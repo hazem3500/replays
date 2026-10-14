@@ -1,0 +1,703 @@
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { AnimatedText } from '@/components/animated-text.tsx';
+
+import { PRODUCT_SLUG } from '../shared/brand.ts';
+import { matchesFilters, type ReplayFilters, type ReplaySummary } from '../shared/replay.ts';
+import {
+  type ReviewSuiteIndexEntry,
+  type ReviewSuiteIndexRun,
+  type SuiteOverallStatus,
+  suiteOverallStatus,
+} from '../shared/review-suite.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { SwitchIconButton } from '@/components/icon-button.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select.tsx';
+import { cn } from '@/lib/utils.ts';
+
+import { copyText } from './clipboard.ts';
+import { productName } from './config.ts';
+import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
+import { tagOptions } from './index/feed.ts';
+import { feedTransition, staggerIn } from './index/feed-transition.ts';
+import { rememberListed } from './navigation.ts';
+import { CommandSearch, IndexIdentity, ScopeBar } from './index/IndexHeader.tsx';
+import { useMediaQuery } from './media.ts';
+import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
+import { FilterMenu, FilterSheet } from './index/FilterMenu.tsx';
+import { apiUrl, rememberIndexSearch } from './route.ts';
+import { readStorage, writeStorage } from './storage.ts';
+import { sourceText } from './index/SourceLine.tsx';
+import { playableReplayId } from './suite/runs.ts';
+import { Topbar } from './Topbar.tsx';
+import { UploadReplay, type UploadReplayHandle } from './upload/UploadReplay.tsx';
+import { useReplayDrop } from './upload/useReplayDrop.tsx';
+
+export type SortKey = 'title' | 'host' | 'capturedAt' | 'duration' | 'steps' | 'errors';
+export interface Sort {
+  key: SortKey;
+  direction: 'ascending' | 'descending';
+}
+
+/** Sortable fields and their names (the sort menu, and `?sort=` validation). */
+export const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> = [
+  { key: 'title', label: 'Title' },
+  { key: 'host', label: 'Host' },
+  { key: 'capturedAt', label: 'Captured' },
+  { key: 'duration', label: 'Duration', numeric: true },
+  { key: 'steps', label: 'Steps', numeric: true },
+  { key: 'errors', label: 'Errors', numeric: true },
+];
+
+export function filtersFromSearch(search: string): ReplayFilters {
+  const params = new URLSearchParams(search);
+  const filters: ReplayFilters = {};
+  const q = params.get('q');
+  if (q) filters.q = q;
+  const host = params.get('host');
+  if (host) filters.host = host;
+  if (params.get('errors') === '1') filters.errors = true;
+  const source = params.get('source');
+  if (source === 'agent' || source === 'human') filters.source = source;
+  const tag = params.get('tag');
+  if (tag) filters.tag = tag;
+  return filters;
+}
+
+export function searchFromFilters(filters: ReplayFilters) {
+  const params = new URLSearchParams();
+  if (filters.q?.trim()) params.set('q', filters.q.trim());
+  if (filters.host) params.set('host', filters.host);
+  if (filters.errors) params.set('errors', '1');
+  if (filters.source) params.set('source', filters.source);
+  if (filters.tag) params.set('tag', filters.tag);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/** Which kinds of row the index shows; kept in the URL as `kind=`, client-side only. */
+export type IndexKind = 'suites' | 'sessions';
+
+export function kindFromSearch(search: string): IndexKind | undefined {
+  const kind = new URLSearchParams(search).get('kind');
+  return kind === 'suites' || kind === 'sessions' ? kind : undefined;
+}
+
+/** The index's suites request; index.html preloads the same URL (keep the two in step). */
+export const INDEX_SUITES_URL = 'suites?expand=runs&limit=100';
+
+/** At or below this width the index is a list, not a table; styles.css keys its compact rules off the same query. */
+export const INDEX_COMPACT_QUERY = '(max-width: 640px)';
+
+export const DEFAULT_SORT: Sort = { key: 'capturedAt', direction: 'descending' };
+const SORT_KEYS = new Set<string>(COLUMNS.map((column) => column.key));
+
+/** `sort=errors` (ascending) or `sort=-errors` (descending); client-side only, absent for the default. */
+export function sortFromSearch(search: string): Sort {
+  const raw = new URLSearchParams(search).get('sort') ?? '';
+  const key = raw.replace(/^-/, '');
+  if (!SORT_KEYS.has(key)) return DEFAULT_SORT;
+  return { key: key as SortKey, direction: raw.startsWith('-') ? 'descending' : 'ascending' };
+}
+
+export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT) {
+  const params = new URLSearchParams(searchFromFilters(filters));
+  if (kind) params.set('kind', kind);
+  if (sort.key !== DEFAULT_SORT.key || sort.direction !== DEFAULT_SORT.direction)
+    params.set('sort', `${sort.direction === 'descending' ? '-' : ''}${sort.key}`);
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/** What the index keeps in its history entry so the back button returns to the same view. */
+interface IndexHistoryState {
+  indexScroll?: number;
+}
+
+const VIEW_KEY = `${PRODUCT_SLUG}-index-view`;
+
+/** List or grid, remembered per browser; phones always get the list. */
+export function storedView(): FeedView {
+  return readStorage(VIEW_KEY) === 'grid' ? 'grid' : 'list';
+}
+
+function indexHistoryState(): IndexHistoryState {
+  return (history.state ?? {}) as IndexHistoryState;
+}
+
+function patchIndexHistoryState(patch: IndexHistoryState) {
+  history.replaceState({ ...history.state, ...patch }, '');
+}
+
+export function errorCount(summary: ReplaySummary) {
+  return summary.consoleErrors + summary.failedRequests;
+}
+
+export function sortSummaries(items: ReplaySummary[], sort: Sort) {
+  const value = (summary: ReplaySummary): string | number => (sort.key === 'errors' ? errorCount(summary) : summary[sort.key]);
+  const factor = sort.direction === 'ascending' ? 1 : -1;
+  return items.toSorted((a, b) => {
+    const left = value(a);
+    const right = value(b);
+    const order = typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right));
+    return order * factor || b.capturedAt.localeCompare(a.capturedAt);
+  });
+}
+
+interface SortValues {
+  title: string;
+  host: string;
+  capturedAt: string;
+  duration: number;
+  steps: number;
+  errors: number;
+}
+
+export type IndexEntry =
+  | { kind: 'session'; id: string; summary: ReplaySummary; values: SortValues }
+  | {
+      kind: 'suite';
+      id: string;
+      suite: ReviewSuiteIndexEntry;
+      status: SuiteOverallStatus;
+      /** Runs that match the filters, in sequence order (all of them when the suite itself matches). */
+      runs: ReviewSuiteIndexRun[];
+      hiddenRuns: number;
+      /** True when the suite's own title or subject matched, rather than one of its runs. */
+      matchedBySuite: boolean;
+      hosts: string[];
+      consoleErrors: number;
+      failedRequests: number;
+      values: SortValues;
+    };
+
+function runMatches(run: ReviewSuiteIndexRun, filters: ReplayFilters, query: string) {
+  const { q: _q, ...rest } = filters;
+  if (run.replay ? !matchesFilters(run.replay, rest) : Boolean(rest.host || rest.tag || rest.errors || rest.source === 'human'))
+    return false;
+  return !query || run.label.toLowerCase().includes(query) || Boolean(run.replay && matchesFilters(run.replay, { q: query }));
+}
+
+function suiteEntry(suite: ReviewSuiteIndexEntry, filters: ReplayFilters): Extract<IndexEntry, { kind: 'suite' }> | undefined {
+  const query = filters.q?.trim().toLowerCase() ?? '';
+  const all = suite.runDetails.toSorted((a, b) => a.sequence - b.sequence);
+  const text = [suite.title, suite.id, suite.subject ? sourceText(suite.subject) : ''];
+  const matchedBySuite =
+    !filters.host &&
+    !filters.tag &&
+    !filters.errors &&
+    filters.source !== 'human' &&
+    (!query || text.some((value) => value.toLowerCase().includes(query)));
+  const runs = matchedBySuite ? all : all.filter((run) => runMatches(run, filters, query));
+  if (!matchedBySuite && runs.length === 0) return undefined;
+  const replays = all.flatMap((run) => (run.replay ? [run.replay] : []));
+  const sum = (pick: (replay: ReplaySummary) => number) => replays.reduce((total, replay) => total + pick(replay), 0);
+  const hosts = [...new Set(replays.map((replay) => replay.host).filter(Boolean))].sort();
+  const consoleErrors = sum((replay) => replay.consoleErrors);
+  const failedRequests = sum((replay) => replay.failedRequests);
+  return {
+    kind: 'suite',
+    id: suite.id,
+    suite,
+    status: suiteOverallStatus(all),
+    runs,
+    hiddenRuns: all.length - runs.length,
+    matchedBySuite,
+    hosts,
+    consoleErrors,
+    failedRequests,
+    values: {
+      title: suite.title,
+      host: hosts[0] ?? '',
+      capturedAt: suite.createdAt,
+      duration: sum((replay) => replay.duration),
+      steps: sum((replay) => replay.steps),
+      errors: consoleErrors + failedRequests,
+    },
+  };
+}
+
+/**
+ * One list for both kinds of row. Sessions arrive already filtered by the server;
+ * suites are filtered here: a suite stays when it, or any of its runs, matches.
+ * Replays recorded for a suite run are listed only under that suite.
+ */
+export function buildIndexEntries(
+  sessions: ReplaySummary[],
+  suites: ReviewSuiteIndexEntry[],
+  filters: ReplayFilters,
+  kind?: IndexKind,
+): IndexEntry[] {
+  const inSuites = new Set(suites.flatMap((suite) => suite.runDetails.flatMap((run) => (run.replayId ? [run.replayId] : []))));
+  const entries: IndexEntry[] = [];
+  if (kind !== 'sessions') {
+    for (const suite of suites) {
+      const entry = suiteEntry(suite, filters);
+      if (entry) entries.push(entry);
+    }
+  }
+  if (kind !== 'suites') {
+    for (const summary of sessions) {
+      if (inSuites.has(summary.id)) continue;
+      entries.push({ kind: 'session', id: summary.id, summary, values: { ...summary, errors: errorCount(summary) } });
+    }
+  }
+  return entries;
+}
+
+export function sortEntries(entries: IndexEntry[], sort: Sort) {
+  const factor = sort.direction === 'ascending' ? 1 : -1;
+  return entries.toSorted((a, b) => {
+    const left = a.values[sort.key];
+    const right = b.values[sort.key];
+    const order = typeof left === 'number' && typeof right === 'number' ? left - right : String(left).localeCompare(String(right));
+    return order * factor || b.values.capturedAt.localeCompare(a.values.capturedAt);
+  });
+}
+
+/** Replays the list shows: top-level sessions plus recorded (unexpired) runs of the listed suites. */
+export function replayCount(entries: IndexEntry[]) {
+  return entries.reduce(
+    (total, entry) => total + (entry.kind === 'session' ? 1 : entry.runs.filter((run) => playableReplayId(run, true)).length),
+    0,
+  );
+}
+
+/** The last list this tab showed, so Back from a replay renders the feed at once (and at its scroll offset). */
+const INDEX_CACHE_KEY = `${PRODUCT_SLUG}-index-cache`;
+const INDEX_CACHE_MAX = 1_500_000;
+
+interface IndexCache {
+  search: string;
+  items: ReplaySummary[];
+  suites: ReviewSuiteIndexEntry[];
+  /** Newest capturedAt this tab has listed: anything newer on a refresh is new (and glows). */
+  newest?: string;
+}
+
+/** On Back/Forward only: the cached list for these filters (a fresh visit always starts from the server). */
+function restoredIndex(filters: ReplayFilters): IndexCache | undefined {
+  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+  if (navigation?.type !== 'back_forward') return undefined;
+  try {
+    const cache = JSON.parse(sessionStorage.getItem(INDEX_CACHE_KEY) ?? 'null') as IndexCache | null;
+    return cache && cache.search === searchFromFilters(filters) ? cache : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function saveIndexCache(cache: IndexCache) {
+  try {
+    const json = JSON.stringify(cache);
+    if (json.length <= INDEX_CACHE_MAX) sessionStorage.setItem(INDEX_CACHE_KEY, json);
+    else sessionStorage.removeItem(INDEX_CACHE_KEY);
+  } catch {
+    // Storage full or blocked: Back just loads the list again.
+  }
+}
+
+const newestOf = (items: readonly ReplaySummary[], since?: string) =>
+  items.reduce((newest, item) => (newest === undefined || item.capturedAt > newest ? item.capturedAt : newest), since);
+
+/** Rings new items once they're on screen (after any feed transition has placed them). */
+function markArrivals(ids: readonly string[]) {
+  window.setTimeout(() => {
+    for (const id of ids) {
+      const item = document.querySelector<HTMLElement>(`.feed-list [data-entry-id="${CSS.escape(id)}"]`);
+      if (!item) continue;
+      item.dataset.arrived = '';
+      window.setTimeout(() => delete item.dataset.arrived, 1600);
+    }
+  }, 50);
+}
+
+function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
+  return a.length === b.length && a.every((item, index) => item.id === b[index]!.id);
+}
+
+export function ReplayIndex() {
+  const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
+  const [restored] = useState(() => restoredIndex(filters));
+  const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
+  const [query, setQuery] = useState(filters.q ?? '');
+  const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
+  const [loadError, setError] = useState('');
+  const [settledFilters, setSettledFilters] = useState<ReplayFilters | undefined>(restored ? filters : undefined);
+  const [hosts, setHosts] = useState<string[]>(() =>
+    [...new Set((restored?.items ?? []).map((summary) => summary.host).filter(Boolean))].sort(),
+  );
+  // Every tag seen so far, like hosts: choosing one narrows the list, but the other tags stay on offer.
+  const [tags, setTags] = useState<string[]>(() => tagOptions(restored?.items ?? []).sort());
+  const [sort, setSort] = useState<Sort>(() => sortFromSearch(location.search));
+  /** Undefined until the first suites request settles, so suite replays never flash as sessions. */
+  const [suites, setSuites] = useState<ReviewSuiteIndexEntry[] | undefined>(restored?.suites);
+  // What the feed shows right now (for refreshes) and the newest item this tab has listed (for arrivals).
+  const shown = useRef({ items: restored?.items, suites: restored?.suites });
+  useLayoutEffect(() => {
+    shown.current = { items, suites };
+  }, [items, suites]);
+  const newest = useRef(restored?.newest);
+  const [preferredView, setPreferredView] = useState<FeedView>(storedView);
+  // Phones get a sort menu and a filter sheet instead of the row of selects (same URL state), and always the list.
+  const compact = useMediaQuery(INDEX_COMPACT_QUERY);
+  const view: FeedView = compact ? 'list' : preferredView;
+  const toolbar = useRef<HTMLDivElement>(null);
+  const shell = useRef<HTMLElement>(null);
+  const upload = useRef<UploadReplayHandle>(null);
+  // Drop a replay.json or rrweb export anywhere on the index to upload it.
+  const dropOverlay = useReplayDrop((file) => upload.current?.open(file));
+
+  useEffect(() => {
+    document.title = productName();
+  }, []);
+
+  // Debounce typing into the search box; other filters apply immediately.
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setFilters((current) => (current.q === (query || undefined) ? current : withFilter(current, 'q', query || undefined))),
+      200,
+    );
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const search = indexSearch(filters, kind, sort);
+    history.replaceState(history.state, '', `${location.pathname}${search}`);
+    rememberIndexSearch(search);
+  }, [filters, kind, sort]);
+
+  // Back from a replay lands where you left: the scroll offset lives in this history entry.
+  useEffect(() => {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    let frame = 0;
+    const save = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => patchIndexHistoryState({ indexScroll: Math.round(window.scrollY) }));
+    };
+    window.addEventListener('scroll', save, { passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', save);
+    };
+  }, []);
+
+  // The header block sticks; day headings stick right under it, and summary jumps stop there too.
+  useLayoutEffect(() => {
+    const host = shell.current;
+    const block = toolbar.current;
+    if (!host || !block) return;
+    const measure = () => host.style.setProperty('--feed-sticky-top', `${Math.round(block.offsetHeight)}px`);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(block);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(apiUrl(`replays${searchFromFilters(filters)}`), { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Replays failed to load (${response.status})`);
+        return (await response.json()) as ReplaySummary[];
+      })
+      .then((summaries) => {
+        if (controller.signal.aborted) return;
+        const previous = shown.current.items;
+        // Newer than anything this tab listed before (e.g. your upload): it glows once it's in (feed.css).
+        const arrived = newest.current ? summaries.filter((summary) => summary.capturedAt > newest.current!) : [];
+        newest.current = newestOf(summaries, newest.current);
+        const apply = () => {
+          setError('');
+          setItems(summaries);
+          setHosts((known) => [...new Set([...known, ...summaries.map((summary) => summary.host).filter(Boolean)])].sort());
+          setTags((known) => [...new Set([...known, ...tagOptions(summaries)])].sort());
+        };
+        // A changed list (filters, search, a refresh with new items) moves in place; the same list just settles.
+        if (previous && !sameIds(previous, summaries)) feedTransition(apply);
+        else apply();
+        if (arrived.length > 0) markArrivals(arrived.map((summary) => `session:${summary.id}`));
+      })
+      .catch((reason: unknown) => {
+        if (controller.signal.aborted || (reason as Error).name === 'AbortError') return;
+        // fetch rejects with a TypeError ("Failed to fetch") when the server cannot be reached at all.
+        setError(
+          reason instanceof TypeError
+            ? `Could not reach ${productName()}. Check your connection.`
+            : reason instanceof Error
+              ? reason.message
+              : String(reason),
+        );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setSettledFilters(filters);
+      });
+    return () => controller.abort();
+  }, [filters]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    // Default cache mode so index.html's preload of this exact URL is reused; the server answers
+    // `Cache-Control: no-store`, so the list is never stale.
+    fetch(apiUrl(INDEX_SUITES_URL), { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Review suites failed to load (${response.status})`);
+        return (await response.json()) as ReviewSuiteIndexEntry[];
+      })
+      .then((loaded) => {
+        const previous = shown.current.suites;
+        if (previous && !sameIds(previous, loaded)) feedTransition(() => setSuites(loaded));
+        else setSuites(loaded);
+        const runs = loaded.flatMap((suite) => suite.runDetails);
+        setHosts((known) => [...new Set([...known, ...runs.map((run) => run.replay?.host ?? '').filter(Boolean)])].sort());
+        setTags((known) => [...new Set([...known, ...tagOptions(runs.flatMap((run) => (run.replay ? [run.replay] : [])))])].sort());
+      })
+      .catch((reason: unknown) => {
+        if ((reason as Error).name === 'AbortError') return;
+        console.warn('Review suites unavailable:', reason);
+        setSuites([]);
+      });
+    return () => controller.abort();
+  }, []);
+
+  const entries = useMemo(
+    () => (items && suites ? sortEntries(buildIndexEntries(items, suites, settledFilters ?? filters, kind), sort) : undefined),
+    // Filter suites with the filters the session list was loaded for, so both kinds update together.
+    [items, suites, settledFilters, filters, kind, sort],
+  );
+  const listed = Boolean(entries);
+  // Effects re-run when the index is shown again behind a viewer page (App.tsx keeps it in an Activity).
+  const entered = useRef(false);
+  useLayoutEffect(() => {
+    if (!listed) return;
+    const top = indexHistoryState().indexScroll;
+    if (top) window.scrollTo(0, top);
+    // A fresh visit: the first items rise in. Back from a replay: the feed is simply there, where you left it.
+    if (!restored && !entered.current && shell.current) staggerIn(shell.current);
+    entered.current = true;
+  }, [listed, restored]);
+  // What a card opens is known before its bundle loads: the viewer's skeleton takes its shape (navigation.ts).
+  useEffect(() => {
+    if (items) rememberListed(items);
+    for (const suite of suites ?? []) rememberListed((suite.runDetails ?? []).flatMap((run) => (run.replay ? [run.replay] : [])));
+  }, [items, suites]);
+  // Remember the list for Back (only once the server has answered for the current filters).
+  useEffect(() => {
+    if (!items || !suites || settledFilters !== filters || (restored && items === restored.items)) return;
+    const search = searchFromFilters(filters);
+    saveIndexCache({ search, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
+  }, [items, suites, settledFilters, filters, restored]);
+  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind);
+  const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
+  const error = settledFilters === filters ? loadError : '';
+  const replays = entries ? replayCount(entries) : 0;
+  const suiteRows = entries ? entries.filter((entry) => entry.kind === 'suite').length : 0;
+
+  // Feed changes cross-fade (feed-transition.ts).
+  const changeSort = (next: Sort) => feedTransition(() => setSort(next));
+  const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
+  const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
+    feedTransition(() => setFilters((current) => withFilter(current, key, value)));
+  const clear = () => {
+    setQuery('');
+    setKind(undefined);
+    setFilters({});
+  };
+  /** The sheet's "Clear all": every filter except the search text. */
+  const clearFilters = () =>
+    feedTransition(() => {
+      setKind(undefined);
+      setFilters((current) => (current.q ? { q: current.q } : {}));
+    });
+  const chooseView = (next: FeedView) => {
+    if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
+    writeStorage(VIEW_KEY, next);
+  };
+  const searchField = <CommandSearch value={query} onChange={setQuery} entries={entries} total={entries?.length} compact={compact} />;
+  const count = (
+    <span className="scope-count" role="status" aria-atomic="true">
+      {pending
+        ? items
+          ? 'Updating replays…'
+          : 'Loading replays…'
+        : !error && entries
+          ? `${replays} ${replays === 1 ? 'replay' : 'replays'}${suiteRows ? ` · ${suiteRows} ${suiteRows === 1 ? 'suite' : 'suites'}` : ''}`
+          : ''}
+    </span>
+  );
+  const filterState = { filters, kind, hosts, tags, update, setKind: changeKind, clearFilters };
+
+  return (
+    <main className="index-shell" ref={shell}>
+      {/* One sticky block: identity + search + actions, then scope (count, filter, sort, layout), then chips. */}
+      <div ref={toolbar} className="index-head">
+        <Topbar
+          root={<IndexIdentity />}
+          actions={
+            <>
+              {searchField}
+              <UploadReplay ref={upload} compact />
+            </>
+          }
+        />
+        <ScopeBar count={count}>
+          {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
+          <SortMenu sort={sort} onChange={changeSort} />
+          {compact ? null : (
+            // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
+            <div className="view-switch" role="group" aria-label="Layout">
+              <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
+                <AnimatedIcon name="list" />
+              </SwitchIconButton>
+              <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
+                <AnimatedIcon name="layout-grid" />
+              </SwitchIconButton>
+            </div>
+          )}
+        </ScopeBar>
+        <CompactFilterChips {...filterState} />
+      </div>
+
+      <section className="index-body" aria-label="Replays" aria-busy={pending}>
+        {error ? (
+          <div className="empty" role="alert">
+            <strong>{error}</strong>
+            <span>Reload the page to try again.</span>
+          </div>
+        ) : entries && entries.length === 0 ? (
+          filtered ? (
+            <div className="empty">
+              <strong>No replays match these filters</strong>
+              <button type="button" className="button secondary" onClick={clear}>
+                Clear filters
+              </button>
+            </div>
+          ) : (
+            <EmptyIndex onUpload={() => upload.current?.open()} />
+          )
+        ) : entries ? (
+          <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
+        ) : (
+          <FeedSkeleton view={view} />
+        )}
+      </section>
+      {dropOverlay}
+    </main>
+  );
+}
+
+/**
+ * A compact filter: one trigger that reads "Host" while unset and "Host · 127.0.0.1" once set,
+ * opening a listbox (shadcn Select over Base UI). Value lives in the URL like every other filter.
+ */
+export function FilterSelect<T extends string>({
+  label,
+  allLabel,
+  value,
+  options,
+  onChange,
+  className,
+  bare,
+}: {
+  label: string;
+  allLabel: string;
+  value: T | undefined;
+  options: Array<{ value: T; label: string }>;
+  onChange: (value: T | undefined) => void;
+  className?: string;
+  /** Show only the value ("All hosts", "example.com"); for places that label the control themselves. */
+  bare?: boolean;
+}) {
+  const items: Array<{ value: T | null; label: string }> = [{ value: null, label: allLabel }, ...options];
+  const current = options.find((option) => option.value === value);
+  return (
+    <Select items={items} value={value ?? null} onValueChange={(next) => onChange((next ?? undefined) as T | undefined)}>
+      <SelectTrigger
+        aria-label={`${label}: ${current?.label ?? allLabel}`}
+        data-active={current ? '' : undefined}
+        className={cn(
+          'filter-trigger h-[30px] max-w-[220px] gap-1.5 border-[var(--line)] bg-transparent px-2 text-[var(--text-tertiary)] hover:bg-[var(--surface-hover)] data-active:border-[var(--line-strong)] data-active:text-[var(--text)] dark:bg-transparent dark:hover:bg-[var(--surface-hover)]',
+          className,
+        )}
+      >
+        {bare ? (
+          <AnimatedText className="min-w-0 truncate" text={current?.label ?? allLabel} />
+        ) : (
+          <>
+            <span>{label}</span>
+            {current ? <AnimatedText className="filter-value" text={current.label} /> : null}
+          </>
+        )}
+      </SelectTrigger>
+      <SelectContent align="start" alignItemWithTrigger={false} className="w-auto min-w-40">
+        {items.map((item) => (
+          <SelectItem key={item.value ?? ''} value={item.value}>
+            {item.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function withFilter<K extends keyof ReplayFilters>(filters: ReplayFilters, key: K, value: ReplayFilters[K] | undefined): ReplayFilters {
+  const next = { ...filters };
+  if (value === undefined || value === '') delete next[key];
+  else next[key] = value;
+  return next;
+}
+
+function EmptyIndex({ onUpload }: { onUpload: () => void }) {
+  const uploadUrl = `${location.origin}${apiUrl('replays')}`;
+  return (
+    <div className="empty-index">
+      <h2>No replays yet</h2>
+      <p>Upload a replay.json or an rrweb export, or drop one anywhere on this page.</p>
+      <Button className="empty-upload" onClick={onUpload}>
+        Upload a replay…
+      </Button>
+      <p className="empty-index-or">Or capture and upload from the command line:</p>
+      <CommandBlock
+        label="Capture an agent run"
+        command={`pnpm capture -- --url https://example.com --title "Example" \\\n  --steps @sample/example.steps.json \\\n  --upload-url ${uploadUrl}`}
+      />
+      <CommandBlock
+        label="Import an rrweb recording"
+        command={`pnpm run import -- --rrweb events.json --title "Checkout bug" \\\n  --upload-url ${uploadUrl}`}
+      />
+    </div>
+  );
+}
+
+/** A shell command that scrolls sideways inside its own box; Copy sits outside the scroll area so it is always reachable. */
+function CommandBlock({ label, command }: { label: string; command: string }) {
+  const [copied, setCopied] = useState<boolean>();
+  useEffect(() => {
+    if (copied === undefined) return;
+    const timer = window.setTimeout(() => setCopied(undefined), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+  return (
+    <figure className="command-block">
+      <figcaption>
+        <span>{label}</span>
+        <button
+          type="button"
+          className="copy-command"
+          aria-label={`Copy command: ${label}`}
+          onClick={() => void copyText(command).then(setCopied)}
+        >
+          {copied === undefined ? 'Copy' : copied ? 'Copied' : 'Copy failed'}
+        </button>
+      </figcaption>
+      {/* Reachable by keyboard so a long line can be scrolled sideways. */}
+      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
+      <pre tabIndex={0} aria-label={label}>
+        <code>{command}</code>
+      </pre>
+      <span className="visually-hidden" role="status">
+        {copied === undefined ? '' : copied ? 'Command copied' : 'Could not copy the command'}
+      </span>
+    </figure>
+  );
+}

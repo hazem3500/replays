@@ -1,0 +1,83 @@
+name: Release
+
+# Manual or tag-triggered. It builds, checks and packs the project and attaches the tarball to the workflow run.
+# It does NOT publish anything on its own:
+#   - npm: the publish step only runs when an NPM_TOKEN secret exists AND package.json is no longer "private": true.
+#   - container images: no registry login or push step exists. See docs/releasing.md for how to add one.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Pack only; never attempt to publish
+        type: boolean
+        default: true
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      publishable: ${{ steps.gate.outputs.publishable }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.0
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+          CHROMIUM_NO_SANDBOX: '1'
+      - run: pnpm build:cli
+      - name: Pack
+        run: pnpm pack --pack-destination dist/pack
+      - uses: actions/upload-artifact@v4
+        with:
+          name: replay-kit-package
+          path: dist/pack/*.tgz
+          retention-days: 30
+      - name: Decide whether publishing is possible
+        id: gate
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          private=$(node -p "require('./package.json').private === true")
+          if [ -n "$NPM_TOKEN" ] && [ "$private" = "false" ] && [ "$DRY_RUN" != "true" ]; then
+            echo "publishable=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "publishable=false" >> "$GITHUB_OUTPUT"
+            echo "Not publishing: needs an NPM_TOKEN secret, a non-private package.json and dry_run=false."
+          fi
+
+  publish-npm:
+    needs: package
+    if: needs.package.outputs.publishable == 'true'
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.22.0
+          registry-url: https://registry.npmjs.org
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:cli
+      - run: pnpm publish --access public --provenance --no-git-checks
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

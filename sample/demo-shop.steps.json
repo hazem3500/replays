@@ -1,0 +1,19 @@
+[
+  { "kind": "wait", "ms": 1500, "label": "Look at the shop" },
+  { "kind": "scroll", "direction": "down", "pixels": 240, "label": "Scroll the product grid" },
+  { "kind": "wait", "ms": 700, "label": "Pick a product" },
+  { "kind": "click", "selector": "button[data-id='tea']", "label": "Add the tea to the cart" },
+  { "kind": "wait", "ms": 700 },
+  { "kind": "click", "selector": "button[data-id='mug']", "label": "Add the mug to the cart" },
+  { "kind": "wait", "ms": 700 },
+  { "kind": "click", "selector": "nav a[href='/checkout.html']", "label": "Open the cart" },
+  { "kind": "wait", "ms": 900, "label": "Review the cart" },
+  { "kind": "fill", "selector": "#email", "text": "demo.shopper@example.com", "label": "Enter an email address" },
+  { "kind": "wait", "ms": 500 },
+  { "kind": "type", "selector": "#coupon", "text": "SPRING10", "label": "Type a coupon code" },
+  { "kind": "wait", "ms": 600 },
+  { "kind": "click", "selector": "#apply", "label": "Apply the coupon" },
+  { "kind": "wait", "ms": 1400, "label": "Read the coupon error" },
+  { "kind": "click", "selector": "#place", "label": "Place the order" },
+  { "kind": "wait", "ms": 1200, "label": "Confirm the order went through" }
+]

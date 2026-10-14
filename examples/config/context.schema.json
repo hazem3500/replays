@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "plan": {
+      "type": "string",
+      "title": "Plan",
+      "description": "The subscription plan of the test account.",
+      "enum": ["free", "trial", "pro"]
+    },
+    "adminUrl": { "type": "string", "title": "Admin console", "format": "uri" },
+    "featureFlags": {
+      "type": "object",
+      "title": "Feature flags",
+      "properties": {
+        "newCheckout": { "type": "boolean", "title": "New checkout" },
+        "darkMode": { "type": "boolean", "title": "Dark mode" }
+      }
+    },
+    "browsers": { "type": "array", "title": "Browsers", "items": { "type": "string" } }
+  },
+  "required": ["plan"],
+  "additionalProperties": false
+}

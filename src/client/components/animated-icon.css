@@ -1,0 +1,57 @@
+/*
+ * Animated icons (animated-icon.tsx). Every moving part carries its gesture as custom properties
+ * (--ai-name, --ai-ms, --ai-delay, --ai-x/-y, --ai-sx/-sy, --ai-rotate, --ai-opacity, --ai-origin); these four
+ * keyframes read them. Nothing animates unless the icon has [data-playing] and the user allows motion.
+ * Gestures ported from lucide-animated (MIT, © 2024-2026 pqoqubbw), see animated-icon-data.ts.
+ */
+.animated-icon [data-motion] {
+  transform-box: fill-box;
+  transform-origin: var(--ai-origin, center);
+}
+
+.animated-icon [data-motion="draw"] {
+  stroke-dasharray: 1 2;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .animated-icon[data-playing] [data-motion] {
+    animation: var(--ai-name) var(--ai-ms, 240ms) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) var(--ai-delay, 0ms) both;
+  }
+}
+
+/* Out to the offset and back: a nudge. */
+@keyframes ai-shift {
+  45% {
+    transform: translate(var(--ai-x, 0), var(--ai-y, 0)) rotate(var(--ai-rotate, 0deg)) scale(var(--ai-sx, 1), var(--ai-sy, 1));
+    opacity: var(--ai-opacity, 1);
+  }
+}
+
+/* Settles in from the offset: an entrance. */
+@keyframes ai-from {
+  from {
+    transform: translate(var(--ai-x, 0), var(--ai-y, 0)) rotate(var(--ai-rotate, 0deg)) scale(var(--ai-sx, 1), var(--ai-sy, 1));
+    opacity: var(--ai-opacity, 1);
+  }
+}
+
+/* Turns to a pose that looks like the rest pose (180° hourglass, 360° arrow), so ending it never jumps. */
+@keyframes ai-spin {
+  to {
+    transform: rotate(var(--ai-rotate, 0deg));
+  }
+}
+
+/* Strokes the path in (pathLength 1). */
+@keyframes ai-draw {
+  from {
+    stroke-dashoffset: 1;
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}

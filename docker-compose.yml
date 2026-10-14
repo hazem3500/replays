@@ -1,0 +1,36 @@
+# A single-node deployment of the viewer and upload API. Build locally (nothing is pulled from or pushed to a registry):
+#
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# This example uses AUTH_MODE=none and binds to the loopback interface only. Before exposing it to a network,
+# pick an auth adapter (see "Authentication" in the README) and put TLS in front of it.
+services:
+  replay-kit:
+    build:
+      context: .
+      args:
+        WITH_RENDER: "0" # "1" adds server-side video export and list posters (larger image)
+    image: replay-kit:local
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      AUTH_MODE: none
+      RETENTION_DAYS: "30" # 0 keeps everything
+      # PRODUCT_NAME: "Acme Replays"
+      # BASE_PATH: /replays
+      # CONTEXT_SCHEMA_FILE: /config/context.schema.json
+      # OTEL_EXPORTER_OTLP_ENDPOINT: http://collector:4318   # tracing stays off without this
+    volumes:
+      - replays:/data
+      # - ./config:/config:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  replays:

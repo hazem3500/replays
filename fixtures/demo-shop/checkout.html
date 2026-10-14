@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Checkout — Pinecone Goods</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <header class="bar">
+      <a class="logo" href="/">Pinecone Goods</a>
+      <nav><a href="/">Shop</a> <a href="/checkout.html">Cart <span id="count">0</span></a></nav>
+    </header>
+    <main class="narrow">
+      <h1>Checkout</h1>
+      <ul id="cart" class="cart"></ul>
+      <form id="order" novalidate>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="off" placeholder="you@example.com" />
+        <label for="coupon">Coupon code</label>
+        <div class="row">
+          <input id="coupon" name="coupon" type="text" autocomplete="off" placeholder="SPRING10" />
+          <button type="button" id="apply" class="secondary">Apply</button>
+        </div>
+        <p id="coupon-note" class="note" role="status"></p>
+        <button type="submit" id="place">Place order</button>
+      </form>
+      <p id="done" class="done" hidden>Thanks! Your demo order is on its way.</p>
+    </main>
+    <script src="/app.js"></script>
+  </body>
+</html>

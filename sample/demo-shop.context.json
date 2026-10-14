@@ -1,0 +1,25 @@
+{
+  "app": {
+    "name": "Demo shop",
+    "environment": "local",
+    "origin": "http://127.0.0.1:4173",
+    "version": "0.1.0"
+  },
+  "test": {
+    "suite": "checkout",
+    "case": "rejects an unknown coupon",
+    "runId": "demo-1"
+  },
+  "sources": [
+    {
+      "provider": "github",
+      "ref": "example-org/shop-demo#42",
+      "label": "Example pull request"
+    },
+    {
+      "provider": "url",
+      "ref": "https://example.com/tickets/DEMO-1",
+      "label": "Example ticket"
+    }
+  ]
+}

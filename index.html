@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#0c0e12" />
+    <!-- Where the app lives ("/" at a domain's root, else a path prefix such as /replays): filled in by the server
+         per request (src/server/base-path.ts), so one build serves every base. Read by src/client/route.ts. -->
+    <meta name="app-base" content="" />
+    <!-- The deployment's display name and logo, filled in by the server (src/client/config.ts reads them). -->
+    <meta name="app-name" content="__PRODUCT_NAME__" />
+    <meta name="app-logo" content="__PRODUCT_LOGO__" />
+    <title>__PRODUCT_NAME__</title>
+    <!-- The product mark (components/brand-icon.tsx BrandMark): a play triangle in a rounded square, in the accent. -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%238b9dff'/%3E%3Cpath fill='%230b0f24' d='M9.5 7.6v8.8a.6.6 0 0 0 .9.5l7.2-4.4a.6.6 0 0 0 0-1l-7.2-4.4a.6.6 0 0 0-.9.5Z'/%3E%3C/svg%3E" />
+    <style>
+      /* Page transitions (styles.css has the animation): opt in here, unlayered, before the first render. */
+      @view-transition { navigation: auto; }
+      @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
+    </style>
+    <!-- Inter (self-hosted, OFL): the Latin subset every page paints with; Latin Extended loads only when used. -->
+    <link rel="preload" href="/src/client/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Before first paint: the saved theme (else the OS preference) on <html>, and the matching browser
+      // chrome colour, so phones never flash the wrong bar. Keep in step with THEME_COLORS in theme.tsx.
+      (function () {
+        var theme;
+        try {
+          theme = localStorage.getItem('replay-kit-theme');
+        } catch (error) {}
+        if (theme !== 'light' && theme !== 'dark') theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0c0e12' : '#eff1f5';
+      })();
+    </script>
+    <script>
+      // Start the page's API requests alongside the app's JS instead of after it: the app's fetch() of the
+      // same URL picks up each preload. Mirrors parseRoute, apiUrl and searchFromFilters (src/client).
+      (function () {
+        var path = location.pathname;
+        // appBase (route.ts): the declared base when the page is under it, else the root.
+        var meta = document.querySelector('meta[name="app-base"]');
+        var declared = meta && meta.content && meta.content !== '/' ? meta.content.replace(/\/+$/, '') : '';
+        var base = declared !== '' && (path === declared || path.indexOf(declared + '/') === 0) ? declared : '';
+        var rest = path.slice(base.length) || '/';
+        var api = base + '/api/';
+        var preload = function (url) {
+          var link = document.createElement('link');
+          link.rel = 'preload';
+          link.as = 'fetch';
+          link.crossOrigin = 'anonymous';
+          link.href = api + url;
+          document.head.appendChild(link);
+        };
+        var id = function (segment) {
+          try {
+            return encodeURIComponent(decodeURIComponent(segment));
+          } catch (error) {
+            return '';
+          }
+        };
+        var params = new URLSearchParams(location.search);
+        var suite = /^\/s\/([^/]+)(?:\/r\/([^/]+))?\/?$/.exec(rest);
+        var replay = /^\/r\/([^/]+)\/?$/.exec(rest);
+        if (suite || replay) {
+          var replayId = id(suite ? suite[2] || '' : replay[1]);
+          var suiteId = suite ? id(suite[1]) : params.get('suite') ? encodeURIComponent(params.get('suite')) : '';
+          if (suiteId) preload('suites/' + suiteId + '?expand=runs');
+          if (replayId) preload('replays/' + replayId);
+          return;
+        }
+        var filters = new URLSearchParams();
+        var q = (params.get('q') || '').trim();
+        if (q) filters.set('q', q);
+        if (params.get('host')) filters.set('host', params.get('host'));
+        if (params.get('errors') === '1') filters.set('errors', '1');
+        if (params.get('source') === 'agent' || params.get('source') === 'human') filters.set('source', params.get('source'));
+        if (params.get('tag')) filters.set('tag', params.get('tag'));
+        var search = filters.toString();
+        preload('replays' + (search ? '?' + search : ''));
+        preload('suites?expand=runs&limit=100');
+      })();
+    </script>
+    <script>
+      // Tag cross-document transitions so styles.css can animate them: "page", and "page-back" on Back (a history
+      // traversal to an earlier entry). Reloads skip the transition. Index ↔ viewer changes stay in the document
+      // and animate there (src/client/navigation.ts). Clicks during any transition go through (below).
+      (function () {
+        function tag(transition, activation) {
+          if (!transition || !activation) return;
+          if (activation.navigationType === 'reload') return transition.skipTransition();
+          transition.types.add('page');
+          var from = activation.from;
+          if (activation.navigationType === 'traverse' && from && from.index > -1 && activation.entry.index < from.index) transition.types.add('page-back');
+        }
+        addEventListener('pageswap', function (event) {
+          tag(event.viewTransition, event.activation);
+        });
+        addEventListener('pagereveal', function (event) {
+          tag(event.viewTransition, window.navigation && navigation.activation);
+        });
+        // Browsers with View Transitions but without document.activeViewTransition (Chromium before 133, which some
+        // embedded previews still ship) would lose every click made while one runs: track it ourselves.
+        if (Document.prototype.startViewTransition && !('activeViewTransition' in Document.prototype)) {
+          var running = null;
+          var start = Document.prototype.startViewTransition;
+          Document.prototype.startViewTransition = function () {
+            var transition = start.apply(this, arguments);
+            running = transition;
+            var clear = function () {
+              if (running === transition) running = null;
+            };
+            transition.finished.then(clear, clear);
+            return transition;
+          };
+          Object.defineProperty(Document.prototype, 'activeViewTransition', {
+            configurable: true,
+            get: function () {
+              return running;
+            },
+          });
+        }
+        // Input never waits for a transition (page or feed): while one runs, browsers route clicks to <html>.
+        // End it and hand the click to whatever is under the pointer once the real page is back on screen.
+        addEventListener(
+          'click',
+          function (event) {
+            var transition = document.activeViewTransition;
+            // The second click of a double click is not a new intent: drop it rather than replaying it on the new page.
+            if (!transition || !event.isTrusted || event.target !== document.documentElement) return;
+            if (event.detail > 1) return event.stopPropagation();
+            event.stopPropagation();
+            var x = event.clientX;
+            var y = event.clientY;
+            transition.skipTransition();
+            transition.finished.finally(function () {
+              requestAnimationFrame(function () {
+                var target = document.elementFromPoint(x, y);
+                if (target && target !== document.documentElement) target.click();
+              });
+            });
+          },
+          true,
+        );
+      })();
+    </script>
+    <!-- In <head> and render-blocking (with main.tsx's synchronous first render), so a page transition's incoming
+         snapshot is the rendered app and its top bar, not an empty #root. Modules defer: #root exists by then. -->
+    <script type="module" src="/src/client/main.tsx" blocking="render"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

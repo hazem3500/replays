@@ -1,0 +1,13 @@
+{
+  "name": "Acme Replays",
+  "theme": {
+    "dark": { "accent": "#7aa2ff", "accent-contrast": "#0b1020" },
+    "light": { "accent": "#2f55d4", "accent-contrast": "#ffffff" }
+  },
+  "basePath": "/",
+  "retentionDays": 14,
+  "contextSchemaFile": "./context.schema.json",
+  "sourceProviders": [
+    { "id": "jira", "label": "Jira", "template": "https://jira.example.com/browse/{ref}", "pattern": "^[A-Z][A-Z0-9]+-\\d+$" }
+  ]
+}

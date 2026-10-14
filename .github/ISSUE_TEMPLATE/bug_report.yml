@@ -1,0 +1,34 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.1.0 / abc1234
+  - type: dropdown
+    id: part
+    attributes:
+      label: Which part?
+      options: [Capture CLI, Recorder library, Server / API, Viewer, Docker, Docs, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Node version, OS, browser, driver (playwright / agent-browser), AUTH_MODE, STORAGE.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or a sample
+      description: "Do not paste recordings of real users or secrets. A replay of a public page or the demo shop is ideal."
+      render: shell

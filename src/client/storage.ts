@@ -1,0 +1,16 @@
+/** localStorage that never throws: storage can be blocked (privacy modes, embedded frames). */
+export function readStorage(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+export function writeStorage(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Preference is kept for this page only.
+  }
+}

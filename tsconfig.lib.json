@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "emitDeclarationOnly": true,
+    "rewriteRelativeImportExtensions": true,
+    "outDir": "dist/types",
+    "rootDir": "src",
+    "types": ["node"]
+  },
+  "include": [
+    "src/index.ts",
+    "src/shared",
+    "src/capture",
+    "src/server/auth",
+    "src/server/storage",
+    "src/server/context-schema.ts",
+    "src/server/branding.ts"
+  ],
+  "exclude": ["src/capture/injected-recorder.ts", "src/server/storage/traced.ts"]
+}

@@ -1,0 +1,509 @@
+/*
+ * Replay index (src/client/ReplayIndex.tsx, src/client/index/*). Imported into the `app` layer by tailwind.css.
+ * Two quiet sticky header rows, then the feed: hairline-separated rows (list) or quiet bordered cards
+ * (grid); posters carry the visual weight. Red only for explicit failed outcomes (failed suites/runs);
+ * accent only for where you are (the "Review suite" badge, active filters).
+ */
+
+/* One page gutter for every left/right edge (identity, search, tabs, headings, thumbnails). */
+.index-shell { --gutter: 32px; }
+/* The feed ends with breathing room, not a footer line. */
+.index-body { padding-bottom: 32px; }
+
+/* ---------- Header: two rows, sticky as one block ---------- */
+.index-head { position: sticky; z-index: 6; top: 0; border-bottom: 1px solid var(--line); background: var(--surface); }
+.index-head > .app-topbar { position: relative; min-height: 52px; gap: 12px; padding: 0 var(--gutter); border-bottom: 0; background: transparent; }
+/* One right-hand column for both header rows: they end at the gutter, Upload sits over List and Theme over Grid
+   (32 px buttons, 4 px apart; 40 px on touch), and the search ends 8 px before the icon pair. */
+.index-head .topbar-actions { gap: 4px; margin-right: 0; }
+.index-head .topbar-actions > button, .index-head .view-switch > button { width: 32px !important; min-width: 32px !important; height: 32px !important; padding: 0 !important; }
+.index-head .topbar-actions > .command-search { margin-right: 4px; }
+@media (pointer: coarse) {
+  .index-head .topbar-actions > button, .index-head .view-switch > button { width: 40px !important; min-width: 40px !important; height: 40px !important; }
+}
+.index-identity { min-width: 0; display: flex; flex: 1 1 auto; align-items: center; gap: 10px; }
+.index-title { margin: 0; color: var(--text); font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.01em; line-height: 24px; }
+.product-logo { flex: 0 0 auto; width: 24px; height: 24px; object-fit: contain; }
+.product-mark { flex: 0 0 auto; overflow: visible; color: var(--text); }
+/* The mark is the "Replays home" button. Its click plays a ~400 ms brand moment (IndexHeader.tsx MarkButton,
+   mark-burst.ts): a deliberate exception to the ≤ 200 ms motion rule, because it is user-initiated and decorative by intent. */
+.mark-button { width: 28px; height: 28px; display: grid; flex: 0 0 auto; place-items: center; margin: 0 -5px; padding: 0; border: 0; border-radius: var(--radius); background: transparent; cursor: pointer; }
+.mark-button:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+.product-mark .mark-seg { fill: currentColor; fill-opacity: 0.35; stroke: none; transform-box: fill-box; transform-origin: center; }
+.product-mark .mark-seg[data-on] { fill: var(--accent); fill-opacity: 1; }
+.product-mark .mark-playhead { fill: var(--accent); stroke: none; transform-box: fill-box; transform-origin: 50% 100%; }
+/* No hover box: the only hover hint is inside the mark, the playhead leaning half a unit forward (its own `translate`,
+   so it composes with the WAAPI transform). */
+.product-mark .mark-playhead { transition: translate 150ms var(--ease-out); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) { .mark-button:hover .mark-playhead { translate: 0.5px 0; } }
+@media (pointer: coarse) { .mark-button { width: 40px; height: 40px; margin: 0 -11px; } }
+/* The fifth rapid click's reverse typewriter (mark-burst.ts): the letters play on an aria-hidden overlay over the h1,
+   whose own text stays in place (transparent) so nothing shifts; the caret is the playhead's aria-hidden HTML twin,
+   positioned in the identity row in the mark's units. ~2.4 s by design: a user-triggered easter egg. */
+.index-identity { position: relative; }
+.index-title { position: relative; }
+.index-title[data-rewinding] { color: transparent; }
+.title-type { position: absolute; inset: 0; color: var(--text); white-space: pre; pointer-events: none; }
+.title-type > span { position: absolute; top: 0; display: inline-block; transform-origin: 100% 70%; }
+.mark-caret { position: absolute; z-index: 1; width: 0; height: 24px; transform-origin: 0 0; pointer-events: none; }
+.mark-caret-stem { position: absolute; left: -0.95px; top: 6.6px; width: 1.9px; height: 11.2px; border-radius: 0.95px; background: var(--accent); transform-origin: 50% 100%; }
+.mark-caret-head { position: absolute; left: -1.9px; top: 4.7px; width: 3.8px; height: 3.8px; border-radius: 50%; background: var(--accent); }
+
+/* Row 1, right: a compact search pill that opens the command results (⌘K). */
+/* The row reserves the widest search (320 px); the pill sits right-aligned in it and widens when it is entered,
+   so nothing beside it moves. Active: a 1 px accent border and a soft accent glow, not a double ring. */
+.index-head .command-search { position: relative; display: flex; width: 320px; flex: 0 0 auto; justify-content: flex-end; }
+.index-head .search-field.command-field { flex: 0 0 auto; width: 240px; min-width: 0; max-width: none; height: 32px; gap: 8px; padding: 0 6px 0 10px; border: 1px solid transparent; border-radius: 8px; background: var(--surface-hover); transition: width 240ms var(--ease-out), border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out); }
+.index-head .search-field.command-field input { font-size: var(--text-sm); }
+.index-head .search-field.command-field > svg { transition: transform 150ms var(--ease-out), color 150ms var(--ease-out); }
+.index-head .search-field.command-field:focus-within,
+.index-head .search-field.command-field:has(input:not(:placeholder-shown)) { width: 100%; }
+.index-head .search-field.command-field:focus-within { border-color: color-mix(in srgb, var(--accent) 85%, var(--surface)); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent); }
+.index-head .search-field.command-field:focus-within > svg { color: var(--accent); stroke: var(--accent); transform: translateX(1px); }
+.command-kbd { flex: 0 0 auto; display: inline-flex; transition: opacity 120ms var(--ease-out); }
+/* The browser's own clear button is redundant (Esc clears) and off-palette. */
+.index-head .search-field.command-field input::-webkit-search-cancel-button { display: none; }
+/* The ⌘K cap fades out as soon as you type. */
+.command-field:has(input:not(:placeholder-shown)) .command-kbd { opacity: 0; }
+/* No key caps for touch: there is no keyboard to press them on. */
+@media (pointer: coarse) { .command-kbd, [data-slot="tooltip-content"] [data-slot="kbd"] { display: none; } }
+.index-head .command-results { right: 0; left: auto; width: 420px; }
+.command-results { position: absolute; z-index: 20; top: calc(100% + 6px); right: 0; left: 0; min-width: 300px; max-height: min(420px, 70vh); overflow: auto; padding: 4px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-raised); box-shadow: var(--shadow-pop); animation: command-in var(--motion-fast) var(--ease-out); }
+.command-results[hidden] { display: none; }
+@keyframes command-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } to { opacity: 1; transform: none; } }
+.command-results { transform-origin: top right; }
+.command-option { min-height: 36px; display: flex; align-items: center; gap: 10px; padding: 4px 8px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size: var(--text-sm); cursor: pointer; }
+.command-option[aria-selected="true"] { background: var(--surface-hover); color: var(--text); }
+.command-option[data-kind="all"] { margin-top: 4px; border-top: 1px solid var(--line); border-radius: 0; }
+.command-option[data-kind="all"][aria-selected="true"] { border-radius: var(--radius-sm); }
+.command-thumb { position: relative; flex: 0 0 auto; }
+.command-thumb .poster-mini { width: 48px; height: 30px; }
+.command-thumb-stack::before { content: ""; position: absolute; top: -3px; right: 5px; left: 5px; height: 8px; border-radius: 3px; background: color-mix(in srgb, var(--surface-hover) 60%, var(--canvas)); box-shadow: inset 0 0 0 1px var(--line); }
+.command-text { min-width: 0; flex: 1; display: grid; }
+.command-title { min-width: 0; overflow: hidden; color: inherit; text-overflow: ellipsis; white-space: nowrap; }
+.command-option[data-kind="entry"] .command-title { color: var(--text); font-weight: 550; }
+.command-detail { min-width: 0; display: flex; align-items: center; gap: 4px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.command-detail svg { width: 11px; height: 11px; flex: 0 0 11px; }
+.command-icon { width: 14px; height: 14px; flex: 0 0 14px; margin: 0 17px 0 8px; color: var(--text-tertiary); }
+.command-enter { width: 13px; height: 13px; flex: 0 0 13px; margin-left: auto; color: var(--text-tertiary); }
+
+/* ---------- Row 2: the count, then Filter, sort, layout ---------- */
+.scope-bar { min-height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 var(--gutter); }
+.scope-count { min-width: 0; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.scope-bar-end { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; }
+/* Row 2 controls: one quiet 32 px style (40 px for coarse pointers). */
+.scope-button, .scope-bar .index-sort-trigger { height: 32px; display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); font-size: var(--text-sm); font-weight: 550; white-space: nowrap; cursor: pointer; }
+.scope-button svg { width: 14px; height: 14px; color: var(--text-tertiary); }
+.scope-button[data-popup-open], .scope-bar .index-sort-trigger[data-popup-open] { background: var(--surface-hover); color: var(--text); }
+.scope-button:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+.scope-badge { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 16px; text-align: center; }
+.view-switch { display: flex; align-items: center; gap: 4px; margin-left: 4px; padding-left: 8px; border-left: 1px solid var(--line); }
+@media (pointer: coarse) { .scope-button, .scope-bar .index-sort-trigger { height: 40px; } }
+/* Active filters: removable chips under row 2, only when any are set. */
+.index-head .index-chips { margin: 0; padding: 0 var(--gutter) 6px; }
+/* ---------- Filters (index/FilterMenu.tsx): one compact menu, a 32 px row each (44 px in the phone sheet) ---------- */
+.filter-menu-head { min-height: 32px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 4px 0 8px; }
+.filter-menu-title { margin: 0; color: var(--text); font-size: 13px; font-weight: 600; }
+.filter-menu .filter-menu-clear, .filter-sheet .filter-menu-clear { min-height: 24px; height: 24px; padding: 0 6px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer; }
+.filter-row { position: relative; width: 100%; min-height: 32px; display: flex; align-items: center; gap: 8px; margin: 0; padding: 0 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font: inherit; font-size: 13px; text-align: left; cursor: pointer; }
+.filter-row-label { flex: 0 0 auto; }
+/* Set filters: the label in full text colour with a small accent dot; the value in text colour. */
+.filter-row[data-active] .filter-row-label { color: var(--text); }
+.filter-row[data-active] .filter-row-label::after { content: ""; display: inline-block; width: 5px; height: 5px; margin: 0 0 2px 6px; border-radius: 50%; background: var(--accent); vertical-align: middle; }
+.filter-row-value { min-width: 0; margin-left: auto; overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
+.filter-row[data-active] .filter-row-value { color: var(--text); }
+.filter-row-hint { min-width: 0; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+/* Menu rows carry the switch, not a checkmark. */
+.filter-switch-row [data-slot="dropdown-menu-checkbox-item-indicator"] { display: none !important; }
+/* Submenu rows: label left, value right, the chevron right after it (the utility's ml-auto would split them). */
+.filter-row[data-slot="dropdown-menu-sub-trigger"] > svg:last-child { margin-left: 4px !important; color: var(--text-tertiary); }
+.filter-switch-row { padding-right: 8px !important; }
+.filter-switch { position: relative; flex: 0 0 auto; width: 26px; height: 16px; margin-left: auto; border-radius: 8px; background: var(--line-strong); transition: background-color var(--motion-fast) var(--ease-out); }
+.filter-switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgb(0 0 0 / 0.25); transition: transform var(--motion-fast) var(--ease-out); }
+.filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch { background: var(--accent); }
+.filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after { transform: translateX(10px); }
+.filter-search { width: calc(100% - 8px); margin: 3px 4px 4px; }
+.filter-option { min-height: 32px; font-size: 13px; }
+.filter-check, .filter-chevron { flex: 0 0 auto; width: 14px; height: 14px; margin-left: auto; color: var(--text-tertiary); }
+.filter-row .filter-chevron { margin-left: 4px; }
+.filter-check { color: var(--accent); }
+.filter-back { width: 32px; height: 32px; display: grid; place-items: center; margin-left: -8px; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); cursor: pointer; }
+.filter-back svg { width: 18px; height: 18px; }
+/* Phones: the sheet's rows are 44 px. */
+.filter-sheet .filter-menu-head { min-height: 44px; padding: 0 0 4px; }
+.filter-sheet .filter-row { min-height: 44px; padding: 0 4px; font-size: var(--text-sm); }
+.filter-sheet .filter-menu-clear { height: 40px; min-height: 40px; }
+.filter-sheet .filter-row:focus-visible, .filter-back:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
+@media (hover: hover) and (pointer: fine) {
+  .filter-sheet .filter-row:hover, .filter-menu .filter-menu-clear:hover, .filter-back:hover { background: var(--surface-hover); color: var(--text); }
+}
+@media (prefers-reduced-motion: reduce) { .filter-switch, .filter-switch::after { transition: none; } }
+@media (forced-colors: active) {
+  .filter-switch, .filter-switch::after { forced-color-adjust: none; border: 1px solid CanvasText; background: Canvas; }
+  .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after { background: Highlight; }
+}
+
+/* ---------- Headings ---------- */
+.feed-heading, .feed-day { margin: 0; color: var(--text-secondary); font-size: 13px; font-weight: 600; line-height: 16px; }
+.feed-day { position: sticky; z-index: 3; top: var(--feed-sticky-top, 0px); padding: 6px var(--gutter); border-bottom: 1px solid var(--line); background: var(--surface); }
+.feed-group { scroll-margin-top: var(--feed-sticky-top, 0px); }
+
+/* ---------- Posters ---------- */
+.poster { position: relative; z-index: 0; display: block; flex: 0 0 auto; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface-raised); clip-path: inset(0 round var(--radius-sm)); isolation: isolate; }
+.poster::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line); pointer-events: none; }
+/* Dark: bright white screenshots glare against the dark page, so posters and previews sit at 88 % brightness behind a
+   faint light hairline, and come back to full brightness while hovered, keyboard-selected or previewing. Light keeps the hairline only. */
+:root:not([data-theme="light"]) .poster::after { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06); }
+:root:not([data-theme="light"]) .poster > :is(img, .poster-video) { filter: brightness(0.95); }
+:root:not([data-theme="light"]) :is(.feed-item:hover, .feed-item:focus-within) .poster > :is(img, .poster-video),
+:root:not([data-theme="light"]) .poster:has(.poster-video[data-shown]) > :is(img, .poster-video) { filter: none; }
+.poster-row { width: 96px; height: 60px; }
+.poster-mini { width: 72px; height: 45px; }
+.poster-card { width: 100%; height: auto; aspect-ratio: 16 / 10; }
+.poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity var(--motion) var(--ease-out); }
+.poster[data-phase="ready"] img { opacity: 1; }
+.poster-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-md); font-weight: 600; }
+.poster-card .poster-placeholder { font-size: var(--text-lg); }
+.poster[data-phase="ready"] .poster-placeholder { visibility: hidden; }
+/* Suites: a second sheet peeks out above the poster, a quiet "several recordings" cue. */
+/* Hover preview (Poster.tsx PreviewVideo): fades in over the poster once it actually plays. */
+.poster-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity var(--motion) var(--ease-out); }
+.poster-video[data-shown] { opacity: 1; }
+.poster-progress { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; height: 2px; background: rgb(255 255 255 / 0.18); opacity: 0; transition: opacity var(--motion) var(--ease-out); }
+.poster-progress[data-shown] { opacity: 1; }
+.poster-progress > span { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; }
+/* Thumbnail overlays: a replay's duration, or a suite's run count (bottom-right, like a video player). */
+.poster-badge { position: absolute; z-index: 1; right: 4px; bottom: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; border-radius: 3px; background: rgb(16 14 18 / 0.78); color: #f6f2f7; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 15px; }
+.poster-badge svg { width: 10px; height: 10px; }
+.poster-card .poster-badge { right: 6px; bottom: 6px; padding: 0 5px; font-size: var(--text-xs); line-height: 17px; }
+.poster-card .poster-badge svg { width: 11px; height: 11px; }
+/* Suites are playlists: two darker sheets offset behind the main poster. */
+/*
+ * Suites as stacks, never rotated or skewed (Apple Photos album style).
+ * List rows: one or two plain sheets above the 96 × 60 thumbnail, each the thumbnail's own box scaled about its
+ * top centre and lifted so the edges sit 4 / 8 px above; on hover they fan out to 7 / 13 px. Grid cards: see
+ * "Grid suites" below — whole card-shaped backs behind the card.
+ * Motion: a soft spring (≤ 4 % overshoot) 420 ms in, the back sheet 40 ms behind; 240 ms ease-out back.
+ */
+.index-shell { --stack-spring: linear(0, 0.22 8%, 0.55 19%, 0.82 31%, 0.97 43%, 1.035 56%, 1.03 68%, 1.01 82%, 1); }
+.poster-stack { position: relative; isolation: isolate; display: block; align-self: start; padding-top: 15px; }
+.stack-front { position: relative; z-index: 2; display: block; border-radius: var(--radius-sm); }
+.stack-layer { position: absolute; top: 15px; right: 0; bottom: 0; left: 0; overflow: hidden; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 70%, var(--text-tertiary)); transform-origin: 50% 0; transition: transform 240ms var(--ease-out); }
+.stack-layer-1 { z-index: 1; background: color-mix(in srgb, var(--surface-hover) 85%, var(--text-tertiary)); transform: translate3d(0, -4px, 0) scale(0.92, 1); }
+.stack-layer-2 { z-index: 0; background: color-mix(in srgb, var(--surface-hover) 92%, var(--text-tertiary)); transform: translate3d(0, -8px, 0) scale(0.84, 1); }
+/* Fans are straight, centred and symmetric: sheets only rise and widen a little, always narrower than the front. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* The pile fans open: sheets rise straight up and widen a little (a smaller grid fan-out). */
+  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .stack-layer { will-change: transform; transition-duration: 300ms; transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .stack-layer-2 { transform: translate3d(0, -11px, 0) scale(0.88, 1); transition-delay: 30ms; }
+  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .stack-layer-1 { transform: translate3d(0, -6px, 0) scale(0.95, 1); }
+  /* The other runs' screenshots brighten as the veil lifts. */
+  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .back-poster[data-phase="ready"] img { opacity: 0.95; }
+  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) :is(.stack-layer, .card-back)::before { opacity: 0.35; }
+}
+/* The sheets carry the other runs' screenshots (Feed.tsx BackPoster): filling the sheet, cropped below the
+   recorded app's own header (so it never reads as yet another card edge), dimmed under a soft veil, with the
+   sheet's hairline drawn on top so each one reads as a single card. */
+.back-poster { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; background: transparent; }
+.back-poster { clip-path: none; }
+/* Only a back's top strip shows: shift its screenshot up past the recorded app's header bar, so the strip is
+   page content (a screenshot), not a flat coloured slab. Never zooms with the front on hover. */
+.back-poster > img { object-position: 50% 0; transform: translate3d(0, -12%, 0) !important; }
+.back-poster[data-phase="ready"] img { opacity: 0.85; }
+.back-poster .poster-placeholder, .back-poster::after { display: none; }
+.back-poster img { transition: opacity 240ms var(--ease-out); }
+:is(.stack-layer, .card-back)::before { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: inherit; background: rgb(0 0 0 / 0.1); pointer-events: none; transition: opacity 240ms var(--ease-out); }
+:root:not([data-theme="light"]) :is(.stack-layer, .card-back)::before { background: rgb(12 10 14 / 0.22); }
+:is(.stack-layer, .card-back)::after { content: ""; position: absolute; z-index: 1; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 80%, transparent); pointer-events: none; }
+:root:not([data-theme="light"]) :is(.stack-layer, .card-back)::after { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08); }
+/* Reduced motion: a static stack; hover only deepens the shadow. */
+@media (prefers-reduced-motion: reduce) {
+  .stack-layer, .stack-front, .card-back { transition: none; }
+}
+/* "Review suite": the one deliberate accent in a suite row (a faint accent-tinted badge). */
+.source-lead-plain.suite-kind { flex: 0 0 auto; height: 20px; gap: 4px; padding: 0 7px 0 6px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: color-mix(in srgb, var(--accent) 80%, var(--text)); font-size: var(--text-xs); font-weight: 600; }
+.suite-kind .source-mark { width: 12px; height: 12px; flex-basis: 12px; }
+.feed-skeleton .poster { animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
+
+/* ---------- Rows (list) ---------- */
+.feed-list { margin: 0; padding: 0; list-style: none; }
+.feed-item { position: relative; min-width: 0; cursor: pointer; }
+.feed-list[data-view="list"] .feed-item { display: grid; grid-template-columns: 96px minmax(0, 1fr); align-items: center; gap: 14px; padding: 12px var(--gutter); border-bottom: 1px solid var(--line); }
+.feed-body { min-width: 0; display: grid; align-content: center; gap: 4px; }
+.feed-head { min-width: 0; display: flex; align-items: baseline; gap: 12px; }
+.feed-title { min-width: 0; flex: 1 1 auto; display: -webkit-box; overflow: hidden; color: var(--text); font-size: var(--text-sm); font-weight: 600; line-height: 18px; text-decoration: none; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.feed-head .index-status { font-size: var(--text-xs); }
+/* Red only for an explicit failed outcome (a failed suite); error counts are never red here. */
+.feed-meta { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 18px; }
+.feed-facts { min-width: 0; flex: 0 1 auto; overflow: hidden; font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
+.feed-facts > * + *::before { content: "·"; margin: 0 6px; color: var(--text-tertiary); }
+/* Relative times read as prose here, not data (the global `time` rule is mono). */
+.feed-facts time { font-family: inherit; }
+.feed-id { font-family: var(--mono); font-size: var(--text-xs); }
+.feed-id mark { border-radius: 2px; background: var(--accent-soft); color: var(--text); }
+
+/* Line 2 leads with the source; links inside a row sit above its stretched hit area. */
+.source-lead { position: relative; z-index: 1; min-width: 0; flex: 0 1 auto; display: inline-flex; align-items: center; gap: 6px; color: var(--text-secondary); font-weight: 550; }
+.source-lead-plain { z-index: auto; gap: 5px; white-space: nowrap; }
+.source-mark { width: 13px; height: 13px; flex: 0 0 13px; }
+.source-more { position: relative; flex: 0 0 auto; margin: 0; padding: 0 5px; border: 0; border-radius: 8px; background: var(--surface-hover); color: var(--text-tertiary); font: inherit; font-size: var(--text-xs); font-weight: 550; line-height: 16px; cursor: pointer; }
+/* The pill stays small; the hit area does not (40 px tall on touch, comfortable with a mouse). */
+.source-more::before { content: ""; position: absolute; inset: -6px -4px; }
+@media (pointer: coarse) { .source-more::before { inset: -12px -6px; } }
+.source-more[data-popup-open] { color: var(--text); }
+.source-more:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+.source-more-link { min-height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: var(--radius-sm); color: var(--text-secondary); font-size: var(--text-sm); text-decoration: none; white-space: nowrap; }
+.source-more-link:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
+@media (pointer: coarse) { .source-more-link { min-height: 40px; } }
+.feed-meta .source-lead + .feed-facts::before { content: "·"; margin: 0 6px 0 -2px; color: var(--text-tertiary); }
+.feed-host { color: var(--text-tertiary); }
+.source-link { position: relative; min-width: 0; height: 20px; display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); text-decoration: none; white-space: nowrap; }
+.source-link-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* 24 px tall hit area (WCAG 2.5.8) without a taller chip. */
+.source-link::before { content: ""; position: absolute; inset: -3px -1px; }
+.source-link .source-link-arrow { width: 11px; height: 11px; flex: 0 0 11px; color: var(--text-tertiary); }
+
+/* ---------- Wide list rows: a time column (≥ 900 px); below that it folds back into line 2 ---------- */
+.feed-cols { display: none; }
+@media (min-width: 900px) {
+  .feed-list[data-view="list"] .feed-item { grid-template-columns: 96px minmax(0, 1fr) auto; }
+  .feed-list[data-view="list"] .feed-cols { display: grid; grid-template-columns: 112px; align-items: center; gap: 16px; align-self: center; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+  .feed-when { min-width: 0; display: grid; justify-items: end; gap: 2px; text-align: right; }
+  .feed-when time { color: var(--text-secondary); font-family: inherit; white-space: nowrap; }
+  .feed-when-host { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Line 2 is just the source; time and host moved to the columns. */
+  .feed-list[data-view="list"] .feed-facts:not(:has(.feed-id)) { display: none; }
+  .feed-list[data-view="list"] .feed-facts > :not(.feed-id) { display: none; }
+}
+
+/* ---------- Suites: the run strip (Feed.tsx RunStrip) ---------- */
+/* One small rounded segment per run, as wide as the run is long; it echoes the product mark. The strip is one
+   target (24 px, 40 px on touch) opening a menu of the runs. Failed = red (calm, 85 %), passed = neutral, running
+   pulses, no recording = an outline. */
+.run-strip { position: relative; z-index: 1; flex: 0 0 auto; min-width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; gap: 3px; margin: 0 -3px; padding: 0 3px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); font: inherit; cursor: pointer; }
+.run-seg { flex: 0 0 auto; width: 10px; height: 6px; border-radius: 3px; background: color-mix(in srgb, var(--text-tertiary) 50%, transparent); transition: transform 160ms var(--ease-out); }
+.run-seg[data-tone="failed"] { background: color-mix(in srgb, var(--danger) 85%, transparent); }
+.run-seg[data-tone="partial"] { background: var(--warning); }
+.run-seg[data-tone="running"] { background: var(--accent); animation: skeleton-pulse 0.9s var(--ease-out) infinite alternate; }
+.run-seg[data-muted] { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
+.run-seg-more { padding-left: 2px; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.run-strip:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+.run-strip[data-popup-open] { background: var(--surface-hover); }
+.run-strip-note { color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; }
+/* The runs menu: like every other menu (the More menu's rows and detail column), one row per run: its segment, its
+   label, its length on the right; a separator, then "Open suite". Links, but never underlined or accent-coloured. */
+.run-menu-item { min-height: 32px; gap: 10px; color: var(--text); font-size: var(--text-sm); text-decoration: none; }
+.run-menu-item .run-seg { width: 12px; }
+.run-menu-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.run-menu-meta.run-menu-meta { padding-left: 16px; color: var(--text-tertiary); font-size: var(--text-xs); letter-spacing: normal; font-variant-numeric: tabular-nums; }
+.run-menu-all { color: var(--text-secondary); }
+.run-menu-arrow.run-menu-arrow { width: 14px; height: 14px; margin-left: auto; color: var(--text-tertiary); transition: transform 150ms var(--ease-out); }
+.run-menu-all[data-highlighted] { color: var(--text); }
+.run-menu-all[data-highlighted] .run-menu-arrow { transform: translateX(2px); }
+@media (hover: hover) and (pointer: fine) {
+  .run-strip:hover { background: var(--surface-hover); }
+  .run-strip:hover .run-seg { transform: scaleY(1.34); }
+}
+@media (pointer: coarse) { .run-strip { min-width: 40px; height: 40px; margin-block: -8px; } }
+@media (prefers-reduced-motion: reduce) { .run-seg { transition: none; animation: none !important; } }
+/* List rows: the strip sits on the meta line after the source link. */
+
+/* ---------- Suites ---------- */
+
+/* Suites are plain rows like replays: the stacked thumbnail is the only difference, and the trailing column
+   lines up with every other row; the run strip sits next to "N runs". */
+/* The pile's sheets peek above the thumbnail: pull it up by that strip so its front aligns with other rows'. */
+.feed-list[data-view="list"] .feed-suite > .poster-stack { margin-top: -15px; }
+/* Grid: the run strip shares the facts line, right-aligned after the time and commit (one line, never wrapping). */
+.feed-list[data-view="grid"] .feed-meta.feed-meta-end { margin-top: 0; flex-wrap: nowrap; }
+.feed-list[data-view="grid"] .feed-meta-end > :is(.run-strip, .run-strip-note) { margin-left: auto; }
+.feed-list[data-view="grid"] .feed-suite .feed-meta .feed-facts { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
+/* Narrow cards drop the commit before anything would truncate. */
+.feed-list[data-view="grid"] .feed-suite .feed-body { container-type: inline-size; }
+@container (max-width: 250px) { .feed-meta-end .feed-facts > * + *::before { display: none; } }
+
+
+/* ---------- Grid ---------- */
+/* Grid cards: a soft raised surface (layered shadow, no hard border), full-bleed thumbnail on top, equal heights
+   per row with the meta row pinned to the bottom. The feed behind the cards takes the page tint so they stand out. */
+.feed-list[data-view="grid"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); align-items: stretch; gap: 20px; padding: 28px var(--gutter) 24px; }
+.feed-list[data-view="grid"] .feed-item { --card-radius: 12px; display: flex; flex-direction: column; gap: 0; padding: 0; border: 0; border-radius: var(--card-radius); background: var(--surface-raised); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.05), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.08); }
+:root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-item { background: var(--surface-raised); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.32); }
+.feed-list[data-view="grid"] .poster-card { border-radius: var(--card-radius) var(--card-radius) 0 0; clip-path: inset(0 round var(--card-radius) var(--card-radius) 0 0); }
+.feed-list[data-view="grid"] .poster-card::after { box-shadow: inset 0 -1px 0 var(--line); }
+.feed-list[data-view="grid"] .feed-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding: 14px; }
+.feed-list[data-view="grid"] .feed-meta { margin-top: auto; flex-wrap: wrap; align-items: center; row-gap: 6px; }
+.feed-list[data-view="grid"] .feed-meta .source-lead:not(.suite-kind) { flex: 1 1 100%; min-width: 0; overflow: hidden; }
+.feed-list[data-view="grid"] .feed-suite .feed-meta .source-lead:not(.suite-kind) { flex: 0 1 auto; }
+.feed-list[data-view="grid"] .feed-meta .feed-facts { flex: 1 1 auto; line-height: 20px; }
+/*
+ * Grid suites: an album stack. Cells reserve no space for it: the backs rise into the list's 28 px top padding and
+ * the 28 px row gap (both above the stack's highest hover offset), so headings sit close to their cards and front
+ * cards stay top-aligned across a row. In a suite cell the face is the li's ::before (z −1) and two card-shaped backs
+ * sit behind it (z −2/−3), straight and centred, scaled about their top centre and always narrower than the front:
+ * 5 / 10 px peeking at rest (0.94 / 0.88), rising to 10 / 20 px on hover (0.96 / 0.92; 300 ms ease-out, the back
+ * one 30 ms later). The backs count as the card (hover and click). Only
+ * transform and opacity animate: the deeper hover shadow is a pre-rendered layer (::after) whose opacity changes.
+ *
+ * Every grid card lifts 3 px on hover. The pointer must not lose the card as it moves: while lifted, the card's
+ * click overlay (.row-target::after) reaches 3 px further down, so the hit box still covers where the card was.
+ */
+.feed-list[data-view="grid"] { --peek: 0px; row-gap: 28px; }
+.feed-list[data-view="grid"] .feed-suite { isolation: isolate; padding-top: var(--peek); background: none; box-shadow: none; }
+:root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite { background: none; box-shadow: none; }
+.feed-list[data-view="grid"] .feed-suite::before,
+.feed-list[data-view="grid"] .feed-suite::after { content: ""; position: absolute; z-index: -1; inset: var(--peek) 0 0; border-radius: var(--card-radius); pointer-events: none; }
+.feed-list[data-view="grid"] .feed-suite::before { background: var(--surface-raised); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.05), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.08); }
+.feed-list[data-view="grid"] .feed-suite::after { box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.06), 0 14px 32px rgb(0 0 0 / 0.16); opacity: 0; transition: opacity 300ms var(--ease-out); }
+:root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite::before { background: var(--surface-raised); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.32); }
+:root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite::after { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 16px 34px rgb(0 0 0 / 0.5); }
+.card-back { display: none; }
+.feed-list[data-view="grid"] .card-back { position: absolute; inset: var(--peek) 0 0; display: block; overflow: hidden; border-radius: var(--card-radius); background: color-mix(in srgb, var(--surface-raised) 88%, var(--line-strong)); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.08); transform-origin: 50% 0; transition: transform 240ms var(--ease-out), box-shadow 300ms var(--ease-out), opacity 240ms var(--ease-out); }
+:root:not([data-theme="light"]) .feed-list[data-view="grid"] .card-back { background: color-mix(in srgb, var(--surface-raised) 80%, var(--canvas)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px rgb(255 255 255 / 0.05), 0 2px 8px rgb(0 0 0 / 0.35); }
+.feed-list[data-view="grid"] .card-back-1 { z-index: -2; transform: translate3d(0, -5px, 0) scale(0.94); }
+.feed-list[data-view="grid"] .card-back-2 { z-index: -3; transform: translate3d(0, -10px, 0) scale(0.88); }
+.feed-list[data-view="grid"] .feed-suite > .poster-card { border-radius: var(--card-radius) var(--card-radius) 0 0; }
+.feed-list[data-view="grid"] .feed-suite .row-target:focus-visible::after { inset: var(--peek) 0 0; }
+/* When line 2 wraps, the facts start their own line: no leading separator. */
+.feed-list[data-view="grid"] .feed-meta .source-lead + .feed-facts::before { content: none; }
+/* Cards are narrow: the error label drops under the title instead of squeezing it. */
+.feed-list[data-view="grid"] .feed-head { flex-wrap: wrap; row-gap: 2px; }
+
+
+/* ---------- Hover, keyboard selection, press: calm surface/border change, a tiny thumbnail zoom inside its frame ---------- */
+.feed-item { transition: background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
+.poster > img, .poster > .poster-video { transition: opacity var(--motion) var(--ease-out), transform 240ms var(--ease-out), filter 200ms var(--ease-out); }
+.feed-list[data-view="grid"] .feed-item .row-target:focus-visible::after { border-radius: var(--card-radius); }
+.source-link:focus-visible { border-radius: 2px; box-shadow: 0 0 0 2px var(--ring); }
+/* Keyboard selection shows the hover state plus the keyboard ring. */
+.feed-item:has(.row-target:focus-visible) { background: var(--surface-hover); }
+.feed-list[data-view="grid"] .feed-item:has(.row-target:focus-visible) { background: var(--surface-raised); }
+/* Press: a 0.99 squeeze, also on touch, only when the row's own link is pressed: a control inside it (the run strip,
+   a source link) presses alone, so the row never shrinks and shifts it under the pointer. */
+.feed-item:has(.row-target:active) { transform: scale(0.99); transition-duration: 100ms; }
+.feed-list[data-view="list"] .feed-item:not(.feed-suite):has(.row-target:active) { background: var(--surface-pressed); }
+@media (hover: hover) and (pointer: fine) {
+  .feed-item:hover { background: var(--surface-hover); transition-duration: 160ms; }
+  .feed-list[data-view="grid"] .feed-item:hover { background: var(--surface-raised); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.06), 0 12px 28px rgb(0 0 0 / 0.13); }
+  :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-item:hover { background: color-mix(in srgb, var(--surface-hover) 70%, var(--surface-raised)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 14px 30px rgb(0 0 0 / 0.45); }
+  /* Grid suites: the pre-rendered deeper shadow fades in while the card lifts and the backs fan out. */
+  .feed-list[data-view="grid"] .feed-suite:hover { background: none; box-shadow: none; }
+  :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite:hover { background: none; box-shadow: none; }
+  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible))::after { opacity: 1; }
+}
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Grid cards lift 3 px (spring); the click overlay reaches down to where the card was, so hover holds. */
+  .feed-list[data-view="grid"] .feed-item:is(:hover, :has(.row-target:focus-visible)) { transform: translate3d(0, -3px, 0); transition: transform 420ms var(--stack-spring), background-color 200ms var(--ease-out), box-shadow 300ms var(--ease-out); }
+  .feed-list[data-view="grid"] .feed-item:hover .row-target::after { bottom: -3px; }
+  .feed-list[data-view="grid"] .feed-item:hover:has(.row-target:active) { transform: translate3d(0, -3px, 0) scale(0.99); transition-duration: 100ms; }
+  /* The stack fans open: backs rise straight up (−10 / −20 px) and widen a little, always narrower than the front. */
+  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back { will-change: transform; transition-duration: 300ms; transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back-2 { transform: translate3d(0, -20px, 0) scale(0.92); transition-delay: 30ms; }
+  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back-1 { transform: translate3d(0, -10px, 0) scale(0.96); }
+  /* Shadows deepen with the lift. */
+  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back { box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 4px 10px rgb(0 0 0 / 0.12), 0 10px 24px rgb(0 0 0 / 0.1); }
+  :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07), 0 4px 12px rgb(0 0 0 / 0.45), 0 12px 28px rgb(0 0 0 / 0.35); }
+  /* Thumbnail zoom: the poster and its hover preview scale together (and stay scaled while the preview plays),
+     so the preview crossfades in over the zoomed poster instead of snapping back to 1×. */
+  :is(.feed-item:hover, .feed-item:has(.row-target:focus-visible)) .poster > :is(img, .poster-video) { transform: scale(1.02); }
+  /* The zooming thumbnail gets its own layer while the row is hovered: the zoom composites, it does not repaint. */
+  .feed-item:hover .poster > :is(img, .poster-video) { will-change: transform; }
+  .source-link:hover { color: var(--text); }
+  .source-more:hover { color: var(--text); }
+  .source-more-link:hover { background: var(--surface-hover); color: var(--text); }
+  .source-link:hover .source-link-text { text-decoration: underline; text-underline-offset: 3px; }
+  .scope-button:hover, .scope-bar .index-sort-trigger:hover { background: var(--surface-hover); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .index-head .search-field.command-field { transition: border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), background-color 150ms var(--ease-out); }
+  .index-head .search-field.command-field > svg { transition: none; transform: none !important; }
+  .poster img, .poster-video, .poster-progress { transition: none; transform: none !important; }
+  .feed-item, .feed-item:has(.row-target:active), .feed-list[data-view="grid"] .feed-item:hover { transform: none; }
+}
+
+/* ---------- Touch at desktop widths (tablets, phones in landscape): 40 px targets, same look ---------- */
+@media (pointer: coarse) and (min-width: 641px) {
+  /* No key cap on touch (hidden globally), so no room is kept for it. */
+  .index-head .search-field.command-field { padding-right: 10px; }
+  .feed-title { padding-block: 10px; margin-block: -10px; }
+  .source-link { height: 40px; margin-block: -10px; }
+}
+
+/* ---------- Phones (≤ 640 px = INDEX_COMPACT_QUERY) ---------- */
+@media (max-width: 640px) {
+  .index-shell { --gutter: 16px; }
+  .index-head > .app-topbar { min-height: 52px; }
+  /* Row 1: the search is an icon until entered, then spans the row above the identity. */
+  .index-head .command-search { position: static; width: 40px; }
+  .index-head .search-field.command-field:has(input:not(:placeholder-shown)):not(:focus-within) { width: 40px; }
+  /* Expanded over the row: sized by its insets, never by the desktop widening rules. */
+  .index-head .search-field.command-field:focus-within:has(input:not(:placeholder-shown)) { width: auto; }
+  .index-head .search-field.command-field { width: 40px; min-width: 0; height: 40px; justify-content: center; padding: 0; border-radius: 20px; background: transparent; }
+  .index-head .search-field.command-field input { width: 0; min-width: 0; flex: 0 0 0; padding: 0; font-size: 16px; }
+  .index-head .search-field.command-field:focus-within { position: absolute; z-index: 2; top: 6px; right: var(--gutter); left: var(--gutter); width: auto; justify-content: flex-start; padding: 0 12px; background: var(--surface); }
+  .index-head .search-field.command-field:focus-within input { width: auto; flex: 1 1 auto; }
+  .index-head .command-results { top: calc(100% - 2px); right: var(--gutter); left: var(--gutter); width: auto; min-width: 0; }
+  /* Row 2: the count on the left; Filter and sort on the right. */
+  .scope-bar { gap: 8px; }
+  .scope-bar-end { gap: 0; }
+  .scope-bar .index-sort-trigger { height: 40px; margin-right: -10px; }
+  .scope-bar .index-filters-button { border: 0; background: transparent; }
+  .feed-list[data-view="list"] .feed-item { grid-template-columns: 72px minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px var(--gutter); }
+  .feed-list[data-view="list"] .poster-row { width: 72px; height: 45px; margin-top: 2px; }
+  .feed-title { font-size: var(--text-md); line-height: 20px; font-weight: 550; }
+  .feed-meta { flex-wrap: wrap; row-gap: 4px; font-size: var(--text-sm); }
+  .feed-meta .source-lead + .feed-facts::before { content: none; }
+  .feed-head { align-items: flex-start; }
+  /* 40 px touch targets that look like the desktop ones: the box grows, the drawn pill (::before) does not. */
+  .feed-title { padding-block: 10px; margin-block: -10px; }
+  .source-link { height: 40px; margin-block: -10px; }
+}
+
+/* ---------- Feed changes (feed-transition.ts): items glide, leave, arrive; the header stays live ---------- */
+/* The header is its own live layer: it never fades. */
+html[data-feed-transition] .index-head { view-transition-name: index-head; }
+html[data-feed-transition]::view-transition-group(index-head),
+html[data-feed-transition]::view-transition-old(index-head),
+html[data-feed-transition]::view-transition-new(index-head),
+/* What isn't an item (day headings, empty states) crossfades. Old and new share one duration and the default
+   plus-lighter blend, so anything that didn't change stays perfectly still (no dip through the page colour). */
+html[data-feed-transition]::view-transition-old(root),
+html[data-feed-transition]::view-transition-new(root) { animation-duration: 160ms; animation-timing-function: linear; }
+/* Items that stay: glide (and morph list ↔ grid) on a soft spring, their two looks crossfading. */
+html[data-feed-transition]::view-transition-group(.feed-item) { animation-duration: 320ms; animation-timing-function: var(--vt-spring); }
+html[data-feed-transition]::view-transition-old(.feed-item),
+html[data-feed-transition]::view-transition-new(.feed-item) { height: 100%; object-fit: cover; object-position: top left; animation-duration: 200ms; animation-timing-function: var(--ease-out); }
+html[data-feed-transition]::view-transition-old(.feed-item) { animation-duration: 120ms; }
+/* List ↔ grid: each thumbnail glides and grows into its new place; everything else crossfades. */
+html[data-feed-transition]::view-transition-group(.feed-poster) { animation-duration: 340ms; animation-timing-function: var(--vt-spring); }
+html[data-feed-transition]::view-transition-old(.feed-poster),
+html[data-feed-transition]::view-transition-new(.feed-poster) { height: 100%; object-fit: cover; object-position: top left; animation-duration: 160ms; }
+/* Leaving: fade and shrink, all at once. Arriving: rise and grow, staggered (per-item delays from the script). */
+html[data-feed-transition]::view-transition-old(.feed-item):only-child { animation: item-out 140ms var(--ease-out) both; }
+html[data-feed-transition]::view-transition-new(.feed-item):only-child { animation: item-in 260ms var(--vt-spring) both; }
+@keyframes item-out { to { opacity: 0; transform: scale(0.98); } }
+@keyframes item-in { from { opacity: 0; transform: translate3d(0, 10px, 0) scale(0.98); } }
+
+/* Back on the feed from a replay: the card you came from shows a quiet neutral hairline that fades once (navigation.ts
+   sets [data-returned]); a hint of where you were, never an accent. */
+.feed-item[data-returned] .row-target::after { border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line-strong); animation: returned-ring 900ms var(--ease-out) 300ms both; }
+.feed-list[data-view="grid"] .feed-item[data-returned] .row-target::after { border-radius: var(--card-radius); }
+/* A new item arriving (e.g. your upload, on the next refresh): a soft pink glow that fades over 1.2 s. */
+.feed-item[data-arrived] .row-target::after { border-radius: inherit; box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 55%, transparent), 0 0 18px 2px color-mix(in srgb, var(--accent) 35%, transparent); animation: returned-ring 1.2s var(--ease-out) 200ms both; }
+.feed-list[data-view="grid"] .feed-item[data-arrived] .row-target::after { border-radius: var(--card-radius); }
+@keyframes returned-ring { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .feed-item[data-returned] .row-target::after, .feed-item[data-arrived] .row-target::after { animation: none; box-shadow: none; }
+}
+.filter-panel-head { justify-content: flex-start; }
+
+/* ---------- Suite cards cycling through their runs while previewing (suite-cycle.ts) ---------- */
+/* The run on screen: its strip segment brightens and gets a thin ring. */
+.run-seg[data-active] { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--text) 70%, transparent); filter: brightness(1.25); }
+/* A short "02 · Desktop: login only" on the poster's bottom-left after each change (fades in, holds, fades out). */
+.poster-caption { position: absolute; z-index: 2; bottom: 4px; left: 4px; max-width: calc(100% - 72px); overflow: hidden; padding: 0 5px; border-radius: 3px; background: rgb(16 14 18 / 0.78); color: #f6f2f7; font-size: 10px; font-weight: 600; line-height: 15px; text-overflow: ellipsis; white-space: nowrap; animation: poster-caption 1.2s var(--ease-out) both; pointer-events: none; }
+.poster-card .poster-caption { bottom: 6px; left: 6px; font-size: var(--text-xs); line-height: 17px; }
+@keyframes poster-caption { 0% { opacity: 0; transform: translate3d(0, 3px, 0); } 15%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
+/* The old front's still while it slides back into the pile (under the new front). */
+.poster-outgoing { z-index: 0; pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .poster-caption { animation-duration: 0s; animation-delay: 0s; } }

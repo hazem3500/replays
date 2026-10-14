@@ -1,0 +1,355 @@
+/*
+ * Scrubber (src/client/viewer/Scrubber.tsx). In the `app` layer with styles.css, whose tokens it uses.
+ *
+ * Geometry: a 28 px hit area (40 px on touch) with the bars' centre line at --center. Bars are drawn 6 px
+ * tall with fully rounded caps and rest at scaleY(2/3) = 4 px, so growing under the pointer is one transform
+ * about the centre line: no layout, no shift. On a whole-pixel centre both 4 and 6 px land on whole pixels.
+ * Errors are red notches on the bars. Motion: transform and opacity only, ease-out,
+ * ≤ 200 ms; reduced motion zeroes it all (styles.css).
+ */
+@layer app {
+  .scrubber {
+    --inset: 6px;
+    --center: 14px;
+    --bar-h: 6px;
+    --bar-rest: var(--line-strong);
+    --bar-hover: rgb(255 255 255 / 0.1);
+    position: relative;
+    min-width: 0;
+    height: 28px;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  :root[data-theme="light"] .scrubber {
+    --bar-hover: rgb(20 26 46 / 0.1);
+  }
+
+  .scrubber-rail {
+    position: absolute;
+    top: calc(var(--center) - var(--bar-h) / 2);
+    right: var(--inset);
+    left: var(--inset);
+    height: var(--bar-h);
+    pointer-events: none;
+  }
+  .scrubber-bars {
+    position: absolute;
+    inset: 0;
+    /* Its own stacking context, grown or not. */
+    isolation: isolate;
+    transform: scaleY(0.6667);
+    /* Collapsing waits a beat, so brushing past the edge of the hit area doesn't flicker. */
+    transition: transform 180ms var(--ease-out) 80ms;
+  }
+  .scrubber-segment {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    overflow: hidden;
+    border-radius: calc(var(--bar-h) / 2);
+    background: var(--bar-rest);
+  }
+  .scrubber-segment-fill {
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: 0 50%;
+  }
+  /* The bar under the pointer brightens a touch (an overlay, so only opacity changes). */
+  .scrubber-segment::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--bar-hover);
+    opacity: 0;
+    transition: opacity 120ms var(--ease-out);
+  }
+  .scrubber-segment[data-hover]::after {
+    opacity: 1;
+  }
+
+  /* The keyboard ring hugs the (grown) bars; the native slider draws nothing. */
+  .scrubber-key-ring {
+    position: absolute;
+    inset: -3px -4px;
+    border-radius: 6px;
+    box-shadow: 0 0 0 2px var(--ring);
+    opacity: 0;
+  }
+
+  .scrubber input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+    outline: none;
+  }
+  .scrubber input::-webkit-slider-runnable-track {
+    height: 3px;
+    background: transparent;
+  }
+  .scrubber input::-moz-range-track {
+    height: 3px;
+    background: transparent;
+  }
+  /* The native thumb stays functional (drag, keys) but invisible; .scrubber-knob draws it. */
+  .scrubber input::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    appearance: none;
+    opacity: 0;
+  }
+  .scrubber input::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    opacity: 0;
+  }
+  .scrubber input:focus-visible {
+    box-shadow: none;
+  }
+
+  /* Errors: 2 px red notches on the bars (red is allowed here, as small marks on a timeline), above the
+     fill and below the knob, growing with the bars. Hidden at rest; they fade in just after the bars start
+     to grow (hover, keyboard, drag) and stay while Console / Network is open, where errors are being read. */
+  .error-notch {
+    position: absolute;
+    z-index: 1;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    border-radius: 1px;
+    background: var(--danger);
+    opacity: 0;
+    transition: opacity 200ms var(--ease-out);
+  }
+  .app-shell[data-tab="console"] .error-notch,
+  .app-shell[data-tab="network"] .error-notch,
+  .scrubber:has(input:focus-visible) .error-notch,
+  .scrubber[data-scrubbing] .error-notch {
+    opacity: 1;
+    transition: opacity 160ms var(--ease-out) 40ms;
+  }
+
+  /* The knob: a small accent disc on the current bar, cut out by a ring of the surface colour; it comes
+     with the pointer (or the keyboard) and leaves with it. */
+  .scrubber-knob-rail {
+    position: absolute;
+    z-index: 3;
+    top: var(--center);
+    right: var(--inset);
+    left: var(--inset);
+    height: 0;
+    pointer-events: none;
+  }
+  .scrubber-knob {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: 10px;
+    height: 10px;
+  }
+  .scrubber-knob::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow:
+      0 0 0 2px var(--surface-raised),
+      0 1px 3px 2px rgb(0 0 0 / 0.14);
+    opacity: 0;
+    transform: scale(0.4);
+    /* Leaving is calm (it lingers after a seek, then fades); arriving is quick (below). */
+    transition:
+      transform 240ms var(--ease-out),
+      opacity 240ms var(--ease-out);
+  }
+
+  /* One bubble: the time, and after hover intent the step (or error) it names. Same tokens as the app's
+     tooltips (components/ui/tooltip.tsx): raised surface, text ink, a line-strong hairline ring; only the
+     near half of --shadow-pop, whose 32 px blur would dim the knob below. Follows the theme. */
+  .scrubber-bubble-anchor {
+    position: absolute;
+    z-index: 5;
+    bottom: calc(100% - var(--center) + 10px);
+    left: 0;
+    width: max-content;
+    max-width: min(280px, 100%);
+    pointer-events: none;
+  }
+  .scrubber-bubble {
+    --bubble-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    background: var(--surface-raised);
+    color: var(--text);
+    box-shadow:
+      0 0 0 1px var(--line-strong),
+      var(--bubble-shadow);
+    font-size: var(--text-xs);
+    line-height: 16px;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(2px) scale(0.98);
+    transform-origin: 50% 100%;
+    transition:
+      opacity 100ms var(--ease-out),
+      transform 100ms var(--ease-out);
+  }
+  :root[data-theme="light"] .scrubber-bubble {
+    --bubble-shadow: 0 2px 6px rgb(20 26 46 / 0.08);
+  }
+  .scrubber-bubble[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+    transition-duration: 150ms;
+  }
+  .scrubber-bubble[data-instant] {
+    transition: none;
+  }
+  .scrubber-bubble-time {
+    flex: none;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+  }
+  .scrubber-bubble-label {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+  }
+  .scrubber-bubble-label:empty {
+    display: none;
+  }
+  /* The separator: a small dot in the hairline colour; for an error, a small red one. */
+  .scrubber-bubble-label::before {
+    content: "";
+    width: 3px;
+    height: 3px;
+    display: inline-block;
+    margin: 0 6px;
+    border-radius: 50%;
+    background: var(--text-tertiary);
+    vertical-align: middle;
+    transform: translateY(-1px);
+  }
+  .scrubber-bubble[data-kind="error"] .scrubber-bubble-label::before {
+    width: 5px;
+    height: 5px;
+    background: var(--danger);
+  }
+
+  /* ---- States ---- */
+  /* In use (dragging, the keyboard): grown bars and the knob. */
+  .scrubber[data-scrubbing] .scrubber-bars,
+  .scrubber:has(input:focus-visible) .scrubber-bars {
+    transform: none;
+    transition-delay: 0ms;
+  }
+  .scrubber:has(input:focus-visible) .scrubber-key-ring {
+    opacity: 1;
+  }
+  /* The knob shows while you seek (dragging, keys, a step or error jump) and lingers a moment after. */
+  .scrubber:has(input:focus-visible) .scrubber-knob::after,
+  .scrubber[data-scrubbing] .scrubber-knob::after,
+  .scrubber[data-seeking] .scrubber-knob::after {
+    opacity: 1;
+    transform: none;
+    transition-duration: 140ms;
+  }
+  .scrubber[data-scrubbing] .scrubber-knob::after {
+    transform: scale(1.1);
+  }
+
+  /* Hover exists only for a fine pointer; a finger never leaves it stuck on. */
+  @media (hover: hover) and (pointer: fine) {
+    .scrubber:hover .scrubber-bars {
+      transform: none;
+      transition-delay: 0ms;
+    }
+    .scrubber:hover .error-notch {
+      opacity: 1;
+      transition: opacity 160ms var(--ease-out) 40ms;
+    }
+    .scrubber:hover .scrubber-knob::after {
+      opacity: 1;
+      transform: none;
+      transition-duration: 140ms;
+    }
+    .scrubber[data-scrubbing] .scrubber-knob::after {
+      transform: scale(1.1);
+    }
+  }
+
+  /* Touch: a 40 px strip that owns the gesture; no hover. While dragging, the bubble rides high enough
+     above the finger to stay readable. */
+  @media (pointer: coarse) {
+    /* The strip reaches 6 px up over the player's bottom edge (an inert picture), so the controls row sits
+       closer to the bars without giving up any of the 40 px. */
+    .scrubber {
+      --center: 22px;
+      height: 40px;
+      margin-top: -6px;
+    }
+    .scrubber-knob {
+      top: -6px;
+      left: -6px;
+      width: 12px;
+      height: 12px;
+    }
+    .scrubber-bubble-anchor {
+      bottom: calc(100% - var(--center) + 30px);
+    }
+    .scrubber-bubble {
+      padding: 5px 10px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scrubber-bars {
+      transition-delay: 0ms;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .scrubber-segment {
+      forced-color-adjust: none;
+      background: GrayText;
+    }
+    .scrubber-segment-fill {
+      forced-color-adjust: none;
+      background: Highlight;
+    }
+    .scrubber-segment::after {
+      display: none;
+    }
+    .scrubber-knob::after {
+      forced-color-adjust: none;
+      background: Highlight;
+      box-shadow: 0 0 0 2px Canvas;
+    }
+    .scrubber-key-ring {
+      forced-color-adjust: none;
+      box-shadow: none;
+      outline: 2px solid Highlight;
+    }
+    .error-notch,
+    .scrubber-bubble[data-kind="error"] .scrubber-bubble-label::before {
+      forced-color-adjust: none;
+      background: CanvasText;
+      box-shadow: none;
+    }
+    .scrubber-bubble {
+      border: 1px solid CanvasText;
+    }
+  }
+}

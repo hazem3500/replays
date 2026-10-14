@@ -1,0 +1,111 @@
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
+
+import { expect, test } from '@playwright/test';
+
+import { createSuite, openReplay, uniqueId, serveApp } from './support.ts';
+
+const server = serveApp();
+
+/** A suite with a passing run, a failing run and a run that never uploaded a recording. */
+async function threeRuns(request: Parameters<typeof createSuite>[0]) {
+  const suite = uniqueId('suite');
+  const one = `${suite}-one`;
+  const two = `${suite}-two`;
+  await createSuite(request, server().origin, suite, [
+    { id: 'attempt-1', label: 'Desktop: run 1', status: 'passed', replayId: one },
+    { id: 'attempt-2', label: 'Desktop: run 2', status: 'failed', replayId: two },
+    { id: 'attempt-3', label: 'Desktop: run 3', status: 'passed' },
+  ]);
+  return { suite, one, two };
+}
+
+test('a suite opens on its first failed run; J and Back move between runs', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
+  await page.goto(`${server().origin}/s/${suite}`);
+  await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/${two}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 2' })).toBeVisible();
+  await expect(page.getByTestId('run-status')).toHaveText('Failed');
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  await expect(sidebar.locator('[aria-current="page"]')).toHaveAttribute('data-replay-id', two);
+  await expect(sidebar.locator('[aria-disabled="true"]')).toContainText('No recording');
+
+  await page.getByTestId('network-tab').click();
+  await page.keyboard.press('Shift+J');
+  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+  // The inspector tab carries over; the playhead starts again at zero.
+  await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
+
+  await page.keyboard.press('j');
+  await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 2' })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+});
+
+test('a run without a source of its own shows the suite’s subject', async ({ page }) => {
+  const { suite, one } = await threeRuns(page.request);
+  await openReplay(page, `${server().origin}/s/${suite}/r/${one}`);
+  await expect(page.getByTestId('source-chip')).toHaveAttribute('href', 'https://github.com/example-org/shop-demo/pull/9');
+});
+
+test('a suite link with #step-n keeps the step on the landing run', async ({ page }) => {
+  const { suite, two } = await threeRuns(page.request);
+  await page.goto(`${server().origin}/s/${suite}#step-3`);
+  await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/${two}#step-3$`));
+  await expect(page.getByTestId('step-timeline').locator('[data-step-index="2"]')).toHaveAttribute('aria-current', 'step');
+});
+
+test('the runs sidebar opens expanded on every visit; collapsing only lasts for the visit', async ({ page }) => {
+  const { suite, one } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await page.goto(`${server().origin}/s/${suite}/r/${one}`);
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  const heading = sidebar.getByRole('heading', { name: `Review ${suite}` });
+  await expect(heading).toBeVisible();
+  await sidebar.getByRole('button', { name: 'Collapse runs sidebar' }).click();
+  await expect(heading).toHaveCount(0);
+  await page.reload();
+  await expect(heading).toBeVisible();
+});
+
+test('at 390 px the sidebar becomes a run switcher in the topbar title', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`${server().origin}/s/${suite}/r/${one}`);
+  await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
+  await expect(page.getByRole('tablist', { name: 'Replay diagnostics' })).toBeInViewport({ ratio: 1 });
+  await expect(page.getByRole('heading', { level: 1, name: /Run 1 of 2\s+Desktop: run 1/ })).toBeVisible();
+  await page.getByTestId('title-menu').click();
+  await page.getByRole('menuitemradio', { name: /Desktop: run 2/ }).click();
+  await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+});
+
+test('the index nests a suite’s runs, and a run whose replay expired is skipped and marked', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
+  // Retention prunes the replay; the suite still references it.
+  await rm(join(server().dataDir, two), { recursive: true });
+  await page.goto(`${server().origin}/s/${suite}`);
+  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  await expect(sidebar.locator('[aria-current="page"]')).toHaveAttribute('data-replay-id', one);
+  await expect(sidebar.locator('[aria-disabled="true"]').first()).toContainText('Expired');
+
+  await page.goto(`${server().origin}/`);
+  await page.getByRole('button', { name: new RegExp(`^Runs of Review ${suite}`) }).click();
+  const menu = page.getByRole('menu', { name: `Runs of Review ${suite}` });
+  await expect(menu.getByRole('menuitem', { name: /Desktop: run 1/ })).toHaveAttribute('href', new RegExp(`/r/${one}$`));
+  await expect(menu.getByRole('menuitem', { name: /Desktop: run 2, Expired/ })).toHaveAttribute('aria-disabled', 'true');
+});
+
+test('the sidebar pin keeps the suite on click', async ({ page }) => {
+  const { suite, one } = await threeRuns(page.request);
+  await openReplay(page, `${server().origin}/s/${suite}/r/${one}`);
+  const pin = page.getByRole('complementary', { name: 'Review suite' }).getByTestId('keep-suite');
+  await pin.click();
+  await expect(pin).toHaveAttribute('aria-pressed', 'true');
+});

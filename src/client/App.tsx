@@ -1,0 +1,216 @@
+import { QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { Activity, lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+
+import { Toaster } from '@/components/ui/sonner.tsx';
+import { TooltipProvider } from '@/components/ui/tooltip.tsx';
+
+import { productName } from './config.ts';
+import { ReplayIndex } from './ReplayIndex.tsx';
+import { queryClient, replayQuery, suiteQuery } from './queries.ts';
+import {
+  afterPageTransition,
+  currentIndexGeneration,
+  currentRoute,
+  installNavigation,
+  pageTransitionRunning,
+  setRoutePreparer,
+  subscribeRoute,
+} from './navigation.ts';
+import { indexHref, type Route } from './route.ts';
+import { ThemeContext, useTheme } from './theme.tsx';
+import { LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
+
+// The index ships alone; the viewer (rrweb + player) and the suite workspace are split chunks.
+// Each loader is memoised so the route can start the download before React asks for it.
+let viewerLoaded = false;
+let viewerModule: typeof import('./Viewer.tsx') | undefined;
+let suiteModule: typeof import('./suite/SuiteWorkspace.tsx') | undefined;
+const loadViewer = once(() => import('./Viewer.tsx').then((module) => ((viewerLoaded = true), (viewerModule = module))));
+const loadSuiteWorkspace = once(() => import('./suite/SuiteWorkspace.tsx').then((module) => (suiteModule = module)));
+const Viewer = lazy(() =>
+  settled(
+    () => viewerModule,
+    loadViewer,
+    (module) => ({ default: module.Viewer }),
+  ),
+);
+const SuiteWorkspace = lazy(() =>
+  settled(
+    () => suiteModule,
+    loadSuiteWorkspace,
+    (module) => ({ default: module.SuiteWorkspace }),
+  ),
+);
+
+/**
+ * For React.lazy: a thenable that settles synchronously when the chunk has already loaded. A plain `.then()`
+ * always settles a microtask later, so lazy would suspend for one tick even for a loaded chunk and React would
+ * commit the Suspense fallback (a second skeleton flashing in right after the first was swapped out).
+ */
+function settled<T, R>(loaded: () => T | undefined, load: () => Promise<T>, map: (value: T) => R): Promise<R> {
+  const ready = loaded();
+  if (!ready) return load().then(map);
+  const result = map(ready);
+  // React.lazy only calls `then`; the cast is for its Promise-typed signature.
+  return {
+    // oxlint-disable-next-line unicorn/no-thenable
+    then<A = R>(onFulfilled?: ((value: R) => A | PromiseLike<A>) | null) {
+      return Promise.resolve(onFulfilled ? onFulfilled(result) : (result as unknown as A));
+    },
+  } as unknown as Promise<R>;
+}
+
+function once<T>(load: () => Promise<T>) {
+  let pending: Promise<T> | undefined;
+  return () => (pending ??= load());
+}
+
+/** A query's data when the cache has it or a request for it is already on the way (else nothing to wait for). */
+function inCache(key: readonly unknown[]) {
+  const state = queryClient.getQueryState(key);
+  return state && (state.data !== undefined || state.fetchStatus === 'fetching')
+    ? queryClient.ensureQueryData({ queryKey: key })
+    : undefined;
+}
+
+/**
+ * Readies a page before a same-document navigation renders it (navigation.ts waits a short budget for this):
+ * its code, and its data when the Query cache has it or a prefetch is already on the way. Uncached data is
+ * left to the page itself, which shows the skeleton meanwhile.
+ */
+function prepareRoute(next: Route) {
+  if (next.kind === 'index') return Promise.resolve();
+  if (next.kind === 'suite')
+    return Promise.all([
+      loadSuiteWorkspace(),
+      inCache(suiteQuery(next.id).queryKey),
+      next.replayId ? inCache(replayQuery(next.replayId).queryKey) : undefined,
+    ]);
+  return Promise.all([loadViewer(), inCache(replayQuery(next.id).queryKey)]);
+}
+
+installNavigation();
+setRoutePreparer(prepareRoute);
+
+export function App() {
+  const route = useSyncExternalStore(subscribeRoute, currentRoute);
+  const indexGeneration = useSyncExternalStore(subscribeRoute, currentIndexGeneration);
+  // The index mounts the first time it is shown and then stays (hidden) behind viewer pages, so Back returns
+  // to it as it was: same list, same scroll, the card you opened still there to morph into.
+  const [indexShown, setIndexShown] = useState(route.kind === 'index');
+  if (route.kind === 'index' && !indexShown) setIndexShown(true);
+  // Fetch the route's chunk in parallel with its data instead of after it; the index warms the viewer's when idle.
+  if (route.kind === 'suite') void loadSuiteWorkspace();
+  else if (route.kind !== 'index') void loadViewer();
+  useEffect(() => {
+    if (route.kind !== 'index') return;
+    const idle = window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 1500));
+    const handle = idle(() => void loadViewer().catch(() => undefined));
+    return () => (window.cancelIdleCallback ?? window.clearTimeout)(handle);
+  }, [route.kind]);
+  // The same element across page changes, so a hidden index doesn't re-render when the route does.
+  const index = useMemo(() => <ReplayIndex key={indexGeneration} />, [indexGeneration]);
+  const themeControls = useTheme();
+  // One provider: hints open after 500 ms, then neighbours open instantly for 400 ms.
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeContext.Provider value={themeControls}>
+        <TooltipProvider delay={500} closeDelay={0} timeout={400}>
+          {indexShown ? <Activity mode={route.kind === 'index' ? 'visible' : 'hidden'}>{index}</Activity> : null}
+          {route.kind === 'suite' ? (
+            <SuitePage key={route.id} id={route.id} {...(route.replayId ? { replayId: route.replayId } : {})} />
+          ) : route.kind === 'replay' ? (
+            <ReplayPage key={route.id} id={route.id} />
+          ) : null}
+          <Toaster />
+        </TooltipProvider>
+      </ThemeContext.Provider>
+    </QueryClientProvider>
+  );
+}
+
+function SuitePage({ id, replayId }: { id: string; replayId?: string }) {
+  // Loaded code and a cached suite render the workspace at once (also inside a page transition).
+  const [ready, setReady] = useState(() => Boolean(suiteModule) && queryClient.getQueryData(suiteQuery(id).queryKey) !== undefined);
+  // Start the workspace's queries (read from index.html's preloads) while the transition runs.
+  useEffect(() => {
+    void queryClient.prefetchQuery(suiteQuery(id));
+    if (replayId) void queryClient.prefetchQuery(replayQuery(replayId));
+  }, [id, replayId]);
+  useEffect(() => {
+    if (ready) return;
+    let live = true;
+    void loadSuiteWorkspace()
+      .then(afterPageTransition, () => undefined)
+      .then(() => live && setReady(true));
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+  // The skeleton fades in only for slow loads, holds ≥ 300 ms once shown and crossfades (ViewerSkeleton.tsx).
+  return (
+    <LoadingSwap ready={ready} skeleton={<ViewerSkeleton suite />}>
+      <Suspense fallback={<ViewerSkeleton suite />}>
+        <SuiteWorkspace id={id} {...(replayId ? { replayId } : {})} />
+      </Suspense>
+    </LoadingSwap>
+  );
+}
+
+function ReplayPage({ id }: { id: string }) {
+  // Cached bundles (an in-page revisit) render at once; Query aborts the request if the page goes away.
+  const { data: bundle, error: failure } = useQuery(replayQuery(id));
+  const error = failure ? failure.message : '';
+  // Loaded code and a cached bundle render the viewer at once, even inside a page transition (it is the
+  // transition's new page). Otherwise the skeleton stays until the transition is over (swapping it mid-way
+  // would remove the elements being animated) and the viewer's code is in, so it never suspends again.
+  const [ready, setReady] = useState(() => viewerLoaded && (bundle !== undefined || !pageTransitionRunning()));
+  useEffect(() => {
+    if (ready) return;
+    let live = true;
+    void Promise.all([afterPageTransition(), loadViewer().catch(() => undefined)]).then(() => live && setReady(true));
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+
+  useEffect(() => {
+    document.title = bundle ? `${bundle.meta.title} · ${productName()}` : productName();
+  }, [bundle]);
+
+  if (error) {
+    return (
+      <main className="state-shell">
+        <a className="state-brand" href={indexHref()}>
+          {productName()}
+        </a>
+        <section className="state-content" role="alert">
+          <span className="state-kicker">Could not open replay</span>
+          <h1>{error}</h1>
+          <p>
+            Replay <code>{id}</code> may have expired or the link may be incomplete.
+          </p>
+          <div className="state-actions">
+            <a className="button" href={indexHref()}>
+              Back to all replays
+            </a>
+            <button type="button" className="button secondary" onClick={() => location.reload()}>
+              Try again
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  // The skeleton fades in only for slow loads, holds ≥ 300 ms once shown and crossfades (ViewerSkeleton.tsx).
+  return (
+    <LoadingSwap ready={Boolean(bundle) && ready} skeleton={<ViewerSkeleton />}>
+      {bundle ? (
+        <Suspense fallback={<ViewerSkeleton />}>
+          <Viewer bundle={bundle} />
+        </Suspense>
+      ) : null}
+    </LoadingSwap>
+  );
+}

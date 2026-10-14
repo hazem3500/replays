@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    <title>__PRODUCT_NAME__: replay what your browser agent or test did</title>
+    <meta
+      name="description"
+      content="Record what your browser agent or test did. Replay it with the console, network and performance on one timeline. Self-hostable and open source."
+    />
+    <meta name="theme-color" content="#0c0e12" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#eff1f5" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="preload" href="assets/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="style.css" />
+    <script src="site.js" defer></script>
+  </head>
+  <body data-product-name="__PRODUCT_NAME__">
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="top">
+      <div class="wrap top-row">
+        <a class="brand" href="#top" aria-label="__PRODUCT_NAME__ home">
+          <img src="favicon.svg" alt="" width="26" height="26" />
+          <span data-product-name-text>__PRODUCT_NAME__</span>
+        </a>
+        <nav aria-label="Sections">
+          <a href="#demo">Demo</a>
+          <a href="#features">Features</a>
+          <a href="#privacy">Privacy</a>
+          <a href="#self-host">Self-host</a>
+          <a class="nav-github" href="https://github.com/hazem3500/replay-kit">GitHub</a>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" id="top">
+        <div class="wrap">
+          <p class="eyebrow">Open source session replay for agents and tests</p>
+          <h1>Record what your browser agent or test did.</h1>
+          <p class="lede">Replay it with the console, network and performance on one timeline.</p>
+          <div class="cta">
+            <a class="button primary" href="#demo">Try the live demo</a>
+            <a class="button" href="https://github.com/hazem3500/replay-kit">View on GitHub</a>
+          </div>
+          <p class="hero-note"><code>docker compose up --build</code> and you are running your own.</p>
+        </div>
+      </section>
+
+      <section class="demo" id="demo" aria-labelledby="demo-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="demo-title">The real viewer, running right here</h2>
+            <p>
+              A recorded checkout in a demo shop: a bad coupon, a failed request and a console error. Press play, click the markers
+              on the scrubber, switch tabs. Nothing leaves your browser.
+            </p>
+          </div>
+          <div class="frame">
+            <div class="frame-bar" aria-hidden="true"><span></span><span></span><span></span><em>demo/r/demo-shop</em></div>
+            <iframe
+              class="frame-view"
+              src="demo/r/demo-shop/"
+              title="__PRODUCT_NAME__ viewer playing the demo shop sample"
+              loading="lazy"
+              allow="fullscreen"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <p class="demo-links">
+            <a href="demo/r/demo-shop/">Open the demo full-screen</a>
+            <span aria-hidden="true">·</span>
+            <a href="demo/r/human-demo/">A human recording</a>
+            <span aria-hidden="true">·</span>
+            <a href="demo/">All demo replays</a>
+          </p>
+        </div>
+      </section>
+
+      <!--shots-->
+      <section class="shots" aria-labelledby="shots-title">
+        <div class="wrap">
+          <h2 id="shots-title" class="visually-hidden">Screenshots</h2>
+          <div class="shot-grid">
+            <!--shot viewer.png-->
+            <figure>
+              <img src="assets/viewer.png" alt="The viewer: player, step timeline, and the console and network panel." width="1440" height="900" loading="lazy" />
+              <figcaption>The viewer: player, steps, console, network and performance.</figcaption>
+            </figure>
+            <!--/shot-->
+            <!--shot index.png-->
+            <figure>
+              <img src="assets/index.png" alt="The replay index: a searchable list of recordings with error counts." width="1440" height="900" loading="lazy" />
+              <figcaption>The index: search, filter by tag, source or errors.</figcaption>
+            </figure>
+            <!--/shot-->
+          </div>
+        </div>
+      </section>
+      <!--/shots-->
+
+      <section class="features" id="features" aria-labelledby="features-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="features-title">Everything the run did, in one place</h2>
+            <p>One portable bundle per session. No vendor, no pipeline to wire up.</p>
+          </div>
+          <ul class="cards">
+            <li>
+              <h3>Capture CLI</h3>
+              <p>
+                Point it at a URL, or drive it from your test runner. It records through the browser's debugging protocol, so the
+                recorder is in place before the first navigation.
+              </p>
+            </li>
+            <li>
+              <h3>One timeline</h3>
+              <p>
+                rrweb DOM events, agent steps, console output, network requests and performance entries share a single clock. Tabs
+                follow the playhead.
+              </p>
+            </li>
+            <li>
+              <h3>Error markers</h3>
+              <p>
+                Console errors and failed requests are marked on the scrubber. Jump to the previous or next one with a key press.
+              </p>
+            </li>
+            <li>
+              <h3>Permalinks</h3>
+              <p>
+                <code>?t=12.5</code> or <code>#step-3</code> opens a replay paused at that moment. Copy the link at the playhead
+                and paste it into a bug report.
+              </p>
+            </li>
+            <li>
+              <h3>Keyboard first</h3>
+              <p>
+                <kbd>Space</kbd> play, <kbd>←</kbd><kbd>→</kbd> seek, <kbd>[</kbd><kbd>]</kbd> steps, <kbd>E</kbd> errors,
+                <kbd>1</kbd>–<kbd>8</kbd> speed, <kbd>C</kbd><kbd>N</kbd><kbd>P</kbd> tabs, <kbd>?</kbd> for the full sheet.
+              </p>
+            </li>
+            <li>
+              <h3>Suites</h3>
+              <p>
+                Group the runs of a test suite into a workspace that opens on the first failure, with the runs listed beside the
+                player.
+              </p>
+            </li>
+            <li>
+              <h3>Retention and keep</h3>
+              <p>
+                Uploads expire after a configurable number of days. Keep the ones that matter and the rest clean themselves up.
+              </p>
+            </li>
+            <li>
+              <h3>Self-host</h3>
+              <p>
+                One small Node server and a data directory. No database, no queue, no account with anyone. Runs in a container or
+                bare.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="privacy" id="privacy" aria-labelledby="privacy-title">
+        <div class="wrap split">
+          <div class="section-head">
+            <h2 id="privacy-title">Private by default</h2>
+            <p>
+              Recordings of real pages can contain real data. The capture side removes what it can before anything is written to
+              disk, and you decide where the rest lives.
+            </p>
+          </div>
+          <ul class="checks">
+            <li><strong>Inputs are masked</strong> at capture time (<code>maskAllInputs</code>).</li>
+            <li>
+              <strong>Credentials are stripped</strong> from the network track: cookies, authorization and other credential headers,
+              URL credentials and sensitive query values.
+            </li>
+            <li><strong>Bodies are never stored.</strong> Only request and response metadata and timings are kept.</li>
+            <li><strong>Uploads expire</strong> after <code>RETENTION_DAYS</code> unless someone keeps them.</li>
+            <li><strong>Your infrastructure.</strong> The viewer and the data are served from your own host, with no third party.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="extend" id="extend" aria-labelledby="extend-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="extend-title">Fits your setup</h2>
+            <p>Small, documented extension points rather than a plugin framework.</p>
+          </div>
+          <dl class="ext">
+            <div>
+              <dt>Auth adapters</dt>
+              <dd>Run open on a private network, behind a shared token, or plug in your identity provider.</dd>
+            </div>
+            <div>
+              <dt>Context schema</dt>
+              <dd>Attach your own fields to a recording and describe them with a JSON Schema. The viewer renders them with your labels.</dd>
+            </div>
+            <div>
+              <dt>Source links</dt>
+              <dd>Link a replay to the pull request, ticket or CI run it came from. Only https links are rendered.</dd>
+            </div>
+            <div>
+              <dt>Storage</dt>
+              <dd>A plain data directory by default, behind an interface you can implement for other backends.</dd>
+            </div>
+            <div>
+              <dt>Theming</dt>
+              <dd>Name, logo, accent colour and fonts are runtime settings. Light and dark are both covered.</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section class="start" id="self-host" aria-labelledby="start-title">
+        <div class="wrap">
+          <div class="section-head">
+            <h2 id="start-title">Up in two commands</h2>
+            <p>Run the viewer, then record something.</p>
+          </div>
+          <div class="code-grid">
+            <div class="code">
+              <div class="code-head"><h3>1. Self-host the viewer</h3><button type="button" class="copy" data-copy>Copy</button></div>
+              <pre><code>git clone https://github.com/hazem3500/replay-kit
+cd replay-kit
+docker compose up --build</code></pre>
+            </div>
+            <div class="code">
+              <div class="code-head"><h3>2. Capture a page</h3><button type="button" class="copy" data-copy>Copy</button></div>
+              <pre><code>replay-kit capture \
+  --url https://example.com \
+  --output ./out</code></pre>
+            </div>
+          </div>
+          <p class="small">
+            The README has the full configuration, the bundle format and the upload API.
+            <a href="https://github.com/hazem3500/replay-kit#readme">Read the README</a>.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-row">
+        <p><span data-product-name-text>__PRODUCT_NAME__</span> is open source under the MIT license.</p>
+        <p><a href="https://github.com/hazem3500/replay-kit">GitHub</a></p>
+      </div>
+    </footer>
+  </body>
+</html>
