@@ -3,7 +3,10 @@ import { createContext, useContext } from 'react';
 import type { ReplayStep } from '../../shared/replay.ts';
 import type { ReplayError } from '../issues.ts';
 
-export type InspectorTab = 'console' | 'network' | 'performance' | 'context' | 'comments';
+export type BuiltinInspectorTab = 'console' | 'network' | 'performance' | 'context' | 'comments';
+/** A tab a client plugin registered: `plugin:<plugin>:<id>` (src/client/plugins/). */
+export type PluginInspectorTab = `plugin:${string}`;
+export type InspectorTab = BuiltinInspectorTab | PluginInspectorTab;
 
 /**
  * Viewer-level data and actions shared by the transport, header, step rail and shortcuts. The value is

@@ -16,6 +16,7 @@ import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
+import { usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
 import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
@@ -327,10 +328,13 @@ export function Viewer({
         : undefined,
     [keep.available, keep.kept, keep.pending, keep.flip],
   );
+  // Client plugins' actions and panel entries (src/client/plugins/): More-menu items; open panels draw in a side drawer.
+  const pluginMenu = usePluginMenu(bundle, player);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
+      ...pluginMenu.items,
       // Useless on phones: no keyboard.
       ...(mobile
         ? []
@@ -344,7 +348,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, keepItem, mobile],
+    [actions.openShortcuts, keepItem, mobile, pluginMenu.items],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -513,6 +517,7 @@ export function Viewer({
           {...(mobilePanel ? { mobile: mobilePanel } : {})}
         />
         <StepAnnouncer />
+        {pluginMenu.drawer}
         <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       </main>
     </ViewerContext.Provider>

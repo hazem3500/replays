@@ -3,6 +3,7 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
+import { loadClientPlugins } from './plugins/load.ts';
 import './tailwind.css';
 
 const root = document.querySelector('#root');
@@ -18,3 +19,6 @@ flushSync(() =>
     </StrictMode>,
   ),
 );
+
+// Browser entries of the server's plugins (src/client/plugins/): loaded after the first paint, failures isolated.
+void loadClientPlugins();

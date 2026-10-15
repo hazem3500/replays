@@ -1,7 +1,10 @@
 # Extension points
 
+> Building a whole distribution (config file, plugins, browser entries, hooks)? Start with [extension-api.md](extension-api.md);
+> this page describes the individual interfaces it builds on.
+
 Everything here is a typed interface exported from `src/index.ts` (the library entry) and exercised by unit tests.
-Plugins are plain ES modules, loaded at start, so no build step is needed.
+Plugins are plain ES modules, loaded at start, so no build step is needed. `AUTH_MODE=plugin` below is the single-purpose form; `definePlugin` ([extension-api.md](extension-api.md)) carries auth together with everything else.
 
 ## Auth adapters
 
@@ -111,8 +114,8 @@ compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.jso
   The bucket needs no public access, and the app is the only deleter, so do not add a lifecycle rule that races with
   "keep".
 - Another backend: implement the interface and pass it to `new ReplayStore(storage, sampleDir, retention)`; run
-  `test/storage.test.ts`'s contract against it. (The server's `storageFromEnv` only knows `fs` and `s3`; wire yours in
-  `src/server/main.ts`.)
+  `test/storage.test.ts`'s contract against it. (`storageFromEnv` only knows `fs` and `s3`; register yours with `api.storage` in a plugin, see
+  [extension-api.md](extension-api.md).)
 
 ## Theming and branding
 

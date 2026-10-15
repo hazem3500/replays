@@ -151,9 +151,10 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `PUBLIC_ORIGIN` | – | `https://replays.example.com`; needed by `oidc` for the redirect URI |
 | `TLS_CERT_FILE`, `TLS_KEY_FILE` | – | Serve HTTPS directly (usually a proxy does this instead) |
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
-| `STORAGE` | `fs` | `fs` or `s3` |
+| `STORAGE` | `fs` | `fs`, `s3`, or a backend a plugin registered |
 | `RETENTION_DAYS` | `30` | Days an upload lives, counted from its upload time; `0` keeps everything. "Kept" replays never expire |
-| `REPLAYS_CONFIG` | – | Path of the JSON config file (below) |
+| `REPLAYS_CONFIG` | `replays.config.{ts,mjs,js,json}` in the working directory | The config file (below); a script can also list [plugins](#extending-replays) |
+| `SAMPLE_DIR` | the bundled `sample/` | Directory of read-only demo replays; point it at an empty directory for none |
 | `PRODUCT_NAME`, `LOGO_URL` | `replays`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
 | `CONTEXT_SCHEMA_FILE` | – | JSON Schema for `context.fields` (see [Context schema](#context-metadata-schema)) |
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
@@ -164,7 +165,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
 The config file takes `name`, `logoUrl`, `theme`, `basePath`, `retentionDays`, `contextSchemaFile`, `githubHost`,
-`gitlabHost`, `sourceProviders`, `beta` and `comments`:
+`gitlabHost`, `sourceProviders`, `beta`, `comments`, `auth`, `storage` and `plugins`:
 
 ```json
 {
@@ -246,6 +247,41 @@ It comes from your runner; the CLI never reads the page's storage or an account.
 server validates `fields` (JSON Schema 2020-12 via Ajv, with string formats) and `GET /api/config` hands the schema to
 the viewer, which uses `title`, `description`, property order and `format: "uri"` to render the Context tab. Without a
 schema, fields still render, with humanized key names.
+
+## Extending replays
+
+To run your own branded, authenticated variant without forking, depend on this package and describe the differences in a
+config file and plugins. One package, six entry points (`/config`, `/plugin`, `/viewer`, `/server`, `/capture` and the root):
+
+```ts
+// replays.config.ts
+import { defineConfig } from '@hazem3500/replays/config';
+import { definePlugin } from '@hazem3500/replays/plugin';
+
+const acme = definePlugin({
+  name: 'acme',
+  setup(api) {
+    api.auth({ name: 'acme-sso', create: (env) => ({ name: 'acme-sso', authenticate: (request) => (request.headers['x-team-key'] === env.TEAM_KEY ? { id: 'team' } : undefined) }) });
+    api.contextAdapter({ name: 'build', schema: { type: 'object', properties: { env: { type: 'string', title: 'Environment' } } } });
+    api.branding({ name: 'Acme Replays', theme: { dark: { accent: '#ff6600' } } });
+    api.basePath('/replays');
+    api.client({ id: 'main', script: new URL('./dist/client.js', import.meta.url).pathname }); // inspector tabs, actions, panels
+  },
+});
+
+export default defineConfig({ plugins: [acme] });
+```
+
+Plugins can register auth adapters, test-context adapters, source-link providers, storage backends, branding, the base path, server hooks
+(request, response, upload lifecycle) and a browser entry that adds inspector tabs, viewer actions and panels. Start it with
+`replays serve`, or `startServer()` from `@hazem3500/replays/server`.
+
+- [docs/extension-api.md](docs/extension-api.md): the reference, with every registration, ordering and conflict rule
+- [docs/api-stability.md](docs/api-stability.md): what is public API, versioning and deprecation rules
+- [docs/packaging.md](docs/packaging.md): why one package with subpath exports
+- [`examples/custom-distro`](examples/custom-distro): a runnable distribution (signed-header auth, context adapter, branding, base
+  path, a custom tab, action and panel) with an end-to-end test that proves each extension is active
+- [docs/downstream-migration.md](docs/downstream-migration.md): moving an existing internal fork onto this surface
 
 ## Privacy model
 
@@ -350,14 +386,16 @@ pnpm install
 pnpm dev          # server + viewer with hot reload
 pnpm check        # lint, format check, typecheck, unit tests, build
 pnpm test:e2e     # Playwright: capture a sample → upload → viewer loads it, plus UI smoke tests
-pnpm build:cli    # dist/cli (bundled CLI), dist/lib (library), dist/types
+pnpm build:cli    # dist/cli (bundled CLI), dist/lib (library entries), dist/types
+pnpm test:distro  # build everything, then the custom-distro example and its end-to-end smoke
+pnpm test:pack    # pack the package and run it from an install outside the repository
 pnpm sample       # re-record sample/demo-shop.json from fixtures/demo-shop
 pnpm build:site   # the static landing page and live demo in dist/site (see docs/site.md)
 ```
 
 Requirements: Node 22.12+, pnpm 10, a Chrome/Chromium for capture and the e2e tests. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-More documentation: [extension points](docs/extending.md) · [operations](docs/operations.md) ·
+More documentation: [extending replays](docs/extension-api.md) · [API stability](docs/api-stability.md) · [extension points](docs/extending.md) · [operations](docs/operations.md) ·
 [releasing](docs/releasing.md) · [landing page](docs/site.md) · [naming](docs/NAMING.md).
 
 ## License

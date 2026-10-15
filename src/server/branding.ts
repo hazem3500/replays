@@ -83,7 +83,7 @@ export function pageBranding(branding: BrandingConfig): PageBranding {
 /** What `GET /api/config` tells the client. */
 export function publicConfig(
   branding: BrandingConfig,
-  extra: { contextSchema?: unknown; sourceProviders: string[]; auth: string; beta?: { editor: boolean }; comments?: boolean },
+  extra: { contextSchema?: unknown; sourceProviders: string[]; auth: string; plugins?: string[]; beta?: { editor: boolean }; comments?: boolean },
 ) {
   return {
     name: branding.name,
@@ -91,6 +91,7 @@ export function publicConfig(
     ...(extra.contextSchema ? { contextSchema: extra.contextSchema } : {}),
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,
+    plugins: extra.plugins ?? [],
     beta: extra.beta ?? { editor: false },
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
   };

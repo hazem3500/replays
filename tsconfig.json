@@ -14,7 +14,27 @@
     "skipLibCheck": true,
     "types": ["node", "vitest/globals"],
     "noEmit": true,
-    "paths": { "@/*": ["./src/client/*"] }
+    "paths": {
+      "@/*": ["./src/client/*"],
+      "@hazem3500/replays": ["./src/index.ts"],
+      "@hazem3500/replays/capture": ["./src/capture/index.ts"],
+      "@hazem3500/replays/server": ["./src/server/index.ts"],
+      "@hazem3500/replays/plugin": ["./src/plugin/index.ts"],
+      "@hazem3500/replays/config": ["./src/config/index.ts"],
+      "@hazem3500/replays/viewer": ["./src/client/plugins/api.ts"]
+    }
   },
-  "include": ["src", "test", "e2e", "scripts/*.d.mts", "vite.config.ts", "vitest.config.ts", "playwright.config.ts"]
+  "include": [
+    "src",
+    "test",
+    "e2e",
+    "scripts/*.d.mts",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "playwright.config.ts",
+    "examples/custom-distro/e2e",
+    "examples/custom-distro/playwright.config.ts",
+    "examples/custom-distro/src",
+    "examples/custom-distro/replays.config.ts"
+  ]
 }

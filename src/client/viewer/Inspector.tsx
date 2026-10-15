@@ -11,6 +11,7 @@ import {
   MessageSquareIcon,
   ListOrderedIcon,
   type LucideIcon,
+  PuzzleIcon,
   SquareTerminalIcon,
   TriangleAlertIcon,
 } from 'lucide-react';
@@ -41,7 +42,8 @@ import { countAtOrBefore, sortByAt } from '../timeline.ts';
 import { createSpring } from '../spring.ts';
 import { type ShortcutAction, shortcutLabel } from '../shortcuts.ts';
 import { useWindowedRows } from '../windowing.ts';
-import { type InspectorTab, useViewer } from './context.ts';
+import { type BuiltinInspectorTab, type InspectorTab, useViewer } from './context.ts';
+import { PluginMount, usePluginContext, usePluginSnapshot } from '../plugins/PluginUi.tsx';
 import { Empty } from './Empty.tsx';
 import { noteTabSwitch, queueReveal, staggerIn } from './stagger.ts';
 import { StepList } from './StepRail.tsx';
@@ -173,14 +175,14 @@ export function InspectorResizer({
 const BACKSLASH = '\\';
 
 /** Tabs with a key: their tooltip shows it (single source: shortcuts.ts). */
-const TAB_SHORTCUTS: Partial<Record<InspectorTab, ShortcutAction>> = {
+const TAB_SHORTCUTS: Partial<Record<BuiltinInspectorTab, ShortcutAction>> = {
   console: 'console-tab',
   network: 'network-tab',
   performance: 'performance-tab',
   comments: 'add-comment',
 };
 
-const TABS: InspectorTab[] = ['console', 'network', 'performance', 'context'];
+const TABS: BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
 
 export interface MobilePanel {
   /** The Steps tab is showing (it sits in front of the diagnostics tabs on phones). */
@@ -221,6 +223,8 @@ export const Inspector = memo(function Inspector({
   const consoleCount = usePlayhead((time) => countAtOrBefore(consoleTrack.ats, horizon(time)));
   const networkCount = usePlayhead((time) => countAtOrBefore(networkTrack.ats, horizon(time)));
   const performanceCount = usePlayhead((time) => countAtOrBefore(performanceTrack.ats, horizon(time)));
+  const pluginTabs = usePluginSnapshot().tabs;
+  const pluginContext = usePluginContext(bundle, player);
   const stepTabs = mobile && bundle.steps.length > 0;
   const activeStep = usePlayhead((time) => (stepTabs ? activeStepIndex(bundle.steps, time, player.duration) : -1));
   const labels = mobile ? MOBILE_TAB_LABELS : TAB_LABELS;
@@ -342,6 +346,17 @@ export const Inspector = memo(function Inspector({
               </TabsTrigger>
             </Hint>
           ))}
+          {pluginTabs.map((pluginTab) => (
+            <TabsTrigger
+              key={pluginTab.key}
+              value={pluginTab.key}
+              id={`${pluginTab.key}-tab`}
+              data-testid={`${pluginTab.key}-tab`}
+              className="inspector-tab"
+            >
+              <TabLabel icon={PuzzleIcon} label={pluginTab.definition.label} iconOnly={iconTabs} />
+            </TabsTrigger>
+          ))}
           {indicator}
         </TabsList>
         {collapse && mobile ? (
@@ -412,6 +427,18 @@ export const Inspector = memo(function Inspector({
           <CommentsPanel />
         </TabsContent>
       ) : null}
+      {pluginTabs.map((pluginTab) => (
+        <TabsContent key={pluginTab.key} value={pluginTab.key} className="inspector-panel">
+          {filled ? (
+            <PluginMount
+              render={pluginTab.definition.render}
+              context={pluginContext}
+              label={pluginTab.definition.label}
+              testId={`${pluginTab.key}-panel`}
+            />
+          ) : null}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 });
@@ -420,7 +447,7 @@ const ICON_TABS_BELOW = 480;
 /** The rows of the inspector's panels that stagger in (never the windowing spacers). */
 const INSPECTOR_ROWS = 'tbody > tr:not(.spacer-row):not(.gap-row), .ctx-summary, .ctx-heading, .ctx-source, .ctx-row, .empty';
 
-const TAB_ICONS: Record<InspectorTab, LucideIcon> = {
+const TAB_ICONS: Record<BuiltinInspectorTab, LucideIcon> = {
   console: SquareTerminalIcon,
   network: GlobeIcon,
   performance: GaugeIcon,

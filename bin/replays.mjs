@@ -10,7 +10,16 @@ const built = fileURLToPath(new URL('../dist/cli/cli.mjs', import.meta.url));
 const source = fileURLToPath(new URL('../src/cli.ts', import.meta.url));
 const args = process.argv.slice(2);
 
-if (existsSync(built) && args[0] !== 'serve') {
+if (args[0] === 'serve' && !existsSync(source) && existsSync(fileURLToPath(new URL('../dist/lib/server.mjs', import.meta.url)))) {
+  // An installed package ships the built server (dist/lib/server.mjs), not the sources.
+  const { startServer } = await import('../dist/lib/server.mjs');
+  try {
+    await startServer({ handleSignals: true });
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : error);
+    process.exit(1);
+  }
+} else if (existsSync(built) && args[0] !== 'serve') {
   await import(pathToFileURL(built).href);
 } else if (existsSync(source)) {
   const result = spawnSync(process.execPath, ['--experimental-strip-types', '--no-warnings', source, ...args], { stdio: 'inherit' });

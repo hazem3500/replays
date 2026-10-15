@@ -100,6 +100,41 @@ jobs:
             test-results/
           retention-days: 7
 
+  distro:
+    name: Custom distribution example
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # The viewer and the library entries (what package.json `exports` points at), then the example on top of them.
+      - run: pnpm build
+      - run: pnpm build:cli
+      - name: The packed tarball works when installed outside the repository
+        run: pnpm test:pack
+      - run: pnpm --filter @hazem3500/replays-example-custom-distro build
+      - run: pnpm --filter @hazem3500/replays-example-custom-distro typecheck
+      - name: Extensions are active (auth, context, branding, tab, action, panel, hooks)
+        run: pnpm exec playwright test -c examples/custom-distro/playwright.config.ts
+        env:
+          CHROMIUM_NO_SANDBOX: '1'
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: distro-playwright-report
+          path: |
+            examples/custom-distro/playwright-report/
+            examples/custom-distro/test-results/
+          retention-days: 7
+
   docker:
     name: Docker build (not pushed)
     runs-on: ubuntu-latest

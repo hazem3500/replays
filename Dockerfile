@@ -14,16 +14,19 @@ RUN corepack enable
 WORKDIR /app
 
 # Production dependencies only (the server runs from TypeScript sources with Node's type stripping).
+# The lockfile covers the workspace (examples/custom-distro): its manifest must be present, but only this package is installed.
 FROM base AS deps
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY examples/custom-distro/package.json ./examples/custom-distro/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod --ignore-scripts
+    pnpm install --frozen-lockfile --prod --ignore-scripts --filter @hazem3500/replays
 
 # The viewer: Vite output in dist/client.
 FROM base AS build
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY examples/custom-distro/package.json ./examples/custom-distro/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --filter @hazem3500/replays
 COPY . .
 RUN pnpm build
 
@@ -65,6 +68,8 @@ COPY --chown=node:node --from=deps /app/node_modules ./node_modules
 COPY --chown=node:node src/server ./src/server
 COPY --chown=node:node src/shared ./src/shared
 COPY --chown=node:node src/capture ./src/capture
+COPY --chown=node:node src/plugin ./src/plugin
+COPY --chown=node:node src/config ./src/config
 COPY --chown=node:node src/client/render/frames.ts ./src/client/render/frames.ts
 COPY --chown=node:node sample ./sample
 COPY --chown=node:node examples ./examples

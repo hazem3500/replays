@@ -33,16 +33,3 @@ await build({
   logLevel: 'warning',
 });
 console.log(`built ${join(out, 'cli.mjs')}`);
-
-// The library entry (src/index.ts) as one ES module; types come from `tsc -p tsconfig.lib.json`.
-await build({
-  entryPoints: [join(root, 'src/index.ts')],
-  outfile: join(root, 'dist/lib/index.mjs'),
-  bundle: true,
-  platform: 'node',
-  format: 'esm',
-  target: 'node22',
-  packages: 'external',
-  logLevel: 'warning',
-});
-console.log(`built ${join(root, 'dist/lib/index.mjs')}`);

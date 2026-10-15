@@ -35,7 +35,7 @@ function under(pathname: string, prefix: string) {
 export function isAppPage(pathname: string, base = appBase()) {
   if (base && !under(pathname, base)) return false;
   const rest = pathname.slice(base.length) || '/';
-  return !/^\/(api|assets|internal)(\/|$)/.test(rest) && rest !== '/healthz' && !rest.endsWith('.html');
+  return !/^\/(api|assets|internal|_plugins)(\/|$)/.test(rest) && rest !== '/healthz' && !rest.endsWith('.html');
 }
 
 /**

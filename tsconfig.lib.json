@@ -11,12 +11,11 @@
   },
   "include": [
     "src/index.ts",
-    "src/shared",
-    "src/capture",
-    "src/server/auth",
-    "src/server/storage",
-    "src/server/context-schema.ts",
-    "src/server/branding.ts"
+    "src/capture/index.ts",
+    "src/server/index.ts",
+    "src/plugin/index.ts",
+    "src/config/index.ts",
+    "src/client/plugins/api.ts"
   ],
   "exclude": ["src/capture/injected-recorder.ts", "src/server/storage/traced.ts"]
 }
