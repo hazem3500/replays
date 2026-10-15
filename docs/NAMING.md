@@ -1,12 +1,11 @@
 # Naming
 
 **Decision (2026-10-15): the product is called "replays".** The GitHub repository is `hazem3500/replays` (private
-until the owner decides otherwise), the CLI binary is `replays`, the npm package is the unscoped **`replays`** (free on
-npm on 2026-10-15: `npm view replays` → 404) and the container image name is `ghcr.io/hazem3500/replays` (nothing is
-pushed). **Fallback:** the scoped `@hazem3500/replays`, also free on 2026-10-15, if the unscoped name is lost before it
-is claimed (change `name` in `package.json`; scoped public packages need `--access public`, which the release workflow
-passes). A name-claim placeholder (`packages/npm-placeholder/`, version 0.0.1) is prepared but **not published**. The
-name lives in one constant (`src/shared/brand.ts`) plus `package.json`, the README and the Dockerfile image label.
+until the owner decides otherwise), the CLI binary is `replays`, the npm package is **`@hazem3500/replays`** (scoped;
+`npm view @hazem3500/replays` → 404 on 2026-10-15) and the container image name is `ghcr.io/hazem3500/replays` (nothing is
+pushed). The unscoped name `replays` was rejected by npm as too similar to the existing package `re-plays`. Publishing
+a scoped public package needs `npm publish --access=public` (the release workflow passes it). The name lives in one
+constant (`src/shared/brand.ts`) plus `package.json`, the README and the Dockerfile image label.
 
 ## History: the earlier candidates
 

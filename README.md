@@ -1,7 +1,7 @@
 # replays
 
 > The name is chosen (see [docs/NAMING.md](docs/NAMING.md)). It lives in `src/shared/brand.ts`, `package.json` and this
-> README. npm package (not published yet): `replays`; CLI: `replays`; image: `ghcr.io/hazem3500/replays`.
+> README. npm package (not published yet): `@hazem3500/replays`; CLI: `replays`; image: `ghcr.io/hazem3500/replays`.
 
 Record what a browser agent, a test or a person did, and replay it with everything that happened around it on **one
 timeline**: the page itself (rrweb), the steps taken, console output, a sanitized network trace and performance
@@ -77,11 +77,11 @@ Other commands: `replays import --rrweb events.json --title "…"` (a plain rrwe
 
 ### Record from your own Playwright test
 
-The recorder is a library (`import … from 'replays'` after `pnpm build:cli`): attach it to any Chrome DevTools
+The recorder is a library (`import … from '@hazem3500/replays'` after `pnpm build:cli`): attach it to any Chrome DevTools
 Protocol connection.
 
 ```ts
-import { RecorderSession } from 'replays';
+import { RecorderSession } from '@hazem3500/replays';
 
 const session = await RecorderSession.start(await context.newCDPSession(page)); // before the first navigation
 await page.goto('https://example.com');

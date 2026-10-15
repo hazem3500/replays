@@ -1,5 +1,5 @@
 /**
- * Library entry point (`import … from 'replays'`): record any browser page yourself, build and validate bundles,
+ * Library entry point (`import … from '@hazem3500/replays'`): record any browser page yourself, build and validate bundles,
  * and write server plugins against the typed interfaces. The CLI (`replays capture`) and the server are built on
  * the same pieces.
  */
