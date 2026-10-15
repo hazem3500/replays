@@ -158,6 +158,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `CONTEXT_SCHEMA_FILE` | – | JSON Schema for `context.fields` (see [Context schema](#context-metadata-schema)) |
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
+| `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
@@ -266,6 +267,26 @@ A replay contains what was on the screen, so the defaults are conservative and t
 What the sanitizer cannot know: text that is *visible on the page* (names, order numbers, messages) is recorded as
 shown. Keep the server behind authentication, keep retention short, and do not record real users' production sessions
 without a legal basis. Report privacy bugs through [SECURITY.md](SECURITY.md).
+
+## Replay editor (beta, off by default)
+
+Edit mode lets you tidy a recording without touching it: trim the start and end, cut ranges, **Remove waits** (cuts the
+idle stretches between steps), speed a stretch up, add **zoom** regions on the clicks, **blur boxes** over parts of the
+page, and **captions** (written from the steps). Open it with the *Edit* button in the viewer or at `/r/<id>/edit`.
+
+- **Non-destructive.** Edits are an edit list stored next to the replay (`<id>/edits.json`); `replay.json` is never
+  rewritten. The viewer plays the edited version with an "Edited" label and a switch to the original (`?original=1`);
+  video exports apply the edits and are cached per edit-list version. Saves are optimistic (`If-Match`), so two people
+  cannot silently overwrite each other, and free text in labels goes through the same URL redaction as uploads.
+- **Flag.** `REPLAYS_BETA_EDITOR=true`, or `{ "beta": { "editor": true } }` in the config file (the variable wins).
+  The server tells the page through `<meta name="app-beta">` and `GET /api/config` (`beta.editor`).
+- **With the flag off** (the default): no Edit button or "Edited" label, `/r/<id>/edit` just opens the replay, the
+  `GET|PUT /api/replays/<id>/edits` endpoints answer `404`, exports ignore any edit list, and the editor's code chunk is
+  never requested. There is deliberately no client-only switch: an editor without its API cannot save, so the flag
+  lives on the server. For local preview run `REPLAYS_BETA_EDITOR=true pnpm dev`.
+- It is a beta: the edit-list format (`src/shared/edits.ts`, `src/shared/effects.ts`) may still change before 1.0.
+
+![Edit mode: the replay above and one timeline of lanes for clip, cuts, zoom, speed, blur and captions](docs/screenshots/editor.png)
 
 ## Suites, retention and keep
 

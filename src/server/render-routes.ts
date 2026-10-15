@@ -4,8 +4,16 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 
 import { send, serveFile } from './app.ts';
+import { editsVersion } from '../shared/edits.ts';
+import type { BetaFlags } from './beta.ts';
 import { renderFilename } from '../shared/render-variant.ts';
-import { RENDER_SPEED_OPTIONS, RenderQueueFullError, type RenderQueue, type RenderSpeedOption } from './render-queue.ts';
+import {
+  EDITS_VERSION_PATTERN,
+  RENDER_SPEED_OPTIONS,
+  RenderQueueFullError,
+  type RenderQueue,
+  type RenderSpeedOption,
+} from './render-queue.ts';
 import { RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
 import type { PosterQueue } from './posters.ts';
 import { serveObject } from './serve-object.ts';
@@ -55,7 +63,7 @@ export async function handleInternalRender(
   request: IncomingMessage,
   response: ServerResponse,
   path: string,
-  options: { store: ReplayStore; render?: RenderService },
+  options: { store: ReplayStore; render?: RenderService; beta?: BetaFlags },
 ) {
   const render = options.render;
   if (!render || request.method !== 'GET' || !isRendererRequest(request, render.token)) {
@@ -67,6 +75,13 @@ export async function handleInternalRender(
     // Built asset URLs are relative (vite.config.ts), so the page, its scripts, stylesheets and their fonts all
     // load from this loopback route, outside the authenticated app.
     if (!(await serveFile(request, response, join(render.clientDir, 'assets', asset[1]!), 'no-store'))) send(response, 404, 'not found');
+    return;
+  }
+  // The edit list an edited export applies (the page checks its version against the one it was asked for).
+  const edits = options.beta?.editor ? /^\/internal\/render\/([a-z0-9][a-z0-9-]{0,79})\/edits\.json$/.exec(path) : null;
+  if (edits) {
+    if (!(await options.store.locate(edits[1]!))) send(response, 404, 'not found');
+    else send(response, 200, JSON.stringify((await options.store.readEdits(edits[1]!)).edits), JSON_TYPE, 'no-store');
     return;
   }
   const bundle = /^\/internal\/render\/([a-z0-9][a-z0-9-]{0,79})\/bundle\.json$/.exec(path);
@@ -135,7 +150,7 @@ export async function handleRenderApi(
   response: ServerResponse,
   path: string,
   search: URLSearchParams,
-  options: { store: ReplayStore; render?: RenderService },
+  options: { store: ReplayStore; render?: RenderService; beta?: BetaFlags },
 ) {
   const match = /^\/api\/replays\/([a-z0-9][a-z0-9-]{0,79})\/render(\/file)?$/.exec(path);
   if (!match) return false;
@@ -163,11 +178,34 @@ export async function handleRenderApi(
     json(response, 400, { error: `${captions === undefined ? 'captions' : 'skipInactive'} must be true or false` });
     return true;
   }
-  const variant = { captions, skipInactive };
   if (!(await options.store.locate(id))) {
     json(response, 404, { error: 'replay not found' });
     return true;
   }
+  // Exports always apply the replay's edits. The client names the edit list version it shows (`edits`): its status
+  // checks and its download keep to the video it asked for, whatever is saved meanwhile. Scripts and older
+  // clients name none and get the stored list.
+  const requested = method === 'POST' ? body.edits : search.get('edits');
+  if (
+    requested !== undefined &&
+    requested !== null &&
+    (typeof requested !== 'string' || (requested && !EDITS_VERSION_PATTERN.test(requested)))
+  ) {
+    json(response, 400, { error: 'edits must be an edit list version' });
+    return true;
+  }
+  // Edits exist only with the beta editor on; without it exports render the replay as recorded.
+  const editorOn = Boolean(options.beta?.editor);
+  const current =
+    editorOn && (requested === undefined || requested === null || method === 'POST')
+      ? editsVersion((await options.store.readEdits(id)).edits)
+      : '';
+  const edits = editorOn && typeof requested === 'string' ? requested : current;
+  if (method === 'POST' && edits !== current) {
+    json(response, 409, { error: 'the edits changed since this page loaded; reload to export the current version' });
+    return true;
+  }
+  const variant = { captions, skipInactive, edits };
 
   if (file) {
     if (method !== 'GET' && method !== 'HEAD') {
@@ -176,7 +214,9 @@ export async function handleRenderApi(
     }
     const served = await serveObject(request, response, queue.storage, queue.outputKey(id, speed, variant), 'private, max-age=3600', {
       contentType: 'video/mp4',
-      headers: { 'content-disposition': `attachment; filename="${renderFilename(id, { speed, ...variant })}"` },
+      headers: {
+        'content-disposition': `attachment; filename="${renderFilename(id, { speed, captions, skipInactive, edited: Boolean(edits) })}"`,
+      },
     });
     if (!served) json(response, 404, { error: 'no rendered video yet' });
     return true;

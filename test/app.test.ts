@@ -100,7 +100,7 @@ describe('replay server', () => {
     const me = await fetch(`${origin}/api/me`, { headers: { 'x-dev-user': 'ada@example.com' } });
     await expect(me.json()).resolves.toEqual({ id: 'ada@example.com', email: 'ada@example.com' });
     const config = await (await fetch(`${origin}/api/config`)).json();
-    expect(config).toEqual({ name: 'replays', sourceProviders: ['github', 'gitlab', 'url'], auth: 'none' });
+    expect(config).toEqual({ name: 'replays', sourceProviders: ['github', 'gitlab', 'url'], auth: 'none', beta: { editor: false } });
   });
 
   it('answers unknown and malformed API paths with a JSON 404, not the SPA page', async () => {

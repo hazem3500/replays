@@ -6,6 +6,7 @@ import { retentionFromEnv, type RetentionPolicy } from '../shared/retention.ts';
 import { type BrandingConfig, validateBranding } from './branding.ts';
 import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { normalizeBasePath } from './base-path.ts';
+import { type BetaFlags, betaFromEnv } from './beta.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -21,7 +22,8 @@ import { normalizeBasePath } from './base-path.ts';
  *     "contextSchemaFile": "./context.schema.json" CONTEXT_SCHEMA_FILE
  *     "githubHost": "github.example.com",          GITHUB_HOST
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
- *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }]
+ *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
+ *     "beta": { "editor": false }                  REPLAYS_BETA_EDITOR (off by default; src/server/beta.ts)
  *   }
  */
 export interface FileConfig {
@@ -34,6 +36,7 @@ export interface FileConfig {
   githubHost?: string;
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
+  beta?: { editor?: boolean };
 }
 
 export interface AppSettings {
@@ -42,6 +45,7 @@ export interface AppSettings {
   retention: RetentionPolicy;
   sources: SourceProviders;
   contextSchema?: ContextSchema;
+  beta: BetaFlags;
 }
 
 const KEYS = new Set([
@@ -54,6 +58,7 @@ const KEYS = new Set([
   'githubHost',
   'gitlabHost',
   'sourceProviders',
+  'beta',
 ]);
 
 export async function readConfigFile(path: string | undefined): Promise<FileConfig> {
@@ -94,5 +99,5 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
-  return { branding, basePath, retention, sources, ...(contextSchema ? { contextSchema } : {}) };
+  return { branding, basePath, retention, sources, beta: betaFromEnv(env, file.beta), ...(contextSchema ? { contextSchema } : {}) };
 }

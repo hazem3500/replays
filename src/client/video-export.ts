@@ -165,12 +165,13 @@ export function useVideoRender(
   const speed = variant.speed ?? 1;
   const skipInactive = variant.skipInactive ?? true;
   const captions = Boolean(variant.captions);
+  const edits = variant.edits ?? '';
   const [state, dispatch] = useReducer(exportReducer, IDLE);
   const [availability, setAvailability] = useState<{ url: string; value: RenderAvailability }>({ url: renderUrl, value: 'unknown' });
   /** Bumped by start/cancel/unmount so a late POST answer cannot revive an abandoned render. */
   const generation = useRef(0);
   /** The variant of the job in flight: changing an option mid-render keeps polling (and saves) the job that was started. */
-  const jobVariant = useRef<RenderVariant>({ speed, skipInactive, captions });
+  const jobVariant = useRef<RenderVariant>({ speed, skipInactive, captions, edits });
   const idle = useRef(true);
   useEffect(() => {
     idle.current = state.kind === 'idle';
@@ -194,7 +195,7 @@ export function useVideoRender(
   // Availability (503 = Chromium/ffmpeg missing) and any render of this variant already running for this replay.
   useEffect(() => {
     const controller = new AbortController();
-    const current = { speed, skipInactive, captions };
+    const current = { speed, skipInactive, captions, edits };
     fetch(renderVariantUrl(renderUrl, current), { cache: 'no-store', signal: controller.signal })
       .then(async (response) => {
         const job = response.ok ? await readJob(response) : undefined;
@@ -211,7 +212,7 @@ export function useVideoRender(
         if (!controller.signal.aborted) setAvailability({ url: renderUrl, value: 'unavailable' });
       });
     return () => controller.abort();
-  }, [renderUrl, speed, skipInactive, captions]);
+  }, [renderUrl, speed, skipInactive, captions, edits]);
 
   // Polls while a job is queued or rendering: every state change schedules the next poll.
   useEffect(() => {
@@ -246,13 +247,13 @@ export function useVideoRender(
   const start = useCallback(async () => {
     if (active) return;
     const run = ++generation.current;
-    jobVariant.current = { speed, skipInactive, captions };
+    jobVariant.current = { speed, skipInactive, captions, edits };
     dispatch({ type: 'start' });
     try {
       const response = await fetch(renderUrl, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ speed, skipInactive, captions }),
+        body: JSON.stringify({ speed, skipInactive, captions, ...(edits ? { edits } : {}) }),
       });
       const job = await readJob(response);
       if (run !== generation.current) return;
@@ -261,7 +262,7 @@ export function useVideoRender(
     } catch (error) {
       if (run === generation.current) dispatch({ type: 'failed', message: error instanceof Error ? error.message : String(error) });
     }
-  }, [active, apply, captions, renderUrl, skipInactive, speed]);
+  }, [active, apply, captions, edits, renderUrl, skipInactive, speed]);
 
   const cancel = useCallback(() => {
     generation.current += 1;

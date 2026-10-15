@@ -121,8 +121,8 @@ describe('render queue', () => {
     expect(renderVariant(2, { captions: true })).toBe('2x-skip-cc');
     expect(renderVariant(0.5, { skipInactive: false, captions: true })).toBe('0.5x-cc');
     expect(renderJobId('a', 8, { skipInactive: true })).toBe('a-8x-skip');
-    expect(parseStateFile('render-1.5x-skip-cc.json')).toEqual({ speed: 1.5, options: { skipInactive: true, captions: true } });
-    expect(parseStateFile('render-1x.json')).toEqual({ speed: 1, options: { skipInactive: false, captions: false } });
+    expect(parseStateFile('render-1.5x-skip-cc.json')).toEqual({ speed: 1.5, options: { skipInactive: true, captions: true, edits: '' } });
+    expect(parseStateFile('render-1x.json')).toEqual({ speed: 1, options: { skipInactive: false, captions: false, edits: '' } });
     expect(parseStateFile('render-3x.json')).toBeUndefined();
     expect(parseStateFile('rendered-1x.mp4')).toBeUndefined();
     const dir = await dataDir();

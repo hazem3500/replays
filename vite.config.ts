@@ -21,6 +21,10 @@ function appBaseMeta(): Plugin {
     transformIndexHtml: (html) =>
       html
         .replace('<meta name="app-base" content="" />', `<meta name="app-base" content="${devBase || '/'}" />`)
+        .replace(
+          '<meta name="app-beta" content="" />',
+          `<meta name="app-beta" content="${/^(true|1|yes|on)$/i.test(process.env.REPLAYS_BETA_EDITOR ?? '') ? 'editor' : ''}" />`,
+        )
         .replaceAll('__PRODUCT_NAME__', PRODUCT_NAME)
         .replaceAll('__PRODUCT_LOGO__', ''),
   };

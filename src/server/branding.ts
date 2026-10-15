@@ -81,12 +81,16 @@ export function pageBranding(branding: BrandingConfig): PageBranding {
 }
 
 /** What `GET /api/config` tells the client. */
-export function publicConfig(branding: BrandingConfig, extra: { contextSchema?: unknown; sourceProviders: string[]; auth: string }) {
+export function publicConfig(
+  branding: BrandingConfig,
+  extra: { contextSchema?: unknown; sourceProviders: string[]; auth: string; beta?: { editor: boolean } },
+) {
   return {
     name: branding.name,
     ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
     ...(extra.contextSchema ? { contextSchema: extra.contextSchema } : {}),
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,
+    beta: extra.beta ?? { editor: false },
   };
 }

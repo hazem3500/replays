@@ -34,3 +34,22 @@ export interface ClientConfig {
   sourceProviders: string[];
   auth: string;
 }
+
+let betaEditorOverride: boolean | undefined;
+
+/**
+ * Whether the beta editor is on (server: `REPLAYS_BETA_EDITOR=true` or `beta.editor` in the config file). The server
+ * writes it into index.html (`<meta name="app-beta" content="editor">`); off by default. With it off the viewer shows no
+ * editor UI, loads no edit lists and never fetches the editor's code.
+ */
+export function betaEditor() {
+  if (betaEditorOverride !== undefined) return betaEditorOverride;
+  if (typeof document === 'undefined') return false;
+  const content = document.querySelector<HTMLMetaElement>('meta[name="app-beta"]')?.content ?? '';
+  return content.split(/[\s,]+/).includes('editor');
+}
+
+/** Tests only: force the flag without a document. */
+export function setBetaEditorForTests(value: boolean | undefined) {
+  betaEditorOverride = value;
+}

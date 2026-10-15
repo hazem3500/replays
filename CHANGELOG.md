@@ -3,6 +3,24 @@
 All notable changes are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and the project aims to follow [Semantic Versioning](https://semver.org/) once it reaches 1.0.
 
+## [Unreleased]
+
+### Added
+
+- **Replay editor (beta, off by default).** Non-destructive edit mode: trim, cuts, "Remove waits", speed-ups, zoom
+  regions, blur boxes and captions, stored as an edit list next to the replay and honoured by playback and video exports.
+  Enable with `REPLAYS_BETA_EDITOR=true` or `beta.editor` in the config file; with the flag off there is no editor UI,
+  the edits API answers 404 and the editor code is not loaded.
+
+### Security
+
+- Relative `srcset` / `imagesrcset` candidates and CSS `url()` values (relative ones too) are redacted like other
+  URLs, and suite and run registrations go through the same privacy pass as replay uploads.
+
+### Changed
+
+- The suite index is built from the replay list instead of three lookups per run.
+
 ## [0.1.0] - Unreleased
 
 First public-shaped version, extracted and generalised from an internal debugging tool.

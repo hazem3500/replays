@@ -16,9 +16,11 @@ import { captureLink, startSpan, type TraceLink, withSpan } from './tracing.ts';
  * when the process died reads as failed (and retryable) after a restart.
  * The MP4 is rendered into a local temporary directory, then stored atomically as
  * <id>/rendered-<variant>.mp4, under the replay's prefix, so retention prunes it with the replay. `<variant>` is
- * `<speed>x[-skip][-cc]` (renderVariant). Skip inactive defaults to on (as in the player), but the file
- * names mark it explicitly, so files from before it existed (`rendered-1x.mp4`, rendered without skipping)
- * still name exactly what they hold: the `skipInactive: false` variant.
+ * `<speed>x[-skip][-cc][-e<edits>]` (renderVariant); `<edits>` is the edit list's content version
+ * (src/shared/edits.ts editsVersion), so an edited replay is never served a video rendered before (or without) its edits.
+ * Skip inactive defaults to on (as in the player), but the file names mark it explicitly, so files from before
+ * it existed (`rendered-1x.mp4`, rendered without skipping) still name exactly what they hold: the
+ * `skipInactive: false` variant.
  */
 
 export type RenderStatus = 'queued' | 'rendering' | 'done' | 'failed';
@@ -31,6 +33,8 @@ export interface RenderOptions {
   captions?: boolean;
   /** Fast-forward idle gaps as the viewer's "skip inactive" does; absent means on, like the player. */
   skipInactive?: boolean;
+  /** The edit list's version (editsVersion) the video applies; '' or absent renders the replay as recorded. */
+  edits?: string;
 }
 
 export interface RenderJobView {
@@ -51,6 +55,8 @@ export interface RenderTask {
   captions: boolean;
   /** Fast-forward idle gaps as the viewer does. */
   skipInactive: boolean;
+  /** The edit list version to apply (the render page checks it is still the stored one); '' for none. */
+  edits: string;
   /** Write the MP4 here, a local temporary path (the queue stores it). */
   output: string;
   signal: AbortSignal;
@@ -104,19 +110,23 @@ const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
  * and its state file. Without `-skip` it is the full-idle-time render, as every render before skip was.
  */
 export const renderVariant = (speed: RenderSpeedOption, options: RenderOptions = {}) =>
-  `${speed}x${options.skipInactive !== false ? '-skip' : ''}${options.captions ? '-cc' : ''}`;
+  `${speed}x${options.skipInactive !== false ? '-skip' : ''}${options.captions ? '-cc' : ''}${options.edits ? `-e${options.edits}` : ''}`;
+
+/** An edit list version as names carry it (editsVersion: base 36). */
+export const EDITS_VERSION_PATTERN = /^[a-z0-9]{1,16}$/;
 
 /** The inverse of renderVariant for a `render-<variant>.json` state file name, or undefined. */
 export function parseStateFile(name: string): { speed: RenderSpeedOption; options: Required<RenderOptions> } | undefined {
-  const match = /^render-([\d.]+)x(-skip)?(-cc)?\.json$/.exec(name);
+  const match = /^render-([\d.]+)x(-skip)?(-cc)?(?:-e([a-z0-9]{1,16}))?\.json$/.exec(name);
   const speed = Number(match?.[1]) as RenderSpeedOption;
   if (!match || !RENDER_SPEED_OPTIONS.includes(speed)) return undefined;
-  return { speed, options: { skipInactive: Boolean(match[2]), captions: Boolean(match[3]) } };
+  return { speed, options: { skipInactive: Boolean(match[2]), captions: Boolean(match[3]), edits: match[4] ?? '' } };
 }
 
 const normalize = (options: RenderOptions): Required<RenderOptions> => ({
   captions: Boolean(options.captions),
   skipInactive: options.skipInactive !== false,
+  edits: options.edits ?? '',
 });
 
 export const renderJobId = (id: string, speed: RenderSpeedOption, options: RenderOptions = {}) => `${id}-${renderVariant(speed, options)}`;
@@ -321,6 +331,7 @@ export class RenderQueue {
         speed,
         captions: options.captions,
         skipInactive: options.skipInactive,
+        edits: options.edits,
         output: temporary,
         signal: job.controller.signal,
         onProgress: (progress) => {

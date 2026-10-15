@@ -21,6 +21,8 @@ import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compre
 import { appPath, publicPath, withBase } from './base-path.ts';
 import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
 import type { ContextSchema } from './context-schema.ts';
+import type { BetaFlags } from './beta.ts';
+import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
@@ -55,6 +57,8 @@ export interface AppOptions {
   render?: RenderService;
   /** Where the app lives publicly (base-path.ts): `''` at the root of its own domain, else e.g. `/replays`. */
   basePath?: string;
+  /** Beta features, all off by default (`REPLAYS_BETA_EDITOR=true` / `beta.editor`): see src/server/config.ts. */
+  beta?: BetaFlags;
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
   publicOrigin?: string;
 }
@@ -371,6 +375,8 @@ export function createApp(options: AppOptions) {
       if (await handleRenderApi(request, response, path, raw.searchParams, options)) return;
       if (await handlePosterApi(request, response, path, { store: options.store, posters: options.render?.posters })) return;
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
+      // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
+      if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id }))) return;
 
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another
@@ -383,6 +389,7 @@ export function createApp(options: AppOptions) {
           ...(options.contextSchema ? { contextSchema: options.contextSchema.schema } : {}),
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
+          beta: { editor: Boolean(options.beta?.editor) },
         });
         send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;
@@ -576,7 +583,13 @@ export function createApp(options: AppOptions) {
       if (request.method === 'GET' && request.headers.accept?.includes('text/html')) {
         const html = await readFile(resolve(options.clientDir, 'index.html'), 'utf8').catch(() => undefined);
         if (html) {
-          await sendCompressed(request, response, 200, withBase(html, base, page), 'text/html; charset=utf-8');
+          await sendCompressed(
+            request,
+            response,
+            200,
+            withBase(html, base, { ...page, beta: options.beta?.editor ? 'editor' : '' }),
+            'text/html; charset=utf-8',
+          );
           return;
         }
       }

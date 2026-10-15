@@ -193,3 +193,5 @@ section { padding: clamp(40px, 7vw, 88px) 0; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+.beta { margin-left: 6px; padding: 1px 7px; border: 1px solid var(--line, currentColor); border-radius: 999px; font-size: 0.7em; font-weight: 600; letter-spacing: 0.02em; vertical-align: middle; opacity: 0.8; }

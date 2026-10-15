@@ -4,6 +4,8 @@ import 'rrweb/dist/style.css';
 
 import { withDottedMasks } from '../shared/mask-display.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
+import { NO_EFFECTS, type PlaybackEffects } from '../shared/effects.ts';
+import { EffectsLayer } from './effects-layer.ts';
 import { ReplayCursor } from './replay-cursor.ts';
 import { renderOffset, type SnapshotGroup, snapshotGroups } from './snapshots.ts';
 import { clampTime } from './timeline.ts';
@@ -54,6 +56,9 @@ export class ReplayController {
   /** Stretches without interaction that "skip inactive" fast-forwards (src/shared/skip.ts). */
   readonly idleGaps: IdleGap[];
   private replayer: Replayer | undefined;
+  /** Zoom, blur and caption effects (src/shared/effects.ts); zoom and blur are drawn by `layer` while mounted. */
+  private effects: PlaybackEffects;
+  private layer: EffectsLayer | undefined;
   private time = 0;
   private state: PlayerState = { status: 'paused', speed: 1, skipInactive: true };
   private viewport: Viewport;
@@ -69,7 +74,8 @@ export class ReplayController {
   private readonly stateListeners = new Set<Listener>();
   private readonly viewportListeners = new Set<Listener>();
 
-  constructor(bundle: ReplayBundle) {
+  constructor(bundle: ReplayBundle, options: { effects?: PlaybackEffects } = {}) {
+    this.effects = options.effects ?? NO_EFFECTS;
     this.events = bundle.events;
     this.duration = eventSpan(bundle.events, bundle.meta.duration);
     this.groups = snapshotGroups(bundle.events, bundle.network);
@@ -104,7 +110,14 @@ export class ReplayController {
     const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0);
     cursor.update(this.time);
     const unsubscribeCursor = this.subscribeTime(() => cursor.update(this.time));
+    const layer = new EffectsLayer(replayer.wrapper, () => this.viewport);
+    layer.set(this.effects, this.time);
+    this.layer = layer;
+    const unsubscribeLayer = this.subscribeTime(() => layer.update(this.time));
     return () => {
+      unsubscribeLayer();
+      layer.destroy();
+      this.layer = undefined;
       unsubscribeCursor();
       cursor.destroy();
       this.stopLoop();
@@ -115,6 +128,21 @@ export class ReplayController {
       replayer.destroy();
       root.replaceChildren();
     };
+  }
+
+  /** The effects drawn over the replay; the editor swaps them as edits change. */
+  getEffects() {
+    return this.effects;
+  }
+
+  setEffects(effects: PlaybackEffects) {
+    this.effects = effects;
+    this.layer?.set(effects, this.time);
+  }
+
+  /** Holds the zoom at 1× (the editor, while a blur box is being placed). */
+  setZoomSuspended(suspended: boolean) {
+    this.layer?.setZoomSuspended(suspended, this.time);
   }
 
   /** Recorded events: how heavy a mount (and the first render) will be. */

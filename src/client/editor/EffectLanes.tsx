@@ -1,0 +1,124 @@
+import { CaptionsIcon, EyeOffIcon, FastForwardIcon, ZoomInIcon } from 'lucide-react';
+import { type ReactNode, useEffect, useRef } from 'react';
+
+import type { ReplayEdits } from '../../shared/edits.ts';
+import { type ReplayBlur, type ReplayCaption, type ReplaySpeedRange, type ReplayZoomRegion, ZOOM_IN_MS } from '../../shared/effects.ts';
+import { formatClock } from '../../shared/replay.ts';
+import { usePlayer } from '../player.ts';
+import { addEffect, type EditorAction, type EffectKind, effectList, moveEffect, removeEffect, type Selection } from './state.ts';
+import { Lane, RegionBlock, startDrag, useTimelineScale } from './Timeline.tsx';
+
+/** Each effect lane: its name (the gutter's tooltip), glyph, and how one of its regions is labelled. */
+export const LANES: Array<{ kind: EffectKind; name: string; empty: string; icon: ReactNode; label: (region: never) => string }> = [
+  {
+    kind: 'zoom',
+    name: 'Zoom: drag on the lane to add a zoom, Z zooms in on every click',
+    empty: 'Zoom · drag to add · Z zooms in on every click',
+    icon: <ZoomInIcon />,
+    label: (zoom: ReplayZoomRegion) => `${zoom.scale}×`,
+  },
+  {
+    kind: 'speed',
+    name: 'Speed: drag on the lane to speed a stretch up (F)',
+    empty: 'Speed · drag over a stretch to play it faster',
+    icon: <FastForwardIcon />,
+    label: (speed: ReplaySpeedRange) => `${speed.rate}×`,
+  },
+  {
+    kind: 'blur',
+    name: 'Blur: drag on the lane to hide part of the page (B)',
+    empty: 'Blur · drag to hide part of the page while it shows',
+    icon: <EyeOffIcon />,
+    label: () => 'Blur',
+  },
+  {
+    kind: 'caption',
+    name: 'Captions: drag on the lane to add one, T adds captions from the steps',
+    empty: 'Captions · drag to add one · T writes them from the steps',
+    icon: <CaptionsIcon />,
+    label: (caption: ReplayCaption) => caption.text,
+  },
+];
+
+const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
+
+/**
+ * The effect lanes under the clip, on the timeline's scale: Zoom, Speed, Blur, Captions. Dragging on an empty stretch
+ * of a lane adds a region over it (one undo step); a click there seeks. Regions move, resize and go like cuts
+ * (Timeline.tsx RegionBlock).
+ */
+export function EffectLanes({
+  edits,
+  selection,
+  dispatch,
+}: {
+  edits: ReplayEdits;
+  selection: Selection;
+  dispatch: (action: EditorAction) => void;
+}) {
+  const scale = useTimelineScale();
+  const player = usePlayer();
+  const latest = useRef(edits);
+  useEffect(() => {
+    latest.current = edits;
+  }, [edits]);
+  const change = (next: ReplayEdits, first: boolean, select?: Selection) =>
+    dispatch({ type: 'change', edits: next, merge: !first, ...(select ? { select } : {}) });
+
+  return (
+    <>
+      {LANES.map(({ kind, name, empty, icon, label }) => (
+        <Lane
+          key={kind}
+          name={name}
+          kind={kind}
+          icon={icon}
+          empty={effectList(edits, kind).length ? undefined : empty}
+          onTrackPointerDown={(event) => {
+            if (event.button !== 0) return;
+            const base = latest.current;
+            const start = scale.timeAt(event.clientX);
+            startDrag(event, scale, {
+              move: (time, first) => {
+                const added = addEffect(base, kind, start, time, scale.duration);
+                if (added) change(added.edits, first, { kind, id: added.id });
+              },
+              end: (moved, time) => {
+                if (moved) return;
+                dispatch({ type: 'select', selection: undefined });
+                player.seek(time);
+              },
+            });
+          }}
+        >
+          {effectList(edits, kind).map((region) => {
+            const text = (label as (region: unknown) => string)(region);
+            return (
+              <RegionBlock
+                key={region.id}
+                id={region.id}
+                kind={kind}
+                from={region.from}
+                to={region.to}
+                label={text}
+                title={`${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`}
+                selected={selection?.kind === kind && selection.id === region.id}
+                seekTo={kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined}
+                onSelect={() => dispatch({ type: 'select', selection: { kind, id: region.id } })}
+                onEdit={(edge, time, first) =>
+                  change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id })
+                }
+                onRemove={() => change(removeEffect(latest.current, kind, region.id), true)}
+              />
+            );
+          })}
+        </Lane>
+      ))}
+    </>
+  );
+}
+
+/** The blur regions shown at a moment (original ms), for the preview's box editor. */
+export function blursAtTime(blurs: readonly ReplayBlur[] | undefined, time: number) {
+  return (blurs ?? []).filter((blur) => time >= blur.from && time < blur.to);
+}

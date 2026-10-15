@@ -1,9 +1,17 @@
-import { FastForwardIcon, PinIcon, PinOffIcon } from 'lucide-react';
+import { FastForwardIcon, PencilIcon, PinIcon, PinOffIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
 import { type CSSProperties, memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { applyEdits, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
+import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
+import { betaEditor } from './config.ts';
+import { EditCaption } from './edit-caption.tsx';
+import type { LoadedEdits } from './edits.ts';
+import { editHref } from './route.ts';
+import { savedAgo } from './editor/state.ts';
+import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
@@ -22,10 +30,17 @@ import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
 
-import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu.tsx';
+import { Topbar, TopbarChip, type TopbarMenuItem } from './Topbar.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu.tsx';
 import { SourceChip, topbarSource } from './viewer/SourceChip.tsx';
-import { IconButton } from '@/components/icon-button.tsx';
+import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
@@ -52,8 +67,14 @@ export function Viewer({
   titleFrom,
   backHref,
   skipLink = true,
+  edited,
+  effects,
 }: {
   bundle: ReplayBundle;
+  /** Zoom, blur and captions from the saved edits, on this bundle's timeline. */
+  effects?: PlaybackEffects;
+  /** The replay has saved edits: who and when, whether the original is on screen, and the switch between them. */
+  edited?: EditedState;
   /** Overrides the recording title in the topbar (the suite workspace shows the run label). */
   title?: string;
   /** Muted text before the title, e.g. "Run 2 of 2" on phones where the runs sidebar is hidden. */
@@ -77,15 +98,31 @@ export function Viewer({
 }) {
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
   const opened = useMemo(() => {
-    const controller = new ReplayController(bundle);
+    const controller = new ReplayController(bundle, effects ? { effects } : {});
     // Permalinks open paused at their moment.
     const target = parsePermalink(location.search, location.hash, bundle.steps.length);
-    const at = target.step === undefined ? target.time : bundle.steps[target.step]?.at;
+    // Back from edit mode (Done): resume at the editor's playhead, on this (edited) timeline, and play.
+    const handoff = peekHandoff(bundle.meta.id);
+    const at = handoff ? handoff.time : target.step === undefined ? target.time : bundle.steps[target.step]?.at;
     if (at !== undefined) controller.seek(at);
     const step = target.step === undefined ? undefined : { index: target.step, time: controller.getTime() };
-    return { controller, step };
+    return { controller, step, resume: Boolean(handoff) };
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
   }, [bundle]);
   const player = opened.controller;
+  // Resuming from the editor: play as soon as the replay is mounted (it mounts after the page transition).
+  useEffect(() => {
+    if (!opened.resume) return;
+    clearHandoff(bundle.meta.id);
+    let frame = 0;
+    const started = performance.now();
+    const tryPlay = () => {
+      if (player.wrapper) player.play();
+      else if (performance.now() - started < 5000) frame = requestAnimationFrame(tryPlay);
+    };
+    frame = requestAnimationFrame(tryPlay);
+    return () => cancelAnimationFrame(frame);
+  }, [bundle.meta.id, opened, player]);
   /** The step `[`/`]` last landed on, while the playhead has not moved since (see nextStepIndex). */
   const stepCursor = useRef(opened.step);
   useEffect(() => {
@@ -255,8 +292,10 @@ export function Viewer({
         setShortcutsOpen(true);
       },
       notify,
+      editsVersion: edited ? editsVersion(editListOf(edited.stored)) : '',
+      editCaptions: Boolean(effects?.captions.length),
     };
-  }, [bundle.steps, captions, errors, notify, player, setCollapsed, setTab, switchCaptions]);
+  }, [bundle.steps, captions, edited, effects, errors, notify, player, setCollapsed, setTab, switchCaptions]);
 
   // Keep (no expiry): a "More" item on every screen; uploads only (committed samples never expire).
   const keep = useKeep(bundle.meta.id);
@@ -299,13 +338,14 @@ export function Viewer({
   const inspectorCollapse = useMemo(() => ({ collapsed, onCollapsedChange: setCollapsed }), [collapsed, setCollapsed]);
   const headerStatus = useMemo(
     () =>
-      status || source ? (
+      status || source || edited ? (
         <>
           {status}
+          {edited ? <EditedChip id={bundle.meta.id} edited={edited} fresh={opened.resume} /> : null}
           {source ? <SourceChip source={source} /> : null}
         </>
       ) : undefined,
-    [source, status],
+    [bundle.meta.id, edited, opened.resume, source, status],
   );
 
   // Phones: toasts rise from just above the transport (over the player's bottom edge), so they never cover the
@@ -435,7 +475,11 @@ export function Viewer({
             <section ref={playerRegion} className="player-region" aria-label="Replay">
               <div className="stage-wrap">
                 <PlayerStage />
-                {captions && bundle.steps.length > 0 ? <StepCaption /> : null}
+                {effects?.captions.length ? (
+                  <EditCaption captions={effects.captions} />
+                ) : captions && bundle.steps.length > 0 ? (
+                  <StepCaption />
+                ) : null}
                 <SkipIndicator />
                 {speedHud ? <SpeedHud key={speedHud.id} speed={speedHud.speed} /> : null}
                 <FullscreenButton region={playerRegion} />
@@ -538,8 +582,9 @@ const ViewerHeader = memo(function ViewerHeader({
       menuItems={menuItems}
       alwaysMenu
       actions={
-        // One quiet icon set: details, copy link, download (theme and More come from the Topbar).
+        // Edit leads (the replay's main action), then one quiet icon set: details, copy link, download (theme and More come from the Topbar).
         <>
+          {betaEditor() ? <EditButton id={bundle.meta.id} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
@@ -582,6 +627,7 @@ function PhoneHeader({
       menuItems={[...menuItems, ...download.items]}
       actions={
         <>
+          {betaEditor() ? <EditButton id={bundle.meta.id} compact /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -850,5 +896,111 @@ function SpeedHud({ speed }: { speed: number }) {
     <div className="speed-hud" aria-hidden="true" data-testid="speed-hud">
       {speed}×
     </div>
+  );
+}
+
+/**
+ * Edit mode's entry: the one tinted control in the bar (accent-soft fill, pencil and "Edit"), so it reads as the
+ * replay's main action without shouting. Phones keep only the icon.
+ */
+function EditButton({ id, compact = false }: { id: string; compact?: boolean }) {
+  return (
+    <Hint label="Trim, cut and add effects" side="bottom" align="end">
+      <a href={editHref(id)} className="edit-entry" data-compact={compact || undefined} data-testid="edit-replay">
+        <PencilIcon aria-hidden="true" />
+        {compact ? <span className="sr-only">Edit</span> : <span>Edit</span>}
+      </a>
+    </Hint>
+  );
+}
+
+/** What the viewer knows about a replay's saved edits. */
+export interface EditedState {
+  stored: StoredReplayEdits;
+  /** The original (unedited) replay is on screen. */
+  original: boolean;
+  setOriginal: (original: boolean) => void;
+}
+
+/**
+ * The quiet "Edited" label beside the title (hairline chip, no colour), and its menu: who saved the edits and when,
+ * a switch to the original recording (and back), and edit mode. Reads "Original" while the original is shown.
+ */
+function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedState; fresh?: boolean }) {
+  const { stored, original, setOriginal } = edited;
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <button
+            type="button"
+            className="edited-chip"
+            data-fresh={fresh || undefined}
+            data-testid="edited-chip"
+            aria-label={original ? 'Showing the original recording' : 'Edited replay'}
+          />
+        }
+      >
+        <TopbarChip>{original ? 'Original' : 'Edited'}</TopbarChip>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-56">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal text-[var(--text-tertiary)]">
+            {stored.updatedBy ? `Edited by ${stored.updatedBy}` : 'Edited'}
+            {stored.updatedAt ? ` · ${savedAgo(stored.updatedAt)}` : ''}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
+        <DropdownMenuItem onClick={() => setOriginal(!original)} data-testid="switch-original">
+          {original ? 'View edited' : 'View original'}
+        </DropdownMenuItem>
+        <DropdownMenuItem render={<a href={editHref(id)} className="menu-link" />} data-testid="open-editor">
+          <PencilIcon aria-hidden="true" />
+          Open editor
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+/** `?original=1` shows the recording as captured; times in `?t=` and `#step-n` belong to one version, so a switch drops them. */
+function readOriginal() {
+  return new URLSearchParams(location.search).get('original') === '1';
+}
+
+/**
+ * The viewer with the replay's saved edits applied (src/shared/edits.ts): trims and cuts played seamlessly, steps and
+ * rows inside them gone, every time on the edited timeline. `edits` undefined (none, or they failed to load) shows the
+ * replay as recorded. Remounts the player when the version on screen changes.
+ */
+export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] & { edits: LoadedEdits | undefined }) {
+  const { bundle } = props;
+  const [original, setOriginalState] = useState(readOriginal);
+  const stored = edits?.stored;
+  const hasEdits = Boolean(stored && !isEmptyEdits(stored));
+  const shown = useMemo(
+    () => (stored && hasEdits && !original ? applyEdits(bundle, editListOf(stored)) : undefined),
+    [bundle, hasEdits, original, stored],
+  );
+  const setOriginal = useCallback((next: boolean) => {
+    const url = new URL(location.href);
+    url.searchParams.delete('t');
+    url.hash = '';
+    if (next) url.searchParams.set('original', '1');
+    else url.searchParams.delete('original');
+    history.replaceState(history.state, '', url);
+    setOriginalState(next);
+  }, []);
+  const edited = useMemo(
+    () => (stored && hasEdits ? { stored, original, setOriginal } : undefined),
+    [hasEdits, original, setOriginal, stored],
+  );
+  return (
+    <Viewer
+      key={`${bundle.meta.id}:${original ? 'original' : (stored?.revision ?? 0)}`}
+      {...props}
+      bundle={shown?.bundle ?? bundle}
+      {...(shown ? { effects: shown.effects } : {})}
+      {...(edited ? { edited } : {})}
+    />
   );
 }

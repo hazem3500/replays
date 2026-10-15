@@ -226,7 +226,7 @@ function onIntent(event: Event) {
 
 function writeHint(target: Route, match: ReturnType<typeof cardFor>) {
   if (target.kind === 'index') return;
-  const id = target.kind === 'replay' ? target.id : (target.replayId ?? target.id);
+  const id = target.kind === 'suite' ? (target.replayId ?? target.id) : target.id;
   const image = match?.poster?.querySelector<HTMLImageElement>(':scope > img');
   const ready = image?.complete && image.naturalWidth > 0;
   // A suite's card shows its landing run's poster: that run's summary shapes the skeleton.

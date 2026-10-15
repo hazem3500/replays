@@ -15,7 +15,8 @@ import { NOOP_SPAN, type SpanHandle, startSpan, traceHeaders, withSpan } from '.
  * or the step caption changed) are captured; clean frames repeat the previous
  * image bytes. The video follows the viewer's options: `task.speed`,
  * `task.skipInactive` (idle gaps fast-forwarded) and `task.captions` (step
- * captions drawn in).
+ * captions drawn in), and the replay's edit list (`task.edits`: trims and cuts,
+ * src/shared/edits.ts).
  */
 
 export interface RenderTools {
@@ -215,7 +216,10 @@ export function createRenderer(options: RendererOptions): RenderRunner {
       );
       const page = await context.newPage();
       await withSpan('render.page_load', { 'replay.id': task.id }, async () => {
-        await page.goto(options.pageUrl(task.id), { waitUntil: 'load', timeout: 60_000 });
+        // An edited replay's page applies the edit list it is given the version of (and fails if it changed since).
+        const pageUrl = new URL(options.pageUrl(task.id));
+        if (task.edits) pageUrl.searchParams.set('edits', task.edits);
+        await page.goto(pageUrl.toString(), { waitUntil: 'load', timeout: 60_000 });
         await page.waitForFunction(() => (window as RenderWindow).__render?.ready === true, undefined, { timeout: 120_000 });
       });
       const setup = await page.evaluate(() => {

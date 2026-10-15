@@ -6,6 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip.tsx';
 
 import { productName } from './config.ts';
 import { ReplayIndex } from './ReplayIndex.tsx';
+import { editsQuery } from './edits.ts';
 import { queryClient, replayQuery, suiteQuery } from './queries.ts';
 import {
   afterPageTransition,
@@ -16,7 +17,8 @@ import {
   setRoutePreparer,
   subscribeRoute,
 } from './navigation.ts';
-import { indexHref, type Route } from './route.ts';
+import { indexHref, replayHref, type Route } from './route.ts';
+import { notify } from './toast.ts';
 import { ThemeContext, useTheme } from './theme.tsx';
 import { LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
 
@@ -25,13 +27,22 @@ import { LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
 let viewerLoaded = false;
 let viewerModule: typeof import('./Viewer.tsx') | undefined;
 let suiteModule: typeof import('./suite/SuiteWorkspace.tsx') | undefined;
+let editorModule: typeof import('./editor/Editor.tsx') | undefined;
 const loadViewer = once(() => import('./Viewer.tsx').then((module) => ((viewerLoaded = true), (viewerModule = module))));
+const loadEditor = once(() => import('./editor/Editor.tsx').then((module) => (editorModule = module)));
 const loadSuiteWorkspace = once(() => import('./suite/SuiteWorkspace.tsx').then((module) => (suiteModule = module)));
 const Viewer = lazy(() =>
   settled(
     () => viewerModule,
     loadViewer,
-    (module) => ({ default: module.Viewer }),
+    (module) => ({ default: module.EditedViewer }),
+  ),
+);
+const Editor = lazy(() =>
+  settled(
+    () => editorModule,
+    loadEditor,
+    (module) => ({ default: module.Editor }),
   ),
 );
 const SuiteWorkspace = lazy(() =>
@@ -86,7 +97,8 @@ function prepareRoute(next: Route) {
       inCache(suiteQuery(next.id).queryKey),
       next.replayId ? inCache(replayQuery(next.replayId).queryKey) : undefined,
     ]);
-  return Promise.all([loadViewer(), inCache(replayQuery(next.id).queryKey)]);
+  if (next.kind === 'edit') return Promise.all([loadEditor(), inCache(replayQuery(next.id).queryKey)]);
+  return Promise.all([loadViewer(), inCache(replayQuery(next.id).queryKey), inCache(editsQuery(next.id).queryKey)]);
 }
 
 installNavigation();
@@ -101,6 +113,7 @@ export function App() {
   if (route.kind === 'index' && !indexShown) setIndexShown(true);
   // Fetch the route's chunk in parallel with its data instead of after it; the index warms the viewer's when idle.
   if (route.kind === 'suite') void loadSuiteWorkspace();
+  else if (route.kind === 'edit') void loadEditor();
   else if (route.kind !== 'index') void loadViewer();
   useEffect(() => {
     if (route.kind !== 'index') return;
@@ -121,6 +134,8 @@ export function App() {
             <SuitePage key={route.id} id={route.id} {...(route.replayId ? { replayId: route.replayId } : {})} />
           ) : route.kind === 'replay' ? (
             <ReplayPage key={route.id} id={route.id} />
+          ) : route.kind === 'edit' ? (
+            <EditPage key={`edit:${route.id}`} id={route.id} />
           ) : null}
           <Toaster />
         </TooltipProvider>
@@ -160,6 +175,12 @@ function SuitePage({ id, replayId }: { id: string; replayId?: string }) {
 function ReplayPage({ id }: { id: string }) {
   // Cached bundles (an in-page revisit) render at once; Query aborts the request if the page goes away.
   const { data: bundle, error: failure } = useQuery(replayQuery(id));
+  // The saved edits come with it (small, revalidated); a failed load shows the replay as recorded.
+  const edits = useQuery(editsQuery(id));
+  const editsSettled = edits.data !== undefined || edits.isError;
+  useEffect(() => {
+    if (edits.isError && bundle) notify('Could not load this replay’s edits', 'info', 'Showing it as recorded.');
+  }, [bundle, edits.isError]);
   const error = failure ? failure.message : '';
   // Loaded code and a cached bundle render the viewer at once, even inside a page transition (it is the
   // transition's new page). Otherwise the skeleton stays until the transition is over (swapping it mid-way
@@ -205,10 +226,63 @@ function ReplayPage({ id }: { id: string }) {
 
   // The skeleton fades in only for slow loads, holds ≥ 300 ms once shown and crossfades (ViewerSkeleton.tsx).
   return (
-    <LoadingSwap ready={Boolean(bundle) && ready} skeleton={<ViewerSkeleton />}>
-      {bundle ? (
+    <LoadingSwap ready={Boolean(bundle) && ready && editsSettled} skeleton={<ViewerSkeleton />}>
+      {bundle && editsSettled ? (
         <Suspense fallback={<ViewerSkeleton />}>
-          <Viewer bundle={bundle} />
+          <Viewer bundle={bundle} edits={edits.data} />
+        </Suspense>
+      ) : null}
+    </LoadingSwap>
+  );
+}
+
+/** Edit mode: the original bundle and the freshest saved edits (always refetched, so a save is never made blind). */
+function EditPage({ id }: { id: string }) {
+  const { data: bundle, error: failure } = useQuery(replayQuery(id));
+  const edits = useQuery({ ...editsQuery(id), staleTime: 0, refetchOnMount: 'always' });
+  const [ready, setReady] = useState(() => Boolean(editorModule));
+  useEffect(() => {
+    if (ready) return;
+    let live = true;
+    void loadEditor()
+      .catch(() => undefined)
+      .then(() => live && setReady(true));
+    return () => {
+      live = false;
+    };
+  }, [ready]);
+  useEffect(() => {
+    document.title = bundle ? `Edit · ${bundle.meta.title} · replays` : 'replays';
+  }, [bundle]);
+  const error = failure?.message ?? (edits.error ? edits.error.message : '');
+  if (error) {
+    return (
+      <main className="state-shell">
+        <a className="state-brand" href={indexHref()}>
+          replays
+        </a>
+        <section className="state-content" role="alert">
+          <span className="state-kicker">Could not open edit mode</span>
+          <h1>{error}</h1>
+          <div className="state-actions">
+            <a className="button" href={replayHref(id)}>
+              Back to the replay
+            </a>
+            <button type="button" className="button secondary" onClick={() => location.reload()}>
+              Try again
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+  // Fresh edits only: a cached copy could be older than someone else's save.
+  const loaded = edits.data && !edits.isFetching ? edits.data : undefined;
+  return (
+    <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={<ViewerSkeleton label="Loading editor" />}>
+      {bundle && loaded ? (
+        <Suspense fallback={<ViewerSkeleton label="Loading editor" />}>
+          <Editor bundle={bundle} loaded={loaded} />
         </Suspense>
       ) : null}
     </LoadingSwap>

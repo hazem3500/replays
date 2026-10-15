@@ -24,7 +24,8 @@ import { indexHref, indexReturnHref, parseRoute, replayInSuiteHref, suiteHref } 
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 import { Topbar, TopbarChip } from '../Topbar.tsx';
-import { Viewer } from '../Viewer.tsx';
+import { EditedViewer } from '../Viewer.tsx';
+import { editsQuery } from '../edits.ts';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
@@ -98,6 +99,9 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const selected = chosen ?? landing;
   const { data: bundle, error: bundleFailure } = useQuery({ ...replayQuery(selected ?? ''), enabled: Boolean(selected) });
   const bundleError = bundleFailure ? bundleFailure.message : '';
+  // Runs show their saved edits too; a failed load shows the run as recorded.
+  const edits = useQuery({ ...editsQuery(selected ?? ''), enabled: Boolean(selected) });
+  const editsSettled = edits.data !== undefined || edits.isError;
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [railPreference, setRailPreference] = useState<boolean | undefined>(undefined);
@@ -130,7 +134,12 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           setSelected(replayId);
           setPending(undefined);
         },
-        replayId ? queryClient.fetchQuery(replayQuery(replayId)) : Promise.resolve(),
+        replayId
+          ? Promise.all([
+              queryClient.fetchQuery(replayQuery(replayId)),
+              queryClient.fetchQuery(editsQuery(replayId)).catch(() => undefined),
+            ])
+          : Promise.resolve(),
         { instant },
       );
     },
@@ -281,10 +290,11 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         />
       ) : null}
       <div className="suite-viewer">
-        {bundle && bundle.meta.id === selected ? (
-          <Viewer
+        {bundle && bundle.meta.id === selected && editsSettled ? (
+          <EditedViewer
             key={bundle.meta.id}
             bundle={bundle}
+            edits={edits.data}
             {...(runTitle ? { title: runTitle } : {})}
             {...(runPrefix ? { prefix: runPrefix } : {})}
             {...(runStatus ? { status: runStatus } : {})}

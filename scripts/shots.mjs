@@ -26,7 +26,7 @@ const free = () =>
   });
 
 /** The real server, with list posters on when a Chrome is available, over a throwaway data directory. */
-async function startServer() {
+async function startServer(extraEnv = {}) {
   const port = await free();
   const dataDir = await mkdtemp(join(tmpdir(), 'replays-shots-'));
   const child = spawn(process.execPath, ['--experimental-strip-types', '--no-warnings', 'src/server/main.ts'], {
@@ -36,6 +36,7 @@ async function startServer() {
       PORT: String(port),
       DATA_DIR: dataDir,
       RENDER_DISABLED: '1',
+      ...extraEnv,
       ...(executablePath ? { CHROMIUM_PATH: executablePath, CHROMIUM_NO_SANDBOX: '1' } : { POSTERS_DISABLED: '1' }),
     },
     stdio: 'ignore',
@@ -83,6 +84,26 @@ try {
   });
   await shoot(browser, { url: `${server.origin}/r/demo-shop?t=6.9`, file: 'viewer-mobile.png', width: 390, height: 844, wait: 3000 });
   await shoot(browser, { url: `${server.origin}/`, file: 'index.png', width: 1440, height: 900, wait: 2500 });
+
+  // The beta editor (REPLAYS_BETA_EDITOR) on its own server: edit mode with a zoom and a speed-up on the effect lanes.
+  const beta = await startServer({ REPLAYS_BETA_EDITOR: 'true' });
+  try {
+    await shoot(browser, {
+      url: `${beta.origin}/r/demo-shop/edit`,
+      file: 'editor.png',
+      width: 1440,
+      height: 900,
+      wait: 2500,
+      ready: async (page) => {
+        await page.getByTestId('timeline').waitFor();
+        await page.locator('body').press('w');
+        await page.keyboard.press('Enter');
+        await page.locator('body').press('z');
+      },
+    });
+  } finally {
+    await beta.stop();
+  }
 
   const site = resolve(root, 'dist/site');
   if (existsSync(site)) {

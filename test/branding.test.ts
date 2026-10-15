@@ -178,11 +178,13 @@ describe('pageBranding and publicConfig', () => {
       contextSchema: schema,
       sourceProviders: ['github', 'url'],
       auth: 'oidc',
+      beta: { editor: false },
     });
     expect(publicConfig({ name: 'Plain' }, { sourceProviders: [], auth: 'none' })).toEqual({
       name: 'Plain',
       sourceProviders: [],
       auth: 'none',
+      beta: { editor: false },
     });
   });
 });

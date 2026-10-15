@@ -28,6 +28,13 @@ export interface ViewerActions {
   /** Step captions on the player (off until turned on; the choice is remembered). */
   captions: boolean;
   switchCaptions: () => void;
+  /**
+   * The saved edit list's version (src/shared/edits.ts editsVersion), '' when unedited: video exports always apply
+   * the edits, and name this version so a running export keeps to it.
+   */
+  editsVersion?: string;
+  /** The saved edits carry their own captions: they replace the step captions (and their switch). */
+  editCaptions?: boolean;
 }
 
 export const ViewerContext = createContext<ViewerActions | null>(null);

@@ -1,8 +1,11 @@
 import { PRODUCT_SLUG } from '../shared/brand.ts';
+import { betaEditor } from './config.ts';
 
 export type Route =
   | { kind: 'index' }
   | { kind: 'replay'; id: string }
+  /** Edit mode for a replay (`/r/<id>/edit`): trims and cuts, saved next to the replay. */
+  | { kind: 'edit'; id: string }
   /** The suite workspace; without `replayId` it picks the first failed run (else the first recording). */
   | { kind: 'suite'; id: string; replayId?: string };
 
@@ -36,7 +39,7 @@ export function isAppPage(pathname: string, base = appBase()) {
 }
 
 /**
- * `<base>/r/<id>` is a replay; `<base>/s/<suite>` and `<base>/s/<suite>/r/<id>` open the suite workspace, and so
+ * `<base>/r/<id>` is a replay and `<base>/r/<id>/edit` its edit mode; `<base>/s/<suite>` and `<base>/s/<suite>/r/<id>` open the suite workspace, and so
  * do older `<base>/r/<id>?suite=<suite>` links. Anything else is the index.
  */
 export function parseRoute(pathname: string, search = '', base = appBase()): Route {
@@ -48,10 +51,12 @@ export function parseRoute(pathname: string, search = '', base = appBase()): Rou
     if (!id || (suite[2] && !replayId)) return { kind: 'index' };
     return { kind: 'suite', id, ...(replayId ? { replayId } : {}) };
   }
-  const match = /^\/r\/([^/]+)\/?$/.exec(rest);
+  const match = /^\/r\/([^/]+)(\/edit)?\/?$/.exec(rest);
   if (!match) return { kind: 'index' };
   const id = decode(match[1]!);
   if (!id) return { kind: 'index' };
+  // `/r/<id>/edit` is the beta editor; without the flag the address just opens the replay.
+  if (match[2] && betaEditor()) return { kind: 'edit', id };
   const suiteId = new URLSearchParams(search).get('suite');
   return suiteId ? { kind: 'suite', id: suiteId, replayId: id } : { kind: 'replay', id };
 }
@@ -85,6 +90,11 @@ export function indexReturnHref() {
 
 export function replayHref(id: string) {
   return `${appBase()}/r/${encodeURIComponent(id)}`;
+}
+
+/** Edit mode for a replay. */
+export function editHref(id: string) {
+  return `${replayHref(id)}/edit`;
 }
 
 export function suiteHref(id: string) {

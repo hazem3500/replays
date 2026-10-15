@@ -39,6 +39,7 @@ export function Topbar({
   menuItems = [],
   alwaysMenu = false,
   backHref,
+  backLabel = 'All replays',
   compact = false,
   root,
   titleMenu,
@@ -61,6 +62,8 @@ export function Topbar({
   menu?: ReactNode;
   /** Where the back arrow goes; defaults to the index with its last filters. */
   backHref?: string;
+  /** The back arrow's name (tooltip and label); defaults to "All replays". */
+  backLabel?: string;
   /** Phones: 40 px targets. */
   compact?: boolean;
   /** The index only: its own bar title, in place of the default product-name h1 (the index renders its h1 below). */
@@ -81,11 +84,11 @@ export function Topbar({
         </h1>
       ) : (
         <>
-          <Hint label="All replays" side="bottom" align="start">
+          <Hint label={backLabel} side="bottom" align="start">
             <a
               href={backHref ?? indexReturnHref()}
               className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'topbar-back [&_svg:not([class*=size-])]:size-4')}
-              aria-label="All replays"
+              aria-label={backLabel}
             >
               <AnimatedIcon name="chevron-left" />
             </a>

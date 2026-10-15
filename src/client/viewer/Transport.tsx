@@ -177,13 +177,13 @@ export function PlayerStage() {
  * the scrubber its own row above the controls.
  */
 export function Transport() {
-  const { steps, errors } = useViewer();
+  const { steps, errors, editCaptions } = useViewer();
   return (
     <div className="transport" role="group" aria-label="Playback controls">
       <PlayButton />
       <TimeReadout />
       <Scrubber steps={steps} errors={errors} />
-      {steps.length > 0 ? <CaptionsSwitch /> : null}
+      {steps.length > 0 && !editCaptions ? <CaptionsSwitch /> : null}
       <PlaybackOptions />
     </div>
   );

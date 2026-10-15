@@ -10,14 +10,25 @@ export interface RenderVariant {
   skipInactive: boolean;
   /** The viewer's step captions drawn in. */
   captions: boolean;
+  /**
+   * The replay's edit list version (src/shared/edits.ts editsVersion) the export applies; '' or absent: as recorded.
+   * Exports always apply the stored edits; the client names the version so a running export keeps to it.
+   */
+  edits?: string;
+  /** Names the file `-edited` (the server knows from `edits`; the client says so for its download name). */
+  edited?: boolean;
 }
 
 export const DEFAULT_RENDER_VARIANT: RenderVariant = { speed: 1, skipInactive: true, captions: false };
 
-/** `<id>[-<speed>x][-full][-captions].mp4`, e.g. `tracker-2x-full-captions.mp4` (`-full`: idle time not skipped); the id is a safe slug. */
+/**
+ * `<id>[-edited][-<speed>x][-full][-captions].mp4`, e.g. `tracker-edited-2x-full-captions.mp4` (`-full`: idle time not
+ * skipped); the id is a safe slug.
+ */
 export function renderFilename(id: string, variant: Partial<RenderVariant> = {}) {
   const speed = variant.speed ?? 1;
-  return `${id}${speed === 1 ? '' : `-${speed}x`}${variant.skipInactive === false ? '-full' : ''}${variant.captions ? '-captions' : ''}.mp4`;
+  const edited = variant.edited ?? Boolean(variant.edits);
+  return `${id}${edited ? '-edited' : ''}${speed === 1 ? '' : `-${speed}x`}${variant.skipInactive === false ? '-full' : ''}${variant.captions ? '-captions' : ''}.mp4`;
 }
 
 /** The API query selecting a variant (`?speed=2&skipInactive=0&captions=1`), defaults left out; '' for the default. */
@@ -26,6 +37,7 @@ export function renderQuery(variant: Partial<RenderVariant> = {}) {
   if ((variant.speed ?? 1) !== 1) params.set('speed', String(variant.speed));
   if (variant.skipInactive === false) params.set('skipInactive', '0');
   if (variant.captions) params.set('captions', '1');
+  if (variant.edits) params.set('edits', variant.edits);
   const query = params.toString();
   return query ? `?${query}` : '';
 }

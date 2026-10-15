@@ -74,25 +74,61 @@ export function initialInspectorHeight() {
   return Number.isFinite(saved) && saved > 0 ? clampInspectorHeight(saved) : DEFAULT_INSPECTOR_HEIGHT;
 }
 
+/** What a bottom-panel splitter resizes: the diagnostics panel by default, or another panel (the editor's dock). */
+export interface PanelSize {
+  /** localStorage key the committed height is kept under. */
+  storageKey: string;
+  /** CSS custom property on `shell` that sizes the panel's grid row while dragging. */
+  variable: string;
+  min: number;
+  max: () => number;
+  label: string;
+}
+
+const INSPECTOR_SIZE: PanelSize = {
+  storageKey: INSPECTOR_HEIGHT_KEY,
+  variable: '--inspector-height',
+  min: MIN_INSPECTOR_HEIGHT,
+  max: maxInspectorHeight,
+  label: 'Resize diagnostics panel',
+};
+
+/** A height clamped to `size`'s limits, whole px. */
+export function clampPanelHeight(height: number, size: PanelSize) {
+  return Math.round(Math.min(Math.max(height, size.min), Math.max(size.min, size.max())));
+}
+
+/** The saved height for `size`, else `fallback`, clamped. */
+export function initialPanelHeight(size: PanelSize, fallback: number) {
+  const saved = Number(readStorage(size.storageKey));
+  return clampPanelHeight(Number.isFinite(saved) && saved > 0 ? saved : fallback, size);
+}
+
+/**
+ * The split-view grabber on a bottom panel's top edge (the diagnostics panel's, and the editor's timeline dock):
+ * drag it, or select it and use ↑/↓ (Home/End: smallest/largest). The height is kept per panel (`size`).
+ */
 export function InspectorResizer({
   shell,
   height,
   onCommit,
+  size = INSPECTOR_SIZE,
 }: {
   shell: RefObject<HTMLElement | null>;
   height: number;
   onCommit: (height: number) => void;
+  size?: PanelSize;
 }) {
   const drag = useRef<{ startY: number; startHeight: number; current: number } | undefined>(undefined);
   const commit = (next: number) => {
-    const value = clampInspectorHeight(next);
-    writeStorage(INSPECTOR_HEIGHT_KEY, String(value));
+    const value = clampPanelHeight(next, size);
+    writeStorage(size.storageKey, String(value));
     onCommit(value);
   };
   const onPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
     if (!drag.current) return;
-    drag.current.current = clampInspectorHeight(drag.current.startHeight + drag.current.startY - event.clientY);
-    shell.current?.style.setProperty('--inspector-height', `${drag.current.current}px`);
+    drag.current.current = clampPanelHeight(drag.current.startHeight + drag.current.startY - event.clientY, size);
+    shell.current?.style.setProperty(size.variable, `${drag.current.current}px`);
   };
   const onPointerEnd = () => {
     if (!drag.current) return;
@@ -105,9 +141,9 @@ export function InspectorResizer({
       className="inspector-resizer"
       role="separator"
       aria-orientation="horizontal"
-      aria-label="Resize diagnostics panel"
-      aria-valuemin={MIN_INSPECTOR_HEIGHT}
-      aria-valuemax={maxInspectorHeight()}
+      aria-label={size.label}
+      aria-valuemin={size.min}
+      aria-valuemax={size.max()}
       aria-valuenow={height}
       tabIndex={0}
       onPointerDown={(event) => {
@@ -119,8 +155,8 @@ export function InspectorResizer({
       onPointerCancel={onPointerEnd}
       onKeyDown={(event) => {
         const delta = event.key === 'ArrowUp' ? 24 : event.key === 'ArrowDown' ? -24 : 0;
-        if (event.key === 'Home') commit(MIN_INSPECTOR_HEIGHT);
-        else if (event.key === 'End') commit(maxInspectorHeight());
+        if (event.key === 'Home') commit(size.min);
+        else if (event.key === 'End') commit(size.max());
         else if (delta) commit(height + delta);
         else return;
         event.preventDefault();

@@ -135,6 +135,7 @@ const handle = createApp({
   auth,
   branding,
   sources: settings.sources,
+  beta: settings.beta,
   ...(settings.contextSchema ? { contextSchema: settings.contextSchema } : {}),
   ...(process.env.PUBLIC_ORIGIN ? { publicOrigin: process.env.PUBLIC_ORIGIN.replace(/\/+$/, '') } : {}),
   store,

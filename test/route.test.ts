@@ -1,5 +1,6 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { setBetaEditorForTests } from '../src/client/config.ts';
 import { formatRelative } from '../src/client/format.ts';
 import {
   buildIndexEntries,
@@ -302,5 +303,17 @@ describe('suite run navigation', () => {
     expect(neighbourReplayId(detailed, 'a', 1, true)).toBe('c');
     expect(neighbourReplayId(detailed, 'c', -1, true)).toBe('a');
     expect(neighbourReplayId(detailed, 'a', 1, false)).toBe('gone');
+  });
+});
+
+describe('the edit route (beta editor)', () => {
+  afterEach(() => setBetaEditorForTests(undefined));
+
+  it('is the editor only when the flag is on; otherwise the address opens the replay', () => {
+    setBetaEditorForTests(true);
+    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'edit', id: 'demo-shop' });
+    setBetaEditorForTests(false);
+    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
+    expect(parseRoute('/r/demo-shop', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
   });
 });

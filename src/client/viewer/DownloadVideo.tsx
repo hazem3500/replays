@@ -51,10 +51,16 @@ function useStoredVideo(meta: ReplayMeta) {
 
 /** The render job and stored-MP4 state behind both download forms (the icon button and the phone's "More" items). */
 function useVideoDownload(meta: ReplayMeta) {
-  const { notify, captions: captionsOn, steps } = useViewer();
+  const { notify, captions: captionsOn, steps, editsVersion, editCaptions } = useViewer();
   const { speed, skipInactive } = usePlayerState();
-  // The export follows the player: its speed, skip inactive, and step captions (when there are steps to caption).
-  const variant = { speed, skipInactive, captions: captionsOn && steps.length > 0 };
+  // The export follows the player: its speed, skip inactive, and step captions (when there are steps to caption); it
+  // always applies the replay's saved edits (also while the original is on screen).
+  const variant = {
+    speed,
+    skipInactive,
+    captions: captionsOn && steps.length > 0 && !editCaptions,
+    ...(editsVersion ? { edits: editsVersion } : {}),
+  };
   const stored = useStoredVideo(meta);
   const render = useVideoRender(apiUrl(`replays/${encodeURIComponent(meta.id)}/render`), meta.id, notify, variant);
   return { ...render, stored, variant, active: isActive(render.state), canRender: render.availability === 'available' };

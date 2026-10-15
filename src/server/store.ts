@@ -9,6 +9,15 @@ import {
   SUMMARY_VERSION,
   summarizeReplay,
 } from '../shared/replay.ts';
+import {
+  assertReplayEdits,
+  assertStoredReplayEdits,
+  bundleSpan,
+  EMPTY_EDITS,
+  normalizeEdits,
+  sameEdits,
+  type StoredReplayEdits,
+} from '../shared/edits.ts';
 import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
 import {
   assertReviewRunRegistration,
@@ -95,6 +104,7 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  *   <id>/replay.json               the bundle (immutable)
  *   <id>/meta.json                 its list summary (rebuilt when missing, stale or an older SUMMARY_VERSION)
  *   <id>/keep.json                 `{ by, at }` while someone keeps it (no expiry)
+ *   <id>/edits.json                its edit list (src/shared/edits.ts): trims and cuts applied on playback and export
  *   <id>/poster.v2.jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
@@ -109,6 +119,8 @@ export class ReplayStore {
   /** Parsed summaries keyed by id, valid while the sidecar's version (generation / mtime) is unchanged. */
   private readonly summaryCache = new Map<string, { version: string; summary: ReplaySummary | undefined }>();
   private readonly keepCache = new Map<string, { version: string; keep: KeepRecord | undefined }>();
+  /** Replay spans (ms) keyed by id, valid while the bundle's version is unchanged: an edit save checks its times against it. */
+  private readonly spanCache = new Map<string, { version: string; span: number }>();
   private readonly suiteWrites = new Map<string, Promise<void>>();
   private lastPrune = 0;
   private pruning: Promise<string[]> | undefined;
@@ -149,6 +161,10 @@ export class ReplayStore {
 
   keepKey(id: string) {
     return `${assertReplayId(id)}/keep.json`;
+  }
+
+  editsKey(id: string) {
+    return `${assertReplayId(id)}/edits.json`;
   }
 
   suiteKey(id: string) {
@@ -653,6 +669,84 @@ export class ReplayStore {
       .sort((a, b) => b.capturedAt.localeCompare(a.capturedAt));
   }
 
+  // Edits (non-destructive: the bundle never changes)
+
+  /**
+   * The replay's span on the player's clock (the rrweb track's length), which every edit time is measured on;
+   * undefined when there is no such replay. Cached per bundle version: a save does not reparse the bundle.
+   */
+  async replaySpan(id: string): Promise<number | undefined> {
+    const located = await this.locate(id);
+    if (!located) return undefined;
+    const cacheKey = `${located.uploaded ? 'upload' : 'sample'}:${id}`;
+    const cached = this.spanCache.get(cacheKey);
+    if (cached?.version === located.info.version) return cached.span;
+    const bundle = await this.load(id);
+    if (!bundle) return undefined;
+    const span = bundleSpan(bundle);
+    this.spanCache.set(cacheKey, { version: located.info.version, span });
+    return span;
+  }
+
+  /**
+   * The stored edit list and its storage version (undefined when none was ever saved). A sidecar that does not
+   * validate reads as no edits, with its version, so the next save can replace it.
+   */
+  async readEdits(id: string): Promise<{ edits: StoredReplayEdits; version: string | undefined }> {
+    const key = this.editsKey(id);
+    const info = await this.storage.stat(key);
+    const none = { ...EMPTY_EDITS, revision: 0 };
+    if (!info) return { edits: none, version: undefined };
+    const parsed = await readJson(this.storage, key).catch(() => undefined);
+    try {
+      assertStoredReplayEdits(parsed);
+      return { edits: parsed, version: info.version };
+    } catch (error) {
+      console.error(`edits ${id}: unreadable sidecar ignored:`, error instanceof Error ? error.message : error);
+      return { edits: none, version: info.version };
+    }
+  }
+
+  /**
+   * Saves an edit list for `id`, recording who and when. Writes are generation-checked: `ifVersion` is the storage
+   * version the editor loaded (null: it saw none), and a save over anything else is a 409 that carries the current
+   * list. Saving the list already stored is a no-op (an idempotent retry), whatever `ifVersion` says.
+   */
+  async saveEdits(
+    id: string,
+    input: unknown,
+    options: { by: string; ifVersion: string | null; now?: Date },
+  ): Promise<{ edits: StoredReplayEdits; version: string | undefined; changed: boolean }> {
+    const span = await this.replaySpan(id);
+    if (span === undefined) throw httpError(404, 'replay not found');
+    assertReplayEdits(input, span);
+    const next = normalizeEdits(input);
+    const current = await this.readEdits(id);
+    if (sameEdits(current.edits, next)) return { ...current, changed: false };
+    const conflict = () =>
+      Object.assign(httpError(409, 'the edits changed since they were loaded'), { current: current.edits, version: current.version });
+    if ((current.version ?? null) !== options.ifVersion) throw conflict();
+    const stored: StoredReplayEdits = {
+      ...next,
+      revision: current.edits.revision + 1,
+      updatedBy: options.by,
+      updatedAt: (options.now ?? new Date()).toISOString(),
+    };
+    try {
+      const info = await this.storage.write(this.editsKey(id), `${JSON.stringify(stored)}\n`, {
+        contentType: JSON_TYPE,
+        ...(current.version === undefined ? { createOnly: true } : { ifVersion: current.version }),
+      });
+      return { edits: stored, version: info.version, changed: true };
+    } catch (error) {
+      if (!(error instanceof PreconditionFailedError || error instanceof ObjectExistsError)) throw error;
+      // Another replica saved first: its list wins unless it is this very list (a retry that raced itself).
+      const latest = await this.readEdits(id);
+      if (sameEdits(latest.edits, next)) return { ...latest, changed: false };
+      throw Object.assign(httpError(409, 'the edits changed since they were loaded'), { current: latest.edits, version: latest.version });
+    }
+  }
+
   // Keep (no expiry) and retention
 
   /**
@@ -766,6 +860,8 @@ export class ReplayStore {
           const name = (file: string) => group.find((object) => object.key === `${id}/${file}`);
           if (name('keep.json') || keptBySuite.has(id)) continue;
           const replay = name('replay.json');
+          // A committed sample's sidecars (its edit list) live as long as the sample: forever.
+          if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
           let expires: number | undefined;
           if (replay) {
             expires = expiryMs(this.retention, { uploadedMs: replay.createdMs });

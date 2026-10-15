@@ -8,9 +8,16 @@
  * follows the viewer's options: `skipInactive` fast-forwards idle gaps like
  * the viewer, `captions` draws the step captions (step-caption.ts/.css, scaled
  * up for video) into every frame; posters and previews never ask for them.
+ * A video export of an edited replay loads with `?edits=<version>`: the page fetches the stored edit list,
+ * checks it is still that version, and plays the edited bundle (src/shared/edits.ts applyEdits), so trims and
+ * cuts land in the video exactly as the viewer plays them. Its effects are drawn into every frame through the same
+ * EffectsLayer as the viewer (zoom, and blur boxes that hide sensitive content), and its captions replace the step
+ * captions. Posters and previews show the replay as recorded.
  */
 import './render.css';
 
+import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdits } from '../../shared/edits.ts';
+import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
@@ -74,18 +81,32 @@ async function assetsSettled(document: Document | null | undefined) {
 
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
+/** The stored edit list, when it is still the `version` this render was asked for. */
+async function loadEdits(id: string, version: string): Promise<ReplayEdits> {
+  const response = await fetch(`/internal/render/${encodeURIComponent(id)}/edits.json`);
+  if (!response.ok) throw new Error(`edits ${response.status}`);
+  const edits = editListOf((await response.json()) as ReplayEdits);
+  assertReplayEdits(edits);
+  if (editsVersion(edits) !== version) throw new Error('the edits changed since this export started; export again');
+  return edits;
+}
+
 async function start() {
   const id = replayId();
-  const response = await fetch(`/internal/render/${encodeURIComponent(id)}/bundle.json`);
+  const editsParam = new URLSearchParams(location.search).get('edits');
+  const [response, edits] = await Promise.all([
+    fetch(`/internal/render/${encodeURIComponent(id)}/bundle.json`),
+    editsParam ? loadEdits(id, editsParam) : undefined,
+  ]);
   if (!response.ok) throw new Error(`bundle ${response.status}`);
-  const bundle = (await response.json()) as ReplayBundle;
+  const { bundle, effects } = applyEdits((await response.json()) as ReplayBundle, edits);
   const host = document.querySelector<HTMLElement>('#render-host');
   if (!host) throw new Error('no render host');
   const { width, height } = bundle.meta.viewport;
   host.style.width = `${width}px`;
   host.style.height = `${height}px`;
 
-  const controller = new ReplayController(bundle);
+  const controller = new ReplayController(bundle, { effects });
   controller.mount(host);
   const first = bundle.events[0]?.timestamp ?? 0;
   const eventTimes = Float64Array.from(bundle.events, (event) => event.timestamp - first);
@@ -94,6 +115,16 @@ async function start() {
   const track = buildCursorTrack(cursorInput(bundle.events));
   const cursorKey = (time: number) => poseKey(cursorPose(track, first + time));
   let captions = false;
+  // The edit list's own captions, when it has any, are always drawn (they are part of the edit).
+  const editCaptions = effects.captions.length > 0;
+  const captionFrame = (time: number) =>
+    editCaptions
+      ? editCaptionAt(effects.captions, time, map.outputAt)
+      : captions
+        ? captionAt(bundle.steps, time, controller.duration, map.outputAt)
+        : undefined;
+  const effectsAt = (time: number) =>
+    editCaptions || effects.zooms.length || effects.blurs.length ? effectsKey(effects, { width, height }, time) : '';
   let map: PlaybackMap = exportMap({ duration: controller.duration, speed: 1 });
   let times: number[] = [0];
   let shownAt = -1;
@@ -104,7 +135,7 @@ async function start() {
   // animation is paused at this frame's moment, so every frame is deterministic.
   let caption: { root: HTMLElement; text: HTMLElement; index: number } | undefined;
   const drawCaption = async (time: number) => {
-    const frame = captions ? captionAt(bundle.steps, time, controller.duration, map.outputAt) : undefined;
+    const frame = captionFrame(time);
     if (!frame) {
       caption?.root.remove();
       caption = undefined;
@@ -117,13 +148,16 @@ async function start() {
       root.setAttribute('aria-hidden', 'true');
       const text = document.createElement('span');
       text.className = 'step-caption-text';
-      const number = document.createElement('span');
-      number.className = 'step-caption-number';
-      number.textContent = String(frame.index + 1);
       const label = document.createElement('span');
       label.className = 'step-caption-label';
       label.textContent = frame.label;
-      text.append(number, label);
+      if (editCaptions) text.append(label);
+      else {
+        const number = document.createElement('span');
+        number.className = 'step-caption-number';
+        number.textContent = String(frame.index + 1);
+        text.append(number, label);
+      }
       root.append(text);
       host.append(root);
       caption = { root, text, index: frame.index };
@@ -145,9 +179,9 @@ async function start() {
       const dirty = dirtyAt(
         times,
         eventTimes,
-        captions
-          ? (time) => `${cursorKey(time)}|${captionKey(captionAt(bundle.steps, time, controller.duration, map.outputAt))}`
-          : cursorKey,
+        captions || editCaptions
+          ? (time) => `${cursorKey(time)}|${captionKey(captionFrame(time))}|${effectsAt(time)}`
+          : (time) => `${cursorKey(time)}|${effectsAt(time)}`,
       );
       return { count: times.length, dirty };
     },
