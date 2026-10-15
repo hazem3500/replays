@@ -7,6 +7,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Comments.** Comment on a whole replay or pin a comment to a moment: markers on the seek bar with a hover card, a
+  Comments tab that follows the playhead, threads, resolve, author-only edit and delete, emoji reactions, comment
+  permalinks (`#comment-<id>` with `?t=`) and the `M` shortcut. Times are stored on the source timeline and mapped
+  through saved edits when the beta editor is on; comments in trimmed or cut stretches are listed as "In removed
+  section". Authors come from the auth adapter (new optional `Identity.avatarUrl`; OIDC `picture`), anonymous with
+  `AUTH_MODE=none`. Stored as `<id>/comments.json` on the filesystem or S3 driver (deleted with the replay), rate
+  limited and length limited. On by default; `REPLAYS_COMMENTS=false` removes the UI and the API answers 404.
 - **Replay editor (beta, off by default).** Non-destructive edit mode: trim, cuts, "Remove waits", speed-ups, zoom
   regions, blur boxes and captions, stored as an edit list next to the replay and honoured by playback and video exports.
   Enable with `REPLAYS_BETA_EDITOR=true` or `beta.editor` in the config file; with the flag off there is no editor UI,

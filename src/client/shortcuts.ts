@@ -17,6 +17,7 @@ export type ShortcutAction =
   | 'fullscreen'
   | 'switch-inspector'
   | 'switch-captions'
+  | 'add-comment'
   | 'next-run'
   | 'previous-run'
   | 'shortcuts';
@@ -89,6 +90,10 @@ export function shortcutFor(event: KeyLike, target?: TargetLike | null): Shortcu
     case 'n':
     case 'N':
       return 'network-tab';
+    // C and Shift C are taken (Console, step captions), so a comment at the playhead is M ("mark").
+    case 'm':
+    case 'M':
+      return 'add-comment';
     case 'p':
     case 'P':
       return 'performance-tab';
@@ -109,7 +114,14 @@ export function shortcutFor(event: KeyLike, target?: TargetLike | null): Shortcu
   }
 }
 
-export const SHORTCUT_GROUPS: Array<{ title: string; items: Array<{ keys: string[]; label: string }> }> = [
+/** `feature`: shown only where that feature is on (the help sheet filters by it). */
+export interface ShortcutItem {
+  keys: string[];
+  label: string;
+  feature?: 'comments';
+}
+
+export const SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutItem[] }> = [
   {
     title: 'Playback',
     items: [
@@ -126,6 +138,7 @@ export const SHORTCUT_GROUPS: Array<{ title: string; items: Array<{ keys: string
     items: [
       { keys: ['['], label: 'Previous step' },
       { keys: [']'], label: 'Next step' },
+      { keys: ['M'], label: 'Comment at the current time', feature: 'comments' },
       { keys: ['E'], label: 'Next error' },
       { keys: ['Shift E'], label: 'Previous error' },
       { keys: ['J'], label: 'Next run (review suite)' },
@@ -167,6 +180,7 @@ const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   fullscreen: 'F',
   'switch-inspector': '\\',
   'switch-captions': 'Shift C',
+  'add-comment': 'M',
   'next-run': 'J',
   'previous-run': 'Shift J',
   shortcuts: '?',

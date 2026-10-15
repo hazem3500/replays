@@ -159,11 +159,12 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
 | `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
+| `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
 The config file takes `name`, `logoUrl`, `theme`, `basePath`, `retentionDays`, `contextSchemaFile`, `githubHost`,
-`gitlabHost` and `sourceProviders`:
+`gitlabHost`, `sourceProviders`, `beta` and `comments`:
 
 ```json
 {
@@ -268,6 +269,39 @@ What the sanitizer cannot know: text that is *visible on the page* (names, order
 shown. Keep the server behind authentication, keep retention short, and do not record real users' production sessions
 without a legal basis. Report privacy bugs through [SECURITY.md](SECURITY.md).
 
+## Comments
+
+Anyone who can open a replay can comment on it, Loom style. A comment is about the **whole replay** or **pinned to a
+moment**; pinned ones are markers (avatar or initials) on the seek bar, with a hover card; a click seeks there. The
+**Comments** tab lists every thread in time order, highlights the one at the playhead and follows it while the replay
+plays. Threads take replies and can be **resolved** and reopened by anyone; **edit and delete are for the author only**
+(deleting a thread deletes its replies). Emoji **reactions** (👍 🎉 👀 🤔 🐛) can be pinned to a moment too.
+
+- **Shortcut.** `M` pauses and starts a comment at the current time (`C` is Console and `Shift C` the step captions, so
+  it was taken); `Ctrl`/`⌘` + `Enter` posts. It is in the `?` sheet. Shortcuts pause while you type.
+- **Permalinks.** *Copy link* on a comment gives `…/r/<id>?t=5.0#comment-<id>`: it opens the Comments tab on that comment
+  and seeks to it. `?t=` is the fallback; the comment decides.
+- **Anchoring.** Comment times are stored on the **source** timeline (ms from the first event of the recorded replay), the
+  same clock saved edits use, so editing never moves a comment. With the beta editor's edits applied
+  (`REPLAYS_BETA_EDITOR=true`) markers are mapped source → edited time (trims shift them, cuts close up, speed-ups
+  compress), and a comment made while watching the edited version is mapped back. A comment inside a trimmed or cut stretch
+  stays in the list, marked **In removed section** with a *View in original* link (`?original=1`); it has no marker and
+  does not seek. The original recording shows every marker.
+- **Who.** Authors come from the auth adapter (`id` for ownership, `name`, optional `avatarUrl`; the OIDC adapter reads the
+  `picture` claim, plugins may return `avatarUrl`). Other viewers only get the display name and a `mine` flag, never the
+  id. With `AUTH_MODE=none` there is no identity to speak of: comments are posted as **Anonymous**, the panel says so, and
+  anyone with access can edit or delete anonymous comments.
+- **Limits.** 2000 characters per comment, 500 comments per replay, 100 replies per thread; control and bidi-override
+  characters are stripped and URLs in the text get the upload redaction. Creating and editing are limited to 20 per minute
+  per person (`429` with `Retry-After`). Comments live in `<id>/comments.json` on the storage driver (filesystem or S3), so
+  retention deletes them with the replay and **Keep** keeps them.
+- **Flag.** On by default. `REPLAYS_COMMENTS=false` (or `{ "comments": { "enabled": false } }`) removes the tab, markers
+  and shortcut, never requests comments, and answers the API with `404`; stored comments stay until retention.
+
+![The seek bar with comment markers and a hover preview](docs/screenshots/comments-seekbar.png)
+![The Comments tab: a thread with replies, a resolved one](docs/screenshots/comments-panel.png)
+![Comments on a phone (390×844)](docs/screenshots/comments-mobile.png)
+
 ## Replay editor (beta, off by default)
 
 Edit mode lets you tidy a recording without touching it: trim the start and end, cut ranges, **Remove waits** (cuts the
@@ -306,6 +340,7 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 | `GET /api/replays`, `GET /api/replays/<id>` | List summaries (`?q=&host=&errors=1&source=&tag=`) / the bundle |
 | `GET /api/suites`, `GET /api/suites/<id>`, `PUT /api/suites/<id>[/runs/<run>]` | Suites |
 | `PUT\|DELETE /api/replays/<id>/keep` | Keep / release |
+| `GET\|POST /api/replays/<id>/comments`, `PATCH\|DELETE …/comments/<comment>` | Comments (`{ body, at?, parentId? }`, `{ emoji, at }`, `{ body }` / `{ resolved }`); `at` is source ms |
 | `GET /api/me`, `GET /api/config` | Identity; branding and context schema |
 
 ## Development

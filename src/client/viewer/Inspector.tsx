@@ -8,6 +8,7 @@ import {
   CircleXIcon,
   GaugeIcon,
   GlobeIcon,
+  MessageSquareIcon,
   ListOrderedIcon,
   type LucideIcon,
   SquareTerminalIcon,
@@ -46,6 +47,8 @@ import { noteTabSwitch, queueReveal, staggerIn } from './stagger.ts';
 import { StepList } from './StepRail.tsx';
 import { activeStepIndex } from './Transport.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
+import { CommentsPanel } from '../comments/CommentsPanel.tsx';
+import { useComments } from '../comments/CommentsProvider.tsx';
 import { useContextSchema } from './context-schema.ts';
 import { Count, countLabel } from '@/components/count.tsx';
 import { HoverGlide } from '@/components/sliding-highlight.tsx';
@@ -174,6 +177,7 @@ const TAB_SHORTCUTS: Partial<Record<InspectorTab, ShortcutAction>> = {
   console: 'console-tab',
   network: 'network-tab',
   performance: 'performance-tab',
+  comments: 'add-comment',
 };
 
 const TABS: InspectorTab[] = ['console', 'network', 'performance', 'context'];
@@ -200,6 +204,9 @@ export const Inspector = memo(function Inspector({
 }) {
   const player = usePlayer();
   const { setTab, setExpandedRequest } = useViewer();
+  // Comments are a tab of their own when they are on (the provider is only mounted then).
+  const comments = useComments();
+  const tabs = comments ? [...TABS, 'comments' as const] : TABS;
   // Rows fill once the page transition has landed (navigation.ts); the tab row is there from the start.
   const filled = useFilledAfterTransition();
   const contextSchema = useContextSchema();
@@ -290,7 +297,7 @@ export const Inspector = memo(function Inspector({
               </TabsTrigger>
             </Hint>
           ) : null}
-          {TABS.map((value) => (
+          {tabs.map((value) => (
             <Hint
               key={value}
               // Console and Network also say how to jump to the next error.
@@ -315,7 +322,9 @@ export const Inspector = memo(function Inspector({
                       ? countLabel(networkCount, networkTrack.entries.length, 'request')
                       : value === 'performance'
                         ? countLabel(performanceCount, performanceTrack.entries.length, 'signal')
-                        : ''
+                        : value === 'comments' && comments?.count
+                          ? ` (${comments.count})`
+                          : ''
                 }`}
               >
                 <TabLabel icon={TAB_ICONS[value]} label={labels[value]} iconOnly={iconTabs} />
@@ -325,6 +334,10 @@ export const Inspector = memo(function Inspector({
                   <Count value={networkCount} total={networkTrack.entries.length} hideZero />
                 ) : value === 'performance' ? (
                   <Count value={performanceCount} total={performanceTrack.entries.length} hideZero />
+                ) : value === 'comments' && comments ? (
+                  comments.count ? (
+                    <span className="count">{comments.count}</span>
+                  ) : null
                 ) : null}
               </TabsTrigger>
             </Hint>
@@ -394,6 +407,11 @@ export const Inspector = memo(function Inspector({
       <TabsContent value="context" className="inspector-panel">
         {filled ? <ContextPanel bundle={bundle} schema={contextSchema} /> : null}
       </TabsContent>
+      {comments ? (
+        <TabsContent value="comments" className="inspector-panel">
+          <CommentsPanel />
+        </TabsContent>
+      ) : null}
     </Tabs>
   );
 });
@@ -407,6 +425,7 @@ const TAB_ICONS: Record<InspectorTab, LucideIcon> = {
   network: GlobeIcon,
   performance: GaugeIcon,
   context: BadgeInfoIcon,
+  comments: MessageSquareIcon,
 };
 
 function TabLabel({ icon: Icon, label, iconOnly }: { icon: LucideIcon; label: string; iconOnly: boolean }) {
@@ -438,6 +457,7 @@ const TAB_LABELS: Record<InspectorTab, string> = {
   network: 'Network',
   performance: 'Performance',
   context: 'Context',
+  comments: 'Comments',
 };
 
 const MOBILE_TAB_LABELS: Record<InspectorTab, string> = { ...TAB_LABELS, performance: 'Perf' };

@@ -7,6 +7,7 @@ import { type BrandingConfig, validateBranding } from './branding.ts';
 import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { normalizeBasePath } from './base-path.ts';
 import { type BetaFlags, betaFromEnv } from './beta.ts';
+import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -23,7 +24,8 @@ import { type BetaFlags, betaFromEnv } from './beta.ts';
  *     "githubHost": "github.example.com",          GITHUB_HOST
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
  *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
- *     "beta": { "editor": false }                  REPLAYS_BETA_EDITOR (off by default; src/server/beta.ts)
+ *     "beta": { "editor": false },                 REPLAYS_BETA_EDITOR (off by default; src/server/beta.ts)
+ *     "comments": { "enabled": true }              REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
  *   }
  */
 export interface FileConfig {
@@ -37,6 +39,7 @@ export interface FileConfig {
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
   beta?: { editor?: boolean };
+  comments?: { enabled?: boolean };
 }
 
 export interface AppSettings {
@@ -46,6 +49,7 @@ export interface AppSettings {
   sources: SourceProviders;
   contextSchema?: ContextSchema;
   beta: BetaFlags;
+  comments: CommentsSettings;
 }
 
 const KEYS = new Set([
@@ -59,6 +63,7 @@ const KEYS = new Set([
   'gitlabHost',
   'sourceProviders',
   'beta',
+  'comments',
 ]);
 
 export async function readConfigFile(path: string | undefined): Promise<FileConfig> {
@@ -99,5 +104,13 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
-  return { branding, basePath, retention, sources, beta: betaFromEnv(env, file.beta), ...(contextSchema ? { contextSchema } : {}) };
+  return {
+    branding,
+    basePath,
+    retention,
+    sources,
+    beta: betaFromEnv(env, file.beta),
+    comments: commentsFromEnv(env, file.comments),
+    ...(contextSchema ? { contextSchema } : {}),
+  };
 }

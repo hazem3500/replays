@@ -1,6 +1,7 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+import { cleanAvatarUrl } from '../../shared/comments.ts';
 import { jwksKeys, verifyJwt, type JwtClaims, type KeySource } from './jwt.ts';
 import type { AuthAdapter, AuthRouteContext, Identity } from './types.ts';
 
@@ -110,7 +111,9 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
     const id = email ?? (typeof claims.sub === 'string' ? claims.sub : undefined);
     if (!id) return undefined;
     const name = typeof claims.name === 'string' ? claims.name : undefined;
-    return { id, ...(email ? { email } : {}), ...(name ? { name } : {}) };
+    // Kept short: the identity rides in the session cookie.
+    const avatarUrl = typeof claims.picture === 'string' && claims.picture.length <= 512 ? cleanAvatarUrl(claims.picture) : undefined;
+    return { id, ...(email ? { email } : {}), ...(name ? { name } : {}), ...(avatarUrl ? { avatarUrl } : {}) };
   };
 
   const cookie = (name: string, value: string, maxAge: number, path: string) =>
@@ -125,7 +128,12 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
     async authenticate(request) {
       const session = unsign<Identity & { exp: number }>('session', cookies(request).get(SESSION_COOKIE));
       if (session && typeof session.id === 'string' && session.id)
-        return { id: session.id, ...(session.email ? { email: session.email } : {}), ...(session.name ? { name: session.name } : {}) };
+        return {
+          id: session.id,
+          ...(session.email ? { email: session.email } : {}),
+          ...(session.name ? { name: session.name } : {}),
+          ...(session.avatarUrl ? { avatarUrl: session.avatarUrl } : {}),
+        };
       const bearer = /^Bearer\s+(.+)$/i.exec(String(request.headers.authorization ?? ''))?.[1];
       if (!bearer) return undefined;
       await discover();

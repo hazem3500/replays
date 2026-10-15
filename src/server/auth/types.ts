@@ -5,6 +5,8 @@ export interface Identity {
   id: string;
   email?: string;
   name?: string;
+  /** An https image URL for the person's avatar (shown beside their comments); optional. */
+  avatarUrl?: string;
 }
 
 /**
