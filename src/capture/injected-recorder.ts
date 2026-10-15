@@ -4,10 +4,10 @@ import { MASK_INPUT_OPTIONS } from './sanitize.ts';
 
 declare global {
   interface Window {
-    __REPLAY_KIT_FLUSH__?: (final?: boolean) => RecorderChunk;
-    __REPLAY_KIT_RUNNING__?: boolean;
-    __REPLAY_KIT_ERROR__?: string;
-    __replayKitNavigationFlush?: (payload: string) => void;
+    __REPLAYS_FLUSH__?: (final?: boolean) => RecorderChunk;
+    __REPLAYS_RUNNING__?: boolean;
+    __REPLAYS_ERROR__?: string;
+    __replaysNavigationFlush?: (payload: string) => void;
   }
 }
 
@@ -19,8 +19,8 @@ interface RecorderChunk {
 }
 
 try {
-  if (window.top === window && !window.__REPLAY_KIT_RUNNING__) {
-    window.__REPLAY_KIT_RUNNING__ = true;
+  if (window.top === window && !window.__REPLAYS_RUNNING__) {
+    window.__REPLAYS_RUNNING__ = true;
     let events: RecorderChunk['events'] = [];
     let consoleEntries: RecorderChunk['console'] = [];
     let performanceEntries: RecorderChunk['performance'] = [];
@@ -156,7 +156,7 @@ try {
       });
     });
 
-    window.__REPLAY_KIT_FLUSH__ = (final = false) => {
+    window.__REPLAYS_FLUSH__ = (final = false) => {
       if (final) finalPaintMetrics();
       const chunk = {
         events,
@@ -173,14 +173,14 @@ try {
     addEventListener(
       'pagehide',
       () => {
-        const chunk = window.__REPLAY_KIT_FLUSH__?.(true);
+        const chunk = window.__REPLAYS_FLUSH__?.(true);
         if (chunk && (chunk.events.length || chunk.console.length || chunk.performance.length)) {
-          window.__replayKitNavigationFlush?.(JSON.stringify(chunk));
+          window.__replaysNavigationFlush?.(JSON.stringify(chunk));
         }
       },
       { capture: true },
     );
   }
 } catch (error) {
-  window.__REPLAY_KIT_ERROR__ = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  window.__REPLAYS_ERROR__ = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 }

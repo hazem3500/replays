@@ -16,7 +16,7 @@ import {
 } from '../src/server/render-queue.ts';
 
 async function dataDir() {
-  const dir = join(await mkdtemp(join(tmpdir(), 'replay-kit-queue-')), 'data');
+  const dir = join(await mkdtemp(join(tmpdir(), 'replays-queue-')), 'data');
   await mkdir(dir, { recursive: true });
   return dir;
 }

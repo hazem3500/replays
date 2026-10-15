@@ -16,7 +16,7 @@
 }
 
 /*
- * Replay Kit theme. One accent (indigo), blue-slate neutral surfaces, nothing else decorative.
+ * replays theme. One accent (indigo), blue-slate neutral surfaces, nothing else decorative.
  * Every colour is a custom property below; a deployment can override a documented subset at runtime
  * (src/server/branding.ts), so keep these names defined for both colour schemes.
  * Type: Inter (self-hosted variable, src/client/fonts, OFL) for UI, numbers included (tabular where they align);

@@ -89,7 +89,7 @@ describe('capture metadata', () => {
   });
 
   it('refuses a non-empty output directory before capture starts', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-output-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-output-'));
     const output = join(root, 'capture');
     await expect(prepareOutputDirectory(output)).resolves.toBeUndefined();
     await writeFile(join(output, 'replay.json'), '{}');
@@ -119,7 +119,7 @@ describe('capture metadata', () => {
   });
 
   it('rejects an invalid context file before a capture starts', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-context-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-context-'));
     const file = join(root, 'context.json');
     await writeFile(file, JSON.stringify({ environment: 'staging', accessToken: 'secret' }));
     const parsed = await readContextFile(file);

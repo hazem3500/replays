@@ -11,7 +11,7 @@ import { cloneBundle, openReplay, postBundle, uniqueId, serveApp, useTheme } fro
 
 let configDir: string;
 test.beforeAll(async () => {
-  configDir = await mkdtemp(join(tmpdir(), 'replay-kit-e2e-config-'));
+  configDir = await mkdtemp(join(tmpdir(), 'replays-e2e-config-'));
   await writeFile(join(configDir, 'config.json'), JSON.stringify({ theme: { dark: { accent: '#ff6600' }, light: { accent: '#0066ff' } } }));
   await writeFile(
     join(configDir, 'context.schema.json'),
@@ -35,7 +35,7 @@ test.describe('branding under /replays', () => {
   const server = serveApp(() => ({
     PRODUCT_NAME: 'Acme Replays',
     BASE_PATH: '/replays',
-    REPLAY_KIT_CONFIG: join(configDir, 'config.json'),
+    REPLAYS_CONFIG: join(configDir, 'config.json'),
   }));
   const origin = () => server().origin;
 

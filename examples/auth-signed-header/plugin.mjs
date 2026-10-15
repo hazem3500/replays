@@ -9,7 +9,7 @@
 //   SIGNED_HEADER_NAME=x-signed-identity            # header carrying the JWT
 //   SIGNED_HEADER_JWKS_URL=https://idp.example.com/.well-known/jwks.json
 //   SIGNED_HEADER_ISSUER=https://idp.example.com
-//   SIGNED_HEADER_AUDIENCE=replay-kit               # the audience the proxy mints tokens for
+//   SIGNED_HEADER_AUDIENCE=replays               # the audience the proxy mints tokens for
 //   SIGNED_HEADER_ALLOW=@example.com,ada@example.org  # optional: email domains (@…) or exact emails
 //   SIGNED_HEADER_EMAIL_CLAIM=email                 # optional, default "email"
 //

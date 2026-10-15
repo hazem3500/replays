@@ -12,7 +12,7 @@ function boot({ saved, prefersLight }: { saved?: string; prefersLight?: boolean 
   const root = { dataset: {} as Record<string, string> };
   const run = new Function('localStorage', 'matchMedia', 'document', inline);
   run(
-    { getItem: (key: string) => (key === 'replay-kit-theme' ? (saved ?? null) : null) },
+    { getItem: (key: string) => (key === 'replays-theme' ? (saved ?? null) : null) },
     (query: string) => ({ matches: query === '(prefers-color-scheme: light)' && Boolean(prefersLight) }),
     { documentElement: root, querySelector: () => meta },
   );

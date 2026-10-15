@@ -1,4 +1,4 @@
-# Replay Kit with an S3-compatible bucket (MinIO) instead of a local volume. Everything is built or pulled locally;
+# replays with an S3-compatible bucket (MinIO) instead of a local volume. Everything is built or pulled locally;
 # nothing is published. Credentials below are throwaway development values: change them for anything real.
 #
 #   docker compose -f examples/s3-minio/docker-compose.yml up --build
@@ -8,8 +8,8 @@ services:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
     environment:
-      MINIO_ROOT_USER: replaykit
-      MINIO_ROOT_PASSWORD: replaykit-secret-change-me
+      MINIO_ROOT_USER: replays
+      MINIO_ROOT_PASSWORD: replays-secret-change-me
     ports:
       - "127.0.0.1:9001:9001"
     volumes:
@@ -26,10 +26,10 @@ services:
       minio:
         condition: service_healthy
     entrypoint: >
-      /bin/sh -c "mc alias set local http://minio:9000 replaykit replaykit-secret-change-me &&
+      /bin/sh -c "mc alias set local http://minio:9000 replays replays-secret-change-me &&
                   mc mb --ignore-existing local/replays"
 
-  replay-kit:
+  replays:
     build:
       context: ../..
     depends_on:
@@ -44,8 +44,8 @@ services:
       S3_ENDPOINT: http://minio:9000
       S3_FORCE_PATH_STYLE: "1"
       S3_REGION: us-east-1
-      AWS_ACCESS_KEY_ID: replaykit
-      AWS_SECRET_ACCESS_KEY: replaykit-secret-change-me
+      AWS_ACCESS_KEY_ID: replays
+      AWS_SECRET_ACCESS_KEY: replays-secret-change-me
 
 volumes:
   minio:

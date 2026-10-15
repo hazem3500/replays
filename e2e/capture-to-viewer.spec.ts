@@ -40,7 +40,7 @@ test('capture a sample, upload it, and the viewer loads it', async ({ page }) =>
     { kind: 'wait', ms: 600, label: 'Read the coupon error' },
   ];
   const demo = await startDemoServer();
-  const output = join(await mkdtemp(join(tmpdir(), 'replay-kit-e2e-capture-')), 'out');
+  const output = join(await mkdtemp(join(tmpdir(), 'replays-e2e-capture-')), 'out');
   try {
     const args = await parseArgs([
       '--url',

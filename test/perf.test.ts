@@ -20,7 +20,7 @@ describe('large replay performance budget', { timeout: 30_000 }, () => {
   const server = createServer();
 
   beforeAll(async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-perf-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-perf-'));
     store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
     await store.save(bundle);
     const handle = createApp({

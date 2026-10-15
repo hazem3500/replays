@@ -117,7 +117,7 @@ async function readSteps(raw?: string): Promise<RawStep[]> {
   return validateSteps(steps);
 }
 
-export const CAPTURE_USAGE = `Usage: replay-kit capture --url <https-url> --output <dir> [options]
+export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output <dir> [options]
 
   --url <url>              page to open (https, or http on localhost)
   --output <dir>           empty directory for replay.json (and session.mp4)
@@ -236,7 +236,7 @@ export function createDriver(name: DriverName, options: { headed?: boolean } = {
 
 export async function capture(args: CaptureArgs, driver: CaptureDriver = createDriver(args.driver)) {
   await prepareOutputDirectory(args.output);
-  const scratch = await mkdtemp(join(tmpdir(), 'replay-kit-'));
+  const scratch = await mkdtemp(join(tmpdir(), 'replays-'));
   const harPath = join(scratch, 'session.har');
   const rawVideoPath = join(scratch, 'session.mp4');
   const rawSteps: Array<ReplayStep & { epoch: number }> = [];
@@ -321,7 +321,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   }
 }
 
-/** `replay-kit capture …`: prints one JSON line on success or failure (machine-readable for agents and CI). */
+/** `replays capture …`: prints one JSON line on success or failure (machine-readable for agents and CI). */
 export async function runCaptureCli(argv: string[]) {
   if (argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(`${CAPTURE_USAGE}\n`);

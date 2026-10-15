@@ -26,7 +26,7 @@ afterEach(async () => {
 const refusing: AuthAdapter = { name: 'refusing', authenticate: () => undefined };
 
 async function start(auth: AuthAdapter = noneAuth({}), basePath = '') {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-upload-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-upload-'));
   const dataDir = join(root, 'data');
   const store = new ReplayStore(dataDir, join(root, 'sample'));
   const handle = createApp({

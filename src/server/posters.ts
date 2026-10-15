@@ -205,7 +205,7 @@ export class PosterQueue {
   private async execute({ kind, id }: Job): Promise<unknown> {
     const output = this.key(id, kind);
     const { storage } = this.options;
-    const directory = await mkdtemp(join(this.options.tempDir ?? tmpdir(), `replay-kit-${kind}-`));
+    const directory = await mkdtemp(join(this.options.tempDir ?? tmpdir(), `replays-${kind}-`));
     const temporary = join(directory, `${kind}${extname(output)}`);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(new Error(`${kind} timed out`)), this.options.timeoutMs);

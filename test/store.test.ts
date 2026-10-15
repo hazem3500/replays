@@ -10,14 +10,14 @@ import { replay } from './fixtures.ts';
 
 describe('ReplayStore', () => {
   it('writes atomically and reads uploaded replays', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
     await store.save(replay());
     await expect(store.load('test-replay')).resolves.toEqual(replay());
   });
 
   it('refuses to overwrite an existing replay id', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
     await store.save(replay());
 
@@ -28,7 +28,7 @@ describe('ReplayStore', () => {
   });
 
   it('falls back to the committed sample directory', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const sample = join(root, 'sample');
     await mkdir(sample);
     await writeFile(join(sample, 'sample-replay.json'), JSON.stringify(replay('sample-replay')));
@@ -37,7 +37,7 @@ describe('ReplayStore', () => {
   });
 
   it('refuses to shadow a committed sample replay', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const sample = join(root, 'sample');
     await mkdir(sample);
     await writeFile(join(sample, 'sample-replay.json'), JSON.stringify(replay('sample-replay')));
@@ -47,7 +47,7 @@ describe('ReplayStore', () => {
   });
 
   it('refuses to overwrite an uploaded replay video', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
     await store.save(replay());
     await store.saveVideo('test-replay', Buffer.from('first'));
@@ -57,7 +57,7 @@ describe('ReplayStore', () => {
   });
 
   it('refuses to attach a video to a committed sample replay', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const sample = join(root, 'sample');
     await mkdir(sample);
     await writeFile(join(sample, 'sample-replay.json'), JSON.stringify(replay('sample-replay')));
@@ -67,7 +67,7 @@ describe('ReplayStore', () => {
   });
 
   it('removes uploads older than the retention window without touching samples', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), 7);
     // Age counts from the upload (the stored file's time) only: the capture time is the client's clock.
     const old = replay('old-replay');
@@ -85,7 +85,7 @@ describe('ReplayStore', () => {
   });
 
   it('removes expired orphan directories without replay.json', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const directory = join(root, 'data', 'orphan-replay');
     await mkdir(directory, { recursive: true });
     await writeFile(join(directory, 'replay.json.crashed.tmp'), 'partial');
@@ -97,7 +97,7 @@ describe('ReplayStore', () => {
   });
 
   it('removes expired review suites and keeps a fresh one', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-store-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-store-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), 7);
     const subject = { provider: 'github', url: 'https://github.com/example-org/shop-demo/issues/42', ref: 'example-org/shop-demo#42' };
     await store.registerSuite('old-suite', {
@@ -125,7 +125,7 @@ describe('ReplayStore', () => {
 });
 
 async function storeWith(...bundles: ReturnType<typeof replay>[]) {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-summary-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-summary-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   for (const bundle of bundles) await store.save(bundle);
   return { root, store };
@@ -177,7 +177,7 @@ describe('replay summaries', () => {
   });
 
   it('prunes a replay together with its poster', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-summary-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-summary-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), 1);
     await store.save(replay('old-one'));
     await writeFile(store.posterFile('old-one'), 'jpeg');
@@ -222,7 +222,7 @@ describe('replay summaries', () => {
   });
 
   it('summarizes committed samples and skips non-replay JSON', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-summary-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-summary-'));
     const sample = join(root, 'sample');
     await mkdir(sample);
     await writeFile(join(sample, 'sample-one.json'), JSON.stringify(replay('sample-one')));

@@ -21,7 +21,7 @@ const TOKEN = 'a'.repeat(43);
 const available = { available: true, chromiumPath: '/bin/chromium', ffmpegPath: 'ffmpeg' };
 
 async function start(options: { closed?: boolean; render?: 'on' | 'off' | 'none' } = {}) {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-render-routes-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-render-routes-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   await store.save(replay());
   const clientDir = join(root, 'client');

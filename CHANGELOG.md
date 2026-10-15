@@ -9,7 +9,7 @@ First public-shaped version, extracted and generalised from an internal debuggin
 
 ### Added
 
-- Capture CLI (`replay-kit capture`): records a page with scripted steps into one `replay.json` (rrweb events,
+- Capture CLI (`replays capture`): records a page with scripted steps into one `replay.json` (rrweb events,
   agent steps, console, sanitized HAR network track, performance) with an optional MP4; Playwright driver by default,
   `agent-browser` driver optional.
 - Recorder as a library (`RecorderSession`) usable from any CDP connection, including a Playwright test.

@@ -1,7 +1,16 @@
 # Naming
 
-"Replay Kit" is a placeholder. The product name lives in one constant (`src/shared/brand.ts`) plus `package.json`,
-the README and the Dockerfile image label, so renaming is a five-minute change.
+**Decision (2026-10-15): the product is called "replays".** The GitHub repository is `hazem3500/replays` (private
+until the owner decides otherwise), the CLI binary is `replays`, the npm package is the unscoped **`replays`** (free on
+npm on 2026-10-15: `npm view replays` → 404) and the container image name is `ghcr.io/hazem3500/replays` (nothing is
+pushed). **Fallback:** the scoped `@hazem3500/replays`, also free on 2026-10-15, if the unscoped name is lost before it
+is claimed (change `name` in `package.json`; scoped public packages need `--access public`, which the release workflow
+passes). A name-claim placeholder (`packages/npm-placeholder/`, version 0.0.1) is prepared but **not published**. The
+name lives in one constant (`src/shared/brand.ts`) plus `package.json`, the README and the Dockerfile image label.
+
+## History: the earlier candidates
+
+The initial working name was "Replay Kit" (a placeholder); three candidates were checked before "replays" was picked.
 
 Checks run on 2026-10-14. "Likely free" for domains means no NS record and an RDAP lookup that answered 404
 (not registered); it is not a reservation, and registrars can still hold premium or reserved names.
@@ -22,4 +31,4 @@ Also checked and rejected: `agentreel` (npm and GitHub taken, `.dev` registered)
 
 Recommendation: **replaytape**, the only one with no neighbouring project at all. If the name changes, also rename
 the GitHub repository (GitHub redirects the old URL), `package.json` `name`/`bin`, `src/shared/brand.ts`, the
-`replay-kit-*` storage keys and cookie names (derived from `PRODUCT_SLUG`) and the Docker image label.
+`replays-*` storage keys and cookie names (derived from `PRODUCT_SLUG`) and the Docker image label.

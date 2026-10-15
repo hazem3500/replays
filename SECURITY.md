@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Replay Kit is pre-1.0. Security fixes land on `main` and in the latest `0.x` release.
+replays is pre-1.0. Security fixes land on `main` and in the latest `0.x` release.
 
 ## Reporting a vulnerability
 

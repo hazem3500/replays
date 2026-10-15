@@ -1,6 +1,6 @@
 /**
- * Library entry point (`import … from 'replay-kit'`): record any browser page yourself, build and validate bundles,
- * and write server plugins against the typed interfaces. The CLI (`replay-kit capture`) and the server are built on
+ * Library entry point (`import … from 'replays'`): record any browser page yourself, build and validate bundles,
+ * and write server plugins against the typed interfaces. The CLI (`replays capture`) and the server are built on
  * the same pieces.
  */
 export { PRODUCT_NAME, PRODUCT_SLUG } from './shared/brand.ts';

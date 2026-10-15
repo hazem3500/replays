@@ -9,8 +9,8 @@ const step = (page: Page, number: number) => page.getByTestId('step-timeline').l
 test.describe('index', () => {
   test('lists the sample replays and opens one', async ({ page }) => {
     await page.goto(`${origin()}/`);
-    await expect(page).toHaveTitle('Replay Kit');
-    await expect(page.getByRole('heading', { level: 1, name: 'Replay Kit' })).toBeVisible();
+    await expect(page).toHaveTitle('replays');
+    await expect(page.getByRole('heading', { level: 1, name: 'replays' })).toBeVisible();
     await expect(page.getByRole('status').first()).toHaveText('2 replays');
     const shop = page.getByRole('link', { name: /^Demo shop: checkout with a bad coupon/ });
     await expect(shop).toHaveAttribute('href', '/r/demo-shop');
@@ -72,7 +72,7 @@ test.describe('index', () => {
 test.describe('viewer', () => {
   test('shows the title, the steps and the recorded page', async ({ page }) => {
     await openReplay(page, viewer());
-    await expect(page).toHaveTitle('Demo shop: checkout with a bad coupon · Replay Kit');
+    await expect(page).toHaveTitle('Demo shop: checkout with a bad coupon · replays');
     await expect(page.getByTestId('step-timeline').locator('[data-step-index]')).toHaveCount(18);
     await expect(page.getByTestId('step-count').locator('.visually-hidden')).toHaveText('Step 1 of 18');
     await expect(playhead(page)).toHaveText('0:00.0');

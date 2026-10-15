@@ -68,7 +68,7 @@ function captured(id: string, capturedDaysAgo: number) {
 const uploadedMs = async (store: ReplayStore, id: string) => (await store.storage.stat(store.replayKey(id)))!.createdMs;
 
 function openStore(days: number | undefined, clock = () => NOW - 200 * DAY) {
-  return mkdtemp(join(tmpdir(), 'replay-kit-retention-')).then(
+  return mkdtemp(join(tmpdir(), 'replays-retention-')).then(
     (root) => new ReplayStore(new MemoryStorage(clock), join(root, 'sample'), days),
   );
 }
@@ -179,7 +179,7 @@ describe('keep API', () => {
   });
 
   async function start() {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-keep-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-keep-'));
     const store = new ReplayStore(new MemoryStorage(), join(root, 'sample'));
     const handle = createApp({ ...appDefaults(), store, clientDir: root });
     const server = createServer((request, response) => void handle(request, response));

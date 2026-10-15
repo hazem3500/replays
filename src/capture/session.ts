@@ -21,7 +21,7 @@ export interface RecorderChunk {
   performanceSupported?: string[];
 }
 
-const BINDING = '__replayKitNavigationFlush';
+const BINDING = '__replaysNavigationFlush';
 
 /** The recorder page script (rrweb plus console, error and performance capture), bundled for the browser. */
 export async function recorderSource() {
@@ -151,7 +151,7 @@ export class RecorderSession {
     this.pull = createPullGate(async (final) => {
       try {
         const result = (await this.cdp.send('Runtime.evaluate', {
-          expression: `window.__REPLAY_KIT_FLUSH__?.(${final ? 'true' : ''})`,
+          expression: `window.__REPLAYS_FLUSH__?.(${final ? 'true' : ''})`,
           returnByValue: true,
         })) as { result?: { value?: RecorderChunk }; exceptionDetails?: unknown };
         if (!result.exceptionDetails) this.add(result.result?.value);
@@ -197,7 +197,7 @@ export class RecorderSession {
       const probe = (await this.cdp
         .send('Runtime.evaluate', {
           expression:
-            '({ href: location.href, running: window.__REPLAY_KIT_RUNNING__, flush: typeof window.__REPLAY_KIT_FLUSH__, error: window.__REPLAY_KIT_ERROR__ })',
+            '({ href: location.href, running: window.__REPLAYS_RUNNING__, flush: typeof window.__REPLAYS_FLUSH__, error: window.__REPLAYS_ERROR__ })',
           returnByValue: true,
         })
         .catch(() => undefined)) as { result?: { value?: unknown } } | undefined;

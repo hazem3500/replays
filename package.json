@@ -1,5 +1,5 @@
 {
-  "name": "replay-kit",
+  "name": "replays",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -74,10 +74,10 @@
   "author": "Hazem (hazem3500)",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/hazem3500/replay-kit.git"
+    "url": "git+https://github.com/hazem3500/replays.git"
   },
   "bin": {
-    "replay-kit": "./bin/replay-kit.mjs"
+    "replays": "./bin/replays.mjs"
   },
   "files": [
     "bin",

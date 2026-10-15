@@ -31,7 +31,7 @@ const request = (headers: Record<string, string> = {}) =>
   ({ headers, socket: { remoteAddress: '10.0.0.5' } }) as unknown as IncomingMessage;
 
 async function pluginFile(source: string, name = 'plugin.mjs') {
-  const dir = await mkdtemp(join(tmpdir(), 'replay-kit-plugin-'));
+  const dir = await mkdtemp(join(tmpdir(), 'replays-plugin-'));
   const file = join(dir, name);
   await writeFile(file, source);
   return file;
@@ -104,7 +104,7 @@ describe('AUTH_MODE=plugin', () => {
       });
     `);
     const auth = await authFromEnv({ AUTH_MODE: 'plugin', AUTH_PLUGIN: file });
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-plugin-app-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-plugin-app-'));
     const handle = createApp({
       ...appDefaults(),
       auth,
@@ -126,7 +126,7 @@ describe('AUTH_MODE=plugin', () => {
 describe('example plugin: signed header', () => {
   const PLUGIN = new URL('../examples/auth-signed-header/plugin.mjs', import.meta.url);
   const ISSUER = 'https://idp.example.test';
-  const AUDIENCE = 'replay-kit';
+  const AUDIENCE = 'replays';
   const NOW = 1_800_000_000;
 
   let rsa: { privateKey: KeyObject; jwk: Record<string, unknown> };

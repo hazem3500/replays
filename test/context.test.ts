@@ -277,7 +277,7 @@ describe('buildReplayContext', () => {
 describe('readContextFile', () => {
   it('returns undefined without a path, parses JSON, and refuses a file over 16 KB', async () => {
     await expect(readContextFile(undefined)).resolves.toBeUndefined();
-    const dir = await mkdtemp(join(tmpdir(), 'replay-kit-context-file-'));
+    const dir = await mkdtemp(join(tmpdir(), 'replays-context-file-'));
     const file = join(dir, 'context.json');
     await writeFile(file, JSON.stringify({ app: { name: 'Shop Demo' } }));
     await expect(readContextFile(file)).resolves.toEqual({ app: { name: 'Shop Demo' } });

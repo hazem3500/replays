@@ -234,7 +234,7 @@ export const StepList = memo(function StepList() {
   );
 });
 
-export const STEPS_WIDTH_KEY = 'replay-kit-steps-width';
+export const STEPS_WIDTH_KEY = 'replays-steps-width';
 export const MIN_STEPS_WIDTH = 220;
 const MAX_STEPS_WIDTH = 480;
 

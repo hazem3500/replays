@@ -115,7 +115,7 @@ for (const bundle of bundles) {
 
 /**
  * The viewer's index.html with the base path decided at load time: this folder can sit under any prefix
- * (/demo/ at a domain root, /replay-kit/demo/ on GitHub project pages). `depth` is how many folders below the
+ * (/demo/ at a domain root, /replays/demo/ on GitHub project pages). `depth` is how many folders below the
  * demo root the page lives, so its asset links point back up.
  */
 const viewerHtml = fill(await readFile(join(clientBuild, 'index.html'), 'utf8'));

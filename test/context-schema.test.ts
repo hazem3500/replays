@@ -109,7 +109,7 @@ describe('compileContextSchema', () => {
 
 describe('loadContextSchema', () => {
   it('reads and compiles a schema file', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'replay-kit-schema-'));
+    const dir = await mkdtemp(join(tmpdir(), 'replays-schema-'));
     const file = join(dir, 'context.schema.json');
     await writeFile(file, JSON.stringify(SCHEMA));
     const loaded = await loadContextSchema(file);
@@ -118,7 +118,7 @@ describe('loadContextSchema', () => {
   });
 
   it('names the file when it cannot be read or parsed', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'replay-kit-schema-'));
+    const dir = await mkdtemp(join(tmpdir(), 'replays-schema-'));
     await expect(loadContextSchema(join(dir, 'missing.json'))).rejects.toThrow(/^cannot read CONTEXT_SCHEMA_FILE .*missing\.json/);
     const bad = join(dir, 'bad.json');
     await writeFile(bad, '{ not json');
@@ -136,7 +136,7 @@ describe('the schema in the server', () => {
   });
 
   async function start(contextSchema?: ContextSchema) {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-schema-app-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-schema-app-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
     const handle = createApp({ ...appDefaults(), store, clientDir: join(root, 'client'), ...(contextSchema ? { contextSchema } : {}) });
     const server = createServer((request, response) => void handle(request, response));

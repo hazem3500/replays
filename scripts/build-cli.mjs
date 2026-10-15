@@ -1,6 +1,6 @@
 // Bundles the CLI (capture, import, upload) into dist/cli/cli.mjs, plus the page-side recorder script it injects
 // (dist/cli/recorder.iife.js). Dependencies stay external: `npm install` provides them. `serve` is not bundled; it
-// runs from the repository (bin/replay-kit.mjs).
+// runs from the repository (bin/replays.mjs).
 import { mkdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 

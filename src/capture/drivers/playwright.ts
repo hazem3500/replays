@@ -60,7 +60,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
         await execFileAsync(ffmpeg, ['-version']).catch(() => {
           throw new Error('--video needs ffmpeg on the PATH (or FFMPEG_PATH) with the Playwright driver');
         });
-        scratch = await mkdtemp(join(tmpdir(), 'replay-kit-video-'));
+        scratch = await mkdtemp(join(tmpdir(), 'replays-video-'));
       }
       browser = await chromium.launch({
         headless: options.headless ?? true,

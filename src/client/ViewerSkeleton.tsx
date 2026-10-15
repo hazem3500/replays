@@ -17,9 +17,9 @@ import { readStorage } from './storage.ts';
  */
 
 /* Repeated from the viewer chunk (StepRail.tsx, Inspector.tsx, Viewer.tsx); keep in sync. */
-const STEPS_WIDTH_KEY = 'replay-kit-steps-width';
-const INSPECTOR_HEIGHT_KEY = 'replay-kit-inspector-height';
-const INSPECTOR_COLLAPSED_KEY = 'replay-kit-inspector-collapsed';
+const STEPS_WIDTH_KEY = 'replays-steps-width';
+const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
+const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const DEFAULT_INSPECTOR_HEIGHT = 260;
 const MIN_INSPECTOR_HEIGHT = 120;
 const INSPECTOR_TABS_HEIGHT = 37;
@@ -28,7 +28,7 @@ const INSPECTOR_TABS_HEIGHT = 37;
  * What the page opening the replay already knows (the index writes it before navigating; see OPEN_HINT_KEY):
  * the title, the recording's viewport and step count.
  */
-export const OPEN_HINT_KEY = 'replay-kit-open-hint';
+export const OPEN_HINT_KEY = 'replays-open-hint';
 export interface OpenHint {
   id: string;
   title?: string;

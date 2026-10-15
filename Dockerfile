@@ -1,8 +1,8 @@
 # syntax=docker/dockerfile:1.7
 #
 # Build locally; nothing in this repository publishes an image.
-#   docker build -t replay-kit .                      # image without Chromium and ffmpeg: viewer + upload API
-#   docker build -t replay-kit:render --build-arg WITH_RENDER=1 .   # + server-side video export and list posters
+#   docker build -t ghcr.io/hazem3500/replays .                      # image without Chromium and ffmpeg: viewer + upload API
+#   docker build -t ghcr.io/hazem3500/replays:render --build-arg WITH_RENDER=1 .   # + server-side video export and list posters
 #
 # WITH_RENDER=1 adds a headless Chromium and ffmpeg (several hundred MB). Without it the render routes answer 503
 # and the viewer hides "Export video".
@@ -52,9 +52,9 @@ ENV CHROMIUM_PATH=/ms-playwright/chrome-headless-shell FFMPEG_PATH=/usr/bin/ffmp
 
 FROM runtime-${WITH_RENDER} AS runtime
 ARG VERSION=dev
-LABEL org.opencontainers.image.title="Replay Kit" \
+LABEL org.opencontainers.image.title="replays" \
       org.opencontainers.image.description="Self-hostable viewer and upload API for browser session replays (rrweb, steps, console, network, performance)." \
-      org.opencontainers.image.source="https://github.com/hazem3500/replay-kit" \
+      org.opencontainers.image.source="https://github.com/hazem3500/replays" \
       org.opencontainers.image.licenses="MIT" \
       org.opencontainers.image.version="$VERSION"
 WORKDIR /app

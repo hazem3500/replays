@@ -4,12 +4,12 @@ import { dirname, resolve } from 'node:path';
 import { assertReplayBundle } from '../shared/replay.ts';
 import { flagMap, upload } from './bundle-io.ts';
 
-/** `replay-kit upload <replay.json> --upload-url <server>/api/replays [--header-file file]` */
+/** `replays upload <replay.json> --upload-url <server>/api/replays [--header-file file]` */
 export async function runUploadCli(argv: string[]) {
   try {
     const [file, ...flags] = argv;
     if (!file || file.startsWith('--'))
-      throw new Error('usage: replay-kit upload <replay.json> --upload-url <server>/api/replays [--header-file file]');
+      throw new Error('usage: replays upload <replay.json> --upload-url <server>/api/replays [--header-file file]');
     const { values } = flagMap(flags);
     if (!values['upload-url']) throw new Error('--upload-url is required');
     const bundle: unknown = JSON.parse(await readFile(resolve(file), 'utf8'));

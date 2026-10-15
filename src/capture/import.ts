@@ -1,6 +1,6 @@
 // Imports a plain rrweb recording made by a person (rrweb record() snippet,
 // the rrweb browser extension, or another tool's export) as a replay.
-// Run with `replay-kit import --rrweb <events.json> --title "..."`. Optional: --url, --id,
+// Run with `replays import --rrweb <events.json> --title "..."`. Optional: --url, --id,
 // --tag <tag> (repeatable), --output, --upload-url, --header-file.
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
@@ -39,7 +39,7 @@ export async function importRecording(args: {
   return { replayPath, id: bundle.meta.id, eventCount: bundle.events.length, duration: bundle.meta.duration };
 }
 
-/** `replay-kit import …` */
+/** `replays import …` */
 export async function runImportCli(argv: string[]) {
   try {
     const { values, lists } = flagMap(argv);

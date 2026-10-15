@@ -8,7 +8,7 @@ import { loadSettings, readConfigFile } from '../src/server/config.ts';
 import { PRODUCT_NAME } from '../src/shared/brand.ts';
 
 async function configFile(content: unknown) {
-  const dir = await mkdtemp(join(tmpdir(), 'replay-kit-config-'));
+  const dir = await mkdtemp(join(tmpdir(), 'replays-config-'));
   const file = join(dir, 'config.json');
   await writeFile(file, typeof content === 'string' ? content : JSON.stringify(content));
   return { dir, file };
@@ -43,8 +43,8 @@ describe('readConfigFile', () => {
 
   it('refuses a file that is missing, not JSON, or not an object', async () => {
     const { dir, file } = await configFile('{ nope');
-    await expect(readConfigFile(file)).rejects.toThrow(/^cannot read REPLAY_KIT_CONFIG /);
-    await expect(readConfigFile(join(dir, 'missing.json'))).rejects.toThrow(/^cannot read REPLAY_KIT_CONFIG .*missing\.json/);
+    await expect(readConfigFile(file)).rejects.toThrow(/^cannot read REPLAYS_CONFIG /);
+    await expect(readConfigFile(join(dir, 'missing.json'))).rejects.toThrow(/^cannot read REPLAYS_CONFIG .*missing\.json/);
     for (const content of ['[]', '"text"', 'null', '3']) {
       const { file: other } = await configFile(content);
       await expect(readConfigFile(other)).rejects.toThrow('the config file must be a JSON object');

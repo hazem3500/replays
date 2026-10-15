@@ -1,7 +1,7 @@
-# Replay Kit
+# replays
 
-> **Replay Kit** is a placeholder name (see [docs/NAMING.md](docs/NAMING.md)). It lives in `src/shared/brand.ts`,
-> `package.json` and this README, so renaming is a five-minute change.
+> The name is chosen (see [docs/NAMING.md](docs/NAMING.md)). It lives in `src/shared/brand.ts`, `package.json` and this
+> README. npm package (not published yet): `replays`; CLI: `replays`; image: `ghcr.io/hazem3500/replays`.
 
 Record what a browser agent, a test or a person did, and replay it with everything that happened around it on **one
 timeline**: the page itself (rrweb), the steps taken, console output, a sanitized network trace and performance
@@ -26,7 +26,7 @@ can host yourself.
 ### Run the viewer and server
 
 ```bash
-git clone https://github.com/hazem3500/replay-kit.git && cd replay-kit
+git clone https://github.com/hazem3500/replays.git && cd replays
 docker compose up --build        # builds locally; nothing is pulled from or pushed to a registry
 open http://localhost:8080       # two sample replays are included
 ```
@@ -62,26 +62,26 @@ Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scr
 intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
 
 ```text
-replay-kit capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
+replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
                    [--viewport 1440x900] [--video] [--tag t]… [--source github:owner/repo#12]…
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload-url <server>/api/replays] [--header-file headers.json] [--headed]
 ```
 
-`replay-kit` is the package's `bin` (`bin/replay-kit.mjs`); from a checkout, `pnpm cli <command>` or
+`replays` is the package's `bin` (`bin/replays.mjs`); from a checkout, `pnpm cli <command>` or
 `pnpm capture` run the TypeScript sources directly. The package is **not published**; see
 [docs/releasing.md](docs/releasing.md).
 
-Other commands: `replay-kit import --rrweb events.json --title "…"` (a plain rrweb recording made by a person),
-`replay-kit upload replay.json --upload-url …`, and `replay-kit serve`.
+Other commands: `replays import --rrweb events.json --title "…"` (a plain rrweb recording made by a person),
+`replays upload replay.json --upload-url …`, and `replays serve`.
 
 ### Record from your own Playwright test
 
-The recorder is a library (`import … from 'replay-kit'` after `pnpm build:cli`): attach it to any Chrome DevTools
+The recorder is a library (`import … from 'replays'` after `pnpm build:cli`): attach it to any Chrome DevTools
 Protocol connection.
 
 ```ts
-import { RecorderSession } from 'replay-kit';
+import { RecorderSession } from 'replays';
 
 const session = await RecorderSession.start(await context.newCDPSession(page)); // before the first navigation
 await page.goto('https://example.com');
@@ -139,7 +139,7 @@ replay.json
 ## Configuration reference
 
 Settings come from environment variables. Non-secret settings can also live in a JSON file
-(`REPLAY_KIT_CONFIG=/etc/replay-kit/config.json`); the environment wins. Secrets are environment-only.
+(`REPLAYS_CONFIG=/etc/replays/config.json`); the environment wins. Secrets are environment-only.
 
 ### Server
 
@@ -153,8 +153,8 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
 | `STORAGE` | `fs` | `fs` or `s3` |
 | `RETENTION_DAYS` | `30` | Days an upload lives, counted from its upload time; `0` keeps everything. "Kept" replays never expire |
-| `REPLAY_KIT_CONFIG` | – | Path of the JSON config file (below) |
-| `PRODUCT_NAME`, `LOGO_URL` | `Replay Kit`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
+| `REPLAYS_CONFIG` | – | Path of the JSON config file (below) |
+| `PRODUCT_NAME`, `LOGO_URL` | `replays`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
 | `CONTEXT_SCHEMA_FILE` | – | JSON Schema for `context.fields` (see [Context schema](#context-metadata-schema)) |
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
@@ -237,7 +237,7 @@ A producer can attach a context block to a recording: which app and build, which
 ```
 
 ```bash
-replay-kit capture … --context-file context.json --context-schema context.schema.json
+replays capture … --context-file context.json --context-schema context.schema.json
 ```
 
 It comes from your runner; the CLI never reads the page's storage or an account. With `CONTEXT_SCHEMA_FILE` set, the

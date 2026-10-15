@@ -9,7 +9,7 @@
 Try the config example from a checkout:
 
 ```bash
-REPLAY_KIT_CONFIG=examples/config/config.json pnpm dev
+REPLAYS_CONFIG=examples/config/config.json pnpm dev
 pnpm capture --url https://example.com --output ./out \
   --context-file examples/config/context.example.json \
   --context-schema examples/config/context.schema.json \

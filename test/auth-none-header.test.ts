@@ -191,7 +191,7 @@ describe('adapters behind createApp', () => {
   });
 
   async function start(auth: AuthAdapter) {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-auth-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-auth-'));
     const handle = createApp({
       ...appDefaults(),
       auth,

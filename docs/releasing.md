@@ -12,7 +12,9 @@ no longer private, and `dry_run` is false. Otherwise it is skipped.
 
 ## Publishing to npm (when you decide to)
 
-1. Pick the final name (see [NAMING.md](NAMING.md)) and rename the package, `bin` and `src/shared/brand.ts`.
+1. The name is decided (see [NAMING.md](NAMING.md)): the package is the unscoped `replays`. Fallback if it is lost: `@hazem3500/replays`.
+   To claim the name early, publish the placeholder in `packages/npm-placeholder/` (version 0.0.1: an empty module and a
+   "coming soon" README) by hand: `cd packages/npm-placeholder && npm publish`. It is not part of any workflow.
 2. Remove `"private": true`; check `pnpm pack --dry-run` lists only `bin`, `dist/cli`, `dist/lib`, `dist/types`.
 3. Add an `NPM_TOKEN` repository secret (or configure trusted publishing) and an `npm` environment with a reviewer.
 4. Move `## [0.1.0] - Unreleased` in `CHANGELOG.md` to a dated heading, tag `v0.1.0`, push the tag.

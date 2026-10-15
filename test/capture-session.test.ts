@@ -21,7 +21,7 @@ class FakeCdp implements CdpLike {
     this.calls.push({ method, params });
     if (method !== 'Runtime.evaluate') return {};
     const expression = String(params?.expression ?? '');
-    if (!expression.includes('__REPLAY_KIT_FLUSH__?.(')) {
+    if (!expression.includes('__REPLAYS_FLUSH__?.(')) {
       if (this.probeFails) throw new Error('context destroyed');
       return { result: { value: this.probe } };
     }
@@ -53,7 +53,7 @@ class FakeCdp implements CdpLike {
 
   flushes() {
     return this.calls.filter(
-      (call) => call.method === 'Runtime.evaluate' && String(call.params?.expression).includes('__REPLAY_KIT_FLUSH__?.('),
+      (call) => call.method === 'Runtime.evaluate' && String(call.params?.expression).includes('__REPLAYS_FLUSH__?.('),
     );
   }
 }
@@ -71,7 +71,7 @@ describe('RecorderSession.start', () => {
       'Runtime.addBinding',
       'Page.addScriptToEvaluateOnNewDocument',
     ]);
-    expect(cdp.calls[2]!.params).toEqual({ name: '__replayKitNavigationFlush' });
+    expect(cdp.calls[2]!.params).toEqual({ name: '__replaysNavigationFlush' });
     const source = String(cdp.calls[3]!.params?.source);
     expect(source.length).toBeGreaterThan(1000);
     // The browser bundle is self-contained: rrweb is inlined, no module syntax is left.
@@ -102,8 +102,8 @@ describe('flush', () => {
     await session.flush(true);
     session.dispose();
     expect(cdp.flushes().map((call) => [call.params?.expression, call.params?.returnByValue])).toEqual([
-      ['window.__REPLAY_KIT_FLUSH__?.()', true],
-      ['window.__REPLAY_KIT_FLUSH__?.(true)', true],
+      ['window.__REPLAYS_FLUSH__?.()', true],
+      ['window.__REPLAYS_FLUSH__?.(true)', true],
     ]);
   });
 
@@ -145,7 +145,7 @@ describe('the navigation binding', () => {
       performance: [{ at: 2060, kind: 'first-contentful-paint', value: 60 }],
       performanceSupported: ['paint'],
     };
-    cdp.emit('Runtime.bindingCalled', { name: '__replayKitNavigationFlush', payload: JSON.stringify(chunk) });
+    cdp.emit('Runtime.bindingCalled', { name: '__replaysNavigationFlush', payload: JSON.stringify(chunk) });
     const tracks = await session.stop();
     expect(tracks.events).toHaveLength(2);
     expect(tracks.console).toEqual([{ at: 50, level: 'error', message: 'Boom' }]);
@@ -157,8 +157,8 @@ describe('the navigation binding', () => {
     const session = await RecorderSession.start(cdp, LONG_INTERVAL);
     const payload = JSON.stringify({ events: events(1, 2, 3) });
     cdp.emit('Runtime.bindingCalled', { name: 'someOtherBinding', payload });
-    cdp.emit('Runtime.bindingCalled', { name: '__replayKitNavigationFlush', payload: { events: [] } });
-    cdp.emit('Runtime.bindingCalled', { name: '__replayKitNavigationFlush', payload: '{not json' });
+    cdp.emit('Runtime.bindingCalled', { name: '__replaysNavigationFlush', payload: { events: [] } });
+    cdp.emit('Runtime.bindingCalled', { name: '__replaysNavigationFlush', payload: '{not json' });
     await expect(session.stop()).rejects.toThrow('rrweb recorded fewer than two events');
   });
 

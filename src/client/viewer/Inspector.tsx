@@ -56,7 +56,7 @@ import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '@/compo
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../navigation.ts';
 
-export const INSPECTOR_HEIGHT_KEY = 'replay-kit-inspector-height';
+export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const DEFAULT_INSPECTOR_HEIGHT = 260;
 export const MIN_INSPECTOR_HEIGHT = 120;
 const NO_RESPONSE = 'No response recorded: a redirect hop, or still in flight when capture stopped';

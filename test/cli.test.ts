@@ -8,7 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CAPTURE_USAGE, parseArgs, runCaptureCli } from '../src/capture/capture.ts';
 
 const root = resolve(import.meta.dirname, '..');
-const URL_FLAGS = ['--url', 'https://example.com/shop', '--output', '/tmp/replay-kit-cli-test-output'];
+const URL_FLAGS = ['--url', 'https://example.com/shop', '--output', '/tmp/replays-cli-test-output'];
 
 const parse = (...extra: string[]) => parseArgs([...URL_FLAGS, ...extra]);
 
@@ -20,7 +20,7 @@ const usageError = (argv: string[]) =>
   );
 
 async function tempFile(name: string, content: unknown) {
-  const dir = await mkdtemp(join(tmpdir(), 'replay-kit-cli-'));
+  const dir = await mkdtemp(join(tmpdir(), 'replays-cli-'));
   const file = join(dir, name);
   await writeFile(file, typeof content === 'string' ? content : JSON.stringify(content));
   return file;
@@ -31,7 +31,7 @@ describe('capture arguments: accepted', () => {
     const args = await parse();
     expect(args).toMatchObject({
       url: 'https://example.com/shop',
-      output: '/tmp/replay-kit-cli-test-output',
+      output: '/tmp/replays-cli-test-output',
       driver: 'playwright',
       viewport: { width: 1440, height: 900 },
       video: false,
@@ -249,30 +249,30 @@ describe('runCaptureCli', () => {
 });
 
 const run = (...args: string[]) =>
-  spawnSync(process.execPath, [join(root, 'bin/replay-kit.mjs'), ...args], { encoding: 'utf8', cwd: tmpdir() });
+  spawnSync(process.execPath, [join(root, 'bin/replays.mjs'), ...args], { encoding: 'utf8', cwd: tmpdir() });
 const runSource = (...args: string[]) =>
   spawnSync(process.execPath, ['--experimental-strip-types', '--no-warnings', join(root, 'src/cli.ts'), ...args], {
     encoding: 'utf8',
     cwd: tmpdir(),
   });
 
-describe('the replay-kit command', () => {
+describe('the replays command', () => {
   it.each([
-    ['bin/replay-kit.mjs', run],
+    ['bin/replays.mjs', run],
     ['src/cli.ts', runSource],
   ])('%s --help lists the commands', (_name, invoke) => {
     for (const flag of ['--help', '-h', 'help']) {
       const result = invoke(flag);
       expect(result.status).toBe(0);
       expect(result.stderr).toBe('');
-      expect(result.stdout).toContain('replay-kit <command> [options]');
+      expect(result.stdout).toContain('replays <command> [options]');
       for (const command of ['capture', 'import', 'upload', 'serve']) expect(result.stdout).toMatch(new RegExp(`^  ${command}\\s`, 'm'));
     }
     expect(invoke().stdout).toContain('Commands:');
   });
 
   it.each([
-    ['bin/replay-kit.mjs', run],
+    ['bin/replays.mjs', run],
     ['src/cli.ts', runSource],
   ])('%s capture --help prints the capture options', (_name, invoke) => {
     const result = invoke('capture', '--help');
@@ -296,7 +296,7 @@ describe('the replay-kit command', () => {
   });
 
   it.each([
-    ['bin/replay-kit.mjs', run],
+    ['bin/replays.mjs', run],
     ['src/cli.ts', runSource],
   ])('%s refuses an unknown command with status 2', (_name, invoke) => {
     const result = invoke('frobnicate');
@@ -315,7 +315,7 @@ describe('the replay-kit command', () => {
   it('reports upload and import usage errors the same way', () => {
     const upload = runSource('upload');
     expect(upload.status).toBe(1);
-    expect(JSON.parse(upload.stderr).error).toMatch(/^usage: replay-kit upload <replay\.json>/);
+    expect(JSON.parse(upload.stderr).error).toMatch(/^usage: replays upload <replay\.json>/);
     const importer = runSource('import', '--rrweb', 'events.json');
     expect(importer.status).toBe(1);
     expect(JSON.parse(importer.stderr)).toEqual({ success: false, error: '--title is required' });

@@ -6,8 +6,8 @@ The server is one Node process (`node --experimental-strip-types src/server/main
 builds the viewer and runs the server as an unprivileged user on port 8080 with a `/data` volume:
 
 ```bash
-docker build -t replay-kit .                                    # image without Chromium and ffmpeg
-docker build -t replay-kit:render --build-arg WITH_RENDER=1 .   # + video export and list posters (Chromium, ffmpeg)
+docker build -t ghcr.io/hazem3500/replays .                                    # image without Chromium and ffmpeg
+docker build -t ghcr.io/hazem3500/replays:render --build-arg WITH_RENDER=1 .   # + video export and list posters (Chromium, ffmpeg)
 docker compose up --build                                       # see docker-compose.yml
 ```
 

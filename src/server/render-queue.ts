@@ -305,7 +305,7 @@ export class RenderQueue {
     const key = renderJobId(id, speed, options);
     const output = this.outputKey(id, speed, options);
     // Synchronous, so the job reads as rendering as soon as it leaves the queue.
-    const directory = mkdtempSync(join(this.tempDir ?? tmpdir(), 'replay-kit-render-'));
+    const directory = mkdtempSync(join(this.tempDir ?? tmpdir(), 'replays-render-'));
     const temporary = join(directory, 'render.mp4');
     const timer = setTimeout(
       () => job.controller.abort(new Error(`timed out after ${Math.round(this.timeoutMs / 1000)} s`)),

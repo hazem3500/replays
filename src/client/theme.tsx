@@ -10,7 +10,7 @@ export type Theme = 'light' | 'dark';
 /** A fixed theme once the person flips it; until then, follow the OS. */
 type ThemePreference = Theme | 'system';
 
-export const THEME_KEY = 'replay-kit-theme';
+export const THEME_KEY = 'replays-theme';
 /** Browser chrome colour per theme (`<meta name="theme-color">`); index.html's inline script repeats these. */
 export const THEME_COLORS: Record<Theme, string> = { dark: '#0c0e12', light: '#eff1f5' };
 

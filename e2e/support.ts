@@ -11,7 +11,7 @@ export const origin = () => {
   return value;
 };
 
-export const THEME_KEY = 'replay-kit-theme';
+export const THEME_KEY = 'replays-theme';
 
 /**
  * A private server for a spec file that stores data (uploads, suites, keeps), so the shared server keeps its

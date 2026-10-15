@@ -154,7 +154,7 @@ describe('rrweb import', () => {
   });
 
   it('writes replay.json from a file', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-import-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-import-'));
     const input = join(root, 'events.json');
     await writeFile(input, JSON.stringify({ events: recording() }));
     const result = await importRecording({ rrweb: input, title: 'From file', id: 'from-file', output: join(root, 'out') });

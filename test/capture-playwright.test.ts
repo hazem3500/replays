@@ -57,7 +57,7 @@ describe.skipIf(!CHROME)(
       });
 
       // A replay server the capture uploads to at the end.
-      const dir = await mkdtemp(join(tmpdir(), 'replay-kit-capture-app-'));
+      const dir = await mkdtemp(join(tmpdir(), 'replays-capture-app-'));
       store = new ReplayStore(new MemoryStorage(), join(dir, 'sample'));
       const handle = createApp({ ...appDefaults(), store, clientDir: dir });
       app = createServer((request, response) => void handle(request, response));
@@ -65,7 +65,7 @@ describe.skipIf(!CHROME)(
       appOrigin = `http://127.0.0.1:${(app.address() as AddressInfo).port}`;
 
       scriptedSteps = (JSON.parse(await readFile(join(root, 'sample/demo-shop.steps.json'), 'utf8')) as unknown[]).length;
-      output = join(await mkdtemp(join(tmpdir(), 'replay-kit-capture-')), 'out');
+      output = join(await mkdtemp(join(tmpdir(), 'replays-capture-')), 'out');
       const args = await parseArgs([
         '--url',
         `${demo.origin}/`,

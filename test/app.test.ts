@@ -20,7 +20,7 @@ afterEach(async () => {
 const closedAuth: AuthAdapter = { name: 'closed', authenticate: () => undefined };
 
 async function start(auth: AuthAdapter = appDefaults().auth) {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-app-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-app-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   const handle = createApp({ ...appDefaults(), auth, store, clientDir: join(root, 'client') });
   const server = createServer((request, response) => void handle(request, response));
@@ -77,7 +77,7 @@ describe('replay server', () => {
     const page = await fetch(`${origin}/r/test-replay`, { headers: { accept: 'text/html' } });
     expect(page.status).toBe(200);
     const html = await page.text();
-    expect(html).toContain('<title>Replay Kit</title>');
+    expect(html).toContain('<title>replays</title>');
     expect(html).not.toContain('__PRODUCT_NAME__');
   });
 
@@ -100,12 +100,12 @@ describe('replay server', () => {
     const me = await fetch(`${origin}/api/me`, { headers: { 'x-dev-user': 'ada@example.com' } });
     await expect(me.json()).resolves.toEqual({ id: 'ada@example.com', email: 'ada@example.com' });
     const config = await (await fetch(`${origin}/api/config`)).json();
-    expect(config).toEqual({ name: 'Replay Kit', sourceProviders: ['github', 'gitlab', 'url'], auth: 'none' });
+    expect(config).toEqual({ name: 'replays', sourceProviders: ['github', 'gitlab', 'url'], auth: 'none' });
   });
 
   it('answers unknown and malformed API paths with a JSON 404, not the SPA page', async () => {
     let middlewareCalls = 0;
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-app-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-app-'));
     const handle = createApp({
       ...appDefaults(),
       store: new ReplayStore(join(root, 'data'), join(root, 'sample')),

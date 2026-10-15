@@ -11,7 +11,7 @@ import { startDemoServer } from './demo-server.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 const { server, origin } = await startDemoServer(4173);
-const output = join(await mkdtemp(join(tmpdir(), 'replay-kit-sample-')), 'out');
+const output = join(await mkdtemp(join(tmpdir(), 'replays-sample-')), 'out');
 try {
   const args = await parseArgs([
     '--url',

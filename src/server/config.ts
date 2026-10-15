@@ -8,7 +8,7 @@ import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { normalizeBasePath } from './base-path.ts';
 
 /**
- * The config file (`REPLAY_KIT_CONFIG=/etc/replay-kit/config.json`) holds the non-secret settings; every key
+ * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
  * also has an environment variable, and the environment wins. Secrets (OIDC client secret, storage credentials)
  * are environment-only.
  *
@@ -62,7 +62,7 @@ export async function readConfigFile(path: string | undefined): Promise<FileConf
   try {
     parsed = JSON.parse(await readFile(path, 'utf8'));
   } catch (error) {
-    throw new Error(`cannot read REPLAY_KIT_CONFIG ${path}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
+    throw new Error(`cannot read REPLAYS_CONFIG ${path}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('the config file must be a JSON object');
   const unknown = Object.keys(parsed).filter((key) => !KEYS.has(key));

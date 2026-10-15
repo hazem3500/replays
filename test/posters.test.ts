@@ -31,7 +31,7 @@ async function start(
     busy?: () => boolean;
   } = {},
 ) {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-posters-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-posters-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   await store.save(replay());
   const runs: string[] = [];
@@ -234,7 +234,7 @@ describe('opening still API', () => {
   it('is 503 when stills are off, and pruned with its replay', async () => {
     const off = await start();
     expect((await fetch(off.openUrl())).status).toBe(503);
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-posters-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-posters-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), 1);
     await store.save(replay('old-open'));
     await writeFile(store.openStillFile('old-open'), OPEN_JPEG);
@@ -247,7 +247,7 @@ describe('opening still API', () => {
 
 describe('PosterQueue', () => {
   it('runs one poster at a time, waits while busy, and dedupes requests', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-posters-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-posters-'));
     let busy = true;
     let running = 0;
     let peak = 0;
@@ -281,7 +281,7 @@ describe('PosterQueue', () => {
   });
 
   it('reports a full queue', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-posters-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-posters-'));
     let busy = true;
     const queue = new PosterQueue({
       storage: new FsStorage(root),
@@ -356,7 +356,7 @@ describe('preview API', () => {
   });
 
   it('is pruned with its replay', async () => {
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-posters-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-posters-'));
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), 1);
     await store.save(replay('old-preview'));
     await writeFile(store.previewFile('old-preview'), MP4);

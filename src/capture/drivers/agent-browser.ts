@@ -26,7 +26,7 @@ function stepArgs(step: RawStep) {
 
 /** Drives a session of the `agent-browser` CLI (https://github.com/vercel-labs/agent-browser, `AGENT_BROWSER_BIN` to override the binary). */
 export function agentBrowserDriver(): CaptureDriver {
-  const browser = new AgentBrowser(`replay-kit-${process.pid}-${Date.now()}`);
+  const browser = new AgentBrowser(`replays-${process.pid}-${Date.now()}`);
   let cdp: CdpClient | undefined;
   let launched: LaunchOptions | undefined;
   let harStarted = false;

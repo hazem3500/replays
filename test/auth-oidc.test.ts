@@ -15,7 +15,7 @@ import { appDefaults, replay } from './fixtures.ts';
 
 const b64 = (value: Buffer | string) => Buffer.from(value).toString('base64url');
 
-const CLIENT_ID = 'replay-kit-client';
+const CLIENT_ID = 'replays-client';
 const CLIENT_SECRET = 'client-secret-for-tests';
 const SESSION_SECRET = 'a-session-secret-of-at-least-16-chars';
 const PUBLIC_ORIGIN = 'https://replays.example.test';
@@ -166,7 +166,7 @@ async function start(setup: Setup = {}) {
   const idp = await startIdp(() => clock.now);
   closers.push(idp.close);
   const base = setup.basePath ?? '';
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-oidc-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-oidc-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   const handle = createApp({
     ...appDefaults(),
@@ -518,8 +518,8 @@ describe('bearer tokens for machine uploads', () => {
   });
 
   it('checks the audience against the configured API audience instead of the client id', async () => {
-    const { idp, get } = await start({ audience: 'replay-kit-api' });
-    const wanted = mint(bearerClaims(idp.issuer, { aud: ['other', 'replay-kit-api'] }));
+    const { idp, get } = await start({ audience: 'replays-api' });
+    const wanted = mint(bearerClaims(idp.issuer, { aud: ['other', 'replays-api'] }));
     expect((await get('/api/me', { authorization: `Bearer ${wanted}` })).status).toBe(200);
     const clientToken = mint(bearerClaims(idp.issuer));
     expect((await get('/api/me', { authorization: `Bearer ${clientToken}` })).status).toBe(401);

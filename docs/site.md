@@ -13,7 +13,7 @@ pnpm build:site          # runs `pnpm build` first when dist/client is missing
 Output in `dist/site`:
 
 - `index.html`, `style.css`, `site.js`, `favicon.svg`, `assets/`: the landing page. Every URL is relative, so it works at a
-  domain root and under a sub-path such as `/replay-kit/`.
+  domain root and under a sub-path such as `/replays/`.
 - `demo/`: the viewer build, with JSON files under `demo/api/` generated from `sample/demo-shop.json` and
   `sample/human-demo.json`.
 - `_headers`, `_redirects` (Cloudflare Pages) and `.nojekyll` (GitHub Pages).

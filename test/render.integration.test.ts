@@ -111,7 +111,7 @@ afterAll(() => Promise.all(servers.map((server) => new Promise((done) => server.
 
 describe.skipIf(!ready)('server-side render (Chromium + ffmpeg)', () => {
   it('cancels a running render cleanly (no EPIPE crash, no file left)', { timeout: 120_000 }, async () => {
-    const dataDir = join(await mkdtemp(join(tmpdir(), 'replay-kit-render-cancel-')), 'data');
+    const dataDir = join(await mkdtemp(join(tmpdir(), 'replays-render-cancel-')), 'data');
     await mkdir(join(dataDir, id), { recursive: true });
     await copyFile(sample, join(dataDir, id, 'replay.json'));
     const store = new ReplayStore(dataDir, join(dataDir, '..', 'sample'));
@@ -143,7 +143,7 @@ describe.skipIf(!ready)('server-side render (Chromium + ffmpeg)', () => {
   });
 
   it(`renders ${id} at 15 fps in the native viewport`, { timeout: 600_000 }, async () => {
-    const dataDir = join(await mkdtemp(join(tmpdir(), 'replay-kit-render-')), 'data');
+    const dataDir = join(await mkdtemp(join(tmpdir(), 'replays-render-')), 'data');
     await mkdir(join(dataDir, id), { recursive: true });
     await copyFile(sample, join(dataDir, id, 'replay.json'));
     const store = new ReplayStore(dataDir, join(dataDir, '..', 'sample'));
@@ -257,7 +257,7 @@ const captionsReady = ready && (await stat(captionsSample).catch(() => undefined
 
 describe.skipIf(!captionsReady)('server-side render with step captions', () => {
   it(`draws the step caption into ${captionsId} only when asked`, { timeout: 300_000 }, async () => {
-    const dataDir = join(await mkdtemp(join(tmpdir(), 'replay-kit-render-captions-')), 'data');
+    const dataDir = join(await mkdtemp(join(tmpdir(), 'replays-render-captions-')), 'data');
     await mkdir(join(dataDir, captionsId), { recursive: true });
     await copyFile(captionsSample, join(dataDir, captionsId, 'replay.json'));
     const store = new ReplayStore(dataDir, join(dataDir, '..', 'sample'));
@@ -326,7 +326,7 @@ describe.skipIf(!captionsReady)('server-side render with step captions', () => {
 
 describe.skipIf(!ready || id !== 'demo-shop')('server-side render at the viewer speed with skip inactive', () => {
   it('renders 2× with idle gaps fast-forwarded, as long as the viewer would play it', { timeout: 300_000 }, async () => {
-    const dataDir = join(await mkdtemp(join(tmpdir(), 'replay-kit-render-skip-')), 'data');
+    const dataDir = join(await mkdtemp(join(tmpdir(), 'replays-render-skip-')), 'data');
     await mkdir(join(dataDir, id), { recursive: true });
     await copyFile(sample, join(dataDir, id, 'replay.json'));
     const store = new ReplayStore(dataDir, join(dataDir, '..', 'sample'));

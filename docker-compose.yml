@@ -6,12 +6,12 @@
 # This example uses AUTH_MODE=none and binds to the loopback interface only. Before exposing it to a network,
 # pick an auth adapter (see "Authentication" in the README) and put TLS in front of it.
 services:
-  replay-kit:
+  replays:
     build:
       context: .
       args:
         WITH_RENDER: "0" # "1" adds server-side video export and list posters (larger image)
-    image: replay-kit:local
+    image: ghcr.io/hazem3500/replays:local
     ports:
       - "127.0.0.1:8080:8080"
     environment:

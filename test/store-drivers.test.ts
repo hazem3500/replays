@@ -37,7 +37,7 @@ function counting(storage: ObjectStorage) {
 
 const drivers: Array<[string, () => Promise<ObjectStorage | undefined>]> = [
   ['memory', async () => new MemoryStorage()],
-  ['fs', async () => new FsStorage(join(await mkdtemp(join(tmpdir(), 'replay-kit-drivers-')), 'data'))],
+  ['fs', async () => new FsStorage(join(await mkdtemp(join(tmpdir(), 'replays-drivers-')), 'data'))],
   [
     's3 (in-process emulator)',
     async () => {
@@ -58,7 +58,7 @@ describe.each(drivers)('ReplayStore on %s', (name, make) => {
   const open = async (skip: (reason: string) => void) => {
     const storage = await make();
     if (!storage) skip(`${name}: no emulator here`);
-    const root = await mkdtemp(join(tmpdir(), 'replay-kit-drivers-'));
+    const root = await mkdtemp(join(tmpdir(), 'replays-drivers-'));
     return new ReplayStore(storage!, join(root, 'sample'), undefined, { listTtlMs: 0 });
   };
 

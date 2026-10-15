@@ -18,7 +18,7 @@ afterEach(async () => {
 });
 
 async function start() {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-suites-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-suites-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   const handle = createApp({
     ...appDefaults(),

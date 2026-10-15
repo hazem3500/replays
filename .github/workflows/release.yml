@@ -42,7 +42,7 @@ jobs:
         run: pnpm pack --pack-destination dist/pack
       - uses: actions/upload-artifact@v4
         with:
-          name: replay-kit-package
+          name: replays-package
           path: dist/pack/*.tgz
           retention-days: 30
       - name: Decide whether publishing is possible

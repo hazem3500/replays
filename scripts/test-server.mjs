@@ -39,7 +39,7 @@ async function waitForHealth(origin, child, timeoutMs = 15_000) {
  */
 export async function startServer({ env = {}, capture = false } = {}) {
   const port = await freePort();
-  const dataDir = await mkdtemp(join(tmpdir(), 'replay-kit-e2e-'));
+  const dataDir = await mkdtemp(join(tmpdir(), 'replays-e2e-'));
   const child = spawn(process.execPath, ['--experimental-strip-types', '--no-warnings', 'src/server/main.ts'], {
     cwd: root,
     env: { ...process.env, AUTH_MODE: 'none', PORT: String(port), DATA_DIR: dataDir, ...env },

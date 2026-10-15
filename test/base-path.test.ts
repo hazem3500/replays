@@ -18,7 +18,7 @@ afterEach(async () => {
 const INDEX = `<!doctype html><html><head><meta name="app-base" content="" /><meta name="app-name" content="__PRODUCT_NAME__" /><meta name="app-logo" content="__PRODUCT_LOGO__" /><title>__PRODUCT_NAME__</title><link rel="modulepreload" href="./assets/react.js" /><script type="module" src="./assets/main.js"></script></head></html>`;
 
 async function start(basePath: string) {
-  const root = await mkdtemp(join(tmpdir(), 'replay-kit-base-'));
+  const root = await mkdtemp(join(tmpdir(), 'replays-base-'));
   const clientDir = join(root, 'client');
   await mkdir(join(clientDir, 'assets'), { recursive: true });
   await writeFile(join(clientDir, 'index.html'), INDEX);
@@ -119,7 +119,7 @@ describe('served at the root', () => {
     for (const path of ['/', '/healthz']) expect(await (await fetch(`${origin}${path}`)).text()).toBe('ok');
     const index = await fetch(`${origin}/`, { headers: html });
     expect(index.status).toBe(200);
-    expect(await index.text()).toContain('<title>Replay Kit</title>');
+    expect(await index.text()).toContain('<title>replays</title>');
   });
 
   it('writes upload receipts without a prefix', async () => {

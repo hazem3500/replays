@@ -140,7 +140,7 @@ describe('tracing on (in-memory exporter)', () => {
   });
 
   async function start() {
-    const dir = await mkdtemp(join(tmpdir(), 'replay-kit-tracing-'));
+    const dir = await mkdtemp(join(tmpdir(), 'replays-tracing-'));
     const store = new ReplayStore(tracedStorage(new FsStorage(join(dir, 'data'))), join(dir, 'sample'));
     const handle = createApp({
       ...appDefaults(),

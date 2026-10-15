@@ -112,12 +112,12 @@ jobs:
           context: .
           push: false
           load: true
-          tags: replay-kit:ci
+          tags: ghcr.io/hazem3500/replays:ci
           cache-from: type=gha
           cache-to: type=gha,mode=max
       - name: Container answers the health check
         run: |
-          docker run -d --name rk -p 8080:8080 replay-kit:ci
+          docker run -d --name rk -p 8080:8080 ghcr.io/hazem3500/replays:ci
           for i in $(seq 1 30); do curl -fsS http://127.0.0.1:8080/healthz && exit 0; sleep 1; done
           docker logs rk
           exit 1

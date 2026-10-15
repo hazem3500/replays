@@ -33,7 +33,7 @@ afterAll(async () => {
 
 const drivers: Array<[string, () => Promise<ObjectStorage | undefined>]> = [
   ['memory', async () => new MemoryStorage()],
-  ['fs', async () => new FsStorage(join(await mkdtemp(join(tmpdir(), 'replay-kit-storage-')), 'data'))],
+  ['fs', async () => new FsStorage(join(await mkdtemp(join(tmpdir(), 'replays-storage-')), 'data'))],
   [
     's3 (in-process emulator)',
     async () => {
@@ -104,7 +104,7 @@ describe.each(drivers)('%s storage', (name, make) => {
 
   it('uploads local files', async ({ skip }) => {
     const store = await storage(skip);
-    const file = join(await mkdtemp(join(tmpdir(), 'replay-kit-upload-')), 'render.mp4');
+    const file = join(await mkdtemp(join(tmpdir(), 'replays-upload-')), 'render.mp4');
     await writeFile(file, Buffer.alloc(3000, 7));
     await expect(store.upload('e/rendered-1x-skip.mp4', file, { contentType: 'video/mp4' })).resolves.toMatchObject({ size: 3000 });
     await expect(store.upload('e/rendered-1x-skip.mp4', file, { createOnly: true })).rejects.toBeInstanceOf(ObjectExistsError);

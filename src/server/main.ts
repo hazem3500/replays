@@ -21,7 +21,7 @@ const root = resolve(import.meta.dirname, '../..');
 let settings: Awaited<ReturnType<typeof loadSettings>>;
 let auth: Awaited<ReturnType<typeof authFromEnv>>;
 try {
-  settings = await loadSettings(process.env, await readConfigFile(process.env.REPLAY_KIT_CONFIG));
+  settings = await loadSettings(process.env, await readConfigFile(process.env.REPLAYS_CONFIG));
   auth = await authFromEnv(process.env);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);

@@ -14,7 +14,7 @@ AUTH_PLUGIN=./examples/auth-signed-header/plugin.mjs \
 SIGNED_HEADER_NAME=x-signed-identity \
 SIGNED_HEADER_JWKS_URL=https://idp.example.com/.well-known/jwks.json \
 SIGNED_HEADER_ISSUER=https://idp.example.com \
-SIGNED_HEADER_AUDIENCE=replay-kit \
+SIGNED_HEADER_AUDIENCE=replays \
 SIGNED_HEADER_ALLOW=@example.com \
 pnpm start
 ```

@@ -63,7 +63,7 @@ example (verifies a signed JWT forwarded by an identity-aware proxy); its test l
 }
 ```
 
-Set `CONTEXT_SCHEMA_FILE` on the server (and pass the same file to `replay-kit capture --context-schema` to fail
+Set `CONTEXT_SCHEMA_FILE` on the server (and pass the same file to `replays capture --context-schema` to fail
 before the browser starts). Uploads violating it get `400 context.fields.plan must be equal to one of the allowed
 values`. The viewer renders the Context tab from the schema: `title` as the label, `description` as help text,
 property order, booleans as Yes/No, scalar arrays as chips, nested objects as indented lists, `format: "uri"` as a link

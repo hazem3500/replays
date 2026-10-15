@@ -30,8 +30,8 @@ import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
 
-const INSPECTOR_COLLAPSED_KEY = 'replay-kit-inspector-collapsed';
-const CAPTIONS_KEY = 'replay-kit-captions';
+const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
+const CAPTIONS_KEY = 'replays-captions';
 /** A folded panel keeps just its tab row (36 px) and the hairline above it. */
 const INSPECTOR_TABS_HEIGHT = 37;
 /** An expanded request grows a shorter desktop panel to this share of the window… */
@@ -683,7 +683,7 @@ function StepCaption() {
 /** How long a finger rests on "Copy link" before its menu opens. */
 const LONG_PRESS_MS = 450;
 /** Set once the copy-link menu has been opened by any route; then the touch hint stops. */
-const LONG_PRESS_HINT_KEY = 'replay-kit-copy-menu-found';
+const LONG_PRESS_HINT_KEY = 'replays-copy-menu-found';
 
 function plainLink() {
   const url = new URL(location.href);

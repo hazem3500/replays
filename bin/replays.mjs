@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Entry point of the `replay-kit` command. A built checkout (`pnpm build:cli`) runs the bundled CLI; otherwise,
+// Entry point of the `replays` command. A built checkout (`pnpm build:cli`) runs the bundled CLI; otherwise,
 // and for `serve` (which needs the whole repository: the server, the built viewer, the samples), the TypeScript
 // sources run directly with Node's type stripping.
 import { spawnSync } from 'node:child_process';
@@ -16,6 +16,6 @@ if (existsSync(built) && args[0] !== 'serve') {
   const result = spawnSync(process.execPath, ['--experimental-strip-types', '--no-warnings', source, ...args], { stdio: 'inherit' });
   process.exit(result.status ?? 1);
 } else {
-  console.error('replay-kit: neither dist/cli/cli.mjs nor src/cli.ts exists; run `pnpm build:cli`.');
+  console.error('replays: neither dist/cli/cli.mjs nor src/cli.ts exists; run `pnpm build:cli`.');
   process.exit(1);
 }

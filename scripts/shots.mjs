@@ -28,7 +28,7 @@ const free = () =>
 /** The real server, with list posters on when a Chrome is available, over a throwaway data directory. */
 async function startServer() {
   const port = await free();
-  const dataDir = await mkdtemp(join(tmpdir(), 'replay-kit-shots-'));
+  const dataDir = await mkdtemp(join(tmpdir(), 'replays-shots-'));
   const child = spawn(process.execPath, ['--experimental-strip-types', '--no-warnings', 'src/server/main.ts'], {
     cwd: root,
     env: {
@@ -56,7 +56,7 @@ async function startServer() {
 
 async function shoot(browser, { url, file, width, height, theme = 'dark', wait = 1500, fullPage = false, ready }) {
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1, colorScheme: theme });
-  await context.addInitScript((value) => localStorage.setItem('replay-kit-theme', value), theme);
+  await context.addInitScript((value) => localStorage.setItem('replays-theme', value), theme);
   const page = await context.newPage();
   await page.goto(url);
   if (ready) await ready(page);
