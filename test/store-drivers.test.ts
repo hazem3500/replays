@@ -99,6 +99,42 @@ describe.each(drivers)('ReplayStore on %s', (name, make) => {
     await expect(store.list()).resolves.toHaveLength(3);
   });
 
+  it('lists suites with their runs’ replays from the replay list, not a stat per run', async ({ skip }) => {
+    const base = await open(skip);
+    const store = new ReplayStore(base.storage, base.sampleDir, undefined, { listTtlMs: 60_000 });
+    await store.registerSuite('indexed', {
+      version: 1,
+      id: 'indexed',
+      title: 'Review',
+      createdAt: '2026-10-12T00:00:00.000Z',
+      subject: { provider: 'github', url: 'https://github.com/example-org/shop-demo/issues/42', ref: 'example-org/shop-demo#42' },
+    });
+    for (let index = 0; index < 4; index++) {
+      const runId = `run-${index}`;
+      await store.registerRun('indexed', runId, {
+        id: runId,
+        sequence: index + 1,
+        label: `Run ${index}`,
+        status: 'running',
+        startedAt: '2026-10-12T00:00:00.000Z',
+      });
+      const bundle = replay(`indexed-${index}`);
+      bundle.suiteRun = { suiteId: 'indexed', runId };
+      await store.save(bundle);
+      await store.attachReplay('indexed', runId, bundle);
+    }
+    await store.list();
+    const stat = store.storage.stat.bind(store.storage);
+    const statted: string[] = [];
+    store.storage.stat = async (key) => {
+      statted.push(key);
+      return stat(key);
+    };
+    const [entry] = await store.listSuiteIndex();
+    expect(entry!.runDetails.map((run) => run.replay?.id)).toEqual(['indexed-0', 'indexed-1', 'indexed-2', 'indexed-3']);
+    expect(statted.filter((key) => key.startsWith('indexed-'))).toEqual([]);
+  });
+
   it('keeps every concurrent run registration, across two replicas too', async ({ skip }) => {
     const store = await open(skip);
     // A second process on the same bucket: its own in-process lock, so only write preconditions protect runs.

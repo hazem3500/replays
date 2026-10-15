@@ -315,12 +315,29 @@ export class ReplayStore {
 
   /** Suite summaries with their runs and each run's replay summary, for the grouped index. */
   async listSuiteIndex(limit = 100): Promise<ReviewSuiteIndexEntry[]> {
-    const suites = await this.listSuites(limit);
-    return Promise.all(suites.map((suite) => this.suiteIndexEntry(suite)));
+    // Runs' replays come from the memoized list (one lookup each), not three stats per run; the suites' own
+    // retention stats go a few dozen at a time.
+    const [suites, summaries] = await Promise.all([this.listSuites(limit), this.list()]);
+    const listed = new Map(summaries.map((summary) => [summary.id, summary]));
+    const gate = limiter(32);
+    return Promise.all(
+      suites.map(async (suite) => {
+        await gate.acquire();
+        try {
+          return await this.suiteIndexEntry(suite, listed);
+        } finally {
+          gate.release();
+        }
+      }),
+    );
   }
 
-  /** One suite as the index (and the suite workspace) lists it: summary plus runs with replay summaries. */
-  async suiteIndexEntry(suite: ReviewSuite): Promise<ReviewSuiteIndexEntry> {
+  /**
+   * One suite as the index (and the suite workspace) lists it: summary plus runs with replay summaries. With
+   * `listed` (the index), a run's replay is looked up there, and read on its own only when the list (memoized
+   * for a few seconds) does not have it yet.
+   */
+  async suiteIndexEntry(suite: ReviewSuite, listed?: ReadonlyMap<string, ReplaySummary>): Promise<ReviewSuiteIndexEntry> {
     const retention = await this.suiteRetentionOf(suite);
     return {
       ...summarizeReviewSuite(suite),
@@ -329,7 +346,9 @@ export class ReplayStore {
         suite.runs
           .toSorted((a, b) => a.sequence - b.sequence)
           .map(async ({ id, sequence, label, status, startedAt, finishedAt, replayId }) => {
-            const found = replayId ? await this.summary(replayId, { suites: false }).catch(() => undefined) : undefined;
+            const found = replayId
+              ? (listed?.get(replayId) ?? (await this.summary(replayId, { suites: false }).catch(() => undefined)))
+              : undefined;
             // A kept suite keeps its runs' replays.
             const replay = found && retention.kept ? { ...found, expiresAt: null } : found;
             return {

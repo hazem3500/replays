@@ -41,6 +41,9 @@ const resolvedSubject = {
   label: 'example-org/shop-demo#42',
 };
 
+const put = (url: string, body: unknown) =>
+  fetch(url, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+
 describe('review suites', () => {
   it('does not call an empty suite complete', () => {
     expect(suiteOverallStatus([])).toBe('Waiting');
@@ -198,6 +201,33 @@ describe('review suites', () => {
       body: JSON.stringify({ ...firstRun, status: 'running' }),
     });
     expect(downgrade.status).toBe(409);
+  });
+
+  it('stores suite and run registrations through the same privacy pass as replay uploads', async () => {
+    const { origin } = await start();
+    const api = `${origin}/api/suites/review-redacted`;
+    const suite = {
+      version: 1,
+      id: 'review-redacted',
+      title: 'Repro of https://app.example.test/reports?api_token=title-secret',
+      createdAt: '2026-10-10T12:00:00.000Z',
+      subject,
+    };
+    expect((await put(api, suite)).status).toBe(200);
+    // A re-registration of the same suite still matches the stored (sanitized) one.
+    expect((await put(api, suite)).status).toBe(200);
+    const run = {
+      id: 'attempt-1',
+      sequence: 1,
+      label: 'Opened https://app.example.test/?token=run-secret on desktop',
+      status: 'running',
+      startedAt: '2026-10-10T12:01:00.000Z',
+    };
+    expect((await put(`${api}/runs/attempt-1`, run)).status).toBe(200);
+    expect((await put(`${api}/runs/attempt-1`, run)).status).toBe(200);
+    const stored = await (await fetch(api)).text();
+    for (const secret of ['title-secret', 'run-secret']) expect(stored).not.toContain(secret);
+    expect(stored).toContain('https://app.example.test/reports?api_token=%5Bredacted%5D');
   });
 
   it('requires a registered suite run before linking a bundle and validates the suite subject', async () => {

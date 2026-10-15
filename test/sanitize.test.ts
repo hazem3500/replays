@@ -212,6 +212,40 @@ describe('URLs outside URL-named fields', () => {
     expect(serialized).toContain('https://cdn.example.com/b.png 2x');
   });
 
+  it('redacts relative URLs in srcset and CSS url(), keeping their form', () => {
+    const [snapshot, mutation] = sanitizeUrlFields([
+      {
+        type: 2,
+        data: {
+          node: {
+            attributes: {
+              srcset: '/a.png?token=srcset-secret 1x, img/b.png?w=2,3&api_key=key-secret 2x,../c.png 3x',
+              imagesrcset: '?signature=preload-secret 1x',
+              style: "background:url('../bg.png?access_token=style-secret#x') no-repeat",
+              _cssText: '.a{background:url(i.png?X-Amz-Signature=css-secret)}.b{background:url(/plain.png?v=1)}',
+            },
+          },
+        },
+      },
+      {
+        type: 3,
+        data: {
+          source: 0,
+          attributes: [{ id: 2, attributes: { style: { 'background-image': 'url(//cdn.example.com/x.png?token=mutation-secret)' } } }],
+        },
+      },
+    ]);
+    const serialized = JSON.stringify([snapshot, mutation]);
+    for (const secret of ['srcset-secret', 'key-secret', 'preload-secret', 'style-secret', 'css-secret', 'mutation-secret']) {
+      expect(serialized).not.toContain(secret);
+    }
+    const attributes = (snapshot as { data: { node: { attributes: Record<string, string> } } }).data.node.attributes;
+    expect(attributes.srcset).toBe('/a.png?token=%5Bredacted%5D 1x, img/b.png?w=2%2C3&api_key=%5Bredacted%5D 2x,../c.png 3x');
+    expect(attributes.style).toBe("background:url('../bg.png?access_token=%5Bredacted%5D#x') no-repeat");
+    expect(attributes._cssText).toContain('url(/plain.png?v=1)');
+    expect(sanitizeUrlFields(snapshot)).toEqual(snapshot);
+  });
+
   it('leaves text without sensitive URLs byte-for-byte unchanged', () => {
     const text = 'see https://example.com?view=all and http://a.test/path, then https://b.test/?page=2';
     expect(sanitizeUrlFields({ message: text })).toEqual({ message: text });

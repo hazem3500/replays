@@ -132,7 +132,10 @@ function cardFor(target: Route, clicked?: HTMLAnchorElement | null) {
   const card = link?.closest<HTMLElement>('.feed-item');
   if (!link || !card) return undefined;
   const poster = card.querySelector('.stack-front > .poster') ?? card.querySelector(':scope > .poster');
-  return { card, link, poster: poster && onScreen(poster) ? poster : undefined, source: card.querySelector('.source-lead') };
+  // Only a linked source has a top-bar chip to morph into; a plain one ("Agent capture") stays in the card's layer
+  // and moves with it, instead of an unpaired layer that pops in place.
+  const source = card.querySelector('.source-lead:not(.source-lead-plain)');
+  return { card, link, poster: poster && onScreen(poster) ? poster : undefined, source };
 }
 
 /** Names the index side: the card's poster, title, badge and source line. */

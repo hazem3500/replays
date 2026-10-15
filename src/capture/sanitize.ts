@@ -8,6 +8,9 @@ const URL_HEADER = /^(content-location|location|origin|referer|referrer)$/i;
 const URL_FIELD = /^(action|currentSrc|formAction|href|poster|src|url|xlink:href)$/i;
 /** Absolute URLs inside free text: srcset, ping, style/CSS url(), meta content, console messages, labels. */
 const EMBEDDED_URL = /\b(?:https?|wss?):\/\/[^\s"'`()<>\\]+/gi;
+/** CSS `url(...)` in styles and stylesheet text, relative or absolute. */
+const CSS_URL = /url\(\s*(['"]?)([^'"()\s]+)\1\s*\)/gi;
+const SRCSET_FIELD = /^(imagesrcset|srcset)$/i;
 const NETWORK_FIELDS = new Set([
   'id',
   'at',
@@ -96,14 +99,44 @@ export function sanitizeUrl(value: string) {
 }
 
 /**
- * Redacts absolute URLs embedded in free text. Only URLs that carry credentials or a sensitive
- * parameter are rewritten, so other text stays byte-for-byte (and a second pass changes nothing).
+ * Redacts absolute URLs embedded in free text, and CSS url() values (relative ones too). Only URLs that carry
+ * credentials or a sensitive parameter are rewritten, so other text stays byte-for-byte (and a second pass
+ * changes nothing).
  */
 export function sanitizeEmbeddedUrls(text: string) {
-  if (!text.includes('://')) return text;
-  return text.replace(EMBEDDED_URL, (match) => {
-    const clean = sanitizeUrl(match);
-    return clean.includes('%5Bredacted%5D') || /^[a-z]+:\/\/[^/?#]*@/i.test(match) ? clean : match;
+  const styled = text.includes('url(')
+    ? text.replace(CSS_URL, (match, quote: string, url: string) => {
+        const clean = redactKnownUrl(url);
+        return clean === url ? match : `url(${quote}${clean}${quote})`;
+      })
+    : text;
+  if (!styled.includes('://')) return styled;
+  return styled.replace(EMBEDDED_URL, (match) => redactKnownUrl(match));
+}
+
+/**
+ * A value known to be a URL (a srcset candidate, a CSS url()), relative ones included: rewritten only when it
+ * carries credentials or a sensitive parameter. Relative paths keep their exact form (`../`, no leading slash).
+ */
+function redactKnownUrl(url: string) {
+  if (/^([a-z][a-z\d+.-]*:|\/\/)/i.test(url)) {
+    const clean = sanitizeUrl(url);
+    return clean.includes('%5Bredacted%5D') || /^([a-z][a-z\d+.-]*:)?\/\/[^/?#]*@/i.test(url) ? clean : url;
+  }
+  const hashAt = url.indexOf('#');
+  const beforeHash = hashAt >= 0 ? url.slice(0, hashAt) : url;
+  const queryAt = beforeHash.indexOf('?');
+  const query = queryAt >= 0 ? `?${redactSensitiveParameters(beforeHash.slice(queryAt + 1))}` : '';
+  const clean = `${queryAt >= 0 ? beforeHash.slice(0, queryAt) : beforeHash}${query}${hashAt >= 0 ? sanitizeHash(url.slice(hashAt)) : ''}`;
+  return clean.includes('%5Bredacted%5D') ? clean : url;
+}
+
+/** srcset / imagesrcset: each candidate's URL (up to whitespace, trailing commas aside), relative ones included. */
+function sanitizeSrcset(value: string) {
+  return value.replace(/(^|,)(\s*)(\S+)/g, (match, comma: string, space: string, candidate: string) => {
+    const url = candidate.replace(/,+$/, '');
+    const clean = redactKnownUrl(url);
+    return clean === url ? match : `${comma}${space}${clean}${candidate.slice(url.length)}`;
   });
 }
 
@@ -114,6 +147,7 @@ export function sanitizeUrlFields<T>(value: T): T {
   const sanitized = Object.fromEntries(
     Object.entries(value).map(([key, nested]) => {
       if (typeof nested === 'string' && URL_FIELD.test(key)) return [key, sanitizeUrl(nested)];
+      if (typeof nested === 'string' && SRCSET_FIELD.test(key)) return [key, sanitizeEmbeddedUrls(sanitizeSrcset(nested))];
       return [key, sanitizeUrlFields(nested)];
     }),
   );

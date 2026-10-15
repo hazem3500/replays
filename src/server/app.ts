@@ -7,7 +7,7 @@ import { promisify } from 'node:util';
 import { gunzip } from 'node:zlib';
 
 import { buildHumanBundle, defaultId } from '../capture/human-bundle.ts';
-import { sanitizeReplayBundle } from '../capture/sanitize.ts';
+import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
 import { assertReplayBundle, assertReplayTags, type ReplayBundle, type ReplayFilters, isReplayTag } from '../shared/replay.ts';
 import {
   assertReviewRunRegistration,
@@ -420,7 +420,9 @@ export function createApp(options: AppOptions) {
       }
       if (suitePath && request.method === 'PUT') {
         const body = await readBody(request, 64 * 1024);
-        const input: unknown = JSON.parse(body.toString('utf8'));
+        // Same privacy pass as replay uploads (titles, source links, labels). Idempotent, so a re-registration of the
+        // same suite still compares equal.
+        const input: unknown = sanitizeUrlFields(JSON.parse(body.toString('utf8')));
         if (suitePath[2]) {
           assertReviewRunRegistration(input, suitePath[2]);
           if (input.context) resolveContext({ context: input.context } as ReplayBundle, options);
