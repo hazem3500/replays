@@ -25,7 +25,7 @@ import type { PluginSpec } from '../plugin/types.ts';
  *     "githubHost": "github.example.com",          GITHUB_HOST
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
  *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
- *     "beta": { "editor": false },                 REPLAYS_BETA_EDITOR (off by default; src/server/beta.ts)
+ *     "beta": { "editor": false, "malleable": false },  REPLAYS_BETA_EDITOR, REPLAYS_BETA_MALLEABLE (off by default; src/server/beta.ts)
  *     "comments": { "enabled": true },             REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
  *     "auth": "iap-header",                        AUTH_MODE (a built-in mode or an auth adapter a plugin registered)
  *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
@@ -44,7 +44,7 @@ export interface FileConfig {
   githubHost?: string;
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
-  beta?: { editor?: boolean };
+  beta?: { editor?: boolean; malleable?: boolean };
   comments?: { enabled?: boolean };
   auth?: string;
   storage?: string;

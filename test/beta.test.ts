@@ -9,14 +9,15 @@ import { join } from 'node:path';
 
 describe('beta flags', () => {
   it('are all off by default', () => {
-    expect(betaFromEnv({})).toEqual({ editor: false });
+    expect(betaFromEnv({})).toEqual({ editor: false, malleable: false });
   });
 
   it('read REPLAYS_BETA_EDITOR, which beats the config file', () => {
-    for (const on of ['true', '1', 'YES', 'on']) expect(betaFromEnv({ REPLAYS_BETA_EDITOR: on })).toEqual({ editor: true });
+    for (const on of ['true', '1', 'YES', 'on'])
+      expect(betaFromEnv({ REPLAYS_BETA_EDITOR: on })).toEqual({ editor: true, malleable: false });
     for (const off of ['false', '0', 'no', 'off', ''])
-      expect(betaFromEnv({ REPLAYS_BETA_EDITOR: off }, { editor: true })).toEqual({ editor: false });
-    expect(betaFromEnv({}, { editor: true })).toEqual({ editor: true });
+      expect(betaFromEnv({ REPLAYS_BETA_EDITOR: off }, { editor: true })).toEqual({ editor: false, malleable: false });
+    expect(betaFromEnv({}, { editor: true })).toEqual({ editor: true, malleable: false });
   });
 
   it('refuse values that are not booleans', () => {
@@ -28,9 +29,12 @@ describe('beta flags', () => {
     const dir = await mkdtemp(join(tmpdir(), 'replays-beta-'));
     const path = join(dir, 'config.json');
     await writeFile(path, JSON.stringify({ beta: { editor: true } }));
-    expect((await loadSettings({}, await readConfigFile(path))).beta).toEqual({ editor: true });
-    expect((await loadSettings({ REPLAYS_BETA_EDITOR: 'false' }, await readConfigFile(path))).beta).toEqual({ editor: false });
-    expect((await loadSettings({})).beta).toEqual({ editor: false });
+    expect((await loadSettings({}, await readConfigFile(path))).beta).toEqual({ editor: true, malleable: false });
+    expect((await loadSettings({ REPLAYS_BETA_EDITOR: 'false' }, await readConfigFile(path))).beta).toEqual({
+      editor: false,
+      malleable: false,
+    });
+    expect((await loadSettings({})).beta).toEqual({ editor: false, malleable: false });
   });
 
   it('are written into index.html for the client, empty when off', () => {

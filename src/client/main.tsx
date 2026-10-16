@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
 import { registerCommentsFeature } from './comments/feature.tsx';
+import { betaMalleable } from './malleable/flag.ts';
 import { loadClientPlugins } from './plugins/load.ts';
 import './tailwind.css';
 
@@ -25,3 +26,6 @@ flushSync(() =>
 
 // Browser entries of the server's plugins (src/client/plugins/): loaded after the first paint, failures isolated.
 void loadClientPlugins();
+
+// Beta (REPLAYS_BETA_MALLEABLE): saved user plugins and the agent tools. Off: the code is never requested.
+if (betaMalleable()) void import('./malleable/boot.ts').then((module) => module.boot());

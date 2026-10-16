@@ -1,7 +1,7 @@
-import { FastForwardIcon, PencilIcon, PinIcon, PinOffIcon } from 'lucide-react';
+import { FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
-import { type CSSProperties, memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
@@ -15,6 +15,8 @@ import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
+import { betaMalleable } from './malleable/flag.ts';
+import { openWorkshop } from './malleable/ui-state.ts';
 import { usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
@@ -46,6 +48,9 @@ import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
+
+// Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
+const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
 
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
@@ -338,6 +343,9 @@ export function Viewer({
     () => [
       ...(keepItem ? [keepItem] : []),
       ...pluginMenu.items,
+      ...(betaMalleable()
+        ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
+        : []),
       // Useless on phones: no keyboard.
       ...(mobile
         ? []
@@ -521,6 +529,11 @@ export function Viewer({
         />
         <StepAnnouncer />
         {pluginMenu.drawer}
+        {betaMalleable() ? (
+          <Suspense fallback={null}>
+            <MalleableHost bundle={bundle} player={player} />
+          </Suspense>
+        ) : null}
         <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       </main>
     </ViewerContext.Provider>

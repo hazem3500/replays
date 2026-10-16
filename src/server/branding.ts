@@ -88,7 +88,7 @@ export function publicConfig(
     sourceProviders: string[];
     auth: string;
     plugins?: string[];
-    beta?: { editor: boolean };
+    beta?: { editor: boolean; malleable?: boolean };
     comments?: boolean;
   },
 ) {
@@ -99,7 +99,7 @@ export function publicConfig(
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,
     plugins: extra.plugins ?? [],
-    beta: extra.beta ?? { editor: false },
+    beta: extra.beta ?? { editor: false, malleable: false },
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
   };
 }
