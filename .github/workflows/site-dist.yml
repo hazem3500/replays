@@ -1,0 +1,34 @@
+# Builds the static landing page + demo (docs/site.md) on every push to main and force-pushes the output to the
+# `site-dist` branch. A Kody webhook (package @oz/replays-site) deploys that branch to Cloudflare Pages
+# (replays.zem.cool). No Cloudflare credentials live in this repo; only static files are published.
+name: Site
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: site-dist
+  cancel-in-progress: true
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build:site
+      - name: Publish dist/site to the site-dist branch
+        run: |
+          cd dist/site
+          git init -q -b site-dist
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -qm "site: ${GITHUB_SHA::7}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" site-dist
