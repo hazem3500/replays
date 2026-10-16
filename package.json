@@ -23,6 +23,7 @@
     "test:e2e": "vite build --logLevel warn && playwright test",
     "shots": "vite build --logLevel warn && node scripts/shots.mjs",
     "shots:comments": "vite build --logLevel warn && node scripts/shots-comments.mjs",
+    "shots:malleable": "vite build --logLevel warn && node --experimental-strip-types --no-warnings scripts/shots-malleable.mjs",
     "sample": "node scripts/record-sample.mjs",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "test:distro": "pnpm build && pnpm build:cli && pnpm --filter @hazem3500/replays-example-custom-distro build && pnpm --filter @hazem3500/replays-example-custom-distro typecheck && playwright test -c examples/custom-distro/playwright.config.ts",

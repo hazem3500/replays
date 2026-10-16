@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/comments.schema.json",
+  "title": "Replay comments",
+  "description": "`<replay id>/comments.json`: every comment, reply and reaction on one replay. `at` is on the SOURCE timeline (ms from the first rrweb event), the same clock saved edits use, so a comment never moves when someone edits the replay. Source of truth: src/shared/comments.ts.",
+  "type": "object",
+  "required": ["version", "comments"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "comments": { "type": "array", "maxItems": 500, "items": { "$ref": "#/$defs/comment" } }
+  },
+  "$defs": {
+    "comment": {
+      "type": "object",
+      "required": ["id", "body", "author", "createdAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^c-[a-z0-9]{6,20}$" },
+        "parentId": { "type": "string", "description": "The top-level comment this replies to." },
+        "at": { "type": "number", "minimum": 0, "description": "Source time, ms. Absent: about the whole replay." },
+        "body": { "type": "string", "maxLength": 2000, "description": "Empty for a reaction." },
+        "emoji": { "enum": ["👍", "🎉", "👀", "🤔", "🐛"] },
+        "author": {
+          "type": "object",
+          "required": ["id"],
+          "additionalProperties": false,
+          "properties": {
+            "id": { "type": "string", "description": "Auth adapter identity. Stays on the server; the API serves `mine` instead." },
+            "name": { "type": "string" },
+            "avatarUrl": { "type": "string", "pattern": "^https://" },
+            "anonymous": { "const": true }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "editedAt": { "type": "string", "format": "date-time" },
+        "resolved": {
+          "type": "object",
+          "required": ["by", "at"],
+          "properties": { "by": { "type": "string" }, "at": { "type": "string", "format": "date-time" } }
+        }
+      }
+    }
+  }
+}

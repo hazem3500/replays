@@ -303,7 +303,7 @@ function Editor({ entry, onGone }: { entry: PluginEntry; onGone: () => void }) {
             </button>
           </div>
           <div className="mall-actions">
-            <button type="button" className="mall-btn" data-testid="plugin-toggle" onClick={() => manager.setEnabled(entry.id, off)}>
+            <button type="button" className="mall-btn" data-testid="plugin-switch" onClick={() => manager.setEnabled(entry.id, off)}>
               {off ? 'Switch on' : 'Switch off on this device'}
             </button>
             <button

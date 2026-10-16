@@ -46,6 +46,7 @@ export async function connectAgent() {
   disconnectAgent();
   set({ status: 'connecting', activity: [] });
   const { token } = await pairBridge();
+  set({ token });
   const stream = new EventSource(bridgeEventsUrl(token));
   source = stream;
   stream.addEventListener('open', () => set({ status: 'connected' }));
@@ -65,7 +66,6 @@ export async function connectAgent() {
       }
     })();
   });
-  set({ token });
   return token;
 }
 

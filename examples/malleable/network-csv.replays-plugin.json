@@ -1,0 +1,19 @@
+{
+  "format": "replays-user-plugin/1",
+  "manifest": {
+    "format": "replays-user-plugin/1",
+    "id": "network-csv",
+    "name": "Network as CSV",
+    "description": "Downloads the replay network log as a CSV file. Asks before downloading.",
+    "permissions": ["replay:read", "export:download"],
+    "contributes": {
+      "actions": [
+        {
+          "id": "csv",
+          "label": "Export network as CSV"
+        }
+      ]
+    }
+  },
+  "source": "replays.action('csv', async (ctx) => {\n  const quote = (v) => '\"' + String(v).replaceAll('\"', '\"\"') + '\"';\n  const rows = [['at_ms', 'method', 'status', 'url', 'duration_ms']].concat(\n    ctx.replay.network.map((r) => [r.at, r.method, r.status, r.url, r.duration]),\n  );\n  await ctx.download(ctx.replay.meta.id + '-network.csv', 'text/csv', rows.map((r) => r.map(quote).join(',')).join('\\n'));\n});\n"
+}

@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
@@ -383,4 +384,63 @@ test('WebMCP: the page registers its tools on document.modelContext', async ({ p
     return typeof raw === 'string' ? JSON.parse(raw) : raw;
   });
   expect(state.replay.title).toBe('Checkout with failures');
+});
+
+const example = async (name: string) =>
+  JSON.parse(await readFile(resolve(import.meta.dirname, `../examples/malleable/${name}.replays-plugin.json`), 'utf8'));
+
+test('the shipped examples load from files and do what they say: a comment template and a CSV export', async ({ page, request }) => {
+  const url = await replayUrl(request);
+  const replayId = url.split('/r/')[1]!;
+  await openReplay(page, url);
+  await openWorkshop(page);
+  await page
+    .getByTestId('plugin-import-input')
+    .setInputFiles(resolve(import.meta.dirname, '../examples/malleable/bug-report-comment.replays-plugin.json'));
+  await page
+    .getByTestId('plugin-import-input')
+    .setInputFiles(resolve(import.meta.dirname, '../examples/malleable/network-csv.replays-plugin.json'));
+  await expect(page.getByTestId('plugin-item:bug-template')).toBeVisible();
+  await expect(page.getByTestId('plugin-item:network-csv')).toBeVisible();
+  await closeWorkshop(page);
+
+  // Bug-report template at the playhead (after seeking to 7.2 s, where the console error is).
+  await page.evaluate(async () => {
+    const context = (document as any).modelContext;
+    const seek = (await context.getTools()).find((tool: { name: string }) => tool.name === 'seek');
+    await context.executeTool(seek, { ms: 7200 });
+  });
+  await openMore(page, 'plugin-action:user-bug-template:bug');
+  await expect(page.getByTestId('permission-preview')).toContainText('Bug at 7.2 s');
+  await expect(page.getByTestId('permission-preview')).toContainText('Console: ');
+  await page.getByTestId('permission-allow-once').click();
+  await expect
+    .poll(
+      async () =>
+        (
+          (await (await request.get(`${app().origin}/api/replays/${replayId}/comments`)).json()) as {
+            comments: Array<{ body: string; at?: number }>;
+          }
+        ).comments,
+    )
+    .toMatchObject([{ at: 7200, body: expect.stringContaining('Expected:') }]);
+
+  // CSV export: asks first; the file has a header and one row per request.
+  await page.getByRole('button', { name: 'More actions' }).click();
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page
+      .getByTestId('plugin-action:user-network-csv:csv')
+      .click()
+      .then(async () => {
+        await expect(page.getByTestId('permission-prompt')).toBeVisible();
+        await expect(page.getByTestId('permission-detail')).toContainText('-network.csv');
+        await page.getByTestId('permission-allow-once').click();
+      }),
+  ]);
+  expect(download.suggestedFilename()).toBe(`${replayId}-network.csv`);
+  const csv = await readFile((await download.path())!, 'utf8');
+  expect(csv.split('\n')[0]).toBe('"at_ms","method","status","url","duration_ms"');
+  expect(csv).toContain('"POST","500"');
+  expect((await example('network-csv')).manifest.permissions).toContain('export:download');
 });

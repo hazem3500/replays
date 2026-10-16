@@ -160,6 +160,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
 | `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
+| `REPLAYS_BETA_MALLEABLE` | `false` | Turns on the beta plugin workshop and agent bridge ([Malleable viewer](#malleable-viewer-beta-off-by-default)). Also `beta.malleable` in the config file; the variable wins |
 | `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
@@ -361,6 +362,31 @@ page, and **captions** (written from the steps). Open it with the *Edit* button 
 
 ![Edit mode: the replay above and one timeline of lanes for clip, cuts, zoom, speed, blur and captions](docs/screenshots/editor.png)
 
+## Malleable viewer (beta, off by default)
+
+The viewer can be reshaped while it runs: write a small **plugin** (an inspector tab, a side panel, a More-menu action) in an in-app
+editor and it hot-loads; keep it as a versioned, diffable, revertable file, per user or for the workspace; or let a **coding agent**
+read the open replay and write the plugin for you ("add a tab that groups failed requests by endpoint", "comment on every console
+error"). Plugins run in a sandboxed frame with no network, no cookies and no access to the page; they can only use the capabilities
+their manifest declares, and anything that writes (a comment, a download) asks you first. Nothing is stored unless you approve it
+in a dialog that shows the diff and the permissions, and an agent has no way to save anything.
+
+- **Flag.** `REPLAYS_BETA_MALLEABLE=true`, or `{ "beta": { "malleable": true } }` in the config file (the variable wins). The page
+  learns it from `<meta name="app-beta">` and `GET /api/config` (`beta.malleable`). Open **More → Plugin workshop** in a replay.
+- **Agents.** In the page, tools are registered with [WebMCP](https://webmachinelearning.github.io/webmcp/) (`document.modelContext`;
+  a small stand-in is installed where the browser has none). From outside, *Agent → Connect an agent* shows a one-tab bridge token for
+  `replays mcp`, an MCP server over stdio (`REPLAYS_URL=… REPLAYS_BRIDGE_TOKEN=… replays mcp`). The tools read live state (open replay,
+  playhead, comments, network and console) and load *draft* plugins; there is no save tool.
+- **Formats.** Replays, comments, edits and plugins are plain JSON with JSON Schemas in [docs/formats/](docs/formats/); example plugins
+  are in [examples/malleable/](examples/malleable/) (import them from the workshop).
+- **With the flag off** (the default): no workshop or menu entry, `/api/malleable/*` and `/_malleable/sandbox.html` answer `404`, no
+  tools are registered, no extra CSP header is sent, and the plugin code is never requested.
+- Design, mapping onto the extension API, the threat model and worked examples: [docs/malleability.md](docs/malleability.md).
+
+![The plugin workshop with an agent-written plugin: list, editable source, output](docs/screenshots/malleable/editor-desktop.png)
+![An agent-made "Failed" tab grouping failed requests by endpoint](docs/screenshots/malleable/agent-tab-desktop.png)
+![A plugin asking before it adds a comment](docs/screenshots/malleable/permission-prompt-desktop.png)
+
 ## Suites, retention and keep
 
 A **suite** groups the runs of one job (for example every browser flow a pull request triggered): register it with
@@ -381,6 +407,7 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 | `PUT\|DELETE /api/replays/<id>/keep` | Keep / release |
 | `GET\|POST /api/replays/<id>/comments`, `PATCH\|DELETE …/comments/<comment>` | Comments (`{ body, at?, parentId? }`, `{ emoji, at }`, `{ body }` / `{ resolved }`); `at` is source ms |
 | `GET /api/me`, `GET /api/config` | Identity; branding and context schema |
+| `GET /api/malleable/plugins[/<scope>/<id>]`, `POST …/approvals`, `PUT\|DELETE …/plugins/<scope>/<id>`, `…/bridge/*`, `GET /_malleable/sandbox.html` | User plugins and the agent bridge (beta, `REPLAYS_BETA_MALLEABLE`; `404` when off). Saves need an approval token |
 
 ## Development
 

@@ -7,6 +7,16 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
+  editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
+  every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user
+  or workspace as a full version history (diff, revert, export/import as `*.replays-plugin.json`), and nothing is stored without an
+  approval token bound to the exact content the person approved. An agent bridge exposes live state and the plugin API as WebMCP tools
+  in the page (`document.modelContext`, with a stand-in where the browser has none) and through `replays mcp`, an MCP server over
+  stdio; an agent can install a draft and ask the person to keep it, but cannot save. Enable with `REPLAYS_BETA_MALLEABLE=true` or
+  `beta.malleable`; off means no UI, `404`s and no bridge. Also: JSON Schemas for replays, comments, edits and plugins in
+  `docs/formats/`, example plugins in `examples/malleable/`, and `ViewerRegistry.replacePlugin`. See
+  [docs/malleability.md](docs/malleability.md).
 - **Comments.** Comment on a whole replay or pin a comment to a moment: markers on the seek bar with a hover card, a
   Comments tab that follows the playhead, threads, resolve, author-only edit and delete, emoji reactions, comment
   permalinks (`#comment-<id>` with `?t=`) and the `M` shortcut. Times are stored on the source timeline and mapped

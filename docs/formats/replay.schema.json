@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/replay.schema.json",
+  "title": "Replay bundle",
+  "description": "One recorded session: an rrweb recording plus steps, console, network and performance tracks. This is `replay.json`, the body of `POST /api/replays` and `GET /api/replays/<id>`. Times (`at`) are milliseconds from the first rrweb event. The server validates more strictly (sizes, privacy pass); this schema documents the shape tools and plugins can rely on. Source of truth: src/shared/replay.ts.",
+  "type": "object",
+  "required": ["meta", "events", "console", "network", "steps"],
+  "additionalProperties": false,
+  "properties": {
+    "meta": {
+      "type": "object",
+      "required": ["id", "title", "url", "capturedAt", "duration", "viewport", "eventCount", "version"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$" },
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "capturedAt": { "type": "string", "format": "date-time" },
+        "duration": { "type": "number", "minimum": 0 },
+        "viewport": {
+          "type": "object",
+          "required": ["width", "height"],
+          "properties": { "width": { "type": "number" }, "height": { "type": "number" } }
+        },
+        "eventCount": { "type": "integer", "minimum": 0 },
+        "version": { "const": 1 },
+        "videoFile": { "type": "string" },
+        "source": { "enum": ["agent", "human"] },
+        "tags": {
+          "type": "array",
+          "maxItems": 10,
+          "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,39}$" }
+        }
+      }
+    },
+    "events": {
+      "description": "rrweb events (https://github.com/rrweb-io/rrweb). Opaque to this format: at least two, each with a numeric `timestamp`.",
+      "type": "array",
+      "minItems": 2,
+      "items": { "type": "object", "required": ["timestamp"], "properties": { "timestamp": { "type": "number" } } }
+    },
+    "console": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "level", "message"],
+        "properties": {
+          "at": { "type": "number" },
+          "level": { "enum": ["debug", "info", "log", "warn", "error"] },
+          "message": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "network": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "at", "duration", "method", "url", "status", "statusText", "requestHeaders", "responseHeaders"],
+        "properties": {
+          "id": { "type": "string" },
+          "at": { "type": "number" },
+          "duration": { "type": "number" },
+          "method": { "type": "string" },
+          "url": { "type": "string" },
+          "status": { "type": "integer", "description": "HTTP status; 0 when there was no response." },
+          "statusText": { "type": "string" },
+          "mimeType": { "type": "string" },
+          "requestHeaders": { "$ref": "#/$defs/headers" },
+          "responseHeaders": { "$ref": "#/$defs/headers" }
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["at", "kind", "label"],
+        "properties": {
+          "at": { "type": "number" },
+          "kind": { "type": "string" },
+          "label": { "type": "string" },
+          "selector": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      }
+    },
+    "performance": {
+      "type": "object",
+      "required": ["supported", "entries"],
+      "properties": {
+        "supported": { "type": "array", "items": { "enum": ["paint", "largest-contentful-paint", "longtask", "event"] } },
+        "entries": {
+          "type": "array",
+          "maxItems": 500,
+          "items": {
+            "type": "object",
+            "required": ["at", "kind", "value"],
+            "properties": {
+              "at": { "type": "number" },
+              "kind": { "enum": ["first-contentful-paint", "largest-contentful-paint", "long-task", "slow-interaction"] },
+              "value": { "type": "number" },
+              "eventType": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "context": { "$ref": "context.schema.json" },
+    "suiteRun": {
+      "type": "object",
+      "required": ["suiteId", "runId"],
+      "additionalProperties": false,
+      "properties": {
+        "suiteId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$" },
+        "runId": { "type": "string", "pattern": "^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$" }
+      }
+    }
+  },
+  "$defs": {
+    "headers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "value"],
+        "properties": { "name": { "type": "string" }, "value": { "type": "string" } }
+      }
+    }
+  }
+}

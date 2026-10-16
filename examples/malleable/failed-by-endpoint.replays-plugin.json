@@ -1,0 +1,19 @@
+{
+  "format": "replays-user-plugin/1",
+  "manifest": {
+    "format": "replays-user-plugin/1",
+    "id": "failed-by-endpoint",
+    "name": "Failed by endpoint",
+    "description": "Groups failed requests (status 400+ or no response) by method and endpoint.",
+    "permissions": ["replay:read", "playback:seek"],
+    "contributes": {
+      "tabs": [
+        {
+          "id": "main",
+          "label": "Failed"
+        }
+      ]
+    }
+  },
+  "source": "// Groups failed requests by endpoint. Ids in the path (numbers, hashes, CODES1) become :id.\nconst SEGMENT_ID = /^(\\d+|[0-9a-f-]{8,}|[A-Z]+\\d+)$/;\nfunction endpointOf(request) {\n  let path;\n  try { path = new URL(request.url).pathname; } catch { path = request.url; }\n  return request.method + ' ' + path.split('/').map((s) => (SEGMENT_ID.test(s) ? ':id' : s)).join('/');\n}\n\nreplays.tab('main', (el, ctx) => {\n  const failed = ctx.replay.network.filter((r) => r.status >= 400 || r.status === 0);\n  const groups = new Map();\n  for (const r of failed) {\n    const key = endpointOf(r);\n    const g = groups.get(key) || { key, count: 0, statuses: new Set(), first: r.at };\n    g.count++;\n    g.statuses.add(r.status);\n    g.first = Math.min(g.first, r.at);\n    groups.set(key, g);\n  }\n  el.replaceChildren();\n  const title = document.createElement('h3');\n  title.textContent = failed.length + ' failed requests in ' + groups.size + ' endpoints';\n  title.dataset.testid = 'summary';\n  el.append(title);\n  if (!groups.size) { el.append('Nothing failed in this replay.'); return; }\n  const table = document.createElement('table');\n  table.innerHTML = '<thead><tr><th>Endpoint</th><th>Failures</th><th>Status</th><th>First</th></tr></thead>';\n  const body = document.createElement('tbody');\n  for (const g of [...groups.values()].sort((a, b) => b.count - a.count)) {\n    const row = document.createElement('tr');\n    row.dataset.endpoint = g.key;\n    const cells = [g.key, String(g.count), [...g.statuses].join(', ')];\n    for (const text of cells) { const td = document.createElement('td'); td.textContent = text; row.append(td); }\n    const td = document.createElement('td');\n    const button = document.createElement('button');\n    button.textContent = (g.first / 1000).toFixed(1) + ' s';\n    button.addEventListener('click', () => ctx.seek(g.first));\n    td.append(button);\n    row.append(td);\n    body.append(row);\n  }\n  table.append(body);\n  el.append(table);\n});\n"
+}
