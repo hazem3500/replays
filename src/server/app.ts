@@ -25,7 +25,9 @@ import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
 import type { ContextSchema } from './context-schema.ts';
 import type { BetaFlags } from './beta.ts';
 import { type CommentsSettings } from './comments-config.ts';
+import { BridgeHub } from './bridge-hub.ts';
 import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
+import { malleablePlugin } from './malleable-plugin.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
@@ -73,6 +75,8 @@ export interface AppOptions {
   basePath?: string;
   /** Beta features, all off by default (`REPLAYS_BETA_EDITOR=true` / `beta.editor`): see src/server/config.ts. */
   beta?: BetaFlags;
+  /** The agent bridge's relay (beta.malleable); the server closes it on shutdown so open streams do not hold it up. */
+  bridgeHub?: BridgeHub;
   /** Comments on replays (`REPLAYS_COMMENTS`, on by default in the server's settings): absent here means off. */
   comments?: CommentsSettings;
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
@@ -366,10 +370,17 @@ export function createApp(options: AppOptions) {
   const base = options.basePath ?? '';
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
-  const registry = options.comments?.enabled
-    ? mergeRegistries(resolvePluginsSync([commentsPlugin({ store: options.store, anonymous: options.auth.name === 'none' })]), userPlugins)
-    : userPlugins;
+  const anonymous = options.auth.name === 'none';
+  const builtIns = [
+    ...(options.comments?.enabled ? [commentsPlugin({ store: options.store, anonymous })] : []),
+    // Beta: user plugins and the agent bridge. Absent unless the flag is on: no routes, no sandbox page, no bridge.
+    ...(options.beta?.malleable
+      ? [malleablePlugin({ storage: options.store.storage, anonymous, hub: options.bridgeHub ?? new BridgeHub() })]
+      : []),
+  ];
+  const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
   const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
+  const betaPage = [options.beta?.editor ? 'editor' : '', options.beta?.malleable ? 'malleable' : ''].filter(Boolean).join(' ');
   const page = {
     ...pageBranding(options.branding),
     ...(registry.clientEntries.length ? { plugins: JSON.stringify(publicClientEntries(registry.clientEntries, base)) } : {}),
@@ -437,7 +448,7 @@ export function createApp(options: AppOptions) {
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
           plugins: [...registry.order],
-          beta: { editor: Boolean(options.beta?.editor) },
+          beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
           comments: commentsOn,
         });
         send(response, 200, JSON.stringify(body), json, REVALIDATE);
@@ -648,11 +659,14 @@ export function createApp(options: AppOptions) {
       if (request.method === 'GET' && request.headers.accept?.includes('text/html')) {
         const html = await readFile(resolve(options.clientDir, 'index.html'), 'utf8').catch(() => undefined);
         if (html) {
+          // With user plugins on, the page may only frame itself, blob: and data: URLs: a sandboxed plugin frame that
+          // navigates itself somewhere else (to smuggle data out in a URL) is refused by the browser.
+          if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
           await sendCompressed(
             request,
             response,
             200,
-            withBase(html, base, { ...page, beta: options.beta?.editor ? 'editor' : '', comments: commentsOn }),
+            withBase(html, base, { ...page, beta: betaPage, comments: commentsOn }),
             'text/html; charset=utf-8',
           );
           return;

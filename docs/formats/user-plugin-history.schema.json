@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/user-plugin-history.schema.json",
+  "title": "User plugin history",
+  "description": "How a saved plugin is stored (`_malleable/u/<person>/<id>.json` or `_malleable/w/<id>.json`) and served by `GET /api/malleable/plugins/<scope>/<id>`: every approved version, oldest first, never rewritten. Reverting appends an old version's content as a new version. Source of truth: src/shared/malleable.ts, src/server/malleable-store.ts.",
+  "type": "object",
+  "required": ["format", "id", "versions"],
+  "additionalProperties": false,
+  "properties": {
+    "format": { "const": "replays-user-plugin-history/1" },
+    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
+    "versions": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/version" } }
+  },
+  "$defs": {
+    "version": {
+      "type": "object",
+      "required": ["n", "at", "by", "message", "manifest", "source", "sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "n": { "type": "integer", "minimum": 1 },
+        "at": { "type": "string", "format": "date-time" },
+        "by": { "type": "string", "description": "Display name of the person who approved it." },
+        "message": { "type": "string", "maxLength": 200 },
+        "manifest": { "$ref": "plugin-manifest.schema.json" },
+        "source": { "type": "string" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$", "description": "sha256 of JSON.stringify([manifest, source])." }
+      }
+    }
+  }
+}

@@ -134,6 +134,11 @@ Comments ship as a plugin, `comments`, so they use the same surface as yours and
   bottom panel, a seek-bar overlay and the `M` shortcut. Features are the React-side twin of the browser plugin API below, for code in this
   repository that uses the viewer's own components; they are not public API. A feature is active when the page says the server loaded its plugin.
 
+- **`malleable`** (`src/server/malleable-plugin.ts`, beta): user plugins and the agent bridge, a built-in plugin loaded only with
+  `REPLAYS_BETA_MALLEABLE` / `beta.malleable` (the name is reserved too). It uses a pre-auth hook (the sandbox page and the agent's
+  bearer-token call) and a post-auth hook (plugin storage, approvals, the page's side of the bridge). User plugins register through the
+  browser registry (`ViewerRegistry.replacePlugin`, internal, not public API) but run sandboxed, not through `api.client`. See [malleability.md](malleability.md).
+
 Another built-in feature would follow the same two steps: a server plugin (if it needs routes) and a registered viewer feature.
 
 ## Browser entries: inspector tabs, viewer actions, panels

@@ -1,0 +1,19 @@
+{
+  "format": "replays-user-plugin/1",
+  "manifest": {
+    "format": "replays-user-plugin/1",
+    "id": "auto-comment",
+    "name": "Comment every console error",
+    "description": "Adds a comment at each console error in the replay. Asks before writing.",
+    "permissions": ["replay:read", "comments:write"],
+    "contributes": {
+      "actions": [
+        {
+          "id": "run",
+          "label": "Comment every console error"
+        }
+      ]
+    }
+  },
+  "source": "replays.action('run', async (ctx) => {\n  const errors = ctx.replay.console.filter((c) => c.level === 'error');\n  console.log('found ' + errors.length + ' console errors');\n  for (const e of errors) await ctx.comments.add({ at: e.at, body: 'Console error: ' + e.message });\n  ctx.notify('Added ' + errors.length + ' comments');\n});\n"
+}

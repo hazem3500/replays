@@ -7,6 +7,7 @@ Commands:
   capture   record a page with scripted steps into replay.json (see: ${PRODUCT_SLUG} capture --help)
   import    convert a plain rrweb recording into a replay
   upload    POST an existing replay.json to a server
+  mcp       MCP server (stdio) for the plugin workshop's agent bridge (beta: REPLAYS_BETA_MALLEABLE)
   serve     start the viewer and upload server (configuration: environment variables, see the README)
 
 Run \`${PRODUCT_SLUG} capture --help\` for the capture options.`;
@@ -22,6 +23,9 @@ switch (command) {
     break;
   case 'upload':
     await (await import('./capture/upload.ts')).runUploadCli(rest);
+    break;
+  case 'mcp':
+    await (await import('./mcp/main.ts')).runMcpCli(rest);
     break;
   case 'serve':
     process.argv = [process.argv[0]!, process.argv[1]!, ...rest];

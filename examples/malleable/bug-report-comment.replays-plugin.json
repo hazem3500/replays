@@ -1,0 +1,19 @@
+{
+  "format": "replays-user-plugin/1",
+  "manifest": {
+    "format": "replays-user-plugin/1",
+    "id": "bug-template",
+    "name": "Bug report comment",
+    "description": "Adds a templated comment at the playhead: step, nearby console errors, expected / actual.",
+    "permissions": ["replay:read", "comments:write"],
+    "contributes": {
+      "actions": [
+        {
+          "id": "bug",
+          "label": "Comment: bug report template"
+        }
+      ]
+    }
+  },
+  "source": "replays.action('bug', async (ctx) => {\n  const t = ctx.getTime();\n  const step = ctx.replay.steps.filter((s) => s.at <= t).at(-1);\n  const near = ctx.replay.console.filter((c) => c.level === 'error' && Math.abs(c.at - t) < 2000);\n  const body = [\n    'Bug at ' + (t / 1000).toFixed(1) + ' s',\n    'Step: ' + (step ? step.label : '(before the first step)'),\n    'Console: ' + (near.map((c) => c.message).join(' | ') || 'no errors nearby'),\n    'Expected: ',\n    'Actual: ',\n  ].join('\\n');\n  await ctx.comments.add({ at: t, body });\n});\n"
+}

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/edits.schema.json",
+  "title": "Replay edits",
+  "description": "`<replay id>/edits.json` (beta editor): a non-destructive edit list. The recording is never changed; viewers and exports apply this list to it. Every time is on the ORIGINAL timeline (ms from the first rrweb event). `revision`, `updatedBy` and `updatedAt` are written by the server. Source of truth: src/shared/edits.ts and src/shared/effects.ts.",
+  "type": "object",
+  "required": ["version", "cuts"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "trim": {
+      "type": "object",
+      "required": ["start", "end"],
+      "additionalProperties": false,
+      "properties": { "start": { "type": "number", "minimum": 0 }, "end": { "type": "number", "minimum": 0 } }
+    },
+    "cuts": {
+      "type": "array",
+      "maxItems": 200,
+      "items": { "$ref": "#/$defs/range", "properties": { "label": { "type": "string", "maxLength": 120 } } }
+    },
+    "zooms": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/range" }],
+        "properties": {
+          "scale": { "type": "number", "minimum": 1.1, "maximum": 3 },
+          "x": { "type": "number", "minimum": 0, "maximum": 1 },
+          "y": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "required": ["scale"]
+      }
+    },
+    "speeds": {
+      "type": "array",
+      "maxItems": 100,
+      "items": { "allOf": [{ "$ref": "#/$defs/range" }], "properties": { "rate": { "enum": [2, 4, 8] } }, "required": ["rate"] }
+    },
+    "blurs": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/range" }],
+        "required": ["x", "y", "width", "height"],
+        "properties": {
+          "x": { "type": "number", "minimum": 0, "maximum": 1 },
+          "y": { "type": "number", "minimum": 0, "maximum": 1 },
+          "width": { "type": "number", "minimum": 0, "maximum": 1 },
+          "height": { "type": "number", "minimum": 0, "maximum": 1 }
+        }
+      }
+    },
+    "captions": {
+      "type": "array",
+      "maxItems": 100,
+      "items": {
+        "allOf": [{ "$ref": "#/$defs/range" }],
+        "required": ["text"],
+        "properties": { "text": { "type": "string", "maxLength": 160 } }
+      }
+    },
+    "revision": { "type": "integer", "minimum": 0 },
+    "updatedBy": { "type": "string" },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "range": {
+      "type": "object",
+      "required": ["id", "from", "to"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,39}$" },
+        "from": { "type": "number", "minimum": 0 },
+        "to": { "type": "number", "minimum": 0, "description": "Greater than `from`." }
+      }
+    }
+  }
+}

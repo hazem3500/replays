@@ -8,6 +8,7 @@ import { dirname, resolve } from 'node:path';
 import type { LoadedConfig } from '../config/index.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
+import { BridgeHub } from './bridge-hub.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
 import { RenderQueue } from './render-queue.ts';
 import type { RenderService } from './render-routes.ts';
@@ -192,12 +193,14 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     log(`list posters and previews off: ${env.POSTERS_DISABLED === '1' ? 'POSTERS_DISABLED=1' : tools.reason}`);
   }
 
+  const bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined;
   const handle = createApp({
     basePath,
     auth,
     branding,
     sources: settings.sources,
     beta: settings.beta,
+    ...(bridgeHub ? { bridgeHub } : {}),
     comments: settings.comments,
     plugins: registry,
     ...(settings.contextSchema ? { contextSchema: settings.contextSchema } : {}),
@@ -230,6 +233,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
 
   const close = async () => {
     clearInterval(pruneTimer);
+    bridgeHub?.close();
     await new Promise<void>((done) => {
       server.close(() => done());
       server.closeIdleConnections();

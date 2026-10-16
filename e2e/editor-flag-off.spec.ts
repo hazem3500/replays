@@ -35,5 +35,5 @@ test('the edits API does not exist', async ({ request }) => {
   });
   expect(put.status()).toBe(404);
   const config = await (await request.get(`${origin()}/api/config`)).json();
-  expect(config.beta).toEqual({ editor: false });
+  expect(config.beta).toEqual({ editor: false, malleable: false });
 });

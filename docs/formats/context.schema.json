@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/context.schema.json",
+  "title": "Replay context",
+  "description": "The small, explicit block of test-run metadata a producer attaches to a replay. Supplied by the runner, never scraped from the browser; at most 16 KB. `fields` is the deployment's own extension point (validated by CONTEXT_SCHEMA_FILE when one is configured). Source of truth: src/shared/context.ts.",
+  "type": "object",
+  "required": ["version", "capturedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "version": { "const": 1 },
+    "capturedAt": { "type": "string" },
+    "app": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "environment": { "type": "string" },
+        "origin": { "type": "string" },
+        "version": { "type": "string" },
+        "commit": { "type": "string" }
+      }
+    },
+    "test": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": { "suite": { "type": "string" }, "case": { "type": "string" }, "runId": { "type": "string" } }
+    },
+    "sources": {
+      "type": "array",
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "required": ["provider", "url"],
+        "additionalProperties": false,
+        "properties": {
+          "provider": { "type": "string" },
+          "ref": { "type": "string" },
+          "url": { "type": "string", "pattern": "^https://" },
+          "label": { "type": "string" }
+        }
+      }
+    },
+    "fields": { "type": "object" }
+  }
+}

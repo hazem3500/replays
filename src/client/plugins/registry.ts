@@ -39,7 +39,13 @@ export class ViewerRegistry {
 
   readonly getSnapshot = () => this.snapshotValue;
 
-  private add<K extends keyof Snapshot>(kind: K, plugin: string, definition: Snapshot[K][number]['definition'], label: string) {
+  private add<K extends keyof Snapshot>(
+    kind: K,
+    plugin: string,
+    definition: Snapshot[K][number]['definition'],
+    label: string,
+    notify = true,
+  ) {
     const d = definition as { id?: unknown; order?: unknown; render?: unknown; run?: unknown };
     if (!d || typeof d.id !== 'string' || !ID.test(d.id))
       throw new ViewerPluginError(`${plugin}: ${kind} id must match ${ID} (got ${JSON.stringify(d?.id)})`);
@@ -54,17 +60,39 @@ export class ViewerRegistry {
     const entry = { plugin, key, definition, seq: this.seq++ };
     const next = [...this.snapshotValue[kind], entry].sort(byOrder as never);
     this.snapshotValue = { ...this.snapshotValue, [kind]: next };
-    for (const listener of this.listeners) listener();
+    if (notify) for (const listener of this.listeners) listener();
   }
 
   /** The API one plugin's entry receives. Registration errors throw to the entry (and are logged by the loader). */
-  apiFor(plugin: string): ViewerPluginApi {
+  apiFor(plugin: string, notify = true): ViewerPluginApi {
     return {
       pluginName: plugin,
-      registerInspectorTab: (definition) => this.add('tabs', plugin, definition, definition?.label),
-      registerViewerAction: (definition) => this.add('actions', plugin, definition, definition?.label),
-      registerViewerPanel: (definition) => this.add('panels', plugin, definition, definition?.title),
+      registerInspectorTab: (definition) => this.add('tabs', plugin, definition, definition?.label, notify),
+      registerViewerAction: (definition) => this.add('actions', plugin, definition, definition?.label, notify),
+      registerViewerPanel: (definition) => this.add('panels', plugin, definition, definition?.title, notify),
     };
+  }
+
+  /**
+   * Swaps everything one plugin registered for what `register` registers now, as one change: the UI re-renders once, a tab
+   * that exists before and after keeps its place (and stays selected). This is how a plugin hot-reloads.
+   */
+  replacePlugin(plugin: string, register: (api: ViewerPluginApi) => void) {
+    const before = this.snapshotValue;
+    const without = <T>(list: readonly Registered<T>[]) => list.filter((entry) => entry.plugin !== plugin);
+    this.snapshotValue = { tabs: without(before.tabs), actions: without(before.actions), panels: without(before.panels) };
+    try {
+      register(this.apiFor(plugin, false));
+    } catch (error) {
+      this.snapshotValue = before;
+      throw error;
+    } finally {
+      for (const listener of this.listeners) listener();
+    }
+  }
+
+  removePlugin(plugin: string) {
+    this.replacePlugin(plugin, () => {});
   }
 
   /** Tests only. */

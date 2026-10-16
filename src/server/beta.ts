@@ -3,16 +3,21 @@
  * routes or code paths.
  *
  *   REPLAYS_BETA_EDITOR=true     or    { "beta": { "editor": true } } in the config file
+ *   REPLAYS_BETA_MALLEABLE=true  or    { "beta": { "malleable": true } }
  *
  * `editor`: edit mode in the viewer (non-destructive trims, cuts, "Remove waits", zoom, speed-ups, blur boxes and
  * captions), the `GET|PUT /api/replays/<id>/edits` API, and applying saved edits on playback and in video exports.
- * The environment variable wins over the file; `true`/`1`/`yes`/`on` and `false`/`0`/`no`/`off` are accepted.
+ * `malleable`: user plugins (a sandboxed, hot-loading plugin workshop in the viewer, versioned per user or workspace), the
+ * `/api/malleable/*` routes, the plugin sandbox page and the agent bridge (WebMCP tools in the page, an MCP server for
+ * agents outside it): docs/malleability.md. Off means none of those exist: no UI, 404s, nothing exposed to agents.
+ * The environment variables win over the file; `true`/`1`/`yes`/`on` and `false`/`0`/`no`/`off` are accepted.
  */
 export interface BetaFlags {
   editor: boolean;
+  malleable: boolean;
 }
 
-export const NO_BETA: BetaFlags = { editor: false };
+export const NO_BETA: BetaFlags = { editor: false, malleable: false };
 
 const TRUE = new Set(['true', '1', 'yes', 'on']);
 const FALSE = new Set(['false', '0', 'no', 'off', '']);
@@ -25,8 +30,11 @@ function flag(name: string, value: string | undefined): boolean | undefined {
   throw new Error(`${name} must be true or false (got ${JSON.stringify(value)})`);
 }
 
-export function betaFromEnv(env: Record<string, string | undefined>, file?: { editor?: unknown }): BetaFlags {
-  if (file?.editor !== undefined && typeof file.editor !== 'boolean')
-    throw new Error("the config file's beta.editor must be true or false");
-  return { editor: flag('REPLAYS_BETA_EDITOR', env.REPLAYS_BETA_EDITOR) ?? file?.editor ?? false };
+export function betaFromEnv(env: Record<string, string | undefined>, file?: { editor?: unknown; malleable?: unknown }): BetaFlags {
+  for (const key of ['editor', 'malleable'] as const)
+    if (file?.[key] !== undefined && typeof file[key] !== 'boolean') throw new Error(`the config file's beta.${key} must be true or false`);
+  return {
+    editor: flag('REPLAYS_BETA_EDITOR', env.REPLAYS_BETA_EDITOR) ?? (file?.editor as boolean | undefined) ?? false,
+    malleable: flag('REPLAYS_BETA_MALLEABLE', env.REPLAYS_BETA_MALLEABLE) ?? (file?.malleable as boolean | undefined) ?? false,
+  };
 }

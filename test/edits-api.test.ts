@@ -135,7 +135,7 @@ async function start(render = false, beta = true) {
   };
   const handle = createApp({
     ...appDefaults(),
-    beta: { editor: beta },
+    beta: { editor: beta, malleable: false },
     store,
     clientDir,
     ...(render ? { render: service } : {}),

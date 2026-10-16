@@ -1,0 +1,325 @@
+import { useSyncExternalStore } from 'react';
+
+import {
+  parseManifest,
+  parsePluginFile,
+  parseSource,
+  PluginFormatError,
+  type PluginScope,
+  type PluginVersion,
+  pluginFile,
+  type UserPluginManifest,
+} from '../../shared/malleable.ts';
+import type { ViewerPluginContext } from '../plugins/api.ts';
+import { viewerRegistry } from '../plugins/registry.ts';
+import { deletePlugin, getHistory, listPlugins, mintApproval, savePlugin } from './api.ts';
+import { permissions, type PluginRef } from './broker.ts';
+import { mountSandbox } from './sandbox.ts';
+import { setMalleableUi } from './ui-state.ts';
+
+export type Origin = 'saved' | 'workshop' | 'agent';
+
+export interface Diagnostic {
+  at: number;
+  level: string;
+  message: string;
+}
+
+export interface PluginEntry {
+  id: string;
+  scope: PluginScope;
+  manifest: UserPluginManifest;
+  source: string;
+  /** Where the working copy came from: the store, the editor (new or imported), or an agent. */
+  origin: Origin;
+  /** The saved history, when this plugin has been saved (latest last). */
+  versions: PluginVersion[];
+  /** Bumped on every (re)load: a hot reload is a new revision. */
+  revision: number;
+  diagnostics: Diagnostic[];
+}
+
+export interface ManagerState {
+  entries: readonly PluginEntry[];
+  /** Plugins the person switched off on this device (kept saved, not loaded). */
+  disabled: readonly string[];
+  /** The open replay's context, when a viewer is mounted. */
+  viewer: ViewerPluginContext | undefined;
+}
+
+const MAX_DIAGNOSTICS = 200;
+const DISABLED_KEY = 'replays-malleable-disabled';
+export const registryName = (id: string) => `user-${id}`;
+
+function readDisabled(): string[] {
+  try {
+    const parsed: unknown = JSON.parse(localStorage.getItem(DISABLED_KEY) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+export const latestSaved = (entry: PluginEntry) => entry.versions.at(-1);
+export const sameManifest = (a: UserPluginManifest, b: UserPluginManifest) => JSON.stringify(a) === JSON.stringify(b);
+/** The working copy differs from the latest saved version (or was never saved). */
+export function isDirty(entry: PluginEntry) {
+  const saved = latestSaved(entry);
+  return !saved || saved.source !== entry.source || !sameManifest(saved.manifest, entry.manifest);
+}
+
+/**
+ * The live plugin set: what is loaded in this tab (saved plugins and unsaved drafts), kept in step with the viewer's plugin
+ * registry (src/client/plugins/registry.ts). A plugin's tabs, panels and actions are registered there like any browser
+ * plugin's, but each `render`/`run` starts a sandboxed frame (sandbox.ts) instead of running the author's code in the
+ * page. A change to a plugin replaces its registrations in one step (`replacePlugin`): that is the hot reload.
+ */
+class PluginManager {
+  private state: ManagerState = { entries: [], disabled: [], viewer: undefined };
+  private readonly listeners = new Set<() => void>();
+  private revision = 0;
+  /** What is mounted right now, so a reload can tear the old frames down. */
+  private mounted = new Map<string, Set<{ dispose(): void }>>();
+
+  readonly subscribe = (listener: () => void) => {
+    this.listeners.add(listener);
+    return () => this.listeners.delete(listener);
+  };
+  readonly getSnapshot = () => this.state;
+
+  private set(patch: Partial<ManagerState>) {
+    this.state = { ...this.state, ...patch };
+    for (const listener of this.listeners) listener();
+  }
+
+  get(id: string) {
+    return this.state.entries.find((entry) => entry.id === id);
+  }
+
+  setViewer(viewer: ViewerPluginContext | undefined) {
+    this.set({ viewer });
+  }
+
+  /** Loads the person's saved plugins (user and workspace) at start-up. A broken one is logged and skipped. */
+  async loadSaved() {
+    this.set({ disabled: readDisabled() });
+    const summaries = await listPlugins();
+    await Promise.all(
+      summaries.map(async (summary) => {
+        try {
+          const history = await getHistory(summary.scope, summary.id);
+          const latest = history.versions.at(-1);
+          if (!latest) return;
+          this.put({
+            id: summary.id,
+            scope: summary.scope,
+            manifest: latest.manifest,
+            source: latest.source,
+            origin: 'saved',
+            versions: history.versions,
+            revision: ++this.revision,
+            diagnostics: [],
+          });
+        } catch (error) {
+          console.error(`plugin ${summary.id} could not be loaded:`, error);
+        }
+      }),
+    );
+  }
+
+  private put(entry: PluginEntry, reload = true) {
+    const others = this.state.entries.filter((existing) => existing.id !== entry.id);
+    this.set({ entries: [...others, entry].sort((a, b) => a.manifest.name.localeCompare(b.manifest.name)) });
+    if (reload) this.sync(entry.id);
+  }
+
+  /** Registers (or re-registers) the plugin's contributions in the viewer registry; unloads them when disabled or gone. */
+  private sync(id: string) {
+    const entry = this.get(id);
+    for (const handle of this.mounted.get(id) ?? []) handle.dispose();
+    this.mounted.delete(id);
+    permissions.drop(id);
+    if (!entry || this.state.disabled.includes(id)) {
+      viewerRegistry.removePlugin(registryName(id));
+      return;
+    }
+    const track = (handle: { dispose(): void }) => {
+      let set = this.mounted.get(id);
+      if (!set) this.mounted.set(id, (set = new Set()));
+      set.add(handle);
+      return () => {
+        handle.dispose();
+        set.delete(handle);
+      };
+    };
+    // The frame reads the entry at mount time, so a reload that lands while a tab is open shows the new source.
+    const ref = (): PluginRef => {
+      const current = this.get(id) ?? entry;
+      return { id, manifest: current.manifest, source: current.source, log: (level, message) => this.log(id, level, message) };
+    };
+    const { contributes } = entry.manifest;
+    viewerRegistry.replacePlugin(registryName(id), (api) => {
+      for (const tab of contributes.tabs ?? [])
+        api.registerInspectorTab({
+          id: tab.id,
+          label: tab.label,
+          order: 100,
+          render: (container, context) => track(mountSandbox({ plugin: ref(), mode: 'tab', contribution: tab.id, container, context })),
+        });
+      for (const panel of contributes.panels ?? [])
+        api.registerViewerPanel({
+          id: panel.id,
+          title: panel.label,
+          render: (container, context) => track(mountSandbox({ plugin: ref(), mode: 'panel', contribution: panel.id, container, context })),
+        });
+      for (const action of contributes.actions ?? [])
+        api.registerViewerAction({
+          id: action.id,
+          label: action.label,
+          run: async (context) => {
+            const host = document.body;
+            const handle = mountSandbox({ plugin: ref(), mode: 'action', contribution: action.id, container: host, context });
+            const untrack = track(handle);
+            await handle.done;
+            untrack();
+          },
+        });
+    });
+  }
+
+  log(id: string, level: string, message: string) {
+    const entry = this.get(id);
+    if (!entry) return;
+    const diagnostics = [...entry.diagnostics, { at: Date.now(), level, message }].slice(-MAX_DIAGNOSTICS);
+    // Diagnostics change often and must not reload anything: replace the entry without syncing.
+    this.set({ entries: this.state.entries.map((existing) => (existing.id === id ? { ...existing, diagnostics } : existing)) });
+  }
+
+  /**
+   * Loads a working copy: from the editor (`workshop`) or an agent. The same id replaces the loaded copy (hot reload);
+   * nothing is stored. Throws PluginFormatError for a manifest or source that does not validate.
+   */
+  upsert(input: { manifest: unknown; source: unknown; origin: Origin; scope?: PluginScope }): PluginEntry {
+    const manifest = parseManifest(input.manifest);
+    const source = parseSource(input.source);
+    const existing = this.get(manifest.id);
+    const entry: PluginEntry = {
+      id: manifest.id,
+      scope: existing?.scope ?? input.scope ?? 'user',
+      manifest,
+      source,
+      origin: input.origin,
+      versions: existing?.versions ?? [],
+      revision: ++this.revision,
+      diagnostics: [],
+    };
+    this.put(entry);
+    // A tab someone is looking at stays selected only if the id survived; nothing to do here.
+    return entry;
+  }
+
+  /** Reloads the loaded copy as it is (the editor's "Run"). */
+  reload(id: string) {
+    const entry = this.get(id);
+    if (entry) this.upsert({ manifest: entry.manifest, source: entry.source, origin: entry.origin, scope: entry.scope });
+  }
+
+  /** Drops the working copy: a never-saved draft disappears, a saved plugin returns to its latest saved version. */
+  discard(id: string) {
+    const entry = this.get(id);
+    if (!entry) return;
+    const saved = latestSaved(entry);
+    if (saved)
+      this.put({ ...entry, manifest: saved.manifest, source: saved.source, origin: 'saved', revision: ++this.revision, diagnostics: [] });
+    else {
+      this.set({ entries: this.state.entries.filter((existing) => existing.id !== id) });
+      this.sync(id);
+    }
+  }
+
+  /** Where a never-saved plugin will be stored: just this person, or everyone in the workspace. Fixed after the first save. */
+  setScope(id: string, scope: PluginScope) {
+    const entry = this.get(id);
+    if (!entry || entry.versions.length) return;
+    this.put({ ...entry, scope }, false);
+  }
+
+  setEnabled(id: string, enabled: boolean) {
+    const disabled = enabled ? this.state.disabled.filter((item) => item !== id) : [...new Set([...this.state.disabled, id])];
+    try {
+      localStorage.setItem(DISABLED_KEY, JSON.stringify(disabled));
+    } catch {
+      /* private mode: the switch lasts for this page */
+    }
+    this.set({ disabled });
+    this.sync(id);
+  }
+
+  /**
+   * Stores the working copy as the next version. Called only by the approval dialog after the person clicked Approve: it
+   * is the one place that asks the server for a consent token.
+   */
+  async saveApproved(id: string, message: string) {
+    const entry = this.get(id);
+    if (!entry) throw new Error('no such plugin');
+    const approval = await mintApproval({ action: 'save', scope: entry.scope, id, manifest: entry.manifest, source: entry.source });
+    const baseVersion = latestSaved(entry)?.n ?? 0;
+    await savePlugin(entry.scope, id, { manifest: entry.manifest, source: entry.source, message, baseVersion, approval });
+    const history = await getHistory(entry.scope, id);
+    // Same code, now stored: the running frames stay as they are.
+    this.put({ ...entry, origin: 'saved', versions: history.versions }, false);
+  }
+
+  async deleteApproved(id: string) {
+    const entry = this.get(id);
+    if (!entry) return;
+    if (entry.versions.length) {
+      const approval = await mintApproval({ action: 'delete', scope: entry.scope, id });
+      await deletePlugin(entry.scope, id, approval);
+    }
+    this.set({ entries: this.state.entries.filter((existing) => existing.id !== id) });
+    this.sync(id);
+  }
+
+  /** Puts an old version in the editor as the working copy (unsaved until approved: that is "revert"). */
+  loadVersion(id: string, n: number) {
+    const entry = this.get(id);
+    const version = entry?.versions.find((candidate) => candidate.n === n);
+    if (!entry || !version) throw new Error(`no version ${n}`);
+    this.put({
+      ...entry,
+      manifest: version.manifest,
+      source: version.source,
+      origin: 'workshop',
+      revision: ++this.revision,
+      diagnostics: [],
+    });
+  }
+
+  /** The `.replays-plugin.json` content for a plugin (working copy, optionally with its saved history). */
+  exportFile(id: string, withVersions: boolean) {
+    const entry = this.get(id);
+    if (!entry) throw new Error('no such plugin');
+    return pluginFile(entry.manifest, entry.source, withVersions && entry.versions.length ? entry.versions : undefined);
+  }
+
+  /** Loads a plugin file as a draft. */
+  importFile(text: string) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new PluginFormatError('that is not a JSON file');
+    }
+    const file = parsePluginFile(parsed);
+    return this.upsert({ manifest: file.manifest, source: file.source, origin: 'workshop' });
+  }
+
+  requestKeep(id: string) {
+    if (!this.get(id)) throw new Error('no such plugin');
+    setMalleableUi({ keepFor: id });
+  }
+}
+
+export const manager = new PluginManager();
+export const useManager = () => useSyncExternalStore(manager.subscribe, manager.getSnapshot);

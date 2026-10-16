@@ -181,7 +181,7 @@ test('on a phone the preview shows, nothing scrolls sideways, and a no-op says s
 
 test('with the flag on, the server says so and the viewer offers the editor', async ({ page }) => {
   const config = await (await page.request.get(`${base()}/api/config`)).json();
-  expect(config.beta).toEqual({ editor: true });
+  expect(config.beta).toEqual({ editor: true, malleable: false });
   await page.goto(`${base()}/r/demo-shop`);
   await expect(page.locator('meta[name="app-beta"]')).toHaveAttribute('content', 'editor');
   await expect(page.getByTestId('edit-replay')).toBeVisible();
