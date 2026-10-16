@@ -34,7 +34,12 @@ export default definePlugin((options: AcmeOptions) => ({
             const token = request.headers[IDENTITY_HEADER];
             const claims = typeof token === 'string' ? verifyIdentity(token, { secret, audience: options.audience }) : undefined;
             if (!claims?.email.endsWith(`@${options.domain}`)) return undefined;
-            return { id: claims.email, email: claims.email, ...(claims.name ? { name: claims.name } : {}) };
+            return {
+              id: claims.email,
+              email: claims.email,
+              ...(claims.name ? { name: claims.name } : {}),
+              ...(claims.avatarUrl ? { avatarUrl: claims.avatarUrl } : {}),
+            };
           },
         };
       },

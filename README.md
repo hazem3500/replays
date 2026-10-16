@@ -333,6 +333,9 @@ plays. Threads take replies and can be **resolved** and reopened by anyone; **ed
   retention deletes them with the replay and **Keep** keeps them.
 - **Flag.** On by default. `REPLAYS_COMMENTS=false` (or `{ "comments": { "enabled": false } }`) removes the tab, markers
   and shortcut, never requests comments, and answers the API with `404`; stored comments stay until retention.
+- **A built-in plugin.** Comments are the `comments` plugin of the [extension surface](#extending-replays): the API is a request hook
+  behind whatever auth adapter is in use (a plugin's adapter included: its identity, name and `avatarUrl` become the author), and
+  the tab, seek-bar markers and `M` key are the matching viewer feature. Turning comments off means the plugin is not loaded.
 
 ![The seek bar with comment markers and a hover preview](docs/screenshots/comments-seekbar.png)
 ![The Comments tab: a thread with replies, a resolved one](docs/screenshots/comments-panel.png)

@@ -17,7 +17,7 @@ import {
 } from '../shared/review-suite.ts';
 import { assertReplayContext, type ReplayContext } from '../shared/context.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
-import { EMPTY_REGISTRY, type PluginRegistry } from '../plugin/registry.ts';
+import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
 import type { AuthAdapter, Identity } from './auth/types.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
 import { appPath, publicPath, withBase } from './base-path.ts';
@@ -25,12 +25,10 @@ import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
 import type { ContextSchema } from './context-schema.ts';
 import type { BetaFlags } from './beta.ts';
 import { type CommentsSettings } from './comments-config.ts';
-import { COMMENT_RATE, handleCommentsApi } from './comments-routes.ts';
-import { CommentsStore } from './comments-store.ts';
+import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
-import { RateLimiter } from './rate-limit.ts';
 import {
   applyContextAdapters,
   clientAsset,
@@ -366,7 +364,12 @@ function resolveContext(bundle: Pick<ReplayBundle, 'context'>, options: AppOptio
 
 export function createApp(options: AppOptions) {
   const base = options.basePath ?? '';
-  const registry = options.plugins ?? EMPTY_REGISTRY;
+  // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
+  const userPlugins = options.plugins ?? EMPTY_REGISTRY;
+  const registry = options.comments?.enabled
+    ? mergeRegistries(resolvePluginsSync([commentsPlugin({ store: options.store, anonymous: options.auth.name === 'none' })]), userPlugins)
+    : userPlugins;
+  const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
   const page = {
     ...pageBranding(options.branding),
     ...(registry.clientEntries.length ? { plugins: JSON.stringify(publicClientEntries(registry.clientEntries, base)) } : {}),
@@ -375,9 +378,6 @@ export function createApp(options: AppOptions) {
   const identities = new WeakMap<IncomingMessage, Identity>();
   const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
   const json = 'application/json; charset=utf-8';
-  const commentsOn = Boolean(options.comments?.enabled);
-  const commentsStore = new CommentsStore(options.store.storage);
-  const commentLimiter = new RateLimiter(COMMENT_RATE.max, COMMENT_RATE.windowMs);
 
   /** Everything past the health checks, inside the request's span. */
   async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string) {
@@ -424,18 +424,6 @@ export function createApp(options: AppOptions) {
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
       if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id }))) return;
-      // Comments: on by default, off with REPLAYS_COMMENTS=false, when the path falls through to the generic API 404.
-      if (
-        commentsOn &&
-        (await handleCommentsApi(request, response, path, {
-          store: options.store,
-          comments: commentsStore,
-          limiter: commentLimiter,
-          user,
-          anonymous: options.auth.name === 'none',
-        }))
-      )
-        return;
 
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another

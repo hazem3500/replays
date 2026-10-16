@@ -124,15 +124,13 @@ function mergeScalar(
   owners.set(key, plugin);
 }
 
+type ResolveOptions = { env?: NodeJS.ProcessEnv; cwd?: string };
+
 /**
- * Runs every plugin's `setup` (in order) and collects what they registered. Registrations are validated as they
- * are made; conflicts between plugins (the same id, the same branding field with different values) throw a
- * `PluginError` naming both sides.
+ * The one implementation of resolving: yields each `setup`'s result so a driver can await it (`resolvePlugins`) or insist
+ * it is synchronous (`resolvePluginsSync`).
  */
-export async function resolvePlugins(
-  plugins: readonly ReplaysPlugin[],
-  options: { env?: NodeJS.ProcessEnv; cwd?: string } = {},
-): Promise<PluginRegistry> {
+function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): Generator<void | Promise<void>, PluginRegistry> {
   plugins.forEach((plugin, index) => assertPlugin(plugin, `plugins[${index}]`));
   const ordered = orderPlugins(plugins);
 
@@ -286,7 +284,7 @@ export async function resolvePlugins(
       },
     };
     try {
-      await plugin.setup(api);
+      yield plugin.setup(api);
     } catch (error) {
       if (error instanceof PluginError) throw error;
       throw new PluginError('setup-failed', `setup failed: ${error instanceof Error ? error.message : String(error)}`, {
@@ -311,5 +309,68 @@ export async function resolvePlugins(
     basePath: basePath?.value,
     hooks,
     clientEntries,
+  };
+}
+
+/**
+ * Runs every plugin's `setup` (in order) and collects what they registered. Registrations are validated as they
+ * are made; conflicts between plugins (the same id, the same branding field with different values) throw a
+ * `PluginError` naming both sides.
+ */
+export async function resolvePlugins(plugins: readonly ReplaysPlugin[], options: ResolveOptions = {}): Promise<PluginRegistry> {
+  const run = collect(plugins, options);
+  let step = run.next();
+  while (!step.done) {
+    try {
+      await step.value;
+    } catch (error) {
+      step = run.throw(error);
+      continue;
+    }
+    step = run.next();
+  }
+  return step.value;
+}
+
+/** Like `resolvePlugins` for plugins whose `setup` is synchronous (the built-in ones); an async `setup` is an error. */
+export function resolvePluginsSync(plugins: readonly ReplaysPlugin[], options: ResolveOptions = {}): PluginRegistry {
+  const run = collect(plugins, options);
+  let step = run.next();
+  while (!step.done) {
+    if (step.value) throw new PluginError('setup-failed', 'an asynchronous setup cannot be used here');
+    step = run.next();
+  }
+  return step.value;
+}
+
+function union<K, V>(a: ReadonlyMap<K, V>, b: ReadonlyMap<K, V>, what: string) {
+  for (const key of a.keys()) if (b.has(key)) throw new PluginError('conflict', `${what} ${JSON.stringify(key)} is registered twice`);
+  return new Map([...a, ...b]);
+}
+
+/**
+ * One registry from two: `first`'s plugins are set up and their hooks run before `second`'s. The built-in plugins are
+ * merged under the user's, so the user's branding and base path win. Names that appear in both are a conflict.
+ */
+export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): PluginRegistry {
+  const clash = first.order.find((name) => second.order.includes(name));
+  if (clash) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: clash });
+  return {
+    order: [...first.order, ...second.order],
+    auth: union(first.auth, second.auth, 'auth adapter'),
+    contextAdapters: [...first.contextAdapters, ...second.contextAdapters],
+    sourceProviders: [...first.sourceProviders, ...second.sourceProviders],
+    storage: union(first.storage, second.storage, 'storage backend'),
+    branding: { ...first.branding, ...second.branding },
+    basePath: second.basePath ?? first.basePath,
+    hooks: {
+      preAuth: [...first.hooks.preAuth, ...second.hooks.preAuth],
+      postAuth: [...first.hooks.postAuth, ...second.hooks.postAuth],
+      response: [...first.hooks.response, ...second.hooks.response],
+      prepareUpload: [...first.hooks.prepareUpload, ...second.hooks.prepareUpload],
+      beforeUpload: [...first.hooks.beforeUpload, ...second.hooks.beforeUpload],
+      afterUpload: [...first.hooks.afterUpload, ...second.hooks.afterUpload],
+    },
+    clientEntries: [...first.clientEntries, ...second.clientEntries],
   };
 }

@@ -18,9 +18,11 @@ so every change to the surface shows up in a diff).
 | Capture and data model: recording, bundle building, sanitising, source providers, `ReplayBundle` and friends | `/capture`, `.` | Public |
 | The replay format (`replay.json`, `meta.version`, the context block) | – | Public: changes are additive, or bump `version` and keep reading the old one |
 | HTTP API (`/api/replays`, `/api/suites`, `/api/config`, `/api/me`, upload receipts) and environment variables | – | Public: changes are additive |
+| `Identity` (`id`, `email`, `name`, `avatarUrl`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
+| The `comments` plugin name and the comments HTTP API | – | Public: the name is reserved; the API changes additively |
 | Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed |
 | The editor (`beta.editor`) and its API | – | Beta: may change in any release |
-| Everything else: files under `src/`, `dist/lib/chunks/`, any import path not in `exports`, CSS class names and DOM structure of the viewer, `data-testid` values other than those named in extension-api.md, log output, internal HTTP routes (`/internal/…`) | – | Not public |
+| Everything else: files under `src/` (including the viewer's built-in feature registry, `src/client/plugins/features.tsx`), `dist/lib/chunks/`, any import path not in `exports`, CSS class names and DOM structure of the viewer, `data-testid` values other than those named in extension-api.md, log output, internal HTTP routes (`/internal/…`) | – | Not public |
 
 Deep imports are blocked by `exports`; if you need something that is not exported, open an issue instead of copying the path:
 it is a candidate for the surface.

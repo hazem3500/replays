@@ -14,8 +14,9 @@ const SECRET = 'e2e-signing-secret';
 const AUDIENCE = 'acme-replays';
 const BASE = '/acme/replays';
 const exp = () => Math.floor(Date.now() / 1000) + 600;
+const AVATAR = 'https://img.example.com/ada.png';
 const token = (email = 'ada@acme.test', overrides: Partial<Parameters<typeof signIdentity>[0]> = {}, secret = SECRET) =>
-  signIdentity({ email, name: 'Ada', aud: AUDIENCE, exp: exp(), ...overrides }, secret);
+  signIdentity({ email, name: 'Ada', avatarUrl: AVATAR, aud: AUDIENCE, exp: exp(), ...overrides }, secret);
 const asAda = { [IDENTITY_HEADER]: token() };
 
 let child: ChildProcess;
@@ -87,7 +88,7 @@ test.describe('auth adapter (signed identity header)', () => {
     const me = await (await request.get(`${origin}${BASE}/api/me`, { headers: asAda })).json();
     expect(me).toMatchObject({ id: 'ada@acme.test', email: 'ada@acme.test', name: 'Ada' });
     const config = await (await request.get(`${origin}${BASE}/api/config`, { headers: asAda })).json();
-    expect(config).toMatchObject({ name: 'Acme Replays', auth: 'acme-iap', plugins: ['acme-distro'] });
+    expect(config).toMatchObject({ name: 'Acme Replays', auth: 'acme-iap', comments: true, plugins: ['comments', 'acme-distro'] });
     expect(config.sourceProviders).toContain('acme-chat');
   });
 });
@@ -187,5 +188,54 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     const response = await request.get(script, { headers: asAda });
     expect(response.status()).toBe(200);
     expect(response.headers()['content-type']).toContain('javascript');
+  });
+});
+
+test.describe('comments work through the plugin surface with the distribution’s identity', () => {
+  test.use({ extraHTTPHeaders: asAda });
+  const id = `distro-comments-${Date.now().toString(36)}`;
+
+  test('the comments plugin is loaded and its API answers behind the signed-header auth', async ({ request }) => {
+    const original = await (await request.get(`${origin}${BASE}/api/replays/demo-shop`)).json();
+    const created = await request.post(`${origin}${BASE}/api/replays`, {
+      data: { ...original, meta: { ...original.meta, id, title: 'Comments check' } },
+    });
+    expect(created.status()).toBe(201);
+    const url = `${origin}${BASE}/api/replays/${id}/comments`;
+    expect((await request.get(url, { headers: { [IDENTITY_HEADER]: 'nope' } })).status()).toBe(403);
+    const posted = await request.post(url, { data: { body: 'Posted through the API', at: 2000 } });
+    expect(posted.status()).toBe(201);
+    // The author is the plugin identity: name and avatar come from the signed header, the id stays private.
+    const listed = await (await request.get(url)).json();
+    expect(listed.anonymous).toBe(false);
+    expect(listed.comments[0]).toMatchObject({
+      body: 'Posted through the API',
+      at: 2000,
+      mine: true,
+      author: { name: 'Ada', avatarUrl: AVATAR },
+    });
+    expect(JSON.stringify(listed)).not.toContain('ada@acme.test');
+  });
+
+  test('the Comments tab, written with the keyboard, names Ada from the signed header and marks the seek bar', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}?t=3`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    // The comment from the previous test is a marker on the seek bar and counted on the tab.
+    await expect(page.getByTestId('comment-marker')).toHaveCount(1);
+    await expect(page.getByTestId('comments-tab')).toContainText('1');
+    await page.keyboard.press('m');
+    await expect(page.getByTestId('comments-tab')).toHaveAttribute('aria-selected', 'true');
+    await page.keyboard.type('Written in the browser');
+    await page.keyboard.press('Control+Enter');
+    await expect(page.getByTestId('comment-thread')).toHaveCount(2);
+    await expect(page.getByTestId('comment-author').first()).toHaveText('Ada');
+    await expect(page.getByTestId('comments-tab')).toContainText('2');
+  });
+
+  test('the custom tab, the Comments tab and the built-in tabs live side by side', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    for (const tab of ['console-tab', 'context-tab', 'comments-tab', 'plugin:acme-distro:build-tab'])
+      await expect(page.getByTestId(tab)).toBeVisible();
   });
 });

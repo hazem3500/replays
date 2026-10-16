@@ -7,8 +7,7 @@ import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, 
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { betaEditor } from './config.ts';
-import { CommentsBridge, CommentsProvider } from './comments/CommentsProvider.tsx';
-import { commentsEnabled } from './comments/enabled.ts';
+import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
 import { editHref } from './route.ts';
@@ -234,15 +233,19 @@ export function Viewer({
   }, [roomForRequest]);
 
   const notify = useCallback((message: string) => showToast(message), []);
-  // Comments: the Comments tab unfolds the panel when it is folded. `M` reaches the provider through the bridge.
+  // Built-in features (plugins/features.tsx, e.g. comments): opening their tab unfolds the panel when it is folded, and a
+  // feature's key (`M`) reaches it through the action it registered.
   const startComment = useRef<() => void>(undefined);
-  const registerStartComment = useCallback((start: (() => void) | undefined) => {
+  const registerStartAction = useCallback((start: (() => void) | undefined) => {
     startComment.current = start;
   }, []);
-  const openComments = useCallback(() => {
-    if (collapsedRef.current) setCollapsed(false, false);
-    setTab('comments');
-  }, [setCollapsed, setTab]);
+  const openFeaturePanel = useCallback(
+    (target: string) => {
+      if (collapsedRef.current) setCollapsed(false, false);
+      setTab(target as InspectorTab);
+    },
+    [setCollapsed, setTab],
+  );
 
   const actions = useMemo<ViewerActions>(() => {
     // Shortcuts and jumps that land in the panel unfold it first, transiently. Playback, seeks and steps never do.
@@ -524,14 +527,14 @@ export function Viewer({
   );
   return (
     <PlayerContext.Provider value={player}>
-      {commentsEnabled() ? (
-        <CommentsProvider replayId={bundle.meta.id} timeline={timeline} openPanel={openComments}>
-          <CommentsBridge register={registerStartComment} />
-          {viewer}
-        </CommentsProvider>
-      ) : (
-        viewer
-      )}
+      <FeatureProviders
+        replayId={bundle.meta.id}
+        timeline={timeline}
+        openPanel={openFeaturePanel}
+        registerStartAction={registerStartAction}
+      >
+        {viewer}
+      </FeatureProviders>
     </PlayerContext.Provider>
   );
 }

@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { definePlugin, orderPlugins, PluginError, PLUGIN_API_VERSION, rejectUpload, resolvePlugins } from '../src/plugin/index.ts';
+import {
+  definePlugin,
+  mergeRegistries,
+  orderPlugins,
+  PluginError,
+  PLUGIN_API_VERSION,
+  rejectUpload,
+  resolvePlugins,
+  resolvePluginsSync,
+} from '../src/plugin/index.ts';
 import type { PluginApi, ReplaysPlugin } from '../src/plugin/index.ts';
 
 const plugin = (name: string, setup: (api: PluginApi) => void = () => {}, extra: Partial<ReplaysPlugin> = {}) =>
@@ -298,5 +307,51 @@ describe('conflicts between plugins', () => {
 describe('rejectUpload', () => {
   it('is an error carrying the HTTP status', () => {
     expect(rejectUpload(422, 'no')).toMatchObject({ message: 'no', status: 422 });
+  });
+});
+
+describe('resolvePluginsSync and mergeRegistries', () => {
+  it('resolves synchronous setups without a promise, and refuses an asynchronous one', () => {
+    const registry = resolvePluginsSync([plugin('a', (api) => api.branding({ name: 'Sync' }))]);
+    expect(registry.branding.name).toBe('Sync');
+    expect(() => resolvePluginsSync([plugin('b', async () => {})])).toThrow(/asynchronous setup cannot be used here/);
+    expect(() =>
+      resolvePluginsSync([
+        plugin('c', () => {
+          throw new Error('boom');
+        }),
+      ]),
+    ).toThrow(/plugin c: setup failed: boom/);
+  });
+
+  it('merges two registries: the first one’s hooks run first, the second wins branding and base path', async () => {
+    const first = resolvePluginsSync([
+      plugin('built-in', (api) => {
+        api.onRequest(() => {});
+        api.branding({ name: 'Built-in' });
+        api.basePath('/first');
+      }),
+    ]);
+    const second = await resolvePlugins([
+      plugin('user', (api) => {
+        api.onRequest(() => {});
+        api.branding({ name: 'User' });
+        api.basePath('/second');
+        api.auth({ name: 'sso', authenticate: () => undefined });
+      }),
+    ]);
+    const merged = mergeRegistries(first, second);
+    expect(merged.order).toEqual(['built-in', 'user']);
+    expect(merged.hooks.postAuth.map((hook) => hook.plugin)).toEqual(['built-in', 'user']);
+    expect(merged.branding.name).toBe('User');
+    expect(merged.basePath).toBe('/second');
+    expect([...merged.auth.keys()]).toEqual(['sso']);
+  });
+
+  it('refuses the same plugin or the same auth adapter on both sides', async () => {
+    const a = resolvePluginsSync([plugin('same', (api) => api.auth({ name: 'sso', authenticate: () => undefined }))]);
+    expect(() => mergeRegistries(a, a)).toThrow(/same: is listed twice/);
+    const b = resolvePluginsSync([plugin('other', (api) => api.auth({ name: 'sso', authenticate: () => undefined }))]);
+    expect(() => mergeRegistries(a, b)).toThrow(/auth adapter "sso" is registered twice/);
   });
 });

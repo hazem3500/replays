@@ -14,7 +14,17 @@ const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.jso
 const entries: Record<string, { source: string; values: string[] }> = {
   './plugin': {
     source: '../src/plugin/index.ts',
-    values: ['PLUGIN_API_VERSION', 'PluginError', 'assertPlugin', 'definePlugin', 'orderPlugins', 'rejectUpload', 'resolvePlugins'],
+    values: [
+      'PLUGIN_API_VERSION',
+      'PluginError',
+      'assertPlugin',
+      'definePlugin',
+      'mergeRegistries',
+      'orderPlugins',
+      'rejectUpload',
+      'resolvePlugins',
+      'resolvePluginsSync',
+    ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
   './viewer': { source: '../src/client/plugins/api.ts', values: ['defineViewerPlugin'] },

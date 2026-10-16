@@ -11,6 +11,8 @@ export const IDENTITY_HEADER = 'x-acme-identity';
 export interface IdentityClaims {
   email: string;
   name?: string;
+  /** An https image URL; becomes the avatar beside the person's comments. */
+  avatarUrl?: string;
   aud: string;
   /** Seconds since the epoch. */
   exp: number;

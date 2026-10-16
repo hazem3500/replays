@@ -31,6 +31,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - Subpath exports `@hazem3500/replays/{capture,server,viewer,plugin,config}` next to the root entry; the package now ships the
     built viewer, the samples and the extension docs. Policy in [docs/api-stability.md](docs/api-stability.md), decision in
     [docs/packaging.md](docs/packaging.md).
+  - Comments are now a built-in plugin (`comments`, loaded first when enabled) instead of being wired into the server and the
+    viewer: the API is a request hook, the tab, seek-bar markers and `M` key a built-in viewer feature. Behaviour is
+    unchanged; plugin auth adapters' identities (with `avatarUrl`) become comment authors.
   - `examples/custom-distro` (workspace package) with an end-to-end smoke in CI, and `pnpm test:pack`.
   - [docs/downstream-migration.md](docs/downstream-migration.md).
 

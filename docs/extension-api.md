@@ -120,9 +120,25 @@ AUTH_MODE (env)  →  config.auth  →  the only plugin adapter  →  built-in d
 A name is looked up among plugin adapters first, then the built-ins. `AUTH_MODE=plugin AUTH_PLUGIN=./x.mjs` (the older
 mechanism) still works.
 
+## Built-in plugins
+
+Comments ship as a plugin, `comments`, so they use the same surface as yours and follow the same rules:
+
+- **Server** (`src/server/comments-plugin.ts`): `definePlugin({ name: 'comments', order: -100, setup })` registers the comments API with
+  `api.onRequest` (post-auth). Because it runs after authentication, whatever adapter is active, a plugin's included, decides who
+  the author is: the `Identity` (`id` for ownership, `name`, optional `avatarUrl` as an https URL) is stored as the comment's author.
+- **Loading**: `REPLAYS_COMMENTS` / `comments.enabled` (default on) decides whether the server adds the plugin. Absent means no routes (404)
+  and no UI; `GET /api/config` shows `comments` and lists `comments` first in `plugins`. The name `comments` is reserved: listing a
+  plugin of that name is a `duplicate-plugin` error.
+- **Viewer** (`src/client/comments/feature.tsx`): a built-in viewer feature (`src/client/plugins/features.tsx`) with a provider around the viewer, a tab in the
+  bottom panel, a seek-bar overlay and the `M` shortcut. Features are the React-side twin of the browser plugin API below, for code in this
+  repository that uses the viewer's own components; they are not public API. A feature is active when the page says the server loaded its plugin.
+
+Another built-in feature would follow the same two steps: a server plugin (if it needs routes) and a registered viewer feature.
+
 ## Browser entries: inspector tabs, viewer actions, panels
 
-A server plugin points at one ES module with `api.client({ id: 'main', script: '/abs/path/client.js' })`. The viewer imports it
+A server plugin points at one ES module with `api.client({ id: 'main', script: '/abs/path/client.js' })`. (Deployment code uses this DOM-based API; the built-in comments use the React feature registry described above.) The viewer imports it
 after the first paint and calls its default export. A failing entry is logged to the console and skipped; it never breaks the viewer
 or other plugins. The module is yours to build (the example uses esbuild, `scripts/build.mjs`); it needs no React and no framework:
 

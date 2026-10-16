@@ -3,8 +3,11 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
+import { registerCommentsFeature } from './comments/feature.tsx';
 import { loadClientPlugins } from './plugins/load.ts';
 import './tailwind.css';
+
+registerCommentsFeature();
 
 const root = document.querySelector('#root');
 if (!root) throw new Error('Missing #root');

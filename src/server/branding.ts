@@ -83,7 +83,14 @@ export function pageBranding(branding: BrandingConfig): PageBranding {
 /** What `GET /api/config` tells the client. */
 export function publicConfig(
   branding: BrandingConfig,
-  extra: { contextSchema?: unknown; sourceProviders: string[]; auth: string; plugins?: string[]; beta?: { editor: boolean }; comments?: boolean },
+  extra: {
+    contextSchema?: unknown;
+    sourceProviders: string[];
+    auth: string;
+    plugins?: string[];
+    beta?: { editor: boolean };
+    comments?: boolean;
+  },
 ) {
   return {
     name: branding.name,

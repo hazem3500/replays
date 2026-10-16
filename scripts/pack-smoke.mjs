@@ -37,7 +37,7 @@ assert.equal(typeof RecorderSession, 'function');
 const server = await startServer({ port: 0, log: () => {}, env: { ...process.env, DATA_DIR: ${JSON.stringify(join(work, 'data'))}, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' } });
 const config = await (await fetch(server.origin + '/packed/api/config')).json();
 assert.equal(config.name, 'Packed');
-assert.deepEqual(config.plugins, ['packed']);
+assert.deepEqual(config.plugins, ['comments', 'packed']);
 const html = await (await fetch(server.origin + '/packed/', { headers: { accept: 'text/html' } })).text();
 assert.ok(html.includes('<title>Packed</title>'), 'the built viewer is served with the plugin branding');
 assert.equal((await (await fetch(server.origin + '/packed/api/replays')).json()).length, 2, 'the bundled samples are served');

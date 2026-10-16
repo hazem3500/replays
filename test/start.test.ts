@@ -28,7 +28,7 @@ describe('startServer', () => {
     expect(server.port).toBeGreaterThan(0);
     expect(await (await fetch(`${server.origin}/healthz`)).text()).toBe('ok');
     const config = await (await fetch(`${server.origin}/api/config`)).json();
-    expect(config).toMatchObject({ name: 'Programmatic', auth: 'none', plugins: ['extra'] });
+    expect(config).toMatchObject({ name: 'Programmatic', auth: 'none', plugins: ['comments', 'extra'] });
     expect(config.sourceProviders).toContain('tick');
   });
 
@@ -42,7 +42,7 @@ describe('startServer', () => {
     const server = await startServer({ env: await baseEnv(), cwd, port: 0, ...quiet });
     running.push(server);
     const config = await (await fetch(`${server.origin}/x/api/config`)).json();
-    expect(config).toMatchObject({ name: 'File Plugin Brand', plugins: ['from-file'] });
+    expect(config).toMatchObject({ name: 'File Plugin Brand', plugins: ['comments', 'from-file'] });
   });
 
   it('serves the samples of SAMPLE_DIR (or none), not only the package’s', async () => {
