@@ -7,8 +7,7 @@ import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, 
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { betaEditor } from './config.ts';
-import { CommentsBridge, CommentsProvider } from './comments/CommentsProvider.tsx';
-import { commentsEnabled } from './comments/enabled.ts';
+import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
 import { editHref } from './route.ts';
@@ -16,6 +15,7 @@ import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
+import { usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
 import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
@@ -233,15 +233,19 @@ export function Viewer({
   }, [roomForRequest]);
 
   const notify = useCallback((message: string) => showToast(message), []);
-  // Comments: the Comments tab unfolds the panel when it is folded. `M` reaches the provider through the bridge.
+  // Built-in features (plugins/features.tsx, e.g. comments): opening their tab unfolds the panel when it is folded, and a
+  // feature's key (`M`) reaches it through the action it registered.
   const startComment = useRef<() => void>(undefined);
-  const registerStartComment = useCallback((start: (() => void) | undefined) => {
+  const registerStartAction = useCallback((start: (() => void) | undefined) => {
     startComment.current = start;
   }, []);
-  const openComments = useCallback(() => {
-    if (collapsedRef.current) setCollapsed(false, false);
-    setTab('comments');
-  }, [setCollapsed, setTab]);
+  const openFeaturePanel = useCallback(
+    (target: string) => {
+      if (collapsedRef.current) setCollapsed(false, false);
+      setTab(target as InspectorTab);
+    },
+    [setCollapsed, setTab],
+  );
 
   const actions = useMemo<ViewerActions>(() => {
     // Shortcuts and jumps that land in the panel unfold it first, transiently. Playback, seeks and steps never do.
@@ -327,10 +331,13 @@ export function Viewer({
         : undefined,
     [keep.available, keep.kept, keep.pending, keep.flip],
   );
+  // Client plugins' actions and panel entries (src/client/plugins/): More-menu items; open panels draw in a side drawer.
+  const pluginMenu = usePluginMenu(bundle, player);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
+      ...pluginMenu.items,
       // Useless on phones: no keyboard.
       ...(mobile
         ? []
@@ -344,7 +351,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, keepItem, mobile],
+    [actions.openShortcuts, keepItem, mobile, pluginMenu.items],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -513,20 +520,21 @@ export function Viewer({
           {...(mobilePanel ? { mobile: mobilePanel } : {})}
         />
         <StepAnnouncer />
+        {pluginMenu.drawer}
         <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       </main>
     </ViewerContext.Provider>
   );
   return (
     <PlayerContext.Provider value={player}>
-      {commentsEnabled() ? (
-        <CommentsProvider replayId={bundle.meta.id} timeline={timeline} openPanel={openComments}>
-          <CommentsBridge register={registerStartComment} />
-          {viewer}
-        </CommentsProvider>
-      ) : (
-        viewer
-      )}
+      <FeatureProviders
+        replayId={bundle.meta.id}
+        timeline={timeline}
+        openPanel={openFeaturePanel}
+        registerStartAction={registerStartAction}
+      >
+        {viewer}
+      </FeatureProviders>
     </PlayerContext.Provider>
   );
 }

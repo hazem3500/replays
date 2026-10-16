@@ -8,9 +8,9 @@ import {
   CircleXIcon,
   GaugeIcon,
   GlobeIcon,
-  MessageSquareIcon,
   ListOrderedIcon,
   type LucideIcon,
+  PuzzleIcon,
   SquareTerminalIcon,
   TriangleAlertIcon,
 } from 'lucide-react';
@@ -41,14 +41,14 @@ import { countAtOrBefore, sortByAt } from '../timeline.ts';
 import { createSpring } from '../spring.ts';
 import { type ShortcutAction, shortcutLabel } from '../shortcuts.ts';
 import { useWindowedRows } from '../windowing.ts';
-import { type InspectorTab, useViewer } from './context.ts';
+import { type BuiltinInspectorTab, type InspectorTab, useViewer } from './context.ts';
+import { PluginMount, usePluginContext, usePluginSnapshot } from '../plugins/PluginUi.tsx';
 import { Empty } from './Empty.tsx';
 import { noteTabSwitch, queueReveal, staggerIn } from './stagger.ts';
 import { StepList } from './StepRail.tsx';
 import { activeStepIndex } from './Transport.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
-import { CommentsPanel } from '../comments/CommentsPanel.tsx';
-import { useComments } from '../comments/CommentsProvider.tsx';
+import { activeFeatures, useFeatureBadges } from '../plugins/features.tsx';
 import { useContextSchema } from './context-schema.ts';
 import { Count, countLabel } from '@/components/count.tsx';
 import { HoverGlide } from '@/components/sliding-highlight.tsx';
@@ -173,14 +173,13 @@ export function InspectorResizer({
 const BACKSLASH = '\\';
 
 /** Tabs with a key: their tooltip shows it (single source: shortcuts.ts). */
-const TAB_SHORTCUTS: Partial<Record<InspectorTab, ShortcutAction>> = {
+const TAB_SHORTCUTS: Partial<Record<BuiltinInspectorTab, ShortcutAction>> = {
   console: 'console-tab',
   network: 'network-tab',
   performance: 'performance-tab',
-  comments: 'add-comment',
 };
 
-const TABS: InspectorTab[] = ['console', 'network', 'performance', 'context'];
+const TABS: BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
 
 export interface MobilePanel {
   /** The Steps tab is showing (it sits in front of the diagnostics tabs on phones). */
@@ -204,9 +203,9 @@ export const Inspector = memo(function Inspector({
 }) {
   const player = usePlayer();
   const { setTab, setExpandedRequest } = useViewer();
-  // Comments are a tab of their own when they are on (the provider is only mounted then).
-  const comments = useComments();
-  const tabs = comments ? [...TABS, 'comments' as const] : TABS;
+  // Built-in features with a tab (comments): after the diagnostics tabs, in registration order.
+  const featureTabs = activeFeatures().flatMap((feature) => (feature.tab ? [{ id: feature.id, featureTab: feature.tab }] : []));
+  const featureBadges = useFeatureBadges();
   // Rows fill once the page transition has landed (navigation.ts); the tab row is there from the start.
   const filled = useFilledAfterTransition();
   const contextSchema = useContextSchema();
@@ -221,6 +220,8 @@ export const Inspector = memo(function Inspector({
   const consoleCount = usePlayhead((time) => countAtOrBefore(consoleTrack.ats, horizon(time)));
   const networkCount = usePlayhead((time) => countAtOrBefore(networkTrack.ats, horizon(time)));
   const performanceCount = usePlayhead((time) => countAtOrBefore(performanceTrack.ats, horizon(time)));
+  const pluginTabs = usePluginSnapshot().tabs;
+  const pluginContext = usePluginContext(bundle, player);
   const stepTabs = mobile && bundle.steps.length > 0;
   const activeStep = usePlayhead((time) => (stepTabs ? activeStepIndex(bundle.steps, time, player.duration) : -1));
   const labels = mobile ? MOBILE_TAB_LABELS : TAB_LABELS;
@@ -297,7 +298,7 @@ export const Inspector = memo(function Inspector({
               </TabsTrigger>
             </Hint>
           ) : null}
-          {tabs.map((value) => (
+          {TABS.map((value) => (
             <Hint
               key={value}
               // Console and Network also say how to jump to the next error.
@@ -322,9 +323,7 @@ export const Inspector = memo(function Inspector({
                       ? countLabel(networkCount, networkTrack.entries.length, 'request')
                       : value === 'performance'
                         ? countLabel(performanceCount, performanceTrack.entries.length, 'signal')
-                        : value === 'comments' && comments?.count
-                          ? ` (${comments.count})`
-                          : ''
+                        : ''
                 }`}
               >
                 <TabLabel icon={TAB_ICONS[value]} label={labels[value]} iconOnly={iconTabs} />
@@ -334,13 +333,40 @@ export const Inspector = memo(function Inspector({
                   <Count value={networkCount} total={networkTrack.entries.length} hideZero />
                 ) : value === 'performance' ? (
                   <Count value={performanceCount} total={performanceTrack.entries.length} hideZero />
-                ) : value === 'comments' && comments ? (
-                  comments.count ? (
-                    <span className="count">{comments.count}</span>
-                  ) : null
                 ) : null}
               </TabsTrigger>
             </Hint>
+          ))}
+          {featureTabs.map(({ id, featureTab }) => (
+            <Hint
+              key={id}
+              label={featureTab.label}
+              side="top"
+              {...(featureTab.shortcut ? { shortcut: shortcutLabel(featureTab.shortcut) } : {})}
+              disabled={!iconTabs && !featureTab.shortcut}
+            >
+              <TabsTrigger
+                value={id}
+                id={`${id}-tab`}
+                data-testid={`${id}-tab`}
+                className="inspector-tab"
+                aria-label={`${featureTab.label}${featureBadges[id] ? ` (${featureBadges[id]})` : ''}`}
+              >
+                <TabLabel icon={featureTab.Icon} label={featureTab.label} iconOnly={iconTabs} />
+                {featureBadges[id] ? <span className="count">{featureBadges[id]}</span> : null}
+              </TabsTrigger>
+            </Hint>
+          ))}
+          {pluginTabs.map((pluginTab) => (
+            <TabsTrigger
+              key={pluginTab.key}
+              value={pluginTab.key}
+              id={`${pluginTab.key}-tab`}
+              data-testid={`${pluginTab.key}-tab`}
+              className="inspector-tab"
+            >
+              <TabLabel icon={PuzzleIcon} label={pluginTab.definition.label} iconOnly={iconTabs} />
+            </TabsTrigger>
           ))}
           {indicator}
         </TabsList>
@@ -407,11 +433,23 @@ export const Inspector = memo(function Inspector({
       <TabsContent value="context" className="inspector-panel">
         {filled ? <ContextPanel bundle={bundle} schema={contextSchema} /> : null}
       </TabsContent>
-      {comments ? (
-        <TabsContent value="comments" className="inspector-panel">
-          <CommentsPanel />
+      {featureTabs.map(({ id, featureTab }) => (
+        <TabsContent key={id} value={id} className="inspector-panel">
+          <featureTab.Panel />
         </TabsContent>
-      ) : null}
+      ))}
+      {pluginTabs.map((pluginTab) => (
+        <TabsContent key={pluginTab.key} value={pluginTab.key} className="inspector-panel">
+          {filled ? (
+            <PluginMount
+              render={pluginTab.definition.render}
+              context={pluginContext}
+              label={pluginTab.definition.label}
+              testId={`${pluginTab.key}-panel`}
+            />
+          ) : null}
+        </TabsContent>
+      ))}
     </Tabs>
   );
 });
@@ -420,12 +458,11 @@ const ICON_TABS_BELOW = 480;
 /** The rows of the inspector's panels that stagger in (never the windowing spacers). */
 const INSPECTOR_ROWS = 'tbody > tr:not(.spacer-row):not(.gap-row), .ctx-summary, .ctx-heading, .ctx-source, .ctx-row, .empty';
 
-const TAB_ICONS: Record<InspectorTab, LucideIcon> = {
+const TAB_ICONS: Record<BuiltinInspectorTab, LucideIcon> = {
   console: SquareTerminalIcon,
   network: GlobeIcon,
   performance: GaugeIcon,
   context: BadgeInfoIcon,
-  comments: MessageSquareIcon,
 };
 
 function TabLabel({ icon: Icon, label, iconOnly }: { icon: LucideIcon; label: string; iconOnly: boolean }) {
@@ -452,15 +489,14 @@ function useNarrowerThan(element: RefObject<HTMLElement | null>, width: number) 
   return narrow;
 }
 
-const TAB_LABELS: Record<InspectorTab, string> = {
+const TAB_LABELS: Record<BuiltinInspectorTab, string> = {
   console: 'Console',
   network: 'Network',
   performance: 'Performance',
   context: 'Context',
-  comments: 'Comments',
 };
 
-const MOBILE_TAB_LABELS: Record<InspectorTab, string> = { ...TAB_LABELS, performance: 'Perf' };
+const MOBILE_TAB_LABELS: Record<BuiltinInspectorTab, string> = { ...TAB_LABELS, performance: 'Perf' };
 
 /** Measures the rendered height of a data row (fallback until mounted), re-measuring as the body resizes. */
 function useRowHeight(body: RefObject<HTMLTableSectionElement | null>, selector: string, mounted: boolean, fallback = 31) {

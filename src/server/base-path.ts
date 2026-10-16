@@ -46,6 +46,8 @@ export interface PageBranding {
   beta?: string;
   /** Comments on replays are enabled (`<meta name="app-comments">`). */
   comments?: boolean;
+  /** JSON list of the plugins' browser entries (`<meta name="app-plugins">`); see src/server/plugin-runtime.ts. */
+  plugins?: string;
 }
 
 const escapeHtml = (value: string) =>
@@ -63,6 +65,10 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
   if (branding) {
     out = out.replace('<meta name="app-comments" content="" />', `<meta name="app-comments" content="${branding.comments ? 'on' : ''}" />`);
     out = out.replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${escapeHtml(branding.beta ?? '')}" />`);
+    out = out.replace(
+      '<meta name="app-plugins" content="" />',
+      `<meta name="app-plugins" content="${escapeHtml(branding.plugins ?? '')}" />`,
+    );
     out = out.replaceAll('__PRODUCT_NAME__', escapeHtml(branding.name)).replaceAll('__PRODUCT_LOGO__', escapeHtml(branding.logoUrl ?? ''));
     if (branding.tokensCss) out = out.replace('</head>', `<style id="brand-tokens">${branding.tokensCss}</style></head>`);
   }

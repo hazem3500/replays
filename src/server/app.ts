@@ -15,7 +15,9 @@ import {
   assertReviewSuiteRegistration,
   type ResolvedSuiteRegistration,
 } from '../shared/review-suite.ts';
+import { assertReplayContext, type ReplayContext } from '../shared/context.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
+import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
 import type { AuthAdapter, Identity } from './auth/types.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
 import { appPath, publicPath, withBase } from './base-path.ts';
@@ -23,12 +25,20 @@ import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
 import type { ContextSchema } from './context-schema.ts';
 import type { BetaFlags } from './beta.ts';
 import { type CommentsSettings } from './comments-config.ts';
-import { COMMENT_RATE, handleCommentsApi } from './comments-routes.ts';
-import { CommentsStore } from './comments-store.ts';
+import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
-import { RateLimiter } from './rate-limit.ts';
+import {
+  applyContextAdapters,
+  clientAsset,
+  publicClientEntries,
+  runAfterUpload,
+  runBeforeUpload,
+  runPrepareUpload,
+  runRequestHooks,
+  watchResponse,
+} from './plugin-runtime.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import { serveObject } from './serve-object.ts';
 import { ReplayConflictError, type ReplayStore } from './store.ts';
@@ -67,6 +77,8 @@ export interface AppOptions {
   comments?: CommentsSettings;
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
   publicOrigin?: string;
+  /** What the loaded plugins registered (src/plugin/registry.ts); none by default. */
+  plugins?: PluginRegistry;
 }
 
 /** What a trace may say about an uploaded replay (tracing.ts): its id, counts and enum fields, never contents. */
@@ -331,8 +343,14 @@ export function isBrowserNavigation(request: IncomingMessage) {
   return accept.includes('text/html');
 }
 
+/** A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. */
+async function acceptUpload(bundle: ReplayBundle) {
+  assertReplayBundle(bundle);
+  return bundle;
+}
+
 /** Applies the deployment's source providers and context schema to an uploaded bundle (in place). */
-function resolveContext(bundle: ReplayBundle, options: AppOptions) {
+function resolveContext(bundle: Pick<ReplayBundle, 'context'>, options: AppOptions) {
   const context = bundle.context;
   if (!context) return;
   if (context.sources) {
@@ -346,12 +364,20 @@ function resolveContext(bundle: ReplayBundle, options: AppOptions) {
 
 export function createApp(options: AppOptions) {
   const base = options.basePath ?? '';
-  const page = pageBranding(options.branding);
+  // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
+  const userPlugins = options.plugins ?? EMPTY_REGISTRY;
+  const registry = options.comments?.enabled
+    ? mergeRegistries(resolvePluginsSync([commentsPlugin({ store: options.store, anonymous: options.auth.name === 'none' })]), userPlugins)
+    : userPlugins;
+  const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
+  const page = {
+    ...pageBranding(options.branding),
+    ...(registry.clientEntries.length ? { plugins: JSON.stringify(publicClientEntries(registry.clientEntries, base)) } : {}),
+  };
+  /** The signed-in person per request, for the `onResponse` hooks. */
+  const identities = new WeakMap<IncomingMessage, Identity>();
   const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
   const json = 'application/json; charset=utf-8';
-  const commentsOn = Boolean(options.comments?.enabled);
-  const commentsStore = new CommentsStore(options.store.storage);
-  const commentLimiter = new RateLimiter(COMMENT_RATE.max, COMMENT_RATE.windowMs);
 
   /** Everything past the health checks, inside the request's span. */
   async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string) {
@@ -361,6 +387,8 @@ export function createApp(options: AppOptions) {
         await handleInternalRender(request, response, path, options);
         return;
       }
+
+      if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
       if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
@@ -377,8 +405,18 @@ export function createApp(options: AppOptions) {
         send(response, login ? 401 : 403, login ? 'sign in required' : 'forbidden');
         return;
       }
+      identities.set(request, user);
       if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request)) {
         send(response, 403, 'cross-site request');
+        return;
+      }
+      if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
+        return;
+      // Files of the plugins' client entries (behind the same auth as everything else).
+      const asset = request.method === 'GET' || request.method === 'HEAD' ? clientAsset(registry, path) : undefined;
+      if (asset) {
+        if (!(await serveFile(request, response, asset.file, REVALIDATE, { contentType: asset.contentType, etag: true })))
+          send(response, 404, 'not found');
         return;
       }
       if (await handleRenderApi(request, response, path, raw.searchParams, options)) return;
@@ -386,18 +424,6 @@ export function createApp(options: AppOptions) {
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
       if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id }))) return;
-      // Comments: on by default, off with REPLAYS_COMMENTS=false, when the path falls through to the generic API 404.
-      if (
-        commentsOn &&
-        (await handleCommentsApi(request, response, path, {
-          store: options.store,
-          comments: commentsStore,
-          limiter: commentLimiter,
-          user,
-          anonymous: options.auth.name === 'none',
-        }))
-      )
-        return;
 
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another
@@ -410,6 +436,7 @@ export function createApp(options: AppOptions) {
           ...(options.contextSchema ? { contextSchema: options.contextSchema.schema } : {}),
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
+          plugins: [...registry.order],
           beta: { editor: Boolean(options.beta?.editor) },
           comments: commentsOn,
         });
@@ -452,19 +479,27 @@ export function createApp(options: AppOptions) {
         // Same privacy pass as replay uploads (titles, source links, labels). Idempotent, so a re-registration of the
         // same suite still compares equal.
         const input: unknown = sanitizeUrlFields(JSON.parse(body.toString('utf8')));
+        const contextInfo = { kind: suitePath[2] ? ('run' as const) : ('suite' as const), identity: user, request };
         if (suitePath[2]) {
           assertReviewRunRegistration(input, suitePath[2]);
-          if (input.context) resolveContext({ context: input.context } as ReplayBundle, options);
+          const adapted = await applyContextAdapters(registry, input.context, contextInfo);
+          if (adapted) input.context = adapted;
+          if (input.context) {
+            resolveContext({ context: input.context }, options);
+            if (adapted) assertReplayContext(input.context);
+          }
           const suite = await options.store.registerRun(suitePath[1]!, suitePath[2]!, input);
           send(response, 200, JSON.stringify(suite), json);
         } else {
           assertReviewSuiteRegistration(input, suitePath[1]!);
+          const adapted = await applyContextAdapters(registry, input.context, contextInfo);
+          if (adapted) input.context = adapted;
           const { subject, ...rest } = input;
           const registration: ResolvedSuiteRegistration = {
             ...rest,
             ...(subject ? { subject: options.sources.resolve(subject, 'suite.subject') } : {}),
           };
-          if (registration.context) resolveContext({ context: registration.context } as ReplayBundle, options);
+          if (registration.context) resolveContext({ context: registration.context }, options);
           // The resolved registration is what is stored, so check the whole thing again (a link, not a reference).
           assertReviewSuite({ ...registration, runs: [] });
           const suite = await options.store.registerSuite(suitePath[1]!, registration);
@@ -490,14 +525,21 @@ export function createApp(options: AppOptions) {
           }),
         );
         setRequestAttributes(request, uploadAttributes(bundle));
-        await saveWithFreshId(options.store, bundle, Boolean(id));
-        setRequestAttributes(request, { 'replay.id': bundle.meta.id });
+        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request));
+        await saveWithFreshId(options.store, accepted, Boolean(id));
+        setRequestAttributes(request, { 'replay.id': accepted.meta.id });
         void options.store.pruneSoon();
-        send(response, 201, replayReceipt(base, bundle), json, REVALIDATE);
+        await runAfterUpload(registry, accepted, user, request, publicPath(`/r/${accepted.meta.id}`, base));
+        send(response, 201, replayReceipt(base, accepted), json, REVALIDATE);
         return;
       }
       if (path === '/api/replays' && request.method === 'POST') {
-        const replay = await readJsonUpload(request, MAX_REPLAY_BYTES);
+        const replay = await runPrepareUpload(registry, await readJsonUpload(request, MAX_REPLAY_BYTES), user, request);
+        if (replay && typeof replay === 'object' && !Array.isArray(replay)) {
+          const upload = replay as { context?: ReplayContext | undefined };
+          const adapted = await applyContextAdapters(registry, upload.context, { kind: 'replay', identity: user, request });
+          if (adapted) upload.context = adapted;
+        }
         // Source references are resolved into links first: the stored shape always has a link.
         const sources = (replay as { context?: { sources?: unknown } } | null)?.context?.sources;
         if (Array.isArray(sources)) {
@@ -508,7 +550,7 @@ export function createApp(options: AppOptions) {
         assertReplayBundle(replay);
         resolveContext(replay, options);
         // Stored data never depends on the uploader having sanitized it.
-        const bundle = sanitize(replay);
+        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request));
         setRequestAttributes(request, uploadAttributes(bundle));
         if (bundle.suiteRun) {
           await options.store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);
@@ -525,6 +567,7 @@ export function createApp(options: AppOptions) {
         if (bundle.suiteRun) await options.store.attachReplay(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle);
         requestListMedia(options, bundle.meta.id);
         void options.store.pruneSoon();
+        await runAfterUpload(registry, bundle, user, request, publicPath(`/r/${bundle.meta.id}`, base));
         send(response, 201, replayReceipt(base, bundle), json, REVALIDATE);
         return;
       }
@@ -633,6 +676,7 @@ export function createApp(options: AppOptions) {
         return;
       }
       // A prefixed deployment answers its bare address with the list, so `/replays` and `/replays/` both work.
+      watchResponse(registry, request, response, path, () => identities.get(request));
       await traceRequest(request, response, path, () => serve(request, response, raw, path));
     } catch (error) {
       fail(request, response, error);

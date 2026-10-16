@@ -8,6 +8,7 @@ import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { normalizeBasePath } from './base-path.ts';
 import { type BetaFlags, betaFromEnv } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
+import type { PluginSpec } from '../plugin/types.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -25,8 +26,13 @@ import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
  *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
  *     "beta": { "editor": false },                 REPLAYS_BETA_EDITOR (off by default; src/server/beta.ts)
- *     "comments": { "enabled": true }              REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
+ *     "comments": { "enabled": true },             REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
+ *     "auth": "iap-header",                        AUTH_MODE (a built-in mode or an auth adapter a plugin registered)
+ *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
+ *     "plugins": ["./plugin.mjs", ["pkg", {}]]     plugins to load (src/plugin/, docs/extension-api.md)
  *   }
+ *
+ * The same keys, typed, make up `defineConfig()` in a `replays.config.ts|js|json` (src/config/).
  */
 export interface FileConfig {
   name?: string;
@@ -40,6 +46,9 @@ export interface FileConfig {
   sourceProviders?: TemplateProviderConfig[];
   beta?: { editor?: boolean };
   comments?: { enabled?: boolean };
+  auth?: string;
+  storage?: string;
+  plugins?: readonly PluginSpec[];
 }
 
 export interface AppSettings {
@@ -52,7 +61,7 @@ export interface AppSettings {
   comments: CommentsSettings;
 }
 
-const KEYS = new Set([
+export const CONFIG_KEYS = new Set([
   'name',
   'logoUrl',
   'theme',
@@ -64,6 +73,9 @@ const KEYS = new Set([
   'sourceProviders',
   'beta',
   'comments',
+  'auth',
+  'storage',
+  'plugins',
 ]);
 
 export async function readConfigFile(path: string | undefined): Promise<FileConfig> {
@@ -75,7 +87,7 @@ export async function readConfigFile(path: string | undefined): Promise<FileConf
     throw new Error(`cannot read REPLAYS_CONFIG ${path}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('the config file must be a JSON object');
-  const unknown = Object.keys(parsed).filter((key) => !KEYS.has(key));
+  const unknown = Object.keys(parsed).filter((key) => !CONFIG_KEYS.has(key));
   if (unknown.length) throw new Error(`the config file has unknown keys: ${unknown.join(', ')}`);
   return parsed as FileConfig;
 }

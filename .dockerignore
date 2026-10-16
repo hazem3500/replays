@@ -1,12 +1,16 @@
 # Keep the build context small and free of local data or credentials.
 .git
 node_modules
+**/node_modules
 dist
+**/dist
 .data
 shots
 coverage
 playwright-report
 test-results
+**/playwright-report
+**/test-results
 docs/screenshots
 site
 *.log

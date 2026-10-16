@@ -19,12 +19,34 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   Enable with `REPLAYS_BETA_EDITOR=true` or `beta.editor` in the config file; with the flag off there is no editor UI,
   the edits API answers 404 and the editor code is not loaded.
 
+- **Extension surface for custom distributions** ([docs/extension-api.md](docs/extension-api.md)):
+  - `replays.config.ts|mjs|js|json` with a typed `defineConfig()`; `auth`, `storage` and `plugins` keys next to the existing ones.
+  - `definePlugin()` and a plugin API with registration for auth adapters, test-context adapters (merged into the context
+    schema), source-link providers, storage backends, branding, base path, request / response / upload-lifecycle hooks
+    (`prepareUpload`, `beforeUpload`, `afterUpload`) and browser entries; ordering (`dependsOn`, `order`), validation and
+    conflict errors (`PluginError` with stable codes).
+  - Browser plugin API (`defineViewerPlugin`): inspector tabs, viewer actions and a side panel drawer, loaded from the server's
+    plugin entries; failures are isolated.
+  - `startServer()` (the server as a function; `replays serve` uses it), `SAMPLE_DIR`.
+  - Subpath exports `@hazem3500/replays/{capture,server,viewer,plugin,config}` next to the root entry; the package now ships the
+    built viewer, the samples and the extension docs. Policy in [docs/api-stability.md](docs/api-stability.md), decision in
+    [docs/packaging.md](docs/packaging.md).
+  - Comments are now a built-in plugin (`comments`, loaded first when enabled) instead of being wired into the server and the
+    viewer: the API is a request hook, the tab, seek-bar markers and `M` key a built-in viewer feature. Behaviour is
+    unchanged; plugin auth adapters' identities (with `avatarUrl`) become comment authors.
+  - `examples/custom-distro` (workspace package) with an end-to-end smoke in CI, and `pnpm test:pack`.
+  - [docs/downstream-migration.md](docs/downstream-migration.md).
+
+### Changed
+
+- `GET /api/config` also lists the loaded `plugins`. `src/server/main.ts` is now a thin wrapper around `startServer()`.
+- The library is built with shared chunks (`dist/lib/*.mjs`); the recorder script is shipped next to it.
+- The repository is a pnpm workspace (`pnpm-workspace.yaml`); the Dockerfile installs only the main package.
+
 ### Security
 
 - Relative `srcset` / `imagesrcset` candidates and CSS `url()` values (relative ones too) are redacted like other
   URLs, and suite and run registrations go through the same privacy pass as replay uploads.
-
-### Changed
 
 - The suite index is built from the replay list instead of three lookups per run.
 

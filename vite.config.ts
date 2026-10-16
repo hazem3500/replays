@@ -25,6 +25,10 @@ function appBaseMeta(): Plugin {
           '<meta name="app-beta" content="" />',
           `<meta name="app-beta" content="${/^(true|1|yes|on)$/i.test(process.env.REPLAYS_BETA_EDITOR ?? '') ? 'editor' : ''}" />`,
         )
+        .replace(
+          '<meta name="app-plugins" content="" />',
+          `<meta name="app-plugins" content="${(process.env.REPLAYS_DEV_PLUGINS ?? '').replaceAll('"', '&quot;')}" />`,
+        )
         .replaceAll('__PRODUCT_NAME__', PRODUCT_NAME)
         .replaceAll('__PRODUCT_LOGO__', ''),
   };

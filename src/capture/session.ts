@@ -25,9 +25,12 @@ const BINDING = '__replaysNavigationFlush';
 
 /** The recorder page script (rrweb plus console, error and performance capture), bundled for the browser. */
 export async function recorderSource() {
-  // A built CLI ships the bundle next to itself (scripts/build-cli.mjs); a checkout bundles it on demand.
-  const prebuilt = fileURLToPath(new URL('./recorder.iife.js', import.meta.url));
-  if (existsSync(prebuilt)) return readFile(prebuilt, 'utf8');
+  // A built CLI ships the bundle next to itself (scripts/build-cli.mjs), the library in dist/lib (scripts/build-lib.mjs; its
+  // shared chunks sit one level down); a checkout bundles it on demand.
+  const prebuilt = ['./recorder.iife.js', '../recorder.iife.js']
+    .map((relative) => fileURLToPath(new URL(relative, import.meta.url)))
+    .find((candidate) => existsSync(candidate));
+  if (prebuilt) return readFile(prebuilt, 'utf8');
   const file = fileURLToPath(new URL('./injected-recorder.ts', import.meta.url));
   const result = await build({
     entryPoints: [file],

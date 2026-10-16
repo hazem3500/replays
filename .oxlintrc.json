@@ -20,10 +20,18 @@
     "jsx-a11y/prefer-tag-over-role": "off",
     "jsx-a11y/interactive-supports-focus": "off"
   },
-  "ignorePatterns": ["dist/**", "node_modules/**", "shots/**", "playwright-report/**", "test-results/**"],
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "shots/**",
+    "playwright-report/**",
+    "test-results/**",
+    "examples/*/playwright-report/**",
+    "examples/*/test-results/**"
+  ],
   "overrides": [
     {
-      "files": ["src/capture/injected-recorder.ts"],
+      "files": ["src/capture/injected-recorder.ts", "test/plugin-*.test.ts", "test/runtime.test.ts", "test/viewer-plugins.test.ts"],
       "rules": {
         "unicorn/consistent-function-scoping": "off"
       }

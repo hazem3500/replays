@@ -130,6 +130,22 @@ importers:
         specifier: 5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0))
 
+  examples/custom-distro:
+    dependencies:
+      '@hazem3500/replays':
+        specifier: workspace:*
+        version: link:../..
+    devDependencies:
+      '@types/node':
+        specifier: 22.18.10
+        version: 22.18.10
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
 packages:
 
   '@axe-core/playwright@4.13.0':

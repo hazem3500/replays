@@ -11,7 +11,7 @@
     "dev": "node --experimental-strip-types --no-warnings src/server/main.ts --dev",
     "build": "vite build",
     "build:site": "node scripts/build-site.mjs",
-    "build:cli": "node scripts/build-cli.mjs && tsc -p tsconfig.lib.json && node scripts/fix-types.mjs",
+    "build:cli": "node scripts/build-cli.mjs && node scripts/build-lib.mjs && tsc -p tsconfig.lib.json && node scripts/fix-types.mjs",
     "start": "node --experimental-strip-types --no-warnings src/server/main.ts",
     "cli": "node --experimental-strip-types --no-warnings src/cli.ts",
     "capture": "node --experimental-strip-types --no-warnings src/cli.ts capture",
@@ -24,7 +24,9 @@
     "shots": "vite build --logLevel warn && node scripts/shots.mjs",
     "shots:comments": "vite build --logLevel warn && node scripts/shots-comments.mjs",
     "sample": "node scripts/record-sample.mjs",
-    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build"
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
+    "test:distro": "pnpm build && pnpm build:cli && pnpm --filter @hazem3500/replays-example-custom-distro build && pnpm --filter @hazem3500/replays-example-custom-distro typecheck && playwright test -c examples/custom-distro/playwright.config.ts",
+    "test:pack": "node scripts/pack-smoke.mjs"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
@@ -85,6 +87,12 @@
     "dist/cli",
     "dist/lib",
     "dist/types",
+    "dist/client",
+    "sample",
+    "docs/api-stability.md",
+    "docs/extension-api.md",
+    "docs/extending.md",
+    "docs/packaging.md",
     "README.md",
     "LICENSE"
   ],
@@ -92,6 +100,27 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "default": "./dist/lib/index.mjs"
-    }
+    },
+    "./capture": {
+      "types": "./dist/types/capture/index.d.ts",
+      "default": "./dist/lib/capture.mjs"
+    },
+    "./server": {
+      "types": "./dist/types/server/index.d.ts",
+      "default": "./dist/lib/server.mjs"
+    },
+    "./viewer": {
+      "types": "./dist/types/client/plugins/api.d.ts",
+      "default": "./dist/lib/viewer.mjs"
+    },
+    "./plugin": {
+      "types": "./dist/types/plugin/index.d.ts",
+      "default": "./dist/lib/plugin.mjs"
+    },
+    "./config": {
+      "types": "./dist/types/config/index.d.ts",
+      "default": "./dist/lib/config.mjs"
+    },
+    "./package.json": "./package.json"
   }
 }

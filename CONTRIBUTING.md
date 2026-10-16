@@ -25,7 +25,7 @@ The server and the CLI run TypeScript directly with Node's type stripping, so on
 | `src/capture` | Recorder session, browser drivers (Playwright, agent-browser), sanitizer, import, upload |
 | `src/server` | HTTP app, auth adapters, storage drivers, retention, tracing, optional video rendering |
 | `src/client` | The viewer (React) |
-| `examples/` | Example plugins (auth) |
+| `examples/` | Example plugins (auth) and `custom-distro`, a runnable distribution on the extension surface |
 | `site/` | The static landing page |
 | `docs/` | Longer documentation |
 
