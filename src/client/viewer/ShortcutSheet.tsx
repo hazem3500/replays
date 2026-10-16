@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog.tsx';
 import { Kbd, KbdGroup } from '@/components/ui/kbd.tsx';
 
+import { commentsEnabled } from '../comments/enabled.ts';
 import { SHORTCUT_GROUPS } from '../shortcuts.ts';
 
 /** Modal sheet (Base UI Dialog): the keyboard stays inside, Esc closes, and the opener gets the keyboard back. */
@@ -39,20 +40,22 @@ export function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenCha
             <section key={group.title}>
               <h3>{group.title}</h3>
               <dl>
-                {group.items.map((item) => (
-                  <div key={item.label}>
-                    <dt>{item.label}</dt>
-                    <dd>
-                      <KbdGroup>
-                        {item.keys.map((key) => (
-                          <Kbd key={key} className="font-mono">
-                            {key}
-                          </Kbd>
-                        ))}
-                      </KbdGroup>
-                    </dd>
-                  </div>
-                ))}
+                {group.items
+                  .filter((item) => item.feature !== 'comments' || commentsEnabled())
+                  .map((item) => (
+                    <div key={item.label}>
+                      <dt>{item.label}</dt>
+                      <dd>
+                        <KbdGroup>
+                          {item.keys.map((key) => (
+                            <Kbd key={key} className="font-mono">
+                              {key}
+                            </Kbd>
+                          ))}
+                        </KbdGroup>
+                      </dd>
+                    </div>
+                  ))}
               </dl>
             </section>
           ))}

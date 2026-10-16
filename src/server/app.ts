@@ -22,9 +22,13 @@ import { appPath, publicPath, withBase } from './base-path.ts';
 import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
 import type { ContextSchema } from './context-schema.ts';
 import type { BetaFlags } from './beta.ts';
+import { type CommentsSettings } from './comments-config.ts';
+import { COMMENT_RATE, handleCommentsApi } from './comments-routes.ts';
+import { CommentsStore } from './comments-store.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
+import { RateLimiter } from './rate-limit.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import { serveObject } from './serve-object.ts';
 import { ReplayConflictError, type ReplayStore } from './store.ts';
@@ -59,6 +63,8 @@ export interface AppOptions {
   basePath?: string;
   /** Beta features, all off by default (`REPLAYS_BETA_EDITOR=true` / `beta.editor`): see src/server/config.ts. */
   beta?: BetaFlags;
+  /** Comments on replays (`REPLAYS_COMMENTS`, on by default in the server's settings): absent here means off. */
+  comments?: CommentsSettings;
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
   publicOrigin?: string;
 }
@@ -343,6 +349,9 @@ export function createApp(options: AppOptions) {
   const page = pageBranding(options.branding);
   const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
   const json = 'application/json; charset=utf-8';
+  const commentsOn = Boolean(options.comments?.enabled);
+  const commentsStore = new CommentsStore(options.store.storage);
+  const commentLimiter = new RateLimiter(COMMENT_RATE.max, COMMENT_RATE.windowMs);
 
   /** Everything past the health checks, inside the request's span. */
   async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string) {
@@ -377,6 +386,18 @@ export function createApp(options: AppOptions) {
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
       if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id }))) return;
+      // Comments: on by default, off with REPLAYS_COMMENTS=false, when the path falls through to the generic API 404.
+      if (
+        commentsOn &&
+        (await handleCommentsApi(request, response, path, {
+          store: options.store,
+          comments: commentsStore,
+          limiter: commentLimiter,
+          user,
+          anonymous: options.auth.name === 'none',
+        }))
+      )
+        return;
 
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another
@@ -390,6 +411,7 @@ export function createApp(options: AppOptions) {
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
           beta: { editor: Boolean(options.beta?.editor) },
+          comments: commentsOn,
         });
         send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;
@@ -587,7 +609,7 @@ export function createApp(options: AppOptions) {
             request,
             response,
             200,
-            withBase(html, base, { ...page, beta: options.beta?.editor ? 'editor' : '' }),
+            withBase(html, base, { ...page, beta: options.beta?.editor ? 'editor' : '', comments: commentsOn }),
             'text/html; charset=utf-8',
           );
           return;

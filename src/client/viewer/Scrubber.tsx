@@ -4,6 +4,7 @@ import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import type { ReplayError } from '../issues.ts';
 import { usePlayer } from '../player.ts';
 import { positionText } from '../timeline.ts';
+import { CommentMarkers } from '../comments/CommentMarkers.tsx';
 import { setPreviewTime } from './preview-time.ts';
 import {
   barBox,
@@ -539,6 +540,7 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
       <div className="scrubber-knob-rail" aria-hidden="true">
         <span ref={knob} className="scrubber-knob" />
       </div>
+      <CommentMarkers width={width} inset={INSET} />
       <div ref={anchor} className="scrubber-bubble-anchor" aria-hidden="true">
         <div ref={bubble} className="scrubber-bubble" data-visible="false" data-kind="time" data-testid="scrubber-bubble">
           <span ref={bubbleTime} className="scrubber-bubble-time" data-testid="scrubber-bubble-time" />

@@ -3,10 +3,12 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
 import { type CSSProperties, memo, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { applyEdits, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
+import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { betaEditor } from './config.ts';
+import { CommentsBridge, CommentsProvider } from './comments/CommentsProvider.tsx';
+import { commentsEnabled } from './comments/enabled.ts';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
 import { editHref } from './route.ts';
@@ -69,8 +71,11 @@ export function Viewer({
   skipLink = true,
   edited,
   effects,
+  timeline,
 }: {
   bundle: ReplayBundle;
+  /** Saved edits' timeline (source ↔ edited time) when they are applied: comments are anchored to source time. */
+  timeline?: EditTimeline;
   /** Zoom, blur and captions from the saved edits, on this bundle's timeline. */
   effects?: PlaybackEffects;
   /** The replay has saved edits: who and when, whether the original is on screen, and the switch between them. */
@@ -228,6 +233,15 @@ export function Viewer({
   }, [roomForRequest]);
 
   const notify = useCallback((message: string) => showToast(message), []);
+  // Comments: the Comments tab unfolds the panel when it is folded. `M` reaches the provider through the bridge.
+  const startComment = useRef<() => void>(undefined);
+  const registerStartComment = useCallback((start: (() => void) | undefined) => {
+    startComment.current = start;
+  }, []);
+  const openComments = useCallback(() => {
+    if (collapsedRef.current) setCollapsed(false, false);
+    setTab('comments');
+  }, [setCollapsed, setTab]);
 
   const actions = useMemo<ViewerActions>(() => {
     // Shortcuts and jumps that land in the panel unfold it first, transiently. Playback, seeks and steps never do.
@@ -432,75 +446,87 @@ export function Viewer({
           return setCollapsed(!collapsedRef.current);
         case 'switch-captions':
           return actions.switchCaptions();
+        case 'add-comment':
+          return startComment.current?.();
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [actions, player, setCollapsed]);
 
+  const viewer = (
+    <ViewerContext.Provider value={actions}>
+      <main
+        ref={shell}
+        className="app-shell"
+        data-mobile={mobile || undefined}
+        data-tab={mobile && stepsSelected ? 'steps' : tab}
+        data-inspector-collapsed={collapsed || undefined}
+        style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
+      >
+        {skipLink ? (
+          <a className="skip-link" href="#replay-player">
+            Skip to replay
+          </a>
+        ) : null}
+        <ViewerHeader
+          bundle={bundle}
+          compact={mobile}
+          menuItems={headerMenuItems}
+          {...(menu ? { menu } : {})}
+          {...(titleMenu ? { titleMenu } : {})}
+          {...(titleFrom ? { titleFrom } : {})}
+          {...(backHref ? { backHref } : {})}
+          {...(title ? { title } : {})}
+          {...(prefix ? { prefix } : {})}
+          {...(headerStatus ? { status: headerStatus } : {})}
+          {...(suite ? { suite } : {})}
+        />
+        <div
+          ref={workspace}
+          className={`workspace ${bundle.steps.length === 0 ? 'no-steps' : ''}`}
+          style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
+        >
+          <section ref={playerRegion} className="player-region" aria-label="Replay">
+            <div className="stage-wrap">
+              <PlayerStage />
+              {effects?.captions.length ? (
+                <EditCaption captions={effects.captions} />
+              ) : captions && bundle.steps.length > 0 ? (
+                <StepCaption />
+              ) : null}
+              <SkipIndicator />
+              {speedHud ? <SpeedHud key={speedHud.id} speed={speedHud.speed} /> : null}
+              <FullscreenButton region={playerRegion} />
+            </div>
+            <Transport />
+          </section>
+          {bundle.steps.length > 0 && !mobile ? <StepsResizer workspace={workspace} width={stepsWidth} onCommit={setStepsWidth} /> : null}
+          {bundle.steps.length > 0 && !mobile ? <StepRail /> : null}
+        </div>
+        {mobile || collapsed ? null : <InspectorResizer shell={shell} height={inspectorHeight} onCommit={setInspectorHeight} />}
+        <Inspector
+          bundle={bundle}
+          tab={tab}
+          expandedRequest={expandedRequest}
+          collapse={inspectorCollapse}
+          {...(mobilePanel ? { mobile: mobilePanel } : {})}
+        />
+        <StepAnnouncer />
+        <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+      </main>
+    </ViewerContext.Provider>
+  );
   return (
     <PlayerContext.Provider value={player}>
-      <ViewerContext.Provider value={actions}>
-        <main
-          ref={shell}
-          className="app-shell"
-          data-mobile={mobile || undefined}
-          data-tab={mobile && stepsSelected ? 'steps' : tab}
-          data-inspector-collapsed={collapsed || undefined}
-          style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
-        >
-          {skipLink ? (
-            <a className="skip-link" href="#replay-player">
-              Skip to replay
-            </a>
-          ) : null}
-          <ViewerHeader
-            bundle={bundle}
-            compact={mobile}
-            menuItems={headerMenuItems}
-            {...(menu ? { menu } : {})}
-            {...(titleMenu ? { titleMenu } : {})}
-            {...(titleFrom ? { titleFrom } : {})}
-            {...(backHref ? { backHref } : {})}
-            {...(title ? { title } : {})}
-            {...(prefix ? { prefix } : {})}
-            {...(headerStatus ? { status: headerStatus } : {})}
-            {...(suite ? { suite } : {})}
-          />
-          <div
-            ref={workspace}
-            className={`workspace ${bundle.steps.length === 0 ? 'no-steps' : ''}`}
-            style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
-          >
-            <section ref={playerRegion} className="player-region" aria-label="Replay">
-              <div className="stage-wrap">
-                <PlayerStage />
-                {effects?.captions.length ? (
-                  <EditCaption captions={effects.captions} />
-                ) : captions && bundle.steps.length > 0 ? (
-                  <StepCaption />
-                ) : null}
-                <SkipIndicator />
-                {speedHud ? <SpeedHud key={speedHud.id} speed={speedHud.speed} /> : null}
-                <FullscreenButton region={playerRegion} />
-              </div>
-              <Transport />
-            </section>
-            {bundle.steps.length > 0 && !mobile ? <StepsResizer workspace={workspace} width={stepsWidth} onCommit={setStepsWidth} /> : null}
-            {bundle.steps.length > 0 && !mobile ? <StepRail /> : null}
-          </div>
-          {mobile || collapsed ? null : <InspectorResizer shell={shell} height={inspectorHeight} onCommit={setInspectorHeight} />}
-          <Inspector
-            bundle={bundle}
-            tab={tab}
-            expandedRequest={expandedRequest}
-            collapse={inspectorCollapse}
-            {...(mobilePanel ? { mobile: mobilePanel } : {})}
-          />
-          <StepAnnouncer />
-          <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-        </main>
-      </ViewerContext.Provider>
+      {commentsEnabled() ? (
+        <CommentsProvider replayId={bundle.meta.id} timeline={timeline} openPanel={openComments}>
+          <CommentsBridge register={registerStartComment} />
+          {viewer}
+        </CommentsProvider>
+      ) : (
+        viewer
+      )}
     </PlayerContext.Provider>
   );
 }
@@ -999,7 +1025,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
       key={`${bundle.meta.id}:${original ? 'original' : (stored?.revision ?? 0)}`}
       {...props}
       bundle={shown?.bundle ?? bundle}
-      {...(shown ? { effects: shown.effects } : {})}
+      {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
       {...(edited ? { edited } : {})}
     />
   );

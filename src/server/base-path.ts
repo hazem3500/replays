@@ -44,6 +44,8 @@ export interface PageBranding {
   logoUrl?: string;
   /** Enabled beta features, space separated (`editor`); empty when none. */
   beta?: string;
+  /** Comments on replays are enabled (`<meta name="app-comments">`). */
+  comments?: boolean;
 }
 
 const escapeHtml = (value: string) =>
@@ -59,6 +61,7 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
     .replace('<meta name="app-base" content="">', `<meta name="app-base" content="${base || '/'}">`)
     .replaceAll(/(\s(?:src|href)=")\.\/(assets\/)/g, `$1${base}/$2`);
   if (branding) {
+    out = out.replace('<meta name="app-comments" content="" />', `<meta name="app-comments" content="${branding.comments ? 'on' : ''}" />`);
     out = out.replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${escapeHtml(branding.beta ?? '')}" />`);
     out = out.replaceAll('__PRODUCT_NAME__', escapeHtml(branding.name)).replaceAll('__PRODUCT_LOGO__', escapeHtml(branding.logoUrl ?? ''));
     if (branding.tokensCss) out = out.replace('</head>', `<style id="brand-tokens">${branding.tokensCss}</style></head>`);
