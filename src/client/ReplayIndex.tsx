@@ -26,6 +26,7 @@ import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
 import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
 import { FilterMenu, FilterSheet } from './index/FilterMenu.tsx';
+import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, rememberIndexSearch } from './route.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
@@ -50,6 +51,12 @@ export const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> 
   { key: 'errors', label: 'Errors', numeric: true },
 ];
 
+/** Plugin filter params (registerIndexFilter / api.indexFilter): the same rule as the server's. */
+const PLUGIN_PARAM = /^x-[a-z0-9][a-z0-9-]{0,38}$/;
+
+/** True when a plugin filter is set: those are matched only by the server. */
+const hasPluginFilters = (filters: ReplayFilters) => Object.keys(filters.params ?? {}).length > 0;
+
 export function filtersFromSearch(search: string): ReplayFilters {
   const params = new URLSearchParams(search);
   const filters: ReplayFilters = {};
@@ -62,6 +69,11 @@ export function filtersFromSearch(search: string): ReplayFilters {
   if (source === 'agent' || source === 'human') filters.source = source;
   const tag = params.get('tag');
   if (tag) filters.tag = tag;
+  // Plugin filters (`x-*`, registerIndexFilter): carried as they are, before or without the plugin's entry; the server matches.
+  const plugin: Record<string, string> = {};
+  for (const [key, value] of params)
+    if (PLUGIN_PARAM.test(key) && value.trim() && !(key in plugin)) plugin[key] = value.trim().slice(0, 200);
+  if (Object.keys(plugin).length) filters.params = plugin;
   return filters;
 }
 
@@ -72,6 +84,7 @@ export function searchFromFilters(filters: ReplayFilters) {
   if (filters.errors) params.set('errors', '1');
   if (filters.source) params.set('source', filters.source);
   if (filters.tag) params.set('tag', filters.tag);
+  for (const key of Object.keys(filters.params ?? {}).sort()) params.set(key, filters.params![key]!);
   const query = params.toString();
   return query ? `?${query}` : '';
 }
@@ -192,14 +205,20 @@ export type IndexEntry =
       values: SortValues;
     };
 
-function runMatches(run: ReviewSuiteIndexRun, filters: ReplayFilters, query: string) {
-  const { q: _q, ...rest } = filters;
+function runMatches(run: ReviewSuiteIndexRun, filters: ReplayFilters, query: string, matched?: ReadonlySet<string>) {
+  const { q: _q, params: _params, ...rest } = filters;
+  // With plugin filters on, a run matches when the server listed its replay (the server alone can run plugin filters).
+  if (matched && !(run.replayId && matched.has(run.replayId))) return false;
   if (run.replay ? !matchesFilters(run.replay, rest) : Boolean(rest.host || rest.tag || rest.errors || rest.source === 'human'))
     return false;
   return !query || run.label.toLowerCase().includes(query) || Boolean(run.replay && matchesFilters(run.replay, { q: query }));
 }
 
-function suiteEntry(suite: ReviewSuiteIndexEntry, filters: ReplayFilters): Extract<IndexEntry, { kind: 'suite' }> | undefined {
+function suiteEntry(
+  suite: ReviewSuiteIndexEntry,
+  filters: ReplayFilters,
+  matched?: ReadonlySet<string>,
+): Extract<IndexEntry, { kind: 'suite' }> | undefined {
   const query = filters.q?.trim().toLowerCase() ?? '';
   const all = suite.runDetails.toSorted((a, b) => a.sequence - b.sequence);
   const text = [suite.title, suite.id, suite.subject ? sourceText(suite.subject) : ''];
@@ -208,8 +227,9 @@ function suiteEntry(suite: ReviewSuiteIndexEntry, filters: ReplayFilters): Extra
     !filters.tag &&
     !filters.errors &&
     filters.source !== 'human' &&
+    !matched &&
     (!query || text.some((value) => value.toLowerCase().includes(query)));
-  const runs = matchedBySuite ? all : all.filter((run) => runMatches(run, filters, query));
+  const runs = matchedBySuite ? all : all.filter((run) => runMatches(run, filters, query, matched));
   if (!matchedBySuite && runs.length === 0) return undefined;
   const replays = all.flatMap((run) => (run.replay ? [run.replay] : []));
   const sum = (pick: (replay: ReplaySummary) => number) => replays.reduce((total, replay) => total + pick(replay), 0);
@@ -251,9 +271,10 @@ export function buildIndexEntries(
 ): IndexEntry[] {
   const inSuites = new Set(suites.flatMap((suite) => suite.runDetails.flatMap((run) => (run.replayId ? [run.replayId] : []))));
   const entries: IndexEntry[] = [];
+  const matched = hasPluginFilters(filters) ? new Set(sessions.map((summary) => summary.id)) : undefined;
   if (kind !== 'sessions') {
     for (const suite of suites) {
-      const entry = suiteEntry(suite, filters);
+      const entry = suiteEntry(suite, filters, matched);
       if (entry) entries.push(entry);
     }
   }
@@ -516,7 +537,9 @@ export function ReplayIndex() {
     const search = searchFromFilters(filters);
     saveIndexCache({ search, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
   }, [items, suites, settledFilters, filters, restored]);
-  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose);
+  const filtered = Boolean(
+    filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || hasPluginFilters(filters),
+  );
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   const error = settledFilters === filters ? loadError : '';
   const replays = entries ? replayCount(entries) : 0;
@@ -528,6 +551,16 @@ export function ReplayIndex() {
   const changePurpose = (next: string | undefined) => feedTransition(() => setPurpose(next));
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
     feedTransition(() => setFilters((current) => withFilter(current, key, value)));
+  /** A plugin filter's `x-*` param (registerIndexFilter); undefined or '' removes it. */
+  const setParam = (param: string, value: string | undefined) =>
+    feedTransition(() =>
+      setFilters((current) => {
+        const params = { ...current.params };
+        if (value?.trim()) params[param] = value.trim().slice(0, 200);
+        else delete params[param];
+        return withFilter(current, 'params', Object.keys(params).length ? params : undefined);
+      }),
+    );
   const clear = () => {
     setQuery('');
     setKind(undefined);
@@ -556,7 +589,7 @@ export function ReplayIndex() {
           : ''}
     </span>
   );
-  const filterState = { filters, kind, hosts, tags, update, setKind: changeKind, clearFilters };
+  const filterState = { filters, kind, hosts, tags, update, setParam, setKind: changeKind, clearFilters };
 
   return (
     <main className="index-shell" ref={shell}>
@@ -591,6 +624,8 @@ export function ReplayIndex() {
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
+        {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
+        {items && !error ? <IndexSections summaries={items} /> : null}
         {error ? (
           <div className="empty" role="alert">
             <strong>{error}</strong>

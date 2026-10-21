@@ -11,7 +11,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 
-import { type FilterState, KIND_OPTIONS, SOURCE_OPTIONS } from './index/FilterMenu.tsx';
+import { type FilterState, KIND_OPTIONS, pluginFilterLabel, SOURCE_OPTIONS } from './index/FilterMenu.tsx';
+import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { COLUMNS, type Sort, sortFromSearch } from './ReplayIndex.tsx';
 
 /*
@@ -73,7 +74,8 @@ function handOff(event: MouseEvent<HTMLButtonElement>) {
 }
 
 /** Active filters as small removable chips under the search; nothing when none are set. */
-export function CompactFilterChips({ filters, kind, update, setKind }: FilterState) {
+export function CompactFilterChips({ filters, kind, update, setParam, setKind }: FilterState) {
+  const plugins = usePluginSnapshot().filters;
   const chips: Array<{ id: string; label: string; name: string; remove: () => void }> = [];
   if (filters.host) chips.push({ id: 'host', label: filters.host, name: `Host ${filters.host}`, remove: () => update('host', undefined) });
   if (filters.tag) chips.push({ id: 'tag', label: filters.tag, name: `Tag ${filters.tag}`, remove: () => update('tag', undefined) });
@@ -86,6 +88,12 @@ export function CompactFilterChips({ filters, kind, update, setKind }: FilterSta
     chips.push({ id: 'kind', label, name: `Kind ${label}`, remove: () => setKind(undefined) });
   }
   if (filters.errors) chips.push({ id: 'errors', label: 'Has errors', name: 'Has errors', remove: () => update('errors', undefined) });
+  // Plugin filters; a param whose plugin has not loaded (yet) shows as itself, so it can still be removed.
+  for (const [param, value] of Object.entries(filters.params ?? {})) {
+    const filter = plugins.find((candidate) => candidate.definition.param === param);
+    const label = filter ? pluginFilterLabel(filter, value) : `${param}: ${value}`;
+    chips.push({ id: param, label, name: label, remove: () => setParam(param, undefined) });
+  }
   if (chips.length === 0) return null;
 
   return (

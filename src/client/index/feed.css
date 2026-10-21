@@ -9,6 +9,11 @@
 .index-shell { --gutter: 32px; }
 /* The feed ends with breathing room, not a footer line. */
 .index-body { padding-bottom: 32px; }
+/* Plugin sections (registerIndexSection): blocks above the list, inside the feed's gutters. */
+.index-sections { display: grid; gap: 12px; padding: 16px var(--gutter) 0; }
+.index-section { min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--card-radius); background: var(--surface-raised); }
+.index-section-title { margin: 0 0 8px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
+.index-section-body { min-width: 0; color: var(--text); font-size: var(--text-sm); }
 
 /* ---------- Header: two rows, sticky as one block ---------- */
 .index-head { position: sticky; z-index: 6; top: 0; border-bottom: 1px solid var(--line); background: var(--surface); }
@@ -135,6 +140,10 @@
 .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch { background: var(--accent); }
 .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after { transform: translateX(10px); }
 .filter-search { width: calc(100% - 8px); margin: 3px 4px 4px; }
+/* A plugin's text filter (registerIndexFilter): the field fills the row after its label. */
+.filter-text-row { cursor: text; }
+.filter-text-input { min-width: 0; flex: 1 1 auto; height: 24px; margin-left: auto; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; font-size: 12px; }
+.filter-text-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 0; }
 .filter-option { min-height: 32px; font-size: 13px; }
 .filter-check, .filter-chevron { flex: 0 0 auto; width: 14px; height: 14px; margin-left: auto; color: var(--text-tertiary); }
 .filter-row .filter-chevron { margin-left: 4px; }
@@ -252,6 +261,10 @@
 /* Relative times read as prose here, not data (the global `time` rule is mono). */
 .feed-facts time { font-family: inherit; }
 .feed-id { font-family: var(--mono); font-size: var(--text-xs); }
+/* Plugin fields (registerIndexColumn): one quiet line under the meta line, each field cut to the row's width. */
+.feed-ext { min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 18px; }
+.feed-ext-field { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-ext-field[data-plugin-error], .index-section-body[data-plugin-error] { color: var(--danger); }
 .feed-id mark { border-radius: 2px; background: var(--accent-soft); color: var(--text); }
 
 /* Line 2 leads with the source; links inside a row sit above its stretched hit area. */

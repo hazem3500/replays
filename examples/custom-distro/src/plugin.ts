@@ -103,7 +103,25 @@ export default definePlugin((options: AcmeOptions) => ({
       stats.uploads += 1;
     });
 
-    // 6. The browser entry: a tab, an action and a panel (built by scripts/build.mjs).
+    // 6. The index: who uploaded a replay and where it ran, derived into each summary (summary.ext['acme-distro']) at
+    //    upload, and a server-side filter on it (`?x-env=production`), which the browser entry's filter menu sets.
+    api.summaryFields({
+      name: 'build',
+      fields(bundle) {
+        const fields = bundle.context?.fields ?? {};
+        return {
+          environment: typeof fields.environment === 'string' ? fields.environment : null,
+          uploadedBy: typeof fields.uploadedBy === 'string' ? fields.uploadedBy : null,
+        };
+      },
+    });
+    api.indexFilter({
+      id: 'environment',
+      param: 'x-env',
+      match: (summary, value) => summary.ext?.['acme-distro']?.environment === value,
+    });
+
+    // 7. The browser entry: a tab, an action, a panel, and an index column, filter and section (built by scripts/build.mjs).
     api.client({ id: 'main', script: fileURLToPath(new URL('../dist/client.js', import.meta.url)) });
   },
 }));

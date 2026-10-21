@@ -33,6 +33,7 @@ import {
 } from '../shared/review-suite.ts';
 import { PurposeCatalog } from './purposes.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
+import type { SummaryFieldsRunner } from './summary-fields.ts';
 import { captureLink, withSpan } from './tracing.ts';
 
 export type { ReplaySummary } from '../shared/replay.ts';
@@ -117,7 +118,7 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  * local DATA_DIR (`STORAGE=fs`) or an S3-compatible bucket (`STORAGE=s3`). Layout, identical on both:
  *
  *   <id>/replay.json               the bundle (immutable)
- *   <id>/meta.json                 its list summary (rebuilt when missing, stale or an older SUMMARY_VERSION)
+ *   <id>/meta.json                 its list summary (rebuilt when missing, stale, an older SUMMARY_VERSION or other summary fields)
  *   <id>/keep.json                 `{ by, at }` while someone keeps it (no expiry)
  *   <id>/edits.json                its edit list (src/shared/edits.ts): trims and cuts applied on playback and export
  *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
@@ -148,12 +149,14 @@ export class ReplayStore {
    */
   private listed: { at: number; summaries: Promise<ReplaySummary[]> } | undefined;
   readonly listTtlMs: number;
+  /** Plugins' `summaryFields` (src/server/summary-fields.ts): run whenever a summary is built, into `summary.ext`. */
+  private readonly summaryFields: SummaryFieldsRunner | undefined;
 
   constructor(
     data: string | ObjectStorage,
     sampleDir: string,
     retention?: number | Partial<RetentionPolicy>,
-    options: { listTtlMs?: number; purposes?: PurposeCatalog } = {},
+    options: { listTtlMs?: number; purposes?: PurposeCatalog; summaryFields?: SummaryFieldsRunner } = {},
   ) {
     this.storage = typeof data === 'string' ? new FsStorage(data) : data;
     this.sampleDir = sampleDir;
@@ -161,6 +164,15 @@ export class ReplayStore {
     this.retention = policyFrom(retention);
     this.purposes = options.purposes ?? new PurposeCatalog();
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
+    this.summaryFields = options.summaryFields;
+  }
+
+  /** A bundle's list summary, with the plugins' summary fields. */
+  private async summarize(bundle: ReplayBundle): Promise<ReplaySummary> {
+    const summary = summarizeReplay(bundle);
+    if (!this.summaryFields) return summary;
+    const ext = await this.summaryFields.derive(bundle);
+    return { ...summary, extVersion: this.summaryFields.version, ...(ext ? { ext } : {}) };
   }
 
   /** DATA_DIR with the fs driver; tests and scripts only. */
@@ -518,7 +530,7 @@ export class ReplayStore {
       if (error instanceof ObjectExistsError) throw new ReplayConflictError(id);
       throw error;
     }
-    await this.writeSummary(id, summarizeReplay(bundle)).catch((error: unknown) => console.error('meta.json write failed:', error));
+    await this.writeSummary(id, await this.summarize(bundle)).catch((error: unknown) => console.error('meta.json write failed:', error));
     this.changed();
     return this.replayKey(id);
   }
@@ -542,7 +554,8 @@ export class ReplayStore {
 
   /**
    * An upload's summary from its `meta.json` sidecar, which is built lazily (and rebuilt when older than
-   * `replay.json` or built by an older SUMMARY_VERSION, e.g. before the list gained timelines). Parsed
+   * `replay.json`, built by an older SUMMARY_VERSION, e.g. before the list gained timelines, or by other plugin summary
+   * fields). Parsed
    * sidecars are cached by the object's version, so listing ~2000 replays reads only what changed.
    */
   private async uploadedSummary(id: string, replay: ObjectInfo, meta: ObjectInfo | undefined): Promise<ReplaySummary | undefined> {
@@ -550,14 +563,19 @@ export class ReplayStore {
       const cached = this.summaryCache.get(id);
       if (cached?.summary && cached.version === meta.version) return cached.summary;
       const parsed = await readJson(this.storage, this.metaKey(id)).catch(() => undefined);
-      if (isReplaySummary(parsed) && parsed.id === id && parsed.summaryVersion === SUMMARY_VERSION) {
+      if (
+        isReplaySummary(parsed) &&
+        parsed.id === id &&
+        parsed.summaryVersion === SUMMARY_VERSION &&
+        (parsed.extVersion ?? '') === (this.summaryFields?.version ?? '')
+      ) {
         this.summaryCache.set(id, { version: meta.version, summary: parsed });
         return parsed;
       }
     }
     const bundle = await this.load(id);
     if (!bundle) return undefined;
-    const summary = summarizeReplay(bundle);
+    const summary = await this.summarize(bundle);
     await this.writeSummary(id, summary).catch((error: unknown) => console.error('meta.json backfill failed:', error));
     return summary;
   }
@@ -568,7 +586,7 @@ export class ReplayStore {
     const cached = this.summaryCache.get(cacheKey);
     if (cached?.version === sample.version) return cached.summary;
     const summary = await this.load(id)
-      .then((bundle) => (bundle ? summarizeReplay(bundle) : undefined))
+      .then((bundle) => (bundle ? this.summarize(bundle) : undefined))
       .catch(() => undefined);
     this.summaryCache.set(cacheKey, { version: sample.version, summary });
     return summary;

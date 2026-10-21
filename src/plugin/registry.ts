@@ -14,6 +14,7 @@ import type {
   BrandingContribution,
   ClientEntry,
   ContextAdapter,
+  IndexFilterDefinition,
   PluginApi,
   PrepareUploadHook,
   PurposeDefinition,
@@ -24,6 +25,7 @@ import type {
   ResponseHook,
   RetentionRuleDefinition,
   StorageBackend,
+  SummaryFieldsDefinition,
 } from './types.ts';
 
 /** Ids the core owns; a plugin cannot take them. */
@@ -31,6 +33,8 @@ export const BUILTIN_AUTH = ['none', 'header', 'oidc', 'plugin'] as const;
 export const BUILTIN_STORAGE = ['fs', 's3', 'memory'] as const;
 
 const ID = /^[a-z][a-z0-9-]{0,39}$/;
+/** Plugin index filter params: namespaced, so they can never take a core query parameter, today's or a future one. */
+export const INDEX_FILTER_PARAM = /^x-[a-z0-9][a-z0-9-]{0,38}$/;
 const BASE = /^\/[A-Za-z0-9._~/-]*$/;
 
 export interface Owned<T> {
@@ -69,6 +73,8 @@ export interface PluginRegistry {
   readonly retention: readonly Owned<RetentionRuleDefinition>[];
   /** `api.render` hooks, in plugin order (src/server/render-hooks.ts runs them). */
   readonly render: readonly Owned<RenderHooks>[];
+  readonly summaryFields: readonly Owned<SummaryFieldsDefinition>[];
+  readonly indexFilters: readonly Owned<IndexFilterDefinition>[];
 }
 
 export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
@@ -85,6 +91,8 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   purposes: [],
   retention: [],
   render: [],
+  summaryFields: [],
+  indexFilters: [],
 });
 
 /**
@@ -177,6 +185,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   const purposes: Owned<PurposeDefinition>[] = [];
   const retention: Owned<RetentionRuleDefinition>[] = [];
   const render: Owned<RenderHooks>[] = [];
+  const summaryFields: Owned<SummaryFieldsDefinition>[] = [];
+  const indexFilters: Owned<IndexFilterDefinition>[] = [];
   const brandScalars: Record<string, string> = {};
   const brandOwners = new Map<string, string>();
   const theme = { dark: {} as Record<string, string>, light: {} as Record<string, string> };
@@ -346,6 +356,27 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         for (const name of names) if (definition[name] !== undefined) needFunction(definition[name], `render.${name}`);
         render.push({ plugin: plugin.name, value: definition });
       },
+      summaryFields(definition) {
+        if (!definition || typeof definition.name !== 'string' || !ID.test(definition.name))
+          fail('summaryFields needs a name like "build"');
+        needFunction(definition.fields, `summaryFields ${definition.name}: fields`);
+        if (definition.version !== undefined && !(Number.isInteger(definition.version) && definition.version > 0))
+          fail(`summaryFields ${definition.name}: version must be a positive integer`);
+        if (summaryFields.some((entry) => entry.plugin === plugin.name && entry.value.name === definition.name))
+          fail(`summaryFields ${JSON.stringify(definition.name)} is registered twice`, 'conflict');
+        summaryFields.push({ plugin: plugin.name, value: definition });
+      },
+      indexFilter(definition) {
+        if (!definition || typeof definition.id !== 'string' || !ID.test(definition.id)) fail('indexFilter needs an id like "env"');
+        needFunction(definition.match, `indexFilter ${definition.id}: match`);
+        if (typeof definition.param !== 'string' || !INDEX_FILTER_PARAM.test(definition.param))
+          fail(`indexFilter ${definition.id}: param must look like "x-env" (got ${JSON.stringify(definition.param)})`);
+        if (indexFilters.some((entry) => entry.plugin === plugin.name && entry.value.id === definition.id))
+          fail(`indexFilter ${JSON.stringify(definition.id)} is registered twice`, 'conflict');
+        const taken = indexFilters.find((entry) => entry.value.param === definition.param);
+        if (taken) fail(`index filter param ${JSON.stringify(definition.param)} is already registered by ${taken.plugin}`, 'conflict');
+        indexFilters.push({ plugin: plugin.name, value: definition });
+      },
     };
     try {
       yield plugin.setup(api);
@@ -377,6 +408,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     purposes,
     retention,
     render,
+    summaryFields,
+    indexFilters,
   };
 }
 
@@ -416,6 +449,12 @@ function union<K, V>(a: ReadonlyMap<K, V>, b: ReadonlyMap<K, V>, what: string) {
   return new Map([...a, ...b]);
 }
 
+function mergeIndexFilters(a: readonly Owned<IndexFilterDefinition>[], b: readonly Owned<IndexFilterDefinition>[]) {
+  const clash = b.find((entry) => a.some((other) => other.value.param === entry.value.param));
+  if (clash) throw new PluginError('conflict', `index filter param ${JSON.stringify(clash.value.param)} is registered twice`);
+  return [...a, ...b];
+}
+
 /**
  * One registry from two: `first`'s plugins are set up and their hooks run before `second`'s. The built-in plugins are
  * merged under the user's, so the user's branding and base path win. Names that appear in both are a conflict.
@@ -447,5 +486,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     purposes: [...first.purposes, ...second.purposes],
     retention: [...first.retention, ...second.retention],
     render: [...first.render, ...second.render],
+    summaryFields: [...first.summaryFields, ...second.summaryFields],
+    indexFilters: mergeIndexFilters(first.indexFilters, second.indexFilters),
   };
 }

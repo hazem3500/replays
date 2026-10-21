@@ -6,7 +6,7 @@ import type { ObjectStorage } from '../server/storage/types.ts';
 import type { ReplayContext } from '../shared/context.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
 import type { PurposeConfig } from '../shared/purposes.ts';
-import type { ReplayBundle, ReplaySummary } from '../shared/replay.ts';
+import type { ReplayBundle, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 
 /** The plugin API generation. A plugin declares the one it was written for; a mismatch is refused at start. */
@@ -196,6 +196,34 @@ export interface RenderHooks {
   afterRender?(job: RenderJob, file: RenderedFile): void | Promise<void>;
 }
 
+/**
+ * Small indexable values derived from each bundle when its summary is built (at upload, and whenever a summary is rebuilt):
+ * the index lists summaries, not bundles, so a column or filter can only use what is here. The values land in
+ * `summary.ext[<plugin name>]`, capped (`SUMMARY_FIELD_LIMITS`). A throwing `fields` is logged and its set left out.
+ */
+export interface SummaryFieldsDefinition {
+  /** `[a-z][a-z0-9-]{0,39}`, unique within the plugin. */
+  readonly name: string;
+  /** Bump when `fields` derives something different: stored summaries built by another version are rebuilt. Default 1. */
+  readonly version?: number;
+  fields(
+    bundle: Readonly<ReplayBundle>,
+  ): Record<string, SummaryFieldValue> | undefined | Promise<Record<string, SummaryFieldValue> | undefined>;
+}
+
+/**
+ * A server-side filter of `GET /api/replays`: with `?<param>=<value>` in the request, only summaries for which
+ * `match(summary, value)` is true are listed. The browser's filter control (`registerIndexFilter`) sets the same param.
+ */
+export interface IndexFilterDefinition {
+  /** `[a-z][a-z0-9-]{0,39}`, unique within the plugin. */
+  readonly id: string;
+  /** The query parameter, namespaced `x-<name>` so it never clashes with the core's (`q`, `host`, `tag`, …); unique. */
+  readonly param: string;
+  /** `value` is the parameter's value, trimmed (at most 200 characters, never empty). A throw counts as no match. */
+  match(summary: Readonly<ReplaySummary>, value: string): boolean;
+}
+
 export interface RequestHookOptions {
   /** `post-auth` (default): only authenticated requests arrive, with `identity`. `pre-auth`: every request, before auth. */
   phase?: 'pre-auth' | 'post-auth';
@@ -225,7 +253,7 @@ export interface PluginApi {
   prepareUpload(hook: PrepareUploadHook): void;
   beforeUpload(hook: BeforeUploadHook): void;
   afterUpload(hook: AfterUploadHook): void;
-  /** A browser entry that registers inspector tabs, viewer actions and panels. */
+  /** A browser entry that registers inspector tabs, viewer actions and panels, and index columns, filters and sections. */
   client(entry: ClientEntry): void;
   /**
    * Redaction rules added to the sanitiser's defaults (never weakening them), in the capture CLI and the server's privacy
@@ -241,6 +269,10 @@ export interface PluginApi {
   retention(rule: RetentionRuleDefinition): void;
   /** Render pipeline hooks: the poster's moment, a check before each render, and a call after each file is stored. */
   render(hooks: RenderHooks): void;
+  /** Values derived into `summary.ext[<plugin name>]` for the index (columns, filters). */
+  summaryFields(definition: SummaryFieldsDefinition): void;
+  /** A server-side filter of the replay list, selected by an `x-*` query parameter. */
+  indexFilter(definition: IndexFilterDefinition): void;
 }
 
 export interface ReplaysPlugin {

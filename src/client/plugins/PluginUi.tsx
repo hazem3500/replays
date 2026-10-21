@@ -33,31 +33,45 @@ export function usePluginContext(bundle: ReplayBundle, player: ReplayController)
   );
 }
 
-/** Runs a plugin's `render(container, context)` into a div and cleans up on unmount. A throwing plugin shows an error line. */
-export function PluginMount({
+/** Draws a failed plugin view's error line into its container (`data-plugin-error`), after logging the error. */
+export function showPluginError(container: HTMLElement, label: string, error: unknown) {
+  console.error(`plugin view "${label}" failed:`, error);
+  container.replaceChildren();
+  container.dataset.pluginError = '';
+  container.textContent = `${label} could not be shown.`;
+}
+
+/**
+ * Runs a plugin's `render(container, context)` into an element and cleans up on unmount; a new `context` renders again.
+ * A throwing plugin shows an error line.
+ */
+export function PluginMount<C>({
   render,
   context,
   label,
   testId,
   className,
+  inline = false,
 }: {
-  render: (container: HTMLElement, context: ViewerPluginContext) => Cleanup;
-  context: ViewerPluginContext;
+  render: (container: HTMLElement, context: C) => Cleanup;
+  context: C;
   label: string;
   testId?: string;
   className?: string;
+  /** A `span` (for a slot inside a line of text) instead of a `div`. */
+  inline?: boolean;
 }) {
-  const host = useRef<HTMLDivElement>(null);
+  const host = useRef<HTMLDivElement & HTMLSpanElement>(null);
   useEffect(() => {
     const container = host.current;
     if (!container) return;
     container.replaceChildren();
+    delete container.dataset.pluginError;
     let cleanup: Cleanup;
     try {
       cleanup = render(container, context);
     } catch (error) {
-      console.error(`plugin view "${label}" failed:`, error);
-      container.textContent = `${label} could not be shown.`;
+      showPluginError(container, label, error);
     }
     return () => {
       try {
@@ -68,7 +82,8 @@ export function PluginMount({
       container.replaceChildren();
     };
   }, [render, context, label]);
-  return <div ref={host} className={className ?? 'plugin-mount'} data-testid={testId} />;
+  const Tag = inline ? 'span' : 'div';
+  return <Tag ref={host} className={className ?? 'plugin-mount'} data-testid={testId} />;
 }
 
 /** Plugin actions and panel entries as "More" menu items, plus the side drawer that open panels render in. */

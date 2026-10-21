@@ -50,6 +50,7 @@ import { handleInternalRender, handleRenderApi, type RenderService } from './ren
 import type { PurposeCatalog } from './purposes.ts';
 import { serveObject } from './serve-object.ts';
 import { ReplayConflictError, type ReplayStore } from './store.ts';
+import { applyIndexFilters, publicIndexFilters } from './summary-fields.ts';
 import { recordError, setRequestAttributes, traceRequest, withSpan } from './tracing.ts';
 
 const MIME: Record<string, string> = {
@@ -506,6 +507,7 @@ export function createApp(options: AppOptions) {
           auth: options.auth.name,
           plugins: [...registry.order],
           purposes: options.store.purposes.list,
+          ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
           beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
           comments: commentsOn,
           versions,
@@ -516,7 +518,12 @@ export function createApp(options: AppOptions) {
         return;
       }
       if (path === '/api/replays' && request.method === 'GET') {
-        const summaries = await options.store.list(replayFilters(raw.searchParams));
+        // Core filters first (store.ts), then the plugins' (`api.indexFilter`, an `x-*` param each).
+        const summaries = applyIndexFilters(
+          registry.indexFilters,
+          raw.searchParams,
+          await options.store.list(replayFilters(raw.searchParams)),
+        );
         await sendCompressed(request, response, 200, JSON.stringify(summaries), json);
         return;
       }

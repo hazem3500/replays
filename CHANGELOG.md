@@ -80,6 +80,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   or just before the first error, the panel open or folded, captions) and the poster moment (`middle-step`, `first-error`,
   `last-step`). `api.retention({ days(summary) })` adds rules that are not about purpose: the shortest window wins, `0` means no
   limit, Keep still overrides. `/server` exports `createPurposeCatalog` and `PurposeCatalog`.
+- **Index slots for plugins** ([docs/extension-api.md](docs/extension-api.md#the-index-summary-fields-columns-filters-sections)):
+  `api.summaryFields({ name, version?, fields(bundle) })` derives small values into `summary.ext[<plugin>]` at upload and whenever a
+  summary is rebuilt (capped: 20 keys, strings cut to 200 characters, 2 KB per plugin, `SUMMARY_FIELD_LIMITS`; a failing set is logged
+  and left out; stored summaries built by other sets are rebuilt). `api.indexFilter({ id, param, match })` filters `GET /api/replays`
+  on the server by an `x-*` query parameter, listed in `GET /api/config` as `indexFilters`. In the browser,
+  `registerIndexColumn`, `registerIndexFilter` (`switch`, `choice` or `text` in the filter menu and the phone sheet) and
+  `registerIndexSection` (a block above the list, re-drawn or `update`d when the list changes, with `summaries` and `me`).
+  The custom-distro example uses all five.
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

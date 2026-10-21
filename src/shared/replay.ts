@@ -214,6 +214,9 @@ export const SUMMARY_VERSION = 7;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
 
+/** One value a plugin's `summaryFields` derives into the summary (src/server/summary-fields.ts). */
+export type SummaryFieldValue = string | number | boolean | null;
+
 /** The small sidecar (`meta.json`) the index lists and filters without loading bundles. */
 export interface ReplaySummary {
   id: string;
@@ -244,6 +247,10 @@ export interface ReplaySummary {
   purpose?: string;
   /** True when `purpose` was inferred rather than set by the producer. Inferred purposes never make a replay permanent. */
   purposeInferred?: boolean;
+  /** Small values derived by plugins at upload (`api.summaryFields`), keyed by plugin name; capped per plugin. */
+  ext?: Record<string, Record<string, SummaryFieldValue>>;
+  /** Which summary-field sets built `ext` (`plugin/name@version,…`); a sidecar built by another set is rebuilt. */
+  extVersion?: string;
   /** Pinned by someone with access (never expires); added by the server, never stored in meta.json. */
   kept?: KeepRecord;
   /** When retention removes it; null when it never expires. Added by the server per request. */
@@ -257,6 +264,11 @@ export interface ReplayFilters {
   source?: ReplaySource;
   tag?: string;
   purpose?: string;
+  /**
+   * Plugin index filters, `x-<name>` query parameter → value (`api.indexFilter`). The server's plugin filters match these;
+   * `matchesFilters` ignores them.
+   */
+  params?: Record<string, string>;
 }
 
 export function hostOf(url: string) {

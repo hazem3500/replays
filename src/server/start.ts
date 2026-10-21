@@ -18,6 +18,7 @@ import { chooseStorage, createRuntime, type Runtime } from './runtime.ts';
 import { tracedStorage } from './storage/traced.ts';
 import { initTracing, shutdownTracing } from './tracing.ts';
 import { ReplayStore } from './store.ts';
+import { summaryFieldsRunner } from './summary-fields.ts';
 
 const days = (value: number) => (value > 0 ? `${value} d` : 'never');
 
@@ -99,7 +100,8 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   let store: ReplayStore;
   try {
     const storage = tracedStorage(await chooseStorage(env, runtime.config.file, registry, dataDir));
-    store = new ReplayStore(storage, sampleDir, settings.retention, { purposes: settings.purposes });
+    const summaryFields = summaryFieldsRunner(registry.summaryFields);
+    store = new ReplayStore(storage, sampleDir, settings.retention, { purposes: settings.purposes, ...(summaryFields ? { summaryFields } : {}) });
     // The first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
     const removed = await store.prune();
     log(

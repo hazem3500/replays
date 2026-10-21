@@ -239,3 +239,53 @@ test.describe('comments work through the plugin surface with the distribution’
       await expect(page.getByTestId(tab)).toBeVisible();
   });
 });
+
+test.describe('index slots: summary fields, a server filter, and a column, filter and section in the list', () => {
+  test.use({ extraHTTPHeaders: asAda });
+  const run = Date.now().toString(36);
+  const staging = `distro-staging-${run}`;
+  const production = `distro-production-${run}`;
+
+  test('summary fields are derived at upload and the plugin filter narrows GET /api/replays', async ({ request }) => {
+    const original = await (await request.get(`${origin}${BASE}/api/replays/demo-shop`)).json();
+    for (const [id, environment] of [
+      [staging, 'staging'],
+      [production, 'production'],
+    ] as const) {
+      const response = await request.post(`${origin}${BASE}/api/replays`, {
+        data: { ...original, meta: { ...original.meta, id, title: `Index ${environment}`, capturedAt: new Date().toISOString() } },
+        headers: { 'x-acme-environment': environment },
+      });
+      expect(response.status(), await response.text()).toBe(201);
+    }
+    const all = (await (await request.get(`${origin}${BASE}/api/replays`)).json()) as Array<{ id: string; ext?: unknown }>;
+    expect(all.find((summary) => summary.id === production)?.ext).toEqual({
+      'acme-distro': { environment: 'production', uploadedBy: 'ada@acme.test' },
+    });
+    const filtered = (await (await request.get(`${origin}${BASE}/api/replays?x-env=production`)).json()) as Array<{ id: string }>;
+    expect(filtered.map((summary) => summary.id)).toContain(production);
+    expect(filtered.map((summary) => summary.id)).not.toContain(staging);
+    const config = await (await request.get(`${origin}${BASE}/api/config`)).json();
+    expect(config.indexFilters).toEqual([{ plugin: 'acme-distro', id: 'environment', param: 'x-env' }]);
+  });
+
+  test('the column, the section and the filter menu control are drawn by the browser entry', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/`);
+    const row = (id: string) => page.locator(`.feed-list [data-entry-id="session:${id}"]`);
+    await expect(row(production).getByTestId('plugin-column:acme-distro:environment')).toHaveText('env production');
+    await expect(row(staging).getByTestId('plugin-column:acme-distro:environment')).toHaveText('env staging');
+    const section = page.getByTestId('plugin-section:acme-distro:mine');
+    await expect(section).toContainText('Uploaded by you');
+    await expect(section).toContainText(/\d+ of \d+ listed replays are yours/);
+
+    await page.getByRole('button', { name: 'Filter' }).click();
+    await page.getByTestId('plugin-filter:acme-distro:environment').click();
+    await page.getByRole('menuitemradio', { name: 'Production' }).click();
+    await expect.poll(() => new URL(page.url()).searchParams.get('x-env')).toBe('production');
+    await page.keyboard.press('Escape');
+    await expect(row(production)).toBeVisible();
+    await expect(row(staging)).toHaveCount(0);
+    // The section is drawn again for the filtered list, and knows who is signed in.
+    await expect(section).toContainText('1 of 1 listed replays are yours');
+  });
+});

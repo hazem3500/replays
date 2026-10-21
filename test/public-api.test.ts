@@ -25,6 +25,7 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'rejectUpload',
       'resolvePlugins',
       'resolvePluginsSync',
+      'SUMMARY_FIELD_LIMITS',
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },

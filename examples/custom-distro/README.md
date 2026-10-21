@@ -7,9 +7,9 @@ Reference: [docs/extension-api.md](../../docs/extension-api.md).
 | File | What it shows |
 | --- | --- |
 | `replays.config.ts` | `defineConfig({ plugins: [acme(...)] })` |
-| `src/plugin.ts` | `definePlugin`: signed-header ("IAP-style") auth, a context adapter with a schema, a chat source-link provider, branding (name, logo, theme tokens), a base path, request / response / upload hooks, and the registration of the browser entry |
+| `src/plugin.ts` | `definePlugin`: signed-header ("IAP-style") auth, a context adapter with a schema, a chat source-link provider, branding (name, logo, theme tokens), a base path, request / response / upload hooks, summary fields and a server-side index filter (`?x-env=`), and the registration of the browser entry |
 | `src/iap.ts` | The fake identity header: `{ email, aud, exp }` signed with HMAC-SHA256 (a real proxy would sign a JWT; see `examples/auth-signed-header`) |
-| `src/client.ts` | `defineViewerPlugin`: an inspector tab, a viewer action and a side panel, drawn into DOM nodes |
+| `src/client.ts` | `defineViewerPlugin`: an inspector tab, a viewer action and a side panel, and in the index a column, a filter and a section ("Uploaded by you"), drawn into DOM nodes |
 | `src/server.ts` | `await startServer()`, the whole entry point |
 | `scripts/build.mjs` | esbuild: `src/client.ts` → `dist/client.js` |
 | `e2e/smoke.spec.ts` | Starts the server and checks that each extension is active |
@@ -43,5 +43,6 @@ pnpm test:distro      # build everything, typecheck the example, run the end-to-
 The smoke test proves, with a real browser: auth is enforced (missing, forged, expired, wrong-audience and wrong-domain identities are
 refused; `/healthz` is public), the context adapter stamps uploads and the Context tab renders its fields with the schema's titles, the
 chat link resolves, the name, logo and theme tokens are applied under the base path, the custom tab is visible and drawn by the browser
-entry, the action and the panel work from the More menu, the upload hooks refuse and count, and plugin files are only served behind auth.
+entry, the action and the panel work from the More menu, the upload hooks refuse and count, plugin files are only served behind auth, and the
+index shows the plugin's column, section and filter, with the summary fields derived at upload and the filter matched by the server.
 CI runs it in the `Custom distribution example` job.

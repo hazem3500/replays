@@ -40,6 +40,8 @@ export interface ClientConfig {
   distribution?: { name: string; version: string };
   /** The host's policy for user plugins (only with beta.malleable on): src/shared/malleable-policy.ts. */
   malleable?: MalleablePolicy;
+  /** Plugin index filters the server matches (`api.indexFilter`); absent when there are none. */
+  indexFilters?: Array<{ plugin: string; id: string; param: string }>;
 }
 
 let betaEditorOverride: boolean | undefined;

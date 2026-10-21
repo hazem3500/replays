@@ -105,6 +105,8 @@ export function publicConfig(
     plugins?: string[];
     /** The deployment's purposes (src/shared/purposes.ts); an empty list in a plain core. */
     purposes?: readonly PurposeInfo[];
+    /** Plugin index filters (`api.indexFilter`): which `x-*` params `GET /api/replays` understands. */
+    indexFilters?: Array<{ plugin: string; id: string; param: string }>;
     beta?: { editor: boolean; malleable?: boolean };
     comments?: boolean;
     versions?: HostVersions;
@@ -119,6 +121,7 @@ export function publicConfig(
     auth: extra.auth,
     plugins: extra.plugins ?? [],
     purposes: extra.purposes ?? [],
+    ...(extra.indexFilters ? { indexFilters: extra.indexFilters } : {}),
     beta: extra.beta ?? { editor: false, malleable: false },
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
     ...(extra.versions ? { core: extra.versions.core } : {}),

@@ -18,6 +18,7 @@ import { replayHref, replayInSuiteHref, suiteHref } from '../route.ts';
 import { playableReplayId } from '../suite/runs.ts';
 import { errorTotal, feedTime, formatBadgeDuration, groupByDay, runStrip } from './feed.ts';
 import { SourceLead, sourceText } from './SourceLine.tsx';
+import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
@@ -199,6 +200,8 @@ function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: F
             ) : null}
           </span>
         </div>
+        {/* Plugins' fields (registerIndexColumn), drawn from summary.ext. */}
+        <IndexColumns summary={summary} />
       </div>
       {view === 'list' ? <RowColumns at={summary.capturedAt} host={summary.host} /> : null}
     </li>

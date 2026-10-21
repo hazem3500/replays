@@ -12,7 +12,7 @@ your-distro/
   package.json            depends on @hazem3500/replays (one version, pinned)
   replays.config.ts       defineConfig({ plugins: [...], name, basePath, … })
   src/plugin.ts           definePlugin(...): auth, context, links, storage, branding, hooks
-  src/client.ts           defineViewerPlugin(...): inspector tabs, actions, panels → bundled to one .js
+  src/client.ts           defineViewerPlugin(...): inspector tabs, actions, panels, index slots → bundled to one .js
   src/server.ts           await startServer()      # or just `replays serve`
 ```
 
@@ -126,12 +126,15 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.purpose({ id, label, order?, retentionDays?, viewer?, poster?, infer? })` | A [purpose](#purposes-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.purpose` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
 | `api.retention({ days(summary) })` | A [retention rule](#purposes-and-retention) that is not about purpose: whole days, or `0` / `undefined` for no limit | – |
 | `api.render({ posterAt?, beforeRender?, afterRender? })` | [Render pipeline hooks](#render-pipeline-hooks): the poster's moment, a veto or option change before each render, a call after each stored file | – (hooks run in plugin order) |
+| `api.summaryFields({ name, version?, fields(bundle) })` | Small values for the index, derived into `summary.ext[<plugin>]` whenever a summary is built ([below](#the-index-summary-fields-columns-filters-sections)) | the same `name` twice in one plugin |
+| `api.indexFilter({ id, param, match(summary, value) })` | A server-side filter of `GET /api/replays` selected by `?<param>=<value>`; `param` is `x-<name>` ([below](#the-index-summary-fields-columns-filters-sections)) | the same `id` twice in one plugin; a `param` taken by any plugin |
 
 Upload order: `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →
 `beforeUpload` → store → `afterUpload`. The core checks cannot be skipped by a hook: an adapter or hook that produces an
 invalid bundle gets a `400`.
 
-`GET /api/config` lists the plugins that are loaded (`plugins: ["acme-distro"]`), and the auth adapter in use.
+`GET /api/config` lists the plugins that are loaded (`plugins: ["acme-distro"]`), the auth adapter in use, and the plugin index
+filters when there are any (`indexFilters: [{ plugin, id, param }]`).
 
 ### Choosing an auth adapter
 
@@ -333,8 +336,8 @@ use without the plugin.
 
 ## Browser entries: inspector tabs, viewer actions, panels
 
-A server plugin points at one ES module with `api.client({ id: 'main', script: '/abs/path/client.js' })`. (Deployment code uses this DOM-based API; the built-in comments use the React feature registry described above.) The viewer imports it
-after the first paint and calls its default export. A failing entry is logged to the console and skipped; it never breaks the viewer
+A server plugin points at one ES module with `api.client({ id: 'main', script: '/abs/path/client.js' })`. (Deployment code uses this DOM-based API; the built-in comments use the React feature registry described above.) The app imports it
+after the first paint on every page, the index as well as the viewer, and calls its default export. A failing entry is logged to the console and skipped; it never breaks the viewer
 or other plugins. The module is yours to build (the example uses esbuild, `scripts/build.mjs`); it needs no React and no framework:
 
 ```ts
@@ -368,6 +371,65 @@ export default defineViewerPlugin((api) => {
 - **Generations.** `defineViewerPlugin` stamps the plugin with `VIEWER_API_VERSION` (now `1`, exported from `/viewer`). A viewer of
   another generation does not call it and logs `plugin <name> (<id>) refused: built for viewer API <n>, this viewer provides <m>`.
   A bare function default export (no `defineViewerPlugin`) carries no stamp and is loaded as before.
+
+## The index: summary fields, columns, filters, sections
+
+The index lists summaries (`meta.json`, one per replay), not bundles, so a column or filter can only use what is in the summary.
+A plugin puts its own values there on the server, and draws and filters them in the browser:
+
+```ts
+// Server (setup(api))
+api.summaryFields({
+  name: 'build',                 // [a-z][a-z0-9-]{0,39}, unique within the plugin
+  version: 1,                    // optional; bump when fields() derives something different
+  fields: (bundle) => ({ environment: String(bundle.context?.fields?.environment ?? 'unknown') }),
+});
+api.indexFilter({
+  id: 'environment',
+  param: 'x-env',                // GET /api/replays?x-env=production
+  match: (summary, value) => summary.ext?.['acme-distro']?.environment === value,
+});
+
+// Browser (defineViewerPlugin((api) => …))
+api.registerIndexColumn({ id: 'environment', label: 'Environment', render(el, { summary }) {
+  el.textContent = String(summary.ext?.['acme-distro']?.environment ?? '');
+} });
+api.registerIndexFilter({ id: 'environment', label: 'Environment', type: 'choice', param: 'x-env',
+  options: [{ value: 'staging', label: 'Staging' }, { value: 'production', label: 'Production' }] });
+api.registerIndexSection({ id: 'mine', title: 'For you',
+  render(el, { summaries, me }) { el.textContent = `${summaries.length} replays`; },
+  update(el, { summaries, me }) { el.textContent = `${summaries.length} replays`; } });
+```
+
+**Summary fields** run when a summary is built: at upload, and whenever the store rebuilds one (a missing or older `meta.json`,
+a committed sample, or a sidecar built by another set of summary fields: the store records `extVersion`, the registered
+`plugin/name@version` list, and rebuilds lazily when it differs). The result, an object of strings, finite numbers, booleans or
+`null`, lands in `summary.ext[<plugin name>]`; several sets of one plugin are merged. Limits (`SUMMARY_FIELD_LIMITS` from
+`@hazem3500/replays/plugin`): at most 20 keys (`[A-Za-z][A-Za-z0-9_-]{0,39}`) and 2 KB of JSON per plugin; strings are cut to 200
+characters. A `fields` that throws or breaks a limit is logged and its set is left out; the upload never fails because of it.
+`fields` sees the stored bundle, after the privacy pass. Values are listed to everyone who can see the index, so derive only what the
+list may show.
+
+**Index filters** run on the server after the core filters (`q`, `host`, `errors`, `source`, `tag`). `param` must be `x-<name>`
+(`^x-[a-z0-9][a-z0-9-]{0,38}$`), so it can never take a core parameter, today's or a later one; a param registered twice is a
+start-up `conflict`. A request without the param (or with an empty value) is not filtered; `value` is trimmed and cut to 200
+characters; a `match` that throws counts as no match and is logged once per request.
+
+**In the browser**, the same rules as tabs: ids are `[a-z][a-z0-9-]*`, unique per kind within the plugin; `order` sorts (lower first);
+a `render` that throws shows an error line in its slot (`data-plugin-error`) and is logged, and the rest of the index carries on.
+
+- **Columns** (`registerIndexColumn({ id, label, order?, render(container, { summary, theme, basePath, apiUrl }) })`) draw a field
+  into an inline box on a line under each replay row's meta line, in list rows, grid cards and the phone list
+  (`data-testid="plugin-column:<plugin>:<id>"`). Suites are not rows of their own replays and get no columns.
+- **Filters** (`registerIndexFilter({ id, label, type, param, options?, order? })`) add a control to the **Filter** menu (and the phone
+  sheet, with a removable chip): `switch` sets `<param>=1`, `choice` one of `options` (with "All" first), `text` free text applied on
+  Enter or leaving the field (`data-testid="plugin-filter:<plugin>:<id>"`). The browser only sets the query parameter; the server's
+  `indexFilter` with the same `param` does the matching. `x-*` parameters in the address are kept and sent even before (or without) the
+  entry that registered them. With a plugin filter on, a suite shows only the runs whose replays the server listed.
+- **Sections** (`registerIndexSection({ id, title, order?, render, update? })`) are blocks above the list
+  (`data-testid="plugin-section:<plugin>:<id>"`). The context is `{ summaries, me?, theme, basePath, apiUrl }`: `summaries` is every replay
+  the list shows now (after the filters), `me` the signed-in person from `GET /api/me` once known. When the list changes, `update(container,
+  context)` is called if given; otherwise the previous render is cleaned up and `render` runs again.
 
 ## Starting the server
 

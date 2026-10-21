@@ -87,6 +87,16 @@
         if (params.get('errors') === '1') filters.set('errors', '1');
         if (params.get('source') === 'agent' || params.get('source') === 'human') filters.set('source', params.get('source'));
         if (params.get('tag')) filters.set('tag', params.get('tag'));
+        // Plugin filters (`x-*`), sorted, as ReplayIndex.tsx searchFromFilters writes them.
+        var plugin = {};
+        params.forEach(function (value, key) {
+          if (/^x-[a-z0-9][a-z0-9-]{0,38}$/.test(key) && value.trim() && !(key in plugin)) plugin[key] = value.trim().slice(0, 200);
+        });
+        Object.keys(plugin)
+          .sort()
+          .forEach(function (key) {
+            filters.set(key, plugin[key]);
+          });
         var search = filters.toString();
         preload('replays' + (search ? '?' + search : ''));
         preload('suites?expand=runs&limit=100');
