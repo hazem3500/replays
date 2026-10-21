@@ -6,7 +6,7 @@ surface ([extension-api.md](extension-api.md)) is that it can drop its copy of t
 pinned version, and keep only what is really its own: a config file, one or two plugins, a browser entry, and its deploy
 infrastructure.
 
-This page is based on reading the downstream's `main` (merge commit `592ba0f`) against this repository. It names the
+The design these steps build on is [architecture/extensibility.md](architecture/extensibility.md). This page is based on reading the downstream's `main` (merge commit `592ba0f`) against this repository. It names the
 downstream only as "the downstream"; product, host and project identifiers stay in its own repository.
 
 ## 1. Where each downstream-only part goes

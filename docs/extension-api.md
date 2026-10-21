@@ -2,7 +2,8 @@
 
 This is the reference for building a **custom distribution** on top of replays without forking it: a config file, plugins
 for the server, and a browser entry for the viewer. A runnable example is [`examples/custom-distro`](../examples/custom-distro);
-the stability promise is in [api-stability.md](api-stability.md), the packaging decision in [packaging.md](packaging.md).
+the stability promise is in [api-stability.md](api-stability.md), the packaging decision in [packaging.md](packaging.md), and the overall
+design (layers, the full list of extension points, and the plan) in [architecture/extensibility.md](architecture/extensibility.md).
 The older, single-purpose extension points (auth adapter, storage interface, context schema, source providers, theme tokens)
 keep working as before and are described in [extending.md](extending.md); this API wraps them so one package can carry all of them.
 
