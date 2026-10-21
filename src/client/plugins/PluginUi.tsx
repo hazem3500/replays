@@ -1,37 +1,73 @@
 import { PuzzleIcon, XIcon } from 'lucide-react';
-import { type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, Fragment, type ReactNode, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
+import { isSafeIconUrl } from '../../shared/icon-url.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
+import { IconButton } from '@/components/icon-button.tsx';
+import {
+  DropdownMenuCheckboxItem,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu.tsx';
 import type { ReplayController } from '../player.ts';
 import { apiUrl, appBase } from '../route.ts';
 import { notify as showToast } from '../toast.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';
-import type { Cleanup, ViewerPluginContext } from './api.ts';
+import type { Cleanup, ViewerActionDefinition, ViewerPluginContext } from './api.ts';
 import { viewerRegistry } from './registry.ts';
+import { pluginSettings, readSetting, subscribeSettings, writeSetting } from './settings.ts';
 
 export function usePluginSnapshot() {
   return useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot);
 }
 
-/** The context plugin code receives for one open replay. */
-export function usePluginContext(bundle: ReplayBundle, player: ReplayController): ViewerPluginContext {
-  return useMemo<ViewerPluginContext>(
-    () => ({
-      replay: bundle,
-      get theme() {
-        return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
-      },
-      basePath: appBase(),
-      apiUrl: (path) => apiUrl(path),
-      getTime: () => player.getTime(),
-      onTime: (listener) => player.subscribeTime(() => listener(player.getTime())),
-      seek: (ms) => player.seek(ms),
-      notify: (message) => showToast(message),
-    }),
-    [bundle, player],
-  );
+/** The context one plugin's code receives for one open replay (`settings` are that plugin's own). */
+export function createPluginContext(bundle: ReplayBundle, player: ReplayController, plugin: string): ViewerPluginContext {
+  return {
+    replay: bundle,
+    get theme() {
+      return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
+    },
+    basePath: appBase(),
+    apiUrl: (path) => apiUrl(path),
+    getTime: () => player.getTime(),
+    onTime: (listener) => player.subscribeTime(() => listener(player.getTime())),
+    seek: (ms) => player.seek(ms),
+    notify: (message) => showToast(message),
+    settings: pluginSettings(plugin),
+  };
 }
+
+/** A context for code that is not one host plugin's (the malleable host); its `settings` are empty. */
+export function usePluginContext(bundle: ReplayBundle, player: ReplayController): ViewerPluginContext {
+  return useMemo(() => createPluginContext(bundle, player, ''), [bundle, player]);
+}
+
+/** Each plugin's context for the open replay, made once per plugin and kept while the replay is open. */
+export type PluginContextFor = (plugin: string) => ViewerPluginContext;
+
+function pluginContexts(bundle: ReplayBundle, player: ReplayController): PluginContextFor {
+  const made = new Map<string, ViewerPluginContext>();
+  return (plugin) => {
+    let context = made.get(plugin);
+    if (!context) {
+      context = createPluginContext(bundle, player, plugin);
+      made.set(plugin, context);
+    }
+    return context;
+  };
+}
+
+export function usePluginContexts(bundle: ReplayBundle, player: ReplayController): PluginContextFor {
+  return useMemo(() => pluginContexts(bundle, player), [bundle, player]);
+}
+
+/** The viewer's PluginContextFor, for parts that do not hold the bundle (the seek bar, the Context tab). */
+export const PluginContexts = createContext<PluginContextFor | null>(null);
 
 /** Draws a failed plugin view's error line into its container (`data-plugin-error`), after logging the error. */
 export function showPluginError(container: HTMLElement, label: string, error: unknown) {
@@ -86,41 +122,83 @@ export function PluginMount<C>({
   return <Tag ref={host} className={className ?? 'plugin-mount'} data-testid={testId} />;
 }
 
-/** Plugin actions and panel entries as "More" menu items, plus the side drawer that open panels render in. */
-export function usePluginMenu(bundle: ReplayBundle, player: ReplayController): { items: TopbarMenuItem[]; drawer: ReactNode } {
+/** An action's glyph: its own icon (a safe image URL, drawn as an <img>), else the puzzle piece. */
+function ActionIcon({ icon }: { icon: string | undefined }) {
+  return icon && isSafeIconUrl(icon) ? (
+    <img src={icon} alt="" width={16} height={16} className="plugin-action-icon" referrerPolicy="no-referrer" draggable={false} />
+  ) : (
+    <PuzzleIcon aria-hidden="true" />
+  );
+}
+
+function runAction(action: ViewerActionDefinition, context: ViewerPluginContext) {
+  void Promise.resolve()
+    .then(() => action.run(context))
+    .catch((error: unknown) => {
+      console.error(`plugin action "${action.label}" failed:`, error);
+      showToast(`${action.label} failed`);
+    });
+}
+
+/**
+ * Client plugins in the header: More-menu actions and panel entries (`items`), bar actions as icon buttons (`bar`; on
+ * phones they join the menu), the plugins' settings for the bottom of the menu (`settings`), and the side drawer that
+ * open panels render in.
+ */
+export function usePluginMenu(
+  contextFor: PluginContextFor,
+  mobile = false,
+): { items: TopbarMenuItem[]; bar: ReactNode; settings: ReactNode; drawer: ReactNode } {
   const snapshot = usePluginSnapshot();
-  const context = usePluginContext(bundle, player);
   const [openPanel, setOpenPanel] = useState<string>();
-  const items = useMemo<TopbarMenuItem[]>(() => {
+  const { items, bar } = useMemo(() => {
     const visible = snapshot.actions.filter((action) => {
       try {
-        return action.definition.when?.(context) !== false;
+        return action.definition.when?.(contextFor(action.plugin)) !== false;
       } catch {
         return false;
       }
     });
-    return [
-      ...visible.map((action) => ({
-        label: action.definition.label,
-        icon: <PuzzleIcon aria-hidden="true" />,
-        testId: `plugin-action:${action.plugin}:${action.definition.id}`,
-        onSelect: () => {
-          void Promise.resolve()
-            .then(() => action.definition.run(context))
-            .catch((error: unknown) => {
-              console.error(`plugin action "${action.definition.label}" failed:`, error);
-              showToast(`${action.definition.label} failed`);
-            });
-        },
-      })),
-      ...snapshot.panels.map((panel) => ({
-        label: panel.definition.title,
-        icon: <PuzzleIcon aria-hidden="true" />,
-        testId: `plugin-panel-open:${panel.plugin}:${panel.definition.id}`,
-        onSelect: () => setOpenPanel((current) => (current === panel.key ? undefined : panel.key)),
-      })),
-    ];
-  }, [snapshot, context]);
+    const inBar = mobile ? [] : visible.filter((action) => action.definition.placement === 'bar');
+    const inMenu = visible.filter((action) => !inBar.includes(action));
+    return {
+      bar: inBar.length ? (
+        <>
+          {inBar.map((action) => (
+            <IconButton
+              key={action.key}
+              label={action.definition.label}
+              tooltipSide="bottom"
+              tooltipAlign="end"
+              className="plugin-bar-action"
+              data-testid={`plugin-action:${action.plugin}:${action.definition.id}`}
+              onClick={() => runAction(action.definition, contextFor(action.plugin))}
+            >
+              <ActionIcon icon={action.definition.icon} />
+            </IconButton>
+          ))}
+        </>
+      ) : null,
+      items: [
+        ...inMenu.map((action) => ({
+          label: action.definition.label,
+          icon: <ActionIcon icon={action.definition.icon} />,
+          testId: `plugin-action:${action.plugin}:${action.definition.id}`,
+          onSelect: () => runAction(action.definition, contextFor(action.plugin)),
+        })),
+        ...snapshot.panels.map((panel) => ({
+          label: panel.definition.title,
+          icon: <PuzzleIcon aria-hidden="true" />,
+          testId: `plugin-panel-open:${panel.plugin}:${panel.definition.id}`,
+          onSelect: () => setOpenPanel((current) => (current === panel.key ? undefined : panel.key)),
+        })),
+      ] satisfies TopbarMenuItem[],
+    };
+  }, [snapshot, contextFor, mobile]);
+  const settings = useMemo(
+    () => (snapshot.settings.length ? <PluginSettingsMenu settings={snapshot.settings} /> : null),
+    [snapshot.settings],
+  );
   const active = snapshot.panels.find((panel) => panel.key === openPanel);
   const drawer = active
     ? createPortal(
@@ -140,10 +218,76 @@ export function usePluginMenu(bundle: ReplayBundle, player: ReplayController): {
               <XIcon aria-hidden="true" />
             </button>
           </header>
-          <PluginMount render={active.definition.render} context={context} label={active.definition.title} className="plugin-drawer-body" />
+          <PluginMount
+            render={active.definition.render}
+            context={contextFor(active.plugin)}
+            label={active.definition.title}
+            className="plugin-drawer-body"
+          />
         </aside>,
         document.body,
       )
     : null;
-  return { items, drawer };
+  return { items, bar, settings, drawer };
+}
+
+/**
+ * The plugins' settings at the bottom of the More menu: switches as check items under "Settings", each choice as its
+ * own labelled group of radio items. Changing one keeps the menu open, stores it and tells the plugin.
+ */
+function PluginSettingsMenu({ settings }: { settings: ReturnType<typeof usePluginSnapshot>['settings'] }) {
+  const [, rerender] = useReducer((count: number) => count + 1, 0);
+  useEffect(() => subscribeSettings(() => rerender()), []);
+  const switches = settings.filter((setting) => setting.definition.type === 'boolean');
+  const choices = settings.filter((setting) => setting.definition.type === 'choice');
+  return (
+    <>
+      {switches.length ? (
+        <>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>Settings</DropdownMenuLabel>
+            {switches.map(({ plugin, key, definition }) => (
+              <DropdownMenuCheckboxItem
+                key={key}
+                checked={readSetting(plugin, definition) === true}
+                onCheckedChange={(checked) => writeSetting(plugin, definition, checked)}
+                closeOnClick={false}
+                inset
+                data-testid={`plugin-setting:${plugin}:${definition.id}`}
+              >
+                {definition.label}
+              </DropdownMenuCheckboxItem>
+            ))}
+          </DropdownMenuGroup>
+        </>
+      ) : null}
+      {choices.map(({ plugin, key, definition }) =>
+        definition.type === 'choice' ? (
+          <Fragment key={key}>
+            <DropdownMenuSeparator />
+            <DropdownMenuGroup>
+              <DropdownMenuLabel>{definition.label}</DropdownMenuLabel>
+              <DropdownMenuRadioGroup
+                value={readSetting(plugin, definition)}
+                onValueChange={(value) => writeSetting(plugin, definition, String(value))}
+              >
+                {definition.options.map((option) => (
+                  <DropdownMenuRadioItem
+                    key={option.value}
+                    value={option.value}
+                    closeOnClick={false}
+                    inset
+                    data-testid={`plugin-setting:${plugin}:${definition.id}:${option.value}`}
+                  >
+                    {option.label ?? option.value}
+                  </DropdownMenuRadioItem>
+                ))}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+          </Fragment>
+        ) : null,
+      )}
+    </>
+  );
 }

@@ -595,6 +595,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .topbar-source-chip svg { width: 11px; height: 11px; flex: 0 0 auto; }
 .topbar-source-chip > svg:last-child { color: var(--text-tertiary); transition: color 150ms var(--ease-out), translate 150ms var(--ease-out); }
 .topbar-source-chip .brand-icon { width: 13px; height: 13px; }
+/* A provider's own icon (an <img>, source-looks.ts): kept to its box, never stretched. */
+.brand-icon-image { flex: 0 0 auto; object-fit: contain; }
 .topbar-source-chip:focus-visible { outline: 2px solid var(--ring); outline-offset: 0; }
 .topbar-source-chip:active { background: var(--surface-pressed); color: var(--text); }
 @media (hover: hover) and (pointer: fine) {

@@ -19,7 +19,7 @@ import { betaMalleable } from './malleable/flag.ts';
 import { replayPurpose } from './purposes.ts';
 import { DEFAULT_LEAD_MS } from '../shared/purposes.ts';
 import { openWorkshop } from './malleable/ui-state.ts';
-import { usePluginMenu } from './plugins/PluginUi.tsx';
+import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
 import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
@@ -351,8 +351,10 @@ export function Viewer({
         : undefined,
     [keep.available, keep.kept, keep.pending, keep.flip],
   );
-  // Client plugins' actions and panel entries (src/client/plugins/): More-menu items; open panels draw in a side drawer.
-  const pluginMenu = usePluginMenu(bundle, player);
+  // Client plugins (src/client/plugins/): one context per plugin for this replay; their actions and panel entries are
+  // More-menu items (bar actions are header buttons on desktop), their settings close the menu, open panels draw in a drawer.
+  const pluginContexts = usePluginContexts(bundle, player);
+  const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
@@ -504,6 +506,8 @@ export function Viewer({
           bundle={bundle}
           compact={mobile}
           menuItems={headerMenuItems}
+          pluginActions={pluginMenu.bar}
+          menuFooter={pluginMenu.settings}
           {...(menu ? { menu } : {})}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
@@ -556,14 +560,16 @@ export function Viewer({
   );
   return (
     <PlayerContext.Provider value={player}>
-      <FeatureProviders
-        replayId={bundle.meta.id}
-        timeline={timeline}
-        openPanel={openFeaturePanel}
-        registerStartAction={registerStartAction}
-      >
-        {viewer}
-      </FeatureProviders>
+      <PluginContexts.Provider value={pluginContexts}>
+        <FeatureProviders
+          replayId={bundle.meta.id}
+          timeline={timeline}
+          openPanel={openFeaturePanel}
+          registerStartAction={registerStartAction}
+        >
+          {viewer}
+        </FeatureProviders>
+      </PluginContexts.Provider>
     </PlayerContext.Provider>
   );
 }
@@ -609,11 +615,17 @@ const ViewerHeader = memo(function ViewerHeader({
   compact,
   menu,
   menuItems,
+  menuFooter,
+  pluginActions,
   backHref,
   titleMenu,
   titleFrom,
 }: {
   bundle: ReplayBundle;
+  /** Client plugins' settings, at the bottom of the More menu. */
+  menuFooter: ReactNode;
+  /** Client plugins' bar actions (desktop): icon buttons after the built-in ones. */
+  pluginActions: ReactNode;
   titleMenu?: ReactNode;
   titleFrom?: string;
   title?: string;
@@ -637,12 +649,13 @@ const ViewerHeader = memo(function ViewerHeader({
     ...(titleFrom ? { titleFrom } : {}),
     titleId: 'replay-title',
   };
-  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} {...shared} />;
+  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} {...shared} />;
   return (
     <Topbar
       {...shared}
       menu={menu}
       menuItems={menuItems}
+      menuFooter={menuFooter}
       alwaysMenu
       actions={
         // Edit leads (the replay's main action), then one quiet icon set: details, copy link, download (theme and More come from the Topbar).
@@ -651,6 +664,7 @@ const ViewerHeader = memo(function ViewerHeader({
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
+          {pluginActions}
         </>
       }
     />
@@ -666,11 +680,13 @@ function PhoneHeader({
   suite,
   menu,
   menuItems,
+  menuFooter,
   ...props
 }: {
   bundle: ReplayBundle;
   suite: SuiteDetails | undefined;
   menu: ReactNode;
+  menuFooter: ReactNode;
   /** The viewer's own items (Keep), before the downloads. */
   menuItems: TopbarMenuItem[];
   title: string;
@@ -688,6 +704,7 @@ function PhoneHeader({
       compact
       menu={menu}
       menuItems={[...menuItems, ...download.items]}
+      menuFooter={menuFooter}
       actions={
         <>
           {betaEditor() ? <EditButton id={bundle.meta.id} compact /> : null}

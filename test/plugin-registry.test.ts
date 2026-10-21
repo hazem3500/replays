@@ -218,6 +218,11 @@ describe('registrations', () => {
       (api: PluginApi) => api.sourceProvider({ id: 'jira', label: 'J' } as never),
       /resolve must be a function/,
     ],
+    [
+      'a source provider icon that is not an image URL',
+      (api: PluginApi) => api.sourceProvider({ id: 'jira', label: 'J', icon: 'javascript:alert(1)', resolve: () => undefined }),
+      /icon must be a data:image\/svg\+xml URL or an https URL/,
+    ],
     ['a storage backend without create', (api: PluginApi) => api.storage({ id: 'gcs' } as never), /storage.create must be a function/],
     ['branding with an unknown token', (api: PluginApi) => api.branding({ theme: { dark: { nope: '1' } as never } }), /not a theme token/],
     ['branding with a url() token', (api: PluginApi) => api.branding({ theme: { dark: { accent: 'url(x)' } } }), /not a plain CSS value/],

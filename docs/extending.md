@@ -88,6 +88,38 @@ values`. The viewer renders the Context tab from the schema: `title` as the labe
 property order, booleans as Yes/No, scalar arrays as chips, nested objects as indented lists, `format: "uri"` as a link
 (`https:` only). Limits independent of the schema: 16 KB per context, depth 6, 100 keys per object.
 
+Three viewer hints (ignored by validation) shape the tab further:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan": { "type": "string", "title": "Plan", "x-replays-group": "Account", "x-replays-order": -1 },
+    "flags": {
+      "type": "array",
+      "title": "Beta flags",
+      "x-replays-group": "Account",
+      "x-replays-widget": "signals",
+      "items": {
+        "type": "object",
+        "required": ["key", "state"],
+        "properties": { "key": { "type": "string" }, "state": { "enum": ["enabled", "disabled", "unknown"] }, "label": { "type": "string" } }
+      }
+    }
+  }
+}
+```
+
+- `x-replays-widget: "signals"` on an array of `{ key, state, label? }` draws tri-state chips: a check for `enabled`, a cross on muted
+  text for `disabled`, and a question mark on a dashed outline for `unknown` (not supplied or not loaded), so a flag nobody reported
+  never reads as switched off. The state is in each chip's tooltip and accessible name. An array that does not fit falls back to the
+  plain rendering.
+- `x-replays-group: "Account"` on a top-level property puts it in its own group, headed by that name; properties without one stay
+  in the default group (titled by the schema's `title`, else "Details"). Groups come in the order of their first property.
+- `x-replays-order` sorts properties (lower first, default 0; ties keep schema order), at any depth.
+
+A client plugin can also add its own block to the tab with `registerContextSection` ([extension-api.md](extension-api.md#browser-entries-inspector-tabs-actions-panels-timeline-tracks-context-sections-settings)).
+
 ## Source-link providers
 
 A source is `{ provider, ref }` and the server stores the resolved `https` link:
@@ -103,6 +135,29 @@ Self-managed hosts: `GITHUB_HOST`, `GITLAB_HOST`. Custom providers go in the con
 (`{ "id": "jira", "template": "https://jira.example.com/browse/{ref}", "pattern": "^[A-Z]+-\\d+$" }`) or, from code,
 `new SourceProviders().register({ id, label, resolve(ref) { … } })`. Templates are validated at start: they must
 produce an `https` URL.
+
+A provider can say how its sources look and keep a few facts about them:
+
+```ts
+api.sourceProvider({
+  id: 'chat',
+  label: 'Chat',
+  noun: 'Chat thread',                          // "thread C123/p456, Chat thread (opens in a new tab)"
+  icon: 'data:image/svg+xml;base64,PHN2ZyB4…',   // or an https URL
+  resolve: (ref) => ({ url: `https://chat.example.com/${ref}`, label: ref, attrs: { channel: ref.split('/')[0], replies: 3 } }),
+});
+```
+
+- `icon` is shown on the topbar's source chip, in the Context tab's Sources and on the index row. It must be a
+  `data:image/svg+xml` URL or an https URL (checked at start; at most 8 KB) and is always drawn as an `<img>`, never inlined as
+  markup, so an SVG cannot run script. Without one the viewer keeps its own mark (GitHub's, else a link glyph).
+- `noun` is short text naming what a source is; it joins the chip's and index link's accessible names and leads the source's line in
+  the Context tab.
+- `attrs` returned by `resolve` are kept on the stored source (`context.sources[].attrs`: at most 8 entries, keys like
+  `[A-Za-z][\w-]*`, values short text or finite numbers; anything else is dropped) and, capped to 4 entries of 80 characters, on the
+  index summary's `sources`. The Context tab lists their values after the noun; client plugins read them from
+  `ctx.replay.context.sources`. A producer that sends an already resolved source (with a `url`) may send `attrs` too.
+- Config-file providers accept `icon` and `noun` as well: `{ "id": "jira", "template": "…", "noun": "Jira issue", "icon": "https://…" }`.
 
 ## Storage
 

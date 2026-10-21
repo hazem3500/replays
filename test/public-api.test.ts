@@ -29,7 +29,7 @@ const entries: Record<string, { source: string; values: string[] }> = {
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
-  './viewer': { source: '../src/client/plugins/api.ts', values: ['VIEWER_API_VERSION', 'defineViewerPlugin'] },
+  './viewer': { source: '../src/client/plugins/api.ts', values: ['MAX_TRACK_MARKERS', 'VIEWER_API_VERSION', 'defineViewerPlugin'] },
   './server': {
     source: '../src/server/index.ts',
     values: [

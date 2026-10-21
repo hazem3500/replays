@@ -3,6 +3,9 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import type { ReplaySource, ReplaySourceLink } from '../../shared/replay.ts';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { SourceIcon } from '@/components/brand-icon.tsx';
+
+import { sourceLook } from '../source-looks.ts';
 
 /*
  * Line 2 of a feed row leads with where the replay came from: the first context source it links to (a pull
@@ -22,15 +25,27 @@ function safeHref(url: string) {
 
 function SourceLink({ link, className, shown }: { link: ReplaySourceLink; className: string; shown: string }) {
   const href = safeHref(link.url);
+  const look = sourceLook(link.provider);
   const content = (
     <>
-      <LinkIcon className="source-mark" aria-hidden="true" />
+      {/* A provider's own icon when it declares one; otherwise every source shares the plain link mark. */}
+      {look?.icon ? (
+        <SourceIcon provider={link.provider} className="source-mark" />
+      ) : (
+        <LinkIcon className="source-mark" aria-hidden="true" />
+      )}
       <span className="source-link-text">{shown}</span>
       {href ? <AnimatedIcon name="arrow-up-right" className="source-link-arrow" /> : null}
     </>
   );
   return href ? (
-    <a className={className} href={href} target="_blank" rel="noreferrer" aria-label={`${sourceText(link)} (opens in a new tab)`}>
+    <a
+      className={className}
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      aria-label={`${sourceText(link)}${look?.noun ? `, ${look.noun}` : ''} (opens in a new tab)`}
+    >
       {content}
     </a>
   ) : (

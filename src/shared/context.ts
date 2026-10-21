@@ -15,7 +15,12 @@ export interface ReplaySourceRef {
   ref?: string;
   url: string;
   label?: string;
+  /** Small facts about the target from its provider (`{ channel: 'support', replies: 3 }`); see sourceAttrs. */
+  attrs?: SourceAttrs;
 }
+
+/** A source's attributes: at most MAX_SOURCE_ATTRS short string or number values under identifier-like keys. */
+export type SourceAttrs = Record<string, string | number>;
 
 /** What a producer sends: `url` may be left out when the provider can resolve `ref` (source-providers.ts). */
 export interface ReplaySourceInput {
@@ -23,6 +28,7 @@ export interface ReplaySourceInput {
   ref?: string;
   url?: string;
   label?: string;
+  attrs?: SourceAttrs;
 }
 
 export interface ReplayContext {
@@ -37,6 +43,28 @@ export interface ReplayContext {
 
 export const MAX_CONTEXT_BYTES = 16_384;
 export const MAX_SOURCES = 10;
+export const MAX_SOURCE_ATTRS = 8;
+const ATTR_KEY = /^[A-Za-z][\w-]{0,39}$/;
+const MAX_ATTR_TEXT = 200;
+
+/**
+ * The attributes worth keeping from `value`, capped: the first `max` entries with a valid key and a short string (no
+ * line breaks or angle brackets) or finite number. Anything else is dropped, never an error: a provider's resolver
+ * should not fail an upload over a decoration. Undefined when nothing is left.
+ */
+export function sourceAttrs(value: unknown, max = MAX_SOURCE_ATTRS, maxText = MAX_ATTR_TEXT): SourceAttrs | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const kept: SourceAttrs = {};
+  let count = 0;
+  for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+    if (count >= max) break;
+    if (!ATTR_KEY.test(key)) continue;
+    if (typeof entry === 'number' ? !Number.isFinite(entry) : typeof entry !== 'string' || !entry || /[\n\r<>]/.test(entry)) continue;
+    kept[key] = typeof entry === 'string' ? entry.slice(0, maxText) : (entry as number);
+    count += 1;
+  }
+  return count ? kept : undefined;
+}
 
 function object(value: unknown, name: string, allowed: readonly string[]) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${name} must be an object`);
@@ -124,11 +152,19 @@ export function assertReplayContext(value: unknown): asserts value is ReplayCont
       throw new Error(`replay.context.sources must contain at most ${MAX_SOURCES} entries`);
     for (const [index, raw] of context.sources.entries()) {
       const name = `replay.context.sources[${index}]`;
-      const source = object(raw, name, ['provider', 'ref', 'url', 'label']);
+      const source = object(raw, name, ['provider', 'ref', 'url', 'label', 'attrs']);
       text(source.provider, `${name}.provider`, 40, /^[a-z0-9][a-z0-9_-]*$/);
       assertSafeUrl(source.url, `${name}.url`);
       if (source.ref !== undefined) text(source.ref, `${name}.ref`, 200, /^[^\s]+$/);
       if (source.label !== undefined) text(source.label, `${name}.label`, 80, /^[^\n\r<>]+$/);
+      if (source.attrs !== undefined) {
+        // Stored attrs are already capped (sourceAttrs): anything the cap would change is refused.
+        const attrs = source.attrs;
+        const count = attrs && typeof attrs === 'object' && !Array.isArray(attrs) ? Object.keys(attrs).length : -1;
+        const kept = sourceAttrs(attrs);
+        if (count < 0 || count > MAX_SOURCE_ATTRS || JSON.stringify(kept ?? {}) !== JSON.stringify(attrs))
+          throw new Error(`${name}.attrs must hold at most ${MAX_SOURCE_ATTRS} short text or number values`);
+      }
     }
   }
   if (context.fields !== undefined) {

@@ -130,6 +130,8 @@ export interface PageBranding {
   plugins?: string;
   /** Browser chrome colour per scheme (`<meta name="theme-color">`): the theme's `page` token; unset keeps the built-in one. */
   themeColor?: { dark?: string; light?: string };
+  /** JSON list of the source providers' icons and nouns (`<meta name="app-sources">`); see SourceProviders.describe. */
+  sources?: string;
 }
 
 const escapeHtml = (value: string) =>
@@ -158,6 +160,10 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
     out = out.replace(
       '<meta name="app-plugins" content="" />',
       `<meta name="app-plugins" content="${escapeHtml(branding.plugins ?? '')}" />`,
+    );
+    out = out.replace(
+      '<meta name="app-sources" content="" />',
+      `<meta name="app-sources" content="${escapeHtml(branding.sources ?? '')}" />`,
     );
     out = out.replaceAll('__PRODUCT_NAME__', escapeHtml(branding.name)).replaceAll('__PRODUCT_LOGO__', escapeHtml(branding.logoUrl ?? ''));
     const color = branding.themeColor;

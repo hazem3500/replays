@@ -21,6 +21,7 @@ import {
   type ReactNode,
   type RefObject,
   useCallback,
+  useContext,
   useEffect,
   useLayoutEffect,
   useMemo,
@@ -42,7 +43,8 @@ import { createSpring } from '../spring.ts';
 import { type ShortcutAction, shortcutLabel } from '../shortcuts.ts';
 import { useWindowedRows } from '../windowing.ts';
 import { type BuiltinInspectorTab, type InspectorTab, useViewer } from './context.ts';
-import { PluginMount, usePluginContext, usePluginSnapshot } from '../plugins/PluginUi.tsx';
+import { PluginContexts, PluginMount, usePluginContexts, usePluginSnapshot } from '../plugins/PluginUi.tsx';
+import { usePluginContextSections } from '../plugins/PluginSlots.tsx';
 import { Empty } from './Empty.tsx';
 import { noteTabSwitch, queueReveal, staggerIn } from './stagger.ts';
 import { StepList } from './StepRail.tsx';
@@ -221,7 +223,10 @@ export const Inspector = memo(function Inspector({
   const networkCount = usePlayhead((time) => countAtOrBefore(networkTrack.ats, horizon(time)));
   const performanceCount = usePlayhead((time) => countAtOrBefore(performanceTrack.ats, horizon(time)));
   const pluginTabs = usePluginSnapshot().tabs;
-  const pluginContext = usePluginContext(bundle, player);
+  // Each plugin gets its own context (its settings); the viewer's when there is one, else made here.
+  const ownContexts = usePluginContexts(bundle, player);
+  const pluginContextFor = useContext(PluginContexts) ?? ownContexts;
+  const contextSections = usePluginContextSections();
   const stepTabs = mobile && bundle.steps.length > 0;
   const activeStep = usePlayhead((time) => (stepTabs ? activeStepIndex(bundle.steps, time, player.duration) : -1));
   const labels = mobile ? MOBILE_TAB_LABELS : TAB_LABELS;
@@ -431,7 +436,7 @@ export const Inspector = memo(function Inspector({
         ) : null}
       </TabsContent>
       <TabsContent value="context" className="inspector-panel">
-        {filled ? <ContextPanel bundle={bundle} schema={contextSchema} /> : null}
+        {filled ? <ContextPanel bundle={bundle} schema={contextSchema} sections={contextSections} /> : null}
       </TabsContent>
       {featureTabs.map(({ id, featureTab }) => (
         <TabsContent key={id} value={id} className="inspector-panel">
@@ -443,7 +448,7 @@ export const Inspector = memo(function Inspector({
           {filled ? (
             <PluginMount
               render={pluginTab.definition.render}
-              context={pluginContext}
+              context={pluginContextFor(pluginTab.plugin)}
               label={pluginTab.definition.label}
               testId={`${pluginTab.key}-panel`}
             />

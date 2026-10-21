@@ -112,7 +112,7 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | --- | --- | --- |
 | `api.auth(adapter \| { name, create(env) })` | An [`AuthAdapter`](extending.md#auth-adapters) selected by `AUTH_MODE=<name>` or the config's `auth`. With exactly one registered and nothing chosen it is used; with several and nothing chosen the server refuses to start | name taken by another plugin or built in (`none`, `header`, `oidc`, `plugin`) |
 | `api.contextAdapter({ name, schema?, normalize? })` | Runs on every upload and suite registration, **before** validation: `normalize(context, { kind, identity, request })` returns the context to use. `schema` (an object schema) is merged into the deployment's context schema, which validates the result and titles the Context tab | name taken; a field defined differently by two adapters or by the schema file |
-| `api.sourceProvider(provider)` | A `{ id, label, resolve(ref) }` link provider (chat, support, VCS style), usable as `--source id:ref` and in `context.sources` | id taken, built in (`github`, `gitlab`, `url`) or defined in the config's `sourceProviders` |
+| `api.sourceProvider(provider)` | A `{ id, label, icon?, noun?, resolve(ref) }` link provider (chat, support, VCS style), usable as `--source id:ref` and in `context.sources`. `icon` (a `data:image/svg+xml` or https URL) and `noun` (`'Chat thread'`) are how the viewer shows its sources; `resolve` may return `attrs` ([details](extending.md#source-link-providers)) | id taken, built in (`github`, `gitlab`, `url`) or defined in the config's `sourceProviders`; an icon that is not a safe image URL |
 | `api.storage({ id, create({ env, dataDir }) })` | An [`ObjectStorage`](extending.md#storage) selected by `STORAGE=<id>` or the config's `storage`. Its `kind` is any string (usually the id); set `listCacheMs` when listing is remote and slow | id taken or built in (`fs`, `s3`, `memory`) |
 | `api.branding({ name?, logoUrl?, theme? })` | Name, logo (https URL or base64 data image) and [theme tokens](extending.md#theming-and-branding) | the same field set to different values by two plugins; the config file and environment override plugins without error |
 | `api.basePath('/replays')` | The default base path | two plugins disagree; config and `BASE_PATH` override |
@@ -387,7 +387,7 @@ server-side (and filters again, for emulators without it). It sets `listCacheMs`
 `roles/storage.objectUser` on the bucket; objects stay private (the server streams them). The module also exports `GcsStorage` for
 use without the plugin.
 
-## Browser entries: inspector tabs, viewer actions, panels
+## Browser entries: inspector tabs, actions, panels, timeline tracks, context sections, settings
 
 A server plugin points at one ES module with `api.client({ id: 'main', script: '/abs/path/client.js' })`. (Deployment code uses this DOM-based API; the built-in comments use the React feature registry described above.) The app imports it
 after the first paint on every page, the index as well as the viewer, and calls its default export. A failing entry is logged to the console and skipped; it never breaks the viewer
@@ -404,23 +404,51 @@ export default defineViewerPlugin((api) => {
     render(container, { replay, theme }) { container.textContent = replay.meta.title; /* return a cleanup function if you need one */ },
   });
   api.registerViewerAction({ id: 'copy', label: 'Copy summary', when: (ctx) => true, run: async (ctx) => ctx.notify('Copied') });
+  api.registerViewerAction({ id: 'start', label: 'Back to start', placement: 'bar', icon: 'data:image/svg+xml,…', run: (ctx) => ctx.seek(0) });
   api.registerViewerPanel({ id: 'notes', title: 'Notes', slot: 'side', render(container, ctx) { return ctx.onTime((ms) => { … }); } });
+  api.registerTimelineTrack({
+    id: 'errors',
+    label: 'Console errors',
+    markers: ({ replay }) => replay.console.filter((e) => e.level === 'error').map((e) => ({ atMs: e.at, label: e.message, tone: 'error' })),
+  });
+  api.registerContextSection({ id: 'release', title: 'Release', render(container, ctx) { container.textContent = '…'; } });
+  api.registerSetting({ id: 'compact', label: 'Compact release', type: 'boolean', default: false });
+  api.registerSetting({ id: 'units', label: 'Clock', type: 'choice', options: [{ value: 's', label: 'Seconds' }, { value: 'ms' }], default: 's' });
 });
 ```
 
 - **Inspector tabs** join Console / Network / Performance / Context in the bottom panel (`data-testid="plugin:<plugin>:<id>-tab"`,
   content `…-panel`).
 - **Viewer actions** are items in the header's **More** menu (`data-testid="plugin-action:<plugin>:<id>"`); `when` can hide one per replay.
+  `placement: 'bar'` makes one an icon button in the header, after the built-in actions, with its label as the tooltip and accessible
+  name (phones keep it in More). `icon` is its glyph, a `data:image/svg+xml` URL or an https URL, drawn as an `<img>` (never inlined
+  as markup); without one it is a puzzle piece.
 - **Viewer panels** open from the **More** menu into a drawer on the right (`slot: 'side'`, `data-testid="plugin-panel:<plugin>:<id>"`).
   This is the extension point for features that need room and live state, such as a comments thread.
+- **Timeline tracks** are rows of marks under the seek bar's bars, in the same overlay layer as the comment markers (one 3 px row per
+  track, lowest `order` nearest the bar). `markers(ctx)` is called once per open replay and may be async; it returns
+  `{ atMs, durationMs?, label, tone? }[]` with `tone` one of `neutral` (default), `info`, `warn`, `error`, `accent`. A `durationMs`
+  draws a range. Hover or focus shows the label; a click seeks to `atMs`; a track is one tab stop and the arrow keys walk its marks.
+  Markers outside the replay, without a label or a finite `atMs`, and past `MAX_TRACK_MARKERS` (500, exported) are left out with a
+  console warning (`data-testid="plugin-track:<plugin>:<id>"`, each mark `plugin-track-marker`).
+- **Context sections** draw a block inside the built-in **Context** tab, after its own groups, under a heading with your `title`
+  (`data-testid="plugin:<plugin>:<id>-section"`); not a tab of their own. They show even for a replay without context.
+- **Settings** are per-person preferences at the bottom of the **More** menu: `type: 'boolean'` is a check item, `type: 'choice'`
+  (at least two `options`, `label` defaulting to the value) a labelled group of radio items. Values are kept in the browser's
+  localStorage under `replays-plugin:<plugin>:setting:<id>`; a stored value that no longer fits the definition reads as the
+  `default`. Read them with `ctx.settings.get(id)` and follow changes with `ctx.settings.onChange((id, value) => …)` (returns the
+  unsubscribe function). A plugin only sees its own settings (`data-testid="plugin-setting:<plugin>:<id>"`, choice options
+  `…:<id>:<value>`).
 - `render(container, context)` draws into the DOM node it is given; return a function to be called on unmount.
-- The **context** is `{ replay, theme, basePath, apiUrl(path), getTime(), onTime(listener), seek(ms), notify(message) }`. `replay` is the open
+- The **context** is `{ replay, theme, basePath, apiUrl(path), getTime(), onTime(listener), seek(ms), notify(message), settings }`. `replay` is the open
   bundle (metadata, steps, console, network, `context`); treat it as read-only. Use `apiUrl('…')` and `fetch` (same origin, the user's
   session) to talk to your own endpoints, which a server plugin adds with `api.onRequest`.
 - Theme: read `theme` and the CSS custom properties (`var(--text)`, `var(--surface)`, `var(--accent)` …, the same tokens as
   [branding](extending.md#theming-and-branding)) so a tab follows light/dark and the distribution's colours. A `style` file on the
   client entry is loaded as a stylesheet.
-- Registration errors (a bad id, a duplicate, a missing function) throw to the entry and are logged with the plugin's name.
+- Registration errors (a bad id, a duplicate, a missing function, an unknown `placement`, an unsafe `icon`, a setting whose `default`
+  does not fit its type or options) throw to the entry and are logged with the plugin's name.
+
 - **Generations.** `defineViewerPlugin` stamps the plugin with `VIEWER_API_VERSION` (now `1`, exported from `/viewer`). A viewer of
   another generation does not call it and logs `plugin <name> (<id>) refused: built for viewer API <n>, this viewer provides <m>`.
   A bare function default export (no `defineViewerPlugin`) carries no stamp and is loaded as before.

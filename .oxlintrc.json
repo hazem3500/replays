@@ -31,7 +31,13 @@
   ],
   "overrides": [
     {
-      "files": ["src/capture/injected-recorder.ts", "test/plugin-*.test.ts", "test/runtime.test.ts", "test/viewer-plugins.test.ts"],
+      "files": [
+        "src/capture/injected-recorder.ts",
+        "test/plugin-*.test.ts",
+        "test/runtime.test.ts",
+        "test/viewer-plugins.test.ts",
+        "test/viewer-slots.test.ts"
+      ],
       "rules": {
         "unicorn/consistent-function-scoping": "off"
       }

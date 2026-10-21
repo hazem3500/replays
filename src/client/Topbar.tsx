@@ -37,6 +37,7 @@ export function Topbar({
   actions,
   menu,
   menuItems = [],
+  menuFooter,
   alwaysMenu = false,
   backHref,
   backLabel = 'All replays',
@@ -56,6 +57,8 @@ export function Topbar({
   actions?: ReactNode;
   /** Secondary actions: a "More" menu when there are two or more, else one icon button. */
   menuItems?: TopbarMenuItem[];
+  /** Menu content after the items (client plugins' settings); always gets the "More" menu. */
+  menuFooter?: ReactNode;
   /** A "More" menu even for one item, so an item (Keyboard shortcuts) stays put while others come and go. */
   alwaysMenu?: boolean;
   /** Extra menu content above the items (the phone's run picker); always gets the "More" menu. */
@@ -116,7 +119,7 @@ export function Topbar({
         {actions}
         {/* Phones: the theme is a "More" item, so the bar keeps room for the title at 360 px. */}
         {compact ? null : <ThemeSwitch />}
-        <MoreMenu items={menuItems} extra={menu} theme={compact} always={alwaysMenu} />
+        <MoreMenu items={menuItems} extra={menu} footer={menuFooter} theme={compact} always={alwaysMenu} />
       </div>
     </header>
   );
@@ -213,16 +216,18 @@ export interface TopbarMenuItem {
 function MoreMenu({
   items,
   extra,
+  footer,
   theme = false,
   always = false,
 }: {
   items: TopbarMenuItem[];
   extra?: ReactNode;
+  footer?: ReactNode;
   theme?: boolean;
   always?: boolean;
 }) {
   const [only] = items;
-  if (!extra && !theme && !always && items.length === 1 && only && !only.href) {
+  if (!extra && !footer && !theme && !always && items.length === 1 && only && !only.href) {
     return (
       <IconButton
         label={only.label}
@@ -236,7 +241,7 @@ function MoreMenu({
       </IconButton>
     );
   }
-  if (!extra && !theme && items.length === 0) return null;
+  if (!extra && !footer && !theme && items.length === 0) return null;
   return (
     <DropdownMenu>
       <Hint label="More" side="bottom" align="end">
@@ -277,6 +282,7 @@ function MoreMenu({
             {item.detail ? <DropdownMenuShortcut className="tracking-normal tabular-nums">{item.detail}</DropdownMenuShortcut> : null}
           </DropdownMenuItem>
         ))}
+        {footer}
         {theme ? (
           <>
             {extra || items.length ? <DropdownMenuSeparator /> : null}

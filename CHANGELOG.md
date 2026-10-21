@@ -98,6 +98,16 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   (it cannot change `id`). The index shows an avatar stack with a person card on rows that have people, and a For me switch with
   fields for the linkable handles (kept in localStorage). `assertReplayPeople`, `parsePeopleFlags` and `personMatch` are exported from
   `/capture`.
+- **Viewer slots for client plugins.** `registerViewerAction` takes `placement: 'bar'` (an icon button in the viewer header) and an
+  `icon`; `registerTimelineTrack({ id, label, markers(ctx) })` draws marks or ranges under the seek bar (hover shows the label, a click
+  seeks; at most `MAX_TRACK_MARKERS`, 500, per track); `registerContextSection` draws a block inside the Context tab; `registerSetting`
+  adds a boolean or choice setting to the More menu, stored per person in the browser and read with the new `ctx.settings`. Context
+  schemas can use `x-replays-widget: "signals"` (tri-state flags, with unknown distinct from disabled), `x-replays-group` and
+  `x-replays-order`. See [docs/extension-api.md](docs/extension-api.md).
+- **Source provider looks and attributes.** A source provider may declare an `icon` (a `data:image/svg+xml` or https URL, always drawn
+  as an image) and a `noun`, shown on the topbar chip, in the Context tab and on index rows; `resolve` may return `attrs`, kept on the
+  stored source and, capped, in the index summary (`SUMMARY_VERSION` 7: older sidecars are rebuilt). See
+  [docs/extending.md](docs/extending.md#source-link-providers).
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

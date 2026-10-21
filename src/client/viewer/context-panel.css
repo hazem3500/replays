@@ -70,6 +70,20 @@
 .ctx-chip { display: inline-flex; align-items: center; max-width: 100%; height: 22px; padding: 0 7px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--text-secondary); cursor: default; }
 .ctx-chip code { min-width: 0; overflow: hidden; font-family: var(--mono); font-size: var(--text-2xs); text-overflow: ellipsis; white-space: nowrap; }
 
+/* Tri-state signals (x-replays-widget: "signals"): enabled reads strongest; disabled is muted with a cross; unknown is a
+   dashed outline with a question mark, so a flag nobody reported never looks switched off. */
+.ctx-signal { gap: 4px; padding-left: 5px; }
+.ctx-signal svg { flex: 0 0 auto; width: 12px; height: 12px; }
+.ctx-signal[data-state="enabled"] { color: var(--text); }
+.ctx-signal[data-state="enabled"] svg { color: var(--success); }
+.ctx-signal[data-state="disabled"] { color: var(--text-tertiary); }
+.ctx-signal[data-state="unknown"] { border-style: dashed; border-color: var(--line-strong); background: transparent; }
+.ctx-signal[data-state="unknown"] svg { color: var(--warning); }
+
+/* Blocks from client plugins (registerContextSection): full width, under the built-in groups. */
+.ctx-plugin-section { min-width: 0; color: var(--text); font-size: 13px; }
+.ctx-plugin-sections { padding-top: 0; }
+
 /* Fields from the deployment's schema: labels without icons, help text as a dotted underline, Yes / No, links. */
 .ctx-fields { grid-column: 1 / -1; }
 .ctx-label { overflow: hidden; text-overflow: ellipsis; }

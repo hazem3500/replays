@@ -24,6 +24,12 @@ export interface FieldSchema {
   enum?: unknown[];
   properties?: Record<string, FieldSchema>;
   items?: FieldSchema;
+  /** Viewer hint: `signals` draws an array of `{ key, state, label? }` as tri-state chips (context-fields.ts). */
+  'x-replays-widget'?: string;
+  /** Viewer hint on a top-level property: the Context tab group it belongs to (its heading). */
+  'x-replays-group'?: string;
+  /** Viewer hint: rows sort by it, lower first (default 0), then in schema order. */
+  'x-replays-order'?: number;
 }
 
 /** `GET /api/config`. */

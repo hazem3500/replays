@@ -1,4 +1,4 @@
-import { assertReplayContext, type ReplayContext } from './context.ts';
+import { assertReplayContext, type ReplayContext, type SourceAttrs, sourceAttrs } from './context.ts';
 import { isPurposeId } from './purposes.ts';
 import { assertReplayPeople, minimalPeople, type ReplayPerson, type ReplayPersonSummary } from './people.ts';
 import type { KeepRecord } from './retention.ts';
@@ -212,12 +212,16 @@ export interface ReplaySourceLink {
   /** The producer's own label, else the provider's default (`acme/api#12`); empty when there is none. */
   label: string;
   url: string;
+  /** The source's attributes from its provider, capped for the list (SUMMARY_SOURCE_ATTRS short values). */
+  attrs?: SourceAttrs;
 }
 
 /** Bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily. */
 export const SUMMARY_VERSION = 7;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
+const SUMMARY_SOURCE_ATTRS = 4;
+const SUMMARY_ATTR_TEXT = 80;
 
 /** One value a plugin's `summaryFields` derives into the summary (src/server/summary-fields.ts). */
 export type SummaryFieldValue = string | number | boolean | null;
@@ -325,11 +329,10 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
   const { meta } = bundle;
   const consoleErrors = bundle.console.filter((entry) => entry.level === 'error').length;
   const failedRequests = bundle.network.filter(isFailedRequest).length;
-  const sources = (bundle.context?.sources ?? []).slice(0, MAX_SOURCE_LINKS).map((source) => ({
-    provider: source.provider,
-    label: source.label ?? source.ref ?? '',
-    url: source.url,
-  }));
+  const sources = (bundle.context?.sources ?? []).slice(0, MAX_SOURCE_LINKS).map((source) => {
+    const attrs = sourceAttrs(source.attrs, SUMMARY_SOURCE_ATTRS, SUMMARY_ATTR_TEXT);
+    return { provider: source.provider, label: source.label ?? source.ref ?? '', url: source.url, ...(attrs ? { attrs } : {}) };
+  });
   return {
     id: meta.id,
     title: meta.title,

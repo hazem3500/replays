@@ -5,7 +5,7 @@ import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { assertPurposeConfig } from '../shared/purposes.ts';
 import { compileHandlePattern, HANDLE_ID, isPersonRole } from '../shared/people.ts';
-import type { SourceProvider } from '../shared/source-providers.ts';
+import { assertProviderLook, type SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
 import { PACKAGE_VERSION, satisfies } from './version.ts';
@@ -252,6 +252,11 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         if (!provider || typeof provider.id !== 'string' || !/^[a-z0-9][a-z0-9_-]*$/.test(provider.id))
           fail('sourceProvider needs an id like "jira"');
         needFunction(provider.resolve, 'sourceProvider.resolve');
+        try {
+          assertProviderLook(provider);
+        } catch (error) {
+          fail((error as Error).message);
+        }
         if (['github', 'gitlab', 'url'].includes(provider.id))
           fail(`source provider ${JSON.stringify(provider.id)} is built in`, 'conflict');
         const taken = sourceProviders.find((entry) => entry.value.id === provider.id);

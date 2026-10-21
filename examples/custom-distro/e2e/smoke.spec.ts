@@ -126,7 +126,31 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     expect(response.status(), await response.text()).toBe(201);
     const stored = await (await request.get(`${origin}${BASE}/api/replays/${id}`)).json();
     expect(stored.context.fields).toEqual({ environment: 'staging', uploadedBy: 'ada@acme.test' });
-    expect(stored.context.sources[0]).toMatchObject({ provider: 'acme-chat', url: 'https://chat.example.com/archives/C123/p456' });
+    expect(stored.context.sources[0]).toMatchObject({
+      provider: 'acme-chat',
+      url: 'https://chat.example.com/archives/C123/p456',
+      attrs: { channel: 'C123' },
+    });
+    // The attribute is in the index summary too.
+    const list = await (await request.get(`${origin}${BASE}/api/replays`)).json();
+    const summary = (list.replays ?? list).find((entry: { id: string }) => entry.id === id);
+    expect(summary.sources[0]).toMatchObject({ provider: 'acme-chat', attrs: { channel: 'C123' } });
+  });
+
+  test('the chat provider’s icon is drawn as an image on the topbar chip, in the Context tab and on the index row', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    const chip = page.getByTestId('source-chip');
+    await expect(chip).toHaveAttribute('aria-label', /Acme Chat thread/);
+    await expect(chip.locator('img[data-provider-icon="acme-chat"]')).toHaveAttribute('src', /^data:image\/svg\+xml/);
+    await page.getByTestId('context-tab').click();
+    const row = page.locator('.ctx-source').first();
+    await expect(row.locator('img[data-provider-icon="acme-chat"]')).toBeVisible();
+    await expect(row).toContainText('Acme Chat thread · C123');
+    // Never inlined: no plugin SVG markup in the page.
+    expect(await page.locator('svg path[fill="#ff6600"]').count()).toBe(0);
+
+    await page.goto(`${origin}${BASE}/`);
+    await expect(page.locator('.source-link img[data-provider-icon="acme-chat"]').first()).toBeVisible();
   });
 
   test('the beforeUpload hook refuses, the request hook answers, the response and upload hooks ran', async ({ request }) => {
@@ -180,6 +204,68 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     await expect(panel).toBeVisible();
     await expect(panel).toContainText('Notes for Distro check');
     await expect(page.getByTestId('acme-clock')).toBeAttached();
+  });
+
+  test('a bar action is a header button, not a More item', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}?t=3`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    const button = page.locator('header').getByTestId('plugin-action:acme-distro:jump-start');
+    await expect(button).toBeVisible();
+    await expect(button).toHaveAccessibleName('Back to the start (Acme)');
+    await expect(button.locator('img')).toHaveAttribute('src', /^data:image\/svg\+xml/);
+    await button.click();
+    await expect(page.getByText('Back at 0:00')).toBeVisible();
+    await expect(page.getByRole('slider', { name: 'Seek' })).toHaveAttribute('aria-valuetext', /^0:00\.0 of /);
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await expect(page.getByRole('menu').getByTestId('plugin-action:acme-distro:jump-start')).toHaveCount(0);
+  });
+
+  test('the timeline track marks the console problems under the seek bar; a click seeks there', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    const markers = page.getByTestId('plugin-track:acme-distro:console-problems').getByTestId('plugin-track-marker');
+    // demo-shop logs one warning and one error at the same moment.
+    await expect(markers).toHaveCount(2);
+    await expect(markers.first()).toHaveAccessibleName(/^Console problems: .+, at 0:07\.\d$/);
+    // The two share a moment, so the later-drawn one is on top.
+    await markers.last().click();
+    await expect(page.getByRole('slider', { name: 'Seek' })).toHaveAttribute('aria-valuetext', /^0:07\.\d of /);
+  });
+
+  test('the Context section draws inside the Context tab and follows a boolean setting from the More menu', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    await page.getByTestId('context-tab').click();
+    const section = page.getByTestId('plugin:acme-distro:release-section');
+    await expect(section).toContainText('Acme release');
+    await expect(section.getByTestId('acme-release')).toHaveText(/^Released to staging, recorded /);
+
+    await page.getByRole('button', { name: 'More actions' }).click();
+    const compact = page.getByTestId('plugin-setting:acme-distro:compact');
+    await expect(compact).toHaveAttribute('aria-checked', 'false');
+    await compact.click();
+    await expect(compact).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
+    await expect(section.getByTestId('acme-release')).toHaveText('staging');
+    expect(await page.evaluate(() => localStorage.getItem('replays-plugin:acme-distro:setting:compact'))).toBe('true');
+
+    // Stored per person in this browser: still on after a reload.
+    await page.reload();
+    await page.getByTestId('context-tab').click();
+    await expect(page.getByTestId('plugin:acme-distro:release-section').getByTestId('acme-release')).toHaveText('staging');
+  });
+
+  test('a choice setting changes what the plugin panel draws', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}?t=2`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByTestId('plugin-panel-open:acme-distro:notes').click();
+    await expect(page.getByTestId('acme-clock')).toHaveText('2 s');
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByTestId('plugin-setting:acme-distro:units:ms').click();
+    await expect(page.getByTestId('plugin-setting:acme-distro:units:ms')).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('acme-clock')).toHaveText('2000 ms');
   });
 
   test('plugin files are served behind the auth', async ({ request }) => {

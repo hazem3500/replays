@@ -34,6 +34,18 @@ export interface ViewerPluginContext {
   seek(ms: number): void;
   /** A short toast. */
   notify(message: string): void;
+  /** This plugin's settings (registerSetting), as the person set them. */
+  readonly settings: ViewerPluginSettings;
+}
+
+/** A setting's value: a boolean for `type: 'boolean'`, one of the option values for `type: 'choice'`. */
+export type SettingValue = boolean | string;
+
+export interface ViewerPluginSettings {
+  /** The current value of one of this plugin's settings (its default until changed); undefined for an unknown id. */
+  get(id: string): SettingValue | undefined;
+  /** Calls `listener` when the person changes one of this plugin's settings; returns the unsubscribe function. */
+  onChange(listener: (id: string, value: SettingValue) => void): () => void;
 }
 
 export interface InspectorTabDefinition {
@@ -49,6 +61,13 @@ export interface ViewerActionDefinition {
   id: string;
   label: string;
   order?: number;
+  /**
+   * Where the action lives: `more` (default) is an item in the header's More menu; `bar` is an icon button in the header,
+   * beside the built-in actions, with the label as its tooltip. Phones keep bar actions in the More menu.
+   */
+  placement?: 'more' | 'bar';
+  /** The button's glyph: a `data:image/svg+xml` URL or an https URL, drawn as an image. Default: a puzzle piece. */
+  icon?: string;
   /** Return false to hide the action for this replay. */
   when?(context: ViewerPluginContext): boolean;
   run(context: ViewerPluginContext): void | Promise<void>;
@@ -141,6 +160,53 @@ export interface IndexSectionDefinition {
   update?(container: HTMLElement, context: IndexSectionContext): void;
 }
 
+/** Most markers one track draws; the rest are dropped (with a console warning). */
+export const MAX_TRACK_MARKERS = 500;
+
+export type TimelineTone = 'neutral' | 'info' | 'warn' | 'error' | 'accent';
+
+export interface TimelineMarker {
+  /** Where it starts, in ms from the start of the recording. */
+  atMs: number;
+  /** A range when set: drawn from `atMs` for this long. */
+  durationMs?: number;
+  /** Shown on hover and focus, and in the marker's accessible name. */
+  label: string;
+  /** Its colour. Default `neutral`. */
+  tone?: TimelineTone;
+}
+
+export interface TimelineTrackDefinition {
+  id: string;
+  /** Names the row (in each marker's accessible name and hover card). */
+  label: string;
+  /** Lower rows first, nearest the seek bar. Default 0. */
+  order?: number;
+  /** The track's markers for the open replay; called once per replay. A click on one seeks to its `atMs`. */
+  markers(context: ViewerPluginContext): readonly TimelineMarker[] | Promise<readonly TimelineMarker[]>;
+}
+
+export interface ContextSectionDefinition {
+  id: string;
+  /** The block's heading inside the Context tab. */
+  title: string;
+  /** Lower first; sections come after the built-in groups. Default 0. */
+  order?: number;
+  render(container: HTMLElement, context: ViewerPluginContext): Cleanup;
+}
+
+export type SettingDefinition =
+  | { id: string; label: string; order?: number; type: 'boolean'; default: boolean }
+  | {
+      id: string;
+      label: string;
+      order?: number;
+      type: 'choice';
+      /** At least two; `value` is what `settings.get` returns, `label` what the menu shows (defaults to the value). */
+      options: readonly { value: string; label?: string }[];
+      default: string;
+    };
+
 export interface ViewerPluginApi {
   /** The server plugin's name (the one that served this script). */
   readonly pluginName: string;
@@ -153,6 +219,12 @@ export interface ViewerPluginApi {
   registerIndexFilter(definition: IndexFilterDefinition): void;
   /** A block above the index's list. */
   registerIndexSection(definition: IndexSectionDefinition): void;
+  /** A row of markers or ranges under the seek bar. */
+  registerTimelineTrack(definition: TimelineTrackDefinition): void;
+  /** A block inside the built-in Context tab (not a tab of its own). */
+  registerContextSection(definition: ContextSectionDefinition): void;
+  /** A per-person preference in the More menu, stored in the browser; read it with `context.settings`. */
+  registerSetting(definition: SettingDefinition): void;
 }
 
 export type ViewerPlugin = ((api: ViewerPluginApi) => void | Promise<void>) & {

@@ -1,8 +1,12 @@
+import { isSafeIconUrl } from '../../shared/icon-url.ts';
 import type {
+  ContextSectionDefinition,
   IndexColumnDefinition,
   IndexFilterDefinition,
   IndexSectionDefinition,
   InspectorTabDefinition,
+  SettingDefinition,
+  TimelineTrackDefinition,
   ViewerActionDefinition,
   ViewerPanelDefinition,
   ViewerPluginApi,
@@ -40,19 +44,25 @@ export interface Snapshot {
   columns: readonly Registered<IndexColumnDefinition>[];
   filters: readonly Registered<IndexFilterDefinition>[];
   sections: readonly Registered<IndexSectionDefinition>[];
+  tracks: readonly Registered<TimelineTrackDefinition>[];
+  contextSections: readonly Registered<ContextSectionDefinition>[];
+  settings: readonly Registered<SettingDefinition>[];
 }
 
-const EMPTY: Snapshot = { tabs: [], actions: [], panels: [], columns: [], filters: [], sections: [] };
-const KINDS = Object.keys(EMPTY) as Array<keyof Snapshot>;
+const EMPTY: Snapshot = { tabs: [], actions: [], panels: [], columns: [], filters: [], sections: [], tracks: [], contextSections: [], settings: [] };
+const KINDS = Object.keys(EMPTY) as (keyof Snapshot)[];
 
-/** Per kind: the function a definition must have (none for filters, which only set a query parameter). */
-const CALLBACK: Record<keyof Snapshot, 'render' | 'run' | undefined> = {
+/** The function each kind must have (settings have none). */
+const NEEDS: Record<keyof Snapshot, string | undefined> = {
   tabs: 'render',
   actions: 'run',
   panels: 'render',
   columns: 'render',
   filters: undefined,
   sections: 'render',
+  tracks: 'markers',
+  contextSections: 'render',
+  settings: undefined,
 };
 
 /** A filter's own fields; a malformed one would break the filter menu for every plugin. */
@@ -76,6 +86,36 @@ function checkFilter(plugin: string, definition: IndexFilterDefinition, filters:
 const byOrder = <T extends { order?: number }>(a: Registered<T>, b: Registered<T>) =>
   (a.definition.order ?? 0) - (b.definition.order ?? 0) || a.seq - b.seq;
 
+/** Kind-specific checks beyond id, label, order and the function. */
+function check(kind: keyof Snapshot, plugin: string, definition: Record<string, unknown>) {
+  const fail = (problem: string) => {
+    throw new ViewerPluginError(`${plugin}: ${kind} "${String(definition.id)}": ${problem}`);
+  };
+  if (kind === 'actions') {
+    if (definition.placement !== undefined && definition.placement !== 'more' && definition.placement !== 'bar')
+      fail(`placement must be 'more' or 'bar'`);
+    if (definition.icon !== undefined && !isSafeIconUrl(definition.icon)) fail('icon must be a data:image/svg+xml URL or an https URL');
+  }
+  if (kind === 'settings') {
+    if (definition.type === 'boolean') {
+      if (typeof definition.default !== 'boolean') fail('a boolean setting needs a boolean default');
+    } else if (definition.type === 'choice') {
+      const options = definition.options;
+      if (
+        !Array.isArray(options) ||
+        options.length < 2 ||
+        !options.every(
+          (option) => typeof option?.value === 'string' && option.value && (option.label === undefined || typeof option.label === 'string'),
+        )
+      )
+        fail('a choice setting needs at least two options with string values');
+      const values = (options as { value: string }[]).map((option) => option.value);
+      if (new Set(values).size !== values.length) fail('option values must be unique');
+      if (!values.includes(definition.default as string)) fail('the default must be one of the option values');
+    } else fail(`type must be 'boolean' or 'choice'`);
+  }
+}
+
 /** What loaded client entries registered. A store: the UI subscribes and re-renders when plugins arrive. */
 export class ViewerRegistry {
   private snapshotValue: Snapshot = EMPTY;
@@ -97,17 +137,16 @@ export class ViewerRegistry {
     notify = true,
   ) {
     if (!OWNER.test(plugin)) throw new ViewerPluginError(`${JSON.stringify(plugin)} is not a plugin name`);
-    const d = definition as { id?: unknown; order?: unknown; render?: unknown; run?: unknown };
+    const d = definition as unknown as Record<string, unknown> | undefined;
     if (!d || typeof d.id !== 'string' || !ID.test(d.id))
       throw new ViewerPluginError(`${plugin}: ${kind} id must match ${ID} (got ${JSON.stringify(d?.id)})`);
     if (typeof label !== 'string' || !label.trim()) throw new ViewerPluginError(`${plugin}: ${kind} "${d.id}" needs a label`);
     if (d.order !== undefined && !Number.isFinite(d.order))
       throw new ViewerPluginError(`${plugin}: ${kind} "${d.id}": order must be a number`);
-    const callback = CALLBACK[kind];
-    if (callback && typeof d[callback] !== 'function')
-      throw new ViewerPluginError(`${plugin}: ${kind} "${d.id}" needs a ${callback} function`);
-    const update = (d as { update?: unknown }).update;
-    if (kind === 'sections' && update !== undefined && typeof update !== 'function')
+    const needs = NEEDS[kind];
+    if (needs && typeof d[needs] !== 'function') throw new ViewerPluginError(`${plugin}: ${kind} "${d.id}" needs a ${needs} function`);
+    check(kind, plugin, d);
+    if (kind === 'sections' && d.update !== undefined && typeof d.update !== 'function')
       throw new ViewerPluginError(`${plugin}: sections "${d.id}": update must be a function`);
     const key = `plugin:${plugin}:${d.id}`;
     if (this.snapshotValue[kind].some((entry) => entry.key === key))
@@ -129,6 +168,9 @@ export class ViewerRegistry {
       registerIndexColumn: (definition) => this.add('columns', plugin, definition, definition?.label, notify),
       registerIndexFilter: (definition) => this.add('filters', plugin, definition, definition?.label, notify),
       registerIndexSection: (definition) => this.add('sections', plugin, definition, definition?.title, notify),
+      registerTimelineTrack: (definition) => this.add('tracks', plugin, definition, definition?.label, notify),
+      registerContextSection: (definition) => this.add('contextSections', plugin, definition, definition?.title, notify),
+      registerSetting: (definition) => this.add('settings', plugin, definition, definition?.label, notify),
     };
   }
 
@@ -138,9 +180,10 @@ export class ViewerRegistry {
    */
   replacePlugin(plugin: string, register: (api: ViewerPluginApi) => void) {
     const before = this.snapshotValue;
-    this.snapshotValue = Object.fromEntries(
-      KINDS.map((kind) => [kind, (before[kind] as readonly Registered<unknown>[]).filter((entry) => entry.plugin !== plugin)]),
-    ) as unknown as Snapshot;
+    const without = <T>(list: readonly Registered<T>[]) => list.filter((entry) => entry.plugin !== plugin);
+    const next = { ...before };
+    for (const kind of KINDS) (next as Record<keyof Snapshot, unknown>)[kind] = without(before[kind] as readonly Registered<unknown>[]);
+    this.snapshotValue = next;
     try {
       register(this.apiFor(plugin, false));
     } catch (error) {
