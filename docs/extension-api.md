@@ -23,7 +23,7 @@ your-distro/
 | `@hazem3500/replays/config` | `defineConfig`, `loadConfig` | Node |
 | `@hazem3500/replays/plugin` | `definePlugin`, `rejectUpload`, `PluginError`, plugin types | Node |
 | `@hazem3500/replays/viewer` | `defineViewerPlugin`, viewer plugin types (no Node, no React) | browser |
-| `@hazem3500/replays/server` | `startServer`, `createApp`, storage (drivers, `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey`, `globToRegExp`), auth (adapters, `verifyJwt`), store | Node |
+| `@hazem3500/replays/server` | `startServer`, `createApp`, `buildStatic`, `renderIndexHtml`, storage (drivers, `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey`, `globToRegExp`), auth (adapters, `verifyJwt`), store | Node |
 | `@hazem3500/replays/server/testing` | `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`: the contract suites the built-in adapters pass | Node, any test runner |
 | `@hazem3500/replays/plugins/iap` | First-party plugin: Google Cloud Identity-Aware Proxy sign-in ([below](#first-party-plugins)) | Node |
 | `@hazem3500/replays/plugins/gcs` | First-party plugin: Google Cloud Storage over its JSON API ([below](#first-party-plugins)) | Node |
@@ -44,6 +44,8 @@ export default defineConfig({
   logoUrl: 'https://…/logo.svg', // LOGO_URL
   theme: { dark: { accent: '#ff6600' }, light: { accent: '#b84700' } },
   basePath: '/replays',          // BASE_PATH
+  hosts: { 'replays.example.com': { basePath: '/' } },   // a different base for this Host; others keep basePath
+  trustForwardedHost: false,     // TRUST_FORWARDED_HOST: pick the host from X-Forwarded-Host (a gateway that rewrites Host)
   retentionDays: 30,             // RETENTION_DAYS
   contextSchemaFile: './context.schema.json',
   githubHost: 'github.example.com', gitlabHost: 'gitlab.example.com',
@@ -251,6 +253,16 @@ export default defineViewerPlugin((api) => {
 import { startServer } from '@hazem3500/replays/server';
 const server = await startServer({ handleSignals: true });   // { origin, port, close(), runtime }
 ```
+
+`createApp` takes `hosts` (`{ 'replays.example.com': { basePath: '' } }`, or the checked form `loadSettings` returns as
+`settings.hosts`) and `trustForwardedHost`; `normalizeHosts(hosts, trust)` checks a record the same way at start. With any entry,
+responses say `Vary: Host` (docs/operations.md, "Several hosts, one process").
+
+The page itself: `renderIndexHtml(html, { base, branding, beta?, comments?, clientEntries? })` returns the built `index.html` with the
+deployment's settings stamped in (base, name, logo, theme tokens, `theme-color` from the `page` token, flags, plugin entries); the
+server runs it per request and `buildStatic({ out, base?, env?, cwd?, config?, plugins?, clientDir?, includeRender? })` (the
+`replays build-static` command) once, for a CDN. `withBase(html, base, pageBranding?)` is the lower-level stamp. `resolveSettings(options)`
+is `createRuntime` without choosing auth (so without its secrets): `{ settings, registry, config }`.
 
 `startServer` options: `env`, `cwd`, `config` (skip discovery), `plugins` (in addition to the config's), `port` (`0` = free port),
 `host`, `sampleDir`, `dev`, `handleSignals`, `log`. `SAMPLE_DIR` (or `sampleDir`) replaces the bundled demo replays, for

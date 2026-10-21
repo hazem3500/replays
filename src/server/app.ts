@@ -20,8 +20,9 @@ import type { SourceProviders } from '../shared/source-providers.ts';
 import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
 import type { AuthAdapter, Identity } from './auth/types.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
-import { appPath, publicPath, withBase } from './base-path.ts';
-import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
+import { appPath, type HostConfig, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath } from './base-path.ts';
+import { type BrandingConfig, publicConfig } from './branding.ts';
+import { renderIndexHtml } from './index-page.ts';
 import type { ContextSchema } from './context-schema.ts';
 import type { BetaFlags } from './beta.ts';
 import { type CommentsSettings } from './comments-config.ts';
@@ -34,7 +35,6 @@ import { handlePosterApi } from './posters.ts';
 import {
   applyContextAdapters,
   clientAsset,
-  publicClientEntries,
   runAfterUpload,
   runBeforeUpload,
   runPrepareUpload,
@@ -73,6 +73,13 @@ export interface AppOptions {
   render?: RenderService;
   /** Where the app lives publicly (base-path.ts): `''` at the root of its own domain, else e.g. `/replays`. */
   basePath?: string;
+  /**
+   * A different base per request host (base-path.ts): `{ 'replays.example.com': { basePath: '' } }`, or the checked
+   * form `loadSettings` returns. Hosts not listed get `basePath`. With any entry, every response says `Vary: Host`.
+   */
+  hosts?: Readonly<Record<string, HostConfig>> | HostRouting;
+  /** Pick the request host from `X-Forwarded-Host` instead of `Host` (a gateway that rewrites `Host`); with a raw `hosts`. */
+  trustForwardedHost?: boolean;
   /** Beta features, all off by default (`REPLAYS_BETA_EDITOR=true` / `beta.editor`): see src/server/config.ts. */
   beta?: BetaFlags;
   /** The agent bridge's relay (beta.malleable); the server closes it on shutdown so open streams do not hold it up. */
@@ -152,7 +159,9 @@ async function sendCompressed(
 ) {
   const buffer = Buffer.from(body);
   const etag = status === 200 ? bodyEtag(buffer) : undefined;
-  const common = { 'cache-control': REVALIDATE, vary: vary ? `Accept-Encoding, ${vary}` : 'Accept-Encoding', ...(etag ? { etag } : {}) };
+  // A `Vary` already on the response (`Host` with per-host bases, createApp) is kept.
+  const varies = ['Accept-Encoding', response.getHeader('vary'), vary].filter((value) => typeof value === 'string' && value).join(', ');
+  const common = { 'cache-control': REVALIDATE, vary: varies, ...(etag ? { etag } : {}) };
   if (etag && notModified(request, etag)) {
     response.writeHead(304, common);
     response.end();
@@ -366,8 +375,19 @@ function resolveContext(bundle: Pick<ReplayBundle, 'context'>, options: AppOptio
   }
 }
 
+/** `AppOptions.hosts` as routing: already checked (`loadSettings`), or a plain record checked here. */
+function hostRouting(options: AppOptions): HostRouting | undefined {
+  const hosts = options.hosts;
+  if (!hosts) return undefined;
+  if ('bases' in hosts && hosts.bases instanceof Map) return hosts as HostRouting;
+  return normalizeHosts(hosts, options.trustForwardedHost ?? false);
+}
+
 export function createApp(options: AppOptions) {
-  const base = options.basePath ?? '';
+  const defaultBase = options.basePath ?? '';
+  const routing = hostRouting(options);
+  // With per-host bases the same path is a different route from one host to the next, so every response varies by it.
+  const vary = hostVary(routing);
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
   const anonymous = options.auth.name === 'none';
@@ -380,18 +400,22 @@ export function createApp(options: AppOptions) {
   ];
   const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
   const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
-  const betaPage = [options.beta?.editor ? 'editor' : '', options.beta?.malleable ? 'malleable' : ''].filter(Boolean).join(' ');
-  const page = {
-    ...pageBranding(options.branding),
-    ...(registry.clientEntries.length ? { plugins: JSON.stringify(publicClientEntries(registry.clientEntries, base)) } : {}),
-  };
+  /** index.html as served at `base` (index-page.ts, shared with `replays build-static`). */
+  const indexPage = (html: string, base: string) =>
+    renderIndexHtml(html, {
+      base,
+      branding: options.branding,
+      ...(options.beta ? { beta: options.beta } : {}),
+      comments: commentsOn,
+      clientEntries: registry.clientEntries,
+    });
   /** The signed-in person per request, for the `onResponse` hooks. */
   const identities = new WeakMap<IncomingMessage, Identity>();
-  const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
   const json = 'application/json; charset=utf-8';
 
   /** Everything past the health checks, inside the request's span. */
-  async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string) {
+  async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string, base: string) {
+    const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
     try {
       // Loopback + per-process token only (render-routes.ts); never reachable through the public path.
       if (path.startsWith('/internal/render/')) {
@@ -633,8 +657,8 @@ export function createApp(options: AppOptions) {
       }
 
       if (options.devMiddleware) {
-        // The dev server's base is the configured public one (vite.config.ts).
-        request.url = `${publicPath(path, base)}${raw.search}`;
+        // The dev server's base is the configured public one (vite.config.ts), whichever host asked.
+        request.url = `${publicPath(path, defaultBase)}${raw.search}`;
         await new Promise<void>((done) => {
           let settled = false;
           const finish = () => {
@@ -662,13 +686,7 @@ export function createApp(options: AppOptions) {
           // With user plugins on, the page may only frame itself, blob: and data: URLs: a sandboxed plugin frame that
           // navigates itself somewhere else (to smuggle data out in a URL) is refused by the browser.
           if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
-          await sendCompressed(
-            request,
-            response,
-            200,
-            withBase(html, base, { ...page, beta: betaPage, comments: commentsOn }),
-            'text/html; charset=utf-8',
-          );
+          await sendCompressed(request, response, 200, indexPage(html, base), 'text/html; charset=utf-8');
           return;
         }
       }
@@ -681,6 +699,10 @@ export function createApp(options: AppOptions) {
   return async function handle(request: IncomingMessage, response: ServerResponse) {
     try {
       const raw = new URL(request.url ?? '/', 'http://app');
+      // The public base of this request: its host's entry in `hosts`, else `basePath`. The host only shapes routes and
+      // links; access is still decided by the auth adapter, the same on every host.
+      const base = hostBase(request.headers, routing, defaultBase);
+      if (vary) response.setHeader('vary', vary);
       const path = appPath(raw.pathname, base);
 
       // Health checks (load balancer, Docker, deploy curl): `/healthz` always, and `/` for anything that is not
@@ -691,7 +713,7 @@ export function createApp(options: AppOptions) {
       }
       // A prefixed deployment answers its bare address with the list, so `/replays` and `/replays/` both work.
       watchResponse(registry, request, response, path, () => identities.get(request));
-      await traceRequest(request, response, path, () => serve(request, response, raw, path));
+      await traceRequest(request, response, path, () => serve(request, response, raw, path, base));
     } catch (error) {
       fail(request, response, error);
     }

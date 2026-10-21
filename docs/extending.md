@@ -161,7 +161,9 @@ Tokens: `accent`, `accent-soft`, `accent-contrast`, `page`, `surface`, `surface-
 `surface-pressed`, `canvas`, `text`, `text-secondary`, `text-tertiary`, `line`, `line-strong`, `danger`,
 `danger-soft`, `warning`, `success`, `ring` (keyboard ring), `sans`, `mono`, `radius`. Values must be plain CSS values
 (no `url()`, braces, semicolons or comments). The server injects them as a `<style id="brand-tokens">` block; keep
-text/background pairs at WCAG AA (`test/contrast.test.ts` shows how the default palette is checked).
+text/background pairs at WCAG AA (`test/contrast.test.ts` shows how the default palette is checked). The browser chrome
+colour (`<meta name="theme-color">`) follows `page` per scheme; give `page` as a plain colour (hex, `rgb()`, `oklch()`), not
+`var()`. `replays build-static` stamps the same into a CDN-hosted `index.html` ([operations](operations.md#static-viewer-on-a-cdn)).
 
 ## Capture drivers
 

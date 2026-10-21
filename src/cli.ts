@@ -9,6 +9,8 @@ Commands:
   upload    POST an existing replay.json to a server
   mcp       MCP server (stdio) for the plugin workshop's agent bridge (beta: REPLAYS_BETA_MALLEABLE)
   serve     start the viewer and upload server (configuration: environment variables, see the README)
+  build-static  copy the built viewer to --out <dir> with the base, name, logo and theme stamped in (CDN hosting;
+            the API stays on a server): ${PRODUCT_SLUG} build-static --out <dir> [--base /] [--config path]
 
 Run \`${PRODUCT_SLUG} capture --help\` for the capture options.`;
 
@@ -26,6 +28,9 @@ switch (command) {
     break;
   case 'mcp':
     await (await import('./mcp/main.ts')).runMcpCli(rest);
+    break;
+  case 'build-static':
+    await (await import('./server/static.ts')).runBuildStaticCli(rest);
     break;
   case 'serve':
     process.argv = [process.argv[0]!, process.argv[1]!, ...rest];

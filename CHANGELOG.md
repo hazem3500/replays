@@ -29,6 +29,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
     at start (`PluginError` `version-range`).
   - `VIEWER_API_VERSION` (`1`, from `/viewer`): `defineViewerPlugin` stamps it, and the viewer refuses an entry of another generation
     with a console error.
+- **A base path per host, a static build, and theme-color from the branding.** `hosts: { 'replays.example.com': { basePath: '/' } }`
+  in the config serves one process at a different base per request `Host` (other hosts keep `basePath`), with `Vary: Host` on every
+  response and `trustForwardedHost` / `TRUST_FORWARDED_HOST` for a gateway that rewrites `Host`; host names are checked at start.
+  `replays build-static --out <dir> [--base /] [--config path]` copies the built viewer with base, name, logo, theme tokens, flags and
+  plugin entries stamped into `index.html`, the same function the server runs per request (`renderIndexHtml`), for hosting the viewer
+  on a CDN in front of the API (docs/operations.md). `<meta name="theme-color">` now follows the theme's `page` token per scheme.
+  New in `@hazem3500/replays/server`: `buildStatic`, `renderIndexHtml`, `withBase`, `normalizeHosts`, `resolveSettings`.
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

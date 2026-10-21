@@ -89,18 +89,20 @@ async function chooseStorage(env: NodeJS.ProcessEnv, file: FileConfig, registry:
   return storageFromEnv(requested ? { ...env, STORAGE: requested } : env, dataDir);
 }
 
-/**
- * Everything the server needs besides the data and the sockets: config file + environment + plugins, merged.
- * Precedence for a setting: environment, then the config file, then plugins, then the built-in default.
- */
-export async function createRuntime(options: {
+export interface RuntimeOptions {
   env?: NodeJS.ProcessEnv;
   cwd?: string;
   /** Skip discovery and use this config (tests, programmatic starts). */
   config?: LoadedConfig;
   /** Plugins in addition to the config's. */
   plugins?: readonly ReplaysPlugin[];
-}): Promise<Runtime> {
+}
+
+/**
+ * Config file + environment + plugins, merged into the settings, without choosing auth or storage (so it needs none of
+ * their secrets): what `replays build-static` stamps into index.html, and the first half of `createRuntime`.
+ */
+export async function resolveSettings(options: RuntimeOptions): Promise<Omit<Runtime, 'auth'>> {
   const env = options.env ?? process.env;
   const cwd = options.cwd ?? process.cwd();
   const config = options.config ?? (await loadConfig({ env, cwd }));
@@ -116,8 +118,18 @@ export async function createRuntime(options: {
   }
   const contextSchema = mergeContextSchemas(settings.contextSchema, registry);
   if (contextSchema) settings.contextSchema = contextSchema;
-  const auth = await chooseAuth(env, config.file, registry);
-  return { settings, registry, config, auth };
+  return { settings, registry, config };
+}
+
+/**
+ * Everything the server needs besides the data and the sockets: config file + environment + plugins, merged.
+ * Precedence for a setting: environment, then the config file, then plugins, then the built-in default.
+ */
+export async function createRuntime(options: RuntimeOptions): Promise<Runtime> {
+  const env = options.env ?? process.env;
+  const resolved = await resolveSettings(options);
+  const auth = await chooseAuth(env, resolved.config.file, resolved.registry);
+  return { ...resolved, auth };
 }
 
 export { chooseStorage };

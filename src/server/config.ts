@@ -5,8 +5,8 @@ import { SourceProviders, type TemplateProviderConfig } from '../shared/source-p
 import { retentionFromEnv, type RetentionPolicy } from '../shared/retention.ts';
 import { type BrandingConfig, validateBranding } from './branding.ts';
 import { type ContextSchema, loadContextSchema } from './context-schema.ts';
-import { normalizeBasePath } from './base-path.ts';
-import { type BetaFlags, betaFromEnv } from './beta.ts';
+import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } from './base-path.ts';
+import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
 
@@ -20,6 +20,8 @@ import type { PluginSpec } from '../plugin/types.ts';
  *     "logoUrl": "https://example.com/logo.svg",   LOGO_URL
  *     "theme": { "dark": { "accent": "#7aa2ff" }, "light": { "accent": "#2f55d4" } },
  *     "basePath": "/replays",                      BASE_PATH
+ *     "hosts": { "replays.example.com": { "basePath": "/" } },  per-host bases (src/server/base-path.ts), else basePath
+ *     "trustForwardedHost": false,                 TRUST_FORWARDED_HOST (pick the host from X-Forwarded-Host)
  *     "retentionDays": 30,                         RETENTION_DAYS (0 = never)
  *     "contextSchemaFile": "./context.schema.json" CONTEXT_SCHEMA_FILE
  *     "githubHost": "github.example.com",          GITHUB_HOST
@@ -39,6 +41,10 @@ export interface FileConfig {
   logoUrl?: string;
   theme?: BrandingConfig['theme'];
   basePath?: string;
+  /** A different base per request host (`Host`, or `X-Forwarded-Host` when trusted); other hosts get `basePath`. */
+  hosts?: Readonly<Record<string, HostConfig>>;
+  /** Read the request host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Only matters with `hosts`. */
+  trustForwardedHost?: boolean;
   retentionDays?: number;
   contextSchemaFile?: string;
   githubHost?: string;
@@ -54,6 +60,8 @@ export interface FileConfig {
 export interface AppSettings {
   branding: BrandingConfig;
   basePath: string;
+  /** Per-host bases (`hosts`, `trustForwardedHost`); no entries means one base for every host. */
+  hosts: HostRouting;
   retention: RetentionPolicy;
   sources: SourceProviders;
   contextSchema?: ContextSchema;
@@ -66,6 +74,8 @@ export const CONFIG_KEYS = new Set([
   'logoUrl',
   'theme',
   'basePath',
+  'hosts',
+  'trustForwardedHost',
   'retentionDays',
   'contextSchemaFile',
   'githubHost',
@@ -102,6 +112,9 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     ...(file.theme ? { theme: file.theme } : {}),
   } as Partial<BrandingConfig>);
   const basePath = normalizeBasePath(pick('BASE_PATH') ?? file.basePath);
+  if (file.trustForwardedHost !== undefined && typeof file.trustForwardedHost !== 'boolean')
+    throw new Error("the config file's trustForwardedHost must be true or false");
+  const hosts = normalizeHosts(file.hosts, parseFlag('TRUST_FORWARDED_HOST', env.TRUST_FORWARDED_HOST) ?? file.trustForwardedHost ?? false);
   const retention =
     pick('RETENTION_DAYS') !== undefined || file.retentionDays === undefined
       ? retentionFromEnv(env)
@@ -119,6 +132,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   return {
     branding,
     basePath,
+    hosts,
     retention,
     sources,
     beta: betaFromEnv(env, file.beta),

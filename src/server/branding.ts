@@ -76,8 +76,21 @@ export function tokensCss(branding: BrandingConfig) {
   return [block(':root', branding.theme?.dark), block(':root[data-theme="light"]', branding.theme?.light)].filter(Boolean).join('');
 }
 
+/** The browser chrome colour per scheme: the theme's `page` token where it sets one (index.html keeps the default otherwise). */
+export function themeColor(branding: BrandingConfig): { dark?: string; light?: string } | undefined {
+  const dark = branding.theme?.dark?.page;
+  const light = branding.theme?.light?.page;
+  return dark || light ? { ...(dark ? { dark } : {}), ...(light ? { light } : {}) } : undefined;
+}
+
 export function pageBranding(branding: BrandingConfig): PageBranding {
-  return { name: branding.name, tokensCss: tokensCss(branding), ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}) };
+  const color = themeColor(branding);
+  return {
+    name: branding.name,
+    tokensCss: tokensCss(branding),
+    ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
+    ...(color ? { themeColor: color } : {}),
+  };
 }
 
 /** What `GET /api/config` tells the client. */

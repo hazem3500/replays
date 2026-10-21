@@ -19,6 +19,47 @@ address is logged as a warning on purpose. Health check: `GET /healthz` → `200
 Under a prefix (`BASE_PATH=/replays`) the process serves `/replays/…`; a proxy that strips the prefix before
 forwarding works too.
 
+### Several hosts, one process
+
+`hosts` in the config file gives a host its own base; every other host keeps `basePath`:
+
+```json
+{ "basePath": "/tools/replays", "hosts": { "replays.example.com": { "basePath": "/" } } }
+```
+
+`https://replays.example.com/r/abc` and `https://intranet.example.com/tools/replays/r/abc` are then the same replay from
+one process. The base is picked from the request's `Host` (port and case ignored). Host names are checked at start (plain
+DNS names: no scheme, port, path or wildcard); a bad one stops the server with a message naming it. With any entry, every
+response carries `Vary: Host` (index.html, redirects, upload receipts and `/api/config` included), so a shared cache never
+serves one host's page to another. The host only shapes routes and links; access is decided by the auth adapter, the same
+on every host. In `--dev`, Vite serves the page at the default base only.
+
+Behind a gateway that rewrites `Host` to its own upstream name, set `TRUST_FORWARDED_HOST=true` (or
+`"trustForwardedHost": true`): the base then comes from the last `X-Forwarded-Host` value, the one the nearest proxy wrote,
+and `Vary` names both headers. Only turn it on when that proxy always sets the header itself; otherwise a client could pick
+its own base (which changes links, never access).
+
+### Static viewer on a CDN
+
+`replays build-static --out site [--base /replays] [--config replays.config.ts]` copies the built viewer (`dist/client`,
+from `pnpm build` or the installed package) to `site/` and stamps `index.html` exactly as the server would per request:
+base path, product name, logo, theme tokens and `theme-color`, beta flags, comments and the plugins' browser entries.
+`--base` defaults to the configured `basePath` (`BASE_PATH`); the environment applies as for `serve`. `render.html`, the
+server-side render's page, is left out (`--include-render` copies it). From code: `buildStatic({ out, base })` from
+`@hazem3500/replays/server`; `renderIndexHtml(html, options)` is the stamping alone.
+
+The viewer still talks to the API at the base on the **same origin**: route `<base>/api/*` (and `<base>/_plugins/*`
+when a plugin has browser entries) to the server, everything else to the bucket. On the bucket:
+
+| Path | Cache-Control | Why |
+| --- | --- | --- |
+| `<base>/index.html`, and any page path that falls back to it | `no-cache` | It names the current asset hashes and carries the branding; revalidate on every load |
+| `<base>/assets/*` | `public, max-age=31536000, immutable` | Content-hashed file names: a new build writes new names |
+
+Serve `index.html` for unknown paths under the base (the viewer routes `/r/<id>` and `/s/<suite>` itself), for example
+a "not found page" of `index.html` with status 200. Rebuild the static files when the branding, base or plugins change:
+nothing is read at request time. Server-only features keep working through the API (video export, posters, comments).
+
 ## Storage and scaling
 
 - `STORAGE=fs`: one instance per `DATA_DIR`. Back the directory up like any data volume.

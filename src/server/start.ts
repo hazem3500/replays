@@ -1,14 +1,14 @@
 import { createServer as createHttpServer, type Server } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer as createNetServer } from 'node:net';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import type { LoadedConfig } from '../config/index.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
 import { BridgeHub } from './bridge-hub.ts';
+import { findPackageRoot } from './package-root.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
 import { RenderQueue } from './render-queue.ts';
 import type { RenderService } from './render-routes.ts';
@@ -20,13 +20,6 @@ import { ReplayStore } from './store.ts';
 
 const days = (value: number) => (value > 0 ? `${value} d` : 'never');
 
-/** The package root: the repository when run from source, the installed package when run from `dist/lib` (or its chunks). */
-function findPackageRoot() {
-  for (let dir = import.meta.dirname; dir !== dirname(dir); dir = dirname(dir)) {
-    if (existsSync(resolve(dir, 'package.json')) && existsSync(resolve(dir, 'bin/replays.mjs'))) return dir;
-  }
-  return resolve(import.meta.dirname, '../..');
-}
 const packageRoot = findPackageRoot();
 
 export interface StartOptions {
@@ -196,6 +189,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   const bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined;
   const handle = createApp({
     basePath,
+    hosts: settings.hosts,
     auth,
     branding,
     sources: settings.sources,
@@ -230,6 +224,10 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     });
   });
   log(`${branding.name} listening on ${host}:${port} (base ${basePath || '/'}, auth ${auth.name}${tlsCert ? ', TLS' : ''})`);
+  if (settings.hosts.bases.size)
+    log(
+      `hosts: ${[...settings.hosts.bases].map(([name, base]) => `${name} at ${base || '/'}`).join(', ')}${settings.hosts.trustForwardedHost ? ' (X-Forwarded-Host trusted)' : ''}`,
+    );
 
   const close = async () => {
     clearInterval(pruneTimer);

@@ -147,7 +147,8 @@ Settings come from environment variables. Non-secret settings can also live in a
 | --- | --- | --- |
 | `PORT` | `8080` (`3000` with `--dev`) | Listen port |
 | `HOST` | `127.0.0.1` (`0.0.0.0` in the Docker image) | Listen address |
-| `BASE_PATH` | `/` | Serve under a prefix, e.g. `/replays`. The bare (prefix-stripped) shape is accepted too, for proxies that strip it |
+| `BASE_PATH` | `/` | Serve under a prefix, e.g. `/replays`. The bare (prefix-stripped) shape is accepted too, for proxies that strip it. `hosts` in the config file gives single hosts their own base ([operations](docs/operations.md#several-hosts-one-process)) |
+| `TRUST_FORWARDED_HOST` | `false` | With `hosts`: pick the host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Also `trustForwardedHost` |
 | `PUBLIC_ORIGIN` | – | `https://replays.example.com`; needed by `oidc` for the redirect URI |
 | `TLS_CERT_FILE`, `TLS_KEY_FILE` | – | Serve HTTPS directly (usually a proxy does this instead) |
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
@@ -165,7 +166,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
-The config file takes `name`, `logoUrl`, `theme`, `basePath`, `retentionDays`, `contextSchemaFile`, `githubHost`,
+The config file takes `name`, `logoUrl`, `theme`, `basePath`, `hosts`, `trustForwardedHost`, `retentionDays`, `contextSchemaFile`, `githubHost`,
 `gitlabHost`, `sourceProviders`, `beta`, `comments`, `auth`, `storage` and `plugins`:
 
 ```json
