@@ -15,6 +15,9 @@ export type {
   ContextFieldsSchema,
   ContextInfo,
   IndexFilterDefinition,
+  IdentityResolver,
+  PeopleOptions,
+  PersonHandle,
   PluginApi,
   PluginSpec,
   PrepareUploadContext,
@@ -43,3 +46,4 @@ export type { ObjectStorage } from '../server/storage/types.ts';
 export type { SourceProvider } from '../shared/source-providers.ts';
 export { assertRedactionRules, type RedactionPattern, type RedactionRules, type RedactionTextRule } from '../shared/redaction.ts';
 export type { PosterMoment, PurposeConfig, PurposeInfo, PurposeOpenAt, PurposeViewerDefaults } from '../shared/purposes.ts';
+export type { ReplayPerson } from '../shared/people.ts';

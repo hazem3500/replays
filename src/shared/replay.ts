@@ -1,5 +1,6 @@
 import { assertReplayContext, type ReplayContext } from './context.ts';
 import { isPurposeId } from './purposes.ts';
+import { assertReplayPeople, minimalPeople, type ReplayPerson, type ReplayPersonSummary } from './people.ts';
 import type { KeepRecord } from './retention.ts';
 
 export type ConsoleLevel = 'debug' | 'info' | 'log' | 'warn' | 'error';
@@ -50,6 +51,7 @@ export interface ReplayPerformanceTrack {
 }
 
 export type { ReplayContext, ReplaySourceInput, ReplaySourceRef } from './context.ts';
+export type { PersonIdentity, ReplayPerson, ReplayPersonSummary } from './people.ts';
 
 /** Who made the recording: the capture CLI (an automated agent or script), or a person via an rrweb import. */
 export type ReplaySource = 'agent' | 'human';
@@ -70,6 +72,8 @@ export interface ReplayMeta {
   tags?: string[];
   /** Why it was recorded: one of the deployment's purposes (src/shared/purposes.ts), checked on upload. Absent: inferred, or none. */
   purpose?: string;
+  /** People related to the recording (at most 10; src/shared/people.ts). */
+  people?: ReplayPerson[];
 }
 
 export const MAX_TAGS = 10;
@@ -136,6 +140,7 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
   // Only the shape here; the server checks the id against the purposes it defines.
   if (replay.meta.purpose !== undefined && !isPurposeId(replay.meta.purpose))
     throw new Error('replay.meta.purpose must be a purpose id (lower-case letters, digits and "-")');
+  if (replay.meta.people !== undefined) assertReplayPeople(replay.meta.people);
   if (replay.context !== undefined) assertReplayContext(replay.context);
   if (replay.suiteRun !== undefined) {
     const suiteRun = replay.suiteRun;
@@ -251,6 +256,8 @@ export interface ReplaySummary {
   ext?: Record<string, Record<string, SummaryFieldValue>>;
   /** Which summary-field sets built `ext` (`plugin/name@version,…`); a sidecar built by another set is rebuilt. */
   extVersion?: string;
+  /** `meta.people`; in API responses with the deployment's avatar and profile links. */
+  people?: ReplayPersonSummary[];
   /** Pinned by someone with access (never expires); added by the server, never stored in meta.json. */
   kept?: KeepRecord;
   /** When retention removes it; null when it never expires. Added by the server per request. */
@@ -343,6 +350,7 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
     ...(sources.length ? { sources } : {}),
     ...(bundle.suiteRun ? { suiteRun: { suiteId: bundle.suiteRun.suiteId, runId: bundle.suiteRun.runId } } : {}),
     ...(meta.purpose ? { purpose: meta.purpose, purposeInferred: false } : {}),
+    ...(meta.people?.length ? { people: minimalPeople(meta.people) } : {}),
   };
 }
 

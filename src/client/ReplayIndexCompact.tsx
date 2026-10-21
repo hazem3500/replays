@@ -74,9 +74,10 @@ function handOff(event: MouseEvent<HTMLButtonElement>) {
 }
 
 /** Active filters as small removable chips under the search; nothing when none are set. */
-export function CompactFilterChips({ filters, kind, update, setParam, setKind }: FilterState) {
+export function CompactFilterChips({ filters, kind, update, setParam, setKind, forMe, setForMe }: FilterState) {
   const plugins = usePluginSnapshot().filters;
   const chips: Array<{ id: string; label: string; name: string; remove: () => void }> = [];
+  if (forMe && setForMe) chips.push({ id: 'for-me', label: 'For me', name: 'For me', remove: () => setForMe(false) });
   if (filters.host) chips.push({ id: 'host', label: filters.host, name: `Host ${filters.host}`, remove: () => update('host', undefined) });
   if (filters.tag) chips.push({ id: 'tag', label: filters.tag, name: `Tag ${filters.tag}`, remove: () => update('tag', undefined) });
   if (filters.source) {

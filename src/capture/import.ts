@@ -1,10 +1,11 @@
 // Imports a plain rrweb recording made by a person (rrweb record() snippet,
 // the rrweb browser extension, or another tool's export) as a replay.
 // Run with `replays import --rrweb <events.json> --title "..."`. Optional: --url, --id,
-// --tag <tag> (repeatable), --purpose <id>, --output, --upload-url, --header-file.
+// --tag <tag> and --person role:email[:handle=value] (both repeatable), --purpose <id>, --output, --upload-url, --header-file.
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
+import { parsePeopleFlags } from '../shared/people.ts';
 import { assertReplayTags } from '../shared/replay.ts';
 import { buildHumanBundle } from './human-bundle.ts';
 import { flagMap, prepareOutputDirectory, upload } from './bundle-io.ts';
@@ -19,12 +20,15 @@ export async function importRecording(args: {
   id?: string;
   tags?: string[];
   purpose?: string;
+  /** `role:email[:handle=value]` values of repeatable --person flags. */
+  person?: string[];
   output?: string;
   uploadUrl?: string;
   headerFile?: string;
 }) {
   // Validate flags before reading the recording.
   if (args.tags?.length) assertReplayTags(args.tags, '--tag');
+  const people = parsePeopleFlags(args.person ?? []);
   const source: unknown = JSON.parse(await readFile(resolve(args.rrweb), 'utf8'));
   const bundle = buildHumanBundle(source, {
     title: args.title,
@@ -32,6 +36,7 @@ export async function importRecording(args: {
     ...(args.id ? { id: args.id } : {}),
     ...(args.tags?.length ? { tags: args.tags } : {}),
     ...(args.purpose ? { purpose: args.purpose } : {}),
+    ...(people.length ? { people } : {}),
   });
   const output = resolve(args.output ?? join('.data', bundle.meta.id));
   await prepareOutputDirectory(output);
@@ -54,6 +59,7 @@ export async function runImportCli(argv: string[]) {
       ...(values.id ? { id: values.id } : {}),
       ...(lists.tag ? { tags: lists.tag } : {}),
       ...(values.purpose ? { purpose: values.purpose } : {}),
+      ...(lists.person ? { person: lists.person } : {}),
       ...(values.output ? { output: values.output } : {}),
       ...(values['upload-url'] ? { uploadUrl: values['upload-url'] } : {}),
       ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),

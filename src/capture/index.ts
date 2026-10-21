@@ -31,6 +31,14 @@ export type {
   ReplaySummary,
 } from '../shared/replay.ts';
 export { assertReplayBundle, summarizeReplay } from '../shared/replay.ts';
+export {
+  assertReplayPeople,
+  parsePeopleFlags,
+  personMatch,
+  type PersonIdentity,
+  type ReplayPerson,
+  type ReplayPersonSummary,
+} from '../shared/people.ts';
 export type { ReplayContext, ReplaySourceInput, ReplaySourceRef } from '../shared/context.ts';
 export { assertReplayContext } from '../shared/context.ts';
 export {

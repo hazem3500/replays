@@ -4,9 +4,10 @@ import type { AuthAdapter, AuthPluginFactory, Identity } from '../server/auth/ty
 import type { ThemeTokens } from '../server/branding.ts';
 import type { ObjectStorage } from '../server/storage/types.ts';
 import type { ReplayContext } from '../shared/context.ts';
+import type { ReplayPerson } from '../shared/people.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
 import type { PurposeConfig } from '../shared/purposes.ts';
-import type { ReplayBundle, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
+import type { ReplayBundle, ReplaySourceLink, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 
 /** The plugin API generation. A plugin declares the one it was written for; a mismatch is refused at start. */
@@ -229,6 +230,40 @@ export interface RequestHookOptions {
   phase?: 'pre-auth' | 'post-auth';
 }
 
+/** An account kind people can be linked by (`person.handles.<id>`), and that a signed-in person can link for "For me". */
+export interface PersonHandle {
+  /** `[a-z][a-z0-9-]{0,39}`: the key in `person.handles` and the `handle.<id>` query parameter. */
+  readonly id: string;
+  /** What the viewer calls it (`GitHub username`). */
+  readonly label: string;
+  /** A regular expression source a value must match as a whole, ignoring case (`^[a-z0-9-]{1,39}$`). */
+  readonly pattern: string;
+}
+
+/** The deployment's people: roles, checks, handles and links (`api.people`). */
+export interface PeopleOptions {
+  /** The known roles, in priority order for "For me" (the best-ranked matching role is the `reason`). Without it, roles are free text. */
+  readonly roles?: readonly string[];
+  /** Return a message to refuse a person (the upload or registration answers 400 naming them); nothing to accept. */
+  validate?(person: ReplayPerson): string | undefined | void;
+  /** The handles people may carry. Without it, any handle id is accepted (shape and size only). */
+  readonly handles?: readonly PersonHandle[];
+  /** An https avatar image for a person, resolved per response (anything else is dropped). */
+  avatarUrl?(person: ReplayPerson): string | undefined | null | false | void;
+  /** An https profile link for a person, resolved per response; `sources` are the row's source links. */
+  profileUrl?(person: ReplayPerson, context: { sources: readonly ReplaySourceLink[] }): string | undefined | null | false | void;
+}
+
+/** Enriches the signed-in identity after authentication (a display name and avatar from a directory). */
+export interface IdentityResolver {
+  /**
+   * Return the identity to use, or nothing to keep it. Only `name`, `avatarUrl` (https) and, when the auth adapter
+   * gave none, `email` are taken; an identity with another `id` is refused (logged, and the request keeps the original).
+   * Runs once per request.
+   */
+  resolve(identity: Identity, context: { request: IncomingMessage }): Identity | undefined | void | Promise<Identity | undefined | void>;
+}
+
 /** What `setup` registers against. Every method may be called any number of times, except where noted. */
 export interface PluginApi {
   readonly pluginName: string;
@@ -273,6 +308,10 @@ export interface PluginApi {
   summaryFields(definition: SummaryFieldsDefinition): void;
   /** A server-side filter of the replay list, selected by an `x-*` query parameter. */
   indexFilter(definition: IndexFilterDefinition): void;
+  /** Roles, validation, handles and avatar/profile links for `meta.people`. Once per deployment: a second call is a conflict. */
+  people(options: PeopleOptions): void;
+  /** Enrich the signed-in identity after auth. Resolvers run in plugin order, each on the previous one's result. */
+  identity(resolver: IdentityResolver): void;
 }
 
 export interface ReplaysPlugin {

@@ -15,9 +15,11 @@ import {
   assertReviewSuite,
   assertReviewSuiteRegistration,
   type ResolvedSuiteRegistration,
+  suitePersonMatch,
 } from '../shared/review-suite.ts';
 import { assertReplayContext, type ReplayContext } from '../shared/context.ts';
 import { isPurposeId } from '../shared/purposes.ts';
+import { parsePeopleFlags, personMatch } from '../shared/people.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
 import { defaultPolicy, type HostVersions, type MalleablePolicy } from '../shared/malleable-policy.ts';
 import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
@@ -36,6 +38,7 @@ import { coreVersion } from './package-info.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
+import { checkPeople, decorateSuite, decorateSummary, forMeQuery, identityResolver, peopleConfig } from './people.ts';
 import {
   applyContextAdapters,
   clientAsset,
@@ -371,10 +374,11 @@ export function isBrowserNavigation(request: IncomingMessage) {
  * A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. Its
  * `meta.purpose` must be one the deployment defines (src/server/purposes.ts); with none defined it must be absent.
  */
-async function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog) {
+async function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog, registry: PluginRegistry) {
   assertReplayBundle(bundle);
   const problem = purposes.problem(bundle.meta.purpose);
   if (problem) throw httpError(400, problem);
+  checkPeople(registry, bundle.meta.people, 'replay.meta.people');
   return bundle;
 }
 
@@ -445,6 +449,9 @@ export function createApp(options: AppOptions) {
     });
   /** The signed-in person per request, for the `onResponse` hooks. */
   const identities = new WeakMap<IncomingMessage, Identity>();
+  const resolveIdentity = identityResolver(registry);
+  const roles = registry.people?.value.roles;
+
   const json = 'application/json; charset=utf-8';
 
   /** Everything past the health checks, inside the request's span. */
@@ -463,8 +470,8 @@ export function createApp(options: AppOptions) {
       if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
         return;
 
-      const user: Identity | undefined = await options.auth.authenticate(request);
-      if (!user) {
+      const authenticated: Identity | undefined = await options.auth.authenticate(request);
+      if (!authenticated) {
         const login = options.auth.loginUrl?.(request, routeContext);
         if (login && request.method === 'GET' && isBrowserNavigation(request) && !path.startsWith('/api/')) {
           response.writeHead(302, { location: login, 'cache-control': 'no-store' });
@@ -474,6 +481,8 @@ export function createApp(options: AppOptions) {
         send(response, login ? 401 : 403, login ? 'sign in required' : 'forbidden');
         return;
       }
+      // Identity resolvers (api.identity) may add a name and avatar; never another id.
+      const user = await resolveIdentity(authenticated, request);
       identities.set(request, user);
       if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request)) {
         send(response, 403, 'cross-site request');
@@ -497,7 +506,9 @@ export function createApp(options: AppOptions) {
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another
         // sign-in), but not `no-store`, which would keep the index out of the back/forward cache.
-        send(response, 200, JSON.stringify(user), json, REVALIDATE);
+        // With api.people, also the roles and the handles a person can link for "For me".
+        const people = peopleConfig(registry);
+        send(response, 200, JSON.stringify({ ...user, ...(people ? { people } : {}) }), json, REVALIDATE);
         return;
       }
       if (path === '/api/config' && request.method === 'GET') {
@@ -518,27 +529,43 @@ export function createApp(options: AppOptions) {
         return;
       }
       if (path === '/api/replays' && request.method === 'GET') {
+        const me = forMeQuery(registry, raw.searchParams, user);
         // Core filters first (store.ts), then the plugins' (`api.indexFilter`, an `x-*` param each).
         const summaries = applyIndexFilters(
           registry.indexFilters,
           raw.searchParams,
           await options.store.list(replayFilters(raw.searchParams)),
         );
-        await sendCompressed(request, response, 200, JSON.stringify(summaries), json);
+        // `?for=me`: only the replays whose people include the signed-in person, each with the role it matched by.
+        const body = me
+          ? summaries.flatMap((summary) => {
+              const reason = personMatch(summary.people, me, roles);
+              return reason ? [{ ...decorateSummary(registry, summary), reason }] : [];
+            })
+          : summaries.map((summary) => decorateSummary(registry, summary));
+        await sendCompressed(request, response, 200, JSON.stringify(body), json);
         return;
       }
       if (path === '/api/suites' && request.method === 'GET') {
-        await sendCompressed(
-          request,
-          response,
-          200,
-          JSON.stringify(
-            raw.searchParams.get('expand') === 'runs'
-              ? await options.store.listSuiteIndex(Number(raw.searchParams.get('limit') ?? 100))
-              : await options.store.listSuiteSummaries(Number(raw.searchParams.get('limit') ?? 20)),
-          ),
-          json,
-        );
+        const me = forMeQuery(registry, raw.searchParams, user);
+        const expand = raw.searchParams.get('expand') === 'runs';
+        let body: unknown[];
+        if (me) {
+          // A suite is for me through its own people or any run's replay people.
+          const entries = await options.store.listSuiteIndex(Number(raw.searchParams.get('limit') ?? (expand ? 100 : 20)));
+          body = entries.flatMap((entry) => {
+            const reason = suitePersonMatch(entry, me, roles);
+            if (!reason) return [];
+            const { runDetails, ...summary } = decorateSuite(registry, entry);
+            return [{ ...summary, ...(expand ? { runDetails } : {}), reason }];
+          });
+        } else {
+          const entries = expand
+            ? await options.store.listSuiteIndex(Number(raw.searchParams.get('limit') ?? 100))
+            : await options.store.listSuiteSummaries(Number(raw.searchParams.get('limit') ?? 20));
+          body = entries.map((entry) => decorateSuite(registry, entry));
+        }
+        await sendCompressed(request, response, 200, JSON.stringify(body), json);
         return;
       }
       const suitePath = /^\/api\/suites\/([a-z0-9][a-z0-9-]{0,79})(?:\/runs\/([a-zA-Z0-9][a-zA-Z0-9-]{0,79}))?$/.exec(path);
@@ -547,7 +574,7 @@ export function createApp(options: AppOptions) {
         // `?expand=runs` adds the index's runDetails (replay summaries per run); the plain shape is unchanged.
         const body =
           suite && raw.searchParams.get('expand') === 'runs'
-            ? { ...suite, runDetails: (await options.store.suiteIndexEntry(suite)).runDetails }
+            ? { ...suite, runDetails: decorateSuite(registry, await options.store.suiteIndexEntry(suite)).runDetails }
             : suite;
         // Suites change while runs register: revalidated (ETag), never assumed fresh.
         await sendCompressed(request, response, suite ? 200 : 404, JSON.stringify(body ?? { error: 'suite not found' }), json);
@@ -581,13 +608,15 @@ export function createApp(options: AppOptions) {
           if (registration.context) resolveContext({ context: registration.context }, options);
           // The resolved registration is what is stored, so check the whole thing again (a link, not a reference).
           assertReviewSuite({ ...registration, runs: [] });
+          checkPeople(registry, registration.people, 'suite.people');
           const suite = await options.store.registerSuite(suitePath[1]!, registration);
           send(response, 200, JSON.stringify(suite), json);
         }
         return;
       }
       if (path === '/api/replays/import' && request.method === 'POST') {
-        // Plain rrweb JSON in the body; `title`, `url`, `id` and `tag` (repeatable) as query parameters.
+        // Plain rrweb JSON in the body; `title`, `url`, `id`, `tag` and `person` (`role:email[:handle=value]`, both
+        // repeatable) as query parameters.
         const input = await readJsonUpload(request, MAX_REPLAY_BYTES);
         const title = raw.searchParams.get('title')?.trim().slice(0, 200) || 'Imported recording';
         const url = raw.searchParams.get('url')?.trim() || undefined;
@@ -597,6 +626,7 @@ export function createApp(options: AppOptions) {
         const purpose = raw.searchParams.get('purpose')?.trim() || undefined;
         const purposeProblem = options.store.purposes.problem(purpose);
         if (purposeProblem) throw httpError(400, purposeProblem.replace('replay.meta.purpose', 'purpose'));
+        const people = parsePeopleFlags(raw.searchParams.getAll('person'), 'person');
         // The same privacy pass as POST /replays, so query-parameter text (the title) is redacted too.
         const bundle = sanitize(
           buildHumanBundle(input, {
@@ -605,10 +635,11 @@ export function createApp(options: AppOptions) {
             ...(id ? { id } : {}),
             ...(tags.length ? { tags } : {}),
             ...(purpose ? { purpose } : {}),
+            ...(people.length ? { people } : {}),
           }),
         );
         setRequestAttributes(request, uploadAttributes(bundle));
-        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request), options.store.purposes);
+        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request), options.store.purposes, registry);
         await saveWithFreshId(options.store, accepted, Boolean(id));
         setRequestAttributes(request, { 'replay.id': accepted.meta.id });
         void options.store.pruneSoon();
@@ -633,7 +664,7 @@ export function createApp(options: AppOptions) {
         assertReplayBundle(replay);
         resolveContext(replay, options);
         // Stored data never depends on the uploader having sanitized it.
-        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request), options.store.purposes);
+        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request), options.store.purposes, registry);
         setRequestAttributes(request, uploadAttributes(bundle));
         if (bundle.suiteRun) {
           await options.store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);

@@ -421,12 +421,19 @@ export class ReplayStore {
         return { next: suite, result: suite };
       }
       const existing = current.suite;
-      // Registering again is idempotent: the same registration changes nothing, a different one conflicts.
-      const { runs: _runs, ...currentIdentity } = existing;
-      if (JSON.stringify(currentIdentity) !== JSON.stringify({ ...input, id })) {
+      // Registering again is idempotent: the same registration changes nothing, a different one conflicts. `people`
+      // is not identity: a re-registration may add or replace them (absent keeps what is stored).
+      const { runs: _runs, people: currentPeople, ...currentIdentity } = existing;
+      const { people: requestedPeople, ...requestedIdentity } = input;
+      if (JSON.stringify(currentIdentity) !== JSON.stringify({ ...requestedIdentity, id })) {
         throw httpError(409, `suite ${id} conflicts with its existing registration`);
       }
-      return { next: undefined, result: existing };
+      if (requestedPeople === undefined || JSON.stringify(requestedPeople) === JSON.stringify(currentPeople))
+        return { next: undefined, result: existing };
+      const { runs, ...rest } = existing;
+      // Key order as on first registration (people before runs), so the stored file reads the same either way.
+      const updated: ReviewSuite = { ...rest, people: requestedPeople, runs };
+      return { next: updated, result: updated };
     });
   }
 

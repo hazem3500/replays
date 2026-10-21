@@ -128,6 +128,8 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.render({ posterAt?, beforeRender?, afterRender? })` | [Render pipeline hooks](#render-pipeline-hooks): the poster's moment, a veto or option change before each render, a call after each stored file | – (hooks run in plugin order) |
 | `api.summaryFields({ name, version?, fields(bundle) })` | Small values for the index, derived into `summary.ext[<plugin>]` whenever a summary is built ([below](#the-index-summary-fields-columns-filters-sections)) | the same `name` twice in one plugin |
 | `api.indexFilter({ id, param, match(summary, value) })` | A server-side filter of `GET /api/replays` selected by `?<param>=<value>`; `param` is `x-<name>` ([below](#the-index-summary-fields-columns-filters-sections)) | the same `id` twice in one plugin; a `param` taken by any plugin |
+| `api.people({ roles?, validate?, handles?, avatarUrl?, profileUrl? })` | The deployment's [people](#people-and-identity): role priority, checks on `meta.people` and suite `people`, linkable handles, avatar and profile links | a second registration (one per deployment) |
+| `api.identity({ resolve(identity, { request }) })` | Enriches the signed-in identity after auth (a display name and avatar from a directory); see [People and identity](#people-and-identity) | – |
 
 Upload order: `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →
 `beforeUpload` → store → `afterUpload`. The core checks cannot be skipped by a hook: an adapter or hook that produces an
@@ -135,6 +137,57 @@ invalid bundle gets a `400`.
 
 `GET /api/config` lists the plugins that are loaded (`plugins: ["acme-distro"]`), the auth adapter in use, and the plugin index
 filters when there are any (`indexFilters: [{ plugin, id, param }]`).
+
+### People and identity
+
+Producers say who a recording or suite is about with `meta.people` (and `people` on a suite registration):
+at most 10 `{ role, email?, name?, handles? }`, each with an email or a handle, at most 4096 bytes of JSON in all. The shape and size are
+always checked; without `api.people` a role is free text and any handle id is accepted. The capture and import CLIs take repeatable
+`--person role:email[:handle=value]…` (`reviewer:ada@example.com:github=ada`, or `reviewer::github=ada` without an email);
+`POST /api/replays/import` takes the same as repeatable `?person=`. Registering a suite again with only `people` changed replaces them
+(absent keeps them); anything else that differs is still a `409`.
+
+```ts
+api.people({
+  roles: ['pr-author', 'reviewer', 'requester', 'assignee', 'uploader', 'mentioned'], // priority order for "For me"
+  validate: (person) => (person.email?.endsWith('@example.com') ? undefined : 'staff only'),
+  handles: [{ id: 'github', label: 'GitHub username', pattern: '^[a-z0-9-]{1,39}$' }],
+  avatarUrl: (person) => person.handles?.github && `https://github.com/${person.handles.github}.png`,
+  profileUrl: (person, { sources }) => person.handles?.github && `https://github.com/${person.handles.github}`,
+});
+```
+
+- **One registration per deployment**; a second one stops the server (`conflict`).
+- **`roles`** is the priority order. With it, an unknown role is refused; it also decides the `reason` of a "For me" match.
+- **`handles`**: the account kinds people may carry and a signed-in person may link. A `pattern` is a regular expression source
+  matched against the whole value, ignoring case. With `handles`, an unknown handle id or a value that does not match is refused.
+- **`validate(person)`** returns a message to refuse a person. Uploads, imports and suite registrations answer `400` naming them:
+  `replay.meta.people[0] (reviewer eve@elsewhere.test): staff only`. A `validate` that throws is a `500`.
+- **`avatarUrl(person)` and `profileUrl(person, { sources })`** run on the way out, per response, and only `https:` URLs are sent (anything
+  else is dropped, as is the link of a callback that throws). `sources` are the row's source links. Nothing they return is stored.
+
+The API (`summary.people` and suite `people` carry `avatarUrl` and `profileUrl` when resolved):
+
+| Request | |
+| --- | --- |
+| `GET /api/replays?for=me` | Only replays whose people match the signed-in person, each with `reason`: the best-ranked matching role |
+| `GET /api/suites?for=me` (and `&expand=runs`) | Suites matching through their own people or any run's replay people, with `reason` |
+| `…&handle.<id>=value` | Handles the person linked (the viewer keeps them in localStorage); each must match its pattern, else `400` |
+| `GET /api/me` | The (resolved) identity, plus `people: { roles?, handles: [{ id, label, pattern }] }` with `api.people` |
+
+A person matches by email (the identity's) or by a linked handle, both ignoring case. The viewer shows an avatar stack on index rows
+that have people (a card with name, role, email to copy and profile link) and a **For me** switch in the filter menu with a field per
+linkable handle; neither appears when no row has people and the deployment registered none.
+
+`api.identity({ resolve(identity, { request }) })` runs once per request, right after the auth adapter, before the request hooks;
+resolvers run in plugin order, each on the previous result, and may be async. From what `resolve` returns, only `name`, an `https:`
+`avatarUrl`, and `email` when the adapter gave none are taken. A result with a different `id` is refused (logged; the request goes on
+with the identity it had), as is a resolver that throws: `id` stays the auth adapter's.
+
+**Avatars and the page's CSP.** The viewer page sends no `img-src` restriction (only `frame-src` with the beta user plugins), so an
+avatar from any host loads. Instead the server sends only `https:` avatar URLs (identity resolvers and `api.people` alike), and the
+viewer renders them with `referrerPolicy="no-referrer"`, falling back to initials. A deployment that adds its own CSP should allow
+`img-src https:` for avatars.
 
 ### Choosing an auth adapter
 

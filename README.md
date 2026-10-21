@@ -63,7 +63,8 @@ intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/
 
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
-                   [--viewport 1440x900] [--video] [--tag t]… [--source github:owner/repo#12]…
+                   [--viewport 1440x900] [--video] [--tag t]… [--person role:email[:handle=value]]…
+                   [--source github:owner/repo#12]…
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload-url <server>/api/replays] [--header-file headers.json] [--headed]
 ```

@@ -25,7 +25,8 @@ import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, Scop
 import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
 import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
-import { FilterMenu, FilterSheet } from './index/FilterMenu.tsx';
+import { FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
+import { MeContext } from './index/People.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, rememberIndexSearch } from './route.ts';
 import { readStorage, writeStorage } from './storage.ts';
@@ -97,6 +98,44 @@ export function kindFromSearch(search: string): IndexKind | undefined {
   return kind === 'suites' || kind === 'sessions' ? kind : undefined;
 }
 
+/** "For me" (`for=me`): only rows whose people include the signed-in person; kept in the URL like `kind=`. */
+export function forMeFromSearch(search: string) {
+  return new URLSearchParams(search).get('for') === 'me';
+}
+
+/**
+ * The query the server filters For me by: `for=me` plus the handles linked in this browser (`handle.<id>=value`),
+ * appended to a request path that may already have a query. Unchanged when For me is off.
+ */
+export function withForMe(path: string, forMe: boolean, linked: Readonly<Record<string, string>> = {}) {
+  if (!forMe) return path;
+  const params = new URLSearchParams({ for: 'me' });
+  for (const [id, value] of Object.entries(linked).sort(([a], [b]) => a.localeCompare(b))) if (value) params.set(`handle.${id}`, value);
+  return `${path}${path.includes('?') ? '&' : '?'}${params}`;
+}
+
+const LINKED_KEY = `${PRODUCT_SLUG}-linked-handles`;
+
+/** The handles this browser linked for For me (`{ github: 'octocat' }`), from localStorage. */
+export function storedLinkedHandles(): Record<string, string> {
+  try {
+    const value = JSON.parse(readStorage(LINKED_KEY) ?? '{}') as unknown;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.fromEntries(
+      Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && Boolean(entry[1])),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/** `GET /api/me`: the signed-in identity, plus the deployment's people config when it has one. */
+interface Me {
+  id: string;
+  email?: string;
+  people?: { roles?: string[]; handles: LinkableHandle[] };
+}
+
 /** The index's suites request; index.html preloads the same URL (keep the two in step). */
 export const INDEX_SUITES_URL = 'suites?expand=runs&limit=100';
 
@@ -133,10 +172,13 @@ export function purposeCounts(entries: readonly IndexEntry[]): PurposeCounts {
   return counts;
 }
 
-export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT, purpose?: string) {
+export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT, purposeOrForMe?: string | boolean, forMe = false) {
+  const purpose = typeof purposeOrForMe === 'string' ? purposeOrForMe : undefined;
+  if (typeof purposeOrForMe === 'boolean') forMe = purposeOrForMe;
   const params = new URLSearchParams(searchFromFilters(filters));
   if (purpose) params.set('purpose', purpose);
   if (kind) params.set('kind', kind);
+  if (forMe) params.set('for', 'me');
   if (sort.key !== DEFAULT_SORT.key || sort.direction !== DEFAULT_SORT.direction)
     params.set('sort', `${sort.direction === 'descending' ? '-' : ''}${sort.key}`);
   const query = params.toString();
@@ -317,13 +359,13 @@ interface IndexCache {
   newest?: string;
 }
 
-/** On Back/Forward only: the cached list for these filters (a fresh visit always starts from the server). */
-function restoredIndex(filters: ReplayFilters): IndexCache | undefined {
+/** On Back/Forward only: the cached list for this request (a fresh visit always starts from the server). */
+function restoredIndex(search: string): IndexCache | undefined {
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
   if (navigation?.type !== 'back_forward') return undefined;
   try {
     const cache = JSON.parse(sessionStorage.getItem(INDEX_CACHE_KEY) ?? 'null') as IndexCache | null;
-    return cache && cache.search === searchFromFilters(filters) ? cache : undefined;
+    return cache && cache.search === search ? cache : undefined;
   } catch {
     return undefined;
   }
@@ -360,7 +402,12 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
 
 export function ReplayIndex() {
   const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
-  const [restored] = useState(() => restoredIndex(filters));
+  const [forMe, setForMe] = useState(() => forMeFromSearch(location.search));
+  const [linked, setLinked] = useState(storedLinkedHandles);
+  const [me, setMe] = useState<Me>();
+  /** The sessions request (and the Back cache's key): the filters, plus For me. */
+  const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
+  const [restored] = useState(() => restoredIndex(listSearch));
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
   const purposes = pagePurposes();
   const [purpose, setPurpose] = useState<string | undefined>(() => purposeFromSearch(location.search, purposes));
@@ -406,10 +453,24 @@ export function ReplayIndex() {
   }, [query]);
 
   useEffect(() => {
-    const search = indexSearch(filters, kind, sort, purpose);
+    const search = indexSearch(filters, kind, sort, purpose, forMe);
     history.replaceState(history.state, '', `${location.pathname}${search}`);
     rememberIndexSearch(search);
-  }, [filters, kind, sort, purpose]);
+  }, [filters, kind, sort, purpose, forMe]);
+
+  // Who "me" is, and which handles the deployment lets a person link (used only where people exist).
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(apiUrl('me'), { signal: controller.signal })
+      .then(async (response) => (response.ok ? ((await response.json()) as Me) : undefined))
+      .then((loaded) => {
+        if (loaded && typeof loaded === 'object') setMe(loaded);
+      })
+      .catch(() => {
+        // Without it the index still works: no "That's you", and For me still matches by email on the server.
+      });
+    return () => controller.abort();
+  }, []);
 
   // Back from a replay lands where you left: the scroll offset lives in this history entry.
   useEffect(() => {
@@ -440,7 +501,7 @@ export function ReplayIndex() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(apiUrl(`replays${searchFromFilters(filters)}`), { signal: controller.signal })
+    fetch(apiUrl(`replays${listSearch}`), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Replays failed to load (${response.status})`);
         return (await response.json()) as ReplaySummary[];
@@ -477,13 +538,15 @@ export function ReplayIndex() {
         if (!controller.signal.aborted) setSettledFilters(filters);
       });
     return () => controller.abort();
+    // `listSearch` follows `filters` and For me; changing For me or a linked handle also replaces `filters` (changeForMe).
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
     const controller = new AbortController();
     // Default cache mode so index.html's preload of this exact URL is reused; the server answers
     // `Cache-Control: no-store`, so the list is never stale.
-    fetch(apiUrl(INDEX_SUITES_URL), { signal: controller.signal })
+    fetch(apiUrl(withForMe(INDEX_SUITES_URL, forMe, linked)), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Review suites failed to load (${response.status})`);
         return (await response.json()) as ReviewSuiteIndexEntry[];
@@ -502,7 +565,7 @@ export function ReplayIndex() {
         setSuites([]);
       });
     return () => controller.abort();
-  }, []);
+  }, [forMe, linked]);
 
   const unsegmented = useMemo(
     () => (items && suites ? sortEntries(buildIndexEntries(items, suites, settledFilters ?? filters, kind), sort) : undefined),
@@ -534,12 +597,16 @@ export function ReplayIndex() {
   // Remember the list for Back (only once the server has answered for the current filters).
   useEffect(() => {
     if (!items || !suites || settledFilters !== filters || (restored && items === restored.items)) return;
-    const search = searchFromFilters(filters);
-    saveIndexCache({ search, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
-  }, [items, suites, settledFilters, filters, restored]);
-  const filtered = Boolean(
-    filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || hasPluginFilters(filters),
-  );
+    saveIndexCache({ search: listSearch, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
+  }, [items, suites, settledFilters, filters, restored, listSearch]);
+  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || forMe || hasPluginFilters(filters));
+  // People UI (For me, avatar stacks) only where people exist: the deployment registered them, or the list has some.
+  const peopleOn =
+    forMe ||
+    Boolean(me?.people) ||
+    Boolean(items?.some((summary) => summary.people?.length)) ||
+    Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
+  const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   const error = settledFilters === filters ? loadError : '';
   const replays = entries ? replayCount(entries) : 0;
@@ -565,14 +632,30 @@ export function ReplayIndex() {
     setQuery('');
     setKind(undefined);
     setPurpose(undefined);
+    setForMe(false);
     setFilters({});
   };
   /** The sheet's "Clear all": every filter except the search text. */
   const clearFilters = () =>
     feedTransition(() => {
       setKind(undefined);
+      setForMe(false);
       setFilters((current) => (current.q ? { q: current.q } : {}));
     });
+  // For me and the linked handles change the sessions request: a fresh `filters` object re-runs it (and its pending state).
+  const changeForMe = (next: boolean) =>
+    feedTransition(() => {
+      setForMe(next);
+      setFilters((current) => ({ ...current }));
+    });
+  const changeLinked = (id: string, value: string) => {
+    const next = { ...linked };
+    if (value) next[id] = value;
+    else delete next[id];
+    writeStorage(LINKED_KEY, JSON.stringify(next));
+    setLinked(next);
+    if (forMe) setFilters((current) => ({ ...current }));
+  };
   const chooseView = (next: FeedView) => {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
@@ -589,7 +672,17 @@ export function ReplayIndex() {
           : ''}
     </span>
   );
-  const filterState = { filters, kind, hosts, tags, update, setParam, setKind: changeKind, clearFilters };
+  const filterState = {
+    filters,
+    kind,
+    hosts,
+    tags,
+    update,
+    setParam,
+    setKind: changeKind,
+    clearFilters,
+    ...(peopleOn ? { forMe, setForMe: changeForMe, handles: me?.people?.handles ?? [], linked, setLinked: changeLinked } : {}),
+  };
 
   return (
     <main className="index-shell" ref={shell}>
@@ -643,7 +736,9 @@ export function ReplayIndex() {
             <EmptyIndex onUpload={() => upload.current?.open()} />
           )
         ) : entries ? (
-          <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
+          <MeContext value={meContext}>
+            <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
+          </MeContext>
         ) : (
           <FeedSkeleton view={view} />
         )}

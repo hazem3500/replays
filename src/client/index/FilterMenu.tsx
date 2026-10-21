@@ -1,6 +1,7 @@
 import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
 import { type KeyboardEvent, useMemo, useState } from 'react';
 
+import { compileHandlePattern } from '../../shared/people.ts';
 import type { ReplayFilters, ReplaySource } from '../../shared/replay.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
@@ -25,8 +26,8 @@ import type { IndexKind } from '../ReplayIndex.tsx';
 
 /*
  * The index's filters as one compact menu (Linear-style; CLAUDE.md principle 6): a 32 px row each, no section
- * hairlines. Has errors is a switch; Host, Tag, Source and Kind show their value and open a submenu with
- * checkmarks (Host and Tag are searchable past eight). Keyboard: arrows move between rows, Right/Enter opens a submenu,
+ * hairlines. For me (only where people exist) and Has errors are switches; Host, Tag, Source and Kind show their value
+ * and open a submenu with checkmarks (Host and Tag are searchable past eight). Keyboard: arrows move between rows, Right/Enter opens a submenu,
  * Left/Escape goes back. Phones get the same rows in a bottom sheet (44 px), the submenus as a second panel.
  * Every control writes the same URL state as before. Plugin filters (registerIndexFilter) follow the built-in rows: a
  * choice submenu, a switch or a text field, each setting its `x-*` query parameter, which the server matches.
@@ -43,6 +44,20 @@ export interface FilterState {
   setParam: (param: string, value: string | undefined) => void;
   setKind: (kind: IndexKind | undefined) => void;
   clearFilters: () => void;
+  /** "For me" (`for=me`); absent (no switch) when neither the deployment nor the list has people. */
+  forMe?: boolean;
+  setForMe?: (value: boolean) => void;
+  /** The handles a person can link for For me (`GET /api/me`), the values linked in this browser, and the setter. */
+  handles?: readonly LinkableHandle[];
+  linked?: Readonly<Record<string, string>>;
+  setLinked?: (id: string, value: string) => void;
+}
+
+/** A handle the deployment matches people by (`api.people({ handles })`). */
+export interface LinkableHandle {
+  id: string;
+  label: string;
+  pattern: string;
 }
 
 export const SOURCE_OPTIONS: Array<{ value: ReplaySource | undefined; label: string }> = [
@@ -58,9 +73,9 @@ export const KIND_OPTIONS: Array<{ value: IndexKind | undefined; label: string }
   { value: 'sessions', label: 'Sessions' },
 ];
 
-export function activeFilters({ filters, kind }: Pick<FilterState, 'filters' | 'kind'>) {
+export function activeFilters({ filters, kind, forMe }: Pick<FilterState, 'filters' | 'kind' | 'forMe'>) {
   return (
-    [filters.host, filters.tag, filters.source, kind, filters.errors].filter(Boolean).length + Object.keys(filters.params ?? {}).length
+    [filters.host, filters.tag, filters.source, kind, filters.errors, forMe].filter(Boolean).length + Object.keys(filters.params ?? {}).length
   );
 }
 
@@ -97,6 +112,68 @@ function pluginChoices(filters: readonly PluginFilter[], { filters: current, set
       onChange: (value?: string) => setParam(filter.definition.param, value),
       testId: pluginTestId(filter),
     }));
+}
+
+/** True when `value` is empty (unlinks) or matches the handle's pattern, as the server checks it. */
+export function handleAccepted(handle: LinkableHandle, value: string) {
+  if (!value) return true;
+  try {
+    return compileHandlePattern(handle.pattern).test(value);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The handles For me also matches by ("GitHub username"), one field each, saved in this browser on Enter or blur.
+ * A value that does not fit the handle's pattern is marked and not saved.
+ */
+function HandleFields({
+  handles,
+  linked,
+  onSave,
+}: {
+  handles: readonly LinkableHandle[];
+  linked: Readonly<Record<string, string>>;
+  onSave: (id: string, value: string) => void;
+}) {
+  const [invalid, setInvalid] = useState<Record<string, boolean>>({});
+  const save = (handle: LinkableHandle, raw: string) => {
+    const value = raw.trim();
+    const ok = handleAccepted(handle, value);
+    setInvalid((current) => ({ ...current, [handle.id]: !ok }));
+    if (ok && value !== (linked[handle.id] ?? '')) onSave(handle.id, value);
+  };
+  return (
+    <div className="filter-handles">
+      {handles.map((handle) => (
+        <label key={handle.id} className="filter-handle">
+          <span>Your {handle.label}</span>
+          <input
+            className="filter-handle-input"
+            data-testid={`for-me-handle-${handle.id}`}
+            defaultValue={linked[handle.id] ?? ''}
+            placeholder={handle.label}
+            autoComplete="off"
+            spellCheck={false}
+            aria-invalid={invalid[handle.id] || undefined}
+            onBlur={(event) => save(handle, event.currentTarget.value)}
+            // Typing belongs to the field, not to the menu's typeahead and arrow keys (Escape still closes).
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') return;
+              event.stopPropagation();
+              if (event.key === 'Enter') save(handle, event.currentTarget.value);
+            }}
+          />
+        </label>
+      ))}
+    </div>
+  );
+}
+
+/** The fields under For me while it is on (and the deployment has handles to link). */
+function forMeFields({ forMe, handles, linked, setLinked }: FilterState) {
+  return forMe && handles?.length && setLinked ? <HandleFields handles={handles} linked={linked ?? {}} onSave={setLinked} /> : null;
 }
 
 const SEARCH_HOSTS_PAST = 8;
@@ -279,6 +356,8 @@ export function FilterMenu(state: FilterState) {
             </DropdownMenuItem>
           ) : null}
         </div>
+        {state.setForMe ? <SwitchRow label="For me" checked={Boolean(state.forMe)} onChange={state.setForMe} /> : null}
+        {forMeFields(state)}
         {[...choiceRows(state), ...pluginChoices(plugins, state)].map((choice) => (
           <ChoiceSubmenu key={choice.key} choice={choice} />
         ))}
@@ -373,6 +452,8 @@ export function FilterSheet(state: FilterState) {
                 </button>
               ) : null}
             </div>
+            {state.setForMe ? <SheetSwitch label="For me" checked={Boolean(state.forMe)} onChange={state.setForMe} /> : null}
+            {forMeFields(state)}
             {choices.map((choice) => (
               <button
                 key={choice.key}

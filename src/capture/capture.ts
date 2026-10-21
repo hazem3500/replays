@@ -4,7 +4,8 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { assertReplayId, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
-import { assertReplayTags } from '../shared/replay.ts';
+import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
+import { parsePeopleFlags } from '../shared/people.ts';
 import { isPurposeId } from '../shared/purposes.ts';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
 import type { ReplaySourceInput } from '../shared/context.ts';
@@ -43,6 +44,8 @@ export interface CaptureArgs {
   tags: string[];
   /** `meta.purpose`: one of the server's purposes (it refuses others). */
   purpose?: string;
+  /** `meta.people`, from repeatable `--person role:email[:handle=value]` flags. */
+  people?: ReplayPerson[];
   suiteRun?: { suiteId: string; runId: string };
   /** JSON Schema file for `context.fields`; the deployment's own, so a bad context fails before the browser starts. */
   contextSchema?: unknown;
@@ -137,6 +140,7 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --video                  also write session.mp4 (playwright driver needs ffmpeg)
   --tag <tag>              label for filtering; repeatable
   --purpose <id>           why it was recorded: one of the server's purposes (GET /api/config lists them)
+  --person <spec>          someone related to it, role:email[:handle=value] (reviewer:ada@example.com); repeatable
   --source <p:ref>         link to the thing under test, e.g. github:owner/repo#12; repeatable
   --context-file <file>    JSON { app?, test?, sources?, fields? } from your test runner
   --context-schema <file>  JSON Schema that context.fields must satisfy (same file as the server's)
@@ -191,6 +195,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (tags.length) assertReplayTags(tags, '--tag');
   if (values.purpose !== undefined && !isPurposeId(values.purpose))
     throw new Error('--purpose must be a purpose id (lower-case letters, digits and "-")');
+  const people = parsePeopleFlags(lists.person ?? []);
   if (Boolean(values['suite-id']) !== Boolean(values['run-id'])) throw new Error('--suite-id and --run-id must be used together');
   if (values['run-id'] && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$/.test(values['run-id'])) {
     throw new Error('--run-id must contain letters, digits, and hyphens');
@@ -212,6 +217,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     sources,
     tags,
     ...(values.purpose ? { purpose: values.purpose } : {}),
+    ...(people.length ? { people } : {}),
     ...(values.title ? { title: values.title } : {}),
     ...(values['upload-url'] ? { uploadUrl: values['upload-url'] } : {}),
     ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
@@ -327,6 +333,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
         ...(args.video ? { videoFile: 'session.mp4' } : {}),
         ...(args.tags.length ? { tags: args.tags } : {}),
         ...(args.purpose ? { purpose: args.purpose } : {}),
+        ...(args.people?.length ? { people: args.people } : {}),
       },
       events: tracks.events,
       console: tracks.console,

@@ -532,3 +532,46 @@ html[data-feed-transition]::view-transition-new(.feed-item):only-child { animati
 /* The old front's still while it slides back into the pile (under the new front). */
 .poster-outgoing { z-index: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .poster-caption { animation-duration: 0s; animation-delay: 0s; } }
+
+/* ---------- People (index/People.tsx): an avatar stack on rows that have people, and its card ---------- */
+.person-avatar { --avatar-size: 18px; position: relative; width: var(--avatar-size); height: var(--avatar-size); display: inline-grid; flex: 0 0 var(--avatar-size); place-items: center; overflow: hidden; border-radius: 50%; background: oklch(0.86 0.035 var(--avatar-hue)); box-shadow: 0 0 0 2px var(--surface); color: oklch(0.32 0.04 var(--avatar-hue)); font-size: calc(var(--avatar-size) * 0.42); font-weight: 700; letter-spacing: 0.02em; line-height: 1; }
+:root:not([data-theme="light"]) .person-avatar { background: oklch(0.42 0.04 var(--avatar-hue)); color: oklch(0.93 0.02 var(--avatar-hue)); }
+.person-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.feed-people { position: relative; z-index: 1; display: inline-flex; flex: 0 0 auto; align-items: center; height: 24px; margin: 0; padding: 0 2px; border: 0; border-radius: 12px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.feed-people > * + * { margin-left: -4px; }
+.feed-meta .feed-people + .feed-facts::before { content: "·"; margin: 0 6px 0 -2px; color: var(--text-tertiary); }
+.feed-people:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+@media (pointer: coarse) { .feed-people::before { content: ""; position: absolute; inset: -8px -6px; } }
+.person-more { margin-left: 4px !important; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.feed-list[data-view="grid"] .person-avatar { box-shadow: 0 0 0 2px var(--surface-raised); }
+@media (hover: hover) and (pointer: fine) { .feed-item:hover .person-avatar { box-shadow: 0 0 0 2px var(--surface-hover); } }
+.person-card { font-size: 13px; }
+.person-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.person-details { display: flex; align-items: flex-start; gap: 10px; min-width: 200px; }
+.person-details .person-avatar { box-shadow: none; }
+.person-text { min-width: 0; display: grid; gap: 2px; }
+.person-name { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
+.person-details-compact .person-name { font-size: 13px; }
+.person-me { padding: 0 6px; border-radius: 8px; background: var(--accent-soft); color: color-mix(in srgb, var(--accent) 80%, var(--text)); font-size: 11px; font-weight: 600; line-height: 16px; }
+.person-role { color: var(--text-secondary); font-size: var(--text-xs); }
+.person-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 4px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.person-email { min-width: 0; display: inline-flex; align-items: center; gap: 2px; }
+.person-email-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person-copy { width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); cursor: pointer; }
+.person-copy svg { width: 12px; height: 12px; }
+.person-link { min-height: 24px; display: inline-flex; align-items: center; gap: 3px; color: var(--text-secondary); text-decoration: none; }
+.person-link svg { width: 11px; height: 11px; color: var(--text-tertiary); }
+.person-copy:focus-visible, .person-link:focus-visible { border-radius: 2px; box-shadow: 0 0 0 2px var(--ring); }
+@media (hover: hover) and (pointer: fine) {
+  .person-copy:hover { background: var(--surface-hover); color: var(--text); }
+  .person-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+}
+@media (pointer: coarse) { .person-copy, .person-link { min-width: 40px; min-height: 40px; margin-block: -8px; } .person-links { margin-top: 8px; } }
+/* "For me" in the filter menu: the handles a person links, under the switch while it is on. */
+.filter-handles { display: grid; gap: 6px; padding: 2px 8px 8px; }
+.filter-handle { display: grid; gap: 3px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.filter-handle-input { height: 28px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+.filter-handle-input:focus-visible { border-color: var(--ring); outline: none; }
+.filter-handle-input[aria-invalid="true"] { border-color: var(--danger); }
+.filter-sheet .filter-handles { padding: 2px 4px 8px; }
+.filter-sheet .filter-handle-input { height: 40px; font-size: 16px; }

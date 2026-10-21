@@ -88,6 +88,16 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   `registerIndexColumn`, `registerIndexFilter` (`switch`, `choice` or `text` in the filter menu and the phone sheet) and
   `registerIndexSection` (a block above the list, re-drawn or `update`d when the list changes, with `summaries` and `me`).
   The custom-distro example uses all five.
+- **People and identity resolvers** ([docs/extension-api.md](docs/extension-api.md#people-and-identity)). `meta.people` and suite
+  `people` (at most 10 `{ role, email?, name?, handles? }`, size-capped, documented in `docs/formats/replay.schema.json`), repeatable
+  `--person role:email[:handle=value]` on `replays capture` and `replays import`, `?person=` on `POST /api/replays/import`, and a
+  people-only suite re-registration that replaces them. `api.people({ roles, validate, handles, avatarUrl, profileUrl })` (one per
+  deployment) sets role priority, refuses people with a `400` naming them, and resolves https avatar and profile links in summaries.
+  `?for=me` on `GET /api/replays` and `GET /api/suites` matches the signed-in email and linked `handle.<id>=` values and returns the
+  best role as `reason`; `GET /api/me` adds the people config. `api.identity({ resolve })` enriches the signed-in identity after auth
+  (it cannot change `id`). The index shows an avatar stack with a person card on rows that have people, and a For me switch with
+  fields for the linkable handles (kept in localStorage). `assertReplayPeople`, `parsePeopleFlags` and `personMatch` are exported from
+  `/capture`.
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

@@ -6,6 +6,7 @@ import addFormats from 'ajv-formats';
 import { describe, expect, it } from 'vitest';
 
 import { EMPTY_COMMENTS } from '../src/shared/comments.ts';
+import { assertReplayPeople } from '../src/shared/people.ts';
 import { parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
 import { UserPluginStore } from '../src/server/malleable-store.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
@@ -55,6 +56,26 @@ describe('docs/formats', () => {
       expect(result.ok).toBe(true);
     }
     expect(check({ meta: {}, events: [], console: [], network: [], steps: [] }).ok).toBe(false);
+  });
+
+  it('meta.people: what the server accepts validates, what it refuses does not', async () => {
+    const check = await validator('replay');
+    const bundle = JSON.parse(await readFile(join(import.meta.dirname, '../sample/demo-shop.json'), 'utf8'));
+    const withPeople = (people: unknown) => ({ ...bundle, meta: { ...bundle.meta, people } });
+    const good = [
+      { role: 'reviewer', email: 'ada@example.com', name: 'Ada', handles: { github: 'ada' } },
+      { role: 'requester', handles: { chat: 'U123' } },
+    ];
+    assertReplayPeople(good);
+    expect(check(withPeople(good)).errors).toBe('No errors');
+    for (const bad of [
+      [{ role: 'reviewer' }],
+      [{ role: 'Reviewer', email: 'a@example.com' }],
+      [{ role: 'x', email: 'a@example.com', extra: 1 }],
+    ]) {
+      expect(() => assertReplayPeople(bad)).toThrow('replay.meta.people[0]');
+      expect(check(withPeople(bad)).ok).toBe(false);
+    }
   });
 
   it('comments the app writes validate', async () => {
