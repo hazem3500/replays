@@ -149,7 +149,7 @@ jobs:
           load: true
           tags: ghcr.io/hazem3500/replays:ci
           cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-to: type=gha,mode=max,ignore-error=true
       - name: Container answers the health check
         run: |
           docker run -d --name rk -p 8080:8080 ghcr.io/hazem3500/replays:ci
