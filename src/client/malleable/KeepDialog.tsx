@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react';
 
 import { diffLines } from '../../shared/line-diff.ts';
 import { CAPABILITIES, isWriteCapability } from '../../shared/malleable.ts';
+import { capabilityRule, policyProblems } from '../../shared/malleable-policy.ts';
 import { notify } from '../toast.ts';
 import { DiffView } from './DiffView.tsx';
-import { latestSaved, manager, useManager } from './manager.ts';
+import { useHost } from './host.ts';
+import { latestSaved, manager, sameManifest, useManager } from './manager.ts';
 import { Modal } from './Modal.tsx';
 import { setMalleableUi, useMalleableUi } from './ui-state.ts';
 
@@ -17,6 +19,7 @@ const ORIGIN_TEXT = { agent: 'Written by an agent', workshop: 'Written in the ed
 export function KeepDialog() {
   const { keepFor } = useMalleableUi();
   const { entries } = useManager();
+  const { policy } = useHost();
   const entry = entries.find((candidate) => candidate.id === keepFor);
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -29,7 +32,9 @@ export function KeepDialog() {
     setError(undefined);
     setMessage('');
   };
-  const manifestChanged = !saved || JSON.stringify(saved.manifest) !== JSON.stringify(entry.manifest);
+  const manifestChanged = !saved || !sameManifest(saved.manifest, entry.manifest);
+  // The host's policy decides before the person does: the server would refuse these anyway (403).
+  const problems = policyProblems(policy, entry.manifest, entry.scope);
   return (
     <Modal title={`Keep “${entry.manifest.name}”?`} wide testId="keep-dialog" onClose={close}>
       <p className="mall-lead">
@@ -43,7 +48,11 @@ export function KeepDialog() {
           {entry.manifest.permissions.map((permission) => (
             <li key={permission} data-write={isWriteCapability(permission)}>
               <code>{permission}</code> {CAPABILITIES[permission].label}
-              {isWriteCapability(permission) ? <em> — asks you each time it runs</em> : null}
+              {capabilityRule(policy, permission) === 'deny' ? (
+                <em> — not allowed on this server</em>
+              ) : isWriteCapability(permission) || capabilityRule(policy, permission) === 'ask' ? (
+                <em> — asks you each time it runs</em>
+              ) : null}
             </li>
           ))}
         </ul>
@@ -59,8 +68,10 @@ export function KeepDialog() {
             value={entry.scope}
             onChange={(event) => manager.setScope(entry.id, event.target.value as 'user' | 'workspace')}
           >
-            <option value="user">Only me</option>
-            <option value="workspace">Everyone in this workspace</option>
+            {policy.scopes.includes('user') || entry.scope === 'user' ? <option value="user">Only me</option> : null}
+            {policy.scopes.includes('workspace') || entry.scope === 'workspace' ? (
+              <option value="workspace">Everyone in this workspace</option>
+            ) : null}
           </select>
         </section>
       ) : null}
@@ -79,6 +90,11 @@ export function KeepDialog() {
           onChange={(event) => setMessage(event.target.value)}
         />
       </label>
+      {problems.length ? (
+        <p className="mall-error" role="alert" data-testid="keep-policy">
+          This server will not keep it: {problems.join('; ')}.
+        </p>
+      ) : null}
       {error ? (
         <p className="mall-error" role="alert" data-testid="keep-error">
           {error}
@@ -92,7 +108,7 @@ export function KeepDialog() {
           type="button"
           className="mall-btn mall-btn-primary"
           data-testid="keep-approve"
-          disabled={busy}
+          disabled={busy || problems.length > 0}
           onClick={() => {
             setBusy(true);
             setError(undefined);

@@ -18,6 +18,7 @@ import {
 } from '../shared/review-suite.ts';
 import { assertReplayContext, type ReplayContext } from '../shared/context.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
+import { defaultPolicy, type HostVersions, type MalleablePolicy } from '../shared/malleable-policy.ts';
 import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
 import type { AuthAdapter, Identity } from './auth/types.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
@@ -30,6 +31,7 @@ import { type CommentsSettings } from './comments-config.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
 import { malleablePlugin } from './malleable-plugin.ts';
+import { coreVersion } from './package-info.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
@@ -85,6 +87,10 @@ export interface AppOptions {
   beta?: BetaFlags;
   /** The agent bridge's relay (beta.malleable); the server closes it on shutdown so open streams do not hold it up. */
   bridgeHub?: BridgeHub;
+  /** The host's policy for user plugins (`malleable` in the config, src/shared/malleable-policy.ts); default: `defaultPolicy()`. */
+  malleable?: MalleablePolicy;
+  /** The core package version and the configured `distribution`; default: this package's version, no distribution. */
+  versions?: HostVersions;
   /** Comments on replays (`REPLAYS_COMMENTS`, on by default in the server's settings): absent here means off. */
   comments?: CommentsSettings;
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
@@ -390,11 +396,13 @@ export function createApp(options: AppOptions) {
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
   const anonymous = options.auth.name === 'none';
+  const policy = options.malleable ?? defaultPolicy();
+  const versions = options.versions ?? { core: coreVersion() };
   const builtIns = [
     ...(options.comments?.enabled ? [commentsPlugin({ store: options.store, anonymous })] : []),
     // Beta: user plugins and the agent bridge. Absent unless the flag is on: no routes, no sandbox page, no bridge.
     ...(options.beta?.malleable
-      ? [malleablePlugin({ storage: options.store.storage, anonymous, hub: options.bridgeHub ?? new BridgeHub() })]
+      ? [malleablePlugin({ storage: options.store.storage, anonymous, hub: options.bridgeHub ?? new BridgeHub(), policy, versions })]
       : []),
   ];
   const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
@@ -477,6 +485,9 @@ export function createApp(options: AppOptions) {
           plugins: [...registry.order],
           beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
           comments: commentsOn,
+          versions,
+          // The user-plugin policy only exists with the feature on (off means nothing about it is exposed).
+          ...(options.beta?.malleable ? { malleable: policy } : {}),
         });
         send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;

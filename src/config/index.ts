@@ -14,6 +14,8 @@ import { CONFIG_KEYS, type FileConfig, readConfigFile } from '../server/config.t
  */
 export type ReplaysConfig = FileConfig;
 export type { PluginSpec } from '../plugin/types.ts';
+/** The `malleable` block: the host's policy for sandboxed user plugins (docs/malleability.md#the-hosts-policy). */
+export type { CapabilityRule, MalleableConfig } from '../shared/malleable-policy.ts';
 
 /** Typed identity function for `replays.config.ts`: `export default defineConfig({ name: 'Acme', plugins: [acme()] })`. */
 export function defineConfig(config: ReplaysConfig): ReplaysConfig {

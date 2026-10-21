@@ -51,6 +51,9 @@ export default defineConfig({
   githubHost: 'github.example.com', gitlabHost: 'gitlab.example.com',
   sourceProviders: [{ id: 'jira', template: 'https://jira.example.com/browse/{ref}' }],
   beta: { editor: false },
+  // Sandboxed user plugins (beta): `enabled` is the same switch as beta.malleable; the rest only narrows. File only.
+  malleable: { enabled: true, scopes: ['user'], capabilities: { 'export:download': 'deny' }, lockedSurfaces: ['inspector:context'] },
+  distribution: { name: 'acme-replays', version: '2.3.0' }, // shown in /api/config, recorded by kept user plugins. File only.
   auth: 'acme-iap',              // AUTH_MODE: a built-in mode or an adapter a plugin registered
   storage: 'gcs',                // STORAGE: fs, s3 or a backend a plugin registered
   redaction: { jsonKeys: ['ssn'], maskSelectors: ['[data-private]'] }, // added to the sanitiser's defaults
@@ -153,6 +156,16 @@ Comments ship as a plugin, `comments`, so they use the same surface as yours and
   `REPLAYS_BETA_MALLEABLE` / `beta.malleable` (the name is reserved too). It uses a pre-auth hook (the sandbox page and the agent's
   bearer-token call) and a post-auth hook (plugin storage, approvals, the page's side of the bridge). User plugins register through the
   browser registry (`ViewerRegistry.replacePlugin`, internal, not public API) but run sandboxed, not through `api.client`. See [malleability.md](malleability.md).
+  A user plugin registers as `user:<id>` (keys `plugin:user:<id>:<contribution>`); a host plugin's name cannot contain `:`, so the two
+  never collide and a user plugin cannot replace or remove a host plugin's tabs, panels or actions.
+- **The host's policy for user plugins** (`malleable` in the config, typed `MalleableConfig` from `/config`): the deployment can only
+  narrow. `scopes` (`'user'`, `'workspace'`; default both) says where a plugin may be kept; `capabilities` maps each capability to
+  `'allow' | 'ask' | 'deny'` (a write capability, `comments:write` or `export:download`, is `'ask'` or `'deny'`; `'allow'` is a start-up
+  error); `lockedSurfaces` lists surfaces user plugins may not replace or hide (`inspector:<tab>`, `inspector:<plugin>:<tab>`,
+  `panel:<plugin>:<id>`, `action:<plugin>:<id>`). The server refuses (403) to keep a plugin that declares a denied capability or targets a
+  disabled scope, the viewer's broker fails a denied capability with `permission-denied`, and the workshop and agents see the policy.
+  `GET /api/config` carries it as `malleable` when the feature is on, plus `core` (this package's version) and `distribution` always
+  (when configured). See [malleability.md](malleability.md#the-hosts-policy).
 
 Another built-in feature would follow the same two steps: a server plugin (if it needs routes) and a registered viewer feature.
 

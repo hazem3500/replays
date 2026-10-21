@@ -50,15 +50,15 @@ test('the workshop: a new plugin runs sandboxed, and edits hot-reload without a 
   await expect(page.getByTestId('editor-title')).toHaveText('My tab');
   await closeWorkshop(page);
 
-  await page.getByTestId('plugin:user-my-tab:main-tab').click();
-  const frame = panelFrame(page, 'plugin:user-my-tab:main');
+  await page.getByTestId('plugin:user:my-tab:main-tab').click();
+  const frame = panelFrame(page, 'plugin:user:my-tab:main');
   await expect(frame.getByRole('heading', { name: 'Requests by status' })).toBeVisible();
   await expect(frame.getByText('404: 2')).toBeVisible();
   // The viewer page itself may only frame itself, blob: and data: (a frame that navigates away is refused by the browser).
   const html = await page.request.get(page.url(), { headers: { accept: 'text/html' } });
   expect(html.headers()['content-security-policy']).toContain("frame-src 'self'");
   // The plugin's frame is a sandboxed, opaque-origin iframe.
-  const iframe = page.getByTestId('plugin:user-my-tab:main-panel').locator('iframe');
+  const iframe = page.getByTestId('plugin:user:my-tab:main-panel').locator('iframe');
   await expect(iframe).toHaveAttribute('sandbox', 'allow-scripts');
 
   await openWorkshop(page);
@@ -117,8 +117,8 @@ replays.tab('main', async (el, ctx) => {
     await page.getByTestId('pane-source').click();
     await page.getByTestId('source-editor').fill(source);
     await closeWorkshop(page);
-    await page.getByTestId('plugin:user-my-tab:main-tab').click();
-    const probe = panelFrame(page, 'plugin:user-my-tab:main').locator('#root[data-done="yes"]');
+    await page.getByTestId('plugin:user:my-tab:main-tab').click();
+    const probe = panelFrame(page, 'plugin:user:my-tab:main').locator('#root[data-done="yes"]');
     await expect(probe).toBeAttached({ timeout: 15_000 });
     const results = JSON.parse((await probe.textContent()) ?? '{}') as Record<string, string>;
     for (const [name, outcome] of Object.entries(results)) {
@@ -165,7 +165,7 @@ test('writes need the person’s yes: a plugin that comments is asked, and Deny 
       .comments;
 
   // Run, then say no.
-  await openMore(page, 'plugin-action:user-auto-comment:run');
+  await openMore(page, 'plugin-action:user:auto-comment:run');
   const prompt = page.getByTestId('permission-prompt');
   await expect(prompt).toBeVisible();
   await expect(page.getByTestId('permission-detail')).toContainText('wants to add a comment');
@@ -176,7 +176,7 @@ test('writes need the person’s yes: a plugin that comments is asked, and Deny 
   expect(await commentsNow()).toEqual([]);
 
   // Run again, allow for this page load: the comment is written, in the person's name.
-  await openMore(page, 'plugin-action:user-auto-comment:run');
+  await openMore(page, 'plugin-action:user:auto-comment:run');
   await expect(prompt).toBeVisible();
   await page.getByTestId('permission-allow-session').click();
   await expect.poll(async () => (await commentsNow()).length).toBeGreaterThan(0);
@@ -199,7 +199,7 @@ test('nothing is stored without approval; keep → history → diff → revert',
   expect(await listSaved(request)).toEqual([]);
   await page.reload();
   await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
-  await expect(page.getByTestId('plugin:user-my-tab:main-tab')).toHaveCount(0);
+  await expect(page.getByTestId('plugin:user:my-tab:main-tab')).toHaveCount(0);
 
   // Approve: version 1 is stored and survives a reload.
   await openWorkshop(page);
@@ -210,7 +210,7 @@ test('nothing is stored without approval; keep → history → diff → revert',
   await expect(dialog).toHaveCount(0);
   expect(await listSaved(request)).toMatchObject([{ id: 'my-tab', version: 1 }]);
   await page.reload();
-  await expect(page.getByTestId('plugin:user-my-tab:main-tab')).toBeVisible();
+  await expect(page.getByTestId('plugin:user:my-tab:main-tab')).toBeVisible();
 
   // Edit → version 2 (the dialog shows the diff).
   await openWorkshop(page);
@@ -292,6 +292,16 @@ test('an agent, through the MCP server, builds "failed requests by endpoint"; th
     expect(state.plugins).toEqual([]);
     const api = await agent.call('get_plugin_api');
     expect(api.text ?? api.markdown).toContain('replays.tab');
+    // …with what this deployment looks like and allows, so the plugin fits it.
+    const deployment = JSON.parse(/## This deployment\s+```json\n([\s\S]*?)\n```/.exec(api.text)![1]!);
+    expect(deployment.theme.tokens['--accent']).toBeTruthy();
+    expect(deployment.policy).toMatchObject({
+      scopes: ['user', 'workspace'],
+      capabilities: { 'comments:write': 'ask' },
+      lockedSurfaces: [],
+    });
+    expect(deployment.versions.core).toMatch(/^\d+\.\d+\.\d+/);
+    expect(deployment.surfaces).toContainEqual({ id: 'inspector:console', owner: 'built-in', label: 'console' });
     const network = await agent.call('get_replay_data', { part: 'network', limit: 50 });
     expect(network.items.some((entry: { url: string }) => entry.url.includes('/api/orders'))).toBe(true);
 
@@ -307,7 +317,7 @@ test('an agent, through the MCP server, builds "failed requests by endpoint"; th
     expect(bad.error).toContain('permissions');
 
     // 3. The tab is there, live, and shows the grouping.
-    const key = 'plugin:user-failed-by-endpoint:main';
+    const key = 'plugin:user:failed-by-endpoint:main';
     await expect(page.getByTestId('workshop')).toBeVisible();
     await page.getByTestId('workshop-view-plugins').click();
     await expect(page.getByTestId('plugin-origin:failed-by-endpoint')).toHaveText('agent draft');
@@ -352,8 +362,8 @@ test('an agent, through the MCP server, builds "failed requests by endpoint"; th
 
   // The kept plugin loads on the next visit with no agent in sight.
   await page.reload();
-  await page.getByTestId('plugin:user-failed-by-endpoint:main-tab').click();
-  await expect(panelFrame(page, 'plugin:user-failed-by-endpoint:main').getByTestId('summary')).toHaveText(
+  await page.getByTestId('plugin:user:failed-by-endpoint:main-tab').click();
+  await expect(panelFrame(page, 'plugin:user:failed-by-endpoint:main').getByTestId('summary')).toHaveText(
     '6 failed requests in 3 endpoints',
   );
 });
@@ -410,7 +420,7 @@ test('the shipped examples load from files and do what they say: a comment templ
     const seek = (await context.getTools()).find((tool: { name: string }) => tool.name === 'seek');
     await context.executeTool(seek, { ms: 7200 });
   });
-  await openMore(page, 'plugin-action:user-bug-template:bug');
+  await openMore(page, 'plugin-action:user:bug-template:bug');
   await expect(page.getByTestId('permission-preview')).toContainText('Bug at 7.2 s');
   await expect(page.getByTestId('permission-preview')).toContainText('Console: ');
   await page.getByTestId('permission-allow-once').click();
@@ -430,7 +440,7 @@ test('the shipped examples load from files and do what they say: a comment templ
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page
-      .getByTestId('plugin-action:user-network-csv:csv')
+      .getByTestId('plugin-action:user:network-csv:csv')
       .click()
       .then(async () => {
         await expect(page.getByTestId('permission-prompt')).toBeVisible();

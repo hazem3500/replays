@@ -1,12 +1,12 @@
 import { SANDBOX_PATH } from '../../shared/sandbox-runtime.ts';
 import type { ViewerPluginContext } from '../plugins/api.ts';
 import { appBase } from '../route.ts';
-import { BrokerError, handleCall, type PluginRef } from './broker.ts';
+import { BrokerError, handleCall, mayReadReplay, type PluginRef } from './broker.ts';
 
 /** The viewer's design tokens a plugin can use as `var(--…)`, copied into the frame (it has none of the page's CSS). */
 const THEME_VARS = ['--text', '--text-secondary', '--surface', '--surface-hover', '--line', '--accent', '--danger'];
 
-function themeVars() {
+export function themeVars() {
   const style = getComputedStyle(document.documentElement);
   const vars: Record<string, string> = {};
   for (const name of THEME_VARS) {
@@ -101,24 +101,37 @@ export function mountSandbox(options: {
     };
     port.addEventListener('message', onPortMessage);
     port.start();
-    const replay = plugin.manifest.permissions.includes('replay:read')
-      ? (() => {
-          const { meta, steps, console: consoleEntries, network, performance, context: replayContext } = context.replay;
-          return {
-            meta,
-            steps,
-            console: consoleEntries,
-            network,
-            ...(performance ? { performance } : {}),
-            ...(replayContext ? { context: replayContext } : {}),
-          };
-        })()
-      : undefined;
-    iframe.contentWindow?.postMessage(
-      { type: 'init', mode, contribution, source: plugin.source, theme: context.theme, vars: themeVars(), time: context.getTime(), replay },
-      '*',
-      [channel.port2],
-    );
+    // The copy of the replay is the one capability handed over rather than called, so the host's policy is checked here.
+    void (plugin.manifest.permissions.includes('replay:read') ? mayReadReplay(plugin) : Promise.resolve(false)).then((readable) => {
+      if (disposed) return;
+      const replay = readable
+        ? (() => {
+            const { meta, steps, console: consoleEntries, network, performance, context: replayContext } = context.replay;
+            return {
+              meta,
+              steps,
+              console: consoleEntries,
+              network,
+              ...(performance ? { performance } : {}),
+              ...(replayContext ? { context: replayContext } : {}),
+            };
+          })()
+        : undefined;
+      iframe.contentWindow?.postMessage(
+        {
+          type: 'init',
+          mode,
+          contribution,
+          source: plugin.source,
+          theme: context.theme,
+          vars: themeVars(),
+          time: context.getTime(),
+          replay,
+        },
+        '*',
+        [channel.port2],
+      );
+    });
   };
   window.addEventListener('message', onMessage);
 

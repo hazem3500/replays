@@ -89,10 +89,15 @@ export class McpServer {
       if (!response.ok) return text(body.error ?? `the viewer answered ${response.status}`, true);
       const result = body.result;
       const structured = result && typeof result === 'object' && !Array.isArray(result) ? { structuredContent: result } : {};
-      const display =
-        tool === 'get_plugin_api' && result && typeof result === 'object'
-          ? ((result as { markdown?: string }).markdown ?? PLUGIN_API_DOC)
-          : JSON.stringify(result);
+      // The reference reads as markdown; what this deployment looks like and allows follows it as JSON (also in structuredContent).
+      const apiDisplay = () => {
+        const { markdown, ...deployment } = result as { markdown?: string };
+        const extra = Object.keys(deployment).length
+          ? `\n\n## This deployment\n\n\`\`\`json\n${JSON.stringify(deployment, null, 2)}\n\`\`\``
+          : '';
+        return `${markdown ?? PLUGIN_API_DOC}${extra}`;
+      };
+      const display = tool === 'get_plugin_api' && result && typeof result === 'object' ? apiDisplay() : JSON.stringify(result);
       return { content: [{ type: 'text', text: display }], isError: false, ...structured };
     } catch (error) {
       return text(

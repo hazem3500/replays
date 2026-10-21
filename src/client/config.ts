@@ -1,4 +1,5 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
+import type { MalleablePolicy } from '../shared/malleable-policy.ts';
 
 /** The deployment's branding, written into index.html by the server (src/server/base-path.ts `withBase`). */
 export function productName() {
@@ -33,6 +34,12 @@ export interface ClientConfig {
   contextSchema?: FieldSchema;
   sourceProviders: string[];
   auth: string;
+  /** This package's version. */
+  core?: string;
+  /** The deployment's `distribution` config, when set. */
+  distribution?: { name: string; version: string };
+  /** The host's policy for user plugins (only with beta.malleable on): src/shared/malleable-policy.ts. */
+  malleable?: MalleablePolicy;
 }
 
 let betaEditorOverride: boolean | undefined;

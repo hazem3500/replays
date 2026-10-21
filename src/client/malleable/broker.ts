@@ -1,18 +1,22 @@
 import { useSyncExternalStore } from 'react';
 
 import { CAPABILITIES, type Capability, isCapability, isWriteCapability, type UserPluginManifest } from '../../shared/malleable.ts';
+import { capabilityRule } from '../../shared/malleable-policy.ts';
 import { createComment, fetchComments } from '../comments/api.ts';
 import { queryClient } from '../queries.ts';
 import { notify } from '../toast.ts';
 import type { ViewerPluginContext } from '../plugins/api.ts';
+import { hostPolicy } from './host.ts';
 
 /*
  * The capability broker: the viewer's half of every call a sandboxed plugin makes. The frame can do nothing but send
- * `{ method, params }` over its port; this module decides. Three rules, in this order:
+ * `{ method, params }` over its port; this module decides. Four rules, in this order:
  *   1. a capability the manifest did not declare is refused (`permission-denied`), whatever the code says;
- *   2. a `write` capability (comments:write, export:download) also needs the person's yes, asked with the exact thing about to
+ *   2. a capability the host's policy denies (`malleable.capabilities`, src/shared/malleable-policy.ts) is refused too, and
+ *      one it set to `ask` asks the person even if it is read-only;
+ *   3. a `write` capability (comments:write, export:download) also needs the person's yes, asked with the exact thing about to
  *      happen, remembered only until the page reloads or the plugin's source changes;
- *   3. inputs are validated and size-limited here, so a plugin cannot hand the viewer anything it did not expect.
+ *   4. inputs are validated and size-limited here, so a plugin cannot hand the viewer anything it did not expect.
  */
 
 export interface PluginRef {
@@ -136,6 +140,34 @@ function declared(plugin: PluginRef, capability: Capability) {
     throw new BrokerError(`permission-denied: ${capability} is not in the manifest's permissions`);
 }
 
+/** Rules 1 and 2: declared, and not denied by the host (a read-only capability the host set to `ask` is asked here). */
+async function check(plugin: PluginRef, capability: Capability) {
+  declared(plugin, capability);
+  const rule = capabilityRule(await hostPolicy(), capability);
+  if (rule === 'deny') throw new BrokerError(`permission-denied: this server does not allow ${capability} for user plugins`);
+  if (rule === 'ask' && !isWriteCapability(capability)) {
+    const label = CAPABILITIES[capability].label;
+    const allowed = await permissions.request(
+      plugin,
+      capability,
+      `“${plugin.manifest.name}” wants to: ${label[0]!.toLowerCase()}${label.slice(1)}.`,
+    );
+    if (!allowed) throw new BrokerError('permission-denied: the person said no');
+  }
+}
+
+/** Whether the frame may get its copy of the replay (`replay:read`, which is handed over at start rather than called). */
+export async function mayReadReplay(plugin: PluginRef) {
+  try {
+    await check(plugin, 'replay:read');
+    return true;
+  } catch (error) {
+    if (!(error instanceof BrokerError)) throw error;
+    if (plugin.manifest.permissions.includes('replay:read')) plugin.log('warn', `replay:read: ${error.message}`);
+    return false;
+  }
+}
+
 function safeFileName(name: unknown) {
   const text = typeof name === 'string' ? name : '';
   const cleaned = text
@@ -151,19 +183,19 @@ export async function handleCall(plugin: PluginRef, ctx: ViewerPluginContext, me
   const input = (params ?? {}) as Record<string, unknown>;
   switch (method) {
     case 'seek': {
-      declared(plugin, 'playback:seek');
+      await check(plugin, 'playback:seek');
       if (typeof input.ms !== 'number' || !Number.isFinite(input.ms) || input.ms < 0)
         throw new BrokerError('seek(ms): ms must be a non-negative number');
       ctx.seek(input.ms);
       return null;
     }
     case 'notify': {
-      declared(plugin, 'notify');
+      await check(plugin, 'notify');
       notify(String(input.message ?? '').slice(0, 200));
       return null;
     }
     case 'comments.list': {
-      declared(plugin, 'comments:read');
+      await check(plugin, 'comments:read');
       const { comments } = await fetchComments(ctx.replay.meta.id);
       return comments.map((comment) => ({
         id: comment.id,
@@ -175,7 +207,7 @@ export async function handleCall(plugin: PluginRef, ctx: ViewerPluginContext, me
       }));
     }
     case 'comments.add': {
-      declared(plugin, 'comments:write');
+      await check(plugin, 'comments:write');
       const body = typeof input.body === 'string' ? input.body.trim() : '';
       if (!body || body.length > 2000) throw new BrokerError('comments.add: body must be 1-2000 characters');
       if (input.at !== undefined && (typeof input.at !== 'number' || !Number.isFinite(input.at) || input.at < 0))
@@ -193,7 +225,7 @@ export async function handleCall(plugin: PluginRef, ctx: ViewerPluginContext, me
       return { id: created.id };
     }
     case 'download': {
-      declared(plugin, 'export:download');
+      await check(plugin, 'export:download');
       const text = typeof input.text === 'string' ? input.text : '';
       if (text.length > MAX_DOWNLOAD) throw new BrokerError('download: the file is larger than 2 MB');
       const name = safeFileName(input.name);

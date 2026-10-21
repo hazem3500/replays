@@ -1,4 +1,5 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
+import type { HostVersions, MalleablePolicy } from '../shared/malleable-policy.ts';
 import type { PageBranding } from './base-path.ts';
 
 /**
@@ -103,6 +104,8 @@ export function publicConfig(
     plugins?: string[];
     beta?: { editor: boolean; malleable?: boolean };
     comments?: boolean;
+    versions?: HostVersions;
+    malleable?: MalleablePolicy;
   },
 ) {
   return {
@@ -114,5 +117,8 @@ export function publicConfig(
     plugins: extra.plugins ?? [],
     beta: extra.beta ?? { editor: false, malleable: false },
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
+    ...(extra.versions ? { core: extra.versions.core } : {}),
+    ...(extra.versions?.distribution ? { distribution: extra.versions.distribution } : {}),
+    ...(extra.malleable ? { malleable: extra.malleable } : {}),
   };
 }

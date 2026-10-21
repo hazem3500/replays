@@ -55,7 +55,14 @@ ctx (only what the manifest's permissions allow; anything else throws "permissio
 
 Limits: fetch, XMLHttpRequest, WebSocket, images, fonts, forms, navigation, cookies and storage do not work. Build DOM with
 createElement/textContent (never put replay text in innerHTML unescaped; recorded pages are untrusted). console.log and thrown
-errors are collected and readable with the get_plugin_diagnostics tool.`;
+errors are collected and readable with the get_plugin_diagnostics tool.
+
+This deployment: get_plugin_api also returns \`theme\` (the colour scheme and the token values the frame gets as CSS variables:
+use them so the plugin looks like the rest of the viewer), \`policy\` (the host's rules: \`scopes\` where a plugin may be kept,
+\`capabilities\` allow | ask | deny per capability, \`lockedSurfaces\`), \`versions\` (core and distribution) and \`surfaces\`
+(every tab, panel and action now, by surface id). A denied capability fails with "permission-denied" and a plugin that
+declares one cannot be kept, so leave it out of the manifest. Plugins only add their own tabs, panels and actions; they cannot
+replace or hide another's.`;
 
 export const BRIDGE_TOOLS: readonly BridgeTool[] = [
   {
@@ -88,7 +95,7 @@ export const BRIDGE_TOOLS: readonly BridgeTool[] = [
   {
     name: 'get_plugin_api',
     description:
-      'How to write a plugin: the manifest, the sandbox API, capability names and limits. Read this before install_plugin_draft.',
+      'How to write a plugin: the manifest, the sandbox API, capability names and limits, plus this deployment’s theme tokens, its policy for user plugins (scopes, allowed / asked / denied capabilities, locked surfaces), its versions and the surfaces in the viewer. Read this before install_plugin_draft.',
     inputSchema: object({}),
     annotations: { readOnlyHint: true },
   },

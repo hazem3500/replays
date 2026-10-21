@@ -1,6 +1,12 @@
 import type { InspectorTabDefinition, ViewerActionDefinition, ViewerPanelDefinition, ViewerPluginApi } from './api.ts';
 
 const ID = /^[a-z][a-z0-9-]*$/;
+/**
+ * Who may register: a host plugin by its name (no `:`, src/plugin/define.ts), or a sandboxed user plugin as `user:<id>`
+ * (src/client/malleable/manager.ts). Keys are `plugin:<owner>:<id>`, so the two can never collide, and a user plugin's
+ * replacePlugin/removePlugin only ever touches its own registrations.
+ */
+const OWNER = /^(user:)?[a-z][a-z0-9-]*$/;
 
 export class ViewerPluginError extends Error {
   constructor(message: string) {
@@ -46,6 +52,7 @@ export class ViewerRegistry {
     label: string,
     notify = true,
   ) {
+    if (!OWNER.test(plugin)) throw new ViewerPluginError(`${JSON.stringify(plugin)} is not a plugin name`);
     const d = definition as { id?: unknown; order?: unknown; render?: unknown; run?: unknown };
     if (!d || typeof d.id !== 'string' || !ID.test(d.id))
       throw new ViewerPluginError(`${plugin}: ${kind} id must match ${ID} (got ${JSON.stringify(d?.id)})`);

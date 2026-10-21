@@ -3,12 +3,14 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { definePlugin } from '../plugin/define.ts';
 import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import { BRIDGE_TOOLS } from '../shared/malleable-tools.ts';
-import { isScope, parseManifest, parseSource, PluginFormatError, type PluginScope } from '../shared/malleable.ts';
+import { isScope, parseManifest, parseSource, PluginFormatError, type PluginScope, type UserPluginManifest } from '../shared/malleable.ts';
+import { defaultPolicy, type HostVersions, type MalleablePolicy, policyProblems, targetsFor } from '../shared/malleable-policy.ts';
 import { SANDBOX_CSP, SANDBOX_HTML, SANDBOX_PATH } from '../shared/sandbox-runtime.ts';
 import { send } from './app.ts';
 import type { Identity } from './auth/types.ts';
 import { BridgeError, BridgeHub } from './bridge-hub.ts';
 import { ApprovalBook, PluginStoreError, UserPluginStore } from './malleable-store.ts';
+import { coreVersion } from './package-info.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -63,9 +65,29 @@ function fail(response: ServerResponse, error: unknown) {
  *   DELETE /api/malleable/plugins/<scope>/<id>?approval=…
  *   POST   /api/malleable/bridge/pair       DELETE /api/malleable/bridge?token=…
  *   GET    /api/malleable/bridge/events?token=…   (SSE) the tab's stream   POST …/bridge/results  the tab's answers
+ *
+ * The host's policy (src/shared/malleable-policy.ts) narrows all of it: a scope it turned off is neither listed nor kept,
+ * and a manifest that declares a capability it denies is refused (403) before an approval is minted or spent. Every
+ * saved version records the core and distribution versions it was kept under (`manifest.targets`).
  */
-export function malleablePlugin(deps: { storage: ObjectStorage; anonymous: boolean; hub?: BridgeHub; approvals?: ApprovalBook }) {
+export function malleablePlugin(deps: {
+  storage: ObjectStorage;
+  anonymous: boolean;
+  hub?: BridgeHub;
+  approvals?: ApprovalBook;
+  /** The host's policy (`malleable` in the config): enforced on every save, and on which scopes are listed. */
+  policy?: MalleablePolicy;
+  /** Recorded as `manifest.targets` on every saved version. */
+  versions?: HostVersions;
+}) {
   const store = new UserPluginStore(deps.storage);
+  const policy = deps.policy ?? defaultPolicy();
+  const versions = deps.versions ?? { core: coreVersion() };
+  /** The host narrows: a scope it turned off, or a capability it denies, is refused before any approval is spent. */
+  const allowed = (manifest: UserPluginManifest, scope: PluginScope) => {
+    const problems = policyProblems(policy, manifest, scope);
+    if (problems.length) throw new PluginStoreError(403, `not kept: ${problems.join('; ')}`);
+  };
   const hub = deps.hub ?? new BridgeHub();
   const approvals = deps.approvals ?? new ApprovalBook();
   const displayName = (user: Identity) => (deps.anonymous ? 'Anonymous' : (user.name ?? user.email ?? user.id)).slice(0, 120);
@@ -117,7 +139,8 @@ export function malleablePlugin(deps: { storage: ObjectStorage; anonymous: boole
           if (rest === 'plugins' && method === 'GET') {
             const scope = new URL(request.url ?? '/', 'http://x').searchParams.get('scope');
             if (scope !== null && !isScope(scope)) throw new PluginStoreError(400, 'scope is user or workspace');
-            const scopes: PluginScope[] = scope ? [scope] : ['user', 'workspace'];
+            // A scope the host turned off is not listed, so its plugins do not load (they stay stored, untouched).
+            const scopes = (scope ? [scope] : (['user', 'workspace'] as PluginScope[])).filter((entry) => policy.scopes.includes(entry));
             const lists = await Promise.all(scopes.map((entry) => store.list(entry, identity.id)));
             reply(response, 200, { plugins: lists.flat() });
             return true;
@@ -127,6 +150,7 @@ export function malleablePlugin(deps: { storage: ObjectStorage; anonymous: boole
             const scope = one[1] as PluginScope;
             const id = one[2]!;
             if (method === 'GET') {
+              if (!policy.scopes.includes(scope)) throw new PluginStoreError(404, 'no such plugin');
               const history = await store.history(scope, identity.id, id);
               if (!history) throw new PluginStoreError(404, 'no such plugin');
               reply(response, 200, history);
@@ -136,6 +160,7 @@ export function malleablePlugin(deps: { storage: ObjectStorage; anonymous: boole
               const body = await readBody(request);
               const manifest = parseManifest(body.manifest);
               const source = parseSource(body.source);
+              allowed(manifest, scope);
               const digest = ApprovalBook.digest('save', scope, id, manifest, source);
               if (!approvals.consume(body.approval, identity.id, digest))
                 throw new PluginStoreError(
@@ -145,7 +170,8 @@ export function malleablePlugin(deps: { storage: ObjectStorage; anonymous: boole
               const baseVersion = typeof body.baseVersion === 'number' && Number.isInteger(body.baseVersion) ? body.baseVersion : -1;
               const message = typeof body.message === 'string' ? (sanitizeUrlFields(body.message) as string) : '';
               const version = await store.save(scope, identity.id, id, {
-                manifest,
+                // What it was kept under, from the server's own versions (a client's `targets` is not trusted).
+                manifest: { ...manifest, targets: targetsFor(versions) },
                 source,
                 message,
                 by: displayName(identity),
@@ -170,6 +196,7 @@ export function malleablePlugin(deps: { storage: ObjectStorage; anonymous: boole
             const save = body.action === 'save';
             const manifest = save ? parseManifest(body.manifest) : undefined;
             const source = save ? parseSource(body.source) : undefined;
+            if (manifest) allowed(manifest, body.scope);
             reply(response, 200, approvals.mint(identity.id, ApprovalBook.digest(body.action, body.scope, body.id, manifest, source)));
             return true;
           }

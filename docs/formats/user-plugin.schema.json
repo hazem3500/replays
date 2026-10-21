@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/hazem3500/replays/docs/formats/user-plugin.schema.json",
   "title": "User plugin file (*.replays-plugin.json)",
-  "description": "The shareable form of a user plugin: the manifest and the JavaScript source, optionally with its saved versions. Importing a file loads it as a draft; nothing is stored until the person approves. Source of truth: src/shared/malleable.ts.",
+  "description": "The shareable form of a user plugin: the manifest and the JavaScript source, optionally with its saved versions. Importing a file loads it as a draft; nothing is stored until the person approves. A manifest may carry `targets` (the core and distribution versions it was kept under, see plugin-manifest.schema.json); an imported file's `targets` is informational and is replaced when the importer keeps it. Source of truth: src/shared/malleable.ts.",
   "type": "object",
   "required": ["format", "manifest", "source"],
   "additionalProperties": false,

@@ -2,11 +2,14 @@ import { BotIcon, DownloadIcon, FileUpIcon, PlusIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { diffLines } from '../../shared/line-diff.ts';
-import { CAPABILITIES, isWriteCapability, PluginFormatError, starterPlugin } from '../../shared/malleable.ts';
+import { CAPABILITIES, type Capability, isWriteCapability, PluginFormatError, starterPlugin } from '../../shared/malleable.ts';
+import { targetsFor } from '../../shared/malleable-policy.ts';
 import { appBase } from '../route.ts';
 import { notify } from '../toast.ts';
 import { connectAgent, disconnectAgent, useBridge } from './bridge.ts';
 import { DiffView } from './DiffView.tsx';
+import { dismissReview, needsReview } from './health.ts';
+import { useHost } from './host.ts';
 import { isDirty, latestSaved, manager, type PluginEntry, useManager } from './manager.ts';
 import { Modal } from './Modal.tsx';
 import { setMalleableUi, useMalleableUi } from './ui-state.ts';
@@ -59,62 +62,148 @@ export function Workshop() {
       {view === 'agent' ? (
         <AgentPane />
       ) : (
-        <div className="mall-split">
-          <nav className="mall-list" aria-label="Plugins">
-            <ul>
-              {entries.map((candidate) => (
-                <li key={candidate.id}>
-                  <button
-                    type="button"
-                    aria-current={candidate.id === entry?.id}
-                    data-testid={`plugin-item:${candidate.id}`}
-                    onClick={() => setSelectedId(candidate.id)}
-                  >
-                    <span className="mall-name">{candidate.manifest.name}</span>
-                    <span className="mall-badges">
-                      <span data-testid={`plugin-origin:${candidate.id}`}>{originLabel[candidate.origin]}</span>
-                      {isDirty(candidate) && candidate.versions.length ? <span>unsaved</span> : null}
-                      {disabled.includes(candidate.id) ? <span>off</span> : null}
-                      {latestSaved(candidate) ? <span>v{latestSaved(candidate)!.n}</span> : null}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <div className="mall-list-actions">
-              <button
-                type="button"
-                className="mall-btn"
-                data-testid="plugin-new"
-                onClick={() => {
-                  const taken = new Set(entries.map((candidate) => candidate.id));
-                  let n = 1;
-                  while (taken.has(n === 1 ? 'my-tab' : `my-tab-${n}`)) n++;
-                  const { manifest, source } = starterPlugin(n === 1 ? 'my-tab' : `my-tab-${n}`);
-                  setSelectedId(
-                    manager.upsert({ manifest: { ...manifest, ...(n > 1 ? { name: `My tab ${n}` } : {}) }, source, origin: 'workshop' }).id,
-                  );
-                }}
-              >
-                <PlusIcon aria-hidden="true" /> New plugin
-              </button>
-              <ImportButton onImported={setSelectedId} />
-            </div>
-          </nav>
-          {entry ? (
-            <Editor key={entry.id} entry={entry} onGone={() => setSelectedId(undefined)} />
-          ) : (
-            <div className="mall-empty" data-testid="workshop-empty">
-              <p>No plugins yet.</p>
-              <p className="mall-note">
-                Start from a template with “New plugin”, import a <code>.replays-plugin.json</code> file, or connect an agent and ask it for
-                one.
-              </p>
-            </div>
-          )}
-        </div>
+        <>
+          <ReviewNotice entries={entries} onSelect={setSelectedId} />
+          <div className="mall-split">
+            <nav className="mall-list" aria-label="Plugins">
+              <ul>
+                {entries.map((candidate) => (
+                  <li key={candidate.id}>
+                    <button
+                      type="button"
+                      aria-current={candidate.id === entry?.id}
+                      data-testid={`plugin-item:${candidate.id}`}
+                      onClick={() => setSelectedId(candidate.id)}
+                    >
+                      <span className="mall-name">{candidate.manifest.name}</span>
+                      <span className="mall-badges">
+                        <span data-testid={`plugin-origin:${candidate.id}`}>{originLabel[candidate.origin]}</span>
+                        {isDirty(candidate) && candidate.versions.length ? <span>unsaved</span> : null}
+                        {disabled.includes(candidate.id) ? <span>off</span> : null}
+                        {latestSaved(candidate) ? <span>v{latestSaved(candidate)!.n}</span> : null}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              <div className="mall-list-actions">
+                <button
+                  type="button"
+                  className="mall-btn"
+                  data-testid="plugin-new"
+                  onClick={() => {
+                    const taken = new Set(entries.map((candidate) => candidate.id));
+                    let n = 1;
+                    while (taken.has(n === 1 ? 'my-tab' : `my-tab-${n}`)) n++;
+                    const { manifest, source } = starterPlugin(n === 1 ? 'my-tab' : `my-tab-${n}`);
+                    setSelectedId(
+                      manager.upsert({ manifest: { ...manifest, ...(n > 1 ? { name: `My tab ${n}` } : {}) }, source, origin: 'workshop' })
+                        .id,
+                    );
+                  }}
+                >
+                  <PlusIcon aria-hidden="true" /> New plugin
+                </button>
+                <ImportButton onImported={setSelectedId} />
+              </div>
+            </nav>
+            {entry ? (
+              <Editor key={entry.id} entry={entry} onGone={() => setSelectedId(undefined)} />
+            ) : (
+              <div className="mall-empty" data-testid="workshop-empty">
+                <p>No plugins yet.</p>
+                <p className="mall-note">
+                  Start from a template with “New plugin”, import a <code>.replays-plugin.json</code> file, or connect an agent and ask it
+                  for one.
+                </p>
+              </div>
+            )}
+          </div>
+          <PolicyNote />
+        </>
       )}
     </Modal>
+  );
+}
+
+const RULE_TEXT = { allow: 'allowed', ask: 'asks you', deny: 'not allowed' } as const;
+
+/** What this server lets user plugins do (the host's `malleable` policy), so nobody writes a plugin it would refuse. */
+function PolicyNote() {
+  const { policy, versions } = useHost();
+  const targets = targetsFor(versions);
+  return (
+    <details className="mall-policy" data-testid="workshop-policy">
+      <summary>This server’s rules for plugins</summary>
+      <ul>
+        <li data-testid="policy-scopes">
+          Can be kept for:{' '}
+          {policy.scopes.length
+            ? policy.scopes.map((scope) => (scope === 'user' ? 'only you' : 'the workspace')).join(', ')
+            : 'nobody (saving is off)'}
+        </li>
+        {(Object.keys(CAPABILITIES) as Capability[]).map((capability) => (
+          <li key={capability} data-testid={`policy-capability:${capability}`} data-rule={policy.capabilities[capability]}>
+            <code>{capability}</code> {RULE_TEXT[policy.capabilities[capability]]}
+          </li>
+        ))}
+        {policy.lockedSurfaces.length ? (
+          <li data-testid="policy-locked">
+            Plugins cannot replace or hide:{' '}
+            {policy.lockedSurfaces.map((surface) => (
+              <code key={surface}>{surface} </code>
+            ))}
+          </li>
+        ) : null}
+        {targets.core ? (
+          <li className="mall-note" data-testid="policy-versions">
+            Running {targets.distribution ? `${targets.distribution} on ` : ''}core {targets.core}
+          </li>
+        ) : null}
+      </ul>
+    </details>
+  );
+}
+
+/**
+ * The upgrade contract's notice: saved plugins that loaded before and fail now that the versions changed. It only points
+ * them out; nothing is switched off, changed or deleted (src/client/malleable/health.ts).
+ */
+function ReviewNotice({ entries, onSelect }: { entries: readonly PluginEntry[]; onSelect: (id: string) => void }) {
+  const { versions } = useHost();
+  const [, setDismissed] = useState(0);
+  const failing = entries.filter((entry) => needsReview(versions, entry.id, latestSaved(entry)));
+  if (!failing.length) return null;
+  return (
+    <div className="mall-review" role="status" data-testid="review-plugins">
+      <p>
+        <strong>Review plugins.</strong> Since this server was updated, {failing.length === 1 ? 'one plugin' : `${failing.length} plugins`}{' '}
+        failed to load. {failing.length === 1 ? 'It is' : 'They are'} still on and unchanged:{' '}
+        {failing.map((entry, index) => (
+          <span key={entry.id}>
+            {index ? ', ' : ''}
+            <button type="button" className="mall-link" data-testid={`review-plugin:${entry.id}`} onClick={() => onSelect(entry.id)}>
+              {entry.manifest.name}
+            </button>
+          </span>
+        ))}
+        .
+      </p>
+      <button
+        type="button"
+        className="mall-btn"
+        data-testid="review-dismiss"
+        onClick={() => {
+          dismissReview(
+            versions,
+            failing.map((entry) => entry.id),
+          );
+          setDismissed((n) => n + 1);
+        }}
+      >
+        Dismiss
+      </button>
+    </div>
   );
 }
 

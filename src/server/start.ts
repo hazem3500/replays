@@ -7,6 +7,7 @@ import { resolve } from 'node:path';
 import type { LoadedConfig } from '../config/index.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
+import { coreVersion, findPackageRoot } from './package-info.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { findPackageRoot } from './package-root.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
@@ -194,6 +195,8 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     branding,
     sources: settings.sources,
     beta: settings.beta,
+    malleable: settings.malleable,
+    versions: { core: coreVersion(), ...(settings.distribution ? { distribution: settings.distribution } : {}) },
     ...(bridgeHub ? { bridgeHub } : {}),
     comments: settings.comments,
     plugins: registry,

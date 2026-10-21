@@ -10,6 +10,13 @@ import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
 import { assertRedactionRules, type RedactionRules } from '../shared/redaction.ts';
+import {
+  type HostVersions,
+  type MalleableConfig,
+  type MalleablePolicy,
+  parseDistribution,
+  parseMalleablePolicy,
+} from '../shared/malleable-policy.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -29,6 +36,9 @@ import { assertRedactionRules, type RedactionRules } from '../shared/redaction.t
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
  *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
  *     "beta": { "editor": false, "malleable": false },  REPLAYS_BETA_EDITOR, REPLAYS_BETA_MALLEABLE (off by default; src/server/beta.ts)
+ *     "malleable": { "scopes": ["user"], "capabilities": { "export:download": "deny" }, "lockedSurfaces": [] },
+ *                                                  the host's policy for user plugins (file only; src/shared/malleable-policy.ts)
+ *     "distribution": { "name": "acme-replays", "version": "2.3.0" },  what this deployment is (file only)
  *     "comments": { "enabled": true },             REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
  *     "auth": "iap-header",                        AUTH_MODE (a built-in mode or an auth adapter a plugin registered)
  *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
@@ -53,6 +63,10 @@ export interface FileConfig {
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
   beta?: { editor?: boolean; malleable?: boolean };
+  /** The host's policy for sandboxed user plugins; `malleable.enabled` is the same switch as `beta.malleable`. */
+  malleable?: MalleableConfig;
+  /** The deployment built on this package (`name@version`), shown in `/api/config` and recorded by kept user plugins. */
+  distribution?: { name: string; version: string };
   comments?: { enabled?: boolean };
   auth?: string;
   storage?: string;
@@ -70,6 +84,9 @@ export interface AppSettings {
   sources: SourceProviders;
   contextSchema?: ContextSchema;
   beta: BetaFlags;
+  /** The user-plugin policy (applies when beta.malleable is on). */
+  malleable: MalleablePolicy;
+  distribution?: HostVersions['distribution'];
   comments: CommentsSettings;
   /** The config file's `redaction` rules, checked (plugins' rules are merged in by the app). */
   redaction?: RedactionRules;
@@ -88,6 +105,8 @@ export const CONFIG_KEYS = new Set([
   'gitlabHost',
   'sourceProviders',
   'beta',
+  'malleable',
+  'distribution',
   'comments',
   'auth',
   'storage',
@@ -137,13 +156,22 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
   if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
+  const malleable = parseMalleablePolicy(file.malleable);
+  const distribution = parseDistribution(file.distribution);
+  // `malleable.enabled` and `beta.malleable` are one switch; the environment variable still wins over both.
+  const enabled = file.malleable?.enabled;
+  const betaFile = file.beta;
+  if (enabled !== undefined && betaFile?.malleable !== undefined && betaFile.malleable !== enabled)
+    throw new Error("the config file's malleable.enabled and beta.malleable disagree: set one of them");
   return {
     branding,
     basePath,
     hosts,
     retention,
     sources,
-    beta: betaFromEnv(env, file.beta),
+    beta: betaFromEnv(env, enabled === undefined ? betaFile : { ...betaFile, malleable: betaFile?.malleable ?? enabled }),
+    malleable,
+    ...(distribution ? { distribution } : {}),
     comments: commentsFromEnv(env, file.comments),
     ...(contextSchema ? { contextSchema } : {}),
     ...(file.redaction ? { redaction: file.redaction } : {}),

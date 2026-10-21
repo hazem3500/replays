@@ -26,6 +26,21 @@
         "panels": { "$ref": "#/$defs/contributions" },
         "actions": { "$ref": "#/$defs/contributions" }
       }
+    },
+    "targets": {
+      "type": "object",
+      "description": "The versions the plugin was kept under, written by the server on every save (a value sent by the client is replaced). The viewer uses it to recognise a plugin that stopped loading after an upgrade; nothing is disabled or changed because of it.",
+      "required": ["core"],
+      "additionalProperties": false,
+      "properties": {
+        "core": { "type": "string", "minLength": 1, "maxLength": 40, "description": "The @hazem3500/replays package version." },
+        "distribution": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 130,
+          "description": "The deployment's `distribution` config as `name@version`, when it sets one."
+        }
+      }
     }
   },
   "$defs": {

@@ -1,9 +1,11 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BrokerError, handleCall, permissions, type PluginRef } from '../src/client/malleable/broker.ts';
+import { setHostForTests } from '../src/client/malleable/host.ts';
 import type { ViewerPluginContext } from '../src/client/plugins/api.ts';
 import { ViewerRegistry } from '../src/client/plugins/registry.ts';
 import { starterPlugin } from '../src/shared/malleable.ts';
+import { defaultPolicy } from '../src/shared/malleable-policy.ts';
 
 const render = () => {};
 
@@ -53,7 +55,12 @@ const plugin = (permissionsList: string[], source = 'x'): PluginRef => ({
 });
 
 describe('the capability broker', () => {
-  afterEach(() => permissions.reset());
+  // The host's default policy (no `malleable` block); test/malleable-policy.test.ts covers narrower ones.
+  beforeEach(() => setHostForTests({ policy: defaultPolicy() }));
+  afterEach(() => {
+    permissions.reset();
+    setHostForTests(undefined);
+  });
 
   it('refuses a capability the manifest did not declare, whatever the call', async () => {
     const ctx = context();

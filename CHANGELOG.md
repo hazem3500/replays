@@ -52,6 +52,17 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   interrupted one resumes. `--dry-run`, `--report out.json`, and `--compare` for the list-summary diff between two stores. The
   same as `migrateStore()` and `compareStores()` from `@hazem3500/replays/server`, and a translation for the older downstream
   format in `examples/migrate/`. See [docs/operations.md](docs/operations.md#converting-stored-replays).
+- **Host policy for user plugins, and the upgrade contract (beta.malleable).** A `malleable` config block lets a deployment narrow
+  what sandboxed user plugins may do: `scopes` (where a plugin may be kept), `capabilities` (`allow` / `ask` / `deny` per capability;
+  write capabilities can only be `ask` or `deny`, checked at start) and `lockedSurfaces`. `malleable.enabled` is accepted as the same
+  switch as `beta.malleable` (both keep working; if both are set they must agree). The server refuses to keep a plugin that declares a
+  denied capability or targets a disabled scope, the broker fails denied capabilities with `permission-denied`, and the workshop shows
+  the policy. New `distribution: { name, version }` config key. `GET /api/config` now includes `core`, `distribution` and (with the
+  feature on) `malleable`. Kept plugin versions record `manifest.targets: { core, distribution }` (additive to
+  `plugin-manifest.schema.json`); the viewer records load health per (core, distribution) in localStorage and shows a quiet "Review
+  plugins" notice for a plugin that fails after the versions changed, without disabling or changing anything. `get_plugin_api` now
+  returns the theme tokens, the policy, the versions and the surfaces in the viewer.
+
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user
@@ -94,6 +105,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- User plugins register in the viewer registry as `user:<id>` (keys `plugin:user:<id>:<contribution>`) instead of `user-<id>`, so a
+  user plugin can no longer collide with, replace or remove the registrations of a host plugin named `user-<something>`.
 - `GET /api/config` also lists the loaded `plugins`. `src/server/main.ts` is now a thin wrapper around `startServer()`.
 - The library is built with shared chunks (`dist/lib/*.mjs`); the recorder script is shipped next to it.
 - The repository is a pnpm workspace (`pnpm-workspace.yaml`); the Dockerfile installs only the main package.

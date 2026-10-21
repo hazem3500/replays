@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 
 import {
+  authoredManifest,
   parseManifest,
   parsePluginFile,
   parseSource,
@@ -14,6 +15,8 @@ import type { ViewerPluginContext } from '../plugins/api.ts';
 import { viewerRegistry } from '../plugins/registry.ts';
 import { deletePlugin, getHistory, listPlugins, mintApproval, savePlugin } from './api.ts';
 import { permissions, type PluginRef } from './broker.ts';
+import { recordLoad } from './health.ts';
+import { hostInfo } from './host.ts';
 import { mountSandbox } from './sandbox.ts';
 import { setMalleableUi } from './ui-state.ts';
 
@@ -49,7 +52,12 @@ export interface ManagerState {
 
 const MAX_DIAGNOSTICS = 200;
 const DISABLED_KEY = 'replays-malleable-disabled';
-export const registryName = (id: string) => `user-${id}`;
+/**
+ * A user plugin's name in the viewer registry: `user:<id>`, so its keys are `plugin:user:<id>:<contribution>`. Host plugin
+ * names cannot contain `:` (src/plugin/define.ts), so a user plugin can never take, replace or remove a host plugin's
+ * registrations, whatever its id.
+ */
+export const registryName = (id: string) => `user:${id}`;
 
 function readDisabled(): string[] {
   try {
@@ -61,7 +69,11 @@ function readDisabled(): string[] {
 }
 
 export const latestSaved = (entry: PluginEntry) => entry.versions.at(-1);
-export const sameManifest = (a: UserPluginManifest, b: UserPluginManifest) => JSON.stringify(a) === JSON.stringify(b);
+/** Same as authored: `targets` is the server's record of where a version was kept, not part of what the author wrote. */
+export const sameManifest = (a: UserPluginManifest, b: UserPluginManifest) =>
+  JSON.stringify(authoredManifest(a)) === JSON.stringify(authoredManifest(b));
+/** The saved, unchanged version a plugin is running, if it is running one: what load health is recorded for. */
+const runningSaved = (entry: PluginEntry) => (isDirty(entry) ? undefined : latestSaved(entry));
 /** The working copy differs from the latest saved version (or was never saved). */
 export function isDirty(entry: PluginEntry) {
   const saved = latestSaved(entry);
@@ -113,7 +125,7 @@ class PluginManager {
           this.put({
             id: summary.id,
             scope: summary.scope,
-            manifest: latest.manifest,
+            manifest: authoredManifest(latest.manifest),
             source: latest.source,
             origin: 'saved',
             versions: history.versions,
@@ -157,8 +169,19 @@ class PluginManager {
       const current = this.get(id) ?? entry;
       return { id, manifest: current.manifest, source: current.source, log: (level, message) => this.log(id, level, message) };
     };
+    const saved = runningSaved(entry);
+    try {
+      this.register(entry, ref, track);
+    } catch (error) {
+      if (saved) recordLoad(hostInfo().versions, id, saved.sha256, false);
+      throw error;
+    }
+    if (saved) recordLoad(hostInfo().versions, id, saved.sha256, true);
+  }
+
+  private register(entry: PluginEntry, ref: () => PluginRef, track: (handle: { dispose(): void }) => () => void) {
     const { contributes } = entry.manifest;
-    viewerRegistry.replacePlugin(registryName(id), (api) => {
+    viewerRegistry.replacePlugin(registryName(entry.id), (api) => {
       for (const tab of contributes.tabs ?? [])
         api.registerInspectorTab({
           id: tab.id,
@@ -191,6 +214,9 @@ class PluginManager {
     const entry = this.get(id);
     if (!entry) return;
     const diagnostics = [...entry.diagnostics, { at: Date.now(), level, message }].slice(-MAX_DIAGNOSTICS);
+    // An error from a saved, unchanged version is a failed load of that version (src/client/malleable/health.ts).
+    const saved = level === 'error' ? runningSaved(entry) : undefined;
+    if (saved) recordLoad(hostInfo().versions, id, saved.sha256, false);
     // Diagnostics change often and must not reload anything: replace the entry without syncing.
     this.set({ entries: this.state.entries.map((existing) => (existing.id === id ? { ...existing, diagnostics } : existing)) });
   }
@@ -205,7 +231,8 @@ class PluginManager {
     const existing = this.get(manifest.id);
     const entry: PluginEntry = {
       id: manifest.id,
-      scope: existing?.scope ?? input.scope ?? 'user',
+      // A new plugin goes to the first scope the host keeps (malleable.scopes): `user` unless only `workspace` is on.
+      scope: existing?.scope ?? input.scope ?? hostInfo().policy.scopes[0] ?? 'user',
       manifest,
       source,
       origin: input.origin,
@@ -230,7 +257,14 @@ class PluginManager {
     if (!entry) return;
     const saved = latestSaved(entry);
     if (saved)
-      this.put({ ...entry, manifest: saved.manifest, source: saved.source, origin: 'saved', revision: ++this.revision, diagnostics: [] });
+      this.put({
+        ...entry,
+        manifest: authoredManifest(saved.manifest),
+        source: saved.source,
+        origin: 'saved',
+        revision: ++this.revision,
+        diagnostics: [],
+      });
     else {
       this.set({ entries: this.state.entries.filter((existing) => existing.id !== id) });
       this.sync(id);
@@ -288,7 +322,7 @@ class PluginManager {
     if (!entry || !version) throw new Error(`no version ${n}`);
     this.put({
       ...entry,
-      manifest: version.manifest,
+      manifest: authoredManifest(version.manifest),
       source: version.source,
       origin: 'workshop',
       revision: ++this.revision,
