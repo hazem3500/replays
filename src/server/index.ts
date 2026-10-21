@@ -8,6 +8,7 @@ export { startServer, type RunningServer, type StartOptions } from './start.ts';
 export { createRuntime, mergeContextSchemas, resolveSettings, type Runtime, type RuntimeOptions } from './runtime.ts';
 export { createApp, type AppOptions } from './app.ts';
 export { ReplayStore } from './store.ts';
+export { createPurposeCatalog, PurposeCatalog } from './purposes.ts';
 export { loadSettings, readConfigFile, type AppSettings, type FileConfig } from './config.ts';
 export { authFromEnv, headerAuth, noneAuth, oidcAuth } from './auth/index.ts';
 export type { OidcOptions } from './auth/oidc.ts';

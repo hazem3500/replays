@@ -30,6 +30,7 @@ import {
   type ReviewSuiteSummary,
   summarizeReviewSuite,
 } from '../shared/review-suite.ts';
+import { PurposeCatalog } from './purposes.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
 import { captureLink, withSpan } from './tracing.ts';
 
@@ -116,6 +117,8 @@ export class ReplayStore {
   readonly samples: FsStorage;
   readonly sampleDir: string;
   readonly retention: RetentionPolicy;
+  /** The deployment's purposes: listed summaries get their (inferred) purpose from here. Empty by default. */
+  readonly purposes: PurposeCatalog;
   /** Parsed summaries keyed by id, valid while the sidecar's version (generation / mtime) is unchanged. */
   private readonly summaryCache = new Map<string, { version: string; summary: ReplaySummary | undefined }>();
   private readonly keepCache = new Map<string, { version: string; keep: KeepRecord | undefined }>();
@@ -136,12 +139,13 @@ export class ReplayStore {
     data: string | ObjectStorage,
     sampleDir: string,
     retention?: number | Partial<RetentionPolicy>,
-    options: { listTtlMs?: number } = {},
+    options: { listTtlMs?: number; purposes?: PurposeCatalog } = {},
   ) {
     this.storage = typeof data === 'string' ? new FsStorage(data) : data;
     this.sampleDir = sampleDir;
     this.samples = new FsStorage(sampleDir);
     this.retention = policyFrom(retention);
+    this.purposes = options.purposes ?? new PurposeCatalog();
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
   }
 
@@ -567,6 +571,9 @@ export class ReplayStore {
     if (keptBySuite && !keep) return { expiresAt: null };
     return retentionOf(this.retention, {
       uploadedMs: replay.createdMs,
+      purpose: summary.purpose,
+      purposeInferred: summary.purposeInferred,
+      summary,
       ...(keep ? { kept: keep } : {}),
     });
   }
@@ -596,8 +603,9 @@ export class ReplayStore {
       this.storage.stat(this.keepKey(id)),
     ]);
     if (replay) {
-      const summary = await this.uploadedSummary(id, replay, meta);
-      if (!summary) return undefined;
+      const stored = await this.uploadedSummary(id, replay, meta);
+      if (!stored) return undefined;
+      const summary = this.purposes.apply(stored);
       const keep = await this.keepOf(this.keepKey(id), keepInfo);
       const keptBySuite = suites && !keep && (await this.keptSuiteReplays()).has(id);
       return { ...summary, ...this.retentionFor(summary, replay, keep, keptBySuite) };
@@ -605,7 +613,7 @@ export class ReplayStore {
     const sample = await this.samples.stat(this.sampleKey(id));
     if (!sample) return undefined;
     const summary = await this.sampleSummary(id, sample);
-    return summary ? { ...summary, expiresAt: null } : undefined;
+    return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
   }
 
   async list(filters: ReplayFilters = {}): Promise<ReplaySummary[]> {
@@ -649,8 +657,9 @@ export class ReplayStore {
         if (!replay) return undefined;
         await gate.acquire();
         try {
-          const summary = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
-          if (!summary) return undefined;
+          const stored = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
+          if (!stored) return undefined;
+          const summary = this.purposes.apply(stored);
           const keep = await this.keepOf(this.keepKey(id), keepInfo);
           return { ...summary, ...this.retentionFor(summary, replay, keep, keptBySuite.has(id)) };
         } finally {
@@ -661,7 +670,7 @@ export class ReplayStore {
         const id = sample.key.slice(0, -'.json'.length);
         if (!ID.test(id) || uploads.get(id)?.replay) return undefined;
         const summary = await this.sampleSummary(id, sample);
-        return summary ? { ...summary, expiresAt: null } : undefined;
+        return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
       }),
     ]);
     return summaries
@@ -864,7 +873,15 @@ export class ReplayStore {
           if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
           let expires: number | undefined;
           if (replay) {
-            expires = expiryMs(this.retention, { uploadedMs: replay.createdMs });
+            // Per purpose and rule: the summary (sidecar, cached) says which applies.
+            const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
+            const summary = stored && this.purposes.apply(stored);
+            expires = expiryMs(this.retention, {
+              uploadedMs: replay.createdMs,
+              purpose: summary?.purpose,
+              purposeInferred: summary?.purposeInferred,
+              summary,
+            });
           } else {
             const newest = Math.max(...group.map((object) => object.updatedMs));
             expires = expiryMs(this.retention, { uploadedMs: newest });

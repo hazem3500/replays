@@ -17,12 +17,15 @@ export type {
   PluginSpec,
   PrepareUploadContext,
   PrepareUploadHook,
+  PurposeDefinition,
+  PurposeInferInput,
   ReplaysPlugin,
   RequestHook,
   RequestHookContext,
   RequestHookOptions,
   ResponseHook,
   ResponseHookContext,
+  RetentionRuleDefinition,
   StorageBackend,
   UploadHookContext,
 } from './types.ts';
@@ -30,3 +33,4 @@ export type { AuthAdapter, AuthPluginFactory, Identity } from '../server/auth/ty
 export type { ObjectStorage } from '../server/storage/types.ts';
 export type { SourceProvider } from '../shared/source-providers.ts';
 export { assertRedactionRules, type RedactionPattern, type RedactionRules, type RedactionTextRule } from '../shared/redaction.ts';
+export type { PosterMoment, PurposeConfig, PurposeInfo, PurposeOpenAt, PurposeViewerDefaults } from '../shared/purposes.ts';

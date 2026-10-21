@@ -18,7 +18,8 @@ import './render.css';
 
 import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdits } from '../../shared/edits.ts';
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
-import type { ReplayBundle } from '../../shared/replay.ts';
+import type { PosterMoment } from '../../shared/purposes.ts';
+import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
@@ -33,8 +34,8 @@ export interface RenderApi {
   /** `captions`: draw the step captions (video export with captions). */
   plan(fps: number, speed: number, options?: RenderPlanOptions): { count: number; dirty: number[] };
   show(index: number): Promise<void>;
-  /** Seeks to the poster moment (posterMoment), waits for its assets, and returns that time. */
-  poster(): Promise<number>;
+  /** Seeks to the poster moment (posterMoment; `moment` from the replay's purpose), waits for its assets, and returns that time. */
+  poster(moment?: PosterMoment): Promise<number>;
   /** Frames for the hover preview (frames.ts previewPlan, 3× with idle gaps squeezed). */
   previewPlan(fps: number, maxOutputMs: number): PreviewPlan;
   /** Seeks to `time` (ms); waits for assets when a new document was rebuilt on the way. */
@@ -204,8 +205,13 @@ async function start() {
     previewPlan(nextFps, maxOutputMs) {
       return previewPlan({ eventTimes, duration: controller.duration, fps: nextFps, maxOutputMs });
     },
-    async poster() {
+    async poster(moment) {
       const time = posterMoment({
+        ...(moment ? { moment } : {}),
+        errorTimes: [
+          ...bundle.console.filter((entry) => entry.level === 'error').map((entry) => entry.at),
+          ...bundle.network.filter(isFailedRequest).map((entry) => entry.at),
+        ],
         stepTimes: bundle.steps.map((step) => step.at),
         snapshotTimes,
         duration: controller.duration,

@@ -1,7 +1,7 @@
 // Imports a plain rrweb recording made by a person (rrweb record() snippet,
 // the rrweb browser extension, or another tool's export) as a replay.
 // Run with `replays import --rrweb <events.json> --title "..."`. Optional: --url, --id,
-// --tag <tag> (repeatable), --output, --upload-url, --header-file.
+// --tag <tag> (repeatable), --purpose <id>, --output, --upload-url, --header-file.
 import { readFile, writeFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
@@ -18,6 +18,7 @@ export async function importRecording(args: {
   url?: string;
   id?: string;
   tags?: string[];
+  purpose?: string;
   output?: string;
   uploadUrl?: string;
   headerFile?: string;
@@ -30,6 +31,7 @@ export async function importRecording(args: {
     ...(args.url ? { url: args.url } : {}),
     ...(args.id ? { id: args.id } : {}),
     ...(args.tags?.length ? { tags: args.tags } : {}),
+    ...(args.purpose ? { purpose: args.purpose } : {}),
   });
   const output = resolve(args.output ?? join('.data', bundle.meta.id));
   await prepareOutputDirectory(output);
@@ -51,6 +53,7 @@ export async function runImportCli(argv: string[]) {
       ...(values.url ? { url: values.url } : {}),
       ...(values.id ? { id: values.id } : {}),
       ...(lists.tag ? { tags: lists.tag } : {}),
+      ...(values.purpose ? { purpose: values.purpose } : {}),
       ...(values.output ? { output: values.output } : {}),
       ...(values['upload-url'] ? { uploadUrl: values['upload-url'] } : {}),
       ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),

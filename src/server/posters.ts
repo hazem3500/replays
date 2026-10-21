@@ -8,6 +8,7 @@ import { extname, join } from 'node:path';
 import { send } from './app.ts';
 import { PREVIEW_SPEED } from '../client/render/frames.ts';
 import { chromiumArgs, ffmpegArgs, RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
+import type { PosterMoment } from '../shared/purposes.ts';
 import { serveObject } from './serve-object.ts';
 import { ObjectExistsError, type ObjectStorage, readJson } from './storage/index.ts';
 import type { ReplayStore } from './store.ts';
@@ -43,6 +44,8 @@ export type MediaKind = 'poster' | 'open' | 'preview';
 
 export interface PosterTask {
   id: string;
+  /** Where the poster is taken (the replay's purpose decides; absent: the default moment). Posters only. */
+  moment?: PosterMoment;
   /** Write the file here, a local temporary path (the queue stores it, and an optional `<output>.json` sidecar). */
   output: string;
   signal: AbortSignal;
@@ -58,6 +61,8 @@ export interface PosterQueueOptions {
   /** The finished poster's key (ReplayStore.posterKey). */
   key: (id: string) => string;
   runner: PosterRunner;
+  /** The poster moment for a replay (from its purpose); absent or undefined means the default. */
+  moment?: (id: string) => Promise<PosterMoment | undefined>;
   /** Hover previews; absent (no ffmpeg) means previews are off. */
   preview?: { key: (id: string) => string; runner: PosterRunner };
   /** Opening stills (ReplayStore.openStillKey); the poster runner also leaves one at `<output>.open.jpg`. */
@@ -85,8 +90,8 @@ interface Job {
 const key = (kind: MediaKind, id: string) => `${kind}:${id}`;
 
 export class PosterQueue {
-  private readonly options: Required<Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir'>> &
-    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir'> & { busy: () => boolean };
+  private readonly options: Required<Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir' | 'moment'>> &
+    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir' | 'moment'> & { busy: () => boolean };
   /** Posters first: they are what the list shows; then opening stills (opening a replay); previews only play on hover. */
   private readonly waiting: Record<MediaKind, Job[]> = { poster: [], open: [], preview: [] };
   private readonly pending = new Set<string>();
@@ -212,7 +217,8 @@ export class PosterQueue {
     const started = this.options.now();
     try {
       const runner = kind === 'poster' ? this.options.runner : kind === 'open' ? this.options.open!.runner : this.options.preview!.runner;
-      await runner({ id, output: temporary, signal: controller.signal });
+      const moment = kind === 'poster' ? await this.options.moment?.(id).catch(() => undefined) : undefined;
+      await runner({ id, output: temporary, signal: controller.signal, ...(moment ? { moment } : {}) });
       controller.signal.throwIfAborted();
       // The sidecar first: whoever sees the media also sees what it covers.
       if (await stat(`${temporary}.json`).catch(() => undefined))
@@ -258,7 +264,7 @@ interface RenderWindow {
     ready: boolean;
     error?: string;
     viewport: { width: number; height: number };
-    poster(): Promise<number>;
+    poster(moment?: PosterMoment): Promise<number>;
     previewPlan(fps: number, maxOutputMs: number): { times: number[]; dirty: number[]; capped: boolean; coveredMs: number };
     showAt(time: number): Promise<void>;
   };
@@ -369,7 +375,7 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       // The page loads showing t = 0: the opening still comes first, for the price of one screenshot.
       await writeFile(`${task.output}.open.jpg`, await shoot(), { mode: 0o640 });
       task.signal.throwIfAborted();
-      await page.evaluate(() => (window as RenderWindow).__render!.poster());
+      await page.evaluate((moment) => (window as RenderWindow).__render!.poster(moment), task.moment);
       task.signal.throwIfAborted();
       await writeFile(task.output, await shoot(), { mode: 0o640 });
     });

@@ -106,6 +106,7 @@ describe('replay server', () => {
       sourceProviders: ['github', 'gitlab', 'url'],
       auth: 'none',
       plugins: [],
+      purposes: [],
       beta: { editor: false, malleable: false },
       comments: false,
       core: coreVersion(),

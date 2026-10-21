@@ -47,6 +47,7 @@ export default defineConfig({
   hosts: { 'replays.example.com': { basePath: '/' } },   // a different base for this Host; others keep basePath
   trustForwardedHost: false,     // TRUST_FORWARDED_HOST: pick the host from X-Forwarded-Host (a gateway that rewrites Host)
   retentionDays: 30,             // RETENTION_DAYS
+  purposes: [{ id: 'triage', label: 'Triage', retentionDays: 90 }],   // see "Purposes and retention" below
   contextSchemaFile: './context.schema.json',
   githubHost: 'github.example.com', gitlabHost: 'gitlab.example.com',
   sourceProviders: [{ id: 'jira', template: 'https://jira.example.com/browse/{ref}' }],
@@ -122,6 +123,8 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.afterUpload(hook)` | `hook({ bundle, identity, request, url })` after the bundle is stored; errors are logged and never fail the upload | – |
 | `api.redaction({ headers?, queryParams?, jsonKeys?, text?, maskSelectors? })` | [Redaction rules](extending.md#redaction-rules) added to the sanitiser's defaults, in the capture CLI (which reads the same config) and the server's privacy pass. Rules from several plugins and the config's `redaction` add up; they cannot turn a default off. Validate your own with `assertRedactionRules` (`/plugin`, `/capture`) | – (invalid rules are an `invalid-registration`) |
 | `api.client({ id, script, style? })` | A browser entry, served by the app behind the same auth (an absolute file path) or loaded from an `https:` URL | the same `id` twice in one plugin |
+| `api.purpose({ id, label, order?, retentionDays?, viewer?, poster?, infer? })` | A [purpose](#purposes-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.purpose` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
+| `api.retention({ days(summary) })` | A [retention rule](#purposes-and-retention) that is not about purpose: whole days, or `0` / `undefined` for no limit | – |
 
 Upload order: `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →
 `beforeUpload` → store → `afterUpload`. The core checks cannot be skipped by a hook: an adapter or hook that produces an
@@ -137,6 +140,60 @@ AUTH_MODE (env)  →  config.auth  →  the only plugin adapter  →  built-in d
 
 A name is looked up among plugin adapters first, then the built-ins. `AUTH_MODE=plugin AUTH_PLUGIN=./x.mjs` (the older
 mechanism) still works.
+
+## Purposes and retention
+
+A purpose answers "why was this recorded?" (a bug triage, a design review, a walkthrough) and changes how a replay is kept,
+opened, listed and drawn. **The core defines none.** A deployment declares them in the config file, or a plugin registers
+them (and only a plugin can *infer* one):
+
+```ts
+// replays.config.ts (or the same list in replays.config.json)
+purposes: [
+  { id: 'triage', label: 'Triage', retentionDays: 90, viewer: { openAt: 'first-error', leadMs: 1000, inspector: 'open' }, poster: 'first-error' },
+  { id: 'walkthrough', label: 'Walkthroughs', order: 2, retentionDays: 0, viewer: { inspector: 'collapsed', captions: true }, poster: 'last-step' },
+],
+
+// a plugin
+api.purpose({ id: 'triage', label: 'Triage', infer: ({ errors, sources }) => errors > 0 && sources?.some((s) => s.provider === 'jira') === true });
+api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : undefined) });
+```
+
+| Field | Meaning |
+| --- | --- |
+| `id` | `[a-z][a-z0-9-]{0,39}`; unique |
+| `label` | Shown on the index tab, the upload picker and in `/api/config` (at most 40 characters) |
+| `order` | Lower first (tabs, and the order `infer` is tried in). Default 0; ties keep declaration order: config entries first, then plugins in plugin order |
+| `retentionDays` | Whole days to keep a replay of this purpose; `0` keeps it forever. `RETENTION_PURPOSE_<ID>_DAYS` overrides it (the id upper-cased, `-` as `_`: `RETENTION_PURPOSE_DESIGN_REVIEW_DAYS`). Absent: `retentionDays` / `RETENTION_DAYS` |
+| `viewer.openAt` | `'start'` (default) or `'first-error'`: open `viewer.leadMs` (default 1000) before the first console error or failed request, on the tab that holds it. A permalink (`?t=`, `#step-…`) wins |
+| `viewer.inspector` | `'open'` or `'collapsed'`: the bottom panel when the person has no stored choice |
+| `viewer.captions` | Step captions on the player when the person has no stored choice |
+| `poster` | The list thumbnail's moment: `'middle-step'` (the default), `'first-error'` or `'last-step'` |
+| `infer(input)` | Plugins only. `input` is the replay's summary (counts, `sources`, `tags`, `suiteRun`, `title`, `url`, …) plus `errors`; return `true` to claim the replay. The first purpose (in `order`) that says yes wins; a throwing `infer` counts as no and is logged once |
+
+- **Config and plugins.** Two plugins registering the same id is a `conflict` error. A config entry with a plugin purpose's id
+  overrides that purpose's fields (`viewer` key by key) and keeps its `infer`, so a host can retune a plugin's purpose without code.
+  A malformed entry stops the server with the field named.
+- **Uploads** may carry `meta.purpose` (`POST /api/replays`), or `?purpose=` on `POST /api/replays/import`. It must be one of the
+  registered ids; anything else is a `400` naming the allowed ids. With no purposes registered, an upload that carries one is
+  refused (`400`, "this server defines no purposes") rather than stored with a purpose nothing knows: a producer finds out at once,
+  and a `prepareUpload` hook can drop or translate the field. The CLI takes `--purpose <id>` on `capture`, `upload` and `import`;
+  the upload dialog offers a picker (bundles and rrweb imports) when purposes exist.
+- **Summaries** gain `purpose` and `purposeInferred` (`SUMMARY_VERSION` 7). Only the explicit purpose is stored in the sidecar;
+  inference runs when the server lists, so a changed rule applies to stored replays at once. Removing a purpose from the
+  config leaves `meta.purpose` in the stored bundles; it is shown as a plain field and no longer affects anything.
+- **Listing.** `GET /api/replays?purpose=<id>` filters; `GET /api/config` lists `purposes` (`[]` in a plain core); the index shows
+  "All · <purpose> …" tabs with counts (only when purposes exist), kept in the URL as `purpose=`. A suite counts under the purposes
+  of its runs' replays.
+- **Viewer.** A replay's purpose is its `meta.purpose`, else the inferred one, which the server sends as
+  `x-replay-purpose: <id>; inferred` with the bundle (cached with it for up to a day). The viewer marks it as `data-purpose` on
+  `main.app-shell`.
+- **Retention.** The purpose's window replaces the default one. **An inferred purpose never makes a replay permanent**: if its
+  window is `0`, the default window applies; only an explicit purpose (or Keep) keeps a replay forever. `api.retention` rules can
+  only shorten: the shortest positive window among the default/purpose window and every rule wins, `0` or `undefined` means no
+  limit from that rule, and **Keep** (or a kept suite) still overrides everything. A rule that throws or returns something other
+  than a whole number of days is logged once and ignored. Rules see the summary, so they apply to replays, not to suites (suites
+  use the default window).
 
 ## Built-in plugins
 

@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path';
 
 import { assertReplayId, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags } from '../shared/replay.ts';
+import { isPurposeId } from '../shared/purposes.ts';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
 import type { ReplaySourceInput } from '../shared/context.ts';
 import { compileContextSchema } from '../server/context-schema.ts';
@@ -40,6 +41,8 @@ export interface CaptureArgs {
   /** Source references (`github:owner/repo#12`) to add to the context. */
   sources: ReplaySourceInput[];
   tags: string[];
+  /** `meta.purpose`: one of the server's purposes (it refuses others). */
+  purpose?: string;
   suiteRun?: { suiteId: string; runId: string };
   /** JSON Schema file for `context.fields`; the deployment's own, so a bad context fails before the browser starts. */
   contextSchema?: unknown;
@@ -133,6 +136,7 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --viewport <WxH>         default 1440x900
   --video                  also write session.mp4 (playwright driver needs ffmpeg)
   --tag <tag>              label for filtering; repeatable
+  --purpose <id>           why it was recorded: one of the server's purposes (GET /api/config lists them)
   --source <p:ref>         link to the thing under test, e.g. github:owner/repo#12; repeatable
   --context-file <file>    JSON { app?, test?, sources?, fields? } from your test runner
   --context-schema <file>  JSON Schema that context.fields must satisfy (same file as the server's)
@@ -185,6 +189,8 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (driver !== 'playwright' && driver !== 'agent-browser') throw new Error('--driver must be playwright or agent-browser');
   const tags = lists.tag ?? [];
   if (tags.length) assertReplayTags(tags, '--tag');
+  if (values.purpose !== undefined && !isPurposeId(values.purpose))
+    throw new Error('--purpose must be a purpose id (lower-case letters, digits and "-")');
   if (Boolean(values['suite-id']) !== Boolean(values['run-id'])) throw new Error('--suite-id and --run-id must be used together');
   if (values['run-id'] && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$/.test(values['run-id'])) {
     throw new Error('--run-id must contain letters, digits, and hyphens');
@@ -205,6 +211,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     viewport: parseViewport(values.viewport),
     sources,
     tags,
+    ...(values.purpose ? { purpose: values.purpose } : {}),
     ...(values.title ? { title: values.title } : {}),
     ...(values['upload-url'] ? { uploadUrl: values['upload-url'] } : {}),
     ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
@@ -319,6 +326,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
         source: 'agent',
         ...(args.video ? { videoFile: 'session.mp4' } : {}),
         ...(args.tags.length ? { tags: args.tags } : {}),
+        ...(args.purpose ? { purpose: args.purpose } : {}),
       },
       events: tracks.events,
       console: tracks.console,

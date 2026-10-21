@@ -21,7 +21,8 @@ import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
 import { rememberListed } from './navigation.ts';
-import { CommandSearch, IndexIdentity, ScopeBar } from './index/IndexHeader.tsx';
+import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, ScopeBar } from './index/IndexHeader.tsx';
+import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
 import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
 import { FilterMenu, FilterSheet } from './index/FilterMenu.tsx';
@@ -100,8 +101,28 @@ export function sortFromSearch(search: string): Sort {
   return { key: key as SortKey, direction: raw.startsWith('-') ? 'descending' : 'ascending' };
 }
 
-export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT) {
+/** The purpose segment, `purpose=`: one of the deployment's purposes, else none (All). */
+export function purposeFromSearch(search: string, purposes = pagePurposes()): string | undefined {
+  const purpose = new URLSearchParams(search).get('purpose');
+  return purposes.some((item) => item.id === purpose) ? purpose! : undefined;
+}
+
+/** The purposes an entry counts under: a replay's own; a suite's, those of its runs' replays. */
+export function entryPurposes(entry: IndexEntry): string[] {
+  if (entry.kind === 'session') return entry.summary.purpose ? [entry.summary.purpose] : [];
+  return [...new Set(entry.suite.runDetails.flatMap((run) => (run.replay?.purpose ? [run.replay.purpose] : [])))];
+}
+
+/** Entries per purpose segment. The segments narrow the list after the other filters, so every tab shows its count. */
+export function purposeCounts(entries: readonly IndexEntry[]): PurposeCounts {
+  const counts: PurposeCounts = { all: entries.length };
+  for (const entry of entries) for (const purpose of entryPurposes(entry)) counts[purpose] = (counts[purpose] ?? 0) + 1;
+  return counts;
+}
+
+export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT, purpose?: string) {
   const params = new URLSearchParams(searchFromFilters(filters));
+  if (purpose) params.set('purpose', purpose);
   if (kind) params.set('kind', kind);
   if (sort.key !== DEFAULT_SORT.key || sort.direction !== DEFAULT_SORT.direction)
     params.set('sort', `${sort.direction === 'descending' ? '-' : ''}${sort.key}`);
@@ -320,6 +341,8 @@ export function ReplayIndex() {
   const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
   const [restored] = useState(() => restoredIndex(filters));
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
+  const purposes = pagePurposes();
+  const [purpose, setPurpose] = useState<string | undefined>(() => purposeFromSearch(location.search, purposes));
   const [query, setQuery] = useState(filters.q ?? '');
   const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
   const [loadError, setError] = useState('');
@@ -362,10 +385,10 @@ export function ReplayIndex() {
   }, [query]);
 
   useEffect(() => {
-    const search = indexSearch(filters, kind, sort);
+    const search = indexSearch(filters, kind, sort, purpose);
     history.replaceState(history.state, '', `${location.pathname}${search}`);
     rememberIndexSearch(search);
-  }, [filters, kind, sort]);
+  }, [filters, kind, sort, purpose]);
 
   // Back from a replay lands where you left: the scroll offset lives in this history entry.
   useEffect(() => {
@@ -460,10 +483,16 @@ export function ReplayIndex() {
     return () => controller.abort();
   }, []);
 
-  const entries = useMemo(
+  const unsegmented = useMemo(
     () => (items && suites ? sortEntries(buildIndexEntries(items, suites, settledFilters ?? filters, kind), sort) : undefined),
     // Filter suites with the filters the session list was loaded for, so both kinds update together.
     [items, suites, settledFilters, filters, kind, sort],
+  );
+  // The purpose segment narrows what the other filters keep (client-side, so every tab can show its count).
+  const counts = useMemo(() => (purposes.length && unsegmented ? purposeCounts(unsegmented) : undefined), [purposes, unsegmented]);
+  const entries = useMemo(
+    () => (purpose && unsegmented ? unsegmented.filter((entry) => entryPurposes(entry).includes(purpose)) : unsegmented),
+    [unsegmented, purpose],
   );
   const listed = Boolean(entries);
   // Effects re-run when the index is shown again behind a viewer page (App.tsx keeps it in an Activity).
@@ -487,7 +516,7 @@ export function ReplayIndex() {
     const search = searchFromFilters(filters);
     saveIndexCache({ search, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
   }, [items, suites, settledFilters, filters, restored]);
-  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind);
+  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   const error = settledFilters === filters ? loadError : '';
   const replays = entries ? replayCount(entries) : 0;
@@ -496,11 +525,13 @@ export function ReplayIndex() {
   // Feed changes cross-fade (feed-transition.ts).
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
+  const changePurpose = (next: string | undefined) => feedTransition(() => setPurpose(next));
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
     feedTransition(() => setFilters((current) => withFilter(current, key, value)));
   const clear = () => {
     setQuery('');
     setKind(undefined);
+    setPurpose(undefined);
     setFilters({});
   };
   /** The sheet's "Clear all": every filter except the search text. */
@@ -540,6 +571,7 @@ export function ReplayIndex() {
             </>
           }
         />
+        {purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : null}
         <ScopeBar count={count}>
           {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
           <SortMenu sort={sort} onChange={changeSort} />

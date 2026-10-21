@@ -1,6 +1,7 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
 import type { HostVersions, MalleablePolicy } from '../shared/malleable-policy.ts';
 import type { PageBranding } from './base-path.ts';
+import type { PurposeInfo } from '../shared/purposes.ts';
 
 /**
  * Theming without a rebuild. Every colour in the viewer is a CSS custom property (src/client/styles.css); a
@@ -102,6 +103,8 @@ export function publicConfig(
     sourceProviders: string[];
     auth: string;
     plugins?: string[];
+    /** The deployment's purposes (src/shared/purposes.ts); an empty list in a plain core. */
+    purposes?: readonly PurposeInfo[];
     beta?: { editor: boolean; malleable?: boolean };
     comments?: boolean;
     versions?: HostVersions;
@@ -115,6 +118,7 @@ export function publicConfig(
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,
     plugins: extra.plugins ?? [],
+    purposes: extra.purposes ?? [],
     beta: extra.beta ?? { editor: false, malleable: false },
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
     ...(extra.versions ? { core: extra.versions.core } : {}),

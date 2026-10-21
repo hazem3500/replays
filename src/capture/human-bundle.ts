@@ -96,6 +96,8 @@ export interface HumanImportOptions {
   id?: string;
   /** `meta.tags`; validated by assertReplayBundle. */
   tags?: string[];
+  /** `meta.purpose`; its shape is validated by assertReplayBundle, the id by the server. */
+  purpose?: string;
 }
 
 /**
@@ -125,6 +127,7 @@ export function buildHumanBundle(input: unknown, options: HumanImportOptions): R
       version: 1,
       source: 'human',
       ...(options.tags?.length ? { tags: options.tags } : {}),
+      ...(options.purpose ? { purpose: options.purpose } : {}),
     },
     events,
     steps: [],

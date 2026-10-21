@@ -8,6 +8,7 @@ import { type AppSettings, type FileConfig, loadSettings } from './config.ts';
 import { authFromEnv } from './auth/index.ts';
 import type { AuthAdapter } from './auth/types.ts';
 import { type ContextSchema, compileContextSchema } from './context-schema.ts';
+import { createPurposeCatalog, wrapRetentionRules } from './purposes.ts';
 import { storageFromEnv } from './storage/index.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
@@ -116,6 +117,18 @@ export async function resolveSettings(options: RuntimeOptions): Promise<Omit<Run
       });
     settings.sources.register(provider.value);
   }
+  // Purposes: the config's merged with the plugins' (src/server/purposes.ts); their windows and the plugins' rules join retention.
+  settings.purposes = createPurposeCatalog({
+    config: file.purposes,
+    plugins: registry.purposes,
+    env,
+    log: (line) => console.warn(line),
+  });
+  settings.retention = {
+    ...settings.retention,
+    ...(settings.purposes.size ? { purposes: settings.purposes.retentionDays() } : {}),
+    ...(registry.retention.length ? { rules: wrapRetentionRules(registry.retention) } : {}),
+  };
   const contextSchema = mergeContextSchemas(settings.contextSchema, registry);
   if (contextSchema) settings.contextSchema = contextSchema;
   return { settings, registry, config };

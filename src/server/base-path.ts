@@ -124,6 +124,8 @@ export interface PageBranding {
   beta?: string;
   /** Comments on replays are enabled (`<meta name="app-comments">`). */
   comments?: boolean;
+  /** JSON list of the deployment's purposes (`<meta name="app-purposes">`); absent when there are none. */
+  purposes?: string;
   /** JSON list of the plugins' browser entries (`<meta name="app-plugins">`); see src/server/plugin-runtime.ts. */
   plugins?: string;
   /** Browser chrome colour per scheme (`<meta name="theme-color">`): the theme's `page` token; unset keeps the built-in one. */
@@ -149,6 +151,10 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
   if (branding) {
     out = out.replace('<meta name="app-comments" content="" />', `<meta name="app-comments" content="${branding.comments ? 'on' : ''}" />`);
     out = out.replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${escapeHtml(branding.beta ?? '')}" />`);
+    out = out.replace(
+      '<meta name="app-purposes" content="" />',
+      `<meta name="app-purposes" content="${escapeHtml(branding.purposes ?? '')}" />`,
+    );
     out = out.replace(
       '<meta name="app-plugins" content="" />',
       `<meta name="app-plugins" content="${escapeHtml(branding.plugins ?? '')}" />`,

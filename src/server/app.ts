@@ -17,6 +17,7 @@ import {
   type ResolvedSuiteRegistration,
 } from '../shared/review-suite.ts';
 import { assertReplayContext, type ReplayContext } from '../shared/context.ts';
+import { isPurposeId } from '../shared/purposes.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
 import { defaultPolicy, type HostVersions, type MalleablePolicy } from '../shared/malleable-policy.ts';
 import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
@@ -45,6 +46,7 @@ import {
   watchResponse,
 } from './plugin-runtime.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
+import type { PurposeCatalog } from './purposes.ts';
 import { serveObject } from './serve-object.ts';
 import { ReplayConflictError, type ReplayStore } from './store.ts';
 import { recordError, setRequestAttributes, traceRequest, withSpan } from './tracing.ts';
@@ -268,6 +270,8 @@ export function replayFilters(params: URLSearchParams): ReplayFilters {
   if (source === 'agent' || source === 'human') filters.source = source;
   const tag = params.get('tag');
   if (isReplayTag(tag)) filters.tag = tag;
+  const purpose = params.get('purpose');
+  if (isPurposeId(purpose)) filters.purpose = purpose;
   return filters;
 }
 
@@ -361,10 +365,21 @@ export function isBrowserNavigation(request: IncomingMessage) {
   return accept.includes('text/html');
 }
 
-/** A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. */
-async function acceptUpload(bundle: ReplayBundle) {
+/**
+ * A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. Its
+ * `meta.purpose` must be one the deployment defines (src/server/purposes.ts); with none defined it must be absent.
+ */
+async function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog) {
   assertReplayBundle(bundle);
+  const problem = purposes.problem(bundle.meta.purpose);
+  if (problem) throw httpError(400, problem);
   return bundle;
+}
+
+/** `x-replay-purpose: <id>; inferred` for a replay whose purpose was inferred (explicit ones are in the bundle). */
+async function servedPurpose(store: ReplayStore, id: string): Promise<Record<string, string> | undefined> {
+  const summary = await store.summary(id, { suites: false }).catch(() => undefined);
+  return summary?.purpose && summary.purposeInferred ? { 'x-replay-purpose': `${summary.purpose}; inferred` } : undefined;
 }
 
 /** Applies the deployment's source providers and context schema to an uploaded bundle (in place). */
@@ -407,6 +422,8 @@ export function createApp(options: AppOptions) {
   ];
   const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
   const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
+  const purposes = options.store.purposes;
+  const inferable = purposes.list.some((purpose) => purpose.inferable);
   const redaction = mergeRedactionRules(options.redaction, registry.redaction);
   /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
   const sanitize = (bundle: ReplayBundle) =>
@@ -483,6 +500,7 @@ export function createApp(options: AppOptions) {
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
           plugins: [...registry.order],
+          purposes: options.store.purposes.list,
           beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
           comments: commentsOn,
           versions,
@@ -564,6 +582,9 @@ export function createApp(options: AppOptions) {
         const id = raw.searchParams.get('id')?.trim() || undefined;
         const tags = raw.searchParams.getAll('tag');
         if (tags.length) assertReplayTags(tags, 'tag');
+        const purpose = raw.searchParams.get('purpose')?.trim() || undefined;
+        const purposeProblem = options.store.purposes.problem(purpose);
+        if (purposeProblem) throw httpError(400, purposeProblem.replace('replay.meta.purpose', 'purpose'));
         // The same privacy pass as POST /replays, so query-parameter text (the title) is redacted too.
         const bundle = sanitize(
           buildHumanBundle(input, {
@@ -571,10 +592,11 @@ export function createApp(options: AppOptions) {
             ...(url ? { url } : {}),
             ...(id ? { id } : {}),
             ...(tags.length ? { tags } : {}),
+            ...(purpose ? { purpose } : {}),
           }),
         );
         setRequestAttributes(request, uploadAttributes(bundle));
-        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request));
+        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request), options.store.purposes);
         await saveWithFreshId(options.store, accepted, Boolean(id));
         setRequestAttributes(request, { 'replay.id': accepted.meta.id });
         void options.store.pruneSoon();
@@ -599,7 +621,7 @@ export function createApp(options: AppOptions) {
         assertReplayBundle(replay);
         resolveContext(replay, options);
         // Stored data never depends on the uploader having sanitized it.
-        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request));
+        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request), options.store.purposes);
         setRequestAttributes(request, uploadAttributes(bundle));
         if (bundle.suiteRun) {
           await options.store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);
@@ -628,12 +650,15 @@ export function createApp(options: AppOptions) {
         // browser keeps them for a day without asking again (reopening a replay reads its disk cache);
         // committed samples can change with a deploy, so they revalidate (ETag).
         const located = await options.store.locate(replayPath.id);
+        // An inferred purpose is not in the bundle: the viewer reads it from this header to open the replay its way.
+        const purposeHeaders = located && inferable ? await servedPurpose(options.store, replayPath.id) : undefined;
         if (
           !located ||
           !(await serveObject(request, response, located.storage, located.key, located.uploaded ? IMMUTABLE_PRIVATE : REVALIDATE, {
             contentType: 'application/json; charset=utf-8',
             etag: true,
             info: located.info,
+            ...(purposeHeaders ? { headers: purposeHeaders } : {}),
           }))
         ) {
           send(response, 404, 'replay not found');

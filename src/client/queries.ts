@@ -3,6 +3,7 @@ import { QueryClient, type QueryCache, queryOptions } from '@tanstack/react-quer
 import type { ReplayBundle } from '../shared/replay.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { readTextWithProgress } from './load-progress.ts';
+import { rememberServedPurpose } from './purposes.ts';
 import { apiUrl } from './route.ts';
 
 /*
@@ -52,6 +53,7 @@ export async function fetchReplay(id: string, signal?: AbortSignal, priority: Pr
     throw new LoadError('Replay failed to load (unexpected response)');
   }
   if (bundle && typeof bundle === 'object') decodedBytes.set(bundle, text.length);
+  rememberServedPurpose(id, response.headers.get('x-replay-purpose'));
   return bundle;
 }
 

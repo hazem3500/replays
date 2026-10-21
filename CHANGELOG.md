@@ -63,6 +63,16 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   plugins" notice for a plugin that fails after the versions changed, without disabling or changing anything. `get_plugin_api` now
   returns the theme tokens, the policy, the versions and the surfaces in the viewer.
 
+- **Purposes and retention rules** ([docs/extension-api.md](docs/extension-api.md#purposes-and-retention)). A deployment can say why
+  replays are recorded: `purposes: [{ id, label, order?, retentionDays?, viewer?, poster? }]` in the config file, or
+  `api.purpose({ …, infer? })` from a plugin (the core defines none). Uploads may carry `meta.purpose` (checked against the
+  registered ids; refused when none are registered), `--purpose <id>` on `capture`, `upload` and `import`, and a picker in the
+  upload dialog. Summaries gain `purpose` and `purposeInferred` (`SUMMARY_VERSION` 7, plus `suiteRun`); `GET /api/replays?purpose=`,
+  `purposes` in `/api/config`, and "All · <purpose>" tabs with counts on the index. Per purpose: a retention window
+  (`RETENTION_PURPOSE_<ID>_DAYS` overrides; an inferred purpose never makes a replay permanent), viewer defaults (open at the start
+  or just before the first error, the panel open or folded, captions) and the poster moment (`middle-step`, `first-error`,
+  `last-step`). `api.retention({ days(summary) })` adds rules that are not about purpose: the shortest window wins, `0` means no
+  limit, Keep still overrides. `/server` exports `createPurposeCatalog` and `PurposeCatalog`.
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

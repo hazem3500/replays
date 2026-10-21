@@ -98,12 +98,18 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   let store: ReplayStore;
   try {
     const storage = tracedStorage(await chooseStorage(env, runtime.config.file, registry, dataDir));
-    store = new ReplayStore(storage, sampleDir, settings.retention);
+    store = new ReplayStore(storage, sampleDir, settings.retention, { purposes: settings.purposes });
     // The first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
     const removed = await store.prune();
     log(
       `storage ${storage.kind} (${storage.description}); retention ${days(store.retention.days)}${removed.length ? `; pruned ${removed.length}` : ''}`,
     );
+    if (store.purposes.size)
+      log(
+        `purposes: ${store.purposes.list
+          .map((purpose) => `${purpose.id}${purpose.retentionDays === undefined ? '' : ` (${days(purpose.retentionDays)})`}`)
+          .join(', ')}`,
+      );
   } catch (error) {
     throw new Error(`storage or retention setup failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
@@ -174,6 +180,10 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
       storage: store.storage,
       key: (id) => store.posterKey(id),
       runner: media.poster,
+      // The purpose's poster moment (src/shared/purposes.ts); the default without one.
+      ...(store.purposes.list.some((purpose) => purpose.poster)
+        ? { moment: async (id: string) => store.purposes.poster((await store.summary(id, { suites: false }))?.purpose) }
+        : {}),
       open: { key: (id: string) => store.openStillKey(id), runner: media.open },
       // Hover previews are MP4s: they need ffmpeg too.
       ...(tools.available ? { preview: { key: (id: string) => store.previewKey(id), runner: media.preview } } : {}),

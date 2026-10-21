@@ -1,4 +1,5 @@
 import { assertReplayContext, type ReplayContext } from './context.ts';
+import { isPurposeId } from './purposes.ts';
 import type { KeepRecord } from './retention.ts';
 
 export type ConsoleLevel = 'debug' | 'info' | 'log' | 'warn' | 'error';
@@ -67,6 +68,8 @@ export interface ReplayMeta {
   source?: ReplaySource;
   /** Free-form labels for filtering (`smoke`, `checkout`); lower-case, bounded. */
   tags?: string[];
+  /** Why it was recorded: one of the deployment's purposes (src/shared/purposes.ts), checked on upload. Absent: inferred, or none. */
+  purpose?: string;
 }
 
 export const MAX_TAGS = 10;
@@ -130,6 +133,9 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
     throw new Error("replay.meta.source must be 'agent' or 'human'");
   }
   if (replay.meta.tags !== undefined) assertReplayTags(replay.meta.tags);
+  // Only the shape here; the server checks the id against the purposes it defines.
+  if (replay.meta.purpose !== undefined && !isPurposeId(replay.meta.purpose))
+    throw new Error('replay.meta.purpose must be a purpose id (lower-case letters, digits and "-")');
   if (replay.context !== undefined) assertReplayContext(replay.context);
   if (replay.suiteRun !== undefined) {
     const suiteRun = replay.suiteRun;
@@ -204,7 +210,7 @@ export interface ReplaySourceLink {
 }
 
 /** Bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily. */
-export const SUMMARY_VERSION = 6;
+export const SUMMARY_VERSION = 7;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
 
@@ -229,6 +235,15 @@ export interface ReplaySummary {
   tags?: string[];
   /** Up to three context sources, in bundle order. */
   sources?: ReplaySourceLink[];
+  /** The review suite run the replay was recorded for. */
+  suiteRun?: { suiteId: string; runId: string };
+  /**
+   * Why it was recorded: `meta.purpose`, else what a plugin's `infer` says (the server applies that when it lists,
+   * so stored sidecars only ever hold the explicit one). Absent when neither applies.
+   */
+  purpose?: string;
+  /** True when `purpose` was inferred rather than set by the producer. Inferred purposes never make a replay permanent. */
+  purposeInferred?: boolean;
   /** Pinned by someone with access (never expires); added by the server, never stored in meta.json. */
   kept?: KeepRecord;
   /** When retention removes it; null when it never expires. Added by the server per request. */
@@ -241,6 +256,7 @@ export interface ReplayFilters {
   errors?: boolean;
   source?: ReplaySource;
   tag?: string;
+  purpose?: string;
 }
 
 export function hostOf(url: string) {
@@ -313,6 +329,8 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
     timeline: summarizeTimeline(bundle),
     ...(meta.tags?.length ? { tags: meta.tags } : {}),
     ...(sources.length ? { sources } : {}),
+    ...(bundle.suiteRun ? { suiteRun: { suiteId: bundle.suiteRun.suiteId, runId: bundle.suiteRun.runId } } : {}),
+    ...(meta.purpose ? { purpose: meta.purpose, purposeInferred: false } : {}),
   };
 }
 
@@ -333,6 +351,7 @@ export function matchesFilters(summary: ReplaySummary, filters: ReplayFilters) {
   if (filters.errors && summary.consoleErrors + summary.failedRequests === 0) return false;
   if (filters.source && summary.source !== filters.source) return false;
   if (filters.tag && !summary.tags?.includes(filters.tag)) return false;
+  if (filters.purpose && summary.purpose !== filters.purpose) return false;
   return true;
 }
 

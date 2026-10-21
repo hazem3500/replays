@@ -1,3 +1,5 @@
+import type { ReplaySummary } from './replay.ts';
+
 /** Someone with access pinned this replay or suite: it never expires. */
 export interface KeepRecord {
   /** The authenticated identity (see auth adapters) that kept it. */
@@ -13,9 +15,20 @@ export interface Retention {
   expiresAt: string | null;
 }
 
-/** `RETENTION_DAYS`: whole days to keep an upload; 0 means never expire. */
+/**
+ * A plugin's retention rule (`api.retention({ days })`): whole days to keep this replay, or `0` / `undefined` for
+ * "no limit from me". The shortest window any rule (or the purpose, or the default) gives wins; Keep overrides all.
+ */
+export type RetentionRule = (summary: ReplaySummary) => number | null | undefined;
+
+/** How long uploads are kept. All windows are whole days; 0 means never expire. */
 export interface RetentionPolicy {
+  /** `RETENTION_DAYS`: the default window (replays without a purpose, review suites). */
   days: number;
+  /** Per purpose id (config, plugins, `RETENTION_PURPOSE_<ID>_DAYS`); a purpose without an entry uses `days`. */
+  purposes?: Readonly<Record<string, number>>;
+  /** `api.retention` rules, already wrapped so they never throw (src/server/purposes.ts). */
+  rules?: readonly RetentionRule[];
 }
 
 export const DEFAULT_RETENTION: RetentionPolicy = { days: 30 };
@@ -30,12 +43,38 @@ export interface RetentionInput {
    */
   uploadedMs: number;
   kept?: unknown;
+  /** The replay's purpose (explicit or inferred), when it has one. */
+  purpose?: string | undefined;
+  /** True when `purpose` was inferred: then it cannot make the replay permanent. */
+  purposeInferred?: boolean | undefined;
+  /** The replay's summary, for `api.retention` rules (absent for suites and broken uploads: no rules apply). */
+  summary?: ReplaySummary | undefined;
 }
 
-/** When something expires, or undefined when it never does (kept, or retention is off). */
+/**
+ * Days `input` is kept under `policy` (0: forever). The purpose's window replaces the default one, except that an
+ * inferred purpose whose window is "forever" gets the default instead: only an explicit purpose (or Keep) makes a
+ * replay permanent. Rules can only shorten the result: the shortest positive window wins.
+ */
+export function retentionDays(policy: RetentionPolicy, input: Omit<RetentionInput, 'uploadedMs' | 'kept'> = {}) {
+  let days = policy.days;
+  const own = input.purpose && policy.purposes && Object.hasOwn(policy.purposes, input.purpose) ? policy.purposes[input.purpose] : undefined;
+  if (own !== undefined) days = input.purposeInferred && !(own > 0) ? policy.days : own;
+  if (!input.summary || !policy.rules?.length) return days;
+  let shortest = days > 0 ? days : Number.POSITIVE_INFINITY;
+  for (const rule of policy.rules) {
+    const value = rule(input.summary);
+    if (typeof value === 'number' && Number.isInteger(value) && value > 0 && value < shortest) shortest = value;
+  }
+  return Number.isFinite(shortest) ? shortest : 0;
+}
+
+/** When something expires, or undefined when it never does (kept, an explicit purpose kept forever, or retention off). */
 export function expiryMs(policy: RetentionPolicy, input: RetentionInput) {
-  if (input.kept || !(policy.days > 0) || !Number.isFinite(input.uploadedMs)) return undefined;
-  return input.uploadedMs + policy.days * DAY_MS;
+  if (input.kept || !Number.isFinite(input.uploadedMs)) return undefined;
+  const days = retentionDays(policy, input);
+  if (!(days > 0)) return undefined;
+  return input.uploadedMs + days * DAY_MS;
 }
 
 export function retentionOf(policy: RetentionPolicy, input: RetentionInput & { kept?: KeepRecord }) {
@@ -46,12 +85,16 @@ export function retentionOf(policy: RetentionPolicy, input: RetentionInput & { k
   } satisfies Retention;
 }
 
-/** The policy from `RETENTION_DAYS` (whole days, 0 = never). Throws on anything else. */
-export function retentionFromEnv(env: Record<string, string | undefined>): RetentionPolicy {
-  const raw = env.RETENTION_DAYS?.trim();
-  if (raw === undefined || raw === '') return { ...DEFAULT_RETENTION };
+/** A whole number of days from `env[name]` (0 = never), or undefined when unset. Throws on anything else. */
+export function daysFromEnv(env: Record<string, string | undefined>, name: string) {
+  const raw = env[name]?.trim();
+  if (raw === undefined || raw === '') return undefined;
   const value = Number(raw);
-  if (!Number.isInteger(value) || value < 0 || value > 3650)
-    throw new Error('RETENTION_DAYS must be a whole number of days from 0 (never) to 3650');
-  return { days: value };
+  if (!Number.isInteger(value) || value < 0 || value > 3650) throw new Error(`${name} must be a whole number of days from 0 (never) to 3650`);
+  return value;
+}
+
+/** The policy from `RETENTION_DAYS` (whole days, 0 = never). Throws on anything else. Per-purpose windows come with the purposes. */
+export function retentionFromEnv(env: Record<string, string | undefined>): RetentionPolicy {
+  return { days: daysFromEnv(env, 'RETENTION_DAYS') ?? DEFAULT_RETENTION.days };
 }

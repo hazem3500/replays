@@ -5,7 +5,8 @@ import type { ThemeTokens } from '../server/branding.ts';
 import type { ObjectStorage } from '../server/storage/types.ts';
 import type { ReplayContext } from '../shared/context.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
-import type { ReplayBundle } from '../shared/replay.ts';
+import type { PurposeConfig } from '../shared/purposes.ts';
+import type { ReplayBundle, ReplaySummary } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 
 /** The plugin API generation. A plugin declares the one it was written for; a mismatch is refused at start. */
@@ -122,6 +123,27 @@ export interface AfterUploadContext extends UploadHookContext {
 /** Runs after the bundle is stored. Errors are logged; they never fail the upload. */
 export type AfterUploadHook = (context: AfterUploadContext) => void | Promise<void>;
 
+/**
+ * What a purpose's `infer` sees: the replay's summary (the index's data: counts, sources, tags, suite run…) plus
+ * `errors` (console errors + failed requests). It runs whenever the server lists a replay without an explicit
+ * `meta.purpose`, so a changed rule applies to stored replays too. Keep it cheap and pure.
+ */
+export type PurposeInferInput = Readonly<Omit<ReplaySummary, 'purpose' | 'purposeInferred' | 'kept' | 'expiresAt'>> & {
+  readonly errors: number;
+};
+
+/** A purpose (src/shared/purposes.ts) plus, optionally, how to recognise one that was uploaded without `meta.purpose`. */
+export interface PurposeDefinition extends PurposeConfig {
+  /** True when a replay without an explicit purpose has this one. Purposes are tried in `order`; the first match wins. */
+  infer?(input: PurposeInferInput): boolean;
+}
+
+/** A retention policy that is not about purpose (`api.retention`). */
+export interface RetentionRuleDefinition {
+  /** Whole days to keep the replay, or `0` / `undefined` for no limit. The shortest window wins; Keep still overrides. */
+  days(summary: ReplaySummary): number | null | undefined;
+}
+
 export interface RequestHookOptions {
   /** `post-auth` (default): only authenticated requests arrive, with `identity`. `pre-auth`: every request, before auth. */
   phase?: 'pre-auth' | 'post-auth';
@@ -158,6 +180,13 @@ export interface PluginApi {
    * pass. Rules from several plugins and the config file's `redaction` add up. Trusted config: see docs/extending.md.
    */
   redaction(rules: RedactionRules): void;
+  /**
+   * A purpose. Ids are unique across plugins; a `purposes` entry in the config file with the same id overrides its
+   * fields (not `infer`).
+   */
+  purpose(definition: PurposeDefinition): void;
+  /** A retention rule; the shortest window any rule, the purpose or the default gives wins. */
+  retention(rule: RetentionRuleDefinition): void;
 }
 
 export interface ReplaysPlugin {

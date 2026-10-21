@@ -3,6 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import type { AuthAdapter, AuthPluginFactory } from '../server/auth/types.ts';
 import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
+import { assertPurposeConfig } from '../shared/purposes.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
@@ -15,10 +16,12 @@ import type {
   ContextAdapter,
   PluginApi,
   PrepareUploadHook,
+  PurposeDefinition,
   ReplaysPlugin,
   RequestHook,
   RequestHookOptions,
   ResponseHook,
+  RetentionRuleDefinition,
   StorageBackend,
 } from './types.ts';
 
@@ -59,6 +62,10 @@ export interface PluginRegistry {
     readonly afterUpload: readonly Owned<AfterUploadHook>[];
   };
   readonly clientEntries: readonly ResolvedClientEntry[];
+  /** `api.purpose`, in registration order (src/server/purposes.ts merges them with the config's). */
+  readonly purposes: readonly Owned<PurposeDefinition>[];
+  /** `api.retention` rules. */
+  readonly retention: readonly Owned<RetentionRuleDefinition>[];
 }
 
 export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
@@ -72,6 +79,8 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   redaction: {},
   hooks: { preAuth: [], postAuth: [], response: [], prepareUpload: [], beforeUpload: [], afterUpload: [] },
   clientEntries: [],
+  purposes: [],
+  retention: [],
 });
 
 /**
@@ -161,6 +170,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     afterUpload: [] as Owned<AfterUploadHook>[],
   };
   const clientEntries: ResolvedClientEntry[] = [];
+  const purposes: Owned<PurposeDefinition>[] = [];
+  const retention: Owned<RetentionRuleDefinition>[] = [];
   const brandScalars: Record<string, string> = {};
   const brandOwners = new Map<string, string>();
   const theme = { dark: {} as Record<string, string>, light: {} as Record<string, string> };
@@ -305,6 +316,22 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         }
         redaction.push(rules);
       },
+      purpose(definition) {
+        try {
+          assertPurposeConfig(definition, 'purpose', ['infer']);
+        } catch (error) {
+          fail((error as Error).message);
+        }
+        if (definition.infer !== undefined) needFunction(definition.infer, `purpose ${definition.id}: infer`);
+        const taken = purposes.find((entry) => entry.value.id === definition.id);
+        if (taken) fail(`purpose ${JSON.stringify(definition.id)} is already registered by ${taken.plugin}`, 'conflict');
+        purposes.push({ plugin: plugin.name, value: definition });
+      },
+      retention(rule) {
+        if (!rule || typeof rule !== 'object') fail('retention needs { days(summary) }');
+        needFunction(rule.days, 'retention.days');
+        retention.push({ plugin: plugin.name, value: rule });
+      },
     };
     try {
       yield plugin.setup(api);
@@ -333,6 +360,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     redaction: mergeRedactionRules(...redaction),
     hooks,
     clientEntries,
+    purposes,
+    retention,
   };
 }
 
@@ -379,6 +408,8 @@ function union<K, V>(a: ReadonlyMap<K, V>, b: ReadonlyMap<K, V>, what: string) {
 export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): PluginRegistry {
   const clash = first.order.find((name) => second.order.includes(name));
   if (clash) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: clash });
+  const purpose = second.purposes.find((entry) => first.purposes.some((other) => other.value.id === entry.value.id));
+  if (purpose) throw new PluginError('conflict', `purpose ${JSON.stringify(purpose.value.id)} is registered twice`, { plugin: purpose.plugin });
   return {
     order: [...first.order, ...second.order],
     auth: union(first.auth, second.auth, 'auth adapter'),
@@ -397,5 +428,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
       afterUpload: [...first.hooks.afterUpload, ...second.hooks.afterUpload],
     },
     clientEntries: [...first.clientEntries, ...second.clientEntries],
+    purposes: [...first.purposes, ...second.purposes],
+    retention: [...first.retention, ...second.retention],
   };
 }
