@@ -66,6 +66,49 @@ nothing is read at request time. Server-only features keep working through the A
 - `STORAGE=s3`: several instances can share a bucket (uploads use create-only writes; suite registration uses
   compare-and-swap writes). Lists are cached for 5 s per instance.
 
+## Converting stored replays
+
+`replays migrate` copies a whole store into another and converts every replay on the way, for a change of storage backend
+or of stored format (for example a distribution that wrote an older shape, [downstream-migration.md](downstream-migration.md#5-stored-data-and-producers)):
+
+```bash
+replays migrate --from <store> --to <store> [--translate ./translate.mjs] [--config path] [--dry-run] [--report out.json]
+replays migrate --compare --from <store> --to <store>
+```
+
+- **Stores.** `fs:<dir>` (a `DATA_DIR`), `s3:<bucket>[/prefix]` (region, endpoint and credentials from the usual `S3_*` and
+  `AWS_*` variables) or the id of a storage backend a plugin of the config registers (`gcs`), configured by the environment as
+  `STORAGE=<id>` would be. `fs` and `s3` alone are the built-in drivers configured by the environment. A plugin backend reads one
+  environment, so to move between two buckets of the same plugin, go through an `fs:` copy.
+- **Translation.** `--translate` names a module whose default export is `(rawReplayJson, info) => rawReplayJson` (`info`: `id`,
+  `key`, `purposes`); a named `translateSuite` converts `_suites/<id>.json` the same way. It may be async. Without one, documents
+  are copied as they are. [`examples/migrate/translate.mjs`](../examples/migrate/translate.mjs) converts the older downstream
+  format; keep the translation idempotent so it can also back a plugin's `prepareUpload`.
+- **Checks.** Every translated bundle must pass the core validator (and `context.fields` the config's context schema), keep its
+  id, and gets the same privacy pass as an upload. One that does not validate is reported with the reason, and nothing of its
+  prefix is written. The exit code is 1 when anything failed.
+- **What is copied.** Each replay prefix: the converted `replay.json`, a fresh `meta.json`, and the other objects as they are
+  (`comments.json`, `edits.json`, `keep.json`, posters, previews, videos, renders). Suites with their keep markers, prefixes
+  without a bundle (a committed sample's comments or edits) and plugin data (`_malleable/`) too.
+- **Idempotent.** Writes are create-only: the target's objects are never overwritten, a second run reports everything as
+  `unchanged`, and an interrupted run resumes. A target holding a *different* `replay.json` for an id is a failure, not an
+  overwrite.
+- **Retention restarts.** The window counts from the target's write time, so converted replays get a fresh one; kept
+  replays and suites stay kept.
+
+Procedure: snapshot the source; `--dry-run --report dry.json` and read the failures; convert into a new, empty target (never the
+live one); `--compare` the two stores, which prints each changed list summary field by field (`GET /api/replays` without
+the retention fields) and what exists on one side only; point a staging server at the target; switch. The same is available
+as a library:
+
+```ts
+import { compareStores, FsStorage, migrateStore } from '@hazem3500/replays/server';
+
+const report = await migrateStore({ from: new FsStorage('/backup'), to: target, translate, dryRun: true, concurrency: 8 });
+// report.converted[] { id, kind, translated, written }, report.unchanged[], report.failed[] { id, kind, reason }
+const diff = await compareStores({ from: new FsStorage('/backup'), to: target });
+```
+
 ## Retention
 
 `RETENTION_DAYS` (default 30, `0` = never) counts from the *server's* upload time, never the client-supplied capture

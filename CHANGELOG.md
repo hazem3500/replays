@@ -44,6 +44,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   server's privacy pass on upload. New exports: `assertRedactionRules` and the `RedactionRules` types from `/plugin` and `/capture`;
   optional `redaction` arguments on `sanitizeReplayBundle`, `sanitizeHar`, `sanitizeUrl`, `networkEntries`, `normalizeConsole` and
   `RecorderSession.start`; `AppOptions.redaction`. See [docs/extending.md](docs/extending.md#redaction-rules).
+- **`replays migrate`.** Copies a store into another and converts every replay on the way: `--from` / `--to` take `fs:<dir>`,
+  `s3:<bucket>[/prefix]` or a storage backend a config plugin registers, `--translate` a module whose default export converts a
+  raw `replay.json` (and an optional `translateSuite` for suites). Each bundle is validated with the core validator and gets the
+  upload privacy pass; invalid ones are reported and nothing of their prefix is written. Sidecars (comments, edits, keep markers,
+  posters, videos), suites and plugin data are copied; writes are create-only, so a second run converts nothing and an
+  interrupted one resumes. `--dry-run`, `--report out.json`, and `--compare` for the list-summary diff between two stores. The
+  same as `migrateStore()` and `compareStores()` from `@hazem3500/replays/server`, and a translation for the older downstream
+  format in `examples/migrate/`. See [docs/operations.md](docs/operations.md#converting-stored-replays).
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

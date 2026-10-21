@@ -30,3 +30,16 @@ export { THEME_TOKENS, validateBranding, type BrandingConfig, type ThemeTokens }
 export { normalizeHosts, withBase, type HostConfig, type HostRouting, type PageBranding } from './base-path.ts';
 export { renderIndexHtml, type IndexPageOptions } from './index-page.ts';
 export { buildStatic, type BuildStaticOptions, type StaticBuild } from './static.ts';
+export {
+  compareStores,
+  migrateStore,
+  type ComparableSummary,
+  type MigratedEntry,
+  type MigrateInfo,
+  type MigrateKind,
+  type MigrateOptions,
+  type MigrateProgress,
+  type MigrateReport,
+  type MigrateTranslate,
+  type StoreComparison,
+} from './migrate.ts';

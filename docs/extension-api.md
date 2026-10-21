@@ -23,7 +23,7 @@ your-distro/
 | `@hazem3500/replays/config` | `defineConfig`, `loadConfig` | Node |
 | `@hazem3500/replays/plugin` | `definePlugin`, `rejectUpload`, `PluginError`, plugin types | Node |
 | `@hazem3500/replays/viewer` | `defineViewerPlugin`, viewer plugin types (no Node, no React) | browser |
-| `@hazem3500/replays/server` | `startServer`, `createApp`, `buildStatic`, `renderIndexHtml`, storage (drivers, `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey`, `globToRegExp`), auth (adapters, `verifyJwt`), store | Node |
+| `@hazem3500/replays/server` | `startServer`, `createApp`, `buildStatic`, `renderIndexHtml`, storage (drivers, `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey`, `globToRegExp`), auth (adapters, `verifyJwt`), store, `migrateStore` / `compareStores` (`replays migrate`, [operations.md](operations.md#converting-stored-replays)) | Node |
 | `@hazem3500/replays/server/testing` | `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`: the contract suites the built-in adapters pass | Node, any test runner |
 | `@hazem3500/replays/plugins/iap` | First-party plugin: Google Cloud Identity-Aware Proxy sign-in ([below](#first-party-plugins)) | Node |
 | `@hazem3500/replays/plugins/gcs` | First-party plugin: Google Cloud Storage over its JSON API ([below](#first-party-plugins)) | Node |

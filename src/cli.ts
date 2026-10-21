@@ -7,6 +7,7 @@ Commands:
   capture   record a page with scripted steps into replay.json (see: ${PRODUCT_SLUG} capture --help)
   import    convert a plain rrweb recording into a replay
   upload    POST an existing replay.json to a server
+  migrate   copy a store into another, converting stored replays (see: ${PRODUCT_SLUG} migrate --help)
   mcp       MCP server (stdio) for the plugin workshop's agent bridge (beta: REPLAYS_BETA_MALLEABLE)
   serve     start the viewer and upload server (configuration: environment variables, see the README)
   build-static  copy the built viewer to --out <dir> with the base, name, logo and theme stamped in (CDN hosting;
@@ -25,6 +26,9 @@ switch (command) {
     break;
   case 'upload':
     await (await import('./capture/upload.ts')).runUploadCli(rest);
+    break;
+  case 'migrate':
+    await (await import('./server/migrate-cli.ts')).runMigrateCli(rest);
     break;
   case 'mcp':
     await (await import('./mcp/main.ts')).runMcpCli(rest);
