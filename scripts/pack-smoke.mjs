@@ -37,6 +37,11 @@ assert.equal(typeof defineViewerPlugin, 'function');
 assert.equal(defineViewerPlugin(() => {}).apiVersion, VIEWER_API_VERSION);
 assert.equal(typeof RecorderSession, 'function');
 assert.equal(typeof verifyJwt, 'function');
+const { default: iap } = await import('@hazem3500/replays/plugins/iap');
+const { default: gcs, GcsStorage } = await import('@hazem3500/replays/plugins/gcs');
+assert.equal(iap({ audience: '/projects/1/global/backendServices/2', domains: ['example.com'] }).name, 'iap');
+assert.equal(gcs({ bucket: 'b' }).name, 'gcs');
+assert.equal(new GcsStorage({ bucket: 'b', token: false }).kind, 'gcs');
 // The contract suite needs no test framework installed: a two-function runner is enough.
 const contract = [];
 describeObjectStorage('memory', () => new MemoryStorage(), { describe: (_name, body) => body(), it: (name, test) => contract.push([name, test]) });

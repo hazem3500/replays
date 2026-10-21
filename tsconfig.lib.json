@@ -16,7 +16,9 @@
     "src/server/testing/index.ts",
     "src/plugin/index.ts",
     "src/config/index.ts",
-    "src/client/plugins/api.ts"
+    "src/client/plugins/api.ts",
+    "src/first-party/iap.ts",
+    "src/first-party/gcs.ts"
   ],
   "exclude": ["src/capture/injected-recorder.ts", "src/server/storage/traced.ts"]
 }

@@ -25,6 +25,8 @@ your-distro/
 | `@hazem3500/replays/viewer` | `defineViewerPlugin`, viewer plugin types (no Node, no React) | browser |
 | `@hazem3500/replays/server` | `startServer`, `createApp`, storage (drivers, `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey`, `globToRegExp`), auth (adapters, `verifyJwt`), store | Node |
 | `@hazem3500/replays/server/testing` | `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`: the contract suites the built-in adapters pass | Node, any test runner |
+| `@hazem3500/replays/plugins/iap` | First-party plugin: Google Cloud Identity-Aware Proxy sign-in ([below](#first-party-plugins)) | Node |
+| `@hazem3500/replays/plugins/gcs` | First-party plugin: Google Cloud Storage over its JSON API ([below](#first-party-plugins)) | Node |
 | `@hazem3500/replays/capture` | recording, bundle building, sanitising, source providers | Node |
 | `@hazem3500/replays` | the original umbrella entry (kept for compatibility) | Node |
 
@@ -149,6 +151,59 @@ Comments ship as a plugin, `comments`, so they use the same surface as yours and
   browser registry (`ViewerRegistry.replacePlugin`, internal, not public API) but run sandboxed, not through `api.client`. See [malleability.md](malleability.md).
 
 Another built-in feature would follow the same two steps: a server plugin (if it needs routes) and a registered viewer feature.
+
+## First-party plugins
+
+Opt-in plugins shipped with the package for common deployments. They are ordinary plugins: they import only `/plugin` and
+`/server` (a test pins that), you list them in the config like your own, and they pass the same contract suites
+([testing](#testing-a-plugin)). Each module default-exports a factory of its options; every option also has an environment variable,
+and an option given in the config wins over it.
+
+```ts
+import { defineConfig } from '@hazem3500/replays/config';
+import gcs from '@hazem3500/replays/plugins/gcs';
+import iap from '@hazem3500/replays/plugins/iap';
+
+export default defineConfig({
+  auth: 'iap',
+  storage: 'gcs',
+  plugins: [
+    iap({ audience: '/projects/123456/global/backendServices/7890', domains: ['example.com'],
+          serviceAccounts: ['uploader@example-ci.iam.gserviceaccount.com'] }),
+    gcs({ bucket: 'example-replays', prefix: 'replays' }),
+  ],
+});
+```
+
+**`iap(options)`**, auth adapter `iap`, for an app behind Google Cloud's Identity-Aware Proxy:
+
+| Option | Env | |
+| --- | --- | --- |
+| `audience` | `IAP_JWT_AUDIENCE` | Required. The exact `aud`: `/projects/<number>/global/backendServices/<id>` (load balancer) or `/projects/<number>/apps/<project-id>` (App Engine) |
+| `domains` | `IAP_ALLOWED_DOMAINS` | Email domains let in (`example.com`; exact, no subdomains). Comma- or space-separated in the env |
+| `serviceAccounts` | `IAP_SERVICE_ACCOUNTS` | Service accounts let in by exact email (an uploader that signs in with an ID token). Only `*.gserviceaccount.com` addresses; any other entry stops the server |
+| `devFallback` | – | Local development only: the email used for requests without the IAP header. Requests with one are still verified. Never set it where the app is reachable without IAP |
+
+It verifies `x-goog-iap-jwt-assertion` with `verifyJwt`: ES256 against Google's JWKS (`https://www.gstatic.com/iap/verify/public_key-jwk`,
+cached for an hour and refetched at most once a minute for an unknown `kid`), issuer `https://cloud.google.com/iap`, the exact
+audience, `iat` required, 30 s leeway. The identity is `{ id: email, email }` (lowercased). A request without a valid assertion, or
+from anyone not listed, gets `403`. At least one of `domains` and `serviceAccounts` is required. IAP itself must also admit the
+service accounts (IAP-secured Web App User); this only stops the app turning them away.
+
+**`gcs(options)`**, storage backend `gcs`, a Cloud Storage bucket over the JSON API with `fetch` (no SDK):
+
+| Option | Env | |
+| --- | --- | --- |
+| `bucket` | `GCS_BUCKET` | Required |
+| `prefix` | `GCS_PREFIX` | Keys live under `<prefix>/` |
+| – | `GOOGLE_OAUTH_ACCESS_TOKEN` | A fixed access token. Without it, tokens come from the GCE metadata server (Workload Identity on GKE, the attached service account on Cloud Run and Compute Engine; `GCE_METADATA_HOST` to override), cached until a minute before they expire |
+| – | `STORAGE_EMULATOR_HOST`, `GCS_API_ENDPOINT` | An emulator (`localhost:4443`; no token is sent unless `GOOGLE_OAUTH_ACCESS_TOKEN` is set) or another endpoint (a token is sent) |
+
+Create-only writes use `ifGenerationMatch=0` and `ifVersion` writes `ifGenerationMatch=<generation>` (a lost race is a `409`, as with the
+built-ins); the object's generation is its version. Uploads above 8 MB are resumable, in 8 MB chunks. Listing uses `matchGlob`
+server-side (and filters again, for emulators without it). It sets `listCacheMs` to 5000, like S3. The service account needs
+`roles/storage.objectUser` on the bucket; objects stay private (the server streams them). The module also exports `GcsStorage` for
+use without the plugin.
 
 ## Browser entries: inspector tabs, viewer actions, panels
 

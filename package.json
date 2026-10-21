@@ -126,6 +126,14 @@
       "types": "./dist/types/config/index.d.ts",
       "default": "./dist/lib/config.mjs"
     },
+    "./plugins/iap": {
+      "types": "./dist/types/first-party/iap.d.ts",
+      "default": "./dist/lib/plugins-iap.mjs"
+    },
+    "./plugins/gcs": {
+      "types": "./dist/types/first-party/gcs.d.ts",
+      "default": "./dist/lib/plugins-gcs.mjs"
+    },
     "./package.json": "./package.json"
   }
 }
