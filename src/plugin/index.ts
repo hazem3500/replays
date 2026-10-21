@@ -29,3 +29,4 @@ export type {
 export type { AuthAdapter, AuthPluginFactory, Identity } from '../server/auth/types.ts';
 export type { ObjectStorage } from '../server/storage/types.ts';
 export type { SourceProvider } from '../shared/source-providers.ts';
+export { assertRedactionRules, type RedactionPattern, type RedactionRules, type RedactionTextRule } from '../shared/redaction.ts';

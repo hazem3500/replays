@@ -141,6 +141,61 @@ compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.jso
   contract the built-ins pass: `describeObjectStorage(name, factory, { describe, it })` from `@hazem3500/replays/server/testing`
   ([extension-api.md](extension-api.md#testing-a-plugin)). (`storageFromEnv` only knows `fs` and `s3`.)
 
+## Redaction rules
+
+The sanitiser's defaults (credential headers, sensitive query values, URL credentials, typed input, no bodies; see the
+[privacy model](../README.md#privacy-model)) are always on. A deployment adds its own rules, from the config file or a plugin:
+
+```ts
+api.redaction({
+  headers: [/^x-acme-session$/i],        // dropped, next to the built-in secret headers
+  queryParams: ['invite_token'],         // [redacted] in every URL, fragments included
+  jsonKeys: ['ssn', /card_?number/i],    // console arguments, and form or JSON bodies a HAR keeps
+  text: [{ pattern: /\bACME-\d{6}\b/g, replace: '[ticket]' }],
+  maskSelectors: ['[data-private]'],     // text masked in the DOM snapshot at capture
+});
+```
+
+```json
+{
+  "redaction": {
+    "headers": ["/^x-acme-session$/i"],
+    "queryParams": ["invite_token"],
+    "jsonKeys": ["ssn", "/card_?number/i"],
+    "text": [{ "pattern": "/\\bACME-\\d{6}\\b/g", "replace": "[ticket]" }],
+    "maskSelectors": ["[data-private]"]
+  }
+}
+```
+
+- **Names** (`headers`, `queryParams`, `jsonKeys`): a string is an exact, case-insensitive name; a `RegExp` (or, in JSON, a
+  `"/.../flags"` string) is tested against the name.
+- **`text`**: each match becomes `replace` (default `[redacted]`). Applies to DOM text and attribute values, console messages,
+  step labels, the title, network URLs and header values. Not to `context` (structured and schema-checked: adapt it in a context
+  adapter or `beforeUpload`). A pattern may not match the empty string, and `replace` may not match its own pattern.
+- **`jsonKeys`**: the value of a matching key (a string, number, object or array) becomes `"[redacted]"` wherever JSON appears in a
+  console message, nested or not. Request and response bodies are never stored, so there is nothing else to cover; a HAR's form
+  parameters with a matching name are redacted by `sanitizeHar`.
+- **`maskSelectors`**: passed to the recorder as rrweb `maskTextSelector`, so the text never leaves the page (every non-space
+  character becomes `*`). An invalid selector fails the capture. The server's pass cannot run CSS on a serialised recording; it
+  checks each selector's last compound part (tag, `#id`, `.class`, `[attr]`, `[attr=value]` and the other attribute operators;
+  pseudo-classes ignored) against snapshots, added nodes and text changes. That masks the same text or more, never less.
+
+**Where they apply.** The capture CLI reads the deployment's config (`--config <file>`, else `REPLAYS_CONFIG`, else
+`replays.config.*` in the working directory), imports its plugins and runs their `setup` to collect `api.redaction` rules; it uses
+nothing else from the config. A config that does not load fails the capture. `RecorderSession.start(cdp, { redaction })` takes rules
+directly. The server applies the config's and every plugin's rules in its privacy pass on `POST /api/replays` and
+`POST /api/replays/import`, so a bundle from an older producer, or one captured without the config, is cleaned too.
+
+**They only add.** Rules from several plugins and the config file are concatenated. The default pass runs first and again after the
+rules, so a text rule cannot bring back what the defaults removed (the stored bundle is always one the default pass leaves unchanged;
+`test/sanitize.test.ts` checks this against rule sets that try). There is no key to switch a default off, and unknown keys are refused.
+
+**Rules are trusted config.** Their regular expressions run over every captured string, so they come only from the host's config
+file and plugins, never from an upload, a request or a sandboxed user plugin. Each pattern is capped at 200 characters and each list at
+100 entries, and every rule is validated at start (`PluginError` `invalid-registration`, or a config error naming the key). The cap
+does not make a pathological pattern safe: avoid nested quantifiers such as `(a+)+`.
+
 ## Theming and branding
 
 Every colour is a CSS custom property. A deployment overrides the documented subset per colour scheme, without a

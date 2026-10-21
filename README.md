@@ -298,6 +298,7 @@ A replay contains what was on the screen, so the defaults are conservative and t
 | Sensitive query values | `token`, `api_key`, `password`, `session`, `code`, `email`, `signature`, … (and `*_token`, `*-secret`, …) become `[redacted]`, also inside URL fragments and in text | `sanitize.ts` |
 | Request and response bodies | Never captured (HAR with content omitted; only a whitelist of fields reaches the bundle) | `capture.ts`, `drivers/` |
 | Uploads | Sanitized again on the server before storing; the pass is idempotent | `app.ts` |
+| Your own rules | Extra headers, query parameters, JSON keys, text patterns and mask selectors from the config's `redaction` or a plugin's `api.redaction`, applied at capture and again on upload. They add to the defaults and cannot turn any off ([docs/extending.md](docs/extending.md#redaction-rules)) | `src/shared/redaction.ts` |
 | Retention | Uploads expire after `RETENTION_DAYS`, from the *server's* upload time; "keep" pins one | `src/shared/retention.ts` |
 | Links in the viewer | Only `https:` URLs without credentials are rendered as links | `shared/context.ts` |
 | Server-side render route | Loopback-only, per-process token, refused when any proxy header is present | `render-routes.ts` |

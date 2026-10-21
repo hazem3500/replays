@@ -2,6 +2,7 @@ import { isDeepStrictEqual } from 'node:util';
 
 import type { AuthAdapter, AuthPluginFactory } from '../server/auth/types.ts';
 import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
+import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
@@ -47,6 +48,8 @@ export interface PluginRegistry {
   readonly storage: ReadonlyMap<string, Owned<StorageBackend>>;
   readonly branding: BrandingContribution;
   readonly basePath: string | undefined;
+  /** Every plugin's `api.redaction` rules, merged (they only add). */
+  readonly redaction: RedactionRules;
   readonly hooks: {
     readonly preAuth: readonly Owned<RequestHook>[];
     readonly postAuth: readonly Owned<RequestHook>[];
@@ -66,6 +69,7 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   storage: new Map(),
   branding: {},
   basePath: undefined,
+  redaction: {},
   hooks: { preAuth: [], postAuth: [], response: [], prepareUpload: [], beforeUpload: [], afterUpload: [] },
   clientEntries: [],
 });
@@ -162,6 +166,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   const theme = { dark: {} as Record<string, string>, light: {} as Record<string, string> };
   const themeOwners = { dark: new Map<string, string>(), light: new Map<string, string>() };
   let basePath: { value: string; plugin: string } | undefined;
+  const redaction: RedactionRules[] = [];
 
   for (const plugin of ordered) {
     function fail(message: string, code: 'invalid-registration' | 'conflict' = 'invalid-registration'): never {
@@ -292,6 +297,14 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
           fail(`client entry ${JSON.stringify(entry.id)} is registered twice`, 'conflict');
         clientEntries.push({ ...entry, plugin: plugin.name });
       },
+      redaction(rules) {
+        try {
+          assertRedactionRules(rules);
+        } catch (error) {
+          fail((error as Error).message);
+        }
+        redaction.push(rules);
+      },
     };
     try {
       yield plugin.setup(api);
@@ -317,6 +330,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     storage,
     branding,
     basePath: basePath?.value,
+    redaction: mergeRedactionRules(...redaction),
     hooks,
     clientEntries,
   };
@@ -373,6 +387,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     storage: union(first.storage, second.storage, 'storage backend'),
     branding: { ...first.branding, ...second.branding },
     basePath: second.basePath ?? first.basePath,
+    redaction: mergeRedactionRules(first.redaction, second.redaction),
     hooks: {
       preAuth: [...first.hooks.preAuth, ...second.hooks.preAuth],
       postAuth: [...first.hooks.postAuth, ...second.hooks.postAuth],

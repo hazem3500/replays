@@ -9,6 +9,7 @@ import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } 
 import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
+import { assertRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -32,6 +33,7 @@ import type { PluginSpec } from '../plugin/types.ts';
  *     "auth": "iap-header",                        AUTH_MODE (a built-in mode or an auth adapter a plugin registered)
  *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
  *     "plugins": ["./plugin.mjs", ["pkg", {}]]     plugins to load (src/plugin/, docs/extension-api.md)
+ *     "redaction": { "jsonKeys": ["ssn", "/card_?number/i"] }   added to the sanitiser's defaults (src/shared/redaction.ts)
  *   }
  *
  * The same keys, typed, make up `defineConfig()` in a `replays.config.ts|js|json` (src/config/).
@@ -55,6 +57,8 @@ export interface FileConfig {
   auth?: string;
   storage?: string;
   plugins?: readonly PluginSpec[];
+  /** Redaction rules added to the defaults; JSON configs write regular expressions as `"/.../flags"` strings. */
+  redaction?: RedactionRules;
 }
 
 export interface AppSettings {
@@ -67,6 +71,8 @@ export interface AppSettings {
   contextSchema?: ContextSchema;
   beta: BetaFlags;
   comments: CommentsSettings;
+  /** The config file's `redaction` rules, checked (plugins' rules are merged in by the app). */
+  redaction?: RedactionRules;
 }
 
 export const CONFIG_KEYS = new Set([
@@ -86,6 +92,7 @@ export const CONFIG_KEYS = new Set([
   'auth',
   'storage',
   'plugins',
+  'redaction',
 ]);
 
 export async function readConfigFile(path: string | undefined): Promise<FileConfig> {
@@ -129,6 +136,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
+  if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
   return {
     branding,
     basePath,
@@ -138,5 +146,6 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     beta: betaFromEnv(env, file.beta),
     comments: commentsFromEnv(env, file.comments),
     ...(contextSchema ? { contextSchema } : {}),
+    ...(file.redaction ? { redaction: file.redaction } : {}),
   };
 }

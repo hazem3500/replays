@@ -197,6 +197,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     ...(bridgeHub ? { bridgeHub } : {}),
     comments: settings.comments,
     plugins: registry,
+    ...(settings.redaction ? { redaction: settings.redaction } : {}),
     ...(settings.contextSchema ? { contextSchema: settings.contextSchema } : {}),
     ...(env.PUBLIC_ORIGIN ? { publicOrigin: env.PUBLIC_ORIGIN.replace(/\/+$/, '') } : {}),
     store,

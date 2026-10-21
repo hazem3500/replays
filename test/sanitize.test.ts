@@ -12,6 +12,7 @@ import {
   sanitizeUrl,
   sanitizeUrlFields,
 } from '../src/capture/sanitize.ts';
+import { assertRedactionRules, type RedactionRules } from '../src/shared/redaction.ts';
 import { hasNoResponse, isFailedRequest, type ReplayBundle } from '../src/shared/replay.ts';
 import { replay } from './fixtures.ts';
 
@@ -348,5 +349,105 @@ describe('hidden inputs', () => {
     const source = await readFile(new URL('../src/capture/injected-recorder.ts', import.meta.url), 'utf8');
     expect(source).toContain('maskInputOptions: MASK_INPUT_OPTIONS');
     expect(source).not.toContain('maskAllInputs: true');
+  });
+});
+
+// Everything the default pass removes, in one bundle: auth headers, sensitive query values, URL credentials, typed input.
+const leakyEverywhere = (): ReplayBundle => {
+  const bundle = replay('never-weaker');
+  bundle.meta.url = 'https://user:userinfo-secret@app.example.com/?token=query-secret#access_token=hash-secret';
+  bundle.events = [
+    { type: 4, timestamp: 1000, data: { href: 'https://app.example.com/?token=query-secret' } },
+    {
+      type: 2,
+      timestamp: 1001,
+      data: {
+        node: {
+          type: 2,
+          id: 1,
+          tagName: 'form',
+          attributes: { action: '/login?password=query-secret' },
+          childNodes: [{ type: 2, id: 2, tagName: 'input', attributes: { type: 'password', value: 'input-secret' }, childNodes: [] }],
+        },
+      },
+    },
+  ] as ReplayBundle['events'];
+  bundle.console = [{ at: 0, level: 'log', message: 'GET https://api.example.com/?api_token=console-secret' }];
+  bundle.steps = [{ at: 0, kind: 'open', label: 'Open https://app.example.com/?token=query-secret' }];
+  bundle.network = [
+    {
+      id: 'request-1',
+      at: 0,
+      duration: 1,
+      method: 'POST',
+      url: 'https://api.example.com/me?session=query-secret',
+      status: 200,
+      statusText: 'OK',
+      requestHeaders: [
+        { name: 'Authorization', value: 'Bearer header-secret' },
+        { name: 'Referer', value: 'https://app.example.com/?code=query-secret' },
+      ],
+      responseHeaders: [{ name: 'Set-Cookie', value: 'sid=header-secret' }],
+      request: { postData: { text: 'password=body-secret' } },
+    } as ReplayBundle['network'][number],
+  ];
+  return bundle;
+};
+
+describe('redaction rules never weaken the defaults', () => {
+  const secrets = ['header-secret', 'query-secret', 'hash-secret', 'userinfo-secret', 'input-secret', 'console-secret', 'body-secret'];
+
+  // Rule sets that try to get something back: rename what the defaults look for, rewrite their markers, match nothing
+  // or everything.
+  const ruleSets: RedactionRules[] = [
+    {},
+    { headers: [], queryParams: [], jsonKeys: [], text: [], maskSelectors: [] },
+    {
+      text: [
+        { pattern: /token=/g, replace: 'tkn=' },
+        { pattern: 'Authorization', replace: 'Accept' },
+      ],
+    },
+    {
+      text: [
+        { pattern: /%5Bredacted%5D|\[redacted\]/, replace: 'ok' },
+        { pattern: /\*+/, replace: 'plain' },
+      ],
+    },
+    { text: [{ pattern: 'https://', replace: 'hxxps://' }] },
+    { headers: [/.*/], queryParams: [/.*/], jsonKeys: [/.*/], text: [{ pattern: /secret/g }], maskSelectors: ['*'] },
+    { headers: ['accept'], queryParams: ['view'], jsonKeys: ['id'], maskSelectors: ['form', '[data-private]'] },
+  ];
+
+  it.each(ruleSets.map((rules, index) => [index, rules] as const))('rule set %i still removes every default secret', (_index, rules) => {
+    const clean = sanitizeReplayBundle(leakyEverywhere(), rules);
+    const serialized = JSON.stringify(clean);
+    for (const secret of secrets) expect(serialized).not.toContain(secret);
+    // The result is always a fixed point of the default pass: nothing is left for the defaults to remove.
+    expect(sanitizeReplayBundle(structuredClone(clean))).toEqual(clean);
+  });
+
+  it('cannot switch a default off: there is no such key, and unknown keys are refused', () => {
+    for (const attempt of [{ defaults: false }, { headers: { allow: ['authorization'] } }, { allowHeaders: ['cookie'] }, { text: 'off' }])
+      expect(() => assertRedactionRules(attempt)).toThrow(/unknown keys|must be an array/);
+    expect(() => sanitizeReplayBundle(leakyEverywhere(), { defaults: false } as RedactionRules)).toThrow(/unknown keys: defaults/);
+  });
+
+  it('adds to the defaults on the other entry points too (headers, URLs)', () => {
+    const rules: RedactionRules = { headers: [/^x-acme-session$/i], queryParams: ['invite_token'] };
+    expect(
+      sanitizeHeaders(
+        [
+          { name: 'Cookie', value: 'c' },
+          { name: 'X-Acme-Session', value: 's' },
+          { name: 'Accept', value: 'a' },
+        ],
+        rules,
+      ),
+    ).toEqual([{ name: 'Accept', value: 'a' }]);
+    expect(sanitizeUrl('https://x.example/?invite_token=abc&token=t&view=1', rules)).toBe(
+      'https://x.example/?invite_token=%5Bredacted%5D&token=%5Bredacted%5D&view=1',
+    );
+    expect(sanitizeUrlFields({ href: '/a?invite_token=abc' }, rules)).toEqual({ href: '/a?invite_token=%5Bredacted%5D' });
   });
 });

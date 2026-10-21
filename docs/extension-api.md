@@ -53,6 +53,7 @@ export default defineConfig({
   beta: { editor: false },
   auth: 'acme-iap',              // AUTH_MODE: a built-in mode or an adapter a plugin registered
   storage: 'gcs',                // STORAGE: fs, s3 or a backend a plugin registered
+  redaction: { jsonKeys: ['ssn'], maskSelectors: ['[data-private]'] }, // added to the sanitiser's defaults
   plugins: [acme({ audience: 'acme-replays' })],
 });
 ```
@@ -116,6 +117,7 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.prepareUpload(hook)` | `hook({ body, identity, request })` on the raw `POST /api/replays` body before any validation; return the body to use (translate a producer's older shape) | – |
 | `api.beforeUpload(hook)` | `hook({ bundle, identity, request })` on the validated, sanitised bundle before it is stored. Throw `rejectUpload(status, message)` to refuse; return a bundle to replace it (it is validated again). Also runs for `POST /api/replays/import` | – |
 | `api.afterUpload(hook)` | `hook({ bundle, identity, request, url })` after the bundle is stored; errors are logged and never fail the upload | – |
+| `api.redaction({ headers?, queryParams?, jsonKeys?, text?, maskSelectors? })` | [Redaction rules](extending.md#redaction-rules) added to the sanitiser's defaults, in the capture CLI (which reads the same config) and the server's privacy pass. Rules from several plugins and the config's `redaction` add up; they cannot turn a default off. Validate your own with `assertRedactionRules` (`/plugin`, `/capture`) | – (invalid rules are an `invalid-registration`) |
 | `api.client({ id, script, style? })` | A browser entry, served by the app behind the same auth (an absolute file path) or loaded from an `https:` URL | the same `id` twice in one plugin |
 
 Upload order: `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →

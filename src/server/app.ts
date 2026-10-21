@@ -8,6 +8,7 @@ import { gunzip } from 'node:zlib';
 
 import { buildHumanBundle, defaultId } from '../capture/human-bundle.ts';
 import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
+import { mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { assertReplayBundle, assertReplayTags, type ReplayBundle, type ReplayFilters, isReplayTag } from '../shared/replay.ts';
 import {
   assertReviewRunRegistration,
@@ -90,6 +91,8 @@ export interface AppOptions {
   publicOrigin?: string;
   /** What the loaded plugins registered (src/plugin/registry.ts); none by default. */
   plugins?: PluginRegistry;
+  /** Redaction rules from the config file; the plugins' `api.redaction` rules are added to them. */
+  redaction?: RedactionRules;
 }
 
 /** What a trace may say about an uploaded replay (tracing.ts): its id, counts and enum fields, never contents. */
@@ -105,10 +108,6 @@ function uploadAttributes(bundle: ReplayBundle) {
     'suite.run_id': bundle.suiteRun?.runId,
   };
 }
-
-/** The server's privacy pass over an upload, in its own span (it walks every event). */
-const sanitize = (bundle: ReplayBundle) =>
-  withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle));
 
 function replayReceipt(base: string, bundle: ReplayBundle) {
   return JSON.stringify({
@@ -400,6 +399,10 @@ export function createApp(options: AppOptions) {
   ];
   const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
   const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
+  const redaction = mergeRedactionRules(options.redaction, registry.redaction);
+  /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
+  const sanitize = (bundle: ReplayBundle) =>
+    withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle, redaction));
   /** index.html as served at `base` (index-page.ts, shared with `replays build-static`). */
   const indexPage = (html: string, base: string) =>
     renderIndexHtml(html, {

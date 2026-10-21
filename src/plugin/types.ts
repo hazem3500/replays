@@ -4,6 +4,7 @@ import type { AuthAdapter, AuthPluginFactory, Identity } from '../server/auth/ty
 import type { ThemeTokens } from '../server/branding.ts';
 import type { ObjectStorage } from '../server/storage/types.ts';
 import type { ReplayContext } from '../shared/context.ts';
+import type { RedactionRules } from '../shared/redaction.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 
@@ -152,6 +153,11 @@ export interface PluginApi {
   afterUpload(hook: AfterUploadHook): void;
   /** A browser entry that registers inspector tabs, viewer actions and panels. */
   client(entry: ClientEntry): void;
+  /**
+   * Redaction rules added to the sanitiser's defaults (never weakening them), in the capture CLI and the server's privacy
+   * pass. Rules from several plugins and the config file's `redaction` add up. Trusted config: see docs/extending.md.
+   */
+  redaction(rules: RedactionRules): void;
 }
 
 export interface ReplaysPlugin {

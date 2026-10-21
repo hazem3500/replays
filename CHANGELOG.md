@@ -36,6 +36,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   plugin entries stamped into `index.html`, the same function the server runs per request (`renderIndexHtml`), for hosting the viewer
   on a CDN in front of the API (docs/operations.md). `<meta name="theme-color">` now follows the theme's `page` token per scheme.
   New in `@hazem3500/replays/server`: `buildStatic`, `renderIndexHtml`, `withBase`, `normalizeHosts`, `resolveSettings`.
+- **Redaction rules.** A deployment adds its own rules to the sanitiser: extra `headers` to drop, `queryParams` to redact,
+  `jsonKeys` whose values are redacted in console arguments, free-`text` patterns, and `maskSelectors` whose text the recorder masks
+  (rrweb `maskTextSelector`). Set them with the config key `redaction` (JSON configs write regexes as `"/.../flags"` strings) or
+  `api.redaction(rules)` in plugins; rules add up and can never weaken the defaults. They apply in the capture CLI, which now reads
+  the deployment's config (`--config <file>`, `REPLAYS_CONFIG` or `replays.config.*` in the working directory), and again in the
+  server's privacy pass on upload. New exports: `assertRedactionRules` and the `RedactionRules` types from `/plugin` and `/capture`;
+  optional `redaction` arguments on `sanitizeReplayBundle`, `sanitizeHar`, `sanitizeUrl`, `networkEntries`, `normalizeConsole` and
+  `RecorderSession.start`; `AppOptions.redaction`. See [docs/extending.md](docs/extending.md#redaction-rules).
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

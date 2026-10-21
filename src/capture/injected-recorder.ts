@@ -8,6 +8,8 @@ declare global {
     __REPLAYS_RUNNING__?: boolean;
     __REPLAYS_ERROR__?: string;
     __replaysNavigationFlush?: (payload: string) => void;
+    /** The host's mask selectors (redaction `maskSelectors`), set by the capture session before this script runs. */
+    __REPLAYS_MASK_TEXT__?: string;
   }
 }
 
@@ -118,12 +120,18 @@ try {
       }
     };
 
+    const maskTextSelector = typeof window.__REPLAYS_MASK_TEXT__ === 'string' ? window.__REPLAYS_MASK_TEXT__ : undefined;
+    delete window.__REPLAYS_MASK_TEXT__;
+    // An invalid selector stops the recorder (the capture fails) rather than recording the text it should hide.
+    if (maskTextSelector) document.createDocumentFragment().querySelector(maskTextSelector);
+
     record({
       emit(event) {
         events.push(event as unknown as RecorderChunk['events'][number]);
       },
       // rrweb's maskAllInputs set plus hidden inputs (CSRF tokens); see sanitize.ts.
       maskInputOptions: MASK_INPUT_OPTIONS,
+      ...(maskTextSelector ? { maskTextSelector } : {}),
     });
 
     for (const level of ['debug', 'info', 'log', 'warn', 'error'] as const) {

@@ -8,12 +8,15 @@ import { assertReplayTags } from '../shared/replay.ts';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
 import type { ReplaySourceInput } from '../shared/context.ts';
 import { compileContextSchema } from '../server/context-schema.ts';
+import { loadConfig } from '../config/index.ts';
+import { resolvePlugins } from '../plugin/registry.ts';
+import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { defaultId, flagMap, prepareOutputDirectory, upload } from './bundle-io.ts';
 import { buildReplayContext, readContextFile } from './context.ts';
 import { agentBrowserDriver } from './drivers/agent-browser.ts';
 import { playwrightDriver } from './drivers/playwright.ts';
 import type { CaptureDriver, RawStep } from './drivers/types.ts';
-import { networkEntries, sanitizeUrl } from './sanitize.ts';
+import { networkEntries, sanitizeReplayBundle, sanitizeUrl } from './sanitize.ts';
 import { RecorderSession } from './session.ts';
 
 export type { RawStep } from './drivers/types.ts';
@@ -41,6 +44,8 @@ export interface CaptureArgs {
   /** JSON Schema file for `context.fields`; the deployment's own, so a bad context fails before the browser starts. */
   contextSchema?: unknown;
   sourceProviders?: readonly TemplateProviderConfig[];
+  /** The deployment's redaction rules (config file and plugins), added to the sanitiser's defaults. */
+  redaction?: RedactionRules;
 }
 
 const BOOLEAN_FLAGS = new Set(['video', 'headed']);
@@ -134,7 +139,9 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --suite-id <id> --run-id <id>   attach the replay to a suite run
   --upload-url <url>       POST the finished replay to <server>/api/replays
   --header-file <file>     JSON object of headers for the upload (e.g. Authorization)
-  --headed                 show the browser window (playwright driver)`;
+  --headed                 show the browser window (playwright driver)
+  --config <file>          replays.config.* whose redaction rules apply (default: REPLAYS_CONFIG, else
+                           replays.config.* in the working directory)`;
 
 function parseViewport(value: string | undefined) {
   if (!value) return { width: 1440, height: 900 };
@@ -148,6 +155,24 @@ function assertCaptureUrl(value: string, flag: string) {
   const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
   if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local))
     throw new Error(`${flag} must use https (http only for localhost)`);
+}
+
+/**
+ * The deployment's redaction rules, so a capture is cleaned the way the server will clean it on upload: the config's
+ * `redaction` plus every plugin's `api.redaction`. The config is the server's (`--config`, else `REPLAYS_CONFIG`, else
+ * `replays.config.*` in `cwd`); its plugins are imported and set up (registration only), nothing else of it is used.
+ */
+export async function loadCaptureRedaction(
+  options: { configFile?: string; cwd?: string; env?: NodeJS.ProcessEnv } = {},
+): Promise<RedactionRules | undefined> {
+  const env = options.env ?? process.env;
+  const cwd = options.cwd ?? process.cwd();
+  const config = await loadConfig({ env: options.configFile ? { ...env, REPLAYS_CONFIG: options.configFile } : env, cwd });
+  if (!config.path) return undefined;
+  if (config.file.redaction !== undefined) assertRedactionRules(config.file.redaction, `${config.path} redaction`);
+  const registry = await resolvePlugins(config.plugins, { env, cwd });
+  const rules = mergeRedactionRules(config.file.redaction, registry.redaction);
+  return Object.keys(rules).length ? rules : undefined;
 }
 
 export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureArgs & { headed: boolean }> {
@@ -168,6 +193,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   const sources = (lists.source ?? []).map((spec) => providers.parse(spec));
   const schema: unknown = values['context-schema'] ? JSON.parse(await readFile(resolve(values['context-schema']), 'utf8')) : undefined;
   const context = await readContextFile(values['context-file']);
+  const redaction = await loadCaptureRedaction(values.config ? { configFile: values.config } : {});
   const args = {
     url: values.url,
     output: resolve(values.output),
@@ -184,6 +210,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
     ...(context !== undefined ? { context } : {}),
     ...(schema !== undefined ? { contextSchema: schema } : {}),
+    ...(redaction ? { redaction } : {}),
     ...(values['suite-id'] || values['run-id']
       ? { suiteRun: { suiteId: assertReplayId(values['suite-id'] ?? ''), runId: values['run-id'] ?? '' } }
       : {}),
@@ -243,7 +270,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   let session: RecorderSession | undefined;
   try {
     const cdp = await driver.launch({ viewport: args.viewport, harPath, ...(args.video ? { videoPath: rawVideoPath } : {}) });
-    session = await RecorderSession.start(cdp);
+    session = await RecorderSession.start(cdp, args.redaction ? { redaction: args.redaction } : {});
 
     rawSteps.push({
       at: 0,
@@ -279,7 +306,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const steps = rawSteps.map(({ epoch, ...step }) => ({ ...step, at: Math.max(0, epoch - origin) }));
     const { duration } = tracks;
     const context = buildContext(args, new Date(origin).toISOString());
-    const bundle: ReplayBundle = {
+    let bundle: ReplayBundle = {
       meta: {
         id: args.id,
         title: args.title ?? new URL(args.url).hostname,
@@ -295,12 +322,14 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       },
       events: tracks.events,
       console: tracks.console,
-      network: networkEntries(har, origin).sort((a, b) => a.at - b.at),
+      network: networkEntries(har, origin, args.redaction).sort((a, b) => a.at - b.at),
       steps,
       performance: tracks.performance,
       ...(context ? { context } : {}),
       ...(args.suiteRun ? { suiteRun: args.suiteRun } : {}),
     };
+    // The host's rules over what the steps added too (labels, the title): the same pass the server runs on upload.
+    if (args.redaction) bundle = sanitizeReplayBundle(bundle, args.redaction);
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });
     if (args.video) await copyFile(rawVideoPath, join(args.output, 'session.mp4'), constants.COPYFILE_EXCL);
