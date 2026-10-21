@@ -5,6 +5,7 @@ import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
+import { PACKAGE_VERSION, satisfies } from './version.ts';
 import type {
   AfterUploadHook,
   BeforeUploadHook,
@@ -124,7 +125,12 @@ function mergeScalar(
   owners.set(key, plugin);
 }
 
-type ResolveOptions = { env?: NodeJS.ProcessEnv; cwd?: string };
+type ResolveOptions = {
+  env?: NodeJS.ProcessEnv;
+  cwd?: string;
+  /** What `requires` ranges are checked against; default the installed package's version. For tests. */
+  packageVersion?: string;
+};
 
 /**
  * The one implementation of resolving: yields each `setup`'s result so a driver can await it (`resolvePlugins`) or insist
@@ -132,6 +138,10 @@ type ResolveOptions = { env?: NodeJS.ProcessEnv; cwd?: string };
  */
 function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): Generator<void | Promise<void>, PluginRegistry> {
   plugins.forEach((plugin, index) => assertPlugin(plugin, `plugins[${index}]`));
+  const version = options.packageVersion ?? PACKAGE_VERSION;
+  for (const plugin of plugins)
+    if (plugin.requires !== undefined && !satisfies(version, plugin.requires))
+      throw new PluginError('version-range', `needs @hazem3500/replays ${plugin.requires}, this is ${version}`, { plugin: plugin.name });
   const ordered = orderPlugins(plugins);
 
   const auth = new Map<string, Owned<AuthPluginFactory>>();

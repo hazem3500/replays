@@ -11,6 +11,7 @@ import { authFromEnv, headerAuth, noneAuth } from '../src/server/auth/index.ts';
 import { addressMatches } from '../src/server/auth/header.ts';
 import type { AuthAdapter } from '../src/server/auth/types.ts';
 import { ReplayStore } from '../src/server/store.ts';
+import { describeAuthAdapter } from '../src/server/testing/index.ts';
 import { appDefaults } from './fixtures.ts';
 
 /** The two things an adapter reads from a request: its headers and the peer address. */
@@ -234,3 +235,42 @@ describe('adapters behind createApp', () => {
     expect(await (await fetch(`${untrusted}/healthz`)).text()).toBe('ok');
   });
 });
+
+// The built-ins pass the same contract a third-party adapter runs (`@hazem3500/replays/server/testing`).
+describeAuthAdapter(
+  'none',
+  {
+    create: () => noneAuth({ DEV_USER: 'dev@example.com' }),
+    accepts: [
+      { title: 'any request, as DEV_USER', request: {}, id: 'dev@example.com' },
+      { title: 'x-dev-user', request: { headers: { 'x-dev-user': 'ada@example.com' } }, id: 'ada@example.com' },
+    ],
+    refuses: [],
+  },
+  { describe, it },
+);
+describeAuthAdapter(
+  'header',
+  {
+    create: () => headerAuth({ header: 'x-forwarded-email', trustedProxies: ['10.0.0.0/8'], allow: ['@example.com'] }),
+    accepts: [
+      {
+        title: 'the header from a trusted proxy',
+        request: { headers: { 'x-forwarded-email': 'ada@example.com' }, remoteAddress: '10.0.0.5' },
+        id: 'ada@example.com',
+      },
+    ],
+    refuses: [
+      {
+        title: 'the header from another peer',
+        request: { headers: { 'x-forwarded-email': 'ada@example.com' }, remoteAddress: '192.0.2.1' },
+      },
+      { title: 'no header', request: { remoteAddress: '10.0.0.5' } },
+      {
+        title: 'an identity outside the allow-list',
+        request: { headers: { 'x-forwarded-email': 'eve@evil.test' }, remoteAddress: '10.0.0.5' },
+      },
+    ],
+  },
+  { describe, it },
+);

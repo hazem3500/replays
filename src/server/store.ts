@@ -125,9 +125,9 @@ export class ReplayStore {
   private lastPrune = 0;
   private pruning: Promise<string[]> | undefined;
   /**
-   * The unfiltered list, reused for `listTtlMs`: with S3 a list is a few API pages, so the index's bursts
-   * (filters, Back) share one. This process's own writes clear it; another replica's show up
-   * within the TTL. 0 (fs, memory) lists every time.
+   * The unfiltered list, reused for `listTtlMs` (the backend's `listCacheMs` unless given): with S3 a list is a few
+   * API pages, so the index's bursts (filters, Back) share one. This process's own writes clear it; another replica's
+   * show up within the TTL. 0 (fs, memory) lists every time.
    */
   private listed: { at: number; summaries: Promise<ReplaySummary[]> } | undefined;
   readonly listTtlMs: number;
@@ -142,7 +142,7 @@ export class ReplayStore {
     this.sampleDir = sampleDir;
     this.samples = new FsStorage(sampleDir);
     this.retention = policyFrom(retention);
-    this.listTtlMs = options.listTtlMs ?? (this.storage.kind === 's3' ? 5000 : 0);
+    this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
   }
 
   /** DATA_DIR with the fs driver; tests and scripts only. */

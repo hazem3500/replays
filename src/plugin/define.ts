@@ -1,5 +1,6 @@
 import { PluginError } from './errors.ts';
 import { PLUGIN_API_VERSION, type ReplaysPlugin } from './types.ts';
+import { parseRange } from './version.ts';
 
 export const PLUGIN_NAME = /^[a-z][a-z0-9-]{0,39}$/;
 
@@ -13,6 +14,10 @@ export function assertPlugin(value: unknown, where = 'plugin'): asserts value is
   if (typeof plugin.setup !== 'function') throw new PluginError('invalid-plugin', 'setup must be a function', { plugin: name });
   if (plugin.apiVersion !== PLUGIN_API_VERSION)
     throw new PluginError('api-version', `needs plugin API ${String(plugin.apiVersion)}, this replays provides ${PLUGIN_API_VERSION}`, {
+      plugin: name,
+    });
+  if (plugin.requires !== undefined && (typeof plugin.requires !== 'string' || !parseRange(plugin.requires)))
+    throw new PluginError('invalid-plugin', `requires must be a version range like ">=0.4 <0.6" (got ${JSON.stringify(plugin.requires)})`, {
       plugin: name,
     });
   if (plugin.dependsOn !== undefined && (!Array.isArray(plugin.dependsOn) || plugin.dependsOn.some((entry) => typeof entry !== 'string')))

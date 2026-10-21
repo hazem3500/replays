@@ -13,6 +13,7 @@
     "src/index.ts",
     "src/capture/index.ts",
     "src/server/index.ts",
+    "src/server/testing/index.ts",
     "src/plugin/index.ts",
     "src/config/index.ts",
     "src/client/plugins/api.ts"

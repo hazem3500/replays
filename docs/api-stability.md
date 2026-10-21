@@ -15,6 +15,7 @@ so every change to the surface shows up in a diff).
 | Plugin API: `definePlugin`, `PluginApi` methods and their hook contexts, `PluginError` codes, `rejectUpload`, `PLUGIN_API_VERSION` | `/plugin` | Public |
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions | `/viewer` | Public |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` types | `/server` | Public |
+| Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
 | Capture and data model: recording, bundle building, sanitising, source providers, `ReplayBundle` and friends | `/capture`, `.` | Public |
 | The replay format (`replay.json`, `meta.version`, the context block) | – | Public: changes are additive, or bump `version` and keep reading the old one |
 | HTTP API (`/api/replays`, `/api/suites`, `/api/config`, `/api/me`, upload receipts) and environment variables | – | Public: changes are additive |
@@ -47,6 +48,10 @@ CHANGELOG when you move, and let `test/public-api.test.ts` plus your own plugin 
 reading the CHANGELOG is enough; the rules below are what we hold ourselves to from 1.0 on and already follow where possible.
 
 ## Plugin API generations
+
+The browser plugin API has its own generation, `VIEWER_API_VERSION` (`@hazem3500/replays/viewer`, now `1`), stamped by `defineViewerPlugin`
+and checked by the viewer in the same way; it moves on the same rule. Within a generation, a plugin that needs a newer minor declares
+`requires` (a version range), and an older core refuses it at start instead of failing later.
 
 `PLUGIN_API_VERSION` is the generation of the plugin API (now `1`). A plugin declares the generation it was written for (`definePlugin`
 fills it in from the installed package). It increases only in a major release. A server refuses a plugin of an unsupported generation at

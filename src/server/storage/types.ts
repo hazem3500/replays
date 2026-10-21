@@ -4,7 +4,7 @@ import type { Readable } from 'node:stream';
  * Where replays, their sidecars, list media, rendered MP4s, render job state and review suites live.
  * Keys are `/`-separated paths relative to the store's root (`<id>/replay.json`, `_suites/<id>.json`),
  * the same layout on every driver: `fs` (DATA_DIR on disk; dev, tests, the pre-live volume), `s3`
- * (an S3-compatible bucket) and `memory` (unit tests).
+ * (an S3-compatible bucket), `memory` (unit tests) and any backend a plugin registers.
  */
 export interface ObjectInfo {
   key: string;
@@ -41,9 +41,19 @@ export interface ListOptions {
 }
 
 export interface ObjectStorage {
-  readonly kind: 'fs' | 's3' | 'memory';
+  /**
+   * The driver, for logs and traces: `fs`, `s3` and `memory` are built in; a plugin's backend uses its own (`gcs`).
+   * `(string & {})` keeps the built-in names suggested while allowing any string.
+   */
+  readonly kind: 'fs' | 's3' | 'memory' | (string & {});
   /** For logs: the directory or `s3://bucket/prefix/`. */
   readonly description: string;
+  /**
+   * How long (ms) the store may reuse one unfiltered listing. Set it on a backend where a list is a few remote API pages
+   * (S3 uses 5000), so the index's bursts (filters, Back) share one; this process's own writes clear it, another
+   * replica's show up within this time. Absent or 0: every listing goes to the backend (fs, memory).
+   */
+  readonly listCacheMs?: number;
   stat(key: string): Promise<ObjectInfo | undefined>;
   /** The whole object, or undefined when there is none. */
   read(key: string): Promise<Buffer | undefined>;

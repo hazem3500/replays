@@ -130,6 +130,8 @@ function literalPrefix(glob: string) {
 /** Objects in an S3-compatible bucket (AWS, MinIO, R2, localstack), over `fetch` with SigV4 signing; no SDK. */
 export class S3Storage implements ObjectStorage {
   readonly kind = 's3' as const;
+  /** A list is a few API pages: the store reuses one for 5 s (ObjectStorage.listCacheMs). */
+  readonly listCacheMs = 5000;
   readonly description: string;
   private readonly bucket: string;
   private readonly region: string;

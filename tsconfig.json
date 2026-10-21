@@ -19,6 +19,7 @@
       "@hazem3500/replays": ["./src/index.ts"],
       "@hazem3500/replays/capture": ["./src/capture/index.ts"],
       "@hazem3500/replays/server": ["./src/server/index.ts"],
+      "@hazem3500/replays/server/testing": ["./src/server/testing/index.ts"],
       "@hazem3500/replays/plugin": ["./src/plugin/index.ts"],
       "@hazem3500/replays/config": ["./src/config/index.ts"],
       "@hazem3500/replays/viewer": ["./src/client/plugins/api.ts"]

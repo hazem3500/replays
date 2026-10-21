@@ -23,7 +23,8 @@ your-distro/
 | `@hazem3500/replays/config` | `defineConfig`, `loadConfig` | Node |
 | `@hazem3500/replays/plugin` | `definePlugin`, `rejectUpload`, `PluginError`, plugin types | Node |
 | `@hazem3500/replays/viewer` | `defineViewerPlugin`, viewer plugin types (no Node, no React) | browser |
-| `@hazem3500/replays/server` | `startServer`, `createApp`, storage, auth, store | Node |
+| `@hazem3500/replays/server` | `startServer`, `createApp`, storage (drivers, `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey`, `globToRegExp`), auth (adapters, `verifyJwt`), store | Node |
+| `@hazem3500/replays/server/testing` | `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`: the contract suites the built-in adapters pass | Node, any test runner |
 | `@hazem3500/replays/capture` | recording, bundle building, sanitising, source providers | Node |
 | `@hazem3500/replays` | the original umbrella entry (kept for compatibility) | Node |
 
@@ -71,6 +72,7 @@ import { definePlugin } from '@hazem3500/replays/plugin';
 export default definePlugin((options: { audience: string }) => ({
   name: 'acme-distro',           // [a-z][a-z0-9-]{0,39}; unique
   dependsOn: ['acme-base'],      // optional: set up after these (they must be listed)
+  requires: '>=0.4 <0.6',        // optional: the @hazem3500/replays versions it works with
   order: 0,                      // optional: lower first among independent plugins
   setup(api) {
     api.auth({ name: 'acme-iap', create: (env) => ({ name: 'acme-iap', authenticate: (request) => … }) });
@@ -82,11 +84,17 @@ export default definePlugin((options: { audience: string }) => ({
 `definePlugin(plugin)` returns the plugin; `definePlugin((options) => plugin)` returns a factory you call in the config. `apiVersion`
 is filled in (`PLUGIN_API_VERSION`, currently `1`); a plugin written for another version is refused at start with both numbers named.
 
+**`requires`** (optional) is a semver range over this package's version, for a plugin that uses something added within an API
+generation: `>=0.4 <0.6`, `^0.4.1`, `~0.4`, `0.4.2`. Supported: `>=`, `>`, `<`, `<=`, `=` or a bare version (a partial one such as
+`0.4` means all of `0.4.x`), `^`, `~`, and space-separated terms that must all hold; no `||`, hyphen ranges or `x`. A malformed
+range is an `invalid-plugin` error; a core outside the range refuses the plugin at start with `version-range`, naming the range and
+the installed version.
+
 **Ordering.** Plugins are set up dependencies first, then by `order` (default 0, ascending), then by position in the config.
 Hooks and context adapters run in that same order. A missing dependency, a duplicate name or a cycle is a start-up error.
 
 **Errors.** Everything found at start throws a `PluginError` with a stable `code` (`invalid-plugin`, `duplicate-plugin`,
-`api-version`, `missing-dependency`, `dependency-cycle`, `invalid-registration`, `conflict`, `setup-failed`, `load-failed`) and a
+`api-version`, `version-range`, `missing-dependency`, `dependency-cycle`, `invalid-registration`, `conflict`, `setup-failed`, `load-failed`) and a
 message that starts with the plugin's name. The server prints it and exits; nothing listens.
 
 ### What `setup(api)` can register
@@ -96,7 +104,7 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.auth(adapter \| { name, create(env) })` | An [`AuthAdapter`](extending.md#auth-adapters) selected by `AUTH_MODE=<name>` or the config's `auth`. With exactly one registered and nothing chosen it is used; with several and nothing chosen the server refuses to start | name taken by another plugin or built in (`none`, `header`, `oidc`, `plugin`) |
 | `api.contextAdapter({ name, schema?, normalize? })` | Runs on every upload and suite registration, **before** validation: `normalize(context, { kind, identity, request })` returns the context to use. `schema` (an object schema) is merged into the deployment's context schema, which validates the result and titles the Context tab | name taken; a field defined differently by two adapters or by the schema file |
 | `api.sourceProvider(provider)` | A `{ id, label, resolve(ref) }` link provider (chat, support, VCS style), usable as `--source id:ref` and in `context.sources` | id taken, built in (`github`, `gitlab`, `url`) or defined in the config's `sourceProviders` |
-| `api.storage({ id, create({ env, dataDir }) })` | An `ObjectStorage` selected by `STORAGE=<id>` or the config's `storage` | id taken or built in (`fs`, `s3`, `memory`) |
+| `api.storage({ id, create({ env, dataDir }) })` | An [`ObjectStorage`](extending.md#storage) selected by `STORAGE=<id>` or the config's `storage`. Its `kind` is any string (usually the id); set `listCacheMs` when listing is remote and slow | id taken or built in (`fs`, `s3`, `memory`) |
 | `api.branding({ name?, logoUrl?, theme? })` | Name, logo (https URL or base64 data image) and [theme tokens](extending.md#theming-and-branding) | the same field set to different values by two plugins; the config file and environment override plugins without error |
 | `api.basePath('/replays')` | The default base path | two plugins disagree; config and `BASE_PATH` override |
 | `api.onRequest(hook, { phase? })` | `hook({ request, response, path, identity? })`, return `true` after answering. `post-auth` (default): only authenticated requests, with `identity`, after the same-origin check. `pre-auth`: every request except the health checks. `path` has the base path removed | – |
@@ -176,6 +184,9 @@ export default defineViewerPlugin((api) => {
   [branding](extending.md#theming-and-branding)) so a tab follows light/dark and the distribution's colours. A `style` file on the
   client entry is loaded as a stylesheet.
 - Registration errors (a bad id, a duplicate, a missing function) throw to the entry and are logged with the plugin's name.
+- **Generations.** `defineViewerPlugin` stamps the plugin with `VIEWER_API_VERSION` (now `1`, exported from `/viewer`). A viewer of
+  another generation does not call it and logs `plugin <name> (<id>) refused: built for viewer API <n>, this viewer provides <m>`.
+  A bare function default export (no `defineViewerPlugin`) carries no stamp and is loaded as before.
 
 ## Starting the server
 
@@ -193,6 +204,28 @@ adds its files with `COPY` and sets nothing else.
 
 ## Testing a plugin
 
+- **Adapters** run the contract suites the built-in ones pass, from `@hazem3500/replays/server/testing`. They assert with
+  `node:assert` and take the runner's `describe` and `it`, so they work under vitest, `node:test`, Jest or Mocha:
+
+  ```ts
+  import { describe, it } from 'vitest';            // or: import { describe, it } from 'node:test';
+  import { describeAuthAdapter, describeObjectStorage } from '@hazem3500/replays/server/testing';
+
+  // The factory is called once per test and must return an empty store (a fresh bucket or prefix); undefined skips the test.
+  describeObjectStorage('acme', () => new AcmeStorage({ bucket: freshBucket() }), { describe, it });
+
+  describeAuthAdapter('acme-sso', {
+    create: () => acmeAuth({ audience: 'replays' }),
+    accepts: [{ title: 'a signed header', request: { headers: { 'x-acme-jwt': signedFor('ada@example.com') } }, id: 'ada@example.com' }],
+    refuses: [{ title: 'no header', request: {} }, { title: 'an expired token', request: () => ({ headers: { 'x-acme-jwt': expired() } }) }],
+  }, { describe, it });
+  ```
+
+  `describeObjectStorage` covers versions, create-only and `ifVersion` writes (`ObjectExistsError` / `PreconditionFailedError`, both
+  409), whole and ranged streams (`404` for a missing object), uploads, prefix and glob listing sorted by key, deletes and key
+  validation. `describeAuthAdapter` checks the adapter's shape, the identities it returns for `accepts`, `undefined` for `refuses`,
+  and that hostile headers never make `authenticate` throw. `fakeRequest({ method, url, headers, remoteAddress })` builds the request
+  an adapter sees.
 - Unit-test registration with `resolvePlugins([plugin])` from `@hazem3500/replays/plugin`; it returns what was registered, or throws the `PluginError`.
 - Test behaviour with `startServer({ port: 0, config: { dir, file: {}, plugins: [plugin] } , env: { DATA_DIR, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' } })`.
 - `examples/custom-distro/e2e/smoke.spec.ts` shows a browser-level check of each extension point.
