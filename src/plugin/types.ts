@@ -144,6 +144,58 @@ export interface RetentionRuleDefinition {
   days(summary: ReplaySummary): number | null | undefined;
 }
 
+/** What the render pipeline makes: a video export, or one of the list media (poster, opening still, hover preview). */
+export type RenderKind = 'video' | 'poster' | 'open' | 'preview';
+
+/** The options of a video export a `beforeRender` hook may change. List media have none (`{}`). */
+export interface RenderJobOptions {
+  /** One of 0.5, 1, 1.5, 2, 4, 8. */
+  speed?: number;
+  /** Draw the step captions into the frames. */
+  captions?: boolean;
+  /** Fast-forward idle gaps. */
+  skipInactive?: boolean;
+}
+
+/**
+ * A render as the hooks see it: a small, stable object, not the queue's state. `id` names the job (for a video,
+ * `<replayId>-<variant>`; for list media, `<replayId>-<kind>`). `identity` is the person who asked for a video export;
+ * list media are made in the background for whoever lists the replay, so they have none.
+ */
+export interface RenderJob {
+  readonly id: string;
+  readonly replayId: string;
+  readonly kind: RenderKind;
+  readonly options: Readonly<RenderJobOptions>;
+  readonly identity?: Identity;
+}
+
+/** The file a render produced. `file` is a local temporary path, readable until the hook returns; `key` is where it is stored. */
+export interface RenderedFile {
+  readonly file: string;
+  readonly key: string;
+  readonly contentType: string;
+  readonly bytes: number;
+}
+
+/** `api.render`: hooks into posters and video exports. Every member is optional; hooks run in plugin order. */
+export interface RenderHooks {
+  /**
+   * The poster's moment, in ms on the replay's timeline (clamped to the replay). The first hook that returns a finite
+   * number wins; `undefined` passes to the next, then to the purpose's `poster` setting, then to the default. Its
+   * answer is cached per replay for the life of the process, so keep it a pure function of the bundle and purpose.
+   */
+  posterAt?(bundle: ReplayBundle, context: { purpose?: string }): number | undefined | Promise<number | undefined>;
+  /**
+   * Before a render. Return `false` to refuse it, or some of `options` to change them (video exports only; other keys
+   * are ignored). Video hooks run on every request that names an export (start, status, download, cancel), so the
+   * same request always maps to the same video: keep them cheap and deterministic. A hook that throws refuses the job.
+   */
+  beforeRender?(job: RenderJob): void | false | Partial<RenderJobOptions> | Promise<void | false | Partial<RenderJobOptions>>;
+  /** After a video, poster, opening still or preview is stored. Errors are logged; they never fail the render. */
+  afterRender?(job: RenderJob, file: RenderedFile): void | Promise<void>;
+}
+
 export interface RequestHookOptions {
   /** `post-auth` (default): only authenticated requests arrive, with `identity`. `pre-auth`: every request, before auth. */
   phase?: 'pre-auth' | 'post-auth';
@@ -187,6 +239,8 @@ export interface PluginApi {
   purpose(definition: PurposeDefinition): void;
   /** A retention rule; the shortest window any rule, the purpose or the default gives wins. */
   retention(rule: RetentionRuleDefinition): void;
+  /** Render pipeline hooks: the poster's moment, a check before each render, and a call after each file is stored. */
+  render(hooks: RenderHooks): void;
 }
 
 export interface ReplaysPlugin {

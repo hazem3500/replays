@@ -4,6 +4,8 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 
 import { send, serveFile } from './app.ts';
+import type { RenderJob } from '../plugin/types.ts';
+import type { Identity } from './auth/types.ts';
 import { editsVersion } from '../shared/edits.ts';
 import type { BetaFlags } from './beta.ts';
 import { renderFilename } from '../shared/render-variant.ts';
@@ -13,7 +15,9 @@ import {
   RenderQueueFullError,
   type RenderQueue,
   type RenderSpeedOption,
+  renderJobId,
 } from './render-queue.ts';
+import type { RenderVerdict } from './render-hooks.ts';
 import { RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
 import type { PosterQueue } from './posters.ts';
 import { serveObject } from './serve-object.ts';
@@ -32,6 +36,12 @@ export interface RenderService {
   maxDurationMs: number;
   /** List posters (src/server/posters.ts); only needs Chromium, so it can be on while video export is off. */
   posters?: PosterQueue;
+}
+
+/** What the render routes need besides the service: the plugins' `beforeRender` (render-hooks.ts) and who is asking. */
+export interface RenderRequestContext {
+  beforeRender?: ((job: RenderJob) => Promise<RenderVerdict>) | undefined;
+  identity?: Identity | undefined;
 }
 
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -144,13 +154,17 @@ export function parseFlag(value: unknown, fallback = false): boolean | undefined
 /**
  * `/api/replays/<id>/render[/file]`, behind the same auth check as
  * the rest of the app. Returns false when `path` is not a render route.
+ *
+ * With `beforeRender` hooks, every request that names an export (start, status, download, cancel) runs them, so the
+ * options a hook adjusts name the same video for all of them. A refusal is `{ status: 'refused', error }`: a 200 for
+ * the viewer's status probe (an expected answer), a 403 for anything else.
  */
 export async function handleRenderApi(
   request: IncomingMessage,
   response: ServerResponse,
   path: string,
   search: URLSearchParams,
-  options: { store: ReplayStore; render?: RenderService; beta?: BetaFlags },
+  options: { store: ReplayStore; render?: RenderService; beta?: BetaFlags } & RenderRequestContext,
 ) {
   const match = /^\/api\/replays\/([a-z0-9][a-z0-9-]{0,79})\/render(\/file)?$/.exec(path);
   if (!match) return false;
@@ -167,13 +181,13 @@ export async function handleRenderApi(
   }
   const method = request.method ?? 'GET';
   const body = method === 'POST' ? await readSmallJson(request) : {};
-  const speed = parseSpeed(method === 'POST' ? body.speed : search.get('speed'));
+  let speed = parseSpeed(method === 'POST' ? body.speed : search.get('speed'));
   if (!speed) {
     json(response, 400, { error: `speed must be one of ${RENDER_SPEED_OPTIONS.join(', ')}` });
     return true;
   }
-  const captions = parseFlag(method === 'POST' ? body.captions : search.get('captions'));
-  const skipInactive = parseFlag(method === 'POST' ? body.skipInactive : search.get('skipInactive'), true);
+  let captions = parseFlag(method === 'POST' ? body.captions : search.get('captions'));
+  let skipInactive = parseFlag(method === 'POST' ? body.skipInactive : search.get('skipInactive'), true);
   if (captions === undefined || skipInactive === undefined) {
     json(response, 400, { error: `${captions === undefined ? 'captions' : 'skipInactive'} must be true or false` });
     return true;
@@ -205,6 +219,23 @@ export async function handleRenderApi(
     json(response, 409, { error: 'the edits changed since this page loaded; reload to export the current version' });
     return true;
   }
+  if (options.beforeRender) {
+    const verdict = await options.beforeRender({
+      id: renderJobId(id, speed, { captions, skipInactive, edits }),
+      replayId: id,
+      kind: 'video',
+      options: { speed, captions, skipInactive },
+      ...(options.identity ? { identity: options.identity } : {}),
+    });
+    if (!verdict.ok) {
+      json(response, (method === 'GET' || method === 'HEAD') && !file ? 200 : 403, { status: 'refused', error: verdict.error });
+      return true;
+    }
+    // render-hooks.ts only lets checked values through.
+    speed = (verdict.options.speed as RenderSpeedOption | undefined) ?? speed;
+    captions = verdict.options.captions ?? captions;
+    skipInactive = verdict.options.skipInactive ?? skipInactive;
+  }
   const variant = { captions, skipInactive, edits };
 
   if (file) {
@@ -231,7 +262,7 @@ export async function handleRenderApi(
         return true;
       }
       try {
-        const job = await queue.enqueue(id, speed, variant);
+        const job = await queue.enqueue(id, speed, variant, { identity: options.identity });
         json(response, job.status === 'done' ? 200 : 202, job);
       } catch (error) {
         if (error instanceof RenderQueueFullError) json(response, 429, { error: error.message });

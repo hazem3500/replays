@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { RENDER_SPEEDS, type RenderSpeed } from '../client/render/frames.ts';
+import type { RenderedFile, RenderJob } from '../plugin/types.ts';
+import type { Identity } from './auth/types.ts';
 import { FsStorage, type ObjectStorage, readJson } from './storage/index.ts';
 import { captureLink, startSpan, type TraceLink, withSpan } from './tracing.ts';
 
@@ -78,6 +80,11 @@ export interface RenderQueueOptions {
   now?: () => number;
   /** One line per job state change (queued, rendering, done, failed, cancelled). */
   log?: (line: string) => void;
+  /**
+   * Called once the MP4 is stored and the job reads as done, before its temporary file is removed (the plugins'
+   * `afterRender`, render-hooks.ts). Its errors are logged; the job stays done.
+   */
+  afterRender?: (job: RenderJob, file: RenderedFile) => void | Promise<void>;
 }
 
 export class RenderQueueFullError extends Error {
@@ -101,6 +108,8 @@ interface Job {
   /** Wall-clock enqueue time and the requesting span, for the job's own trace (tracing.ts). */
   queuedAtMs: number;
   link?: TraceLink | undefined;
+  /** Who asked for it first (the `afterRender` hooks see them). */
+  identity?: Identity | undefined;
 }
 
 const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -140,6 +149,7 @@ export class RenderQueue {
   private readonly timeoutMs: number;
   private readonly now: () => number;
   private readonly log: (line: string) => void;
+  private readonly afterRender: RenderQueueOptions['afterRender'];
   private readonly jobs = new Map<string, Job>();
   private readonly waiting: Job[] = [];
   private running = 0;
@@ -154,6 +164,7 @@ export class RenderQueue {
     this.timeoutMs = options.timeoutMs ?? 15 * 60_000;
     this.now = options.now ?? Date.now;
     this.log = options.log ?? (() => undefined);
+    this.afterRender = options.afterRender;
   }
 
   outputKey(id: string, speed: RenderSpeedOption, options: RenderOptions = {}) {
@@ -190,8 +201,13 @@ export class RenderQueue {
     return recovered;
   }
 
-  /** Starts (or joins) the render for `id` at `speed` with `options` (skip inactive, captions). */
-  async enqueue(id: string, speed: RenderSpeedOption, options: RenderOptions = {}): Promise<RenderJobView> {
+  /** Starts (or joins) the render for `id` at `speed` with `options` (skip inactive, captions); `identity` asked for it. */
+  async enqueue(
+    id: string,
+    speed: RenderSpeedOption,
+    options: RenderOptions = {},
+    context: { identity?: Identity | undefined } = {},
+  ): Promise<RenderJobView> {
     const key = renderJobId(assertId(id), speed, options);
     const existing = this.jobs.get(key);
     if (existing && (existing.status === 'queued' || existing.status === 'rendering')) return this.view(existing);
@@ -212,6 +228,7 @@ export class RenderQueue {
       resolve,
       queuedAtMs: Date.now(),
       link: captureLink(),
+      identity: context.identity,
     };
     this.jobs.set(key, job);
     this.waiting.push(job);
@@ -339,11 +356,23 @@ export class RenderQueue {
         },
       });
       job.controller.signal.throwIfAborted();
-      await this.storage.upload(output, temporary, { contentType: 'video/mp4' });
+      const stored = await this.storage.upload(output, temporary, { contentType: 'video/mp4' });
       job.status = 'done';
       job.progress = 1;
       await this.storage.delete(this.stateKey(id, speed, options));
       this.log(`render ${key}: done in ${((this.now() - job.startedAt) / 1000).toFixed(1)} s`);
+      if (this.afterRender) {
+        const view: RenderJob = {
+          id: key,
+          replayId: id,
+          kind: 'video',
+          options: { speed, captions: options.captions, skipInactive: options.skipInactive },
+          ...(job.identity ? { identity: job.identity } : {}),
+        };
+        await Promise.resolve()
+          .then(() => this.afterRender!(view, { file: temporary, key: output, contentType: 'video/mp4', bytes: stored.size }))
+          .catch((error: unknown) => this.log(`render ${key}: afterRender failed: ${summarizeError(error)}`));
+      }
       return undefined;
     } catch (error) {
       // A cancelled job was already removed from the map and its state file deleted.

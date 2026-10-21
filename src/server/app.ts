@@ -45,6 +45,7 @@ import {
   runRequestHooks,
   watchResponse,
 } from './plugin-runtime.ts';
+import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import type { PurposeCatalog } from './purposes.ts';
 import { serveObject } from './serve-object.ts';
@@ -422,6 +423,9 @@ export function createApp(options: AppOptions) {
   ];
   const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
   const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
+  // `api.render`'s `beforeRender` for video exports (the queues in start.ts run the rest of the render hooks).
+  const renderHooks = createRenderHooks(registry.render);
+  const beforeRender = renderHooks.checks ? renderHooks.beforeRender : undefined;
   const purposes = options.store.purposes;
   const inferable = purposes.list.some((purpose) => purpose.inferable);
   const redaction = mergeRedactionRules(options.redaction, registry.redaction);
@@ -483,7 +487,7 @@ export function createApp(options: AppOptions) {
           send(response, 404, 'not found');
         return;
       }
-      if (await handleRenderApi(request, response, path, raw.searchParams, options)) return;
+      if (await handleRenderApi(request, response, path, raw.searchParams, { ...options, beforeRender, identity: user })) return;
       if (await handlePosterApi(request, response, path, { store: options.store, posters: options.render?.posters })) return;
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.

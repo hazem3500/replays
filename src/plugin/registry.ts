@@ -17,6 +17,7 @@ import type {
   PluginApi,
   PrepareUploadHook,
   PurposeDefinition,
+  RenderHooks,
   ReplaysPlugin,
   RequestHook,
   RequestHookOptions,
@@ -66,6 +67,8 @@ export interface PluginRegistry {
   readonly purposes: readonly Owned<PurposeDefinition>[];
   /** `api.retention` rules. */
   readonly retention: readonly Owned<RetentionRuleDefinition>[];
+  /** `api.render` hooks, in plugin order (src/server/render-hooks.ts runs them). */
+  readonly render: readonly Owned<RenderHooks>[];
 }
 
 export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
@@ -81,6 +84,7 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   clientEntries: [],
   purposes: [],
   retention: [],
+  render: [],
 });
 
 /**
@@ -172,6 +176,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   const clientEntries: ResolvedClientEntry[] = [];
   const purposes: Owned<PurposeDefinition>[] = [];
   const retention: Owned<RetentionRuleDefinition>[] = [];
+  const render: Owned<RenderHooks>[] = [];
   const brandScalars: Record<string, string> = {};
   const brandOwners = new Map<string, string>();
   const theme = { dark: {} as Record<string, string>, light: {} as Record<string, string> };
@@ -332,6 +337,15 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         needFunction(rule.days, 'retention.days');
         retention.push({ plugin: plugin.name, value: rule });
       },
+      render(definition) {
+        if (!definition || typeof definition !== 'object') fail('render needs { posterAt?, beforeRender?, afterRender? }');
+        const names = ['posterAt', 'beforeRender', 'afterRender'] as const;
+        const unknown = Object.keys(definition).find((name) => !(names as readonly string[]).includes(name));
+        if (unknown) fail(`render: unknown hook ${JSON.stringify(unknown)} (use ${names.join(', ')})`);
+        if (!names.some((name) => definition[name] !== undefined)) fail('render needs at least one of posterAt, beforeRender, afterRender');
+        for (const name of names) if (definition[name] !== undefined) needFunction(definition[name], `render.${name}`);
+        render.push({ plugin: plugin.name, value: definition });
+      },
     };
     try {
       yield plugin.setup(api);
@@ -362,6 +376,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     clientEntries,
     purposes,
     retention,
+    render,
   };
 }
 
@@ -431,5 +446,6 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     clientEntries: [...first.clientEntries, ...second.clientEntries],
     purposes: [...first.purposes, ...second.purposes],
     retention: [...first.retention, ...second.retention],
+    render: [...first.render, ...second.render],
   };
 }

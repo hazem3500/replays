@@ -34,8 +34,11 @@ export interface RenderApi {
   /** `captions`: draw the step captions (video export with captions). */
   plan(fps: number, speed: number, options?: RenderPlanOptions): { count: number; dirty: number[] };
   show(index: number): Promise<void>;
-  /** Seeks to the poster moment (posterMoment; `moment` from the replay's purpose), waits for its assets, and returns that time. */
-  poster(moment?: PosterMoment): Promise<number>;
+  /**
+   * Seeks to the poster moment (posterMoment): a named `moment` (the replay's purpose) or a time in ms (a plugin's
+   * `posterAt`), clamped to the replay; waits for its assets and returns that time.
+   */
+  poster(moment?: PosterMoment | number): Promise<number>;
   /** Frames for the hover preview (frames.ts previewPlan, 3× with idle gaps squeezed). */
   previewPlan(fps: number, maxOutputMs: number): PreviewPlan;
   /** Seeks to `time` (ms); waits for assets when a new document was rebuilt on the way. */
@@ -207,7 +210,7 @@ async function start() {
     },
     async poster(moment) {
       const time = posterMoment({
-        ...(moment ? { moment } : {}),
+        ...(typeof moment === 'number' ? { at: moment } : moment ? { moment } : {}),
         errorTimes: [
           ...bundle.console.filter((entry) => entry.level === 'error').map((entry) => entry.at),
           ...bundle.network.filter(isFailedRequest).map((entry) => entry.at),

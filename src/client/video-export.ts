@@ -22,7 +22,8 @@ export type RenderJobStatus = 'queued' | 'rendering' | 'done' | 'failed';
 /** GET/POST <base>/api/replays/<id>/render. */
 export interface RenderJob {
   jobId?: string;
-  status: RenderJobStatus | 'none';
+  /** `refused`: a server plugin's `beforeRender` said no (`error` says why). */
+  status: RenderJobStatus | 'none' | 'refused';
   progress?: number;
   etaMs?: number;
   error?: string;
@@ -68,6 +69,7 @@ export function exportReducer(state: ExportState, event: ExportEvent): ExportSta
       }
       if (job.status === 'failed') return { kind: 'error', message: `The render failed: ${job.error ?? 'unknown error'}` };
       if (job.status === 'none') return { kind: 'error', message: 'The render was cancelled.' };
+      if (job.status === 'refused') return { kind: 'error', message: describeRenderResponse(403, job) };
       // 'done' keeps the last progress state until the download has been triggered ('saved').
       return { kind: 'rendering', progress: 1 };
     }

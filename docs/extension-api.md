@@ -125,6 +125,7 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.client({ id, script, style? })` | A browser entry, served by the app behind the same auth (an absolute file path) or loaded from an `https:` URL | the same `id` twice in one plugin |
 | `api.purpose({ id, label, order?, retentionDays?, viewer?, poster?, infer? })` | A [purpose](#purposes-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.purpose` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
 | `api.retention({ days(summary) })` | A [retention rule](#purposes-and-retention) that is not about purpose: whole days, or `0` / `undefined` for no limit | – |
+| `api.render({ posterAt?, beforeRender?, afterRender? })` | [Render pipeline hooks](#render-pipeline-hooks): the poster's moment, a veto or option change before each render, a call after each stored file | – (hooks run in plugin order) |
 
 Upload order: `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →
 `beforeUpload` → store → `afterUpload`. The core checks cannot be skipped by a hook: an adapter or hook that produces an
@@ -168,7 +169,7 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
 | `viewer.openAt` | `'start'` (default) or `'first-error'`: open `viewer.leadMs` (default 1000) before the first console error or failed request, on the tab that holds it. A permalink (`?t=`, `#step-…`) wins |
 | `viewer.inspector` | `'open'` or `'collapsed'`: the bottom panel when the person has no stored choice |
 | `viewer.captions` | Step captions on the player when the person has no stored choice |
-| `poster` | The list thumbnail's moment: `'middle-step'` (the default), `'first-error'` or `'last-step'` |
+| `poster` | The list thumbnail's moment: `'middle-step'` (the default), `'first-error'` or `'last-step'`. A plugin's [`posterAt`](#render-pipeline-hooks) wins over it |
 | `infer(input)` | Plugins only. `input` is the replay's summary (counts, `sources`, `tags`, `suiteRun`, `title`, `url`, …) plus `errors`; return `true` to claim the replay. The first purpose (in `order`) that says yes wins; a throwing `infer` counts as no and is logged once |
 
 - **Config and plugins.** Two plugins registering the same id is a `conflict` error. A config entry with a plugin purpose's id
@@ -194,6 +195,57 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
   limit from that rule, and **Keep** (or a kept suite) still overrides everything. A rule that throws or returns something other
   than a whole number of days is logged once and ignored. Rules see the summary, so they apply to replays, not to suites (suites
   use the default window).
+
+## Render pipeline hooks
+
+Posters (the index thumbnails), opening stills, hover previews and video exports are made by headless Chromium on the server.
+`api.render` hooks into all of them:
+
+```ts
+api.render({
+  // The poster's moment in ms on the replay's timeline; undefined passes to the next hook.
+  posterAt: (bundle, { purpose }) => (purpose === 'checkout' ? bundle.steps.find((step) => step.kind === 'submit')?.at : undefined),
+  // false refuses; an object changes options (video exports only).
+  beforeRender: (job) => (job.kind === 'video' && !job.identity?.email?.endsWith('@example.com') ? false : { speed: 2 }),
+  // After each stored file; errors are logged and never fail the render.
+  afterRender: async (job, { file, key, contentType, bytes }) => copyToCdn(file, `${job.replayId}/${key.split('/').at(-1)}`),
+});
+```
+
+**The job** every hook gets is a small, frozen object, not the queue's state; it may grow new optional keys within the API generation:
+
+| Field | Meaning |
+| --- | --- |
+| `id` | The job: `<replayId>-<variant>` for a video (`test-replay-2x-skip-cc`), `<replayId>-<kind>` for list media |
+| `replayId` | The replay |
+| `kind` | `'video'`, `'poster'`, `'open'` (the opening still) or `'preview'` (the hover clip) |
+| `options` | Video: `{ speed, captions, skipInactive }`. List media: `{}` |
+| `identity` | Video: who asked for the export. List media are made in the background for whoever lists the replay, so they have none |
+
+- **`posterAt(bundle, { purpose })`** picks where the poster is taken. Hooks run in plugin order and the first one that returns a
+  finite number (≥ 0) wins; `undefined` passes on. After the hooks comes the purpose's `poster` setting
+  ([purposes](#purposes-and-retention)), which is the same mechanism's built-in last step, then the default (`middle-step`). The time
+  is clamped to the replay and never lands before its first document. A hook that throws or returns something else is skipped and
+  logged. The answer is remembered per replay for the life of the process (a bundle never changes), so keep it a pure function of the
+  bundle and the purpose; the bundle is only read when a `posterAt` hook exists.
+- **Poster caching.** A poster's file name says which moment it shows: `poster.v2.jpg` for the default, `poster.v2-first-error.jpg`
+  for a purpose setting, `poster.v2-t<ms>.jpg` for a hook's time. When a deploy changes the choice for a replay, its next poster
+  request looks for a new name, so the old file is never served again and a new one is made (the old one is pruned with the
+  replay). Posters stored where nothing chooses keep their name, so adding hooks never invalidates the default ones. Browsers
+  that cached a poster (a week) keep showing it until that expires.
+- **`beforeRender(job)`** runs before each render. Return `false` to refuse it; return some of `{ speed, captions, skipInactive }` to
+  change a video export (`speed` one of 0.5, 1, 1.5, 2, 4, 8; the others booleans). Other keys, invalid values and option changes
+  for list media are ignored and logged once. Hooks run in plugin order, each one sees the options as changed so far, and the first
+  `false` stops. A hook that throws refuses the job too (a broken policy check must not let everything through).
+  - For video exports it runs on every request that names an export (start, status, download, cancel), so the adjusted options name
+    the same video for all of them: keep it cheap and deterministic. A refusal answers `{ "status": "refused", "error": "this export
+    is not allowed here" }`: `403` to start, download or cancel, `200` to the viewer's status probe. The viewer shows the message.
+  - For list media it runs when the job starts; a refused job counts as failed (the index keeps its placeholder, `404` for the file)
+    and is tried again after ten minutes, like any failure.
+- **`afterRender(job, { file, key, contentType, bytes })`** runs after a file is stored: each video export, poster, opening still
+  (also the one a poster job makes on the way) and preview. `file` is a local temporary path, readable until the hook returns; `key`
+  is the stored object's key. Hooks run in plugin order and are awaited before the job's temporary files are removed (a video already
+  reads as done), so a slow hook holds its render slot. Errors are logged and never fail the render or reach the next hook.
 
 ## Built-in plugins
 

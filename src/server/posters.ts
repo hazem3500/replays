@@ -8,10 +8,11 @@ import { extname, join } from 'node:path';
 import { send } from './app.ts';
 import { PREVIEW_SPEED } from '../client/render/frames.ts';
 import { chromiumArgs, ffmpegArgs, RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
-import type { PosterMoment } from '../shared/purposes.ts';
+import type { RenderedFile, RenderJob } from '../plugin/types.ts';
+import type { RenderVerdict } from './render-hooks.ts';
 import { serveObject } from './serve-object.ts';
 import { ObjectExistsError, type ObjectStorage, readJson } from './storage/index.ts';
-import type { ReplayStore } from './store.ts';
+import type { PosterChoice, ReplayStore } from './store.ts';
 import { captureLink, traceHeaders, type TraceLink, withSpan } from './tracing.ts';
 
 /**
@@ -27,7 +28,8 @@ import { captureLink, traceHeaders, type TraceLink, withSpan } from './tracing.t
  * One job at a time (posters before previews), only while no video export is
  * running, so list media never slow an export. Made in a local temporary directory,
  * then stored (src/server/storage/) as <id>/poster.v2.jpg, open.v1.jpg and preview.v2.mp4, pruned with
- * the replay. List requests never wait for them.
+ * the replay. List requests never wait for them. A poster taken at a non-default moment (a purpose's `poster`, a
+ * plugin's `posterAt`) is stored as poster.v2-<moment>.jpg (ReplayStore.posterKey), so a changed choice remakes it.
  */
 
 export const POSTER_WIDTH = 480;
@@ -44,8 +46,8 @@ export type MediaKind = 'poster' | 'open' | 'preview';
 
 export interface PosterTask {
   id: string;
-  /** Where the poster is taken (the replay's purpose decides; absent: the default moment). Posters only. */
-  moment?: PosterMoment;
+  /** Where the poster is taken: a named moment or a time in ms (posterAt; absent: the default moment). Posters only. */
+  moment?: PosterChoice;
   /** Write the file here, a local temporary path (the queue stores it, and an optional `<output>.json` sidecar). */
   output: string;
   signal: AbortSignal;
@@ -58,11 +60,15 @@ export type PosterState = 'ready' | 'pending' | 'failed' | 'full' | 'off';
 export interface PosterQueueOptions {
   /** Where finished media are stored (ReplayStore.storage). */
   storage: ObjectStorage;
-  /** The finished poster's key (ReplayStore.posterKey). */
-  key: (id: string) => string;
+  /** The finished poster's key (ReplayStore.posterKey), for the moment `posterAt` chose. */
+  key: (id: string, choice?: PosterChoice) => string;
   runner: PosterRunner;
-  /** The poster moment for a replay (from its purpose); absent or undefined means the default. */
-  moment?: (id: string) => Promise<PosterMoment | undefined>;
+  /** The poster moment for a replay (render-hooks.ts posterChooser); absent or undefined means the default. */
+  posterAt?: ((id: string) => Promise<PosterChoice | undefined>) | undefined;
+  /** The plugins' `beforeRender`: a refused job fails (and is retried like any failure). */
+  beforeRender?: ((job: RenderJob) => Promise<RenderVerdict>) | undefined;
+  /** The plugins' `afterRender`, after each stored file (the poster job's opening still too). Errors are logged. */
+  afterRender?: ((job: RenderJob, file: RenderedFile) => void | Promise<void>) | undefined;
   /** Hover previews; absent (no ffmpeg) means previews are off. */
   preview?: { key: (id: string) => string; runner: PosterRunner };
   /** Opening stills (ReplayStore.openStillKey); the poster runner also leaves one at `<output>.open.jpg`. */
@@ -90,8 +96,10 @@ interface Job {
 const key = (kind: MediaKind, id: string) => `${kind}:${id}`;
 
 export class PosterQueue {
-  private readonly options: Required<Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir' | 'moment'>> &
-    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir' | 'moment'> & { busy: () => boolean };
+  private readonly options: Required<
+    Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender'>
+  > &
+    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender'> & { busy: () => boolean };
   /** Posters first: they are what the list shows; then opening stills (opening a replay); previews only play on hover. */
   private readonly waiting: Record<MediaKind, Job[]> = { poster: [], open: [], preview: [] };
   private readonly pending = new Set<string>();
@@ -119,8 +127,10 @@ export class PosterQueue {
     return kind === 'poster' || Boolean(kind === 'open' ? this.options.open : this.options.preview);
   }
 
-  key(id: string, kind: MediaKind = 'poster') {
-    return kind === 'poster' ? this.options.key(id) : kind === 'open' ? this.options.open!.key(id) : this.options.preview!.key(id);
+  /** The stored file's key; a poster's names the moment `posterAt` chooses for the replay (memoised there). */
+  async key(id: string, kind: MediaKind = 'poster') {
+    if (kind === 'poster') return this.options.key(id, await this.options.posterAt?.(id));
+    return kind === 'open' ? this.options.open!.key(id) : this.options.preview!.key(id);
   }
 
   private get queued() {
@@ -128,7 +138,7 @@ export class PosterQueue {
   }
 
   async exists(id: string, kind: MediaKind = 'poster') {
-    return Boolean(await this.options.storage.stat(this.key(id, kind)));
+    return Boolean(await this.options.storage.stat(await this.key(id, kind)));
   }
 
   /** The file's state, queueing it when it is neither stored, queued nor recently failed. */
@@ -208,36 +218,51 @@ export class PosterQueue {
 
   /** Makes and stores the file; returns why it failed (undefined when it did not). */
   private async execute({ kind, id }: Job): Promise<unknown> {
-    const output = this.key(id, kind);
     const { storage } = this.options;
     const directory = await mkdtemp(join(this.options.tempDir ?? tmpdir(), `replays-${kind}-`));
-    const temporary = join(directory, `${kind}${extname(output)}`);
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(new Error(`${kind} timed out`)), this.options.timeoutMs);
     const started = this.options.now();
+    const job = (of: MediaKind): RenderJob => ({ id: `${id}-${of}`, replayId: id, kind: of, options: {} });
     try {
+      const verdict = await this.options.beforeRender?.(job(kind));
+      if (verdict && !verdict.ok) throw new Error(`refused by plugin ${verdict.plugin}: ${verdict.error}`);
+      // One choice for both the file's name and where the page seeks, so the key always says what the file shows.
+      const moment = kind === 'poster' ? await this.options.posterAt?.(id) : undefined;
+      const output = kind === 'poster' ? this.options.key(id, moment) : await this.key(id, kind);
+      const temporary = join(directory, `${kind}${extname(output)}`);
       const runner = kind === 'poster' ? this.options.runner : kind === 'open' ? this.options.open!.runner : this.options.preview!.runner;
-      const moment = kind === 'poster' ? await this.options.moment?.(id).catch(() => undefined) : undefined;
-      await runner({ id, output: temporary, signal: controller.signal, ...(moment ? { moment } : {}) });
+      await runner({ id, output: temporary, signal: controller.signal, ...(moment !== undefined ? { moment } : {}) });
       controller.signal.throwIfAborted();
       // The sidecar first: whoever sees the media also sees what it covers.
       if (await stat(`${temporary}.json`).catch(() => undefined))
         await storage.upload(`${output}.json`, `${temporary}.json`, { contentType: 'application/json; charset=utf-8' });
       const stored = await storage.upload(output, temporary, { contentType: MEDIA[kind].type });
+      const files: Array<[RenderJob, RenderedFile]> = [
+        [job(kind), { file: temporary, key: output, contentType: MEDIA[kind].type, bytes: stored.size }],
+      ];
       // The poster job's opening still (shot on the way): stored unless there is one, and a queued
       // opening-still job for this replay is then done too.
       if (kind === 'poster' && this.options.open && (await stat(`${temporary}.open.jpg`).catch(() => undefined))) {
-        const kept = await storage
-          .upload(this.options.open.key(id), `${temporary}.open.jpg`, { createOnly: true, contentType: MEDIA.open.type })
-          .then(
-            () => true,
-            (error: unknown) => {
-              if (!(error instanceof ObjectExistsError)) throw error;
-              return false;
-            },
-          );
-        if (kept) this.dequeue('open', id);
+        const openKey = this.options.open.key(id);
+        const kept = await storage.upload(openKey, `${temporary}.open.jpg`, { createOnly: true, contentType: MEDIA.open.type }).then(
+          (info) => info,
+          (error: unknown) => {
+            if (!(error instanceof ObjectExistsError)) throw error;
+            return undefined;
+          },
+        );
+        if (kept) {
+          this.dequeue('open', id);
+          files.push([job('open'), { file: `${temporary}.open.jpg`, key: openKey, contentType: MEDIA.open.type, bytes: kept.size }]);
+        }
       }
+      for (const [done, file] of files)
+        await Promise.resolve()
+          .then(() => this.options.afterRender?.(done, file))
+          .catch((error: unknown) =>
+            this.options.log(`${done.kind} ${id}: afterRender failed: ${String(error instanceof Error ? error.message : error)}`),
+          );
       const ms = this.options.now() - started;
       const bytes = stored.size;
       this.timings.push({ kind, id, ms, bytes });
@@ -264,7 +289,7 @@ interface RenderWindow {
     ready: boolean;
     error?: string;
     viewport: { width: number; height: number };
-    poster(moment?: PosterMoment): Promise<number>;
+    poster(moment?: PosterChoice): Promise<number>;
     previewPlan(fps: number, maxOutputMs: number): { times: number[]; dirty: number[]; capped: boolean; coveredMs: number };
     showAt(time: number): Promise<void>;
   };
@@ -490,7 +515,8 @@ export async function handlePosterApi(
   }
   const cache = 'private, max-age=604800';
   const serve = async () => {
-    const objectKey = media.key(options.store, id);
+    // With a queue, the poster's key names the moment its plugins and purpose choose (ReplayStore.posterKey).
+    const objectKey = options.posters?.supports(kind) ? await options.posters.key(id, kind) : media.key(options.store, id);
     const info = await options.store.storage.stat(objectKey);
     if (!info) return false;
     // The preview's sidecar rides along as headers, so the client's HEAD can label a cut-short clip.

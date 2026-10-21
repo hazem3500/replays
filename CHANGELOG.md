@@ -63,6 +63,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   plugins" notice for a plugin that fails after the versions changed, without disabling or changing anything. `get_plugin_api` now
   returns the theme tokens, the policy, the versions and the surfaces in the viewer.
 
+- **Render pipeline hooks** ([docs/extension-api.md](docs/extension-api.md#render-pipeline-hooks)). `api.render({ posterAt?, beforeRender?,
+  afterRender? })`: `posterAt(bundle, { purpose })` picks the poster's moment (the first hook in plugin order that returns a time wins,
+  then the purpose's `poster` setting, which is now the built-in last step of the same chain, then the default); `beforeRender(job)`
+  refuses a render (`false`; a refused export answers `{ status: 'refused', error }`) or changes a video export's `speed`, `captions` or
+  `skipInactive`; `afterRender(job, { file, key, contentType, bytes })` runs after each stored video, poster, opening still and preview,
+  and its errors never fail the render. Hooks see a small job object (`id`, `replayId`, `kind`, `options`, `identity?`). A poster
+  taken at a non-default moment is stored as `poster.v2-<moment>.jpg`, so a changed choice is remade instead of served stale.
 - **Purposes and retention rules** ([docs/extension-api.md](docs/extension-api.md#purposes-and-retention)). A deployment can say why
   replays are recorded: `purposes: [{ id, label, order?, retentionDays?, viewer?, poster? }]` in the config file, or
   `api.purpose({ …, infer? })` from a plugin (the core defines none). Uploads may carry `meta.purpose` (checked against the

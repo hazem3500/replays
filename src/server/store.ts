@@ -18,6 +18,7 @@ import {
   sameEdits,
   type StoredReplayEdits,
 } from '../shared/edits.ts';
+import type { PosterMoment } from '../shared/purposes.ts';
 import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
 import {
   assertReviewRunRegistration,
@@ -38,6 +39,19 @@ export type { ReplaySummary } from '../shared/replay.ts';
 
 /** Bump when the poster moment or format changes (the client's poster URL carries it too). */
 export const POSTER_VERSION = 2;
+/**
+ * A poster moment other than the default: a purpose's named moment or a time (ms) a plugin's `posterAt` chose. The
+ * poster's key names it (posterKey), so a changed choice is a different file: nothing stale is served, the old one is
+ * pruned with the replay. The default moment keeps the plain key, so stored posters stay valid where nothing chooses.
+ */
+export type PosterChoice = PosterMoment | number;
+
+/** `''` for the default moment, else `first-error`, `last-step` or `t<ms>`. */
+export function posterTag(choice?: PosterChoice) {
+  if (choice === undefined || choice === 'middle-step') return '';
+  return typeof choice === 'number' ? `t${Math.max(0, Math.round(choice))}` : choice;
+}
+
 /** Bump when the opening still's moment or format changes (the client's URL carries it too). */
 export const OPEN_STILL_VERSION = 1;
 /** Bump when the preview's speed, cap or encoding changes. */
@@ -106,7 +120,7 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  *   <id>/meta.json                 its list summary (rebuilt when missing, stale or an older SUMMARY_VERSION)
  *   <id>/keep.json                 `{ by, at }` while someone keeps it (no expiry)
  *   <id>/edits.json                its edit list (src/shared/edits.ts): trims and cuts applied on playback and export
- *   <id>/poster.v2.jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
+ *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
  *
@@ -181,10 +195,12 @@ export class ReplayStore {
 
   /**
    * The list thumbnail (src/server/posters.ts); under the replay's prefix so retention prunes it with
-   * the replay. Versioned: when the poster moment changes, older posters are simply not found and remade.
+   * the replay. Versioned: when the poster moment changes, older posters are simply not found and remade. A
+   * non-default `choice` (posterTag) is part of the name for the same reason.
    */
-  posterKey(id: string) {
-    return `${assertReplayId(id)}/poster.v${POSTER_VERSION}.jpg`;
+  posterKey(id: string, choice?: PosterChoice) {
+    const tag = posterTag(choice);
+    return `${assertReplayId(id)}/poster.v${POSTER_VERSION}${tag ? `-${tag}` : ''}.jpg`;
   }
 
   /**
@@ -205,8 +221,8 @@ export class ReplayStore {
   }
 
   /** The files behind the keys above, with the fs driver only (tests). */
-  posterFile(id: string) {
-    return this.fsPath(this.posterKey(id));
+  posterFile(id: string, choice?: PosterChoice) {
+    return this.fsPath(this.posterKey(id, choice));
   }
 
   openStillFile(id: string) {

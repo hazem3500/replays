@@ -10,6 +10,7 @@ import { createApp } from './app.ts';
 import { coreVersion, findPackageRoot } from './package-info.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
+import { createRenderHooks } from './render-hooks.ts';
 import { RenderQueue } from './render-queue.ts';
 import type { RenderService } from './render-routes.ts';
 import { createRenderer, detectRenderTools, type RenderTools, renderToken } from './renderer.ts';
@@ -146,6 +147,10 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   const origin = `${tlsCert && tlsKey ? 'https' : 'http'}://127.0.0.1:${port}`;
   // Dev serves the render page through Vite; production serves the built page on the loopback-only route.
   const renderPageUrl = (id: string) => (dev ? `${origin}${basePath}/render.html?id=${id}` : `${origin}/internal/render/${id}`);
+  // `api.render`: the poster's moment, the check before each list-media job, and the call after each stored file.
+  // (createApp runs `beforeRender` for video exports, on the request.)
+  const renderHooks = createRenderHooks(registry.render, (line) => console.error(line));
+  const afterRender = renderHooks.notifies ? renderHooks.afterRender : undefined;
   if (tools.available) {
     render.queue = new RenderQueue({
       storage: store.storage,
@@ -153,6 +158,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
       maxQueued: positive('RENDER_QUEUE_MAX', 8),
       timeoutMs: positive('RENDER_TIMEOUT_MS', 30 * 60_000),
       log,
+      ...(afterRender ? { afterRender } : {}),
       runner: createRenderer({
         origin,
         token: render.token,
@@ -178,12 +184,16 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     const media = createMediaRenderer({ origin, token: render.token, tools, pageUrl: renderPageUrl });
     render.posters = new PosterQueue({
       storage: store.storage,
-      key: (id) => store.posterKey(id),
+      key: (id, choice) => store.posterKey(id, choice),
       runner: media.poster,
-      // The purpose's poster moment (src/shared/purposes.ts); the default without one.
-      ...(store.purposes.list.some((purpose) => purpose.poster)
-        ? { moment: async (id: string) => store.purposes.poster((await store.summary(id, { suites: false }))?.purpose) }
-        : {}),
+      // The plugins' `posterAt`, then the purpose's `poster` setting (src/shared/purposes.ts), then the default.
+      posterAt: renderHooks.posterChooser({
+        purpose: async (id) => (await store.summary(id, { suites: false }))?.purpose,
+        ...(store.purposes.list.some((purpose) => purpose.poster) ? { purposePoster: (purpose) => store.purposes.poster(purpose) } : {}),
+        load: (id) => store.load(id),
+      }),
+      ...(renderHooks.checks ? { beforeRender: renderHooks.beforeRender } : {}),
+      ...(afterRender ? { afterRender } : {}),
       open: { key: (id: string) => store.openStillKey(id), runner: media.open },
       // Hover previews are MP4s: they need ffmpeg too.
       ...(tools.available ? { preview: { key: (id: string) => store.previewKey(id), runner: media.preview } } : {}),

@@ -172,6 +172,8 @@ export interface PosterMomentInput {
   errorTimes?: readonly number[];
   /** The replay's purpose's choice (src/shared/purposes.ts); default `'middle-step'`. */
   moment?: PosterMoment;
+  /** A time a plugin chose (`api.render({ posterAt })`); wins over `moment`, still clamped like the others. */
+  at?: number;
 }
 
 /** After this long a step's effects (navigation, re-render) have usually landed. */
@@ -182,9 +184,17 @@ const SETTLE_MS = 900;
  * - `middle-step` (default): the middle, right after the step nearest it settled;
  * - `first-error`: just after the first error shows (middle-step when there is none);
  * - `last-step`: after the last step settled (the end result), or just before the end.
- * Never before the first document exists; falls back to posterTime when nothing applies.
+ * `at` (a plugin's time) wins over all three. Never before the first document exists; falls back to posterTime when
+ * nothing applies.
  */
-export function posterMoment({ stepTimes, snapshotTimes, duration, errorTimes = [], moment = 'middle-step' }: PosterMomentInput) {
+export function posterMoment({
+  stepTimes,
+  snapshotTimes,
+  duration,
+  errorTimes = [],
+  moment = 'middle-step',
+  at: chosen,
+}: PosterMomentInput) {
   const fallback = posterTime(snapshotTimes, duration);
   const first = snapshotTimes.length > 0 ? (snapshotTimes[0] as number) : 0;
   const clamp = (time: number) => Math.max(0, Math.min(duration, Math.max(first + 300, time)));
@@ -193,6 +203,7 @@ export function posterMoment({ stepTimes, snapshotTimes, duration, errorTimes = 
     const next = steps[index + 1];
     return Math.min(steps[index]! + SETTLE_MS, next === undefined ? duration : Math.max(steps[index]!, next - 50));
   };
+  if (chosen !== undefined && Number.isFinite(chosen)) return clamp(chosen);
   if (moment === 'first-error') {
     const error = errorTimes.filter((at) => Number.isFinite(at)).sort((a, b) => a - b)[0];
     if (error !== undefined) return clamp(error + 600);
