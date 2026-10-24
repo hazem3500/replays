@@ -52,7 +52,7 @@ test('built host loads its theme, purposes, server hooks, browser contributions 
     assert.equal(me.email, 'reviewer@example.com');
     assert.equal(me.name, 'reviewer');
     assert.ok(me.people.roles.includes('reviewer'));
-    const page = await (await fetch(url('/'))).text();
+    const page = await (await fetch(url('/'), { headers: { accept: 'text/html' } })).text();
     assert.match(page, /Example Replays/);
     assert.match(page, /--page:#19131f/);
     assert.match(page, /name="theme-color"/);
@@ -75,16 +75,37 @@ test('built host loads its theme, purposes, server hooks, browser contributions 
       events: [
         { type: 4, timestamp: Date.parse(now), data: { href: 'https://app.example.com', width: 800, height: 600 } },
         {
-          type: 2, timestamp: Date.parse(now) + 1,
+          type: 2,
+          timestamp: Date.parse(now) + 1,
           data: {
             node: {
-              type: 0, id: 1, childNodes: [{
-                type: 2, id: 2, tagName: 'html', attributes: {}, childNodes: [{
-                  type: 2, id: 3, tagName: 'body', attributes: {}, childNodes: [{
-                    type: 2, id: 4, tagName: 'input', attributes: { value: 'never-show-typed' }, childNodes: [],
-                  }],
-                }],
-              }],
+              type: 0,
+              id: 1,
+              childNodes: [
+                {
+                  type: 2,
+                  id: 2,
+                  tagName: 'html',
+                  attributes: {},
+                  childNodes: [
+                    {
+                      type: 2,
+                      id: 3,
+                      tagName: 'body',
+                      attributes: {},
+                      childNodes: [
+                        {
+                          type: 2,
+                          id: 4,
+                          tagName: 'input',
+                          attributes: { value: 'never-show-typed' },
+                          childNodes: [],
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
             },
             initialOffset: { left: 0, top: 0 },
           },
