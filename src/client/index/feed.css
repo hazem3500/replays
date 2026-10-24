@@ -253,6 +253,8 @@
 .feed-body { min-width: 0; display: grid; align-content: center; gap: 4px; }
 .feed-head { min-width: 0; display: flex; align-items: baseline; gap: 12px; }
 .feed-title { min-width: 0; flex: 1 1 auto; display: -webkit-box; overflow: hidden; color: var(--text); font-size: var(--text-sm); font-weight: 600; line-height: 18px; text-decoration: none; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* Keep padding off the clamped box: it exposes extra lines over the metadata in Chromium.
+   The title's .row-target::after already makes the entire row/card its hit target. */
 .feed-head .index-status { font-size: var(--text-xs); }
 /* Red only for an explicit failed outcome (a failed suite); error counts are never red here. */
 .feed-meta { min-width: 0; display: flex; align-items: center; gap: 8px; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 18px; }
@@ -450,7 +452,6 @@
 @media (pointer: coarse) and (min-width: 641px) {
   /* No key cap on touch (hidden globally), so no room is kept for it. */
   .index-head .search-field.command-field { padding-right: 10px; }
-  .feed-title { padding-block: 10px; margin-block: -10px; }
   .source-link { height: 40px; margin-block: -10px; }
 }
 
@@ -479,8 +480,7 @@
   .feed-meta { flex-wrap: wrap; row-gap: 4px; font-size: var(--text-sm); }
   .feed-meta .source-lead + .feed-facts::before { content: none; }
   .feed-head { align-items: flex-start; }
-  /* 40 px touch targets that look like the desktop ones: the box grows, the drawn pill (::before) does not. */
-  .feed-title { padding-block: 10px; margin-block: -10px; }
+  /* Source links get 40 px touch targets without enlarging the drawn pill (::before). */
   .source-link { height: 40px; margin-block: -10px; }
 }
 
