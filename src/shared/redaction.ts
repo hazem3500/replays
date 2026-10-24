@@ -180,11 +180,28 @@ export function compileRedaction(rules: RedactionRules | undefined): CompiledRed
   return result;
 }
 
-/** Applies the text rules to one string. */
+/**
+ * Settle the whole merged rule list, so later replacements cannot leave work for an earlier rule on the next upload.
+ * A cycle or an expanding/non-converging rule set fails closed without including recorded text in the error.
+ */
 export function redactText(value: string, rules: CompiledRedaction): string {
+  if (!rules.text.length) return value;
   let result = value;
-  for (const rule of rules.text) result = result.replace(rule.pattern, rule.replace);
-  return result;
+  const seen = new Set([value]);
+  const maxLength = Math.max(4096, value.length * 4);
+  for (let pass = 0; pass < 32; pass++) {
+    let changed = false;
+    for (const rule of rules.text) {
+      const next = result.replace(rule.pattern, rule.replace);
+      changed ||= next !== result;
+      if (next.length > maxLength) throw new Error('redaction.text replacements exceed the output limit');
+      result = next;
+    }
+    if (!changed) return result;
+    if (seen.has(result)) throw new Error('redaction.text replacements form a cycle');
+    seen.add(result);
+  }
+  throw new Error('redaction.text replacements did not settle within 32 passes');
 }
 
 /** The end of the JSON value that starts at `start` (a string, an object or array, or a bare scalar). */

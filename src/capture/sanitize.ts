@@ -185,7 +185,28 @@ function textWith<T>(value: T, rules: CompiledRedaction): T {
 /** A console message with the host's rules applied: JSON keys first (the message is often a logged object), then text. */
 export function redactConsoleMessage(message: string, redaction?: RedactionRules) {
   const rules = compileRedaction(redaction);
-  return rules.empty ? message : redactText(redactJsonKeys(message, rules), rules);
+  return rules.empty ? message : consoleWith(message, rules);
+}
+
+/** Settle interactions between privacy stages too, not just the text rules within one stage. */
+function settleRedaction<T>(input: T, apply: (value: T) => T, serialize: (value: T) => string): T {
+  let value = input;
+  let previous = serialize(value);
+  const maxLength = Math.max(4096, previous.length * 4);
+  for (let pass = 0; pass < 32; pass++) {
+    const next = apply(value);
+    const serialized = serialize(next);
+    if (serialized.length > maxLength) throw new Error('redaction stages exceed the output limit');
+    if (serialized === previous) return next;
+    value = next;
+    previous = serialized;
+  }
+  throw new Error('redaction stages did not settle within 32 passes');
+}
+
+function consoleWith(message: string, rules: CompiledRedaction) {
+  const apply = (value: string) => redactText(redactJsonKeys(value, rules), rules);
+  return rules.text.length ? settleRedaction(message, apply, (value) => value) : apply(message);
 }
 
 const FULL_SNAPSHOT = 2;
@@ -409,31 +430,79 @@ function compoundMatches(node: SerializedNode, compound: CompoundSelector) {
 /** rrweb's default `maskTextFn`: every non-space character becomes `*`. */
 const maskedText = (value: string) => value.replace(/\S/g, '*');
 
-function maskSelectorTree(node: SerializedNode | undefined, compounds: CompoundSelector[], inside: boolean, masked: Set<number>) {
-  if (!node || typeof node !== 'object') return;
-  const hit = inside || (node.type === ELEMENT && compounds.some((compound) => compoundMatches(node, compound)));
-  if (hit && typeof node.id === 'number') masked.add(node.id);
-  if (hit && node.type === TEXT && typeof node.textContent === 'string') node.textContent = maskedText(node.textContent);
-  for (const child of Array.isArray(node.childNodes) ? node.childNodes : []) maskSelectorTree(child, compounds, hit, masked);
-}
-
-/** Masks the text inside elements that match the selectors: in snapshots, in added nodes and in later text changes. */
+/** Masks selector matches through snapshots, moves, attribute mutations, added nodes and later text changes. */
 function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
   const compounds = selectors.flatMap((list) => splitTopLevel(list, /,/)).flatMap((selector) => parseCompound(selector) ?? []);
   if (!Array.isArray(events) || !compounds.length) return events;
   const masked = new Set<number>();
+  const nodes = new Map<number, { node: SerializedNode; attributes: Record<string, unknown> }>();
+  const parents = new Map<number, number>();
+  // Keep edges even if an add lists the child before its parent.
+  const children = new Map<number, Set<number>>();
+  const detach = (id: number) => {
+    const parent = parents.get(id);
+    if (parent !== undefined) children.get(parent)?.delete(id);
+    parents.delete(id);
+  };
+  const protect = (id: number) => {
+    const pending = [id];
+    const seen = new Set<number>();
+    while (pending.length) {
+      const current = pending.pop()!;
+      if (seen.has(current)) continue;
+      seen.add(current);
+      masked.add(current);
+      const node = nodes.get(current)?.node;
+      // Conservatively scrub the earlier serialized text too when its element becomes private.
+      if (node?.type === TEXT && typeof node.textContent === 'string') node.textContent = maskedText(node.textContent);
+      for (const child of children.get(current) ?? []) pending.push(child);
+    }
+  };
+  const matches = (node: SerializedNode) => node.type === ELEMENT && compounds.some((compound) => compoundMatches(node, compound));
+  const remember = (node: SerializedNode | undefined, parent: number | undefined, inside = false) => {
+    if (!node || typeof node !== 'object') return;
+    const id = typeof node.id === 'number' ? node.id : undefined;
+    if (id !== undefined) {
+      detach(id);
+      nodes.set(id, { node, attributes: { ...node.attributes } });
+      if (parent !== undefined) {
+        parents.set(id, parent);
+        let siblings = children.get(parent);
+        if (!siblings) children.set(parent, (siblings = new Set()));
+        siblings.add(id);
+      }
+    }
+    const hit = inside || (parent !== undefined && masked.has(parent)) || (id !== undefined && masked.has(id)) || matches(node);
+    if (hit && id !== undefined) protect(id);
+    if (hit && node.type === TEXT && typeof node.textContent === 'string') node.textContent = maskedText(node.textContent);
+    for (const child of Array.isArray(node.childNodes) ? node.childNodes : []) remember(child, id ?? parent, hit);
+  };
   for (const event of events) {
     const record = event as { type?: unknown; data?: Record<string, unknown> } | null;
     const data = record?.data;
     if (!data || typeof data !== 'object') continue;
     if (record.type === FULL_SNAPSHOT) {
       masked.clear();
-      maskSelectorTree(data.node as SerializedNode, compounds, false, masked);
+      nodes.clear();
+      parents.clear();
+      children.clear();
+      remember(data.node as SerializedNode, undefined);
       continue;
     }
     if (record.type !== INCREMENTAL || data.source !== MUTATION) continue;
+    // Detach removed subtrees, but retain their state and masking for a subsequent move/re-add.
+    for (const removal of (data.removes as Array<{ id?: number }> | undefined) ?? [])
+      if (typeof removal?.id === 'number') detach(removal.id);
     for (const add of (data.adds as Array<{ parentId?: number; node?: SerializedNode }> | undefined) ?? [])
-      maskSelectorTree(add?.node, compounds, typeof add?.parentId === 'number' && masked.has(add.parentId), masked);
+      remember(add?.node, typeof add?.parentId === 'number' ? add.parentId : undefined);
+    for (const change of (data.attributes as Array<{ id?: number; attributes?: Record<string, unknown> }> | undefined) ?? []) {
+      if (typeof change?.id !== 'number') continue;
+      const known = nodes.get(change.id);
+      if (!known) continue;
+      // Mutate the current mirror, not the historical snapshot's attributes.
+      known.attributes = { ...known.attributes, ...change.attributes };
+      if (masked.has(change.id) || matches({ ...known.node, attributes: known.attributes })) protect(change.id);
+    }
     for (const change of (data.texts as Array<{ id?: number; value?: unknown }> | undefined) ?? [])
       if (typeof change?.id === 'number' && masked.has(change.id) && typeof change.value === 'string')
         change.value = maskedText(change.value);
@@ -444,7 +513,11 @@ function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
 /** Text patterns and mask selectors over rrweb events (the recorder session applies them chunk by chunk). */
 export function redactEvents<T>(events: T, redaction?: RedactionRules): T {
   const rules = compileRedaction(redaction);
-  return rules.empty ? events : maskSelectorText(textWith(events, rules), rules.maskSelectors);
+  if (rules.empty) return events;
+  const apply = (value: T) => maskSelectorText(textWith(value, rules), rules.maskSelectors);
+  return rules.text.length && rules.maskSelectors.length
+    ? settleRedaction(events, apply, (value) => JSON.stringify(value) ?? '')
+    : apply(events);
 }
 
 /**
@@ -463,7 +536,7 @@ function textRulesWith(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBu
     ...bundle,
     meta: { ...bundle.meta, title: text(bundle.meta.title) },
     events: maskSelectorText(textWith(bundle.events, rules), rules.maskSelectors),
-    console: bundle.console.map((entry) => ({ ...entry, message: text(redactJsonKeys(entry.message, rules)) })),
+    console: bundle.console.map((entry) => ({ ...entry, message: consoleWith(entry.message, rules) })),
     steps: bundle.steps.map((step) => ({ ...step, label: text(step.label) })),
     network: bundle.network.map((entry) => ({
       ...entry,
@@ -485,10 +558,13 @@ function textRulesWith(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBu
  */
 export function sanitizeReplayBundle(bundle: ReplayBundle, redaction?: RedactionRules): ReplayBundle {
   const rules = compileRedaction(redaction);
-  const clean = defaultPass(bundle, rules);
   // The default pass runs again after the text rules, so nothing a rule writes can bring back what it removes: the
   // result is always a bundle the default pass leaves unchanged.
-  return rules.empty ? clean : defaultPass(textRulesWith(clean, rules), rules);
+  const apply = (value: ReplayBundle) => {
+    const clean = defaultPass(value, rules);
+    return rules.empty ? clean : defaultPass(textRulesWith(clean, rules), rules);
+  };
+  return rules.text.length ? settleRedaction(bundle, apply, JSON.stringify) : apply(bundle);
 }
 
 function defaultPass(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBundle {
