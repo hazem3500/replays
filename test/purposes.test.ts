@@ -123,7 +123,14 @@ describe('the purpose catalog', () => {
       plugins: registry.purposes,
     });
     expect(catalog.list).toEqual([
-      { id: 'triage', label: 'Triage', order: 0, retentionDays: 90, viewer: { openAt: 'first-error', inspector: 'open', leadMs: 500 }, inferable: true },
+      {
+        id: 'triage',
+        label: 'Triage',
+        order: 0,
+        retentionDays: 90,
+        viewer: { openAt: 'first-error', inspector: 'open', leadMs: 500 },
+        inferable: true,
+      },
       { id: 'review', label: 'Design review', order: 1 },
       { id: 'walkthrough', label: 'Walkthrough', order: 2 },
     ]);
@@ -182,7 +189,10 @@ describe('the purpose catalog', () => {
     expect(catalog.apply(summary({ consoleErrors: 1 }))).toMatchObject({ purpose: 'triage', purposeInferred: true });
     expect(calls).toEqual(['broken', 'triage']);
     expect(catalog.apply(summary())).toMatchObject({ purpose: 'walkthrough', purposeInferred: true });
-    expect(catalog.apply(summary({ purpose: 'broken', purposeInferred: false }))).toMatchObject({ purpose: 'broken', purposeInferred: false });
+    expect(catalog.apply(summary({ purpose: 'broken', purposeInferred: false }))).toMatchObject({
+      purpose: 'broken',
+      purposeInferred: false,
+    });
     // Logged once, however often it fails.
     expect(log).toHaveBeenCalledTimes(1);
     expect(log.mock.calls[0]![0]).toMatch(/plugin acme: purpose broken: infer failed: boom/);
@@ -229,7 +239,14 @@ describe('retention math', () => {
     const log = vi.fn<(line: string) => void>();
     const [throwing, nonsense, fine] = wrapRetentionRules(
       [
-        { plugin: 'a', value: { days: () => { throw new Error('nope'); } } },
+        {
+          plugin: 'a',
+          value: {
+            days: () => {
+              throw new Error('nope');
+            },
+          },
+        },
         { plugin: 'b', value: { days: () => -2 } },
         { plugin: 'c', value: { days: (s) => (s.consoleErrors ? 3 : undefined) } },
       ],
@@ -335,7 +352,10 @@ describe('purposes in the app', () => {
       plugin('acme', (api) => api.purpose({ id: 'triage', label: 'Triage', order: 1, infer: ({ title }) => title === 'Broken' })),
     ]);
     const origin = await start(
-      createPurposeCatalog({ config: [{ id: 'walkthrough', label: 'Walkthrough', viewer: { captions: true } }], plugins: registry.purposes }),
+      createPurposeCatalog({
+        config: [{ id: 'walkthrough', label: 'Walkthrough', viewer: { captions: true } }],
+        plugins: registry.purposes,
+      }),
     );
     expect((await post(origin, withPurpose('explicit', 'walkthrough'))).status).toBe(201);
     const refused = await post(origin, withPurpose('unknown', 'demo'));
@@ -370,7 +390,9 @@ describe('purposes in the app', () => {
     const imported = await fetch(`${origin}/api/replays/import?title=Imported&purpose=walkthrough`, { method: 'POST', body: events });
     expect(imported.status).toBe(201);
     const { id } = (await imported.json()) as { id: string };
-    expect(((await (await fetch(`${origin}/api/replays/${id}`)).json()) as { meta: { purpose?: string } }).meta.purpose).toBe('walkthrough');
+    expect(((await (await fetch(`${origin}/api/replays/${id}`)).json()) as { meta: { purpose?: string } }).meta.purpose).toBe(
+      'walkthrough',
+    );
     const badImport = await fetch(`${origin}/api/replays/import?title=Imported&purpose=demo`, { method: 'POST', body: events });
     expect(badImport.status).toBe(400);
     expect(await badImport.text()).toMatch(/^purpose must be one of walkthrough, triage/);
@@ -382,15 +404,19 @@ describe('purposes in the app', () => {
       config: {
         dir: tmpdir(),
         file: { purposes: [{ id: 'walkthrough', label: 'Walkthrough', retentionDays: 0 }] },
-        plugins: [plugin('acme', (api) => {
-          api.purpose({ id: 'triage', label: 'Triage', retentionDays: 90 });
-          api.retention({ days: () => undefined });
-        })],
+        plugins: [
+          plugin('acme', (api) => {
+            api.purpose({ id: 'triage', label: 'Triage', retentionDays: 90 });
+            api.retention({ days: () => undefined });
+          }),
+        ],
       },
     });
     expect(runtime.settings.purposes.ids).toEqual(['walkthrough', 'triage']);
     expect(runtime.settings.retention).toMatchObject({ days: 30, purposes: { walkthrough: 0, triage: 14 }, rules: [expect.any(Function)] });
-    await expect(loadSettings({}, { purposes: [{ id: 'x', label: 'X', poster: 'nope' as never }] })).rejects.toThrow(/purposes\[0\].poster/);
+    await expect(loadSettings({}, { purposes: [{ id: 'x', label: 'X', poster: 'nope' as never }] })).rejects.toThrow(
+      /purposes\[0\].poster/,
+    );
   });
 });
 
@@ -408,8 +434,23 @@ describe('poster moment and the upload request', () => {
   it('sets, keeps or clears meta.purpose on a bundle and passes it to the import', () => {
     const bundle = replay();
     bundle.meta.purpose = 'triage';
-    const prepared = { kind: 'bundle' as const, fileName: 'r.json', size: 1, eventCount: 2, duration: 1, viewport: { width: 1, height: 1 }, title: 'T', text: '', bundle };
-    const meta = (purpose?: string) => (JSON.parse(uploadRequest(prepared, { title: 'T', url: '', ...(purpose === undefined ? {} : { purpose }) }).body) as { meta: { purpose?: string } }).meta;
+    const prepared = {
+      kind: 'bundle' as const,
+      fileName: 'r.json',
+      size: 1,
+      eventCount: 2,
+      duration: 1,
+      viewport: { width: 1, height: 1 },
+      title: 'T',
+      text: '',
+      bundle,
+    };
+    const meta = (purpose?: string) =>
+      (
+        JSON.parse(uploadRequest(prepared, { title: 'T', url: '', ...(purpose === undefined ? {} : { purpose }) }).body) as {
+          meta: { purpose?: string };
+        }
+      ).meta;
     expect(meta().purpose).toBe('triage');
     expect(meta('walkthrough').purpose).toBe('walkthrough');
     expect(meta('')).not.toHaveProperty('purpose');
