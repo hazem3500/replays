@@ -7,6 +7,16 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **First-party plugins** `@hazem3500/replays/plugins/iap` and `@hazem3500/replays/plugins/gcs`
+  ([docs/extension-api.md](docs/extension-api.md#first-party-plugins)):
+  - `iap({ audience, domains, serviceAccounts, devFallback })`: the `iap` auth adapter verifies `x-goog-iap-jwt-assertion` (ES256,
+    Google's JWKS cached for an hour, issuer `https://cloud.google.com/iap`, exact audience, `iat` required, 30 s leeway) and lets in
+    the listed email domains and exact service accounts; a non-service-account entry stops the server. Env: `IAP_JWT_AUDIENCE`,
+    `IAP_ALLOWED_DOMAINS`, `IAP_SERVICE_ACCOUNTS`.
+  - `gcs({ bucket, prefix })`: the `gcs` storage backend over the Cloud Storage JSON API with `fetch`, no SDK: create-only writes with
+    `ifGenerationMatch=0`, generations as versions, resumable uploads above 8 MB, `matchGlob` listing, tokens from the metadata server
+    or `GOOGLE_OAUTH_ACCESS_TOKEN`, `STORAGE_EMULATOR_HOST` / `GCS_API_ENDPOINT`. Env: `GCS_BUCKET`, `GCS_PREFIX`. It passes the storage
+    contract suite against an in-process fake of the API.
 - **Adapter kit** for storage and auth adapters written outside this repository:
   - `ObjectStorage.kind` is an open string (the built-ins stay `fs`, `s3`, `memory`), and a backend sets `listCacheMs` to get the store's
     listing cache (S3 sets 5000, as before).

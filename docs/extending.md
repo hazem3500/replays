@@ -25,6 +25,9 @@ interface Identity { id: string; email?: string; name?: string }
 - State-changing requests from a browser are additionally required to be same-origin by the server (`Sec-Fetch-Site`),
   whatever the adapter does.
 
+First-party plugin: `@hazem3500/replays/plugins/iap` for Google Cloud's Identity-Aware Proxy (domains and service accounts; see
+[extension-api.md](extension-api.md#first-party-plugins)).
+
 Built in: `none`, `header` (trusted proxy; refuses requests from peers outside `AUTH_TRUSTED_PROXIES`), `oidc`
 (authorization code + PKCE; discovery, JWKS, nonce/state checks, HMAC-signed HttpOnly session cookie; bearer tokens
 for machine uploads; `AUTH_ALLOW` allow-list).
@@ -127,6 +130,9 @@ compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.jso
   SDK. `STORAGE=s3 S3_BUCKET=… S3_ENDPOINT=… S3_FORCE_PATH_STYLE=1 AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=…`.
   The bucket needs no public access, and the app is the only deleter, so do not add a lifecycle rule that races with
   "keep".
+- `GcsStorage` (first-party plugin `@hazem3500/replays/plugins/gcs`, `STORAGE=gcs`): a Cloud Storage bucket over the JSON API, no SDK;
+  `GCS_BUCKET`, `GCS_PREFIX`, credentials from the metadata server or `GOOGLE_OAUTH_ACCESS_TOKEN`, `STORAGE_EMULATOR_HOST` for an
+  emulator. See [extension-api.md](extension-api.md#first-party-plugins).
 - Another backend: implement the interface and register it with `api.storage` in a plugin (see [extension-api.md](extension-api.md)),
   or pass it to `new ReplayStore(storage, sampleDir, retention)`. Throw the exported `ObjectExistsError` (a `createOnly` write over an
   existing key) and `PreconditionFailedError` (an `ifVersion` write over a newer version), and `NotFoundError` from `stream`; the

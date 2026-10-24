@@ -57,6 +57,14 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'verifyJwt',
     ],
   },
+  './plugins/iap': {
+    source: '../src/first-party/iap.ts',
+    values: ['IAP_ISSUER', 'IAP_JWKS_URL', 'default', 'iapAuth', 'resolveIapOptions'],
+  },
+  './plugins/gcs': {
+    source: '../src/first-party/gcs.ts',
+    values: ['GcsError', 'GcsStorage', 'RESUMABLE_BYTES', 'default', 'gcsStorageFromEnv'],
+  },
   './server/testing': { source: '../src/server/testing/index.ts', values: ['describeAuthAdapter', 'describeObjectStorage', 'fakeRequest'] },
   './capture': {
     source: '../src/capture/index.ts',
@@ -121,6 +129,8 @@ describe('public API', () => {
       './viewer',
       './plugin',
       './config',
+      './plugins/iap',
+      './plugins/gcs',
       './package.json',
     ]);
     for (const target of Object.values(pkg.exports)) {
@@ -132,6 +142,14 @@ describe('public API', () => {
 
   it('ships what a custom distribution needs at run time: the built viewer, the samples and the docs it links to', () => {
     for (const path of ['dist/lib', 'dist/types', 'dist/client', 'sample', 'bin']) expect(pkg.files).toContain(path);
+  });
+
+  it('builds first-party plugins only on the public surface (/plugin and /server), as a third party would', () => {
+    for (const file of ['iap.ts', 'gcs.ts']) {
+      const source = readFileSync(resolve(import.meta.dirname, '../src/first-party', file), 'utf8');
+      const imports = [...source.matchAll(/from '(\.\.?\/[^']+)'/g)].map((match) => match[1]);
+      for (const path of imports) expect(path, `${file} imports ${path}`).toMatch(/^\.\.\/(plugin|server)\/index\.ts$/);
+    }
   });
 
   it('keeps the testing entry free of any test runner, so it works under vitest, node:test or Jest', () => {

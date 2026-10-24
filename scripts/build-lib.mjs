@@ -13,6 +13,8 @@ const entries = {
   plugin: 'src/plugin/index.ts',
   config: 'src/config/index.ts',
   viewer: 'src/client/plugins/api.ts',
+  'plugins-iap': 'src/first-party/iap.ts',
+  'plugins-gcs': 'src/first-party/gcs.ts',
 };
 
 await build({
