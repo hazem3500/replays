@@ -7,7 +7,7 @@
 # WITH_RENDER=1 adds a headless Chromium and ffmpeg (several hundred MB). Without it the render routes answer 503
 # and the viewer hides "Export video".
 ARG WITH_RENDER=0
-ARG NODE_VERSION=22.22.0
+ARG NODE_VERSION=22.23.4
 
 FROM node:${NODE_VERSION}-bookworm-slim AS base
 RUN corepack enable
