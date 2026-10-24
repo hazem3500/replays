@@ -31,7 +31,7 @@ afterEach(async () => {
 });
 
 function find<T extends Element = HTMLElement>(selector: string): T {
-  const element = host.querySelector<T>(selector);
+  const element = host.querySelector<T>(selector) ?? document.querySelector('.wf-filter-popover')?.querySelector<T>(selector);
   expect(element).not.toBeNull();
   return element!;
 }
@@ -42,6 +42,7 @@ async function key(element: HTMLElement, value: string) {
   await act(async () => element.dispatchEvent(new KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true })));
 }
 async function changeSelect(label: string, value: string) {
+  if (!document.querySelector(`select[aria-label="${label}"]`)) await click(find('[data-testid="waterfall-filters"]'));
   await act(async () => {
     const select = find<HTMLSelectElement>(`select[aria-label="${label}"]`);
     select.value = value;
@@ -129,7 +130,7 @@ describe('waterfall DOM controls and replay selection', () => {
     await input(find('input[type="search"]'), 'not present');
     expect(host.querySelectorAll('.wf-row')).toHaveLength(0);
     expect(host.textContent).toContain('No matching events');
-    await click(Array.from(host.querySelectorAll('button')).find((button) => button.textContent === 'Clear filters')!);
+    await click(Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Clear filters')!);
     expect(host.querySelectorAll('.wf-row')).toHaveLength(4);
     await changeSelect('Waterfall state', 'slow');
     expect(host.querySelectorAll('.wf-row')).toHaveLength(1);
@@ -157,6 +158,56 @@ describe('waterfall DOM controls and replay selection', () => {
     await key(find('input[type="search"]'), ' ');
     expect(shortcut).not.toHaveBeenCalled();
     document.removeEventListener('keydown', shortcut);
+  });
+
+  it('discloses filters outside the event/detail layout and Escape preserves selected detail and replay time', async () => {
+    const bundle = waterfallFixture();
+    bundle.steps = [];
+    bundle.network = [request({ status: 503 }), request({ id: 'second', at: 3000, duration: 100 })];
+    const { player } = await renderWaterfall(bundle);
+    const scroller = find('[data-testid="waterfall-scroll"]');
+    expect(document.querySelector('select[aria-label="Waterfall state"]')).toBeNull();
+    await click(find('[data-waterfall-id="network-0"]'));
+    await click(find('[data-testid="waterfall-filters"]'));
+    const popup = document.querySelector('.wf-filter-popover');
+    expect(popup).not.toBeNull();
+    expect(find('.wf-workspace').contains(popup)).toBe(false);
+    expect(find('.wf-tools').contains(popup)).toBe(false);
+    await changeSelect('Waterfall state', 'failed');
+    expect(find('[data-testid="waterfall-filters"]').textContent).toBe('Filters (1)');
+    await key(find('select[aria-label="Waterfall state"]'), 'Escape');
+    expect(find('[data-testid="waterfall-filters"]').getAttribute('aria-expanded')).toBe('false');
+    expect(find('.wf-detail').hidden).toBe(false);
+    expect(find('[data-waterfall-id="network-0"]').getAttribute('aria-expanded')).toBe('true');
+    expect(find('[data-testid="waterfall-scroll"]')).toBe(scroller);
+    expect(player.getTime()).toBe(1000);
+  });
+
+  it('keeps independent event and detail scroll regions while switching selected requests', async () => {
+    const bundle = waterfallFixture();
+    bundle.steps = [];
+    bundle.network = [request(), request({ id: 'second', at: 3000, duration: 100 })];
+    const { player, opened } = await renderWaterfall(bundle);
+    const scroller = find('[data-testid="waterfall-scroll"]');
+    await click(find('[data-waterfall-id="network-0"]'));
+    const detail = find('.wf-detail');
+    const workspace = find('.wf-workspace');
+    expect(workspace.hasAttribute('data-detail-open')).toBe(true);
+    expect(detail.parentElement).toBe(scroller.parentElement);
+    expect(detail.tabIndex).toBe(0);
+    scroller.scrollTop = 44;
+    detail.scrollTop = 200;
+    await click(find('[data-waterfall-id="network-1"]'));
+    expect(find('[data-testid="waterfall-scroll"]')).toBe(scroller);
+    expect(scroller.scrollTop).toBe(44);
+    expect(detail.scrollTop).toBe(0);
+    expect(find('[data-request-detail="second"]').textContent).toContain('/api/projects');
+    expect(opened).toHaveBeenLastCalledWith('second');
+    expect(player.getTime()).toBe(3000);
+    await key(detail, 'Escape');
+    expect(workspace.hasAttribute('data-detail-open')).toBe(false);
+    expect(detail.hidden).toBe(true);
+    expect(document.activeElement).toBe(find('[data-waterfall-id="network-1"]'));
   });
 
   it('opens action and paint details as point events without fake spans', async () => {
