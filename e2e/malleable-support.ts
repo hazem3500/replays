@@ -1,5 +1,5 @@
 import { createServer, type Server } from 'node:http';
-import type { AddressInfo } from 'node:net';
+import type { AddressInfo, Socket } from 'node:net';
 import { expect, type FrameLocator, type Page, type APIRequestContext } from '@playwright/test';
 
 import { type Bundle, cloneBundle, openReplay, postBundle, uniqueId } from './support.ts';
@@ -77,12 +77,23 @@ export async function startCanary() {
     response.writeHead(200, { 'access-control-allow-origin': '*', 'content-type': 'text/plain' });
     response.end('leaked');
   });
+  const sockets = new Set<Socket>();
+  server.on('connection', (socket) => {
+    sockets.add(socket);
+    socket.once('close', () => sockets.delete(socket));
+  });
   await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
   const port = (server.address() as AddressInfo).port;
   return {
     origin: `http://127.0.0.1:${port}`,
     hits,
-    close: () => new Promise<void>((done) => server.close(() => done())),
+    close: () =>
+      new Promise<void>((done) => {
+        server.close(() => done());
+        // Blocked browser probes can leave a socket without an HTTP request.
+        // Tear those down as well as keep-alive connections during cleanup.
+        for (const socket of sockets) socket.destroy();
+      }),
   };
 }
 
