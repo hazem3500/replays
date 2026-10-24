@@ -308,6 +308,15 @@ describe('replays migrate', () => {
     expect(migrated.meta.tags).not.toContain('purpose:triage');
   });
 
+  it('preserves current suite people and translates legacy GitHub handles', () => {
+    const people = [{ role: 'reviewer', email: 'ada@example.com' }];
+    const current = { ...legacySuite, people };
+    expect(translateSuite(current).people).toEqual(people);
+    const converted = translateSuite(legacySuite);
+    expect(converted.people).toEqual([{ role: 'pr-author', handles: { github: 'octocat' } }]);
+    expect(() => assertReviewSuite(converted)).not.toThrow();
+  });
+
   it('parses its arguments', () => {
     expect(parseMigrateArgs(['--from', 'fs:a', '--to', 'gcs', '--dry-run', '--concurrency', '2'])).toEqual({
       from: 'fs:a',

@@ -6,7 +6,7 @@
 //   meta.purpose                          kept when the target declares that purpose, else the tag `purpose:<id>`
 //   a typed context (account, organization, ...)  ->  context.fields; app.product -> app.name
 //   context.sources[].kind + url          ->  { provider, ref, url, label }
-//   a suite's review (a PR reference)     ->  subject; suite people are dropped (suites have no people yet)
+//   a suite's review (a PR reference)     ->  subject; suite people are preserved, and legacy provider handles become named handles
 
 const PROVIDERS = {
   'slack-thread': 'slack',
@@ -64,7 +64,11 @@ export default function translate(raw, info) {
 
 /** `_suites/<id>.json`. */
 export function translateSuite(raw) {
-  const { review, people: _people, ...suite } = raw;
+  const { review, ...suite } = raw;
+  if (suite.people) suite.people = suite.people.map((person) => {
+    const { github, ...current } = person;
+    return { ...current, ...(github ? { handles: { github, ...current.handles } } : {}) };
+  });
   return {
     ...suite,
     ...(review && !suite.subject ? { subject: translateSource(review) } : {}),
