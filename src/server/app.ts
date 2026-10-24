@@ -471,8 +471,8 @@ export function createApp(options: AppOptions) {
         return;
       }
 
-      const policy = applyRequestPolicy(registry, request, response, path);
-      if (policy.handled) return;
+      const requestPolicy = applyRequestPolicy(registry, request, response, path);
+      if (requestPolicy.handled) return;
 
       if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return;
 
@@ -494,7 +494,7 @@ export function createApp(options: AppOptions) {
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
       const user = await resolveIdentity(authenticated, request);
       identities.set(request, user);
-      if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !policy.csrfAllowed) {
+      if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !requestPolicy.csrfAllowed) {
         send(response, 403, 'cross-site request');
         return;
       }

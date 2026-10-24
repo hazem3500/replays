@@ -24,7 +24,7 @@ afterEach(async () => {
   await Promise.all(cleanups.splice(0).map((cleanup) => cleanup()));
 });
 
-async function start(setup: (api: PluginApi) => void, basePath = '') {
+async function start(setup: (api: PluginApi) => void, basePath = '', overrides: Partial<Parameters<typeof createApp>[0]> = {}) {
   const root = await mkdtemp(join(tmpdir(), 'replays-intake-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'samples'));
   const authenticate = vi.fn<(request: IncomingMessage) => { id: string } | undefined>((request) =>
@@ -38,6 +38,7 @@ async function start(setup: (api: PluginApi) => void, basePath = '') {
     clientDir: root,
     plugins: registry,
     basePath,
+    ...overrides,
   });
   const server = createServer((request, response) => void handle(request, response));
   await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
@@ -191,11 +192,63 @@ describe('trusted request policy', () => {
   });
 });
 
+describe('host routing with intake policies', () => {
+  it.each([false, true])(
+    'preserves host routing Vary on refusals, preflights and compressed reads (forwarded=%s)',
+    async (trustForwardedHost) => {
+      const { request, store } = await start((api) => api.requestPolicy(policy), '', {
+        hosts: { '127.0.0.1': { basePath: '/tools/replays' }, 'tools.example.com': { basePath: '/tools/replays' } },
+        trustForwardedHost,
+      });
+      const hostHeaders = { 'x-forwarded-host': 'tools.example.com' };
+      const hostFields = trustForwardedHost ? ['Host', 'X-Forwarded-Host'] : ['Host'];
+      const expectVary = (response: Response, extra: string[]) =>
+        expect(new Set(response.headers.get('vary')?.split(', '))).toEqual(new Set([...hostFields, 'Origin', ...extra]));
+      const denied = await request(
+        '/tools/replays/api/replays',
+        upload(replay(), { ...hostHeaders, origin: 'https://unknown.example.com' }),
+      );
+      expect(denied.status).toBe(403);
+      expectVary(denied, []);
+      expect(denied.headers.get('access-control-allow-origin')).toBeNull();
+      const unauthenticated = await request(
+        '/tools/replays/api/replays',
+        upload(replay(), { ...hostHeaders, ...crossSite, authorization: '' }),
+      );
+      expect(unauthenticated.status).toBe(403);
+      expectCors(unauthenticated);
+      expectVary(unauthenticated, []);
+      for (const method of ['POST', 'PUT']) {
+        const response = await request(
+          '/tools/replays/api/replays',
+          preflight({ ...hostHeaders, 'access-control-request-method': method }),
+        );
+        expect(response.status).toBe(method === 'POST' ? 204 : 403);
+        expectVary(response, ['Access-Control-Request-Method', 'Access-Control-Request-Headers']);
+      }
+      for (let index = 0; index < 5; index++) {
+        const bundle = replay(`compress-${index}`);
+        bundle.meta.title = 'a meaningful test recording title '.repeat(10);
+        await store.save(bundle);
+      }
+      const compressed = await request('/tools/replays/api/replays', {
+        headers: { ...hostHeaders, authorization: 'Bearer trusted', origin: trusted, 'accept-encoding': 'gzip' },
+      });
+      expect(compressed.status).toBe(200);
+      expect(compressed.headers.get('content-encoding')).toBe('gzip');
+      expectVary(compressed, ['Accept-Encoding']);
+      expect(compressed.headers.get('access-control-allow-origin')).toBeNull();
+      expect(await compressed.json()).toHaveLength(5);
+    },
+  );
+});
+
 describe('upload endpoint aliases', () => {
   const path = '/api/foreign-recordings';
   it('runs endpoint prepare, global prepare, validation, privacy, upload hooks and immutable storage with the original URL', async () => {
     const calls: string[] = [];
     const { request, store } = await start((api) => {
+      api.redaction({ queryParams: ['tenant-secret'] });
       api.uploadEndpoint({
         path,
         prepare: ({ body, request: incoming, identity }) => {
@@ -210,18 +263,20 @@ describe('upload endpoint aliases', () => {
       api.beforeUpload(({ bundle }) => {
         calls.push('before');
         expect(bundle.meta.url).not.toContain('private-token');
+        expect(bundle.meta.url).not.toContain('foreign-private');
       });
       api.afterUpload(({ url }) => {
         calls.push(`after:${url}`);
       });
     }, '/tools/replays');
     const bundle = replay('alias-replay');
-    bundle.meta.url = 'https://example.com/?token=private-token';
+    bundle.meta.url = 'https://example.com/?token=private-token&tenant-secret=foreign-private';
     const response = await request(`/tools/replays${path}`, upload({ recording: bundle }));
     expect(response.status).toBe(201);
     expect(response.headers.get('access-control-allow-origin')).toBeNull();
     expect(await response.json()).toMatchObject({ id: 'alias-replay', url: '/tools/replays/r/alias-replay' });
     expect((await store.load('alias-replay'))?.meta.url).not.toContain('private-token');
+    expect((await store.load('alias-replay'))?.meta.url).not.toContain('foreign-private');
     expect(calls).toEqual([
       `alias:service-account:/tools/replays${path}`,
       `global:/tools/replays${path}`,

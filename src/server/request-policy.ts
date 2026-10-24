@@ -29,7 +29,7 @@ function vary(response: ServerResponse, fields: string[]) {
     headers.vary = [...new Map(tokens.map((token) => [token.toLowerCase(), token])).values()].join(', ');
     return typeof reasonOrHeaders === 'string' ? original(status, reasonOrHeaders, headers as never) : original(status, headers as never);
   }) as ServerResponse['writeHead'];
-  response.setHeader('vary', fields.join(', '));
+  response.setHeader('vary', [response.getHeader('vary'), ...fields].filter(Boolean).join(', '));
 }
 
 /** A handled preflight/denial, or an actual exact match eligible for the narrow CSRF exception. */

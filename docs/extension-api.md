@@ -116,9 +116,11 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.storage({ id, create({ env, dataDir }) })` | An [`ObjectStorage`](extending.md#storage) selected by `STORAGE=<id>` or the config's `storage`. Its `kind` is any string (usually the id); set `listCacheMs` when listing is remote and slow | id taken or built in (`fs`, `s3`, `memory`) |
 | `api.branding({ name?, logoUrl?, theme? })` | Name, logo (https URL or base64 data image) and [theme tokens](extending.md#theming-and-branding) | the same field set to different values by two plugins; the config file and environment override plugins without error |
 | `api.basePath('/replays')` | The default base path | two plugins disagree; config and `BASE_PATH` override |
-| `api.onRequest(hook, { phase? })` | `hook({ request, response, path, identity? })`, return `true` after answering. `post-auth` (default): only authenticated requests, with `identity`, after the same-origin check. `pre-auth`: every request except the health checks. `path` has the base path removed | – |
+| `api.requestPolicy({ path, methods, origins, headers, credentials? })` | [Trusted route policy](#trusted-browser-intake-and-upload-aliases): exact-origin CORS, preflight validation and a narrow CSRF exception; actual requests retain auth | overlapping path/method registration |
+| `api.uploadEndpoint({ path, prepare? })` | [POST upload alias](#trusted-browser-intake-and-upload-aliases) using the normal core upload pipeline; no implicit CORS | duplicate alias or built-in path |
+| `api.onRequest(hook, { phase? })` | `hook({ request, response, path, identity? })`, return `true` after answering. `post-auth` (default): only authenticated requests, with `identity`, after the same-origin check. `pre-auth`: requests not already answered by health checks or route policies. `path` has the base path removed | – |
 | `api.onResponse(hook)` | `hook({ method, path, status, durationMs, identity? })` after each response; errors are logged | – |
-| `api.prepareUpload(hook)` | `hook({ body, identity, request })` on the raw `POST /api/replays` body before any validation; return the body to use (translate a producer's older shape) | – |
+| `api.prepareUpload(hook)` | `hook({ body, identity, request })` on the raw canonical or alias upload body before any validation; return the body to use (translate a producer's older shape) | – |
 | `api.beforeUpload(hook)` | `hook({ bundle, identity, request })` on the validated, sanitised bundle before it is stored. Throw `rejectUpload(status, message)` to refuse; return a bundle to replace it (it is validated again). Also runs for `POST /api/replays/import` | – |
 | `api.afterUpload(hook)` | `hook({ bundle, identity, request, url })` after the bundle is stored; errors are logged and never fail the upload | – |
 | `api.redaction({ headers?, queryParams?, jsonKeys?, text?, maskSelectors? })` | [Redaction rules](extending.md#redaction-rules) added to the sanitiser's defaults, in the capture CLI (which reads the same config) and the server's privacy pass. Rules from several plugins and the config's `redaction` add up; they cannot turn a default off. Validate your own with `assertRedactionRules` (`/plugin`, `/capture`) | – (invalid rules are an `invalid-registration`) |
@@ -131,7 +133,7 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.people({ roles?, validate?, handles?, avatarUrl?, profileUrl? })` | The deployment's [people](#people-and-identity): role priority, checks on `meta.people` and suite `people`, linkable handles, avatar and profile links | a second registration (one per deployment) |
 | `api.identity({ resolve(identity, { request }) })` | Enriches the signed-in identity after auth (a display name and avatar from a directory); see [People and identity](#people-and-identity) | – |
 
-Upload order: `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →
+Upload order: endpoint `prepare` (aliases only) → `prepareUpload` → context adapters → source links resolved → validation and context schema → privacy pass →
 `beforeUpload` → store → `afterUpload`. The core checks cannot be skipped by a hook: an adapter or hook that produces an
 invalid bundle gets a `400`.
 
