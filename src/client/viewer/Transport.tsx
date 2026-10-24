@@ -240,6 +240,18 @@ function PlaybackOptions() {
   const player = usePlayer();
   const { speed, skipInactive } = usePlayerState();
   const [open, setOpen] = useState(false);
+  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
+  useEffect(() => {
+    // A body portal is outside the browser's fullscreen top layer and cannot be seen or clicked.
+    // Close on either transition so an open menu never keeps focus in the old portal.
+    const update = () => {
+      setOpen(false);
+      setPortalContainer(document.fullscreenElement instanceof HTMLElement ? document.fullscreenElement : undefined);
+    };
+    update();
+    document.addEventListener('fullscreenchange', update);
+    return () => document.removeEventListener('fullscreenchange', update);
+  }, []);
   return (
     <DropdownMenu
       open={open}
@@ -252,7 +264,11 @@ function PlaybackOptions() {
         setOpen(next);
       }}
     >
-      <Hint label="Playback speed and options" shortcut={`${shortcutLabel('speed-down')} ${shortcutLabel('speed-up')}`} align="end">
+      <Hint
+        label="Playback speed and skip inactive parts"
+        shortcut={`${shortcutLabel('speed-down')} ${shortcutLabel('speed-up')}`}
+        align="end"
+      >
         <DropdownMenuTrigger
           render={
             <Button
@@ -276,7 +292,13 @@ function PlaybackOptions() {
           </span>
         </DropdownMenuTrigger>
       </Hint>
-      <DropdownMenuContent side="top" align="end" className="playback-menu w-auto min-w-48" aria-label="Playback">
+      <DropdownMenuContent
+        side="top"
+        align="end"
+        portalContainer={portalContainer}
+        className="playback-menu w-auto min-w-48"
+        aria-label="Playback"
+      >
         <DropdownMenuGroup>
           <DropdownMenuLabel className="flex items-center justify-between gap-3">
             Playback speed
@@ -300,7 +322,7 @@ function PlaybackOptions() {
           onCheckedChange={(checked) => player.setSkipInactive(checked)}
           title="Fast-forward through idle gaps"
         >
-          Skip inactive
+          Skip inactive parts
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
