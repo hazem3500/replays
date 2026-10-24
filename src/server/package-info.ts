@@ -1,13 +1,9 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-/** The package root: the repository when run from source, the installed package when run from `dist/lib` (or its chunks). */
-export function findPackageRoot() {
-  for (let dir = import.meta.dirname; dir !== dirname(dir); dir = dirname(dir)) {
-    if (existsSync(resolve(dir, 'package.json')) && existsSync(resolve(dir, 'bin/replays.mjs'))) return dir;
-  }
-  return resolve(import.meta.dirname, '../..');
-}
+import { findPackageRoot } from './package-root.ts';
+
+export { findPackageRoot };
 
 let cached: string | undefined;
 

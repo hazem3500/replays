@@ -9,7 +9,6 @@ import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
 import { coreVersion, findPackageRoot } from './package-info.ts';
 import { BridgeHub } from './bridge-hub.ts';
-import { findPackageRoot } from './package-root.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
 import { RenderQueue } from './render-queue.ts';
 import type { RenderService } from './render-routes.ts';
