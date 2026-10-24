@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import type { StoredReplayEdits } from '../shared/edits.ts';
 import { notModified, REVALIDATE, send } from './app.ts';
+import type { EditingSettings } from './editing-config.ts';
 import type { ReplayStore } from './store.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
@@ -41,7 +42,8 @@ function sendEdits(response: ServerResponse, status: number, body: unknown, vers
  * `GET|PUT /api/replays/<id>/edits`: the replay's non-destructive edit list (src/shared/edits.ts), behind the auth
  * adapter like the rest of the app (and the same-origin check for writes). Only mounted with the beta editor flag
  * (`REPLAYS_BETA_EDITOR=true`, see src/server/config.ts); without it these paths are plain 404s. Anyone who can open a
- * replay can edit it; the save records who.
+ * replay can edit it unless the host disables writes with editing.enabled; the save records who.
+ * Disabled writes return 403 before preconditions or body parsing; GET/HEAD remain available.
  *
  * GET answers the stored list (or an empty one, revision 0) with an ETag and `private, no-cache`, so the viewer
  * revalidates on every open and gets a 304 while nothing changed. PUT needs `If-Match` with that ETag: a save
@@ -52,7 +54,7 @@ export async function handleEditsApi(
   request: IncomingMessage,
   response: ServerResponse,
   path: string,
-  options: { store: ReplayStore; user: string },
+  options: { store: ReplayStore; user: string; editing?: EditingSettings },
 ) {
   const match = /^\/api\/replays\/([a-z0-9][a-z0-9-]{0,79})\/edits$/.exec(path);
   if (!match) return false;
@@ -76,6 +78,11 @@ export async function handleEditsApi(
       return true;
     }
     sendEdits(response, 200, edits, version);
+    return true;
+  }
+
+  if (options.editing?.enabled === false) {
+    send(response, 403, JSON.stringify({ error: 'editing is turned off' }), JSON_TYPE);
     return true;
   }
 

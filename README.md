@@ -163,13 +163,14 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
 | `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
+| `EDITING_ENABLED` | `true` | Host edit write policy within `beta.editor`; `false` hides editing and rejects saves while saved edits still play and export. Also `editing.enabled` in config |
 | `REPLAYS_BETA_MALLEABLE` | `false` | Turns on the beta plugin workshop and agent bridge ([Malleable viewer](#malleable-viewer-beta-off-by-default)). Also `beta.malleable` in the config file; the variable wins |
 | `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
 The config file takes `name`, `logoUrl`, `theme`, `basePath`, `hosts`, `trustForwardedHost`, `retentionDays`, `contextSchemaFile`, `githubHost`,
-`gitlabHost`, `sourceProviders`, `beta`, `comments`, `auth`, `storage` and `plugins`:
+`gitlabHost`, `sourceProviders`, `beta`, `editing`, `comments`, `auth`, `storage` and `plugins`:
 
 ```json
 {
@@ -358,6 +359,10 @@ page, and **captions** (written from the steps). Open it with the *Edit* button 
   cannot silently overwrite each other, and free text in labels goes through the same URL redaction as uploads.
 - **Flag.** `REPLAYS_BETA_EDITOR=true`, or `{ "beta": { "editor": true } }` in the config file (the variable wins).
   The server tells the page through `<meta name="app-beta">` and `GET /api/config` (`beta.editor`).
+- **Read-only editing.** Keep `beta.editor` on and set `{ "editing": { "enabled": false } }` or `EDITING_ENABLED=false`.
+  Edit links disappear and edit deep links open playback. Saved edits still play and export; GET/HEAD edits and ETag
+  revalidation work, while PUT returns `403`. `GET /api/config` reports the effective `editing.enabled` capability.
+  See [host editing policy](docs/extension-api.md#host-editing-write-policy) for precedence and validation.
 - **With the flag off** (the default): no Edit button or "Edited" label, `/r/<id>/edit` just opens the replay, the
   `GET|PUT /api/replays/<id>/edits` endpoints answer `404`, exports ignore any edit list, and the editor's code chunk is
   never requested. There is deliberately no client-only switch: an editor without its API cannot save, so the flag
@@ -383,6 +388,10 @@ in a dialog that shows the diff and the permissions, and an agent has no way to 
   playhead, comments, network and console) and load *draft* plugins; there is no save tool.
 - **Formats.** Replays, comments, edits and plugins are plain JSON with JSON Schemas in [docs/formats/](docs/formats/); example plugins
   are in [examples/malleable/](examples/malleable/) (import them from the workshop).
+- **Read-only editing.** Keep `beta.editor` on and set `{ "editing": { "enabled": false } }` or `EDITING_ENABLED=false`.
+  Edit links disappear and edit deep links open playback. Saved edits still play and export; GET/HEAD edits and ETag
+  revalidation work, while PUT returns `403`. `GET /api/config` reports the effective `editing.enabled` capability.
+  See [host editing policy](docs/extension-api.md#host-editing-write-policy) for precedence and validation.
 - **With the flag off** (the default): no workshop or menu entry, `/api/malleable/*` and `/_malleable/sandbox.html` answer `404`, no
   tools are registered, no extra CSP header is sent, and the plugin code is never requested.
 - Design, mapping onto the extension API, the threat model and worked examples: [docs/malleability.md](docs/malleability.md).

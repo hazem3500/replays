@@ -35,6 +35,7 @@ import { BridgeHub } from './bridge-hub.ts';
 import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
 import { malleablePlugin } from './malleable-plugin.ts';
 import { coreVersion } from './package-info.ts';
+import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
@@ -92,6 +93,8 @@ export interface AppOptions {
   trustForwardedHost?: boolean;
   /** Beta features, all off by default (`REPLAYS_BETA_EDITOR=true` / `beta.editor`): see src/server/config.ts. */
   beta?: BetaFlags;
+  /** Host write policy; defaults to enabled within beta.editor. Saved edits remain readable and applied when disabled. */
+  editing?: EditingSettings;
   /** The agent bridge's relay (beta.malleable); the server closes it on shutdown so open streams do not hold it up. */
   bridgeHub?: BridgeHub;
   /** The host's policy for user plugins (`malleable` in the config, src/shared/malleable-policy.ts); default: `defaultPolicy()`. */
@@ -414,6 +417,7 @@ export function createApp(options: AppOptions) {
   const routing = hostRouting(options);
   // With per-host bases the same path is a different route from one host to the next, so every response varies by it.
   const vary = hostVary(routing);
+  const editing = { enabled: editingFromEnv({}, options.editing).enabled && Boolean(options.beta?.editor) };
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
   const anonymous = options.auth.name === 'none';
@@ -446,6 +450,7 @@ export function createApp(options: AppOptions) {
       sources: options.sources.describe(),
       ...(options.beta ? { beta: options.beta } : {}),
       comments: commentsOn,
+      editing,
       clientEntries: registry.clientEntries,
     });
   /** The signed-in person per request, for the `onResponse` hooks. */
@@ -502,7 +507,7 @@ export function createApp(options: AppOptions) {
       if (await handlePosterApi(request, response, path, { store: options.store, posters: options.render?.posters })) return;
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
-      if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id }))) return;
+      if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id, editing }))) return;
 
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another
@@ -525,6 +530,7 @@ export function createApp(options: AppOptions) {
           versions,
           // The user-plugin policy only exists with the feature on (off means nothing about it is exposed).
           ...(options.beta?.malleable ? { malleable: policy } : {}),
+          editing,
         });
         send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;

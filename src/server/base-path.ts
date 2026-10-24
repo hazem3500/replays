@@ -126,6 +126,8 @@ export interface PageBranding {
   comments?: boolean;
   /** JSON list of the deployment's purposes (`<meta name="app-purposes">`); absent when there are none. */
   purposes?: string;
+  /** Effective host edit write capability (beta.editor and editing.enabled). */
+  editing?: boolean;
   /** JSON list of the plugins' browser entries (`<meta name="app-plugins">`); see src/server/plugin-runtime.ts. */
   plugins?: string;
   /** Browser chrome colour per scheme (`<meta name="theme-color">`): the theme's `page` token; unset keeps the built-in one. */
@@ -151,6 +153,7 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
     .replace('<meta name="app-base" content="">', `<meta name="app-base" content="${base || '/'}">`)
     .replaceAll(/(\s(?:src|href)=")\.\/(assets\/)/g, `$1${base}/$2`);
   if (branding) {
+    out = out.replace('<meta name="app-editing" content="" />', `<meta name="app-editing" content="${branding.editing ? 'on' : 'off'}" />`);
     out = out.replace('<meta name="app-comments" content="" />', `<meta name="app-comments" content="${branding.comments ? 'on' : ''}" />`);
     out = out.replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${escapeHtml(branding.beta ?? '')}" />`);
     out = out.replace(

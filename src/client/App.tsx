@@ -4,7 +4,7 @@ import { Activity, lazy, Suspense, useEffect, useMemo, useState, useSyncExternal
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { TooltipProvider } from '@/components/ui/tooltip.tsx';
 
-import { productName } from './config.ts';
+import { editingEnabled, productName } from './config.ts';
 import { ReplayIndex } from './ReplayIndex.tsx';
 import { editsQuery } from './edits.ts';
 import { queryClient, replayQuery, suiteQuery } from './queries.ts';
@@ -107,6 +107,11 @@ setRoutePreparer(prepareRoute);
 export function App() {
   const route = useSyncExternalStore(subscribeRoute, currentRoute);
   const indexGeneration = useSyncExternalStore(subscribeRoute, currentIndexGeneration);
+  // Old edit links open playback; keep their time, original-view choice and step/comment anchor.
+  useEffect(() => {
+    if (route.kind !== 'edit' && !editingEnabled() && /\/r\/[^/]+\/edit\/?$/.test(location.pathname))
+      history.replaceState(history.state, '', `${location.pathname.replace(/\/edit\/?$/, '')}${location.search}${location.hash}`);
+  }, [route]);
   // The index mounts the first time it is shown and then stays (hidden) behind viewer pages, so Back returns
   // to it as it was: same list, same scroll, the card you opened still there to morph into.
   const [indexShown, setIndexShown] = useState(route.kind === 'index');

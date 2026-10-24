@@ -18,7 +18,7 @@ const INDEX = [
   '<!doctype html><html><head>',
   '<meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />',
   '<meta name="app-base" content="" /><meta name="app-beta" content="" /><meta name="app-comments" content="" />',
-  '<meta name="app-plugins" content="" /><meta name="app-purposes" content="" />',
+  '<meta name="app-plugins" content="" /><meta name="app-purposes" content="" /><meta name="app-editing" content="" />',
   '<meta name="app-name" content="__PRODUCT_NAME__" /><meta name="app-logo" content="__PRODUCT_LOGO__" />',
   '<title>__PRODUCT_NAME__</title><link rel="modulepreload" href="./assets/react.js" /><script type="module" src="./assets/main.js"></script>',
   '</head><body></body></html>',
@@ -156,5 +156,22 @@ describe('replays build-static', () => {
     expect(served).toBe(
       renderIndexHtml(INDEX, { base: '/replays', branding: settings.branding, beta: settings.beta, comments: settings.comments.enabled }),
     );
+  });
+});
+
+describe('static viewer editing write policy', () => {
+  it('uses the same write policy as the server and keeps the beta editor active for reads', async () => {
+    const clientDir = await builtViewer();
+    const out = await mkdtemp(join(tmpdir(), 'replays-static-editing-'));
+    for (const [beta, enabled, expected] of [
+      [true, false, 'off'],
+      [true, true, 'on'],
+      [false, true, 'off'],
+    ] as const) {
+      await buildStatic({ out, clientDir, env: {}, config: config({ beta: { editor: beta }, editing: { enabled } }) });
+      const html = await readFile(join(out, 'index.html'), 'utf8');
+      expect(html).toContain(`<meta name="app-editing" content="${expected}" />`);
+      expect(html).toContain(`<meta name="app-beta" content="${beta ? 'editor' : ''}" />`);
+    }
   });
 });

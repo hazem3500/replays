@@ -108,6 +108,7 @@ describe('replay server', () => {
       plugins: [],
       purposes: [],
       beta: { editor: false, malleable: false },
+      editing: { enabled: false },
       comments: false,
       core: coreVersion(),
     });

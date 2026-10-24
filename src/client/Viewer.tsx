@@ -6,7 +6,7 @@ import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, 
 import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
-import { betaEditor } from './config.ts';
+import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
@@ -660,7 +660,7 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         // Edit leads (the replay's main action), then one quiet icon set: details, copy link, download (theme and More come from the Topbar).
         <>
-          {betaEditor() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
@@ -707,7 +707,7 @@ function PhoneHeader({
       menuFooter={menuFooter}
       actions={
         <>
-          {betaEditor() ? <EditButton id={bundle.meta.id} compact /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} compact /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -1033,10 +1033,12 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
         <DropdownMenuItem onClick={() => setOriginal(!original)} data-testid="switch-original">
           {original ? 'View edited' : 'View original'}
         </DropdownMenuItem>
-        <DropdownMenuItem render={<a href={editHref(id)} className="menu-link" />} data-testid="open-editor">
-          <PencilIcon aria-hidden="true" />
-          Open editor
-        </DropdownMenuItem>
+        {editingEnabled() ? (
+          <DropdownMenuItem render={<a href={editHref(id)} className="menu-link" />} data-testid="open-editor">
+            <PencilIcon aria-hidden="true" />
+            Open editor
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

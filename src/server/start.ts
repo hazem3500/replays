@@ -221,6 +221,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     beta: settings.beta,
     malleable: settings.malleable,
     versions: { core: coreVersion(), ...(settings.distribution ? { distribution: settings.distribution } : {}) },
+    editing: settings.editing,
     ...(bridgeHub ? { bridgeHub } : {}),
     comments: settings.comments,
     plugins: registry,

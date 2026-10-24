@@ -108,6 +108,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   as an image) and a `noun`, shown on the topbar chip, in the Context tab and on index rows; `resolve` may return `attrs`, kept on the
   stored source and, capped, in the index summary (`SUMMARY_VERSION` 7: older sidecars are rebuilt). See
   [docs/extending.md](docs/extending.md#source-link-providers).
+- **Host editing write policy.** `editing.enabled` / `EDITING_ENABLED` can disable new edits while preserving saved-edit
+  reads, playback and video exports. Edit links and routes follow the policy; saves return `403` before precondition or body
+  parsing, and `/api/config` advertises the effective capability. The beta editor flag remains the outer feature gate.
+
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

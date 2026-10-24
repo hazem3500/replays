@@ -563,3 +563,26 @@ adds its files with `COPY` and sets nothing else.
 - Unit-test registration with `resolvePlugins([plugin])` from `@hazem3500/replays/plugin`; it returns what was registered, or throws the `PluginError`.
 - Test behaviour with `startServer({ port: 0, config: { dir, file: {}, plugins: [plugin] } , env: { DATA_DIR, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' } })`.
 - `examples/custom-distro/e2e/smoke.spec.ts` shows a browser-level check of each extension point.
+
+## Host editing write policy
+
+Use `defineConfig({ beta: { editor: true }, editing: { enabled: false } })` for a host that plays saved edits
+without accepting new ones. `editing.enabled` defaults to `true`; `beta.editor` remains the outer gate, so enabling
+writes never enables the beta feature. This host policy is independent of malleable plugin permissions and approvals.
+
+`EDITING_ENABLED` overrides the config value. It accepts `true`/`1`/`yes`/`on` and `false`/`0`/`no`/`off`
+(case insensitive); an unset or blank value uses the config. Config values must be booleans. Invalid shapes, unknown
+`editing` keys, non-boolean values and invalid environment values fail startup, even if the environment overrides the file.
+
+With the beta editor on and writes disabled:
+
+- Edit links and actions disappear, and `/r/<id>/edit` opens normal playback without loading the editor.
+  The URL drops `/edit` with history replacement while keeping its query and fragment.
+- `GET` and `HEAD /api/replays/<id>/edits` keep their saved data, ETags and `304` revalidation.
+- `PUT` for an existing replay returns `403` with `{ "error": "editing is turned off" }` before checking `If-Match`
+  or parsing the body. Missing replays still return `404`.
+- Saved trims, cuts and effects still apply to playback and video exports, including the edit version in render cache keys.
+
+`GET /api/config` advertises the effective write capability as `editing: { enabled: boolean }` (the beta flag AND
+the write policy). Served pages carry the same value in `<meta name="app-editing" content="on|off">`.
+With `beta.editor` off, the edits API remains `404`, playback and exports ignore stored edits, and editing stays unavailable.

@@ -2,6 +2,7 @@ import type { SourceProviderInfo } from '../shared/source-providers.ts';
 import type { PurposeInfo } from '../shared/purposes.ts';
 import type { ResolvedClientEntry } from '../plugin/registry.ts';
 import { withBase } from './base-path.ts';
+import { editingFromEnv, type EditingSettings } from './editing-config.ts';
 import type { BetaFlags } from './beta.ts';
 import { type BrandingConfig, pageBranding } from './branding.ts';
 import { publicClientEntries } from './plugin-runtime.ts';
@@ -16,6 +17,8 @@ export interface IndexPageOptions {
   purposes?: readonly PurposeInfo[];
   /** Provider icons and nouns for the source chips. */
   sources?: readonly SourceProviderInfo[];
+  /** Host write policy, still gated by beta.editor. */
+  editing?: EditingSettings;
   /** The comments plugin is loaded (`<meta name="app-comments" content="on">`). */
   comments?: boolean;
   /** The plugins' browser entries; served ones are listed by their URL under `base` (`<base>/_plugins/…`). */
@@ -36,6 +39,7 @@ export function renderIndexHtml(html: string, options: IndexPageOptions) {
     ...(options.purposes?.length ? { purposes: JSON.stringify(options.purposes) } : {}),
     ...(entries.length ? { plugins: JSON.stringify(publicClientEntries(entries, options.base)) } : {}),
     beta,
+    editing: Boolean(options.beta?.editor) && editingFromEnv({}, options.editing).enabled,
     comments: Boolean(options.comments),
   });
 }

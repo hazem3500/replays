@@ -8,6 +8,7 @@ import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } from './base-path.ts';
 import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
+import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
 import { assertRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import {
@@ -42,6 +43,7 @@ import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
  *     "malleable": { "scopes": ["user"], "capabilities": { "export:download": "deny" }, "lockedSurfaces": [] },
  *                                                  the host's policy for user plugins (file only; src/shared/malleable-policy.ts)
  *     "distribution": { "name": "acme-replays", "version": "2.3.0" },  what this deployment is (file only)
+ *     "editing": { "enabled": false },            EDITING_ENABLED (writes on by default, requires beta.editor)
  *     "comments": { "enabled": true },             REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
  *     "auth": "iap-header",                        AUTH_MODE (a built-in mode or an auth adapter a plugin registered)
  *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
@@ -73,6 +75,7 @@ export interface FileConfig {
   /** The deployment built on this package (`name@version`), shown in `/api/config` and recorded by kept user plugins. */
   distribution?: { name: string; version: string };
   comments?: { enabled?: boolean };
+  editing?: { enabled?: boolean };
   auth?: string;
   storage?: string;
   plugins?: readonly PluginSpec[];
@@ -97,6 +100,7 @@ export interface AppSettings {
   comments: CommentsSettings;
   /** The config file's `redaction` rules, checked (plugins' rules are merged in by the app). */
   redaction?: RedactionRules;
+  editing: EditingSettings;
 }
 
 export const CONFIG_KEYS = new Set([
@@ -116,6 +120,7 @@ export const CONFIG_KEYS = new Set([
   'malleable',
   'distribution',
   'comments',
+  'editing',
   'auth',
   'storage',
   'plugins',
@@ -183,6 +188,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     malleable,
     ...(distribution ? { distribution } : {}),
     comments: commentsFromEnv(env, file.comments),
+    editing: editingFromEnv(env, file.editing),
     ...(contextSchema ? { contextSchema } : {}),
     ...(file.redaction ? { redaction: file.redaction } : {}),
   };

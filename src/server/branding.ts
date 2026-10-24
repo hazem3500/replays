@@ -109,6 +109,7 @@ export function publicConfig(
     indexFilters?: Array<{ plugin: string; id: string; param: string }>;
     beta?: { editor: boolean; malleable?: boolean };
     comments?: boolean;
+    editing?: { enabled: boolean };
     versions?: HostVersions;
     malleable?: MalleablePolicy;
   },
@@ -123,6 +124,7 @@ export function publicConfig(
     purposes: extra.purposes ?? [],
     ...(extra.indexFilters ? { indexFilters: extra.indexFilters } : {}),
     beta: extra.beta ?? { editor: false, malleable: false },
+    ...(extra.editing ? { editing: extra.editing } : {}),
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
     ...(extra.versions ? { core: extra.versions.core } : {}),
     ...(extra.versions?.distribution ? { distribution: extra.versions.distribution } : {}),
