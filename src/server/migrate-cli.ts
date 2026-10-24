@@ -158,7 +158,9 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
     }
     const settings = await loadSettings(env, config.file, config.dir);
     const contextSchema = mergeContextSchemas(settings.contextSchema, registry);
-    const purposes = createPurposeCatalog({ config: config.file.purposes, plugins: registry.purposes, env }).list.map((purpose) => purpose.id);
+    const purposes = createPurposeCatalog({ config: config.file.purposes, plugins: registry.purposes, env }).list.map(
+      (purpose) => purpose.id,
+    );
     const translator = args.translate ? await loadTranslator(args.translate, cwd) : {};
     process.stderr.write(`${args.dryRun ? 'dry run: ' : ''}${from.description} -> ${to.description}\n`);
     const report = await migrateStore({

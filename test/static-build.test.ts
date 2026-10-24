@@ -76,9 +76,18 @@ describe('replays build-static', () => {
     const clientDir = await builtViewer();
     const out = await mkdtemp(join(tmpdir(), 'replays-static-purposes-'));
     await buildStatic({
-      out, clientDir, env: {},
+      out,
+      clientDir,
+      env: {},
       config: config({ purposes: [{ id: 'demo', label: 'Demo' }] }),
-      plugins: [definePlugin({ name: 'triage', setup(api) { api.purpose({ id: 'triage', label: 'Triage' }); } })],
+      plugins: [
+        definePlugin({
+          name: 'triage',
+          setup(api) {
+            api.purpose({ id: 'triage', label: 'Triage' });
+          },
+        }),
+      ],
     });
     const html = await readFile(join(out, 'index.html'), 'utf8');
     expect(html).toContain('&quot;id&quot;:&quot;demo&quot;');
