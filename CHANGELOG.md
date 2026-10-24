@@ -7,6 +7,18 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Adapter kit** for storage and auth adapters written outside this repository:
+  - `ObjectStorage.kind` is an open string (the built-ins stay `fs`, `s3`, `memory`), and a backend sets `listCacheMs` to get the store's
+    listing cache (S3 sets 5000, as before).
+  - `/server` exports `ObjectExistsError`, `PreconditionFailedError`, `NotFoundError`, `assertKey` and `globToRegExp`, and
+    `verifyJwt({ token, jwksUrl | jwks, issuer, audience, algorithms, leewaySec, requireIat })`.
+  - `@hazem3500/replays/server/testing`: `describeObjectStorage(name, factory, { describe, it })` and `describeAuthAdapter(name,
+    contract, { describe, it })`, the contract suites the built-in adapters pass, plus `fakeRequest`. They assert with `node:assert`, so
+    any runner works.
+  - `requires` on a plugin: a semver range over the package version (`>=0.4 <0.6`, `^0.4.1`); outside it the server refuses the plugin
+    at start (`PluginError` `version-range`).
+  - `VIEWER_API_VERSION` (`1`, from `/viewer`): `defineViewerPlugin` stamps it, and the viewer refuses an entry of another generation
+    with a console error.
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user

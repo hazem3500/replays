@@ -1,4 +1,4 @@
-import type { ViewerPlugin } from './api.ts';
+import { VIEWER_API_VERSION, type ViewerPlugin } from './api.ts';
 import { viewerRegistry, type ViewerRegistry } from './registry.ts';
 
 export interface ClientEntryInfo {
@@ -48,7 +48,14 @@ export async function loadClientPlugins(
         const url = new URL(entry.script, typeof location === 'undefined' ? 'http://localhost/' : location.href).href;
         const loaded = await importer(url);
         if (typeof loaded.default !== 'function') throw new Error('the entry must default-export a function (defineViewerPlugin)');
-        await (loaded.default as ViewerPlugin)(registry.apiFor(entry.plugin));
+        const plugin = loaded.default as ViewerPlugin;
+        if (plugin.apiVersion !== undefined && plugin.apiVersion !== VIEWER_API_VERSION) {
+          console.error(
+            `plugin ${entry.plugin} (${entry.id}) refused: built for viewer API ${String(plugin.apiVersion)}, this viewer provides ${VIEWER_API_VERSION}`,
+          );
+          return;
+        }
+        await plugin(registry.apiFor(entry.plugin));
       } catch (error) {
         console.error(`plugin ${entry.plugin} (${entry.id}) failed to load:`, error);
       }

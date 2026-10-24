@@ -27,19 +27,24 @@ const entries: Record<string, { source: string; values: string[] }> = {
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
-  './viewer': { source: '../src/client/plugins/api.ts', values: ['defineViewerPlugin'] },
+  './viewer': { source: '../src/client/plugins/api.ts', values: ['VIEWER_API_VERSION', 'defineViewerPlugin'] },
   './server': {
     source: '../src/server/index.ts',
     values: [
       'FsStorage',
       'MemoryStorage',
+      'NotFoundError',
+      'ObjectExistsError',
+      'PreconditionFailedError',
       'ReplayStore',
       'S3Storage',
       'THEME_TOKENS',
+      'assertKey',
       'authFromEnv',
       'compileContextSchema',
       'createApp',
       'createRuntime',
+      'globToRegExp',
       'headerAuth',
       'loadSettings',
       'mergeContextSchemas',
@@ -49,8 +54,10 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'startServer',
       'storageFromEnv',
       'validateBranding',
+      'verifyJwt',
     ],
   },
+  './server/testing': { source: '../src/server/testing/index.ts', values: ['describeAuthAdapter', 'describeObjectStorage', 'fakeRequest'] },
   './capture': {
     source: '../src/capture/index.ts',
     values: [
@@ -106,16 +113,32 @@ describe('public API', () => {
   });
 
   it('package.json exposes exactly the documented subpaths, each with types and an ES module', () => {
-    expect(Object.keys(pkg.exports)).toEqual(['.', './capture', './server', './viewer', './plugin', './config', './package.json']);
+    expect(Object.keys(pkg.exports)).toEqual([
+      '.',
+      './capture',
+      './server',
+      './server/testing',
+      './viewer',
+      './plugin',
+      './config',
+      './package.json',
+    ]);
     for (const target of Object.values(pkg.exports)) {
       if (typeof target === 'string') continue;
-      expect(target.default).toMatch(/^\.\/dist\/lib\/[a-z]+\.mjs$/);
+      expect(target.default).toMatch(/^\.\/dist\/lib\/[a-z-]+\.mjs$/);
       expect(target.types).toMatch(/^\.\/dist\/types\/.+\.d\.ts$/);
     }
   });
 
   it('ships what a custom distribution needs at run time: the built viewer, the samples and the docs it links to', () => {
     for (const path of ['dist/lib', 'dist/types', 'dist/client', 'sample', 'bin']) expect(pkg.files).toContain(path);
+  });
+
+  it('keeps the testing entry free of any test runner, so it works under vitest, node:test or Jest', () => {
+    for (const file of ['index.ts', 'storage.ts', 'auth.ts', 'runner.ts']) {
+      const source = readFileSync(resolve(import.meta.dirname, '../src/server/testing', file), 'utf8');
+      expect(source).not.toMatch(/^import[^\n]*from '(vitest|jest|mocha|node:test)/m);
+    }
   });
 
   it('keeps the viewer entry free of Node and React, so a browser bundle can import it', () => {

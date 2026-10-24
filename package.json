@@ -110,6 +110,10 @@
       "types": "./dist/types/server/index.d.ts",
       "default": "./dist/lib/server.mjs"
     },
+    "./server/testing": {
+      "types": "./dist/types/server/testing/index.d.ts",
+      "default": "./dist/lib/server-testing.mjs"
+    },
     "./viewer": {
       "types": "./dist/types/client/plugins/api.d.ts",
       "default": "./dist/lib/viewer.mjs"

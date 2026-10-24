@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { defineViewerPlugin, type ViewerPluginApi } from '../src/client/plugins/api.ts';
+import { defineViewerPlugin, VIEWER_API_VERSION, type ViewerPluginApi } from '../src/client/plugins/api.ts';
 import { loadClientPlugins, readClientEntries } from '../src/client/plugins/load.ts';
 import { ViewerPluginError, ViewerRegistry } from '../src/client/plugins/registry.ts';
 
@@ -144,6 +144,30 @@ describe('loadClientPlugins', () => {
       },
     }));
     expect(registry.getSnapshot().tabs.map((tab) => tab.key)).toEqual(['plugin:p:one']);
+  });
+
+  it('stamps VIEWER_API_VERSION and refuses an entry built for another generation', async () => {
+    expect(defineViewerPlugin(() => {}).apiVersion).toBe(VIEWER_API_VERSION);
+    expect(VIEWER_API_VERSION).toBe(1);
+    const registry = new ViewerRegistry();
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const future = Object.assign((api: ViewerPluginApi) => api.registerViewerAction({ id: 'go', label: 'Go', run: () => {} }), {
+      apiVersion: 2,
+    });
+    await loadClientPlugins(
+      [
+        { plugin: 'future', id: 'main', script: '/a.js' },
+        { plugin: 'current', id: 'main', script: '/b.js' },
+      ],
+      registry,
+      async (url) =>
+        url.endsWith('/a.js')
+          ? { default: future }
+          : { default: defineViewerPlugin((api) => api.registerViewerAction({ id: 'go', label: 'Go', run: () => {} })) },
+    );
+    expect(registry.getSnapshot().actions.map((action) => action.key)).toEqual(['plugin:current:go']);
+    expect(error).toHaveBeenCalledTimes(1);
+    expect(String(error.mock.calls[0]?.[0])).toMatch(/plugin future \(main\) refused: built for viewer API 2, this viewer provides 1/);
   });
 });
 

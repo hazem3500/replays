@@ -11,8 +11,19 @@ export { ReplayStore } from './store.ts';
 export { loadSettings, readConfigFile, type AppSettings, type FileConfig } from './config.ts';
 export { authFromEnv, headerAuth, noneAuth, oidcAuth } from './auth/index.ts';
 export type { OidcOptions } from './auth/oidc.ts';
+export { verifyJwt, type JsonWebKeySet, type JwtAlgorithm, type JwtClaims, type VerifyJwtOptions } from './auth/jwt.ts';
 export type { AuthAdapter, AuthPluginFactory, AuthRouteContext, Identity } from './auth/types.ts';
-export { FsStorage, MemoryStorage, S3Storage, storageFromEnv } from './storage/index.ts';
+export {
+  assertKey,
+  FsStorage,
+  globToRegExp,
+  MemoryStorage,
+  NotFoundError,
+  ObjectExistsError,
+  PreconditionFailedError,
+  S3Storage,
+  storageFromEnv,
+} from './storage/index.ts';
 export type { ObjectInfo, ObjectStorage, ListOptions, WriteOptions } from './storage/types.ts';
 export { compileContextSchema, type ContextSchema } from './context-schema.ts';
 export { THEME_TOKENS, validateBranding, type BrandingConfig, type ThemeTokens } from './branding.ts';

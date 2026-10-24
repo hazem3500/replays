@@ -3,6 +3,7 @@ export type PluginErrorCode =
   | 'invalid-plugin'
   | 'duplicate-plugin'
   | 'api-version'
+  | 'version-range'
   | 'missing-dependency'
   | 'dependency-cycle'
   | 'invalid-registration'

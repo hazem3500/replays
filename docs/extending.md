@@ -46,6 +46,19 @@ export default function myAuth(env) {
 The module's default export may be async. `examples/auth-signed-header/plugin.mjs` is a complete, self-contained
 example (verifies a signed JWT forwarded by an identity-aware proxy); its test lives in `test/auth-plugin.test.ts`.
 
+A proxy that signs a header needs only `verifyJwt` from `@hazem3500/replays/server`: it checks the signature against a JWKS
+(`RS256`/`ES256`; `jwksUrl` is cached hourly and refetched at most once a minute for an unknown `kid`, or pass `jwks`), the exact
+issuer, the audience, `exp`, `nbf` and `iat` with `leewaySec` (default 30), and `iat` presence with `requireIat`. It resolves to the
+claims or `undefined`:
+
+```js
+import { verifyJwt } from '@hazem3500/replays/server';
+const claims = await verifyJwt({ token, jwksUrl: 'https://proxy.example.com/jwks', issuer: 'https://proxy.example.com',
+  audience: 'replays', algorithms: ['ES256'], requireIat: true });
+```
+
+Run `describeAuthAdapter` from `@hazem3500/replays/server/testing` against your adapter ([extension-api.md](extension-api.md#testing-a-plugin)).
+
 ## Context metadata schema
 
 `context.fields` is a free-form JSON object that you describe with a JSON Schema (2020-12; Ajv with string formats):
@@ -92,8 +105,9 @@ produce an `https` URL.
 
 ```ts
 interface ObjectStorage {
-  readonly kind: 'fs' | 's3' | 'memory';
+  readonly kind: 'fs' | 's3' | 'memory' | (string & {});   // the built-ins, or your backend's own name ('gcs')
   readonly description: string;
+  readonly listCacheMs?: number;                          // reuse one listing for this long (S3: 5000); absent = list every time
   stat(key): Promise<ObjectInfo | undefined>;
   read(key): Promise<Buffer | undefined>;
   stream(key, range?): Promise<Readable>;
@@ -113,9 +127,13 @@ compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.jso
   SDK. `STORAGE=s3 S3_BUCKET=… S3_ENDPOINT=… S3_FORCE_PATH_STYLE=1 AWS_ACCESS_KEY_ID=… AWS_SECRET_ACCESS_KEY=…`.
   The bucket needs no public access, and the app is the only deleter, so do not add a lifecycle rule that races with
   "keep".
-- Another backend: implement the interface and pass it to `new ReplayStore(storage, sampleDir, retention)`; run
-  `test/storage.test.ts`'s contract against it. (`storageFromEnv` only knows `fs` and `s3`; register yours with `api.storage` in a plugin, see
-  [extension-api.md](extension-api.md).)
+- Another backend: implement the interface and register it with `api.storage` in a plugin (see [extension-api.md](extension-api.md)),
+  or pass it to `new ReplayStore(storage, sampleDir, retention)`. Throw the exported `ObjectExistsError` (a `createOnly` write over an
+  existing key) and `PreconditionFailedError` (an `ifVersion` write over a newer version), and `NotFoundError` from `stream`; the
+  store and the comments tell a conflict from a failure with `instanceof`. Check keys with `assertKey` and match `glob` with
+  `globToRegExp` (both exported from `/server`). Set `listCacheMs` when a listing is a few remote API pages. Then run the same
+  contract the built-ins pass: `describeObjectStorage(name, factory, { describe, it })` from `@hazem3500/replays/server/testing`
+  ([extension-api.md](extension-api.md#testing-a-plugin)). (`storageFromEnv` only knows `fs` and `s3`.)
 
 ## Theming and branding
 

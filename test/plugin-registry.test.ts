@@ -1,4 +1,9 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
+
+import { PACKAGE_VERSION, parseRange, satisfies } from '../src/plugin/version.ts';
 
 import {
   definePlugin,
@@ -54,6 +59,51 @@ describe('definePlugin', () => {
 
   it('refuses a plugin written for another API version, naming both', () => {
     expect(() => definePlugin({ name: 'old', apiVersion: 0, setup() {} })).toThrow(/old: needs plugin API 0, this replays provides 1/);
+  });
+});
+
+describe('requires (a version range over the package)', () => {
+  it.each([
+    ['>=0.4 <0.6', ['0.4.0', '0.5.9'], ['0.3.9', '0.6.0']],
+    ['>= 0.4', ['0.4.0', '1.0.0'], ['0.3.99']],
+    ['^0.4.1', ['0.4.1', '0.4.9'], ['0.4.0', '0.5.0']],
+    ['^1.2', ['1.2.0', '1.9.9'], ['1.1.9', '2.0.0']],
+    ['^0.0.3', ['0.0.3'], ['0.0.4', '0.0.2']],
+    ['~1.2.3', ['1.2.3', '1.2.9'], ['1.3.0', '1.2.2']],
+    ['~0.4', ['0.4.0', '0.4.7'], ['0.5.0']],
+    ['0.4.2', ['0.4.2', '0.4.2-rc.1'], ['0.4.3']],
+    ['0.4', ['0.4.0', '0.4.12'], ['0.5.0', '0.3.0']],
+    ['=1.0.0', ['1.0.0'], ['1.0.1']],
+    ['>0.4 <=0.6', ['0.5.0', '0.6.5'], ['0.4.9', '0.7.0']],
+    ['<1', ['0.99.0'], ['1.0.0']],
+  ])('%s', (range, inside, outside) => {
+    for (const version of inside) expect(satisfies(version, range), `${version} in ${range}`).toBe(true);
+    for (const version of outside) expect(satisfies(version, range), `${version} outside ${range}`).toBe(false);
+  });
+
+  it.each(['', '1.x', '>=0.4 || <0.2', '1 - 2', 'latest', '>='])('refuses the malformed range %j', (range) => {
+    expect(parseRange(range)).toBeUndefined();
+    expect(() => definePlugin({ name: 'ranged', requires: range, setup() {} })).toThrow(/ranged: requires must be a version range/);
+  });
+
+  it('is checked against the package version at start: a mismatch is a version-range error', async () => {
+    const ranged = definePlugin({ name: 'ranged', requires: '>=0.4 <0.6', setup() {} });
+    await expect(resolvePlugins([ranged], { packageVersion: '0.5.1' })).resolves.toMatchObject({ order: ['ranged'] });
+    const error = await rejection(resolvePlugins([ranged], { packageVersion: '0.6.0' }));
+    expect(error).toBeInstanceOf(PluginError);
+    expect(error.code).toBe('version-range');
+    expect(error.plugin).toBe('ranged');
+    expect(error.message).toBe('plugin ranged: needs @hazem3500/replays >=0.4 <0.6, this is 0.6.0');
+    expect(() => resolvePluginsSync([ranged], { packageVersion: '0.1.0' })).toThrow(/version-range|needs @hazem3500\/replays/);
+  });
+
+  it('defaults to the installed version, read from package.json', async () => {
+    const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json'), 'utf8')) as { version: string };
+    expect(PACKAGE_VERSION).toBe(pkg.version);
+    await expect(resolvePlugins([definePlugin({ name: 'here', requires: `=${pkg.version}`, setup() {} })])).resolves.toBeTruthy();
+    await expect(rejection(resolvePlugins([definePlugin({ name: 'later', requires: '>=99', setup() {} })]))).resolves.toMatchObject({
+      code: 'version-range',
+    });
   });
 });
 

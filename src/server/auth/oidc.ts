@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypt
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { cleanAvatarUrl } from '../../shared/comments.ts';
-import { jwksKeys, verifyJwt, type JwtClaims, type KeySource } from './jwt.ts';
+import { jwksKeys, verifyJwtWith, type JwtClaims, type KeySource } from './jwt.ts';
 import type { AuthAdapter, AuthRouteContext, Identity } from './types.ts';
 
 export interface OidcOptions {
@@ -137,7 +137,7 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       const bearer = /^Bearer\s+(.+)$/i.exec(String(request.headers.authorization ?? ''))?.[1];
       if (!bearer) return undefined;
       await discover();
-      const claims = await verifyJwt(bearer, {
+      const claims = await verifyJwtWith(bearer, {
         keys: keys!,
         issuer,
         audience: options.audience ?? options.clientId,
@@ -220,7 +220,7 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       });
       const tokens = exchanged.ok ? ((await exchanged.json()) as { id_token?: string }) : undefined;
       const claims = tokens?.id_token
-        ? await verifyJwt(tokens.id_token, { keys: keys!, issuer, audience: options.clientId, nonce: login.nonce, now: nowMs() / 1000 })
+        ? await verifyJwtWith(tokens.id_token, { keys: keys!, issuer, audience: options.clientId, nonce: login.nonce, now: nowMs() / 1000 })
         : undefined;
       const identity = claims ? identityOf(claims) : undefined;
       if (!identity) {

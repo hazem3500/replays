@@ -3,7 +3,7 @@ import type { ListOptions, ObjectStorage } from './types.ts';
 
 /**
  * The storage with a span per operation (`storage.read`, `storage.write`, `storage.list`…) when tracing is on;
- * the storage itself, unwrapped, when it is off. Attributes: the driver (`storage.system`: fs, s3, memory),
+ * the storage itself, unwrapped, when it is off. Attributes: the driver (`storage.system`: fs, s3, memory, a plugin's kind),
  * the key (`<id>/replay.json`: replay ids only, never contents), sizes and counts. The wrapper inherits from
  * the driver, so `instanceof FsStorage` and driver-specific helpers keep working.
  */
@@ -12,7 +12,7 @@ export function tracedStorage<S extends ObjectStorage>(storage: S): S {
   const system = storage.kind;
   const span = <T>(operation: string, attributes: Record<string, string | number | undefined>, fn: () => Promise<T>) =>
     withSpan(`storage.${operation}`, { 'storage.system': system, 'storage.operation': operation, ...attributes }, fn, {
-      kind: system === 's3' ? 'client' : 'internal',
+      kind: system === 'fs' || system === 'memory' ? 'internal' : 'client',
     });
   const traced: ObjectStorage = Object.create(storage) as S;
   Object.assign(traced, {

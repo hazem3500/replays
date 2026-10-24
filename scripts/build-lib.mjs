@@ -9,6 +9,7 @@ const entries = {
   index: 'src/index.ts',
   capture: 'src/capture/index.ts',
   server: 'src/server/index.ts',
+  'server-testing': 'src/server/testing/index.ts',
   plugin: 'src/plugin/index.ts',
   config: 'src/config/index.ts',
   viewer: 'src/client/plugins/api.ts',

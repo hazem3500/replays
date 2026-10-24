@@ -10,6 +10,12 @@ import type { ReplayBundle } from '../../shared/replay.ts';
 
 export type Cleanup = void | (() => void);
 
+/**
+ * The browser plugin API generation. `defineViewerPlugin` stamps it on the plugin; a viewer of another generation refuses
+ * the plugin (a console error naming both numbers) instead of calling it. It moves only in a major release.
+ */
+export const VIEWER_API_VERSION = 1;
+
 /** What a tab, panel or action can see and do. Stable for one open replay. */
 export interface ViewerPluginContext {
   /** The open replay, read-only by contract: metadata, steps, console, network, `context`. */
@@ -64,9 +70,15 @@ export interface ViewerPluginApi {
   registerViewerPanel(definition: ViewerPanelDefinition): void;
 }
 
-export type ViewerPlugin = (api: ViewerPluginApi) => void | Promise<void>;
+export type ViewerPlugin = ((api: ViewerPluginApi) => void | Promise<void>) & {
+  /** The generation the plugin was built for; `defineViewerPlugin` fills it in. Absent on a bare function (accepted). */
+  readonly apiVersion?: number;
+};
 
-/** Marks and types the default export of a client entry. */
-export function defineViewerPlugin(plugin: ViewerPlugin): ViewerPlugin {
-  return plugin;
+/** Marks and types the default export of a client entry, and stamps it with `VIEWER_API_VERSION`. */
+export function defineViewerPlugin(plugin: (api: ViewerPluginApi) => void | Promise<void>): ViewerPlugin {
+  if (typeof plugin !== 'function') throw new TypeError('defineViewerPlugin needs a function (api) => void');
+  // A wrapper, so stamping never mutates (or fails on) the caller's function.
+  const stamped = (api: ViewerPluginApi) => plugin(api);
+  return Object.defineProperty(stamped, 'apiVersion', { value: VIEWER_API_VERSION, enumerable: true });
 }

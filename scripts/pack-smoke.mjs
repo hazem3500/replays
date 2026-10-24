@@ -29,11 +29,19 @@ export default defineConfig({
   await writeFile(
     join(app, 'check.mjs'),
     `import assert from 'node:assert/strict';
-import { startServer } from '@hazem3500/replays/server';
-import { defineViewerPlugin } from '@hazem3500/replays/viewer';
+import { MemoryStorage, startServer, verifyJwt } from '@hazem3500/replays/server';
+import { describeObjectStorage } from '@hazem3500/replays/server/testing';
+import { defineViewerPlugin, VIEWER_API_VERSION } from '@hazem3500/replays/viewer';
 import { RecorderSession } from '@hazem3500/replays/capture';
 assert.equal(typeof defineViewerPlugin, 'function');
+assert.equal(defineViewerPlugin(() => {}).apiVersion, VIEWER_API_VERSION);
 assert.equal(typeof RecorderSession, 'function');
+assert.equal(typeof verifyJwt, 'function');
+// The contract suite needs no test framework installed: a two-function runner is enough.
+const contract = [];
+describeObjectStorage('memory', () => new MemoryStorage(), { describe: (_name, body) => body(), it: (name, test) => contract.push([name, test]) });
+for (const [, test] of contract) await test();
+assert.ok(contract.length >= 8, 'the storage contract ran');
 const server = await startServer({ port: 0, log: () => {}, env: { ...process.env, DATA_DIR: ${JSON.stringify(join(work, 'data'))}, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' } });
 const config = await (await fetch(server.origin + '/packed/api/config')).json();
 assert.equal(config.name, 'Packed');

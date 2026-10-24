@@ -159,6 +159,12 @@ export interface ReplaysPlugin {
   readonly name: string;
   /** The plugin API generation the plugin was written for (`PLUGIN_API_VERSION`). */
   readonly apiVersion: number;
+  /**
+   * The versions of this package the plugin works with, a semver range such as `>=0.4 <0.6` or `^0.4.1` (`>=`, `>`, `<`,
+   * `<=`, `=`, `^`, `~`, space-separated terms must all hold). A core outside it refuses the plugin at start
+   * (`PluginError` `version-range`). Use it when the plugin needs something added within an API generation.
+   */
+  readonly requires?: string;
   /** Plugin names that must be present; they are set up first. */
   readonly dependsOn?: readonly string[];
   /** Lower runs first among plugins that do not depend on each other. Default 0; ties keep config order. */
