@@ -27,7 +27,8 @@
     "sample": "node scripts/record-sample.mjs",
     "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build",
     "test:distro": "pnpm build && pnpm build:cli && pnpm --filter @hazem3500/replays-example-custom-distro build && pnpm --filter @hazem3500/replays-example-custom-distro typecheck && playwright test -c examples/custom-distro/playwright.config.ts",
-    "test:pack": "node scripts/pack-smoke.mjs"
+    "test:pack": "node scripts/pack-smoke.mjs",
+    "test:host-app": "pnpm build && pnpm build:cli && pnpm --filter @hazem3500/replays-example-host-app check"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",

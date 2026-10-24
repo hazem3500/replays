@@ -1,0 +1,23 @@
+{
+  "name": "@hazem3500/replays-example-host-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "A neutral company distribution composed from public replays APIs, config and trusted plugins.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "node --experimental-strip-types --no-warnings src/server.ts",
+    "start:local": "HOST_APP_PROFILE=local pnpm start",
+    "test": "node --experimental-strip-types --no-warnings --test test/smoke.test.ts",
+    "check": "pnpm build && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@hazem3500/replays": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.10",
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3"
+  }
+}
