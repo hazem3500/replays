@@ -280,6 +280,28 @@ describe('replays migrate', () => {
     expect((await target.read('private-recording/meta.json'))?.toString()).not.toContain('PRIVATE-123');
   });
 
+  it('passes purposes declared by config and plugins to the CLI translation', async () => {
+    const sourceDir = await mkdtemp(join(tmpdir(), 'replays-migrate-source-'));
+    const source = new FsStorage(sourceDir);
+    await source.write('old-one/replay.json', JSON.stringify(legacyBundle('old-one')), JSON_TYPE);
+    const work = await mkdtemp(join(tmpdir(), 'replays-migrate-purposes-'));
+    const target = new MemoryStorage();
+    (globalThis as { __migrateTarget?: MemoryStorage }).__migrateTarget = target;
+    await writeFile(join(work, 'replays.config.mjs'), `export default {
+      purposes: [{ id: 'demo', label: 'Demo' }],
+      plugins: [{ name: 'target', apiVersion: 1, setup(api) {
+        api.storage({ id: 'mem', create: () => globalThis.__migrateTarget });
+        api.purpose({ id: 'triage', label: 'Triage' });
+      } }]
+    };`);
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true);
+    vi.spyOn(process.stderr, 'write').mockReturnValue(true);
+    await runMigrateCli(['--from', `fs:${sourceDir}`, '--to', 'mem', '--translate', join(import.meta.dirname, '../examples/migrate/translate.mjs')], { cwd: work, env: {} });
+    const migrated = JSON.parse((await target.read('old-one/replay.json'))!.toString());
+    expect(migrated.meta.purpose).toBe('triage');
+    expect(migrated.meta.tags).not.toContain('purpose:triage');
+  });
+
   it('parses its arguments', () => {
     expect(parseMigrateArgs(['--from', 'fs:a', '--to', 'gcs', '--dry-run', '--concurrency', '2'])).toEqual({
       from: 'fs:a',

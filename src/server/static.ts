@@ -83,6 +83,7 @@ export async function buildStatic(options: BuildStaticOptions): Promise<StaticBu
     base,
     branding: settings.branding,
     beta: settings.beta,
+    purposes: settings.purposes.list,
     comments: settings.comments.enabled,
     clientEntries: registry.clientEntries,
   });

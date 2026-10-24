@@ -433,6 +433,7 @@ export function createApp(options: AppOptions) {
     renderIndexHtml(html, {
       base,
       branding: options.branding,
+      purposes: purposes.list,
       ...(options.beta ? { beta: options.beta } : {}),
       comments: commentsOn,
       clientEntries: registry.clientEntries,

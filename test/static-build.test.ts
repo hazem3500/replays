@@ -5,6 +5,7 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { definePlugin } from '../src/plugin/define.ts';
 import type { LoadedConfig } from '../src/config/index.ts';
 import { createApp } from '../src/server/app.ts';
 import { loadSettings } from '../src/server/config.ts';
@@ -17,7 +18,7 @@ const INDEX = [
   '<!doctype html><html><head>',
   '<meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />',
   '<meta name="app-base" content="" /><meta name="app-beta" content="" /><meta name="app-comments" content="" />',
-  '<meta name="app-plugins" content="" />',
+  '<meta name="app-plugins" content="" /><meta name="app-purposes" content="" />',
   '<meta name="app-name" content="__PRODUCT_NAME__" /><meta name="app-logo" content="__PRODUCT_LOGO__" />',
   '<title>__PRODUCT_NAME__</title><link rel="modulepreload" href="./assets/react.js" /><script type="module" src="./assets/main.js"></script>',
   '</head><body></body></html>',
@@ -69,6 +70,19 @@ describe('replays build-static', () => {
     expect(html).toContain('<meta name="app-beta" content="" />');
     expect(await readFile(join(out, 'assets', 'main.js'), 'utf8')).toBe('console.log(1)');
     await expect(readFile(join(out, 'render.html'))).rejects.toThrow(/ENOENT/);
+  });
+
+  it('stamps config and plugin purposes into the static index', async () => {
+    const clientDir = await builtViewer();
+    const out = await mkdtemp(join(tmpdir(), 'replays-static-purposes-'));
+    await buildStatic({
+      out, clientDir, env: {},
+      config: config({ purposes: [{ id: 'demo', label: 'Demo' }] }),
+      plugins: [definePlugin({ name: 'triage', setup(api) { api.purpose({ id: 'triage', label: 'Triage' }); } })],
+    });
+    const html = await readFile(join(out, 'index.html'), 'utf8');
+    expect(html).toContain('&quot;id&quot;:&quot;demo&quot;');
+    expect(html).toContain('&quot;id&quot;:&quot;triage&quot;');
   });
 
   it('takes --base over the configured one, and copies render.html only when asked', async () => {

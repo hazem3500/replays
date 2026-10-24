@@ -6,6 +6,7 @@ import { loadConfig } from '../config/index.ts';
 import { resolvePlugins } from '../plugin/registry.ts';
 import { mergeRedactionRules } from '../shared/redaction.ts';
 import { loadSettings } from './config.ts';
+import { createPurposeCatalog } from './purposes.ts';
 import { compareStores, type MigrateTranslate, migrateStore, type StoreComparison } from './migrate.ts';
 import { chooseStorage, mergeContextSchemas } from './runtime.ts';
 import { FsStorage, storageFromEnv } from './storage/index.ts';
@@ -157,11 +158,7 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
     }
     const settings = await loadSettings(env, config.file, config.dir);
     const contextSchema = mergeContextSchemas(settings.contextSchema, registry);
-    // Forward-compatible: purposes a config or plugin declares, once the deployment has them.
-    const declared = (config.file as { purposes?: Array<{ id?: unknown }> }).purposes;
-    const purposes = Array.isArray(declared)
-      ? declared.map((purpose) => purpose?.id).filter((id): id is string => typeof id === 'string')
-      : [];
+    const purposes = createPurposeCatalog({ config: config.file.purposes, plugins: registry.purposes, env }).list.map((purpose) => purpose.id);
     const translator = args.translate ? await loadTranslator(args.translate, cwd) : {};
     process.stderr.write(`${args.dryRun ? 'dry run: ' : ''}${from.description} -> ${to.description}\n`);
     const report = await migrateStore({
