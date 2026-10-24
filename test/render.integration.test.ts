@@ -12,7 +12,7 @@
  * compares a frame mid-step.
  */
 import { spawnSync } from 'node:child_process';
-import { copyFile, mkdir, mkdtemp, readFile, stat } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -24,6 +24,7 @@ import { createApp } from '../src/server/app.ts';
 import { RenderQueue } from '../src/server/render-queue.ts';
 import { createRenderer, detectRenderTools, type RenderStats, renderToken } from '../src/server/renderer.ts';
 import { ReplayStore } from '../src/server/store.ts';
+import type { ReplayBundle } from '../src/shared/replay.ts';
 import { idleGaps } from '../src/shared/skip.ts';
 import { appDefaults } from './fixtures.ts';
 
@@ -328,7 +329,12 @@ describe.skipIf(!ready || id !== 'demo-shop')('server-side render at the viewer 
   it('renders 2× with idle gaps fast-forwarded, as long as the viewer would play it', { timeout: 300_000 }, async () => {
     const dataDir = join(await mkdtemp(join(tmpdir(), 'replays-render-skip-')), 'data');
     await mkdir(join(dataDir, id), { recursive: true });
-    await copyFile(sample, join(dataDir, id, 'replay.json'));
+    // Keep this integration fixture above the shared inactivity threshold even as capture pacing changes.
+    const bundle = JSON.parse(await readFile(sample, 'utf8')) as ReplayBundle;
+    bundle.events.push({ type: 3, timestamp: bundle.events.at(-1)!.timestamp + 6000, data: { source: 1, positions: [] } });
+    bundle.meta.duration = bundle.events.at(-1)!.timestamp - bundle.events[0]!.timestamp;
+    bundle.meta.eventCount = bundle.events.length;
+    await writeFile(join(dataDir, id, 'replay.json'), JSON.stringify(bundle));
     const store = new ReplayStore(dataDir, join(dataDir, '..', 'sample'));
     const token = renderToken();
     let origin = '';
@@ -358,9 +364,6 @@ describe.skipIf(!ready || id !== 'demo-shop')('server-side render at the viewer 
     expect(file.headers.get('content-disposition')).toBe(`attachment; filename="${id}-2x-captions.mp4"`);
     await file.arrayBuffer();
 
-    const bundle = JSON.parse(await readFile(sample, 'utf8')) as {
-      events: Array<{ type: number; timestamp: number }>;
-    };
     const duration = bundle.events.at(-1)!.timestamp - bundle.events[0]!.timestamp;
     const gaps = idleGaps(bundle.events);
     expect(gaps.length).toBeGreaterThan(0);
