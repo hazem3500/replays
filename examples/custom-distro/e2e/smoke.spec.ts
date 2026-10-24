@@ -115,7 +115,8 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
   test.use({ extraHTTPHeaders: asAda });
   const id = `distro-${Date.now().toString(36)}`;
 
-  test('an upload is stamped by the context adapter and its chat source resolves', async ({ request }) => {
+  // Each worker (including a retry worker) owns and seeds its server data.
+  test.beforeAll(async ({ request }) => {
     const original = await (await request.get(`${origin}${BASE}/api/replays/demo-shop`)).json();
     const bundle = {
       ...original,
@@ -124,6 +125,9 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     };
     const response = await request.post(`${origin}${BASE}/api/replays`, { data: bundle });
     expect(response.status(), await response.text()).toBe(201);
+  });
+
+  test('an upload is stamped by the context adapter and its chat source resolves', async ({ request }) => {
     const stored = await (await request.get(`${origin}${BASE}/api/replays/${id}`)).json();
     expect(stored.context.fields).toEqual({ environment: 'staging', uploadedBy: 'ada@acme.test' });
     expect(stored.context.sources[0]).toMatchObject({
