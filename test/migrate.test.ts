@@ -252,7 +252,7 @@ describe('compareStores', () => {
     expect(comparison.onlyInTarget).toEqual([]);
     expect(comparison.identical).toBe(1);
     const changed = comparison.changed.find(({ id }) => id === 'old-one')!;
-    expect(changed.fields.map(({ field }) => field).sort()).toEqual(['source', 'sources', 'tags']);
+    expect(changed.fields.map(({ field }) => field).sort()).toEqual(['purpose', 'purposeInferred', 'source', 'sources', 'tags']);
     expect(changed.fields.find(({ field }) => field === 'source')).toEqual({ field: 'source', from: 'toki', to: 'agent' });
     expect(formatComparison(comparison)).toContain('    source: "toki" -> "agent"');
   });
