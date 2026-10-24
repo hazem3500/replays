@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import { sanitizeReplayBundle } from '../capture/sanitize.ts';
+import type { RedactionRules } from '../shared/redaction.ts';
 import { assertReplayBundle, type ReplayBundle, type ReplaySummary, summarizeReplay } from '../shared/replay.ts';
 import { assertReviewSuite } from '../shared/review-suite.ts';
 import type { ContextSchema } from './context-schema.ts';
@@ -42,6 +43,8 @@ export interface MigrateOptions {
   contextSchema?: ContextSchema;
   /** Passed to the translation as `info.purposes`. */
   purposes?: readonly string[];
+  /** Additional privacy rules from the target deployment, applied with the built-in defaults. */
+  redaction?: RedactionRules;
   /** Read, translate and validate everything, write nothing; the report says what would be written. */
   dryRun?: boolean;
   /** Prefixes processed at once (default 4). */
@@ -163,7 +166,7 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
   const problem = next.context?.fields !== undefined ? options.contextSchema?.validate(next.context.fields) : undefined;
   if (problem) throw new Error(problem);
   // The same privacy pass an upload gets: stored data never depends on the translation having sanitized it.
-  const bundle: ReplayBundle = sanitizeReplayBundle(next);
+  const bundle: ReplayBundle = sanitizeReplayBundle(next, options.redaction);
   assertReplayBundle(bundle);
   return { text: json(bundle), translated: !isDeepStrictEqual(bundle, original) };
 }

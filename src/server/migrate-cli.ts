@@ -4,6 +4,7 @@ import { pathToFileURL } from 'node:url';
 
 import { loadConfig } from '../config/index.ts';
 import { resolvePlugins } from '../plugin/registry.ts';
+import { mergeRedactionRules } from '../shared/redaction.ts';
 import { loadSettings } from './config.ts';
 import { compareStores, type MigrateTranslate, migrateStore, type StoreComparison } from './migrate.ts';
 import { chooseStorage, mergeContextSchemas } from './runtime.ts';
@@ -169,6 +170,7 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
       ...translator,
       ...(contextSchema ? { contextSchema } : {}),
       purposes,
+      redaction: mergeRedactionRules(settings.redaction, registry.redaction),
       dryRun: args.dryRun,
       concurrency: args.concurrency,
       onProgress({ id, kind, status, done, total }) {

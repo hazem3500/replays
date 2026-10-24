@@ -264,6 +264,22 @@ describe('replays migrate', () => {
     vi.restoreAllMocks();
   });
 
+  it('applies target redaction rules before writing a replay and its summary', async () => {
+    const source = new MemoryStorage();
+    const target = new MemoryStorage();
+    const bundle = replay('private-recording');
+    bundle.meta.title = 'Case PRIVATE-123';
+    await source.write('private-recording/replay.json', JSON.stringify(bundle), JSON_TYPE);
+    const report = await migrateStore({
+      from: source,
+      to: target,
+      redaction: { text: [{ pattern: /PRIVATE-\d+/g, replace: '[private]' }] },
+    });
+    expect(report.failed).toEqual([]);
+    expect((await target.read('private-recording/replay.json'))?.toString()).not.toContain('PRIVATE-123');
+    expect((await target.read('private-recording/meta.json'))?.toString()).not.toContain('PRIVATE-123');
+  });
+
   it('parses its arguments', () => {
     expect(parseMigrateArgs(['--from', 'fs:a', '--to', 'gcs', '--dry-run', '--concurrency', '2'])).toEqual({
       from: 'fs:a',
