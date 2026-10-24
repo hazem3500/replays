@@ -172,7 +172,13 @@ export function purposeCounts(entries: readonly IndexEntry[]): PurposeCounts {
   return counts;
 }
 
-export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT, purposeOrForMe?: string | boolean, forMe = false) {
+export function indexSearch(
+  filters: ReplayFilters,
+  kind: IndexKind | undefined,
+  sort: Sort = DEFAULT_SORT,
+  purposeOrForMe?: string | boolean,
+  forMe = false,
+) {
   const purpose = typeof purposeOrForMe === 'string' ? purposeOrForMe : undefined;
   if (typeof purposeOrForMe === 'boolean') forMe = purposeOrForMe;
   const params = new URLSearchParams(searchFromFilters(filters));
@@ -599,7 +605,9 @@ export function ReplayIndex() {
     if (!items || !suites || settledFilters !== filters || (restored && items === restored.items)) return;
     saveIndexCache({ search: listSearch, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
   }, [items, suites, settledFilters, filters, restored, listSearch]);
-  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || forMe || hasPluginFilters(filters));
+  const filtered = Boolean(
+    filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || forMe || hasPluginFilters(filters),
+  );
   // People UI (For me, avatar stacks) only where people exist: the deployment registered them, or the list has some.
   const peopleOn =
     forMe ||

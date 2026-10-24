@@ -75,7 +75,8 @@ export const KIND_OPTIONS: Array<{ value: IndexKind | undefined; label: string }
 
 export function activeFilters({ filters, kind, forMe }: Pick<FilterState, 'filters' | 'kind' | 'forMe'>) {
   return (
-    [filters.host, filters.tag, filters.source, kind, filters.errors, forMe].filter(Boolean).length + Object.keys(filters.params ?? {}).length
+    [filters.host, filters.tag, filters.source, kind, filters.errors, forMe].filter(Boolean).length +
+    Object.keys(filters.params ?? {}).length
   );
 }
 

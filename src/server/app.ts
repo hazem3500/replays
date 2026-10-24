@@ -664,7 +664,11 @@ export function createApp(options: AppOptions) {
         assertReplayBundle(replay);
         resolveContext(replay, options);
         // Stored data never depends on the uploader having sanitized it.
-        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request), options.store.purposes, registry);
+        const bundle = await acceptUpload(
+          await runBeforeUpload(registry, sanitize(replay), user, request),
+          options.store.purposes,
+          registry,
+        );
         setRequestAttributes(request, uploadAttributes(bundle));
         if (bundle.suiteRun) {
           await options.store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);

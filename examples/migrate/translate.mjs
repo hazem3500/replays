@@ -65,10 +65,11 @@ export default function translate(raw, info) {
 /** `_suites/<id>.json`. */
 export function translateSuite(raw) {
   const { review, ...suite } = raw;
-  if (suite.people) suite.people = suite.people.map((person) => {
-    const { github, ...current } = person;
-    return { ...current, ...(github ? { handles: { github, ...current.handles } } : {}) };
-  });
+  if (suite.people)
+    suite.people = suite.people.map((person) => {
+      const { github, ...current } = person;
+      return { ...current, ...(github ? { handles: { github, ...current.handles } } : {}) };
+    });
   return {
     ...suite,
     ...(review && !suite.subject ? { subject: translateSource(review) } : {}),

@@ -311,8 +311,11 @@ describe('replays migrate', () => {
   it('preserves current suite people and translates legacy GitHub handles', () => {
     const people = [{ role: 'reviewer', email: 'ada@example.com' }];
     const current = { ...legacySuite, people };
-    expect(translateSuite(current).people).toEqual(people);
+    const preserved = translateSuite(current);
+    assertReviewSuite(preserved);
+    expect(preserved.people).toEqual(people);
     const converted = translateSuite(legacySuite);
+    assertReviewSuite(converted);
     expect(converted.people).toEqual([{ role: 'pr-author', handles: { github: 'octocat' } }]);
     expect(() => assertReviewSuite(converted)).not.toThrow();
   });
