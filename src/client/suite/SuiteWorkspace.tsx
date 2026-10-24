@@ -1,4 +1,4 @@
-import { SignInLink } from '../sign-in.tsx';
+import { SignInError, SignInLink } from '../sign-in.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
@@ -103,6 +103,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // Runs show their saved edits too; a failed load shows the run as recorded.
   const edits = useQuery({ ...editsQuery(selected ?? ''), enabled: Boolean(selected) });
   const editsSettled = edits.data !== undefined || edits.isError;
+  // An observed auth failure must win over cached suite, bundle or edit data.
+  const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [railPreference, setRailPreference] = useState<boolean | undefined>(undefined);
@@ -243,7 +245,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const tone = run ? statusTone(run, detailed) : undefined;
   const runStatus = useMemo(() => (tone ? <RunStatusChip tone={tone} /> : undefined), [tone]);
 
-  if (error && !suite) {
+  if (authFailure || (error && !suite)) {
     return (
       <main className="state-shell">
         <a className="state-brand" href={indexHref()}>
@@ -251,8 +253,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         </a>
         <section className="state-content" role="alert">
           <span className="state-kicker">Could not open review suite</span>
-          <h1>{error}</h1>
-          <SignInLink error={suiteFailure} />
+          <h1>{authFailure?.message ?? error}</h1>
+          <SignInLink error={authFailure ?? suiteFailure} />
           <p>
             Suite <code>{id}</code> may have expired or the link may be incomplete.
           </p>

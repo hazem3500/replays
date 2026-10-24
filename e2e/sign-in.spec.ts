@@ -1,8 +1,8 @@
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { expect, test } from '@playwright/test';
-import { serveApp } from './support.ts';
+import { expect, test, type Page } from '@playwright/test';
+import { cloneBundle, createSuite, postBundle, serveApp, uniqueId } from './support.ts';
 
 let dir: string;
 test.beforeAll(async () => {
@@ -69,4 +69,86 @@ test('a proxy redirect is distinguished from offline, with storage-disabled manu
   await expect(signIn).toBeVisible();
   await expect(signIn).toHaveAttribute('href', '/replays/api/sign-in?next=%2Freplays%2Fr%2Fdemo-shop%3Ft%3D2%23step-2');
   await expect(page).toHaveURL(/\/replays\/r\/demo-shop\?t=2#step-2$/);
+});
+
+/** Keep TanStack's cache alive while changing the observed page. */
+async function inPage(page: Page, path: string) {
+  await page.evaluate((next) => {
+    history.pushState(null, '', next);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }, path);
+}
+
+for (const kind of ['replay', 'suite'] as const) {
+  test(`cached ${kind} waits for sign-in when only fresh edits are refused`, async ({ page }) => {
+    const base = `${server().origin}/replays`;
+    const id = uniqueId(`auth-cached-${kind}`);
+    const suite = uniqueId('auth-suite');
+    if (kind === 'suite') {
+      await createSuite(page.request, base, suite, [{ id: 'run-1', label: 'Cached run', status: 'passed', replayId: id }]);
+    } else {
+      await postBundle(page.request, base, await cloneBundle(page.request, base, 'demo-shop', id, 'Cached recording'));
+    }
+    const editsUrl = `${base}/api/replays/${id}/edits`;
+    const original = await page.request.get(editsUrl);
+    expect(
+      (
+        await page.request.put(editsUrl, {
+          headers: { 'if-match': original.headers().etag! },
+          data: { version: 1, cuts: [{ id: 'cut-1', from: 1000, to: 2000 }] },
+        })
+      ).ok(),
+    ).toBe(true);
+    let bundleReads = 0;
+    await page.route(
+      (url) => url.pathname === `/replays/api/replays/${id}`,
+      async (route) => {
+        bundleReads++;
+        await route.continue();
+      },
+    );
+    const path = kind === 'suite' ? `/replays/s/${suite}/r/${id}` : `/replays/r/${id}`;
+    await page.goto(`${server().origin}${path}`);
+    await expect(page.getByTestId('edited-chip')).toBeVisible();
+    const cachedReads = bundleReads;
+    await inPage(page, '/replays/');
+    await expect(page.locator('.index-shell')).toBeVisible();
+    await page.clock.setFixedTime(new Date(Date.now() + 20_000));
+    await page.evaluate(() => sessionStorage.setItem('replays:sign-in-attempt', String(Date.now())));
+    await page.route(editsUrl, (route) => route.fulfill({ status: 401, body: 'session expired' }));
+    await inPage(page, path);
+    await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+    await expect(page.getByTestId('replay-player')).toHaveCount(0);
+    expect(bundleReads).toBe(cachedReads);
+  });
+}
+
+test('a cached suite surfaces an observed background auth failure', async ({ page }) => {
+  const base = `${server().origin}/replays`;
+  const suite = uniqueId('auth-background-suite');
+  const id = uniqueId('auth-background-run');
+  await createSuite(page.request, base, suite, [{ id: 'run-1', label: 'Cached suite run', status: 'passed', replayId: id }]);
+  await page.goto(`${base}/s/${suite}/r/${id}`);
+  await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+  await page.clock.setFixedTime(new Date(Date.now() + 60_000));
+  await page.evaluate(() => sessionStorage.setItem('replays:sign-in-attempt', String(Date.now())));
+  let refreshes = 0;
+  await page.route(
+    (url) => url.pathname === `/replays/api/suites/${suite}`,
+    async (route) => {
+      refreshes++;
+      await route.fulfill({ status: 401, body: 'session expired' });
+    },
+  );
+  await page.evaluate(() => window.dispatchEvent(new Event('visibilitychange')));
+  await expect.poll(() => refreshes).toBeGreaterThan(0);
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
+  await expect(page.getByTestId('replay-player')).toHaveCount(0);
+});
+
+test('ordinary edits failures retain the recorded fallback without sign-in recovery', async ({ page }) => {
+  await page.route('**/replays/api/replays/demo-shop/edits', (route) => route.fulfill({ status: 500, body: 'unavailable' }));
+  await page.goto(`${server().origin}/replays/r/demo-shop`);
+  await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toHaveCount(0);
 });

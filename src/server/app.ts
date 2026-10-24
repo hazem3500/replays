@@ -415,6 +415,15 @@ function hostRouting(options: AppOptions): HostRouting | undefined {
   return normalizeHosts(hosts, options.trustForwardedHost ?? false);
 }
 
+/** A browser recovery may only return to a page, never another auth or machine endpoint. */
+function signInDestination(next: string | null, base: string, path: string) {
+  const destination = signInReturn(next, publicPath('/', base));
+  const target = new URL(destination, 'http://replays.invalid');
+  const targetPath = base && target.pathname.startsWith(`${base}/`) ? target.pathname.slice(base.length) : target.pathname;
+  const blocked = target.pathname === publicPath(path, base) || /^\/(api|auth|internal|_plugins)(\/|$)/.test(targetPath);
+  return blocked ? publicPath('/', base) : destination;
+}
+
 export function createApp(options: AppOptions) {
   const defaultBase = options.basePath ?? '';
   const signIn = normalizeSignIn(options.signIn ?? options.auth.signIn);
@@ -486,8 +495,16 @@ export function createApp(options: AppOptions) {
 
       const authenticated: Identity | undefined = await options.auth.authenticate(request);
       if (!authenticated) {
-        const login = options.auth.loginUrl?.(request, routeContext);
-        if (login && path !== signIn?.path && request.method === 'GET' && isBrowserNavigation(request) && !path.startsWith('/api/')) {
+        const recovery = signIn && path === signIn.path && request.method === 'GET' && isBrowserNavigation(request);
+        // loginUrl adapters (including OIDC) return to this authenticated endpoint after their callback.
+        // Keep the original page inside a normalized next parameter without mutating the real request.
+        const loginRequest = recovery
+          ? Object.assign(Object.create(request) as IncomingMessage, {
+              url: `${publicPath(signIn.path, base)}?${new URLSearchParams({ next: signInDestination(raw.searchParams.get('next'), base, signIn.path) })}`,
+            })
+          : request;
+        const login = options.auth.loginUrl?.(loginRequest, routeContext);
+        if (login && request.method === 'GET' && isBrowserNavigation(request) && (recovery || !path.startsWith('/api/'))) {
           response.writeHead(302, { location: login, 'cache-control': 'no-store' });
           response.end();
           return;
@@ -509,13 +526,8 @@ export function createApp(options: AppOptions) {
           send(response, 405, JSON.stringify({ error: 'method not allowed' }), json);
           return;
         }
-        const next = signInReturn(raw.searchParams.get('next'), publicPath('/', base));
-        const target = new URL(next, 'http://replays.invalid');
-        // Never bounce back to sign-in itself or a machine/internal endpoint.
-        const targetPath = base && target.pathname.startsWith(`${base}/`) ? target.pathname.slice(base.length) : target.pathname;
-        const blocked = target.pathname === publicPath(signIn.path, base) || /^\/(api|auth|internal|_plugins)(\/|$)/.test(targetPath);
         response.writeHead(302, {
-          location: blocked ? publicPath('/', base) : next,
+          location: signInDestination(raw.searchParams.get('next'), base, signIn.path),
           'cache-control': 'no-store',
           ...(vary ? { vary } : {}),
         });
