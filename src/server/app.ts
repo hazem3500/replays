@@ -1,3 +1,4 @@
+import { applyRequestPolicy } from './request-policy.ts';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
@@ -470,6 +471,9 @@ export function createApp(options: AppOptions) {
         return;
       }
 
+      const policy = applyRequestPolicy(registry, request, response, path);
+      if (policy.handled) return;
+
       if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
@@ -490,7 +494,7 @@ export function createApp(options: AppOptions) {
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
       const user = await resolveIdentity(authenticated, request);
       identities.set(request, user);
-      if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request)) {
+      if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !policy.csrfAllowed) {
         send(response, 403, 'cross-site request');
         return;
       }
@@ -654,8 +658,11 @@ export function createApp(options: AppOptions) {
         send(response, 201, replayReceipt(base, accepted), json, REVALIDATE);
         return;
       }
-      if (path === '/api/replays' && request.method === 'POST') {
-        const replay = await runPrepareUpload(registry, await readJsonUpload(request, MAX_REPLAY_BYTES), user, request);
+      const endpoint = registry.uploadEndpoints.get(path)?.value;
+      if ((path === '/api/replays' || endpoint) && request.method === 'POST') {
+        const body = await readJsonUpload(request, MAX_REPLAY_BYTES);
+        const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, request }) : body;
+        const replay = await runPrepareUpload(registry, prepared, user, request);
         if (replay && typeof replay === 'object' && !Array.isArray(replay)) {
           const upload = replay as { context?: ReplayContext | undefined };
           const adapted = await applyContextAdapters(registry, upload.context, { kind: 'replay', identity: user, request });

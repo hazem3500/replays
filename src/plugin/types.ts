@@ -95,7 +95,7 @@ export interface ResponseHookContext {
 export type ResponseHook = (context: ResponseHookContext) => void | Promise<void>;
 
 export interface PrepareUploadContext {
-  /** The parsed JSON body of `POST /api/replays`, before any validation. Untrusted; may not even be an object. */
+  /** The parsed JSON body of a canonical or registered upload endpoint, before any validation. Untrusted; may not even be an object. */
   body: unknown;
   identity: Identity;
   request: IncomingMessage;
@@ -224,7 +224,25 @@ export interface IndexFilterDefinition {
   /** `value` is the parameter's value, trimmed (at most 200 characters, never empty). A throw counts as no match. */
   match(summary: Readonly<ReplaySummary>, value: string): boolean;
 }
+/** A trusted host's exact route-scoped browser intake policy. Authentication still runs for actual requests. */
+export interface RequestPolicy {
+  /** Canonical path without the deployment base prefix. No patterns. */
+  readonly path: string;
+  readonly methods: readonly string[];
+  /** Serialized http(s) origins, without trailing slashes. No wildcards or opaque origins. */
+  readonly origins: readonly string[];
+  /** Allowed preflight request header names (case insensitive). */
+  readonly headers: readonly string[];
+  readonly credentials?: boolean;
+}
 
+/** An additional POST route into the core upload pipeline; no CORS policy is implied. */
+export interface UploadEndpoint {
+  /** A distinct `/api/<name>` path, without the deployment base prefix. */
+  readonly path: string;
+  /** Runs before global prepareUpload hooks; the result still passes core validation and privacy checks. */
+  readonly prepare?: PrepareUploadHook;
+}
 export interface RequestHookOptions {
   /** `post-auth` (default): only authenticated requests arrive, with `identity`. `pre-auth`: every request, before auth. */
   phase?: 'pre-auth' | 'post-auth';
@@ -282,6 +300,10 @@ export interface PluginApi {
   branding(contribution: BrandingContribution): void;
   /** The default base path (`/replays`). Config and env win. */
   basePath(path: string): void;
+  /** Exact-origin CORS and a narrow CSRF exception. Only preflights bypass authentication. */
+  requestPolicy(policy: RequestPolicy): void;
+  /** Register a POST alias using the normal auth, CSRF and complete core upload pipeline. */
+  uploadEndpoint(endpoint: UploadEndpoint): void;
   onRequest(hook: RequestHook, options?: RequestHookOptions): void;
   onResponse(hook: ResponseHook): void;
   /** Translate the raw upload body before validation (legacy producers). */

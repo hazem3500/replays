@@ -1,7 +1,8 @@
+import type { PluginApi, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 // The public API of the package, entry by entry (docs/api-stability.md). Adding an export is a minor change, removing or
 // renaming one is a major change: either way this file changes in the same commit, so the diff shows the API change.
@@ -113,6 +114,11 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('exposes typed host intake registration and the existing prepare hook contract', () => {
+    expectTypeOf<PluginApi['requestPolicy']>().parameter(0).toEqualTypeOf<RequestPolicy>();
+    expectTypeOf<PluginApi['uploadEndpoint']>().parameter(0).toEqualTypeOf<UploadEndpoint>();
+    expectTypeOf<UploadEndpoint['prepare']>().toEqualTypeOf<PrepareUploadHook | undefined>();
+  });
   it.each(Object.entries(entries))('%s exports exactly the documented values', async (_subpath, { source, values }) => {
     const module = (await import(source)) as Record<string, unknown>;
     expect(Object.keys(module).sort()).toEqual([...values].sort());

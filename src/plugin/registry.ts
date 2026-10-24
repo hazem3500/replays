@@ -9,6 +9,7 @@ import { assertProviderLook, type SourceProvider } from '../shared/source-provid
 import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
 import { PACKAGE_VERSION, satisfies } from './version.ts';
+import { validateRequestPolicy, validateUploadEndpoint, assertDistinctPolicies } from './request-policy.ts';
 import type {
   AfterUploadHook,
   BeforeUploadHook,
@@ -25,6 +26,8 @@ import type {
   ReplaysPlugin,
   RequestHook,
   RequestHookOptions,
+  RequestPolicy,
+  UploadEndpoint,
   ResponseHook,
   RetentionRuleDefinition,
   StorageBackend,
@@ -57,6 +60,8 @@ export interface PluginRegistry {
   readonly contextAdapters: readonly Owned<ContextAdapter>[];
   readonly sourceProviders: readonly Owned<SourceProvider>[];
   readonly storage: ReadonlyMap<string, Owned<StorageBackend>>;
+  readonly requestPolicies: readonly Owned<RequestPolicy>[];
+  readonly uploadEndpoints: ReadonlyMap<string, Owned<UploadEndpoint>>;
   readonly branding: BrandingContribution;
   readonly basePath: string | undefined;
   /** Every plugin's `api.redaction` rules, merged (they only add). */
@@ -89,6 +94,8 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   contextAdapters: [],
   sourceProviders: [],
   storage: new Map(),
+  requestPolicies: [],
+  uploadEndpoints: new Map(),
   branding: {},
   basePath: undefined,
   redaction: {},
@@ -189,6 +196,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     beforeUpload: [] as Owned<BeforeUploadHook>[],
     afterUpload: [] as Owned<AfterUploadHook>[],
   };
+  const requestPolicies: Owned<RequestPolicy>[] = [];
+  const uploadEndpoints = new Map<string, Owned<UploadEndpoint>>();
   const clientEntries: ResolvedClientEntry[] = [];
   const purposes: Owned<PurposeDefinition>[] = [];
   const retention: Owned<RetentionRuleDefinition>[] = [];
@@ -302,6 +311,17 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
             'conflict',
           );
         basePath = { value: normalized, plugin: plugin.name };
+      },
+      requestPolicy(policy) {
+        const value = validateRequestPolicy(policy);
+        assertDistinctPolicies(requestPolicies, [{ plugin: plugin.name, value }]);
+        requestPolicies.push({ plugin: plugin.name, value });
+      },
+      uploadEndpoint(endpoint) {
+        const value = validateUploadEndpoint(endpoint);
+        const taken = uploadEndpoints.get(value.path);
+        if (taken) fail(`upload endpoint ${value.path} is already registered by ${taken.plugin}`, 'conflict');
+        uploadEndpoints.set(value.path, { plugin: plugin.name, value });
       },
       onRequest(hook: RequestHook, hookOptions: RequestHookOptions = {}) {
         needFunction(hook, 'onRequest hook');
@@ -452,6 +472,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     sourceProviders,
     storage,
     branding,
+    requestPolicies,
+    uploadEndpoints,
     basePath: basePath?.value,
     redaction: mergeRedactionRules(...redaction),
     hooks,
@@ -522,7 +544,10 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     throw new PluginError('conflict', `registers people, but ${first.people.plugin} already did; a deployment has one`, {
       plugin: second.people.plugin,
     });
+  assertDistinctPolicies(first.requestPolicies, second.requestPolicies);
   return {
+    requestPolicies: [...first.requestPolicies, ...second.requestPolicies],
+    uploadEndpoints: union(first.uploadEndpoints, second.uploadEndpoints, 'upload endpoint'),
     order: [...first.order, ...second.order],
     auth: union(first.auth, second.auth, 'auth adapter'),
     contextAdapters: [...first.contextAdapters, ...second.contextAdapters],

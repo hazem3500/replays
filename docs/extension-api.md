@@ -586,3 +586,70 @@ With the beta editor on and writes disabled:
 `GET /api/config` advertises the effective write capability as `editing: { enabled: boolean }` (the beta flag AND
 the write policy). Served pages carry the same value in `<meta name="app-editing" content="on|off">`.
 With `beta.editor` off, the edits API remains `404`, playback and exports ignore stored edits, and editing stays unavailable.
+
+## Trusted browser intake and upload aliases
+
+A host plugin can declare a browser intake policy during setup. Configure explicit trusted origins in the host;
+replays has no CORS origins or alternate upload endpoints by default.
+
+```ts
+api.requestPolicy({
+  path: '/api/replays',
+  methods: ['POST'],
+  origins: ['https://app.example.com'],
+  headers: ['content-type'],
+  credentials: true,
+});
+
+api.uploadEndpoint({
+  path: '/api/foreign-recordings',
+  prepare: ({ body, identity, request }) => translateForeignRecording(body, identity, request.url),
+});
+```
+
+`RequestPolicy` and `UploadEndpoint` are exported types from `@hazem3500/replays/plugin`. These are trusted server
+registrations, never values accepted from an incoming request. Policy paths are exact canonical `/api/…` paths without
+query strings, patterns or the deployment base prefix. Methods are uppercase `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, or
+`DELETE`; origins are serialized HTTP(S) origins without paths, trailing slashes, credentials or wildcards. Header names
+are case insensitive explicit HTTP tokens, never `*`. Overlapping path/method policies are rejected even across plugins;
+registrations are copied and frozen so selection is stable after setup.
+
+For the example policy, only `POST /api/replays` from the named origin gets `Access-Control-Allow-Origin` and
+`Access-Control-Allow-Credentials: true`. `GET` gets no CORS permission. An OPTIONS preflight must name an allowed
+origin, requested method and subset of the allowed request headers. An accepted preflight returns an empty `204`
+before auth, request hooks or data access; a denied preflight returns `403`. Both vary on `Origin`,
+`Access-Control-Request-Method` and `Access-Control-Request-Headers`. Actual responses vary on `Origin`, preserving
+other core or host `Vary` fields. Allowed actual requests retain CORS headers on authentication, validation, duplicate,
+host-policy and server errors.
+
+**Actual data requests always run the configured auth adapter.** Only an exact path/method/origin match exempts that
+request from the core cross-site CSRF rejection. Unlisted cross-site origins on a configured mutating route are refused.
+Same-origin browser requests retain their normal CSRF behavior. Other routes keep normal CSRF checks. Clients without Origin use the existing auth and CSRF behavior; a missing Origin never
+grants an exception. `credentials: true` is browser permission to send credentials, not an identity or an auth bypass.
+
+An upload endpoint is a distinct `/api/<name>` (one lowercase kebab-case segment); built-in routes such as `/api/replays`,
+`/api/suites`, `/api/me`, `/api/config` and `/api/malleable` are reserved. It accepts POST through normal auth, CSRF and
+post-auth request hooks. It implies no CORS permission. The optional endpoint `prepare` uses `PrepareUploadHook` and runs
+on the parsed raw JSON before global `prepareUpload` hooks. Both see the original request, including its URL and base
+prefix. Then the same context adapters, source resolution, schema/bundle validation, sanitizer, `beforeUpload`, immutable
+storage/duplicate checks and `afterUpload` hooks run as for the canonical upload endpoint. Body limits and JSON errors
+are identical. Prepared bodies remain untrusted.
+
+Backend identities are a host authentication concern: verify the service identity and restrict its request URL and
+method in the auth adapter on every application route. Built-in plugins may answer their routes before a host post-auth
+hook runs, so auth is the enforcement boundary for a universal restriction. A post-auth hook can additionally restrict
+host requests by **both** canonical `path` and request method:
+
+```ts
+api.onRequest(({ identity, path, request, response }) => {
+  if (identity?.id === forwardingServiceId &&
+      !(path === '/api/foreign-recordings' && request.method === 'POST')) {
+    response.writeHead(403);
+    response.end('service identity restricted');
+    return true;
+  }
+});
+```
+
+Use the host's verified stable identity, not an unverified email/header. Neither alias registration nor request policy authorizes a service identity to browse other authenticated routes.
+Mounted paths (`/tools/replays/api/…`) and proxy-stripped paths resolve to the same canonical registration.

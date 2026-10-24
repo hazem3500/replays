@@ -33,6 +33,8 @@ export type {
   RequestHook,
   RequestHookContext,
   RequestHookOptions,
+  RequestPolicy,
+  UploadEndpoint,
   ResponseHook,
   ResponseHookContext,
   RetentionRuleDefinition,
