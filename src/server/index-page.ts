@@ -1,3 +1,4 @@
+import type { SourceProviderInfo } from '../shared/source-providers.ts';
 import type { PurposeInfo } from '../shared/purposes.ts';
 import type { ResolvedClientEntry } from '../plugin/registry.ts';
 import { withBase } from './base-path.ts';
@@ -13,6 +14,8 @@ export interface IndexPageOptions {
   beta?: BetaFlags;
   /** Purposes available in this deployment, including plugin declarations. */
   purposes?: readonly PurposeInfo[];
+  /** Provider icons and nouns for the source chips. */
+  sources?: readonly SourceProviderInfo[];
   /** The comments plugin is loaded (`<meta name="app-comments" content="on">`). */
   comments?: boolean;
   /** The plugins' browser entries; served ones are listed by their URL under `base` (`<base>/_plugins/…`). */
@@ -29,6 +32,7 @@ export function renderIndexHtml(html: string, options: IndexPageOptions) {
   const entries = options.clientEntries ?? [];
   return withBase(html, options.base, {
     ...pageBranding(options.branding),
+    ...(options.sources?.length ? { sources: JSON.stringify(options.sources) } : {}),
     ...(options.purposes?.length ? { purposes: JSON.stringify(options.purposes) } : {}),
     ...(entries.length ? { plugins: JSON.stringify(publicClientEntries(entries, options.base)) } : {}),
     beta,

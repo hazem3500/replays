@@ -443,6 +443,7 @@ export function createApp(options: AppOptions) {
       base,
       branding: options.branding,
       purposes: purposes.list,
+      sources: options.sources.describe(),
       ...(options.beta ? { beta: options.beta } : {}),
       comments: commentsOn,
       clientEntries: registry.clientEntries,
