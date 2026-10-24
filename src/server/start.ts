@@ -101,7 +101,10 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   try {
     const storage = tracedStorage(await chooseStorage(env, runtime.config.file, registry, dataDir));
     const summaryFields = summaryFieldsRunner(registry.summaryFields);
-    store = new ReplayStore(storage, sampleDir, settings.retention, { purposes: settings.purposes, ...(summaryFields ? { summaryFields } : {}) });
+    store = new ReplayStore(storage, sampleDir, settings.retention, {
+      purposes: settings.purposes,
+      ...(summaryFields ? { summaryFields } : {}),
+    });
     // The first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
     const removed = await store.prune();
     log(
