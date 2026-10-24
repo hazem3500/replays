@@ -82,7 +82,8 @@ export function assertPurposeConfig(value: unknown, where = 'purpose', extra: re
   const purpose = value as Record<string, unknown>;
   const unknown = Object.keys(purpose).filter((key) => !CONFIG_KEYS.has(key) && !extra.includes(key));
   if (unknown.length) throw new Error(`${where} has unknown keys: ${unknown.join(', ')}`);
-  if (!isPurposeId(purpose.id)) throw new Error(`${where}.id must look like "triage" or "design-review" (got ${JSON.stringify(purpose.id)})`);
+  if (!isPurposeId(purpose.id))
+    throw new Error(`${where}.id must look like "triage" or "design-review" (got ${JSON.stringify(purpose.id)})`);
   const label = purpose.label;
   if (typeof label !== 'string' || !label.trim() || label.length > MAX_LABEL)
     throw new Error(`${where}.label must be a non-empty string of at most ${MAX_LABEL} characters`);
@@ -105,14 +106,16 @@ export function assertPurposeConfig(value: unknown, where = 'purpose', extra: re
       throw new Error(`${where}.viewer.leadMs must be a whole number of milliseconds from 0 to ${MAX_LEAD_MS}`);
     if (viewer.inspector !== undefined && viewer.inspector !== 'open' && viewer.inspector !== 'collapsed')
       throw new Error(`${where}.viewer.inspector must be "open" or "collapsed"`);
-    if (viewer.captions !== undefined && typeof viewer.captions !== 'boolean') throw new Error(`${where}.viewer.captions must be a boolean`);
+    if (viewer.captions !== undefined && typeof viewer.captions !== 'boolean')
+      throw new Error(`${where}.viewer.captions must be a boolean`);
   }
 }
 
 /** `meta.purpose` on an upload, checked against the deployment's purposes; `undefined` when it is fine. */
 export function purposeProblem(purpose: unknown, allowed: readonly string[]): string | undefined {
   if (purpose === undefined) return undefined;
-  if (!allowed.length) return 'replay.meta.purpose is set, but this server defines no purposes (remove it, or declare purposes in the config)';
+  if (!allowed.length)
+    return 'replay.meta.purpose is set, but this server defines no purposes (remove it, or declare purposes in the config)';
   if (typeof purpose !== 'string' || !allowed.includes(purpose))
     return `replay.meta.purpose must be one of ${allowed.join(', ')} (got ${JSON.stringify(purpose)})`;
   return undefined;
