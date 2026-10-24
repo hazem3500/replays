@@ -236,7 +236,7 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
   refused (`400`, "this server defines no purposes") rather than stored with a purpose nothing knows: a producer finds out at once,
   and a `prepareUpload` hook can drop or translate the field. The CLI takes `--purpose <id>` on `capture`, `upload` and `import`;
   the upload dialog offers a picker (bundles and rrweb imports) when purposes exist.
-- **Summaries** gain `purpose` and `purposeInferred` (`SUMMARY_VERSION` 7). Only the explicit purpose is stored in the sidecar;
+- **Summaries** gain `purpose` and `purposeInferred` (`SUMMARY_VERSION` 8). Only the explicit purpose is stored in the sidecar;
   inference runs when the server lists, so a changed rule applies to stored replays at once. Removing a purpose from the
   config leaves `meta.purpose` in the stored bundles; it is shown as a plain field and no longer affects anything.
 - **Listing.** `GET /api/replays?purpose=<id>` filters; `GET /api/config` lists `purposes` (`[]` in a plain core); the index shows

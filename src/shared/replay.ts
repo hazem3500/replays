@@ -217,7 +217,8 @@ export interface ReplaySourceLink {
 }
 
 /** Bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily. */
-export const SUMMARY_VERSION = 7;
+// Version 8 combines purposes, people, source attributes and plugin summary fields (partial fleets used 7).
+export const SUMMARY_VERSION = 8;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
 const SUMMARY_SOURCE_ATTRS = 4;

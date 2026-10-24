@@ -8,8 +8,10 @@ import translate, { translateSuite } from '../examples/migrate/translate.mjs';
 import { compareStores, type MigrateProgress, migrateStore } from '../src/server/migrate.ts';
 import { formatComparison, parseMigrateArgs, runMigrateCli } from '../src/server/migrate-cli.ts';
 import { FsStorage, MemoryStorage } from '../src/server/storage/index.ts';
+import { createPurposeCatalog } from '../src/server/purposes.ts';
+import { summaryFieldsRunner } from '../src/server/summary-fields.ts';
 import { ReplayStore } from '../src/server/store.ts';
-import { assertReplayBundle } from '../src/shared/replay.ts';
+import { assertReplayBundle, summarizeReplay, SUMMARY_VERSION } from '../src/shared/replay.ts';
 import { assertReviewSuite } from '../src/shared/review-suite.ts';
 import { replay } from './fixtures.ts';
 
@@ -161,10 +163,18 @@ describe('migrateStore', () => {
   it('drops media derived from changed recordings but preserves comments, edits and keep markers', async () => {
     const { source } = await legacyStore();
     const target = new MemoryStorage();
-    const media = ['poster.v2-1200.jpg', 'open.v1.jpg', 'preview.v2.mp4', 'preview.v2.mp4.json', 'rendered-1x.mp4', 'render-1x.json', 'session.mp4'];
+    const media = [
+      'poster.v2-1200.jpg',
+      'open.v1.jpg',
+      'preview.v2.mp4',
+      'preview.v2.mp4.json',
+      'rendered-1x.mp4',
+      'render-1x.json',
+      'session.mp4',
+    ];
     for (const name of media) await source.write(`old-one/${name}`, 'sensitive pixels');
     await migrateStore({ from: source, to: target, translate, translateSuite, sourceVideo: 'copy-if-unchanged' });
-    for (const name of media) expect(await target.read(`old-one/${name}`), name).toBeUndefined();
+    for (const name of media) expect(await target.read(`old-one/${name}`)).toBeUndefined();
     for (const name of ['comments.json', 'edits.json', 'keep.json']) expect(await target.read(`old-one/${name}`)).toBeDefined();
   });
 
@@ -183,8 +193,23 @@ describe('migrateStore', () => {
   it('sanitizes suite and nested run URLs using built-in and host rules', async () => {
     const source = new MemoryStorage();
     const target = new MemoryStorage();
-    const context = { version: 1, sources: [{ provider: 'url', url: 'https://example.com/run?customer_id=private' }] };
-    await source.write('_suites/private-suite.json', JSON.stringify({ version: 1, id: 'private-suite', title: 'Suite', createdAt: '2026-10-01T00:00:00.000Z', subject: { provider: 'url', url: 'https://example.com/review?token=secret' }, runs: [{ id: 'run', title: 'Run', context }] }), JSON_TYPE);
+    const context = {
+      version: 1,
+      capturedAt: '2026-10-01T00:00:00.000Z',
+      sources: [{ provider: 'url', url: 'https://example.com/run?customer_id=private' }],
+    };
+    await source.write(
+      '_suites/private-suite.json',
+      JSON.stringify({
+        version: 1,
+        id: 'private-suite',
+        title: 'Suite',
+        createdAt: '2026-10-01T00:00:00.000Z',
+        subject: { provider: 'url', url: 'https://example.com/review?token=secret' },
+        runs: [{ id: 'run', sequence: 1, label: 'Run', status: 'running', startedAt: '2026-10-01T00:00:00.000Z', context }],
+      }),
+      JSON_TYPE,
+    );
     const report = await migrateStore({ from: source, to: target, redaction: { queryParams: ['customer_id'] } });
     expect(report.failed).toEqual([]);
     const stored = (await target.read('_suites/private-suite.json'))!.toString();
@@ -197,7 +222,11 @@ describe('migrateStore', () => {
     const age = Date.now() - 10 * 86400000;
     await source.write('aged/replay.json', JSON.stringify(replay('aged')), JSON_TYPE);
     await source.write('aged/upload-age.json', JSON.stringify({ version: 1, uploadedMs: age }), JSON_TYPE);
-    await source.write('_suites/aged-suite.json', JSON.stringify({ version: 1, id: 'aged-suite', title: 'Aged', createdAt: '2099-01-01T00:00:00.000Z', runs: [] }), JSON_TYPE);
+    await source.write(
+      '_suites/aged-suite.json',
+      JSON.stringify({ version: 1, id: 'aged-suite', title: 'Aged', createdAt: '2099-01-01T00:00:00.000Z', runs: [] }),
+      JSON_TYPE,
+    );
     await source.write('_suites/aged-suite.upload-age.json', JSON.stringify({ version: 1, uploadedMs: age }), JSON_TYPE);
     const target = new MemoryStorage();
     await migrateStore({ from: source, to: target });
@@ -284,8 +313,8 @@ describe('migrateStore', () => {
       'old-one/comments.json',
       'old-one/edits.json',
       'old-one/keep.json',
-      'old-one/replay.json',
       'old-one/upload-age.json',
+      'old-one/replay.json',
     ]);
     expect(report.failed.map(({ id }) => id)).toEqual(['broken']);
     expect(await target.list()).toEqual([]);
@@ -373,6 +402,62 @@ describe('replays migrate', () => {
     assertReviewSuite(converted);
     expect(converted.people).toEqual([{ role: 'pr-author', handles: { github: 'octocat' } }]);
     expect(() => assertReviewSuite(converted)).not.toThrow();
+  });
+
+  it('compares configured purpose inference and plugin summary fields', async () => {
+    const source = new MemoryStorage();
+    const target = new MemoryStorage();
+    const bundle = replay('derived');
+    bundle.context = { version: 1, capturedAt: '2026-10-01T00:00:00.000Z', fields: { account: 'before' } };
+    await source.write('derived/replay.json', JSON.stringify(bundle), JSON_TYPE);
+    bundle.context.fields = { account: 'after' };
+    await target.write('derived/replay.json', JSON.stringify(bundle), JSON_TYPE);
+    const fields = summaryFieldsRunner([
+      { plugin: 'host', value: { name: 'account', fields: (recording) => ({ account: String(recording.context?.fields?.account) }) } },
+    ]);
+    const before = new ReplayStore(source, tmpdir(), undefined, { summaryFields: fields! });
+    const after = new ReplayStore(target, tmpdir(), undefined, {
+      summaryFields: fields!,
+      purposes: createPurposeCatalog({ plugins: [{ plugin: 'host', value: { id: 'triage', label: 'Triage', infer: () => true } }] }),
+    });
+    const report = await compareStores({ from: before, to: after });
+    expect(report.identical).toBe(0);
+    expect(report.changed[0]?.fields.map((field) => field.field)).toEqual(expect.arrayContaining(['ext', 'purpose', 'purposeInferred']));
+  });
+
+  it('translates legacy replay handles and omits malformed source references', () => {
+    const raw = legacyBundle('legacy-people');
+    const converted = translate(
+      { ...raw, meta: { ...raw.meta, people: [{ role: 'reviewer', github: 'octocat', slack: 'U123' }] } },
+      { id: 'legacy-people', key: 'legacy-people/replay.json', purposes: [] },
+    );
+    assertReplayBundle(converted);
+    expect(converted.meta.people).toEqual([{ role: 'reviewer', handles: { github: 'octocat', slack: 'U123' } }]);
+    const suite = translateSuite({ ...legacySuite, review: { kind: 'github-pr', url: 'https://github.com/acme/web/pull/12' } });
+    assertReviewSuite(suite);
+    expect(suite.subject?.ref).toBeUndefined();
+  });
+
+  it('rebuilds partial-fleet v7 summaries with the final people, purposes and source attributes', async () => {
+    const storage = new MemoryStorage();
+    const bundle = replay('partial-cache');
+    bundle.meta.purpose = 'triage';
+    bundle.meta.people = [{ role: 'reviewer', email: 'ada@example.com' }];
+    bundle.context = {
+      version: 1,
+      capturedAt: '2026-10-01T00:00:00.000Z',
+      sources: [{ provider: 'url', url: 'https://example.com', label: 'Thread', attrs: { channel: 'support' } }],
+    };
+    await storage.write('partial-cache/replay.json', JSON.stringify(bundle), JSON_TYPE);
+    const stale = { ...summarizeReplay(bundle), summaryVersion: 7, people: [], sources: [] };
+    delete stale.purpose;
+    await storage.write('partial-cache/meta.json', JSON.stringify(stale), JSON_TYPE);
+    const store = new ReplayStore(storage, join(tmpdir(), 'missing-samples'));
+    const summary = await store.summary('partial-cache');
+    expect(summary?.summaryVersion).toBe(SUMMARY_VERSION);
+    expect(summary?.purpose).toBe('triage');
+    expect(summary?.people?.[0]?.email).toBe('ada@example.com');
+    expect(summary?.sources?.[0]?.attrs).toEqual({ channel: 'support' });
   });
 
   it('parses its arguments', () => {

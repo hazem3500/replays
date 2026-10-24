@@ -2,13 +2,11 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-import { loadConfig } from '../config/index.ts';
-import { resolvePlugins } from '../plugin/registry.ts';
 import { mergeRedactionRules } from '../shared/redaction.ts';
-import { loadSettings } from './config.ts';
-import { createPurposeCatalog } from './purposes.ts';
 import { compareStores, type MigrateTranslate, migrateStore, type StoreComparison } from './migrate.ts';
-import { chooseStorage, mergeContextSchemas } from './runtime.ts';
+import { chooseStorage, resolveSettings } from './runtime.ts';
+import { ReplayStore } from './store.ts';
+import { summaryFieldsRunner } from './summary-fields.ts';
 import { FsStorage, storageFromEnv } from './storage/index.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
@@ -142,8 +140,7 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
   const cwd = options.cwd ?? process.cwd();
   const env = { ...(options.env ?? process.env), ...(args.config ? { REPLAYS_CONFIG: resolve(cwd, args.config) } : {}) };
   try {
-    const config = await loadConfig({ env, cwd });
-    const registry = await resolvePlugins(config.plugins, { env, cwd: config.dir });
+    const { config, settings, registry } = await resolveSettings({ env, cwd });
     // A backend id goes through the same choice as STORAGE: a plugin's backend, else the built-in driver.
     const resolveBackend = (id: string, dataDir: string) => chooseStorage({ ...env, STORAGE: id }, config.file, registry, dataDir);
     const [from, to] = await Promise.all([
@@ -151,16 +148,16 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
       openStore(args.to, { env, cwd, resolveBackend }),
     ]);
     if (args.compare) {
-      const comparison = await compareStores({ from, to });
+      const summaryFields = summaryFieldsRunner(registry.summaryFields);
+      const store = (storage: ObjectStorage) =>
+        new ReplayStore(storage, cwd, settings.retention, { purposes: settings.purposes, ...(summaryFields ? { summaryFields } : {}) });
+      const comparison = await compareStores({ from: store(from), to: store(to) });
       process.stdout.write(`${formatComparison(comparison)}\n`);
       if (args.report) await writeFile(resolve(cwd, args.report), `${JSON.stringify(comparison, null, 2)}\n`);
       return;
     }
-    const settings = await loadSettings(env, config.file, config.dir);
-    const contextSchema = mergeContextSchemas(settings.contextSchema, registry);
-    const purposes = createPurposeCatalog({ config: config.file.purposes, plugins: registry.purposes, env }).list.map(
-      (purpose) => purpose.id,
-    );
+    const contextSchema = settings.contextSchema;
+    const purposes = settings.purposes.ids;
     const translator = args.translate ? await loadTranslator(args.translate, cwd) : {};
     process.stderr.write(`${args.dryRun ? 'dry run: ' : ''}${from.description} -> ${to.description}\n`);
     const report = await migrateStore({

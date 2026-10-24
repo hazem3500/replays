@@ -88,12 +88,12 @@ replays migrate --compare --from <store> --to <store>
   id, and gets the same privacy pass as an upload. One that does not validate is reported with the reason, and nothing of its
   prefix is written. The exit code is 1 when anything failed.
 - **What is copied.** Each replay prefix: the converted `replay.json`, a fresh `meta.json`, and the other objects as they are
-  (`comments.json`, `edits.json`, `keep.json`, posters, previews, videos, renders). Suites with their keep markers, prefixes
+  (`comments.json`, `edits.json`, `keep.json`). Derived posters, opening stills, preview clips and render caches are copied only when the replay is unchanged; source `session.mp4` is dropped by default (the public API can opt into `sourceVideo: 'copy-if-unchanged'`). Suites with their keep markers, prefixes
   without a bundle (a committed sample's comments or edits) and plugin data (`_malleable/`) too.
 - **Idempotent.** Writes are create-only: the target's objects are never overwritten, a second run reports everything as
   `unchanged`, and an interrupted run resumes. A target holding a *different* `replay.json` for an id is a failure, not an
   overwrite.
-- **Retention restarts.** The window counts from the target's write time, so converted replays get a fresh one; kept
+- **Retention age is preserved.** Server-owned `upload-age.json` / `_suites/<id>.upload-age.json` metadata carries the source storage upload time through repeated migrations; the store uses it for expiry and pruning. Client `capturedAt` / suite `createdAt` never controls retention. Invalid or later-than-upload metadata cannot extend the window. Kept
   replays and suites stay kept.
 
 Procedure: snapshot the source; `--dry-run --report dry.json` and read the failures; convert into a new, empty target (never the

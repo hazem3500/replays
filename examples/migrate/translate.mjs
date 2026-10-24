@@ -15,6 +15,19 @@ const PROVIDERS = {
   'github-issue': 'github',
 };
 
+/** Legacy provider handles move under `handles`; all current fields remain for core validation. */
+function translatePeople(people) {
+  return people?.map((person) => {
+    const { github, slack, ...current } = person;
+    return {
+      ...current,
+      ...(github || slack || current.handles
+        ? { handles: { ...(github ? { github } : {}), ...(slack ? { slack } : {}), ...current.handles } }
+        : {}),
+    };
+  });
+}
+
 const CONTEXT_KEYS = new Set(['version', 'capturedAt', 'app', 'test', 'sources', 'fields']);
 
 /** An old `{ kind, url, ... }` source as `{ provider, ref, url, label }`; a new one unchanged. */
@@ -22,7 +35,12 @@ export function translateSource(source) {
   if (!source || typeof source !== 'object' || !('kind' in source)) return source;
   const provider = PROVIDERS[source.kind];
   if (!provider) throw new Error(`unknown source kind ${JSON.stringify(source.kind)}`);
-  const ref = provider === 'github' ? `${source.repository}#${source.number}` : source.id;
+  const ref =
+    provider === 'github'
+      ? typeof source.repository === 'string' && Number.isSafeInteger(Number(source.number)) && Number(source.number) > 0
+        ? `${source.repository}#${source.number}`
+        : undefined
+      : source.id;
   return {
     provider,
     ...(ref ? { ref } : {}),
@@ -51,6 +69,7 @@ export function translateContext(context) {
 export default function translate(raw, info) {
   const { purpose, ...meta } = raw.meta;
   meta.source = meta.source === 'human' ? 'human' : 'agent';
+  if (meta.people) meta.people = translatePeople(meta.people);
   if (purpose !== undefined) {
     if (info.purposes.includes(purpose)) meta.purpose = purpose;
     else meta.tags = [...new Set([...(meta.tags ?? []), `purpose:${purpose}`])];
@@ -65,11 +84,7 @@ export default function translate(raw, info) {
 /** `_suites/<id>.json`. */
 export function translateSuite(raw) {
   const { review, ...suite } = raw;
-  if (suite.people)
-    suite.people = suite.people.map((person) => {
-      const { github, ...current } = person;
-      return { ...current, ...(github ? { handles: { github, ...current.handles } } : {}) };
-    });
+  if (suite.people) suite.people = translatePeople(suite.people);
   return {
     ...suite,
     ...(review && !suite.subject ? { subject: translateSource(review) } : {}),

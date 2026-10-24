@@ -176,6 +176,11 @@ export class ReplayStore {
     return { ...summary, extVersion: this.summaryFields.version, ...(ext ? { ext } : {}) };
   }
 
+  /** Derives the same summary the list uses, without reading/writing cached sidecars or retention metadata. */
+  async listSummary(bundle: ReplayBundle): Promise<ReplaySummary> {
+    return this.purposes.apply(await this.summarize(bundle));
+  }
+
   /** DATA_DIR with the fs driver; tests and scripts only. */
   get dataDir() {
     if (!(this.storage instanceof FsStorage)) throw new Error(`no data directory with STORAGE=${this.storage.kind}`);
@@ -609,7 +614,12 @@ export class ReplayStore {
     return keep;
   }
 
-  private async retentionFor(summary: ReplaySummary, replay: ObjectInfo, keep: KeepRecord | undefined, keptBySuite: boolean): Retention {
+  private async retentionFor(
+    summary: ReplaySummary,
+    replay: ObjectInfo,
+    keep: KeepRecord | undefined,
+    keptBySuite: boolean,
+  ): Promise<Retention> {
     if (keptBySuite && !keep) return { expiresAt: null };
     return retentionOf(this.retention, {
       uploadedMs: await serverUploadMs(this.storage, replay),

@@ -1,6 +1,7 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
+import { purposeProblem } from '../shared/purposes.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
 import { assertReplayBundle, type ReplayBundle, type ReplaySummary, summarizeReplay } from '../shared/replay.ts';
 import { assertReviewSuite } from '../shared/review-suite.ts';
@@ -31,7 +32,7 @@ export interface MigrateInfo {
 }
 
 /** Turns one stored document (parsed JSON) into its new shape; return it unchanged when there is nothing to do. */
-export type MigrateTranslate = (raw: unknown, info: MigrateInfo) => unknown;
+export type MigrateTranslate = (raw: unknown, info: MigrateInfo) => unknown | Promise<unknown>;
 
 export interface MigrateOptions {
   from: ObjectStorage | ReplayStore;
@@ -156,7 +157,11 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
     throw new Error(`${key} is not JSON`);
   }
   const original = structuredClone(raw);
-  const info: MigrateInfo = { id: unit.id, key, purposes: options.purposes ?? [] };
+  const info: MigrateInfo = {
+    id: unit.id,
+    key,
+    purposes: options.purposes ?? (options.to instanceof ReplayStore ? options.to.purposes.ids : []),
+  };
   if (unit.kind === 'suite') {
     const translated = options.translateSuite ? await options.translateSuite(raw, info) : raw;
     const next = sanitizeUrlFields(translated, options.redaction);
@@ -172,6 +177,11 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
   // The same privacy pass an upload gets: stored data never depends on the translation having sanitized it.
   const bundle: ReplayBundle = sanitizeReplayBundle(next, options.redaction);
   assertReplayBundle(bundle);
+  const purposeError = purposeProblem(
+    bundle.meta.purpose,
+    options.purposes ?? (options.to instanceof ReplayStore ? options.to.purposes.ids : []),
+  );
+  if (purposeError) throw new Error(purposeError);
   return { text: json(bundle), translated: !isDeepStrictEqual(bundle, original) };
 }
 
@@ -208,14 +218,17 @@ async function migrateUnit(unit: Unit, source: ObjectStorage, target: ObjectStor
   }
   const written: string[] = [];
   // A changed recording cannot reuse media generated from its old DOM. Source video is never sanitizable.
-  const media = /^(?:poster(?:\.v[^/]*)?\.(?:jpg|png)|open(?:\.v[^/]*)?\.(?:jpg|png)|preview(?:\.v[^/]*)?\.mp4(?:\.json)?|rendered-.*\.mp4|render-.*\.json)$/;
+  const media =
+    /^(?:poster(?:\.v[^/]*)?\.(?:jpg|png)|open(?:\.v[^/]*)?\.(?:jpg|png)|preview(?:\.v[^/]*)?\.mp4(?:\.json)?|rendered-.*\.mp4|render-.*\.json)$/;
   // Sidecars first, the bundle last: a replay shows up in the target's list only once it is complete.
   for (const object of unit.others) {
     const name = object.key.slice(unit.id.length + 1);
-    if (unit.kind === 'replay' && (
-      (main?.translated && media.test(name)) ||
-      (name === 'session.mp4' && (options.sourceVideo !== 'copy-if-unchanged' || main?.translated))
-    )) continue;
+    if (
+      unit.kind === 'replay' &&
+      ((main?.translated && media.test(name)) ||
+        (name === 'session.mp4' && (options.sourceVideo !== 'copy-if-unchanged' || main?.translated)))
+    )
+      continue;
     if (object.key === (unit.main && uploadAgeKey(unit.main.key))) continue;
     if (await target.stat(object.key)) continue;
     const body = await readOrThrow(source, object.key);
@@ -224,7 +237,7 @@ async function migrateUnit(unit: Unit, source: ObjectStorage, target: ObjectStor
   if (main && unit.main) {
     const uploadedMs = await serverUploadMs(source, unit.main);
     const ageKey = uploadAgeKey(unit.main.key);
-    if (!(await target.stat(ageKey)) && await put(target, ageKey, json({ version: 1, uploadedMs }), dryRun)) written.push(ageKey);
+    if (!(await target.stat(ageKey)) && (await put(target, ageKey, json({ version: 1, uploadedMs }), dryRun))) written.push(ageKey);
   }
   if (main && unit.main && !mainExists) {
     if (await put(target, unit.main.key, main.text, dryRun)) written.push(unit.main.key);
@@ -299,14 +312,16 @@ export interface StoreComparison {
 }
 
 /** Each replay's summary, built from the stored bundle as is (an old-format bundle too, as far as it goes). */
-async function summaries(storage: ObjectStorage, concurrency: number) {
+async function summaries(value: ObjectStorage | ReplayStore, concurrency: number) {
+  const storage = storageOf(value);
   const objects = await storage.list({ glob: '*/{replay,keep}.json' });
   const ids = [...new Set(objects.filter((object) => object.key.endsWith('/replay.json')).map((object) => object.key.split('/')[0]!))];
   const result = new Map<string, ComparableSummary | { unreadable: string }>();
   await pool(ids, concurrency, async (id) => {
     try {
       const bundle = JSON.parse((await readOrThrow(storage, `${id}/replay.json`)).toString('utf8')) as ReplayBundle;
-      const { summaryVersion: _version, ...summary } = summarizeReplay(bundle);
+      const derived = value instanceof ReplayStore ? await value.listSummary(bundle) : summarizeReplay(bundle);
+      const { summaryVersion: _version, ...summary } = derived;
       const keep = await storage.read(`${id}/keep.json`).catch(() => undefined);
       const kept = keep ? (JSON.parse(keep.toString('utf8')) as ReplaySummary['kept']) : undefined;
       result.set(id, { ...summary, ...(kept ? { kept } : {}) });
@@ -324,10 +339,7 @@ export async function compareStores(options: {
   concurrency?: number;
 }): Promise<StoreComparison> {
   const concurrency = options.concurrency ?? 8;
-  const [before, after] = await Promise.all([
-    summaries(storageOf(options.from), concurrency),
-    summaries(storageOf(options.to), concurrency),
-  ]);
+  const [before, after] = await Promise.all([summaries(options.from, concurrency), summaries(options.to, concurrency)]);
   const comparison: StoreComparison = { onlyInSource: [], onlyInTarget: [], changed: [], identical: 0 };
   for (const id of [...new Set([...before.keys(), ...after.keys()])].sort()) {
     const from = before.get(id) as Record<string, unknown> | undefined;
