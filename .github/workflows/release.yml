@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   package:
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     timeout-minutes: 20
     outputs:
       publishable: ${{ steps.gate.outputs.publishable }}
@@ -62,7 +62,7 @@ jobs:
   publish-npm:
     needs: package
     if: needs.package.outputs.publishable == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubicloud-standard-2
     environment: npm
     permissions:
       contents: read
