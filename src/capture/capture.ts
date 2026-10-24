@@ -3,6 +3,7 @@ import { copyFile, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+import { stepPauseMs, type CapturePacingOptions } from '../shared/capture-pacing.ts';
 import { assertReplayId, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
@@ -27,7 +28,7 @@ export { defaultId, prepareOutputDirectory } from './bundle-io.ts';
 
 export type DriverName = 'playwright' | 'agent-browser';
 
-export interface CaptureArgs {
+export interface CaptureArgs extends CapturePacingOptions {
   url: string;
   output: string;
   id: string;
@@ -133,6 +134,7 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --url <url>              page to open (https, or http on localhost)
   --output <dir>           empty directory for replay.json (and session.mp4)
   --steps <json|@file>     closed list of steps: click, hover, type, fill, press, wait, scroll, goto
+  --step-pause <ms>        hold after non-wait actions, 0..10000 (config.capture.stepPauseMs, else 0)
   --title <text>           title shown in the viewer (default: the host name)
   --id <id>                replay id (default: <host>-<timestamp>-<random>)
   --driver <name>          playwright (default) or agent-browser
@@ -168,19 +170,26 @@ function assertCaptureUrl(value: string, flag: string) {
 /**
  * The deployment's redaction rules, so a capture is cleaned the way the server will clean it on upload: the config's
  * `redaction` plus every plugin's `api.redaction`. The config is the server's (`--config`, else `REPLAYS_CONFIG`, else
- * `replays.config.*` in `cwd`); its plugins are imported and set up (registration only), nothing else of it is used.
+ * `replays.config.*` in `cwd`); its plugins are imported and set up (registration only). Also reads capture defaults.
  */
-export async function loadCaptureRedaction(
+async function loadCaptureSettings(
   options: { configFile?: string; cwd?: string; env?: NodeJS.ProcessEnv } = {},
-): Promise<RedactionRules | undefined> {
+): Promise<{ redaction?: RedactionRules | undefined; pacing?: CapturePacingOptions | undefined }> {
   const env = options.env ?? process.env;
   const cwd = options.cwd ?? process.cwd();
   const config = await loadConfig({ env: options.configFile ? { ...env, REPLAYS_CONFIG: options.configFile } : env, cwd });
-  if (!config.path) return undefined;
+  if (!config.path) return {};
   if (config.file.redaction !== undefined) assertRedactionRules(config.file.redaction, `${config.path} redaction`);
   const registry = await resolvePlugins(config.plugins, { env, cwd });
   const rules = mergeRedactionRules(config.file.redaction, registry.redaction);
-  return Object.keys(rules).length ? rules : undefined;
+  return { redaction: Object.keys(rules).length ? rules : undefined, pacing: config.file.capture };
+}
+
+/** The config and plugins' additive redaction rules, also used by other producers. */
+export async function loadCaptureRedaction(
+  options: { configFile?: string; cwd?: string; env?: NodeJS.ProcessEnv } = {},
+): Promise<RedactionRules | undefined> {
+  return (await loadCaptureSettings(options)).redaction;
 }
 
 export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureArgs & { headed: boolean }> {
@@ -204,12 +213,14 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   const sources = (lists.source ?? []).map((spec) => providers.parse(spec));
   const schema: unknown = values['context-schema'] ? JSON.parse(await readFile(resolve(values['context-schema']), 'utf8')) : undefined;
   const context = await readContextFile(values['context-file']);
-  const redaction = await loadCaptureRedaction(values.config ? { configFile: values.config } : {});
+  const { redaction, pacing } = await loadCaptureSettings(values.config ? { configFile: values.config } : {});
+  const pause = stepPauseMs(values['step-pause'] === undefined ? pacing?.stepPauseMs : Number(values['step-pause']));
   const args = {
     url: values.url,
     output: resolve(values.output),
     id,
     steps: await readSteps(values.steps),
+    stepPauseMs: pause,
     video: booleans.has('video'),
     headed: booleans.has('headed'),
     driver,
@@ -247,17 +258,43 @@ function buildContext(args: CaptureArgs, capturedAt: string) {
   });
 }
 
-function labelFor(step: RawStep) {
+function quoted(value: string) {
+  return value
+    .trim()
+    .replace(/^(["'])(.*)\1$/s, '$2')
+    .trim();
+}
+
+/**
+ * A readable name for a selector, for captions: `text=Save` → Save, `button[aria-label="Go to the Next Month"]`
+ * → Go to the Next Month, `[data-tracking-id=holiday-calendar-add-date]` → holiday calendar add date. Undefined
+ * when the selector names nothing a person would recognise.
+ */
+export function selectorName(selector: string) {
+  const text = /^text=(.+)$/s.exec(selector.trim());
+  if (text) return quoted(text[1]!) || undefined;
+  for (const attribute of ['aria-label', 'title', 'placeholder', 'alt', 'name', 'data-tracking-id', 'data-testid']) {
+    const matches = [...selector.matchAll(new RegExp(`\\[${attribute}=("[^"]*"|'[^']*'|[^\\]]*)\\]`, 'gi'))];
+    const value = matches.length ? quoted(matches.at(-1)![1]!) : '';
+    if (!value) continue;
+    return attribute.startsWith('data-') || attribute === 'name' ? value.replace(/[-_]+/g, ' ').trim() : value;
+  }
+  const hasText = /:has-text\((["'])(.+?)\1\)/.exec(selector);
+  return hasText?.[2]?.trim() || undefined;
+}
+
+export function labelFor(step: RawStep) {
   if (step.label) return step.label;
+  const name = 'selector' in step ? selectorName(step.selector) : undefined;
   switch (step.kind) {
     case 'click':
-      return `Click ${step.selector}`;
+      return name ? `Click “${name}”` : `Click ${step.selector}`;
     case 'hover':
-      return `Hover ${step.selector}`;
+      return `Hover ${name ? `“${name}”` : step.selector}`;
     case 'type':
-      return `Type into ${step.selector}`;
+      return `Type into ${name ? `“${name}”` : step.selector}`;
     case 'fill':
-      return `Fill ${step.selector}`;
+      return `Fill ${name ? `“${name}”` : step.selector}`;
     case 'press':
       return `Press ${step.key}`;
     case 'wait':
@@ -275,6 +312,7 @@ export function createDriver(name: DriverName, options: { headed?: boolean } = {
 }
 
 export async function capture(args: CaptureArgs, driver: CaptureDriver = createDriver(args.driver)) {
+  const pause = stepPauseMs(args.stepPauseMs);
   await prepareOutputDirectory(args.output);
   const scratch = await mkdtemp(join(tmpdir(), 'replays-'));
   const harPath = join(scratch, 'session.har');
@@ -298,15 +336,17 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
 
     for (const step of args.steps) {
       await session.flush();
-      rawSteps.push({
-        at: 0,
-        epoch: Date.now(),
-        kind: step.kind,
-        label: labelFor(step),
-        ...('selector' in step ? { selector: step.selector } : {}),
-        ...('url' in step ? { url: sanitizeUrl(step.url) } : {}),
-      });
+      if (step.kind !== 'wait' || step.label?.trim())
+        rawSteps.push({
+          at: 0,
+          epoch: Date.now(),
+          kind: step.kind,
+          label: labelFor(step),
+          ...('selector' in step ? { selector: step.selector } : {}),
+          ...('url' in step ? { url: sanitizeUrl(step.url) } : {}),
+        });
       await driver.step(step);
+      if (step.kind !== 'wait' && pause > 0) await driver.wait(pause);
       await session.flush();
     }
     await driver.wait(900);

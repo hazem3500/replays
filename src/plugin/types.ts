@@ -150,7 +150,7 @@ export type RenderKind = 'video' | 'poster' | 'open' | 'preview';
 
 /** The options of a video export a `beforeRender` hook may change. List media have none (`{}`). */
 export interface RenderJobOptions {
-  /** One of 0.5, 1, 1.5, 2, 4, 8. */
+  /** One of 0.25, 0.5, 1, 1.5, 2, 4, 8. */
   speed?: number;
   /** Draw the step captions into the frames. */
   captions?: boolean;

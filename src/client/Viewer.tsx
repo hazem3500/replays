@@ -30,6 +30,7 @@ import { DownloadVideoButton, usePhoneDownload } from './viewer/DownloadVideo.ts
 import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
+import { captionAt } from './step-caption.ts';
 import { clampInspectorHeight, initialInspectorHeight, Inspector, InspectorResizer, type MobilePanel } from './viewer/Inspector.tsx';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
@@ -785,7 +786,8 @@ function StepCaption() {
       offState();
     };
   }, [player]);
-  const step = steps[active];
+  const frame = captionAt(steps, player.getTime(), player.duration);
+  const step = frame && steps[frame.index];
   const playing = status === 'playing';
   if (!step || !(playing || (seeked && status !== 'ended'))) return null;
   return (

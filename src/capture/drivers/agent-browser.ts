@@ -1,6 +1,7 @@
 import { CdpClient } from '../cdp.ts';
 import type { CdpLike } from '../session.ts';
 import { AgentBrowser } from './agent-browser-cli.ts';
+import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
 function stepArgs(step: RawStep) {
@@ -10,7 +11,7 @@ function stepArgs(step: RawStep) {
     case 'hover':
       return ['hover', step.selector];
     case 'type':
-      return ['type', step.selector, step.text, '--delay', '45'];
+      return ['type', step.selector, step.text, '--delay', String(TYPE_DELAY_MS)];
     case 'fill':
       return ['fill', step.selector, step.text];
     case 'press':

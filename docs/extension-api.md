@@ -292,7 +292,7 @@ api.render({
   replay). Posters stored where nothing chooses keep their name, so adding hooks never invalidates the default ones. Browsers
   that cached a poster (a week) keep showing it until that expires.
 - **`beforeRender(job)`** runs before each render. Return `false` to refuse it; return some of `{ speed, captions, skipInactive }` to
-  change a video export (`speed` one of 0.5, 1, 1.5, 2, 4, 8; the others booleans). Other keys, invalid values and option changes
+  change a video export (`speed` one of 0.25, 0.5, 1, 1.5, 2, 4, 8; the others booleans). Other keys, invalid values and option changes
   for list media are ignored and logged once. Hooks run in plugin order, each one sees the options as changed so far, and the first
   `false` stops. A hook that throws refuses the job too (a broken policy check must not let everything through).
   - For video exports it runs on every request that names an export (start, status, download, cancel), so the adjusted options name

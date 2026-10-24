@@ -7,6 +7,7 @@ import { promisify } from 'node:util';
 import { chromium, type Browser, type BrowserContext, type CDPSession, type Page } from 'playwright-core';
 
 import type { CdpLike } from '../session.ts';
+import { TYPE_DELAY_MS } from '../../shared/capture-pacing.ts';
 import type { CaptureDriver, LaunchOptions, RawStep } from './types.ts';
 
 const execFileAsync = promisify(execFile);
@@ -89,7 +90,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
           await target.hover(step.selector, { timeout: STEP_TIMEOUT });
           break;
         case 'type':
-          await target.locator(step.selector).first().pressSequentially(step.text, { delay: 45, timeout: STEP_TIMEOUT });
+          await target.locator(step.selector).first().pressSequentially(step.text, { delay: TYPE_DELAY_MS, timeout: STEP_TIMEOUT });
           break;
         case 'fill':
           await target.fill(step.selector, step.text, { timeout: STEP_TIMEOUT });

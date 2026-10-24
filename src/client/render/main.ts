@@ -23,7 +23,7 @@ import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
-import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale } from '../step-caption.ts';
+import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
 
 export interface RenderApi {
@@ -121,7 +121,7 @@ async function start() {
   let captions = false;
   // The edit list's own captions, when it has any, are always drawn (they are part of the edit).
   const editCaptions = effects.captions.length > 0;
-  const captionFrame = (time: number) =>
+  const captionFrame = (time: number): CaptionFrame | undefined =>
     editCaptions
       ? editCaptionAt(effects.captions, time, map.outputAt)
       : captions
@@ -145,6 +145,7 @@ async function start() {
       caption = undefined;
       return;
     }
+    const shownNumber = (frame.step ?? frame.index) + 1;
     if (caption?.index !== frame.index) {
       caption?.root.remove();
       const root = document.createElement('div');
@@ -159,14 +160,16 @@ async function start() {
       else {
         const number = document.createElement('span');
         number.className = 'step-caption-number';
-        number.textContent = String(frame.index + 1);
+        number.textContent = String(shownNumber);
         text.append(number, label);
       }
       root.append(text);
       host.append(root);
       caption = { root, text, index: frame.index };
-      await document.fonts.load('500 14px "Inter Variable"', `${frame.index + 1} ${frame.label}`).catch(() => undefined);
+      await document.fonts.load('500 14px "Inter Variable"', `${shownNumber} ${frame.label}`).catch(() => undefined);
     }
+    const number = caption.text.querySelector('.step-caption-number');
+    if (number) number.textContent = String(shownNumber);
     caption.text.style.animationPlayState = 'paused';
     caption.text.style.animationDelay = `${-Math.min(frame.enteredMs, CAPTION_IN_MS)}ms`;
   };

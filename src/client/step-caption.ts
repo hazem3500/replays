@@ -11,13 +11,38 @@ import { activeStepIndex } from './timeline.ts';
 /** Length of the caption's entrance, `caption-in` in step-caption.css (keep in sync). */
 export const CAPTION_IN_MS = 200;
 
-/** The step captioned at `time`: the active step, so the caption and the step rail always agree. */
-export function captionIndex(steps: ReadonlyArray<{ at: number }>, time: number, duration: number) {
-  return activeStepIndex(steps, time, duration);
+/** The label older captures gave every `wait` step; such a step is pacing, not something to caption. */
+const DEFAULT_WAIT_LABEL = 'Wait for the page';
+
+type CaptionStep = { at: number; label?: string; kind?: string };
+
+const isPacing = (step: CaptionStep) => step.kind === 'wait' && (step.label === undefined || step.label === DEFAULT_WAIT_LABEL);
+
+/**
+ * The step captioned at `time`: the active step (as on the step rail), except that an unlabelled wait keeps
+ * the caption of the action it waits on, and a run of identical steps (ten "Next month" clicks) shares the
+ * first one's caption so it enters once instead of flickering. Pacing waits inside the run (older captures logged
+ * one after every action) don't break it.
+ */
+export function captionIndex(steps: ReadonlyArray<CaptionStep>, time: number, duration: number) {
+  let index = activeStepIndex(steps, time, duration);
+  while (index > 0 && isPacing(steps[index]!)) index--;
+  for (let previous = index - 1; previous >= 0; previous--) {
+    if (isPacing(steps[previous]!)) continue;
+    if (steps[previous]!.label !== steps[index]!.label) break;
+    index = previous;
+  }
+  return index;
 }
 
 export interface CaptionFrame {
+  /** The captioned step (captionIndex): a new index is a new caption, with its own entrance. */
   index: number;
+  /**
+   * The rail's active step (activeStepIndex), drawn as the caption's number so it matches "n of N" on the rail;
+   * absent (edit captions) means `index`.
+   */
+  step?: number;
   label: string;
   /** Output (wall-clock) ms since this caption appeared; at or above CAPTION_IN_MS it has settled. */
   enteredMs: number;
@@ -30,7 +55,7 @@ export interface CaptionFrame {
  * wall-clock time at any playback speed or skip.
  */
 export function captionAt(
-  steps: ReadonlyArray<{ at: number; label: string }>,
+  steps: ReadonlyArray<{ at: number; label: string; kind?: string }>,
   time: number,
   duration: number,
   outputAt: (time: number) => number = (at) => at,
@@ -41,13 +66,14 @@ export function captionAt(
   // The first caption is up from the start; a later one enters at its step, or is already settled at the very end.
   const shownSince = index === 0 ? 0 : step.at <= time ? step.at : Number.NEGATIVE_INFINITY;
   const enteredMs = Number.isFinite(shownSince) ? Math.max(0, outputAt(time) - outputAt(shownSince)) : Number.POSITIVE_INFINITY;
-  return { index, label: step.label, enteredMs };
+  return { index, step: Math.max(index, activeStepIndex(steps, time, duration)), label: step.label, enteredMs };
 }
 
 /** Changes whenever the drawn caption changes: another step, or another moment of its entrance. */
 export function captionKey(frame: CaptionFrame | undefined) {
   if (!frame) return '';
-  return frame.enteredMs < CAPTION_IN_MS ? `${frame.index}@${frame.enteredMs.toFixed(1)}` : `${frame.index}`;
+  const shown = `${frame.index}#${frame.step ?? frame.index}`;
+  return frame.enteredMs < CAPTION_IN_MS ? `${shown}@${frame.enteredMs.toFixed(1)}` : shown;
 }
 
 /** Reference export width: captions are EXPORT_CAPTION_SCALE× the viewer's at this recorded viewport width. */

@@ -9,6 +9,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Capture pacing: optional `CaptureArgs.stepPauseMs`, config `capture.stepPauseMs`, and CLI `--step-pause`
+  (0–10000ms after non-wait actions; default 0 for compatibility, set 1200 for demonstration captures).
+  Built-in drivers type at 80ms/character, selector-derived labels omit typed values, and unlabelled waits
+  no longer add rail steps. Full privacy masking remains unchanged.
+- Shared playback/export speeds including 0.25× across render start/status/download/cancel and frame math.
+  Captions hold through legacy pacing waits and repeated labels while numbering follows the active rail;
+  exports redraw on number changes. Skip inactive uses a 4000ms threshold, 800ms lead and 16× speed.
+
 - **First-party plugins** `@hazem3500/replays/plugins/iap` and `@hazem3500/replays/plugins/gcs`
   ([docs/extension-api.md](docs/extension-api.md#first-party-plugins)):
   - `iap({ audience, domains, serviceAccounts, devFallback })`: the `iap` auth adapter verifies `x-goog-iap-jwt-assertion` (ES256,

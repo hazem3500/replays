@@ -291,3 +291,28 @@ interface CaptureDriver {
 
 The recorder itself (`RecorderSession`) only needs a `CdpLike { send, on, off }`, which a Playwright `CDPSession`
 satisfies, so a driver is mostly "launch a browser and run the steps". Pass yours to `capture(args, driver)`.
+
+### Capture pacing
+
+`capture(args, driver)` accepts optional `stepPauseMs` (0–10000 milliseconds). It waits after each
+non-wait scripted action; `wait` steps keep their own duration. The default remains 0 to preserve existing
+capture timing. The CLI also reads `capture.stepPauseMs` from `--config` / `REPLAYS_CONFIG` /
+`replays.config.*`; an explicit `--step-pause` overrides it. A host wanting a readable demonstration pace
+can use the public config entry:
+
+```ts
+import { defineConfig } from '@hazem3500/replays/config';
+
+export default defineConfig({ capture: { stepPauseMs: 1200 } });
+```
+
+Both built-in drivers type at 80ms per character; `fill` stays immediate. Custom drivers continue to own
+how they implement `type`. Automatic labels derive readable names from selectors (text, accessibility
+attributes, test IDs), never from typed values. Explicit labels remain the producer's responsibility.
+Unlabelled waits execute but are omitted from the step rail; label a wait to make it a visible step.
+These options do not alter capture or upload sanitization.
+
+Playback and MP4 export share speeds 0.25×, 0.5×, 1×, 1.5×, 2×, 4× and 8×. Skip inactive detects gaps
+longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×. Captions hold the
+preceding label through legacy unlabelled waits and repeated actions, while their number follows the
+active rail step. Exports use the same caption selection and time mapping.

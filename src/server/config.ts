@@ -19,6 +19,7 @@ import {
   parseDistribution,
   parseMalleablePolicy,
 } from '../shared/malleable-policy.ts';
+import type { CapturePacingOptions } from '../shared/capture-pacing.ts';
 import type { PurposeConfig } from '../shared/purposes.ts';
 import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
 
@@ -57,6 +58,8 @@ import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
 export interface FileConfig {
   /** Browser sign-in recovery; explicit config also stamps a public static viewer. false overrides the adapter. */
   signIn?: import('../shared/sign-in.ts').SignInConfig | false;
+  /** Capture CLI defaults, overridden by explicit flags; ignored by the server runtime. */
+  capture?: CapturePacingOptions;
   name?: string;
   logoUrl?: string;
   theme?: BrandingConfig['theme'];
@@ -108,6 +111,7 @@ export interface AppSettings {
 }
 
 export const CONFIG_KEYS = new Set([
+  'capture',
   'name',
   'logoUrl',
   'theme',

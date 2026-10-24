@@ -3,13 +3,14 @@
  *
  * rrweb's own skipInactive only fires on gaps longer than `inactivePeriodThreshold` (10 s by default) and then
  * plays them at gap ÷ 5 s speed, so every skip still takes about five seconds and our 9–15 s agent replays
- * (with 1–3 s idle waits) never skipped at all. We find idle gaps ourselves and fast-forward through them.
+ * (with short idle waits) never skipped at all. We find idle gaps ourselves and fast-forward through them.
+ * A 4000ms threshold leaves room for a capture beat plus a short wait; 800ms at each end keeps actions readable.
  */
 
 /** A stretch without user interaction longer than this is inactive. */
-export const INACTIVE_THRESHOLD_MS = 2000;
+export const INACTIVE_THRESHOLD_MS = 4000;
 /** Real time kept at both ends of a gap, so the action before it settles and the next one is not jumped into. */
-export const INACTIVE_LEAD_MS = 300;
+export const INACTIVE_LEAD_MS = 800;
 /** Playback speed through an inactive gap: fast-forward that still reads as motion, not a cut. */
 export const INACTIVE_SKIP_SPEED = 16;
 

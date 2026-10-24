@@ -1,3 +1,4 @@
+import { PLAYBACK_SPEEDS } from '../../shared/render-variant.ts';
 /**
  * Frame planning for the server-side video render (src/server/renderer.ts
  * drives src/client/render/main.ts). Pure: no DOM, unit-tested in
@@ -16,7 +17,7 @@ import type { PosterMoment } from '../../shared/purposes.ts';
 export const RENDER_FPS = [15, 30] as const;
 export type RenderFps = (typeof RENDER_FPS)[number];
 /** Export speeds: the viewer's playback speeds (src/client/player.ts SPEEDS). */
-export const RENDER_SPEEDS = [0.5, 1, 1.5, 2, 4, 8] as const;
+export const RENDER_SPEEDS = PLAYBACK_SPEEDS;
 export type RenderSpeed = (typeof RENDER_SPEEDS)[number];
 
 /** Number of frames for `duration` ms of replay at `fps`, played at `speed`; the last frame lands on the end. */

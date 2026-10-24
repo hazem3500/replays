@@ -10,6 +10,7 @@ export {
   type CdpLike,
   type RecordedTracks,
 } from './session.ts';
+export type { CapturePacingOptions } from '../shared/capture-pacing.ts';
 export { capture, parseArgs, type CaptureArgs, type DriverName } from './capture.ts';
 export { playwrightDriver, type PlaywrightDriverOptions } from './drivers/playwright.ts';
 export { agentBrowserDriver } from './drivers/agent-browser.ts';

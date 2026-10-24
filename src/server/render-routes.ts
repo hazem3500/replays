@@ -133,7 +133,7 @@ async function readSmallJson(request: IncomingMessage): Promise<Record<string, u
   return value as Record<string, unknown>;
 }
 
-/** One of the viewer's speeds (0.5, 1, 1.5, 2, 4, 8); absent means 1×. */
+/** One of the viewer's speeds (0.25, 0.5, 1, 1.5, 2, 4, 8); absent means 1×. */
 export function parseSpeed(value: unknown): RenderSpeedOption | undefined {
   if (value === undefined || value === null || value === '') return 1;
   const speed = Number(value);

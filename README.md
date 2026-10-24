@@ -60,10 +60,14 @@ drop), or `POST` it to `/api/replays`. The CLI prints one JSON line (`{"success"
 
 Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scroll`, `goto`. Arbitrary page scripts are
 intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
+Use `--step-pause 1200` to hold each non-wait action for a readable beat (default: 0ms, or
+`capture.stepPauseMs` in your config). Built-in drivers type at 80ms per character; `fill` is immediate.
+Unlabelled waits execute without adding a step. Labels use selector names without typed values.
+See [capture pacing](docs/extending.md#capture-pacing) for host configuration.
 
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
-                   [--viewport 1440x900] [--video] [--tag t]… [--person role:email[:handle=value]]…
+                   [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
                    [--source github:owner/repo#12]…
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload-url <server>/api/replays] [--header-file headers.json] [--headed]
