@@ -49,7 +49,17 @@ export interface Snapshot {
   settings: readonly Registered<SettingDefinition>[];
 }
 
-const EMPTY: Snapshot = { tabs: [], actions: [], panels: [], columns: [], filters: [], sections: [], tracks: [], contextSections: [], settings: [] };
+const EMPTY: Snapshot = {
+  tabs: [],
+  actions: [],
+  panels: [],
+  columns: [],
+  filters: [],
+  sections: [],
+  tracks: [],
+  contextSections: [],
+  settings: [],
+};
 const KINDS = Object.keys(EMPTY) as (keyof Snapshot)[];
 
 /** The function each kind must have (settings have none). */
