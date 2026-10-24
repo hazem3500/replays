@@ -16,7 +16,13 @@ test.beforeAll(async () => {
     join(configDir, 'config.json'),
     JSON.stringify({
       purposes: [
-        { id: 'triage', label: 'Triage', retentionDays: 90, viewer: { openAt: 'first-error', leadMs: 1000, inspector: 'open' }, poster: 'first-error' },
+        {
+          id: 'triage',
+          label: 'Triage',
+          retentionDays: 90,
+          viewer: { openAt: 'first-error', leadMs: 1000, inspector: 'open' },
+          poster: 'first-error',
+        },
         { id: 'walkthrough', label: 'Walkthroughs', order: 1, retentionDays: 0, viewer: { inspector: 'collapsed', captions: true } },
       ],
     }),
@@ -87,7 +93,9 @@ test('a triage replay opens one second before its first error, on that tab; a pe
   await expect(page.getByTestId('playhead')).toHaveText('0:02.0');
 });
 
-test('a walkthrough opens at the start with the panel folded and captions on; a replay without a purpose opens as before', async ({ page }) => {
+test('a walkthrough opens at the start with the panel folded and captions on; a replay without a purpose opens as before', async ({
+  page,
+}) => {
   const walkthrough = await upload(page.request, 'walkthrough', 'Walkthrough opening');
   await openReplay(page, `${server().origin}/r/${walkthrough}`);
   await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
