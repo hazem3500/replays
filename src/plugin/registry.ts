@@ -409,7 +409,8 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
   const clash = first.order.find((name) => second.order.includes(name));
   if (clash) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: clash });
   const purpose = second.purposes.find((entry) => first.purposes.some((other) => other.value.id === entry.value.id));
-  if (purpose) throw new PluginError('conflict', `purpose ${JSON.stringify(purpose.value.id)} is registered twice`, { plugin: purpose.plugin });
+  if (purpose)
+    throw new PluginError('conflict', `purpose ${JSON.stringify(purpose.value.id)} is registered twice`, { plugin: purpose.plugin });
   return {
     order: [...first.order, ...second.order],
     auth: union(first.auth, second.auth, 'auth adapter'),
