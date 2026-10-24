@@ -107,17 +107,19 @@ describe('migrateStore', () => {
       '_malleable/w/tool.json',
       '_suites/suite-one.json',
       '_suites/suite-one.keep.json',
+      '_suites/suite-one.upload-age.json',
       'human-one/meta.json',
       'human-one/replay.json',
+      'human-one/upload-age.json',
       'old-one/comments.json',
       'old-one/edits.json',
       'old-one/keep.json',
       'old-one/meta.json',
-      'old-one/poster.v2.jpg',
       'old-one/replay.json',
+      'old-one/upload-age.json',
       'sample-one/comments.json',
     ]);
-    expect(await target.read('old-one/poster.v2.jpg')).toEqual(Buffer.from([0xff, 0xd8, 0xff]));
+    expect(await target.read('old-one/poster.v2.jpg')).toBeUndefined();
 
     const bundle: unknown = JSON.parse((await target.read('old-one/replay.json'))!.toString('utf8'));
     assertReplayBundle(bundle);
@@ -154,6 +156,59 @@ describe('migrateStore', () => {
     );
     expect(listed.find((summary) => summary.id === 'old-one')).toMatchObject({ kept: { by: 'someone@example.com' }, expiresAt: null });
     expect(await store.listSuites()).toHaveLength(1);
+  });
+
+  it('drops media derived from changed recordings but preserves comments, edits and keep markers', async () => {
+    const { source } = await legacyStore();
+    const target = new MemoryStorage();
+    const media = ['poster.v2-1200.jpg', 'open.v1.jpg', 'preview.v2.mp4', 'preview.v2.mp4.json', 'rendered-1x.mp4', 'render-1x.json', 'session.mp4'];
+    for (const name of media) await source.write(`old-one/${name}`, 'sensitive pixels');
+    await migrateStore({ from: source, to: target, translate, translateSuite, sourceVideo: 'copy-if-unchanged' });
+    for (const name of media) expect(await target.read(`old-one/${name}`), name).toBeUndefined();
+    for (const name of ['comments.json', 'edits.json', 'keep.json']) expect(await target.read(`old-one/${name}`)).toBeDefined();
+  });
+
+  it('drops source video by default and only copies it by opt-in for an unchanged bundle', async () => {
+    const source = new MemoryStorage();
+    await source.write('plain/replay.json', JSON.stringify(replay('plain')), JSON_TYPE);
+    await source.write('plain/session.mp4', 'source pixels');
+    const dropped = new MemoryStorage();
+    await migrateStore({ from: source, to: dropped });
+    expect(await dropped.read('plain/session.mp4')).toBeUndefined();
+    const copied = new MemoryStorage();
+    await migrateStore({ from: source, to: copied, sourceVideo: 'copy-if-unchanged' });
+    expect((await copied.read('plain/session.mp4'))?.toString()).toBe('source pixels');
+  });
+
+  it('sanitizes suite and nested run URLs using built-in and host rules', async () => {
+    const source = new MemoryStorage();
+    const target = new MemoryStorage();
+    const context = { version: 1, sources: [{ provider: 'url', url: 'https://example.com/run?customer_id=private' }] };
+    await source.write('_suites/private-suite.json', JSON.stringify({ version: 1, id: 'private-suite', title: 'Suite', createdAt: '2026-10-01T00:00:00.000Z', subject: { provider: 'url', url: 'https://example.com/review?token=secret' }, runs: [{ id: 'run', title: 'Run', context }] }), JSON_TYPE);
+    const report = await migrateStore({ from: source, to: target, redaction: { queryParams: ['customer_id'] } });
+    expect(report.failed).toEqual([]);
+    const stored = (await target.read('_suites/private-suite.json'))!.toString();
+    expect(stored).not.toContain('token=secret');
+    expect(stored).not.toContain('customer_id=private');
+  });
+
+  it('preserves server upload age for replay/suite expiry and pruning across repeated migrations', async () => {
+    const source = new MemoryStorage();
+    const age = Date.now() - 10 * 86400000;
+    await source.write('aged/replay.json', JSON.stringify(replay('aged')), JSON_TYPE);
+    await source.write('aged/upload-age.json', JSON.stringify({ version: 1, uploadedMs: age }), JSON_TYPE);
+    await source.write('_suites/aged-suite.json', JSON.stringify({ version: 1, id: 'aged-suite', title: 'Aged', createdAt: '2099-01-01T00:00:00.000Z', runs: [] }), JSON_TYPE);
+    await source.write('_suites/aged-suite.upload-age.json', JSON.stringify({ version: 1, uploadedMs: age }), JSON_TYPE);
+    const target = new MemoryStorage();
+    await migrateStore({ from: source, to: target });
+    const again = new MemoryStorage();
+    await migrateStore({ from: target, to: again });
+    const store = new ReplayStore(again, join(tmpdir(), 'missing-samples'), 5);
+    expect((await store.summary('aged'))?.expiresAt).toBe(new Date(age + 5 * 86400000).toISOString());
+    expect((await store.suiteRetention('aged-suite'))?.expiresAt).toBe(new Date(age + 5 * 86400000).toISOString());
+    await store.prune(Date.now());
+    expect(await again.read('aged/replay.json')).toBeUndefined();
+    expect(await again.read('_suites/aged-suite.json')).toBeUndefined();
   });
 
   it('keeps meta.purpose when the target declares the purpose', async () => {
@@ -229,8 +284,8 @@ describe('migrateStore', () => {
       'old-one/comments.json',
       'old-one/edits.json',
       'old-one/keep.json',
-      'old-one/poster.v2.jpg',
       'old-one/replay.json',
+      'old-one/upload-age.json',
     ]);
     expect(report.failed.map(({ id }) => id)).toEqual(['broken']);
     expect(await target.list()).toEqual([]);

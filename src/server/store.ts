@@ -31,6 +31,7 @@ import {
   type ReviewSuiteSummary,
   summarizeReviewSuite,
 } from '../shared/review-suite.ts';
+import { serverUploadMs, uploadAgeKey } from './upload-age.ts';
 import { PurposeCatalog } from './purposes.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
 import type { SummaryFieldsRunner } from './summary-fields.ts';
@@ -608,10 +609,10 @@ export class ReplayStore {
     return keep;
   }
 
-  private retentionFor(summary: ReplaySummary, replay: ObjectInfo, keep: KeepRecord | undefined, keptBySuite: boolean): Retention {
+  private async retentionFor(summary: ReplaySummary, replay: ObjectInfo, keep: KeepRecord | undefined, keptBySuite: boolean): Retention {
     if (keptBySuite && !keep) return { expiresAt: null };
     return retentionOf(this.retention, {
-      uploadedMs: replay.createdMs,
+      uploadedMs: await serverUploadMs(this.storage, replay),
       purpose: summary.purpose,
       purposeInferred: summary.purposeInferred,
       summary,
@@ -649,7 +650,7 @@ export class ReplayStore {
       const summary = this.purposes.apply(stored);
       const keep = await this.keepOf(this.keepKey(id), keepInfo);
       const keptBySuite = suites && !keep && (await this.keptSuiteReplays()).has(id);
-      return { ...summary, ...this.retentionFor(summary, replay, keep, keptBySuite) };
+      return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite)) };
     }
     const sample = await this.samples.stat(this.sampleKey(id));
     if (!sample) return undefined;
@@ -702,7 +703,7 @@ export class ReplayStore {
           if (!stored) return undefined;
           const summary = this.purposes.apply(stored);
           const keep = await this.keepOf(this.keepKey(id), keepInfo);
-          return { ...summary, ...this.retentionFor(summary, replay, keep, keptBySuite.has(id)) };
+          return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite.has(id))) };
         } finally {
           gate.release();
         }
@@ -845,7 +846,7 @@ export class ReplayStore {
     const [info, keepInfo] = await Promise.all([this.storage.stat(this.suiteKey(suite.id)), this.storage.stat(key)]);
     const keep = await this.keepOf(key, keepInfo);
     return retentionOf(this.retention, {
-      uploadedMs: info?.createdMs ?? Number.NaN,
+      uploadedMs: info ? await serverUploadMs(this.storage, info) : Number.NaN,
       ...(keep ? { kept: keep } : {}),
     });
   }
@@ -918,7 +919,7 @@ export class ReplayStore {
             const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
             const summary = stored && this.purposes.apply(stored);
             expires = expiryMs(this.retention, {
-              uploadedMs: replay.createdMs,
+              uploadedMs: await serverUploadMs(this.storage, replay),
               purpose: summary?.purpose,
               purposeInferred: summary?.purposeInferred,
               summary,
@@ -940,9 +941,10 @@ export class ReplayStore {
           if (!match) continue;
           suites++;
           if (keptSuites.has(match[1]!)) continue;
-          const expires = expiryMs(this.retention, { uploadedMs: object.createdMs });
+          const expires = expiryMs(this.retention, { uploadedMs: await serverUploadMs(this.storage, object) });
           if (expires !== undefined && expires < now) {
             await this.storage.delete(object.key);
+            await this.storage.delete(uploadAgeKey(object.key));
             removed.push(`suite:${match[1]}`);
           }
         }

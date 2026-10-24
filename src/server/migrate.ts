@@ -1,11 +1,12 @@
 import { isDeepStrictEqual } from 'node:util';
 
-import { sanitizeReplayBundle } from '../capture/sanitize.ts';
+import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
 import { assertReplayBundle, type ReplayBundle, type ReplaySummary, summarizeReplay } from '../shared/replay.ts';
 import { assertReviewSuite } from '../shared/review-suite.ts';
 import type { ContextSchema } from './context-schema.ts';
 import { ReplayStore } from './store.ts';
+import { serverUploadMs, uploadAgeKey } from './upload-age.ts';
 import { ObjectExistsError, type ObjectInfo, type ObjectStorage } from './storage/types.ts';
 
 /*
@@ -45,6 +46,8 @@ export interface MigrateOptions {
   purposes?: readonly string[];
   /** Additional privacy rules from the target deployment, applied with the built-in defaults. */
   redaction?: RedactionRules;
+  /** Source videos contain unsanitizable pixels. Default: drop; opt in only for an unchanged bundle. */
+  sourceVideo?: 'drop' | 'copy-if-unchanged';
   /** Read, translate and validate everything, write nothing; the report says what would be written. */
   dryRun?: boolean;
   /** Prefixes processed at once (default 4). */
@@ -83,7 +86,7 @@ export interface MigrateReport {
 }
 
 const ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
-const SUITE = /^_suites\/([a-z0-9][a-z0-9-]{0,79})(\.keep)?\.json$/;
+const SUITE = /^_suites\/([a-z0-9][a-z0-9-]{0,79})(\.(?:keep|upload-age))?\.json$/;
 
 const storageOf = (value: ObjectStorage | ReplayStore) => (value instanceof ReplayStore ? value.storage : value);
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
@@ -155,7 +158,8 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
   const original = structuredClone(raw);
   const info: MigrateInfo = { id: unit.id, key, purposes: options.purposes ?? [] };
   if (unit.kind === 'suite') {
-    const next = options.translateSuite ? await options.translateSuite(raw, info) : raw;
+    const translated = options.translateSuite ? await options.translateSuite(raw, info) : raw;
+    const next = sanitizeUrlFields(translated, options.redaction);
     assertReviewSuite(next);
     if (next.id !== unit.id) throw new Error(`suite.id changed from ${unit.id} to ${String(next.id)}`);
     return { text: json(next), translated: !isDeepStrictEqual(next, original) };
@@ -203,11 +207,24 @@ async function migrateUnit(unit: Unit, source: ObjectStorage, target: ObjectStor
     }
   }
   const written: string[] = [];
+  // A changed recording cannot reuse media generated from its old DOM. Source video is never sanitizable.
+  const media = /^(?:poster(?:\.v[^/]*)?\.(?:jpg|png)|open(?:\.v[^/]*)?\.(?:jpg|png)|preview(?:\.v[^/]*)?\.mp4(?:\.json)?|rendered-.*\.mp4|render-.*\.json)$/;
   // Sidecars first, the bundle last: a replay shows up in the target's list only once it is complete.
   for (const object of unit.others) {
+    const name = object.key.slice(unit.id.length + 1);
+    if (unit.kind === 'replay' && (
+      (main?.translated && media.test(name)) ||
+      (name === 'session.mp4' && (options.sourceVideo !== 'copy-if-unchanged' || main?.translated))
+    )) continue;
+    if (object.key === (unit.main && uploadAgeKey(unit.main.key))) continue;
     if (await target.stat(object.key)) continue;
     const body = await readOrThrow(source, object.key);
     if (await put(target, object.key, body, dryRun)) written.push(object.key);
+  }
+  if (main && unit.main) {
+    const uploadedMs = await serverUploadMs(source, unit.main);
+    const ageKey = uploadAgeKey(unit.main.key);
+    if (!(await target.stat(ageKey)) && await put(target, ageKey, json({ version: 1, uploadedMs }), dryRun)) written.push(ageKey);
   }
   if (main && unit.main && !mainExists) {
     if (await put(target, unit.main.key, main.text, dryRun)) written.push(unit.main.key);

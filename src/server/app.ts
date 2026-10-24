@@ -585,7 +585,7 @@ export function createApp(options: AppOptions) {
         const body = await readBody(request, 64 * 1024);
         // Same privacy pass as replay uploads (titles, source links, labels). Idempotent, so a re-registration of the
         // same suite still compares equal.
-        const input: unknown = sanitizeUrlFields(JSON.parse(body.toString('utf8')));
+        const input: unknown = sanitizeUrlFields(JSON.parse(body.toString('utf8')), redaction);
         const contextInfo = { kind: suitePath[2] ? ('run' as const) : ('suite' as const), identity: user, request };
         if (suitePath[2]) {
           assertReviewRunRegistration(input, suitePath[2]);
