@@ -61,7 +61,9 @@ export class PurposeCatalog {
 
   /** Whole days per purpose that has its own window. */
   retentionDays(): Record<string, number> {
-    return Object.fromEntries(this.list.flatMap((purpose) => (purpose.retentionDays === undefined ? [] : [[purpose.id, purpose.retentionDays]])));
+    return Object.fromEntries(
+      this.list.flatMap((purpose) => (purpose.retentionDays === undefined ? [] : [[purpose.id, purpose.retentionDays]])),
+    );
   }
 
   /** The poster moment for a replay of `purpose` (undefined: the default, middle-step). */
@@ -85,7 +87,9 @@ export class PurposeCatalog {
       } catch (error) {
         if (!this.failed.has(candidate.info.id)) {
           this.failed.add(candidate.info.id);
-          this.log(`plugin ${candidate.plugin}: purpose ${candidate.info.id}: infer failed: ${error instanceof Error ? error.message : String(error)}`);
+          this.log(
+            `plugin ${candidate.plugin}: purpose ${candidate.info.id}: infer failed: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       }
       if (match) return { ...rest, purpose: candidate.info.id, purposeInferred: true };
@@ -95,7 +99,10 @@ export class PurposeCatalog {
 }
 
 /** An `api.retention` rule that never throws: errors and bad values are logged once and count as "no limit". */
-export function wrapRetentionRules(rules: readonly Owned<RetentionRuleDefinition>[], log: (line: string) => void = (line) => console.error(line)) {
+export function wrapRetentionRules(
+  rules: readonly Owned<RetentionRuleDefinition>[],
+  log: (line: string) => void = (line) => console.error(line),
+) {
   return rules.map(({ plugin, value }): RetentionRule => {
     let reported = false;
     const report = (message: string) => {
