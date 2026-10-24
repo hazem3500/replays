@@ -58,7 +58,8 @@ export interface RetentionInput {
  */
 export function retentionDays(policy: RetentionPolicy, input: Omit<RetentionInput, 'uploadedMs' | 'kept'> = {}) {
   let days = policy.days;
-  const own = input.purpose && policy.purposes && Object.hasOwn(policy.purposes, input.purpose) ? policy.purposes[input.purpose] : undefined;
+  const own =
+    input.purpose && policy.purposes && Object.hasOwn(policy.purposes, input.purpose) ? policy.purposes[input.purpose] : undefined;
   if (own !== undefined) days = input.purposeInferred && !(own > 0) ? policy.days : own;
   if (!input.summary || !policy.rules?.length) return days;
   let shortest = days > 0 ? days : Number.POSITIVE_INFINITY;
@@ -90,7 +91,8 @@ export function daysFromEnv(env: Record<string, string | undefined>, name: strin
   const raw = env[name]?.trim();
   if (raw === undefined || raw === '') return undefined;
   const value = Number(raw);
-  if (!Number.isInteger(value) || value < 0 || value > 3650) throw new Error(`${name} must be a whole number of days from 0 (never) to 3650`);
+  if (!Number.isInteger(value) || value < 0 || value > 3650)
+    throw new Error(`${name} must be a whole number of days from 0 (never) to 3650`);
   return value;
 }
 
