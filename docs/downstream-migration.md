@@ -42,25 +42,83 @@ downstream only as "the downstream"; product, host and project identifiers stay 
 
 ## 3. Target layout
 
+The pending customer-forwarding branch is a separate trust boundary. If adopted, register a backend-only upload alias and use the same core upload pipeline:
+
+```ts
+api.uploadEndpoint({
+  path: '/api/customer-recordings',
+  prepare: ({ body, identity, request }) => normalizeCustomerRecording(body, identity, request),
+});
 ```
-downstream/
-  package.json              "@hazem3500/replays": "<pinned version>"
-  replays.config.ts         defineConfig({ name, theme, basePath, plugins: [downstream()] })
+
+The host owns authorization and normalization: the forwarder must be allowed by IAP **and** the customer-forwarder policy, and it must be refused on every other authenticated application route. Enforce that restriction in the verified auth adapter before built-in plugin hooks can answer; a later host post-auth hook alone does not cover every route. The alias gets no browser CORS exception. Generate the replay id server-side; set the human source and support purpose; discard producer people, privacy hints and suite attachment; replace context with the bounded, validated customer context. The result still passes normal validation, sanitization, upload hooks and storage. Do not copy the downstream HTTP handler into the host.
+
+Test the forwarder's denied read/list/export/other-upload paths as well as successful forwarding. Retain staff upload and same-origin behavior. The pending branch's exact accepted envelope, metadata limits and service-account permissions need a final comparison when it lands.
+
+### Staging privacy
+
+The downstream can keep ordinary staging input values and `email`/`code` query parameters readable after checking the recorded page/step origins. Password and hidden inputs remain masked, including password visibility toggles.
+
+**Initial migration decision: retain upstream's stricter sanitization.** Ordinary typed values and sensitive URL parameters therefore stay masked in staging too. Host redaction rules can add protection; they cannot restore data already removed by the core. This is a visible behavior difference to validate with staging users, not an equivalent implementation of the downstream's readable-staging policy. Customer recordings continue through the strict sanitizer regardless of producer hints. A future relaxed staging profile needs a separately reviewed, explicit trusted-host contract; do not implement it by bypassing the sanitizer in an upload hook.
+
+### Playback, runtime and workspace changes
+
+Pacing and replay fidelity are core behavior: preserve the latest downstream regression fixtures when validating real recordings. The host config can select `capture: { stepPauseMs: 1200 }` while the core keeps its existing zero-pause default. Shared caption/idle handling and the playback/export speed list belong upstream. Product-specific policy stays in config/plugins.
+
+The refreshed downstream pins Node 22.23.4; align the package's image and CI patch pin and satisfy its type-stripping requirements. Compile published plugins to JavaScript: Node does not strip TypeScript from dependencies under `node_modules`. Keep the deployment's frontend and private renderer origins separate where required. Set `signIn: { path: '/api/sign-in' }` in the CDN host config; the path excludes the host base. The core normalizes return paths, probes refused API access and bounds automatic retry; network failures must remain network failures.
+
+A pending monorepo reorganization changes host workspace/build wiring, not the extension contract. Its gateway and frontend should both depend on the same pinned package artifact. Check the final downstream workspace layout before preparing the later migration PR.
+
+## Target host layout
+
+```text
+host/
+  package.json                 exact dependency and committed lockfile
+  replays.config.mjs           deployed auth/storage/theme/purposes/policy
+  replays.local.config.mjs     explicit local fs/none profile
   context.schema.json
-  src/plugin.ts             auth (1), context adapter (2), source providers (3), storage (7), request hooks (6), prepareUpload (9)
-  src/client.ts             optional: inspector tab / panel for bespoke context rendering (2)
-  sample/                   (11)
-  Dockerfile                FROM node:22 · pnpm install --prod · COPY config, src, dist/client.js · CMD node src/server.ts
-  .github/workflows/        (5) unchanged
+  src/server.mjs               startServer entry
+  src/plugin.mjs               context, sources, people, intake and legacy translation
+  src/client.ts                optional index/viewer contributions
+  dist/client/                 built host browser entry
+  assets/                     logo and stylesheet
+  sample/                     host fixtures
+  Dockerfile
+  .github/workflows/           existing deployment infrastructure
 ```
 
-`src/server.ts` is `await startServer({ handleSignals: true })`. In an image built from the upstream `Dockerfile`, the working
-directory is `/app`, which is where the config is looked up, so a thin layer works too:
+Use the runnable example's build and entry points rather than copying the package's source. Keep deployment identifiers and secrets in the downstream; neutral examples use `example.com`.
 
-```dockerfile
-FROM <upstream image built from the pinned tag>
-COPY --chown=node:node replays.config.mjs context.schema.json /app/
-COPY --chown=node:node dist/plugin /app/plugin
+## Migration steps for the later downstream PR
+
+Each step must be reviewable and reversible. Do not change the downstream in this upstream implementation thread.
+
+1. **Freeze the comparison.** Record the current downstream main SHA, deployed image and pending PRs. Inventory producers, routes, bucket prefixes, users and storage sidecars. Re-run this mapping if main advances.
+2. **Choose an immutable artifact.** Build a tarball from the tested upstream commit/tag and pin its content/checksum, or pin an exact published release when available. The package is currently private/unpublished; a registry version shown in examples is not proof that it exists. Commit the host lockfile.
+3. **Add the host layer beside the old app.** Start from `examples/host-app`: config, theme, purposes, people, source/context plugins and compiled browser entry. Use a distinct staging data prefix and explicit local profile. Compare the pages without replacing the live app.
+4. **Port producer normalization.** Exercise automated captures, human imports, review suites and staff browser uploads against the replacement. Verify default purposes, provenance, uploader identity, gzip/size/error behavior and duplicate replay handling. Preserve suite people during translation.
+5. **Validate auth and routing.** Test the IAP allow/deny matrix, browser sign-in/deep links, health checks, forwarded hosts, CDN paths, gateway prefix rewriting and private renderer origin. Test allowed staff-origin preflight/upload and refused origins/methods/headers. Keep backend-only forwarders out of unrelated routes if customer intake is adopted.
+6. **Validate saved edits and rendering.** Disable edit writes while leaving saved edits active. Confirm PUT 403, GET/HEAD/304, viewer trim/cuts/effects and MP4 variant behavior. Posters, opening stills and hover previews continue to show the recording as captured. Compare pacing on real multi-navigation and user recordings.
+7. **Rehearse data conversion on a copy.** Snapshot the source. Run `replays migrate --dry-run`, then convert into an empty destination prefix using the same legacy translator and host config. Preserve replay ids, suites, people, comments, edits, keep markers, plugin data and the original server upload age used for retention. Do not substitute the producer-controlled recording timestamp for trusted upload age. Rebuild summaries from converted bundles and regenerate derived media if sanitization changes the underlying content. Source `session.mp4` is dropped by default because the sanitizer cannot clean its pixels; the public migration API can opt into `sourceVideo: 'copy-if-unchanged'` only for an unchanged bundle after review. Never perform the first rehearsal against the live destination.
+8. **Compare and smoke the converted store.** Review the migration report, `--compare` summary differences and explicit sidecar checks. Open representative old/new replays and suite links; inspect retention and privacy. Summary equality alone does not prove comments, edits or rendered frames are correct.
+9. **Build and stage the thin image.** Use only the pinned artifact plus host files. Run the existing downstream use-case scripts, adapter/plugin tests, palette checks and browser smoke. Confirm the staging privacy difference explicitly before cutover.
+10. **Cut over with a write plan.** Quiesce uploads or use a deliberate producer cutover, take the final snapshot/delta and deploy through the existing gated workflow. Keep the old image and untouched source prefix available. Do not let old and new servers write incompatible formats into one prefix.
+11. **Delete copied core source last.** After staging and production validation, remove the copied capture/server/shared/viewer directories and redundant core build files. Keep host config/plugins/assets/producers/deploy files and their tests. Verify there are no imports into an upstream `src/` path.
+12. **Upgrade deliberately.** Bump one pinned artifact at a time, read the changelog, run host contracts and smoke tests, stage and then deploy. Host changes roll back by artifact/config version; sandboxed user plugins keep their in-app history and review notices.
+
+Rollback uses the old image **and its matching source data snapshot/prefix**. Before enabling writes after a cutover, decide how new uploads will be retained or replayed if rollback is needed. Redeploying an old image alone does not make new-format writes readable.
+
+## Conversion commands and remaining boundaries
+
+Adapt [`examples/migrate/translate.mjs`](../examples/migrate/translate.mjs) to the current producer fixtures. The translation must be idempotent and must retain the purposes/people supported by the target artifact.
+
+```sh
+replays migrate --from fs:/backup/replays --to fs:/tmp/converted \
+  --translate ./translate.mjs --config ./replays.config.mjs --dry-run --report dry.json
+replays migrate --from fs:/backup/replays --to gcs \
+  --translate ./translate.mjs --config ./replays.config.mjs --report converted.json
+replays migrate --compare --from fs:/backup/replays --to gcs \
+  --config ./replays.config.mjs --report comparison.json
 ```
 
 ## 4. Migration steps
