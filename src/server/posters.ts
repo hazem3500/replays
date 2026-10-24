@@ -241,20 +241,28 @@ export class PosterQueue {
       const files: Array<[RenderJob, RenderedFile]> = [
         [job(kind), { file: temporary, key: output, contentType: MEDIA[kind].type, bytes: stored.size }],
       ];
-      // The poster job's opening still (shot on the way): stored unless there is one, and a queued
-      // opening-still job for this replay is then done too.
+      // The opening still is a separate artifact: its own policy must allow persistence,
+      // even though the poster runner already shot it on the way.
       if (kind === 'poster' && this.options.open && (await stat(`${temporary}.open.jpg`).catch(() => undefined))) {
-        const openKey = this.options.open.key(id);
-        const kept = await storage.upload(openKey, `${temporary}.open.jpg`, { createOnly: true, contentType: MEDIA.open.type }).then(
-          (info) => info,
-          (error: unknown) => {
-            if (!(error instanceof ObjectExistsError)) throw error;
-            return undefined;
-          },
-        );
-        if (kept) {
+        const openJob = job('open');
+        const openVerdict = await this.options.beforeRender?.(openJob);
+        if (openVerdict && !openVerdict.ok) {
+          this.failed.set(key('open', id), this.options.now());
           this.dequeue('open', id);
-          files.push([job('open'), { file: `${temporary}.open.jpg`, key: openKey, contentType: MEDIA.open.type, bytes: kept.size }]);
+          this.options.log(`open ${id}: refused by plugin ${openVerdict.plugin}: ${openVerdict.error}`);
+        } else {
+          const openKey = this.options.open.key(id);
+          const kept = await storage.upload(openKey, `${temporary}.open.jpg`, { createOnly: true, contentType: MEDIA.open.type }).then(
+            (info) => info,
+            (error: unknown) => {
+              if (!(error instanceof ObjectExistsError)) throw error;
+              return undefined;
+            },
+          );
+          if (kept) {
+            this.dequeue('open', id);
+            files.push([openJob, { file: `${temporary}.open.jpg`, key: openKey, contentType: MEDIA.open.type, bytes: kept.size }]);
+          }
         }
       }
       for (const [done, file] of files)
