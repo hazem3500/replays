@@ -337,6 +337,13 @@ Small pull requests, each with its own tests and docs, merged in about this orde
 | [#14](https://github.com/hazem3500/replays/pull/14) | Render hooks | 5.9 |
 | [#12](https://github.com/hazem3500/replays/pull/12) | User-plugin policy and upgrade contract | 6 |
 | [#11](https://github.com/hazem3500/replays/pull/11) | `replays migrate` | 8 |
-| 12 | `examples/host-app` | all |
+| [#18](https://github.com/hazem3500/replays/pull/18) | Pin the matching Node runtime | packaging/runtime |
+| [#20](https://github.com/hazem3500/replays/pull/20) | Composed privacy, migration, retention-age and cache integrity fixes | 5.1, 5.5, 5.9, 8 |
+| [#21](https://github.com/hazem3500/replays/pull/21) | Host editing write policy with saved-edit playback | 5.13 |
+| [#22](https://github.com/hazem3500/replays/pull/22) | Scoped browser intake policy and upload aliases | 5.11 |
+| [#23](https://github.com/hazem3500/replays/pull/23) | Browser sign-in recovery | 5.12 |
+| [#24](https://github.com/hazem3500/replays/pull/24) | Capture pacing, shared captions and playback/export speeds | 5.14 |
+| [#25](https://github.com/hazem3500/replays/pull/25) | `examples/host-app` | all |
+| [#26](https://github.com/hazem3500/replays/pull/26) | Refresh the architecture and downstream migration guide | documentation |
 
-The refreshed downstream audit also adds focused follow-ups for intake policy/aliases, edit writes, sign-in recovery, pacing and a matching Node runtime pin. Their final PR links and the runnable host example are recorded when those changes are published. A reviewed source mapping does not replace the real IAP/CDN/GCS staging checks in the migration guide.
+A reviewed source mapping does not replace the real IAP/CDN/GCS staging checks in the migration guide.
