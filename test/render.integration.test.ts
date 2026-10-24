@@ -366,7 +366,7 @@ describe.skipIf(!ready || id !== 'demo-shop')('server-side render at the viewer 
     await file.arrayBuffer();
 
     const duration = bundle.events.at(-1)!.timestamp - bundle.events[0]!.timestamp;
-    const gaps = idleGaps(bundle.events);
+    const gaps = idleGaps(bundle.events.map((event) => ({ ...event, type: Number(event.type) })));
     expect(gaps.length).toBeGreaterThan(0);
     const expected = exportMap({ duration, speed: 2, gaps }).outputMs / 1000;
     const seconds = Number(probe(queue.outputFile(id, 2, { skipInactive: true, captions: true })).format?.duration);
