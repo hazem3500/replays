@@ -19,6 +19,7 @@ const INDEX = [
   '<meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />',
   '<meta name="app-base" content="" /><meta name="app-beta" content="" /><meta name="app-comments" content="" />',
   '<meta name="app-plugins" content="" /><meta name="app-purposes" content="" /><meta name="app-editing" content="" />',
+  '<meta name="app-sign-in" content="" />',
   '<meta name="app-name" content="__PRODUCT_NAME__" /><meta name="app-logo" content="__PRODUCT_LOGO__" />',
   '<title>__PRODUCT_NAME__</title><link rel="modulepreload" href="./assets/react.js" /><script type="module" src="./assets/main.js"></script>',
   '</head><body></body></html>',
@@ -49,6 +50,16 @@ afterEach(async () => {
 });
 
 describe('replays build-static', () => {
+  it('stamps explicit recovery without constructing a secret-dependent adapter', async () => {
+    const clientDir = await builtViewer();
+    const out = await mkdtemp(join(tmpdir(), 'replays-static-sign-in-'));
+    const options = { out, clientDir, env: {}, config: config({ ...FILE, auth: 'missing-proxy', signIn: { path: '/api/sign-in' } }) };
+    await buildStatic(options);
+    expect(await readFile(join(out, 'index.html'), 'utf8')).toContain('<meta name="app-sign-in" content="/replays/api/sign-in" />');
+    await buildStatic({ ...options, base: '/' });
+    expect(await readFile(join(out, 'index.html'), 'utf8')).toContain('<meta name="app-sign-in" content="/api/sign-in" />');
+  });
+
   it('copies the viewer and stamps base, name, logo, tokens and theme-color into index.html', async () => {
     const clientDir = await builtViewer();
     const out = join(await mkdtemp(join(tmpdir(), 'replays-static-out-')), 'site');

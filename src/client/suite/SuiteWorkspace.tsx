@@ -1,3 +1,4 @@
+import { SignInLink } from '../sign-in.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
@@ -251,6 +252,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         <section className="state-content" role="alert">
           <span className="state-kicker">Could not open review suite</span>
           <h1>{error}</h1>
+          <SignInLink error={suiteFailure} />
           <p>
             Suite <code>{id}</code> may have expired or the link may be incomplete.
           </p>
@@ -319,6 +321,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             <div className="empty" role="alert">
               <strong>Could not open this run</strong>
               <span>{bundleError === 'Replay not found' ? 'Its recording has expired or was removed.' : bundleError}</span>
+              <SignInLink error={bundleFailure} />
             </div>
           </main>
         ) : suite && !selected && runs.every((item) => !playableReplayId(item, detailed)) ? (

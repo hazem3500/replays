@@ -115,6 +115,7 @@ export function hostVary(routing: HostRouting | undefined) {
 }
 
 export interface PageBranding {
+  signIn?: string;
   name: string;
   /** Inline `<style>` body with the theme's design tokens, or empty. */
   tokensCss: string;
@@ -154,6 +155,10 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
     .replaceAll(/(\s(?:src|href)=")\.\/(assets\/)/g, `$1${base}/$2`);
   if (branding) {
     out = out.replace('<meta name="app-editing" content="" />', `<meta name="app-editing" content="${branding.editing ? 'on' : 'off'}" />`);
+    out = out.replace(
+      '<meta name="app-sign-in" content="" />',
+      `<meta name="app-sign-in" content="${escapeHtml(branding.signIn ?? '')}" />`,
+    );
     out = out.replace('<meta name="app-comments" content="" />', `<meta name="app-comments" content="${branding.comments ? 'on' : ''}" />`);
     out = out.replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${escapeHtml(branding.beta ?? '')}" />`);
     out = out.replace(

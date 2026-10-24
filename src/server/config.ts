@@ -1,3 +1,4 @@
+import { normalizeSignIn } from '../shared/sign-in.ts';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -54,6 +55,8 @@ import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
  * The same keys, typed, make up `defineConfig()` in a `replays.config.ts|js|json` (src/config/).
  */
 export interface FileConfig {
+  /** Browser sign-in recovery; explicit config also stamps a public static viewer. false overrides the adapter. */
+  signIn?: import('../shared/sign-in.ts').SignInConfig | false;
   name?: string;
   logoUrl?: string;
   theme?: BrandingConfig['theme'];
@@ -84,6 +87,7 @@ export interface FileConfig {
 }
 
 export interface AppSettings {
+  signIn?: import('../shared/sign-in.ts').SignInConfig | false;
   branding: BrandingConfig;
   basePath: string;
   /** Per-host bases (`hosts`, `trustForwardedHost`); no entries means one base for every host. */
@@ -122,6 +126,7 @@ export const CONFIG_KEYS = new Set([
   'comments',
   'editing',
   'auth',
+  'signIn',
   'storage',
   'plugins',
   'redaction',
@@ -177,7 +182,9 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   const betaFile = file.beta;
   if (enabled !== undefined && betaFile?.malleable !== undefined && betaFile.malleable !== enabled)
     throw new Error("the config file's malleable.enabled and beta.malleable disagree: set one of them");
+  const signIn = file.signIn === false ? false : normalizeSignIn(file.signIn);
   return {
+    ...(signIn !== undefined ? { signIn } : {}),
     branding,
     basePath,
     hosts,

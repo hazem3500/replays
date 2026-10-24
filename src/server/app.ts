@@ -1,4 +1,5 @@
 import { applyRequestPolicy } from './request-policy.ts';
+import { normalizeSignIn, signInReturn } from '../shared/sign-in.ts';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
@@ -72,6 +73,7 @@ const MIME: Record<string, string> = {
 };
 
 export interface AppOptions {
+  signIn?: import('../shared/sign-in.ts').SignInConfig | false;
   auth: AuthAdapter;
   store: ReplayStore;
   clientDir: string;
@@ -415,6 +417,7 @@ function hostRouting(options: AppOptions): HostRouting | undefined {
 
 export function createApp(options: AppOptions) {
   const defaultBase = options.basePath ?? '';
+  const signIn = normalizeSignIn(options.signIn ?? options.auth.signIn);
   const routing = hostRouting(options);
   // With per-host bases the same path is a different route from one host to the next, so every response varies by it.
   const vary = hostVary(routing);
@@ -449,6 +452,7 @@ export function createApp(options: AppOptions) {
       branding: options.branding,
       purposes: purposes.list,
       sources: options.sources.describe(),
+      ...(signIn ? { signIn } : {}),
       ...(options.beta ? { beta: options.beta } : {}),
       comments: commentsOn,
       editing,
@@ -483,7 +487,7 @@ export function createApp(options: AppOptions) {
       const authenticated: Identity | undefined = await options.auth.authenticate(request);
       if (!authenticated) {
         const login = options.auth.loginUrl?.(request, routeContext);
-        if (login && request.method === 'GET' && isBrowserNavigation(request) && !path.startsWith('/api/')) {
+        if (login && path !== signIn?.path && request.method === 'GET' && isBrowserNavigation(request) && !path.startsWith('/api/')) {
           response.writeHead(302, { location: login, 'cache-control': 'no-store' });
           response.end();
           return;
@@ -500,6 +504,24 @@ export function createApp(options: AppOptions) {
       }
       if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
         return;
+      if (signIn && path === signIn.path) {
+        if (request.method !== 'GET') {
+          send(response, 405, JSON.stringify({ error: 'method not allowed' }), json);
+          return;
+        }
+        const next = signInReturn(raw.searchParams.get('next'), publicPath('/', base));
+        const target = new URL(next, 'http://replays.invalid');
+        // Never bounce back to sign-in itself or a machine/internal endpoint.
+        const targetPath = base && target.pathname.startsWith(`${base}/`) ? target.pathname.slice(base.length) : target.pathname;
+        const blocked = target.pathname === publicPath(signIn.path, base) || /^\/(api|auth|internal|_plugins)(\/|$)/.test(targetPath);
+        response.writeHead(302, {
+          location: blocked ? publicPath('/', base) : next,
+          'cache-control': 'no-store',
+          ...(vary ? { vary } : {}),
+        });
+        response.end();
+        return;
+      }
       // Files of the plugins' client entries (behind the same auth as everything else).
       const asset = request.method === 'GET' || request.method === 'HEAD' ? clientAsset(registry, path) : undefined;
       if (asset) {
@@ -526,6 +548,7 @@ export function createApp(options: AppOptions) {
           ...(options.contextSchema ? { contextSchema: options.contextSchema.schema } : {}),
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
+          ...(signIn ? { signIn } : {}),
           plugins: [...registry.order],
           purposes: options.store.purposes.list,
           ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),

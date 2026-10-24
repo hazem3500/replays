@@ -1,3 +1,4 @@
+import { SignInLink } from './sign-in.tsx';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Activity, lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
@@ -213,6 +214,7 @@ function ReplayPage({ id }: { id: string }) {
         <section className="state-content" role="alert">
           <span className="state-kicker">Could not open replay</span>
           <h1>{error}</h1>
+          <SignInLink error={failure ?? edits.error} />
           <p>
             Replay <code>{id}</code> may have expired or the link may be incomplete.
           </p>
@@ -269,6 +271,7 @@ function EditPage({ id }: { id: string }) {
         <section className="state-content" role="alert">
           <span className="state-kicker">Could not open edit mode</span>
           <h1>{error}</h1>
+          <SignInLink error={failure ?? edits.error} />
           <div className="state-actions">
             <a className="button" href={replayHref(id)}>
               Back to the replay

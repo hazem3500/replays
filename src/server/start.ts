@@ -216,6 +216,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     basePath,
     hosts: settings.hosts,
     auth,
+    ...(settings.signIn !== undefined ? { signIn: settings.signIn } : {}),
     branding,
     sources: settings.sources,
     beta: settings.beta,

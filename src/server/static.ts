@@ -82,6 +82,7 @@ export async function buildStatic(options: BuildStaticOptions): Promise<StaticBu
   const html = renderIndexHtml(await readFile(template, 'utf8'), {
     base,
     branding: settings.branding,
+    ...(settings.signIn ? { signIn: settings.signIn } : {}),
     beta: settings.beta,
     purposes: settings.purposes.list,
     sources: settings.sources.describe(),

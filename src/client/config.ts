@@ -40,6 +40,7 @@ export interface ClientConfig {
   contextSchema?: FieldSchema;
   sourceProviders: string[];
   auth: string;
+  signIn?: import('../shared/sign-in.ts').SignInConfig;
   /** This package's version. */
   core?: string;
   /** The deployment's `distribution` config, when set. */

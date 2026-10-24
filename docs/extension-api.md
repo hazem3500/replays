@@ -655,3 +655,20 @@ api.onRequest(({ identity, path, request, response }) => {
 
 Use the host's verified stable identity, not an unverified email/header. Neither alias registration nor request policy authorizes a service identity to browse other authenticated routes.
 Mounted paths (`/tools/replays/api/…`) and proxy-stripped paths resolve to the same canonical registration.
+
+### Browser sign-in recovery
+
+An auth adapter can declare `signIn: { path: '/api/sign-in' }`. Core then serves an authenticated GET return endpoint and stamps the viewer with its URL. `/auth/<name>` paths also work; paths are canonical and omit the deployment base. The IAP plugin opts in by default and accepts `signIn: false` or a custom path. No audience or key material reaches the browser.
+
+For a public CDN viewer, set `signIn: { path: '/api/sign-in' }` in `defineConfig` too: `build-static` stamps this explicit value without instantiating an auth adapter or needing its secrets. The same configuration must reach the API server. `signIn: false` overrides adapter metadata. Publish the sign-in endpoint behind the same authentication front door as the API.
+
+When a page-data read fails, the viewer probes `/api/me` with manual redirects and XHR headers. A proxy redirect or 401 offers Sign in; an unreachable API remains a network error. An observed index, replay, suite or editor load navigates through the return endpoint at most once per tab per minute. Unavailable sessionStorage leaves a manual link. Prefetches, uploads, mutations and internal rendering never navigate. The endpoint accepts a normalized same-origin `next` path with query and hash, rejects open redirects and refuses to bounce into itself or machine endpoints. Ordinary API failures remain HTTP failures.
+
+```ts
+// Host configuration, also used by replays build-static:
+defineConfig({ signIn: { path: '/api/sign-in' }, plugins: [iap({ /* deployment options */ })] });
+// A custom adapter's optional declaration:
+const auth: AuthAdapter = { name: 'proxy', signIn: { path: '/auth/return' }, authenticate };
+```
+
+`SignInConfig` is exported as a type from `/server`. Existing adapters remain unchanged unless they opt in.

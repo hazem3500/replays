@@ -11,6 +11,7 @@ import { publicClientEntries } from './plugin-runtime.ts';
 export interface IndexPageOptions {
   /** The public base (`''` at a domain's root, else `/a/b`). */
   base: string;
+  signIn?: import('../shared/sign-in.ts').SignInConfig;
   branding: BrandingConfig;
   beta?: BetaFlags;
   /** Purposes available in this deployment, including plugin declarations. */
@@ -38,6 +39,7 @@ export function renderIndexHtml(html: string, options: IndexPageOptions) {
     ...(options.sources?.length ? { sources: JSON.stringify(options.sources) } : {}),
     ...(options.purposes?.length ? { purposes: JSON.stringify(options.purposes) } : {}),
     ...(entries.length ? { plugins: JSON.stringify(publicClientEntries(entries, options.base)) } : {}),
+    ...(options.signIn ? { signIn: `${options.base}${options.signIn.path}` } : {}),
     beta,
     editing: Boolean(options.beta?.editor) && editingFromEnv({}, options.editing).enabled,
     comments: Boolean(options.comments),

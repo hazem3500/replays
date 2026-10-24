@@ -25,6 +25,8 @@ export interface IapOptions {
    * `/projects/<number>/apps/<project-id>` (App Engine). Env: `IAP_JWT_AUDIENCE`.
    */
   audience?: string;
+  /** Authenticated return endpoint for a CDN viewer; false disables recovery. */
+  signIn?: import('../server/index.ts').SignInConfig | false;
   /** Email domains whose people are let in (`example.com`; exact, no subdomains). Env: `IAP_ALLOWED_DOMAINS`, comma- or space-separated. */
   domains?: readonly string[];
   /**
@@ -72,6 +74,7 @@ export function iapAuth(options: IapOptions, env: NodeJS.ProcessEnv = process.en
   if (devFallback) console.warn(`iap: requests without ${HEADER} are signed in as ${devFallback} (devFallback; never in production)`);
   return {
     name: 'iap',
+    ...(options.signIn === false ? {} : { signIn: options.signIn ?? { path: '/api/sign-in' } }),
     async authenticate(request: IncomingMessage): Promise<Identity | undefined> {
       const assertion = request.headers[HEADER];
       if (assertion === undefined && devFallback) return { id: devFallback, email: devFallback };

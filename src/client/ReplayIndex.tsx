@@ -1,3 +1,4 @@
+import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
 
@@ -420,6 +421,7 @@ export function ReplayIndex() {
   const [query, setQuery] = useState(filters.q ?? '');
   const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
   const [loadError, setError] = useState('');
+  const [authFailure, setAuthFailure] = useState<SignInError>();
   const [settledFilters, setSettledFilters] = useState<ReplayFilters | undefined>(restored ? filters : undefined);
   const [hosts, setHosts] = useState<string[]>(() =>
     [...new Set((restored?.items ?? []).map((summary) => summary.host).filter(Boolean))].sort(),
@@ -467,12 +469,13 @@ export function ReplayIndex() {
   // Who "me" is, and which handles the deployment lets a person link (used only where people exist).
   useEffect(() => {
     const controller = new AbortController();
-    fetch(apiUrl('me'), { signal: controller.signal })
+    fetchPage(apiUrl('me'), { signal: controller.signal })
       .then(async (response) => (response.ok ? ((await response.json()) as Me) : undefined))
       .then((loaded) => {
         if (loaded && typeof loaded === 'object') setMe(loaded);
       })
-      .catch(() => {
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted && reason instanceof SignInError) setAuthFailure(reason);
         // Without it the index still works: no "That's you", and For me still matches by email on the server.
       });
     return () => controller.abort();
@@ -507,7 +510,7 @@ export function ReplayIndex() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(apiUrl(`replays${listSearch}`), { signal: controller.signal })
+    fetchPage(apiUrl(`replays${listSearch}`), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Replays failed to load (${response.status})`);
         return (await response.json()) as ReplaySummary[];
@@ -531,6 +534,7 @@ export function ReplayIndex() {
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted || (reason as Error).name === 'AbortError') return;
+        if (reason instanceof SignInError) setAuthFailure(reason);
         // fetch rejects with a TypeError ("Failed to fetch") when the server cannot be reached at all.
         setError(
           reason instanceof TypeError
@@ -552,7 +556,7 @@ export function ReplayIndex() {
     const controller = new AbortController();
     // Default cache mode so index.html's preload of this exact URL is reused; the server answers
     // `Cache-Control: no-store`, so the list is never stale.
-    fetch(apiUrl(withForMe(INDEX_SUITES_URL, forMe, linked)), { signal: controller.signal })
+    fetchPage(apiUrl(withForMe(INDEX_SUITES_URL, forMe, linked)), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Review suites failed to load (${response.status})`);
         return (await response.json()) as ReviewSuiteIndexEntry[];
@@ -567,6 +571,7 @@ export function ReplayIndex() {
       })
       .catch((reason: unknown) => {
         if ((reason as Error).name === 'AbortError') return;
+        if (reason instanceof SignInError) setAuthFailure(reason);
         console.warn('Review suites unavailable:', reason);
         setSuites([]);
       });
@@ -727,6 +732,7 @@ export function ReplayIndex() {
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
         {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
         {items && !error ? <IndexSections summaries={items} /> : null}
+        {authFailure ? <SignInLink error={authFailure} /> : null}
         {error ? (
           <div className="empty" role="alert">
             <strong>{error}</strong>
