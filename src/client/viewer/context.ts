@@ -3,7 +3,7 @@ import { createContext, useContext } from 'react';
 import type { ReplayStep } from '../../shared/replay.ts';
 import type { ReplayError } from '../issues.ts';
 
-export type BuiltinInspectorTab = 'console' | 'network' | 'performance' | 'context';
+export type BuiltinInspectorTab = 'console' | 'network' | 'waterfall' | 'performance' | 'context';
 /** A tab a client plugin registered: `plugin:<plugin>:<id>` (src/client/plugins/). */
 export type PluginInspectorTab = `plugin:${string}`;
 /** A tab a built-in viewer feature registered (src/client/plugins/features.tsx): comments. */

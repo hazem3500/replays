@@ -114,6 +114,9 @@ importers:
       '@vitejs/plugin-react':
         specifier: 6.1.2
         version: 6.1.2(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      happy-dom:
+        specifier: 21.0.4
+        version: 21.0.4
       oxlint:
         specifier: 1.87.0
         version: 1.87.0
@@ -134,13 +137,13 @@ importers:
         version: 8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)
       vitest:
         specifier: 5.0.3
-        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+        version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
 
   examples/agent-native:
     dependencies:
       '@agent-native/core':
         specifier: 0.220.0
-        version: 0.220.0(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(@tailwindcss/vite@4.3.3(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(@tanstack/react-query@5.104.2(react@19.3.0))(@types/react@19.3.0)(better-call@1.4.0(zod@4.6.7))(crossws@0.4.16(srvx@1.0.7))(kysely@0.29.7)(nanostores@1.5.5)(ocache@0.3.1)(playwright@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.3)(typescript@5.9.3)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
+        version: 0.220.0(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(@tailwindcss/vite@4.3.3(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(@tanstack/react-query@5.104.2(react@19.3.0))(@types/react@19.3.0)(better-call@1.4.0(zod@4.6.7))(crossws@0.4.16(srvx@1.0.7))(kysely@0.29.7)(nanostores@1.5.5)(ocache@0.3.1)(playwright@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.3)(typescript@5.9.3)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       '@hazem3500/replays':
         specifier: workspace:*
         version: link:../..
@@ -1000,12 +1003,14 @@ packages:
   '@opentelemetry/sdk-trace-base@2.12.0':
     resolution: {integrity: sha512-JOERgZCxRM06FEJ5kEWxlSRChah6MmXDx3KwCruqEv/iEyLkTokCSemf2y1w8oIHtfrr8EVTpzebq/31vn2Cpg==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.3.0 <1.10.0'
 
   '@opentelemetry/sdk-trace-node@2.12.0':
     resolution: {integrity: sha512-9DufH1IlmQMoKAfot5y/FhTP1RnmhLb5K6eKmJO/bvzPjYwPAazoiAUbTZFdPbqxOXN0FEbhZx/e6SB1Og4jmg==}
     engines: {node: ^18.19.0 || >=20.6.0}
+    deprecated: Use @opentelemetry/sdk-trace package
     peerDependencies:
       '@opentelemetry/api': '>=1.0.0 <1.10.0'
 
@@ -1752,6 +1757,9 @@ packages:
   '@types/resolve@1.20.6':
     resolution: {integrity: sha512-A4STmOXPhMUtHH+S6ymgE2GiBSMqf4oTvcQZMcHzokuTLVYzXTB8ttjcgxOVaAp2lGwEdzZ0J+cRbbeevQj1UQ==}
 
+  '@types/whatwg-mimetype@3.0.2':
+    resolution: {integrity: sha512-c2AKvDT8ToxLIOUlN51gTiHXflsfIFisS4pO7pDPoKouJCESkhZnEy623gwP9laCy5lnLDAw1vAzu2vM2YLOrA==}
+
   '@types/ws@8.18.2':
     resolution: {integrity: sha512-67MQl+fpWKVTT1NYdnmo3U4sc/xPo/zQBncVnI74qmQa0z/b+1g6iYqNmGCPbxO+zz2aklb08a0oHfegiVd0/w==}
 
@@ -1956,6 +1964,10 @@ packages:
     resolution: {integrity: sha512-2TcbbiwXEq+N0kD36tykpCfyyQigUXmuwNQbnPp4Xk4PX9JOqVIKjJlIDjpH7uY6tmRGoAd+apeT1p60T8wsdA==}
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
+
+  buffer-image-size@0.6.4:
+    resolution: {integrity: sha512-nEh+kZOPY1w+gcCMobZ6ETUp9WfibndnosbpwB1iJk/8Gt5ZF2bhS6+B6bPYz424KtwsR6Rflc3tCz1/ghX2dQ==}
+    engines: {node: '>=4.0'}
 
   bundle-name@4.1.1:
     resolution: {integrity: sha512-DdH81/zPLVS11EUgWq3tEu/xn+EzljlMYooDNdzWEnFha3R3NBMpMV1UqYIpjYHV/SgpFKMIX1Oh7o06SjM/oA==}
@@ -2402,6 +2414,10 @@ packages:
         optional: true
       ocache:
         optional: true
+
+  happy-dom@21.0.4:
+    resolution: {integrity: sha512-tFm+GaLBgo6o0awHnvHaNoraVo27qJ+2tZEtZ+cIa08hXbeitrxAJajLI05hsUy/2/YTKcUjQYzHe5mCcraLBw==}
+    engines: {node: '>=20.0.0'}
 
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
@@ -3301,6 +3317,10 @@ packages:
     resolution: {integrity: sha512-Dhxzh5HZuiHQhbvTW9AMetFfBHDMYpo23Uo9btPXgdYP+3T5S+p+jgNy7spra+veYhBP2dCSgxR/i2Y02h5/6w==}
     engines: {node: '>=0.10.0'}
 
+  whatwg-mimetype@3.0.0:
+    resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
+    engines: {node: '>=12'}
+
   which@2.0.2:
     resolution: {integrity: sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==}
     engines: {node: '>= 8'}
@@ -3397,7 +3417,7 @@ snapshots:
       '@ag-ui/core': 0.0.59
       '@noble/hashes': 2.4.0
 
-  '@agent-native/core@0.220.0(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(@tailwindcss/vite@4.3.3(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(@tanstack/react-query@5.104.2(react@19.3.0))(@types/react@19.3.0)(better-call@1.4.0(zod@4.6.7))(crossws@0.4.16(srvx@1.0.7))(kysely@0.29.7)(nanostores@1.5.5)(ocache@0.3.1)(playwright@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.3)(typescript@5.9.3)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))':
+  '@agent-native/core@0.220.0(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(@tailwindcss/vite@4.3.3(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))(@tanstack/react-query@5.104.2(react@19.3.0))(@types/react@19.3.0)(better-call@1.4.0(zod@4.6.7))(crossws@0.4.16(srvx@1.0.7))(kysely@0.29.7)(nanostores@1.5.5)(ocache@0.3.1)(playwright@1.64.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(tailwindcss@4.3.3)(typescript@5.9.3)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))':
     dependencies:
       '@agent-native/agentkit': 0.220.0
       '@agent-native/recap-cli': 0.5.89(playwright@1.64.0)
@@ -3417,7 +3437,7 @@ snapshots:
       '@tanstack/query-persist-client-core': 5.101.2
       ajv: 8.20.0
       ajv-formats: 3.0.1(ajv@8.20.0)
-      better-auth: 1.7.6(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@opentelemetry/api@1.9.1)(kysely@0.29.7)(postgres@3.4.9))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
+      better-auth: 1.7.6(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@opentelemetry/api@1.9.1)(kysely@0.29.7)(postgres@3.4.9))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)))
       cron-parser: 5.10.2
       diff: 9.0.0
       diff-match-patch: 1.0.5
@@ -4606,6 +4626,8 @@ snapshots:
 
   '@types/resolve@1.20.6': {}
 
+  '@types/whatwg-mimetype@3.0.2': {}
+
   '@types/ws@8.18.2':
     dependencies:
       '@types/node': 22.18.10
@@ -4703,7 +4725,7 @@ snapshots:
 
   baseline-browser-mapping@2.11.32: {}
 
-  better-auth@1.7.6(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@opentelemetry/api@1.9.1)(kysely@0.29.7)(postgres@3.4.9))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))):
+  better-auth@1.7.6(@opentelemetry/api@1.9.1)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@opentelemetry/api@1.9.1)(kysely@0.29.7)(postgres@3.4.9))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))):
     dependencies:
       '@better-auth/core': 1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.7))(jose@6.2.13)(kysely@0.29.7)(nanostores@1.5.5)
       '@better-auth/drizzle-adapter': 1.7.6(@better-auth/core@1.7.6(@better-auth/utils@0.4.2)(@better-fetch/fetch@1.3.2)(@opentelemetry/api@1.9.1)(better-call@1.4.0(zod@4.6.7))(jose@6.2.13)(kysely@0.29.7)(nanostores@1.5.5))(@better-auth/utils@0.4.2)(drizzle-orm@0.45.4(@neondatabase/serverless@1.2.0)(@opentelemetry/api@1.9.1)(kysely@0.29.7)(postgres@3.4.9))
@@ -4726,7 +4748,7 @@ snapshots:
       drizzle-orm: 0.45.4(@neondatabase/serverless@1.2.0)(@opentelemetry/api@1.9.1)(kysely@0.29.7)(postgres@3.4.9)
       react: 19.3.0
       react-dom: 19.3.0(react@19.3.0)
-      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
+      vitest: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
     transitivePeerDependencies:
       - '@opentelemetry/api'
 
@@ -4752,6 +4774,10 @@ snapshots:
       electron-to-chromium: 1.5.464
       node-releases: 2.0.60
       update-browserslist-db: 1.3.4(browserslist@4.29.4)
+
+  buffer-image-size@0.6.4:
+    dependencies:
+      '@types/node': 22.18.10
 
   bundle-name@4.1.1:
     dependencies:
@@ -5067,6 +5093,19 @@ snapshots:
     optionalDependencies:
       crossws: 0.4.16(srvx@1.0.7)
       ocache: 0.3.1
+
+  happy-dom@21.0.4:
+    dependencies:
+      '@types/node': 22.18.10
+      '@types/whatwg-mimetype': 3.0.2
+      '@types/ws': 8.18.2
+      buffer-image-size: 0.6.4
+      entities: 7.0.1
+      whatwg-mimetype: 3.0.0
+      ws: 8.22.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   hasown@2.0.4:
     dependencies:
@@ -5840,7 +5879,7 @@ snapshots:
       jiti: 2.7.0
       yaml: 2.9.1
 
-  vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)):
+  vitest@5.0.3(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(happy-dom@21.0.4)(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1)):
     dependencies:
       '@types/chai': 5.2.3
       '@vitest/mocker': 5.0.3(vite@8.3.3(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(yaml@2.9.1))
@@ -5859,10 +5898,13 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/node': 22.18.10
+      happy-dom: 21.0.4
     transitivePeerDependencies:
       - msw
 
   void-elements@3.1.0: {}
+
+  whatwg-mimetype@3.0.0: {}
 
   which@2.0.2:
     dependencies:

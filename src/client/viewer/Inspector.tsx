@@ -7,6 +7,7 @@ import {
   GripHorizontalIcon,
   CircleXIcon,
   GaugeIcon,
+  ChartNoAxesGanttIcon,
   GlobeIcon,
   ListOrderedIcon,
   type LucideIcon,
@@ -60,6 +61,9 @@ import { Button } from '@/components/ui/button.tsx';
 import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../navigation.ts';
+import type { EditTimeline } from '../../shared/edits.ts';
+import { Waterfall } from './Waterfall.tsx';
+import { performanceLabel, validDuration } from './waterfall.ts';
 
 export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const DEFAULT_INSPECTOR_HEIGHT = 260;
@@ -181,7 +185,7 @@ const TAB_SHORTCUTS: Partial<Record<BuiltinInspectorTab, ShortcutAction>> = {
   performance: 'performance-tab',
 };
 
-const TABS: BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
+const TABS: BuiltinInspectorTab[] = ['console', 'network', 'waterfall', 'performance', 'context'];
 
 export interface MobilePanel {
   /** The Steps tab is showing (it sits in front of the diagnostics tabs on phones). */
@@ -191,12 +195,17 @@ export interface MobilePanel {
 
 export const Inspector = memo(function Inspector({
   bundle,
+  sourceBundle = bundle,
+  timeline,
   tab,
   expandedRequest,
   mobile,
   collapse,
 }: {
   bundle: ReplayBundle;
+  /** Original captured data: measured spans must be mapped, including starts inside cuts. */
+  sourceBundle?: ReplayBundle;
+  timeline?: EditTimeline | undefined;
   tab: InspectorTab;
   expandedRequest: string | undefined;
   mobile?: MobilePanel;
@@ -215,6 +224,10 @@ export const Inspector = memo(function Inspector({
   const replayHost = useMemo(() => hostOf(bundle.meta.url), [bundle.meta.url]);
   const consoleTrack = useMemo(() => sortByAt(bundle.console), [bundle]);
   const networkTrack = useMemo(() => sortByAt(bundle.network), [bundle]);
+  const firstNetworkAt = useMemo(
+    () => sourceBundle.network.reduce((first, entry) => (Number.isFinite(entry.at) ? Math.min(first, entry.at) : first), Infinity),
+    [sourceBundle],
+  );
   const performanceTrack = useMemo(() => sortByAt(bundle.performance?.entries ?? []), [bundle]);
   // Once playback reaches the end every entry is in view (some trail the last DOM event). At the very start nothing
   // has happened yet, not even entries stamped 0:00.0, so the now line can rest above every row.
@@ -435,6 +448,18 @@ export const Inspector = memo(function Inspector({
           <PerformancePanel track={bundle.performance} entries={performanceTrack.entries} reached={performanceCount} human={human} />
         ) : null}
       </TabsContent>
+      <TabsContent value="waterfall" className="inspector-panel">
+        {filled ? (
+          <Waterfall
+            bundle={sourceBundle}
+            timeline={timeline}
+            onNetworkSelection={setExpandedRequest}
+            renderRequestDetail={(entry) => (
+              <RequestDetail entry={entry} firstAt={firstNetworkAt} unanswered={hasNoResponse(entry)} size={entrySize(entry)} />
+            )}
+          />
+        ) : null}
+      </TabsContent>
       <TabsContent value="context" className="inspector-panel">
         {filled ? <ContextPanel bundle={bundle} schema={contextSchema} sections={contextSections} /> : null}
       </TabsContent>
@@ -466,6 +491,7 @@ const INSPECTOR_ROWS = 'tbody > tr:not(.spacer-row):not(.gap-row), .ctx-summary,
 const TAB_ICONS: Record<BuiltinInspectorTab, LucideIcon> = {
   console: SquareTerminalIcon,
   network: GlobeIcon,
+  waterfall: ChartNoAxesGanttIcon,
   performance: GaugeIcon,
   context: BadgeInfoIcon,
 };
@@ -497,6 +523,7 @@ function useNarrowerThan(element: RefObject<HTMLElement | null>, width: number) 
 const TAB_LABELS: Record<BuiltinInspectorTab, string> = {
   console: 'Console',
   network: 'Network',
+  waterfall: 'Waterfall',
   performance: 'Performance',
   context: 'Context',
 };
@@ -1733,19 +1760,6 @@ const PerformancePanel = memo(function PerformancePanel({
   );
 });
 
-function performanceLabel(kind: ReplayPerformanceEntry['kind']) {
-  switch (kind) {
-    case 'first-contentful-paint':
-      return 'First contentful paint';
-    case 'largest-contentful-paint':
-      return 'Largest contentful paint candidate';
-    case 'long-task':
-      return 'Main-thread task';
-    case 'slow-interaction':
-      return 'Slow interaction';
-  }
-}
-
 const NetworkRow = memo(function NetworkRow({
   entry,
   rowIndex,
@@ -1921,6 +1935,7 @@ function RequestDetail({
   size: number | undefined;
 }) {
   const url = useMemo(() => splitUrl(entry.url), [entry.url]);
+  const measured = !unanswered && validDuration(entry.duration) && Number.isFinite(entry.at + entry.duration);
   return (
     <div className="rd-grid">
       <div className="rd-url">
@@ -1935,14 +1950,16 @@ function RequestDetail({
       </div>
       <dl className="rd-facts">
         <Fact label="Status" title={unanswered ? NO_RESPONSE : undefined}>
-          {unanswered ? 'No response (redirect hop)' : `${entry.status || 'Error'} ${entry.statusText}`.trim()}
+          {unanswered ? 'No response recorded' : `${entry.status || 'Error'} ${entry.statusText}`.trim()}
         </Fact>
         <Fact label="Method">{entry.method}</Fact>
         <Fact label="Content type">{entry.mimeType ?? '—'}</Fact>
         <Fact label="Size">{size === undefined ? '—' : formatBytes(size)}</Fact>
         <Fact label="Started">{formatClock(entry.at)}</Fact>
-        <Fact label="Duration">{entry.duration.toFixed(1)} ms</Fact>
-        <Fact label="Finished">{formatClock(entry.at + entry.duration)}</Fact>
+        <Fact label="Duration">
+          {measured ? `${entry.duration.toFixed(1)} ms` : unanswered ? 'Unknown / incomplete' : 'Invalid / unknown'}
+        </Fact>
+        <Fact label="Finished">{measured ? formatClock(entry.at + entry.duration) : 'Unknown'}</Fact>
         <Fact label="After first request">{entry.at > firstAt ? `+${formatDuration(entry.at - firstAt)}` : '—'}</Fact>
       </dl>
       <div className="rd-headers">

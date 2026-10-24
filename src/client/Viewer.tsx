@@ -80,8 +80,11 @@ export function Viewer({
   edited,
   effects,
   timeline,
+  sourceBundle = bundle,
 }: {
   bundle: ReplayBundle;
+  /** Original diagnostics for the waterfall's measured spans when playback has saved edits. */
+  sourceBundle?: ReplayBundle;
   /** Saved edits' timeline (source ↔ edited time) when they are applied: comments are anchored to source time. */
   timeline?: EditTimeline;
   /** Zoom, blur and captions from the saved edits, on this bundle's timeline. */
@@ -543,6 +546,8 @@ export function Viewer({
         {mobile || collapsed ? null : <InspectorResizer shell={shell} height={inspectorHeight} onCommit={setInspectorHeight} />}
         <Inspector
           bundle={bundle}
+          sourceBundle={sourceBundle}
+          timeline={timeline}
           tab={tab}
           expandedRequest={expandedRequest}
           collapse={inspectorCollapse}
@@ -1083,6 +1088,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
       key={`${bundle.meta.id}:${original ? 'original' : (stored?.revision ?? 0)}`}
       {...props}
       bundle={shown?.bundle ?? bundle}
+      sourceBundle={bundle}
       {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
       {...(edited ? { edited } : {})}
     />
