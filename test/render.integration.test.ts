@@ -331,7 +331,7 @@ describe.skipIf(!ready || id !== 'demo-shop')('server-side render at the viewer 
     await mkdir(join(dataDir, id), { recursive: true });
     // Keep this integration fixture above the shared inactivity threshold even as capture pacing changes.
     const bundle = JSON.parse(await readFile(sample, 'utf8')) as ReplayBundle;
-    bundle.events.push({ type: 3, timestamp: bundle.events.at(-1)!.timestamp + 6000, data: { source: 1, positions: [] } });
+    bundle.events.push({ type: 3, timestamp: bundle.events.at(-1)!.timestamp + 6000, data: { source: 3, id: -1, x: 0, y: 0 } });
     bundle.meta.duration = bundle.events.at(-1)!.timestamp - bundle.events[0]!.timestamp;
     bundle.meta.eventCount = bundle.events.length;
     await writeFile(join(dataDir, id, 'replay.json'), JSON.stringify(bundle));
@@ -360,6 +360,7 @@ describe.skipIf(!ready || id !== 'demo-shop')('server-side render at the viewer 
     });
     expect(post.status).toBe(202);
     await queue.settled(id, 2, { skipInactive: true, captions: true });
+    expect(await queue.status(id, 2, { skipInactive: true, captions: true })).toMatchObject({ status: 'done' });
     const file = await fetch(`${origin}/api/replays/${id}/render/file?speed=2&captions=1`);
     expect(file.headers.get('content-disposition')).toBe(`attachment; filename="${id}-2x-captions.mp4"`);
     await file.arrayBuffer();
