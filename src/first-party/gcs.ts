@@ -26,6 +26,8 @@ import {
 export const RESUMABLE_BYTES = 8 * 1024 * 1024;
 /** Resumable chunk size: a multiple of 256 KiB, as the API requires. */
 const CHUNK_BYTES = 8 * 1024 * 1024;
+/** Stop retrying a session that repeatedly acknowledges no new bytes. */
+const MAX_STALLED_ACKS = 3;
 const LIST_FIELDS = 'items(name,size,generation,updated,timeCreated),nextPageToken';
 const METADATA_TOKEN_PATH = '/computeMetadata/v1/instance/service-accounts/default/token';
 
@@ -272,20 +274,38 @@ export class GcsStorage implements ObjectStorage {
     if (!opened.ok) return this.writeFailed(key, options, opened);
     const session = opened.headers.get('location');
     if (!session) throw new GcsError(opened.status, `GCS resumable upload of ${key} returned no session URL`);
-    for (let start = 0; start < size; start += CHUNK_BYTES) {
+    let start = 0;
+    let acknowledged = 0;
+    let stalled = 0;
+    for (;;) {
       const end = Math.min(size, start + CHUNK_BYTES);
-      const bytes = await chunk(start, end);
+      const bytes = start < size ? await chunk(start, end) : Buffer.alloc(0);
       const response = await this.request(session, {
         method: 'PUT',
-        headers: { 'content-range': `bytes ${start}-${end - 1}/${size}` },
+        // If all bytes were acknowledged with 308, probe for the final object metadata.
+        headers: { 'content-range': start < size ? `bytes ${start}-${end - 1}/${size}` : `bytes */${size}` },
         // A copy typed over a plain ArrayBuffer, which fetch's BodyInit wants.
         body: Buffer.from(bytes),
       });
-      if (response.status === 308) continue;
+      if (response.status === 308) {
+        const range = response.headers.get('range');
+        await response.body?.cancel();
+        const match = range === null ? undefined : /^bytes=0-(\d+)$/.exec(range);
+        // No Range means no bytes persisted. Never advance by how much we sent.
+        const next = range === null ? 0 : match ? Number(match[1]) + 1 : NaN;
+        if (!Number.isSafeInteger(next) || next > end)
+          throw new GcsError(308, `GCS resumable upload of ${key} returned an invalid acknowledged Range`);
+        // Compare against the high-water mark so a regressing/oscillating offset cannot retry forever.
+        stalled = next > acknowledged ? 0 : stalled + 1;
+        if (stalled >= MAX_STALLED_ACKS)
+          throw new GcsError(308, `GCS resumable upload of ${key} made no progress after ${MAX_STALLED_ACKS} acknowledgments`);
+        acknowledged = Math.max(acknowledged, next);
+        start = next;
+        continue;
+      }
       if (!response.ok) return this.writeFailed(key, options, response);
       return this.info((await response.json()) as GcsObject, key);
     }
-    throw new GcsError(500, `GCS resumable upload of ${key} did not complete`);
   }
 
   async delete(key: string) {
