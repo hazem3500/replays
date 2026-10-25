@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+import { assertCapturePacing } from '../shared/capture-pacing.ts';
 import { assertPlugin } from '../plugin/define.ts';
 import { PluginError } from '../plugin/errors.ts';
 import type { PluginSpec, ReplaysPlugin } from '../plugin/types.ts';
@@ -13,7 +14,11 @@ import { CONFIG_KEYS, type FileConfig, readConfigFile } from '../server/config.t
  * `replays.config.ts|js|json`; only a script can hold plugin objects directly (JSON lists module specifiers).
  */
 export type ReplaysConfig = FileConfig;
+export type { CapturePacingOptions } from '../shared/capture-pacing.ts';
 export type { PluginSpec } from '../plugin/types.ts';
+/** The `malleable` block: the host's policy for sandboxed user plugins (docs/malleability.md#the-hosts-policy). */
+export type { CapabilityRule, MalleableConfig } from '../shared/malleable-policy.ts';
+export type { PosterMoment, PurposeConfig, PurposeViewerDefaults } from '../shared/purposes.ts';
 
 /** Typed identity function for `replays.config.ts`: `export default defineConfig({ name: 'Acme', plugins: [acme()] })`. */
 export function defineConfig(config: ReplaysConfig): ReplaysConfig {
@@ -119,6 +124,7 @@ export async function loadConfig(options: { env?: NodeJS.ProcessEnv; cwd?: strin
     if (!(await exists(path))) throw new Error(`cannot read REPLAYS_CONFIG ${path}: no such file`);
     file = await loadScript(path);
   }
+  if (file.capture !== undefined) assertCapturePacing(file.capture);
   if (file.contextSchemaFile) file = { ...file, contextSchemaFile: resolve(dir, file.contextSchemaFile) };
   const specs = file.plugins ?? [];
   if (!Array.isArray(specs)) throw new Error("the config file's plugins must be an array");

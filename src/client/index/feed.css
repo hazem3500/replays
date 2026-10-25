@@ -9,6 +9,11 @@
 .index-shell { --gutter: 32px; }
 /* The feed ends with breathing room, not a footer line. */
 .index-body { padding-bottom: 32px; }
+/* Plugin sections (registerIndexSection): blocks above the list, inside the feed's gutters. */
+.index-sections { display: grid; gap: 12px; padding: 16px var(--gutter) 0; }
+.index-section { min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--card-radius); background: var(--surface-raised); }
+.index-section-title { margin: 0 0 8px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
+.index-section-body { min-width: 0; color: var(--text); font-size: var(--text-sm); }
 
 /* ---------- Header: two rows, sticky as one block ---------- */
 .index-head { position: sticky; z-index: 6; top: 0; border-bottom: 1px solid var(--line); background: var(--surface); }
@@ -88,6 +93,18 @@
 .command-enter { width: 13px; height: 13px; flex: 0 0 13px; margin-left: auto; color: var(--text-tertiary); }
 
 /* ---------- Row 2: the count, then Filter, sort, layout ---------- */
+/* Purpose segments (only with purposes): tabs with a sliding underline, above the scope row. */
+.purpose-bar { min-height: 40px; display: flex; align-items: center; padding: 0 var(--gutter); }
+.purpose-segments { position: relative; min-width: 0; align-self: stretch; display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; }
+.purpose-segments::-webkit-scrollbar { display: none; }
+.purpose-indicator { position: absolute; bottom: 0; left: 0; height: 2px; border-radius: 1px; background: var(--accent); transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), width 200ms cubic-bezier(0.22, 1, 0.36, 1); }
+.purpose-segment { position: relative; display: flex; flex: 0 0 auto; }
+.purpose-segment-label { height: 40px; display: inline-flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: var(--text-sm); font-weight: 550; white-space: nowrap; cursor: pointer; transition: color var(--motion-fast) ease; }
+.purpose-segment-count { color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 500; font-variant-numeric: tabular-nums; }
+.purpose-segment:has(input:checked) .purpose-segment-label { color: var(--text); }
+.purpose-segment:has(input:focus-visible) .purpose-segment-label { border-radius: 2px; box-shadow: 0 0 0 2px var(--focus); }
+@media (hover: hover) { .purpose-segment-label:hover { color: var(--text); } }
+@media (prefers-reduced-motion: reduce) { .purpose-indicator, .purpose-segment-label { transition: none; } }
 .scope-bar { min-height: 40px; display: flex; align-items: center; gap: 12px; padding: 0 var(--gutter); }
 .scope-count { min-width: 0; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; text-overflow: ellipsis; white-space: nowrap; }
 .scope-bar-end { display: flex; flex: 0 0 auto; align-items: center; gap: 4px; margin-left: auto; }
@@ -123,6 +140,10 @@
 .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch { background: var(--accent); }
 .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after { transform: translateX(10px); }
 .filter-search { width: calc(100% - 8px); margin: 3px 4px 4px; }
+/* A plugin's text filter (registerIndexFilter): the field fills the row after its label. */
+.filter-text-row { cursor: text; }
+.filter-text-input { min-width: 0; flex: 1 1 auto; height: 24px; margin-left: auto; padding: 0 6px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; font-size: 12px; }
+.filter-text-input:focus-visible { outline: 2px solid var(--ring); outline-offset: 0; }
 .filter-option { min-height: 32px; font-size: 13px; }
 .filter-check, .filter-chevron { flex: 0 0 auto; width: 14px; height: 14px; margin-left: auto; color: var(--text-tertiary); }
 .filter-row .filter-chevron { margin-left: 4px; }
@@ -240,6 +261,10 @@
 /* Relative times read as prose here, not data (the global `time` rule is mono). */
 .feed-facts time { font-family: inherit; }
 .feed-id { font-family: var(--mono); font-size: var(--text-xs); }
+/* Plugin fields (registerIndexColumn): one quiet line under the meta line, each field cut to the row's width. */
+.feed-ext { min-width: 0; display: flex; flex-wrap: wrap; gap: 2px 12px; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 18px; }
+.feed-ext-field { min-width: 0; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.feed-ext-field[data-plugin-error], .index-section-body[data-plugin-error] { color: var(--danger); }
 .feed-id mark { border-radius: 2px; background: var(--accent-soft); color: var(--text); }
 
 /* Line 2 leads with the source; links inside a row sit above its stretched hit area. */
@@ -507,3 +532,46 @@ html[data-feed-transition]::view-transition-new(.feed-item):only-child { animati
 /* The old front's still while it slides back into the pile (under the new front). */
 .poster-outgoing { z-index: 0; pointer-events: none; }
 @media (prefers-reduced-motion: reduce) { .poster-caption { animation-duration: 0s; animation-delay: 0s; } }
+
+/* ---------- People (index/People.tsx): an avatar stack on rows that have people, and its card ---------- */
+.person-avatar { --avatar-size: 18px; position: relative; width: var(--avatar-size); height: var(--avatar-size); display: inline-grid; flex: 0 0 var(--avatar-size); place-items: center; overflow: hidden; border-radius: 50%; background: oklch(0.86 0.035 var(--avatar-hue)); box-shadow: 0 0 0 2px var(--surface); color: oklch(0.32 0.04 var(--avatar-hue)); font-size: calc(var(--avatar-size) * 0.42); font-weight: 700; letter-spacing: 0.02em; line-height: 1; }
+:root:not([data-theme="light"]) .person-avatar { background: oklch(0.42 0.04 var(--avatar-hue)); color: oklch(0.93 0.02 var(--avatar-hue)); }
+.person-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.feed-people { position: relative; z-index: 1; display: inline-flex; flex: 0 0 auto; align-items: center; height: 24px; margin: 0; padding: 0 2px; border: 0; border-radius: 12px; background: transparent; color: inherit; font: inherit; cursor: pointer; }
+.feed-people > * + * { margin-left: -4px; }
+.feed-meta .feed-people + .feed-facts::before { content: "·"; margin: 0 6px 0 -2px; color: var(--text-tertiary); }
+.feed-people:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+@media (pointer: coarse) { .feed-people::before { content: ""; position: absolute; inset: -8px -6px; } }
+.person-more { margin-left: 4px !important; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.feed-list[data-view="grid"] .person-avatar { box-shadow: 0 0 0 2px var(--surface-raised); }
+@media (hover: hover) and (pointer: fine) { .feed-item:hover .person-avatar { box-shadow: 0 0 0 2px var(--surface-hover); } }
+.person-card { font-size: 13px; }
+.person-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.person-details { display: flex; align-items: flex-start; gap: 10px; min-width: 200px; }
+.person-details .person-avatar { box-shadow: none; }
+.person-text { min-width: 0; display: grid; gap: 2px; }
+.person-name { display: flex; align-items: center; gap: 6px; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
+.person-details-compact .person-name { font-size: 13px; }
+.person-me { padding: 0 6px; border-radius: 8px; background: var(--accent-soft); color: color-mix(in srgb, var(--accent) 80%, var(--text)); font-size: 11px; font-weight: 600; line-height: 16px; }
+.person-role { color: var(--text-secondary); font-size: var(--text-xs); }
+.person-links { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; margin-top: 4px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.person-email { min-width: 0; display: inline-flex; align-items: center; gap: 2px; }
+.person-email-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.person-copy { width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); cursor: pointer; }
+.person-copy svg { width: 12px; height: 12px; }
+.person-link { min-height: 24px; display: inline-flex; align-items: center; gap: 3px; color: var(--text-secondary); text-decoration: none; }
+.person-link svg { width: 11px; height: 11px; color: var(--text-tertiary); }
+.person-copy:focus-visible, .person-link:focus-visible { border-radius: 2px; box-shadow: 0 0 0 2px var(--ring); }
+@media (hover: hover) and (pointer: fine) {
+  .person-copy:hover { background: var(--surface-hover); color: var(--text); }
+  .person-link:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+}
+@media (pointer: coarse) { .person-copy, .person-link { min-width: 40px; min-height: 40px; margin-block: -8px; } .person-links { margin-top: 8px; } }
+/* "For me" in the filter menu: the handles a person links, under the switch while it is on. */
+.filter-handles { display: grid; gap: 6px; padding: 2px 8px 8px; }
+.filter-handle { display: grid; gap: 3px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.filter-handle-input { height: 28px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; }
+.filter-handle-input:focus-visible { border-color: var(--ring); outline: none; }
+.filter-handle-input[aria-invalid="true"] { border-color: var(--danger); }
+.filter-sheet .filter-handles { padding: 2px 4px 8px; }
+.filter-sheet .filter-handle-input { height: 40px; font-size: 16px; }

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { setBetaEditorForTests } from '../src/client/config.ts';
+import { editingEnabled, setBetaEditorForTests } from '../src/client/config.ts';
 import { formatRelative } from '../src/client/format.ts';
 import {
   buildIndexEntries,
@@ -315,5 +315,24 @@ describe('the edit route (beta editor)', () => {
     setBetaEditorForTests(false);
     expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
     expect(parseRoute('/r/demo-shop', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
+  });
+});
+
+describe('host editing route policy', () => {
+  afterEach(() => {
+    setBetaEditorForTests(undefined);
+    vi.unstubAllGlobals();
+  });
+
+  it('opens normal playback for edit deep links without write capability, including under a base path', () => {
+    setBetaEditorForTests(true);
+    vi.stubGlobal('document', { querySelector: () => ({ content: 'off' }) });
+    expect(editingEnabled()).toBe(false);
+    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
+    expect(parseRoute('/replays/r/demo-shop/edit', '', '/replays')).toEqual({ kind: 'replay', id: 'demo-shop' });
+    vi.stubGlobal('document', { querySelector: () => ({ content: 'on' }) });
+    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'edit', id: 'demo-shop' });
+    setBetaEditorForTests(false);
+    expect(editingEnabled()).toBe(false);
   });
 });

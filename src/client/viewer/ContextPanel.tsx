@@ -1,5 +1,6 @@
 import {
   CheckIcon,
+  CircleHelpIcon,
   FlaskConicalIcon,
   GitCommitHorizontalIcon,
   GlobeIcon,
@@ -7,6 +8,7 @@ import {
   ListChecksIcon,
   type LucideIcon,
   TagIcon,
+  XIcon,
 } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type ReactElement, type ReactNode, useContext, useId, useLayoutEffect, useRef, useState } from 'react';
@@ -15,7 +17,8 @@ import type { ReplayContext, ReplaySourceRef } from '../../shared/context.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import type { FieldSchema } from '../config.ts';
 import { formatRelative } from '../format.ts';
-import { type FieldRow, type FieldValue, fieldRows, httpsHref } from './context-fields.ts';
+import { sourceLook } from '../source-looks.ts';
+import { type FieldRow, type FieldValue, fieldGroups, httpsHref, type Signal, type SignalState } from './context-fields.ts';
 import { ViewerContext } from './context.ts';
 import { Empty } from './Empty.tsx';
 import { SourceIcon } from '@/components/brand-icon.tsx';
@@ -44,7 +47,16 @@ function useNotify() {
   return useContext(ViewerContext)?.notify;
 }
 
-export function ContextPanel({ bundle, schema }: { bundle: ContextBundle; schema?: FieldSchema | undefined }) {
+export function ContextPanel({
+  bundle,
+  schema,
+  sections,
+}: {
+  bundle: ContextBundle;
+  schema?: FieldSchema | undefined;
+  /** Blocks client plugins add to the tab (registerContextSection), drawn after the built-in groups. */
+  sections?: ReactNode;
+}) {
   const context = bundle.context;
   if (!context) {
     return (
@@ -52,6 +64,7 @@ export function ContextPanel({ bundle, schema }: { bundle: ContextBundle; schema
         <Empty title="No context was captured">
           Pass --context-file to the capture CLI to attach the build, test and sources behind a run.
         </Empty>
+        {sections ? <div className="ctx-inner ctx-plugin-sections">{sections}</div> : null}
       </div>
     );
   }
@@ -61,8 +74,22 @@ export function ContextPanel({ bundle, schema }: { bundle: ContextBundle; schema
         <Summary context={context} />
         {context.sources?.length ? <Sources sources={context.sources} /> : null}
         <Groups context={context} schema={schema} />
+        {sections}
       </div>
     </div>
+  );
+}
+
+/** One plugin block in the Context tab: the same heading as a built-in group, the plugin's DOM below it. */
+export function ContextSection({ title, testId, children }: { title: string; testId: string; children: ReactNode }) {
+  const heading = useId();
+  return (
+    <section className="ctx-section ctx-plugin-section" aria-labelledby={heading} data-testid={testId}>
+      <h2 id={heading} className="ctx-heading">
+        {title}
+      </h2>
+      {children}
+    </section>
   );
 }
 
@@ -109,9 +136,21 @@ function SourceRow({ source }: { source: ReplaySourceRef }) {
       ) : (
         <span className="ctx-source-link">{sourceLabel(source)}</span>
       )}
-      <span className="ctx-source-meta">{source.provider}</span>
+      <SourceMeta source={source} />
       {href ? <AnimatedIcon name="arrow-up-right" className="ctx-source-arrow" /> : null}
     </li>
+  );
+}
+
+/** What the source is (the provider's noun, else its id), then its attributes' values; the keys are in the tooltip. */
+function SourceMeta({ source }: { source: ReplaySourceRef }) {
+  const what = sourceLook(source.provider)?.noun ?? source.provider;
+  const attrs = Object.entries(source.attrs ?? {});
+  const text = [what, ...attrs.map(([, value]) => String(value))].join(' · ');
+  return (
+    <span className="ctx-source-meta" title={attrs.length ? attrs.map(([key, value]) => `${key}: ${value}`).join('\n') : undefined}>
+      {text}
+    </span>
   );
 }
 
@@ -194,7 +233,7 @@ function Groups({ context, schema }: { context: ReplayContext; schema: FieldSche
       ),
     });
 
-  const custom = fields ? fieldRows(fields, schema) : [];
+  const custom = fields ? fieldGroups(fields, schema) : [];
   const groups = [
     { title: 'Build', rows: build },
     { title: 'Test', rows: testRows },
@@ -205,7 +244,14 @@ function Groups({ context, schema }: { context: ReplayContext; schema: FieldSche
       {groups.map((group) => (
         <Group key={group.title} title={group.title} rows={group.rows} />
       ))}
-      {custom.length ? <Fields title={schema?.title || 'Details'} rows={custom} /> : null}
+      {custom.map((group) => (
+        <Fields
+          key={group.title ?? ''}
+          title={group.title ?? (schema?.title || 'Details')}
+          rows={group.rows}
+          testId={group.title === undefined ? 'context-fields' : `context-group:${group.title}`}
+        />
+      ))}
     </div>
   );
 }
@@ -234,10 +280,10 @@ function Group({ title, rows }: { title: string; rows: Row[] }) {
 
 /* ---------- The deployment's own fields ---------- */
 
-function Fields({ title, rows }: { title: string; rows: FieldRow[] }) {
+function Fields({ title, rows, testId }: { title: string; rows: FieldRow[]; testId: string }) {
   const heading = useId();
   return (
-    <section className="ctx-section ctx-group ctx-fields" aria-labelledby={heading} data-testid="context-fields">
+    <section className="ctx-section ctx-group ctx-fields" aria-labelledby={heading} data-testid={testId}>
       <h2 id={heading} className="ctx-heading">
         {title}
       </h2>
@@ -303,9 +349,47 @@ function FieldValueView({ value }: { value: FieldValue }): ReactElement {
           ))}
         </ul>
       );
+    case 'signals':
+      return <Signals items={value.items} />;
     case 'rows':
       return <FieldList rows={value.rows} nested />;
   }
+}
+
+const SIGNAL_LABEL: Record<SignalState, string> = {
+  enabled: 'Enabled',
+  disabled: 'Disabled',
+  unknown: 'Unknown: not supplied or not loaded',
+};
+
+const SIGNAL_ICON: Record<SignalState, LucideIcon> = {
+  enabled: CheckIcon,
+  disabled: XIcon,
+  unknown: CircleHelpIcon,
+};
+
+/**
+ * Tri-state flags (`x-replays-widget: "signals"`): a check for enabled, a cross on muted text for disabled, and for
+ * unknown a question mark on a dashed outline, so "we don't know" never reads as "off".
+ */
+function Signals({ items }: { items: Signal[] }) {
+  return (
+    <ul className="ctx-chips" data-widget="signals">
+      {items.map(({ key, state, label }, index) => {
+        const Icon = SIGNAL_ICON[state];
+        const name = label ?? key;
+        return (
+          <Hint key={`${key}-${index}`} label={`${name}: ${SIGNAL_LABEL[state]}`}>
+            <li className="ctx-chip ctx-signal" data-state={state} data-testid="context-signal">
+              <Icon aria-hidden="true" />
+              <code>{name}</code>
+              <span className="visually-hidden">: {state}</span>
+            </li>
+          </Hint>
+        );
+      })}
+    </ul>
+  );
 }
 
 /** A value that truncates to one line; the tooltip (with the full value) only exists while it is cut off. */

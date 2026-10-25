@@ -5,7 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import type { ReplayConsoleEntry, ReplayPerformanceEntry, ReplayPerformanceTrack } from '../shared/replay.ts';
 import { MAX_PERFORMANCE_ENTRIES } from '../shared/replay.ts';
-import { sanitizeEmbeddedUrls, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
+import { compileRedaction, type RedactionRules } from '../shared/redaction.ts';
+import { redactConsoleMessage, redactEvents, sanitizeEmbeddedUrls, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
 
 /** What the recorder needs from a Chrome DevTools Protocol connection: a Playwright `CDPSession` fits, and so does `CdpClient`. */
 export interface CdpLike {
@@ -70,14 +71,30 @@ export function createPullGate(run: (final: boolean) => Promise<void>) {
   };
 }
 
-export function normalizeConsole(entries: RecorderChunk['console'], origin: number): ReplayConsoleEntry[] {
+/** The default URL pass, then the host's rules, then the default pass again (as sanitizeReplayBundle does). */
+function consoleMessage(message: string, redaction: RedactionRules | undefined) {
+  const clean = sanitizeEmbeddedUrls(message, redaction);
+  return redaction ? sanitizeEmbeddedUrls(redactConsoleMessage(clean, redaction), redaction) : clean;
+}
+
+/** `redaction`: the host's rules (JSON keys and text patterns in the message, extra query parameters in URLs). */
+export function normalizeConsole(entries: RecorderChunk['console'], origin: number, redaction?: RedactionRules): ReplayConsoleEntry[] {
   const levels = new Set(['debug', 'info', 'log', 'warn', 'error']);
   return (entries ?? []).map((entry) => ({
     at: Math.max(0, entry.at - origin),
     level: levels.has(entry.level) ? (entry.level as ReplayConsoleEntry['level']) : 'log',
-    message: sanitizeEmbeddedUrls(entry.message.slice(0, 20_000)),
-    ...(entry.url ? { url: sanitizeUrl(entry.url) } : {}),
+    message: consoleMessage(entry.message.slice(0, 20_000), redaction),
+    ...(entry.url ? { url: sanitizeUrl(entry.url, redaction) } : {}),
   }));
+}
+
+/**
+ * The page script with the host's mask selectors set before it runs (rrweb `maskTextSelector`). The selector list is a
+ * JSON string literal, never code.
+ */
+export function recorderScript(source: string, redaction?: RedactionRules) {
+  const selectors = compileRedaction(redaction).maskSelectors;
+  return selectors.length ? `window.__REPLAYS_MASK_TEXT__=${JSON.stringify(selectors.join(', '))};\n${source}` : source;
 }
 
 const performanceKinds = new Set<ReplayPerformanceEntry['kind']>([
@@ -148,9 +165,11 @@ export class RecorderSession {
   };
 
   private readonly cdp: CdpLike;
+  private readonly redaction: RedactionRules | undefined;
 
-  private constructor(cdp: CdpLike) {
+  private constructor(cdp: CdpLike, redaction?: RedactionRules) {
     this.cdp = cdp;
+    this.redaction = redaction;
     this.pull = createPullGate(async (final) => {
       try {
         const result = (await this.cdp.send('Runtime.evaluate', {
@@ -164,20 +183,26 @@ export class RecorderSession {
     });
   }
 
-  static async start(cdp: CdpLike, options: { pullIntervalMs?: number } = {}) {
-    const session = new RecorderSession(cdp);
+  /**
+   * `redaction`: the host's rules (src/shared/redaction.ts). Mask selectors go to the recorder in the page; the other
+   * rules apply to the events and console entries as they are collected.
+   */
+  static async start(cdp: CdpLike, options: { pullIntervalMs?: number; redaction?: RedactionRules } = {}) {
+    if (options.redaction) compileRedaction(options.redaction);
+    const session = new RecorderSession(cdp, options.redaction);
     cdp.on('Runtime.bindingCalled', session.onBinding);
     await cdp.send('Runtime.enable');
     await cdp.send('Page.enable');
     await cdp.send('Runtime.addBinding', { name: BINDING });
-    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: await recorderSource() });
+    await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: recorderScript(await recorderSource(), options.redaction) });
     session.timer = setInterval(() => void session.pull(), options.pullIntervalMs ?? 1000);
     return session;
   }
 
   private add(chunk: RecorderChunk | undefined) {
     if (!chunk) return;
-    this.events.push(...(chunk.events ?? []).map((event) => sanitizeUrlFields(event)));
+    const events = (chunk.events ?? []).map((event) => sanitizeUrlFields(event, this.redaction));
+    this.events.push(...(this.redaction ? sanitizeUrlFields(redactEvents(events, this.redaction), this.redaction) : events));
     this.consoleEntries.push(...(chunk.console ?? []));
     const remaining = Math.max(0, MAX_PERFORMANCE_ENTRIES - this.performanceEntries.length);
     this.performanceEntries.push(...(chunk.performance ?? []).slice(0, remaining));
@@ -209,7 +234,7 @@ export class RecorderSession {
     const origin = this.events[0]!.timestamp;
     return {
       events: this.events,
-      console: normalizeConsole(this.consoleEntries, origin).sort((a, b) => a.at - b.at),
+      console: normalizeConsole(this.consoleEntries, origin, this.redaction).sort((a, b) => a.at - b.at),
       performance: {
         supported: [...this.performanceSupported].sort(),
         entries: normalizePerformance(this.performanceEntries, origin),

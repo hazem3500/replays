@@ -5,6 +5,7 @@ import type { ReplayError } from '../issues.ts';
 import { usePlayer } from '../player.ts';
 import { positionText } from '../timeline.ts';
 import { FeatureScrubberOverlays } from '../plugins/features.tsx';
+import { PluginTimelineTracks } from '../plugins/PluginSlots.tsx';
 import { setPreviewTime } from './preview-time.ts';
 import {
   barBox,
@@ -541,6 +542,7 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
         <span ref={knob} className="scrubber-knob" />
       </div>
       <FeatureScrubberOverlays width={width} inset={INSET} />
+      <PluginTimelineTracks width={width} inset={INSET} />
       <div ref={anchor} className="scrubber-bubble-anchor" aria-hidden="true">
         <div ref={bubble} className="scrubber-bubble" data-visible="false" data-kind="time" data-testid="scrubber-bubble">
           <span ref={bubbleTime} className="scrubber-bubble-time" data-testid="scrubber-bubble-time" />

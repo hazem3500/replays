@@ -1,7 +1,8 @@
+import type { PluginApi, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
 // The public API of the package, entry by entry (docs/api-stability.md). Adding an export is a minor change, removing or
 // renaming one is a major change: either way this file changes in the same commit, so the diff shows the API change.
@@ -18,16 +19,18 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'PLUGIN_API_VERSION',
       'PluginError',
       'assertPlugin',
+      'assertRedactionRules',
       'definePlugin',
       'mergeRegistries',
       'orderPlugins',
       'rejectUpload',
       'resolvePlugins',
       'resolvePluginsSync',
+      'SUMMARY_FIELD_LIMITS',
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
-  './viewer': { source: '../src/client/plugins/api.ts', values: ['VIEWER_API_VERSION', 'defineViewerPlugin'] },
+  './viewer': { source: '../src/client/plugins/api.ts', values: ['MAX_TRACK_MARKERS', 'VIEWER_API_VERSION', 'defineViewerPlugin'] },
   './server': {
     source: '../src/server/index.ts',
     values: [
@@ -36,25 +39,34 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'NotFoundError',
       'ObjectExistsError',
       'PreconditionFailedError',
+      'PurposeCatalog',
       'ReplayStore',
       'S3Storage',
       'THEME_TOKENS',
       'assertKey',
       'authFromEnv',
+      'buildStatic',
+      'compareStores',
       'compileContextSchema',
       'createApp',
+      'createPurposeCatalog',
       'createRuntime',
       'globToRegExp',
       'headerAuth',
       'loadSettings',
       'mergeContextSchemas',
+      'migrateStore',
       'noneAuth',
+      'normalizeHosts',
       'oidcAuth',
       'readConfigFile',
+      'renderIndexHtml',
+      'resolveSettings',
       'startServer',
       'storageFromEnv',
       'validateBranding',
       'verifyJwt',
+      'withBase',
     ],
   },
   './plugins/iap': {
@@ -74,8 +86,10 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'RecorderSession',
       'SourceProviders',
       'agentBrowserDriver',
+      'assertRedactionRules',
       'assertReplayBundle',
       'assertReplayContext',
+      'assertReplayPeople',
       'buildHumanBundle',
       'buildReplayContext',
       'capture',
@@ -85,6 +99,8 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'normalizeConsole',
       'normalizePerformance',
       'parseArgs',
+      'parsePeopleFlags',
+      'personMatch',
       'playwrightDriver',
       'recorderSource',
       'sanitizeHar',
@@ -98,6 +114,11 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('exposes typed host intake registration and the existing prepare hook contract', () => {
+    expectTypeOf<PluginApi['requestPolicy']>().parameter(0).toEqualTypeOf<RequestPolicy>();
+    expectTypeOf<PluginApi['uploadEndpoint']>().parameter(0).toEqualTypeOf<UploadEndpoint>();
+    expectTypeOf<UploadEndpoint['prepare']>().toEqualTypeOf<PrepareUploadHook | undefined>();
+  });
   it.each(Object.entries(entries))('%s exports exactly the documented values', async (_subpath, { source, values }) => {
     const module = (await import(source)) as Record<string, unknown>;
     expect(Object.keys(module).sort()).toEqual([...values].sort());

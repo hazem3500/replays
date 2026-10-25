@@ -1,10 +1,11 @@
+import { SignInError, SignInLink } from './sign-in.tsx';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
 import { Activity, lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { TooltipProvider } from '@/components/ui/tooltip.tsx';
 
-import { productName } from './config.ts';
+import { editingEnabled, productName } from './config.ts';
 import { ReplayIndex } from './ReplayIndex.tsx';
 import { editsQuery } from './edits.ts';
 import { queryClient, replayQuery, suiteQuery } from './queries.ts';
@@ -107,6 +108,11 @@ setRoutePreparer(prepareRoute);
 export function App() {
   const route = useSyncExternalStore(subscribeRoute, currentRoute);
   const indexGeneration = useSyncExternalStore(subscribeRoute, currentIndexGeneration);
+  // Old edit links open playback; keep their time, original-view choice and step/comment anchor.
+  useEffect(() => {
+    if (route.kind !== 'edit' && !editingEnabled() && /\/r\/[^/]+\/edit\/?$/.test(location.pathname))
+      history.replaceState(history.state, '', `${location.pathname.replace(/\/edit\/?$/, '')}${location.search}${location.hash}`);
+  }, [route]);
   // The index mounts the first time it is shown and then stays (hidden) behind viewer pages, so Back returns
   // to it as it was: same list, same scroll, the card you opened still there to morph into.
   const [indexShown, setIndexShown] = useState(route.kind === 'index');
@@ -179,9 +185,11 @@ function ReplayPage({ id }: { id: string }) {
   const edits = useQuery(editsQuery(id));
   const editsSettled = edits.data !== undefined || edits.isError;
   useEffect(() => {
-    if (edits.isError && bundle) notify('Could not load this replay’s edits', 'info', 'Showing it as recorded.');
-  }, [bundle, edits.isError]);
-  const error = failure ? failure.message : '';
+    if (edits.isError && bundle && !(edits.error instanceof SignInError))
+      notify('Could not load this replay’s edits', 'info', 'Showing it as recorded.');
+  }, [bundle, edits.isError, edits.error]);
+  const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
+  const error = (authFailure ?? failure)?.message ?? '';
   // Loaded code and a cached bundle render the viewer at once, even inside a page transition (it is the
   // transition's new page). Otherwise the skeleton stays until the transition is over (swapping it mid-way
   // would remove the elements being animated) and the viewer's code is in, so it never suspends again.
@@ -208,6 +216,7 @@ function ReplayPage({ id }: { id: string }) {
         <section className="state-content" role="alert">
           <span className="state-kicker">Could not open replay</span>
           <h1>{error}</h1>
+          <SignInLink error={authFailure ?? failure ?? edits.error} />
           <p>
             Replay <code>{id}</code> may have expired or the link may be incomplete.
           </p>
@@ -254,7 +263,8 @@ function EditPage({ id }: { id: string }) {
   useEffect(() => {
     document.title = bundle ? `Edit · ${bundle.meta.title} · replays` : 'replays';
   }, [bundle]);
-  const error = failure?.message ?? (edits.error ? edits.error.message : '');
+  const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
+  const error = (authFailure ?? failure ?? edits.error)?.message ?? '';
   if (error) {
     return (
       <main className="state-shell">
@@ -264,6 +274,7 @@ function EditPage({ id }: { id: string }) {
         <section className="state-content" role="alert">
           <span className="state-kicker">Could not open edit mode</span>
           <h1>{error}</h1>
+          <SignInLink error={authFailure ?? failure ?? edits.error} />
           <div className="state-actions">
             <a className="button" href={replayHref(id)}>
               Back to the replay

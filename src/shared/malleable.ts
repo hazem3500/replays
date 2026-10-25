@@ -52,6 +52,17 @@ export interface UserPluginManifest {
     /** Entries in the More menu that run the plugin's function once. */
     actions?: Contribution[];
   };
+  /**
+   * The versions this plugin was last kept under: the core package and, when the deployment names one, its distribution
+   * (`name@version`). Written by the server when a version is saved (whatever the client sent); used by the viewer to tell
+   * "this plugin broke after an upgrade" from "this plugin is broken" (docs/malleability.md#upgrades).
+   */
+  targets?: PluginTargets;
+}
+
+export interface PluginTargets {
+  core: string;
+  distribution?: string;
 }
 
 export type PluginScope = 'user' | 'workspace';
@@ -125,7 +136,7 @@ function contributions(value: unknown, kind: string): Contribution[] | undefined
 export function parseManifest(value: unknown): UserPluginManifest {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new PluginFormatError('the manifest must be an object');
   const input = value as Record<string, unknown>;
-  const known = ['format', 'id', 'name', 'description', 'permissions', 'contributes'];
+  const known = ['format', 'id', 'name', 'description', 'permissions', 'contributes', 'targets'];
   const extra = Object.keys(input).find((key) => !known.includes(key));
   if (extra) throw new PluginFormatError(`manifest.${extra} is not a supported field`);
   if (input.format !== USER_PLUGIN_FORMAT) throw new PluginFormatError(`manifest.format must be "${USER_PLUGIN_FORMAT}"`);
@@ -148,6 +159,7 @@ export function parseManifest(value: unknown): UserPluginManifest {
   const actions = contributions(c.actions, 'actions');
   if (!tabs?.length && !panels?.length && !actions?.length)
     throw new PluginFormatError('a plugin must contribute at least one tab, panel or action');
+  const targets = parseTargets(input.targets);
   return {
     format: USER_PLUGIN_FORMAT,
     id: input.id,
@@ -155,7 +167,30 @@ export function parseManifest(value: unknown): UserPluginManifest {
     ...(input.description ? { description: input.description as string } : {}),
     permissions: [...new Set(permissions as Capability[])],
     contributes: { ...(tabs?.length ? { tabs } : {}), ...(panels?.length ? { panels } : {}), ...(actions?.length ? { actions } : {}) },
+    ...(targets ? { targets } : {}),
   };
+}
+
+function parseTargets(value: unknown): PluginTargets | undefined {
+  if (value === undefined) return undefined;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new PluginFormatError('manifest.targets must be an object');
+  const input = value as Record<string, unknown>;
+  const extra = Object.keys(input).find((key) => key !== 'core' && key !== 'distribution');
+  if (extra) throw new PluginFormatError(`manifest.targets.${extra} is not a supported field`);
+  if (typeof input.core !== 'string' || !input.core || input.core.length > 40)
+    throw new PluginFormatError('manifest.targets.core must be a version string');
+  if (
+    input.distribution !== undefined &&
+    (typeof input.distribution !== 'string' || !input.distribution || input.distribution.length > 130)
+  )
+    throw new PluginFormatError('manifest.targets.distribution must be "name@version"');
+  return { core: input.core, ...(input.distribution ? { distribution: input.distribution as string } : {}) };
+}
+
+/** The manifest without `targets`: what the author wrote, for comparing a working copy with a saved version. */
+export function authoredManifest(manifest: UserPluginManifest): Omit<UserPluginManifest, 'targets'> {
+  const { targets: _targets, ...rest } = manifest;
+  return rest;
 }
 
 export function parseSource(value: unknown): string {

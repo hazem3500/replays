@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { dirtyFrames, exportMap, exportTimes, frameCount, frameTime, poseKey } from '../src/client/render/frames.ts';
+import { PLAYBACK_SPEEDS } from '../src/shared/render-variant.ts';
 import { INACTIVE_SKIP_SPEED } from '../src/shared/skip.ts';
 import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale } from '../src/client/step-caption.ts';
 
@@ -55,11 +56,11 @@ const stepCaptionKey = (time: number) => captionKey(captionAt(steps, time, 1000)
 describe('step captions in exported frames', () => {
   it('captions the active step, entering when it starts (the first one from the start)', () => {
     expect(captionAt([], 100, 1000)).toBeUndefined();
-    expect(captionAt(steps, 0, 1000)).toEqual({ index: 0, label: 'Open settings', enteredMs: 0 });
+    expect(captionAt(steps, 0, 1000)).toEqual({ index: 0, step: 0, label: 'Open settings', enteredMs: 0 });
     expect(captionAt(steps, 100, 1000)).toMatchObject({ index: 0, enteredMs: 100 });
     // The first caption does not enter again when its step's own time comes.
     expect(captionAt(steps, 400, 1000)).toMatchObject({ index: 0, enteredMs: 400 });
-    expect(captionAt(steps, 750, 1000)).toEqual({ index: 1, label: 'Save', enteredMs: 50 });
+    expect(captionAt(steps, 750, 1000)).toEqual({ index: 1, step: 1, label: 'Save', enteredMs: 50 });
     // The entrance runs in output time: at 2× it covers twice the replay time.
     expect(captionAt(steps, 750, 1000, (time) => time / 2)).toMatchObject({ enteredMs: 25 });
     // At the end every step counts as reached, already settled.
@@ -68,7 +69,9 @@ describe('step captions in exported frames', () => {
 
   it('keys a caption by step while it enters, then by step alone', () => {
     expect(captionKey(undefined)).toBe('');
-    expect(captionKey({ index: 1, label: 'Save', enteredMs: 50 })).not.toBe(captionKey({ index: 1, label: 'Save', enteredMs: 100 }));
+    expect(captionKey({ index: 1, step: 1, label: 'Save', enteredMs: 50 })).not.toBe(
+      captionKey({ index: 1, label: 'Save', enteredMs: 100 }),
+    );
     expect(captionKey({ index: 1, label: 'Save', enteredMs: CAPTION_IN_MS })).toBe(
       captionKey({ index: 1, label: 'Save', enteredMs: 5000 }),
     );
@@ -125,5 +128,51 @@ describe('export timeline (speed, skip inactive)', () => {
     expect(exportCaptionScale(0)).toBe(1);
     // 22.4 px text, 28.8 px from the bottom at 1440 px.
     expect(14 * exportCaptionScale(1440)).toBeCloseTo(22.4, 5);
+  });
+});
+
+describe('pacing parity', () => {
+  const held = [
+    { at: 0, kind: 'click', label: 'Next month' },
+    { at: 400, kind: 'wait', label: 'Wait for the page' },
+    { at: 600, kind: 'click', label: 'Next month' },
+    { at: 800, kind: 'wait', label: 'Wait for the page' },
+    { at: 900, kind: 'wait', label: 'Wait for export' },
+  ];
+
+  it('holds repeated labels across pacing waits while numbering follows the active rail', () => {
+    for (const [time, step] of [
+      [450, 1],
+      [650, 2],
+      [850, 3],
+    ]) {
+      expect(captionAt(held, time!, 1000)).toEqual({ index: 0, step, label: 'Next month', enteredMs: time });
+    }
+    expect(captionAt(held, 950, 1000)).toMatchObject({ index: 4, step: 4, label: 'Wait for export', enteredMs: 50 });
+    expect(captionAt(held, 1000, 1000)).toMatchObject({ index: 4, step: 4 });
+    expect(captionKey(captionAt(held, 650, 1000))).not.toBe(captionKey(captionAt(held, 850, 1000)));
+  });
+
+  it('redraws a held caption when only its number changes', () => {
+    const dirty = dirtyFrames({
+      duration: 1000,
+      fps: 10,
+      speed: 1,
+      eventTimes: [],
+      cursorKey: still,
+      captionKey: (time) => captionKey(captionAt(held, time, 1000)),
+    });
+    expect(dirty).toEqual([0, 1, 2, 4, 6, 8, 9, 10]);
+  });
+
+  it('keeps quarter speed frame counts and inverse timeline math consistent', () => {
+    expect(PLAYBACK_SPEEDS).toEqual([0.25, 0.5, 1, 1.5, 2, 4, 8]);
+    expect(frameCount(1000, 30, 0.25)).toBe(121);
+    expect(frameTime(1, 30, 0.25, 1000)).toBeCloseTo(8.333, 3);
+    const map = exportMap({ duration: 10_000, speed: 0.25, gaps: [{ from: 800, to: 9200 }] });
+    expect(map.outputMs).toBe(6400 + 8400 / 16);
+    for (const time of [0, 800, 5000, 9200, 10_000]) expect(map.replayAt(map.outputAt(time))).toBeCloseTo(time, 6);
+    expect(exportTimes(exportMap({ duration: 1000, speed: 0.25 }), 10, 1000)).toHaveLength(41);
+    expect(exportTimes(map, 30, 10_000).at(-1)).toBe(10_000);
   });
 });

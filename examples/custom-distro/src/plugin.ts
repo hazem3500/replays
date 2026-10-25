@@ -16,6 +16,11 @@ const LOGO = `data:image/svg+xml;base64,${Buffer.from(
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" rx="6" fill="#ff6600"/><path fill="#fff" d="M8 6l10 6-10 6z"/></svg>',
 ).toString('base64')}`;
 
+// The chat provider's mark: an image URL like the logo (drawn as <img> by the viewer, never inlined).
+const CHAT_ICON = `data:image/svg+xml;base64,${Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"><path fill="#ff6600" d="M2 3h12v8H7l-3 3v-3H2z"/></svg>',
+).toString('base64')}`;
+
 /** What the example's hooks observed; served at /_distro/stats to prove they ran. */
 const stats = { responses: 0, uploads: 0 };
 
@@ -70,12 +75,17 @@ export default definePlugin((options: AcmeOptions) => ({
       },
     });
 
-    // 3. A source-link provider: `acme-chat:C123/p456` becomes a link to the thread.
+    // 3. A source-link provider: `acme-chat:C123/p456` becomes a link to the thread, with its own mark and noun, and
+    //    the channel kept as an attribute (on the stored source and, capped, in the index summary).
     api.sourceProvider({
       id: 'acme-chat',
       label: 'Acme Chat',
+      noun: 'Acme Chat thread',
+      icon: CHAT_ICON,
       resolve: (ref) =>
-        /^C\w+\/p\d+$/.test(ref) ? { url: `https://chat.example.com/archives/${ref}`, label: `thread ${ref}` } : undefined,
+        /^C\w+\/p\d+$/.test(ref)
+          ? { url: `https://chat.example.com/archives/${ref}`, label: `thread ${ref}`, attrs: { channel: ref.split('/')[0]! } }
+          : undefined,
     });
 
     // 4. Branding and base path.
@@ -103,7 +113,25 @@ export default definePlugin((options: AcmeOptions) => ({
       stats.uploads += 1;
     });
 
-    // 6. The browser entry: a tab, an action and a panel (built by scripts/build.mjs).
+    // 6. The index: who uploaded a replay and where it ran, derived into each summary (summary.ext['acme-distro']) at
+    //    upload, and a server-side filter on it (`?x-env=production`), which the browser entry's filter menu sets.
+    api.summaryFields({
+      name: 'build',
+      fields(bundle) {
+        const fields = bundle.context?.fields ?? {};
+        return {
+          environment: typeof fields.environment === 'string' ? fields.environment : null,
+          uploadedBy: typeof fields.uploadedBy === 'string' ? fields.uploadedBy : null,
+        };
+      },
+    });
+    api.indexFilter({
+      id: 'environment',
+      param: 'x-env',
+      match: (summary, value) => summary.ext?.['acme-distro']?.environment === value,
+    });
+
+    // 7. The browser entry: tabs, bar and menu actions, panels, timeline tracks, context sections, settings and index slots.
     api.client({ id: 'main', script: fileURLToPath(new URL('../dist/client.js', import.meta.url)) });
   },
 }));

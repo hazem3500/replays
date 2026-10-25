@@ -1,3 +1,4 @@
+import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
 
@@ -21,10 +22,13 @@ import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
 import { rememberListed } from './navigation.ts';
-import { CommandSearch, IndexIdentity, ScopeBar } from './index/IndexHeader.tsx';
+import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, ScopeBar } from './index/IndexHeader.tsx';
+import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
 import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
-import { FilterMenu, FilterSheet } from './index/FilterMenu.tsx';
+import { FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
+import { MeContext } from './index/People.tsx';
+import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, rememberIndexSearch } from './route.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
@@ -49,6 +53,12 @@ export const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> 
   { key: 'errors', label: 'Errors', numeric: true },
 ];
 
+/** Plugin filter params (registerIndexFilter / api.indexFilter): the same rule as the server's. */
+const PLUGIN_PARAM = /^x-[a-z0-9][a-z0-9-]{0,38}$/;
+
+/** True when a plugin filter is set: those are matched only by the server. */
+const hasPluginFilters = (filters: ReplayFilters) => Object.keys(filters.params ?? {}).length > 0;
+
 export function filtersFromSearch(search: string): ReplayFilters {
   const params = new URLSearchParams(search);
   const filters: ReplayFilters = {};
@@ -61,6 +71,11 @@ export function filtersFromSearch(search: string): ReplayFilters {
   if (source === 'agent' || source === 'human') filters.source = source;
   const tag = params.get('tag');
   if (tag) filters.tag = tag;
+  // Plugin filters (`x-*`, registerIndexFilter): carried as they are, before or without the plugin's entry; the server matches.
+  const plugin: Record<string, string> = {};
+  for (const [key, value] of params)
+    if (PLUGIN_PARAM.test(key) && value.trim() && !(key in plugin)) plugin[key] = value.trim().slice(0, 200);
+  if (Object.keys(plugin).length) filters.params = plugin;
   return filters;
 }
 
@@ -71,6 +86,7 @@ export function searchFromFilters(filters: ReplayFilters) {
   if (filters.errors) params.set('errors', '1');
   if (filters.source) params.set('source', filters.source);
   if (filters.tag) params.set('tag', filters.tag);
+  for (const key of Object.keys(filters.params ?? {}).sort()) params.set(key, filters.params![key]!);
   const query = params.toString();
   return query ? `?${query}` : '';
 }
@@ -81,6 +97,44 @@ export type IndexKind = 'suites' | 'sessions';
 export function kindFromSearch(search: string): IndexKind | undefined {
   const kind = new URLSearchParams(search).get('kind');
   return kind === 'suites' || kind === 'sessions' ? kind : undefined;
+}
+
+/** "For me" (`for=me`): only rows whose people include the signed-in person; kept in the URL like `kind=`. */
+export function forMeFromSearch(search: string) {
+  return new URLSearchParams(search).get('for') === 'me';
+}
+
+/**
+ * The query the server filters For me by: `for=me` plus the handles linked in this browser (`handle.<id>=value`),
+ * appended to a request path that may already have a query. Unchanged when For me is off.
+ */
+export function withForMe(path: string, forMe: boolean, linked: Readonly<Record<string, string>> = {}) {
+  if (!forMe) return path;
+  const params = new URLSearchParams({ for: 'me' });
+  for (const [id, value] of Object.entries(linked).sort(([a], [b]) => a.localeCompare(b))) if (value) params.set(`handle.${id}`, value);
+  return `${path}${path.includes('?') ? '&' : '?'}${params}`;
+}
+
+const LINKED_KEY = `${PRODUCT_SLUG}-linked-handles`;
+
+/** The handles this browser linked for For me (`{ github: 'octocat' }`), from localStorage. */
+export function storedLinkedHandles(): Record<string, string> {
+  try {
+    const value = JSON.parse(readStorage(LINKED_KEY) ?? '{}') as unknown;
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+    return Object.fromEntries(
+      Object.entries(value).filter((entry): entry is [string, string] => typeof entry[1] === 'string' && Boolean(entry[1])),
+    );
+  } catch {
+    return {};
+  }
+}
+
+/** `GET /api/me`: the signed-in identity, plus the deployment's people config when it has one. */
+interface Me {
+  id: string;
+  email?: string;
+  people?: { roles?: string[]; handles: LinkableHandle[] };
 }
 
 /** The index's suites request; index.html preloads the same URL (keep the two in step). */
@@ -100,9 +154,38 @@ export function sortFromSearch(search: string): Sort {
   return { key: key as SortKey, direction: raw.startsWith('-') ? 'descending' : 'ascending' };
 }
 
-export function indexSearch(filters: ReplayFilters, kind: IndexKind | undefined, sort: Sort = DEFAULT_SORT) {
+/** The purpose segment, `purpose=`: one of the deployment's purposes, else none (All). */
+export function purposeFromSearch(search: string, purposes = pagePurposes()): string | undefined {
+  const purpose = new URLSearchParams(search).get('purpose');
+  return purposes.some((item) => item.id === purpose) ? purpose! : undefined;
+}
+
+/** The purposes an entry counts under: a replay's own; a suite's, those of its runs' replays. */
+export function entryPurposes(entry: IndexEntry): string[] {
+  if (entry.kind === 'session') return entry.summary.purpose ? [entry.summary.purpose] : [];
+  return [...new Set(entry.suite.runDetails.flatMap((run) => (run.replay?.purpose ? [run.replay.purpose] : [])))];
+}
+
+/** Entries per purpose segment. The segments narrow the list after the other filters, so every tab shows its count. */
+export function purposeCounts(entries: readonly IndexEntry[]): PurposeCounts {
+  const counts: PurposeCounts = { all: entries.length };
+  for (const entry of entries) for (const purpose of entryPurposes(entry)) counts[purpose] = (counts[purpose] ?? 0) + 1;
+  return counts;
+}
+
+export function indexSearch(
+  filters: ReplayFilters,
+  kind: IndexKind | undefined,
+  sort: Sort = DEFAULT_SORT,
+  purposeOrForMe?: string | boolean,
+  forMe = false,
+) {
+  const purpose = typeof purposeOrForMe === 'string' ? purposeOrForMe : undefined;
+  if (typeof purposeOrForMe === 'boolean') forMe = purposeOrForMe;
   const params = new URLSearchParams(searchFromFilters(filters));
+  if (purpose) params.set('purpose', purpose);
   if (kind) params.set('kind', kind);
+  if (forMe) params.set('for', 'me');
   if (sort.key !== DEFAULT_SORT.key || sort.direction !== DEFAULT_SORT.direction)
     params.set('sort', `${sort.direction === 'descending' ? '-' : ''}${sort.key}`);
   const query = params.toString();
@@ -171,14 +254,20 @@ export type IndexEntry =
       values: SortValues;
     };
 
-function runMatches(run: ReviewSuiteIndexRun, filters: ReplayFilters, query: string) {
-  const { q: _q, ...rest } = filters;
+function runMatches(run: ReviewSuiteIndexRun, filters: ReplayFilters, query: string, matched?: ReadonlySet<string>) {
+  const { q: _q, params: _params, ...rest } = filters;
+  // With plugin filters on, a run matches when the server listed its replay (the server alone can run plugin filters).
+  if (matched && !(run.replayId && matched.has(run.replayId))) return false;
   if (run.replay ? !matchesFilters(run.replay, rest) : Boolean(rest.host || rest.tag || rest.errors || rest.source === 'human'))
     return false;
   return !query || run.label.toLowerCase().includes(query) || Boolean(run.replay && matchesFilters(run.replay, { q: query }));
 }
 
-function suiteEntry(suite: ReviewSuiteIndexEntry, filters: ReplayFilters): Extract<IndexEntry, { kind: 'suite' }> | undefined {
+function suiteEntry(
+  suite: ReviewSuiteIndexEntry,
+  filters: ReplayFilters,
+  matched?: ReadonlySet<string>,
+): Extract<IndexEntry, { kind: 'suite' }> | undefined {
   const query = filters.q?.trim().toLowerCase() ?? '';
   const all = suite.runDetails.toSorted((a, b) => a.sequence - b.sequence);
   const text = [suite.title, suite.id, suite.subject ? sourceText(suite.subject) : ''];
@@ -187,8 +276,9 @@ function suiteEntry(suite: ReviewSuiteIndexEntry, filters: ReplayFilters): Extra
     !filters.tag &&
     !filters.errors &&
     filters.source !== 'human' &&
+    !matched &&
     (!query || text.some((value) => value.toLowerCase().includes(query)));
-  const runs = matchedBySuite ? all : all.filter((run) => runMatches(run, filters, query));
+  const runs = matchedBySuite ? all : all.filter((run) => runMatches(run, filters, query, matched));
   if (!matchedBySuite && runs.length === 0) return undefined;
   const replays = all.flatMap((run) => (run.replay ? [run.replay] : []));
   const sum = (pick: (replay: ReplaySummary) => number) => replays.reduce((total, replay) => total + pick(replay), 0);
@@ -230,9 +320,10 @@ export function buildIndexEntries(
 ): IndexEntry[] {
   const inSuites = new Set(suites.flatMap((suite) => suite.runDetails.flatMap((run) => (run.replayId ? [run.replayId] : []))));
   const entries: IndexEntry[] = [];
+  const matched = hasPluginFilters(filters) ? new Set(sessions.map((summary) => summary.id)) : undefined;
   if (kind !== 'sessions') {
     for (const suite of suites) {
-      const entry = suiteEntry(suite, filters);
+      const entry = suiteEntry(suite, filters, matched);
       if (entry) entries.push(entry);
     }
   }
@@ -275,13 +366,13 @@ interface IndexCache {
   newest?: string;
 }
 
-/** On Back/Forward only: the cached list for these filters (a fresh visit always starts from the server). */
-function restoredIndex(filters: ReplayFilters): IndexCache | undefined {
+/** On Back/Forward only: the cached list for this request (a fresh visit always starts from the server). */
+function restoredIndex(search: string): IndexCache | undefined {
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
   if (navigation?.type !== 'back_forward') return undefined;
   try {
     const cache = JSON.parse(sessionStorage.getItem(INDEX_CACHE_KEY) ?? 'null') as IndexCache | null;
-    return cache && cache.search === searchFromFilters(filters) ? cache : undefined;
+    return cache && cache.search === search ? cache : undefined;
   } catch {
     return undefined;
   }
@@ -318,11 +409,19 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
 
 export function ReplayIndex() {
   const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
-  const [restored] = useState(() => restoredIndex(filters));
+  const [forMe, setForMe] = useState(() => forMeFromSearch(location.search));
+  const [linked, setLinked] = useState(storedLinkedHandles);
+  const [me, setMe] = useState<Me>();
+  /** The sessions request (and the Back cache's key): the filters, plus For me. */
+  const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
+  const [restored] = useState(() => restoredIndex(listSearch));
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
+  const purposes = pagePurposes();
+  const [purpose, setPurpose] = useState<string | undefined>(() => purposeFromSearch(location.search, purposes));
   const [query, setQuery] = useState(filters.q ?? '');
   const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
   const [loadError, setError] = useState('');
+  const [authFailure, setAuthFailure] = useState<SignInError>();
   const [settledFilters, setSettledFilters] = useState<ReplayFilters | undefined>(restored ? filters : undefined);
   const [hosts, setHosts] = useState<string[]>(() =>
     [...new Set((restored?.items ?? []).map((summary) => summary.host).filter(Boolean))].sort(),
@@ -362,10 +461,25 @@ export function ReplayIndex() {
   }, [query]);
 
   useEffect(() => {
-    const search = indexSearch(filters, kind, sort);
+    const search = indexSearch(filters, kind, sort, purpose, forMe);
     history.replaceState(history.state, '', `${location.pathname}${search}`);
     rememberIndexSearch(search);
-  }, [filters, kind, sort]);
+  }, [filters, kind, sort, purpose, forMe]);
+
+  // Who "me" is, and which handles the deployment lets a person link (used only where people exist).
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchPage(apiUrl('me'), { signal: controller.signal })
+      .then(async (response) => (response.ok ? ((await response.json()) as Me) : undefined))
+      .then((loaded) => {
+        if (loaded && typeof loaded === 'object') setMe(loaded);
+      })
+      .catch((reason: unknown) => {
+        if (!controller.signal.aborted && reason instanceof SignInError) setAuthFailure(reason);
+        // Without it the index still works: no "That's you", and For me still matches by email on the server.
+      });
+    return () => controller.abort();
+  }, []);
 
   // Back from a replay lands where you left: the scroll offset lives in this history entry.
   useEffect(() => {
@@ -396,7 +510,7 @@ export function ReplayIndex() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetch(apiUrl(`replays${searchFromFilters(filters)}`), { signal: controller.signal })
+    fetchPage(apiUrl(`replays${listSearch}`), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Replays failed to load (${response.status})`);
         return (await response.json()) as ReplaySummary[];
@@ -420,6 +534,7 @@ export function ReplayIndex() {
       })
       .catch((reason: unknown) => {
         if (controller.signal.aborted || (reason as Error).name === 'AbortError') return;
+        if (reason instanceof SignInError) setAuthFailure(reason);
         // fetch rejects with a TypeError ("Failed to fetch") when the server cannot be reached at all.
         setError(
           reason instanceof TypeError
@@ -433,13 +548,15 @@ export function ReplayIndex() {
         if (!controller.signal.aborted) setSettledFilters(filters);
       });
     return () => controller.abort();
+    // `listSearch` follows `filters` and For me; changing For me or a linked handle also replaces `filters` (changeForMe).
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
   useEffect(() => {
     const controller = new AbortController();
     // Default cache mode so index.html's preload of this exact URL is reused; the server answers
     // `Cache-Control: no-store`, so the list is never stale.
-    fetch(apiUrl(INDEX_SUITES_URL), { signal: controller.signal })
+    fetchPage(apiUrl(withForMe(INDEX_SUITES_URL, forMe, linked)), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Review suites failed to load (${response.status})`);
         return (await response.json()) as ReviewSuiteIndexEntry[];
@@ -454,16 +571,23 @@ export function ReplayIndex() {
       })
       .catch((reason: unknown) => {
         if ((reason as Error).name === 'AbortError') return;
+        if (reason instanceof SignInError) setAuthFailure(reason);
         console.warn('Review suites unavailable:', reason);
         setSuites([]);
       });
     return () => controller.abort();
-  }, []);
+  }, [forMe, linked]);
 
-  const entries = useMemo(
+  const unsegmented = useMemo(
     () => (items && suites ? sortEntries(buildIndexEntries(items, suites, settledFilters ?? filters, kind), sort) : undefined),
     // Filter suites with the filters the session list was loaded for, so both kinds update together.
     [items, suites, settledFilters, filters, kind, sort],
+  );
+  // The purpose segment narrows what the other filters keep (client-side, so every tab can show its count).
+  const counts = useMemo(() => (purposes.length && unsegmented ? purposeCounts(unsegmented) : undefined), [purposes, unsegmented]);
+  const entries = useMemo(
+    () => (purpose && unsegmented ? unsegmented.filter((entry) => entryPurposes(entry).includes(purpose)) : unsegmented),
+    [unsegmented, purpose],
   );
   const listed = Boolean(entries);
   // Effects re-run when the index is shown again behind a viewer page (App.tsx keeps it in an Activity).
@@ -484,10 +608,18 @@ export function ReplayIndex() {
   // Remember the list for Back (only once the server has answered for the current filters).
   useEffect(() => {
     if (!items || !suites || settledFilters !== filters || (restored && items === restored.items)) return;
-    const search = searchFromFilters(filters);
-    saveIndexCache({ search, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
-  }, [items, suites, settledFilters, filters, restored]);
-  const filtered = Boolean(filters.q || filters.host || filters.tag || filters.errors || filters.source || kind);
+    saveIndexCache({ search: listSearch, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
+  }, [items, suites, settledFilters, filters, restored, listSearch]);
+  const filtered = Boolean(
+    filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || forMe || hasPluginFilters(filters),
+  );
+  // People UI (For me, avatar stacks) only where people exist: the deployment registered them, or the list has some.
+  const peopleOn =
+    forMe ||
+    Boolean(me?.people) ||
+    Boolean(items?.some((summary) => summary.people?.length)) ||
+    Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
+  const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   const error = settledFilters === filters ? loadError : '';
   const replays = entries ? replayCount(entries) : 0;
@@ -496,19 +628,47 @@ export function ReplayIndex() {
   // Feed changes cross-fade (feed-transition.ts).
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
+  const changePurpose = (next: string | undefined) => feedTransition(() => setPurpose(next));
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
     feedTransition(() => setFilters((current) => withFilter(current, key, value)));
+  /** A plugin filter's `x-*` param (registerIndexFilter); undefined or '' removes it. */
+  const setParam = (param: string, value: string | undefined) =>
+    feedTransition(() =>
+      setFilters((current) => {
+        const params = { ...current.params };
+        if (value?.trim()) params[param] = value.trim().slice(0, 200);
+        else delete params[param];
+        return withFilter(current, 'params', Object.keys(params).length ? params : undefined);
+      }),
+    );
   const clear = () => {
     setQuery('');
     setKind(undefined);
+    setPurpose(undefined);
+    setForMe(false);
     setFilters({});
   };
   /** The sheet's "Clear all": every filter except the search text. */
   const clearFilters = () =>
     feedTransition(() => {
       setKind(undefined);
+      setForMe(false);
       setFilters((current) => (current.q ? { q: current.q } : {}));
     });
+  // For me and the linked handles change the sessions request: a fresh `filters` object re-runs it (and its pending state).
+  const changeForMe = (next: boolean) =>
+    feedTransition(() => {
+      setForMe(next);
+      setFilters((current) => ({ ...current }));
+    });
+  const changeLinked = (id: string, value: string) => {
+    const next = { ...linked };
+    if (value) next[id] = value;
+    else delete next[id];
+    writeStorage(LINKED_KEY, JSON.stringify(next));
+    setLinked(next);
+    if (forMe) setFilters((current) => ({ ...current }));
+  };
   const chooseView = (next: FeedView) => {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
@@ -525,7 +685,17 @@ export function ReplayIndex() {
           : ''}
     </span>
   );
-  const filterState = { filters, kind, hosts, tags, update, setKind: changeKind, clearFilters };
+  const filterState = {
+    filters,
+    kind,
+    hosts,
+    tags,
+    update,
+    setParam,
+    setKind: changeKind,
+    clearFilters,
+    ...(peopleOn ? { forMe, setForMe: changeForMe, handles: me?.people?.handles ?? [], linked, setLinked: changeLinked } : {}),
+  };
 
   return (
     <main className="index-shell" ref={shell}>
@@ -540,6 +710,7 @@ export function ReplayIndex() {
             </>
           }
         />
+        {purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : null}
         <ScopeBar count={count}>
           {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
           <SortMenu sort={sort} onChange={changeSort} />
@@ -559,6 +730,9 @@ export function ReplayIndex() {
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
+        {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
+        {items && !error ? <IndexSections summaries={items} /> : null}
+        {authFailure ? <SignInLink error={authFailure} /> : null}
         {error ? (
           <div className="empty" role="alert">
             <strong>{error}</strong>
@@ -576,7 +750,9 @@ export function ReplayIndex() {
             <EmptyIndex onUpload={() => upload.current?.open()} />
           )
         ) : entries ? (
-          <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
+          <MeContext value={meContext}>
+            <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
+          </MeContext>
         ) : (
           <FeedSkeleton view={view} />
         )}

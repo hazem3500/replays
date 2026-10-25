@@ -1,0 +1,4 @@
+/* Extra primitives are scoped to the host contribution and use the active core theme tokens. */
+.company-for-you ul { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.company-for-you a { display: block; padding: 8px 12px; color: var(--accent); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.company-for-you a:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }

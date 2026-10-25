@@ -1,5 +1,8 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
+import type { SignInConfig } from '../../shared/sign-in.ts';
+export type { SignInConfig } from '../../shared/sign-in.ts';
+
 /** Who is making a request. `id` is the stable key (kept-by records, logs); the rest is display. */
 export interface Identity {
   id: string;
@@ -20,6 +23,8 @@ export interface Identity {
  */
 export interface AuthAdapter {
   readonly name: string;
+  /** Opt into browser recovery through an authenticated top-level return endpoint. */
+  readonly signIn?: SignInConfig;
   authenticate(request: IncomingMessage): Promise<Identity | undefined> | Identity | undefined;
   handle?(request: IncomingMessage, response: ServerResponse, context: AuthRouteContext): Promise<boolean> | boolean;
   loginUrl?(request: IncomingMessage, context: AuthRouteContext): string | undefined;

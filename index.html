@@ -3,15 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0c0e12" />
+    <!-- Browser chrome colour: the theme's page token per scheme (data-dark / data-light), stamped by the server or
+         replays build-static from the branding (src/server/base-path.ts withBase). The inline script below picks one. -->
+    <meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />
     <!-- Where the app lives ("/" at a domain's root, else a path prefix such as /replays): filled in by the server
          per request (src/server/base-path.ts), so one build serves every base. Read by src/client/route.ts. -->
     <meta name="app-base" content="" />
+    <meta name="app-sign-in" content="" />
     <!-- Beta features the server enabled (REPLAYS_BETA_EDITOR): read by src/client/config.ts betaEditor(). Empty = none. -->
     <meta name="app-beta" content="" />
+    <!-- Effective host editing write policy; saved edits use app-beta independently. -->
+    <meta name="app-editing" content="" />
     <meta name="app-comments" content="" />
     <!-- Browser entries of the server's plugins (JSON), filled in by the server: read by src/client/plugins/load.ts. -->
     <meta name="app-plugins" content="" />
+    <!-- The deployment's purposes (JSON), filled in by the server: read by src/client/purposes.ts. Empty = none. -->
+    <meta name="app-purposes" content="" />
+    <!-- Source providers' icons and nouns (JSON), filled in by the server: read by src/client/source-looks.ts. -->
+    <meta name="app-sources" content="" />
     <!-- The deployment's display name and logo, filled in by the server (src/client/config.ts reads them). -->
     <meta name="app-name" content="__PRODUCT_NAME__" />
     <meta name="app-logo" content="__PRODUCT_LOGO__" />
@@ -27,7 +36,8 @@
     <link rel="preload" href="/src/client/fonts/inter-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
     <script>
       // Before first paint: the saved theme (else the OS preference) on <html>, and the matching browser
-      // chrome colour, so phones never flash the wrong bar. Keep in step with THEME_COLORS in theme.tsx.
+      // chrome colour (the meta's data-dark / data-light, the branding's page colours), so phones never flash the wrong
+      // bar. The fallbacks are THEME_COLORS in theme.tsx.
       (function () {
         var theme;
         try {
@@ -35,7 +45,8 @@
         } catch (error) {}
         if (theme !== 'light' && theme !== 'dark') theme = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         document.documentElement.dataset.theme = theme;
-        document.querySelector('meta[name="theme-color"]').content = theme === 'dark' ? '#0c0e12' : '#eff1f5';
+        var color = document.querySelector('meta[name="theme-color"]');
+        color.content = color.getAttribute('data-' + theme) || (theme === 'dark' ? '#0c0e12' : '#eff1f5');
       })();
     </script>
     <script>
@@ -81,6 +92,16 @@
         if (params.get('errors') === '1') filters.set('errors', '1');
         if (params.get('source') === 'agent' || params.get('source') === 'human') filters.set('source', params.get('source'));
         if (params.get('tag')) filters.set('tag', params.get('tag'));
+        // Plugin filters (`x-*`), sorted, as ReplayIndex.tsx searchFromFilters writes them.
+        var plugin = {};
+        params.forEach(function (value, key) {
+          if (/^x-[a-z0-9][a-z0-9-]{0,38}$/.test(key) && value.trim() && !(key in plugin)) plugin[key] = value.trim().slice(0, 200);
+        });
+        Object.keys(plugin)
+          .sort()
+          .forEach(function (key) {
+            filters.set(key, plugin[key]);
+          });
         var search = filters.toString();
         preload('replays' + (search ? '?' + search : ''));
         preload('suites?expand=runs&limit=100');

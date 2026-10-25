@@ -88,6 +88,38 @@ values`. The viewer renders the Context tab from the schema: `title` as the labe
 property order, booleans as Yes/No, scalar arrays as chips, nested objects as indented lists, `format: "uri"` as a link
 (`https:` only). Limits independent of the schema: 16 KB per context, depth 6, 100 keys per object.
 
+Three viewer hints (ignored by validation) shape the tab further:
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "plan": { "type": "string", "title": "Plan", "x-replays-group": "Account", "x-replays-order": -1 },
+    "flags": {
+      "type": "array",
+      "title": "Beta flags",
+      "x-replays-group": "Account",
+      "x-replays-widget": "signals",
+      "items": {
+        "type": "object",
+        "required": ["key", "state"],
+        "properties": { "key": { "type": "string" }, "state": { "enum": ["enabled", "disabled", "unknown"] }, "label": { "type": "string" } }
+      }
+    }
+  }
+}
+```
+
+- `x-replays-widget: "signals"` on an array of `{ key, state, label? }` draws tri-state chips: a check for `enabled`, a cross on muted
+  text for `disabled`, and a question mark on a dashed outline for `unknown` (not supplied or not loaded), so a flag nobody reported
+  never reads as switched off. The state is in each chip's tooltip and accessible name. An array that does not fit falls back to the
+  plain rendering.
+- `x-replays-group: "Account"` on a top-level property puts it in its own group, headed by that name; properties without one stay
+  in the default group (titled by the schema's `title`, else "Details"). Groups come in the order of their first property.
+- `x-replays-order` sorts properties (lower first, default 0; ties keep schema order), at any depth.
+
+A client plugin can also add its own block to the tab with `registerContextSection` ([extension-api.md](extension-api.md#browser-entries-inspector-tabs-actions-panels-timeline-tracks-context-sections-settings)).
+
 ## Source-link providers
 
 A source is `{ provider, ref }` and the server stores the resolved `https` link:
@@ -103,6 +135,29 @@ Self-managed hosts: `GITHUB_HOST`, `GITLAB_HOST`. Custom providers go in the con
 (`{ "id": "jira", "template": "https://jira.example.com/browse/{ref}", "pattern": "^[A-Z]+-\\d+$" }`) or, from code,
 `new SourceProviders().register({ id, label, resolve(ref) { … } })`. Templates are validated at start: they must
 produce an `https` URL.
+
+A provider can say how its sources look and keep a few facts about them:
+
+```ts
+api.sourceProvider({
+  id: 'chat',
+  label: 'Chat',
+  noun: 'Chat thread',                          // "thread C123/p456, Chat thread (opens in a new tab)"
+  icon: 'data:image/svg+xml;base64,PHN2ZyB4…',   // or an https URL
+  resolve: (ref) => ({ url: `https://chat.example.com/${ref}`, label: ref, attrs: { channel: ref.split('/')[0], replies: 3 } }),
+});
+```
+
+- `icon` is shown on the topbar's source chip, in the Context tab's Sources and on the index row. It must be a
+  `data:image/svg+xml` URL or an https URL (checked at start; at most 8 KB) and is always drawn as an `<img>`, never inlined as
+  markup, so an SVG cannot run script. Without one the viewer keeps its own mark (GitHub's, else a link glyph).
+- `noun` is short text naming what a source is; it joins the chip's and index link's accessible names and leads the source's line in
+  the Context tab.
+- `attrs` returned by `resolve` are kept on the stored source (`context.sources[].attrs`: at most 8 entries, keys like
+  `[A-Za-z][\w-]*`, values short text or finite numbers; anything else is dropped) and, capped to 4 entries of 80 characters, on the
+  index summary's `sources`. The Context tab lists their values after the noun; client plugins read them from
+  `ctx.replay.context.sources`. A producer that sends an already resolved source (with a `url`) may send `attrs` too.
+- Config-file providers accept `icon` and `noun` as well: `{ "id": "jira", "template": "…", "noun": "Jira issue", "icon": "https://…" }`.
 
 ## Storage
 
@@ -141,6 +196,61 @@ compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.jso
   contract the built-ins pass: `describeObjectStorage(name, factory, { describe, it })` from `@hazem3500/replays/server/testing`
   ([extension-api.md](extension-api.md#testing-a-plugin)). (`storageFromEnv` only knows `fs` and `s3`.)
 
+## Redaction rules
+
+The sanitiser's defaults (credential headers, sensitive query values, URL credentials, typed input, no bodies; see the
+[privacy model](../README.md#privacy-model)) are always on. A deployment adds its own rules, from the config file or a plugin:
+
+```ts
+api.redaction({
+  headers: [/^x-acme-session$/i],        // dropped, next to the built-in secret headers
+  queryParams: ['invite_token'],         // [redacted] in every URL, fragments included
+  jsonKeys: ['ssn', /card_?number/i],    // console arguments, and form or JSON bodies a HAR keeps
+  text: [{ pattern: /\bACME-\d{6}\b/g, replace: '[ticket]' }],
+  maskSelectors: ['[data-private]'],     // text masked in the DOM snapshot at capture
+});
+```
+
+```json
+{
+  "redaction": {
+    "headers": ["/^x-acme-session$/i"],
+    "queryParams": ["invite_token"],
+    "jsonKeys": ["ssn", "/card_?number/i"],
+    "text": [{ "pattern": "/\\bACME-\\d{6}\\b/g", "replace": "[ticket]" }],
+    "maskSelectors": ["[data-private]"]
+  }
+}
+```
+
+- **Names** (`headers`, `queryParams`, `jsonKeys`): a string is an exact, case-insensitive name; a `RegExp` (or, in JSON, a
+  `"/.../flags"` string) is tested against the name.
+- **`text`**: each match becomes `replace` (default `[redacted]`). Applies to DOM text and attribute values, console messages,
+  step labels, the title, network URLs and header values. Not to `context` (structured and schema-checked: adapt it in a context
+  adapter or `beforeUpload`). A pattern may not match the empty string, and `replace` may not match its own pattern.
+- **`jsonKeys`**: the value of a matching key (a string, number, object or array) becomes `"[redacted]"` wherever JSON appears in a
+  console message, nested or not. Request and response bodies are never stored, so there is nothing else to cover; a HAR's form
+  parameters with a matching name are redacted by `sanitizeHar`.
+- **`maskSelectors`**: passed to the recorder as rrweb `maskTextSelector`, so the text never leaves the page (every non-space
+  character becomes `*`). An invalid selector fails the capture. The server's pass cannot run CSS on a serialised recording; it
+  checks each selector's last compound part (tag, `#id`, `.class`, `[attr]`, `[attr=value]` and the other attribute operators;
+  pseudo-classes ignored) against snapshots, added nodes and text changes. That masks the same text or more, never less.
+
+**Where they apply.** The capture CLI reads the deployment's config (`--config <file>`, else `REPLAYS_CONFIG`, else
+`replays.config.*` in the working directory), imports its plugins and runs their `setup` to collect `api.redaction` rules; it uses
+nothing else from the config. A config that does not load fails the capture. `RecorderSession.start(cdp, { redaction })` takes rules
+directly. The server applies the config's and every plugin's rules in its privacy pass on `POST /api/replays` and
+`POST /api/replays/import`, so a bundle from an older producer, or one captured without the config, is cleaned too.
+
+**They only add.** Rules from several plugins and the config file are concatenated. The default pass runs first and again after the
+rules, so a text rule cannot bring back what the defaults removed (the stored bundle is always one the default pass leaves unchanged;
+`test/sanitize.test.ts` checks this against rule sets that try). There is no key to switch a default off, and unknown keys are refused.
+
+**Rules are trusted config.** Their regular expressions run over every captured string, so they come only from the host's config
+file and plugins, never from an upload, a request or a sandboxed user plugin. Each pattern is capped at 200 characters and each list at
+100 entries, and every rule is validated at start (`PluginError` `invalid-registration`, or a config error naming the key). The cap
+does not make a pathological pattern safe: avoid nested quantifiers such as `(a+)+`.
+
 ## Theming and branding
 
 Every colour is a CSS custom property. A deployment overrides the documented subset per colour scheme, without a
@@ -161,7 +271,9 @@ Tokens: `accent`, `accent-soft`, `accent-contrast`, `page`, `surface`, `surface-
 `surface-pressed`, `canvas`, `text`, `text-secondary`, `text-tertiary`, `line`, `line-strong`, `danger`,
 `danger-soft`, `warning`, `success`, `ring` (keyboard ring), `sans`, `mono`, `radius`. Values must be plain CSS values
 (no `url()`, braces, semicolons or comments). The server injects them as a `<style id="brand-tokens">` block; keep
-text/background pairs at WCAG AA (`test/contrast.test.ts` shows how the default palette is checked).
+text/background pairs at WCAG AA (`test/contrast.test.ts` shows how the default palette is checked). The browser chrome
+colour (`<meta name="theme-color">`) follows `page` per scheme; give `page` as a plain colour (hex, `rgb()`, `oklch()`), not
+`var()`. `replays build-static` stamps the same into a CDN-hosted `index.html` ([operations](operations.md#static-viewer-on-a-cdn)).
 
 ## Capture drivers
 
@@ -179,3 +291,28 @@ interface CaptureDriver {
 
 The recorder itself (`RecorderSession`) only needs a `CdpLike { send, on, off }`, which a Playwright `CDPSession`
 satisfies, so a driver is mostly "launch a browser and run the steps". Pass yours to `capture(args, driver)`.
+
+### Capture pacing
+
+`capture(args, driver)` accepts optional `stepPauseMs` (0–10000 milliseconds). It waits after each
+non-wait scripted action; `wait` steps keep their own duration. The default remains 0 to preserve existing
+capture timing. The CLI also reads `capture.stepPauseMs` from `--config` / `REPLAYS_CONFIG` /
+`replays.config.*`; an explicit `--step-pause` overrides it. A host wanting a readable demonstration pace
+can use the public config entry:
+
+```ts
+import { defineConfig } from '@hazem3500/replays/config';
+
+export default defineConfig({ capture: { stepPauseMs: 1200 } });
+```
+
+Both built-in drivers type at 80ms per character; `fill` stays immediate. Custom drivers continue to own
+how they implement `type`. Automatic labels derive readable names from selectors (text, accessibility
+attributes, test IDs), never from typed values. Explicit labels remain the producer's responsibility.
+Unlabelled waits execute but are omitted from the step rail; label a wait to make it a visible step.
+These options do not alter capture or upload sanitization.
+
+Playback and MP4 export share speeds 0.25×, 0.5×, 1×, 1.5×, 2×, 4× and 8×. Skip inactive detects gaps
+longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×. Captions hold the
+preceding label through legacy unlabelled waits and repeated actions, while their number follows the
+active rail step. Exports use the same caption selection and time mapping.

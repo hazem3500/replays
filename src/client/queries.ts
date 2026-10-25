@@ -1,8 +1,10 @@
+import { fetchPage } from './sign-in.tsx';
 import { QueryClient, type QueryCache, queryOptions } from '@tanstack/react-query';
 
 import type { ReplayBundle } from '../shared/replay.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { readTextWithProgress } from './load-progress.ts';
+import { rememberServedPurpose } from './purposes.ts';
 import { apiUrl } from './route.ts';
 
 /*
@@ -36,7 +38,7 @@ type Priority = 'high' | 'low' | 'auto';
  * `<link rel=preload>` and an earlier hover prefetch from the browser's cache.
  */
 export async function fetchReplay(id: string, signal?: AbortSignal, priority: Priority = 'auto'): Promise<ReplayBundle> {
-  const response = await fetch(apiUrl(`replays/${encodeURIComponent(id)}`), {
+  const response = await fetchPage(apiUrl(`replays/${encodeURIComponent(id)}`), {
     ...(signal ? { signal } : {}),
     ...(priority === 'auto' ? {} : { priority }),
   } as RequestInit);
@@ -52,11 +54,12 @@ export async function fetchReplay(id: string, signal?: AbortSignal, priority: Pr
     throw new LoadError('Replay failed to load (unexpected response)');
   }
   if (bundle && typeof bundle === 'object') decodedBytes.set(bundle, text.length);
+  rememberServedPurpose(id, response.headers.get('x-replay-purpose'));
   return bundle;
 }
 
 export async function fetchSuite(id: string, signal?: AbortSignal): Promise<SuiteWithRuns> {
-  const response = await fetch(apiUrl(`suites/${encodeURIComponent(id)}?expand=runs`), signal ? { signal } : {});
+  const response = await fetchPage(apiUrl(`suites/${encodeURIComponent(id)}?expand=runs`), signal ? { signal } : {});
   if (!response.ok)
     throw new LoadError(
       response.status === 404 ? 'Review suite not found' : `Review suite failed to load (${response.status})`,

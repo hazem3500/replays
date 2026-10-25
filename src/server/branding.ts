@@ -1,5 +1,7 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
+import type { HostVersions, MalleablePolicy } from '../shared/malleable-policy.ts';
 import type { PageBranding } from './base-path.ts';
+import type { PurposeInfo } from '../shared/purposes.ts';
 
 /**
  * Theming without a rebuild. Every colour in the viewer is a CSS custom property (src/client/styles.css); a
@@ -76,8 +78,21 @@ export function tokensCss(branding: BrandingConfig) {
   return [block(':root', branding.theme?.dark), block(':root[data-theme="light"]', branding.theme?.light)].filter(Boolean).join('');
 }
 
+/** The browser chrome colour per scheme: the theme's `page` token where it sets one (index.html keeps the default otherwise). */
+export function themeColor(branding: BrandingConfig): { dark?: string; light?: string } | undefined {
+  const dark = branding.theme?.dark?.page;
+  const light = branding.theme?.light?.page;
+  return dark || light ? { ...(dark ? { dark } : {}), ...(light ? { light } : {}) } : undefined;
+}
+
 export function pageBranding(branding: BrandingConfig): PageBranding {
-  return { name: branding.name, tokensCss: tokensCss(branding), ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}) };
+  const color = themeColor(branding);
+  return {
+    name: branding.name,
+    tokensCss: tokensCss(branding),
+    ...(branding.logoUrl ? { logoUrl: branding.logoUrl } : {}),
+    ...(color ? { themeColor: color } : {}),
+  };
 }
 
 /** What `GET /api/config` tells the client. */
@@ -87,9 +102,17 @@ export function publicConfig(
     contextSchema?: unknown;
     sourceProviders: string[];
     auth: string;
+    signIn?: import('../shared/sign-in.ts').SignInConfig;
     plugins?: string[];
+    /** The deployment's purposes (src/shared/purposes.ts); an empty list in a plain core. */
+    purposes?: readonly PurposeInfo[];
+    /** Plugin index filters (`api.indexFilter`): which `x-*` params `GET /api/replays` understands. */
+    indexFilters?: Array<{ plugin: string; id: string; param: string }>;
     beta?: { editor: boolean; malleable?: boolean };
     comments?: boolean;
+    editing?: { enabled: boolean };
+    versions?: HostVersions;
+    malleable?: MalleablePolicy;
   },
 ) {
   return {
@@ -98,8 +121,15 @@ export function publicConfig(
     ...(extra.contextSchema ? { contextSchema: extra.contextSchema } : {}),
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,
+    ...(extra.signIn ? { signIn: extra.signIn } : {}),
     plugins: extra.plugins ?? [],
+    purposes: extra.purposes ?? [],
+    ...(extra.indexFilters ? { indexFilters: extra.indexFilters } : {}),
     beta: extra.beta ?? { editor: false, malleable: false },
+    ...(extra.editing ? { editing: extra.editing } : {}),
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
+    ...(extra.versions ? { core: extra.versions.core } : {}),
+    ...(extra.versions?.distribution ? { distribution: extra.versions.distribution } : {}),
+    ...(extra.malleable ? { malleable: extra.malleable } : {}),
   };
 }

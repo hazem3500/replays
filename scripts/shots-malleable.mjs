@@ -105,11 +105,11 @@ async function flow(name, { viewport, mobile, record }) {
     await page.waitForTimeout(500);
     await shot('editor');
     await page.getByTestId('workshop-close').click();
-    await agent.call('open_tab', { tab: 'plugin:user-failed-by-endpoint:main' });
-    await page.getByTestId('plugin:user-failed-by-endpoint:main-panel').frameLocator('iframe').getByTestId('summary').waitFor();
+    await agent.call('open_tab', { tab: 'plugin:user:failed-by-endpoint:main' });
+    await page.getByTestId('plugin:user:failed-by-endpoint:main-panel').frameLocator('iframe').getByTestId('summary').waitFor();
     await page.waitForTimeout(400);
     await shot('agent-tab');
-    await more('plugin-action:user-auto-comment:run');
+    await more('plugin-action:user:auto-comment:run');
     await page.getByTestId('permission-prompt').waitFor();
     await page.waitForTimeout(300);
     await shot('permission-prompt');

@@ -68,9 +68,9 @@ test('capture a sample, upload it, and the viewer loads it', async ({ page }) =>
   await openReplay(page, `${server().origin}/r/${id}`);
   await expect(page.getByRole('heading', { level: 1, name: 'Captured demo shop' })).toBeVisible();
 
-  // One rail row per captured step, plus the opening step.
+  // Unlabelled waits are pacing only; labelled waits keep their rail row, plus the opening step.
   const rail = page.getByTestId('step-timeline').locator('[data-step-index]');
-  await expect(rail).toHaveCount(steps.length + 1);
+  await expect(rail).toHaveCount(steps.filter((step) => step.kind !== 'wait' || step.label).length + 1);
   for (const label of ['Add the tea to the cart', 'Open the cart', 'Enter an email address', 'Apply the coupon', 'Read the coupon error']) {
     await expect(page.getByTestId('step-timeline').getByText(label, { exact: true })).toBeVisible();
   }

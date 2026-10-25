@@ -44,6 +44,7 @@ describe('API preloads in index.html', () => {
       '?source=human&host=example.com',
       '?tag=smoke&source=agent',
       '?source=bogus&errors=0',
+      '?x-env=%20production%20&tag=smoke&x-area=checkout&x-env=other&X-bad=1&x-=1',
     ]) {
       const expected = `/api/replays${searchFromFilters(filtersFromSearch(search))}`;
       expect(boot(`/${search}`, '/')).toEqual([expected, `/api/${INDEX_SUITES_URL}`]);

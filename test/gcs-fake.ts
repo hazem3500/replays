@@ -16,6 +16,8 @@ export interface GcsFake {
   bucket(): string;
   /** Every request: `METHOD path?query`. */
   requests: string[];
+  /** Content-Range of every resumable PUT, in request order. */
+  uploadRanges: string[];
   /** The token the API requires (undefined: none) and the one the metadata endpoint hands out. */
   token: string | undefined;
   /** Seconds the metadata endpoint says its token lives. */
@@ -41,6 +43,7 @@ interface Session {
   ifGenerationMatch: string | null;
   chunks: Buffer[];
   received: number;
+  chunkIndex: number;
 }
 
 function json(response: ServerResponse, status: number, value: unknown) {
@@ -74,7 +77,9 @@ function parseMultipart(body: Buffer, boundary: string) {
   return { metadata: JSON.parse(parts[0]!.toString('utf8')) as Record<string, string>, media: parts[1]! };
 }
 
-export async function startGcsFake(options: { pageSize?: number } = {}): Promise<GcsFake> {
+export async function startGcsFake(
+  options: { pageSize?: number; resumableAcceptBytes?: readonly number[]; resumableFinalizeOnProbe?: boolean } = {},
+): Promise<GcsFake> {
   const buckets = new Map<string, Map<string, Stored>>();
   const sessions = new Map<string, Session>();
   let generation = 1_700_000_000_000_000;
@@ -115,6 +120,7 @@ export async function startGcsFake(options: { pageSize?: number } = {}): Promise
     endpoint: '',
     host: '',
     requests: [],
+    uploadRanges: [],
     token: undefined,
     tokenLifetime: 3600,
     bucket() {
@@ -139,14 +145,20 @@ export async function startGcsFake(options: { pageSize?: number } = {}): Promise
       if (session && request.method === 'PUT') {
         const state = sessions.get(session);
         if (!state) return error(response, 404, 'no such session');
-        const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(String(request.headers['content-range'] ?? ''));
+        const contentRange = String(request.headers['content-range'] ?? '');
+        fake.uploadRanges.push(contentRange);
+        const range = /^bytes (\d+)-(\d+)\/(\d+)$/.exec(contentRange);
         const body = await readBody(request);
-        if (!range || Number(range[1]) !== state.received || body.byteLength !== Number(range[2]) - Number(range[1]) + 1)
-          return error(response, 400, 'bad content-range');
-        state.chunks.push(body);
-        state.received += body.byteLength;
-        if (state.received < state.size) {
-          response.writeHead(308, { range: `bytes=0-${state.received - 1}` });
+        const probe = contentRange === `bytes */${state.size}` && body.byteLength === 0;
+        if (!probe) {
+          if (!range || Number(range[1]) !== state.received || body.byteLength !== Number(range[2]) - Number(range[1]) + 1)
+            return error(response, 400, 'bad content-range');
+          const accepted = Math.min(body.byteLength, options.resumableAcceptBytes?.[state.chunkIndex++] ?? body.byteLength);
+          state.chunks.push(body.subarray(0, accepted));
+          state.received += accepted;
+        }
+        if (state.received < state.size || (options.resumableFinalizeOnProbe && !probe)) {
+          response.writeHead(308, state.received ? { range: `bytes=0-${state.received - 1}` } : {});
           return response.end();
         }
         sessions.delete(session);
@@ -189,6 +201,7 @@ export async function startGcsFake(options: { pageSize?: number } = {}): Promise
             ifGenerationMatch: match,
             chunks: [],
             received: 0,
+            chunkIndex: 0,
           });
           response.writeHead(200, { location: `${fake.endpoint}/upload/storage/v1/b/${upload[1]}/o?uploadType=resumable&upload_id=${id}` });
           return response.end();

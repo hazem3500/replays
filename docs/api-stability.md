@@ -14,7 +14,7 @@ so every change to the surface shows up in a diff).
 | Config file keys and `defineConfig` | `@hazem3500/replays/config` | Public |
 | Plugin API: `definePlugin`, `PluginApi` methods and their hook contexts, `PluginError` codes, `rejectUpload`, `PLUGIN_API_VERSION` | `/plugin` | Public |
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions | `/viewer` | Public |
-| Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` types | `/server` | Public |
+| Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
 | Capture and data model: recording, bundle building, sanitising, source providers, `ReplayBundle` and friends | `/capture`, `.` | Public |
 | The replay format (`replay.json`, `meta.version`, the context block) | – | Public: changes are additive, or bump `version` and keep reading the old one |
@@ -22,6 +22,7 @@ so every change to the surface shows up in a diff).
 | `Identity` (`id`, `email`, `name`, `avatarUrl`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
 | The `comments` plugin name and the comments HTTP API | – | Public: the name is reserved; the API changes additively |
 | Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed |
+| Host edit write policy (`editing.enabled`, `EDITING_ENABLED`, `/api/config` effective capability) | – | Public: changes are additive; editor format remains beta |
 | The editor (`beta.editor`) and its API | – | Beta: may change in any release |
 | User plugins and the agent bridge (`beta.malleable`): the `.replays-plugin.json` format, `replays.*` sandbox API, `/api/malleable/*`, bridge tool names, `replays mcp` | – | Beta: may change in any release. The JSON Schemas in `docs/formats/` for replays, comments and edits follow the replay-format promise above |
 | Everything else: files under `src/` (including the viewer's built-in feature registry, `src/client/plugins/features.tsx`), `dist/lib/chunks/`, any import path not in `exports`, CSS class names and DOM structure of the viewer, `data-testid` values other than those named in extension-api.md, log output, internal HTTP routes (`/internal/…`) | – | Not public |

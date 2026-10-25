@@ -1,7 +1,7 @@
 # Malleability: the viewer you can reshape, and that an agent can reshape with you
 
-> **Status: beta, off by default.** `REPLAYS_BETA_MALLEABLE=true` (or `{ "beta": { "malleable": true } }` in the config file)
-> turns it on. With the flag off there is no UI, every `/api/malleable/*` route and the sandbox page answer `404`, no WebMCP tool
+> **Status: beta, off by default.** `REPLAYS_BETA_MALLEABLE=true` (or `{ "beta": { "malleable": true } }`, or
+> `{ "malleable": { "enabled": true } }` in the config file) turns it on. With the flag off there is no UI, every `/api/malleable/*` route and the sandbox page answer `404`, no WebMCP tool
 > is registered and none of this code is requested by the browser. The plugin file format and the tool names may change before 1.0
 > ([api-stability.md](api-stability.md)).
 
@@ -12,7 +12,7 @@ all inside the running app, all reversible, none of it able to reach beyond what
 
 Contents: [sources](#sources) · [principles → design](#principles--design) · [the slope](#the-slope-use--configure--compose--extend--modify) ·
 [how it works](#how-it-works) · [what it builds on](#what-it-builds-on-pr-2s-extension-points) · [the agent bridge](#the-agent-bridge) ·
-[data as the stable core](#data-as-the-stable-core) · [threat model](#security-and-threat-model) · [worked examples](#worked-examples) ·
+[data as the stable core](#data-as-the-stable-core) · [the host's policy](#the-hosts-policy) · [upgrades](#upgrades) · [threat model](#security-and-threat-model) · [worked examples](#worked-examples) ·
 [gaps](#gaps-and-what-is-not-built) · [trying it](#trying-it)
 
 ## Sources
@@ -178,7 +178,7 @@ Two doors to the same tools: **in the page** (WebMCP) and **outside it** (an MCP
 | `get_app_state` | Route, open replay (id, title, counts incl. failed requests and console errors), playhead, selected tab, plugin tab keys, plugins with saved/unsaved state | yes |
 | `get_replay_data` | One part of the replay (`meta`, `steps`, `console`, `network`, `performance`, `context`), paged; marked `untrustedContentHint` | yes |
 | `get_comments` | The comments, `untrustedContentHint` | yes |
-| `get_plugin_api` | The manifest, `replays.*` and `ctx` reference the agent writes against | yes |
+| `get_plugin_api` | The manifest, `replays.*` and `ctx` reference the agent writes against, plus this deployment's theme tokens, [policy](#the-hosts-policy), versions and the surfaces in the viewer (by surface id), so what it writes fits the distribution | yes |
 | `list_plugins`, `get_plugin` | Plugins and their saved versions | yes |
 | `get_plugin_diagnostics` | What a plugin printed and threw since its last load (`untrustedContentHint`) | yes |
 | `install_plugin_draft` | Validate and hot-load a draft (same id = reload). `consequentialHint` | no |
@@ -236,6 +236,65 @@ get a *copy* of the replay and no way to rewrite it; their only writes are comme
 and a download. Formats are versioned (`version`, `format`); changes are additive, or bump the version and keep reading the old one
 ([api-stability.md](api-stability.md)). The schemas describe the shape; the server still enforces sizes and the privacy pass.
 
+## The host's policy
+
+A deployment that turns user plugins on may narrow them, in the config file (no environment variables; `MalleableConfig` from
+`@hazem3500/replays/config`, validated by `parseMalleablePolicy` in `src/shared/malleable-policy.ts`):
+
+```ts
+malleable: {
+  enabled: true,                                                          // = beta.malleable
+  scopes: ['user'],                                                       // where plugins may be kept (default: both)
+  capabilities: { 'comments:write': 'ask', 'export:download': 'deny' },   // allow | ask | deny per capability
+  lockedSurfaces: ['inspector:context'],                                  // user plugins cannot replace or hide these
+},
+distribution: { name: 'acme-replays', version: '2.3.0' },                 // what this deployment is (see Upgrades)
+```
+
+**The host can only narrow.** With no block, both scopes are on, the read-only capabilities are `allow` and the write ones `ask`
+(what the sections above describe). A read-only capability may be set to `ask` (the person is prompted, like for a write) or `deny`;
+a write capability (`comments:write`, `export:download`) may be `ask` or `deny`, and `allow` is refused **at start** with an error that
+says why: a write always shows the person what it is about to do. Unknown keys, capabilities, scopes and malformed surface ids stop
+the server too. **Backward compatibility:** `beta.malleable` and `REPLAYS_BETA_MALLEABLE` keep working unchanged; `malleable.enabled`
+is the same switch in the new block. If the file sets both and they disagree the server does not start; the environment variable
+still wins over both. A `malleable` block without `enabled` sets the policy and leaves the feature off.
+
+| Where | What the policy does |
+| --- | --- |
+| Server (`src/server/malleable-plugin.ts`) | Refuses (`403`, "not kept: …") to mint an approval for, or to store, a plugin whose manifest declares a denied capability or whose scope is turned off. A turned-off scope is not listed, so its plugins do not load; they stay in storage untouched and come back when the scope is turned on. |
+| Broker (`src/client/malleable/broker.ts`) | A denied capability fails with `permission-denied: this server does not allow …` and never prompts; `ask` on a read-only one prompts. `replay:read` is checked before the frame gets its copy. Until the policy has loaded, calls wait; if it cannot be read, writes are denied. Plugins already kept that declare a capability the host later denied still load: that capability just fails. |
+| Workshop | "This server's rules for plugins" lists the scopes, every capability's rule, the locked surfaces and the versions. The keep dialog marks a denied capability, offers only the allowed scopes and disables *Approve* with the reason. |
+| `GET /api/config` | `malleable` (the resolved policy, only when the feature is on), `core` and `distribution`. |
+| Agents | `get_plugin_api` returns the policy, so an agent leaves denied capabilities out. |
+
+**Surfaces and `lockedSurfaces`.** A surface id names something in the viewer: a built-in inspector tab `inspector:<tab>`
+(`console`, `network`, `performance`, `context`) and a host plugin's contributions `inspector:<plugin>:<tab>`,
+`panel:<plugin>:<id>` and `action:<plugin>:<id>`. What user plugins can do today: **add** tabs, panels and actions under their own
+name, and nothing else. The manifest has no `replaces` or `hides` field (unknown fields are refused), the registry keeps every
+registration in its owner's namespace, and a user plugin registers as `user:<id>` (keys `plugin:user:<id>:<contribution>`). Host
+plugin names cannot contain `:`, so a user plugin can neither collide with a host plugin nor remove one's registrations; before this
+change a user plugin `x` registered as `user-x` and could have taken over the registrations of a host plugin named `user-x`. So
+`lockedSurfaces` has nothing to refuse yet: it is validated, exposed and shown, and `assertMayOverride(policy, surface)` is the check
+any future override path (a `replaces`, a "hide this tab", reordering) must call. A user plugin's own surfaces cannot be locked.
+
+## Upgrades
+
+The upgrade contract for user plugins, adapted from Powermove's: a host upgrade never disables, deletes or rewrites a person's
+plugins; it may point out the ones to look at.
+
+- **`targets`.** Every kept version's manifest records the versions it was kept under, `targets: { core, distribution? }`: `core` is
+  this package's version, `distribution` the config's `distribution` as `name@version`. The server writes it on save from its own
+  values (a client's `targets` is replaced), so it is the truth about where a version was approved. It is additive in
+  [`plugin-manifest.schema.json`](formats/plugin-manifest.schema.json); the workshop's working copy leaves it out, so it is never a
+  "change" to keep.
+- **Load health.** The viewer records, per (core, distribution) pair and per saved plugin version (by its sha256), whether it loaded:
+  registered fine, or failed (registration threw, or the frame reported an error). It lives in this browser's `localStorage`
+  (`replays-malleable-health`, the last six pairs); `src/client/malleable/health.ts`. Drafts and unsaved changes are not recorded.
+- **The notice.** A saved plugin that failed under the current versions, when the versions changed since it was kept (its `targets`
+  differ) or since it last loaded fine in this browser, is listed in the workshop under **Review plugins**, with a link to open it and
+  its output. It stays on and unchanged; *Dismiss* hides the notice for those failures until a new version or another upgrade. A plugin
+  that is broken under the versions it was kept under gets no notice: that is a bug, shown in its output as before.
+
 ## Security and threat model
 
 **Assets.** The replay content (it can hold whatever the recorded page showed: the privacy pass redacts known secrets but not
@@ -261,6 +320,8 @@ The server trusts the auth adapter's identity and the approval token.
 | Prompt injection through replay content (URLs, console text, comments) steering the agent | Tools carry `untrustedContentHint`; the MCP server's instructions say so; the agent's powers are bounded as above, so even a steered agent can only install a sandboxed draft and ask | design; not testable without a model |
 | Stale tab overwrites a newer version | `baseVersion` check (409) plus storage `ifVersion` | `test/malleable.test.ts` |
 | A user plugin of one person is read by another | Per-identity keys; list and read routes look only under the caller's key | `test/malleable.test.ts` |
+| The host wants less than the defaults (no workspace plugins, no downloads) | `malleable` policy: refused by the server on keep, by the broker on use, shown before approval; widening (`allow` for a write) stops the server at start | `test/malleable-policy.test.ts`, e2e `malleable-policy.spec.ts` |
+| A user plugin takes over a host plugin's surfaces | User plugins register as `user:<id>`; host names have no `:`; the registry refuses any other owner name | `test/malleable-policy.test.ts` |
 | Flag off still exposes something | Absent plugin: 404s, no CSP header, no meta, no tools, code never requested | e2e `malleable-flag-off.spec.ts`, `test/malleable.test.ts` |
 
 ### Residual risks
@@ -272,7 +333,8 @@ The server trusts the auth adapter's identity and the approval token.
   anyone who can open the viewer can save a **workspace** plugin that then loads for everyone. It still runs sandboxed with only the
   permissions its manifest declares, and any write asks the *viewer* first, but a malicious workspace plugin can try to talk someone
   into a "wants to add a comment in your name" prompt. Keep the workspace scope for trusted deployments, or give the auth adapter a
-  role and gate `scope: workspace` on it (a small change in `malleable-plugin.ts`). The prompt names the plugin and shows the text.
+  role and gate `scope: workspace` on it (a small change in `malleable-plugin.ts`), or turn the workspace scope off with
+  `malleable.scopes: ['user']`. The prompt names the plugin and shows the text.
 - **Read access is real access.** A plugin with `replay:read` sees the replay's console and network text, so a malicious plugin can
   *display* it misleadingly, though it cannot send it anywhere. The URL privacy pass still applies to what is stored; it is not a
   data-loss-prevention system.

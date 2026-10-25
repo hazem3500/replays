@@ -120,3 +120,65 @@ describe('gcs storage', () => {
     expect(new ReplayStore(created, '/tmp/none').listTtlMs).toBe(5000);
   });
 });
+
+describe.each(['buffer', 'file'] as const)('resumable %s uploads', (source) => {
+  async function checkUpload(
+    acceptBytes: readonly number[],
+    check: (upload: () => ReturnType<GcsStorage['write']>, store: GcsStorage, server: GcsFake, body: Buffer) => Promise<void>,
+    finalizeOnProbe = false,
+  ) {
+    const server = await startGcsFake({ resumableAcceptBytes: acceptBytes, resumableFinalizeOnProbe: finalizeOnProbe });
+    const store = new GcsStorage({ bucket: server.bucket(), endpoint: server.endpoint, token: false });
+    const dir = await mkdtemp(join(tmpdir(), 'replays-gcs-acks-'));
+    try {
+      const body = Buffer.alloc(2 * RESUMABLE_BYTES + 7);
+      for (let index = 0; index < body.length - 4; index += 4096) body.writeUInt32LE(index, index);
+      const file = join(dir, 'body.bin');
+      if (source === 'file') await writeFile(file, body);
+      await check(() => (source === 'file' ? store.upload('body.bin', file) : store.write('body.bin', body)), store, server, body);
+    } finally {
+      await server.stop();
+      await rm(dir, { recursive: true, force: true });
+    }
+  }
+
+  it('resends from partial acknowledgments, including transient missing Range and repeated offsets', async () => {
+    const half = RESUMABLE_BYTES / 2;
+    await checkUpload([0, half, 0, half], async (upload, store, server, body) => {
+      await expect(upload()).resolves.toMatchObject({ size: body.length });
+      expect(server.uploadRanges).toEqual([
+        `bytes 0-${RESUMABLE_BYTES - 1}/${body.length}`,
+        `bytes 0-${RESUMABLE_BYTES - 1}/${body.length}`,
+        `bytes ${half}-${half + RESUMABLE_BYTES - 1}/${body.length}`,
+        `bytes ${half}-${half + RESUMABLE_BYTES - 1}/${body.length}`,
+        `bytes ${RESUMABLE_BYTES}-${2 * RESUMABLE_BYTES - 1}/${body.length}`,
+        `bytes ${2 * RESUMABLE_BYTES}-${body.length - 1}/${body.length}`,
+      ]);
+      expect((await store.read('body.bin'))?.equals(body)).toBe(true);
+    });
+  });
+
+  it('checks completion if the final bytes are acknowledged with 308', async () => {
+    await checkUpload(
+      [],
+      async (upload, store, server, body) => {
+        await expect(upload()).resolves.toMatchObject({ size: body.length });
+        expect(server.uploadRanges.at(-1)).toBe(`bytes */${body.length}`);
+        expect((await store.read('body.bin'))?.equals(body)).toBe(true);
+      },
+      true,
+    );
+  });
+
+  it.each([
+    { label: 'missing Range', accepted: [0, 0, 0], offset: 0, requests: 3 },
+    { label: 'no progress after a partial chunk', accepted: [RESUMABLE_BYTES / 2, 0, 0, 0], offset: RESUMABLE_BYTES / 2, requests: 4 },
+  ])('bounds recovery for $label', async ({ accepted, offset, requests }) => {
+    await checkUpload(accepted, async (upload, store, server, body) => {
+      await expect(upload()).rejects.toMatchObject({ status: 308, message: expect.stringContaining('no progress') });
+      expect(server.uploadRanges).toHaveLength(requests);
+      expect(server.uploadRanges.slice(-3)).toEqual(Array(3).fill(`bytes ${offset}-${offset + RESUMABLE_BYTES - 1}/${body.length}`));
+      await expect(store.stat('body.bin')).resolves.toBeUndefined();
+    });
+  });
+});

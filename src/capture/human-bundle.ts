@@ -1,7 +1,7 @@
 // Pure conversion from a plain rrweb recording to a replay bundle.
 // No Node APIs: shared by the `pnpm run import` CLI, the server's
 // POST /api/replays/import route, and the browser upload preview.
-import { assertReplayBundle, assertReplayId, type ReplayBundle } from '../shared/replay.ts';
+import { assertReplayBundle, assertReplayId, type ReplayBundle, type ReplayPerson } from '../shared/replay.ts';
 import { maskCapturedInputs, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
 
 export type RrwebEvent = ReplayBundle['events'][number];
@@ -96,6 +96,10 @@ export interface HumanImportOptions {
   id?: string;
   /** `meta.tags`; validated by assertReplayBundle. */
   tags?: string[];
+  /** `meta.purpose`; its shape is validated by assertReplayBundle, the id by the server. */
+  purpose?: string;
+  /** `meta.people` (`--person`, `?person=`); validated by assertReplayBundle. */
+  people?: ReplayPerson[];
 }
 
 /**
@@ -125,6 +129,8 @@ export function buildHumanBundle(input: unknown, options: HumanImportOptions): R
       version: 1,
       source: 'human',
       ...(options.tags?.length ? { tags: options.tags } : {}),
+      ...(options.purpose ? { purpose: options.purpose } : {}),
+      ...(options.people?.length ? { people: options.people } : {}),
     },
     events,
     steps: [],

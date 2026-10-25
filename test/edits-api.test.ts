@@ -115,7 +115,7 @@ describe('ReplayStore edits', () => {
   });
 });
 
-async function start(render = false, beta = true) {
+async function start(render = false, beta = true, editing?: boolean) {
   const { root, store } = await tempStore();
   const runs: Array<{ id: string; edits: string }> = [];
   const clientDir = join(root, 'client');
@@ -136,6 +136,7 @@ async function start(render = false, beta = true) {
   const handle = createApp({
     ...appDefaults(),
     beta: { editor: beta, malleable: false },
+    ...(editing !== undefined ? { editing: { enabled: editing } } : {}),
     store,
     clientDir,
     ...(render ? { render: service } : {}),
@@ -258,6 +259,72 @@ describe('edits API', () => {
     // Naming no edits explicitly ('') still reaches the video rendered before the edits.
     await expect((await fetch(`${render}?edits=`)).json()).resolves.toMatchObject({ status: 'done' });
     expect((await fetch(`${render}?edits=NOT-OK`)).status).toBe(400);
+  });
+});
+
+describe('host editing writes disabled', () => {
+  it('keeps saved GET/HEAD and ETag revalidation, refusing PUT before If-Match and body parsing', async () => {
+    const { api, store } = await start(false, true, false);
+    const saved = await store.saveEdits('test-replay', cut(100, 300), { by: 'ada@example.com', ifVersion: null });
+    const url = `${api}/test-replay/edits`;
+    const get = await fetch(url);
+    expect(get.status).toBe(200);
+    await expect(get.json()).resolves.toEqual(saved.edits);
+    const etag = get.headers.get('etag')!;
+    const head = await fetch(url, { method: 'HEAD' });
+    expect(head.status).toBe(200);
+    expect(head.headers.get('etag')).toBe(etag);
+    expect(await head.text()).toBe('');
+    for (const method of ['GET', 'HEAD']) {
+      const cached = await fetch(url, { method, headers: { 'if-none-match': etag } });
+      expect(cached.status).toBe(304);
+      expect(cached.headers.get('cache-control')).toBe('private, no-cache');
+    }
+    for (const headers of [{}, { 'if-match': etag }]) {
+      const denied = await fetch(url, { method: 'PUT', headers, body: '{invalid json' });
+      expect(denied.status).toBe(403);
+      await expect(denied.json()).resolves.toEqual({ error: 'editing is turned off' });
+    }
+    await expect(store.readEdits('test-replay')).resolves.toEqual({ edits: saved.edits, version: saved.version });
+    expect((await fetch(`${api}/missing/edits`, { method: 'PUT' })).status).toBe(404);
+  });
+
+  it('keeps trims and effects in the MP4 variant hash and internal render edit list', async () => {
+    const { api, origin, store, queue, runs } = await start(true, true, false);
+    const edits: ReplayEdits = {
+      version: 1,
+      cuts: [],
+      trim: { start: 100, end: 900 },
+      captions: [{ id: 'caption-1', from: 100, to: 900, text: 'Saved caption' }],
+      zooms: [{ id: 'zoom-1', from: 100, to: 900, scale: 1.5 }],
+    };
+    await store.saveEdits('test-replay', edits, { by: 'ada@example.com', ifVersion: null });
+    const version = editsVersion(edits);
+    const render = `${api}/test-replay/render`;
+    const response = await fetch(render, { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' });
+    expect(response.status).toBe(202);
+    await expect(response.json()).resolves.toMatchObject({ jobId: `test-replay-1x-skip-e${version}` });
+    await queue.settled('test-replay', 1, { edits: version });
+    expect(runs).toEqual([{ id: 'test-replay', edits: version }]);
+    const internal = await fetch(`${origin}/internal/render/test-replay/edits.json`, { headers: { 'x-render-token': 'a'.repeat(43) } });
+    expect(internal.status).toBe(200);
+    await expect(internal.json()).resolves.toMatchObject(edits);
+    expect((await fetch(`${render}/file`)).status).toBe(200);
+    expect((await fetch(`${render}/file?edits=`)).status).toBe(404);
+  });
+
+  it('advertises effective write capability independently of the beta flag', async () => {
+    for (const [beta, enabled, effective] of [
+      [true, false, false],
+      [true, true, true],
+      [false, true, false],
+    ] as const) {
+      const { origin } = await start(false, beta, enabled);
+      await expect((await fetch(`${origin}/api/config`)).json()).resolves.toMatchObject({
+        beta: { editor: beta },
+        editing: { enabled: effective },
+      });
+    }
   });
 });
 

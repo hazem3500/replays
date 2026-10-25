@@ -18,11 +18,12 @@ import './render.css';
 
 import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdits } from '../../shared/edits.ts';
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
-import type { ReplayBundle } from '../../shared/replay.ts';
+import type { PosterMoment } from '../../shared/purposes.ts';
+import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
-import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale } from '../step-caption.ts';
+import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
 
 export interface RenderApi {
@@ -33,8 +34,11 @@ export interface RenderApi {
   /** `captions`: draw the step captions (video export with captions). */
   plan(fps: number, speed: number, options?: RenderPlanOptions): { count: number; dirty: number[] };
   show(index: number): Promise<void>;
-  /** Seeks to the poster moment (posterMoment), waits for its assets, and returns that time. */
-  poster(): Promise<number>;
+  /**
+   * Seeks to the poster moment (posterMoment): a named `moment` (the replay's purpose) or a time in ms (a plugin's
+   * `posterAt`), clamped to the replay; waits for its assets and returns that time.
+   */
+  poster(moment?: PosterMoment | number): Promise<number>;
   /** Frames for the hover preview (frames.ts previewPlan, 3× with idle gaps squeezed). */
   previewPlan(fps: number, maxOutputMs: number): PreviewPlan;
   /** Seeks to `time` (ms); waits for assets when a new document was rebuilt on the way. */
@@ -117,7 +121,7 @@ async function start() {
   let captions = false;
   // The edit list's own captions, when it has any, are always drawn (they are part of the edit).
   const editCaptions = effects.captions.length > 0;
-  const captionFrame = (time: number) =>
+  const captionFrame = (time: number): CaptionFrame | undefined =>
     editCaptions
       ? editCaptionAt(effects.captions, time, map.outputAt)
       : captions
@@ -141,6 +145,7 @@ async function start() {
       caption = undefined;
       return;
     }
+    const shownNumber = (frame.step ?? frame.index) + 1;
     if (caption?.index !== frame.index) {
       caption?.root.remove();
       const root = document.createElement('div');
@@ -155,14 +160,16 @@ async function start() {
       else {
         const number = document.createElement('span');
         number.className = 'step-caption-number';
-        number.textContent = String(frame.index + 1);
+        number.textContent = String(shownNumber);
         text.append(number, label);
       }
       root.append(text);
       host.append(root);
       caption = { root, text, index: frame.index };
-      await document.fonts.load('500 14px "Inter Variable"', `${frame.index + 1} ${frame.label}`).catch(() => undefined);
+      await document.fonts.load('500 14px "Inter Variable"', `${shownNumber} ${frame.label}`).catch(() => undefined);
     }
+    const number = caption.text.querySelector('.step-caption-number');
+    if (number) number.textContent = String(shownNumber);
     caption.text.style.animationPlayState = 'paused';
     caption.text.style.animationDelay = `${-Math.min(frame.enteredMs, CAPTION_IN_MS)}ms`;
   };
@@ -204,8 +211,13 @@ async function start() {
     previewPlan(nextFps, maxOutputMs) {
       return previewPlan({ eventTimes, duration: controller.duration, fps: nextFps, maxOutputMs });
     },
-    async poster() {
+    async poster(moment) {
       const time = posterMoment({
+        ...(typeof moment === 'number' ? { at: moment } : moment ? { moment } : {}),
+        errorTimes: [
+          ...bundle.console.filter((entry) => entry.level === 'error').map((entry) => entry.at),
+          ...bundle.network.filter(isFailedRequest).map((entry) => entry.at),
+        ],
         stepTimes: bundle.steps.map((step) => step.at),
         snapshotTimes,
         duration: controller.duration,

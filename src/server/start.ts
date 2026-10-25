@@ -1,15 +1,16 @@
 import { createServer as createHttpServer, type Server } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { existsSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { createServer as createNetServer } from 'node:net';
-import { dirname, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 import type { LoadedConfig } from '../config/index.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
+import { coreVersion, findPackageRoot } from './package-info.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
+import { createRenderHooks } from './render-hooks.ts';
 import { RenderQueue } from './render-queue.ts';
 import type { RenderService } from './render-routes.ts';
 import { createRenderer, detectRenderTools, type RenderTools, renderToken } from './renderer.ts';
@@ -17,16 +18,10 @@ import { chooseStorage, createRuntime, type Runtime } from './runtime.ts';
 import { tracedStorage } from './storage/traced.ts';
 import { initTracing, shutdownTracing } from './tracing.ts';
 import { ReplayStore } from './store.ts';
+import { summaryFieldsRunner } from './summary-fields.ts';
 
 const days = (value: number) => (value > 0 ? `${value} d` : 'never');
 
-/** The package root: the repository when run from source, the installed package when run from `dist/lib` (or its chunks). */
-function findPackageRoot() {
-  for (let dir = import.meta.dirname; dir !== dirname(dir); dir = dirname(dir)) {
-    if (existsSync(resolve(dir, 'package.json')) && existsSync(resolve(dir, 'bin/replays.mjs'))) return dir;
-  }
-  return resolve(import.meta.dirname, '../..');
-}
 const packageRoot = findPackageRoot();
 
 export interface StartOptions {
@@ -105,12 +100,22 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   let store: ReplayStore;
   try {
     const storage = tracedStorage(await chooseStorage(env, runtime.config.file, registry, dataDir));
-    store = new ReplayStore(storage, sampleDir, settings.retention);
+    const summaryFields = summaryFieldsRunner(registry.summaryFields);
+    store = new ReplayStore(storage, sampleDir, settings.retention, {
+      purposes: settings.purposes,
+      ...(summaryFields ? { summaryFields } : {}),
+    });
     // The first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
     const removed = await store.prune();
     log(
       `storage ${storage.kind} (${storage.description}); retention ${days(store.retention.days)}${removed.length ? `; pruned ${removed.length}` : ''}`,
     );
+    if (store.purposes.size)
+      log(
+        `purposes: ${store.purposes.list
+          .map((purpose) => `${purpose.id}${purpose.retentionDays === undefined ? '' : ` (${days(purpose.retentionDays)})`}`)
+          .join(', ')}`,
+      );
   } catch (error) {
     throw new Error(`storage or retention setup failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
@@ -147,6 +152,10 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   const origin = `${tlsCert && tlsKey ? 'https' : 'http'}://127.0.0.1:${port}`;
   // Dev serves the render page through Vite; production serves the built page on the loopback-only route.
   const renderPageUrl = (id: string) => (dev ? `${origin}${basePath}/render.html?id=${id}` : `${origin}/internal/render/${id}`);
+  // `api.render`: the poster's moment, the check before each list-media job, and the call after each stored file.
+  // (createApp runs `beforeRender` for video exports, on the request.)
+  const renderHooks = createRenderHooks(registry.render, (line) => console.error(line));
+  const afterRender = renderHooks.notifies ? renderHooks.afterRender : undefined;
   if (tools.available) {
     render.queue = new RenderQueue({
       storage: store.storage,
@@ -154,6 +163,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
       maxQueued: positive('RENDER_QUEUE_MAX', 8),
       timeoutMs: positive('RENDER_TIMEOUT_MS', 30 * 60_000),
       log,
+      ...(afterRender ? { afterRender } : {}),
       runner: createRenderer({
         origin,
         token: render.token,
@@ -179,8 +189,16 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     const media = createMediaRenderer({ origin, token: render.token, tools, pageUrl: renderPageUrl });
     render.posters = new PosterQueue({
       storage: store.storage,
-      key: (id) => store.posterKey(id),
+      key: (id, choice) => store.posterKey(id, choice),
       runner: media.poster,
+      // The plugins' `posterAt`, then the purpose's `poster` setting (src/shared/purposes.ts), then the default.
+      posterAt: renderHooks.posterChooser({
+        purpose: async (id) => (await store.summary(id, { suites: false }))?.purpose,
+        ...(store.purposes.list.some((purpose) => purpose.poster) ? { purposePoster: (purpose) => store.purposes.poster(purpose) } : {}),
+        load: (id) => store.load(id),
+      }),
+      ...(renderHooks.checks ? { beforeRender: renderHooks.beforeRender } : {}),
+      ...(afterRender ? { afterRender } : {}),
       open: { key: (id: string) => store.openStillKey(id), runner: media.open },
       // Hover previews are MP4s: they need ffmpeg too.
       ...(tools.available ? { preview: { key: (id: string) => store.previewKey(id), runner: media.preview } } : {}),
@@ -196,13 +214,19 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   const bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined;
   const handle = createApp({
     basePath,
+    hosts: settings.hosts,
     auth,
+    ...(settings.signIn !== undefined ? { signIn: settings.signIn } : {}),
     branding,
     sources: settings.sources,
     beta: settings.beta,
+    malleable: settings.malleable,
+    versions: { core: coreVersion(), ...(settings.distribution ? { distribution: settings.distribution } : {}) },
+    editing: settings.editing,
     ...(bridgeHub ? { bridgeHub } : {}),
     comments: settings.comments,
     plugins: registry,
+    ...(settings.redaction ? { redaction: settings.redaction } : {}),
     ...(settings.contextSchema ? { contextSchema: settings.contextSchema } : {}),
     ...(env.PUBLIC_ORIGIN ? { publicOrigin: env.PUBLIC_ORIGIN.replace(/\/+$/, '') } : {}),
     store,
@@ -230,6 +254,10 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     });
   });
   log(`${branding.name} listening on ${host}:${port} (base ${basePath || '/'}, auth ${auth.name}${tlsCert ? ', TLS' : ''})`);
+  if (settings.hosts.bases.size)
+    log(
+      `hosts: ${[...settings.hosts.bases].map(([name, base]) => `${name} at ${base || '/'}`).join(', ')}${settings.hosts.trustForwardedHost ? ' (X-Forwarded-Host trusted)' : ''}`,
+    );
 
   const close = async () => {
     clearInterval(pruneTimer);

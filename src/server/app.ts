@@ -1,3 +1,5 @@
+import { applyRequestPolicy } from './request-policy.ts';
+import { normalizeSignIn, signInReturn } from '../shared/sign-in.ts';
 import { createHash } from 'node:crypto';
 import { createReadStream } from 'node:fs';
 import { readFile, stat } from 'node:fs/promises';
@@ -8,42 +10,53 @@ import { gunzip } from 'node:zlib';
 
 import { buildHumanBundle, defaultId } from '../capture/human-bundle.ts';
 import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
+import { mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { assertReplayBundle, assertReplayTags, type ReplayBundle, type ReplayFilters, isReplayTag } from '../shared/replay.ts';
 import {
   assertReviewRunRegistration,
   assertReviewSuite,
   assertReviewSuiteRegistration,
   type ResolvedSuiteRegistration,
+  suitePersonMatch,
 } from '../shared/review-suite.ts';
 import { assertReplayContext, type ReplayContext } from '../shared/context.ts';
+import { isPurposeId } from '../shared/purposes.ts';
+import { parsePeopleFlags, personMatch } from '../shared/people.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
+import { defaultPolicy, type HostVersions, type MalleablePolicy } from '../shared/malleable-policy.ts';
 import { EMPTY_REGISTRY, mergeRegistries, type PluginRegistry, resolvePluginsSync } from '../plugin/registry.ts';
 import type { AuthAdapter, Identity } from './auth/types.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
-import { appPath, publicPath, withBase } from './base-path.ts';
-import { type BrandingConfig, pageBranding, publicConfig } from './branding.ts';
+import { appPath, type HostConfig, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath } from './base-path.ts';
+import { type BrandingConfig, publicConfig } from './branding.ts';
+import { renderIndexHtml } from './index-page.ts';
 import type { ContextSchema } from './context-schema.ts';
 import type { BetaFlags } from './beta.ts';
 import { type CommentsSettings } from './comments-config.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
 import { malleablePlugin } from './malleable-plugin.ts';
+import { coreVersion } from './package-info.ts';
+import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
 import { handlePosterApi } from './posters.ts';
+import { checkPeople, decorateSuite, decorateSummary, forMeQuery, identityResolver, peopleConfig } from './people.ts';
 import {
   applyContextAdapters,
   clientAsset,
-  publicClientEntries,
   runAfterUpload,
   runBeforeUpload,
   runPrepareUpload,
   runRequestHooks,
   watchResponse,
 } from './plugin-runtime.ts';
+import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
+import type { PurposeCatalog } from './purposes.ts';
 import { serveObject } from './serve-object.ts';
 import { ReplayConflictError, type ReplayStore } from './store.ts';
+import { applyIndexFilters, publicIndexFilters } from './summary-fields.ts';
 import { recordError, setRequestAttributes, traceRequest, withSpan } from './tracing.ts';
 
 const MIME: Record<string, string> = {
@@ -60,6 +73,7 @@ const MIME: Record<string, string> = {
 };
 
 export interface AppOptions {
+  signIn?: import('../shared/sign-in.ts').SignInConfig | false;
   auth: AuthAdapter;
   store: ReplayStore;
   clientDir: string;
@@ -73,16 +87,31 @@ export interface AppOptions {
   render?: RenderService;
   /** Where the app lives publicly (base-path.ts): `''` at the root of its own domain, else e.g. `/replays`. */
   basePath?: string;
+  /**
+   * A different base per request host (base-path.ts): `{ 'replays.example.com': { basePath: '' } }`, or the checked
+   * form `loadSettings` returns. Hosts not listed get `basePath`. With any entry, every response says `Vary: Host`.
+   */
+  hosts?: Readonly<Record<string, HostConfig>> | HostRouting;
+  /** Pick the request host from `X-Forwarded-Host` instead of `Host` (a gateway that rewrites `Host`); with a raw `hosts`. */
+  trustForwardedHost?: boolean;
   /** Beta features, all off by default (`REPLAYS_BETA_EDITOR=true` / `beta.editor`): see src/server/config.ts. */
   beta?: BetaFlags;
+  /** Host write policy; defaults to enabled within beta.editor. Saved edits remain readable and applied when disabled. */
+  editing?: EditingSettings;
   /** The agent bridge's relay (beta.malleable); the server closes it on shutdown so open streams do not hold it up. */
   bridgeHub?: BridgeHub;
+  /** The host's policy for user plugins (`malleable` in the config, src/shared/malleable-policy.ts); default: `defaultPolicy()`. */
+  malleable?: MalleablePolicy;
+  /** The core package version and the configured `distribution`; default: this package's version, no distribution. */
+  versions?: HostVersions;
   /** Comments on replays (`REPLAYS_COMMENTS`, on by default in the server's settings): absent here means off. */
   comments?: CommentsSettings;
   /** Public origin (`https://replays.example.com`); only auth adapters that redirect need it. */
   publicOrigin?: string;
   /** What the loaded plugins registered (src/plugin/registry.ts); none by default. */
   plugins?: PluginRegistry;
+  /** Redaction rules from the config file; the plugins' `api.redaction` rules are added to them. */
+  redaction?: RedactionRules;
 }
 
 /** What a trace may say about an uploaded replay (tracing.ts): its id, counts and enum fields, never contents. */
@@ -98,10 +127,6 @@ function uploadAttributes(bundle: ReplayBundle) {
     'suite.run_id': bundle.suiteRun?.runId,
   };
 }
-
-/** The server's privacy pass over an upload, in its own span (it walks every event). */
-const sanitize = (bundle: ReplayBundle) =>
-  withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle));
 
 function replayReceipt(base: string, bundle: ReplayBundle) {
   return JSON.stringify({
@@ -152,7 +177,9 @@ async function sendCompressed(
 ) {
   const buffer = Buffer.from(body);
   const etag = status === 200 ? bodyEtag(buffer) : undefined;
-  const common = { 'cache-control': REVALIDATE, vary: vary ? `Accept-Encoding, ${vary}` : 'Accept-Encoding', ...(etag ? { etag } : {}) };
+  // A `Vary` already on the response (`Host` with per-host bases, createApp) is kept.
+  const varies = ['Accept-Encoding', response.getHeader('vary'), vary].filter((value) => typeof value === 'string' && value).join(', ');
+  const common = { 'cache-control': REVALIDATE, vary: varies, ...(etag ? { etag } : {}) };
   if (etag && notModified(request, etag)) {
     response.writeHead(304, common);
     response.end();
@@ -254,6 +281,8 @@ export function replayFilters(params: URLSearchParams): ReplayFilters {
   if (source === 'agent' || source === 'human') filters.source = source;
   const tag = params.get('tag');
   if (isReplayTag(tag)) filters.tag = tag;
+  const purpose = params.get('purpose');
+  if (isPurposeId(purpose)) filters.purpose = purpose;
   return filters;
 }
 
@@ -347,10 +376,22 @@ export function isBrowserNavigation(request: IncomingMessage) {
   return accept.includes('text/html');
 }
 
-/** A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. */
-async function acceptUpload(bundle: ReplayBundle) {
+/**
+ * A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. Its
+ * `meta.purpose` must be one the deployment defines (src/server/purposes.ts); with none defined it must be absent.
+ */
+async function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog, registry: PluginRegistry) {
   assertReplayBundle(bundle);
+  const problem = purposes.problem(bundle.meta.purpose);
+  if (problem) throw httpError(400, problem);
+  checkPeople(registry, bundle.meta.people, 'replay.meta.people');
   return bundle;
+}
+
+/** `x-replay-purpose: <id>; inferred` for a replay whose purpose was inferred (explicit ones are in the bundle). */
+async function servedPurpose(store: ReplayStore, id: string): Promise<Record<string, string> | undefined> {
+  const summary = await store.summary(id, { suites: false }).catch(() => undefined);
+  return summary?.purpose && summary.purposeInferred ? { 'x-replay-purpose': `${summary.purpose}; inferred` } : undefined;
 }
 
 /** Applies the deployment's source providers and context schema to an uploaded bundle (in place). */
@@ -366,32 +407,76 @@ function resolveContext(bundle: Pick<ReplayBundle, 'context'>, options: AppOptio
   }
 }
 
+/** `AppOptions.hosts` as routing: already checked (`loadSettings`), or a plain record checked here. */
+function hostRouting(options: AppOptions): HostRouting | undefined {
+  const hosts = options.hosts;
+  if (!hosts) return undefined;
+  if ('bases' in hosts && hosts.bases instanceof Map) return hosts as HostRouting;
+  return normalizeHosts(hosts, options.trustForwardedHost ?? false);
+}
+
+/** A browser recovery may only return to a page, never another auth or machine endpoint. */
+function signInDestination(next: string | null, base: string, path: string) {
+  const destination = signInReturn(next, publicPath('/', base));
+  const target = new URL(destination, 'http://replays.invalid');
+  const targetPath = base && target.pathname.startsWith(`${base}/`) ? target.pathname.slice(base.length) : target.pathname;
+  const blocked = target.pathname === publicPath(path, base) || /^\/(api|auth|internal|_plugins)(\/|$)/.test(targetPath);
+  return blocked ? publicPath('/', base) : destination;
+}
+
 export function createApp(options: AppOptions) {
-  const base = options.basePath ?? '';
+  const defaultBase = options.basePath ?? '';
+  const signIn = normalizeSignIn(options.signIn ?? options.auth.signIn);
+  const routing = hostRouting(options);
+  // With per-host bases the same path is a different route from one host to the next, so every response varies by it.
+  const vary = hostVary(routing);
+  const editing = { enabled: editingFromEnv({}, options.editing).enabled && Boolean(options.beta?.editor) };
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
   const anonymous = options.auth.name === 'none';
+  const policy = options.malleable ?? defaultPolicy();
+  const versions = options.versions ?? { core: coreVersion() };
   const builtIns = [
     ...(options.comments?.enabled ? [commentsPlugin({ store: options.store, anonymous })] : []),
     // Beta: user plugins and the agent bridge. Absent unless the flag is on: no routes, no sandbox page, no bridge.
     ...(options.beta?.malleable
-      ? [malleablePlugin({ storage: options.store.storage, anonymous, hub: options.bridgeHub ?? new BridgeHub() })]
+      ? [malleablePlugin({ storage: options.store.storage, anonymous, hub: options.bridgeHub ?? new BridgeHub(), policy, versions })]
       : []),
   ];
   const registry = builtIns.length ? mergeRegistries(resolvePluginsSync(builtIns), userPlugins) : userPlugins;
   const commentsOn = registry.order.includes(COMMENTS_PLUGIN);
-  const betaPage = [options.beta?.editor ? 'editor' : '', options.beta?.malleable ? 'malleable' : ''].filter(Boolean).join(' ');
-  const page = {
-    ...pageBranding(options.branding),
-    ...(registry.clientEntries.length ? { plugins: JSON.stringify(publicClientEntries(registry.clientEntries, base)) } : {}),
-  };
+  // `api.render`'s `beforeRender` for video exports (the queues in start.ts run the rest of the render hooks).
+  const renderHooks = createRenderHooks(registry.render);
+  const beforeRender = renderHooks.checks ? renderHooks.beforeRender : undefined;
+  const purposes = options.store.purposes;
+  const inferable = purposes.list.some((purpose) => purpose.inferable);
+  const redaction = mergeRedactionRules(options.redaction, registry.redaction);
+  /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
+  const sanitize = (bundle: ReplayBundle) =>
+    withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle, redaction));
+  /** index.html as served at `base` (index-page.ts, shared with `replays build-static`). */
+  const indexPage = (html: string, base: string) =>
+    renderIndexHtml(html, {
+      base,
+      branding: options.branding,
+      purposes: purposes.list,
+      sources: options.sources.describe(),
+      ...(signIn ? { signIn } : {}),
+      ...(options.beta ? { beta: options.beta } : {}),
+      comments: commentsOn,
+      editing,
+      clientEntries: registry.clientEntries,
+    });
   /** The signed-in person per request, for the `onResponse` hooks. */
   const identities = new WeakMap<IncomingMessage, Identity>();
-  const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
+  const resolveIdentity = identityResolver(registry);
+  const roles = registry.people?.value.roles;
+
   const json = 'application/json; charset=utf-8';
 
   /** Everything past the health checks, inside the request's span. */
-  async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string) {
+  async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string, base: string) {
+    const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
     try {
       // Loopback + per-process token only (render-routes.ts); never reachable through the public path.
       if (path.startsWith('/internal/render/')) {
@@ -399,16 +484,27 @@ export function createApp(options: AppOptions) {
         return;
       }
 
+      const requestPolicy = applyRequestPolicy(registry, request, response, path);
+      if (requestPolicy.handled) return;
+
       if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
       if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
         return;
 
-      const user: Identity | undefined = await options.auth.authenticate(request);
-      if (!user) {
-        const login = options.auth.loginUrl?.(request, routeContext);
-        if (login && request.method === 'GET' && isBrowserNavigation(request) && !path.startsWith('/api/')) {
+      const authenticated: Identity | undefined = await options.auth.authenticate(request);
+      if (!authenticated) {
+        const recovery = signIn && path === signIn.path && request.method === 'GET' && isBrowserNavigation(request);
+        // loginUrl adapters (including OIDC) return to this authenticated endpoint after their callback.
+        // Keep the original page inside a normalized next parameter without mutating the real request.
+        const loginRequest = recovery
+          ? Object.assign(Object.create(request) as IncomingMessage, {
+              url: `${publicPath(signIn.path, base)}?${new URLSearchParams({ next: signInDestination(raw.searchParams.get('next'), base, signIn.path) })}`,
+            })
+          : request;
+        const login = options.auth.loginUrl?.(loginRequest, routeContext);
+        if (login && request.method === 'GET' && isBrowserNavigation(request) && (recovery || !path.startsWith('/api/'))) {
           response.writeHead(302, { location: login, 'cache-control': 'no-store' });
           response.end();
           return;
@@ -416,13 +512,28 @@ export function createApp(options: AppOptions) {
         send(response, login ? 401 : 403, login ? 'sign in required' : 'forbidden');
         return;
       }
+      // Identity resolvers (api.identity) may add a name and avatar; never another id.
+      const user = await resolveIdentity(authenticated, request);
       identities.set(request, user);
-      if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request)) {
+      if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !requestPolicy.csrfAllowed) {
         send(response, 403, 'cross-site request');
         return;
       }
       if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
         return;
+      if (signIn && path === signIn.path) {
+        if (request.method !== 'GET') {
+          send(response, 405, JSON.stringify({ error: 'method not allowed' }), json);
+          return;
+        }
+        response.writeHead(302, {
+          location: signInDestination(raw.searchParams.get('next'), base, signIn.path),
+          'cache-control': 'no-store',
+          ...(vary ? { vary } : {}),
+        });
+        response.end();
+        return;
+      }
       // Files of the plugins' client entries (behind the same auth as everything else).
       const asset = request.method === 'GET' || request.method === 'HEAD' ? clientAsset(registry, path) : undefined;
       if (asset) {
@@ -430,16 +541,18 @@ export function createApp(options: AppOptions) {
           send(response, 404, 'not found');
         return;
       }
-      if (await handleRenderApi(request, response, path, raw.searchParams, options)) return;
+      if (await handleRenderApi(request, response, path, raw.searchParams, { ...options, beforeRender, identity: user })) return;
       if (await handlePosterApi(request, response, path, { store: options.store, posters: options.render?.posters })) return;
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
-      if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id }))) return;
+      if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id, editing }))) return;
 
       if (path === '/api/me' && request.method === 'GET') {
         // Names the signed-in person: private and revalidated on every use (never served stale to another
         // sign-in), but not `no-store`, which would keep the index out of the back/forward cache.
-        send(response, 200, JSON.stringify(user), json, REVALIDATE);
+        // With api.people, also the roles and the handles a person can link for "For me".
+        const people = peopleConfig(registry);
+        send(response, 200, JSON.stringify({ ...user, ...(people ? { people } : {}) }), json, REVALIDATE);
         return;
       }
       if (path === '/api/config' && request.method === 'GET') {
@@ -447,30 +560,58 @@ export function createApp(options: AppOptions) {
           ...(options.contextSchema ? { contextSchema: options.contextSchema.schema } : {}),
           sourceProviders: options.sources.ids,
           auth: options.auth.name,
+          ...(signIn ? { signIn } : {}),
           plugins: [...registry.order],
+          purposes: options.store.purposes.list,
+          ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
           beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
           comments: commentsOn,
+          versions,
+          // The user-plugin policy only exists with the feature on (off means nothing about it is exposed).
+          ...(options.beta?.malleable ? { malleable: policy } : {}),
+          editing,
         });
         send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;
       }
       if (path === '/api/replays' && request.method === 'GET') {
-        const summaries = await options.store.list(replayFilters(raw.searchParams));
-        await sendCompressed(request, response, 200, JSON.stringify(summaries), json);
+        const me = forMeQuery(registry, raw.searchParams, user);
+        // Core filters first (store.ts), then the plugins' (`api.indexFilter`, an `x-*` param each).
+        const summaries = applyIndexFilters(
+          registry.indexFilters,
+          raw.searchParams,
+          await options.store.list(replayFilters(raw.searchParams)),
+        );
+        // `?for=me`: only the replays whose people include the signed-in person, each with the role it matched by.
+        const body = me
+          ? summaries.flatMap((summary) => {
+              const reason = personMatch(summary.people, me, roles);
+              return reason ? [{ ...decorateSummary(registry, summary), reason }] : [];
+            })
+          : summaries.map((summary) => decorateSummary(registry, summary));
+        await sendCompressed(request, response, 200, JSON.stringify(body), json);
         return;
       }
       if (path === '/api/suites' && request.method === 'GET') {
-        await sendCompressed(
-          request,
-          response,
-          200,
-          JSON.stringify(
-            raw.searchParams.get('expand') === 'runs'
-              ? await options.store.listSuiteIndex(Number(raw.searchParams.get('limit') ?? 100))
-              : await options.store.listSuiteSummaries(Number(raw.searchParams.get('limit') ?? 20)),
-          ),
-          json,
-        );
+        const me = forMeQuery(registry, raw.searchParams, user);
+        const expand = raw.searchParams.get('expand') === 'runs';
+        let body: unknown[];
+        if (me) {
+          // A suite is for me through its own people or any run's replay people.
+          const entries = await options.store.listSuiteIndex(Number(raw.searchParams.get('limit') ?? (expand ? 100 : 20)));
+          body = entries.flatMap((entry) => {
+            const reason = suitePersonMatch(entry, me, roles);
+            if (!reason) return [];
+            const { runDetails, ...summary } = decorateSuite(registry, entry);
+            return [{ ...summary, ...(expand ? { runDetails } : {}), reason }];
+          });
+        } else {
+          const entries = expand
+            ? await options.store.listSuiteIndex(Number(raw.searchParams.get('limit') ?? 100))
+            : await options.store.listSuiteSummaries(Number(raw.searchParams.get('limit') ?? 20));
+          body = entries.map((entry) => decorateSuite(registry, entry));
+        }
+        await sendCompressed(request, response, 200, JSON.stringify(body), json);
         return;
       }
       const suitePath = /^\/api\/suites\/([a-z0-9][a-z0-9-]{0,79})(?:\/runs\/([a-zA-Z0-9][a-zA-Z0-9-]{0,79}))?$/.exec(path);
@@ -479,7 +620,7 @@ export function createApp(options: AppOptions) {
         // `?expand=runs` adds the index's runDetails (replay summaries per run); the plain shape is unchanged.
         const body =
           suite && raw.searchParams.get('expand') === 'runs'
-            ? { ...suite, runDetails: (await options.store.suiteIndexEntry(suite)).runDetails }
+            ? { ...suite, runDetails: decorateSuite(registry, await options.store.suiteIndexEntry(suite)).runDetails }
             : suite;
         // Suites change while runs register: revalidated (ETag), never assumed fresh.
         await sendCompressed(request, response, suite ? 200 : 404, JSON.stringify(body ?? { error: 'suite not found' }), json);
@@ -489,7 +630,7 @@ export function createApp(options: AppOptions) {
         const body = await readBody(request, 64 * 1024);
         // Same privacy pass as replay uploads (titles, source links, labels). Idempotent, so a re-registration of the
         // same suite still compares equal.
-        const input: unknown = sanitizeUrlFields(JSON.parse(body.toString('utf8')));
+        const input: unknown = sanitizeUrlFields(JSON.parse(body.toString('utf8')), redaction);
         const contextInfo = { kind: suitePath[2] ? ('run' as const) : ('suite' as const), identity: user, request };
         if (suitePath[2]) {
           assertReviewRunRegistration(input, suitePath[2]);
@@ -513,19 +654,25 @@ export function createApp(options: AppOptions) {
           if (registration.context) resolveContext({ context: registration.context }, options);
           // The resolved registration is what is stored, so check the whole thing again (a link, not a reference).
           assertReviewSuite({ ...registration, runs: [] });
+          checkPeople(registry, registration.people, 'suite.people');
           const suite = await options.store.registerSuite(suitePath[1]!, registration);
           send(response, 200, JSON.stringify(suite), json);
         }
         return;
       }
       if (path === '/api/replays/import' && request.method === 'POST') {
-        // Plain rrweb JSON in the body; `title`, `url`, `id` and `tag` (repeatable) as query parameters.
+        // Plain rrweb JSON in the body; `title`, `url`, `id`, `tag` and `person` (`role:email[:handle=value]`, both
+        // repeatable) as query parameters.
         const input = await readJsonUpload(request, MAX_REPLAY_BYTES);
         const title = raw.searchParams.get('title')?.trim().slice(0, 200) || 'Imported recording';
         const url = raw.searchParams.get('url')?.trim() || undefined;
         const id = raw.searchParams.get('id')?.trim() || undefined;
         const tags = raw.searchParams.getAll('tag');
         if (tags.length) assertReplayTags(tags, 'tag');
+        const purpose = raw.searchParams.get('purpose')?.trim() || undefined;
+        const purposeProblem = options.store.purposes.problem(purpose);
+        if (purposeProblem) throw httpError(400, purposeProblem.replace('replay.meta.purpose', 'purpose'));
+        const people = parsePeopleFlags(raw.searchParams.getAll('person'), 'person');
         // The same privacy pass as POST /replays, so query-parameter text (the title) is redacted too.
         const bundle = sanitize(
           buildHumanBundle(input, {
@@ -533,10 +680,12 @@ export function createApp(options: AppOptions) {
             ...(url ? { url } : {}),
             ...(id ? { id } : {}),
             ...(tags.length ? { tags } : {}),
+            ...(purpose ? { purpose } : {}),
+            ...(people.length ? { people } : {}),
           }),
         );
         setRequestAttributes(request, uploadAttributes(bundle));
-        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request));
+        const accepted = await acceptUpload(await runBeforeUpload(registry, bundle, user, request), options.store.purposes, registry);
         await saveWithFreshId(options.store, accepted, Boolean(id));
         setRequestAttributes(request, { 'replay.id': accepted.meta.id });
         void options.store.pruneSoon();
@@ -544,8 +693,11 @@ export function createApp(options: AppOptions) {
         send(response, 201, replayReceipt(base, accepted), json, REVALIDATE);
         return;
       }
-      if (path === '/api/replays' && request.method === 'POST') {
-        const replay = await runPrepareUpload(registry, await readJsonUpload(request, MAX_REPLAY_BYTES), user, request);
+      const endpoint = registry.uploadEndpoints.get(path)?.value;
+      if ((path === '/api/replays' || endpoint) && request.method === 'POST') {
+        const body = await readJsonUpload(request, MAX_REPLAY_BYTES);
+        const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, request }) : body;
+        const replay = await runPrepareUpload(registry, prepared, user, request);
         if (replay && typeof replay === 'object' && !Array.isArray(replay)) {
           const upload = replay as { context?: ReplayContext | undefined };
           const adapted = await applyContextAdapters(registry, upload.context, { kind: 'replay', identity: user, request });
@@ -561,7 +713,11 @@ export function createApp(options: AppOptions) {
         assertReplayBundle(replay);
         resolveContext(replay, options);
         // Stored data never depends on the uploader having sanitized it.
-        const bundle = await acceptUpload(await runBeforeUpload(registry, sanitize(replay), user, request));
+        const bundle = await acceptUpload(
+          await runBeforeUpload(registry, sanitize(replay), user, request),
+          options.store.purposes,
+          registry,
+        );
         setRequestAttributes(request, uploadAttributes(bundle));
         if (bundle.suiteRun) {
           await options.store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);
@@ -590,12 +746,15 @@ export function createApp(options: AppOptions) {
         // browser keeps them for a day without asking again (reopening a replay reads its disk cache);
         // committed samples can change with a deploy, so they revalidate (ETag).
         const located = await options.store.locate(replayPath.id);
+        // An inferred purpose is not in the bundle: the viewer reads it from this header to open the replay its way.
+        const purposeHeaders = located && inferable ? await servedPurpose(options.store, replayPath.id) : undefined;
         if (
           !located ||
           !(await serveObject(request, response, located.storage, located.key, located.uploaded ? IMMUTABLE_PRIVATE : REVALIDATE, {
             contentType: 'application/json; charset=utf-8',
             etag: true,
             info: located.info,
+            ...(purposeHeaders ? { headers: purposeHeaders } : {}),
           }))
         ) {
           send(response, 404, 'replay not found');
@@ -633,8 +792,8 @@ export function createApp(options: AppOptions) {
       }
 
       if (options.devMiddleware) {
-        // The dev server's base is the configured public one (vite.config.ts).
-        request.url = `${publicPath(path, base)}${raw.search}`;
+        // The dev server's base is the configured public one (vite.config.ts), whichever host asked.
+        request.url = `${publicPath(path, defaultBase)}${raw.search}`;
         await new Promise<void>((done) => {
           let settled = false;
           const finish = () => {
@@ -662,13 +821,7 @@ export function createApp(options: AppOptions) {
           // With user plugins on, the page may only frame itself, blob: and data: URLs: a sandboxed plugin frame that
           // navigates itself somewhere else (to smuggle data out in a URL) is refused by the browser.
           if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
-          await sendCompressed(
-            request,
-            response,
-            200,
-            withBase(html, base, { ...page, beta: betaPage, comments: commentsOn }),
-            'text/html; charset=utf-8',
-          );
+          await sendCompressed(request, response, 200, indexPage(html, base), 'text/html; charset=utf-8');
           return;
         }
       }
@@ -681,6 +834,10 @@ export function createApp(options: AppOptions) {
   return async function handle(request: IncomingMessage, response: ServerResponse) {
     try {
       const raw = new URL(request.url ?? '/', 'http://app');
+      // The public base of this request: its host's entry in `hosts`, else `basePath`. The host only shapes routes and
+      // links; access is still decided by the auth adapter, the same on every host.
+      const base = hostBase(request.headers, routing, defaultBase);
+      if (vary) response.setHeader('vary', vary);
       const path = appPath(raw.pathname, base);
 
       // Health checks (load balancer, Docker, deploy curl): `/healthz` always, and `/` for anything that is not
@@ -691,7 +848,7 @@ export function createApp(options: AppOptions) {
       }
       // A prefixed deployment answers its bare address with the list, so `/replays` and `/replays/` both work.
       watchResponse(registry, request, response, path, () => identities.get(request));
-      await traceRequest(request, response, path, () => serve(request, response, raw, path));
+      await traceRequest(request, response, path, () => serve(request, response, raw, path, base));
     } catch (error) {
       fail(request, response, error);
     }

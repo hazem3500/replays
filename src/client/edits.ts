@@ -1,3 +1,4 @@
+import { fetchPage } from './sign-in.tsx';
 import { queryOptions } from '@tanstack/react-query';
 
 import { EMPTY_EDITS, editListOf, type ReplayEdits, type StoredReplayEdits } from '../shared/edits.ts';
@@ -19,7 +20,7 @@ const editsUrl = (id: string) => apiUrl(`replays/${encodeURIComponent(id)}/edits
 export async function fetchEdits(id: string, signal?: AbortSignal): Promise<LoadedEdits> {
   // Beta editor off: no request at all, the replay is shown as recorded.
   if (!betaEditor()) return NONE;
-  const response = await fetch(editsUrl(id), signal ? { signal } : {});
+  const response = await fetchPage(editsUrl(id), signal ? { signal } : {});
   if (response.status === 404) {
     const body = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
     if (body?.error === 'replay not found') throw new LoadError('Replay not found', 404);

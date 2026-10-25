@@ -17,7 +17,9 @@ import { formatRelative } from '../format.ts';
 import { replayHref, replayInSuiteHref, suiteHref } from '../route.ts';
 import { playableReplayId } from '../suite/runs.ts';
 import { errorTotal, feedTime, formatBadgeDuration, groupByDay, runStrip } from './feed.ts';
+import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
+import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
@@ -38,7 +40,7 @@ export type FeedEntry =
   | {
       kind: 'suite';
       id: string;
-      suite: Pick<ReviewSuiteIndexEntry, 'id' | 'title' | 'createdAt' | 'subject' | 'runDetails'>;
+      suite: Pick<ReviewSuiteIndexEntry, 'id' | 'title' | 'createdAt' | 'subject' | 'runDetails' | 'people'>;
       status: SuiteOverallStatus;
       runs: ReviewSuiteIndexRun[];
       hiddenRuns: number;
@@ -187,6 +189,7 @@ function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: F
         </div>
         <div className="feed-meta">
           <SourceLead sources={summary.sources} origin={summary.source} />
+          <PeopleStack people={summary.people} />
           <span className="feed-facts">
             <span>
               <Relative at={summary.capturedAt} narrow={view === 'grid'} />
@@ -199,6 +202,8 @@ function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: F
             ) : null}
           </span>
         </div>
+        {/* Plugins' fields (registerIndexColumn), drawn from summary.ext. */}
+        <IndexColumns summary={summary} />
       </div>
       {view === 'list' ? <RowColumns at={summary.capturedAt} host={summary.host} /> : null}
     </li>
@@ -387,6 +392,7 @@ function SuiteItem({ entry, view }: { entry: SuiteFeedEntry; view: FeedView }) {
             Review suite
           </span>
           {sources ? <SourceLead sources={sources} origin="agent" short /> : null}
+          <PeopleStack people={suite.people} />
           {view === 'list' ? facts : null}
           {view === 'list' ? strip() : null}
         </div>

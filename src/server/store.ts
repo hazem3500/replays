@@ -18,6 +18,7 @@ import {
   sameEdits,
   type StoredReplayEdits,
 } from '../shared/edits.ts';
+import type { PosterMoment } from '../shared/purposes.ts';
 import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
 import {
   assertReviewRunRegistration,
@@ -30,13 +31,29 @@ import {
   type ReviewSuiteSummary,
   summarizeReviewSuite,
 } from '../shared/review-suite.ts';
+import { serverUploadMs, uploadAgeKey } from './upload-age.ts';
+import { PurposeCatalog } from './purposes.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
+import type { SummaryFieldsRunner } from './summary-fields.ts';
 import { captureLink, withSpan } from './tracing.ts';
 
 export type { ReplaySummary } from '../shared/replay.ts';
 
 /** Bump when the poster moment or format changes (the client's poster URL carries it too). */
 export const POSTER_VERSION = 2;
+/**
+ * A poster moment other than the default: a purpose's named moment or a time (ms) a plugin's `posterAt` chose. The
+ * poster's key names it (posterKey), so a changed choice is a different file: nothing stale is served, the old one is
+ * pruned with the replay. The default moment keeps the plain key, so stored posters stay valid where nothing chooses.
+ */
+export type PosterChoice = PosterMoment | number;
+
+/** `''` for the default moment, else `first-error`, `last-step` or `t<ms>`. */
+export function posterTag(choice?: PosterChoice) {
+  if (choice === undefined || choice === 'middle-step') return '';
+  return typeof choice === 'number' ? `t${Math.max(0, Math.round(choice))}` : choice;
+}
+
 /** Bump when the opening still's moment or format changes (the client's URL carries it too). */
 export const OPEN_STILL_VERSION = 1;
 /** Bump when the preview's speed, cap or encoding changes. */
@@ -102,10 +119,10 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  * local DATA_DIR (`STORAGE=fs`) or an S3-compatible bucket (`STORAGE=s3`). Layout, identical on both:
  *
  *   <id>/replay.json               the bundle (immutable)
- *   <id>/meta.json                 its list summary (rebuilt when missing, stale or an older SUMMARY_VERSION)
+ *   <id>/meta.json                 its list summary (rebuilt when missing, stale, an older SUMMARY_VERSION or other summary fields)
  *   <id>/keep.json                 `{ by, at }` while someone keeps it (no expiry)
  *   <id>/edits.json                its edit list (src/shared/edits.ts): trims and cuts applied on playback and export
- *   <id>/poster.v2.jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
+ *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
  *
@@ -116,6 +133,8 @@ export class ReplayStore {
   readonly samples: FsStorage;
   readonly sampleDir: string;
   readonly retention: RetentionPolicy;
+  /** The deployment's purposes: listed summaries get their (inferred) purpose from here. Empty by default. */
+  readonly purposes: PurposeCatalog;
   /** Parsed summaries keyed by id, valid while the sidecar's version (generation / mtime) is unchanged. */
   private readonly summaryCache = new Map<string, { version: string; summary: ReplaySummary | undefined }>();
   private readonly keepCache = new Map<string, { version: string; keep: KeepRecord | undefined }>();
@@ -131,18 +150,35 @@ export class ReplayStore {
    */
   private listed: { at: number; summaries: Promise<ReplaySummary[]> } | undefined;
   readonly listTtlMs: number;
+  /** Plugins' `summaryFields` (src/server/summary-fields.ts): run whenever a summary is built, into `summary.ext`. */
+  private readonly summaryFields: SummaryFieldsRunner | undefined;
 
   constructor(
     data: string | ObjectStorage,
     sampleDir: string,
     retention?: number | Partial<RetentionPolicy>,
-    options: { listTtlMs?: number } = {},
+    options: { listTtlMs?: number; purposes?: PurposeCatalog; summaryFields?: SummaryFieldsRunner } = {},
   ) {
     this.storage = typeof data === 'string' ? new FsStorage(data) : data;
     this.sampleDir = sampleDir;
     this.samples = new FsStorage(sampleDir);
     this.retention = policyFrom(retention);
+    this.purposes = options.purposes ?? new PurposeCatalog();
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
+    this.summaryFields = options.summaryFields;
+  }
+
+  /** A bundle's list summary, with the plugins' summary fields. */
+  private async summarize(bundle: ReplayBundle): Promise<ReplaySummary> {
+    const summary = summarizeReplay(bundle);
+    if (!this.summaryFields) return summary;
+    const ext = await this.summaryFields.derive(bundle);
+    return { ...summary, extVersion: this.summaryFields.version, ...(ext ? { ext } : {}) };
+  }
+
+  /** Derives the same summary the list uses, without reading/writing cached sidecars or retention metadata. */
+  async listSummary(bundle: ReplayBundle): Promise<ReplaySummary> {
+    return this.purposes.apply(await this.summarize(bundle));
   }
 
   /** DATA_DIR with the fs driver; tests and scripts only. */
@@ -177,10 +213,12 @@ export class ReplayStore {
 
   /**
    * The list thumbnail (src/server/posters.ts); under the replay's prefix so retention prunes it with
-   * the replay. Versioned: when the poster moment changes, older posters are simply not found and remade.
+   * the replay. Versioned: when the poster moment changes, older posters are simply not found and remade. A
+   * non-default `choice` (posterTag) is part of the name for the same reason.
    */
-  posterKey(id: string) {
-    return `${assertReplayId(id)}/poster.v${POSTER_VERSION}.jpg`;
+  posterKey(id: string, choice?: PosterChoice) {
+    const tag = posterTag(choice);
+    return `${assertReplayId(id)}/poster.v${POSTER_VERSION}${tag ? `-${tag}` : ''}.jpg`;
   }
 
   /**
@@ -201,8 +239,8 @@ export class ReplayStore {
   }
 
   /** The files behind the keys above, with the fs driver only (tests). */
-  posterFile(id: string) {
-    return this.fsPath(this.posterKey(id));
+  posterFile(id: string, choice?: PosterChoice) {
+    return this.fsPath(this.posterKey(id, choice));
   }
 
   openStillFile(id: string) {
@@ -389,12 +427,19 @@ export class ReplayStore {
         return { next: suite, result: suite };
       }
       const existing = current.suite;
-      // Registering again is idempotent: the same registration changes nothing, a different one conflicts.
-      const { runs: _runs, ...currentIdentity } = existing;
-      if (JSON.stringify(currentIdentity) !== JSON.stringify({ ...input, id })) {
+      // Registering again is idempotent: the same registration changes nothing, a different one conflicts. `people`
+      // is not identity: a re-registration may add or replace them (absent keeps what is stored).
+      const { runs: _runs, people: currentPeople, ...currentIdentity } = existing;
+      const { people: requestedPeople, ...requestedIdentity } = input;
+      if (JSON.stringify(currentIdentity) !== JSON.stringify({ ...requestedIdentity, id })) {
         throw httpError(409, `suite ${id} conflicts with its existing registration`);
       }
-      return { next: undefined, result: existing };
+      if (requestedPeople === undefined || JSON.stringify(requestedPeople) === JSON.stringify(currentPeople))
+        return { next: undefined, result: existing };
+      const { runs, ...rest } = existing;
+      // Key order as on first registration (people before runs), so the stored file reads the same either way.
+      const updated: ReviewSuite = { ...rest, people: requestedPeople, runs };
+      return { next: updated, result: updated };
     });
   }
 
@@ -498,7 +543,7 @@ export class ReplayStore {
       if (error instanceof ObjectExistsError) throw new ReplayConflictError(id);
       throw error;
     }
-    await this.writeSummary(id, summarizeReplay(bundle)).catch((error: unknown) => console.error('meta.json write failed:', error));
+    await this.writeSummary(id, await this.summarize(bundle)).catch((error: unknown) => console.error('meta.json write failed:', error));
     this.changed();
     return this.replayKey(id);
   }
@@ -522,7 +567,8 @@ export class ReplayStore {
 
   /**
    * An upload's summary from its `meta.json` sidecar, which is built lazily (and rebuilt when older than
-   * `replay.json` or built by an older SUMMARY_VERSION, e.g. before the list gained timelines). Parsed
+   * `replay.json`, built by an older SUMMARY_VERSION, e.g. before the list gained timelines, or by other plugin summary
+   * fields). Parsed
    * sidecars are cached by the object's version, so listing ~2000 replays reads only what changed.
    */
   private async uploadedSummary(id: string, replay: ObjectInfo, meta: ObjectInfo | undefined): Promise<ReplaySummary | undefined> {
@@ -530,14 +576,19 @@ export class ReplayStore {
       const cached = this.summaryCache.get(id);
       if (cached?.summary && cached.version === meta.version) return cached.summary;
       const parsed = await readJson(this.storage, this.metaKey(id)).catch(() => undefined);
-      if (isReplaySummary(parsed) && parsed.id === id && parsed.summaryVersion === SUMMARY_VERSION) {
+      if (
+        isReplaySummary(parsed) &&
+        parsed.id === id &&
+        parsed.summaryVersion === SUMMARY_VERSION &&
+        (parsed.extVersion ?? '') === (this.summaryFields?.version ?? '')
+      ) {
         this.summaryCache.set(id, { version: meta.version, summary: parsed });
         return parsed;
       }
     }
     const bundle = await this.load(id);
     if (!bundle) return undefined;
-    const summary = summarizeReplay(bundle);
+    const summary = await this.summarize(bundle);
     await this.writeSummary(id, summary).catch((error: unknown) => console.error('meta.json backfill failed:', error));
     return summary;
   }
@@ -548,7 +599,7 @@ export class ReplayStore {
     const cached = this.summaryCache.get(cacheKey);
     if (cached?.version === sample.version) return cached.summary;
     const summary = await this.load(id)
-      .then((bundle) => (bundle ? summarizeReplay(bundle) : undefined))
+      .then((bundle) => (bundle ? this.summarize(bundle) : undefined))
       .catch(() => undefined);
     this.summaryCache.set(cacheKey, { version: sample.version, summary });
     return summary;
@@ -563,10 +614,18 @@ export class ReplayStore {
     return keep;
   }
 
-  private retentionFor(summary: ReplaySummary, replay: ObjectInfo, keep: KeepRecord | undefined, keptBySuite: boolean): Retention {
+  private async retentionFor(
+    summary: ReplaySummary,
+    replay: ObjectInfo,
+    keep: KeepRecord | undefined,
+    keptBySuite: boolean,
+  ): Promise<Retention> {
     if (keptBySuite && !keep) return { expiresAt: null };
     return retentionOf(this.retention, {
-      uploadedMs: replay.createdMs,
+      uploadedMs: await serverUploadMs(this.storage, replay),
+      purpose: summary.purpose,
+      purposeInferred: summary.purposeInferred,
+      summary,
       ...(keep ? { kept: keep } : {}),
     });
   }
@@ -596,16 +655,17 @@ export class ReplayStore {
       this.storage.stat(this.keepKey(id)),
     ]);
     if (replay) {
-      const summary = await this.uploadedSummary(id, replay, meta);
-      if (!summary) return undefined;
+      const stored = await this.uploadedSummary(id, replay, meta);
+      if (!stored) return undefined;
+      const summary = this.purposes.apply(stored);
       const keep = await this.keepOf(this.keepKey(id), keepInfo);
       const keptBySuite = suites && !keep && (await this.keptSuiteReplays()).has(id);
-      return { ...summary, ...this.retentionFor(summary, replay, keep, keptBySuite) };
+      return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite)) };
     }
     const sample = await this.samples.stat(this.sampleKey(id));
     if (!sample) return undefined;
     const summary = await this.sampleSummary(id, sample);
-    return summary ? { ...summary, expiresAt: null } : undefined;
+    return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
   }
 
   async list(filters: ReplayFilters = {}): Promise<ReplaySummary[]> {
@@ -649,10 +709,11 @@ export class ReplayStore {
         if (!replay) return undefined;
         await gate.acquire();
         try {
-          const summary = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
-          if (!summary) return undefined;
+          const stored = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
+          if (!stored) return undefined;
+          const summary = this.purposes.apply(stored);
           const keep = await this.keepOf(this.keepKey(id), keepInfo);
-          return { ...summary, ...this.retentionFor(summary, replay, keep, keptBySuite.has(id)) };
+          return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite.has(id))) };
         } finally {
           gate.release();
         }
@@ -661,7 +722,7 @@ export class ReplayStore {
         const id = sample.key.slice(0, -'.json'.length);
         if (!ID.test(id) || uploads.get(id)?.replay) return undefined;
         const summary = await this.sampleSummary(id, sample);
-        return summary ? { ...summary, expiresAt: null } : undefined;
+        return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
       }),
     ]);
     return summaries
@@ -795,7 +856,7 @@ export class ReplayStore {
     const [info, keepInfo] = await Promise.all([this.storage.stat(this.suiteKey(suite.id)), this.storage.stat(key)]);
     const keep = await this.keepOf(key, keepInfo);
     return retentionOf(this.retention, {
-      uploadedMs: info?.createdMs ?? Number.NaN,
+      uploadedMs: info ? await serverUploadMs(this.storage, info) : Number.NaN,
       ...(keep ? { kept: keep } : {}),
     });
   }
@@ -864,7 +925,15 @@ export class ReplayStore {
           if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
           let expires: number | undefined;
           if (replay) {
-            expires = expiryMs(this.retention, { uploadedMs: replay.createdMs });
+            // Per purpose and rule: the summary (sidecar, cached) says which applies.
+            const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
+            const summary = stored && this.purposes.apply(stored);
+            expires = expiryMs(this.retention, {
+              uploadedMs: await serverUploadMs(this.storage, replay),
+              purpose: summary?.purpose,
+              purposeInferred: summary?.purposeInferred,
+              summary,
+            });
           } else {
             const newest = Math.max(...group.map((object) => object.updatedMs));
             expires = expiryMs(this.retention, { uploadedMs: newest });
@@ -882,9 +951,10 @@ export class ReplayStore {
           if (!match) continue;
           suites++;
           if (keptSuites.has(match[1]!)) continue;
-          const expires = expiryMs(this.retention, { uploadedMs: object.createdMs });
+          const expires = expiryMs(this.retention, { uploadedMs: await serverUploadMs(this.storage, object) });
           if (expires !== undefined && expires < now) {
             await this.storage.delete(object.key);
+            await this.storage.delete(uploadAgeKey(object.key));
             removed.push(`suite:${match[1]}`);
           }
         }

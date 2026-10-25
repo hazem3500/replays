@@ -70,6 +70,8 @@ jobs:
           CHROMIUM_NO_SANDBOX: '1'
       - run: pnpm build
       - run: pnpm build:cli
+      - name: Host application example
+        run: pnpm --filter @hazem3500/replays-example-host-app check
 
   e2e:
     name: End-to-end smoke

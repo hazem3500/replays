@@ -2,12 +2,15 @@ import { LinkIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.ts';
 
+import { sourceLook } from '../source-looks.ts';
+
 /*
  * Marks, 14 px by default, all drawn in currentColor so they follow the theme:
  * - `product`: the neutral mark of this app (a play triangle in a rounded square). A deployment replaces it with
  *   its own logo through `productLogo()` (config.ts) where the header shows one.
  * - `github`: Octicons `mark-github` (16 px grid), MIT licence, github.com/primer/octicons.
  * - `link`: a plain link glyph for every other source provider.
+ * A provider that declares its own `icon` (source-looks.ts) is drawn as that image instead: an <img>, never inline markup.
  */
 
 export type Brand = 'product' | 'github' | 'link';
@@ -37,7 +40,22 @@ export function BrandIcon({ brand = 'product', size = 14, className }: { brand?:
   );
 }
 
-/** The mark of a source's provider. */
+/** The mark of a source's provider: its declared icon, else the built-in mark. */
 export function SourceIcon({ provider, size, className }: { provider: string; size?: number; className?: string }) {
+  const icon = sourceLook(provider)?.icon;
+  if (icon)
+    return (
+      <img
+        src={icon}
+        alt=""
+        width={size ?? 14}
+        height={size ?? 14}
+        className={cn('brand-icon brand-icon-image', className)}
+        data-provider-icon={provider}
+        referrerPolicy="no-referrer"
+        decoding="async"
+        draggable={false}
+      />
+    );
   return <BrandIcon brand={brandForProvider(provider)} {...(size ? { size } : {})} {...(className ? { className } : {})} />;
 }

@@ -1,3 +1,4 @@
+import { PLAYBACK_SPEEDS } from '../../shared/render-variant.ts';
 /**
  * Frame planning for the server-side video render (src/server/renderer.ts
  * drives src/client/render/main.ts). Pure: no DOM, unit-tested in
@@ -11,11 +12,12 @@
  */
 
 import { INACTIVE_SKIP_SPEED, INACTIVE_THRESHOLD_MS } from '../../shared/skip.ts';
+import type { PosterMoment } from '../../shared/purposes.ts';
 
 export const RENDER_FPS = [15, 30] as const;
 export type RenderFps = (typeof RENDER_FPS)[number];
 /** Export speeds: the viewer's playback speeds (src/client/player.ts SPEEDS). */
-export const RENDER_SPEEDS = [0.5, 1, 1.5, 2, 4, 8] as const;
+export const RENDER_SPEEDS = PLAYBACK_SPEEDS;
 export type RenderSpeed = (typeof RENDER_SPEEDS)[number];
 
 /** Number of frames for `duration` ms of replay at `fps`, played at `speed`; the last frame lands on the end. */
@@ -162,21 +164,38 @@ export function posterTime(snapshotTimes: ArrayLike<number>, duration: number) {
   return Math.max(0, Math.min(duration, first + POSTER_DELAY_MS));
 }
 
-/** Inputs of the poster moment; every one is ms on the replay timeline. */
+/** Inputs of the poster moment; every time is ms on the replay timeline. */
 export interface PosterMomentInput {
   stepTimes: readonly number[];
   snapshotTimes: ArrayLike<number>;
   duration: number;
+  /** Console errors and failed requests, for `moment: 'first-error'`. */
+  errorTimes?: readonly number[];
+  /** The replay's purpose's choice (src/shared/purposes.ts); default `'middle-step'`. */
+  moment?: PosterMoment;
+  /** A time a plugin chose (`api.render({ posterAt })`); wins over `moment`, still clamped like the others. */
+  at?: number;
 }
 
 /** After this long a step's effects (navigation, re-render) have usually landed. */
 const SETTLE_MS = 900;
 
 /**
- * Where the poster is taken, so thumbnails tell replays apart: the middle, right after the step nearest it
- * settled. Never before the first document exists; falls back to posterTime when nothing applies.
+ * Where the poster is taken, so thumbnails tell replays apart:
+ * - `middle-step` (default): the middle, right after the step nearest it settled;
+ * - `first-error`: just after the first error shows (middle-step when there is none);
+ * - `last-step`: after the last step settled (the end result), or just before the end.
+ * `at` (a plugin's time) wins over all three. Never before the first document exists; falls back to posterTime when
+ * nothing applies.
  */
-export function posterMoment({ stepTimes, snapshotTimes, duration }: PosterMomentInput) {
+export function posterMoment({
+  stepTimes,
+  snapshotTimes,
+  duration,
+  errorTimes = [],
+  moment = 'middle-step',
+  at: chosen,
+}: PosterMomentInput) {
   const fallback = posterTime(snapshotTimes, duration);
   const first = snapshotTimes.length > 0 ? (snapshotTimes[0] as number) : 0;
   const clamp = (time: number) => Math.max(0, Math.min(duration, Math.max(first + 300, time)));
@@ -185,6 +204,15 @@ export function posterMoment({ stepTimes, snapshotTimes, duration }: PosterMomen
     const next = steps[index + 1];
     return Math.min(steps[index]! + SETTLE_MS, next === undefined ? duration : Math.max(steps[index]!, next - 50));
   };
+  if (chosen !== undefined && Number.isFinite(chosen)) return clamp(chosen);
+  if (moment === 'first-error') {
+    const error = errorTimes.filter((at) => Number.isFinite(at)).sort((a, b) => a - b)[0];
+    if (error !== undefined) return clamp(error + 600);
+  }
+  if (moment === 'last-step') {
+    const last = steps.at(-1);
+    return clamp(last === undefined ? duration - 100 : Math.min(duration - 100, last + 1500));
+  }
   if (steps.length > 0) {
     const middle = duration / 2;
     let nearest = 0;

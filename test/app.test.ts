@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/server/app.ts';
 import type { AuthAdapter } from '../src/server/auth/types.ts';
+import { coreVersion } from '../src/server/package-info.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
@@ -105,8 +106,11 @@ describe('replay server', () => {
       sourceProviders: ['github', 'gitlab', 'url'],
       auth: 'none',
       plugins: [],
+      purposes: [],
       beta: { editor: false, malleable: false },
+      editing: { enabled: false },
       comments: false,
+      core: coreVersion(),
     });
   });
 

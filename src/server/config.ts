@@ -1,3 +1,4 @@
+import { normalizeSignIn } from '../shared/sign-in.ts';
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
@@ -5,10 +6,22 @@ import { SourceProviders, type TemplateProviderConfig } from '../shared/source-p
 import { retentionFromEnv, type RetentionPolicy } from '../shared/retention.ts';
 import { type BrandingConfig, validateBranding } from './branding.ts';
 import { type ContextSchema, loadContextSchema } from './context-schema.ts';
-import { normalizeBasePath } from './base-path.ts';
-import { type BetaFlags, betaFromEnv } from './beta.ts';
+import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } from './base-path.ts';
+import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
+import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
+import { assertRedactionRules, type RedactionRules } from '../shared/redaction.ts';
+import {
+  type HostVersions,
+  type MalleableConfig,
+  type MalleablePolicy,
+  parseDistribution,
+  parseMalleablePolicy,
+} from '../shared/malleable-policy.ts';
+import type { CapturePacingOptions } from '../shared/capture-pacing.ts';
+import type { PurposeConfig } from '../shared/purposes.ts';
+import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -20,62 +33,107 @@ import type { PluginSpec } from '../plugin/types.ts';
  *     "logoUrl": "https://example.com/logo.svg",   LOGO_URL
  *     "theme": { "dark": { "accent": "#7aa2ff" }, "light": { "accent": "#2f55d4" } },
  *     "basePath": "/replays",                      BASE_PATH
+ *     "hosts": { "replays.example.com": { "basePath": "/" } },  per-host bases (src/server/base-path.ts), else basePath
+ *     "trustForwardedHost": false,                 TRUST_FORWARDED_HOST (pick the host from X-Forwarded-Host)
  *     "retentionDays": 30,                         RETENTION_DAYS (0 = never)
+ *     "purposes": [{ "id": "triage", "label": "Triage", "retentionDays": 90 }],   RETENTION_PURPOSE_<ID>_DAYS (src/server/purposes.ts)
  *     "contextSchemaFile": "./context.schema.json" CONTEXT_SCHEMA_FILE
  *     "githubHost": "github.example.com",          GITHUB_HOST
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
  *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
  *     "beta": { "editor": false, "malleable": false },  REPLAYS_BETA_EDITOR, REPLAYS_BETA_MALLEABLE (off by default; src/server/beta.ts)
+ *     "malleable": { "scopes": ["user"], "capabilities": { "export:download": "deny" }, "lockedSurfaces": [] },
+ *                                                  the host's policy for user plugins (file only; src/shared/malleable-policy.ts)
+ *     "distribution": { "name": "acme-replays", "version": "2.3.0" },  what this deployment is (file only)
+ *     "editing": { "enabled": false },            EDITING_ENABLED (writes on by default, requires beta.editor)
  *     "comments": { "enabled": true },             REPLAYS_COMMENTS (on by default; src/server/comments-config.ts)
  *     "auth": "iap-header",                        AUTH_MODE (a built-in mode or an auth adapter a plugin registered)
  *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
  *     "plugins": ["./plugin.mjs", ["pkg", {}]]     plugins to load (src/plugin/, docs/extension-api.md)
+ *     "redaction": { "jsonKeys": ["ssn", "/card_?number/i"] }   added to the sanitiser's defaults (src/shared/redaction.ts)
  *   }
  *
  * The same keys, typed, make up `defineConfig()` in a `replays.config.ts|js|json` (src/config/).
  */
 export interface FileConfig {
+  /** Browser sign-in recovery; explicit config also stamps a public static viewer. false overrides the adapter. */
+  signIn?: import('../shared/sign-in.ts').SignInConfig | false;
+  /** Capture CLI defaults, overridden by explicit flags; ignored by the server runtime. */
+  capture?: CapturePacingOptions;
   name?: string;
   logoUrl?: string;
   theme?: BrandingConfig['theme'];
   basePath?: string;
+  /** A different base per request host (`Host`, or `X-Forwarded-Host` when trusted); other hosts get `basePath`. */
+  hosts?: Readonly<Record<string, HostConfig>>;
+  /** Read the request host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Only matters with `hosts`. */
+  trustForwardedHost?: boolean;
   retentionDays?: number;
+  /** Why replays are recorded (src/shared/purposes.ts); plugins can add more with `api.purpose`. None by default. */
+  purposes?: PurposeConfig[];
   contextSchemaFile?: string;
   githubHost?: string;
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
   beta?: { editor?: boolean; malleable?: boolean };
+  /** The host's policy for sandboxed user plugins; `malleable.enabled` is the same switch as `beta.malleable`. */
+  malleable?: MalleableConfig;
+  /** The deployment built on this package (`name@version`), shown in `/api/config` and recorded by kept user plugins. */
+  distribution?: { name: string; version: string };
   comments?: { enabled?: boolean };
+  editing?: { enabled?: boolean };
   auth?: string;
   storage?: string;
   plugins?: readonly PluginSpec[];
+  /** Redaction rules added to the defaults; JSON configs write regular expressions as `"/.../flags"` strings. */
+  redaction?: RedactionRules;
 }
 
 export interface AppSettings {
+  signIn?: import('../shared/sign-in.ts').SignInConfig | false;
   branding: BrandingConfig;
   basePath: string;
+  /** Per-host bases (`hosts`, `trustForwardedHost`); no entries means one base for every host. */
+  hosts: HostRouting;
   retention: RetentionPolicy;
+  /** The config's purposes; createRuntime merges the plugins' in. */
+  purposes: PurposeCatalog;
   sources: SourceProviders;
   contextSchema?: ContextSchema;
   beta: BetaFlags;
+  /** The user-plugin policy (applies when beta.malleable is on). */
+  malleable: MalleablePolicy;
+  distribution?: HostVersions['distribution'];
   comments: CommentsSettings;
+  /** The config file's `redaction` rules, checked (plugins' rules are merged in by the app). */
+  redaction?: RedactionRules;
+  editing: EditingSettings;
 }
 
 export const CONFIG_KEYS = new Set([
+  'capture',
   'name',
   'logoUrl',
   'theme',
   'basePath',
+  'hosts',
+  'trustForwardedHost',
   'retentionDays',
+  'purposes',
   'contextSchemaFile',
   'githubHost',
   'gitlabHost',
   'sourceProviders',
   'beta',
+  'malleable',
+  'distribution',
   'comments',
+  'editing',
   'auth',
+  'signIn',
   'storage',
   'plugins',
+  'redaction',
 ]);
 
 export async function readConfigFile(path: string | undefined): Promise<FileConfig> {
@@ -102,6 +160,9 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     ...(file.theme ? { theme: file.theme } : {}),
   } as Partial<BrandingConfig>);
   const basePath = normalizeBasePath(pick('BASE_PATH') ?? file.basePath);
+  if (file.trustForwardedHost !== undefined && typeof file.trustForwardedHost !== 'boolean')
+    throw new Error("the config file's trustForwardedHost must be true or false");
+  const hosts = normalizeHosts(file.hosts, parseFlag('TRUST_FORWARDED_HOST', env.TRUST_FORWARDED_HOST) ?? file.trustForwardedHost ?? false);
   const retention =
     pick('RETENTION_DAYS') !== undefined || file.retentionDays === undefined
       ? retentionFromEnv(env)
@@ -114,15 +175,32 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     ...(gitlabHost ? { gitlabHost } : {}),
     templates: file.sourceProviders ?? [],
   });
+  const purposes = createPurposeCatalog({ config: file.purposes, env });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
+  if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
+  const malleable = parseMalleablePolicy(file.malleable);
+  const distribution = parseDistribution(file.distribution);
+  // `malleable.enabled` and `beta.malleable` are one switch; the environment variable still wins over both.
+  const enabled = file.malleable?.enabled;
+  const betaFile = file.beta;
+  if (enabled !== undefined && betaFile?.malleable !== undefined && betaFile.malleable !== enabled)
+    throw new Error("the config file's malleable.enabled and beta.malleable disagree: set one of them");
+  const signIn = file.signIn === false ? false : normalizeSignIn(file.signIn);
   return {
+    ...(signIn !== undefined ? { signIn } : {}),
     branding,
     basePath,
-    retention,
+    hosts,
+    retention: purposes.size ? { ...retention, purposes: purposes.retentionDays() } : retention,
+    purposes,
     sources,
-    beta: betaFromEnv(env, file.beta),
+    beta: betaFromEnv(env, enabled === undefined ? betaFile : { ...betaFile, malleable: betaFile?.malleable ?? enabled }),
+    malleable,
+    ...(distribution ? { distribution } : {}),
     comments: commentsFromEnv(env, file.comments),
+    editing: editingFromEnv(env, file.editing),
     ...(contextSchema ? { contextSchema } : {}),
+    ...(file.redaction ? { redaction: file.redaction } : {}),
   };
 }

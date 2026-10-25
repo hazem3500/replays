@@ -1,7 +1,12 @@
 import { PLUGIN_API_DOC } from '../../shared/malleable-tools.ts';
 import { PluginFormatError } from '../../shared/malleable.ts';
+import { surfaceId, targetsFor } from '../../shared/malleable-policy.ts';
+import { viewerRegistry } from '../plugins/registry.ts';
+import type { BuiltinInspectorTab } from '../viewer/context.ts';
 import { permissions } from './broker.ts';
+import { hostInfo } from './host.ts';
 import { isDirty, latestSaved, manager, registryName } from './manager.ts';
+import { themeVars } from './sandbox.ts';
 
 /*
  * What each bridge tool does, in the page. Both doors use these: WebMCP's `execute` (webmcp.ts) and the MCP server's relayed
@@ -10,6 +15,23 @@ import { isDirty, latestSaved, manager, registryName } from './manager.ts';
  */
 
 class ToolError extends Error {}
+
+const BUILTIN_TABS: readonly BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
+
+/** Every surface in the viewer now, by surface id (the ids `malleable.lockedSurfaces` uses), with who owns it. */
+function surfaces() {
+  const snapshot = viewerRegistry.getSnapshot();
+  const locked = new Set(hostInfo().policy.lockedSurfaces);
+  const entry = (id: string, owner: string, label: string) => ({ id, owner, label, ...(locked.has(id) ? { locked: true } : {}) });
+  return [
+    ...BUILTIN_TABS.map((tab) => entry(`inspector:${tab}`, 'built-in', tab)),
+    ...snapshot.tabs.map((tab) => entry(surfaceId('tabs', tab.plugin, tab.definition.id), tab.plugin, tab.definition.label)),
+    ...snapshot.panels.map((panel) => entry(surfaceId('panels', panel.plugin, panel.definition.id), panel.plugin, panel.definition.title)),
+    ...snapshot.actions.map((action) =>
+      entry(surfaceId('actions', action.plugin, action.definition.id), action.plugin, action.definition.label),
+    ),
+  ];
+}
 
 function viewer() {
   const context = manager.getSnapshot().viewer;
@@ -97,7 +119,20 @@ export const toolHandlers: Record<string, ToolHandler> = {
     return { comments };
   },
 
-  get_plugin_api: () => ({ markdown: PLUGIN_API_DOC }),
+  /** The reference, plus what this deployment looks like and allows, so a plugin written now fits it. */
+  get_plugin_api: () => {
+    const { policy, versions } = hostInfo();
+    return {
+      markdown: PLUGIN_API_DOC,
+      theme: {
+        scheme: manager.getSnapshot().viewer?.theme ?? (document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'),
+        tokens: themeVars(),
+      },
+      policy: { scopes: policy.scopes, capabilities: policy.capabilities, lockedSurfaces: policy.lockedSurfaces },
+      versions: targetsFor(versions),
+      surfaces: surfaces(),
+    };
+  },
 
   list_plugins: () => ({ plugins: summary() }),
 

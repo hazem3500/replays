@@ -1,4 +1,6 @@
-import { assertReplayContext, type ReplayContext } from './context.ts';
+import { assertReplayContext, type ReplayContext, type SourceAttrs, sourceAttrs } from './context.ts';
+import { isPurposeId } from './purposes.ts';
+import { assertReplayPeople, minimalPeople, type ReplayPerson, type ReplayPersonSummary } from './people.ts';
 import type { KeepRecord } from './retention.ts';
 
 export type ConsoleLevel = 'debug' | 'info' | 'log' | 'warn' | 'error';
@@ -49,6 +51,7 @@ export interface ReplayPerformanceTrack {
 }
 
 export type { ReplayContext, ReplaySourceInput, ReplaySourceRef } from './context.ts';
+export type { PersonIdentity, ReplayPerson, ReplayPersonSummary } from './people.ts';
 
 /** Who made the recording: the capture CLI (an automated agent or script), or a person via an rrweb import. */
 export type ReplaySource = 'agent' | 'human';
@@ -67,6 +70,10 @@ export interface ReplayMeta {
   source?: ReplaySource;
   /** Free-form labels for filtering (`smoke`, `checkout`); lower-case, bounded. */
   tags?: string[];
+  /** Why it was recorded: one of the deployment's purposes (src/shared/purposes.ts), checked on upload. Absent: inferred, or none. */
+  purpose?: string;
+  /** People related to the recording (at most 10; src/shared/people.ts). */
+  people?: ReplayPerson[];
 }
 
 export const MAX_TAGS = 10;
@@ -130,6 +137,10 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
     throw new Error("replay.meta.source must be 'agent' or 'human'");
   }
   if (replay.meta.tags !== undefined) assertReplayTags(replay.meta.tags);
+  // Only the shape here; the server checks the id against the purposes it defines.
+  if (replay.meta.purpose !== undefined && !isPurposeId(replay.meta.purpose))
+    throw new Error('replay.meta.purpose must be a purpose id (lower-case letters, digits and "-")');
+  if (replay.meta.people !== undefined) assertReplayPeople(replay.meta.people);
   if (replay.context !== undefined) assertReplayContext(replay.context);
   if (replay.suiteRun !== undefined) {
     const suiteRun = replay.suiteRun;
@@ -201,12 +212,20 @@ export interface ReplaySourceLink {
   /** The producer's own label, else the provider's default (`acme/api#12`); empty when there is none. */
   label: string;
   url: string;
+  /** The source's attributes from its provider, capped for the list (SUMMARY_SOURCE_ATTRS short values). */
+  attrs?: SourceAttrs;
 }
 
 /** Bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily. */
-export const SUMMARY_VERSION = 6;
+// Version 8 combines purposes, people, source attributes and plugin summary fields (partial fleets used 7).
+export const SUMMARY_VERSION = 8;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
+const SUMMARY_SOURCE_ATTRS = 4;
+const SUMMARY_ATTR_TEXT = 80;
+
+/** One value a plugin's `summaryFields` derives into the summary (src/server/summary-fields.ts). */
+export type SummaryFieldValue = string | number | boolean | null;
 
 /** The small sidecar (`meta.json`) the index lists and filters without loading bundles. */
 export interface ReplaySummary {
@@ -229,6 +248,21 @@ export interface ReplaySummary {
   tags?: string[];
   /** Up to three context sources, in bundle order. */
   sources?: ReplaySourceLink[];
+  /** The review suite run the replay was recorded for. */
+  suiteRun?: { suiteId: string; runId: string };
+  /**
+   * Why it was recorded: `meta.purpose`, else what a plugin's `infer` says (the server applies that when it lists,
+   * so stored sidecars only ever hold the explicit one). Absent when neither applies.
+   */
+  purpose?: string;
+  /** True when `purpose` was inferred rather than set by the producer. Inferred purposes never make a replay permanent. */
+  purposeInferred?: boolean;
+  /** Small values derived by plugins at upload (`api.summaryFields`), keyed by plugin name; capped per plugin. */
+  ext?: Record<string, Record<string, SummaryFieldValue>>;
+  /** Which summary-field sets built `ext` (`plugin/name@version,…`); a sidecar built by another set is rebuilt. */
+  extVersion?: string;
+  /** `meta.people`; in API responses with the deployment's avatar and profile links. */
+  people?: ReplayPersonSummary[];
   /** Pinned by someone with access (never expires); added by the server, never stored in meta.json. */
   kept?: KeepRecord;
   /** When retention removes it; null when it never expires. Added by the server per request. */
@@ -241,6 +275,12 @@ export interface ReplayFilters {
   errors?: boolean;
   source?: ReplaySource;
   tag?: string;
+  purpose?: string;
+  /**
+   * Plugin index filters, `x-<name>` query parameter → value (`api.indexFilter`). The server's plugin filters match these;
+   * `matchesFilters` ignores them.
+   */
+  params?: Record<string, string>;
 }
 
 export function hostOf(url: string) {
@@ -290,11 +330,10 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
   const { meta } = bundle;
   const consoleErrors = bundle.console.filter((entry) => entry.level === 'error').length;
   const failedRequests = bundle.network.filter(isFailedRequest).length;
-  const sources = (bundle.context?.sources ?? []).slice(0, MAX_SOURCE_LINKS).map((source) => ({
-    provider: source.provider,
-    label: source.label ?? source.ref ?? '',
-    url: source.url,
-  }));
+  const sources = (bundle.context?.sources ?? []).slice(0, MAX_SOURCE_LINKS).map((source) => {
+    const attrs = sourceAttrs(source.attrs, SUMMARY_SOURCE_ATTRS, SUMMARY_ATTR_TEXT);
+    return { provider: source.provider, label: source.label ?? source.ref ?? '', url: source.url, ...(attrs ? { attrs } : {}) };
+  });
   return {
     id: meta.id,
     title: meta.title,
@@ -313,6 +352,9 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
     timeline: summarizeTimeline(bundle),
     ...(meta.tags?.length ? { tags: meta.tags } : {}),
     ...(sources.length ? { sources } : {}),
+    ...(bundle.suiteRun ? { suiteRun: { suiteId: bundle.suiteRun.suiteId, runId: bundle.suiteRun.runId } } : {}),
+    ...(meta.purpose ? { purpose: meta.purpose, purposeInferred: false } : {}),
+    ...(meta.people?.length ? { people: minimalPeople(meta.people) } : {}),
   };
 }
 
@@ -333,6 +375,7 @@ export function matchesFilters(summary: ReplaySummary, filters: ReplayFilters) {
   if (filters.errors && summary.consoleErrors + summary.failedRequests === 0) return false;
   if (filters.source && summary.source !== filters.source) return false;
   if (filters.tag && !summary.tags?.includes(filters.tag)) return false;
+  if (filters.purpose && summary.purpose !== filters.purpose) return false;
   return true;
 }
 

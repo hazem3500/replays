@@ -1,3 +1,4 @@
+import { PLAYBACK_SPEEDS } from '../shared/render-variant.ts';
 import { createContext, useContext, useSyncExternalStore } from 'react';
 import { Replayer } from 'rrweb';
 import 'rrweb/dist/style.css';
@@ -11,7 +12,7 @@ import { renderOffset, type SnapshotGroup, snapshotGroups } from './snapshots.ts
 import { clampTime } from './timeline.ts';
 import { type IdleGap, idleGaps, INACTIVE_SKIP_SPEED } from '../shared/skip.ts';
 
-export const SPEEDS = [0.5, 1, 1.5, 2, 4, 8] as const;
+export const SPEEDS = PLAYBACK_SPEEDS;
 export type Speed = (typeof SPEEDS)[number];
 export type PlaybackStatus = 'paused' | 'playing' | 'ended';
 

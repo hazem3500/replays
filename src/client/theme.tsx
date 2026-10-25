@@ -11,7 +11,10 @@ export type Theme = 'light' | 'dark';
 type ThemePreference = Theme | 'system';
 
 export const THEME_KEY = 'replays-theme';
-/** Browser chrome colour per theme (`<meta name="theme-color">`); index.html's inline script repeats these. */
+/**
+ * Built-in browser chrome colour per theme (`<meta name="theme-color">`), the default `--page` of styles.css. A themed
+ * deployment's own `page` colours ride on the meta's `data-dark` / `data-light` (stamped by the server), and win.
+ */
 export const THEME_COLORS: Record<Theme, string> = { dark: '#0c0e12', light: '#eff1f5' };
 
 const LIGHT_QUERY = '(prefers-color-scheme: light)';
@@ -54,7 +57,7 @@ export function useTheme() {
       themeColor.name = 'theme-color';
       document.head.append(themeColor);
     }
-    themeColor.content = THEME_COLORS[theme];
+    themeColor.content = themeColor.getAttribute(`data-${theme}`) || THEME_COLORS[theme];
   }, [theme]);
 
   useEffect(() => {

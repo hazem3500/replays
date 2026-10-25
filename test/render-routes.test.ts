@@ -6,10 +6,11 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/server/app.ts';
-import { RenderQueue } from '../src/server/render-queue.ts';
+import { type RenderRunner, RenderQueue } from '../src/server/render-queue.ts';
 import { isRendererRequest, parseFlag, parseSpeed, type RenderService } from '../src/server/render-routes.ts';
 import { chromiumArgs, detectRenderTools, ffmpegArgs } from '../src/server/renderer.ts';
 import { ReplayStore } from '../src/server/store.ts';
+import { PLAYBACK_SPEEDS } from '../src/shared/render-variant.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const servers: Array<ReturnType<typeof createServer>> = [];
@@ -20,7 +21,7 @@ afterEach(async () => {
 const TOKEN = 'a'.repeat(43);
 const available = { available: true, chromiumPath: '/bin/chromium', ffmpegPath: 'ffmpeg' };
 
-async function start(options: { closed?: boolean; render?: 'on' | 'off' | 'none' } = {}) {
+async function start(options: { closed?: boolean; render?: 'on' | 'off' | 'none'; runner?: RenderRunner } = {}) {
   const root = await mkdtemp(join(tmpdir(), 'replays-render-routes-'));
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   await store.save(replay());
@@ -31,10 +32,12 @@ async function start(options: { closed?: boolean; render?: 'on' | 'off' | 'none'
   const runs: string[] = [];
   const queue = new RenderQueue({
     dataDir: store.dataDir,
-    runner: async (task) => {
-      runs.push(task.id);
-      await writeFile(task.output, 'mp4-bytes');
-    },
+    runner:
+      options.runner ??
+      (async (task) => {
+        runs.push(task.id);
+        await writeFile(task.output, 'mp4-bytes');
+      }),
   });
   const mode = options.render ?? 'on';
   const render: RenderService | undefined =
@@ -137,6 +140,42 @@ describe('render job API', () => {
     expect(file.headers.get('content-disposition')).toBe('attachment; filename="test-replay-2x-full-captions.mp4"');
     expect((await post(endpoint, origin, { skipInactive: 'sometimes' })).status).toBe(400);
     expect((await post(endpoint, origin, { speed: 3 })).status).toBe(400);
+  });
+
+  it.each(PLAYBACK_SPEEDS)('accepts %sx throughout the render lifecycle, keeping variants separate', async (speed) => {
+    const { origin, queue } = await start();
+    const endpoint = `${origin}/api/replays/test-replay/render`;
+    const options = { skipInactive: false, captions: true };
+    const query = `?speed=${speed}&skipInactive=0&captions=1`;
+    expect((await post(endpoint, origin, { speed, ...options })).status).toBe(202);
+    await queue.settled('test-replay', speed, options);
+    const status = await fetch(`${endpoint}${query}`);
+    expect(status.status).toBe(200);
+    await expect(status.json()).resolves.toMatchObject({ status: 'done' });
+    await expect((await fetch(`${endpoint}?speed=${speed}`)).json()).resolves.toEqual({ status: 'none' });
+    const file = await fetch(`${endpoint}/file${query}`);
+    expect(file.status).toBe(200);
+    expect(file.headers.get('content-disposition')).toBe(
+      `attachment; filename="test-replay${speed === 1 ? '' : `-${speed}x`}-full-captions.mp4"`,
+    );
+    // The completed variant is accepted by DELETE as well (there is no running job to cancel).
+    expect((await fetch(`${endpoint}${query}`, { method: 'DELETE', headers: { origin } })).status).toBe(404);
+  });
+
+  it.each(PLAYBACK_SPEEDS)('cancels an active %sx variant without cancelling another variant', async (speed) => {
+    const { origin, queue } = await start({
+      runner: (task) =>
+        new Promise<void>((_resolve, reject) => {
+          task.signal.addEventListener('abort', () => reject(new Error('cancelled')), { once: true });
+        }),
+    });
+    const endpoint = `${origin}/api/replays/test-replay/render`;
+    expect((await post(endpoint, origin, { speed, captions: true })).status).toBe(202);
+    expect((await fetch(`${endpoint}?speed=${speed}`, { method: 'DELETE', headers: { origin } })).status).toBe(404);
+    const cancelled = await fetch(`${endpoint}?speed=${speed}&captions=1`, { method: 'DELETE', headers: { origin } });
+    expect(cancelled.status).toBe(200);
+    await expect(cancelled.json()).resolves.toEqual({ cancelled: true });
+    await queue.settled('test-replay', speed, { captions: true });
   });
 
   it('parses on/off flags, absent meaning the given default', () => {

@@ -1,0 +1,84 @@
+import { useEffect } from 'react';
+
+import { apiUrl } from './route.ts';
+
+export class SignInError extends Error {
+  readonly status = 401;
+  constructor() {
+    super('Sign in to continue');
+    this.name = 'SignInError';
+  }
+}
+
+/** Available before any authenticated API fetch, including a viewer served by a public CDN. */
+export function signInPath() {
+  if (typeof document === 'undefined') return undefined;
+  const path = document.querySelector<HTMLMetaElement>('meta[name="app-sign-in"]')?.content;
+  return path?.startsWith('/') && !path.startsWith('//') && !/[\\?#]/.test(path) ? path : undefined;
+}
+
+export function signInHref(next = `${location.pathname}${location.search}${location.hash}`) {
+  const path = signInPath();
+  return path ? `${path}?next=${encodeURIComponent(next)}` : undefined;
+}
+
+/** Distinguish a proxy sign-in redirect/401 from an unreachable API. Never follows the redirect. */
+export async function signedOut(signal?: AbortSignal) {
+  if (!signInPath()) return false;
+  try {
+    const response = await fetch(apiUrl('me'), {
+      redirect: 'manual',
+      cache: 'no-store',
+      headers: { 'x-requested-with': 'XMLHttpRequest' },
+      ...(signal ? { signal } : {}),
+    });
+    return response.type === 'opaqueredirect' || response.status === 401;
+  } catch {
+    return false;
+  }
+}
+
+/** Only page data reads use this: uploads, mutations, media and internal rendering never redirect. */
+export async function fetchPage(input: string, init?: RequestInit): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(input, init);
+  } catch (error) {
+    if (error instanceof TypeError && !init?.signal?.aborted && (await signedOut(init?.signal ?? undefined)) && !init?.signal?.aborted)
+      throw new SignInError();
+    throw error;
+  }
+  if (response.status === 401 && signInPath()) throw new SignInError();
+  return response;
+}
+
+const ATTEMPT_KEY = 'replays:sign-in-attempt';
+const ATTEMPT_WINDOW_MS = 60_000;
+
+export function redirectToSignIn(now = Date.now()) {
+  const href = signInHref();
+  if (!href) return false;
+  try {
+    const last = sessionStorage.getItem(ATTEMPT_KEY);
+    if (last !== null && now - Number(last) < ATTEMPT_WINDOW_MS) return false;
+    sessionStorage.setItem(ATTEMPT_KEY, String(now));
+  } catch {
+    return false;
+  }
+  location.assign(href);
+  return true;
+}
+
+/** Auto-recovery only when an observed page load needs it; a prefetch cannot navigate the tab. */
+export function SignInLink({ error }: { error: unknown }) {
+  const needed = error instanceof SignInError;
+  useEffect(() => {
+    if (needed) redirectToSignIn();
+  }, [needed]);
+  const href = needed ? signInHref() : undefined;
+  return href ? (
+    <a className="button" href={href}>
+      Sign in
+    </a>
+  ) : null;
+}

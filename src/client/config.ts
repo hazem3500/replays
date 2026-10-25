@@ -1,4 +1,5 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
+import type { MalleablePolicy } from '../shared/malleable-policy.ts';
 
 /** The deployment's branding, written into index.html by the server (src/server/base-path.ts `withBase`). */
 export function productName() {
@@ -23,6 +24,12 @@ export interface FieldSchema {
   enum?: unknown[];
   properties?: Record<string, FieldSchema>;
   items?: FieldSchema;
+  /** Viewer hint: `signals` draws an array of `{ key, state, label? }` as tri-state chips (context-fields.ts). */
+  'x-replays-widget'?: string;
+  /** Viewer hint on a top-level property: the Context tab group it belongs to (its heading). */
+  'x-replays-group'?: string;
+  /** Viewer hint: rows sort by it, lower first (default 0), then in schema order. */
+  'x-replays-order'?: number;
 }
 
 /** `GET /api/config`. */
@@ -33,6 +40,17 @@ export interface ClientConfig {
   contextSchema?: FieldSchema;
   sourceProviders: string[];
   auth: string;
+  signIn?: import('../shared/sign-in.ts').SignInConfig;
+  /** This package's version. */
+  core?: string;
+  /** The deployment's `distribution` config, when set. */
+  distribution?: { name: string; version: string };
+  /** The host's policy for user plugins (only with beta.malleable on): src/shared/malleable-policy.ts. */
+  malleable?: MalleablePolicy;
+  /** Plugin index filters the server matches (`api.indexFilter`); absent when there are none. */
+  indexFilters?: Array<{ plugin: string; id: string; param: string }>;
+  /** Effective edit write capability, with beta.editor as the outer gate. */
+  editing: { enabled: boolean };
 }
 
 let betaEditorOverride: boolean | undefined;
@@ -52,4 +70,11 @@ export function betaEditor() {
 /** Tests only: force the flag without a document. */
 export function setBetaEditorForTests(value: boolean | undefined) {
   betaEditorOverride = value;
+}
+
+/** Host write capability. Absent metadata preserves compatibility with older beta-enabled hosts. */
+export function editingEnabled() {
+  if (!betaEditor()) return false;
+  if (typeof document === 'undefined') return true;
+  return document.querySelector<HTMLMetaElement>('meta[name="app-editing"]')?.content !== 'off';
 }

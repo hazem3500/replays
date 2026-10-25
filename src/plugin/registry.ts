@@ -2,23 +2,36 @@ import { isDeepStrictEqual } from 'node:util';
 
 import type { AuthAdapter, AuthPluginFactory } from '../server/auth/types.ts';
 import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
-import type { SourceProvider } from '../shared/source-providers.ts';
+import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
+import { assertPurposeConfig } from '../shared/purposes.ts';
+import { compileHandlePattern, HANDLE_ID, isPersonRole } from '../shared/people.ts';
+import { assertProviderLook, type SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
 import { PACKAGE_VERSION, satisfies } from './version.ts';
+import { validateRequestPolicy, validateUploadEndpoint, assertDistinctPolicies } from './request-policy.ts';
 import type {
   AfterUploadHook,
   BeforeUploadHook,
   BrandingContribution,
   ClientEntry,
   ContextAdapter,
+  IndexFilterDefinition,
+  IdentityResolver,
+  PeopleOptions,
   PluginApi,
   PrepareUploadHook,
+  PurposeDefinition,
+  RenderHooks,
   ReplaysPlugin,
   RequestHook,
   RequestHookOptions,
+  RequestPolicy,
+  UploadEndpoint,
   ResponseHook,
+  RetentionRuleDefinition,
   StorageBackend,
+  SummaryFieldsDefinition,
 } from './types.ts';
 
 /** Ids the core owns; a plugin cannot take them. */
@@ -26,6 +39,8 @@ export const BUILTIN_AUTH = ['none', 'header', 'oidc', 'plugin'] as const;
 export const BUILTIN_STORAGE = ['fs', 's3', 'memory'] as const;
 
 const ID = /^[a-z][a-z0-9-]{0,39}$/;
+/** Plugin index filter params: namespaced, so they can never take a core query parameter, today's or a future one. */
+export const INDEX_FILTER_PARAM = /^x-[a-z0-9][a-z0-9-]{0,38}$/;
 const BASE = /^\/[A-Za-z0-9._~/-]*$/;
 
 export interface Owned<T> {
@@ -45,8 +60,12 @@ export interface PluginRegistry {
   readonly contextAdapters: readonly Owned<ContextAdapter>[];
   readonly sourceProviders: readonly Owned<SourceProvider>[];
   readonly storage: ReadonlyMap<string, Owned<StorageBackend>>;
+  readonly requestPolicies: readonly Owned<RequestPolicy>[];
+  readonly uploadEndpoints: ReadonlyMap<string, Owned<UploadEndpoint>>;
   readonly branding: BrandingContribution;
   readonly basePath: string | undefined;
+  /** Every plugin's `api.redaction` rules, merged (they only add). */
+  readonly redaction: RedactionRules;
   readonly hooks: {
     readonly preAuth: readonly Owned<RequestHook>[];
     readonly postAuth: readonly Owned<RequestHook>[];
@@ -56,6 +75,17 @@ export interface PluginRegistry {
     readonly afterUpload: readonly Owned<AfterUploadHook>[];
   };
   readonly clientEntries: readonly ResolvedClientEntry[];
+  /** `api.purpose`, in registration order (src/server/purposes.ts merges them with the config's). */
+  readonly purposes: readonly Owned<PurposeDefinition>[];
+  /** `api.retention` rules. */
+  readonly retention: readonly Owned<RetentionRuleDefinition>[];
+  /** `api.render` hooks, in plugin order (src/server/render-hooks.ts runs them). */
+  readonly render: readonly Owned<RenderHooks>[];
+  readonly summaryFields: readonly Owned<SummaryFieldsDefinition>[];
+  readonly indexFilters: readonly Owned<IndexFilterDefinition>[];
+  /** `api.people`: at most one per deployment. */
+  readonly people: Owned<PeopleOptions> | undefined;
+  readonly identityResolvers: readonly Owned<IdentityResolver>[];
 }
 
 export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
@@ -64,10 +94,20 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   contextAdapters: [],
   sourceProviders: [],
   storage: new Map(),
+  requestPolicies: [],
+  uploadEndpoints: new Map(),
   branding: {},
   basePath: undefined,
+  redaction: {},
   hooks: { preAuth: [], postAuth: [], response: [], prepareUpload: [], beforeUpload: [], afterUpload: [] },
   clientEntries: [],
+  purposes: [],
+  retention: [],
+  render: [],
+  summaryFields: [],
+  indexFilters: [],
+  people: undefined,
+  identityResolvers: [],
 });
 
 /**
@@ -156,12 +196,22 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     beforeUpload: [] as Owned<BeforeUploadHook>[],
     afterUpload: [] as Owned<AfterUploadHook>[],
   };
+  const requestPolicies: Owned<RequestPolicy>[] = [];
+  const uploadEndpoints = new Map<string, Owned<UploadEndpoint>>();
   const clientEntries: ResolvedClientEntry[] = [];
+  const purposes: Owned<PurposeDefinition>[] = [];
+  const retention: Owned<RetentionRuleDefinition>[] = [];
+  const render: Owned<RenderHooks>[] = [];
+  const summaryFields: Owned<SummaryFieldsDefinition>[] = [];
+  const indexFilters: Owned<IndexFilterDefinition>[] = [];
+  let people: Owned<PeopleOptions> | undefined;
+  const identityResolvers: Owned<IdentityResolver>[] = [];
   const brandScalars: Record<string, string> = {};
   const brandOwners = new Map<string, string>();
   const theme = { dark: {} as Record<string, string>, light: {} as Record<string, string> };
   const themeOwners = { dark: new Map<string, string>(), light: new Map<string, string>() };
   let basePath: { value: string; plugin: string } | undefined;
+  const redaction: RedactionRules[] = [];
 
   for (const plugin of ordered) {
     function fail(message: string, code: 'invalid-registration' | 'conflict' = 'invalid-registration'): never {
@@ -211,6 +261,11 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         if (!provider || typeof provider.id !== 'string' || !/^[a-z0-9][a-z0-9_-]*$/.test(provider.id))
           fail('sourceProvider needs an id like "jira"');
         needFunction(provider.resolve, 'sourceProvider.resolve');
+        try {
+          assertProviderLook(provider);
+        } catch (error) {
+          fail((error as Error).message);
+        }
         if (['github', 'gitlab', 'url'].includes(provider.id))
           fail(`source provider ${JSON.stringify(provider.id)} is built in`, 'conflict');
         const taken = sourceProviders.find((entry) => entry.value.id === provider.id);
@@ -257,6 +312,17 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
           );
         basePath = { value: normalized, plugin: plugin.name };
       },
+      requestPolicy(policy) {
+        const value = validateRequestPolicy(policy);
+        assertDistinctPolicies(requestPolicies, [{ plugin: plugin.name, value }]);
+        requestPolicies.push({ plugin: plugin.name, value });
+      },
+      uploadEndpoint(endpoint) {
+        const value = validateUploadEndpoint(endpoint);
+        const taken = uploadEndpoints.get(value.path);
+        if (taken) fail(`upload endpoint ${value.path} is already registered by ${taken.plugin}`, 'conflict');
+        uploadEndpoints.set(value.path, { plugin: plugin.name, value });
+      },
       onRequest(hook: RequestHook, hookOptions: RequestHookOptions = {}) {
         needFunction(hook, 'onRequest hook');
         const phase = hookOptions.phase ?? 'post-auth';
@@ -292,6 +358,96 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
           fail(`client entry ${JSON.stringify(entry.id)} is registered twice`, 'conflict');
         clientEntries.push({ ...entry, plugin: plugin.name });
       },
+      redaction(rules) {
+        try {
+          assertRedactionRules(rules);
+        } catch (error) {
+          fail((error as Error).message);
+        }
+        redaction.push(rules);
+      },
+      purpose(definition) {
+        try {
+          assertPurposeConfig(definition, 'purpose', ['infer']);
+        } catch (error) {
+          fail((error as Error).message);
+        }
+        if (definition.infer !== undefined) needFunction(definition.infer, `purpose ${definition.id}: infer`);
+        const taken = purposes.find((entry) => entry.value.id === definition.id);
+        if (taken) fail(`purpose ${JSON.stringify(definition.id)} is already registered by ${taken.plugin}`, 'conflict');
+        purposes.push({ plugin: plugin.name, value: definition });
+      },
+      retention(rule) {
+        if (!rule || typeof rule !== 'object') fail('retention needs { days(summary) }');
+        needFunction(rule.days, 'retention.days');
+        retention.push({ plugin: plugin.name, value: rule });
+      },
+      render(definition) {
+        if (!definition || typeof definition !== 'object') fail('render needs { posterAt?, beforeRender?, afterRender? }');
+        const names = ['posterAt', 'beforeRender', 'afterRender'] as const;
+        const unknown = Object.keys(definition).find((name) => !(names as readonly string[]).includes(name));
+        if (unknown) fail(`render: unknown hook ${JSON.stringify(unknown)} (use ${names.join(', ')})`);
+        if (!names.some((name) => definition[name] !== undefined)) fail('render needs at least one of posterAt, beforeRender, afterRender');
+        for (const name of names) if (definition[name] !== undefined) needFunction(definition[name], `render.${name}`);
+        render.push({ plugin: plugin.name, value: definition });
+      },
+      summaryFields(definition) {
+        if (!definition || typeof definition.name !== 'string' || !ID.test(definition.name))
+          fail('summaryFields needs a name like "build"');
+        needFunction(definition.fields, `summaryFields ${definition.name}: fields`);
+        if (definition.version !== undefined && !(Number.isInteger(definition.version) && definition.version > 0))
+          fail(`summaryFields ${definition.name}: version must be a positive integer`);
+        if (summaryFields.some((entry) => entry.plugin === plugin.name && entry.value.name === definition.name))
+          fail(`summaryFields ${JSON.stringify(definition.name)} is registered twice`, 'conflict');
+        summaryFields.push({ plugin: plugin.name, value: definition });
+      },
+      indexFilter(definition) {
+        if (!definition || typeof definition.id !== 'string' || !ID.test(definition.id)) fail('indexFilter needs an id like "env"');
+        needFunction(definition.match, `indexFilter ${definition.id}: match`);
+        if (typeof definition.param !== 'string' || !INDEX_FILTER_PARAM.test(definition.param))
+          fail(`indexFilter ${definition.id}: param must look like "x-env" (got ${JSON.stringify(definition.param)})`);
+        if (indexFilters.some((entry) => entry.plugin === plugin.name && entry.value.id === definition.id))
+          fail(`indexFilter ${JSON.stringify(definition.id)} is registered twice`, 'conflict');
+        const taken = indexFilters.find((entry) => entry.value.param === definition.param);
+        if (taken) fail(`index filter param ${JSON.stringify(definition.param)} is already registered by ${taken.plugin}`, 'conflict');
+        indexFilters.push({ plugin: plugin.name, value: definition });
+      },
+      people(config) {
+        if (!config || typeof config !== 'object') fail('people needs an object');
+        if (people) fail(`people is already registered by ${people.plugin}; a deployment has one`, 'conflict');
+        for (const key of ['validate', 'avatarUrl', 'profileUrl'] as const)
+          if (config[key] !== undefined) needFunction(config[key], `people.${key}`);
+        if (config.roles !== undefined) {
+          if (!Array.isArray(config.roles) || config.roles.length === 0) fail('people.roles must be a non-empty array');
+          for (const role of config.roles)
+            if (!isPersonRole(role)) fail(`people.roles: ${JSON.stringify(role)} is not a role like "reviewer"`);
+          if (new Set(config.roles).size !== config.roles.length) fail('people.roles lists a role twice');
+        }
+        if (config.handles !== undefined) {
+          if (!Array.isArray(config.handles)) fail('people.handles must be an array');
+          const ids = new Set<string>();
+          for (const handle of config.handles) {
+            if (!handle || typeof handle.id !== 'string' || !HANDLE_ID.test(handle.id)) fail('people.handles needs ids like "github"');
+            if (ids.has(handle.id)) fail(`people.handles lists ${JSON.stringify(handle.id)} twice`);
+            ids.add(handle.id);
+            if (typeof handle.label !== 'string' || !handle.label.trim() || handle.label.length > 60)
+              fail(`people.handles.${handle.id}: label must be 1-60 characters`);
+            if (typeof handle.pattern !== 'string' || !handle.pattern)
+              fail(`people.handles.${handle.id}: pattern must be a regular expression source`);
+            try {
+              compileHandlePattern(handle.pattern);
+            } catch (error) {
+              fail(`people.handles.${handle.id}: pattern does not compile (${(error as Error).message})`);
+            }
+          }
+        }
+        people = { plugin: plugin.name, value: config };
+      },
+      identity(resolver) {
+        if (!resolver || typeof resolver !== 'object') fail('identity needs { resolve(identity, { request }) }');
+        needFunction(resolver.resolve, 'identity.resolve');
+        identityResolvers.push({ plugin: plugin.name, value: resolver });
+      },
     };
     try {
       yield plugin.setup(api);
@@ -316,9 +472,19 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     sourceProviders,
     storage,
     branding,
+    requestPolicies,
+    uploadEndpoints,
     basePath: basePath?.value,
+    redaction: mergeRedactionRules(...redaction),
     hooks,
     clientEntries,
+    purposes,
+    retention,
+    render,
+    summaryFields,
+    indexFilters,
+    people,
+    identityResolvers,
   };
 }
 
@@ -358,6 +524,12 @@ function union<K, V>(a: ReadonlyMap<K, V>, b: ReadonlyMap<K, V>, what: string) {
   return new Map([...a, ...b]);
 }
 
+function mergeIndexFilters(a: readonly Owned<IndexFilterDefinition>[], b: readonly Owned<IndexFilterDefinition>[]) {
+  const clash = b.find((entry) => a.some((other) => other.value.param === entry.value.param));
+  if (clash) throw new PluginError('conflict', `index filter param ${JSON.stringify(clash.value.param)} is registered twice`);
+  return [...a, ...b];
+}
+
 /**
  * One registry from two: `first`'s plugins are set up and their hooks run before `second`'s. The built-in plugins are
  * merged under the user's, so the user's branding and base path win. Names that appear in both are a conflict.
@@ -365,7 +537,17 @@ function union<K, V>(a: ReadonlyMap<K, V>, b: ReadonlyMap<K, V>, what: string) {
 export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): PluginRegistry {
   const clash = first.order.find((name) => second.order.includes(name));
   if (clash) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: clash });
+  const purpose = second.purposes.find((entry) => first.purposes.some((other) => other.value.id === entry.value.id));
+  if (purpose)
+    throw new PluginError('conflict', `purpose ${JSON.stringify(purpose.value.id)} is registered twice`, { plugin: purpose.plugin });
+  if (first.people && second.people)
+    throw new PluginError('conflict', `registers people, but ${first.people.plugin} already did; a deployment has one`, {
+      plugin: second.people.plugin,
+    });
+  assertDistinctPolicies(first.requestPolicies, second.requestPolicies);
   return {
+    requestPolicies: [...first.requestPolicies, ...second.requestPolicies],
+    uploadEndpoints: union(first.uploadEndpoints, second.uploadEndpoints, 'upload endpoint'),
     order: [...first.order, ...second.order],
     auth: union(first.auth, second.auth, 'auth adapter'),
     contextAdapters: [...first.contextAdapters, ...second.contextAdapters],
@@ -373,6 +555,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     storage: union(first.storage, second.storage, 'storage backend'),
     branding: { ...first.branding, ...second.branding },
     basePath: second.basePath ?? first.basePath,
+    redaction: mergeRedactionRules(first.redaction, second.redaction),
     hooks: {
       preAuth: [...first.hooks.preAuth, ...second.hooks.preAuth],
       postAuth: [...first.hooks.postAuth, ...second.hooks.postAuth],
@@ -382,5 +565,12 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
       afterUpload: [...first.hooks.afterUpload, ...second.hooks.afterUpload],
     },
     clientEntries: [...first.clientEntries, ...second.clientEntries],
+    purposes: [...first.purposes, ...second.purposes],
+    retention: [...first.retention, ...second.retention],
+    render: [...first.render, ...second.render],
+    summaryFields: [...first.summaryFields, ...second.summaryFields],
+    indexFilters: mergeIndexFilters(first.indexFilters, second.indexFilters),
+    people: first.people ?? second.people,
+    identityResolvers: [...first.identityResolvers, ...second.identityResolvers],
   };
 }

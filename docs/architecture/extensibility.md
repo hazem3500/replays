@@ -1,6 +1,6 @@
 # Extensibility architecture: a core that host apps compose, and people reshape
 
-Status: design, being implemented in small pull requests (the [roadmap](#9-roadmap) tracks them). Reference pages for what already
+Status: implementation and host migration guide; the [roadmap](#9-roadmap) links each concern. The selected package artifact must contain the referenced changes before a host migrates. Reference pages for what already
 ships: [extension-api.md](../extension-api.md) (config, server plugins, browser entries), [extending.md](../extending.md) (the older
 single-purpose points), [malleability.md](../malleability.md) (sandboxed user plugins and the agent bridge),
 [api-stability.md](../api-stability.md) (what a version pin protects) and [packaging.md](../packaging.md) (one package, subpath exports).
@@ -36,7 +36,7 @@ Rules that hold across the layers:
    layer's code. A host cannot import `src/`; `exports` blocks it ([api-stability.md](../api-stability.md)).
 2. **Precedence is fixed and visible.** For settings: environment → config file → host plugins → core default. For surfaces (tabs,
    panels, actions, tracks, columns, sections, filters): core, then host, then workspace, then user, ordered by `order` inside a layer.
-   `GET /api/config` lists every loaded contribution with its layer, so "where does this tab come from?" always has an answer.
+   `GET /api/config` exposes loaded plugin names and public configuration. Namespaced registrations retain their owner; the agent bridge lists the built-in and plugin inspector tabs, panels and actions with their ownership and lock policy.
 3. **The host sets the policy for the layers above it.** It decides whether user plugins exist at all, which capabilities they may ask
    for, and which surfaces they may not cover (section 6).
 4. **Data outlives code.** Contributions read and annotate replays; they never own the format. A replay recorded under one host's
@@ -74,7 +74,7 @@ happens, the subpath names become package names and the umbrella re-exports them
 - **Additive inside a generation.** New registration methods, new optional fields, new context properties: a minor release. Contexts
   and options are objects so they grow; plugins must not depend on their exact key set.
 - **A plugin can say which core it needs.** `requires: '>=0.4 <0.6'` (a semver range over the package version, optional). A core
-  outside the range refuses the plugin at start (`PluginError` `version-range`). This is the guard for features added within a
+  outside the supported range refuses the plugin at start (`PluginError` `version-range`). The accepted range subset is documented in `extension-api.md`; it is not a complete npm range parser. This is the guard for features added within a
   generation: a host plugin that uses `api.purpose` declares `>=0.4`.
 - **Everything is checked at start.** Ids (`[a-z][a-z0-9-]{0,39}`), duplicates, conflicts between plugins, schemas: a bad plugin stops
   the server with a stable `PluginError` code and the plugin's name, before anything listens. Run time errors in hooks are logged and
@@ -106,6 +106,11 @@ method on `PluginApi`; every browser one on `ViewerPluginApi`; most have a confi
 | Settings | – | `registerSetting({ id, label, type, default })` | – | new |
 | Theme and brand tokens | `branding({ name, logoUrl, theme })` | CSS variables, `ctx.theme` | `name`, `logoUrl`, `theme` | today; `theme-color` meta and static build new |
 | Upload hooks | `prepareUpload`, `beforeUpload`, `afterUpload` | – | – | today |
+| Additional upload endpoints | `uploadEndpoint({ path, prepare })` | – | – | scoped intake extension |
+| Exact-origin request policy | `requestPolicy({ path, methods, origins, headers, credentials })` | – | – | scoped intake extension |
+| Sign-in recovery | auth adapter `signIn` metadata | generic failed-fetch recovery | `signIn` | CDN/IAP extension |
+| Edit write policy | enforced on edit PUT | controls and route policy | `editing.enabled` | independent of beta playback gate |
+| Capture pacing | public capture options | shared caption/idle/speed behavior | `capture.stepPauseMs` | defaults preserve existing capture pause |
 | Request hooks | `onRequest` (pre/post auth), `onResponse` | – | – | today |
 | Render pipeline | `render({ posterAt(bundle), beforeRender(job), afterRender(job, file) })` | – | – | new |
 | Base path and hosts | `basePath` | – | `basePath`, `hosts`, `trustForwardedHost` | today for one path; per-host new |
@@ -113,7 +118,7 @@ method on `PluginApi`; every browser one on `ViewerPluginApi`; most have a confi
 
 ### 5.1 Storage
 
-`ObjectStorage` (`get`, `put` with `ifNoneMatch`/`ifMatch`, `list`, `delete`, …) is the whole contract. New: `kind` becomes an open
+`ObjectStorage` (`read`, `write` with `createOnly`/`ifVersion`, `list`, `delete`, …) is the whole contract. New: `kind` becomes an open
 string, and a backend sets `listCacheMs` to get the store's listing cache that `s3` gets today. `ObjectExistsError`,
 `PreconditionFailedError`, `assertKey` and `globToRegExp` are exported, because the comments and malleable stores rely on `instanceof`.
 `/server/testing` exports `describeObjectStorage(name, factory)`, the suite every built-in backend passes.
@@ -132,7 +137,7 @@ issuer, audience, algorithms, leewaySec, requireIat })` is exported so a proxy a
 entry that is not a `*.gserviceaccount.com` address stops the server). The agent runner that uploads with an ID token is one of those
 service accounts; nothing else is needed for it.
 
-`api.identity({ resolve })` runs after authentication and may enrich the identity (a display name and avatar from a directory). It may
+`api.identity({ resolve(identity, { request }) })` runs after authentication and may enrich the identity (a display name and avatar from a directory). It may
 not change `id`.
 
 ### 5.3 Purposes and taxonomies
@@ -220,6 +225,26 @@ CDN, notify).
 One base path today. New: `hosts: { 'replays.example.com': { basePath: '' } }` serves the same process at a different base per
 `Host`, with `Vary: Host` on responses that depend on it, and `trustForwardedHost` for a gateway that rewrites `Host`.
 
+### 5.11 Intake routes and request policy
+
+A host can register an additional upload path with `api.uploadEndpoint({ path, prepare })`. Its optional translation runs before the global upload preparation hooks; the result goes through the same validation, sanitizer, upload hooks, store and media scheduling as ordinary uploads. The alias has normal authentication and same-origin enforcement. No customer-specific route is built into core.
+
+Staff browser recording intake can opt into `api.requestPolicy({ path: '/api/replays', methods: ['POST'], origins: ['https://app.example.com'], headers: ['content-type', 'content-encoding'], credentials: true })`. Paths are canonical and exclude the deployment base. Only the configured path/method/exact origin gets CORS and the narrow CSRF exception; actual data requests still authenticate. Preflight validates its method and headers before auth. Refusals retain the applicable CORS headers, and unrelated read/write routes retain their normal policy. Wildcard origins and a global CSRF-disable switch are outside the contract.
+
+Backend forwarder authorization belongs in the host's auth adapter. Restrict such an identity to its exact upload path and method before any built-in plugin can answer a request; a later host request hook alone is insufficient. Host normalization owns fresh ids, source/purpose and bounded product metadata, then hands the result to the core pipeline.
+
+### 5.12 Sign-in recovery across a CDN
+
+A public CDN page can load even while IAP refuses its API requests. Auth adapters provide sign-in metadata; static hosts explicitly set `signIn: { path: '/api/sign-in' }` so the viewer receives the canonical endpoint before its first API fetch. The core distinguishes signed-out responses from network failures, normalizes same-origin return paths, preserves query/hash/base and bounds automatic retries. A manual sign-in link remains available when automatic recovery or browser storage is unavailable. Uploads and internal render calls do not navigate to sign-in pages.
+
+### 5.13 Edit writes and saved playback
+
+`beta.editor` remains the outer feature gate. With it enabled, `editing: { enabled: false }` hides editor entry points and rejects edit writes while retaining saved edit reads, playback and MP4 exports. The environment override is `EDITING_ENABLED`. This is independent of user-plugin capabilities. Posters, opening stills and hover previews remain as recorded.
+
+### 5.14 Capture and playback pacing
+
+`capture: { stepPauseMs: 1200 }` configures a host's capture pause; `--step-pause` overrides it. Values are bounded to 0–10000ms and the existing zero-pause core default is retained. Labels derived from selectors must not include typed secrets. Idle skipping, held-caption selection/rail numbering and the speed list (including 0.25×) are shared between viewer and export paths so a host need not patch either implementation.
+
 ## 6. Trusted host plugins and sandboxed user plugins
 
 |  | Host plugin | User / workspace plugin |
@@ -283,22 +308,17 @@ How each downstream-only part maps (the full table, with file paths, is in
 | Palette, name, logo | `name`, `logoUrl`, `theme`, plus a client `style` file for extra primitives |
 | Old paths, the own-domain root host, CDN-served frontend | a `pre-auth` redirect hook, `hosts`, `replays build-static` |
 | Old upload shapes (`meta.source: 'toki'`, typed context, source `kind`) | `prepareUpload` + a context adapter; `replays migrate` for stored data |
+| Staff app intake, browser sign-in recovery and disabled edit writes | scoped request policy, adapter/config sign-in metadata and independent edit-write config |
+| Backend customer forwarding (pending downstream work) | optional upload endpoint alias and host auth/normalization plugin |
+| Deployment runtime and pending workspace restructuring | stay in the downstream; both web and gateway consume the same pinned artifact |
 | Deploy workflows, gateway, secrets, samples | stay in the downstream |
 
 `examples/host-app` is this mapping as a runnable distribution with neutral names: IAP auth, Cloud Storage, three purposes, people
 rules, a theme, a "For you" section and a provenance provider, built only from config and plugins, with an end-to-end smoke test.
 
-Migration, in order, each step shippable and revertible (details and checks in [downstream-migration.md](../downstream-migration.md#4-migration-steps)):
+The mapping is refreshed against downstream `4390e7a5` (2026-10-24), including the real gateway/renderer, sign-in recovery, staff browser intake and disabled editing. Pending customer-forwarding and workspace-restructuring branches remain separate migration inputs. The initial migration retains upstream's stricter input/URL sanitization, so staging readability differs; the migration guide records that deliberate boundary.
 
-1. Depend on a pinned tarball or tag of `@hazem3500/replays`.
-2. Add `replays.config.ts` with name, theme, base path, purposes; compare pages side by side with the old server.
-3. Add the downstream plugin: context adapter, source providers, people rules, `prepareUpload` translation; replay the producers against staging.
-4. Switch auth to `iap()`; check the 403/200 matrix, including the agent runner's service account.
-5. Switch storage to `gcs()` on a copy of the bucket; run the contract suite against the emulator.
-6. Add the redirect hook and `hosts`; switch the CDN build to `replays build-static`.
-7. Build the image from the package plus the downstream layer; staging, then production.
-8. Delete the copied core in one commit.
-9. Run `replays migrate` with the plugin's translation over a copy of the stored data; compare summaries; switch.
+Migration order: pin a tested immutable artifact; compose config/plugins/theme beside the old app; validate producers, IAP, CDN/gateway paths, scoped intake and saved-edit playback; rehearse conversion into a separate store while preserving trusted retention age and nonmedia sidecars; compare summaries and representative content; stage and cut over with a write/rollback plan; delete copied core source last. Follow the concrete [step list](../downstream-migration.md#migration-steps-for-the-later-downstream-pr). Converting stored data after deleting the old app is not the first migration rehearsal.
 
 ## 9. Roadmap
 
@@ -306,15 +326,24 @@ Small pull requests, each with its own tests and docs, merged in about this orde
 
 | # | Change | Extension points |
 | --- | --- | --- |
-| 1 | This document | – |
-| 2 | Adapter kit: exported storage errors and helpers, open `kind` + `listCacheMs`, `verifyJwt`, `/server/testing` contract suites, `requires` ranges, `VIEWER_API_VERSION` | 5.1, 5.2, 4 |
-| 3 | First-party `iap` and `gcs` plugins (`/plugins/*`) | 5.1, 5.2 |
-| 4 | Purposes and retention rules | 5.3 |
-| 5 | Redaction rules | 5.5 |
-| 6 | People and identity resolvers | 5.2, 5.4 |
-| 7 | Index and viewer slots: summary fields, index columns/filters/sections, bar actions, timeline tracks, context sections and widgets, settings, source-provider icons | 5.6, 5.7 |
-| 8 | Hosts, `theme-color`, static build | 5.8, 5.10 |
-| 9 | Render hooks | 5.9 |
-| 10 | User-plugin policy and upgrade contract | 6 |
-| 11 | `replays migrate` | 8 |
-| 12 | `examples/host-app` | all |
+| [#5](https://github.com/hazem3500/replays/pull/5) | Architecture document | – |
+| [#8](https://github.com/hazem3500/replays/pull/8) | Adapter kit: exported storage errors and helpers, open `kind` + `listCacheMs`, `verifyJwt`, `/server/testing` contract suites, `requires` ranges, `VIEWER_API_VERSION` | 5.1, 5.2, 4 |
+| [#9](https://github.com/hazem3500/replays/pull/9) | First-party `iap` and `gcs` plugins (`/plugins/*`) | 5.1, 5.2 |
+| [#13](https://github.com/hazem3500/replays/pull/13) | Purposes and retention rules | 5.3 |
+| [#10](https://github.com/hazem3500/replays/pull/10) | Redaction rules | 5.5 |
+| [#16](https://github.com/hazem3500/replays/pull/16) | People and identity resolvers | 5.2, 5.4 |
+| [#15](https://github.com/hazem3500/replays/pull/15), [#17](https://github.com/hazem3500/replays/pull/17) | Index and viewer slots: summary fields, index columns/filters/sections, bar actions, timeline tracks, context sections and widgets, settings, source-provider icons | 5.6, 5.7 |
+| [#7](https://github.com/hazem3500/replays/pull/7) | Hosts, `theme-color`, static build | 5.8, 5.10 |
+| [#14](https://github.com/hazem3500/replays/pull/14) | Render hooks | 5.9 |
+| [#12](https://github.com/hazem3500/replays/pull/12) | User-plugin policy and upgrade contract | 6 |
+| [#11](https://github.com/hazem3500/replays/pull/11) | `replays migrate` | 8 |
+| [#18](https://github.com/hazem3500/replays/pull/18) | Pin the matching Node runtime | packaging/runtime |
+| [#20](https://github.com/hazem3500/replays/pull/20) | Composed privacy, migration, retention-age and cache integrity fixes | 5.1, 5.5, 5.9, 8 |
+| [#21](https://github.com/hazem3500/replays/pull/21) | Host editing write policy with saved-edit playback | 5.13 |
+| [#22](https://github.com/hazem3500/replays/pull/22) | Scoped browser intake policy and upload aliases | 5.11 |
+| [#23](https://github.com/hazem3500/replays/pull/23) | Browser sign-in recovery | 5.12 |
+| [#24](https://github.com/hazem3500/replays/pull/24) | Capture pacing, shared captions and playback/export speeds | 5.14 |
+| [#25](https://github.com/hazem3500/replays/pull/25) | `examples/host-app` | all |
+| [#26](https://github.com/hazem3500/replays/pull/26) | Refresh the architecture and downstream migration guide | documentation |
+
+A reviewed source mapping does not replace the real IAP/CDN/GCS staging checks in the migration guide.

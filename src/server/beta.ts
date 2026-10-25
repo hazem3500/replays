@@ -22,7 +22,8 @@ export const NO_BETA: BetaFlags = { editor: false, malleable: false };
 const TRUE = new Set(['true', '1', 'yes', 'on']);
 const FALSE = new Set(['false', '0', 'no', 'off', '']);
 
-function flag(name: string, value: string | undefined): boolean | undefined {
+/** A boolean environment variable: undefined when unset, else true/false (or a readable error). */
+export function parseFlag(name: string, value: string | undefined): boolean | undefined {
   if (value === undefined) return undefined;
   const lower = value.trim().toLowerCase();
   if (TRUE.has(lower)) return true;
@@ -34,7 +35,7 @@ export function betaFromEnv(env: Record<string, string | undefined>, file?: { ed
   for (const key of ['editor', 'malleable'] as const)
     if (file?.[key] !== undefined && typeof file[key] !== 'boolean') throw new Error(`the config file's beta.${key} must be true or false`);
   return {
-    editor: flag('REPLAYS_BETA_EDITOR', env.REPLAYS_BETA_EDITOR) ?? (file?.editor as boolean | undefined) ?? false,
-    malleable: flag('REPLAYS_BETA_MALLEABLE', env.REPLAYS_BETA_MALLEABLE) ?? (file?.malleable as boolean | undefined) ?? false,
+    editor: parseFlag('REPLAYS_BETA_EDITOR', env.REPLAYS_BETA_EDITOR) ?? (file?.editor as boolean | undefined) ?? false,
+    malleable: parseFlag('REPLAYS_BETA_MALLEABLE', env.REPLAYS_BETA_MALLEABLE) ?? (file?.malleable as boolean | undefined) ?? false,
   };
 }

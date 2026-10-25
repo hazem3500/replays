@@ -60,10 +60,15 @@ drop), or `POST` it to `/api/replays`. The CLI prints one JSON line (`{"success"
 
 Steps are a closed list: `click`, `hover`, `type`, `fill`, `press`, `wait`, `scroll`, `goto`. Arbitrary page scripts are
 intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/demo-shop.steps.json` is a longer one.
+Use `--step-pause 1200` to hold each non-wait action for a readable beat (default: 0ms, or
+`capture.stepPauseMs` in your config). Built-in drivers type at 80ms per character; `fill` is immediate.
+Unlabelled waits execute without adding a step. Labels use selector names without typed values.
+See [capture pacing](docs/extending.md#capture-pacing) for host configuration.
 
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
-                   [--viewport 1440x900] [--video] [--tag t]… [--source github:owner/repo#12]…
+                   [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
+                   [--source github:owner/repo#12]…
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload-url <server>/api/replays] [--header-file headers.json] [--headed]
 ```
@@ -147,12 +152,14 @@ Settings come from environment variables. Non-secret settings can also live in a
 | --- | --- | --- |
 | `PORT` | `8080` (`3000` with `--dev`) | Listen port |
 | `HOST` | `127.0.0.1` (`0.0.0.0` in the Docker image) | Listen address |
-| `BASE_PATH` | `/` | Serve under a prefix, e.g. `/replays`. The bare (prefix-stripped) shape is accepted too, for proxies that strip it |
+| `BASE_PATH` | `/` | Serve under a prefix, e.g. `/replays`. The bare (prefix-stripped) shape is accepted too, for proxies that strip it. `hosts` in the config file gives single hosts their own base ([operations](docs/operations.md#several-hosts-one-process)) |
+| `TRUST_FORWARDED_HOST` | `false` | With `hosts`: pick the host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Also `trustForwardedHost` |
 | `PUBLIC_ORIGIN` | – | `https://replays.example.com`; needed by `oidc` for the redirect URI |
 | `TLS_CERT_FILE`, `TLS_KEY_FILE` | – | Serve HTTPS directly (usually a proxy does this instead) |
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
 | `STORAGE` | `fs` | `fs`, `s3`, or a backend a plugin registered |
 | `RETENTION_DAYS` | `30` | Days an upload lives, counted from its upload time; `0` keeps everything. "Kept" replays never expire |
+| `RETENTION_PURPOSE_<ID>_DAYS` | – | Days for replays of one [purpose](docs/extension-api.md#purposes-and-retention) (`RETENTION_PURPOSE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
 | `REPLAYS_CONFIG` | `replays.config.{ts,mjs,js,json}` in the working directory | The config file (below); a script can also list [plugins](#extending-replays) |
 | `SAMPLE_DIR` | the bundled `sample/` | Directory of read-only demo replays; point it at an empty directory for none |
 | `PRODUCT_NAME`, `LOGO_URL` | `replays`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
@@ -160,13 +167,14 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `GITHUB_HOST`, `GITLAB_HOST` | `github.com`, `gitlab.com` | Hosts the `github:` / `gitlab:` source providers link to (self-managed instances) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
 | `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
+| `EDITING_ENABLED` | `true` | Host edit write policy within `beta.editor`; `false` hides editing and rejects saves while saved edits still play and export. Also `editing.enabled` in config |
 | `REPLAYS_BETA_MALLEABLE` | `false` | Turns on the beta plugin workshop and agent bridge ([Malleable viewer](#malleable-viewer-beta-off-by-default)). Also `beta.malleable` in the config file; the variable wins |
 | `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
-The config file takes `name`, `logoUrl`, `theme`, `basePath`, `retentionDays`, `contextSchemaFile`, `githubHost`,
-`gitlabHost`, `sourceProviders`, `beta`, `comments`, `auth`, `storage` and `plugins`:
+The config file takes `name`, `logoUrl`, `theme`, `basePath`, `hosts`, `trustForwardedHost`, `retentionDays`, `contextSchemaFile`, `githubHost`,
+`gitlabHost`, `sourceProviders`, `beta`, `editing`, `comments`, `auth`, `storage` and `plugins`:
 
 ```json
 {
@@ -297,6 +305,7 @@ A replay contains what was on the screen, so the defaults are conservative and t
 | Sensitive query values | `token`, `api_key`, `password`, `session`, `code`, `email`, `signature`, … (and `*_token`, `*-secret`, …) become `[redacted]`, also inside URL fragments and in text | `sanitize.ts` |
 | Request and response bodies | Never captured (HAR with content omitted; only a whitelist of fields reaches the bundle) | `capture.ts`, `drivers/` |
 | Uploads | Sanitized again on the server before storing; the pass is idempotent | `app.ts` |
+| Your own rules | Extra headers, query parameters, JSON keys, text patterns and mask selectors from the config's `redaction` or a plugin's `api.redaction`, applied at capture and again on upload. They add to the defaults and cannot turn any off ([docs/extending.md](docs/extending.md#redaction-rules)) | `src/shared/redaction.ts` |
 | Retention | Uploads expire after `RETENTION_DAYS`, from the *server's* upload time; "keep" pins one | `src/shared/retention.ts` |
 | Links in the viewer | Only `https:` URLs without credentials are rendered as links | `shared/context.ts` |
 | Server-side render route | Loopback-only, per-process token, refused when any proxy header is present | `render-routes.ts` |
@@ -354,6 +363,10 @@ page, and **captions** (written from the steps). Open it with the *Edit* button 
   cannot silently overwrite each other, and free text in labels goes through the same URL redaction as uploads.
 - **Flag.** `REPLAYS_BETA_EDITOR=true`, or `{ "beta": { "editor": true } }` in the config file (the variable wins).
   The server tells the page through `<meta name="app-beta">` and `GET /api/config` (`beta.editor`).
+- **Read-only editing.** Keep `beta.editor` on and set `{ "editing": { "enabled": false } }` or `EDITING_ENABLED=false`.
+  Edit links disappear and edit deep links open playback. Saved edits still play and export; GET/HEAD edits and ETag
+  revalidation work, while PUT returns `403`. `GET /api/config` reports the effective `editing.enabled` capability.
+  See [host editing policy](docs/extension-api.md#host-editing-write-policy) for precedence and validation.
 - **With the flag off** (the default): no Edit button or "Edited" label, `/r/<id>/edit` just opens the replay, the
   `GET|PUT /api/replays/<id>/edits` endpoints answer `404`, exports ignore any edit list, and the editor's code chunk is
   never requested. There is deliberately no client-only switch: an editor without its API cannot save, so the flag
@@ -379,6 +392,10 @@ in a dialog that shows the diff and the permissions, and an agent has no way to 
   playhead, comments, network and console) and load *draft* plugins; there is no save tool.
 - **Formats.** Replays, comments, edits and plugins are plain JSON with JSON Schemas in [docs/formats/](docs/formats/); example plugins
   are in [examples/malleable/](examples/malleable/) (import them from the workshop).
+- **Read-only editing.** Keep `beta.editor` on and set `{ "editing": { "enabled": false } }` or `EDITING_ENABLED=false`.
+  Edit links disappear and edit deep links open playback. Saved edits still play and export; GET/HEAD edits and ETag
+  revalidation work, while PUT returns `403`. `GET /api/config` reports the effective `editing.enabled` capability.
+  See [host editing policy](docs/extension-api.md#host-editing-write-policy) for precedence and validation.
 - **With the flag off** (the default): no workshop or menu entry, `/api/malleable/*` and `/_malleable/sandbox.html` answer `404`, no
   tools are registered, no extra CSP header is sent, and the plugin code is never requested.
 - Design, mapping onto the extension API, the threat model and worked examples: [docs/malleability.md](docs/malleability.md).

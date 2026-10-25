@@ -1,5 +1,5 @@
 import { PRODUCT_SLUG } from '../shared/brand.ts';
-import { betaEditor } from './config.ts';
+import { editingEnabled } from './config.ts';
 
 export type Route =
   | { kind: 'index' }
@@ -55,8 +55,8 @@ export function parseRoute(pathname: string, search = '', base = appBase()): Rou
   if (!match) return { kind: 'index' };
   const id = decode(match[1]!);
   if (!id) return { kind: 'index' };
-  // `/r/<id>/edit` is the beta editor; without the flag the address just opens the replay.
-  if (match[2] && betaEditor()) return { kind: 'edit', id };
+  // Without edit write capability, deep links open normal playback with saved edits.
+  if (match[2] && editingEnabled()) return { kind: 'edit', id };
   const suiteId = new URLSearchParams(search).get('suite');
   return suiteId ? { kind: 'suite', id: suiteId, replayId: id } : { kind: 'replay', id };
 }

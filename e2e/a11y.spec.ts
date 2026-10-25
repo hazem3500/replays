@@ -224,6 +224,7 @@ test('menus open, move and close by keyboard and return to their trigger', async
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('ArrowDown');
   await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
   await expect(page.getByRole('menuitemradio', { name: /^2×/ })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByRole('menu', { name: 'Playback' })).toHaveCount(0);

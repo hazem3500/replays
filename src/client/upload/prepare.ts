@@ -161,6 +161,8 @@ export interface UploadEdits {
   url: string;
   /** Tags from the dialog; `[]` clears them, `undefined` keeps the bundle's own `meta.tags`. */
   tags?: string[];
+  /** The purpose picked in the dialog; `''` clears it, `undefined` keeps the bundle's own `meta.purpose`. */
+  purpose?: string;
 }
 
 /** Body and endpoint for the upload; bundles carry the edited title, start URL and tags in `meta`. */
@@ -172,12 +174,15 @@ export function uploadRequest(prepared: PreparedUpload, edits: UploadEdits) {
     const meta: ReplayBundle['meta'] = { ...prepared.bundle.meta, title, ...(url ? { url } : {}) };
     if (edits.tags && edits.tags.length === 0) delete meta.tags;
     else if (edits.tags) meta.tags = edits.tags;
+    if (edits.purpose === '') delete meta.purpose;
+    else if (edits.purpose) meta.purpose = edits.purpose;
     const bundle: ReplayBundle = { ...prepared.bundle, meta };
     return { path: 'replays', body: JSON.stringify(bundle), id: bundle.meta.id };
   }
   const params = new URLSearchParams({ title });
   if (url) params.set('url', url);
   for (const tag of edits.tags ?? []) params.append('tag', tag);
+  if (edits.purpose) params.set('purpose', edits.purpose);
   return { path: `replays/import?${params}`, body: prepared.text };
 }
 

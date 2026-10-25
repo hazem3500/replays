@@ -5,7 +5,17 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Add adapter-owned/configurable sign-in recovery for public CDN viewers: safe authenticated return endpoints, page-load recovery and a bounded automatic attempt with manual fallback.
+
 ### Added
+
+- Capture pacing: optional `CaptureArgs.stepPauseMs`, config `capture.stepPauseMs`, and CLI `--step-pause`
+  (0–10000ms after non-wait actions; default 0 for compatibility, set 1200 for demonstration captures).
+  Built-in drivers type at 80ms/character, selector-derived labels omit typed values, and unlabelled waits
+  no longer add rail steps. Full privacy masking remains unchanged.
+- Shared playback/export speeds including 0.25× across render start/status/download/cancel and frame math.
+  Captions hold through legacy pacing waits and repeated labels while numbering follows the active rail;
+  exports redraw on number changes. Skip inactive uses a 4000ms threshold, 800ms lead and 16× speed.
 
 - **First-party plugins** `@hazem3500/replays/plugins/iap` and `@hazem3500/replays/plugins/gcs`
   ([docs/extension-api.md](docs/extension-api.md#first-party-plugins)):
@@ -29,6 +39,93 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
     at start (`PluginError` `version-range`).
   - `VIEWER_API_VERSION` (`1`, from `/viewer`): `defineViewerPlugin` stamps it, and the viewer refuses an entry of another generation
     with a console error.
+- **A base path per host, a static build, and theme-color from the branding.** `hosts: { 'replays.example.com': { basePath: '/' } }`
+  in the config serves one process at a different base per request `Host` (other hosts keep `basePath`), with `Vary: Host` on every
+  response and `trustForwardedHost` / `TRUST_FORWARDED_HOST` for a gateway that rewrites `Host`; host names are checked at start.
+  `replays build-static --out <dir> [--base /] [--config path]` copies the built viewer with base, name, logo, theme tokens, flags and
+  plugin entries stamped into `index.html`, the same function the server runs per request (`renderIndexHtml`), for hosting the viewer
+  on a CDN in front of the API (docs/operations.md). `<meta name="theme-color">` now follows the theme's `page` token per scheme.
+  New in `@hazem3500/replays/server`: `buildStatic`, `renderIndexHtml`, `withBase`, `normalizeHosts`, `resolveSettings`.
+- **Redaction rules.** A deployment adds its own rules to the sanitiser: extra `headers` to drop, `queryParams` to redact,
+  `jsonKeys` whose values are redacted in console arguments, free-`text` patterns, and `maskSelectors` whose text the recorder masks
+  (rrweb `maskTextSelector`). Set them with the config key `redaction` (JSON configs write regexes as `"/.../flags"` strings) or
+  `api.redaction(rules)` in plugins; rules add up and can never weaken the defaults. They apply in the capture CLI, which now reads
+  the deployment's config (`--config <file>`, `REPLAYS_CONFIG` or `replays.config.*` in the working directory), and again in the
+  server's privacy pass on upload. New exports: `assertRedactionRules` and the `RedactionRules` types from `/plugin` and `/capture`;
+  optional `redaction` arguments on `sanitizeReplayBundle`, `sanitizeHar`, `sanitizeUrl`, `networkEntries`, `normalizeConsole` and
+  `RecorderSession.start`; `AppOptions.redaction`. See [docs/extending.md](docs/extending.md#redaction-rules).
+- **`replays migrate`.** Copies a store into another and converts every replay on the way: `--from` / `--to` take `fs:<dir>`,
+  `s3:<bucket>[/prefix]` or a storage backend a config plugin registers, `--translate` a module whose default export converts a
+  raw `replay.json` (and an optional `translateSuite` for suites). Each bundle is validated with the core validator and gets the
+  upload privacy pass; invalid ones are reported and nothing of their prefix is written. Sidecars (comments, edits, keep markers,
+  posters, videos), suites and plugin data are copied; writes are create-only, so a second run converts nothing and an
+  interrupted one resumes. `--dry-run`, `--report out.json`, and `--compare` for the list-summary diff between two stores. The
+  same as `migrateStore()` and `compareStores()` from `@hazem3500/replays/server`, and a translation for the older downstream
+  format in `examples/migrate/`. See [docs/operations.md](docs/operations.md#converting-stored-replays).
+- **Host policy for user plugins, and the upgrade contract (beta.malleable).** A `malleable` config block lets a deployment narrow
+  what sandboxed user plugins may do: `scopes` (where a plugin may be kept), `capabilities` (`allow` / `ask` / `deny` per capability;
+  write capabilities can only be `ask` or `deny`, checked at start) and `lockedSurfaces`. `malleable.enabled` is accepted as the same
+  switch as `beta.malleable` (both keep working; if both are set they must agree). The server refuses to keep a plugin that declares a
+  denied capability or targets a disabled scope, the broker fails denied capabilities with `permission-denied`, and the workshop shows
+  the policy. New `distribution: { name, version }` config key. `GET /api/config` now includes `core`, `distribution` and (with the
+  feature on) `malleable`. Kept plugin versions record `manifest.targets: { core, distribution }` (additive to
+  `plugin-manifest.schema.json`); the viewer records load health per (core, distribution) in localStorage and shows a quiet "Review
+  plugins" notice for a plugin that fails after the versions changed, without disabling or changing anything. `get_plugin_api` now
+  returns the theme tokens, the policy, the versions and the surfaces in the viewer.
+
+- **Render pipeline hooks** ([docs/extension-api.md](docs/extension-api.md#render-pipeline-hooks)). `api.render({ posterAt?, beforeRender?,
+  afterRender? })`: `posterAt(bundle, { purpose })` picks the poster's moment (the first hook in plugin order that returns a time wins,
+  then the purpose's `poster` setting, which is now the built-in last step of the same chain, then the default); `beforeRender(job)`
+  refuses a render (`false`; a refused export answers `{ status: 'refused', error }`) or changes a video export's `speed`, `captions` or
+  `skipInactive`; `afterRender(job, { file, key, contentType, bytes })` runs after each stored video, poster, opening still and preview,
+  and its errors never fail the render. Hooks see a small job object (`id`, `replayId`, `kind`, `options`, `identity?`). A poster
+  taken at a non-default moment is stored as `poster.v2-<moment>.jpg`, so a changed choice is remade instead of served stale.
+- **Purposes and retention rules** ([docs/extension-api.md](docs/extension-api.md#purposes-and-retention)). A deployment can say why
+  replays are recorded: `purposes: [{ id, label, order?, retentionDays?, viewer?, poster? }]` in the config file, or
+  `api.purpose({ …, infer? })` from a plugin (the core defines none). Uploads may carry `meta.purpose` (checked against the
+  registered ids; refused when none are registered), `--purpose <id>` on `capture`, `upload` and `import`, and a picker in the
+  upload dialog. Summaries gain `purpose` and `purposeInferred` (`SUMMARY_VERSION` 7, plus `suiteRun`); `GET /api/replays?purpose=`,
+  `purposes` in `/api/config`, and "All · <purpose>" tabs with counts on the index. Per purpose: a retention window
+  (`RETENTION_PURPOSE_<ID>_DAYS` overrides; an inferred purpose never makes a replay permanent), viewer defaults (open at the start
+  or just before the first error, the panel open or folded, captions) and the poster moment (`middle-step`, `first-error`,
+  `last-step`). `api.retention({ days(summary) })` adds rules that are not about purpose: the shortest window wins, `0` means no
+  limit, Keep still overrides. `/server` exports `createPurposeCatalog` and `PurposeCatalog`.
+- **Index slots for plugins** ([docs/extension-api.md](docs/extension-api.md#the-index-summary-fields-columns-filters-sections)):
+  `api.summaryFields({ name, version?, fields(bundle) })` derives small values into `summary.ext[<plugin>]` at upload and whenever a
+  summary is rebuilt (capped: 20 keys, strings cut to 200 characters, 2 KB per plugin, `SUMMARY_FIELD_LIMITS`; a failing set is logged
+  and left out; stored summaries built by other sets are rebuilt). `api.indexFilter({ id, param, match })` filters `GET /api/replays`
+  on the server by an `x-*` query parameter, listed in `GET /api/config` as `indexFilters`. In the browser,
+  `registerIndexColumn`, `registerIndexFilter` (`switch`, `choice` or `text` in the filter menu and the phone sheet) and
+  `registerIndexSection` (a block above the list, re-drawn or `update`d when the list changes, with `summaries` and `me`).
+  The custom-distro example uses all five.
+- **People and identity resolvers** ([docs/extension-api.md](docs/extension-api.md#people-and-identity)). `meta.people` and suite
+  `people` (at most 10 `{ role, email?, name?, handles? }`, size-capped, documented in `docs/formats/replay.schema.json`), repeatable
+  `--person role:email[:handle=value]` on `replays capture` and `replays import`, `?person=` on `POST /api/replays/import`, and a
+  people-only suite re-registration that replaces them. `api.people({ roles, validate, handles, avatarUrl, profileUrl })` (one per
+  deployment) sets role priority, refuses people with a `400` naming them, and resolves https avatar and profile links in summaries.
+  `?for=me` on `GET /api/replays` and `GET /api/suites` matches the signed-in email and linked `handle.<id>=` values and returns the
+  best role as `reason`; `GET /api/me` adds the people config. `api.identity({ resolve })` enriches the signed-in identity after auth
+  (it cannot change `id`). The index shows an avatar stack with a person card on rows that have people, and a For me switch with
+  fields for the linkable handles (kept in localStorage). `assertReplayPeople`, `parsePeopleFlags` and `personMatch` are exported from
+  `/capture`.
+- **Viewer slots for client plugins.** `registerViewerAction` takes `placement: 'bar'` (an icon button in the viewer header) and an
+  `icon`; `registerTimelineTrack({ id, label, markers(ctx) })` draws marks or ranges under the seek bar (hover shows the label, a click
+  seeks; at most `MAX_TRACK_MARKERS`, 500, per track); `registerContextSection` draws a block inside the Context tab; `registerSetting`
+  adds a boolean or choice setting to the More menu, stored per person in the browser and read with the new `ctx.settings`. Context
+  schemas can use `x-replays-widget: "signals"` (tri-state flags, with unknown distinct from disabled), `x-replays-group` and
+  `x-replays-order`. See [docs/extension-api.md](docs/extension-api.md).
+- **Source provider looks and attributes.** A source provider may declare an `icon` (a `data:image/svg+xml` or https URL, always drawn
+  as an image) and a `noun`, shown on the topbar chip, in the Context tab and on index rows; `resolve` may return `attrs`, kept on the
+  stored source and, capped, in the index summary (`SUMMARY_VERSION` 7: older sidecars are rebuilt). See
+  [docs/extending.md](docs/extending.md#source-link-providers).
+- **Host editing write policy.** `editing.enabled` / `EDITING_ENABLED` can disable new edits while preserving saved-edit
+  reads, playback and video exports. Edit links and routes follow the policy; saves return `403` before precondition or body
+  parsing, and `/api/config` advertises the effective capability. The beta editor flag remains the outer feature gate.
+
+- Trusted host plugins can register exact route/method/origin request policies with credentialed CORS and validated
+  preflight handling before authentication. Actual requests retain auth and get only a matching CSRF exception.
+- Host-defined POST upload endpoint aliases with optional raw-body preparation reuse validation, privacy checks,
+  immutable storage and all normal upload hooks. No extra endpoint or browser origin is enabled by default.
 - **Malleable viewer (beta, off by default).** An in-app plugin workshop: write a tab, side panel or More-menu action in an
   editable source view and it hot-loads into the running viewer. Plugins run in a sandboxed frame (opaque origin, CSP forbidding
   every outgoing request, a capability broker; `comments:write` and `export:download` ask the person each time), are stored per user
@@ -71,6 +168,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- User plugins register in the viewer registry as `user:<id>` (keys `plugin:user:<id>:<contribution>`) instead of `user-<id>`, so a
+  user plugin can no longer collide with, replace or remove the registrations of a host plugin named `user-<something>`.
 - `GET /api/config` also lists the loaded `plugins`. `src/server/main.ts` is now a thin wrapper around `startServer()`.
 - The library is built with shared chunks (`dist/lib/*.mjs`); the recorder script is shipped next to it.
 - The repository is a pnpm workspace (`pnpm-workspace.yaml`); the Dockerfile installs only the main package.

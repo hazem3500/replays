@@ -13,6 +13,12 @@
 .mall-note { margin: 0; color: var(--text-secondary); font-size: 11px; }
 .mall-error { margin: 0; color: var(--danger); font-size: 11px; white-space: pre-wrap; }
 .mall-section { display: flex; flex-direction: column; gap: 4px; }
+.mall-policy { font-size: 11px; color: var(--text-secondary); }
+.mall-policy summary { cursor: pointer; }
+.mall-policy ul { margin: 4px 0 0; padding-left: 18px; }
+.mall-review { display: flex; align-items: center; gap: 10px; justify-content: space-between; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; font-size: 12px; }
+.mall-review p { margin: 0; }
+.mall-link { padding: 0; border: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
 .mall-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
 .mall-btn { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--text); font: inherit; cursor: pointer; }
 .mall-btn svg { width: 13px; height: 13px; }

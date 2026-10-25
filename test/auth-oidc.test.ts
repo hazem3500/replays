@@ -159,6 +159,7 @@ interface Setup {
   audience?: string;
   basePath?: string;
   sessionHours?: number;
+  signIn?: { path: string };
 }
 
 async function start(setup: Setup = {}) {
@@ -184,6 +185,7 @@ async function start(setup: Setup = {}) {
     store,
     clientDir: join(root, 'client'),
     basePath: base,
+    ...(setup.signIn ? { signIn: setup.signIn } : {}),
     publicOrigin: PUBLIC_ORIGIN,
   });
   const server = createServer((request, response) => void handle(request, response));
@@ -260,6 +262,40 @@ describe('oidcAuth setup', () => {
 });
 
 describe('login flow', () => {
+  for (const path of ['/api/sign-in', '/auth/return']) {
+    it(`starts OIDC recovery at ${path} and returns through its authenticated endpoint`, async () => {
+      const { get, signIn } = await start({ basePath: '/tools', signIn: { path } });
+      const original = '/tools/a/../r/some-replay?t=2#step-3';
+      const normalized = '/tools/r/some-replay?t=2#step-3';
+      const recovery = await get(`/tools${path}?next=${encodeURIComponent(original)}`, {
+        accept: 'text/html',
+        'sec-fetch-mode': 'navigate',
+      });
+      expect(recovery.status).toBe(302);
+      const login = new URL(recovery.headers.get('location')!, PUBLIC_ORIGIN);
+      expect(login.pathname).toBe('/tools/auth/login');
+      const returnTo = login.searchParams.get('next')!;
+      const returned = new URL(returnTo, PUBLIC_ORIGIN);
+      expect(returned.pathname).toBe(`/tools${path}`);
+      expect(returned.searchParams.get('next')).toBe(normalized);
+      const { callback, session } = await signIn(undefined, returnTo);
+      expect(callback.status).toBe(302);
+      expect(callback.headers.get('location')).toBe(returnTo);
+      const complete = await get(returnTo, { cookie: session });
+      expect(complete.status).toBe(302);
+      expect(complete.headers.get('location')).toBe(normalized);
+      for (const api of ['/tools/api/me', '/tools/api/replays']) {
+        const refused = await get(api, { accept: 'text/html', 'sec-fetch-mode': 'navigate' });
+        expect(refused.status).toBe(401);
+        expect(refused.headers.get('location')).toBeNull();
+      }
+      expect((await get(`/tools${path}`)).status).toBe(401);
+      const unsafe = await get(`/tools${path}?next=${encodeURIComponent('/.//evil.example')}`, { accept: 'text/html' });
+      const safeReturn = new URL(new URL(unsafe.headers.get('location')!, PUBLIC_ORIGIN).searchParams.get('next')!, PUBLIC_ORIGIN);
+      expect(safeReturn.searchParams.get('next')).toBe('/tools/');
+    });
+  }
+
   it('sends a browser without a session to the login route, and an API client a 401', async () => {
     const { get } = await start();
     const page = await get('/r/abc', { accept: 'text/html', 'sec-fetch-mode': 'navigate' });

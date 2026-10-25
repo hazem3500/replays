@@ -1,0 +1,147 @@
+/*
+ * Client plugins in built-in views (PluginSlots.tsx, PluginUi.tsx). Tokens come from styles.css.
+ *
+ * Timeline tracks: one 3 px row per track under the seek bar's bars (the comment markers sit above them, in the same
+ * overlay layer), 2 px apart. A point is a 3 px tick, a range a bar of its length. Hover or focus shows a small card above
+ * the marker (the scrubber's own time bubble steps aside meanwhile); a click seeks.
+ */
+.plugin-tracks {
+  position: absolute;
+  z-index: 4;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 0;
+  pointer-events: none;
+}
+.plugin-track-marker {
+  --track-tone: var(--text-tertiary);
+  position: absolute;
+  top: calc(var(--center, 14px) + var(--bar-h, 6px) / 2 + 2px + var(--track-row, 0) * 5px);
+  width: 3px;
+  height: 3px;
+  margin-left: -1.5px;
+  border-radius: 1.5px;
+  background: var(--track-tone);
+}
+.plugin-track-marker[data-range] {
+  margin-left: 0;
+  opacity: 0.85;
+}
+.plugin-track-marker[data-tone="warn"] { --track-tone: var(--warning); }
+.plugin-track-marker[data-tone="error"] { --track-tone: var(--danger); }
+.plugin-track-marker[data-tone="accent"] { --track-tone: var(--accent); }
+/* No info token in the palette: a calm blue per theme. */
+.plugin-track-marker[data-tone="info"] { --track-tone: #6cb6ff; }
+:root[data-theme="light"] .plugin-track-marker[data-tone="info"] { --track-tone: #1f6feb; }
+
+/* The hit area: 4 px around the mark (11 px square for a point), more on touch. */
+.plugin-track-hit {
+  position: absolute;
+  inset: -4px;
+  padding: 0;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+@media (pointer: coarse) {
+  .plugin-track-hit {
+    inset: -10px -8px;
+  }
+}
+.plugin-track-hit:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 0;
+}
+@media (hover: hover) and (pointer: fine) {
+  .plugin-track-marker:hover {
+    filter: brightness(1.25);
+  }
+}
+
+.plugin-track-card {
+  position: absolute;
+  z-index: 1;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  display: grid;
+  gap: 2px;
+  width: max-content;
+  max-width: 260px;
+  padding: 6px 9px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-pop);
+  color: var(--text);
+  font-size: var(--text-xs);
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 4px);
+  transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), visibility 0s linear 120ms;
+  visibility: hidden;
+}
+.plugin-track-marker[data-range] .plugin-track-card {
+  left: 0;
+  transform: translate(0, 4px);
+}
+.plugin-track-marker[data-side="start"] .plugin-track-card {
+  left: -8px;
+  transform: translate(0, 4px);
+}
+.plugin-track-marker[data-side="end"] .plugin-track-card {
+  right: -8px;
+  left: auto;
+  transform: translate(0, 4px);
+}
+.plugin-track-marker:hover .plugin-track-card,
+.plugin-track-marker:has(:focus-visible) .plugin-track-card {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 0s;
+  visibility: visible;
+}
+.plugin-track-marker[data-range]:hover .plugin-track-card,
+.plugin-track-marker[data-range]:has(:focus-visible) .plugin-track-card,
+.plugin-track-marker[data-side="start"]:hover .plugin-track-card,
+.plugin-track-marker[data-side="start"]:has(:focus-visible) .plugin-track-card,
+.plugin-track-marker[data-side="end"]:hover .plugin-track-card,
+.plugin-track-marker[data-side="end"]:has(:focus-visible) .plugin-track-card {
+  transform: translate(0, 0);
+}
+.plugin-track-card-head {
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+.plugin-track-card-label {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+/* While a marker's card is up, the scrubber's own time bubble steps aside. */
+.scrubber:has(.plugin-track-marker:hover) .scrubber-bubble {
+  opacity: 0;
+}
+
+/* Bar actions (placement: 'bar'): a plugin's own icon is an <img>, kept to the 16 px glyph box. */
+.plugin-action-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+}
+[role="menuitem"] .plugin-action-icon {
+  width: 14px;
+  height: 14px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plugin-track-card {
+    transition: none;
+  }
+}

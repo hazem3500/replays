@@ -1,5 +1,13 @@
 import type { KeepRecord } from './retention.ts';
 import { assertReplayContext, assertSafeUrl, type ReplayContext, type ReplaySourceInput, type ReplaySourceRef } from './context.ts';
+import {
+  assertReplayPeople,
+  minimalPeople,
+  type PersonIdentity,
+  personMatch,
+  type ReplayPerson,
+  type ReplayPersonSummary,
+} from './people.ts';
 import { assertReplayId, type ReplaySummary } from './replay.ts';
 
 export type ReviewRunStatus = 'running' | 'passed' | 'failed' | 'partial';
@@ -37,6 +45,8 @@ export interface ReviewSuite {
   subject?: ReplaySourceRef;
   /** Shared snapshot; each context retains its own capturedAt timestamp. */
   context?: ReplayContext;
+  /** People related to the suite (src/shared/people.ts). Not identity: registering again may replace them. */
+  people?: ReplayPerson[];
   runs: ReviewSuiteRun[];
 }
 
@@ -46,6 +56,8 @@ export interface ReviewSuiteSummary {
   createdAt: string;
   /** The suite's subject (provider, label, link); absent when it has none. */
   subject?: Pick<ReplaySourceRef, 'provider' | 'url'> & { label: string };
+  /** The suite's own people; in API responses with the deployment's avatar and profile links. */
+  people?: ReplayPersonSummary[];
   runs: number;
   running: number;
   failed: number;
@@ -69,6 +81,18 @@ export interface ReviewSuiteIndexEntry extends ReviewSuiteSummary {
   runDetails: ReviewSuiteIndexRun[];
 }
 
+/**
+ * How `me` relates to a suite: through its own people or any run's replay people, by `personMatch` priority
+ * (`roles`, the deployment's order).
+ */
+export function suitePersonMatch(
+  entry: Pick<ReviewSuiteIndexEntry, 'people' | 'runDetails'>,
+  me: PersonIdentity,
+  roles?: readonly string[],
+): string | undefined {
+  return personMatch([...(entry.people ?? []), ...entry.runDetails.flatMap((run) => run.replay?.people ?? [])], me, roles);
+}
+
 const RUN_ID = /^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$/;
 const STATUSES = new Set<ReviewRunStatus>(['running', 'passed', 'failed', 'partial']);
 
@@ -84,7 +108,7 @@ function date(value: unknown, label: string) {
 }
 
 export function assertReviewSuite(value: unknown): asserts value is ReviewSuite {
-  const suite = record(value, 'suite', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'runs']);
+  const suite = record(value, 'suite', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'runs']);
   if (suite.version !== 1) throw new Error('suite.version is unsupported');
   if (typeof suite.id !== 'string') throw new Error('suite.id is invalid');
   assertReplayId(suite.id);
@@ -97,6 +121,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
     assertSafeUrl(subject.url, 'suite.subject.url');
   }
   if (suite.context !== undefined) assertReplayContext(suite.context);
+  if (suite.people !== undefined) assertReplayPeople(suite.people, 'suite.people');
   if (!Array.isArray(suite.runs) || suite.runs.length > 100) throw new Error('suite.runs must contain at most 100 entries');
   const ids = new Set<string>();
   const sequences = new Set<number>();
@@ -140,6 +165,8 @@ export interface ReviewSuiteRegistration {
   /** A provider reference (`{ provider: 'github', ref: 'acme/api#12' }`) or a complete source; the server resolves it. */
   subject?: ReplaySourceInput;
   context?: ReplayContext;
+  /** Absent on a later registration keeps the stored people; present replaces them. */
+  people?: ReplayPerson[];
 }
 
 /** A registration after the server resolved the subject reference into a link. */
@@ -156,7 +183,7 @@ export interface ReviewRunRegistration {
 }
 
 export function assertReviewSuiteRegistration(value: unknown, suiteId: string): asserts value is ReviewSuiteRegistration {
-  const input = record(value, 'suite registration', ['version', 'id', 'title', 'createdAt', 'subject', 'context']);
+  const input = record(value, 'suite registration', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people']);
   if (input.id !== suiteId) throw new Error('suite ID does not match path');
   const { subject, ...rest } = input;
   if (subject !== undefined) record(subject, 'suite.subject', ['provider', 'ref', 'url', 'label']);
@@ -190,6 +217,7 @@ export function summarizeReviewSuite(suite: ReviewSuite): ReviewSuiteSummary {
           },
         }
       : {}),
+    ...(suite.people?.length ? { people: minimalPeople(suite.people) } : {}),
     runs: suite.runs.length,
     running: suite.runs.filter((run) => run.status === 'running').length,
     failed: suite.runs.filter((run) => run.status === 'failed').length,

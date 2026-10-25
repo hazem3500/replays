@@ -6,7 +6,7 @@ import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, 
 import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
-import { betaEditor } from './config.ts';
+import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
@@ -16,8 +16,10 @@ import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
 import { betaMalleable } from './malleable/flag.ts';
+import { replayPurpose } from './purposes.ts';
+import { DEFAULT_LEAD_MS } from '../shared/purposes.ts';
 import { openWorkshop } from './malleable/ui-state.ts';
-import { usePluginMenu } from './plugins/PluginUi.tsx';
+import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
 import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
@@ -28,6 +30,7 @@ import { DownloadVideoButton, usePhoneDownload } from './viewer/DownloadVideo.ts
 import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
+import { captionAt } from './step-caption.ts';
 import { clampInspectorHeight, initialInspectorHeight, Inspector, InspectorResizer, type MobilePanel } from './viewer/Inspector.tsx';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
@@ -107,6 +110,8 @@ export function Viewer({
   skipLink?: boolean;
 }) {
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
+  // The deployment's purpose for this replay (src/client/purposes.ts) sets how it first opens.
+  const purpose = useMemo(() => replayPurpose(bundle), [bundle]);
   const opened = useMemo(() => {
     const controller = new ReplayController(bundle, effects ? { effects } : {});
     // Permalinks open paused at their moment.
@@ -115,8 +120,11 @@ export function Viewer({
     const handoff = peekHandoff(bundle.meta.id);
     const at = handoff ? handoff.time : target.step === undefined ? target.time : bundle.steps[target.step]?.at;
     if (at !== undefined) controller.seek(at);
+    // `openAt: 'first-error'` (a bug reproduction): just before the first error, on the tab that holds it. Permalinks win.
+    const firstError = purpose?.viewer?.openAt === 'first-error' && at === undefined ? errors[0] : undefined;
+    if (firstError) controller.seek(Math.max(0, firstError.at - (purpose?.viewer?.leadMs ?? DEFAULT_LEAD_MS)));
     const step = target.step === undefined ? undefined : { index: target.step, time: controller.getTime() };
-    return { controller, step, resume: Boolean(handoff) };
+    return { controller, step, resume: Boolean(handoff), tab: firstError?.kind };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
   }, [bundle]);
   const player = opened.controller;
@@ -149,17 +157,25 @@ export function Viewer({
   const [speedHud, setSpeedHud] = useState<{ speed: number; id: number }>();
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
   const workspace = useRef<HTMLDivElement>(null);
-  const [tab, setTabState] = useState<InspectorTab>(initialTab);
-  // Step captions on the player: off until someone turns them on (remembered).
-  const [captions, setCaptionsState] = useState(() => readStorage(CAPTIONS_KEY) === '1');
+  const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
+  // Step captions on the player: the person's stored choice, else the purpose's default (off without one).
+  const [captions, setCaptionsState] = useState(() => {
+    const saved = readStorage(CAPTIONS_KEY);
+    return saved === '1' ? true : saved === '0' ? false : purpose?.viewer?.captions === true;
+  });
   const switchCaptions = useCallback(() => {
     setCaptionsState((current) => {
       writeStorage(CAPTIONS_KEY, current ? '0' : '1');
       return !current;
     });
   }, []);
-  // The bottom panel folds to its tab row (desktop). Remembered; open when nothing is stored.
-  const [collapsed, setCollapsedState] = useState(() => readStorage(INSPECTOR_COLLAPSED_KEY) === '1');
+  // The bottom panel folds to its tab row (desktop). Remembered; when nothing is stored, the purpose's default (open without one).
+  const [collapsed, setCollapsedState] = useState(() => {
+    // Opening on an error shows the panel that holds it (for this visit; the stored choice stands).
+    if (opened.tab) return false;
+    const saved = readStorage(INSPECTOR_COLLAPSED_KEY);
+    return saved === '1' ? true : saved === '0' ? false : purpose?.viewer?.inspector === 'collapsed';
+  });
   /** `persist: false` is a transient change for one action (a shortcut that needs the panel), not a preference. */
   const setCollapsed = useCallback((next: boolean, persist = true) => {
     if (persist) writeStorage(INSPECTOR_COLLAPSED_KEY, next ? '1' : '0');
@@ -336,8 +352,10 @@ export function Viewer({
         : undefined,
     [keep.available, keep.kept, keep.pending, keep.flip],
   );
-  // Client plugins' actions and panel entries (src/client/plugins/): More-menu items; open panels draw in a side drawer.
-  const pluginMenu = usePluginMenu(bundle, player);
+  // Client plugins (src/client/plugins/): one context per plugin for this replay; their actions and panel entries are
+  // More-menu items (bar actions are header buttons on desktop), their settings close the menu, open panels draw in a drawer.
+  const pluginContexts = usePluginContexts(bundle, player);
+  const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
@@ -477,6 +495,7 @@ export function Viewer({
         data-mobile={mobile || undefined}
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
+        data-purpose={purpose?.id}
         style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
       >
         {skipLink ? (
@@ -488,6 +507,8 @@ export function Viewer({
           bundle={bundle}
           compact={mobile}
           menuItems={headerMenuItems}
+          pluginActions={pluginMenu.bar}
+          menuFooter={pluginMenu.settings}
           {...(menu ? { menu } : {})}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
@@ -540,14 +561,16 @@ export function Viewer({
   );
   return (
     <PlayerContext.Provider value={player}>
-      <FeatureProviders
-        replayId={bundle.meta.id}
-        timeline={timeline}
-        openPanel={openFeaturePanel}
-        registerStartAction={registerStartAction}
-      >
-        {viewer}
-      </FeatureProviders>
+      <PluginContexts.Provider value={pluginContexts}>
+        <FeatureProviders
+          replayId={bundle.meta.id}
+          timeline={timeline}
+          openPanel={openFeaturePanel}
+          registerStartAction={registerStartAction}
+        >
+          {viewer}
+        </FeatureProviders>
+      </PluginContexts.Provider>
     </PlayerContext.Provider>
   );
 }
@@ -593,11 +616,17 @@ const ViewerHeader = memo(function ViewerHeader({
   compact,
   menu,
   menuItems,
+  menuFooter,
+  pluginActions,
   backHref,
   titleMenu,
   titleFrom,
 }: {
   bundle: ReplayBundle;
+  /** Client plugins' settings, at the bottom of the More menu. */
+  menuFooter: ReactNode;
+  /** Client plugins' bar actions (desktop): icon buttons after the built-in ones. */
+  pluginActions: ReactNode;
   titleMenu?: ReactNode;
   titleFrom?: string;
   title?: string;
@@ -621,20 +650,22 @@ const ViewerHeader = memo(function ViewerHeader({
     ...(titleFrom ? { titleFrom } : {}),
     titleId: 'replay-title',
   };
-  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} {...shared} />;
+  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} {...shared} />;
   return (
     <Topbar
       {...shared}
       menu={menu}
       menuItems={menuItems}
+      menuFooter={menuFooter}
       alwaysMenu
       actions={
         // Edit leads (the replay's main action), then one quiet icon set: details, copy link, download (theme and More come from the Topbar).
         <>
-          {betaEditor() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
+          {pluginActions}
         </>
       }
     />
@@ -650,11 +681,13 @@ function PhoneHeader({
   suite,
   menu,
   menuItems,
+  menuFooter,
   ...props
 }: {
   bundle: ReplayBundle;
   suite: SuiteDetails | undefined;
   menu: ReactNode;
+  menuFooter: ReactNode;
   /** The viewer's own items (Keep), before the downloads. */
   menuItems: TopbarMenuItem[];
   title: string;
@@ -672,9 +705,10 @@ function PhoneHeader({
       compact
       menu={menu}
       menuItems={[...menuItems, ...download.items]}
+      menuFooter={menuFooter}
       actions={
         <>
-          {betaEditor() ? <EditButton id={bundle.meta.id} compact /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} compact /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -752,7 +786,8 @@ function StepCaption() {
       offState();
     };
   }, [player]);
-  const step = steps[active];
+  const frame = captionAt(steps, player.getTime(), player.duration);
+  const step = frame && steps[frame.index];
   const playing = status === 'playing';
   if (!step || !(playing || (seeked && status !== 'ended'))) return null;
   return (
@@ -1000,10 +1035,12 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
         <DropdownMenuItem onClick={() => setOriginal(!original)} data-testid="switch-original">
           {original ? 'View edited' : 'View original'}
         </DropdownMenuItem>
-        <DropdownMenuItem render={<a href={editHref(id)} className="menu-link" />} data-testid="open-editor">
-          <PencilIcon aria-hidden="true" />
-          Open editor
-        </DropdownMenuItem>
+        {editingEnabled() ? (
+          <DropdownMenuItem render={<a href={editHref(id)} className="menu-link" />} data-testid="open-editor">
+            <PencilIcon aria-hidden="true" />
+            Open editor
+          </DropdownMenuItem>
+        ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
   );

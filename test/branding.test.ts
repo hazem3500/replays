@@ -179,6 +179,7 @@ describe('pageBranding and publicConfig', () => {
       sourceProviders: ['github', 'url'],
       auth: 'oidc',
       plugins: [],
+      purposes: [],
       beta: { editor: false, malleable: false },
     });
     expect(publicConfig({ name: 'Plain' }, { sourceProviders: [], auth: 'none' })).toEqual({
@@ -186,6 +187,7 @@ describe('pageBranding and publicConfig', () => {
       sourceProviders: [],
       auth: 'none',
       plugins: [],
+      purposes: [],
       beta: { editor: false, malleable: false },
     });
   });

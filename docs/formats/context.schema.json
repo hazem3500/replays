@@ -36,7 +36,14 @@
           "provider": { "type": "string" },
           "ref": { "type": "string" },
           "url": { "type": "string", "pattern": "^https://" },
-          "label": { "type": "string" }
+          "label": { "type": "string" },
+          "attrs": {
+            "description": "Small facts about the target from its source provider (resolve's `attrs`): at most 8 short text or number values.",
+            "type": "object",
+            "maxProperties": 8,
+            "propertyNames": { "pattern": "^[A-Za-z][\\w-]{0,39}$" },
+            "additionalProperties": { "type": ["string", "number"], "maxLength": 200 }
+          }
         }
       }
     },

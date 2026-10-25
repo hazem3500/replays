@@ -64,7 +64,9 @@ describe.skipIf(!CHROME)(
       await new Promise<void>((resolveListen) => app.listen(0, '127.0.0.1', resolveListen));
       appOrigin = `http://127.0.0.1:${(app.address() as AddressInfo).port}`;
 
-      scriptedSteps = (JSON.parse(await readFile(join(root, 'sample/demo-shop.steps.json'), 'utf8')) as unknown[]).length;
+      scriptedSteps = (
+        JSON.parse(await readFile(join(root, 'sample/demo-shop.steps.json'), 'utf8')) as Array<{ kind: string; label?: string }>
+      ).filter((step) => step.kind !== 'wait' || step.label?.trim()).length;
       output = join(await mkdtemp(join(tmpdir(), 'replays-capture-')), 'out');
       const args = await parseArgs([
         '--url',

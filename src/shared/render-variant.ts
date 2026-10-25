@@ -3,6 +3,9 @@
  * label, filename). The defaults match the player's: 1×, skip inactive on, no captions. Names, queries and
  * labels list only deviations from them (skip off reads "full idle time", `-full`).
  */
+/** Playback and export accept exactly the same speeds. */
+export const PLAYBACK_SPEEDS = [0.25, 0.5, 1, 1.5, 2, 4, 8] as const;
+
 export interface RenderVariant {
   /** Playback speed (src/client/render/frames.ts RENDER_SPEEDS). */
   speed: number;

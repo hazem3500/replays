@@ -65,6 +65,13 @@ afterEach(() => {
 });
 
 describe('iap auth', () => {
+  it('declares configurable browser recovery without exposing deployment credentials', () => {
+    const { fetcher } = keyServer();
+    expect(iapAuth(options(fetcher), {}).signIn).toEqual({ path: '/api/sign-in' });
+    expect(iapAuth(options(fetcher, { signIn: false }), {}).signIn).toBeUndefined();
+    expect(iapAuth(options(fetcher, { signIn: { path: '/auth/return' } }), {}).signIn).toEqual({ path: '/auth/return' });
+  });
+
   it('accepts a person in an allowed domain, with their email as the id', async () => {
     const { fetcher } = keyServer();
     const auth = iapAuth(options(fetcher), {});
