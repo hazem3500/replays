@@ -179,6 +179,49 @@ for (const theme of THEMES) {
       }
       await context.close();
     });
+
+    test('phone Performance marks keep measured geometry and usable targets', async ({ browser }) => {
+      test.slow();
+      const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+      const page = await context.newPage();
+      await useTheme(page, theme);
+      await openReplay(page, `${server().origin}/r/demo-shop`);
+      await page.getByTestId('performance-tab').click();
+      const timeline = page.locator('.perf-timeline');
+      await timeline.scrollIntoViewIfNeeded();
+      const geometry = await timeline.locator('.perf-lane').evaluateAll((lanes) =>
+        lanes.map((lane) => {
+          const target = lane.getBoundingClientRect();
+          return { width: target.width, height: target.height };
+        }),
+      );
+      expect(geometry.length).toBeGreaterThan(0);
+      expect(geometry.every((mark) => mark.width >= 24 && mark.height >= 24)).toBe(true);
+      const marks = timeline.locator('.perf-span, .perf-point');
+      expect(await marks.count()).toBeGreaterThan(4);
+      await expect(timeline.getByRole('button')).toHaveCount(4);
+      expect(await marks.evaluateAll((items) => items.some((mark) => mark.getBoundingClientRect().width < 24))).toBe(true);
+      await audit(page, 'phone Performance marks');
+
+      const taskLane = timeline.getByRole('button', { name: /^Main thread,/ });
+      await taskLane.focus();
+      await taskLane.press('End');
+      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
+      // The transport range serializes whole milliseconds; captured signal starts may be fractional.
+      const selectedAt = Number(await page.getByRole('slider', { name: 'Performance replay playhead' }).getAttribute('aria-valuenow'));
+      expect(Number(await page.getByRole('slider', { name: 'Seek', exact: true }).inputValue())).toBe(Math.round(selectedAt));
+      await taskLane.press('Escape');
+      await expect(taskLane).toBeFocused();
+
+      await page.getByRole('button', { name: /^All events/ }).click();
+      const list = page.getByTestId('performance-events');
+      await list.getByRole('button').first().click();
+      const bounds = await list.boundingBox();
+      expect(bounds!.height).toBeGreaterThanOrEqual(88);
+      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
+      await audit(page, 'phone Performance list and selected evidence');
+      await context.close();
+    });
   });
 }
 

@@ -20,18 +20,44 @@ test('performance signals follow the playhead and open with the P key', async ({
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   await page.getByTestId('performance-tab').click();
-  // Every entry is listed; the ones after the playhead are faded and the count reads reached / total.
+  // Overview and All events share the player; future observations remain explicit in the full list.
   await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 1 of 3 signals reached');
-  await expect(page.locator('.performance-row')).toHaveCount(3);
-  await expect(page.locator('.performance-row[data-future]')).toHaveCount(2);
-  await expect(page.locator('.performance-row').first()).toContainText(/contentful paint/i);
+  await expect(page.getByRole('button', { name: /^Longest recorded task/ })).toContainText('72 ms');
+  await page.getByRole('button', { name: /^All events/ }).click();
+  const events = page.getByTestId('performance-events');
+  const rows = events.getByRole('button');
+  await expect(rows).toHaveCount(3);
+  await expect(events.locator('[data-future]')).toHaveCount(2);
+  await expect(rows.first()).toContainText(/contentful paint/i);
+  await expect(rows.first()).toContainText('500 ms from navigation');
+  await expect(rows.nth(1)).toContainText('Upcoming');
+
+  await rows.nth(1).click();
+  await expect(page.getByTestId('playhead')).toHaveText('0:05.0');
+  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 2 of 3 signals reached');
+  await expect(events.locator('[data-future]')).toHaveCount(1);
+  const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
+  await expect(evidence).toContainText('72 ms measured');
+  await rows.nth(1).press('ArrowDown');
+  await expect(page.getByTestId('playhead')).toHaveText('0:08.0');
+  await expect(rows.nth(2)).toBeFocused();
+  await expect(evidence).toContainText('96 ms measured');
+  await expect(evidence).toContainText('Recorded click duration');
+  await page.keyboard.press('Escape');
+  await expect(evidence).toBeHidden();
+  await expect(rows.nth(2)).toBeFocused();
 
   await page.getByTestId('console-tab').click();
   await page.keyboard.press('p');
   await expect(page.getByTestId('performance-tab')).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('button', { name: /^All events/ }).click();
   await page.getByRole('slider', { name: 'Seek' }).press('End');
-  await expect(page.locator('.performance-row[data-future]')).toHaveCount(0);
-  await expect(page.locator('.performance-row').nth(2)).toContainText('click');
+  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 3 of 3 signals reached');
+  await expect(events.locator('[data-future]')).toHaveCount(0);
+  await expect(rows.nth(2)).toContainText('click');
+  await page.getByRole('slider', { name: 'Seek' }).press('Home');
+  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 0 of 3 signals reached');
+  await expect(events.locator('[data-future]')).toHaveCount(3);
 });
 
 test('an imported recording has an empty Context tab', async ({ page }) => {

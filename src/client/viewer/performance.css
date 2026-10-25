@@ -29,14 +29,15 @@
 .perf-playhead::before { content: ""; position: absolute; inset: -5px -21px 0; }
 .perf-playhead::after { content: ""; position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
 .perf-track { height: 34px; }
-.perf-lane { position: relative; min-width: 0; margin: 0 10px; background: repeating-linear-gradient(to right, var(--line) 0, var(--line) 1px, transparent 1px, transparent 25%); }
-.perf-span { position: absolute; top: 11px; height: 12px; min-width: 2px; padding: 0; border: 0; border-radius: 3px; background: var(--text-secondary); }
+.perf-lane { padding: 0; border: 0; border-radius: 0; text-align: left; position: relative; min-width: 0; margin: 0 10px; background: repeating-linear-gradient(to right, var(--line) 0, var(--line) 1px, transparent 1px, transparent 25%); }
+.perf-span { position: absolute; top: 11px; height: 12px; border-radius: 3px; background: var(--text-secondary); }
 [data-lane="tasks"] .perf-span { background: var(--danger); }
 [data-lane="interactions"] .perf-span { background: var(--warning); }
 [data-lane="network"] .perf-span { background: var(--accent); opacity: 0.65; }
-.perf-point { position: absolute; top: 13px; width: 8px; height: 8px; padding: 0; border: 0; background: var(--success); translate: -50% 0; rotate: 45deg; }
-.perf-point[data-unknown] { border: 2px solid var(--text-secondary); border-radius: 50%; background: var(--surface); rotate: 0deg; }
-.perf-span[aria-expanded="true"], .perf-point[aria-expanded="true"] { outline: 2px solid var(--text); outline-offset: 2px; }
+.perf-point { position: absolute; top: 13px; width: 8px; height: 8px; translate: -50% 0; }
+.perf-point::before { content: ""; position: absolute; inset: 0; background: var(--success); rotate: 45deg; }
+.perf-point[data-unknown]::before { border: 2px solid var(--text-secondary); border-radius: 50%; background: var(--surface); rotate: 0deg; }
+.perf-span[data-selected], .perf-point[data-selected] { outline: 2px solid var(--text); outline-offset: 2px; }
 .perf-note { margin: 6px 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
 .perf-heading { margin: 14px 0 6px; font-size: var(--text-sm); }
 .perf-moments { display: grid; gap: 5px; }

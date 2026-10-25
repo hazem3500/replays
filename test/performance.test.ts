@@ -6,6 +6,7 @@ import {
   chartLaneRows,
   focusPerformanceWindow,
   missingPerformanceLabel,
+  nearestPerformanceRow,
   overlaps,
   relatedPerformanceActivity,
 } from '../src/client/viewer/performance.ts';
@@ -14,6 +15,16 @@ import { performanceFixture } from './performance-fixture.ts';
 import { request, waterfallEdits } from './waterfall-fixture.ts';
 
 describe('performance diagnosis timing and evidence', () => {
+  it('chooses nearby evidence by actual span distance and resolves overlaps by their closest start', () => {
+    const model = buildPerformance(performanceFixture());
+    expect(nearestPerformanceRow([], 1700)).toBeUndefined();
+    expect(nearestPerformanceRow(model.rows, 1000)?.id).toBe('performance-0');
+    const overlapping = model.rows.filter((row) => row.id === 'network-0' || row.id === 'performance-1');
+    expect(nearestPerformanceRow(overlapping, 1850)?.id).toBe('performance-1');
+    expect(nearestPerformanceRow(overlapping, 2500)?.id).toBe('network-0');
+    expect(nearestPerformanceRow(model.signals, 2800)?.at).toBe(2800);
+  });
+
   it('ranks captured durations without adding overlapping observations or changing source data', () => {
     const bundle = performanceFixture(),
       before = structuredClone(bundle);
