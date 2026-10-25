@@ -8,11 +8,13 @@ export default defineConfig({
   auth: 'none',
   storage: 'fs',
   malleable: { enabled: true },
-  plugins: [definePlugin({
-    name: 'agent-native-browser',
-    requires: '>=0.1.0 <0.2.0',
-    setup(api) {
-      api.client({ id: 'tools', script: fileURLToPath(new URL('./dist/client.js', import.meta.url)) });
-    },
-  })],
+  plugins: [
+    definePlugin({
+      name: 'agent-native-browser',
+      requires: '>=0.1.0 <0.2.0',
+      setup(api) {
+        api.client({ id: 'tools', script: fileURLToPath(new URL('./dist/client.js', import.meta.url)) });
+      },
+    }),
+  ],
 });

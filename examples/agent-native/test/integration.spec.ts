@@ -116,6 +116,32 @@ for (const mode of ['native', 'stand-in'] as const) {
   });
 }
 
+test('framework discovery recovers when the stand-in initializes after the tab opens', async ({ page }) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(document, 'modelContext', { value: undefined, configurable: true });
+    Object.defineProperty(navigator, 'modelContext', { value: undefined, configurable: true });
+  });
+  let release!: () => void;
+  const configReady = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route('**/api/config', async (route) => {
+    await configReady;
+    await route.continue();
+  });
+  try {
+    await page.goto(`${server.origin}/r/demo-shop`);
+    await page.getByRole('tab', { name: 'Agent-Native', exact: true }).click();
+    await expect(page.locator('pre[aria-live="polite"]')).toContainText('Waiting for Replays WebMCP initialization');
+    await expect(page.getByRole('button', { name: 'Run tool', exact: true })).toBeDisabled();
+    release();
+    await expect(page.locator('pre[aria-live="polite"]')).toContainText('tools discovered');
+    await expect(await runTool(page, 'get_app_state')).toContainText('demo-shop');
+  } finally {
+    release();
+  }
+});
+
 test('Storybook renders fixture states, themes and real permission decisions without service calls', async ({ page }) => {
   const apiRequests: string[] = [];
   page.on('request', (request) => {
@@ -140,5 +166,25 @@ test('Storybook renders fixture states, themes and real permission decisions wit
   await expect(page.getByTestId('permission-preview')).toContainText('<script>recorded page text</script>');
   await page.getByRole('button', { name: 'Allow this once' }).click();
   await expect(page.getByRole('status')).toContainText('Allowed for this fixture; no comment was written.');
+  // Storybook reuses the preview document on story selection, so session consent must not carry over to another fixture.
+  const timeOrigin = await page.evaluate(() => performance.timeOrigin);
+  const selectStory = (storyId: string) =>
+    page.evaluate((id) => {
+      const channel = (window as Window & { __STORYBOOK_ADDONS_CHANNEL__?: { emit(event: string, input: unknown): void } })
+        .__STORYBOOK_ADDONS_CHANNEL__;
+      if (!channel) throw new Error('Storybook preview channel is unavailable');
+      channel.emit('setCurrentStory', { storyId: id, viewMode: 'story' });
+    }, storyId);
+  await selectStory('plugins-permission--comment-approval');
+  await expect(page.getByTestId('permission-preview')).toContainText('Expected: checkout succeeds');
+  await page.getByRole('button', { name: 'Allow until I reload', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText('Allowed for this fixture');
+  await selectStory('plugins-permission--untrusted-preview');
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await expect(page.getByTestId('permission-preview')).toContainText('<script>recorded page text</script>');
+  await page.getByRole('button', { name: 'Deny', exact: true }).click();
+  await selectStory('plugins-permission--comment-approval');
+  await expect(page.getByRole('alertdialog')).toBeVisible();
+  expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
   expect(apiRequests).toEqual([]);
 });

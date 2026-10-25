@@ -20,7 +20,9 @@ function PermissionFixture({ preview }: { preview: string }) {
   const [decision, setDecision] = useState('Awaiting your decision');
   useEffect(() => {
     let live = true;
-    void permissions.request(plugin, 'comments:write', 'Add a bug report comment at 7.2 seconds.', preview).then((allowed) => {
+    // A fresh source invalidates prior session consent when Storybook reuses this document/component between stories.
+    const fixture = { ...plugin, source: crypto.randomUUID() };
+    void permissions.request(fixture, 'comments:write', 'Add a bug report comment at 7.2 seconds.', preview).then((allowed) => {
       if (live) setDecision(allowed ? 'Allowed for this fixture; no comment was written.' : 'Denied; no comment was written.');
     });
     return () => {
@@ -35,7 +37,11 @@ function PermissionFixture({ preview }: { preview: string }) {
     </>
   );
 }
-const meta = { title: 'Plugins/Permission', component: PermissionFixture } satisfies Meta<typeof PermissionFixture>;
+const meta = {
+  title: 'Plugins/Permission',
+  component: PermissionFixture,
+  render: (args, context) => <PermissionFixture key={`${context.id}:${args.preview}`} {...args} />,
+} satisfies Meta<typeof PermissionFixture>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const CommentApproval: Story = { args: { preview: 'Expected: checkout succeeds\nActual: POST /checkout returns 500' } };
