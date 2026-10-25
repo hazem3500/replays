@@ -1,3 +1,4 @@
 packages:
   - examples/custom-distro
   - examples/host-app
+  - examples/agent-native
