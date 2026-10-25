@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
 
@@ -33,6 +33,17 @@ test.afterAll(async () => {
 });
 
 const server = serveApp(() => ({ REPLAYS_CONFIG: join(configDir, 'config.json') }));
+
+// LoadingSwap can retain a busy skeleton beside the mounted viewer during its crossfade.
+const viewerShell = (page: Page) => page.getByRole('main').and(page.locator('.app-shell:not([aria-busy="true"]):visible'));
+
+async function loadedViewer(page: Page) {
+  const viewer = viewerShell(page);
+  await expect(viewer).toBeVisible();
+  await expect(viewer.getByTestId('replay-player').locator('iframe')).toBeAttached();
+  await expect(viewer.getByRole('heading', { level: 1 })).toBeVisible();
+  return viewer;
+}
 
 async function upload(request: Parameters<typeof cloneBundle>[0], purpose: string | undefined, title: string) {
   const base = server().origin;
@@ -84,7 +95,8 @@ test('an upload with an unknown purpose is refused, naming the allowed ids', asy
 test('a triage replay opens one second before its first error, on that tab; a permalink still wins', async ({ page }) => {
   const id = await upload(page.request, 'triage', 'Triage opening');
   await openReplay(page, `${server().origin}/r/${id}`);
-  await expect(page.locator('main.app-shell')).toHaveAttribute('data-purpose', 'triage');
+  const viewer = await loadedViewer(page);
+  await expect(viewer).toHaveAttribute('data-purpose', 'triage');
   // demo-shop's first error is the failed coupon request at 7.174 s.
   await expect(page.getByTestId('playhead')).toHaveText('0:06.2');
   await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
@@ -99,13 +111,43 @@ test('a walkthrough opens at the start with the panel folded and captions on; a 
   const walkthrough = await upload(page.request, 'walkthrough', 'Walkthrough opening');
   await openReplay(page, `${server().origin}/r/${walkthrough}`);
   await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
-  await expect(page.locator('main.app-shell')).toHaveAttribute('data-inspector-collapsed', 'true');
+  const viewer = await loadedViewer(page);
+  await expect(viewer).toHaveAttribute('data-inspector-collapsed', 'true');
   await expect(page.getByTestId('captions-switch')).toHaveAttribute('aria-pressed', 'true');
 
   await openReplay(page, `${server().origin}/r/demo-shop`);
-  await expect(page.locator('main.app-shell')).not.toHaveAttribute('data-purpose');
+  const plainViewer = await loadedViewer(page);
+  await expect(plainViewer).not.toHaveAttribute('data-purpose');
   await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
   await expect(page.getByTestId('captions-switch')).toHaveAttribute('aria-pressed', 'false');
+});
+
+test('a loading shell cannot satisfy the purpose-free viewer assertions', async ({ page }) => {
+  const base = server().origin;
+  const id = await upload(page.request, undefined, 'Delayed purpose-free replay');
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  await page.route(`${base}/api/replays/${id}`, async (route) => {
+    await gate;
+    await route.continue();
+  });
+
+  try {
+    await page.goto(`${base}/r/${id}`);
+    const loading = page.getByRole('main', { name: 'Loading replay', exact: true });
+    await expect(loading).toBeVisible();
+    await expect(loading).toHaveAttribute('aria-busy', 'true');
+    // Absence alone would pass on this skeleton; the purpose assertions must first await a loaded viewer.
+    await expect(loading).not.toHaveAttribute('data-purpose');
+    await expect(viewerShell(page)).toHaveCount(0);
+
+    release();
+    const viewer = await loadedViewer(page);
+    await expect(viewer.getByRole('heading', { level: 1 })).toHaveText('Delayed purpose-free replay');
+    await expect(viewer).not.toHaveAttribute('data-purpose');
+  } finally {
+    release();
+  }
 });
 
 test('the upload dialog offers the purposes and stores the one picked', async ({ page }) => {
@@ -122,7 +164,8 @@ test('the upload dialog offers the purposes and stores the one picked', async ({
   await page.getByRole('option', { name: 'Walkthroughs' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Upload', exact: true }).click();
   await expect(page).toHaveURL(`${base}/r/${bundle.meta.id}`, { timeout: 15_000 });
-  await expect(page.locator('main.app-shell')).toHaveAttribute('data-purpose', 'walkthrough');
+  const viewer = await loadedViewer(page);
+  await expect(viewer).toHaveAttribute('data-purpose', 'walkthrough');
   const stored = (await (await page.request.get(`${base}/api/replays/${bundle.meta.id}`)).json()) as { meta: { purpose?: string } };
   expect(stored.meta.purpose).toBe('walkthrough');
 });
