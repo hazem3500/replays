@@ -2,12 +2,14 @@ import { type PointerEvent as ReactPointerEvent, type ReactNode, useLayoutEffect
 
 import { formatClock, type ReplayNetworkEntry } from '../../shared/replay.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
+import { countAtOrBefore } from '../timeline.ts';
 import { useWindowedRows } from '../windowing.ts';
 import { Empty } from './Empty.tsx';
 import {
   chartLaneRows,
   focusPerformanceWindow,
   missingPerformanceLabel,
+  nearestPerformanceRow,
   PERFORMANCE_LANES,
   relatedPerformanceActivity,
   type PerformanceModel,
@@ -290,6 +292,9 @@ function PerformanceEvents({
   onChoose: (row: WaterfallRow, element?: HTMLElement) => void;
   onFocus: (element: HTMLElement) => void;
 }) {
+  const player = usePlayer();
+  const ats = useMemo(() => rows.map((row) => row.at), [rows]);
+  const reached = usePlayhead((time) => countAtOrBefore(ats, time >= player.duration ? Infinity : time <= 0 ? -1 : time));
   const scroll = useRef<HTMLDivElement>(null);
   const pending = useRef<string | undefined>(undefined);
   const window = useWindowedRows(scroll, { count: rows.length, rowHeight: EVENT_HEIGHT });
@@ -311,6 +316,7 @@ function PerformanceEvents({
           key={row.id}
           className="perf-event"
           data-performance-id={row.id}
+          data-future={window.start + offset >= reached || undefined}
           aria-expanded={selected === row.id}
           onClick={(event) => onChoose(row, event.currentTarget)}
           onFocus={(event) => onFocus(event.currentTarget)}
@@ -342,6 +348,7 @@ function PerformanceEvents({
             </strong>
             <small>
               {formatClock(row.at)} · {rowDuration(row)}
+              {window.start + offset >= reached ? ' · Upcoming' : ''}
             </small>
           </span>
         </button>
@@ -431,31 +438,63 @@ function PerformanceTimeline({
         {shown.map((lane) => (
           <div className="perf-track" key={lane.id} data-lane={lane.id}>
             <span title={lane.label}>{lane.label}</span>
-            <div className="perf-lane">
+            <button
+              type="button"
+              className="perf-lane"
+              aria-label={`${lane.label}, ${lane.rows.length} events. Select a mark or use Left and Right arrows.`}
+              disabled={!lane.rows.length}
+              onClick={(event) => {
+                const target = event.target instanceof Element ? event.target.closest('[data-performance-id]') : null;
+                const direct = lane.rows.find((row) => row.id === target?.getAttribute('data-performance-id'));
+                const bounds = event.currentTarget.getBoundingClientRect();
+                const at =
+                  event.detail && bounds.width > 0
+                    ? window.from + Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) * extent
+                    : time;
+                const row = direct ?? nearestPerformanceRow(lane.rows, at);
+                if (row) onChoose(row, event.currentTarget);
+              }}
+              onKeyDown={(event) => {
+                const index = lane.rows.findIndex((row) => row.id === selected);
+                const next =
+                  event.key === 'ArrowRight'
+                    ? index + 1
+                    : event.key === 'ArrowLeft'
+                      ? index < 0
+                        ? lane.rows.length - 1
+                        : index - 1
+                      : event.key === 'Home'
+                        ? 0
+                        : event.key === 'End'
+                          ? lane.rows.length - 1
+                          : undefined;
+                if (next === undefined) return;
+                event.preventDefault();
+                const row = lane.rows[Math.max(0, Math.min(lane.rows.length - 1, next))];
+                if (row) onChoose(row, event.currentTarget);
+              }}
+            >
               {lane.rows.map((row) =>
                 row.segments.length ? (
                   row.segments.map((segment, index) => {
                     const from = Math.max(window.from, segment.from),
                       to = Math.min(window.to, segment.to);
                     return to > from ? (
-                      <button
-                        type="button"
+                      <span
                         key={`${row.id}-${index}`}
                         className="perf-span"
+                        aria-hidden="true"
                         data-performance-id={row.id}
-                        aria-expanded={selected === row.id}
-                        aria-label={`${row.label}, ${formatClock(row.at)}, ${rowDuration(row)}`}
-                        title={`${row.label} · ${rowDuration(row)}`}
+                        data-selected={selected === row.id || undefined}
                         style={{ left: `${percent(from)}%`, width: `${((to - from) / width) * 100}%` }}
-                        onClick={(event) => onChoose(row, event.currentTarget)}
                       />
                     ) : null;
                   })
                 ) : (
-                  <button
-                    type="button"
+                  <span
                     key={row.id}
                     className="perf-point"
+                    aria-hidden="true"
                     data-unknown={
                       row.timing === 'invalid' ||
                       row.timing === 'incomplete' ||
@@ -464,20 +503,18 @@ function PerformanceTimeline({
                         : undefined
                     }
                     data-performance-id={row.id}
-                    aria-expanded={selected === row.id}
-                    aria-label={`${row.label}, ${formatClock(row.at)}, ${rowDuration(row)}`}
-                    title={`${row.label} · ${rowDuration(row)}`}
+                    data-selected={selected === row.id || undefined}
                     style={{ left: `${percent(row.at)}%` }}
-                    onClick={(event) => onChoose(row, event.currentTarget)}
                   />
                 ),
               )}
-            </div>
+            </button>
           </div>
         ))}
       </div>
       <p className="perf-note">
-        Drag the ruler or blue line to scrub. Bars show measured spans; diamonds are paint milestones.{' '}
+        Drag the ruler or blue line to scrub. Select a mark or its lane to inspect the nearest event; Left/Right cycles events. Bars show
+        measured spans; diamonds are paint milestones.{' '}
         {omitted ? `${omitted} marks omitted in this view; zoom or use All events and related details.` : ''}
       </p>
     </>

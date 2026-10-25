@@ -89,7 +89,7 @@ describe('performance diagnosis DOM and player integration', () => {
     const bar = find('.perf-span[data-performance-id="performance-0"]');
     expect(bar.style.left).toBe('40%');
     expect(bar.style.width).toBe('5%');
-    await click(bar);
+    await click(find('[data-lane="tasks"] .perf-lane'));
     expect(player.duration).toBe(5000);
     expect(player.getTime()).toBe(2000);
     expect(find('.perf-detail').textContent).toContain('1.00 s measured');
@@ -152,6 +152,45 @@ describe('performance diagnosis DOM and player integration', () => {
     await key(find('.perf-detail'), 'Escape');
     expect(host.querySelector('.perf-detail')).toBeNull();
     expect(document.activeElement).toBe(candidate);
+  });
+
+  it('keeps future observations explicit as the shared player seeks and the list is filtered', async () => {
+    const { player, model } = await renderPerformance();
+    await click(button('All events'));
+    const future = () => host.querySelectorAll('.perf-events [data-future]').length;
+    expect(future()).toBe(model.signals.length);
+    expect(find('.perf-events').textContent).toContain('Upcoming');
+    await act(async () => player.seek(1700));
+    expect(future()).toBe(3);
+    const input = find<HTMLInputElement>('input[type="search"]');
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'paint');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(host.querySelectorAll('.perf-events .perf-event')).toHaveLength(2);
+    expect(future()).toBe(1);
+    await act(async () => player.seek(player.duration));
+    expect(future()).toBe(0);
+    await act(async () => player.seek(0));
+    expect(future()).toBe(2);
+  });
+
+  it('uses one lane control for dense marks while preserving direct selection and keyboard event seeking', async () => {
+    const { player } = await renderPerformance();
+    const lane = find('[data-lane="tasks"] .perf-lane');
+    expect(lane.tagName).toBe('BUTTON');
+    expect(lane.querySelectorAll('button')).toHaveLength(0);
+    expect(lane.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
+    await click(lane);
+    expect(player.getTime()).toBe(1700);
+    await key(lane, 'End');
+    expect(player.getTime()).toBe(2800);
+    expect(find('.perf-detail').textContent).toContain('90 ms measured');
+    await click(find('.perf-span[data-performance-id="performance-1"]'));
+    expect(player.getTime()).toBe(1700);
+    await key(lane, 'Escape');
+    expect(host.querySelector('.perf-detail')).toBeNull();
+    expect(document.activeElement).toBe(lane);
   });
 
   it('windows a large event list and keyboard-selects an unmounted final event', async () => {

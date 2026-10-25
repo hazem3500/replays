@@ -29,6 +29,19 @@ export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline) 
 
 export type PerformanceModel = ReturnType<typeof buildPerformance>;
 
+/** One lane control avoids overlapping small targets; empty lane space selects the nearest visible event. */
+export function nearestPerformanceRow(rows: readonly WaterfallRow[], at: number) {
+  const distance = (row: WaterfallRow) =>
+    row.segments.length
+      ? row.segments.reduce((nearest, span) => Math.min(nearest, Math.max(span.from - at, at - span.to, 0)), Infinity)
+      : Math.abs(row.at - at);
+  return rows.reduce<WaterfallRow | undefined>((nearest, row) => {
+    if (!nearest) return row;
+    const delta = distance(row) - distance(nearest);
+    return delta < 0 || (delta === 0 && Math.abs(row.at - at) < Math.abs(nearest.at - at)) ? row : nearest;
+  }, undefined);
+}
+
 export function performanceLane(row: WaterfallRow): PerformanceLane | undefined {
   if (row.kind === 'network') return 'network';
   if (row.kind !== 'performance') return;
