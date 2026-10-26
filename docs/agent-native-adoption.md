@@ -1,5 +1,7 @@
 # Agent-Native, WebMCP, Effect, XState and Storybook
 
+Implementation update, 26 October 2026: the [main application runtime slice](architecture/application-runtime.md) now mounts the pinned framework's authenticated metadata dispatcher in the normal server path, adds PostgreSQL-owned application records and scoped credentials. React Compiler is enabled in the application Vite build. Embedded chat, conversation messages, durable model runs and migration of the viewer's existing operations remain outstanding; the evaluation below records the earlier browser compatibility stage.
+
 Evaluated 25 October 2026 against Replays main `0198c19` (the merged modular host/plugin architecture). The target is **Agent-Native as Replays' default application runtime**, retaining the portable replay engine and public host contracts. This PR delivers the first compatibility slice: a framework browser client consuming the existing tools, native WebMCP fixes and Storybook. Its isolated example is a migration step, not the final application architecture; the default server and viewer have not yet moved to the framework. Evaluate an isolated Effect server job and an XState approval machine only when their additional guarantees pay for the migration.
 
 ## The specific framework

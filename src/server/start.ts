@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createServer as createNetServer } from 'node:net';
 import { resolve } from 'node:path';
 
+import type { ApplicationOptions } from './agent-native/runtime.ts';
 import type { LoadedConfig } from '../config/index.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
@@ -25,6 +26,8 @@ const days = (value: number) => (value > 0 ? `${value} d` : 'never');
 const packageRoot = findPackageRoot();
 
 export interface StartOptions {
+  /** Main application runtime. Explicit false is for hosts using only the portable HTTP/library API. */
+  application?: ApplicationOptions | false;
   env?: NodeJS.ProcessEnv;
   /** Where `replays.config.*` is looked for, and relative paths resolve from. Default: the working directory. */
   cwd?: string;
@@ -119,6 +122,16 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   } catch (error) {
     throw new Error(`storage or retention setup failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
+  const application =
+    options.application === false
+      ? undefined
+      : await (await import('./agent-native/runtime.ts')).createApplicationRuntime(store, auth.name, {
+          ...(env.DATABASE_URL ? { databaseUrl: env.DATABASE_URL } : {}),
+          ...(env.REPLAYS_WORKSPACE_ID ? { workspaceId: env.REPLAYS_WORKSPACE_ID } : {}),
+          credentials: env.REPLAYS_AGENT_CREDENTIALS === '1',
+          ...options.application,
+        });
+
   const pruneTimer = setInterval(
     () => void store.prune().catch((error: unknown) => console.error('prune failed:', error)),
     6 * 60 * 60_000,
@@ -213,6 +226,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
 
   const bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined;
   const handle = createApp({
+    ...(application ? { application } : {}),
     basePath,
     hosts: settings.hosts,
     auth,
@@ -259,16 +273,30 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
       `hosts: ${[...settings.hosts.bases].map(([name, base]) => `${name} at ${base || '/'}`).join(', ')}${settings.hosts.trustForwardedHost ? ' (X-Forwarded-Host trusted)' : ''}`,
     );
 
-  const close = async () => {
-    clearInterval(pruneTimer);
-    bridgeHub?.close();
-    await new Promise<void>((done) => {
-      server.close(() => done());
-      server.closeIdleConnections();
-    });
-    // Pending spans are flushed before exit (a no-op when tracing is off).
-    await Promise.allSettled([closeDev?.(), shutdownTracing()]);
+  let closing: Promise<void> | undefined;
+  const close = () => {
+    closing ??= (async () => {
+      clearInterval(pruneTimer);
+      bridgeHub?.close();
+      const errors: unknown[] = [];
+      const connectionsClosed = new Promise<void>((done) => {
+        server.close(() => done());
+        server.closeIdleConnections();
+      });
+      try {
+        await application?.close();
+      } catch (error) {
+        errors.push(error);
+      }
+      await connectionsClosed;
+      // Complete all resource releases even when an earlier release failed.
+      const released = await Promise.allSettled([closeDev?.(), shutdownTracing()]);
+      for (const result of released) if (result.status === 'rejected') errors.push(result.reason);
+      if (errors.length) throw new AggregateError(errors, 'server shutdown cleanup failed');
+    })();
+    return closing;
   };
+
   if (options.handleSignals)
     for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => void close().finally(() => process.exit(0)));
 
