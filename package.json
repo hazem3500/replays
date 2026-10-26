@@ -15,7 +15,7 @@
     "start": "node --experimental-strip-types --no-warnings src/server/main.ts",
     "cli": "node --experimental-strip-types --no-warnings src/cli.ts",
     "capture": "node --experimental-strip-types --no-warnings src/cli.ts capture",
-    "lint": "oxlint --deny-warnings",
+    "lint": "oxlint --config .oxlintrc.json --deny-warnings && pnpm lint:types",
     "format": "biome format --write .",
     "format:check": "biome format .",
     "typecheck": "tsc --noEmit",
@@ -31,7 +31,9 @@
     "test:host-app": "pnpm build && pnpm build:cli && pnpm --filter @hazem3500/replays-example-host-app check",
     "storybook": "storybook dev -p 6006 --no-open --disable-telemetry",
     "build:storybook": "storybook build --disable-telemetry",
-    "typecheck:storybook": "tsc -p .storybook/tsconfig.json --noEmit"
+    "typecheck:storybook": "tsc -p .storybook/tsconfig.json --noEmit",
+    "lint:types": "oxlint --type-aware --config .oxlintrc.types.json --deny-warnings src/shared",
+    "lint:types:audit": "oxlint --type-aware --config .oxlintrc.types.json --deny-warnings"
   },
   "dependencies": {
     "@base-ui/react": "1.9.0",
@@ -78,7 +80,8 @@
     "vite": "8.3.3",
     "vitest": "5.0.3",
     "storybook": "10.6.3",
-    "@storybook/react-vite": "10.6.3"
+    "@storybook/react-vite": "10.6.3",
+    "oxlint-tsgolint": "7.0.2005"
   },
   "description": "Record browser sessions (rrweb + steps + console + network + performance) into one portable replay, and play them back in a self-hostable viewer.",
   "license": "MIT",

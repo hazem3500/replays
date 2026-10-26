@@ -18,7 +18,18 @@
     "unicorn/no-array-sort": "off",
     "jsx-a11y/control-has-associated-label": "off",
     "jsx-a11y/prefer-tag-over-role": "off",
-    "jsx-a11y/interactive-supports-focus": "off"
+    "jsx-a11y/interactive-supports-focus": "off",
+    "eslint/eqeqeq": ["error", "always"],
+    "eslint/no-eval": "error",
+    "eslint/no-implied-eval": "error",
+    "eslint/no-throw-literal": "error",
+    "eslint/array-callback-return": "error",
+    "eslint/no-constructor-return": "error",
+    "eslint/no-self-compare": "error",
+    "eslint/no-unmodified-loop-condition": "error",
+    "eslint/no-unreachable-loop": "error",
+    "eslint/no-unsafe-optional-chaining": "error",
+    "eslint/prefer-promise-reject-errors": "error"
   },
   "ignorePatterns": [
     "dist/**",
@@ -27,7 +38,10 @@
     "playwright-report/**",
     "test-results/**",
     "examples/*/playwright-report/**",
-    "examples/*/test-results/**"
+    "examples/*/test-results/**",
+    ".claude/**",
+    ".review-artifacts/**",
+    "storybook-static/**"
   ],
   "overrides": [
     {
@@ -40,6 +54,63 @@
       ],
       "rules": {
         "unicorn/consistent-function-scoping": "off"
+      }
+    },
+    {
+      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "rules": {
+        "typescript/no-explicit-any": "error",
+        "eslint/no-new-func": "error",
+        "eslint/no-template-curly-in-string": "error"
+      }
+    },
+    {
+      "files": ["src/shared/**/*.ts"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "node:*",
+                  "**/server/**",
+                  "**/client/**",
+                  "**/capture/**",
+                  "@/*",
+                  "@hazem3500/replays/server",
+                  "@hazem3500/replays/server/*",
+                  "@hazem3500/replays/capture",
+                  "@hazem3500/replays/viewer",
+                  "@hazem3500/replays/plugins/*"
+                ],
+                "message": "Shared replay contracts must remain portable. Put environment-specific behavior behind a capture, server, or viewer adapter."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/client/**/*.ts", "src/client/**/*.tsx"],
+      "rules": {
+        "eslint/no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "node:*",
+                  "**/server/**",
+                  "@hazem3500/replays/server",
+                  "@hazem3500/replays/server/*",
+                  "@hazem3500/replays/plugins/*"
+                ],
+                "message": "Browser code must not import server code or Node APIs. Use shared contracts and authenticated API calls."
+              }
+            ]
+          }
+        ]
       }
     }
   ]
