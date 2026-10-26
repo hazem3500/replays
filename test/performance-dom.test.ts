@@ -66,7 +66,9 @@ describe('performance diagnosis DOM and player integration', () => {
   it('starts with compact kind filters and exposes search only on request', async () => {
     await renderPerformance();
     expect(host.querySelector('input[type="search"]')).toBeNull();
-    const tasks = [...host.querySelectorAll<HTMLButtonElement>('.perf-filter')].find((candidate) => candidate.textContent === 'Tasks')!;
+    const tasks = [...host.querySelectorAll<HTMLButtonElement>('.perf-filter')].find(
+      (candidate) => candidate.textContent === 'Long tasks',
+    )!;
     await click(tasks);
     expect(tasks.getAttribute('aria-pressed')).toBe('true');
     expect(find('.perf-events').querySelectorAll('.perf-event')).toHaveLength(2);
@@ -76,7 +78,7 @@ describe('performance diagnosis DOM and player integration', () => {
     await click(find('[aria-label="Close event search"]'));
     expect(host.querySelector('input[type="search"]')).toBeNull();
     expect(tasks.isConnected).toBe(false);
-    expect(find('.perf-filter[aria-pressed="true"]').textContent).toBe('Tasks');
+    expect(find('.perf-filter[aria-pressed="true"]').textContent).toBe('Long tasks');
   });
 
   it('reuses the diagnostic clock drag handle and its keyboard seeking', async () => {
@@ -97,8 +99,10 @@ describe('performance diagnosis DOM and player integration', () => {
     const main = find('[data-testid="performance-main"]');
     await click(find('.perf-events [data-performance-id="performance-1"]'));
     expect(player.getTime()).toBe(1700);
-    expect(find('.perf-detail').textContent).toContain('420 ms measured');
-    expect(find('.perf-detail').textContent).toContain('do not establish the cause');
+    expect(find('.perf-facts').textContent).toContain('Captured duration420 ms');
+    expect(host.querySelector('.perf-detail > .diagnostic-timing')).toBeNull();
+    expect(find('.perf-raw').hasAttribute('open')).toBe(false);
+    expect(find('.perf-detail').textContent).toContain('not proof of a cause');
     expect(find('[data-testid="performance-main"]')).toBe(main);
     await click(find('.perf-detail [data-performance-id="network-0"]'));
     expect(player.getTime()).toBe(1600);
@@ -116,8 +120,10 @@ describe('performance diagnosis DOM and player integration', () => {
     await click(find('.perf-events [data-performance-id="performance-0"]'));
     expect(player.duration).toBe(5000);
     expect(player.getTime()).toBe(2000);
-    expect(find('.perf-detail').textContent).toContain('1.00 s measured');
-    expect(find('.perf-detail').textContent).toContain('250 ms visible in this replay');
+    expect(find('.perf-detail').textContent).toContain('1.00 s');
+    expect(find('.perf-edit-note').textContent).toContain('Source time 0:03.5');
+    expect(find('.perf-edit-note').textContent).toContain('250 ms kept in replay');
+    expect(find('.perf-facts').textContent).toContain('Replay time0:02.0');
   });
 
   it('searches captured events, labels paint values from navigation and restores selection focus on Escape', async () => {
@@ -130,10 +136,12 @@ describe('performance diagnosis DOM and player integration', () => {
     });
     expect(find('.perf-events').querySelectorAll('.perf-event')).toHaveLength(2);
     const candidate = find('.perf-events [data-performance-id="performance-3"]');
-    expect(candidate.textContent).toContain('2.40 s from navigation');
+    expect(candidate.querySelector('.perf-event-value')?.textContent).toBe('2.40 s nav.');
+    expect(candidate.querySelector('.perf-event-value')?.getAttribute('title')).toContain('from navigation');
     await click(candidate);
     expect(player.getTime()).toBe(2400);
     expect(find('.perf-detail').textContent).toContain('not a task duration');
+    expect(find('.perf-facts').textContent).toContain('Since navigation2.40 s');
     await key(find('.perf-detail'), 'Escape');
     expect(host.querySelector('.perf-detail')).toBeNull();
     expect(document.activeElement).toBe(candidate);
@@ -188,12 +196,41 @@ describe('performance diagnosis DOM and player integration', () => {
     expect(host.textContent).toContain('Performance APIs unavailable');
     bundle.performance = { supported: ['longtask'], entries: [{ at: 1000, kind: 'long-task', value: NaN }] };
     await renderPerformance(bundle);
-    expect(find('.perf-events').textContent).toContain('Invalid / unknown');
+    expect(find('.perf-events').textContent).toContain('Unknown');
     expect(host.querySelector('.diagnostic-timing-span')).toBeNull();
     expect(find('.diagnostic-timing-point').hasAttribute('data-unknown')).toBe(true);
     bundle.performance.entries = [{ at: 1000, kind: 'long-task', value: 0 }];
     await renderPerformance(bundle);
     expect(find('.perf-events').textContent).toContain('0 ms');
+  });
+
+  it('keeps action points distinct from navigation milestones when following related evidence', async () => {
+    await renderPerformance();
+    await click(find('.perf-events [data-performance-id="performance-1"]'));
+    const related = find('.perf-detail [data-performance-id="action-1"]');
+    await click(related);
+    expect(find('.perf-facts').textContent).toContain('Event timingPoint event');
+    expect(find('.perf-facts').textContent).not.toContain('Since navigation');
+    expect(find('.perf-detail h2').textContent).toBe('click: Open details');
+    await key(find('.perf-detail'), 'Escape');
+    expect(document.activeElement).toBe(find('.perf-filter'));
+  });
+
+  it('does not invent a duration for invalid paint metrics or discard a captured zero', async () => {
+    const bundle = performanceFixture();
+    bundle.steps = [];
+    bundle.network = [];
+    bundle.performance!.entries = [
+      { at: 1000, kind: 'first-contentful-paint', value: -1 },
+      { at: 1100, kind: 'largest-contentful-paint', value: 0 },
+    ];
+    await renderPerformance(bundle);
+    expect(find('[data-performance-id="performance-0"] .perf-event-value').textContent).toBe('Unknown nav.');
+    await click(find('[data-performance-id="performance-0"]'));
+    expect(find('.perf-facts').textContent).toContain('Since navigationUnknown');
+    await click(find('[data-performance-id="performance-1"]'));
+    expect(find('.perf-facts').textContent).toContain('Since navigation0 ms');
+    expect(find('.perf-detail').textContent).toContain('No related events captured here.');
   });
 
   it('integrates through Inspector with original edited evidence and existing redacted network details', async () => {
