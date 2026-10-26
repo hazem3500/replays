@@ -5,6 +5,10 @@ import { expect, test } from '@playwright/test';
 import { editsVersion, type ReplayEdits } from '../src/shared/edits.ts';
 import { serveApp } from './support.ts';
 
+function spawnError(result: ReturnType<typeof spawnSync>) {
+  return result.stderr?.toString().trim() || result.error?.message || `process exited with status ${result.status}`;
+}
+
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
 test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 
@@ -49,11 +53,11 @@ test('export render page applies saved cursor settings and blur to encoded MP4 f
       ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-i', 'pipe:0', '-frames:v', '1', '-c:v', 'libx264', '-pix_fmt', 'yuv420p', video],
       { input: png },
     );
-    expect(encoded.status, encoded.stderr.toString()).toBe(0);
+    expect(encoded.status, spawnError(encoded)).toBe(0);
     const probe = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'stream=codec_name,width,height,pix_fmt', '-of', 'json', video], {
       encoding: 'utf8',
     });
-    expect(probe.status).toBe(0);
+    expect(probe.status, spawnError(probe)).toBe(0);
     expect(JSON.parse(probe.stdout).streams[0]).toMatchObject({ codec_name: 'h264', width: 1280, height: 800, pix_fmt: 'yuv420p' });
   }
 });
