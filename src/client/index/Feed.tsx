@@ -548,10 +548,6 @@ export function Feed({ entries, view, grouped, query }: { entries: FeedEntry[]; 
           <section key={group.label} className="feed-group" aria-labelledby={`${id}-${index}`}>
             <h2 className="feed-day" id={`${id}-${index}`}>
               {group.label}
-              <span className="feed-group-count" aria-label={`${group.items.length} items`}>
-                {' '}
-                · {group.items.length}
-              </span>
             </h2>
             <FeedItems entries={group.items} view={view} query={query} />
           </section>
