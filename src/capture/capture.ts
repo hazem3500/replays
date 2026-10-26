@@ -273,14 +273,38 @@ function quoted(value: string) {
 export function selectorName(selector: string) {
   const text = /^text=(.+)$/s.exec(selector.trim());
   if (text) return quoted(text[1]!) || undefined;
-  for (const attribute of ['aria-label', 'title', 'placeholder', 'alt', 'name', 'data-tracking-id', 'data-testid']) {
-    const matches = [...selector.matchAll(new RegExp(`\\[${attribute}=("[^"]*"|'[^']*'|[^\\]]*)\\]`, 'gi'))];
-    const value = matches.length ? quoted(matches.at(-1)![1]!) : '';
+  for (const attribute of ['aria-label', 'title', 'alt', 'name', 'placeholder', 'data-tracking-id', 'data-testid']) {
+    const matches = [
+      ...selector.matchAll(new RegExp(`\\[${attribute}\\s*([~|^$*]?=)\\s*("[^"]*"|'[^']*'|[^\\]\\s]+)\\s*(?:[is]\\s*)?\\]`, 'gi')),
+    ];
+    const match = matches.at(-1);
+    if (!match) continue;
+    const value = quoted(match[2]!);
     if (!value) continue;
-    return attribute.startsWith('data-') || attribute === 'name' ? value.replace(/[-_]+/g, ' ').trim() : value;
+    const name = attribute.startsWith('data-') || attribute === 'name' ? value.replace(/[-_]+/g, ' ').trim() : value;
+    // Partial selectors only give a fragment of the name. Keep that uncertainty visible rather than inventing the rest.
+    if (match[1] === '^=') return `${name}…`;
+    if (match[1] === '$=') return `…${name}`;
+    if (match[1] !== '=') return `…${name}…`;
+    return name;
   }
   const hasText = /:has-text\((["'])(.+?)\1\)/.exec(selector);
   return hasText?.[2]?.trim() || undefined;
+}
+
+function controlDescription(selector: string, field: boolean) {
+  if (field) return 'the field';
+  // Use only known control types, never ids/classes or selector syntax in the visible caption.
+  const control = /(?:^|[\s>+~])(?:button|a|input|textarea|select)(?=[\s.#[:]|$)/gi;
+  const tag = [...selector.matchAll(control)]
+    .at(-1)?.[0]
+    .trim()
+    .replace(/^[>+~]\s*/, '')
+    .toLowerCase();
+  if (tag === 'button') return 'the button';
+  if (tag === 'a') return 'the link';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return 'the field';
+  return 'the control';
 }
 
 export function labelFor(step: RawStep) {
@@ -288,13 +312,13 @@ export function labelFor(step: RawStep) {
   const name = 'selector' in step ? selectorName(step.selector) : undefined;
   switch (step.kind) {
     case 'click':
-      return name ? `Click “${name}”` : `Click ${step.selector}`;
+      return name ? `Click “${name}”` : `Click ${controlDescription(step.selector, false)}`;
     case 'hover':
-      return `Hover ${name ? `“${name}”` : step.selector}`;
+      return `Hover ${name ? `“${name}”` : controlDescription(step.selector, false)}`;
     case 'type':
-      return `Type into ${name ? `“${name}”` : step.selector}`;
+      return `Type into ${name ? `“${name}”` : controlDescription(step.selector, true)}`;
     case 'fill':
-      return `Fill ${name ? `“${name}”` : step.selector}`;
+      return `Fill ${name ? `“${name}”` : controlDescription(step.selector, true)}`;
     case 'press':
       return `Press ${step.key}`;
     case 'wait':

@@ -55,6 +55,13 @@ describe('capture labels', () => {
     ['button[aria-label="Go to the Next Month"]', 'Go to the Next Month'],
     ['[data-tracking-id=holiday-calendar-add-date]', 'holiday calendar add date'],
     ["input[placeholder='Email address']", 'Email address'],
+    ['input[placeholder^="Search developer"]', 'Search developer…'],
+    ['input[placeholder$="developer"]', '…developer'],
+    ['input[placeholder*="developer"]', '…developer…'],
+    ['input[placeholder~="developer"]', '…developer…'],
+    ['input[placeholder = "Email address" i]', 'Email address'],
+    ['input[placeholder="Search"][aria-label="Find a developer"]', 'Find a developer'],
+    ['input[name="developer_search"][placeholder="Search"]', 'developer search'],
     ['[name=first_name]', 'first name'],
     ['button:has-text("Save")', 'Save'],
     ['#plain-css', undefined],
@@ -70,6 +77,23 @@ describe('capture labels', () => {
       );
     }
     expect(labelFor({ kind: 'click', selector: '#save', label: 'Save changes' })).toBe('Save changes');
+    expect(labelFor({ kind: 'fill', selector: 'input[placeholder^="Search developer"]', text: 'private query' })).toBe(
+      'Fill “Search developer…”',
+    );
+    expect(
+      labelFor({ kind: 'type', selector: 'input[placeholder^="Search developer"]', text: 'private query', label: 'Search developers' }),
+    ).toBe('Search developers');
+  });
+
+  it('keeps technical selectors out of fallback captions', () => {
+    expect(labelFor({ kind: 'click', selector: '#save > button.action:nth-child(2)' })).toBe('Click the button');
+    expect(labelFor({ kind: 'click', selector: 'a.download' })).toBe('Click the link');
+    expect(labelFor({ kind: 'hover', selector: '#menu > .target' })).toBe('Hover the control');
+    for (const kind of ['fill', 'type'] as const) {
+      expect(labelFor({ kind, selector: '#search-input', text: 'secret-value' })).toBe(
+        kind === 'fill' ? 'Fill the field' : 'Type into the field',
+      );
+    }
   });
 });
 
@@ -114,6 +138,7 @@ it.each([0, 1200])('holds non-wait actions for %sms and omits unlabelled waits f
   );
   const bundle = JSON.parse(await readFile(result.replayPath, 'utf8')) as ReplayBundle;
   expect(bundle.steps.map(({ label }) => label)).toEqual(['Open example.com', 'Click “Save”', 'Type into “email”', 'Wait for export']);
+  expect(bundle.steps[2]?.selector).toBe('[name=email]');
   expect(JSON.stringify(bundle.steps)).not.toContain('secret-value');
   expect(calls).toEqual(pause ? [700, 'click', pause, 'wait', 'type', pause, 'wait', 900] : [700, 'click', 'wait', 'type', 'wait', 900]);
 });
