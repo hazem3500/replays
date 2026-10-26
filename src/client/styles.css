@@ -816,65 +816,22 @@ svg.lucide.lucide { stroke-width: 2; }
 .skeleton { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-hover); animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
 .skeleton-thin { height: 8px; }
 @keyframes skeleton-pulse { from { opacity: 1; } to { opacity: 0.45; } }
-/* ---------- Viewer skeleton (ViewerSkeleton.tsx) ----------
-   The viewer's own layout in quiet shapes. It fades in after 150 ms (a fast load never shows it); every block
-   shares one slow diagonal sheen anchored to the viewport (background-attachment: fixed), so the blocks shimmer
-   in sync like one light passing over the page; reduced motion keeps them static. */
-.skeleton-shell { --sk-base: var(--surface-hover); --sk-peak: var(--surface-pressed); animation: sk-in 180ms var(--ease-out) 150ms both; }
-:root[data-theme="light"] .skeleton-shell { --sk-base: var(--surface-pressed); --sk-peak: var(--surface-raised); }
-.skeleton-shell[data-instant], .skeleton-suite .skeleton-shell, .skeleton-overlay .skeleton-shell { animation: none; }
-.skeleton-suite { --sk-base: var(--surface-hover); --sk-peak: var(--surface-pressed); animation: sk-in 180ms var(--ease-out) 150ms both; }
-:root[data-theme="light"] .skeleton-suite { --sk-base: var(--surface-pressed); --sk-peak: var(--surface-raised); }
-.skeleton-suite[data-instant] { animation: none; }
+/* Loading keeps the real layout and poster; only one small status replaces the unavailable controls. */
+.skeleton-shell, .skeleton-suite { animation: sk-in 180ms var(--ease-out) 150ms both; }
+.skeleton-shell[data-instant], .skeleton-suite .skeleton-shell, .skeleton-suite[data-instant] { animation: none; }
 @keyframes sk-in { from { opacity: 0; } }
-.sk { display: block; flex: 0 0 auto; border-radius: var(--radius-sm); background-color: var(--sk-base); background-image: linear-gradient(105deg, transparent 0 42%, var(--sk-peak) 50%, transparent 58% 100%); background-size: 200vw 100vh; background-attachment: fixed; background-repeat: no-repeat; animation: sk-sheen 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-@keyframes sk-sheen { from { background-position: 100vw 0; } to { background-position: -100vw 0; } }
-.sk-line { height: 10px; max-width: 100%; border-radius: 5px; }
-.sk-line-title { height: 12px; border-radius: 6px; }
-.sk-line-chip { height: 20px; border-radius: var(--radius); }
-.sk-faint { opacity: 0.6; }
-.sk-glyph { border-radius: 4px; }
-.sk-slot { width: 28px; height: 28px; flex: 0 0 28px; display: inline-grid; place-items: center; }
-.sk-slot-touch { width: 40px; height: 40px; flex-basis: 40px; }
-.sk-slot-wide { width: auto; padding: 0 8px; justify-items: end; }
-.sk-stack { min-width: 0; flex: 1; display: grid; gap: 6px; }
-.sk-title { min-width: 0; flex: 0 1 auto; display: flex; align-items: center; height: 28px; padding-left: 2px; }
 .sk-topbar { position: relative; }
-/* Desktop top bar icons are 24 px buttons (back and the action set); phones keep 40 px slots. */
-.app-shell:not([data-mobile]) .sk-topbar .sk-slot { width: 24px; height: 24px; flex-basis: 24px; }
-.sk-title { padding-left: 0; }
-.sk-topbar .topbar-actions { margin-left: auto; }
-/* The player: canvas, the recording's frame fitted with the viewer's 12 px inset, a faint play glyph. */
+.loading-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); padding-inline: 6px; }
+.loading-notice { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
+.loading-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
+.transport.loading-transport { display: flex; padding-inline: 16px; }
+@media (pointer: coarse) { .transport.loading-transport { min-height: 75px; } }
 .sk-stage { container-type: size; display: grid; place-items: center; }
-.sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; border-radius: 2px; background: color-mix(in srgb, var(--surface-raised) 55%, var(--canvas)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--line) 60%, transparent); }
+.sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }
 .sk-frame:has(.sk-poster) { overflow: hidden; }
 .sk-poster { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
-.sk-play { width: 28px; height: 28px; fill: var(--text-tertiary); opacity: 0.22; }
-.sk-transport .sk-scrub { min-width: 0; height: 28px; display: flex; align-items: center; gap: 3px; padding: 0 6px; }
-.sk-scrub > .sk { height: 4px; flex-basis: 0; border-radius: 2px; }
-.sk-steps { overflow: hidden; }
-.sk-step { cursor: default; }
-/* The panel: the real tab bar's height with label-width lines, the table's header and 32 px rows. */
-.sk-tabs { align-items: center; gap: 0; }
-.sk-tab { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; }
-.sk-tabs-end { margin-left: auto; }
-.sk-table-head { height: 28px; display: grid; grid-template-columns: 66px 1fr; align-items: center; padding: 0 10px; border-bottom: 1px solid var(--line); }
-.sk-table-row { height: 32px; display: grid; grid-template-columns: 66px 1fr; align-items: center; padding: 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
 .skeleton-divider { border-top: 1px solid var(--line); }
 .app-shell[data-mobile] .sk-tabs-phone { min-height: 52px; padding: 0 0 0 4px; border-top: 1px solid var(--line); }
-.app-shell[data-mobile] .sk-title { flex: 1 1 auto; }
-/* Touch: the transport's 40 px scrub strip (reaching 6 px over the player) and 40 px controls, as in scrubber.css. */
-@media (pointer: coarse) {
-  .sk-transport .sk-scrub { height: 40px; margin-top: -6px; }
-  .sk-transport .sk-slot { width: 40px; height: 40px; flex-basis: 40px; }
-  .sk-transport .sk-slot-wide { width: auto; min-width: 40px; padding-right: 12px; }
-}
-.app-shell[data-mobile] .sk-tabs-phone .sk-tab { flex: 1 1 auto; justify-content: center; padding: 0 9px; }
-.app-shell[data-mobile] .sk-tabs-phone .sk-tabs-end { width: 44px; height: 44px; flex-basis: 44px; border-left: 1px solid var(--line); }
-.sk-step-phone { height: 40px; }
-/* Suite: the runs sidebar's head and rows. */
-.sk-sidebar-head { align-items: center; }
-.sk-run { display: grid; grid-template-columns: 2.2ch minmax(0, 1fr); align-items: center; cursor: default; }
 /* After 1.2 s still loading: a thin accent line along the top bar's bottom edge; indeterminate (a short segment
    gliding across), or the downloaded share when the size is known. No spinners. */
 .sk-progress { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; overflow: hidden; opacity: 0; transition: opacity 240ms var(--ease-out); }
@@ -884,7 +841,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-progress[data-determinate] > span { transition: transform 200ms var(--ease-out); }
 @keyframes sk-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(360%); } }
 @media (prefers-reduced-motion: reduce) {
-  .sk, .sk-progress:not([data-determinate]) > span { animation: none; }
+  .skeleton-shell, .skeleton-suite, .sk-progress:not([data-determinate]) > span { animation: none; }
   .sk-progress:not([data-determinate]) > span { width: 100%; opacity: 0.5; }
 }
 /* ---------- Replay index ---------- */

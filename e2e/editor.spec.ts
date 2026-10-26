@@ -202,7 +202,8 @@ test('editor entry has a stable stage and timeline skeleton, without a viewer in
   await page.goto(`${base()}/r/${id}/edit`);
   const skeleton = page.getByTestId('editor-skeleton');
   await expect(skeleton).toBeVisible();
-  await expect(skeleton.locator('.editor-loading-track')).toHaveCount(1);
+  await expect(skeleton.locator('.loading-notice')).toHaveText('Opening editor…');
+  await expect(skeleton.locator('.editor-loading-track')).toHaveCount(0);
   await expect(skeleton.locator('.sk-steps, .sk-table-head, .sk-tabs')).toHaveCount(0);
   release();
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');

@@ -6,17 +6,7 @@ import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
 
-/**
- * The placeholder while a replay (or a suite run) loads. It is the viewer's own layout, drawn with quiet shapes:
- * the same top bar, workspace grid (player, splitter column, step rail), transport, splitter row and panel, at
- * the stored rail width and panel height, so nothing moves when the replay arrives. Lives outside the viewer
- * chunk (the index bundle renders it while that chunk downloads), so the few viewer constants it needs are
- * repeated here (storage keys, defaults).
- *
- * Calm on purpose: it fades in only after 150 ms (fast loads never show it), every block shares one slow sheen
- * (a viewport-fixed gradient, so blocks shimmer in sync; static under reduced motion), and after 1.2 s a thin
- * progress line appears under the top bar. Ready content replaces it immediately, without a second full-page layer.
- */
+/** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
 /* Repeated from the viewer chunk (StepRail.tsx, Inspector.tsx, Viewer.tsx); keep in sync. */
 const STEPS_WIDTH_KEY = 'replays-steps-width';
@@ -68,10 +58,6 @@ function layout(hint: OpenHint | undefined) {
   const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
   return { height, collapsed, stepsWidth: Number.isFinite(stepsWidth) && stepsWidth > 0 ? stepsWidth : undefined, ratio };
 }
-
-/** Deterministic "natural" widths: a fixed sequence, never random per render. */
-const LINE_WIDTHS = [64, 48, 72, 56, 80, 44, 68, 52, 76, 60, 40, 70];
-const width = (index: number) => LINE_WIDTHS[index % LINE_WIDTHS.length]!;
 
 /** A skeleton that disappeared this recently hands over to the next one at once (no second fade-in). */
 let lastVisibleAt = Number.NEGATIVE_INFINITY;
@@ -139,38 +125,13 @@ export function EditorSkeleton() {
       <span className="visually-hidden" role="status">
         Loading editor…
       </span>
-      <div className="topbar app-topbar sk-topbar" aria-hidden="true">
-        <span className="sk-slot">
-          <Glyph />
-        </span>
-        <span className="sk-title">
-          <Line width={hint?.title ? Math.min(420, hint.title.length * 8) : 260} className="sk-line-title" />
-        </span>
-        <span className="topbar-actions">
-          <Line width={72} className="sk-line-chip" />
-          <Line width={64} className="sk-line-chip" />
-        </span>
-        <ProgressHint />
-      </div>
+      <LoadingHeader hint={hint} />
       <section className="editor-loading-stage" aria-hidden="true">
         <PlayerSkeleton poster={hint?.poster} />
       </section>
       {mobile ? null : <div className="editor-loading-divider" aria-hidden="true" />}
       <section className="editor-loading-dock" aria-hidden="true">
-        <div className="editor-loading-tools">
-          <Glyph />
-          <Line width={46} />
-          <Glyph />
-          <Glyph />
-          <Line width={72} />
-        </div>
-        <div className="editor-loading-ruler">
-          <Line width={30} />
-          <Line width={30} />
-          <Line width={30} />
-          <Line width={30} />
-        </div>
-        <div className="sk editor-loading-track" />
+        <LoadingNotice label="Opening editor" />
       </section>
     </main>
   );
@@ -198,12 +159,22 @@ function ProgressHint() {
   );
 }
 
-function Glyph({ size = 16 }: { size?: number }) {
-  return <span className="sk sk-glyph" style={{ width: size, height: size }} />;
+function LoadingHeader({ hint }: { hint: OpenHint | undefined }) {
+  return (
+    <div className="topbar app-topbar sk-topbar" aria-hidden="true">
+      <span className="loading-title">{hint?.title ?? 'Replay'}</span>
+      <ProgressHint />
+    </div>
+  );
 }
 
-function Line({ width: value, className = '' }: { width: number | string; className?: string }) {
-  return <span className={`sk sk-line ${className}`} style={{ width: value }} />;
+function LoadingNotice({ label = 'Opening replay' }: { label?: string }) {
+  return (
+    <span className="loading-notice">
+      <span className="loading-dot" />
+      {label}…
+    </span>
+  );
 }
 
 /** The player: the stage's canvas, the recording's frame at its aspect ratio (as the viewer fits it), a faint play glyph. */
@@ -212,66 +183,12 @@ function PlayerSkeleton({ poster }: { poster?: string | undefined }) {
     <div className="stage-wrap">
       <div className="player-stage sk-stage">
         <div className="sk-frame">
-          {poster ? (
-            <img className="sk-poster" src={poster} alt="" decoding="sync" draggable={false} />
-          ) : (
-            <svg className="sk-play" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M8 5.5v13l10.5-6.5z" />
-            </svg>
-          )}
+          {poster ? <img className="sk-poster" src={poster} alt="" decoding="sync" draggable={false} /> : null}
         </div>
       </div>
     </div>
   );
 }
-
-/** Segmented like the real scrubber (one bar per step), at its rest height. */
-function ScrubSkeleton({ steps }: { steps: number }) {
-  const count = Math.max(1, Math.min(steps, 14));
-  return (
-    <span className="sk-scrub" style={{ gridArea: 'scrub' }}>
-      {Array.from({ length: count }, (_, index) => (
-        <span key={index} className="sk" style={{ flexGrow: 2 + (width(index * 3) % 5) }} />
-      ))}
-    </span>
-  );
-}
-
-function TransportSkeleton({ steps }: { steps: number }) {
-  return (
-    <div className="transport sk-transport">
-      <span className="sk-slot" style={{ gridArea: 'play' }}>
-        <Glyph />
-      </span>
-      <span style={{ gridArea: 'time' }}>
-        <Line width={42} />
-      </span>
-      <ScrubSkeleton steps={steps} />
-      <span className="sk-slot" style={{ gridArea: 'captions' }}>
-        <Glyph />
-      </span>
-      <span className="sk-slot sk-slot-wide" style={{ gridArea: 'options' }}>
-        <Line width={14} />
-      </span>
-    </div>
-  );
-}
-
-function StepRows({ count, phone = false }: { count: number; phone?: boolean }) {
-  return (
-    <div className="timeline sk-steps">
-      {Array.from({ length: count }, (_, index) => (
-        <div key={index} className={`step sk-step ${phone ? 'sk-step-phone' : ''}`}>
-          <Glyph size={14} />
-          <Line width={`${width(index)}%`} />
-          <Line width={30} className="sk-faint" />
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const TAB_WIDTHS = [86, 90, 112, 52];
 
 function DesktopSkeleton({
   hint,
@@ -282,27 +199,9 @@ function DesktopSkeleton({
   stepsWidth: number | undefined;
   collapsed: boolean;
 }) {
-  const steps = hint?.steps ?? 10;
-  const titleWidth = hint?.title ? Math.min(420, Math.max(120, hint.title.length * 8)) : 260;
   return (
     <>
-      <div className="topbar app-topbar sk-topbar" aria-hidden="true">
-        <span className="sk-slot" data-skel="back">
-          <Glyph />
-        </span>
-        <span data-skel="title" className="sk-title">
-          <Line width={titleWidth} className="sk-line-title" />
-        </span>
-        {hint?.source ? <Line width={92} className="sk-line-chip" /> : null}
-        <span className="topbar-actions" data-skel="actions">
-          {[0, 1, 2, 3, 4].map((index) => (
-            <span key={index} className="sk-slot">
-              <Glyph />
-            </span>
-          ))}
-        </span>
-        <ProgressHint />
-      </div>
+      <LoadingHeader hint={hint} />
       <div
         className="workspace"
         aria-hidden="true"
@@ -310,117 +209,42 @@ function DesktopSkeleton({
       >
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
-          <TransportSkeleton steps={steps} />
-        </section>
-        {/* The splitter's grid column (zero wide), so the rail lands in its own column. */}
-        <span />
-        <aside className="timeline-panel">
-          <div className="section-heading">
-            <Line width={34} />
-            <Line width={36} className="sk-faint" />
+          <div className="transport loading-transport">
+            <LoadingNotice />
           </div>
-          <StepRows count={Math.min(steps, 16)} />
-        </aside>
+        </section>
+        <span />
+        <aside className="timeline-panel" />
       </div>
       {collapsed ? null : <div className="skeleton-divider" aria-hidden="true" />}
       <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs sk-tabs">
-          {TAB_WIDTHS.map((tab, index) => (
-            <span key={index} className="sk-tab">
-              <Line width={tab} />
-            </span>
-          ))}
-          <span className="sk-slot sk-tabs-end">
-            <Glyph size={14} />
-          </span>
-        </div>
-        {collapsed ? null : (
-          <div className="sk-table">
-            <div className="sk-table-head">
-              <Line width={28} className="sk-faint" />
-              <Line width={52} className="sk-faint" />
-            </div>
-            {[0, 1, 2, 3, 4, 5].map((row) => (
-              <div key={row} className="sk-table-row">
-                <Line width={36} className="sk-faint" />
-                <Line width={`${width(row + 3) * 0.6}%`} />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="inspector-tabs" />
       </div>
     </>
   );
 }
 
 function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
-  const steps = hint?.steps ?? 10;
   return (
     <>
-      <div className="topbar app-topbar topbar-compact sk-topbar" aria-hidden="true">
-        <span className="sk-slot sk-slot-touch" data-skel="back">
-          <Glyph />
-        </span>
-        <span data-skel="title" className="sk-title">
-          <Line width="min(180px, 100%)" className="sk-line-title" />
-        </span>
-        <span className="topbar-actions" data-skel="actions">
-          {[0, 1, 2].map((index) => (
-            <span key={index} className="sk-slot sk-slot-touch">
-              <Glyph />
-            </span>
-          ))}
-        </span>
-        <ProgressHint />
-      </div>
+      <LoadingHeader hint={hint} />
       <div className="workspace" aria-hidden="true">
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
-          <TransportSkeleton steps={steps} />
+          <div className="transport loading-transport">
+            <LoadingNotice />
+          </div>
         </section>
       </div>
       <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs sk-tabs sk-tabs-phone">
-          {[0, 1, 2, 3, 4].map((index) => (
-            <span key={index} className="sk-tab">
-              <Glyph />
-              {index < 4 ? <Line width={22} className="sk-faint" /> : null}
-            </span>
-          ))}
-          <span className="sk-slot sk-tabs-end">
-            <Glyph size={14} />
-          </span>
-        </div>
-        <div className="inspector-panel">
-          <StepRows count={Math.min(steps, 12)} phone />
-        </div>
+        <div className="inspector-tabs sk-tabs-phone" />
       </div>
     </>
   );
 }
 
 function SuiteSidebarSkeleton() {
-  return (
-    <aside className="suite-sidebar" aria-hidden="true">
-      <div className="suite-sidebar-head sk-sidebar-head">
-        <span className="sk-stack">
-          <Line width="82%" />
-          <Line width="46%" className="sk-faint" />
-        </span>
-      </div>
-      <div className="suite-run-list">
-        {[0, 1, 2].map((index) => (
-          <div key={index} className="suite-run-item sk-run">
-            <Line width={16} className="sk-faint" />
-            <span className="sk-stack">
-              <Line width={`${width(index + 1)}%`} />
-              <Line width="38%" className="sk-faint" />
-            </span>
-          </div>
-        ))}
-      </div>
-    </aside>
-  );
+  return <aside className="suite-sidebar" aria-hidden="true" />;
 }
 
 /** Loading is a single layout, replaced as soon as content is ready. CSS delays its entrance for fast loads. */
