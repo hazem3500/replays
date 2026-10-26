@@ -32,7 +32,7 @@ export function SettingsButton() {
           <DialogTitle className="text-base">Settings</DialogTitle>
           <DialogDescription>Make this workspace yours and connect your tools.</DialogDescription>
         </DialogHeader>
-        <Tabs defaultValue="appearance" className="min-h-[276px] gap-5">
+        <Tabs defaultValue="appearance" className="min-h-[276px] flex-col gap-5">
           <TabsList aria-label="Settings sections" variant="line" className="w-full justify-start gap-4 border-b border-border p-0 pb-2">
             <TabsTrigger value="appearance" className="flex-none px-0 py-1">
               Appearance
@@ -41,10 +41,12 @@ export function SettingsButton() {
               Agent access
             </TabsTrigger>
           </TabsList>
-          <TabsContent value="appearance">
+          <TabsContent value="appearance" className="min-w-0">
             <Appearance />
           </TabsContent>
-          <TabsContent value="agents">{open ? <AgentAccess enabled={open} /> : null}</TabsContent>
+          <TabsContent value="agents" className="min-w-0">
+            {open ? <AgentAccess enabled={open} /> : null}
+          </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
