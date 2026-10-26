@@ -1,25 +1,34 @@
 import { mkdtemp, rm } from 'node:fs/promises';
-import { createServer, type Server } from 'node:http';
+import { createServer, Server } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import type { InlineConfig } from 'vite';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import * as records from '../src/server/agent-native/records.ts';
+import type { createApp } from '../src/server/app.ts';
 import { RenderQueue } from '../src/server/render-queue.ts';
 import * as renderer from '../src/server/renderer.ts';
 import { startServer, type RunningServer } from '../src/server/start.ts';
 import * as tracing from '../src/server/tracing.ts';
 
-const vite = vi.hoisted(() => ({ close: vi.fn(async () => {}), createServer: vi.fn() }));
+type ViteMiddleware = NonNullable<Parameters<typeof createApp>[0]['devMiddleware']>;
+type ViteServerStub = { middlewares: ViteMiddleware; close: () => Promise<void> };
+
+const vite = vi.hoisted(() => ({
+  close: vi.fn<() => Promise<void>>(async () => {}),
+  createServer: vi.fn<(options: InlineConfig) => Promise<ViteServerStub>>(),
+}));
 vi.mock('vite', () => ({ createServer: vite.createServer }));
+const viteMiddleware: ViteMiddleware = () => {};
 
 const directories: string[] = [];
 const servers: Array<Server | RunningServer> = [];
 afterEach(async () => {
   for (const server of servers.splice(0)) {
-    if ('origin' in server) await server.close().catch(() => {});
-    else await new Promise<void>((done) => server.close(() => done()));
+    if (server instanceof Server) await new Promise<void>((done) => server.close(() => done()));
+    else await server.close().catch(() => {});
   }
   vi.restoreAllMocks();
   vite.close.mockReset();
@@ -30,11 +39,12 @@ afterEach(async () => {
 async function fixture() {
   const dir = await mkdtemp(join(tmpdir(), 'replays-start-lifecycle-'));
   directories.push(dir);
-  const databaseClose = vi.fn(async () => {});
+  const databaseClose = vi.fn<NonNullable<InstanceType<typeof records.ApplicationRecords>['db']['close']>>(async () => {});
   // Exercise the actual ApplicationRuntime -> ApplicationRecords -> database close chain, without PostgreSQL credentials.
-  const applicationRecords = new records.ApplicationRecords({ execute: vi.fn(), close: databaseClose });
+  const execute = vi.fn<InstanceType<typeof records.ApplicationRecords>['db']['execute']>();
+  const applicationRecords = new records.ApplicationRecords({ execute, close: databaseClose });
   vi.spyOn(records, 'openApplicationRecords').mockResolvedValue(applicationRecords);
-  vite.createServer.mockResolvedValue({ middlewares: vi.fn(), close: vite.close });
+  vite.createServer.mockResolvedValue({ middlewares: viteMiddleware, close: vite.close });
   return {
     databaseClose,
     options: {
@@ -53,6 +63,15 @@ async function occupiedPort() {
   return (server.address() as { port: number }).port;
 }
 
+function serverListening(server: unknown) {
+  return server instanceof Server ? server.listening : undefined;
+}
+
+function hmrServerListening(options: InlineConfig | undefined) {
+  const hmr = options?.server?.hmr;
+  return hmr && typeof hmr === 'object' ? serverListening(hmr.server) : undefined;
+}
+
 describe('startup resource ownership', () => {
   it('releases application records and the prune timer when a TLS file cannot be read', async () => {
     const { options, databaseClose } = await fixture();
@@ -62,9 +81,9 @@ describe('startup resource ownership', () => {
       startServer({ ...options, env: { ...options.env, TLS_CERT_FILE: join(options.sampleDir, 'missing.pem'), TLS_KEY_FILE: 'unused' } }),
     ).rejects.toMatchObject({ code: 'ENOENT' });
     expect(databaseClose).toHaveBeenCalledTimes(1);
-    const pruneTimer = timers.mock.results.find((_, i) => timers.mock.calls[i]?.[1] === 6 * 60 * 60_000)?.value;
-    expect(pruneTimer).toBeDefined();
-    expect(clear).toHaveBeenCalledWith(pruneTimer);
+    const pruneTimers = timers.mock.results.filter((_, i) => timers.mock.calls[i]?.[1] === 6 * 60 * 60_000);
+    expect(pruneTimers).toHaveLength(1);
+    expect(clear).toHaveBeenCalledWith(pruneTimers[0]?.value);
   });
 
   it('releases records, render queue and dev middleware after a real listen failure, preserving EADDRINUSE', async () => {
@@ -79,8 +98,8 @@ describe('startup resource ownership', () => {
     expect(queueClose).toHaveBeenCalledTimes(1);
     expect(vite.close).toHaveBeenCalledTimes(1);
     // The occupied listener belongs to the host and must remain open.
-    expect((servers[0] as Server).listening).toBe(true);
-    expect(vite.createServer.mock.calls[0]?.[0].server.hmr.server.listening).toBe(false);
+    expect(serverListening(servers[0])).toBe(true);
+    expect(hmrServerListening(vite.createServer.mock.calls[0]?.[0])).toBe(false);
   });
 
   it('closes an already listening server when the final startup log throws', async () => {
@@ -97,7 +116,7 @@ describe('startup resource ownership', () => {
     ).rejects.toBe(failure);
     expect(databaseClose).toHaveBeenCalledTimes(1);
     expect(vite.close).toHaveBeenCalledTimes(1);
-    expect(vite.createServer.mock.calls[0]?.[0].server.hmr.server.listening).toBe(false);
+    expect(hmrServerListening(vite.createServer.mock.calls[0]?.[0])).toBe(false);
   });
 
   it('keeps successful close idempotent and reports every cleanup failure in an AggregateError', async () => {
@@ -139,13 +158,17 @@ describe('startup resource ownership', () => {
     vi.spyOn(tracing, 'tracingEnabled').mockReturnValueOnce(alreadyEnabled).mockReturnValue(true);
     vi.spyOn(tracing, 'initTracing').mockResolvedValue('fixture tracing');
     const shutdown = vi.spyOn(tracing, 'shutdownTracing').mockResolvedValue();
-    if (failStartup) {
-      await expect(startServer({ ...options, port: await occupiedPort() })).rejects.toMatchObject({ code: 'EADDRINUSE' });
-    } else {
-      const server = await startServer(options);
-      servers.push(server);
-      await server.close();
-    }
+    const outcome = await (failStartup
+      ? startServer({ ...options, port: await occupiedPort() }).then(
+          () => ({ kind: 'started' as const }),
+          (error: NodeJS.ErrnoException) => ({ kind: 'failed' as const, code: error.code }),
+        )
+      : startServer(options).then(async (server) => {
+          servers.push(server);
+          await server.close();
+          return { kind: 'closed' as const };
+        }));
+    expect(outcome).toEqual(failStartup ? { kind: 'failed', code: 'EADDRINUSE' } : { kind: 'closed' });
     expect(shutdown).toHaveBeenCalledTimes(alreadyEnabled ? 0 : 1);
   });
 });
