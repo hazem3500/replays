@@ -2,6 +2,13 @@ import { expect, test } from '@playwright/test';
 
 import { origin } from './support.ts';
 
+type Rect = { x: number; y: number; width: number; height: number };
+type Box = Rect & { right: number; bottom: number };
+
+function box(rect: Rect): Box {
+  return { ...rect, right: rect.x + rect.width, bottom: rect.y + rect.height };
+}
+
 test.describe('touch phone settings', () => {
   test.use({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 
@@ -10,7 +17,6 @@ test.describe('touch phone settings', () => {
     await page.getByRole('button', { name: 'Settings', exact: true }).tap();
 
     const dialog = page.getByRole('dialog', { name: 'Settings' });
-    const tabs = dialog.locator('[data-slot="tabs"]');
     const tabList = dialog.getByRole('tablist', { name: 'Settings sections' });
     const panel = dialog.getByRole('tabpanel');
     await expect(dialog.getByRole('heading', { name: 'Settings' })).toBeVisible();
@@ -26,16 +32,12 @@ test.describe('touch phone settings', () => {
       const panelElement = tabsRoot.querySelector<HTMLElement>('[role="tabpanel"]')!;
       const appearance = panelElement.querySelector<HTMLElement>('section[aria-labelledby="settings-appearance"]')!;
       const dialogElement = tabsRoot.closest<HTMLElement>('[role="dialog"]')!;
-      const box = (element: Element) => {
-        const { x, y, width, height } = element.getBoundingClientRect();
-        return { x, y, width, height };
-      };
       return {
         flexDirection: getComputedStyle(tabsRoot).flexDirection,
-        dialogWidth: box(dialogElement).width,
-        tabList: box(tabListElement),
-        panel: box(panelElement),
-        appearance: box(appearance),
+        dialogWidth: dialogElement.getBoundingClientRect().width,
+        tabList: tabListElement.getBoundingClientRect().toJSON(),
+        panel: panelElement.getBoundingClientRect().toJSON(),
+        appearance: appearance.getBoundingClientRect().toJSON(),
         appearanceClientWidth: appearance.clientWidth,
         appearanceScrollWidth: appearance.scrollWidth,
         documentScrollWidth: document.documentElement.scrollWidth,
@@ -43,8 +45,11 @@ test.describe('touch phone settings', () => {
         deviceScaleFactor: window.devicePixelRatio,
       };
     });
+    appearanceGeometry.tabList = box(appearanceGeometry.tabList);
+    appearanceGeometry.panel = box(appearanceGeometry.panel);
+    appearanceGeometry.appearance = box(appearanceGeometry.appearance);
     expect(appearanceGeometry.flexDirection).toBe('column');
-    expect(appearanceGeometry.tabList.y + appearanceGeometry.tabList.height).toBeLessThanOrEqual(appearanceGeometry.panel.y + 1);
+    expect(appearanceGeometry.tabList.bottom).toBeLessThanOrEqual(appearanceGeometry.panel.y + 1);
     expect(appearanceGeometry.panel.width).toBeGreaterThan(appearanceGeometry.dialogWidth * 0.85);
     expect(appearanceGeometry.appearanceClientWidth).toBeGreaterThan(300);
     expect(appearanceGeometry.appearanceScrollWidth).toBeLessThanOrEqual(appearanceGeometry.appearanceClientWidth + 1);
@@ -95,23 +100,22 @@ test.describe('desktop settings', () => {
       const tabsRoot = dialogElement.querySelector<HTMLElement>('[data-slot="tabs"]')!;
       const tabList = tabsRoot.querySelector<HTMLElement>('[role="tablist"]')!;
       const panel = tabsRoot.querySelector<HTMLElement>('[role="tabpanel"]')!;
-      const box = (element: Element) => {
-        const { x, y, width, height } = element.getBoundingClientRect();
-        return { x, y, width, height };
-      };
       return {
         flexDirection: getComputedStyle(tabsRoot).flexDirection,
-        dialog: box(dialogElement),
-        tabList: box(tabList),
-        panel: box(panel),
+        dialog: dialogElement.getBoundingClientRect().toJSON(),
+        tabList: tabList.getBoundingClientRect().toJSON(),
+        panel: panel.getBoundingClientRect().toJSON(),
         panelClientWidth: panel.clientWidth,
         panelScrollWidth: panel.scrollWidth,
         documentScrollWidth: document.documentElement.scrollWidth,
         viewportWidth: window.innerWidth,
       };
     });
+    geometry.dialog = box(geometry.dialog);
+    geometry.tabList = box(geometry.tabList);
+    geometry.panel = box(geometry.panel);
     expect(geometry.flexDirection).toBe('column');
-    expect(geometry.tabList.y + geometry.tabList.height).toBeLessThanOrEqual(geometry.panel.y + 1);
+    expect(geometry.tabList.bottom).toBeLessThanOrEqual(geometry.panel.y + 1);
     expect(geometry.panel.width).toBeGreaterThan(geometry.dialog.width * 0.85);
     expect(geometry.panelClientWidth).toBeGreaterThan(450);
     expect(geometry.panelScrollWidth).toBeLessThanOrEqual(geometry.panelClientWidth + 1);
