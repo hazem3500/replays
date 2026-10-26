@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs.t
 import type { ClientConfig } from '../config.ts';
 import { apiUrl } from '../route.ts';
 import { useThemeControls } from '../theme.tsx';
+import { AgentCredentials } from './AgentCredentials.tsx';
 
 const AUTH_DOCS = 'https://github.com/hazem3500/replays#authentication';
 const CLI_DOCS = 'https://github.com/hazem3500/replays#quick-start';
@@ -43,9 +44,7 @@ export function SettingsButton() {
           <TabsContent value="appearance">
             <Appearance />
           </TabsContent>
-          <TabsContent value="agents">
-            <AgentAccess enabled={open} />
-          </TabsContent>
+          <TabsContent value="agents">{open ? <AgentAccess enabled={open} /> : null}</TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
@@ -172,9 +171,7 @@ function AgentAccess({ enabled }: { enabled: boolean }) {
                     : 'Use a private headers.json file containing the credentials accepted by your deployment. Keep it out of source control.'}
             </p>
           </div>
-          <p className="text-muted-foreground">
-            API token creation is not available on this deployment. Credentials are issued by its authentication provider.
-          </p>
+          <AgentCredentials />
         </>
       )}
       <div className="flex gap-4 text-primary">

@@ -33,7 +33,13 @@ async function click(element: Element | null) {
 }
 
 async function openSettings(auth = 'oidc') {
-  const fetchConfig = vi.fn<typeof fetch>().mockResolvedValue(new Response(JSON.stringify({ auth }), { status: 200 }));
+  const fetchConfig = vi
+    .fn<typeof fetch>()
+    .mockImplementation(async (input) =>
+      String(input).endsWith('/agent-capabilities')
+        ? new Response(null, { status: 404 })
+        : new Response(JSON.stringify({ auth }), { status: 200 }),
+    );
   vi.stubGlobal('fetch', fetchConfig);
   const switchTheme = vi.fn<() => void>();
   await act(async () =>
