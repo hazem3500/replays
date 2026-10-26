@@ -49,9 +49,9 @@ async function transition(element: Element | null) {
   });
 }
 
-async function renderTransport() {
+async function renderTransport(overrides: Partial<ViewerActions> = {}) {
   const player = new ReplayController(waterfallFixture());
-  const viewer = { steps: [], errors: [], captions: false } as unknown as ViewerActions;
+  const viewer = { steps: [], errors: [], captions: false, captionNumbers: false, ...overrides } as unknown as ViewerActions;
   await act(async () =>
     root.render(createElement(PlayerContext, { value: player }, createElement(ViewerContext, { value: viewer }, createElement(Transport)))),
   );
@@ -151,5 +151,39 @@ describe('playback menu in fullscreen', () => {
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
     expect(document.activeElement).toBe(trigger);
+  });
+});
+
+describe('step number option', () => {
+  const steps = [{ at: 0, kind: 'click', label: 'Review the cart' }];
+
+  it('uses the existing playback popup and forwards the switch and label changes', async () => {
+    const setCaptionNumbers = vi.fn<(value: boolean) => void>();
+    await renderTransport({ steps, captions: true, setCaptionNumbers });
+    await click(find('.playback-options'));
+    const numbers = find('[role="switch"][id$="-numbers"]');
+    expect(numbers.getAttribute('aria-checked')).toBe('false');
+    await click(numbers);
+    expect(setCaptionNumbers.mock.calls[0]?.[0]).toBe(true);
+    await click(find('label[for$="-numbers"]'));
+    expect(setCaptionNumbers).toHaveBeenCalledTimes(2);
+    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('retains the choice while captions are hidden and disables changes', async () => {
+    const setCaptionNumbers = vi.fn<(value: boolean) => void>();
+    await renderTransport({ steps, captions: false, captionNumbers: true, setCaptionNumbers });
+    await click(find('.playback-options'));
+    const numbers = find<HTMLButtonElement>('[role="switch"][id$="-numbers"]');
+    expect(numbers.getAttribute('aria-checked')).toBe('true');
+    expect(numbers.disabled).toBe(true);
+    await click(numbers);
+    expect(setCaptionNumbers).not.toHaveBeenCalled();
+  });
+
+  it.each([{ steps: [] }, { steps, editCaptions: true }])('omits numbering without generated captions: %j', async (overrides) => {
+    await renderTransport({ captions: true, setCaptionNumbers: vi.fn<(value: boolean) => void>(), ...overrides });
+    await click(find('.playback-options'));
+    expect(document.querySelector('[role="switch"][id$="-numbers"]')).toBeNull();
   });
 });

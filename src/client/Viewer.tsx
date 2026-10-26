@@ -59,6 +59,7 @@ const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
 
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
+const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
 /** A folded panel keeps just its tab row (36 px) and the hairline above it. */
 const INSPECTOR_TABS_HEIGHT = 37;
 /** An expanded request grows a shorter desktop panel to this share of the window… */
@@ -173,6 +174,12 @@ export function Viewer({
       writeStorage(CAPTIONS_KEY, current ? '0' : '1');
       return !current;
     });
+  }, []);
+  // Viewer-only presentation, independent of caption visibility and saved editor captions.
+  const [captionNumbers, setCaptionNumbersState] = useState(() => readStorage(CAPTION_NUMBERS_KEY) === '1');
+  const setCaptionNumbers = useCallback((next: boolean) => {
+    writeStorage(CAPTION_NUMBERS_KEY, next ? '1' : '0');
+    setCaptionNumbersState(next);
   }, []);
   // The bottom panel folds to its tab row (desktop). Remembered; when nothing is stored, the purpose's default (open without one).
   const [collapsed, setCollapsedState] = useState(() => {
@@ -332,6 +339,8 @@ export function Viewer({
       },
       captions,
       switchCaptions,
+      captionNumbers,
+      setCaptionNumbers,
       openShortcuts: () => {
         setShortcutsOpen(true);
       },
@@ -339,7 +348,20 @@ export function Viewer({
       editsVersion: edited ? editsVersion(editListOf(edited.stored)) : '',
       editCaptions: Boolean(effects?.captions.length),
     };
-  }, [bundle.steps, captions, edited, effects, errors, notify, player, setCollapsed, setTab, switchCaptions]);
+  }, [
+    bundle.steps,
+    captionNumbers,
+    captions,
+    edited,
+    effects,
+    errors,
+    notify,
+    player,
+    setCaptionNumbers,
+    setCollapsed,
+    setTab,
+    switchCaptions,
+  ]);
 
   // Keep (no expiry): a "More" item on every screen; uploads only (committed samples never expire).
   const keep = useKeep(bundle.meta.id);
@@ -777,7 +799,7 @@ function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
  */
 function StepCaption() {
   const player = usePlayer();
-  const { steps } = useViewer();
+  const { steps, captionNumbers } = useViewer();
   const { status } = usePlayerState();
   // The same step index the step rail shows (one source), so caption and rail never disagree at a boundary.
   const active = useActiveStep(steps);
@@ -802,7 +824,7 @@ function StepCaption() {
       {/* One persistent caption: it fades in once, then the label morphs from step to step (AnimatedText); a fast
           scrub swaps it instantly. */}
       <span className="step-caption-text">
-        <span className="step-caption-number">{active + 1}</span>
+        {captionNumbers ? <span className="step-caption-number">{active + 1}</span> : null}
         <AnimatedText className="step-caption-label" text={step.label} />
       </span>
     </div>
