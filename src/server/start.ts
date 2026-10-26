@@ -1,10 +1,10 @@
 import { createServer as createHttpServer, type Server } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { readFile } from 'node:fs/promises';
-import { createServer as createNetServer } from 'node:net';
+import { createServer as createNetServer, type Socket } from 'node:net';
 import { resolve } from 'node:path';
 
-import type { ApplicationOptions } from './agent-native/runtime.ts';
+import type { ApplicationOptions, ApplicationRuntime } from './agent-native/runtime.ts';
 import type { LoadedConfig } from '../config/index.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
@@ -17,7 +17,7 @@ import type { RenderService } from './render-routes.ts';
 import { createRenderer, detectRenderTools, type RenderTools, renderToken } from './renderer.ts';
 import { chooseStorage, createRuntime, type Runtime } from './runtime.ts';
 import { tracedStorage } from './storage/traced.ts';
-import { initTracing, shutdownTracing } from './tracing.ts';
+import { initTracing, shutdownTracing, tracingEnabled } from './tracing.ts';
 import { ReplayStore } from './store.ts';
 import { summaryFieldsRunner } from './summary-fields.ts';
 
@@ -66,12 +66,70 @@ async function freePort() {
   return port;
 }
 
+/** Resources acquired by this start attempt, including before the listener is ready. */
+interface ServerResources {
+  application?: ApplicationRuntime | undefined;
+  pruneTimer?: ReturnType<typeof setInterval>;
+  server?: Server;
+  closeDev?: () => Promise<void>;
+  render?: RenderService;
+  bridgeHub?: BridgeHub | undefined;
+  ownsTracing?: boolean;
+  sockets: Set<Socket>;
+}
+
 /**
  * Starts the viewer and API: config + plugins resolved, storage opened, optional render queue and posters, the HTTP(S)
  * listener. Everything `replays serve` does, usable from your own `server.ts`. Rejects with a readable message when
  * configuration is wrong; nothing is listening then.
  */
 export async function startServer(options: StartOptions = {}): Promise<RunningServer> {
+  const resources: ServerResources = { sockets: new Set() };
+  let closing: Promise<void> | undefined;
+  let failed = false;
+  const close = () => {
+    closing ??= (async () => {
+      const errors: unknown[] = [];
+      const release = async (fn: () => unknown) => {
+        try {
+          await fn();
+        } catch (error) {
+          errors.push(error);
+        }
+      };
+      clearInterval(resources.pruneTimer);
+      await release(() => resources.bridgeHub?.close());
+      await release(() => resources.render?.queue?.close());
+      const connectionsClosed = release(async () => {
+        const server = resources.server;
+        if (!server) return;
+        await new Promise<void>((done) => {
+          // A server that failed to listen reports ERR_SERVER_NOT_RUNNING here; no listener needs releasing.
+          server.close(() => done());
+          server.closeIdleConnections();
+          // A late startup failure may already have accepted connections, including HMR upgrades.
+          if (failed) for (const socket of resources.sockets) socket.destroy();
+        });
+      });
+      await release(() => resources.application?.close());
+      await connectionsClosed;
+      // Run every finalizer, including when another finalizer throws synchronously.
+      await Promise.all([release(() => resources.closeDev?.()), release(() => (resources.ownsTracing ? shutdownTracing() : undefined))]);
+      if (errors.length) throw new AggregateError(errors, 'server shutdown cleanup failed');
+    })();
+    return closing;
+  };
+  try {
+    return await startOwnedServer(options, resources, close);
+  } catch (error) {
+    failed = true;
+    // The caller has no handle on failure. Await all releases and preserve the original startup error.
+    await close().catch(() => undefined);
+    throw error;
+  }
+}
+
+async function startOwnedServer(options: StartOptions, resources: ServerResources, close: () => Promise<void>): Promise<RunningServer> {
   const env = options.env ?? process.env;
   const cwd = options.cwd ?? process.cwd();
   const dev = options.dev ?? false;
@@ -91,7 +149,9 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
 
   // Tracing (tracing.ts): on only with an OTLP endpoint or OTEL_TRACES_EXPORTER; otherwise the SDK is never loaded.
   try {
+    const alreadyTracing = tracingEnabled();
     const tracing = await initTracing(env);
+    resources.ownsTracing = !alreadyTracing && tracingEnabled();
     log(String(tracing ?? 'tracing off (no OTEL_EXPORTER_OTLP_ENDPOINT)'));
   } catch (error) {
     throw new Error(`tracing setup failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
@@ -122,7 +182,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   } catch (error) {
     throw new Error(`storage or retention setup failed: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
-  const application =
+  const application = (resources.application =
     options.application === false
       ? undefined
       : await (await import('./agent-native/runtime.ts')).createApplicationRuntime(store, auth.name, {
@@ -130,26 +190,30 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
           ...(env.REPLAYS_WORKSPACE_ID ? { workspaceId: env.REPLAYS_WORKSPACE_ID } : {}),
           credentials: env.REPLAYS_AGENT_CREDENTIALS === '1',
           ...options.application,
-        });
+        }));
 
-  const pruneTimer = setInterval(
+  const pruneTimer = (resources.pruneTimer = setInterval(
     () => void store.prune().catch((error: unknown) => console.error('prune failed:', error)),
     6 * 60 * 60_000,
-  );
+  ));
   pruneTimer.unref();
 
   const tlsCert = env.TLS_CERT_FILE;
   const tlsKey = env.TLS_KEY_FILE;
-  const server = tlsCert && tlsKey ? createHttpsServer({ cert: await readFile(tlsCert), key: await readFile(tlsKey) }) : createHttpServer();
+  const server = (resources.server =
+    tlsCert && tlsKey ? createHttpsServer({ cert: await readFile(tlsCert), key: await readFile(tlsKey) }) : createHttpServer());
+  server.on('connection', (socket) => {
+    resources.sockets.add(socket);
+    socket.once('close', () => resources.sockets.delete(socket));
+  });
 
   let devMiddleware: Parameters<typeof createApp>[0]['devMiddleware'];
-  let closeDev: (() => Promise<void>) | undefined;
   if (dev) {
     const { createServer: createViteServer } = await import('vite');
     // Share the public listener so reverse proxies need only forward the app port, including WebSockets.
     const vite = await createViteServer({ root, appType: 'spa', server: { middlewareMode: true, hmr: { server } } });
     devMiddleware = (request, response, next) => vite.middlewares(request, response, next);
-    closeDev = () => vite.close();
+    resources.closeDev = () => vite.close();
   }
 
   // Server-side video renders (src/server/renderer.ts). Missing Chromium/ffmpeg only switches the feature off.
@@ -164,7 +228,12 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     reason: String(error),
     ffmpegPath: 'ffmpeg',
   }));
-  const render: RenderService = { tools, token: renderToken(), clientDir, maxDurationMs: positive('RENDER_MAX_DURATION_MS', 10 * 60_000) };
+  const render: RenderService = (resources.render = {
+    tools,
+    token: renderToken(),
+    clientDir,
+    maxDurationMs: positive('RENDER_MAX_DURATION_MS', 10 * 60_000),
+  });
   const origin = `${tlsCert && tlsKey ? 'https' : 'http'}://127.0.0.1:${port}`;
   // Dev serves the render page through Vite; production serves the built page on the loopback-only route.
   const renderPageUrl = (id: string) => (dev ? `${origin}${basePath}/render.html?id=${id}` : `${origin}/internal/render/${id}`);
@@ -227,7 +296,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     log(`list posters and previews off: ${env.POSTERS_DISABLED === '1' ? 'POSTERS_DISABLED=1' : tools.reason}`);
   }
 
-  const bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined;
+  const bridgeHub = (resources.bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined);
   const handle = createApp({
     ...(application ? { application } : {}),
     basePath,
@@ -269,35 +338,6 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     log(
       `hosts: ${[...settings.hosts.bases].map(([name, base]) => `${name} at ${base || '/'}`).join(', ')}${settings.hosts.trustForwardedHost ? ' (X-Forwarded-Host trusted)' : ''}`,
     );
-
-  let closing: Promise<void> | undefined;
-  const close = () => {
-    closing ??= (async () => {
-      clearInterval(pruneTimer);
-      bridgeHub?.close();
-      const errors: unknown[] = [];
-      try {
-        await render.queue?.close();
-      } catch (error) {
-        errors.push(error);
-      }
-      const connectionsClosed = new Promise<void>((done) => {
-        server.close(() => done());
-        server.closeIdleConnections();
-      });
-      try {
-        await application?.close();
-      } catch (error) {
-        errors.push(error);
-      }
-      await connectionsClosed;
-      // Complete all resource releases even when an earlier release failed.
-      const released = await Promise.allSettled([closeDev?.(), shutdownTracing()]);
-      for (const result of released) if (result.status === 'rejected') errors.push(result.reason);
-      if (errors.length) throw new AggregateError(errors, 'server shutdown cleanup failed');
-    })();
-    return closing;
-  };
 
   if (options.handleSignals)
     for (const signal of ['SIGINT', 'SIGTERM'] as const) process.on(signal, () => void close().finally(() => process.exit(0)));
