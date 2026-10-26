@@ -67,6 +67,96 @@ test('performance signals follow the playhead and open with the P key', async ({
   await expect(events.locator('[data-future]')).toHaveCount(3);
 });
 
+test('performance virtualization keeps row and clock offsets aligned across responsive resize', async ({ page }) => {
+  const id = uniqueId('performance-virtualized');
+  const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id);
+  bundle.performance = {
+    supported: ['longtask'],
+    entries: Array.from({ length: 120 }, (_, index) => ({ at: 10 + index * 8, kind: 'long-task', value: 2 + (index % 4) })),
+  };
+  await postBundle(page.request, server().origin, bundle);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/r/${id}`);
+  await page.getByTestId('performance-tab').click();
+
+  const events = page.getByTestId('performance-events');
+  const panel = page.getByTestId('performance-diagnostics');
+  const row = (index: number) => events.locator(`[data-performance-id="performance-${index}"]`);
+  const assertWindowAt = async (index: number, rowHeight: number) => {
+    await expect(panel).toHaveAttribute('data-row-height', String(rowHeight));
+    await events.evaluate(
+      (element, top) => {
+        element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
+        element.scrollTop = top;
+      },
+      index * rowHeight + 28,
+    );
+    await expect(row(index)).toBeAttached();
+    await row(index).evaluate((element) => element.scrollIntoView({ block: 'center' }));
+    await expect(row(index)).toBeInViewport();
+    const visible = await events
+      .locator('.perf-event')
+      .evaluateAll((elements) => elements.map((element) => Number((element as HTMLElement).dataset.performanceId?.split('-').at(-1))));
+    expect(visible.length).toBeLessThan(120);
+    expect(visible).toContain(index);
+    expect(visible).toContain(index + 1);
+    await expect(row(index)).toHaveCSS('height', `${rowHeight}px`);
+  };
+  const assertDividerAfterSelected = async (index: number, rowHeight: number) => {
+    await row(index).click();
+    await expect(row(index)).toHaveAttribute('aria-expanded', 'true');
+    const visibleOffset = 28 + (index + 1) * rowHeight - 100;
+    await events.evaluate((element, top) => {
+      element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
+      element.scrollTop = top;
+    }, visibleOffset);
+    await expect.poll(() => events.evaluate((element) => element.scrollTop)).toBe(visibleOffset);
+    const alignment = await events.evaluate((element, nextIndex) => {
+      const divider = element.querySelector<HTMLElement>('[data-testid="now-divider"]');
+      const next = element.querySelector<HTMLElement>(`[data-performance-id="performance-${nextIndex}"]`);
+      return {
+        reached: Number(divider?.dataset.reached),
+        dividerTop: divider?.getBoundingClientRect().top,
+        nextTop: next?.getBoundingClientRect().top,
+      };
+    }, index + 1);
+    expect(alignment.reached).toBe(index + 1);
+    expect(alignment.nextTop).toBeDefined();
+    expect(alignment.dividerTop).toBeDefined();
+    expect(Math.abs(alignment.nextTop! - alignment.dividerTop!)).toBeLessThanOrEqual(1);
+    await expect(row(index)).toBeFocused();
+    await row(index).press('ArrowDown');
+    await expect(row(index + 1)).toBeFocused();
+    await expect(row(index + 1)).toHaveAttribute('aria-expanded', 'true');
+    await expect(row(index + 1)).toHaveCSS('height', `${rowHeight}px`);
+  };
+
+  await assertWindowAt(60, 32);
+  await assertDividerAfterSelected(60, 32);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
+  await events.evaluate((element) => {
+    element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(row(119)).toBeAttached();
+  await row(119).evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  await expect(row(119)).toBeInViewport();
+
+  await page.setViewportSize({ width: 390, height: 800 });
+  await assertWindowAt(60, 44);
+  await assertDividerAfterSelected(60, 44);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
+  await events.evaluate((element) => {
+    element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(row(119)).toBeAttached();
+  await row(119).evaluate((element) => element.scrollIntoView({ block: 'center' }));
+  await expect(row(119)).toBeInViewport();
+});
+
 test.describe('Performance on a phone', () => {
   test.use({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 

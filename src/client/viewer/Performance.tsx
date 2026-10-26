@@ -5,6 +5,7 @@ import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'reac
 
 import { formatClock, type ReplayNetworkEntry } from '../../shared/replay.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
+import { useMediaQuery } from '../media.ts';
 import { countAtOrBefore } from '../timeline.ts';
 import { useWindowedRows } from '../windowing.ts';
 import { Empty } from './Empty.tsx';
@@ -14,7 +15,9 @@ import './diagnostic-timing.css';
 import { durationLabel, rowDuration, type WaterfallRow } from './waterfall.ts';
 import './performance.css';
 
-const EVENT_HEIGHT = 32;
+const DESKTOP_EVENT_HEIGHT = 32;
+const TOUCH_EVENT_HEIGHT = 44;
+const TOUCH_ROWS_QUERY = '(max-width: 600px), (pointer: coarse)';
 const EVENT_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'long-task', label: 'Long tasks' },
@@ -31,6 +34,7 @@ export function PerformanceDiagnostics({
   renderRequestDetail: (entry: ReplayNetworkEntry) => ReactNode;
 }) {
   const player = usePlayer();
+  const rowHeight = useMediaQuery(TOUCH_ROWS_QUERY) ? TOUCH_EVENT_HEIGHT : DESKTOP_EVENT_HEIGHT;
   const panel = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const detail = useRef<HTMLElement>(null);
@@ -82,6 +86,7 @@ export function PerformanceDiagnostics({
     <section
       ref={panel}
       className="performance-diagnostics"
+      data-row-height={rowHeight}
       aria-label="Performance diagnosis"
       data-testid="performance-diagnostics"
       onKeyDown={(event) => {
@@ -132,6 +137,7 @@ export function PerformanceDiagnostics({
           <PerformanceEvents
             key={`${query}:${filter}`}
             rows={events}
+            rowHeight={rowHeight}
             selected={selectedId}
             onChoose={choose}
             onFocus={(element) => {
@@ -273,11 +279,13 @@ function EventButton({
 
 function PerformanceEvents({
   rows,
+  rowHeight,
   selected,
   onChoose,
   onFocus,
 }: {
   rows: readonly WaterfallRow[];
+  rowHeight: number;
   selected: string | undefined;
   onChoose: (row: WaterfallRow, element?: HTMLElement) => void;
   onFocus: (element: HTMLElement) => void;
@@ -287,7 +295,7 @@ function PerformanceEvents({
   const reached = usePlayhead((time) => countAtOrBefore(ats, time >= player.duration ? Infinity : time <= 0 ? -1 : time));
   const scroll = useRef<HTMLDivElement>(null);
   const pending = useRef<string | undefined>(undefined);
-  const window = useWindowedRows(scroll, { count: rows.length, rowHeight: EVENT_HEIGHT, headerHeight: HEADER_HEIGHT });
+  const window = useWindowedRows(scroll, { count: rows.length, rowHeight, headerHeight: HEADER_HEIGHT });
   useLayoutEffect(() => {
     if (!pending.current) return;
     const row = scroll.current?.querySelector<HTMLElement>(`[data-performance-id="${pending.current}"]`);
@@ -302,7 +310,7 @@ function PerformanceEvents({
       scrollClassName="perf-events"
       reached={reached}
       total={rows.length}
-      rowHeight={EVENT_HEIGHT}
+      rowHeight={rowHeight}
       ats={ats}
       scroller={scroll}
     >
@@ -346,7 +354,7 @@ function PerformanceEvents({
             const target = rows[Math.max(0, Math.min(rows.length - 1, next))];
             if (!target) return;
             pending.current = target.id;
-            if (scroll.current) scroll.current.scrollTop = Math.max(0, next) * EVENT_HEIGHT;
+            if (scroll.current) scroll.current.scrollTop = Math.max(0, next) * rowHeight;
             onChoose(target);
           }}
         >
