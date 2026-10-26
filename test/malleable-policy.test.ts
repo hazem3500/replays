@@ -5,7 +5,14 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { handleCall, mayReadReplay, permissions, type PluginRef } from '../src/client/malleable/broker.ts';
-import { dismissReview, needsReview, recordLoad, resetHealthForTests } from '../src/client/malleable/health.ts';
+import {
+  dismissReview,
+  getHealthSnapshot,
+  needsReview,
+  recordLoad,
+  resetHealthForTests,
+  subscribeHealth,
+} from '../src/client/malleable/health.ts';
 import { setHostForTests } from '../src/client/malleable/host.ts';
 import { registryName } from '../src/client/malleable/manager.ts';
 import type { ViewerPluginContext } from '../src/client/plugins/api.ts';
@@ -327,6 +334,26 @@ describe('load health and the review notice (upgrade contract)', () => {
 
   const before = { core: '0.1.0', distribution: { name: 'acme', version: '1.0.0' } };
   const after = { core: '0.2.0', distribution: { name: 'acme', version: '2.0.0' } };
+  it('publishes immutable health snapshots when a failure is recorded or dismissed', () => {
+    const listener = vi.fn<() => void>();
+    const unsubscribe = subscribeHealth(listener);
+    try {
+      const saved = version(targetsFor(before));
+      const initial = getHealthSnapshot();
+      expect(getHealthSnapshot()).toBe(initial);
+      recordLoad(after, 'p', saved.sha256, false);
+      const failed = getHealthSnapshot();
+      expect(failed).not.toBe(initial);
+      expect(needsReview(after, 'p', saved, failed)).toBe(true);
+      dismissReview(after, ['p']);
+      expect(getHealthSnapshot()).not.toBe(failed);
+      expect(needsReview(after, 'p', saved, getHealthSnapshot())).toBe(false);
+      expect(needsReview(after, 'p', saved, failed)).toBe(true);
+      expect(listener).toHaveBeenCalledTimes(2);
+    } finally {
+      unsubscribe();
+    }
+  });
   it('points out a plugin that loaded before the upgrade and fails after it, and nothing else', () => {
     const saved = version(targetsFor(before));
     recordLoad(before, 'p', saved.sha256, true);

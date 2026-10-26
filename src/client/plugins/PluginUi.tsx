@@ -1,5 +1,5 @@
 import { PuzzleIcon, XIcon } from 'lucide-react';
-import { createContext, Fragment, type ReactNode, useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
+import { createContext, Fragment, type ReactNode, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
 import { isSafeIconUrl } from '../../shared/icon-url.ts';
@@ -17,7 +17,7 @@ import type { ReplayController } from '../player.ts';
 import { apiUrl, appBase } from '../route.ts';
 import { notify as showToast } from '../toast.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';
-import type { Cleanup, ViewerActionDefinition, ViewerPluginContext } from './api.ts';
+import type { Cleanup, SettingDefinition, ViewerActionDefinition, ViewerPluginContext } from './api.ts';
 import { viewerRegistry } from './registry.ts';
 import { pluginSettings, readSetting, subscribeSettings, writeSetting } from './settings.ts';
 
@@ -236,8 +236,6 @@ export function usePluginMenu(
  * own labelled group of radio items. Changing one keeps the menu open, stores it and tells the plugin.
  */
 function PluginSettingsMenu({ settings }: { settings: ReturnType<typeof usePluginSnapshot>['settings'] }) {
-  const [, rerender] = useReducer((count: number) => count + 1, 0);
-  useEffect(() => subscribeSettings(() => rerender()), []);
   const switches = settings.filter((setting) => setting.definition.type === 'boolean');
   const choices = settings.filter((setting) => setting.definition.type === 'choice');
   return (
@@ -248,46 +246,60 @@ function PluginSettingsMenu({ settings }: { settings: ReturnType<typeof usePlugi
           <DropdownMenuGroup>
             <DropdownMenuLabel>Settings</DropdownMenuLabel>
             {switches.map(({ plugin, key, definition }) => (
-              <DropdownMenuCheckboxItem
-                key={key}
-                checked={readSetting(plugin, definition) === true}
-                onCheckedChange={(checked) => writeSetting(plugin, definition, checked)}
-                closeOnClick={false}
-                inset
-                data-testid={`plugin-setting:${plugin}:${definition.id}`}
-              >
-                {definition.label}
-              </DropdownMenuCheckboxItem>
+              <PluginSettingCheckbox key={key} plugin={plugin} definition={definition} />
             ))}
           </DropdownMenuGroup>
         </>
       ) : null}
-      {choices.map(({ plugin, key, definition }) =>
-        definition.type === 'choice' ? (
-          <Fragment key={key}>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuLabel>{definition.label}</DropdownMenuLabel>
-              <DropdownMenuRadioGroup
-                value={readSetting(plugin, definition)}
-                onValueChange={(value) => writeSetting(plugin, definition, String(value))}
-              >
-                {definition.options.map((option) => (
-                  <DropdownMenuRadioItem
-                    key={option.value}
-                    value={option.value}
-                    closeOnClick={false}
-                    inset
-                    data-testid={`plugin-setting:${plugin}:${definition.id}:${option.value}`}
-                  >
-                    {option.label ?? option.value}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuGroup>
-          </Fragment>
-        ) : null,
-      )}
+      {choices.map(({ plugin, key, definition }) => (
+        <PluginSettingChoice key={key} plugin={plugin} definition={definition} />
+      ))}
     </>
+  );
+}
+
+/** Storage is external state: subscribing its primitive value also makes changes visible to memoized renders. */
+function useSettingValue(plugin: string, definition: SettingDefinition) {
+  return useSyncExternalStore(subscribeSettings, () => readSetting(plugin, definition));
+}
+
+function PluginSettingCheckbox({ plugin, definition }: { plugin: string; definition: SettingDefinition }) {
+  const value = useSettingValue(plugin, definition);
+  return (
+    <DropdownMenuCheckboxItem
+      checked={value === true}
+      onCheckedChange={(checked) => writeSetting(plugin, definition, checked)}
+      closeOnClick={false}
+      inset
+      data-testid={`plugin-setting:${plugin}:${definition.id}`}
+    >
+      {definition.label}
+    </DropdownMenuCheckboxItem>
+  );
+}
+
+function PluginSettingChoice({ plugin, definition }: { plugin: string; definition: SettingDefinition }) {
+  const value = useSettingValue(plugin, definition);
+  if (definition.type !== 'choice') return null;
+  return (
+    <Fragment>
+      <DropdownMenuSeparator />
+      <DropdownMenuGroup>
+        <DropdownMenuLabel>{definition.label}</DropdownMenuLabel>
+        <DropdownMenuRadioGroup value={value} onValueChange={(next) => writeSetting(plugin, definition, String(next))}>
+          {definition.options.map((option) => (
+            <DropdownMenuRadioItem
+              key={option.value}
+              value={option.value}
+              closeOnClick={false}
+              inset
+              data-testid={`plugin-setting:${plugin}:${definition.id}:${option.value}`}
+            >
+              {option.label ?? option.value}
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuGroup>
+    </Fragment>
   );
 }

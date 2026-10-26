@@ -22,7 +22,7 @@ import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
-import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
+import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState, usePlayhead } from './player.ts';
 import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
@@ -815,8 +815,8 @@ function StepCaption() {
       offState();
     };
   }, [player]);
-  const frame = captionAt(steps, player.getTime(), player.duration);
-  const step = frame && steps[frame.index];
+  const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
+  const step = steps[captionIndex];
   const playing = status === 'playing';
   if (!step || !(playing || (seeked && status !== 'ended'))) return null;
   return (
