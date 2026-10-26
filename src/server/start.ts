@@ -279,6 +279,11 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
       clearInterval(pruneTimer);
       bridgeHub?.close();
       const errors: unknown[] = [];
+      try {
+        await render.queue?.close();
+      } catch (error) {
+        errors.push(error);
+      }
       const connectionsClosed = new Promise<void>((done) => {
         server.close(() => done());
         server.closeIdleConnections();
