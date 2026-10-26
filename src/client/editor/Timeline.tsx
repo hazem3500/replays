@@ -14,7 +14,7 @@ import {
 import { Hint } from '@/components/icon-button.tsx';
 
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
-import { formatClock, type ReplayStep } from '../../shared/replay.ts';
+import { formatClock } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { type EditorAction, moveCut, type Selection, setTrimEdge, trimOf } from './state.ts';
 
@@ -90,18 +90,6 @@ export function timeKeys(event: ReactKeyboardEvent, value: number, min: number, 
   set(Math.min(max, Math.max(min, next)));
 }
 
-/** Event density across the replay, `bins` values in 0–1 (log-scaled so one busy moment does not flatten the rest). */
-export function activityBins(events: ReadonlyArray<{ timestamp: number }>, duration: number, bins = 160) {
-  const counts = Array.from({ length: bins }, () => 0);
-  const first = events[0]?.timestamp ?? 0;
-  for (const event of events) {
-    const index = Math.min(bins - 1, Math.max(0, Math.floor(((event.timestamp - first) / Math.max(1, duration)) * bins)));
-    counts[index]! += 1;
-  }
-  const max = Math.log1p(Math.max(1, ...counts));
-  return counts.map((count) => Math.log1p(count) / max);
-}
-
 /** Tick spacing: the smallest of these with at least ~72 px between labels. */
 const TICK_STEPS = [100, 200, 500, 1000, 2000, 5000, 10_000, 15_000, 30_000, 60_000, 120_000, 300_000, 600_000];
 
@@ -153,7 +141,10 @@ export function RegionBlock({
   const scale = useTimelineScale();
   const player = usePlayer();
   const left = scale.x(from);
-  const width = Math.max(6, scale.x(to) - left);
+  const naturalWidth = scale.x(to) - left;
+  // Captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
+  const width = kind === 'caption' ? Math.max(1, naturalWidth - 2) : Math.max(6, naturalWidth);
+  const showLabel = kind !== 'caption' || width >= (label?.length ?? 0) * 6.5 + 24;
   const length = to - from;
   const edge = (side: 'from' | 'to') => (event: ReactPointerEvent) => {
     onSelect();
@@ -204,7 +195,7 @@ export function RegionBlock({
           timeKeys(event, from, 0, scale.duration - length, (time) => onEdit('move', time, true));
         }}
       >
-        {label ? <span className="tl-region-label">{label}</span> : null}
+        {label && showLabel ? <span className="tl-region-label">{label}</span> : null}
         {children}
       </button>
       <span className="tl-region-edge" data-edge="from" aria-hidden="true" onPointerDown={edge('from')} />
@@ -236,6 +227,7 @@ export function Lane({
   onTrackPointerDown,
   tall = false,
   empty,
+  reveal = false,
 }: {
   name: string;
   icon: ReactNode;
@@ -244,9 +236,15 @@ export function Lane({
   onTrackPointerDown?: (event: ReactPointerEvent<HTMLDivElement>) => void;
   tall?: boolean;
   empty?: string | undefined;
+  /** Keyboard and menu-created effects reveal their track in the compact scrolling dock. */
+  reveal?: boolean;
 }) {
+  const lane = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (reveal) lane.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }, [reveal]);
   return (
-    <div className="tl-lane" data-kind={kind} data-tall={tall || undefined} role="group" aria-label={name}>
+    <div ref={lane} className="tl-lane" data-kind={kind} data-tall={tall || undefined} role="group" aria-label={name}>
       <Hint label={name} side="left">
         <span className="tl-gutter" aria-hidden="true">
           {icon}
@@ -266,8 +264,8 @@ export function Lane({
 
 /**
  * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, the
- * replay's steps as marks, the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
- * lanes. The clip lane shows the replay's activity inside the clip; its accent edges are the trim, dragged directly;
+ * the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
+ * lanes. The recording track stays plain; its accent edges are the trim, dragged directly;
  * cuts are hatched regions. Dragging on the clip selects a range (C cuts it), a click seeks. "Remove waits"
  * suggestions show as dashed regions until applied. `lanes` (the effects) go under it, on the same scale.
  */
@@ -276,8 +274,6 @@ export function Timeline({
   edits,
   selection,
   dispatch,
-  steps,
-  activity,
   suggestions,
   onCutRange,
   lanes,
@@ -286,8 +282,6 @@ export function Timeline({
   edits: ReplayEdits;
   selection: Selection;
   dispatch: (action: EditorAction) => void;
-  steps: readonly ReplayStep[];
-  activity: readonly number[];
   suggestions: readonly ReplayCut[];
   /** Cut the selected range (the selection pill). */
   onCutRange: () => void;
@@ -399,19 +393,6 @@ export function Timeline({
                 <span className="tl-tick-label">{tickLabel(at, tick)}</span>
               </span>
             ))}
-            {steps.map((step, index) => (
-              <Hint key={`${index}-${step.at}`} label={step.label}>
-                <span
-                  className="tl-step"
-                  data-kind={step.kind}
-                  style={{ transform: `translateX(${scale.x(step.at)}px)` }}
-                  onPointerDown={(event) => {
-                    event.stopPropagation();
-                    player.seek(step.at);
-                  }}
-                />
-              </Hint>
-            ))}
           </div>
         </div>
 
@@ -436,26 +417,6 @@ export function Timeline({
             });
           }}
         >
-          <svg
-            className="tl-activity"
-            aria-hidden="true"
-            style={{ left: `${PAD}px`, width: `${scale.width}px` }}
-            viewBox={`0 0 ${activity.length} 100`}
-            preserveAspectRatio="none"
-          >
-            {activity.map((value, index) =>
-              value > 0 ? (
-                <rect
-                  key={index}
-                  x={index + 0.15}
-                  width={0.7}
-                  y={100 - Math.max(6, value * 88)}
-                  height={Math.max(6, value * 88)}
-                  rx={0.35}
-                />
-              ) : null,
-            )}
-          </svg>
           {trim.start > 0 ? <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }} /> : null}
           {trim.end < duration ? <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }} /> : null}
           <div

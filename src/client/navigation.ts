@@ -11,16 +11,10 @@ import { OPEN_HINT_KEY, type OpenHint } from './ViewerSkeleton.tsx';
  * left clicks on in-app links and Back/Forward are routed here; anything else (modifier clicks, new tabs,
  * other paths) stays a normal page load.
  *
- * Index ↔ viewer runs as one View Transition (styles.css, "Page changes"), tagged `html[data-page-transition]`:
- * - The card's poster (or its live hover preview) morphs into the recorded frame inside the player: the
- *   viewer draws the same poster at the frame's exact rect (`.player-frame`, Transport.tsx) until rrweb has
- *   painted underneath, then crossfades to it. rrweb mounts only after the transition, so nothing heavy runs
- *   while the morph is on screen.
- * - The title and the source line move to the top bar as crossfading text (position only, never scaled), the
- *   duration badge fades where it was, the viewer's regions rise in 30–40 ms apart and the index recedes.
- * - Back reverses it into the card you came from (scroll restored first); a card that is off screen fades.
- * The new page renders inside the update callback: cached data and loaded code render the viewer itself (no
- * skeleton); otherwise the skeleton lands under the morph and the content crossfades in after it.
+ * Index ↔ viewer uses one short crossfade. Thumbnails and their letter fallbacks never expand into a
+ * recording: they can differ from its opening frame and aspect ratio. Cached routes render immediately;
+ * slow routes keep their normal loading/error state. History, focus and scroll restoration stay independent
+ * of animation, and reduced motion skips the crossfade.
  */
 
 export type PageDirection = 'to-viewer' | 'to-index' | 'page';
@@ -136,30 +130,6 @@ function cardFor(target: Route, clicked?: HTMLAnchorElement | null) {
   // and moves with it, instead of an unpaired layer that pops in place.
   const source = card.querySelector('.source-lead:not(.source-lead-plain)');
   return { card, link, poster: poster && onScreen(poster) ? poster : undefined, source };
-}
-
-/** Names the index side: the card's poster, title, badge and source line. */
-function nameCard(match: ReturnType<typeof cardFor>) {
-  if (!match) return;
-  if (match.poster) {
-    name(match.poster, 'vt-hero');
-    name(match.poster.querySelector('.poster-badge'), 'vt-badge');
-  }
-  if (onScreen(match.link)) name(match.link, 'vt-title');
-  if (match.source && onScreen(match.source)) name(match.source, 'vt-source');
-}
-
-/** Names the viewer side: the recorded frame (the replay, or the poster over it while rrweb loads) and the title. */
-function nameViewer() {
-  const shell = document.querySelector('.app-shell:not(.skeleton-overlay *)');
-  if (!shell) return;
-  name(shell.querySelector('.player-frame, .sk-frame'), 'vt-hero');
-  // A suite's card title is the suite's: it lands on the runs sidebar's heading.
-  name(
-    document.querySelector('.suite-sidebar-title h2') ?? shell.querySelector('.app-topbar .topbar-title-text, .sk-topbar .sk-title'),
-    'vt-title',
-  );
-  name(shell.querySelector('.app-topbar .topbar-source-chip, .sk-topbar .sk-line-chip'), 'vt-source');
 }
 
 /* ---------- The hint the viewer opens with ---------- */
@@ -418,126 +388,22 @@ function show(
   active?.skipTransition();
   const root = document.documentElement;
   unnameAll();
-  if (direction === 'to-viewer') nameCard(match);
-  else nameViewer();
-  root.dataset.pageTransition = direction;
-  if (direction === 'to-viewer' && hint?.still) root.dataset.pageStill = '';
-  else delete root.dataset.pageStill;
-  const before = measureNamed();
-  let morphs: Morph[] = [];
+  root.dataset.pageTransition = 'page';
   const transition = document.startViewTransition(async () => {
     await ready;
-    unnameAll();
     update();
-    if (run !== sequence) return;
-    if (direction === 'to-viewer') nameViewer();
-    else nameCard(returned);
-    morphs = planMorphs(before, measureNamed());
   });
   active = transition;
-  transition.ready.then(() => runMorphs(morphs)).catch(() => undefined);
   transition.finished
     .catch(() => undefined)
     .then(() => {
       if (active === transition) {
         active = undefined;
         delete root.dataset.pageTransition;
-        delete root.dataset.pageStill;
         unnameAll();
-        morphStyle.textContent = '';
-        // The lists that waited for the landing fade in rather than pop (styles.css html[data-landed]).
-        if (direction === 'to-viewer') {
-          root.dataset.landed = '';
-          window.setTimeout(() => delete root.dataset.landed, 300);
-        }
       }
       if (run === sequence) settleAfter(direction, returned);
     });
-}
-
-/* ---------- Compositor-only morphs ----------
- * The browser animates a shared element's group by width, height and transform, and width/height run on the
- * main thread: any work there (the viewer filling its lists) would stall the frame mid-flight. Instead each
- * group keeps one size (the larger of its two boxes, so the snapshot only ever scales down and stays sharp)
- * and moves on transform alone, which the compositor runs. Text never scales: it slides, and its two
- * renderings crossfade at their own size (styles.css).
- */
-
-interface Box {
-  rect: DOMRect;
-  radius: number;
-}
-interface Morph {
-  name: string;
-  from: string;
-  to: string;
-  radius?: [number, number];
-}
-
-const SCALED = new Set(['vt-hero']);
-const MOVED = new Set(['vt-hero', 'vt-title', 'vt-source']);
-
-const morphStyle = typeof document === 'undefined' ? ({} as HTMLStyleElement) : document.createElement('style');
-
-function measureNamed() {
-  const boxes = new Map<string, Box>();
-  for (const element of named) {
-    const group = element.style.viewTransitionName;
-    if (!MOVED.has(group)) continue;
-    boxes.set(group, {
-      rect: element.getBoundingClientRect(),
-      radius: Number.parseFloat(getComputedStyle(element).borderTopLeftRadius) || 0,
-    });
-  }
-  return boxes;
-}
-
-function planMorphs(before: Map<string, Box>, after: Map<string, Box>) {
-  const morphs: Morph[] = [];
-  let css = '';
-  for (const [group, old] of before) {
-    const next = after.get(group);
-    if (!next || old.rect.width === 0 || next.rect.width === 0) continue;
-    const a = old.rect;
-    const b = next.rect;
-    if (SCALED.has(group)) {
-      const base = a.width * a.height > b.width * b.height ? a : b;
-      const [w, h] = [base.width, base.height];
-      css += `html::view-transition-group(${group}) { width: ${w}px !important; height: ${h}px !important; transform-origin: 0 0 !important; }\n`;
-      morphs.push({
-        name: group,
-        from: `translate(${a.left}px, ${a.top}px) scale(${a.width / w}, ${a.height / h})`,
-        to: `translate(${b.left}px, ${b.top}px) scale(${b.width / w}, ${b.height / h})`,
-        radius: [(old.radius * w) / a.width, (Math.max(next.radius, 2) * w) / b.width],
-      });
-    } else {
-      css += `html::view-transition-group(${group}) { width: ${b.width}px !important; height: ${b.height}px !important; transform-origin: 0 0 !important; }\n`;
-      morphs.push({ name: group, from: `translate(${a.left}px, ${a.top}px)`, to: `translate(${b.left}px, ${b.top}px)` });
-    }
-  }
-  morphStyle.textContent = css;
-  if (!morphStyle.isConnected) document.head.append(morphStyle);
-  return morphs;
-}
-
-function runMorphs(morphs: Morph[]) {
-  const root = document.documentElement;
-  const animations = root.getAnimations({ subtree: true });
-  for (const morph of morphs) {
-    const pseudoElement = `::view-transition-group(${morph.name})`;
-    const computed = getComputedStyle(root, pseudoElement);
-    const duration = Number.parseFloat(computed.animationDuration) * 1000 || 400;
-    const easing = computed.animationTimingFunction || 'ease';
-    for (const animation of animations)
-      if ((animation.effect as KeyframeEffect | null)?.pseudoElement === pseudoElement) animation.cancel();
-    root.animate({ transform: [morph.from, morph.to] }, { pseudoElement, duration, easing, fill: 'both' });
-    // Corners ease from the card's radius to the player's (in the group's own, unscaled space).
-    if (morph.radius)
-      root.animate(
-        { borderRadius: morph.radius.map((value) => `${value}px`) },
-        { pseudoElement, duration, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'both' },
-      );
-  }
 }
 
 /* ---------- In-place swaps (a suite's runs) ----------

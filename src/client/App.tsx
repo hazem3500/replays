@@ -9,19 +9,11 @@ import { editingEnabled, productName } from './config.ts';
 import { ReplayIndex } from './ReplayIndex.tsx';
 import { editsQuery } from './edits.ts';
 import { queryClient, replayQuery, suiteQuery } from './queries.ts';
-import {
-  afterPageTransition,
-  currentIndexGeneration,
-  currentRoute,
-  installNavigation,
-  pageTransitionRunning,
-  setRoutePreparer,
-  subscribeRoute,
-} from './navigation.ts';
+import { currentIndexGeneration, currentRoute, installNavigation, setRoutePreparer, subscribeRoute } from './navigation.ts';
 import { indexHref, replayHref, type Route } from './route.ts';
 import { notify } from './toast.ts';
 import { ThemeContext, useTheme } from './theme.tsx';
-import { LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
+import { EditorSkeleton, LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
 
 // The index ships alone; the viewer (rrweb + player) and the suite workspace are split chunks.
 // Each loader is memoised so the route can start the download before React asks for it.
@@ -162,13 +154,13 @@ function SuitePage({ id, replayId }: { id: string; replayId?: string }) {
     if (ready) return;
     let live = true;
     void loadSuiteWorkspace()
-      .then(afterPageTransition, () => undefined)
+      .catch(() => undefined)
       .then(() => live && setReady(true));
     return () => {
       live = false;
     };
   }, [ready]);
-  // The skeleton fades in only for slow loads, holds ≥ 300 ms once shown and crossfades (ViewerSkeleton.tsx).
+  // Fast loads skip the delayed skeleton; ready content replaces it immediately.
   return (
     <LoadingSwap ready={ready} skeleton={<ViewerSkeleton suite />}>
       <Suspense fallback={<ViewerSkeleton suite />}>
@@ -190,14 +182,14 @@ function ReplayPage({ id }: { id: string }) {
   }, [bundle, edits.isError, edits.error]);
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure)?.message ?? '';
-  // Loaded code and a cached bundle render the viewer at once, even inside a page transition (it is the
-  // transition's new page). Otherwise the skeleton stays until the transition is over (swapping it mid-way
-  // would remove the elements being animated) and the viewer's code is in, so it never suspends again.
-  const [ready, setReady] = useState(() => viewerLoaded && (bundle !== undefined || !pageTransitionRunning()));
+  // A page crossfade never delays ready content or forces a loading placeholder to finish animating.
+  const [ready, setReady] = useState(() => viewerLoaded);
   useEffect(() => {
     if (ready) return;
     let live = true;
-    void Promise.all([afterPageTransition(), loadViewer().catch(() => undefined)]).then(() => live && setReady(true));
+    void loadViewer()
+      .catch(() => undefined)
+      .then(() => live && setReady(true));
     return () => {
       live = false;
     };
@@ -233,7 +225,7 @@ function ReplayPage({ id }: { id: string }) {
     );
   }
 
-  // The skeleton fades in only for slow loads, holds ≥ 300 ms once shown and crossfades (ViewerSkeleton.tsx).
+  // Fast loads skip the delayed skeleton; ready content replaces it immediately.
   return (
     <LoadingSwap ready={Boolean(bundle) && ready && editsSettled} skeleton={<ViewerSkeleton />}>
       {bundle && editsSettled ? (
@@ -290,9 +282,9 @@ function EditPage({ id }: { id: string }) {
   // Fresh edits only: a cached copy could be older than someone else's save.
   const loaded = edits.data && !edits.isFetching ? edits.data : undefined;
   return (
-    <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={<ViewerSkeleton label="Loading editor" />}>
+    <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={<EditorSkeleton />}>
       {bundle && loaded ? (
-        <Suspense fallback={<ViewerSkeleton label="Loading editor" />}>
+        <Suspense fallback={<EditorSkeleton />}>
           <Editor bundle={bundle} loaded={loaded} />
         </Suspense>
       ) : null}

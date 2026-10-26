@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test';
 
 import { serveApp } from './support.ts';
+import { editListOf, editsVersion } from '../src/shared/edits.ts';
 
 // Edit mode (/r/<id>/edit), reached from the viewer's top-bar Edit button: "Remove waits" suggestions applied with
 // Enter, a range dragged on the clip and cut with C, undo/redo, a trim edge moved by keyboard, autosave that records
@@ -186,4 +187,50 @@ test('with the flag on, the server says so and the viewer offers the editor', as
   await expect(page.locator('meta[name="app-beta"]')).toHaveAttribute('content', 'editor');
   await expect(page.getByTestId('edit-replay')).toBeVisible();
   expect((await page.request.get(`${base()}/api/replays/demo-shop/edits`)).status()).toBe(200);
+});
+
+test('editor entry has a stable stage and timeline skeleton, without a viewer inspector', async ({ page }) => {
+  const id = await uploadCopy(page, 'editor-loading');
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(`**/api/replays/${id}`, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await page.goto(`${base()}/r/${id}/edit`);
+  const skeleton = page.getByTestId('editor-skeleton');
+  await expect(skeleton).toBeVisible();
+  await expect(skeleton.locator('.loading-notice')).toHaveText('Opening editor…');
+  await expect(skeleton.locator('.editor-loading-track')).toHaveCount(0);
+  await expect(skeleton.locator('.sk-steps, .sk-table-head, .sk-tabs')).toHaveCount(0);
+  release();
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await expect(skeleton).toHaveCount(0);
+});
+
+test('export uses the saved edit revision; viewing original preserves edits', async ({ page }) => {
+  const id = await uploadCopy(page, 'editor-export');
+  let exported: Record<string, unknown> | undefined;
+  await page.route(`**/api/replays/${id}/render**`, async (route) => {
+    const request = route.request();
+    if (request.method() === 'POST') exported = request.postDataJSON();
+    await route.fulfill({ json: { status: exported && request.method() !== 'DELETE' ? 'queued' : 'none' } });
+  });
+  await page.goto(`${base()}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByTestId('editor-done')).toHaveText('View replay');
+  await page.locator('body').press('c');
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+  const saved = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
+  await page.getByTestId('editor-export').click();
+  await expect.poll(() => exported).toEqual({ speed: 1, skipInactive: false, captions: false, edits: editsVersion(editListOf(saved)) });
+  await page.getByTestId('editor-export-status').getByRole('button', { name: 'Cancel' }).click();
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByTestId('editor-view-original').click();
+  await expect(page).toHaveURL(new RegExp(`/r/${id}\\?original=1$`));
+  await expect(page.getByTestId('edited-chip')).toHaveText('Original');
+  const after = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
+  expect(after).toEqual(saved);
 });

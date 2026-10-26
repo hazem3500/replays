@@ -43,8 +43,8 @@ function expectSameLayout(before: Record<string, number[] | null>, after: Record
 }
 
 for (const [label, viewport, mobile] of [
-  ['desktop', { width: 1440, height: 900 }, false],
-  ['phone', { width: 412, height: 915 }, true],
+  ['desktop', { width: 1280, height: 800 }, false],
+  ['phone', { width: 390, height: 800 }, true],
 ] as const) {
   test(`${label}: the skeleton has the loaded viewer's layout (no shift)`, async ({ browser }) => {
     const context = await browser.newContext({ viewport, ...(mobile ? { isMobile: true, hasTouch: true } : {}) });
@@ -70,24 +70,27 @@ test('after 1.2 s still loading, a thin progress line shows under the top bar', 
   await expect(line).toBeAttached();
   const opacity = () => line.evaluate((element) => Number(getComputedStyle(element).opacity));
   expect(await opacity()).toBeLessThan(0.1);
+  await expect(line).toHaveAttribute('data-visible', 'true');
   await expect.poll(opacity, { timeout: 8_000 }).toBe(1);
   release();
 });
 
-test('under reduced motion the skeleton is static', async ({ browser }) => {
-  const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1440, height: 900 } });
+test('under reduced motion loading is static and contains no pretend controls', async ({ browser }) => {
+  const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const release = await holdBundle(page);
   await page.goto(viewer());
-  const block = page.locator('main.skeleton-shell .sk').first();
+  const block = page.locator('main.skeleton-shell');
   await expect(block).toBeAttached();
+  await expect(block.locator('.sk, .sk-step, .sk-table-row')).toHaveCount(0);
+  await expect(block.locator('.loading-notice')).toHaveText('Opening replay…');
   expect(await block.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
   release();
   await context.close();
 });
 
 test('a suite opens on a skeleton with its runs sidebar', async ({ page }) => {
-  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.route(/\/api\/suites\//, async (route) => {
     await new Promise((resolve) => setTimeout(resolve, 1500));
     await route.continue();

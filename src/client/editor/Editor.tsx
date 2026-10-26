@@ -12,6 +12,8 @@ import {
   ScissorsIcon,
   Undo2Icon,
   ZoomInIcon,
+  PlusIcon,
+  FileVideoCameraIcon,
 } from 'lucide-react';
 import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
@@ -32,6 +34,10 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
@@ -78,7 +84,8 @@ import {
   withEffectList,
 } from './state.ts';
 import { handOff } from './handoff.ts';
-import { activityBins, Timeline } from './Timeline.tsx';
+import { Timeline } from './Timeline.tsx';
+import { EditorExport } from './EditorExport.tsx';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 const MOD = IS_MAC ? '⌘' : 'Ctrl+';
@@ -91,14 +98,13 @@ const RETRY_BASE_MS = 2000;
 const RETRY_MAX_MS = 30_000;
 
 /** The timeline dock: resized from its top edge like the viewer's diagnostics panel, kept under its own key. */
-const DEFAULT_DOCK_HEIGHT = 330;
+const DEFAULT_DOCK_HEIGHT = 168;
 const DOCK_SIZE: PanelSize = {
   storageKey: 'replays-editor-dock-height',
   variable: '--dock-height',
-  // The control row, the ruler, the clip lane at its smallest and the hint.
-  // The control row, the ruler, the clip lane and four effect lanes at their smallest, and the hint.
-  min: 300,
-  max: () => Math.max(300, Math.round(window.innerHeight * 0.65)),
+  // Playback, ruler, clip and a quiet hint; effect tracks scroll when the dock is short.
+  min: 148,
+  max: () => Math.max(148, Math.round(window.innerHeight * 0.65)),
   label: 'Resize timeline',
 };
 
@@ -107,7 +113,7 @@ const DOCK_SIZE: PanelSize = {
  * timeline that holds every edit (src/client/editor/Timeline.tsx). Everything is direct manipulation: drag the clip's
  * edges to trim, drag across the clip to select and C to cut, drag a cut's edges or remove it from its ×. "Remove
  * waits" first shows the waits it found on the track; Enter applies them all. Playback previews the result live (cuts
- * are skipped, it stops at the trim end). Changes save on their own (a quiet "Saved"); Done returns to the viewer.
+ * are skipped, it stops at the trim end). Changes save on their own (a quiet "Saved"); View replay returns to the viewer.
  * Edits are a non-destructive list next to the replay (src/shared/edits.ts).
  */
 export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: LoadedEdits }) {
@@ -123,6 +129,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [failure, setFailure] = useState('');
   const [conflict, setConflict] = useState<LoadedEdits>();
   const [suggesting, setSuggesting] = useState(false);
+  const [showEmptyTracks, setShowEmptyTracks] = useState(false);
+  const [blurPlacement, setBlurPlacement] = useState<{ from: number; to: number }>();
   const [note, say] = useNote();
   const mobile = useMediaQuery(MOBILE_QUERY);
   const shell = useRef<HTMLElement>(null);
@@ -132,7 +140,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const timeline = useMemo(() => editTimeline(edits, duration), [edits, duration]);
   const dirty = isDirty(state);
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
-  const activity = useMemo(() => activityBins(bundle.events, duration), [bundle.events, duration]);
   const suggestions = useMemo(
     () => (suggesting ? waitSuggestions(edits, bundle.steps, duration) : []),
     [bundle.steps, duration, edits, suggesting],
@@ -148,7 +155,10 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const previewEffects = useMemo(() => playbackEffects(edits, IDENTITY_TIME(duration), bundle.events), [bundle.events, duration, edits]);
   useEffect(() => player.setEffects(previewEffects), [player, previewEffects]);
   // Placing a blur box: the zoom holds at 1× so the box sits on the page as recorded.
-  useEffect(() => player.setZoomSuspended(state.selection?.kind === 'blur'), [player, state.selection]);
+  useEffect(
+    () => player.setZoomSuspended(Boolean(blurPlacement) || state.selection?.kind === 'blur'),
+    [blurPlacement, player, state.selection],
+  );
   const speedsRef = useRef(edits.speeds);
   useEffect(() => {
     speedsRef.current = edits.speeds;
@@ -336,6 +346,13 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       effect: (kind: EffectKind) => {
         const { present, selection } = live.current.state;
         const range = selection?.kind === 'range' ? selection : undefined;
+        if (kind === 'blur') {
+          player.pause();
+          const from = range?.from ?? player.getTime();
+          setBlurPlacement({ from, to: range?.to ?? Math.min(duration, from + NEW_EFFECT_MS) });
+          return;
+        }
+        setBlurPlacement(undefined);
         if (!range && kind === 'zoom') {
           const regions = proposeZoomRegions(clicksOf(bundle.events), duration, present.zooms ?? [], undefined, (index) =>
             nextEffectId(present, 'zoom', index),
@@ -433,6 +450,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         case 'delete':
           return actions.deleteSelection();
         case 'deselect':
+          setBlurPlacement(undefined);
           setSuggesting(false);
           return dispatch({ type: 'select', selection: undefined });
       }
@@ -473,6 +491,32 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
 
   const menuItems = useMemo<TopbarMenuItem[]>(
     () => [
+      ...(mobile
+        ? [
+            {
+              label: 'Undo',
+              icon: <Undo2Icon aria-hidden="true" />,
+              onSelect: () => dispatch({ type: 'undo' }),
+              disabled: !canUndo(state),
+              shortcut: `${MOD}Z`,
+              testId: 'undo',
+            },
+            {
+              label: 'Redo',
+              icon: <Redo2Icon aria-hidden="true" />,
+              onSelect: () => dispatch({ type: 'redo' }),
+              disabled: !canRedo(state),
+              shortcut: IS_MAC ? '⇧⌘Z' : 'Ctrl+Y',
+              testId: 'redo',
+            },
+          ]
+        : []),
+      {
+        label: 'View original',
+        icon: <FileVideoCameraIcon aria-hidden="true" />,
+        onSelect: () => void leave(`${replayHref(id)}?original=1`),
+        testId: 'editor-view-original',
+      },
       {
         label: 'Remove waits',
         icon: <HourglassIcon aria-hidden="true" />,
@@ -488,7 +532,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         testId: 'reset-edits',
       },
     ],
-    [actions.removeWaits, change, edits],
+    [actions.removeWaits, change, edits, id, leave, mobile, state],
   );
 
   const selection = state.selection;
@@ -535,38 +579,62 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
             alwaysMenu
             actions={
               <>
-                <IconButton
-                  label="Undo"
-                  shortcut={`${MOD}Z`}
-                  tooltipSide="bottom"
-                  disabled={!canUndo(state)}
-                  onClick={() => dispatch({ type: 'undo' })}
-                  data-testid="undo"
-                >
-                  <Undo2Icon aria-hidden="true" />
-                </IconButton>
-                <IconButton
-                  label="Redo"
-                  shortcut={IS_MAC ? '⇧⌘Z' : 'Ctrl+Y'}
-                  tooltipSide="bottom"
-                  disabled={!canRedo(state)}
-                  onClick={() => dispatch({ type: 'redo' })}
-                  data-testid="redo"
-                >
-                  <Redo2Icon aria-hidden="true" />
-                </IconButton>
+                {mobile ? null : (
+                  <>
+                    <IconButton
+                      label="Undo"
+                      shortcut={`${MOD}Z`}
+                      tooltipSide="bottom"
+                      disabled={!canUndo(state)}
+                      onClick={() => dispatch({ type: 'undo' })}
+                      data-testid="undo"
+                    >
+                      <Undo2Icon aria-hidden="true" />
+                    </IconButton>
+                    <IconButton
+                      label="Redo"
+                      shortcut={IS_MAC ? '⇧⌘Z' : 'Ctrl+Y'}
+                      tooltipSide="bottom"
+                      disabled={!canRedo(state)}
+                      onClick={() => dispatch({ type: 'redo' })}
+                      data-testid="redo"
+                    >
+                      <Redo2Icon aria-hidden="true" />
+                    </IconButton>
+                  </>
+                )}
                 <Hint label="Back to the replay, edits applied" side="bottom" align="end">
-                  <Button size="sm" className="editor-done" onClick={() => void leave(replayHref(id))} data-testid="editor-done">
-                    Done
+                  <Button
+                    size="sm"
+                    className="editor-done"
+                    aria-label="View replay"
+                    onClick={() => void leave(replayHref(id))}
+                    data-testid="editor-done"
+                  >
+                    {mobile ? 'View' : 'View replay'}
                   </Button>
                 </Hint>
+                <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
               </>
             }
           />
           <section className="editor-stage" aria-label="Preview">
             <div className="stage-wrap">
               <PlayerStage />
-              <BlurOverlay edits={edits} selection={selection} dispatch={dispatch} />
+              <BlurOverlay
+                edits={edits}
+                selection={selection}
+                dispatch={dispatch}
+                placing={Boolean(blurPlacement)}
+                onCancel={() => setBlurPlacement(undefined)}
+                onPlace={(box) => {
+                  if (!blurPlacement) return;
+                  const added = addEffect(live.current.state.present, 'blur', blurPlacement.from, blurPlacement.to, duration, box);
+                  if (added) change(added.edits, { kind: 'blur', id: added.id });
+                  else say('Choose a position inside the replay to add a blur');
+                  setBlurPlacement(undefined);
+                }}
+              />
               {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
             </div>
           </section>
@@ -594,38 +662,34 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 <HourglassIcon aria-hidden="true" />
               </IconButton>
               <span className="editor-bar-divider" aria-hidden="true" />
-              <IconButton
-                label={selection?.kind === 'range' ? 'Zoom in on the selection' : 'Zoom in on every click'}
-                shortcut="Z"
-                onClick={() => actions.effect('zoom')}
-                data-testid="add-zoom"
-              >
-                <ZoomInIcon aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                label={selection?.kind === 'range' ? 'Speed up the selection' : 'Speed up 3 s from the playhead'}
-                shortcut="F"
-                onClick={() => actions.effect('speed')}
-                data-testid="add-speed"
-              >
-                <FastForwardIcon aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                label={selection?.kind === 'range' ? 'Blur part of the page over the selection' : 'Blur part of the page from the playhead'}
-                shortcut="B"
-                onClick={() => actions.effect('blur')}
-                data-testid="add-blur"
-              >
-                <EyeOffIcon aria-hidden="true" />
-              </IconButton>
-              <IconButton
-                label={edits.captions?.length ? 'Add a caption at the playhead' : 'Captions from the step names'}
-                shortcut="T"
-                onClick={() => actions.effect('caption')}
-                data-testid="add-caption"
-              >
-                <CaptionsIcon aria-hidden="true" />
-              </IconButton>
+              <DropdownMenu>
+                <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-add-effect" data-testid="add-effect" />}>
+                  <PlusIcon aria-hidden="true" /> Effect <ChevronDownIcon aria-hidden="true" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent side="top" className="w-auto min-w-52" aria-label="Add effect">
+                  <DropdownMenuItem onClick={() => actions.effect('zoom')} data-testid="add-zoom">
+                    <ZoomInIcon aria-hidden="true" /> Zoom on clicks <DropdownMenuShortcut>Z</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.effect('speed')} data-testid="add-speed">
+                    <FastForwardIcon aria-hidden="true" /> Speed up <DropdownMenuShortcut>F</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.effect('blur')} data-testid="add-blur">
+                    <EyeOffIcon aria-hidden="true" /> Blur an area <DropdownMenuShortcut>B</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => actions.effect('caption')} data-testid="add-caption">
+                    <CaptionsIcon aria-hidden="true" /> Captions <DropdownMenuShortcut>T</DropdownMenuShortcut>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuCheckboxItem
+                    checked={showEmptyTracks}
+                    onCheckedChange={setShowEmptyTracks}
+                    closeOnClick
+                    data-testid="show-empty-tracks"
+                  >
+                    Show empty tracks
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <EffectControls edits={edits} selection={selection} change={change} />
               <div className="editor-bar-end">
                 {suggesting && suggestions.length ? (
@@ -677,11 +741,9 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
               edits={edits}
               selection={selection}
               dispatch={dispatch}
-              steps={bundle.steps}
-              activity={activity}
               suggestions={suggestions}
               onCutRange={actions.cut}
-              lanes={<EffectLanes edits={edits} selection={selection} dispatch={dispatch} />}
+              lanes={<EffectLanes edits={edits} selection={selection} dispatch={dispatch} showEmpty={showEmptyTracks} />}
             />
             <p className="editor-hint" data-testid="editor-hint" data-note={note ? '' : undefined}>
               {note ?? hint}

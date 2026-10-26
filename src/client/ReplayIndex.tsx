@@ -676,7 +676,7 @@ export function ReplayIndex() {
   };
   const searchField = <CommandSearch value={query} onChange={setQuery} entries={entries} total={entries?.length} compact={compact} />;
   const count = (
-    <span className="scope-count" role="status" aria-atomic="true">
+    <span className={cn('scope-count', !filtered && !pending && 'sr-only')} role="status" aria-atomic="true">
       {pending
         ? items
           ? 'Updating replays…'

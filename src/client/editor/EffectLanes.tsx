@@ -51,9 +51,11 @@ export function EffectLanes({
   edits,
   selection,
   dispatch,
+  showEmpty = false,
 }: {
   edits: ReplayEdits;
   selection: Selection;
+  showEmpty?: boolean;
   dispatch: (action: EditorAction) => void;
 }) {
   const scale = useTimelineScale();
@@ -67,53 +69,56 @@ export function EffectLanes({
 
   return (
     <>
-      {LANES.map(({ kind, name, empty, icon, label }) => (
-        <Lane
-          key={kind}
-          name={name}
-          kind={kind}
-          icon={icon}
-          empty={effectList(edits, kind).length ? undefined : empty}
-          onTrackPointerDown={(event) => {
-            if (event.button !== 0) return;
-            const base = latest.current;
-            const start = scale.timeAt(event.clientX);
-            startDrag(event, scale, {
-              move: (time, first) => {
-                const added = addEffect(base, kind, start, time, scale.duration);
-                if (added) change(added.edits, first, { kind, id: added.id });
-              },
-              end: (moved, time) => {
-                if (moved) return;
-                dispatch({ type: 'select', selection: undefined });
-                player.seek(time);
-              },
-            });
-          }}
-        >
-          {effectList(edits, kind).map((region) => {
-            const text = (label as (region: unknown) => string)(region);
-            return (
-              <RegionBlock
-                key={region.id}
-                id={region.id}
-                kind={kind}
-                from={region.from}
-                to={region.to}
-                label={text}
-                title={`${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`}
-                selected={selection?.kind === kind && selection.id === region.id}
-                seekTo={kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined}
-                onSelect={() => dispatch({ type: 'select', selection: { kind, id: region.id } })}
-                onEdit={(edge, time, first) =>
-                  change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id })
-                }
-                onRemove={() => change(removeEffect(latest.current, kind, region.id), true)}
-              />
-            );
-          })}
-        </Lane>
-      ))}
+      {LANES.filter(({ kind }) => showEmpty || effectList(edits, kind).length > 0 || selection?.kind === kind).map(
+        ({ kind, name, empty, icon, label }) => (
+          <Lane
+            key={kind}
+            name={name}
+            kind={kind}
+            reveal={selection?.kind === kind}
+            icon={icon}
+            empty={effectList(edits, kind).length ? undefined : empty}
+            onTrackPointerDown={(event) => {
+              if (event.button !== 0) return;
+              const base = latest.current;
+              const start = scale.timeAt(event.clientX);
+              startDrag(event, scale, {
+                move: (time, first) => {
+                  const added = addEffect(base, kind, start, time, scale.duration);
+                  if (added) change(added.edits, first, { kind, id: added.id });
+                },
+                end: (moved, time) => {
+                  if (moved) return;
+                  dispatch({ type: 'select', selection: undefined });
+                  player.seek(time);
+                },
+              });
+            }}
+          >
+            {effectList(edits, kind).map((region) => {
+              const text = (label as (region: unknown) => string)(region);
+              return (
+                <RegionBlock
+                  key={region.id}
+                  id={region.id}
+                  kind={kind}
+                  from={region.from}
+                  to={region.to}
+                  label={text}
+                  title={`${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`}
+                  selected={selection?.kind === kind && selection.id === region.id}
+                  seekTo={kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined}
+                  onSelect={() => dispatch({ type: 'select', selection: { kind, id: region.id } })}
+                  onEdit={(edge, time, first) =>
+                    change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id })
+                  }
+                  onRemove={() => change(removeEffect(latest.current, kind, region.id), true)}
+                />
+              );
+            })}
+          </Lane>
+        ),
+      )}
     </>
   );
 }

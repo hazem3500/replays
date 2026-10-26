@@ -69,10 +69,6 @@
   @media (pointer: coarse) {
     /* Not [data-slot]: tooltip triggers replace the slot attribute. */
     .transport button:not(.marker) { min-width: 40px; height: 40px; }
-    /* Touch: a 40 px target that meets the captions target (no gap: neither shows a fill at rest); the label starts at
-       its left edge, 6 px after the chip like desktop, and the widest one ends about 16 px from the bar (the play
-       glyph's inset). */
-    .transport .playback-options { justify-content: flex-start; margin-left: -5px; margin-right: 0; padding-left: 0; }
     /* Fullscreen on touch is always shown, so it stays quiet: a 34 px translucent disc, 10 px in from the player's
        corner (whole, on top of whatever the recording shows there), lifted by a soft shadow rather than a ring. The
        button itself is a transparent 40 px target; the disc is its ::before, under the icon. */

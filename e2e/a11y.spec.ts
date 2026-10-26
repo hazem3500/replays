@@ -52,7 +52,7 @@ async function audit(page: Page, state: string, { disable = [] as string[] } = {
 for (const theme of THEMES) {
   test.describe(`axe (${theme})`, () => {
     test.beforeEach(async ({ page }) => {
-      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.setViewportSize({ width: 1280, height: 800 });
       await useTheme(page, theme);
     });
 
@@ -69,7 +69,7 @@ for (const theme of THEMES) {
       await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
       await audit(page, 'index, filtered');
       await page.getByRole('button', { name: /^Filter/ }).click();
-      await expect(page.getByRole('menu', { name: 'Filters' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
       await audit(page, 'index, filter menu');
     });
 
@@ -89,7 +89,7 @@ for (const theme of THEMES) {
       await audit(page, 'viewer, request detail');
 
       await page.getByRole('button', { name: /^Playback: / }).click();
-      await expect(page.getByRole('menu', { name: 'Playback' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Playback' })).toBeVisible();
       await audit(page, 'viewer, playback options');
       await page.keyboard.press('Escape');
 
@@ -180,46 +180,26 @@ for (const theme of THEMES) {
       await context.close();
     });
 
-    test('phone Performance marks keep measured geometry and usable targets', async ({ browser }) => {
+    test('phone Performance event rows keep useful targets and keyboard evidence inspection', async ({ browser }) => {
       test.slow();
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
       const page = await context.newPage();
       await useTheme(page, theme);
       await openReplay(page, `${server().origin}/r/demo-shop`);
       await page.getByTestId('performance-tab').click();
-      const timeline = page.locator('.perf-timeline');
-      await timeline.scrollIntoViewIfNeeded();
-      const geometry = await timeline.locator('.perf-lane').evaluateAll((lanes) =>
-        lanes.map((lane) => {
-          const target = lane.getBoundingClientRect();
-          return { width: target.width, height: target.height };
-        }),
-      );
-      expect(geometry.length).toBeGreaterThan(0);
-      expect(geometry.every((mark) => mark.width >= 24 && mark.height >= 24)).toBe(true);
-      const marks = timeline.locator('.perf-span, .perf-point');
-      expect(await marks.count()).toBeGreaterThan(4);
-      await expect(timeline.getByRole('button')).toHaveCount(4);
-      expect(await marks.evaluateAll((items) => items.some((mark) => mark.getBoundingClientRect().width < 24))).toBe(true);
-      await audit(page, 'phone Performance marks');
-
-      const taskLane = timeline.getByRole('button', { name: /^Main thread,/ });
-      await taskLane.focus();
-      await taskLane.press('End');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      // The transport range serializes whole milliseconds; captured signal starts may be fractional.
-      const selectedAt = Number(await page.getByRole('slider', { name: 'Performance replay playhead' }).getAttribute('aria-valuenow'));
-      expect(Number(await page.getByRole('slider', { name: 'Seek', exact: true }).inputValue())).toBe(Math.round(selectedAt));
-      await taskLane.press('Escape');
-      await expect(taskLane).toBeFocused();
-
-      await page.getByRole('button', { name: /^All events/ }).click();
       const list = page.getByTestId('performance-events');
-      await list.getByRole('button').first().click();
-      const bounds = await list.boundingBox();
-      expect(bounds!.height).toBeGreaterThanOrEqual(88);
+      const first = list.getByRole('button').first();
+      await expect(first).toBeVisible();
+      const bounds = await first.boundingBox();
+      expect(bounds!.height).toBeGreaterThanOrEqual(44);
+      await first.focus();
+      await first.press('End');
       await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      await audit(page, 'phone Performance list and selected evidence');
+      await list.locator('[aria-expanded="true"]').press('Escape');
+      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
+      await first.click();
+      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
+      await audit(page, 'phone Performance events and selected evidence');
       await context.close();
     });
   });
@@ -262,19 +242,17 @@ test('menus open, move and close by keyboard and return to their trigger', async
   const speed = page.getByRole('button', { name: /^Playback: / });
   await speed.focus();
   await page.keyboard.press('Enter');
-  // The menu opens on its first item; arrows move through the speeds; Enter picks one and closes.
-  await expect(page.getByRole('menuitemradio').first()).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('menuitemradio', { name: /^2×/ })).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('menu', { name: 'Playback' })).toHaveCount(0);
-  await expect(speed).toBeFocused();
+  const slider = page.getByRole('slider', { name: 'Playback speed' });
+  await slider.focus();
+  await slider.press('ArrowRight');
+  await slider.press('ArrowRight');
   await expect(page.getByTestId('speed-tag')).toHaveText('2×');
+  await expect(slider).toHaveAttribute('aria-valuetext', '2×');
+  await slider.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Playback' })).toHaveCount(0);
+  await expect(speed).toBeFocused();
   await speed.press('Enter');
-  await expect(page.getByRole('menuitemradio').first()).toBeFocused();
+  await expect(slider).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(speed).toBeFocused();
   await page.keyboard.press('Shift+?');

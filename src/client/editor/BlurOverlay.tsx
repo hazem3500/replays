@@ -1,9 +1,12 @@
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from 'react';
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react';
 
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { MIN_BLUR_SIZE, type ReplayBlur } from '../../shared/effects.ts';
 import type { EditorAction, Selection } from './state.ts';
 import { updateEffect } from './state.ts';
+import { Button } from '@/components/ui/button.tsx';
+
+type BlurBox = Pick<ReplayBlur, 'x' | 'y' | 'width' | 'height'>;
 
 type Handle = 'move' | 'nw' | 'ne' | 'sw' | 'se';
 const CORNERS: Handle[] = ['nw', 'ne', 'sw', 'se'];
@@ -41,12 +44,24 @@ export function BlurOverlay({
   edits,
   selection,
   dispatch,
+  placing = false,
+  onPlace,
+  onCancel,
 }: {
   edits: ReplayEdits;
   selection: Selection;
   dispatch: (action: EditorAction) => void;
+  placing?: boolean;
+  onPlace?: (box: BlurBox) => void;
+  onCancel?: () => void;
 }) {
   const frame = useRef<HTMLDivElement>(null);
+  const [draft, setDraft] = useState<BlurBox>();
+  const stopDrawing = useRef<(() => void) | undefined>(undefined);
+  useEffect(() => {
+    if (!placing) stopDrawing.current?.();
+    return () => stopDrawing.current?.();
+  }, [placing]);
   const latest = useRef(edits);
   useEffect(() => {
     latest.current = edits;
@@ -54,7 +69,50 @@ export function BlurOverlay({
   const selectedId = selection?.kind === 'blur' ? selection.id : undefined;
   // Only the selected box: the zoom holds at 1× while one is selected, so its outline sits exactly on the blur.
   const visible = (edits.blurs ?? []).filter((blur) => blur.id === selectedId);
-  if (!visible.length) return null;
+  if (!visible.length && !placing) return null;
+
+  const draw = (event: ReactPointerEvent) => {
+    if (!placing || event.button !== 0 || (event.target instanceof Element && event.target.closest('button'))) return;
+    const rect = frame.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setDraft(undefined);
+    const x = clamp01((event.clientX - rect.left) / rect.width);
+    const y = clamp01((event.clientY - rect.top) / rect.height);
+    const boxAt = (next: PointerEvent): BlurBox => {
+      const endX = clamp01((next.clientX - rect.left) / rect.width);
+      const endY = clamp01((next.clientY - rect.top) / rect.height);
+      return {
+        x: round(Math.min(x, endX)),
+        y: round(Math.min(y, endY)),
+        width: round(Math.abs(endX - x)),
+        height: round(Math.abs(endY - y)),
+      };
+    };
+    const move = (next: PointerEvent) => setDraft(boxAt(next));
+    const cleanup = () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', cancel);
+      stopDrawing.current = undefined;
+    };
+    const cancel = () => {
+      cleanup();
+      setDraft(undefined);
+    };
+    const end = (next: PointerEvent) => {
+      cleanup();
+      const box = boxAt(next);
+      setDraft(undefined);
+      if (box.width >= MIN_BLUR_SIZE && box.height >= MIN_BLUR_SIZE) onPlace?.(box);
+    };
+    stopDrawing.current?.();
+    stopDrawing.current = cleanup;
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', cancel);
+  };
 
   const begin = (event: ReactPointerEvent, blur: ReplayBlur, handle: Handle) => {
     if (event.button !== 0) return;
@@ -88,7 +146,31 @@ export function BlurOverlay({
   };
 
   return (
-    <div ref={frame} className="blur-overlay" data-testid="blur-overlay">
+    <div ref={frame} className="blur-overlay" data-placing={placing || undefined} data-testid="blur-overlay" onPointerDown={draw}>
+      {placing ? (
+        <>
+          <div className="blur-placement-help" role="status">
+            <span>Draw the area to blur</span>
+            <Button size="xs" variant="secondary" onClick={() => onPlace?.({ x: 0.35, y: 0.38, width: 0.3, height: 0.14 })}>
+              Use centered area
+            </Button>
+            <Button size="xs" variant="ghost" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+          {draft ? (
+            <div
+              className="blur-draft"
+              style={{
+                left: `${draft.x * 100}%`,
+                top: `${draft.y * 100}%`,
+                width: `${draft.width * 100}%`,
+                height: `${draft.height * 100}%`,
+              }}
+            />
+          ) : null}
+        </>
+      ) : null}
       {visible.map((blur) => (
         <div
           key={blur.id}

@@ -1,23 +1,23 @@
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { type KeyboardEvent, useMemo, useState } from 'react';
+import {
+  BotIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CircleAlertIcon,
+  GlobeIcon,
+  LayersIcon,
+  SlidersHorizontalIcon,
+  TagIcon,
+  UserRoundIcon,
+} from 'lucide-react';
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 
 import { compileHandlePattern } from '../../shared/people.ts';
 import type { ReplayFilters, ReplaySource } from '../../shared/replay.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer.tsx';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { cn } from '@/lib/utils.ts';
 
 import { usePluginSnapshot } from '../plugins/PluginUi.tsx';
@@ -25,9 +25,9 @@ import type { Snapshot } from '../plugins/registry.ts';
 import type { IndexKind } from '../ReplayIndex.tsx';
 
 /*
- * The index's filters as one compact menu (Linear-style; CLAUDE.md principle 6): a 32 px row each, no section
+ * The index's filters as one compact popover with in-place choice panels, no section
  * hairlines. For me (only where people exist) and Has errors are switches; Host, Tag, Source and Kind show their value
- * and open a submenu with checkmarks (Host and Tag are searchable past eight). Keyboard: arrows move between rows, Right/Enter opens a submenu,
+ * and open an in-place panel with checkmarks (Host and Tag are searchable past eight). Keyboard: arrows move between rows, Right/Enter opens a panel,
  * Left/Escape goes back. Phones get the same rows in a bottom sheet (44 px), the submenus as a second panel.
  * Every control writes the same URL state as before. Plugin filters (registerIndexFilter) follow the built-in rows: a
  * choice submenu, a switch or a text field, each setting its `x-*` query parameter, which the server matches.
@@ -177,7 +177,7 @@ function forMeFields({ forMe, handles, linked, setLinked }: FilterState) {
   return forMe && handles?.length && setLinked ? <HandleFields handles={handles} linked={linked ?? {}} onSave={setLinked} /> : null;
 }
 
-const SEARCH_HOSTS_PAST = 8;
+const SEARCH_OPTIONS_PAST = 8;
 
 /** The choice rows, shared by the menu and the sheet: label, current value, options. */
 function choiceRows({ filters, kind, hosts, tags, update, setKind }: FilterState): Choice[] {
@@ -242,7 +242,15 @@ function TextFilter({ filter, state }: { filter: PluginFilter; state: FilterStat
 }
 
 /** The plugins' switch and text filters (their choices are rows with the built-in ones). */
-function PluginFilterRows({ plugins, state, Switch }: { plugins: readonly PluginFilter[]; state: FilterState; Switch: typeof SwitchRow }) {
+function PluginFilterRows({
+  plugins,
+  state,
+  Switch,
+}: {
+  plugins: readonly PluginFilter[];
+  state: FilterState;
+  Switch: typeof SheetSwitch;
+}) {
   return plugins.map((filter) =>
     filter.definition.type === 'switch' ? (
       <Switch
@@ -259,53 +267,115 @@ function PluginFilterRows({ plugins, state, Switch }: { plugins: readonly Plugin
 }
 
 const valueLabel = (choice: Choice) => choice.options.find((option) => option.value === choice.value)?.label ?? choice.options[0]!.label;
-const ALL = '__all__';
+
+function ChoiceIcon({ name }: { name: string }) {
+  const Icon =
+    ({ host: GlobeIcon, tag: TagIcon, source: BotIcon, kind: LayersIcon } as Record<string, typeof GlobeIcon>)[name] ??
+    SlidersHorizontalIcon;
+  return <Icon className="filter-kind-icon" aria-hidden="true" />;
+}
 
 /* ---------- Desktop: the Filter menu ---------- */
 
-function ChoiceSubmenu({ choice }: { choice: Choice }) {
-  const [open, setOpen] = useState(false);
+function ChoiceOptions({ choice, onBack }: { choice: Choice; onBack: () => void }) {
   const [query, setQuery] = useState('');
-  const searchable = (choice.key === 'host' || choice.key === 'tag') && choice.options.length - 1 > SEARCH_HOSTS_PAST;
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchable = choice.key === 'host' || choice.key === 'tag' || choice.options.length > SEARCH_OPTIONS_PAST;
   const options = useMemo(
-    () =>
-      searchable && query ? choice.options.filter((option) => option.label.toLowerCase().includes(query.toLowerCase())) : choice.options,
+    () => choice.options.filter((option) => !searchable || option.label.toLowerCase().includes(query.toLowerCase())),
     [choice.options, query, searchable],
   );
-  const active = choice.value !== undefined;
   return (
-    <DropdownMenuSub open={open} onOpenChange={setOpen}>
-      <DropdownMenuSubTrigger className="filter-row" data-active={active || undefined} data-testid={choice.testId}>
-        <span className="filter-row-label">{choice.label}</span>
-        <span className="filter-row-value">{valueLabel(choice)}</span>
-      </DropdownMenuSubTrigger>
-      <DropdownMenuSubContent className="filter-submenu min-w-44 p-1">
-        {searchable ? (
-          <input
-            className="filter-search"
-            aria-label={`Search ${choice.label.toLowerCase()}s`}
-            placeholder={`Search ${choice.label.toLowerCase()}s`}
-            value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
-            onKeyDown={keepTyping}
-          />
+    <div className="filter-pane">
+      <div className="filter-choice-head">
+        <Button variant="ghost" size="icon-sm" onClick={onBack} aria-label="Back to filters">
+          <ChevronLeftIcon aria-hidden="true" />
+        </Button>
+        <span className="filter-menu-title">{choice.label}</span>
+        {choice.value !== undefined ? (
+          <Button
+            variant="ghost"
+            size="xs"
+            className="filter-choice-reset"
+            onClick={() => {
+              choice.onChange(undefined);
+              onBack();
+            }}
+          >
+            Reset
+          </Button>
         ) : null}
-        <DropdownMenuRadioGroup
-          value={choice.value ?? ALL}
-          onValueChange={(next: string) => {
-            choice.onChange(next === ALL ? undefined : next);
-            // Back to the menu: one choice per visit, the rest of the filters stay a keystroke away.
-            setOpen(false);
+      </div>
+      {searchable ? (
+        <input
+          ref={searchInput}
+          className="filter-search"
+          aria-label={`Search ${choice.label.toLowerCase()}s`}
+          placeholder={`Search ${choice.label.toLowerCase()}s…`}
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              event.currentTarget.parentElement?.querySelector<HTMLElement>('[role="option"]')?.focus();
+            }
           }}
-        >
-          {options.map((option) => (
-            <DropdownMenuRadioItem key={option.label} value={option.value ?? ALL} className="filter-option">
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuSubContent>
-    </DropdownMenuSub>
+        />
+      ) : null}
+      <div
+        className="filter-choice-list"
+        role="listbox"
+        aria-label={choice.label}
+        onKeyDown={(event) => {
+          const rows = [...event.currentTarget.querySelectorAll<HTMLElement>('[role="option"]')];
+          const position = rows.indexOf(document.activeElement as HTMLElement);
+          let next: number | undefined;
+          if (event.key === 'ArrowDown') next = (position + 1) % rows.length;
+          if (event.key === 'ArrowUp') next = (position - 1 + rows.length) % rows.length;
+          if (event.key === 'Home') next = 0;
+          if (event.key === 'End') next = rows.length - 1;
+          if (next !== undefined) {
+            event.preventDefault();
+            rows[next]?.focus();
+          }
+        }}
+      >
+        {options.map((option, index) => (
+          <button
+            key={option.label}
+            type="button"
+            role="option"
+            aria-selected={option.value === choice.value}
+            className="filter-choice-option"
+            tabIndex={
+              option.value === choice.value || (index === 0 && !options.some((candidate) => candidate.value === choice.value)) ? 0 : -1
+            }
+            onClick={() => {
+              choice.onChange(option.value);
+              onBack();
+            }}
+          >
+            <span>{option.label}</span>
+            {option.value === choice.value ? <CheckIcon aria-hidden="true" /> : null}
+          </button>
+        ))}
+      </div>
+      {!options.length ? (
+        <div className="filter-empty" role="status">
+          No matching {choice.label.toLowerCase()}s
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={() => {
+              setQuery('');
+              searchInput.current?.focus();
+            }}
+          >
+            Clear search
+          </Button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -316,30 +386,42 @@ interface SwitchProps {
   testId?: string;
 }
 
-function SwitchRow({ label, checked, onChange, testId }: SwitchProps) {
-  return (
-    <DropdownMenuCheckboxItem
-      closeOnClick={false}
-      checked={checked}
-      onCheckedChange={(value: boolean) => onChange(value)}
-      className="filter-row filter-switch-row"
-      data-active={checked || undefined}
-      data-testid={testId}
-    >
-      <span className="filter-row-label">{label}</span>
-      <span className="filter-switch" aria-hidden="true" />
-    </DropdownMenuCheckboxItem>
-  );
-}
-
 /** Desktop: one quiet "Filter" button (icon, label, active count) opening the filter menu. */
 export function FilterMenu(state: FilterState) {
   const { filters, clearFilters, update } = state;
   const active = activeFilters(state);
   const plugins = usePluginSnapshot().filters;
+  const [panel, setPanel] = useState<string>();
+  const previousPanel = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    const previous = previousPanel.current;
+    previousPanel.current = panel;
+    if (!panel && !previous) return;
+    const frame = requestAnimationFrame(() => {
+      const popup = document.querySelector<HTMLElement>('[data-filter-menu]');
+      const target = panel
+        ? popup?.querySelector<HTMLElement>('.filter-search, [role="option"][aria-selected="true"], [role="option"]')
+        : popup?.querySelector<HTMLElement>(`[data-filter-key="${CSS.escape(previous!)}"]`);
+      target?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [panel]);
+  const choices = [...choiceRows(state), ...pluginChoices(plugins, state)];
+  const selected = choices.find((choice) => choice.key === panel);
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="scope-button" aria-label={active ? `Filter, ${active} active` : 'Filter'}>
+    <Popover
+      onOpenChange={(open, details) => {
+        // Base UI listens for Escape before the popup's React key handler. Cancel its dismissal when
+        // leaving a choice pane, so the first Escape goes back and the next one closes the popover.
+        if (!open && panel && details.reason === 'escape-key') {
+          details.cancel();
+          setPanel(undefined);
+          return;
+        }
+        if (!open) setPanel(undefined);
+      }}
+    >
+      <PopoverTrigger className="scope-button" aria-label={active ? `Filter, ${active} active` : 'Filter'}>
         <AnimatedIcon name="sliders-horizontal" />
         Filter
         {active ? (
@@ -347,25 +429,79 @@ export function FilterMenu(state: FilterState) {
             {active}
           </span>
         ) : null}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="filter-menu w-[272px] p-1" aria-label="Filters">
-        <div className="filter-menu-head">
-          <span className="filter-menu-title">Filters</span>
-          {active ? (
-            <DropdownMenuItem closeOnClick={false} className="filter-menu-clear" onClick={clearFilters}>
-              Clear
-            </DropdownMenuItem>
-          ) : null}
-        </div>
-        {state.setForMe ? <SwitchRow label="For me" checked={Boolean(state.forMe)} onChange={state.setForMe} /> : null}
-        {forMeFields(state)}
-        {[...choiceRows(state), ...pluginChoices(plugins, state)].map((choice) => (
-          <ChoiceSubmenu key={choice.key} choice={choice} />
-        ))}
-        <SwitchRow label="Has errors" checked={Boolean(filters.errors)} onChange={(value) => update('errors', value ? true : undefined)} />
-        <PluginFilterRows plugins={plugins} state={state} Switch={SwitchRow} />
-      </DropdownMenuContent>
-    </DropdownMenu>
+      </PopoverTrigger>
+      <PopoverContent
+        data-filter-menu=""
+        align="end"
+        className="filter-menu w-[264px] max-w-[calc(100vw-24px)] gap-0 p-1"
+        aria-label={selected ? `Filter by ${selected.label}` : 'Filters'}
+        onKeyDown={(event) => {
+          if (!selected && event.target instanceof HTMLButtonElement && event.target.matches('.filter-row')) {
+            const rows = [...event.currentTarget.querySelectorAll<HTMLButtonElement>('button.filter-row')];
+            const position = rows.indexOf(event.target);
+            let next: number | undefined;
+            if (event.key === 'ArrowDown') next = (position + 1) % rows.length;
+            if (event.key === 'ArrowUp') next = (position - 1 + rows.length) % rows.length;
+            if (event.key === 'Home') next = 0;
+            if (event.key === 'End') next = rows.length - 1;
+            if (next !== undefined) {
+              event.preventDefault();
+              rows[next]?.focus();
+            }
+          }
+          if (selected && (event.key === 'Escape' || (event.key === 'ArrowLeft' && !(event.target instanceof HTMLInputElement)))) {
+            event.preventDefault();
+            event.stopPropagation();
+            setPanel(undefined);
+          }
+        }}
+      >
+        {selected ? (
+          <ChoiceOptions key={selected.key} choice={selected} onBack={() => setPanel(undefined)} />
+        ) : (
+          <div key="filters" className="filter-pane">
+            <div className="filter-menu-head">
+              <span className="filter-menu-title">Filters</span>
+              {active ? (
+                <Button variant="ghost" size="xs" className="filter-menu-clear" onClick={clearFilters}>
+                  Clear all
+                </Button>
+              ) : null}
+            </div>
+            {state.setForMe ? <SheetSwitch label="For me" checked={Boolean(state.forMe)} onChange={state.setForMe} /> : null}
+            {forMeFields(state)}
+            {choices.map((choice) => (
+              <button
+                type="button"
+                key={choice.key}
+                data-filter-key={choice.key}
+                className="filter-row"
+                data-active={choice.value !== undefined || undefined}
+                data-testid={choice.testId}
+                onClick={() => setPanel(choice.key)}
+                onKeyDown={(event) => {
+                  if (event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    setPanel(choice.key);
+                  }
+                }}
+              >
+                <ChoiceIcon name={choice.key} />
+                <span className="filter-row-label">{choice.label}</span>
+                <span className="filter-row-value">{valueLabel(choice)}</span>
+                <ChevronRightIcon className="filter-chevron" aria-hidden="true" />
+              </button>
+            ))}
+            <SheetSwitch
+              label="Has errors"
+              checked={Boolean(filters.errors)}
+              onChange={(value) => update('errors', value ? true : undefined)}
+            />
+            <PluginFilterRows plugins={plugins} state={state} Switch={SheetSwitch} />
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -382,6 +518,13 @@ function SheetSwitch({ label, checked, onChange, testId }: SwitchProps) {
       data-testid={testId}
       onClick={() => onChange(!checked)}
     >
+      {label === 'Has errors' ? (
+        <CircleAlertIcon className="filter-kind-icon" aria-hidden="true" />
+      ) : label === 'For me' ? (
+        <UserRoundIcon className="filter-kind-icon" aria-hidden="true" />
+      ) : (
+        <SlidersHorizontalIcon className="filter-kind-icon" aria-hidden="true" />
+      )}
       <span className="filter-row-label">{label}</span>
       <span className="filter-switch" aria-hidden="true" />
     </button>

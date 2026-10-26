@@ -59,26 +59,33 @@ async function renderTransport() {
 }
 
 describe('playback menu in fullscreen', () => {
-  it('keeps the ordinary body portal and changes speed through real menu items', async () => {
+  it('keeps the ordinary body portal and changes speed through a discrete slider', async () => {
     const player = await renderTransport();
     await click(find('.playback-options'));
-    const menu = find('[role="menu"][aria-label="Playback"]');
+    const menu = find('[data-slot="popover-content"][aria-label="Playback"]');
     expect(host.contains(menu)).toBe(false);
     expect(menu.textContent).toContain('Skip inactive parts');
-    const rate = [...menu.querySelectorAll<HTMLElement>('[role="menuitemradio"]')].find((item) => item.textContent === '2×');
-    expect(rate).toBeDefined();
-    await click(rate!);
+    expect(menu.querySelector('[data-slot="slider-track"]')).not.toBeNull();
+    expect(menu.querySelector('[data-slot="slider-thumb"]')).not.toBeNull();
+    const rate = find<HTMLInputElement>('.playback-rate-slider input[type="range"]');
+    await act(async () => {
+      // React's controlled input tracker must see a native change rather than a programmatic setter.
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(rate, '4');
+      rate.dispatchEvent(new Event('input', { bubbles: true }));
+      rate.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     expect(player.getState().speed).toBe(2);
-    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('false');
+    expect(rate.getAttribute('aria-valuetext')).toBe('2×');
+    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
   });
 
   it('opens inside the fullscreen player and toggles inactivity without closing the menu', async () => {
     const player = await renderTransport();
     await transition(host);
     await click(find('.playback-options'));
-    const menu = find('[role="menu"][aria-label="Playback"]');
+    const menu = find('[data-slot="popover-content"][aria-label="Playback"]');
     expect(fullscreen?.contains(menu)).toBe(true);
-    const skip = find('[role="menuitemcheckbox"]');
+    const skip = find('[role="switch"]');
     expect(skip.getAttribute('aria-checked')).toBe('true');
     await click(skip);
     expect(player.getState().skipInactive).toBe(false);
@@ -86,20 +93,51 @@ describe('playback menu in fullscreen', () => {
     expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
     await click(skip);
     expect(player.getState().skipInactive).toBe(true);
+    await click(find('.playback-skip label'));
+    expect(player.getState().skipInactive).toBe(false);
+    expect(skip.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('changes speed with slider arrows without triggering viewer keyboard shortcuts', async () => {
+    const player = await renderTransport();
+    await click(find('.playback-options'));
+    const seek = vi.fn<(event: KeyboardEvent) => void>();
+    window.addEventListener('keydown', seek);
+    try {
+      await act(async () =>
+        find('.playback-rate-slider input[type="range"]').dispatchEvent(
+          new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }),
+        ),
+      );
+      expect(seek).not.toHaveBeenCalled();
+      expect(player.getState().speed).toBe(1.5);
+    } finally {
+      window.removeEventListener('keydown', seek);
+    }
+  });
+
+  it('snaps to normal speed from its label without closing the popup', async () => {
+    const player = await renderTransport();
+    await act(async () => player.setSpeed(4));
+    await click(find('.playback-options'));
+    await click(find('[aria-label="Set playback speed to 1×"]'));
+    expect(player.getState().speed).toBe(1);
+    expect(find('[aria-label="Set playback speed to 1×"]').getAttribute('aria-pressed')).toBe('true');
+    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
   });
 
   it('closes an open popup on fullscreen transitions and restores body placement after exit', async () => {
     await renderTransport();
     await click(find('.playback-options'));
-    expect(host.contains(find('[role="menu"][aria-label="Playback"]'))).toBe(false);
+    expect(host.contains(find('[data-slot="popover-content"][aria-label="Playback"]'))).toBe(false);
     await transition(host);
     expect(find('.playback-options').getAttribute('aria-expanded')).toBe('false');
     await click(find('.playback-options'));
-    expect(host.contains(find('[role="menu"][aria-label="Playback"]'))).toBe(true);
+    expect(host.contains(find('[data-slot="popover-content"][aria-label="Playback"]'))).toBe(true);
     await transition(null);
     expect(find('.playback-options').getAttribute('aria-expanded')).toBe('false');
     await click(find('.playback-options'));
-    expect(host.contains(find('[role="menu"][aria-label="Playback"]'))).toBe(false);
+    expect(host.contains(find('[data-slot="popover-content"][aria-label="Playback"]'))).toBe(false);
   });
 
   it('handles mounting already in fullscreen and Escape closes with focus returned to playback', async () => {
@@ -107,7 +145,7 @@ describe('playback menu in fullscreen', () => {
     await renderTransport();
     const trigger = find('.playback-options');
     await click(trigger);
-    const menu = find('[role="menu"][aria-label="Playback"]');
+    const menu = find('[data-slot="popover-content"][aria-label="Playback"]');
     expect(host.contains(menu)).toBe(true);
     await act(async () => menu.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
     expect(trigger.getAttribute('aria-expanded')).toBe('false');

@@ -160,85 +160,24 @@ time { font-variant-numeric: tabular-nums; }
 html[data-theme-switching]::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
 html[data-theme-switching]::view-transition-new(root) { animation: theme-in 180ms var(--ease-out) both; mix-blend-mode: normal; }
 @keyframes theme-in { from { opacity: 0; } }
-/*
- * Page changes. Index ↔ viewer (a replay or a suite) stays in the document and runs one View Transition
- * (navigation.ts tags it html[data-page-transition]); ~400 ms, transform/opacity, none under reduced motion:
- * - "to-viewer": the card's poster ("vt-hero") morphs into the recorded frame on a soft spring (the only
- *   overshoot), its corners easing to the player's; the title ("vt-title") and source line ("vt-source")
- *   glide into the top bar as crossfading text, never scaled (no blur); the duration badge fades in place;
- *   the index recedes (0.985 + fade) while the viewer's regions rise 10 px, 35 ms apart, and a suite's runs
- *   sidebar slides in from the left.
- * - "to-index": the same in reverse, on the same curves: regions drop away first, the frame shrinks into its
- *   card (a quiet hairline fades on it, feed.css [data-returned]) and the index settles back from 0.985.
- * Other page loads (cross-document, index.html) keep a plain crossfade: "page", "page-back".
- */
+/* Page navigation crossfades one opaque page over the previous one. No card, title or panel morphs. */
 :root {
   --vt-spring: linear(0, 0.24 8%, 0.58 19%, 0.85 31%, 0.99 44%, 1.025 56%, 1.015 70%, 1);
-  /* A damped spring (ζ 0.8): settles by ~50%, peaks 1.5% over. */
-  --page-spring: linear(0, 0.020 2.5%, 0.072 5%, 0.144 7.5%, 0.227 10%, 0.316 12.5%, 0.406 15%, 0.492 17.5%, 0.573 20%, 0.647 22.5%, 0.712 25%, 0.820 30%, 0.898 35%, 0.951 40%, 0.984 45%, 1.003 50%, 1.012 55%, 1.015 60%, 1.015 65%, 1.013 70%, 1.010 75%, 1.007 80%, 1.005 85%, 1.003 90%, 1.002 95%, 1);
   --page-ease: cubic-bezier(0.22, 1, 0.36, 1);
-  --page-duration: 400ms;
+  --page-duration: 180ms;
 }
-html:active-view-transition-type(page) .app-topbar { view-transition-name: topbar; }
-html:active-view-transition-type(page)::view-transition-group(topbar) { animation-duration: 280ms; animation-timing-function: var(--ease-out); }
-html:active-view-transition-type(page)::view-transition-old(topbar),
-html:active-view-transition-type(page)::view-transition-new(topbar) { animation-duration: 160ms; animation-timing-function: var(--ease-out); }
-html:active-view-transition-type(page)::view-transition-old(root) { animation: page-out 120ms var(--ease-out) both; }
-html:active-view-transition-type(page)::view-transition-new(root) { animation: page-in 180ms var(--ease-out) both; }
-html:active-view-transition-type(page-back)::view-transition-new(root) { animation-name: page-in-back; }
-
-/* Index ↔ viewer: the viewer's regions are their own layers (the skeleton's too; never the overlay's). */
-html[data-page-transition] .app-shell .app-topbar .topbar-actions { view-transition-name: vt-actions; }
-html[data-page-transition] .app-shell .transport { view-transition-name: vt-transport; }
-html[data-page-transition] .app-shell .timeline-panel { view-transition-name: vt-rail; }
-html[data-page-transition] .app-shell .inspector { view-transition-name: vt-panel; }
-html[data-page-transition] .suite-sidebar { view-transition-name: vt-runs; }
-html[data-page-transition]::view-transition-group(*) { animation-duration: var(--page-duration); animation-timing-function: var(--page-ease); }
-/* The page itself never moves: no size animation on its group (that would run on the main thread). */
-html[data-page-transition]::view-transition-group(root) { animation: none; }
-/* The frame: one spring, corners clipped. navigation.ts swaps the size animation for a transform-only one. */
-html[data-page-transition]::view-transition-group(vt-hero) { overflow: clip; animation-timing-function: var(--page-spring); }
-html[data-page-transition]::view-transition-old(vt-hero),
-html[data-page-transition]::view-transition-new(vt-hero) { height: 100%; object-fit: cover; object-position: top left; animation-duration: 200ms; animation-timing-function: var(--ease-out); }
-/* Text: the group only slides (navigation.ts); the two renderings keep their own size and crossfade. */
-html[data-page-transition]::view-transition-old(vt-title),
-html[data-page-transition]::view-transition-new(vt-title),
-html[data-page-transition]::view-transition-old(vt-source),
-html[data-page-transition]::view-transition-new(vt-source) { width: auto; height: auto; object-fit: none; object-position: left top; }
-html[data-page-transition]::view-transition-old(vt-title),
-html[data-page-transition]::view-transition-old(vt-source) { animation: page-out 160ms var(--ease-out) both; }
-html[data-page-transition]::view-transition-new(vt-title),
-html[data-page-transition]::view-transition-new(vt-source) { animation: page-text-in 240ms var(--ease-out) 90ms both; }
-html[data-page-transition]::view-transition-old(vt-badge):only-child { animation: page-out 120ms var(--ease-out) both; }
-html[data-page-transition]::view-transition-new(vt-badge):only-child { animation: page-text-in 200ms var(--ease-out) 200ms both; }
-/* Opening onto the replay's opening still (navigation.ts): the card's poster holds for the first quarter of the
-   morph, then hands over to the still by 55% (the spring has the frame near full size by then, where the card's
-   small snapshot would look soft), so the frame lands showing exactly what rrweb paints first. */
-html[data-page-still]::view-transition-old(vt-hero),
-html[data-page-still]::view-transition-new(vt-hero) { mix-blend-mode: plus-lighter; }
-html[data-page-still]::view-transition-old(vt-hero) { animation: page-out 120ms linear 100ms both; }
-html[data-page-still]::view-transition-new(vt-hero) { animation: page-text-in 120ms linear 100ms both; }
-/* A frame with no card to go to (scrolled away, filtered out) or come from: it simply fades. */
-html[data-page-transition]::view-transition-old(vt-hero):only-child { animation: page-recede 200ms var(--ease-out) both; }
-html[data-page-transition]::view-transition-new(vt-hero):only-child { animation: page-text-in 240ms var(--ease-out) both; }
-html[data-page-transition]::view-transition-old(vt-title):only-child { animation: page-out 140ms var(--ease-out) both; }
-html[data-page-transition]::view-transition-new(vt-title):only-child { animation: page-text-in 240ms var(--ease-out) 60ms both; }
-/* Opening. */
-html[data-page-transition="to-viewer"]::view-transition-old(root) { animation: page-recede 300ms var(--ease-out) both; }
-html[data-page-transition="to-viewer"]::view-transition-new(root) { animation: page-text-in 220ms var(--ease-out) both; }
-html[data-page-transition="to-viewer"]::view-transition-new(vt-actions) { animation: region-in 280ms var(--page-ease) 40ms both; }
-html[data-page-transition="to-viewer"]::view-transition-new(vt-transport) { animation: region-in 280ms var(--page-ease) 75ms both; }
-html[data-page-transition="to-viewer"]::view-transition-new(vt-rail) { animation: region-in 280ms var(--page-ease) 110ms both; }
-html[data-page-transition="to-viewer"]::view-transition-new(vt-panel) { animation: region-in 280ms var(--page-ease) 145ms both; }
-html[data-page-transition="to-viewer"]::view-transition-new(vt-runs) { animation: runs-in 320ms var(--page-ease) 40ms both; }
-/* Closing. */
-html[data-page-transition="to-index"]::view-transition-old(root) { animation: page-out 200ms var(--ease-out) both; }
-html[data-page-transition="to-index"]::view-transition-new(root) { animation: page-settle 320ms var(--page-ease) both; }
-html[data-page-transition="to-index"]::view-transition-old(vt-actions),
-html[data-page-transition="to-index"]::view-transition-old(vt-transport),
-html[data-page-transition="to-index"]::view-transition-old(vt-rail),
-html[data-page-transition="to-index"]::view-transition-old(vt-panel) { animation: region-out 160ms var(--ease-out) both; }
-html[data-page-transition="to-index"]::view-transition-old(vt-runs) { animation: runs-in 180ms var(--ease-out) reverse both; }
+html:active-view-transition-type(page) .app-topbar { view-transition-name: none; }
+html[data-page-transition="page"]::view-transition-group(root) { animation: none; }
+html[data-page-transition="page"]::view-transition-old(root),
+html:active-view-transition-type(page)::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
+html[data-page-transition="page"]::view-transition-new(root),
+html:active-view-transition-type(page)::view-transition-new(root) { animation: page-text-in 160ms var(--ease-out) both; mix-blend-mode: normal; }
+/* Suite run switches keep their existing local layers; page navigation does not split the incoming skeleton. */
+html[data-page-transition="run"] .app-shell .app-topbar .topbar-actions { view-transition-name: vt-actions; }
+html[data-page-transition="run"] .app-shell .transport { view-transition-name: vt-transport; }
+html[data-page-transition="run"] .app-shell .timeline-panel { view-transition-name: vt-rail; }
+html[data-page-transition="run"] .app-shell .inspector { view-transition-name: vt-panel; }
+html[data-page-transition="run"] .suite-sidebar { view-transition-name: vt-runs; }
 /* A suite's run → run (navigation.ts swapInPlace): everything stays where it is. The sidebar is its live self
    (only its selection glides), the frame crossfades at its rect (resizing if the aspect differs), the top bar
    and transport crossfade in place, the rail and panel crossfade with a 4 px rise. 200 ms. The page itself stays
@@ -271,7 +210,7 @@ html[data-page-transition="run"]::view-transition-new(vt-hero) { animation-durat
 html[data-landed] :is(.timeline-panel .timeline-wrap:not([data-staggered]), .inspector-panel:not([data-staggered]) > :not([data-staggered])) { animation: content-in 160ms var(--ease-out); }
 /* After an in-document page change the new page is the transition's own new state: no second entrance. */
 html[data-navigated] .app-shell:not(.skeleton-shell) { animation: none; }
-html[data-navigated] :is(.skeleton-shell, .skeleton-suite) { animation: none; }
+
 @keyframes page-text-in { from { opacity: 0; } }
 @keyframes page-settle { from { opacity: 0; transform: scale(0.985); } }
 @keyframes runs-in { from { opacity: 0; transform: translateX(-16px); } }
@@ -458,15 +397,12 @@ svg.lucide.lucide { stroke-width: 2; }
 .transport .playback-options.playback-options { color: var(--text-tertiary); }
 .transport .playback-options[data-speed-changed].playback-options { color: var(--accent); }
 .transport:hover .playback-options.playback-options, .transport:focus-within .playback-options.playback-options, .playback-options[data-popup-open] { color: var(--text-secondary); }
-/* The widest rate ("0.5×", tabular) sizes an invisible twin under the label, so the button keeps that width and
-   changing speed never shifts the row. The label is left-aligned: every rate starts 6 px after the captions chip
-   (2 px gap, 1 px border, 3 px inset; the fills never touch), and spare width sits at the right end. The box's right
-   edge leaves the widest label 12 px from the bar, mirroring the play glyph's inset. */
+/* Keep every rate centred in a stable-width button. */
 .playback-speed-box { display: inline-grid; }
-.playback-speed-box > * { grid-area: 1 / 1; text-align: left; }
+.playback-speed-box > * { grid-area: 1 / 1; text-align: center; }
 .playback-speed-sizer { visibility: hidden; }
 .playback-speed { display: inline-block; }
-.transport .playback-options { margin-left: -2px; margin-right: 1px; }
+.transport .playback-options { margin: 0; justify-content: center; }
 .transport { padding-right: 4px; }
 .playback-options.playback-options { gap: 3px; font-size: var(--text-xs); font-weight: 500; font-variant-numeric: tabular-nums; }
 
@@ -880,83 +816,32 @@ svg.lucide.lucide { stroke-width: 2; }
 .skeleton { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-hover); animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
 .skeleton-thin { height: 8px; }
 @keyframes skeleton-pulse { from { opacity: 1; } to { opacity: 0.45; } }
-/* ---------- Viewer skeleton (ViewerSkeleton.tsx) ----------
-   The viewer's own layout in quiet shapes. It fades in after 150 ms (a fast load never shows it); every block
-   shares one slow diagonal sheen anchored to the viewport (background-attachment: fixed), so the blocks shimmer
-   in sync like one light passing over the page; reduced motion keeps them static. */
-.skeleton-shell { --sk-base: var(--surface-hover); --sk-peak: var(--surface-pressed); animation: sk-in 180ms var(--ease-out) 150ms both; }
-:root[data-theme="light"] .skeleton-shell { --sk-base: var(--surface-pressed); --sk-peak: var(--surface-raised); }
-.skeleton-shell[data-instant], .skeleton-suite .skeleton-shell, .skeleton-overlay .skeleton-shell { animation: none; }
-.skeleton-suite { --sk-base: var(--surface-hover); --sk-peak: var(--surface-pressed); animation: sk-in 180ms var(--ease-out) 150ms both; }
-:root[data-theme="light"] .skeleton-suite { --sk-base: var(--surface-pressed); --sk-peak: var(--surface-raised); }
-.skeleton-suite[data-instant] { animation: none; }
+/* Loading keeps the real layout and poster; only one small status replaces the unavailable controls. */
+.skeleton-shell, .skeleton-suite { animation: sk-in 180ms var(--ease-out) 150ms both; }
+.skeleton-shell[data-instant], .skeleton-suite .skeleton-shell, .skeleton-suite[data-instant] { animation: none; }
 @keyframes sk-in { from { opacity: 0; } }
-.sk { display: block; flex: 0 0 auto; border-radius: var(--radius-sm); background-color: var(--sk-base); background-image: linear-gradient(105deg, transparent 0 42%, var(--sk-peak) 50%, transparent 58% 100%); background-size: 200vw 100vh; background-attachment: fixed; background-repeat: no-repeat; animation: sk-sheen 1.8s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
-@keyframes sk-sheen { from { background-position: 100vw 0; } to { background-position: -100vw 0; } }
-.sk-line { height: 10px; max-width: 100%; border-radius: 5px; }
-.sk-line-title { height: 12px; border-radius: 6px; }
-.sk-line-chip { height: 20px; border-radius: var(--radius); }
-.sk-faint { opacity: 0.6; }
-.sk-glyph { border-radius: 4px; }
-.sk-slot { width: 28px; height: 28px; flex: 0 0 28px; display: inline-grid; place-items: center; }
-.sk-slot-touch { width: 40px; height: 40px; flex-basis: 40px; }
-.sk-slot-wide { width: auto; padding: 0 8px; justify-items: end; }
-.sk-stack { min-width: 0; flex: 1; display: grid; gap: 6px; }
-.sk-title { min-width: 0; flex: 0 1 auto; display: flex; align-items: center; height: 28px; padding-left: 2px; }
 .sk-topbar { position: relative; }
-/* Desktop top bar icons are 24 px buttons (back and the action set); phones keep 40 px slots. */
-.app-shell:not([data-mobile]) .sk-topbar .sk-slot { width: 24px; height: 24px; flex-basis: 24px; }
-.sk-title { padding-left: 0; }
-.sk-topbar .topbar-actions { margin-left: auto; }
-/* The player: canvas, the recording's frame fitted with the viewer's 12 px inset, a faint play glyph. */
+.loading-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); padding-inline: 6px; }
+.loading-notice { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
+.loading-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
+.transport.loading-transport { display: flex; padding-inline: 16px; }
+@media (pointer: coarse) { .transport.loading-transport { min-height: 75px; } }
 .sk-stage { container-type: size; display: grid; place-items: center; }
-.sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; border-radius: 2px; background: color-mix(in srgb, var(--surface-raised) 55%, var(--canvas)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--line) 60%, transparent); }
+.sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }
 .sk-frame:has(.sk-poster) { overflow: hidden; }
 .sk-poster { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
-.sk-play { width: 28px; height: 28px; fill: var(--text-tertiary); opacity: 0.22; }
-.sk-transport .sk-scrub { min-width: 0; height: 28px; display: flex; align-items: center; gap: 3px; padding: 0 6px; }
-.sk-scrub > .sk { height: 4px; flex-basis: 0; border-radius: 2px; }
-.sk-steps { overflow: hidden; }
-.sk-step { cursor: default; }
-/* The panel: the real tab bar's height with label-width lines, the table's header and 32 px rows. */
-.sk-tabs { align-items: center; gap: 0; }
-.sk-tab { display: flex; align-items: center; gap: 6px; height: 100%; padding: 0 10px; }
-.sk-tabs-end { margin-left: auto; }
-.sk-table-head { height: 28px; display: grid; grid-template-columns: 66px 1fr; align-items: center; padding: 0 10px; border-bottom: 1px solid var(--line); }
-.sk-table-row { height: 32px; display: grid; grid-template-columns: 66px 1fr; align-items: center; padding: 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
 .skeleton-divider { border-top: 1px solid var(--line); }
 .app-shell[data-mobile] .sk-tabs-phone { min-height: 52px; padding: 0 0 0 4px; border-top: 1px solid var(--line); }
-.app-shell[data-mobile] .sk-title { flex: 1 1 auto; }
-/* Touch: the transport's 40 px scrub strip (reaching 6 px over the player) and 40 px controls, as in scrubber.css. */
-@media (pointer: coarse) {
-  .sk-transport .sk-scrub { height: 40px; margin-top: -6px; }
-  .sk-transport .sk-slot { width: 40px; height: 40px; flex-basis: 40px; }
-  .sk-transport .sk-slot-wide { width: auto; min-width: 40px; padding-right: 12px; }
-}
-.app-shell[data-mobile] .sk-tabs-phone .sk-tab { flex: 1 1 auto; justify-content: center; padding: 0 9px; }
-.app-shell[data-mobile] .sk-tabs-phone .sk-tabs-end { width: 44px; height: 44px; flex-basis: 44px; border-left: 1px solid var(--line); }
-.sk-step-phone { height: 40px; }
-/* Suite: the runs sidebar's head and rows. */
-.sk-sidebar-head { align-items: center; }
-.sk-run { display: grid; grid-template-columns: 2.2ch minmax(0, 1fr); align-items: center; cursor: default; }
 /* After 1.2 s still loading: a thin accent line along the top bar's bottom edge; indeterminate (a short segment
    gliding across), or the downloaded share when the size is known. No spinners. */
-.sk-progress { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; overflow: hidden; opacity: 0; animation: sk-show 240ms var(--ease-out) 1.2s both; }
-@keyframes sk-show { from { opacity: 0; } to { opacity: 1; } }
+.sk-progress { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; overflow: hidden; opacity: 0; transition: opacity 240ms var(--ease-out); }
+.sk-progress[data-visible] { opacity: 1; }
 .sk-progress > span { position: absolute; inset: 0; background: var(--accent); transform-origin: left center; }
 .sk-progress:not([data-determinate]) > span { width: 28%; animation: sk-indeterminate 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite; }
 .sk-progress[data-determinate] > span { transition: transform 200ms var(--ease-out); }
 @keyframes sk-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(360%); } }
-/* The swap: the skeleton fades out over the arriving content, which is already there at full opacity (LoadingSwap):
-   one layer fading over an opaque one, so the frame a page transition landed on never dims or moves again (fading
-   both at once dipped the shared image toward the page colour mid-swap). */
-.skeleton-overlay { position: fixed; z-index: 40; inset: 0; pointer-events: none; }
-.skeleton-overlay[data-fading] { animation: sk-out 180ms var(--ease-out) both; }
-.skeleton-overlay * { view-transition-name: none !important; }
-@keyframes sk-out { to { opacity: 0; } }
-html[data-skeleton-swap] .app-shell:not(.skeleton-shell), html[data-skeleton-swap] .suite-workspace:not(.skeleton-suite) { animation: none; }
 @media (prefers-reduced-motion: reduce) {
-  .sk, .sk-progress:not([data-determinate]) > span { animation: none; }
+  .skeleton-shell, .skeleton-suite, .sk-progress:not([data-determinate]) > span { animation: none; }
   .sk-progress:not([data-determinate]) > span { width: 100%; opacity: 0.5; }
 }
 /* ---------- Replay index ---------- */
@@ -1351,17 +1236,7 @@ html[data-skeleton-swap] .app-shell:not(.skeleton-shell), html[data-skeleton-swa
 a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .edited-chip:hover .topbar-chip, .edited-chip[data-popup-open] .topbar-chip { color: var(--text); }
 
-/* The viewer's Edit entry: the bar's one tinted control (accent-soft fill), calm next to its quiet icon neighbours. */
-.edit-entry { position: relative; display: inline-flex; align-items: center; gap: 5px; height: 24px; margin-right: 13px; padding: 0 9px 0 8px; border-radius: var(--radius); background: var(--accent-soft); color: var(--text); font-size: var(--text-xs); font-weight: 600; text-decoration: none; white-space: nowrap; transition: background-color var(--motion-fast) var(--ease-out); }
-.edit-entry svg { width: 13px; height: 13px; color: var(--accent); fill: none; stroke: currentColor; stroke-width: 2; }
-/* A hairline after it sets it apart from the icon buttons. */
-.edit-entry::after { content: ""; position: absolute; top: 5px; right: -7px; bottom: 5px; width: 1px; background: var(--line-strong); pointer-events: none; }
-.edit-entry:hover { background: color-mix(in srgb, var(--accent-soft), var(--accent) 14%); }
-.edit-entry:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
-/* Phones: a 32 px tinted square inside a 40 px touch target. */
-.edit-entry[data-compact] { width: 40px; height: 40px; justify-content: center; margin-right: 0; padding: 4px; background-clip: content-box; border-radius: 10px; }
-.edit-entry[data-compact]::after { display: none; }
-.edit-entry[data-compact] svg { width: 15px; height: 15px; }
+@media (pointer: coarse) { .topbar-actions .edit-entry { min-width: 40px; min-height: 40px; } }
 /* Just back from the editor: the label settles in once (no toast). */
 @media (prefers-reduced-motion: no-preference) {
   .edited-chip[data-fresh] .topbar-chip { animation: edited-settle var(--motion-slow) var(--ease-out) 160ms both; }
@@ -1377,3 +1252,34 @@ a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .plugin-drawer-close:hover { background: var(--surface-hover); color: var(--text); }
 .plugin-drawer-close svg { width: 16px; height: 16px; }
 .plugin-drawer-body { min-height: 0; flex: 1; overflow: auto; padding: 12px 16px; font-size: 13px; }
+
+.ui-slider { width: 100%; touch-action: none; user-select: none; }
+.ui-slider-control { display: flex; align-items: center; min-height: 28px; cursor: pointer; }
+.ui-slider-track { position: relative; width: 100%; height: 4px; border-radius: 999px; background: var(--line); }
+.ui-slider-indicator { height: 100%; border-radius: inherit; background: var(--accent); transition: width 140ms var(--ease-out); }
+.ui-slider-thumb { width: 13px; height: 13px; border: 2px solid var(--accent); border-radius: 50%; background: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 0.2); transition: left 140ms var(--ease-out), box-shadow 140ms var(--ease-out); }
+.ui-slider-thumb::after { content: ''; position: absolute; inset: -7px; }
+.ui-slider-thumb:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ui-slider[data-dragging] .ui-slider-thumb, .ui-slider[data-dragging] .ui-slider-indicator { transition: none; }
+.ui-slider[data-disabled] { opacity: 0.45; pointer-events: none; }
+.ui-switch { position: relative; display: inline-flex; align-items: center; width: 28px; height: 16px; flex: 0 0 28px; padding: 2px; border-radius: 999px; background: var(--line); cursor: pointer; outline: none; }
+.ui-switch::after { content: ''; position: absolute; inset: -6px; }
+.ui-switch[data-checked] { background: var(--accent); }
+.ui-switch-thumb { display: block; width: 12px; height: 12px; border-radius: 50%; background: var(--text); box-shadow: 0 1px 2px rgb(0 0 0 / 0.18); transform: translateX(0); transition: transform 140ms var(--ease-out); }
+.ui-switch[data-checked] .ui-switch-thumb { transform: translateX(12px); }
+.ui-switch:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ui-switch[data-disabled] { opacity: 0.45; cursor: default; }
+@media (prefers-reduced-motion: reduce) {
+  .ui-slider-thumb, .ui-slider-indicator, .ui-switch-thumb { transition: none; }
+}
+.playback-rate-value { min-width: 38px; padding: 2px 6px; border-radius: 4px; color: var(--accent); background: var(--accent-soft); text-align: center; font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
+.playback-rate-slider { width: calc(100% - 12px); margin: -5px 6px -12px; }
+.playback-rate-ticks { position: absolute; inset: 0; display: flex; justify-content: space-between; align-items: center; pointer-events: none; }
+.playback-rate-ticks i { width: 3px; height: 3px; border-radius: 50%; background: var(--surface-raised); opacity: 0.8; }
+.playback-rate-labels { position: relative; height: 22px; margin: 0 6px -4px; }
+.playback-rate-labels button { position: absolute; left: var(--rate-position); transform: translateX(-50%); height: 24px; padding: 0 3px; border: 0; border-radius: 3px; color: var(--text-tertiary); background: transparent; font-size: 10px; font-variant-numeric: tabular-nums; cursor: pointer; white-space: nowrap; }
+.playback-rate-labels button:first-child { transform: none; margin-left: -6px; }
+.playback-rate-labels button:last-child { transform: translateX(-100%); margin-left: 6px; }
+.playback-rate-labels button:hover, .playback-rate-labels button[aria-pressed="true"] { color: var(--text); }
+.playback-rate-labels button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.playback-skip { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; border-top: 1px solid var(--line); padding-top: 8px; font-size: var(--text-xs); cursor: pointer; }
