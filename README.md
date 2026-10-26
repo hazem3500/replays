@@ -43,6 +43,10 @@ pnpm build && pnpm start          # http://127.0.0.1:8080
 
 The default `AUTH_MODE=none` is for local use. Read [Authentication](#authentication) before exposing the server.
 
+### Record inside your app
+
+Use the browser-only [`@hazem3500/replays/recorder`](docs/recorder.md) entry for consent, private capture and a minimal customizable floating UI. The host supplies its upload transport; no Node or React code enters the browser bundle.
+
 ### Capture a replay
 
 ```bash

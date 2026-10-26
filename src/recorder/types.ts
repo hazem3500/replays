@@ -1,0 +1,181 @@
+import type { ReplayConsoleLevel } from './bundle-types.ts';
+import type { IssueReport, IssueReportReceipt, IssueReportUpload, RecorderApp } from './upload.ts';
+
+/** Who asked for the recording. Recording still needs the user's consent. */
+export type RecorderTrigger = { source: 'user' } | { source: 'crisp' } | { source: 'host'; reason?: string };
+
+export type StopReason = 'user' | 'max-duration' | 'max-size' | 'page-hidden';
+
+export type RecordingSummary = {
+  durationMs: number;
+  eventCount: number;
+  consoleErrors: number;
+  failedRequests: number;
+  /** Approximate JSON size of the bundle, in bytes. */
+  approxBytes: number;
+  stopReason: StopReason;
+};
+
+export type RecorderState =
+  | { status: 'idle' }
+  | { status: 'consent'; trigger: RecorderTrigger }
+  | { status: 'starting'; trigger: RecorderTrigger }
+  | {
+      status: 'recording';
+      trigger: RecorderTrigger;
+      startedAt: number;
+      maxDurationMs: number;
+    }
+  | { status: 'review'; summary: RecordingSummary }
+  | { status: 'uploading'; summary: RecordingSummary }
+  | { status: 'uploaded'; receipt: IssueReportReceipt }
+  | {
+      status: 'error';
+      phase: 'start' | 'upload';
+      error: Error;
+      /** Present after a failed upload: the recording is kept for a retry. */
+      summary?: RecordingSummary;
+    };
+
+export type RecorderStatus = RecorderState['status'];
+
+export type UploadDecision = { confirmed: true; note?: string } | { confirmed: false };
+
+/**
+ * The in-app prompts. The default (`createDefaultUi`) is a small framework-free
+ * dialog + indicator; hosts can render their own (e.g. with the design system)
+ * but must keep the same guarantees: explicit consent, a visible indicator with
+ * a stop control for the whole recording, and an explicit upload choice.
+ */
+export type RecorderUi = {
+  /**
+   * `signal` aborts when the recorder is discarded or destroyed while the
+   * prompt is open: close it then (the answer is ignored).
+   */
+  requestConsent(context: { trigger: RecorderTrigger; maxDurationMs: number; signal: AbortSignal }): Promise<boolean>;
+  /** Shows the recording indicator; returns a function that hides it. */
+  showIndicator(context: { startedAt: number; maxDurationMs: number; stop: () => void }): () => void;
+  /** `signal` works as in `requestConsent`. */
+  confirmUpload(context: { summary: RecordingSummary; signal: AbortSignal }): Promise<UploadDecision>;
+  /**
+   * Shown while a confirmed recording uploads; returns a function that hides
+   * it.
+   */
+  showUploading?(): () => void;
+  /** Remove the persistent floating surface and custom renderer resources. */
+  dismiss?(): void;
+  showResult?(context: { status: 'uploaded'; receipt: IssueReportReceipt } | { status: 'error'; error: Error; retry?: () => void }): void;
+};
+
+export type RecorderPrivacyOptions = {
+  /** Default true. Internal hosts may opt out of broad page/input masking.
+   * Passwords, hidden inputs, credential URLs and auth headers stay protected.
+   * This is a host API option, not an end-user privacy toggle.
+   */
+  sanitize?: boolean;
+  /** Mask all page text (rrweb `maskTextSelector: '*'`). Default `true`. */
+  maskAllText?: boolean;
+  /** Extra selector whose text is masked when `maskAllText` is off. */
+  maskTextSelector?: string;
+  /**
+   * Text inside these elements stays readable even with `maskAllText` (e.g.
+   * `[data-recorder-unmask]` on navigation labels). Inputs are always masked;
+   * there is no way to unmask them.
+   */
+  unmaskTextSelector?: string;
+  /**
+   * Attribute names kept readable on masked elements, in addition to the
+   * built-in list (layout, ARIA states, Radix `data-state`…). Every other
+   * attribute (`title`, `aria-label`, `placeholder`, `alt`, `data-*`…) is
+   * masked like the element's text.
+   */
+  unmaskAttributes?: readonly string[];
+  /**
+   * Elements replaced by an empty box of the same size. Added to the defaults.
+   * An invalid selector (here or in the text selectors) throws instead of
+   * silently blocking nothing.
+   */
+  blockSelector?: string;
+  /** Block images, video, audio, canvas and iframes. Default `true`. */
+  blockMedia?: boolean;
+  /**
+   * Console levels to keep. Default `['warn', 'error']` plus uncaught errors.
+   * `[]` turns it off.
+   */
+  consoleLevels?: readonly ReplayConsoleLevel[];
+  /** Record method, URL, status and timing of fetch/XHR calls. Default `true`. */
+  captureNetwork?: boolean;
+  /** Network headers to keep (allow-list). Default `DEFAULT_ALLOWED_HEADERS`. */
+  allowedHeaders?: readonly string[];
+};
+
+/**
+ * Which prompts `request()` shows. Both are on by default, which is the
+ * customer flow. An internal tool can turn them off for a one-click flow: the
+ * user clicks Record, uses the app, clicks Finish, and the recording uploads.
+ */
+export type RecorderPrompts = {
+  /**
+   * `false`: calling `request()` from the user's own Record click is the
+   * consent, so recording starts without the consent dialog. Default `true`.
+   */
+  consent?: boolean;
+  /**
+   * `false`: the recording uploads as soon as it stops, with no review dialog
+   * and no note. A failed upload offers Retry. Default `true`.
+   */
+  review?: boolean;
+};
+
+export type RecorderOptions = {
+  upload: IssueReportUpload;
+  /** Turn off the consent and review prompts. Default: both shown. */
+  prompts?: RecorderPrompts;
+  /** Prompts; default `createDefaultUi()`. */
+  ui?: RecorderUi;
+  app?: RecorderApp;
+  /** Replay title support sees. Default `Issue report from <app name>`. */
+  title?: string;
+  /** Default 3 minutes; clamped to 5 s … 10 minutes. */
+  maxDurationMs?: number;
+  /** Default 15 MB; clamped to 20 MB (Replays accepts 25 MB). */
+  maxBytes?: number;
+  privacy?: RecorderPrivacyOptions;
+  /**
+   * URLs the network capture skips. Uploads run after capture stops, so the
+   * upload endpoint never needs listing.
+   */
+  ignoreUrls?: (string | RegExp)[];
+  /** How to load rrweb; default `import('rrweb')`. For tests and custom builds. */
+  loadRrweb?: () => Promise<RrwebModule>;
+};
+
+/** The part of rrweb the recorder uses. */
+export type RrwebModule = {
+  record: ((options: Record<string, unknown>) => (() => void) | undefined) & {
+    /** Serialized node id → live node; used to mask attributes. */
+    mirror?: { getNode(id: number): Node | null };
+  };
+};
+
+export type Recorder = {
+  getState(): RecorderState;
+  subscribe(listener: (state: RecorderState) => void): () => void;
+  /**
+   * The guided flow: consent prompt → recording with indicator → review →
+   * upload. Resolves with the receipt, or `undefined` when the user declined,
+   * discarded, or the recorder was busy.
+   */
+  request(trigger?: RecorderTrigger): Promise<IssueReportReceipt | undefined>;
+  /** Starts recording. Only call after the user agreed in your own UI. */
+  start(options: { consent: true; trigger?: RecorderTrigger }): Promise<void>;
+  /** Stops recording and keeps the result in memory for review. */
+  stop(reason?: StopReason): RecordingSummary | undefined;
+  /** Uploads the reviewed recording. Only call after the user confirmed. */
+  upload(options: { confirmed: true; note?: string }): Promise<IssueReportReceipt>;
+  /** Drops everything recorded and returns to `idle`. Aborts a running upload. */
+  discard(): void;
+  /** Extra report fields, e.g. the Crisp session (set by the Crisp adapter). */
+  setReportContext(context: Pick<IssueReport, 'crisp'>): void;
+  destroy(): void;
+};

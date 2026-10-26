@@ -24,7 +24,8 @@
       "@hazem3500/replays/config": ["./src/config/index.ts"],
       "@hazem3500/replays/viewer": ["./src/client/plugins/api.ts"],
       "@hazem3500/replays/plugins/iap": ["./src/first-party/iap.ts"],
-      "@hazem3500/replays/plugins/gcs": ["./src/first-party/gcs.ts"]
+      "@hazem3500/replays/plugins/gcs": ["./src/first-party/gcs.ts"],
+      "@hazem3500/replays/recorder": ["./src/recorder/index.ts"]
     }
   },
   "include": [
