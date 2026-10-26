@@ -133,6 +133,49 @@ test('performance virtualization keeps row and clock offsets aligned across resp
 
   await assertWindowAt(60, 32);
   await assertDividerAfterSelected(60, 32);
+  const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
+  const detailHeading = evidence.locator('h2');
+  const selectedHeading = await detailHeading.textContent();
+  const assertSelectedSurvivesResize = async (index: number, rowHeight: number) => {
+    await expect(panel).toHaveAttribute('data-row-height', String(rowHeight));
+    await expect(row(index)).toBeFocused();
+    await expect(row(index)).toHaveAttribute('aria-expanded', 'true');
+    await expect
+      .poll(() =>
+        row(index).evaluate((element) => {
+          const scroller = element.closest<HTMLElement>('[data-testid="performance-events"]')!;
+          const rowBox = element.getBoundingClientRect();
+          const listBox = scroller.getBoundingClientRect();
+          return rowBox.top >= listBox.top + 28 && rowBox.bottom <= listBox.bottom;
+        }),
+      )
+      .toBe(true);
+    await expect(detailHeading).toHaveText(selectedHeading!);
+    const aligned = await events.evaluate((element, nextIndex) => {
+      const divider = element.querySelector<HTMLElement>('[data-testid="now-divider"]');
+      const next = element.querySelector<HTMLElement>(`[data-performance-id="performance-${nextIndex}"]`);
+      return Math.abs((divider?.getBoundingClientRect().top ?? Infinity) - (next?.getBoundingClientRect().top ?? -Infinity));
+    }, index + 1);
+    expect(aligned).toBeLessThanOrEqual(1);
+  };
+  await page.setViewportSize({ width: 390, height: 800 });
+  await assertSelectedSurvivesResize(61, 44);
+  await row(61).press('ArrowDown');
+  await expect(row(62)).toBeFocused();
+  await expect(row(62)).toHaveAttribute('aria-expanded', 'true');
+  await expect(detailHeading).toHaveText(selectedHeading!);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await assertSelectedSurvivesResize(62, 32);
+  await row(62).press('ArrowDown');
+  await expect(row(63)).toBeFocused();
+  await page.getByRole('button', { name: 'Search performance events' }).click();
+  const searchInput = page.getByRole('searchbox', { name: 'Search performance events' });
+  await expect(searchInput).toBeFocused();
+  await page.setViewportSize({ width: 390, height: 800 });
+  await expect(panel).toHaveAttribute('data-row-height', '44');
+  await expect(searchInput).toBeFocused();
+  await expect(detailHeading).toHaveText(selectedHeading!);
+  await page.getByRole('button', { name: 'Close event search' }).click();
   await page.keyboard.press('Escape');
   await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
   await events.evaluate((element) => {

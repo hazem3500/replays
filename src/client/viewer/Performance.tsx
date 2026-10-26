@@ -1,13 +1,12 @@
 import { SearchIcon, XIcon } from 'lucide-react';
 import { IconButton } from '@/components/icon-button.tsx';
 import { TrackList, HEADER_HEIGHT, TRAILING_GAP } from './TrackList.tsx';
-import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { formatClock, type ReplayNetworkEntry } from '../../shared/replay.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
-import { useMediaQuery } from '../media.ts';
 import { countAtOrBefore } from '../timeline.ts';
-import { useWindowedRows } from '../windowing.ts';
+import { windowRange } from '../windowing.ts';
 import { Empty } from './Empty.tsx';
 import { relatedPerformanceActivity, type PerformanceModel } from './performance.ts';
 import { TimingBar } from './TimingBar.tsx';
@@ -18,6 +17,13 @@ import './performance.css';
 const DESKTOP_EVENT_HEIGHT = 32;
 const TOUCH_EVENT_HEIGHT = 44;
 const TOUCH_ROWS_QUERY = '(max-width: 600px), (pointer: coarse)';
+interface PerformanceResizeAnchor {
+  token: number;
+  id?: string;
+  index: number;
+  scrollTop: number;
+  focusedElement?: HTMLButtonElement;
+}
 const EVENT_FILTERS = [
   { id: 'all', label: 'All' },
   { id: 'long-task', label: 'Long tasks' },
@@ -34,8 +40,17 @@ export function PerformanceDiagnostics({
   renderRequestDetail: (entry: ReplayNetworkEntry) => ReactNode;
 }) {
   const player = usePlayer();
-  const rowHeight = useMediaQuery(TOUCH_ROWS_QUERY) ? TOUCH_EVENT_HEIGHT : DESKTOP_EVENT_HEIGHT;
+  const [touchRows, setTouchRows] = useState(() => matchMedia(TOUCH_ROWS_QUERY).matches);
+  const rowHeight = touchRows ? TOUCH_EVENT_HEIGHT : DESKTOP_EVENT_HEIGHT;
   const panel = useRef<HTMLElement>(null);
+  const eventsScroller = useRef<HTMLDivElement>(null);
+  const resizeToken = useRef(0);
+  const [resizeAnchor, setResizeAnchor] = useState<PerformanceResizeAnchor>();
+  const previousTouchRows = useRef(touchRows);
+  const onResizeAnchorApplied = useCallback(
+    (token: number) => setResizeAnchor((current) => (current?.token === token ? undefined : current)),
+    [],
+  );
   const opener = useRef<HTMLElement | null>(null);
   const detail = useRef<HTMLElement>(null);
   const [query, setQuery] = useState('');
@@ -55,6 +70,53 @@ export function PerformanceDiagnostics({
       return matchesKind && words.every((word) => text.includes(word));
     });
   }, [model, query, filter]);
+  useEffect(() => {
+    const media = matchMedia(TOUCH_ROWS_QUERY);
+    const captureResizeAnchor = () => {
+      if (media.matches === previousTouchRows.current) return;
+      const element = eventsScroller.current;
+      if (element) {
+        const scrollerBox = element.getBoundingClientRect();
+        const active = element.ownerDocument.activeElement;
+        const focused = active instanceof HTMLButtonElement ? active.closest<HTMLButtonElement>('[data-performance-id]') : null;
+        const focusedId = focused && element.contains(focused) ? focused.dataset.performanceId : undefined;
+        let id = focusedId;
+        let screenTop = focused ? focused.getBoundingClientRect().top - scrollerBox.top : Number.NaN;
+        if (!id) {
+          const visible = [...element.querySelectorAll<HTMLButtonElement>('[data-performance-id]')].find((row) => {
+            const box = row.getBoundingClientRect();
+            return box.bottom > scrollerBox.top + HEADER_HEIGHT && box.top < scrollerBox.bottom;
+          });
+          id = visible?.dataset.performanceId;
+          if (visible) screenTop = visible.getBoundingClientRect().top - scrollerBox.top;
+        }
+        let index = events.findIndex((row) => row.id === id);
+        const oldHeight = previousTouchRows.current ? TOUCH_EVENT_HEIGHT : DESKTOP_EVENT_HEIGHT;
+        if (index < 0 && events.length) {
+          const contentTop = Math.max(0, element.scrollTop - HEADER_HEIGHT);
+          index = Math.min(events.length - 1, Math.floor(contentTop / oldHeight));
+          id = events[index]?.id;
+          screenTop = HEADER_HEIGHT + index * oldHeight - element.scrollTop;
+        }
+        const nextHeight = media.matches ? TOUCH_EVENT_HEIGHT : DESKTOP_EVENT_HEIGHT;
+        if (index >= 0 && Number.isFinite(screenTop)) {
+          setResizeAnchor({
+            token: ++resizeToken.current,
+            ...(id ? { id } : {}),
+            index,
+            scrollTop: Math.max(0, HEADER_HEIGHT + index * nextHeight - screenTop),
+            ...(focusedId ? { focusedElement: focused! } : {}),
+          });
+        }
+      }
+      previousTouchRows.current = media.matches;
+      setTouchRows(media.matches);
+    };
+    media.addEventListener('change', captureResizeAnchor);
+    // Catch a breakpoint change between the initial render and effect setup.
+    captureResizeAnchor();
+    return () => media.removeEventListener('change', captureResizeAnchor);
+  }, [events]);
   const choose = (row: WaterfallRow, element?: HTMLElement) => {
     if (element) opener.current = element;
     if (row.id !== selectedId) {
@@ -138,6 +200,9 @@ export function PerformanceDiagnostics({
             key={`${query}:${filter}`}
             rows={events}
             rowHeight={rowHeight}
+            scroller={eventsScroller}
+            resizeAnchor={resizeAnchor}
+            onResizeAnchorApplied={onResizeAnchorApplied}
             selected={selectedId}
             onChoose={choose}
             onFocus={(element) => {
@@ -280,12 +345,18 @@ function EventButton({
 function PerformanceEvents({
   rows,
   rowHeight,
+  scroller,
+  resizeAnchor,
+  onResizeAnchorApplied,
   selected,
   onChoose,
   onFocus,
 }: {
   rows: readonly WaterfallRow[];
   rowHeight: number;
+  scroller: RefObject<HTMLDivElement | null>;
+  resizeAnchor: PerformanceResizeAnchor | undefined;
+  onResizeAnchorApplied: (token: number) => void;
   selected: string | undefined;
   onChoose: (row: WaterfallRow, element?: HTMLElement) => void;
   onFocus: (element: HTMLElement) => void;
@@ -293,12 +364,11 @@ function PerformanceEvents({
   const player = usePlayer();
   const ats = useMemo(() => rows.map((row) => row.at), [rows]);
   const reached = usePlayhead((time) => countAtOrBefore(ats, time >= player.duration ? Infinity : time <= 0 ? -1 : time));
-  const scroll = useRef<HTMLDivElement>(null);
   const pending = useRef<string | undefined>(undefined);
-  const window = useWindowedRows(scroll, { count: rows.length, rowHeight, headerHeight: HEADER_HEIGHT });
+  const window = usePerformanceWindowedRows(scroller, rows.length, rowHeight, resizeAnchor, onResizeAnchorApplied);
   useLayoutEffect(() => {
     if (!pending.current) return;
-    const row = scroll.current?.querySelector<HTMLElement>(`[data-performance-id="${pending.current}"]`);
+    const row = scroller.current?.querySelector<HTMLElement>(`[data-performance-id="${pending.current}"]`);
     if (row) {
       row.focus({ preventScroll: true });
       pending.current = undefined;
@@ -312,7 +382,7 @@ function PerformanceEvents({
       total={rows.length}
       rowHeight={rowHeight}
       ats={ats}
-      scroller={scroll}
+      scroller={scroller}
     >
       {!rows.length ? <p className="perf-note">No matching performance events.</p> : null}
       <div className="perf-event-columns" aria-hidden="true">
@@ -354,7 +424,7 @@ function PerformanceEvents({
             const target = rows[Math.max(0, Math.min(rows.length - 1, next))];
             if (!target) return;
             pending.current = target.id;
-            if (scroll.current) scroll.current.scrollTop = Math.max(0, next) * rowHeight;
+            if (scroller.current) scroller.current.scrollTop = Math.max(0, next) * rowHeight;
             onChoose(target);
           }}
         >
@@ -376,4 +446,70 @@ function PerformanceEvents({
       <div style={{ height: window.padBottom + TRAILING_GAP }} aria-hidden="true" />
     </TrackList>
   );
+}
+
+/** Keep Performance's logical row and any focused row mounted while its responsive height changes. */
+function usePerformanceWindowedRows(
+  container: RefObject<HTMLDivElement | null>,
+  count: number,
+  rowHeight: number,
+  anchor: PerformanceResizeAnchor | undefined,
+  onAnchorApplied: (token: number) => void,
+) {
+  const [viewport, setViewport] = useState({ scrollTop: 0, height: 600 });
+  const scrollTop = anchor?.scrollTop ?? viewport.scrollTop;
+
+  useLayoutEffect(() => {
+    const element = container.current;
+    if (!element) return;
+    let frame = 0;
+    const read = () => {
+      frame = 0;
+      setViewport((current) =>
+        current.scrollTop === element.scrollTop && current.height === element.clientHeight
+          ? current
+          : { scrollTop: element.scrollTop, height: element.clientHeight },
+      );
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(read);
+    };
+    read();
+    element.addEventListener('scroll', schedule, { passive: true });
+    const observer = new ResizeObserver(schedule);
+    observer.observe(element);
+    return () => {
+      cancelAnimationFrame(frame);
+      element.removeEventListener('scroll', schedule);
+      observer.disconnect();
+    };
+  }, [container]);
+
+  useLayoutEffect(() => {
+    if (!anchor) return;
+    const element = container.current;
+    if (!element) return;
+    // The corrected range is already rendered from anchor.scrollTop, so this sync keeps the DOM scroller in
+    // step before paint without unmounting its focused row. This ref owns the list's scroll position.
+    // oxlint-disable-next-line react/immutability
+    element.scrollTop = anchor.scrollTop;
+    const frame = requestAnimationFrame(() => {
+      setViewport({ scrollTop: element.scrollTop, height: element.clientHeight });
+      const document = element.ownerDocument;
+      if (anchor.focusedElement && !anchor.focusedElement.isConnected && document.activeElement === document.body && anchor.id) {
+        [...element.querySelectorAll<HTMLElement>('[data-performance-id]')]
+          .find((row) => row.dataset.performanceId === anchor.id)
+          ?.focus({ preventScroll: true });
+      }
+      onAnchorApplied(anchor.token);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [anchor, container, onAnchorApplied]);
+
+  return windowRange({
+    scrollTop: scrollTop - HEADER_HEIGHT,
+    viewportHeight: viewport.height,
+    count,
+    rowHeight,
+  });
 }
