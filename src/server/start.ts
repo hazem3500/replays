@@ -138,19 +138,22 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
   );
   pruneTimer.unref();
 
+  const tlsCert = env.TLS_CERT_FILE;
+  const tlsKey = env.TLS_KEY_FILE;
+  const server = tlsCert && tlsKey ? createHttpsServer({ cert: await readFile(tlsCert), key: await readFile(tlsKey) }) : createHttpServer();
+
   let devMiddleware: Parameters<typeof createApp>[0]['devMiddleware'];
   let closeDev: (() => Promise<void>) | undefined;
   if (dev) {
     const { createServer: createViteServer } = await import('vite');
-    const vite = await createViteServer({ root, appType: 'spa', server: { middlewareMode: true } });
+    // Share the public listener so reverse proxies need only forward the app port, including WebSockets.
+    const vite = await createViteServer({ root, appType: 'spa', server: { middlewareMode: true, hmr: { server } } });
     devMiddleware = (request, response, next) => vite.middlewares(request, response, next);
     closeDev = () => vite.close();
   }
 
   // Server-side video renders (src/server/renderer.ts). Missing Chromium/ffmpeg only switches the feature off.
   const port = options.port === undefined ? Number(env.PORT ?? (dev ? 3000 : 8080)) : options.port === 0 ? await freePort() : options.port;
-  const tlsCert = env.TLS_CERT_FILE;
-  const tlsKey = env.TLS_KEY_FILE;
   const clientDir = resolve(root, 'dist/client');
   const positive = (name: string, fallback: number) => {
     const value = Number(env[name] ?? fallback);
@@ -249,13 +252,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     ...(devMiddleware ? { devMiddleware } : {}),
   });
 
-  const server =
-    tlsCert && tlsKey
-      ? createHttpsServer(
-          { cert: await readFile(tlsCert), key: await readFile(tlsKey) },
-          (request, response) => void handle(request, response),
-        )
-      : createHttpServer((request, response) => void handle(request, response));
+  server.on('request', (request, response) => void handle(request, response));
   // Loopback by default: a deployment that wants the network says so with HOST=0.0.0.0 (the Docker image does).
   const host = options.host ?? (env.HOST?.trim() || '127.0.0.1');
   if (auth.name === 'none' && !['127.0.0.1', '::1', 'localhost'].includes(host))
