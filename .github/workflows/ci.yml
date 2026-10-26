@@ -88,6 +88,8 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Install FFmpeg for encoded export coverage
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y ffmpeg
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
         env:

@@ -60,6 +60,16 @@
         "properties": { "text": { "type": "string", "maxLength": 160 } }
       }
     },
+    "cursor": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "visible": { "type": "boolean", "default": true },
+        "size": { "type": "number", "minimum": 0.5, "maximum": 2, "default": 1 },
+        "hideWhenIdle": { "type": "boolean", "default": true },
+        "clickFeedback": { "type": "boolean", "default": true }
+      }
+    },
     "revision": { "type": "integer", "minimum": 0 },
     "updatedBy": { "type": "string" },
     "updatedAt": { "type": "string", "format": "date-time" }

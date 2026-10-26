@@ -11,6 +11,7 @@
  * The format is deliberately plain (versioned, no derived data) so it can be handed to another tool later.
  */
 
+import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
 import {
   MAX_CAPTION,
   MAX_EFFECTS,
@@ -58,6 +59,7 @@ export interface ReplayEdits {
   speeds?: ReplaySpeedRange[];
   blurs?: ReplayBlur[];
   captions?: ReplayCaption[];
+  cursor?: ReplayCursorSettings;
 }
 
 /** As stored and served: the edit list plus who saved it last, and when. */
@@ -73,7 +75,7 @@ export interface StoredReplayEdits extends ReplayEdits {
 export const EMPTY_EDITS: ReplayEdits = { version: EDITS_VERSION, cuts: [] };
 
 const EDIT_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
-const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions'];
+const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions', 'cursor'];
 const STORED_FIELDS = [...EDIT_FIELDS, 'revision', 'updatedBy', 'updatedAt'];
 
 function object(value: unknown, name: string, allowed: readonly string[]) {
@@ -181,6 +183,17 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
     if ((cut.to as number) - (cut.from as number) < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
     label(cut.label, `${field}.label`);
   }
+  if (edits.cursor !== undefined) {
+    const cursor = object(edits.cursor, `${name}.cursor`, ['visible', 'size', 'hideWhenIdle', 'clickFeedback']);
+    for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
+      if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
+    }
+    if (
+      cursor.size !== undefined &&
+      (typeof cursor.size !== 'number' || !Number.isFinite(cursor.size) || cursor.size < 0.5 || cursor.size > 2)
+    )
+      throw new Error(`${name}.cursor.size must be from 0.5 to 2`);
+  }
   assertEffects(edits, name, duration);
   if (duration !== undefined && editTimeline(edits as unknown as ReplayEdits, duration).duration < MIN_EDIT_MS) {
     throw new Error(`${name} remove the whole replay`);
@@ -207,6 +220,7 @@ export function editListOf(stored: ReplayEdits | StoredReplayEdits): ReplayEdits
 /** Only the edit list (no revision or authorship), with times rounded to whole ms and cuts in time order. */
 export function normalizeEdits(edits: ReplayEdits): ReplayEdits {
   const round = Math.round;
+  const cursor = normalizeCursor(edits.cursor);
   return {
     version: EDITS_VERSION,
     ...(edits.trim ? { trim: { start: round(edits.trim.start), end: round(edits.trim.end) } } : {}),
@@ -214,6 +228,7 @@ export function normalizeEdits(edits: ReplayEdits): ReplayEdits {
       .map((cut) => ({ id: cut.id, from: round(cut.from), to: round(cut.to), ...(cut.label ? { label: cut.label } : {}) }))
       .sort((a, b) => a.from - b.from || a.to - b.to || a.id.localeCompare(b.id)),
     ...effectLists(edits),
+    ...(cursor ? { cursor } : {}),
   };
 }
 
@@ -264,9 +279,11 @@ export function isEmptyEdits(edits: ReplayEdits | undefined) {
   return !edits || (!edits.trim && edits.cuts.length === 0 && !hasEffectEdits(edits));
 }
 
-/** True when the list has any effect (zoom, speed, blur or caption). */
+/** True when the list has any effect (zoom, speed, blur, caption or cursor presentation). */
 export function hasEffectEdits(edits: ReplayEdits | undefined) {
-  return Boolean(edits?.zooms?.length || edits?.speeds?.length || edits?.blurs?.length || edits?.captions?.length);
+  return Boolean(
+    edits?.zooms?.length || edits?.speeds?.length || edits?.blurs?.length || edits?.captions?.length || normalizeCursor(edits?.cursor),
+  );
 }
 
 /** True when the list changes timing (trim, cuts or speed-ups): the bundle has to be remapped. */

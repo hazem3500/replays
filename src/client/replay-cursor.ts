@@ -1,3 +1,5 @@
+import type { ReplayCursorSettings } from '../shared/cursor.ts';
+
 import {
   buildCursorTrack,
   CURSOR_CANVAS,
@@ -22,6 +24,7 @@ export class ReplayCursor {
   private readonly element: HTMLDivElement;
   private readonly media: MediaQueryList | undefined;
   private track: CursorTrack;
+  private settings: ReplayCursorSettings | undefined;
   private readonly pose: Pose = { visible: false, x: 0, y: 0, heading: 0, scale: 1, opacity: 1 };
   private fitScale = 1;
   /** The fit scale only changes when the stage or the recorded viewport resizes; measure it then, not every frame. */
@@ -36,12 +39,18 @@ export class ReplayCursor {
   private readonly events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>;
   private readonly base: number;
 
-  constructor(wrapper: HTMLElement, events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>, base: number) {
+  constructor(
+    wrapper: HTMLElement,
+    events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>,
+    base: number,
+    settings?: ReplayCursorSettings,
+  ) {
     this.wrapper = wrapper;
     this.events = events;
     this.base = base;
+    this.settings = settings;
     this.media = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
-    this.track = buildCursorTrack(cursorInput(events), { reducedMotion: this.media?.matches ?? false });
+    this.track = buildCursorTrack(cursorInput(events), { reducedMotion: this.media?.matches ?? false, settings: this.settings });
     this.media?.addEventListener('change', this.onMotionPreference);
 
     const element = document.createElement('div');
@@ -92,10 +101,16 @@ export class ReplayCursor {
       this.element.style.opacity = opacity;
       this.lastOpacity = opacity;
     }
-    const transform = `translate3d(${pose.x.toFixed(2)}px,${pose.y.toFixed(2)}px,0) rotate(${(pose.heading - Math.PI / 4).toFixed(4)}rad) scale(${(pose.scale / this.fitScale).toFixed(4)})`;
+    const transform = `translate3d(${pose.x.toFixed(2)}px,${pose.y.toFixed(2)}px,0) rotate(${(pose.heading - Math.PI / 4).toFixed(4)}rad) scale(${((pose.scale * (this.settings?.size ?? 1)) / this.fitScale).toFixed(4)})`;
     if (transform === this.lastTransform) return;
     this.element.style.transform = transform;
     this.lastTransform = transform;
+  }
+
+  setSettings(settings: ReplayCursorSettings | undefined) {
+    if (JSON.stringify(settings) === JSON.stringify(this.settings)) return;
+    this.settings = settings;
+    this.onMotionPreference();
   }
 
   destroy() {
@@ -114,7 +129,7 @@ export class ReplayCursor {
   }
 
   private readonly onMotionPreference = () => {
-    this.track = buildCursorTrack(cursorInput(this.events), { reducedMotion: this.media?.matches ?? false });
+    this.track = buildCursorTrack(cursorInput(this.events), { reducedMotion: this.media?.matches ?? false, settings: this.settings });
     if (!Number.isNaN(this.lastTime)) this.update(this.lastTime);
   };
 }

@@ -1,3 +1,5 @@
+import type { ReplayCursorSettings } from '../shared/cursor.ts';
+
 /**
  * Replay cursor motion: a pure function from playhead time to cursor pose.
  *
@@ -469,6 +471,7 @@ export interface CursorTrack {
   activeStarts: Float64Array;
   activeEnds: Float64Array;
   reducedMotion: boolean;
+  settings?: ReplayCursorSettings | undefined;
 }
 
 export interface Pose {
@@ -521,7 +524,10 @@ function mergeSpans(spans: Array<[number, number]>) {
  * target was reached. If it must start while the previous move is still
  * settling, it starts from that move's pose and the earlier one is cut there.
  */
-export function buildCursorTrack(input: CursorInput, options: { reducedMotion?: boolean } = {}): CursorTrack {
+export function buildCursorTrack(
+  input: CursorInput,
+  options: { reducedMotion?: boolean; settings?: ReplayCursorSettings | undefined } = {},
+): CursorTrack {
   const reducedMotion = options.reducedMotion ?? false;
   const targets = cursorTargets(onPage(input.points, input.viewport));
   const moves: Move[] = [];
@@ -553,6 +559,7 @@ export function buildCursorTrack(input: CursorInput, options: { reducedMotion?: 
     presses: input.presses,
     ...mergeSpans(spans),
     reducedMotion,
+    settings: options.settings,
   };
 }
 
@@ -596,7 +603,7 @@ export function cursorPose(
 ) {
   into.scale = 1;
   into.opacity = 1;
-  if (!track.first || !(t >= track.appearsAt)) {
+  if (track.settings?.visible === false || !track.first || !(t >= track.appearsAt)) {
     into.visible = false;
     into.opacity = 0;
     return into;
@@ -613,11 +620,11 @@ export function cursorPose(
   } else {
     sampleTrajectory(move.traj, (t - move.start) / move.scale, into);
   }
-  if (!track.reducedMotion) {
+  if (!track.reducedMotion && track.settings?.clickFeedback !== false) {
     const press = track.presses[lastAtOrBefore(track.presses, t)];
     if (press !== undefined && t - press < CLICK_FX_MS) into.scale = 1 - squish(t - press);
   }
-  into.opacity = idlePresence(track, t);
+  into.opacity = track.settings?.hideWhenIdle === false ? 1 : idlePresence(track, t);
   if (!track.reducedMotion && into.opacity < 1) into.scale *= IDLE_SCALE + (1 - IDLE_SCALE) * into.opacity;
   return into;
 }
