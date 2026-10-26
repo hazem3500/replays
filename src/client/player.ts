@@ -60,6 +60,7 @@ export class ReplayController {
   /** Zoom, blur and caption effects (src/shared/effects.ts); zoom and blur are drawn by `layer` while mounted. */
   private effects: PlaybackEffects;
   private layer: EffectsLayer | undefined;
+  private cursor: ReplayCursor | undefined;
   private time = 0;
   private state: PlayerState = { status: 'paused', speed: 1, skipInactive: true };
   private viewport: Viewport;
@@ -108,7 +109,8 @@ export class ReplayController {
     this.replayer = replayer;
     replayer.pause(this.offsetFor(this.time));
     // Replay cursor: our own overlay (rrweb's mouse is hidden in CSS), a pure function of the playhead.
-    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0);
+    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, this.effects.cursor);
+    this.cursor = cursor;
     cursor.update(this.time);
     const unsubscribeCursor = this.subscribeTime(() => cursor.update(this.time));
     const layer = new EffectsLayer(replayer.wrapper, () => this.viewport);
@@ -121,6 +123,7 @@ export class ReplayController {
       this.layer = undefined;
       unsubscribeCursor();
       cursor.destroy();
+      this.cursor = undefined;
       this.stopLoop();
       this.cancelScrubRender();
       this.scrubbing = false;
@@ -138,6 +141,7 @@ export class ReplayController {
 
   setEffects(effects: PlaybackEffects) {
     this.effects = effects;
+    this.cursor?.setSettings(effects.cursor);
     this.layer?.set(effects, this.time);
   }
 

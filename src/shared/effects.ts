@@ -10,6 +10,8 @@
  * Everything here is pure and identical in Node and the browser.
  */
 
+import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
+
 /** Speed-up rates a range can play at. */
 export const SPEED_RATES = [2, 4, 8] as const;
 export type SpeedRate = (typeof SPEED_RATES)[number];
@@ -95,6 +97,7 @@ export interface PlaybackZoom {
 }
 
 export interface PlaybackEffects {
+  cursor?: ReplayCursorSettings;
   zooms: PlaybackZoom[];
   blurs: Array<Omit<ReplayBlur, 'id'>>;
   captions: Array<Omit<ReplayCaption, 'id'>>;
@@ -103,7 +106,7 @@ export interface PlaybackEffects {
 export const NO_EFFECTS: PlaybackEffects = { zooms: [], blurs: [], captions: [] };
 
 export function hasEffects(effects: PlaybackEffects | undefined) {
-  return Boolean(effects && (effects.zooms.length || effects.blurs.length || effects.captions.length));
+  return Boolean(effects && (effects.zooms.length || effects.blurs.length || effects.captions.length || normalizeCursor(effects.cursor)));
 }
 
 const INCREMENTAL = 3;
@@ -143,11 +146,12 @@ function mapStretches<T extends { from: number; to: number }>(items: readonly T[
  * applyEdits): auto-zoom follows the clicks that are left.
  */
 export function playbackEffects(
-  edits: { zooms?: ReplayZoomRegion[]; blurs?: ReplayBlur[]; captions?: ReplayCaption[] } | undefined,
+  edits: { zooms?: ReplayZoomRegion[]; blurs?: ReplayBlur[]; captions?: ReplayCaption[]; cursor?: ReplayCursorSettings } | undefined,
   timeline: TimeMap,
   editedEvents: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>,
 ): PlaybackEffects {
   if (!edits) return NO_EFFECTS;
+  const cursor = normalizeCursor(edits.cursor);
   const clicks = edits.zooms?.length ? clicksOf(editedEvents) : [];
   const zooms = mapStretches(edits.zooms, timeline).map((zoom) => ({
     from: zoom.from,
@@ -157,7 +161,12 @@ export function playbackEffects(
     y: zoom.y ?? 0.5,
     clicks: clicks.filter((click) => click.at >= zoom.from && click.at < zoom.to),
   }));
-  return { zooms, blurs: mapStretches(edits.blurs, timeline), captions: mapStretches(edits.captions, timeline) };
+  return {
+    zooms,
+    blurs: mapStretches(edits.blurs, timeline),
+    captions: mapStretches(edits.captions, timeline),
+    ...(cursor ? { cursor } : {}),
+  };
 }
 
 /** Original-timing effects for the editor's preview, which plays the original replay (cuts skipped live). */

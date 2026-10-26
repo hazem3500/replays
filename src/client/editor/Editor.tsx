@@ -3,6 +3,7 @@ import './editor.css';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   CaptionsIcon,
+  MousePointer2Icon,
   CheckIcon,
   ChevronDownIcon,
   EyeOffIcon,
@@ -85,6 +86,7 @@ import {
 } from './state.ts';
 import { handOff } from './handoff.ts';
 import { Timeline } from './Timeline.tsx';
+import { CursorInspector } from './CursorInspector.tsx';
 import { EditorExport } from './EditorExport.tsx';
 
 const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
@@ -130,6 +132,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [conflict, setConflict] = useState<LoadedEdits>();
   const [suggesting, setSuggesting] = useState(false);
   const [showEmptyTracks, setShowEmptyTracks] = useState(false);
+  const [cursorOpen, setCursorOpen] = useState(false);
+  const cursorTrigger = useRef<HTMLButtonElement>(null);
   const [blurPlacement, setBlurPlacement] = useState<{ from: number; to: number }>();
   const [note, say] = useNote();
   const mobile = useMediaQuery(MOBILE_QUERY);
@@ -614,6 +618,17 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                     {mobile ? 'View' : 'View replay'}
                   </Button>
                 </Hint>
+                <Button
+                  ref={cursorTrigger}
+                  variant="ghost"
+                  size="sm"
+                  aria-expanded={cursorOpen}
+                  aria-controls={cursorOpen ? 'cursor-inspector' : undefined}
+                  onClick={() => setCursorOpen((open) => !open)}
+                >
+                  <MousePointer2Icon aria-hidden="true" />
+                  Cursor
+                </Button>
                 <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
               </>
             }
@@ -637,6 +652,19 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
               />
               {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
             </div>
+            {cursorOpen ? (
+              <CursorInspector
+                settings={edits.cursor}
+                onChange={(cursor) => {
+                  const { cursor: _previous, ...rest } = live.current.state.present;
+                  change(cursor ? { ...rest, cursor } : rest);
+                }}
+                onClose={() => {
+                  setCursorOpen(false);
+                  cursorTrigger.current?.focus();
+                }}
+              />
+            ) : null}
           </section>
           {mobile ? null : <InspectorResizer shell={shell} height={dockHeight} onCommit={setDockHeight} size={DOCK_SIZE} />}
           <section className="editor-dock" aria-label="Timeline">
