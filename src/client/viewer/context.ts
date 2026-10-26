@@ -33,6 +33,9 @@ export interface ViewerActions {
   /** Step captions on the player (off until turned on; the choice is remembered). */
   captions: boolean;
   switchCaptions: () => void;
+  /** Viewer-only step numbering (off by default); absent in editor contexts, never applied to saved captions or exports. */
+  captionNumbers?: boolean;
+  setCaptionNumbers?: (show: boolean) => void;
   /**
    * The saved edit list's version (src/shared/edits.ts editsVersion), '' when unedited: video exports always apply
    * the edits, and name this version so a running export keeps to it.

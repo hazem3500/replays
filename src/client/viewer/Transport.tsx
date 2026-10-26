@@ -230,6 +230,7 @@ const WIDEST_SPEED = SPEEDS.reduce((widest, speed) => (String(speed).length > St
 function PlaybackOptions() {
   const rateId = useId();
   const player = usePlayer();
+  const { steps, captions, editCaptions, captionNumbers, setCaptionNumbers } = useViewer();
   const { speed, skipInactive } = usePlayerState();
   const [open, setOpen] = useState(false);
   const [portalContainer, setPortalContainer] = useState<HTMLElement>();
@@ -347,6 +348,22 @@ function PlaybackOptions() {
             onCheckedChange={(checked) => player.setSkipInactive(checked)}
           />
         </div>
+        {steps.length > 0 && !editCaptions && setCaptionNumbers ? (
+          <div className="playback-skip">
+            <label id={`${rateId}-numbers-label`} htmlFor={`${rateId}-numbers`}>
+              Show step numbers
+            </label>
+            <Switch
+              id={`${rateId}-numbers`}
+              nativeButton
+              render={<button type="button" />}
+              aria-labelledby={`${rateId}-numbers-label`}
+              checked={captionNumbers === true}
+              disabled={!captions}
+              onCheckedChange={setCaptionNumbers}
+            />
+          </div>
+        ) : null}
       </PopoverContent>
     </Popover>
   );
