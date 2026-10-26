@@ -1,5 +1,5 @@
 import { BotIcon, DownloadIcon, FileUpIcon, PlusIcon } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { diffLines } from '../../shared/line-diff.ts';
 import { CAPABILITIES, type Capability, isWriteCapability, PluginFormatError, starterPlugin } from '../../shared/malleable.ts';
@@ -8,7 +8,7 @@ import { appBase } from '../route.ts';
 import { notify } from '../toast.ts';
 import { connectAgent, disconnectAgent, useBridge } from './bridge.ts';
 import { DiffView } from './DiffView.tsx';
-import { dismissReview, needsReview } from './health.ts';
+import { dismissReview, getHealthSnapshot, needsReview, subscribeHealth } from './health.ts';
 import { useHost } from './host.ts';
 import { isDirty, latestSaved, manager, type PluginEntry, useManager } from './manager.ts';
 import { Modal } from './Modal.tsx';
@@ -171,8 +171,8 @@ function PolicyNote() {
  */
 function ReviewNotice({ entries, onSelect }: { entries: readonly PluginEntry[]; onSelect: (id: string) => void }) {
   const { versions } = useHost();
-  const [, setDismissed] = useState(0);
-  const failing = entries.filter((entry) => needsReview(versions, entry.id, latestSaved(entry)));
+  const health = useSyncExternalStore(subscribeHealth, getHealthSnapshot);
+  const failing = entries.filter((entry) => needsReview(versions, entry.id, latestSaved(entry), health));
   if (!failing.length) return null;
   return (
     <div className="mall-review" role="status" data-testid="review-plugins">
@@ -198,7 +198,6 @@ function ReviewNotice({ entries, onSelect }: { entries: readonly PluginEntry[]; 
             versions,
             failing.map((entry) => entry.id),
           );
-          setDismissed((n) => n + 1);
         }}
       >
         Dismiss

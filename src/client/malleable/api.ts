@@ -10,9 +10,10 @@ export class MalleableRequestError extends Error {
   }
 }
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(apiUrl(`malleable/${path}`), {
     method,
+    ...(signal ? { signal } : {}),
     ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   });
   const parsed = (await response.json().catch(() => ({}))) as T & { error?: string };
@@ -21,22 +22,27 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 }
 
 export const listPlugins = async () => (await request<{ plugins: PluginSummary[] }>('GET', 'plugins')).plugins;
-export const getHistory = (scope: PluginScope, id: string) => request<PluginHistory>('GET', `plugins/${scope}/${id}`);
+export const getHistory = (scope: PluginScope, id: string, signal?: AbortSignal) =>
+  request<PluginHistory>('GET', `plugins/${scope}/${id}`, undefined, signal);
 
 /** Only the approval dialog calls these two (src/client/malleable/KeepDialog.tsx): the token is the person's yes. */
-export const mintApproval = async (input: {
-  action: 'save' | 'delete';
-  scope: PluginScope;
-  id: string;
-  manifest?: UserPluginManifest;
-  source?: string;
-}) => (await request<{ token: string }>('POST', 'approvals', input)).token;
+export const mintApproval = async (
+  input: {
+    action: 'save' | 'delete';
+    scope: PluginScope;
+    id: string;
+    manifest?: UserPluginManifest;
+    source?: string;
+  },
+  signal?: AbortSignal,
+) => (await request<{ token: string }>('POST', 'approvals', input, signal)).token;
 
 export const savePlugin = (
   scope: PluginScope,
   id: string,
   input: { manifest: UserPluginManifest; source: string; message: string; baseVersion: number; approval: string },
-) => request<{ version: number }>('PUT', `plugins/${scope}/${id}`, input);
+  signal?: AbortSignal,
+) => request<{ version: number }>('PUT', `plugins/${scope}/${id}`, input, signal);
 
 export const deletePlugin = (scope: PluginScope, id: string, approval: string) =>
   request<{ removed: boolean }>('DELETE', `plugins/${scope}/${id}?approval=${encodeURIComponent(approval)}`);

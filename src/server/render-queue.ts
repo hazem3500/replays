@@ -1,11 +1,9 @@
-import { mkdtempSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { RENDER_SPEEDS, type RenderSpeed } from '../client/render/frames.ts';
 import type { RenderedFile, RenderJob } from '../plugin/types.ts';
 import type { Identity } from './auth/types.ts';
+import { withRenderScope } from './render-scope.ts';
 import { FsStorage, type ObjectStorage, readJson } from './storage/index.ts';
 import { captureLink, startSpan, type TraceLink, withSpan } from './tracing.ts';
 
@@ -141,6 +139,9 @@ const normalize = (options: RenderOptions): Required<RenderOptions> => ({
 export const renderJobId = (id: string, speed: RenderSpeedOption, options: RenderOptions = {}) => `${id}-${renderVariant(speed, options)}`;
 
 export class RenderQueue {
+  private closed = false;
+  private readonly active = new Set<Job>();
+  private readonly admissions = new Set<Promise<RenderJobView>>();
   readonly storage: ObjectStorage;
   private readonly tempDir: string | undefined;
   private readonly runner: RenderRunner;
@@ -202,16 +203,30 @@ export class RenderQueue {
   }
 
   /** Starts (or joins) the render for `id` at `speed` with `options` (skip inactive, captions); `identity` asked for it. */
-  async enqueue(
+  enqueue(
     id: string,
     speed: RenderSpeedOption,
     options: RenderOptions = {},
     context: { identity?: Identity | undefined } = {},
   ): Promise<RenderJobView> {
+    const admission = this.enqueueJob(id, speed, options, context);
+    this.admissions.add(admission);
+    void admission.finally(() => this.admissions.delete(admission)).catch(() => {});
+    return admission;
+  }
+
+  private async enqueueJob(
+    id: string,
+    speed: RenderSpeedOption,
+    options: RenderOptions,
+    context: { identity?: Identity | undefined },
+  ): Promise<RenderJobView> {
+    if (this.closed) throw Object.assign(new Error('render queue is shutting down'), { status: 503 });
     const key = renderJobId(assertId(id), speed, options);
     const existing = this.jobs.get(key);
     if (existing && (existing.status === 'queued' || existing.status === 'rendering')) return this.view(existing);
     const cached = await this.cached(id, speed, options);
+    if (this.closed) throw Object.assign(new Error('render queue is shutting down'), { status: 503 });
     if (cached) return cached;
     if (this.waiting.length >= this.maxQueued) throw new RenderQueueFullError();
 
@@ -233,6 +248,11 @@ export class RenderQueue {
     this.jobs.set(key, job);
     this.waiting.push(job);
     await this.writeState(id, speed, options, { status: 'queued' });
+    if (this.closed) {
+      await this.storage.delete(this.stateKey(id, speed, options));
+      job.resolve();
+      throw Object.assign(new Error('render queue is shutting down'), { status: 503 });
+    }
     this.log(`render ${key}: queued`);
     this.pump();
     return this.view(job);
@@ -259,10 +279,21 @@ export class RenderQueue {
     if (index >= 0) this.waiting.splice(index, 1);
     job.controller.abort(new Error('cancelled'));
     this.jobs.delete(key);
-    await this.storage.delete(this.stateKey(id, speed, options));
     if (index >= 0) job.resolve();
+    await this.storage.delete(this.stateKey(id, speed, options));
     this.log(`render ${key}: cancelled`);
     return true;
+  }
+
+  /** Abort and drain owned runners before the server exits; finalizers retain files until runners settle. */
+  async close() {
+    this.closed = true;
+    const jobs = [...new Set([...this.jobs.values(), ...this.active])];
+    const cancelled = await Promise.allSettled(jobs.map((job) => this.cancel(job.id, job.speed, job.options)));
+    await Promise.allSettled(this.admissions);
+    await Promise.all(jobs.map((job) => job.done));
+    const errors = cancelled.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []));
+    if (errors.length) throw new AggregateError(errors, 'render shutdown cleanup failed');
   }
 
   /** Resolves when the job for `id`+`speed`+`options` settles (tests, graceful shutdown). */
@@ -293,7 +324,9 @@ export class RenderQueue {
     while (this.running < this.concurrency && this.waiting.length > 0) {
       const job = this.waiting.shift() as Job;
       this.running++;
+      this.active.add(job);
       void this.run(job).finally(() => {
+        this.active.delete(job);
         this.running--;
         job.resolve();
         this.pump();
@@ -332,48 +365,46 @@ export class RenderQueue {
     const key = renderJobId(id, speed, options);
     const output = this.outputKey(id, speed, options);
     // Synchronous, so the job reads as rendering as soon as it leaves the queue.
-    const directory = mkdtempSync(join(this.tempDir ?? tmpdir(), 'replays-render-'));
-    const temporary = join(directory, 'render.mp4');
-    const timer = setTimeout(
-      () => job.controller.abort(new Error(`timed out after ${Math.round(this.timeoutMs / 1000)} s`)),
-      this.timeoutMs,
-    );
     job.status = 'rendering';
-    job.startedAt = this.now();
+    const startedAt = this.now();
+    job.startedAt = startedAt;
     this.log(`render ${key}: rendering`);
     try {
-      await this.writeState(id, speed, options, { status: 'rendering' });
-      await this.runner({
-        id,
-        speed,
-        captions: options.captions,
-        skipInactive: options.skipInactive,
-        edits: options.edits,
-        output: temporary,
-        signal: job.controller.signal,
-        onProgress: (progress) => {
-          job.progress = Math.min(1, Math.max(job.progress, progress));
-        },
+      return await withRenderScope({ tempDir: this.tempDir, controller: job.controller, timeoutMs: this.timeoutMs }, async (directory) => {
+        const temporary = join(directory, 'render.mp4');
+        await this.writeState(id, speed, options, { status: 'rendering' });
+        await this.runner({
+          id,
+          speed,
+          captions: options.captions,
+          skipInactive: options.skipInactive,
+          edits: options.edits,
+          output: temporary,
+          signal: job.controller.signal,
+          onProgress: (progress) => {
+            job.progress = Math.min(1, Math.max(job.progress, progress));
+          },
+        });
+        job.controller.signal.throwIfAborted();
+        const stored = await this.storage.upload(output, temporary, { contentType: 'video/mp4' });
+        job.status = 'done';
+        job.progress = 1;
+        await this.storage.delete(this.stateKey(id, speed, options));
+        this.log(`render ${key}: done in ${((this.now() - startedAt) / 1000).toFixed(1)} s`);
+        if (this.afterRender) {
+          const view: RenderJob = {
+            id: key,
+            replayId: id,
+            kind: 'video',
+            options: { speed, captions: options.captions, skipInactive: options.skipInactive },
+            ...(job.identity ? { identity: job.identity } : {}),
+          };
+          await Promise.resolve()
+            .then(() => this.afterRender!(view, { file: temporary, key: output, contentType: 'video/mp4', bytes: stored.size }))
+            .catch((error: unknown) => this.log(`render ${key}: afterRender failed: ${summarizeError(error)}`));
+        }
+        return undefined;
       });
-      job.controller.signal.throwIfAborted();
-      const stored = await this.storage.upload(output, temporary, { contentType: 'video/mp4' });
-      job.status = 'done';
-      job.progress = 1;
-      await this.storage.delete(this.stateKey(id, speed, options));
-      this.log(`render ${key}: done in ${((this.now() - job.startedAt) / 1000).toFixed(1)} s`);
-      if (this.afterRender) {
-        const view: RenderJob = {
-          id: key,
-          replayId: id,
-          kind: 'video',
-          options: { speed, captions: options.captions, skipInactive: options.skipInactive },
-          ...(job.identity ? { identity: job.identity } : {}),
-        };
-        await Promise.resolve()
-          .then(() => this.afterRender!(view, { file: temporary, key: output, contentType: 'video/mp4', bytes: stored.size }))
-          .catch((error: unknown) => this.log(`render ${key}: afterRender failed: ${summarizeError(error)}`));
-      }
-      return undefined;
     } catch (error) {
       // A cancelled job was already removed from the map and its state file deleted.
       if (this.jobs.get(key) !== job) return undefined;
@@ -383,9 +414,6 @@ export class RenderQueue {
       this.log(`render ${key}: failed: ${job.error.split('\n')[0]?.slice(0, 300)}`);
       await this.writeState(id, speed, options, { status: 'failed', error: job.error }).catch(() => undefined);
       return reason;
-    } finally {
-      clearTimeout(timer);
-      await rm(directory, { recursive: true, force: true });
     }
   }
 

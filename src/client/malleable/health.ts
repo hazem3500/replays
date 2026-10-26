@@ -24,6 +24,16 @@ interface HealthRecord {
 type Book = Record<string, Record<string, HealthRecord>>;
 
 let cache: Book | undefined;
+const listeners = new Set<() => void>();
+
+export function subscribeHealth(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+export const getHealthSnapshot = () => read();
 
 function read(): Book {
   if (cache) return cache;
@@ -45,6 +55,7 @@ function write(book: Book) {
   } catch {
     /* private mode: health lasts for this page */
   }
+  for (const listener of listeners) listener();
 }
 
 /**
@@ -69,9 +80,8 @@ export function recordLoad(versions: HostVersions, id: string, sha: string, ok: 
  * Whether a saved plugin should be reviewed: it failed to load under the current versions, the versions changed since it
  * was kept (its `targets` differ) or since it last loaded fine, and nobody dismissed the notice yet.
  */
-export function needsReview(versions: HostVersions, id: string, saved: PluginVersion | undefined) {
+export function needsReview(versions: HostVersions, id: string, saved: PluginVersion | undefined, book: Book = read()) {
   if (!versions.core || !saved) return false;
-  const book = read();
   const key = versionsKey(versions);
   const record = book[key]?.[id];
   if (record?.status !== 'failed' || record.sha !== saved.sha256 || record.reviewed) return false;

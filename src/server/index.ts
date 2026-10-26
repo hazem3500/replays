@@ -5,6 +5,8 @@
  *   await startServer({ handleSignals: true });   // reads replays.config.* and the environment
  */
 export { startServer, type RunningServer, type StartOptions } from './start.ts';
+export type { ApplicationOptions, ApplicationRuntime } from './agent-native/runtime.ts';
+export type { AgentCredential, AgentScope } from './agent-native/credentials.ts';
 export { createRuntime, mergeContextSchemas, resolveSettings, type Runtime, type RuntimeOptions } from './runtime.ts';
 export { createApp, type AppOptions } from './app.ts';
 export { ReplayStore } from './store.ts';

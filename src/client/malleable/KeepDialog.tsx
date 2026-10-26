@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { diffLines } from '../../shared/line-diff.ts';
 import { CAPABILITIES, isWriteCapability } from '../../shared/malleable.ts';
 import { capabilityRule, policyProblems } from '../../shared/malleable-policy.ts';
 import { notify } from '../toast.ts';
+import { createDraftApproval } from './approval-machine.ts';
 import { DiffView } from './DiffView.tsx';
 import { useHost } from './host.ts';
 import { latestSaved, manager, sameManifest, useManager } from './manager.ts';
@@ -22,14 +23,40 @@ export function KeepDialog() {
   const { policy } = useHost();
   const entry = entries.find((candidate) => candidate.id === keepFor);
   const [message, setMessage] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>();
+  const actor = useRef<ReturnType<typeof createDraftApproval> | undefined>(undefined);
+  const [approval, setApproval] = useState<ReturnType<ReturnType<typeof createDraftApproval>['getSnapshot']>>();
+  const id = entry?.id;
+  const revision = entry?.revision;
+  useEffect(() => {
+    if (id === undefined || revision === undefined) return;
+    const session = createDraftApproval(revision, (reviewedRevision, note, signal) =>
+      manager.saveApproved(id, note, { revision: reviewedRevision, signal }),
+    );
+    actor.current = session;
+    const subscription = session.subscribe((snapshot) => {
+      setApproval(snapshot);
+      if (snapshot.matches('saved')) {
+        notify(`Saved “${manager.get(id)?.manifest.name ?? id}”`);
+        setMalleableUi({ keepFor: undefined });
+        setMessage('');
+      }
+    });
+    session.start();
+    session.send({ type: 'requestKeep' });
+    return () => {
+      subscription.unsubscribe();
+      session.stop();
+      actor.current = undefined;
+    };
+  }, [actor, id, revision]);
+  const busy = approval?.matches('saving') ?? false;
+  const error = approval?.context.error;
   const saved = entry ? latestSaved(entry) : undefined;
   const diff = useMemo(() => (entry ? diffLines(saved?.source ?? '', entry.source) : []), [entry, saved]);
   if (!entry) return null;
   const close = () => {
     setMalleableUi({ keepFor: undefined });
-    setError(undefined);
+    actor.current?.send({ type: 'cancel' });
     setMessage('');
   };
   const manifestChanged = !saved || !sameManifest(saved.manifest, entry.manifest);
@@ -110,16 +137,7 @@ export function KeepDialog() {
           data-testid="keep-approve"
           disabled={busy || problems.length > 0}
           onClick={() => {
-            setBusy(true);
-            setError(undefined);
-            manager
-              .saveApproved(entry.id, message)
-              .then(() => {
-                notify(`Saved “${entry.manifest.name}”`);
-                close();
-              })
-              .catch((failure: unknown) => setError(failure instanceof Error ? failure.message : String(failure)))
-              .finally(() => setBusy(false));
+            actor.current?.send({ type: 'approve', revision: entry.revision, message, human: true });
           }}
         >
           Approve &amp; save

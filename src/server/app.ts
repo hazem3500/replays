@@ -1,3 +1,4 @@
+import type { ApplicationRuntime } from './agent-native/runtime.ts';
 import { applyRequestPolicy } from './request-policy.ts';
 import { normalizeSignIn, signInReturn } from '../shared/sign-in.ts';
 import { createHash } from 'node:crypto';
@@ -73,6 +74,8 @@ const MIME: Record<string, string> = {
 };
 
 export interface AppOptions {
+  /** Main application dispatcher, behind host auth and request policy. */
+  application?: ApplicationRuntime;
   signIn?: import('../shared/sign-in.ts').SignInConfig | false;
   auth: AuthAdapter;
   store: ReplayStore;
@@ -519,6 +522,7 @@ export function createApp(options: AppOptions) {
         send(response, 403, 'cross-site request');
         return;
       }
+      await options.application?.authorize(request, path, user);
       if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
         return;
       if (signIn && path === signIn.path) {
@@ -534,6 +538,7 @@ export function createApp(options: AppOptions) {
         response.end();
         return;
       }
+      if (await options.application?.handle(request, response, path, user)) return;
       // Files of the plugins' client entries (behind the same auth as everything else).
       const asset = request.method === 'GET' || request.method === 'HEAD' ? clientAsset(registry, path) : undefined;
       if (asset) {
