@@ -24,13 +24,17 @@ function DropdownMenuContent({
   side = 'bottom',
   sideOffset = 4,
   anchor,
+  portalContainer,
   className,
   children,
   ...props
-}: MenuPrimitive.Popup.Props & Pick<MenuPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset' | 'anchor'>) {
+}: MenuPrimitive.Popup.Props &
+  Pick<MenuPrimitive.Positioner.Props, 'align' | 'alignOffset' | 'side' | 'sideOffset' | 'anchor'> & {
+    portalContainer?: MenuPrimitive.Portal.Props['container'];
+  }) {
   const popup = React.useRef<HTMLDivElement>(null);
   return (
-    <MenuPrimitive.Portal>
+    <MenuPrimitive.Portal container={portalContainer}>
       <MenuPrimitive.Positioner
         className="isolate z-50 outline-none"
         align={align}

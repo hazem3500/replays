@@ -7,6 +7,7 @@ import {
   GripHorizontalIcon,
   CircleXIcon,
   GaugeIcon,
+  ChartNoAxesGanttIcon,
   GlobeIcon,
   ListOrderedIcon,
   type LucideIcon,
@@ -29,13 +30,7 @@ import {
   useState,
 } from 'react';
 
-import {
-  formatClock,
-  type ReplayBundle,
-  type ReplayConsoleEntry,
-  type ReplayNetworkEntry,
-  type ReplayPerformanceEntry,
-} from '../../shared/replay.ts';
+import { formatClock, type ReplayBundle, type ReplayConsoleEntry, type ReplayNetworkEntry } from '../../shared/replay.ts';
 import { domain, entrySize, formatBytes, hasNoResponse, isFailedRequest } from '../format.ts';
 import { usePlayer, usePlayerState, usePlayhead } from '../player.ts';
 import { countAtOrBefore, sortByAt } from '../timeline.ts';
@@ -60,6 +55,11 @@ import { Button } from '@/components/ui/button.tsx';
 import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../navigation.ts';
+import type { EditTimeline } from '../../shared/edits.ts';
+import { Waterfall } from './Waterfall.tsx';
+import { validDuration } from './waterfall.ts';
+import { PerformanceDiagnostics } from './Performance.tsx';
+import { buildPerformance } from './performance.ts';
 
 export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const DEFAULT_INSPECTOR_HEIGHT = 260;
@@ -181,7 +181,7 @@ const TAB_SHORTCUTS: Partial<Record<BuiltinInspectorTab, ShortcutAction>> = {
   performance: 'performance-tab',
 };
 
-const TABS: BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
+const TABS: BuiltinInspectorTab[] = ['console', 'network', 'waterfall', 'performance', 'context'];
 
 export interface MobilePanel {
   /** The Steps tab is showing (it sits in front of the diagnostics tabs on phones). */
@@ -191,12 +191,17 @@ export interface MobilePanel {
 
 export const Inspector = memo(function Inspector({
   bundle,
+  sourceBundle = bundle,
+  timeline,
   tab,
   expandedRequest,
   mobile,
   collapse,
 }: {
   bundle: ReplayBundle;
+  /** Original captured data: measured spans must be mapped, including starts inside cuts. */
+  sourceBundle?: ReplayBundle;
+  timeline?: EditTimeline | undefined;
   tab: InspectorTab;
   expandedRequest: string | undefined;
   mobile?: MobilePanel;
@@ -215,7 +220,12 @@ export const Inspector = memo(function Inspector({
   const replayHost = useMemo(() => hostOf(bundle.meta.url), [bundle.meta.url]);
   const consoleTrack = useMemo(() => sortByAt(bundle.console), [bundle]);
   const networkTrack = useMemo(() => sortByAt(bundle.network), [bundle]);
-  const performanceTrack = useMemo(() => sortByAt(bundle.performance?.entries ?? []), [bundle]);
+  const firstNetworkAt = useMemo(
+    () => sourceBundle.network.reduce((first, entry) => (Number.isFinite(entry.at) ? Math.min(first, entry.at) : first), Infinity),
+    [sourceBundle],
+  );
+  const performanceModel = useMemo(() => buildPerformance(sourceBundle, timeline), [sourceBundle, timeline]);
+  const performanceTrack = useMemo(() => sortByAt(performanceModel.signals), [performanceModel]);
   // Once playback reaches the end every entry is in view (some trail the last DOM event). At the very start nothing
   // has happened yet, not even entries stamped 0:00.0, so the now line can rest above every row.
   const horizon = (time: number) => (time >= player.duration ? Number.POSITIVE_INFINITY : time <= 0 ? -1 : time);
@@ -432,7 +442,24 @@ export const Inspector = memo(function Inspector({
       </TabsContent>
       <TabsContent value="performance" className="inspector-panel">
         {filled ? (
-          <PerformancePanel track={bundle.performance} entries={performanceTrack.entries} reached={performanceCount} human={human} />
+          <PerformanceDiagnostics
+            model={performanceModel}
+            renderRequestDetail={(entry) => (
+              <RequestDetail entry={entry} firstAt={firstNetworkAt} unanswered={hasNoResponse(entry)} size={entrySize(entry)} />
+            )}
+          />
+        ) : null}
+      </TabsContent>
+      <TabsContent value="waterfall" className="inspector-panel">
+        {filled ? (
+          <Waterfall
+            bundle={sourceBundle}
+            timeline={timeline}
+            onNetworkSelection={setExpandedRequest}
+            renderRequestDetail={(entry) => (
+              <RequestDetail entry={entry} firstAt={firstNetworkAt} unanswered={hasNoResponse(entry)} size={entrySize(entry)} />
+            )}
+          />
         ) : null}
       </TabsContent>
       <TabsContent value="context" className="inspector-panel">
@@ -466,6 +493,7 @@ const INSPECTOR_ROWS = 'tbody > tr:not(.spacer-row):not(.gap-row), .ctx-summary,
 const TAB_ICONS: Record<BuiltinInspectorTab, LucideIcon> = {
   console: SquareTerminalIcon,
   network: GlobeIcon,
+  waterfall: ChartNoAxesGanttIcon,
   performance: GaugeIcon,
   context: BadgeInfoIcon,
 };
@@ -497,6 +525,7 @@ function useNarrowerThan(element: RefObject<HTMLElement | null>, width: number) 
 const TAB_LABELS: Record<BuiltinInspectorTab, string> = {
   console: 'Console',
   network: 'Network',
+  waterfall: 'Waterfall',
   performance: 'Performance',
   context: 'Context',
 };
@@ -1657,95 +1686,6 @@ const NetworkPanel = memo(function NetworkPanel({
   );
 });
 
-const PerformancePanel = memo(function PerformancePanel({
-  track,
-  entries,
-  reached,
-  human,
-}: {
-  track: ReplayBundle['performance'];
-  entries: ReplayPerformanceEntry[];
-  reached: number;
-  human: boolean;
-}) {
-  const scroller = useRef<HTMLDivElement>(null);
-  const body = useRef<HTMLTableSectionElement>(null);
-  const total = entries.length;
-  const ats = useMemo(() => entries.map((entry) => entry.at), [entries]);
-  const rowHeight = useRowHeight(body, 'tr.performance-row', total > 0);
-  const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: total, rowHeight, headerHeight: HEADER_HEIGHT + TRACK_GAP });
-  const supported = track?.supported ?? [];
-  return (
-    <TrackList testId="performance-list" reached={reached} total={total} rowHeight={rowHeight} ats={ats} scroller={scroller}>
-      {total === 0 ? (
-        !track ? (
-          <Empty title="Performance wasn’t recorded">
-            {human
-              ? 'This recording was imported from rrweb, so browser timing wasn’t captured.'
-              : 'This older replay has no Performance track.'}
-          </Empty>
-        ) : supported.length === 0 ? (
-          <Empty title="Performance APIs unavailable">This browser did not expose the timing entries used by this capture.</Empty>
-        ) : (
-          <Empty title="No slow work captured">
-            No long tasks (50 ms or more) or slow interactions (40 ms or more) were observed. Available paint timings are included when
-            present.
-          </Empty>
-        )
-      ) : (
-        <table className="diagnostic-table performance-table" aria-rowcount={total + 1}>
-          <thead>
-            <tr aria-rowindex={1}>
-              <th>Time</th>
-              <th>Signal</th>
-              <th>Duration</th>
-              <th>Event</th>
-            </tr>
-          </thead>
-          <tbody ref={body}>
-            <GapRow columns={4} />
-            <SpacerRow height={padTop} columns={4} />
-            {entries.slice(start, end).map((entry, offset) => {
-              const index = start + offset;
-              const future = index >= reached;
-              return (
-                <tr
-                  className={`performance-row ${entry.kind}`}
-                  key={`${entry.at}-${index}`}
-                  aria-rowindex={index + 2}
-                  data-future={future || undefined}
-                >
-                  <td>
-                    <SeekTime at={entry.at} future={future} />
-                  </td>
-                  <td>{performanceLabel(entry.kind)}</td>
-                  <td className="number-cell">{Math.round(entry.value)} ms</td>
-                  <td className="performance-detail">{entry.eventType ?? '—'}</td>
-                </tr>
-              );
-            })}
-            <SpacerRow height={padBottom} columns={4} />
-            <GapRow columns={4} trailing />
-          </tbody>
-        </table>
-      )}
-    </TrackList>
-  );
-});
-
-function performanceLabel(kind: ReplayPerformanceEntry['kind']) {
-  switch (kind) {
-    case 'first-contentful-paint':
-      return 'First contentful paint';
-    case 'largest-contentful-paint':
-      return 'Largest contentful paint candidate';
-    case 'long-task':
-      return 'Main-thread task';
-    case 'slow-interaction':
-      return 'Slow interaction';
-  }
-}
-
 const NetworkRow = memo(function NetworkRow({
   entry,
   rowIndex,
@@ -1921,6 +1861,7 @@ function RequestDetail({
   size: number | undefined;
 }) {
   const url = useMemo(() => splitUrl(entry.url), [entry.url]);
+  const measured = !unanswered && validDuration(entry.duration) && Number.isFinite(entry.at + entry.duration);
   return (
     <div className="rd-grid">
       <div className="rd-url">
@@ -1935,14 +1876,16 @@ function RequestDetail({
       </div>
       <dl className="rd-facts">
         <Fact label="Status" title={unanswered ? NO_RESPONSE : undefined}>
-          {unanswered ? 'No response (redirect hop)' : `${entry.status || 'Error'} ${entry.statusText}`.trim()}
+          {unanswered ? 'No response recorded' : `${entry.status || 'Error'} ${entry.statusText}`.trim()}
         </Fact>
         <Fact label="Method">{entry.method}</Fact>
         <Fact label="Content type">{entry.mimeType ?? '—'}</Fact>
         <Fact label="Size">{size === undefined ? '—' : formatBytes(size)}</Fact>
         <Fact label="Started">{formatClock(entry.at)}</Fact>
-        <Fact label="Duration">{entry.duration.toFixed(1)} ms</Fact>
-        <Fact label="Finished">{formatClock(entry.at + entry.duration)}</Fact>
+        <Fact label="Duration">
+          {measured ? `${entry.duration.toFixed(1)} ms` : unanswered ? 'Unknown / incomplete' : 'Invalid / unknown'}
+        </Fact>
+        <Fact label="Finished">{measured ? formatClock(entry.at + entry.duration) : 'Unknown'}</Fact>
         <Fact label="After first request">{entry.at > firstAt ? `+${formatDuration(entry.at - firstAt)}` : '—'}</Fact>
       </dl>
       <div className="rd-headers">

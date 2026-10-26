@@ -13,7 +13,8 @@ can host yourself.
 - **One timeline.** rrweb events, agent steps, console, network and performance share the same millisecond clock. Click a
   step, a request or a console line and the page jumps there.
 - **Built for debugging.** Error markers on the scrubber (console errors, failed requests), previous/next error,
-  permalinks (`?t=6.9` or `#step-3`), keyboard shortcuts, a Context tab for test metadata.
+  permalinks (`?t=6.9` or `#step-3`), keyboard shortcuts, a Context tab for test metadata, and a Waterfall tab for
+  overlapping requests, actions and performance signals.
 - **Capture that survives navigations.** The recorder is registered over the Chrome DevTools Protocol before the first
   page loads, pulls chunks every second and flushes on `pagehide`.
 - **Private by default.** Inputs are masked at capture time; cookies, credential headers, URL credentials and sensitive
@@ -96,6 +97,18 @@ const tracks = await session.stop(); // { events, console, performance, origin, 
 
 `stop()` gives the page-side tracks; combine them with a HAR (`networkEntries`) and your steps into a
 `ReplayBundle` (see `src/capture/capture.ts` for the reference assembly) and upload it.
+
+### Inspect the waterfall
+
+Open **Waterfall** in the replay's diagnostics panel. Requests share a horizontal clock with action/paint points
+and measured task spans. Select a row to seek the existing player and open details; ↑/↓, Home/End and Escape work
+from the keyboard. Search and track/state filters help isolate failures, slow requests (at least 500 ms measured),
+incomplete requests, or invalid durations. On narrow screens, scroll the timeline horizontally; event labels stay pinned.
+
+With saved edits, bars follow the edited replay clock through trims, cuts and speed-ups. Labels and request details
+retain source measurements; the selected event also shows its visible elapsed time. Requests crossing removed time
+keep their surviving portions, even when their start was cut. Actions and paints remain points, never inferred spans.
+Missing responses have unknown duration. Older bundles work with the tracks they contain; no additional capture data is needed.
 
 ## Architecture
 
