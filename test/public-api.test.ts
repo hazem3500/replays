@@ -13,6 +13,29 @@ const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.jso
 };
 
 const entries: Record<string, { source: string; values: string[] }> = {
+  './recorder': {
+    source: '../src/recorder/index.ts',
+    values: [
+      'BLOCK_ATTRIBUTE',
+      'DEFAULT_ALLOWED_HEADERS',
+      'DEFAULT_MAX_BYTES',
+      'DEFAULT_MAX_DURATION_MS',
+      'DEFAULT_MESSAGES',
+      'IssueUploadError',
+      'MASK_INPUT_OPTIONS',
+      'MAX_BYTES_CEILING',
+      'MAX_DURATION_CEILING_MS',
+      'UI_ATTRIBUTE',
+      'buildReplayBundle',
+      'createDefaultUi',
+      'createRecorder',
+      'createTokenUpload',
+      'formatDuration',
+      'gzip',
+      'redactText',
+      'redactUrl',
+    ],
+  },
   './plugin': {
     source: '../src/plugin/index.ts',
     values: [
@@ -153,6 +176,7 @@ describe('public API', () => {
       './plugins/iap',
       './plugins/gcs',
       './package.json',
+      './recorder',
     ]);
     for (const target of Object.values(pkg.exports)) {
       if (typeof target === 'string') continue;
