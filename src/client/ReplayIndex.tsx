@@ -622,6 +622,7 @@ export function ReplayIndex() {
   const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
   const error = settledFilters === filters ? loadError : '';
+  const connectionError = error.startsWith('Could not reach ');
   const replays = entries ? replayCount(entries) : 0;
   const suiteRows = entries ? entries.filter((entry) => entry.kind === 'suite').length : 0;
 
@@ -735,13 +736,17 @@ export function ReplayIndex() {
         {authFailure ? <SignInLink error={authFailure} /> : null}
         {error ? (
           <div className="empty" role="alert">
-            <strong>{error}</strong>
-            <span>Reload the page to try again.</span>
+            <strong>{connectionError ? 'Can’t reach Replays' : 'Could not load replays'}</strong>
+            <span>{connectionError ? 'Check your connection or VPN, then try again.' : error}</span>
+            <button type="button" className="button secondary" onClick={() => window.location.reload()}>
+              Try again
+            </button>
           </div>
         ) : entries && entries.length === 0 ? (
           filtered ? (
             <div className="empty">
-              <strong>No replays match these filters</strong>
+              <strong>No replays match</strong>
+              <span>Clear a filter or switch purpose to see more replays.</span>
               <button type="button" className="button secondary" onClick={clear}>
                 Clear filters
               </button>
@@ -825,22 +830,80 @@ function withFilter<K extends keyof ReplayFilters>(filters: ReplayFilters, key: 
 
 function EmptyIndex({ onUpload }: { onUpload: () => void }) {
   const uploadUrl = `${location.origin}${apiUrl('replays')}`;
+  const askText = '@Toki record a replay of creating a project on track.toggl.space';
+  const [copied, setCopied] = useState(false);
   return (
     <div className="empty-index">
-      <h2>No replays yet</h2>
-      <p>Upload a replay.json or an rrweb export, or drop one anywhere on this page.</p>
-      <Button className="empty-upload" onClick={onUpload}>
-        Upload a replay…
-      </Button>
-      <p className="empty-index-or">Or capture and upload from the command line:</p>
-      <CommandBlock
-        label="Capture an agent run"
-        command={`pnpm capture -- --url https://example.com --title "Example" \\\n  --steps @sample/example.steps.json \\\n  --upload-url ${uploadUrl}`}
-      />
-      <CommandBlock
-        label="Import an rrweb recording"
-        command={`pnpm run import -- --rrweb events.json --title "Checkout bug" \\\n  --upload-url ${uploadUrl}`}
-      />
+      <header className="empty-index-intro">
+        <span className="empty-index-eyebrow">Replays</span>
+        <h2>See what happened in a browser session</h2>
+        <p>Page, console and network activity, recorded together on one timeline.</p>
+      </header>
+      <div className="empty-index-ways">
+        <section className="empty-index-way empty-index-toki">
+          <div className="empty-index-way-top">
+            <h3>Ask Toki</h3>
+            <span className="empty-index-badge">Fastest</span>
+          </div>
+          <p>Describe the flow in Slack. Toki records it and shares the replay link.</p>
+          <blockquote>
+            <span>@Toki</span> record a replay of creating a project on track.toggl.space
+          </blockquote>
+          <div className="empty-index-actions">
+            <a className="button" href="https://app.slack.com/client/" target="_blank" rel="noreferrer">
+              Open Slack
+            </a>
+            <button className="button secondary" type="button" onClick={() => void copyText(askText).then(setCopied)}>
+              {copied ? 'Copied' : 'Copy request'}
+            </button>
+          </div>
+        </section>
+        <section className="empty-index-way">
+          <div className="empty-index-way-top">
+            <h3>Upload a replay</h3>
+          </div>
+          <p>
+            Bring a <code>replay.json</code> or an rrweb export recorded with inputs masked.
+          </p>
+          <Button className="empty-index-drop" onClick={onUpload}>
+            Drop a file anywhere or choose one
+          </Button>
+        </section>
+        <section className="empty-index-way">
+          <div className="empty-index-way-top">
+            <h3>Capture from code</h3>
+            <span className="empty-index-badge muted">Engineers</span>
+          </div>
+          <p>
+            Use the capture CLI from a <code>hazem3500/replays</code> checkout.
+          </p>
+          <details className="empty-index-engineer">
+            <summary>Show capture and import commands</summary>
+            <CommandBlock
+              label="Capture a scripted run from a hazem3500/replays checkout"
+              command={`pnpm capture --url https://example.com --title "Example" --steps '[{"kind":"wait","ms":800}]' --upload-url ${uploadUrl}`}
+            />
+            <CommandBlock
+              label="Import an rrweb recording"
+              command={`pnpm cli import --rrweb events.json --title "Checkout bug" --upload-url ${uploadUrl}`}
+            />
+          </details>
+        </section>
+      </div>
+      <div className="empty-index-uses">
+        <div>
+          <strong>Triage</strong>
+          <span>Reproduce a bug with errors and failed requests attached.</span>
+        </div>
+        <div>
+          <strong>Design review</strong>
+          <span>Step through a flow and compare it with the design.</span>
+        </div>
+        <div>
+          <strong>Walkthrough</strong>
+          <span>Show how a flow works, step by step.</span>
+        </div>
+      </div>
     </div>
   );
 }
