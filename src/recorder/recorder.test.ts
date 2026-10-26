@@ -65,6 +65,15 @@ function setup(overrides: Partial<RecorderOptions> = {}) {
 }
 
 const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((yes, no) => {
+    resolve = yes;
+    reject = no;
+  });
+  return { promise, resolve, reject };
+}
 
 describe('createRecorder', () => {
   it('loads nothing and records nothing until consent', async () => {
@@ -361,6 +370,61 @@ describe('createRecorder', () => {
       await flush();
       expect(recorder.getState().status).toBe('recording');
       recorder.discard();
+    });
+
+    it.each(['resolve', 'reject'] as const)('does not let an old %s touch a new recording', async (completion) => {
+      const pending = deferred<{ replayId: string }>();
+      const upload = vi.fn<RecorderOptions['upload']>().mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ replayId: 'new' });
+      const oldHide = vi.fn<() => void>();
+      const nextHide = vi.fn<() => void>();
+      const showUploading = vi.fn<() => () => void>().mockReturnValueOnce(oldHide).mockReturnValueOnce(nextHide);
+      const ui = fakeUi({ showUploading });
+      const { recorder, rrweb } = setup({ ...quick, ui: ui.ui, upload });
+      const oldRequest = recorder.request();
+      await flush();
+      rrweb.emit({ type: 3, timestamp: Date.now() + 1_000, data: {} });
+      ui.clickStop();
+      await flush();
+      recorder.discard();
+      const newRequest = recorder.request();
+      await flush();
+      expect(recorder.getState().status).toBe('recording');
+
+      if (completion === 'resolve') pending.resolve({ replayId: 'old' });
+      else pending.reject(new Error('old failure'));
+      await oldRequest;
+      await flush();
+      expect(recorder.getState().status).toBe('recording');
+      expect(oldHide).not.toHaveBeenCalled();
+      expect(ui.ui.showResult).not.toHaveBeenCalled();
+      // The current session still owns its indicator and can stop normally.
+      ui.clickStop();
+      await newRequest;
+      expect(recorder.getState().status).toBe('uploaded');
+      expect(nextHide).toHaveBeenCalledOnce();
+    });
+
+    it('ignores stale consent resolution while a newer consent prompt owns state', async () => {
+      const firstConsent = deferred<boolean>();
+      const secondConsent = deferred<boolean>();
+      const requestConsent = vi
+        .fn<RecorderUi['requestConsent']>()
+        .mockReturnValueOnce(firstConsent.promise)
+        .mockReturnValueOnce(secondConsent.promise);
+      const ui = fakeUi({ requestConsent });
+      const { recorder } = setup({ ui: ui.ui });
+      const oldRequest = recorder.request();
+      await flush();
+      recorder.discard();
+      const newRequest = recorder.request();
+      await flush();
+      expect(recorder.getState().status).toBe('consent');
+      firstConsent.resolve(true);
+      await oldRequest;
+      expect(recorder.getState().status).toBe('consent');
+      secondConsent.resolve(false);
+      await newRequest;
+      expect(recorder.getState().status).toBe('idle');
     });
   });
 });

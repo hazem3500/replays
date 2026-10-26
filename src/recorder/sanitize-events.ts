@@ -241,6 +241,158 @@ function redactSrcset(value: string) {
   return candidates.map(({ redacted, descriptors }) => [redacted, ...descriptors].join(' ')).join(', ');
 }
 
+function decodeCssEscapes(value: string): string {
+  return value.replace(/\\([\da-f]{1,6}\s?|\r\n|\n|\r|.)/gi, (_match, escaped: string) => {
+    const hex = /^[\da-f]/i.test(escaped) ? Number.parseInt(escaped.trim(), 16) : 0;
+    if (hex) return hex <= 0x10ffff ? String.fromCodePoint(hex) : '\ufffd';
+    if (/^[\r\n]/.test(escaped)) return '';
+    return escaped;
+  });
+}
+
+function redactEmbeddedCssUrls(value: string): string {
+  // rrweb can resolve a style text URL and leave the original absolute URL
+  // nested in its path. The CSS token scanner finds the URL first; this pass
+  // sanitizes that nested absolute URL with the same existing URL redactor.
+  const scheme = /(?:https?|wss?):\/\//gi;
+  let cursor = 0;
+  let result = value;
+  let match: RegExpExecArray | null;
+  while (true) {
+    scheme.lastIndex = cursor;
+    match = scheme.exec(result);
+    if (!match) break;
+    const start = match.index;
+    let end = start + match[0].length;
+    while (end < result.length && !/[\s"'`()<>\\]/.test(result[end]!)) end++;
+    if (end > start + match[0].length) {
+      const clean = redactUrl(result.slice(start, end));
+      result = result.slice(0, start) + clean + result.slice(end);
+    }
+    // Continue after this scheme so a second absolute URL nested in the first
+    // URL's path is visited too.
+    cursor = start + match[0].length;
+  }
+  return result;
+}
+
+function redactCssUrl(raw: string): string {
+  const decoded = decodeCssEscapes(raw.trim());
+  let redacted = redactEmbeddedCssUrls(redactUrl(decoded));
+  if (redacted === decoded && decoded.startsWith('#') && decoded.includes('=')) {
+    try {
+      redacted = new URL(redactUrl(`https://redaction.invalid/${decoded}`)).hash;
+    } catch {
+      // Preserve malformed fragment URLs.
+    }
+  }
+  // `redactUrl` intentionally recognizes root-relative and query-only URLs.
+  // CSS commonly uses `../asset.css?token=...`, so sanitize its query/hash
+  // through the same URL logic while retaining its relative path.
+  if (redacted === decoded && !/^(?:[a-z][a-z\d+.-]*:|\/\/|\/|\?|#)/i.test(decoded) && /[?#]/.test(decoded)) {
+    try {
+      const split = decoded.search(/[?#]/);
+      const path = split < 0 ? decoded : decoded.slice(0, split);
+      const parsed = new URL(decoded, 'https://redaction.invalid');
+      const cleaned = new URL(redactUrl(parsed.href));
+      redacted = `${path}${cleaned.search}${cleaned.hash}`;
+    } catch {
+      // Keep malformed CSS URLs intact; valid CSS URLs are handled above.
+    }
+  }
+  if (redacted === decoded) return raw;
+  // URL redaction only substitutes credentials/query values; preserve CSS
+  // delimiters and quote style while escaping characters meaningful to CSS.
+  return redacted
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/'/g, "\\'")
+    .replace(/[\n\r\f]/g, ' ');
+}
+
+/** Comments are whitespace at CSS token boundaries, including after quoted URLs. */
+function skipCssTrivia(css: string, start: number): number {
+  let cursor = start;
+  while (cursor < css.length) {
+    if (/\s/.test(css[cursor]!)) cursor++;
+    else if (css.startsWith('/*', cursor)) {
+      const end = css.indexOf('*/', cursor + 2);
+      cursor = end < 0 ? css.length : end + 2;
+    } else break;
+  }
+  return cursor;
+}
+
+/** Scan CSS tokens so escaped `url` identifiers and nested quoting are handled. */
+function redactCssUrls(css: string): string {
+  let output = '';
+  let cursor = 0;
+  while (cursor < css.length) {
+    const start = cursor;
+    let identifier = '';
+    while (cursor < css.length && (/[\w-]/.test(css[cursor]!) || css[cursor] === '\\')) {
+      if (css[cursor] === '\\') {
+        const escape = /^\\(?:[\da-f]{1,6}\s?|\r\n|[\n\r\f]|.)/i.exec(css.slice(cursor));
+        if (!escape) break;
+        identifier += decodeCssEscapes(escape[0]);
+        cursor += escape[0].length;
+      } else identifier += css[cursor++];
+    }
+    if (identifier.toLowerCase() === 'import' && css[start - 1] === '@') {
+      const valueStart = skipCssTrivia(css, cursor);
+      const quote = css[valueStart] === '"' || css[valueStart] === "'" ? css[valueStart]! : '';
+      if (quote) {
+        let end = valueStart + 1;
+        let escaped = false;
+        while (end < css.length) {
+          const ch = css[end]!;
+          if (!escaped && ch === quote) break;
+          if (ch === '\\' && !escaped) escaped = true;
+          else escaped = false;
+          end++;
+        }
+        if (css[end] === quote) {
+          output += css.slice(start, valueStart + 1) + redactCssUrl(css.slice(valueStart + 1, end)) + quote;
+          cursor = end + 1;
+          continue;
+        }
+      }
+    }
+    if (identifier.toLowerCase() === 'url') {
+      const open = skipCssTrivia(css, cursor);
+      if (css[open] === '(') {
+        const valueStart = skipCssTrivia(css, open + 1);
+        const quote = css[valueStart] === '"' || css[valueStart] === "'" ? css[valueStart]! : '';
+        const contentStart = valueStart + (quote ? 1 : 0);
+        let end = contentStart;
+        let escaped = false;
+        while (end < css.length) {
+          const ch = css[end]!;
+          if (!escaped && ((quote && ch === quote) || (!quote && ch === ')'))) break;
+          if (ch === '\\' && !escaped) escaped = true;
+          else escaped = false;
+          end++;
+        }
+        const contentEnd = end;
+        let close = end;
+        if (quote) {
+          close = skipCssTrivia(css, close + 1);
+          if (css[close] !== ')') close = -1;
+        }
+        if (close >= 0) {
+          const replacement = redactCssUrl(css.slice(contentStart, contentEnd));
+          output += css.slice(start, contentStart) + replacement + css.slice(contentEnd, close + 1);
+          cursor = close + 1;
+          continue;
+        }
+      }
+    }
+    if (cursor === start) cursor++;
+    output += css.slice(start, cursor);
+  }
+  return output;
+}
+
 /**
  * Redacts a URL attribute: credentials and sensitive parameters (`redactUrl`),
  * and the address of a `mailto:`, `tel:` or `sms:` link. Other attributes are
@@ -259,13 +411,49 @@ export function redactAttributeUrl(name: string, value: string): string {
  * every URL attribute in snapshots and mutations.
  */
 export function redactEventUrls(event: ReplayRrwebEvent): ReplayRrwebEvent {
-  let next = transformEventAttributes(event, (name, value) => redactAttributeUrl(name, value));
+  let next = transformEventAttributes(event, (name, value) => {
+    if (name === 'style' || name === '_csstext' || name === 'csstext') return redactCssUrls(value);
+    return redactAttributeUrl(name, value);
+  });
+  next = transformCssText(next);
   const data = next.data;
   if (next.type === RRWEB_EVENT.Meta && isObject(data) && typeof data.href === 'string') {
     const href = redactUrl(data.href);
     if (href !== data.href) next = { ...next, data: { ...data, href } };
   }
   return next;
+}
+
+function transformCssTextValue(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    let changed = false;
+    const result = value.map((entry) => {
+      const mapped = transformCssTextValue(entry);
+      if (mapped !== entry) changed = true;
+      return mapped;
+    });
+    return changed ? result : value;
+  }
+  if (!isObject(value)) return value;
+  let changed = false;
+  const result: Record<string, unknown> = {};
+  for (const [key, entry] of Object.entries(value)) {
+    // rrweb also carries style-element content in ordinary snapshot text nodes
+    // and mutation `texts`. Sanitizing CSS URL tokens here needs no live DOM or
+    // node-id history, and leaves strings without those tokens unchanged.
+    const mapped =
+      typeof entry === 'string' && /^(?:_?cssText|textContent|text|value)$/i.test(key)
+        ? redactCssUrls(entry)
+        : transformCssTextValue(entry);
+    if (mapped !== entry) changed = true;
+    result[key] = mapped;
+  }
+  return changed ? result : value;
+}
+
+function transformCssText(event: ReplayRrwebEvent): ReplayRrwebEvent {
+  const data = transformCssTextValue(event.data);
+  return data === event.data ? event : { ...event, data };
 }
 
 /** Whether an attribute can carry customer text and must follow text masking. */

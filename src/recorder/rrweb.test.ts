@@ -93,6 +93,45 @@ describe('with the real rrweb recorder', () => {
     // Unmasked chrome keeps its attributes.
     expect(serialized).toContain('All projects');
   });
+
+  it('redacts CSS URLs from real rrweb snapshots and stylesheet mutations', async () => {
+    document.head.innerHTML = `<style id="captured-style">@import "https://cdn.example.test/site.css?api_key=import-secret"; .hero { background-image: url("https://user:pass@cdn.example.test/a.png?token=css-secret&theme=dark") }</style>`;
+    document.body.innerHTML = `<div id="styled" style="background-image: url(https://inline:password@cdn.example.test/i.png?signature=inline-secret); color: red"></div>`;
+    let report: IssueReport | undefined;
+    const recorder = createRecorder({
+      upload: (value) => {
+        report = value;
+        return Promise.resolve({ replayId: 'css' });
+      },
+      ui: { requestConsent: async () => true, showIndicator: () => () => undefined, confirmUpload: async () => ({ confirmed: true }) },
+    });
+    await recorder.start({ consent: true });
+    const dynamic = document.createElement('style');
+    document.head.append(dynamic);
+    dynamic.sheet?.insertRule('.dynamic { background: url(https://user:pass@cdn.example.test/m.png?token=mutation-secret) }');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    dynamic.textContent = '.changed { background: url("https://user:pass@cdn.example.test/t.png?token=text-mutation-secret"/*comment*/) }';
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    recorder.stop();
+    await recorder.upload({ confirmed: true });
+
+    if (!report) throw new Error('nothing was uploaded');
+    const serialized = JSON.stringify(report.bundle.events);
+    for (const secret of [
+      'user:pass',
+      'inline:password',
+      'css-secret',
+      'import-secret',
+      'inline-secret',
+      'mutation-secret',
+      'text-mutation-secret',
+    ]) {
+      expect(serialized).not.toContain(secret);
+    }
+    expect(serialized).toContain('theme=dark');
+    expect(serialized).toContain('color: red');
+    expect(serialized).toContain('site.css');
+  });
   it('preserves ordinary text/input content on opt-out while protecting credential fields and URLs', async () => {
     document.body.innerHTML = `<h1>Useful project title</h1><input type="text" value="ordinary input" /><input type="password" value="password secret" /><input type="hidden" value="hidden credential" /><a href="https://name:password@example.com/path?token=private-token">Open project</a>`;
     let report: IssueReport | undefined;
