@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["typescript"],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off"
+  },
+  "rules": {
+    "typescript/no-floating-promises": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/await-thenable": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/no-unsafe-assignment": "error",
+    "typescript/no-unsafe-call": "error",
+    "typescript/no-unsafe-member-access": "error",
+    "typescript/no-unsafe-return": "error"
+  },
+  "ignorePatterns": [
+    "dist/**",
+    "node_modules/**",
+    "shots/**",
+    "playwright-report/**",
+    "test-results/**",
+    "examples/*/playwright-report/**",
+    "examples/*/test-results/**",
+    ".claude/**",
+    ".review-artifacts/**",
+    "storybook-static/**"
+  ]
+}
