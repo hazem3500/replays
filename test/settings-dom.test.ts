@@ -73,7 +73,7 @@ describe('workspace settings', () => {
         [...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === 'Agent access')!,
     );
     expect(fetchConfig).toHaveBeenCalledWith('/workspace/api/config', expect.objectContaining({ signal: expect.any(AbortSignal) }));
-    expect(document.body.textContent).toContain('Managed authentication');
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Managed authentication'));
     expect(document.body.textContent).toContain('API token creation is not available');
     expect(document.querySelector('code')?.textContent).toContain('/workspace/api/replays');
     expect(document.querySelector('code')?.textContent).toContain('--header-file headers.json');
@@ -83,7 +83,7 @@ describe('workspace settings', () => {
   it('does not request credentials for a deployment configured with open access', async () => {
     await openSettings('none');
     await click([...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === 'Agent access')!);
-    expect(document.body.textContent).toContain('Open access');
+    await vi.waitFor(() => expect(document.body.textContent).toContain('Open access'));
     expect(document.querySelector('code')?.textContent).not.toContain('--header-file');
   });
 });

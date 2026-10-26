@@ -87,7 +87,7 @@ test('For me keeps the rows I am on (by email, then by a linked GitHub handle) a
   await expect(row(other)).toBeVisible();
 
   await page.getByRole('button', { name: 'Filter' }).click();
-  await page.getByRole('menuitemcheckbox', { name: 'For me' }).click();
+  await page.getByRole('switch', { name: 'For me' }).click();
   await expect(page).toHaveURL(/[?&]for=me/);
   await expect(row(mine)).toBeVisible();
   await expect(row(byHandle)).toHaveCount(0);

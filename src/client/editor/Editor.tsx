@@ -680,7 +680,12 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                     <CaptionsIcon aria-hidden="true" /> Captions <DropdownMenuShortcut>T</DropdownMenuShortcut>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuCheckboxItem checked={showEmptyTracks} onCheckedChange={setShowEmptyTracks} data-testid="show-empty-tracks">
+                  <DropdownMenuCheckboxItem
+                    checked={showEmptyTracks}
+                    onCheckedChange={setShowEmptyTracks}
+                    closeOnClick
+                    data-testid="show-empty-tracks"
+                  >
                     Show empty tracks
                   </DropdownMenuCheckboxItem>
                 </DropdownMenuContent>

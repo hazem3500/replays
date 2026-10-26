@@ -178,10 +178,21 @@ export function EditorSkeleton() {
 
 /** The thin line under the top bar after 1.2 s: indeterminate, or the share downloaded when the size is known. */
 function ProgressHint() {
+  // Visibility is loading state, not an animation side effect. It must survive disabled/cancelled animations.
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setVisible(true), 1200);
+    return () => window.clearTimeout(timer);
+  }, []);
   const progress = useLoadProgress();
   const share = progress?.total ? Math.min(1, progress.loaded / progress.total) : undefined;
   return (
-    <span className="sk-progress" data-determinate={share === undefined ? undefined : ''} aria-hidden="true">
+    <span
+      className="sk-progress"
+      data-visible={visible || undefined}
+      data-determinate={share === undefined ? undefined : ''}
+      aria-hidden="true"
+    >
       <span style={share === undefined ? undefined : { transform: `scaleX(${share})` }} />
     </span>
   );

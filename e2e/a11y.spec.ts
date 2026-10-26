@@ -52,7 +52,7 @@ async function audit(page: Page, state: string, { disable = [] as string[] } = {
 for (const theme of THEMES) {
   test.describe(`axe (${theme})`, () => {
     test.beforeEach(async ({ page }) => {
-      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.setViewportSize({ width: 1280, height: 800 });
       await useTheme(page, theme);
     });
 
@@ -69,7 +69,7 @@ for (const theme of THEMES) {
       await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
       await audit(page, 'index, filtered');
       await page.getByRole('button', { name: /^Filter/ }).click();
-      await expect(page.getByRole('menu', { name: 'Filters' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Filters' })).toBeVisible();
       await audit(page, 'index, filter menu');
     });
 
@@ -89,7 +89,7 @@ for (const theme of THEMES) {
       await audit(page, 'viewer, request detail');
 
       await page.getByRole('button', { name: /^Playback: / }).click();
-      await expect(page.getByRole('menu', { name: 'Playback' })).toBeVisible();
+      await expect(page.getByRole('dialog', { name: 'Playback' })).toBeVisible();
       await audit(page, 'viewer, playback options');
       await page.keyboard.press('Escape');
 
@@ -242,19 +242,17 @@ test('menus open, move and close by keyboard and return to their trigger', async
   const speed = page.getByRole('button', { name: /^Playback: / });
   await speed.focus();
   await page.keyboard.press('Enter');
-  // The menu opens on its first item; arrows move through the speeds; Enter picks one and closes.
-  await expect(page.getByRole('menuitemradio').first()).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  await page.keyboard.press('ArrowDown');
-  await expect(page.getByRole('menuitemradio', { name: /^2×/ })).toBeFocused();
-  await page.keyboard.press('Enter');
-  await expect(page.getByRole('menu', { name: 'Playback' })).toHaveCount(0);
-  await expect(speed).toBeFocused();
+  const slider = page.getByRole('slider', { name: 'Playback speed' });
+  await slider.focus();
+  await slider.press('ArrowRight');
+  await slider.press('ArrowRight');
   await expect(page.getByTestId('speed-tag')).toHaveText('2×');
+  await expect(slider).toHaveAttribute('aria-valuetext', '2×');
+  await slider.press('Escape');
+  await expect(page.getByRole('dialog', { name: 'Playback' })).toHaveCount(0);
+  await expect(speed).toBeFocused();
   await speed.press('Enter');
-  await expect(page.getByRole('menuitemradio').first()).toBeFocused();
+  await expect(slider).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(speed).toBeFocused();
   await page.keyboard.press('Shift+?');

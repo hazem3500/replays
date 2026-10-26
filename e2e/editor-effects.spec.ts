@@ -48,7 +48,10 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await expect(page.locator('.editor-bar > [data-testid="zoom-setting"]')).toBeVisible();
   await page.keyboard.press('Escape');
   // Back to 0:00 from the ruler's start.
-  const ruler = (await page.getByTestId('timeline-ruler').boundingBox())!;
+  const rulerTrack = page.getByTestId('timeline-ruler');
+  await rulerTrack.scrollIntoViewIfNeeded();
+  await expect(rulerTrack).toBeInViewport({ ratio: 1 });
+  const ruler = (await rulerTrack.boundingBox())!;
   await page.mouse.click(ruler.x + 2, ruler.y + ruler.height / 2);
   await expect(page.getByTestId('editor-clock')).toHaveText('0:00.0');
   await page.keyboard.press('t');
@@ -57,6 +60,8 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   // Empty tracks remain available for precise range drawing, without crowding the default editor.
   await page.getByTestId('add-effect').click();
   await page.getByTestId('show-empty-tracks').click();
+  await expect(page.getByTestId('add-effect')).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(page.getByTestId('lane-speed')).toContainText('Speed · drag');
   // A speed-up dragged out on its lane, then set to 8× from the control row.
   const speedTrack = page.getByTestId('lane-speed');

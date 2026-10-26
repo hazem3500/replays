@@ -8,11 +8,12 @@ test('quarter speed is offered, selected, and reachable by keyboard', async ({ p
   await openReplay(page, `${origin()}/r/demo-shop`);
   const menu = page.getByRole('button', { name: /^Playback: / });
   await menu.click();
-  await page.getByRole('menuitemradio', { name: /^0.25×/ }).click();
+  await page.getByRole('button', { name: 'Set playback speed to 0.25×' }).click();
   await expect(page.getByTestId('speed-tag')).toHaveText('0.25×');
-  await menu.click();
-  await expect(page.getByRole('menuitemradio', { name: /^0.25×/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('button', { name: 'Set playback speed to 0.25×' })).toHaveAttribute('aria-pressed', 'true');
   await page.keyboard.press('Escape');
+  await expect(menu).toBeFocused();
+  await expect(page.getByRole('dialog', { name: 'Playback' })).toHaveCount(0);
   await page.keyboard.press('>');
   await expect(page.getByTestId('speed-tag')).toHaveText('0.5×');
   await page.keyboard.press('<');

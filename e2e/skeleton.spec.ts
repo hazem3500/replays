@@ -70,6 +70,7 @@ test('after 1.2 s still loading, a thin progress line shows under the top bar', 
   await expect(line).toBeAttached();
   const opacity = () => line.evaluate((element) => Number(getComputedStyle(element).opacity));
   expect(await opacity()).toBeLessThan(0.1);
+  await expect(line).toHaveAttribute('data-visible', 'true');
   await expect.poll(opacity, { timeout: 8_000 }).toBe(1);
   release();
 });

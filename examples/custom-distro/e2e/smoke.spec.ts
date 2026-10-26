@@ -370,7 +370,7 @@ test.describe('index slots: summary fields, a server filter, and a column, filte
 
     await page.getByRole('button', { name: 'Filter' }).click();
     await page.getByTestId('plugin-filter:acme-distro:environment').click();
-    await page.getByRole('menuitemradio', { name: 'Production' }).click();
+    await page.getByRole('option', { name: 'Production', exact: true }).click();
     await expect.poll(() => new URL(page.url()).searchParams.get('x-env')).toBe('production');
     await page.keyboard.press('Escape');
     await expect(row(production)).toBeVisible();
