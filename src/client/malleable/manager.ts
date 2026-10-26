@@ -90,6 +90,8 @@ class PluginManager {
   private state: ManagerState = { entries: [], disabled: [], viewer: undefined };
   private readonly listeners = new Set<() => void>();
   private revision = 0;
+  /** A PUT may commit even when its response/history request is cancelled. Reconcile before any retry. */
+  private readonly pendingSaves = new Map<string, { scope: PluginScope; baseVersion: number }>();
   /** What is mounted right now, so a reload can tear the old frames down. */
   private mounted = new Map<string, Set<{ dispose(): void }>>();
 
@@ -275,7 +277,7 @@ class PluginManager {
   setScope(id: string, scope: PluginScope) {
     const entry = this.get(id);
     if (!entry || entry.versions.length) return;
-    this.put({ ...entry, scope }, false);
+    this.put({ ...entry, scope, revision: ++this.revision }, false);
   }
 
   setEnabled(id: string, enabled: boolean) {
@@ -293,15 +295,59 @@ class PluginManager {
    * Stores the working copy as the next version. Called only by the approval dialog after the person clicked Approve: it
    * is the one place that asks the server for a consent token.
    */
-  async saveApproved(id: string, message: string) {
-    const entry = this.get(id);
+  private async reconcileSave(id: string, keepPending = false) {
+    const pending = this.pendingSaves.get(id);
+    if (!pending) return false;
+    const versions = await getHistory(pending.scope, id, AbortSignal.timeout(10_000))
+      .then((history) => history.versions)
+      .catch((error: unknown) => {
+        if (error instanceof Error && 'status' in error && error.status === 404) return [];
+        throw error;
+      });
+    const current = this.get(id);
+    if (current && current.scope === pending.scope) {
+      const latest = versions.at(-1);
+      const saved = latest && latest.source === current.source && sameManifest(latest.manifest, current.manifest);
+      // Reconcile receipt/history only. Never put an older source back over a newer working draft.
+      this.put({ ...current, versions, origin: saved ? 'saved' : current.origin }, false);
+    }
+    if (!keepPending) this.pendingSaves.delete(id);
+    return (versions.at(-1)?.n ?? 0) !== pending.baseVersion;
+  }
+
+  async saveApproved(id: string, message: string, options: { revision?: number; signal?: AbortSignal } = {}) {
+    let entry = this.get(id);
     if (!entry) throw new Error('no such plugin');
-    const approval = await mintApproval({ action: 'save', scope: entry.scope, id, manifest: entry.manifest, source: entry.source });
+    const revision = entry.revision;
+    const check = () => {
+      options.signal?.throwIfAborted();
+      if (this.get(id)?.revision !== revision || (options.revision !== undefined && options.revision !== revision))
+        throw new Error('The draft changed; review it again before saving');
+    };
+    check();
+    if (this.pendingSaves.has(id)) {
+      const changed = await this.reconcileSave(id);
+      check();
+      entry = this.get(id)!;
+      if (!isDirty(entry)) return; // The previously approved write already committed; do not append a duplicate version.
+      if (changed) throw new Error('Saved history was refreshed; review the changes again before saving');
+    }
+    const approval = await mintApproval(
+      { action: 'save', scope: entry.scope, id, manifest: entry.manifest, source: entry.source },
+      options.signal,
+    );
+    check();
     const baseVersion = latestSaved(entry)?.n ?? 0;
-    await savePlugin(entry.scope, id, { manifest: entry.manifest, source: entry.source, message, baseVersion, approval });
-    const history = await getHistory(entry.scope, id);
-    // Same code, now stored: the running frames stay as they are.
-    this.put({ ...entry, origin: 'saved', versions: history.versions }, false);
+    this.pendingSaves.set(id, { scope: entry.scope, baseVersion });
+    try {
+      await savePlugin(entry.scope, id, { manifest: entry.manifest, source: entry.source, message, baseVersion, approval }, options.signal);
+    } catch (error) {
+      // Cancellation cannot roll back a server commit. A bounded read may recover it, and retry reads again.
+      await this.reconcileSave(id, true).catch(() => {});
+      throw error;
+    }
+    await this.reconcileSave(id);
+    check();
   }
 
   async deleteApproved(id: string) {
