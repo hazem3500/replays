@@ -21,9 +21,10 @@ interface ToolDefinition {
 }
 
 interface ModelContextLike {
-  registerTool(tool: ToolDefinition, options?: { signal?: AbortSignal }): Promise<undefined>;
+  readonly polyfill?: boolean;
+  registerTool(tool: ToolDefinition, options?: { signal?: AbortSignal }): void | Promise<undefined>;
   getTools?(): Promise<unknown[]>;
-  executeTool?(tool: unknown, input?: object): Promise<string>;
+  executeTool?(tool: unknown, input?: object | string, options?: { signal?: AbortSignal }): Promise<string>;
 }
 
 /** The minimal object we install when the browser has none. Not a full implementation of the draft (no cross-origin exposure). */
@@ -34,13 +35,20 @@ class ModelContextPolyfill extends EventTarget implements ModelContextLike {
 
   async registerTool(tool: ToolDefinition, options: { signal?: AbortSignal } = {}) {
     if (!tool.name || !tool.description) throw new TypeError('a tool needs a name and a description');
+    options.signal?.throwIfAborted();
     if (this.tools.has(tool.name)) throw new DOMException(`tool ${tool.name} is already registered`, 'InvalidStateError');
     this.tools.set(tool.name, tool);
     this.changed();
-    options.signal?.addEventListener('abort', () => {
-      this.tools.delete(tool.name);
-      this.changed();
-    });
+    options.signal?.addEventListener(
+      'abort',
+      () => {
+        if (this.tools.get(tool.name) === tool) {
+          this.tools.delete(tool.name);
+          this.changed();
+        }
+      },
+      { once: true },
+    );
     return undefined;
   }
 
@@ -48,10 +56,22 @@ class ModelContextPolyfill extends EventTarget implements ModelContextLike {
     return [...this.tools.values()].map(({ execute: _execute, ...rest }) => rest);
   }
 
-  async executeTool(tool: { name: string }, input: object = {}) {
+  async executeTool(tool: { name: string }, input: object | string = {}, options: { signal?: AbortSignal } = {}) {
+    options.signal?.throwIfAborted();
     const registered = this.tools.get(tool.name);
     if (!registered) throw new DOMException(`no tool ${tool.name}`, 'NotFoundError');
-    return JSON.stringify(await registered.execute(input as Record<string, unknown>, { signal: new AbortController().signal }));
+    let args: unknown;
+    try {
+      args = typeof input === 'string' ? JSON.parse(input) : input;
+    } catch {
+      throw new DOMException('tool input must be a JSON object', 'DataError');
+    }
+    if (!args || typeof args !== 'object' || Array.isArray(args)) throw new DOMException('tool input must be an object', 'DataError');
+    return JSON.stringify(
+      await registered.execute(args as Record<string, unknown>, {
+        signal: options.signal ?? new AbortController().signal,
+      }),
+    );
   }
 
   private changed() {
@@ -64,43 +84,54 @@ class ModelContextPolyfill extends EventTarget implements ModelContextLike {
 export function getModelContext(): { context: ModelContextLike; native: boolean } {
   const doc = document as Document & { modelContext?: ModelContextLike };
   const nav = navigator as Navigator & { modelContext?: ModelContextLike };
-  const native = doc.modelContext ?? nav.modelContext;
-  if (native) return { context: native, native: true };
+  const existing = doc.modelContext ?? nav.modelContext;
+  if (existing && typeof existing.registerTool === 'function') return { context: existing, native: existing.polyfill !== true };
   const context = new ModelContextPolyfill();
   Object.defineProperty(doc, 'modelContext', { value: context, configurable: true });
   return { context, native: false };
 }
 
-let installed: { native: boolean; abort: AbortController } | undefined;
+let installed: { native: boolean; abort: AbortController; ready: Promise<boolean> } | undefined;
 
 /** Registers the bridge tools with the page's model context. Idempotent. */
-export async function installWebMcp() {
-  if (installed) return installed.native;
+export function installWebMcp(): Promise<boolean> {
+  if (installed) return installed.ready;
   const { context, native } = getModelContext();
   const abort = new AbortController();
-  installed = { native, abort };
-  await Promise.all(
-    BRIDGE_TOOLS.map((tool) =>
-      context
-        .registerTool(
-          {
-            name: tool.name,
-            title: tool.name.replaceAll('_', ' '),
-            description: tool.description,
-            inputSchema: tool.inputSchema,
-            annotations: tool.annotations,
-            async execute(input) {
-              const handler = toolHandlers[tool.name];
-              if (!handler) throw new Error(`no handler for ${tool.name}`);
+  // The async callback also catches synchronous failures from early navigator implementations.
+  const ready = Promise.all(
+    BRIDGE_TOOLS.map(async (tool) => {
+      await context.registerTool(
+        {
+          name: tool.name,
+          title: tool.name.replaceAll('_', ' '),
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+          annotations: tool.annotations,
+          async execute(input, options) {
+            options?.signal?.throwIfAborted();
+            const handler = toolHandlers[tool.name];
+            if (!handler) throw new Error(`no handler for ${tool.name}`);
+            try {
               return await handler(input ?? {});
-            },
+            } catch (error) {
+              // Native WebMCP does not forward thrown error messages to the agent.
+              return { error: error instanceof Error ? error.message : 'Tool execution failed' };
+            }
           },
-          { signal: abort.signal },
-        )
-        .catch((error: unknown) => console.warn(`WebMCP: could not register ${tool.name}:`, error)),
-    ),
-  );
-  return native;
+        },
+        { signal: abort.signal },
+      );
+    }),
+  )
+    .then(() => native)
+    .catch((error: unknown) => {
+      abort.abort();
+      if (installed?.abort === abort) installed = undefined;
+      throw error;
+    });
+  installed = { native, abort, ready };
+  return ready;
 }
 
 export function uninstallWebMcp() {

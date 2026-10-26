@@ -449,3 +449,7 @@ More documentation: [extending replays](docs/extension-api.md) · [API stability
 
 [MIT](LICENSE) © 2026 Hazem (hazem3500). rrweb is MIT licensed; the Inter font is bundled under the SIL OFL
 (`src/client/fonts/Inter-OFL-LICENSE.txt`).
+
+### Component development and agent framework evaluation
+
+`pnpm storybook` runs isolated viewer, host-context and plugin-permission stories with a light/dark theme toolbar; `pnpm build:storybook` produces a static build. See [Storybook and the Agent-Native adoption design](docs/agent-native-adoption.md) for scope, validation and the evaluated fit of Effect and XState. [The Agent-Native integration spike](examples/agent-native/README.md) uses the actual framework browser client with the existing WebMCP bridge. It is the first migration slice toward Agent-Native as the default application runtime, preserving human Keep approval and portable core storage/auth.

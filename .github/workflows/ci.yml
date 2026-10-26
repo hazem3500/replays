@@ -48,6 +48,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
+      - run: pnpm typecheck:storybook
 
   unit:
     name: Unit tests and build
@@ -135,6 +136,36 @@ jobs:
           path: |
             examples/custom-distro/playwright-report/
             examples/custom-distro/test-results/
+          retention-days: 7
+
+  agent-integrations:
+    name: Agent-Native and Storybook
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build
+      - run: pnpm build:cli
+      - run: pnpm --filter @hazem3500/replays-example-agent-native check
+      - run: pnpm build:storybook
+      - name: Native WebMCP, stand-in, framework consumer and inert component stories
+        run: pnpm --filter @hazem3500/replays-example-agent-native test --max-failures=1
+        env:
+          CHROMIUM_NO_SANDBOX: '1'
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agent-integration-results
+          path: examples/agent-native/test-results/
           retention-days: 7
 
   docker:

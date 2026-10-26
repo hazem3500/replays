@@ -1,0 +1,26 @@
+{
+  "name": "@hazem3500/replays-example-agent-native",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.22.0"
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "node --experimental-strip-types --no-warnings src/server.ts",
+    "check": "pnpm build && pnpm typecheck",
+    "test": "playwright test -c playwright.config.ts"
+  },
+  "dependencies": {
+    "@agent-native/core": "0.220.0",
+    "@hazem3500/replays": "workspace:*"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "typescript": "5.9.3",
+    "@types/node": "22.18.10",
+    "@playwright/test": "1.64.0"
+  }
+}
