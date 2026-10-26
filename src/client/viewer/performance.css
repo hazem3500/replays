@@ -59,6 +59,9 @@
   .perf-toolbar { padding-inline: 8px; }
   .perf-filter, .performance-diagnostics .perf-search-toggle, .perf-search, .perf-search input { min-height: 32px; }
 }
+@media (max-width: 600px), (pointer: coarse) {
+  .perf-events .perf-event { height: auto; min-height: 44px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .performance-diagnostics .perf-filter { transition: none; }
 }

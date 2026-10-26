@@ -157,7 +157,10 @@ describe('render queue', () => {
     await queue.enqueue('b', 1);
     await queue.enqueue('c', 1);
     await tick();
-    expect(manual.started).toEqual(['a', 'b']);
+    expect(manual.started).toHaveLength(2);
+    expect(new Set(manual.started)).toEqual(new Set(['a', 'b']));
+    expect(queue.size).toEqual({ running: 2, queued: 1 });
+    expect(await queue.status('c', 1)).toMatchObject({ status: 'queued' });
   });
 
   it('bounds the waiting list', async () => {
