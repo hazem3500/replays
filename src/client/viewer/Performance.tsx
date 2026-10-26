@@ -14,10 +14,10 @@ import './diagnostic-timing.css';
 import { durationLabel, rowDuration, type WaterfallRow } from './waterfall.ts';
 import './performance.css';
 
-const EVENT_HEIGHT = 44;
+const EVENT_HEIGHT = 32;
 const EVENT_FILTERS = [
   { id: 'all', label: 'All' },
-  { id: 'long-task', label: 'Tasks' },
+  { id: 'long-task', label: 'Long tasks' },
   { id: 'slow-interaction', label: 'Interactions' },
   { id: 'paint', label: 'Paints' },
 ] as const;
@@ -144,68 +144,104 @@ export function PerformanceDiagnostics({
           // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
           <section className="perf-detail" ref={detail} aria-label="Selected performance evidence" tabIndex={0}>
             <div className="perf-detail-heading">
-              <h2 title={selected.label}>{selected.label}</h2>
+              <h2 title={eventName(selected)}>{eventName(selected)}</h2>
               <IconButton label="Close details" onClick={close}>
                 <XIcon aria-hidden="true" />
               </IconButton>
             </div>
-            <p className="perf-note">
-              Replay position {formatClock(selected.at)} · Source start {formatClock(selected.sourceAt)}
-            </p>
-            <p>
-              {rowDuration(selected)}
-              {selected.visible !== undefined ? ` · ${durationLabel(selected.visible)} visible in this replay` : ''}
-            </p>
-            <TimingBar row={selected} duration={player.duration} />
+            <dl className="perf-facts">
+              <div>
+                <dt>
+                  {selected.kind === 'action' ? 'Event timing' : selected.timing === 'point' ? 'Since navigation' : 'Captured duration'}
+                </dt>
+                <dd>{eventValue(selected)}</dd>
+              </div>
+              <div>
+                <dt>Replay time</dt>
+                <dd title={`${selected.at} ms`}>{formatClock(selected.at)}</dd>
+              </div>
+            </dl>
+            {selected.sourceAt !== selected.at || (selected.visible !== undefined && selected.visible !== selected.measured) ? (
+              <p className="perf-edit-note">
+                Source time <time title={`${selected.sourceAt} ms`}>{formatClock(selected.sourceAt)}</time>
+                {selected.visible !== undefined ? ` · ${durationLabel(selected.visible)} kept in replay` : ''}
+              </p>
+            ) : null}
             {selected.kind === 'performance' ? (
               <p className="perf-note">
                 {selected.entry.kind === 'long-task'
-                  ? 'A recorded main-thread task. No JavaScript stack or script attribution was captured.'
+                  ? 'Script and stack attribution were not recorded.'
                   : selected.entry.kind === 'slow-interaction'
-                    ? `Recorded ${selected.entry.eventType ?? 'interaction'} duration. Input, processing and presentation phases were not captured; this is not an INP score.`
-                    : 'A captured paint milestone measured from navigation, not a task duration or final Web Vitals score. No element/resource attribution was captured.'}
+                    ? 'Time from input to the next paint. A phase breakdown was not recorded.'
+                    : 'Paint milestone since navigation, not a task duration. The painted element was not recorded.'}
               </p>
             ) : selected.kind === 'network' ? (
               renderRequestDetail(selected.entry)
             ) : (
               <p className="perf-note">Action point event; no action duration was captured.</p>
             )}
-            <details className="perf-raw">
-              <summary>Captured event data</summary>
-              <pre>{JSON.stringify(selected.entry, null, 2)}</pre>
-            </details>
-            <h3>Observed during this event</h3>
-            <p className="perf-note">
-              Overlapping recorded spans or event starts. These observations do not establish the cause of a delay.
-            </p>
+            {activity?.overlapping.length ? (
+              <h3>
+                At the same time <span>{activity.overlapping.length}</span>
+              </h3>
+            ) : null}
             {activity?.overlapping.slice(0, relatedLimit).map((row) => (
               <EventButton key={row.id} row={row} onChoose={choose} />
             ))}
-            {!activity?.overlapping.length ? <p className="perf-note">No overlapping activity was captured on this timeline.</p> : null}
             {(activity?.overlapping.length ?? 0) > relatedLimit ? (
-              <button type="button" onClick={() => setRelatedLimit((limit) => limit + 8)}>
+              <button type="button" className="perf-more" onClick={() => setRelatedLimit((limit) => limit + 8)}>
                 Show more related events ({activity!.overlapping.length - relatedLimit})
               </button>
             ) : null}
             {activity?.nearbyActions.length ? (
               <>
-                <h3>Nearby actions</h3>
-                <p className="perf-note">Within 500 ms of the captured source start.</p>
+                <h3>
+                  Nearby actions <span>{activity.nearbyActions.length}</span>
+                </h3>
                 {activity.nearbyActions.slice(0, relatedLimit).map((row) => (
                   <EventButton key={row.id} row={row} onChoose={choose} />
                 ))}
                 {activity.nearbyActions.length > relatedLimit ? (
-                  <button type="button" onClick={() => setRelatedLimit((limit) => limit + 8)}>
+                  <button type="button" className="perf-more" onClick={() => setRelatedLimit((limit) => limit + 8)}>
                     Show more nearby actions ({activity.nearbyActions.length - relatedLimit})
                   </button>
                 ) : null}
               </>
             ) : null}
+            {activity && !activity.overlapping.length && !activity.nearbyActions.length ? (
+              <p className="perf-note perf-no-related">No related events captured here.</p>
+            ) : null}
+            <details className="perf-raw">
+              <summary>Recording details</summary>
+              <p className="perf-note">
+                Source time {formatClock(selected.sourceAt)}
+                {selected.visible !== undefined ? ` · ${durationLabel(selected.visible)} kept in replay` : ''}. Concurrent events are
+                context, not proof of a cause.
+              </p>
+              <p className="perf-note">
+                Interaction observations are not an INP score; paint candidates are not final Web Vitals scores. Nearby actions are within
+                500 ms of the source start.
+              </p>
+              <pre>{JSON.stringify(selected.entry, null, 2)}</pre>
+            </details>
           </section>
         ) : null}
       </div>
     </section>
   );
+}
+
+function eventName(row: WaterfallRow) {
+  return `${row.label}${row.kind === 'performance' && row.entry.eventType ? ` · ${row.entry.eventType}` : ''}`;
+}
+
+function eventValue(row: WaterfallRow) {
+  if (row.kind === 'action') return 'Point event';
+  if (row.timing === 'incomplete') return 'Unknown';
+  if (row.measured !== undefined) return durationLabel(row.measured);
+  if (row.kind === 'performance' && row.timing === 'point' && Number.isFinite(row.entry.value) && row.entry.value >= 0)
+    return durationLabel(row.entry.value);
+  return 'Unknown';
 }
 
 function EventButton({
@@ -220,13 +256,13 @@ function EventButton({
   return (
     <button
       type="button"
-      className="perf-event"
+      className="perf-event perf-related"
       data-performance-id={row.id}
       aria-expanded={selected === row.id}
       onClick={(event) => onChoose(row, event.currentTarget)}
     >
       <span>
-        <strong>{row.label}</strong>
+        <strong title={eventName(row)}>{eventName(row)}</strong>
         <small>
           {formatClock(row.at)} · {rowDuration(row)}
         </small>
@@ -273,9 +309,14 @@ function PerformanceEvents({
       {!rows.length ? <p className="perf-note">No matching performance events.</p> : null}
       <div className="perf-event-columns" aria-hidden="true">
         <span>Event</span>
-        <span>Replay time</span>
-        <span>Captured value</span>
-        <span>Timing</span>
+        <span className="perf-replay-heading">
+          <span className="perf-replay-wide">Replay time</span>
+          <span className="perf-replay-compact">Time</span>
+        </span>
+        <span className="perf-value-heading">Timing</span>
+        <span className="perf-timing-heading">
+          Recording <span>{formatClock(player.duration)}</span>
+        </span>
       </div>
       <div style={{ height: window.padTop }} aria-hidden="true" />
       {rows.slice(window.start, window.end).map((row, offset) => (
@@ -309,18 +350,18 @@ function PerformanceEvents({
             onChoose(target);
           }}
         >
-          <span className="perf-event-name">
-            <strong>
-              {row.label}
-              {row.kind === 'performance' && row.entry.eventType ? ` · ${row.entry.eventType}` : ''}
-            </strong>
-            <small>
-              {row.kind === 'performance' && row.entry.kind.includes('paint') ? 'Paint milestone' : 'Captured duration'}
-              {window.start + offset >= reached ? ' · Upcoming' : ''}
-            </small>
+          <span className="perf-event-name" data-kind={row.kind === 'performance' ? row.entry.kind : undefined}>
+            <span className="perf-kind-dot" aria-hidden="true" />
+            <strong title={eventName(row)}>{eventName(row)}</strong>
           </span>
-          <span className="perf-event-time">{formatClock(row.at)}</span>
-          <span className="perf-event-value">{rowDuration(row)}</span>
+          <span className="perf-event-time">
+            {formatClock(row.at)}
+            {window.start + offset >= reached ? <span className="visually-hidden"> · Upcoming</span> : null}
+          </span>
+          <span className="perf-event-value" title={rowDuration(row)}>
+            {eventValue(row)}
+            {row.timing === 'point' ? <span className="perf-nav-label"> nav.</span> : null}
+          </span>
           <TimingBar row={row} duration={player.duration} />
         </button>
       ))}
