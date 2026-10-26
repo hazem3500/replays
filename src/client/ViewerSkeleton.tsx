@@ -1,4 +1,6 @@
-import { type CSSProperties, type ReactNode, useEffect, useLayoutEffect, useState } from 'react';
+import './editor/skeleton.css';
+
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
@@ -13,7 +15,7 @@ import { readStorage } from './storage.ts';
  *
  * Calm on purpose: it fades in only after 150 ms (fast loads never show it), every block shares one slow sheen
  * (a viewport-fixed gradient, so blocks shimmer in sync; static under reduced motion), and after 1.2 s a thin
- * progress line appears under the top bar. `LoadingSwap` keeps it up at least 300 ms once shown and crossfades.
+ * progress line appears under the top bar. Ready content replaces it immediately, without a second full-page layer.
  */
 
 /* Repeated from the viewer chunk (StepRail.tsx, Inspector.tsx, Viewer.tsx); keep in sync. */
@@ -114,6 +116,63 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
       <SuiteSidebarSkeleton />
       <div className="suite-viewer">{viewer}</div>
     </div>
+  );
+}
+
+/** Edit loads retain the editor's single stage and compact timeline; no viewer inspector or step rail flashes. */
+export function EditorSkeleton() {
+  const mobile = useMediaQuery(MOBILE_QUERY);
+  const [hint] = useState(readHint);
+  const [height] = useState(() => {
+    const saved = Number(readStorage('replays-editor-dock-height'));
+    return Math.round(Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : 168, 148), Math.max(148, window.innerHeight * 0.65)));
+  });
+  return (
+    <main
+      className="app-shell skeleton-shell editor-loading"
+      data-mobile={mobile || undefined}
+      aria-busy="true"
+      aria-label="Loading editor"
+      data-testid="editor-skeleton"
+      style={{ '--editor-loading-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties}
+    >
+      <span className="visually-hidden" role="status">
+        Loading editor…
+      </span>
+      <div className="topbar app-topbar sk-topbar" aria-hidden="true">
+        <span className="sk-slot">
+          <Glyph />
+        </span>
+        <span className="sk-title">
+          <Line width={hint?.title ? Math.min(420, hint.title.length * 8) : 260} className="sk-line-title" />
+        </span>
+        <span className="topbar-actions">
+          <Line width={72} className="sk-line-chip" />
+          <Line width={64} className="sk-line-chip" />
+        </span>
+        <ProgressHint />
+      </div>
+      <section className="editor-loading-stage" aria-hidden="true">
+        <PlayerSkeleton poster={hint?.poster} />
+      </section>
+      {mobile ? null : <div className="editor-loading-divider" aria-hidden="true" />}
+      <section className="editor-loading-dock" aria-hidden="true">
+        <div className="editor-loading-tools">
+          <Glyph />
+          <Line width={46} />
+          <Glyph />
+          <Glyph />
+          <Line width={72} />
+        </div>
+        <div className="editor-loading-ruler">
+          <Line width={30} />
+          <Line width={30} />
+          <Line width={30} />
+          <Line width={30} />
+        </div>
+        <div className="sk editor-loading-track" />
+      </section>
+    </main>
   );
 }
 
@@ -353,62 +412,7 @@ function SuiteSidebarSkeleton() {
   );
 }
 
-/**
- * Shows `skeleton` until `ready`, without flashing: a load that finishes inside the skeleton's 150 ms fade-in delay
- * never shows it; once shown it stays at least 300 ms; then the skeleton fades out over the arriving content
- * (180 ms); the content is already there underneath at full opacity, so nothing it shares with the skeleton (the
- * opening frame) dims (styles.css `html[data-skeleton-swap]`).
- */
+/** Loading is a single layout, replaced as soon as content is ready. CSS delays its entrance for fast loads. */
 export function LoadingSwap({ ready, skeleton, children }: { ready: boolean; skeleton: ReactNode; children: ReactNode }) {
-  const [mountedAt] = useState(() => performance.now());
-  const [phase, setPhase] = useState<'loading' | 'leaving' | 'done'>(ready ? 'done' : 'loading');
-  useLayoutEffect(() => {
-    if (!ready || phase !== 'loading') return;
-    const elapsed = performance.now() - mountedAt;
-    // Ready inside the fade-in delay: the skeleton never became visible, so the content simply replaces it.
-    const fast = elapsed < SHOW_DELAY_MS;
-    const wait = fast ? 0 : Math.max(0, SHOW_DELAY_MS + MIN_VISIBLE_MS - elapsed);
-    const timer = window.setTimeout(() => setPhase(fast ? 'done' : 'leaving'), wait);
-    return () => window.clearTimeout(timer);
-  }, [mountedAt, phase, ready]);
-  // Leaving: keep the skeleton fully up until the real page has actually rendered (a lazy chunk can still suspend
-  // for a tick), then fade it out over the content and drop it.
-  const [fading, setFading] = useState(false);
-  useEffect(() => {
-    if (phase !== 'leaving') return;
-    const root = document.documentElement;
-    let frame = 0;
-    let timer = 0;
-    const started = performance.now();
-    const arrived = () =>
-      document.querySelector('main.app-shell:not(.skeleton-shell), .suite-workspace:not(.skeleton-suite), .state-shell');
-    const check = () => {
-      if (!arrived() && performance.now() - started < 3000) {
-        frame = requestAnimationFrame(check);
-        return;
-      }
-      // Stays set for the page's life: removing it would swap the content's entrance animation and replay it.
-      root.dataset.skeletonSwap = '';
-      setFading(true);
-      timer = window.setTimeout(() => setPhase('done'), CROSSFADE_MS + 20);
-    };
-    frame = requestAnimationFrame(check);
-    return () => {
-      cancelAnimationFrame(frame);
-      window.clearTimeout(timer);
-    };
-  }, [phase]);
-  if (phase === 'loading') return <>{skeleton}</>;
-  if (phase === 'done') return <>{children}</>;
-  return (
-    <>
-      {children}
-      <div className="skeleton-overlay" data-fading={fading || undefined} aria-hidden="true">
-        {skeleton}
-      </div>
-    </>
-  );
+  return <>{ready ? children : skeleton}</>;
 }
-
-const MIN_VISIBLE_MS = 300;
-const CROSSFADE_MS = 180;

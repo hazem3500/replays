@@ -40,8 +40,8 @@ test.describe('index', () => {
 
     await page.goto(`${origin()}/`);
     await page.getByRole('button', { name: /^Filter/ }).click();
-    await page.getByRole('menuitem', { name: /^Tag/ }).click();
-    await page.getByRole('menuitemradio', { name: 'demo' }).click();
+    await page.getByRole('button', { name: /^Tag/ }).click();
+    await page.getByRole('option', { name: 'demo', exact: true }).click();
     await expect(page).toHaveURL(/[?&]tag=demo/);
     await expect(page.getByRole('status').first()).toHaveText('1 replay');
   });
@@ -109,7 +109,7 @@ test.describe('viewer', () => {
   test('plays to the end and offers a restart', async ({ page }) => {
     await openReplay(page, viewer());
     await page.getByRole('button', { name: /^Playback: / }).click();
-    await page.getByRole('menuitemradio', { name: /^8×/ }).click();
+    await page.getByRole('button', { name: 'Set playback speed to 8×' }).click();
     await expect(page.getByTestId('speed-tag')).toHaveText('8×');
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Replay from start' })).toBeVisible({ timeout: 15_000 });
@@ -132,8 +132,6 @@ test.describe('viewer', () => {
     await expect(page.getByTestId('request-detail')).toContainText('404');
 
     await page.getByTestId('performance-tab').click();
-    await expect(page.getByRole('button', { name: /^Longest recorded task/ })).toBeVisible();
-    await page.getByRole('button', { name: /^All events/ }).click();
     await expect(page.getByTestId('performance-events')).toContainText(/contentful paint/i);
 
     await page.getByTestId('context-tab').click();

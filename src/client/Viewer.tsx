@@ -48,6 +48,8 @@ import {
 } from '@/components/ui/dropdown-menu.tsx';
 import { SourceChip, topbarSource } from './viewer/SourceChip.tsx';
 import { Hint, IconButton } from '@/components/icon-button.tsx';
+import { buttonVariants } from '@/components/ui/button.tsx';
+import { cn } from '@/lib/utils.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
@@ -664,7 +666,7 @@ const ViewerHeader = memo(function ViewerHeader({
       menuFooter={menuFooter}
       alwaysMenu
       actions={
-        // Edit leads (the replay's main action), then one quiet icon set: details, copy link, download (theme and More come from the Topbar).
+        // One quiet icon set: edit, details, copy link and download.
         <>
           {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
@@ -713,7 +715,7 @@ function PhoneHeader({
       menuFooter={menuFooter}
       actions={
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} compact /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -986,16 +988,20 @@ function SpeedHud({ speed }: { speed: number }) {
   );
 }
 
-/**
- * Edit mode's entry: the one tinted control in the bar (accent-soft fill, pencil and "Edit"), so it reads as the
- * replay's main action without shouting. Phones keep only the icon.
- */
-function EditButton({ id, compact = false }: { id: string; compact?: boolean }) {
+/** Edit uses the same quiet icon button as the viewer's other toolbar actions. */
+function EditButton({ id }: { id: string }) {
   return (
-    <Hint label="Trim, cut and add effects" side="bottom" align="end">
-      <a href={editHref(id)} className="edit-entry" data-compact={compact || undefined} data-testid="edit-replay">
-        <PencilIcon aria-hidden="true" />
-        {compact ? <span className="sr-only">Edit</span> : <span>Edit</span>}
+    <Hint label="Edit replay · Trim, cut and add effects" side="bottom" align="end">
+      <a
+        href={editHref(id)}
+        className={cn(
+          buttonVariants({ variant: 'ghost', size: 'icon' }),
+          'edit-entry text-[var(--text-secondary)] hover:text-foreground [&_svg:not([class*=size-])]:size-4',
+        )}
+        aria-label="Edit replay"
+        data-testid="edit-replay"
+      >
+        <AnimatedIcon name="pencil" />
       </a>
     </Hint>
   );

@@ -20,10 +20,8 @@ test('performance signals follow the playhead and open with the P key', async ({
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   await page.getByTestId('performance-tab').click();
-  // Overview and All events share the player; future observations remain explicit in the full list.
+  // Captured event rows share the player; future observations remain explicit.
   await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 1 of 3 signals reached');
-  await expect(page.getByRole('button', { name: /^Longest recorded task/ })).toContainText('72 ms');
-  await page.getByRole('button', { name: /^All events/ }).click();
   const events = page.getByTestId('performance-events');
   const rows = events.getByRole('button');
   await expect(rows).toHaveCount(3);
@@ -50,7 +48,6 @@ test('performance signals follow the playhead and open with the P key', async ({
   await page.getByTestId('console-tab').click();
   await page.keyboard.press('p');
   await expect(page.getByTestId('performance-tab')).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('button', { name: /^All events/ }).click();
   await page.getByRole('slider', { name: 'Seek' }).press('End');
   await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 3 of 3 signals reached');
   await expect(events.locator('[data-future]')).toHaveCount(0);

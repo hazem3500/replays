@@ -1,24 +1,27 @@
-import { type PointerEvent as ReactPointerEvent, type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { SearchIcon, XIcon } from 'lucide-react';
+import { IconButton } from '@/components/icon-button.tsx';
+import { TrackList, HEADER_HEIGHT, TRAILING_GAP } from './TrackList.tsx';
+import { type ReactNode, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { formatClock, type ReplayNetworkEntry } from '../../shared/replay.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
 import { countAtOrBefore } from '../timeline.ts';
 import { useWindowedRows } from '../windowing.ts';
 import { Empty } from './Empty.tsx';
-import {
-  chartLaneRows,
-  focusPerformanceWindow,
-  missingPerformanceLabel,
-  nearestPerformanceRow,
-  PERFORMANCE_LANES,
-  relatedPerformanceActivity,
-  type PerformanceModel,
-  type PerformanceWindow,
-} from './performance.ts';
-import { durationLabel, rowDuration, validDuration, type WaterfallRow } from './waterfall.ts';
+import { relatedPerformanceActivity, type PerformanceModel } from './performance.ts';
+import { TimingBar } from './TimingBar.tsx';
+import './diagnostic-timing.css';
+import { durationLabel, rowDuration, type WaterfallRow } from './waterfall.ts';
 import './performance.css';
 
 const EVENT_HEIGHT = 44;
+const EVENT_FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'long-task', label: 'Tasks' },
+  { id: 'slow-interaction', label: 'Interactions' },
+  { id: 'paint', label: 'Paints' },
+] as const;
+type EventFilter = (typeof EVENT_FILTERS)[number]['id'];
 
 export function PerformanceDiagnostics({
   model,
@@ -31,10 +34,11 @@ export function PerformanceDiagnostics({
   const panel = useRef<HTMLElement>(null);
   const opener = useRef<HTMLElement | null>(null);
   const detail = useRef<HTMLElement>(null);
-  const [mode, setMode] = useState<'overview' | 'events'>('overview');
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filter, setFilter] = useState<EventFilter>('all');
+  const search = useRef<HTMLInputElement>(null);
   const [selection, setSelection] = useState<string>();
-  const [zoom, setZoom] = useState<PerformanceWindow>();
   const [relatedLimit, setRelatedLimit] = useState(8);
   const selected = model.rows.find((row) => row.id === selection);
   const selectedId = selected?.id;
@@ -43,9 +47,10 @@ export function PerformanceDiagnostics({
     const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
     return model.signals.filter((row) => {
       const text = `${row.label} ${row.entry.eventType ?? ''} ${rowDuration(row)}`.toLocaleLowerCase();
-      return words.every((word) => text.includes(word));
+      const matchesKind = filter === 'all' || (filter === 'paint' ? row.entry.kind.includes('paint') : row.entry.kind === filter);
+      return matchesKind && words.every((word) => text.includes(word));
     });
-  }, [model, query]);
+  }, [model, query, filter]);
   const choose = (row: WaterfallRow, element?: HTMLElement) => {
     if (element) opener.current = element;
     if (row.id !== selectedId) {
@@ -58,7 +63,7 @@ export function PerformanceDiagnostics({
   const close = () => {
     setSelection(undefined);
     if (opener.current?.isConnected) opener.current.focus({ preventScroll: true });
-    else panel.current?.querySelector<HTMLElement>('.perf-mode')?.focus();
+    else panel.current?.querySelector<HTMLElement>('input, .perf-filter')?.focus();
   };
 
   if (!model.track) return <Empty title="Performance wasn’t recorded">This replay has no captured browser timing track.</Empty>;
@@ -87,108 +92,52 @@ export function PerformanceDiagnostics({
         }
       }}
     >
-      <div className="perf-toolbar" role="group" aria-label="Performance view">
-        <button className="perf-mode" type="button" aria-pressed={mode === 'overview'} onClick={() => setMode('overview')}>
-          Overview
-        </button>
-        <button className="perf-mode" type="button" aria-pressed={mode === 'events'} onClick={() => setMode('events')}>
-          All events ({model.signals.length})
-        </button>
+      <div className="perf-toolbar">
+        {searchOpen ? (
+          <label className="perf-search">
+            <SearchIcon aria-hidden="true" />
+            <span className="visually-hidden">Search performance events</span>
+            <input
+              ref={search}
+              type="search"
+              placeholder="Search events…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+            />
+          </label>
+        ) : (
+          <div className="perf-filters" role="group" aria-label="Performance event types">
+            {EVENT_FILTERS.map(({ id, label }) => (
+              <button key={id} type="button" className="perf-filter" aria-pressed={filter === id} onClick={() => setFilter(id)}>
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        <IconButton
+          className="perf-search-toggle"
+          label={searchOpen ? 'Close event search' : 'Search performance events'}
+          aria-expanded={searchOpen}
+          onClick={() => {
+            setSearchOpen((open) => !open);
+            if (searchOpen) setQuery('');
+            else requestAnimationFrame(() => search.current?.focus());
+          }}
+        >
+          {searchOpen ? <XIcon aria-hidden="true" /> : <SearchIcon aria-hidden="true" />}
+        </IconButton>
       </div>
       <div className="perf-workspace" data-detail-open={selected ? '' : undefined}>
         <div className="perf-main" data-testid="performance-main">
-          {mode === 'overview' ? (
-            <>
-              <div className="perf-summary">
-                {[
-                  {
-                    label: 'Longest recorded task',
-                    row: model.longestTask,
-                    missing: missingPerformanceLabel(model, 'longtask', 'long-task'),
-                  },
-                  {
-                    label: 'Slowest recorded interaction',
-                    row: model.slowestInteraction,
-                    missing: missingPerformanceLabel(model, 'event', 'slow-interaction'),
-                  },
-                  {
-                    label: 'Latest largest paint candidate',
-                    row: model.largestPaint,
-                    missing: missingPerformanceLabel(model, 'largest-contentful-paint', 'largest-contentful-paint'),
-                  },
-                ].map(({ label, row, missing }) => (
-                  <button
-                    type="button"
-                    className="perf-metric"
-                    key={label}
-                    disabled={!row}
-                    onClick={(event) => row && choose(row, event.currentTarget)}
-                  >
-                    <span>{label}</span>
-                    <strong>{row ? durationLabel(row.measured ?? row.entry.value) : missing}</strong>
-                    <small>{row ? (row.measured === undefined ? 'Since navigation' : 'Captured duration') : 'No score inferred'}</small>
-                  </button>
-                ))}
-              </div>
-              <div className="perf-chart-tools">
-                <span>Shared replay clock</span>
-                <button
-                  type="button"
-                  disabled={!selected}
-                  onClick={() => selected && setZoom(focusPerformanceWindow(selected, player.duration))}
-                >
-                  Zoom to selection
-                </button>
-                {zoom ? (
-                  <button type="button" onClick={() => setZoom(undefined)}>
-                    Full recording
-                  </button>
-                ) : null}
-              </div>
-              <PerformanceTimeline
-                model={model}
-                window={zoom ?? { from: 0, to: player.duration }}
-                selected={selectedId}
-                onChoose={choose}
-              />
-              <h2 className="perf-heading">Worst recorded moments</h2>
-              <p className="perf-note">Ranked by captured duration. Overlapping tasks and interactions are not added into a score.</p>
-              <div className="perf-moments">
-                {model.moments.slice(0, 6).map((row) => (
-                  <EventButton key={row.id} row={row} selected={selectedId} onChoose={choose} />
-                ))}
-                {!model.moments.length ? <p className="perf-note">No valid task or interaction durations on this timeline.</p> : null}
-              </div>
-              <p className="perf-note">
-                Paints are milestones. Requests with unknown duration show only their start. Values describe captured observations, not a
-                complete CPU profile.
-              </p>
-              {model.invalidTimes ? (
-                <p className="perf-note">{model.invalidTimes} events have unusable timestamps and are omitted.</p>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <label className="perf-search">
-                <span className="visually-hidden">Search performance events</span>
-                <input
-                  type="search"
-                  placeholder="Signal, event type, timing…"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                />
-              </label>
-              <PerformanceEvents
-                key={query}
-                rows={events}
-                selected={selectedId}
-                onChoose={choose}
-                onFocus={(element) => {
-                  opener.current = element;
-                }}
-              />
-            </>
-          )}
+          <PerformanceEvents
+            key={`${query}:${filter}`}
+            rows={events}
+            selected={selectedId}
+            onChoose={choose}
+            onFocus={(element) => {
+              opener.current = element;
+            }}
+          />
         </div>
         {selected ? (
           // Keyboard focus makes the independently scrollable evidence pane accessible.
@@ -196,9 +145,9 @@ export function PerformanceDiagnostics({
           <section className="perf-detail" ref={detail} aria-label="Selected performance evidence" tabIndex={0}>
             <div className="perf-detail-heading">
               <h2 title={selected.label}>{selected.label}</h2>
-              <button type="button" onClick={close}>
-                Close details
-              </button>
+              <IconButton label="Close details" onClick={close}>
+                <XIcon aria-hidden="true" />
+              </IconButton>
             </div>
             <p className="perf-note">
               Replay position {formatClock(selected.at)} · Source start {formatClock(selected.sourceAt)}
@@ -207,6 +156,7 @@ export function PerformanceDiagnostics({
               {rowDuration(selected)}
               {selected.visible !== undefined ? ` · ${durationLabel(selected.visible)} visible in this replay` : ''}
             </p>
+            <TimingBar row={selected} duration={player.duration} />
             {selected.kind === 'performance' ? (
               <p className="perf-note">
                 {selected.entry.kind === 'long-task'
@@ -220,6 +170,10 @@ export function PerformanceDiagnostics({
             ) : (
               <p className="perf-note">Action point event; no action duration was captured.</p>
             )}
+            <details className="perf-raw">
+              <summary>Captured event data</summary>
+              <pre>{JSON.stringify(selected.entry, null, 2)}</pre>
+            </details>
             <h3>Observed during this event</h3>
             <p className="perf-note">
               Overlapping recorded spans or event starts. These observations do not establish the cause of a delay.
@@ -297,7 +251,7 @@ function PerformanceEvents({
   const reached = usePlayhead((time) => countAtOrBefore(ats, time >= player.duration ? Infinity : time <= 0 ? -1 : time));
   const scroll = useRef<HTMLDivElement>(null);
   const pending = useRef<string | undefined>(undefined);
-  const window = useWindowedRows(scroll, { count: rows.length, rowHeight: EVENT_HEIGHT });
+  const window = useWindowedRows(scroll, { count: rows.length, rowHeight: EVENT_HEIGHT, headerHeight: HEADER_HEIGHT });
   useLayoutEffect(() => {
     if (!pending.current) return;
     const row = scroll.current?.querySelector<HTMLElement>(`[data-performance-id="${pending.current}"]`);
@@ -307,8 +261,22 @@ function PerformanceEvents({
     }
   });
   return (
-    <div className="perf-events" ref={scroll} data-testid="performance-events">
+    <TrackList
+      testId="performance-events"
+      scrollClassName="perf-events"
+      reached={reached}
+      total={rows.length}
+      rowHeight={EVENT_HEIGHT}
+      ats={ats}
+      scroller={scroll}
+    >
       {!rows.length ? <p className="perf-note">No matching performance events.</p> : null}
+      <div className="perf-event-columns" aria-hidden="true">
+        <span>Event</span>
+        <span>Replay time</span>
+        <span>Captured value</span>
+        <span>Timing</span>
+      </div>
       <div style={{ height: window.padTop }} aria-hidden="true" />
       {rows.slice(window.start, window.end).map((row, offset) => (
         <button
@@ -341,182 +309,22 @@ function PerformanceEvents({
             onChoose(target);
           }}
         >
-          <span>
+          <span className="perf-event-name">
             <strong>
               {row.label}
               {row.kind === 'performance' && row.entry.eventType ? ` · ${row.entry.eventType}` : ''}
             </strong>
             <small>
-              {formatClock(row.at)} · {rowDuration(row)}
+              {row.kind === 'performance' && row.entry.kind.includes('paint') ? 'Paint milestone' : 'Captured duration'}
               {window.start + offset >= reached ? ' · Upcoming' : ''}
             </small>
           </span>
+          <span className="perf-event-time">{formatClock(row.at)}</span>
+          <span className="perf-event-value">{rowDuration(row)}</span>
+          <TimingBar row={row} duration={player.duration} />
         </button>
       ))}
-      <div style={{ height: window.padBottom }} aria-hidden="true" />
-    </div>
-  );
-}
-
-function PerformanceTimeline({
-  model,
-  window,
-  selected,
-  onChoose,
-}: {
-  model: PerformanceModel;
-  window: PerformanceWindow;
-  selected: string | undefined;
-  onChoose: (row: WaterfallRow, element?: HTMLElement) => void;
-}) {
-  const player = usePlayer();
-  const time = usePlayhead((current) => current);
-  const extent = Math.max(0, window.to - window.from);
-  const width = Math.max(1, extent);
-  const percent = (value: number) => ((value - window.from) / width) * 100;
-  const shown = useMemo(
-    () => PERFORMANCE_LANES.map((lane) => ({ ...lane, ...chartLaneRows(model.rows, lane.id, window, selected) })),
-    [model, window, selected],
-  );
-  const omitted = shown.reduce((sum, lane) => sum + lane.omitted, 0);
-  const seekAt = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const bounds = event.currentTarget.getBoundingClientRect();
-    if (bounds.width > 0) player.seek(window.from + Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) * extent);
-  };
-  return (
-    <>
-      <div className="perf-timeline" aria-label="Performance activity on the replay clock">
-        <div className="perf-ruler">
-          <span>Replay time</span>
-          <div
-            className="perf-axis"
-            role="slider"
-            tabIndex={0}
-            aria-orientation="horizontal"
-            aria-label="Performance replay playhead"
-            aria-valuemin={window.from}
-            aria-valuemax={window.to}
-            aria-valuenow={Math.max(window.from, Math.min(window.to, time))}
-            aria-valuetext={`${formatClock(time)}${time < window.from || time > window.to ? ', outside zoomed window' : ''}`}
-            onPointerDown={(event) => {
-              if (event.button !== 0) return;
-              event.currentTarget.setPointerCapture(event.pointerId);
-              seekAt(event);
-            }}
-            onPointerMove={(event) => {
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) seekAt(event);
-            }}
-            onPointerUp={(event) => {
-              if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-            }}
-            onKeyDown={(event) => {
-              const next =
-                event.key === 'ArrowRight'
-                  ? time + 100
-                  : event.key === 'ArrowLeft'
-                    ? time - 100
-                    : event.key === 'Home'
-                      ? window.from
-                      : event.key === 'End'
-                        ? window.to
-                        : undefined;
-              if (next === undefined) return;
-              event.preventDefault();
-              player.seek(Math.max(window.from, Math.min(window.to, next)));
-            }}
-          >
-            {[0, 0.25, 0.5, 0.75, 1].map((part) => (
-              <span key={part} className="perf-tick" style={{ left: `${part * 100}%` }}>
-                {formatClock(window.from + extent * part)}
-              </span>
-            ))}
-            {time >= window.from && time <= window.to ? (
-              <span className="perf-playhead" data-testid="performance-playhead" style={{ left: `${percent(time)}%` }} />
-            ) : null}
-          </div>
-        </div>
-        {shown.map((lane) => (
-          <div className="perf-track" key={lane.id} data-lane={lane.id}>
-            <span title={lane.label}>{lane.label}</span>
-            <button
-              type="button"
-              className="perf-lane"
-              aria-label={`${lane.label}, ${lane.rows.length} events. Select a mark or use Left and Right arrows.`}
-              disabled={!lane.rows.length}
-              onClick={(event) => {
-                const target = event.target instanceof Element ? event.target.closest('[data-performance-id]') : null;
-                const direct = lane.rows.find((row) => row.id === target?.getAttribute('data-performance-id'));
-                const bounds = event.currentTarget.getBoundingClientRect();
-                const at =
-                  event.detail && bounds.width > 0
-                    ? window.from + Math.max(0, Math.min(1, (event.clientX - bounds.left) / bounds.width)) * extent
-                    : time;
-                const row = direct ?? nearestPerformanceRow(lane.rows, at);
-                if (row) onChoose(row, event.currentTarget);
-              }}
-              onKeyDown={(event) => {
-                const index = lane.rows.findIndex((row) => row.id === selected);
-                const next =
-                  event.key === 'ArrowRight'
-                    ? index + 1
-                    : event.key === 'ArrowLeft'
-                      ? index < 0
-                        ? lane.rows.length - 1
-                        : index - 1
-                      : event.key === 'Home'
-                        ? 0
-                        : event.key === 'End'
-                          ? lane.rows.length - 1
-                          : undefined;
-                if (next === undefined) return;
-                event.preventDefault();
-                const row = lane.rows[Math.max(0, Math.min(lane.rows.length - 1, next))];
-                if (row) onChoose(row, event.currentTarget);
-              }}
-            >
-              {lane.rows.map((row) =>
-                row.segments.length ? (
-                  row.segments.map((segment, index) => {
-                    const from = Math.max(window.from, segment.from),
-                      to = Math.min(window.to, segment.to);
-                    return to > from ? (
-                      <span
-                        key={`${row.id}-${index}`}
-                        className="perf-span"
-                        aria-hidden="true"
-                        data-performance-id={row.id}
-                        data-selected={selected === row.id || undefined}
-                        style={{ left: `${percent(from)}%`, width: `${((to - from) / width) * 100}%` }}
-                      />
-                    ) : null;
-                  })
-                ) : (
-                  <span
-                    key={row.id}
-                    className="perf-point"
-                    aria-hidden="true"
-                    data-unknown={
-                      row.timing === 'invalid' ||
-                      row.timing === 'incomplete' ||
-                      (row.kind === 'performance' && !validDuration(row.entry.value))
-                        ? ''
-                        : undefined
-                    }
-                    data-performance-id={row.id}
-                    data-selected={selected === row.id || undefined}
-                    style={{ left: `${percent(row.at)}%` }}
-                  />
-                ),
-              )}
-            </button>
-          </div>
-        ))}
-      </div>
-      <p className="perf-note">
-        Drag the ruler or blue line to scrub. Select a mark or its lane to inspect the nearest event; Left/Right cycles events. Bars show
-        measured spans; diamonds are paint milestones.{' '}
-        {omitted ? `${omitted} marks omitted in this view; zoom or use All events and related details.` : ''}
-      </p>
-    </>
+      <div style={{ height: window.padBottom + TRAILING_GAP }} aria-hidden="true" />
+    </TrackList>
   );
 }

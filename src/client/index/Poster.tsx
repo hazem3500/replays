@@ -141,7 +141,8 @@ export const previewUrl = (id: string) => `${apiUrl(`replays/${encodeURIComponen
 export async function probePreview(id: string, signal?: AbortSignal): Promise<PreviewInfo> {
   const response = await fetch(previewUrl(id), { method: 'HEAD', ...(signal ? { signal } : {}) });
   const retry = response.headers.get('retry-after');
-  if (response.ok)
+  // A 202 is also response.ok: it means the clip is still rendering, never a playable video.
+  if (response.status === 200)
     return {
       status: 'ready',
       capped: response.headers.get('x-preview-capped') === '1',

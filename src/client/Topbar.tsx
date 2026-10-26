@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils.ts';
 import { indexReturnHref } from './route.ts';
 import { productName } from './config.ts';
 import { ThemeSwitch, useThemeControls } from './theme.tsx';
+import { SettingsButton } from './settings/Settings.tsx';
 
 /**
  * The quiet header shared by every page. Left: a back arrow to all replays and
@@ -119,6 +120,7 @@ export function Topbar({
         {actions}
         {/* Phones: the theme is a "More" item, so the bar keeps room for the title at 360 px. */}
         {compact ? null : <ThemeSwitch />}
+        {title === undefined ? <SettingsButton /> : null}
         <MoreMenu items={menuItems} extra={menu} footer={menuFooter} theme={compact} always={alwaysMenu} />
       </div>
     </header>

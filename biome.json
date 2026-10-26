@@ -2,7 +2,18 @@
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
-    "includes": ["**", "!**/dist", "!**/shots", "!sample/*.json", "!pnpm-lock.yaml", "!**/playwright-report", "!**/test-results"]
+    "includes": [
+      "**",
+      "!**/dist",
+      "!**/shots",
+      "!sample/*.json",
+      "!pnpm-lock.yaml",
+      "!**/playwright-report",
+      "!**/test-results",
+      "!!.claude",
+      "!!.review-artifacts",
+      "!!.ship"
+    ]
   },
   "formatter": {
     "enabled": true,

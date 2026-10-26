@@ -4,6 +4,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -11,25 +12,16 @@ import {
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import { formatClock } from '../../shared/replay.ts';
-import { type Speed, SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
+import { SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
 import { activeStepIndex, fitViewport } from '../timeline.ts';
 
 export { activeStepIndex };
 import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
 import { shortcutLabel } from '../shortcuts.ts';
 import { Button } from '@/components/ui/button.tsx';
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
-import { Kbd } from '@/components/ui/kbd.tsx';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from '@/components/ui/slider.tsx';
+import { Switch } from '@/components/ui/switch.tsx';
 import { useViewer } from './context.ts';
 import { afterMorphStart, afterPageTransition, freshPoster, swappingInPlace } from '../navigation.ts';
 import { Scrubber } from './Scrubber.tsx';
@@ -228,15 +220,15 @@ function TimeReadout() {
 }
 
 /**
- * Playback options behind a quiet text trigger that shows the speed ("1×", accent when not 1×). A standard menu:
- * "Playback speed" as radio items (the < > keys step through them from anywhere), then Skip inactive as a
- * checkbox item that stays open. Shift- or Alt-click on the trigger
+ * Playback options: a discrete speed slider and a skip-inactive switch in one compact popover.
+ * Shift- or Alt-click on the trigger
  * cycles the speed without opening.
  */
 /** The rate whose label is widest in tabular figures (0.5 and 1.5 tie); it sizes the speed button. */
 const WIDEST_SPEED = SPEEDS.reduce((widest, speed) => (String(speed).length > String(widest).length ? speed : widest));
 
 function PlaybackOptions() {
+  const rateId = useId();
   const player = usePlayer();
   const { speed, skipInactive } = usePlayerState();
   const [open, setOpen] = useState(false);
@@ -253,7 +245,7 @@ function PlaybackOptions() {
     return () => document.removeEventListener('fullscreenchange', update);
   }, []);
   return (
-    <DropdownMenu
+    <Popover
       open={open}
       onOpenChange={(next, details) => {
         const event = details.event as MouseEvent | undefined;
@@ -269,14 +261,13 @@ function PlaybackOptions() {
         shortcut={`${shortcutLabel('speed-down')} ${shortcutLabel('speed-up')}`}
         align="end"
       >
-        <DropdownMenuTrigger
+        <PopoverTrigger
           render={
             <Button
               variant="ghost"
               size="sm"
-              // Same family as the captions switch: 28 px tall, 6 px radius; as wide as the widest rate (plus its
-              // insets), the label left-aligned 6 px after the captions chip, so a speed change never moves the row.
-              className="playback-options h-7 rounded-md pr-1.5 pl-[3px]"
+              // Stable width and symmetric insets keep every rate centred as it changes.
+              className="playback-options h-7 rounded-md px-2"
               data-speed-changed={speed === 1 ? undefined : ''}
               aria-label={`Playback: ${speed}× speed, skip inactive ${skipInactive ? 'on' : 'off'}`}
             />
@@ -290,42 +281,74 @@ function PlaybackOptions() {
               {speed}×
             </span>
           </span>
-        </DropdownMenuTrigger>
+        </PopoverTrigger>
       </Hint>
-      <DropdownMenuContent
+      <PopoverContent
         side="top"
         align="end"
         portalContainer={portalContainer}
-        className="playback-menu w-auto min-w-48"
+        className="playback-menu w-60 gap-3 p-3"
         aria-label="Playback"
+        onKeyDown={(event) => {
+          // Slider arrows, Home/End and switch Space belong to these controls, not replay shortcuts.
+          if (event.key !== 'Escape') event.stopPropagation();
+        }}
       >
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="flex items-center justify-between gap-3">
-            Playback speed
-            <span className="flex gap-0.5" aria-label="Keys: less than and greater than">
-              <Kbd>{shortcutLabel('speed-down')}</Kbd>
-              <Kbd>{shortcutLabel('speed-up')}</Kbd>
-            </span>
-          </DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={String(speed)} onValueChange={(value) => player.setSpeed(Number(value) as Speed)}>
-            {SPEEDS.map((value) => (
-              <DropdownMenuRadioItem key={value} value={String(value)} closeOnClick className="tabular-nums">
-                {value}×
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem
-          checked={skipInactive}
-          closeOnClick={false}
-          onCheckedChange={(checked) => player.setSkipInactive(checked)}
-          title="Fast-forward through idle gaps"
+        <div className="flex items-center justify-between gap-3">
+          <PopoverTitle className="m-0 text-xs">Playback speed</PopoverTitle>
+          <output htmlFor={rateId} className="playback-rate-value">
+            {speed}×
+          </output>
+        </div>
+        <Slider
+          min={0}
+          max={SPEEDS.length - 1}
+          step={1}
+          value={SPEEDS.indexOf(speed)}
+          onValueChange={(value) => player.setSpeed(SPEEDS[value]!)}
+          className="playback-rate-slider"
         >
-          Skip inactive parts
-        </DropdownMenuCheckboxItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+          <SliderControl>
+            <SliderTrack>
+              <SliderIndicator />
+              <span className="playback-rate-ticks" aria-hidden="true">
+                {SPEEDS.map((value) => (
+                  <i key={value} />
+                ))}
+              </span>
+              <SliderThumb id={rateId} aria-label="Playback speed" getAriaValueText={(value) => `${SPEEDS[Number(value)]}×`} />
+            </SliderTrack>
+          </SliderControl>
+        </Slider>
+        <div className="playback-rate-labels" aria-label="Speed presets">
+          {[0, 2, 6].map((index) => (
+            <button
+              key={index}
+              type="button"
+              style={{ '--rate-position': `${(index / (SPEEDS.length - 1)) * 100}%` } as CSSProperties}
+              aria-label={`Set playback speed to ${SPEEDS[index]}×`}
+              aria-pressed={speed === SPEEDS[index]}
+              onClick={() => player.setSpeed(SPEEDS[index]!)}
+            >
+              {SPEEDS[index]}×
+            </button>
+          ))}
+        </div>
+        <div className="playback-skip">
+          <label id={`${rateId}-skip-label`} htmlFor={`${rateId}-skip`}>
+            Skip inactive parts
+          </label>
+          <Switch
+            id={`${rateId}-skip`}
+            nativeButton
+            render={<button type="button" />}
+            aria-labelledby={`${rateId}-skip-label`}
+            checked={skipInactive}
+            onCheckedChange={(checked) => player.setSkipInactive(checked)}
+          />
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 

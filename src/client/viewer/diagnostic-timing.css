@@ -1,0 +1,44 @@
+.diagnostic-timing { position: relative; display: block; height: 20px; min-width: 0; background: repeating-linear-gradient(to right, var(--line) 0, var(--line) 1px, transparent 1px, transparent 25%); }
+.diagnostic-timing-span { position: absolute; top: 6px; height: 8px; min-width: 2px; max-width: 100%; border-radius: 2px; background: var(--accent); }
+.diagnostic-timing-point { position: absolute; top: 6px; width: 7px; height: 7px; translate: -50% 0; rotate: 45deg; background: var(--accent); }
+.diagnostic-timing-point[data-unknown] { background: var(--surface); border: 1px solid var(--text-secondary); border-radius: 50%; rotate: 0deg; }
+.network-workspace { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.diagnostic-toolbar { display: flex; align-items: center; justify-content: space-between; min-height: 34px; flex: none; padding: 2px 12px; border-bottom: 1px solid var(--line); color: var(--text-secondary); font-size: var(--text-xs); }
+.network-timing-heading, .network-table .network-timing-cell { width: 28%; min-width: 120px; }
+.network-timing-heading span { float: right; font-weight: 400; color: var(--text-secondary); }
+.network-timing-cell > button { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
+.network-timing-cell > button:focus-visible { outline: 2px solid var(--accent); }
+.request-clock-note { padding: 8px 12px 0; margin: 0; color: var(--text-secondary); font-size: var(--text-xs); }
+/* The tab list takes remaining space; collapse remains the final fixed end cap. */
+.inspector-tabs > .inspector-tablist { flex: 1 1 auto; min-width: 0; justify-content: flex-start; }
+.inspector-tabs > .inspector-collapse, .inspector-tabs > .panel-expand { flex: 0 0 auto; margin-left: auto; }
+@media (max-width: 600px) {
+  .network-timing-heading, .network-table .network-timing-cell { min-width: 70px; width: 22%; }
+  .network-timing-heading span { display: none; }
+}
+.diagnostic-timing-clock { position: absolute; top: 1px; bottom: 1px; width: 1px; background: var(--text-secondary); opacity: .6; }
+.diagnostic-timing[data-kind="long-task"] .diagnostic-timing-span { background: var(--danger); }
+.diagnostic-timing[data-kind="slow-interaction"] .diagnostic-timing-span { background: var(--warning); }
+
+/* Filtering is one left-aligned group; visualization controls stay at the trailing edge. */
+.network-workspace { container: network-controls / inline-size; }
+.network-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; min-height: 40px; padding: 6px 12px; }
+.network-toolbar-filters { display: flex; align-items: center; gap: 8px; min-width: 0; max-width: 520px; }
+.network-search { display: flex; align-items: center; flex: 1; gap: 6px; min-width: 80px; height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface-raised); }
+.network-search > svg { flex: none; width: 13px; height: 13px; color: var(--text-tertiary); }
+.network-search input { width: 100%; min-width: 0; height: 100%; padding: 0; border: 0; outline: none; background: transparent; color: var(--text); font: inherit; }
+.network-search:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.network-toolbar .network-status-filter { flex: none; height: 28px; min-width: 112px; padding-inline: 8px; }
+.network-toolbar .network-timing-toggle { height: 28px; gap: 5px; padding-inline: 8px; justify-self: end; color: var(--text-secondary); }
+.network-timing-toggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+@container network-controls (max-width: 480px) {
+  .network-toolbar { gap: 8px; padding-inline: 8px; }
+  .network-toolbar-filters { gap: 6px; }
+  .network-toolbar .network-status-filter { min-width: 100px; padding-inline: 6px; }
+  .network-toolbar .network-timing-toggle { padding-inline: 6px; }
+}
+@container network-controls (max-width: 340px) {
+  .network-toolbar-filters { display: contents; }
+  .network-toolbar .network-search { grid-column: 1 / -1; }
+  .network-toolbar .network-status-filter { justify-self: start; }
+}

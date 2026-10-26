@@ -10,7 +10,7 @@ import { serveApp } from './support.ts';
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
 const base = () => server().origin;
 
-async function uploadHuman(page: Page) {
+async function uploadHuman(page: Page, denseCaptions = false) {
   const id = `effects-e2e-${Date.now().toString(36)}`;
   const bundle = await (await page.request.get(`${base()}/api/replays/human-demo`)).json();
   bundle.meta.id = id;
@@ -21,6 +21,12 @@ async function uploadHuman(page: Page) {
     { at: 1944, kind: 'click', label: 'Click the email field' },
     { at: 3177, kind: 'click', label: 'Tick updates' },
   ];
+  if (denseCaptions)
+    bundle.steps = Array.from({ length: 30 }, (_, index) => ({
+      at: index * 100,
+      kind: 'click',
+      label: `Caption ${index + 1}: complete text remains available for editing`,
+    }));
   expect((await page.request.post(`${base()}/api/replays`, { data: bundle })).status()).toBe(201);
   return id;
 }
@@ -30,10 +36,8 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   const id = await uploadHuman(page);
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  for (const lane of ['zoom', 'speed', 'blur', 'caption']) await expect(page.getByTestId(`lane-${lane}`)).toBeVisible();
-  // Empty lanes say what they are and how to add to them, until they hold something.
-  await expect(page.getByTestId('lane-zoom')).toContainText('Zoom · drag to add');
-  await expect(page.getByTestId('lane-caption')).toContainText('T writes them from the steps');
+  // Start with only the recording track. Adding an effect reveals its track automatically.
+  for (const lane of ['zoom', 'speed', 'blur', 'caption']) await expect(page.getByTestId(`lane-${lane}`)).toHaveCount(0);
 
   await page.locator('body').press('z');
   await expect(page.getByTestId('region-zoom')).toHaveCount(1);
@@ -50,8 +54,15 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.keyboard.press('t');
   await expect(page.getByTestId('region-caption')).toHaveCount(4);
 
+  // Empty tracks remain available for precise range drawing, without crowding the default editor.
+  await page.getByTestId('add-effect').click();
+  await page.getByTestId('show-empty-tracks').click();
+  await expect(page.getByTestId('lane-speed')).toContainText('Speed · drag');
   // A speed-up dragged out on its lane, then set to 8× from the control row.
-  const lane = (await page.getByTestId('lane-speed').boundingBox())!;
+  const speedTrack = page.getByTestId('lane-speed');
+  await speedTrack.scrollIntoViewIfNeeded();
+  await expect(speedTrack).toBeInViewport({ ratio: 1 });
+  const lane = (await speedTrack.boundingBox())!;
   const y = lane.y + lane.height / 2;
   await page.mouse.move(lane.x + lane.width * 0.55, y);
   await page.mouse.down();
@@ -65,8 +76,16 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   // A blur box at the playhead (0:00), dragged on the preview.
   await page.keyboard.press('Escape');
   await page.keyboard.press('b');
+  await expect(page.getByTestId('blur-box')).toHaveCount(0);
+  await expect(page.getByText('Draw the area to blur', { exact: true })).toBeVisible();
+  const frame = (await page.getByTestId('blur-overlay').boundingBox())!;
+  await page.mouse.move(frame.x + frame.width * 0.35, frame.y + frame.height * 0.38);
+  await page.mouse.down();
+  await page.mouse.move(frame.x + frame.width * 0.65, frame.y + frame.height * 0.52, { steps: 5 });
+  await page.mouse.up();
   const box = page.getByTestId('blur-box');
   await expect(box).toBeVisible();
+  await expect(page.getByTestId('lane-blur')).toBeInViewport({ ratio: 1 });
   const before = (await box.boundingBox())!;
   await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2);
   await page.mouse.down();
@@ -101,4 +120,29 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   // The speed-up shortens the edited replay.
   const total = await page.getByRole('slider', { name: 'Seek' }).getAttribute('aria-valuetext');
   expect(total).not.toMatch(/of 0:04\.\d/);
+});
+
+test('dense captions keep every edit without overlapping labels or truncating the selected text', async ({ page }) => {
+  const id = await uploadHuman(page, true);
+  await page.goto(`${base()}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('.tl-activity, .tl-step')).toHaveCount(0);
+  await page.locator('body').press('t');
+  const captions = page.getByTestId('region-caption');
+  await expect(captions).toHaveCount(30);
+  const first = captions.first();
+  await first.scrollIntoViewIfNeeded();
+  await expect(first.locator('.tl-region-label')).toHaveCount(0);
+  const boxes = await captions.evaluateAll((nodes) =>
+    nodes.map((node) => {
+      const box = node.getBoundingClientRect();
+      return { left: box.left, right: box.right };
+    }),
+  );
+  for (let index = 1; index < boxes.length; index++) expect(boxes[index]!.left).toBeGreaterThanOrEqual(boxes[index - 1]!.right);
+  await first.locator('.tl-region-body').click();
+  await expect(page.getByTestId('caption-text')).toHaveValue('Caption 1: complete text remains available for editing');
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+  const stored = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
+  expect(stored.captions).toHaveLength(30);
 });

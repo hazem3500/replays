@@ -274,15 +274,19 @@ describe('waterfall DOM controls and replay selection', () => {
     const queries = new QueryClient({ defaultOptions: { queries: { enabled: false, retry: false } } });
     await act(async () => root.render(createElement(QueryClientProvider, { client: queries }, createElement(Harness))));
     expect(find('[data-testid="network-tab"]').textContent).toContain('Network');
-    await click(find('[data-testid="waterfall-tab"]'));
-    expect(find('[data-testid="waterfall-tab"]').getAttribute('aria-selected')).toBe('true');
-    await click(find('[data-waterfall-id="network-0"]'));
+    expect(host.querySelector('[data-testid="waterfall-tab"]')).toBeNull();
+    await click(find('[data-testid="network-tab"]'));
+    expect(find('.network-timing-heading').textContent).toContain('Waterfall');
+    await click(find('.network-timing-cell button'));
     expect(player.getTime()).toBe(1000);
     expect(find('.rd-grid').textContent).toContain('Request headers');
     expect(find('.rd-grid').textContent).toContain('[REDACTED]');
     expect(find('.rd-grid').textContent).toContain('Request and response bodies are not retained');
-    await click(find('[data-testid="network-tab"]'));
+    const toggle = [...host.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Waterfall')!;
+    await click(toggle);
+    expect(host.querySelector('.network-timing-heading')).toBeNull();
     expect(find('[data-request-id="req"]').getAttribute('aria-expanded')).toBe('true');
+    expect(find('.request-detail-row td').getAttribute('colspan')).toBe('4');
   });
 
   it('passes original diagnostics through Inspector for edited crossing requests and exposes honest source details', async () => {
@@ -294,36 +298,31 @@ describe('waterfall DOM controls and replay selection', () => {
     const shown = applyEdits(bundle, waterfallEdits);
     const player = new ReplayController(shown.bundle);
     const queries = new QueryClient({ defaultOptions: { queries: { enabled: false, retry: false } } });
-    const actions = { setTab: () => {}, setExpandedRequest: () => {} } as unknown as ViewerActions;
-    await act(async () =>
-      root.render(
+    function Harness() {
+      const [expanded, setExpandedRequest] = useState<string>();
+      const actions = { setTab: () => {}, setExpandedRequest } as unknown as ViewerActions;
+      return createElement(
+        PlayerContext,
+        { value: player },
         createElement(
-          QueryClientProvider,
-          { client: queries },
-          createElement(
-            PlayerContext,
-            { value: player },
-            createElement(
-              ViewerContext,
-              { value: actions },
-              createElement(Inspector, {
-                bundle: shown.bundle,
-                sourceBundle: bundle,
-                timeline: shown.timeline,
-                tab: 'waterfall',
-                expandedRequest: undefined,
-              }),
-            ),
-          ),
+          ViewerContext,
+          { value: actions },
+          createElement(Inspector, {
+            bundle: shown.bundle,
+            sourceBundle: bundle,
+            timeline: shown.timeline,
+            tab: 'network',
+            expandedRequest: expanded,
+          }),
         ),
-      ),
-    );
+      );
+    }
+    await act(async () => root.render(createElement(QueryClientProvider, { client: queries }, createElement(Harness))));
     expect(shown.bundle.network.some((entry) => entry.id === 'req')).toBe(false);
-    await click(find('[data-waterfall-id="network-0"]'));
-    expect(player.getTime()).toBe(2000);
+    await click(find('[data-request-id="req"]'));
     expect(find('.rd-facts').textContent).toContain('1000.0 ms');
     expect(host.textContent).toContain('250 ms visible in replay');
-    await click(find('[data-waterfall-id="network-1"]'));
+    await click(find('[data-request-id="incomplete"]'));
     expect(find('.rd-facts').textContent).toContain('Unknown / incomplete');
     expect(find('.rd-facts').textContent).toContain('No response recorded');
   });
