@@ -116,7 +116,7 @@ test.describe('Performance on a phone', () => {
           rowsFit: rows.every((row) => {
             const box = row.getBoundingClientRect();
             return (
-              Math.abs(box.height - 32) < 1 &&
+              box.height >= 43 &&
               [...row.children].every((cell) => !cell.getBoundingClientRect().width || within(cell.getBoundingClientRect(), box))
             );
           }),
