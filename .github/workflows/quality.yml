@@ -1,0 +1,67 @@
+name: Code quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  audit:
+    name: Quality / ${{ matrix.tool }}
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        tool: [knip, boundaries, package, size, dedupe, hooks, test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - if: matrix.tool == 'package' || matrix.tool == 'size'
+        run: pnpm build && pnpm build:cli
+      - name: Measure fresh main for the size diff
+        if: matrix.tool == 'size'
+        run: |
+          git fetch origin main
+          printf 'Head %s; main %s\n' "$GITHUB_SHA" "$(git rev-parse origin/main)" >> "$GITHUB_STEP_SUMMARY"
+          mkdir -p ../quality-main
+          git archive origin/main | tar -x -C ../quality-main
+          (
+            cd ../quality-main
+            pnpm install --frozen-lockfile
+            pnpm exec vp build --manifest
+            pnpm build:cli
+          )
+          # Same esbuild options and main source; add only the chunk-membership metadata for stable names.
+          REPLAYS_BUILD_ROOT="$PWD/../quality-main" node scripts/build-lib.mjs
+          node scripts/quality-size.mjs --measure --root ../quality-main --output .review-artifacts/quality/main-bundle-sizes.json
+      - name: Check bundle ratchet and summarize deltas
+        if: matrix.tool == 'size'
+        run: pnpm quality:size --baseline .review-artifacts/quality/main-bundle-sizes.json
+      # Report-only wrappers retain findings/status; invalid JSON, crashes and build errors still fail.
+      # Tightening instructions and the initial inventory live in docs/quality-tooling.md.
+      - if: matrix.tool != 'size'
+        run: pnpm quality:${{ matrix.tool }}
+      - if: always() && matrix.tool != 'hooks' && matrix.tool != 'test'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-${{ matrix.tool }}
+          path: .review-artifacts/quality/
+          if-no-files-found: error
+          retention-days: 14

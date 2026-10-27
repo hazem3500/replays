@@ -1,0 +1,64 @@
+{
+  "$schema": "https://unpkg.com/knip@6.43.0/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/server/{main,migrate-cli}.ts",
+        "src/{cli,index}.ts",
+        "bin/replays.mjs",
+        "src/capture/{index,injected-recorder}.ts",
+        "src/server/{index,testing/index}.ts",
+        "src/client/plugins/api.ts",
+        "src/plugin/index.ts",
+        "src/config/index.ts",
+        "src/first-party/{iap,gcs}.ts",
+        "src/recorder/index.ts",
+        "src/mcp/main.ts",
+        "src/client/{main,render}.tsx",
+        "index.html",
+        "render.html",
+        "scripts/*.{mjs,ts}",
+        "test/**/*.test.{ts,tsx}",
+        "e2e/**/*.spec.ts",
+        ".storybook/{main,preview,vite.config}.{ts,tsx}",
+        "stories/**/*.stories.tsx",
+        "examples/*/*.{mjs,ts}"
+      ],
+      "project": [
+        "src/**/*.{ts,tsx}",
+        "bin/**/*.mjs",
+        "scripts/**/*.{mjs,ts,mts}",
+        "test/**/*.{ts,tsx}",
+        "e2e/**/*.ts",
+        "stories/**/*.{ts,tsx}",
+        ".storybook/**/*.{ts,tsx}",
+        "*.{ts,mjs,cjs}",
+        "examples/**/*.{ts,tsx,mjs,mts}"
+      ],
+      "ignoreDependencies": [
+        "@arethetypeswrong/cli",
+        "dependency-cruiser",
+        "knip",
+        "publint",
+        "size-limit",
+        "@size-limit/file",
+        "tw-animate-css"
+      ],
+      "vitest": {
+        "config": ["vitest.config.ts", "vitest.recorder.config.ts"]
+      },
+      "ignoreFiles": ["examples/migrate/*.d.mts"]
+    },
+    "examples/*": {
+      "entry": [
+        "src/{client,server,plugin,iap,webmcp-client}.ts",
+        "replays.config.ts",
+        "scripts/*.mjs",
+        "test/**/*.ts",
+        "e2e/**/*.ts",
+        "playwright.config.ts"
+      ],
+      "project": ["**/*.{ts,tsx,mjs}"]
+    }
+  }
+}

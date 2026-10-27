@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["headroomPercent", "files"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "headroomPercent": { "const": 3 },
+    "files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["raw", "gzip", "brotli"],
+        "additionalProperties": false,
+        "properties": {
+          "raw": { "type": "integer", "minimum": 0 },
+          "gzip": { "type": "integer", "minimum": 0 },
+          "brotli": { "type": "integer", "minimum": 0 }
+        }
+      }
+    }
+  }
+}
