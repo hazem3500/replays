@@ -67,6 +67,8 @@ export default defineConfig(({ command }) => ({
   // shadcn/ui convention: "@/components/ui/…" resolves inside the client.
   resolve: { alias: { '@': fileURLToPath(new URL('./src/client', import.meta.url)) } },
   build: {
+    // Quality budgets follow static imports for initial JS/CSS and inventory every lazy chunk.
+    manifest: true,
     outDir: 'dist/client',
     emptyOutDir: true,
     // render.html is the internal page the server-side video render loads (src/server/renderer.ts).

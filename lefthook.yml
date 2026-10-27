@@ -1,0 +1,11 @@
+# Opt in with pnpm hooks:install. Check only staged paths; no whole-project/type-aware work.
+# Read-only checks preserve partially staged changes and never stage unrelated edits.
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts,json,jsonc}'
+      run: pnpm exec vp fmt --config .oxfmtrc.json --check {staged_files}
+    lint:
+      glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'
+      run: pnpm exec vp lint --config .oxlintrc.json --deny-warnings {staged_files}
