@@ -164,8 +164,8 @@
     },
     "dist/lib/capture.mjs": {
       "raw": 1625,
-      "gzip": 493,
-      "brotli": 417
+      "gzip": 492,
+      "brotli": 424
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -175,12 +175,12 @@
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
       "gzip": 18876,
-      "brotli": 16354
+      "brotli": 16351
     },
-    "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
-      "raw": 272355,
-      "gzip": 72905,
-      "brotli": 59492
+    "dist/lib/chunks/context.schema.json-a0771edd90c2.mjs": {
+      "raw": 269541,
+      "gzip": 72062,
+      "brotli": 58774
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
@@ -199,8 +199,8 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "gzip": 9499,
-      "brotli": 8394
+      "gzip": 9496,
+      "brotli": 8389
     },
     "dist/lib/chunks/index.ts-21682b68ed82.mjs": {
       "raw": 0,
@@ -213,14 +213,14 @@
       "brotli": 9330
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
-      "raw": 31393,
-      "gzip": 8181,
-      "brotli": 7133
+      "raw": 31954,
+      "gzip": 8369,
+      "brotli": 7281
     },
-    "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
-      "raw": 3950,
-      "gzip": 1449,
-      "brotli": 1306
+    "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
+      "raw": 4485,
+      "gzip": 1658,
+      "brotli": 1466
     },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
@@ -248,9 +248,9 @@
       "brotli": 420
     },
     "dist/lib/plugin.mjs": {
-      "raw": 661,
-      "gzip": 272,
-      "brotli": 222
+      "raw": 705,
+      "gzip": 287,
+      "brotli": 247
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
@@ -360,16 +360,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/62"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
-      "cap": {
-        "raw": 272355,
-        "gzip": 72905,
-        "brotli": 59492
-      },
-      "reason": "Embed canonical replay/context schemas and validate upload envelopes before hooks; the shared server chunk source identity changes.",
-      "pr": "https://github.com/hazem3500/replays/pull/77"
-    },
-    {
       "file": "dist/lib/config.mjs",
       "cap": {
         "brotli": 131
@@ -386,6 +376,54 @@
       },
       "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
       "pr": "https://github.com/hazem3500/replays/pull/63"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a0771edd90c2.mjs",
+      "cap": {
+        "raw": 269541,
+        "gzip": 72062,
+        "brotli": 58774
+      },
+      "reason": "The shared server chunk now also holds the upload-endpoint helpers and HttpError, so its source identity changes; it measures smaller than main's context.schema.json-d5791ba8f4b9 chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs",
+      "cap": {
+        "raw": 4485,
+        "gzip": 1658,
+        "brotli": 1466
+      },
+      "reason": "The plugin entry's shared chunk gains HttpError and tooManyRequests (src/shared/http-error.ts); replaces summary-fields.ts-a8479d40f474 (+535 B raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
+      "cap": {
+        "raw": 31954,
+        "gzip": 8369,
+        "brotli": 7281
+      },
+      "reason": "Upload endpoint option validation (authenticate, maxBytes, rateLimit, normalize, receipt, prefixed paths) and api.normalizeUpload registration.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "raw": 705,
+        "gzip": 287,
+        "brotli": 247
+      },
+      "reason": "The /plugin entry re-exports HttpError and tooManyRequests.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/capture.mjs",
+      "cap": {
+        "brotli": 424
+      },
+      "reason": "The generated import hash changes with the renamed shared server chunk; capture's own source is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
     }
   ]
 }
