@@ -113,8 +113,10 @@ export function IconButton({
   );
 }
 
-export interface SwitchIconButtonProps
-  extends Omit<ComponentProps<typeof Pressable>, 'aria-label' | 'children' | 'pressed' | 'onPressedChange'> {
+export interface SwitchIconButtonProps extends Omit<
+  ComponentProps<typeof Pressable>,
+  'aria-label' | 'children' | 'pressed' | 'onPressedChange'
+> {
   label: string;
   shortcut?: string;
   tooltipSide?: Side;

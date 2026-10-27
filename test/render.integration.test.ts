@@ -183,7 +183,7 @@ describe.skipIf(!ready)('server-side render (Chromium + ffmpeg)', () => {
         .split('\n')
         .map((line) => line.trim().split(/\s+/).map(Number) as [number, number, number]);
       const family = new Set([process.pid]);
-      for (let grew = true; grew; ) {
+      for (let grew = true; grew;) {
         grew = false;
         for (const [pid, ppid] of rows) {
           if (family.has(ppid) && !family.has(pid)) {

@@ -185,7 +185,9 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   const application = (resources.application =
     options.application === false
       ? undefined
-      : await (await import('./agent-native/runtime.ts')).createApplicationRuntime(store, auth.name, {
+      : await (
+          await import('./agent-native/runtime.ts')
+        ).createApplicationRuntime(store, auth.name, {
           ...(env.DATABASE_URL ? { databaseUrl: env.DATABASE_URL } : {}),
           ...(env.REPLAYS_WORKSPACE_ID ? { workspaceId: env.REPLAYS_WORKSPACE_ID } : {}),
           credentials: env.REPLAYS_AGENT_CREDENTIALS === '1',

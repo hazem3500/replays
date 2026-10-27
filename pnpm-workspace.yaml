@@ -2,3 +2,8 @@ packages:
   - examples/custom-distro
   - examples/host-app
   - examples/agent-native
+
+# Keep plugins, Storybook and Vitest on the core supplied by Vite+ 1.4.0.
+overrides:
+  'vite@*': npm:@voidzero-dev/vite-plus-core@1.4.0
+  'vitest@*': 5.0.5

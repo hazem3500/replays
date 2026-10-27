@@ -71,8 +71,10 @@ export interface ReviewSuiteSummary {
 }
 
 /** One run as the index lists it: registration fields plus its replay's summary when uploaded. */
-export interface ReviewSuiteIndexRun
-  extends Pick<ReviewSuiteRun, 'id' | 'sequence' | 'label' | 'status' | 'startedAt' | 'finishedAt' | 'replayId'> {
+export interface ReviewSuiteIndexRun extends Pick<
+  ReviewSuiteRun,
+  'id' | 'sequence' | 'label' | 'status' | 'startedAt' | 'finishedAt' | 'replayId'
+> {
   replay?: ReplaySummary;
 }
 

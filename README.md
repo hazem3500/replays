@@ -32,7 +32,7 @@ docker compose up --build        # builds locally; nothing is pulled from or pus
 open http://localhost:8080       # two sample replays are included
 ```
 
-Without Docker (Node 22.12+ and pnpm 10):
+Without Docker (Node 22.22+ (22.x), 24.11+ (24.x), or 26+ and pnpm 10):
 
 ```bash
 pnpm install
@@ -457,7 +457,11 @@ pnpm sample       # re-record sample/demo-shop.json from fixtures/demo-shop
 pnpm build:site   # the static landing page and live demo in dist/site (see docs/site.md)
 ```
 
-Requirements: Node 22.12+, pnpm 10, a Chrome/Chromium for capture and the e2e tests. See [CONTRIBUTING.md](CONTRIBUTING.md).
+Requirements: Node 22.22+ (22.x), 24.11+ (24.x), or 26+, pnpm 10, a Chrome/Chromium for capture and the e2e tests. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Tooling: [Vite+ 1.4.0](https://viteplus.dev/) provides Vite, Vitest, Oxlint and Oxfmt through the local `vp` CLI.
+`pnpm format` / `pnpm format:check` use [.oxfmtrc.json](.oxfmtrc.json); lint policy and the custom Node/library
+builds are preserved. See [tooling](docs/tooling.md) and [contributing](CONTRIBUTING.md).
 
 More documentation: [extending replays](docs/extension-api.md) · [API stability](docs/api-stability.md) · [extension points](docs/extending.md) · [operations](docs/operations.md) ·
 [releasing](docs/releasing.md) · [landing page](docs/site.md) · [naming](docs/NAMING.md).

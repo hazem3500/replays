@@ -3,7 +3,7 @@ import type { DiffLine } from '../../shared/line-diff.ts';
 /** A unified line diff: added lines green, removed red, unchanged dimmed; long unchanged runs are folded. */
 export function DiffView({ diff, testId }: { diff: readonly DiffLine[]; testId?: string }) {
   const rows: Array<DiffLine | { kind: 'fold'; count: number }> = [];
-  for (let i = 0; i < diff.length; ) {
+  for (let i = 0; i < diff.length;) {
     const line = diff[i]!;
     if (line.kind !== 'same') {
       rows.push(line);
