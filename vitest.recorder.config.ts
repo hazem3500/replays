@@ -1,2 +1,13 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite-plus/test/config';
-export default defineConfig({ test: { include: ['src/recorder/**/*.test.ts'], environment: 'happy-dom', globals: true } });
+export default defineConfig({
+  resolve: {
+    alias: Object.fromEntries(
+      ['kit', 'react', 'ui', 'testing', ''].map((name) => [
+        `@hazem3500/replays/recorder${name ? `/${name}` : ''}`,
+        fileURLToPath(new URL(`./src/recorder/${name ? `${name}/` : ''}index.${name === 'react' ? 'tsx' : 'ts'}`, import.meta.url)),
+      ]),
+    ),
+  },
+  test: { include: ['src/recorder/**/*.test.ts', 'src/recorder/**/*.test.tsx'], environment: 'happy-dom', globals: true },
+});
