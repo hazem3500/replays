@@ -1,4 +1,6 @@
 import { spawn } from 'node:child_process';
+
+import { guardRenderRequests, type RenderAssetPolicy } from './media/browser-network.ts';
 import { once } from 'node:events';
 import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -175,11 +177,17 @@ export class PosterQueue {
         while (this.options.busy()) await new Promise((resolve) => setTimeout(resolve, this.options.waitMs));
         const job = (this.waiting.poster.shift() ?? this.waiting.open.shift() ?? this.waiting.preview.shift())!;
         const name = key(job.kind, job.id);
-        await this.run(job);
-        this.pending.delete(name);
-        this.resolvers.get(name)?.();
-        this.resolvers.delete(name);
-        this.settledBy.delete(name);
+        try {
+          await this.run(job);
+        } catch (error) {
+          this.failed.set(name, this.options.now());
+          this.options.log(`${job.kind} ${job.id}: failed: ${String(error)}`);
+        } finally {
+          this.pending.delete(name);
+          this.resolvers.get(name)?.();
+          this.resolvers.delete(name);
+          this.settledBy.delete(name);
+        }
       }
     } finally {
       this.running = false;
@@ -219,12 +227,13 @@ export class PosterQueue {
   /** Makes and stores the file; returns why it failed (undefined when it did not). */
   private async execute({ kind, id }: Job): Promise<unknown> {
     const { storage } = this.options;
-    const directory = await mkdtemp(join(this.options.tempDir ?? tmpdir(), `replays-${kind}-`));
+    let directory: string | undefined;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(new Error(`${kind} timed out`)), this.options.timeoutMs);
     const started = this.options.now();
     const job = (of: MediaKind): RenderJob => ({ id: `${id}-${of}`, replayId: id, kind: of, options: {} });
     try {
+      directory = await mkdtemp(join(this.options.tempDir ?? tmpdir(), `replays-${kind}-`));
       const verdict = await this.options.beforeRender?.(job(kind));
       if (verdict && !verdict.ok) throw new Error(`refused by plugin ${verdict.plugin}: ${verdict.error}`);
       // One choice for both the file's name and where the page seeks, so the key always says what the file shows.
@@ -287,7 +296,7 @@ export class PosterQueue {
       return error;
     } finally {
       clearTimeout(timer);
-      await rm(directory, { recursive: true, force: true });
+      if (directory) await rm(directory, { recursive: true, force: true });
     }
   }
 }
@@ -304,6 +313,7 @@ interface RenderWindow {
 }
 
 export interface PosterRendererOptions {
+  assetPolicy?: RenderAssetPolicy;
   origin: string | (() => string);
   pageUrl: (id: string) => string;
   token: string;
@@ -356,16 +366,19 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       browser = undefined;
       throw error;
     });
-    const context = await shared.newContext({ deviceScaleFactor: 1, ignoreHTTPSErrors: true, reducedMotion: 'reduce' });
+    const context = await shared.newContext({
+      deviceScaleFactor: 1,
+      ignoreHTTPSErrors: true,
+      serviceWorkers: 'block',
+      reducedMotion: 'reduce',
+    });
     const abort = () => void context.close().catch(() => undefined);
     task.signal.addEventListener('abort', abort, { once: true });
     try {
       const origin = typeof options.origin === 'function' ? options.origin() : options.origin;
       // The job's trace context too (tracing.ts; empty when off), so the page's requests join the job's trace.
       const trace = traceHeaders();
-      await context.route(`${origin}/**`, (route) =>
-        route.continue({ headers: { ...route.request().headers(), ...trace, [RENDER_TOKEN_HEADER]: options.token } }),
-      );
+      await guardRenderRequests(context, origin, { ...trace, [RENDER_TOKEN_HEADER]: options.token }, options.assetPolicy);
       const page = await context.newPage();
       await page.goto(options.pageUrl(task.id), { waitUntil: 'load', timeout: 30_000 });
       await page.waitForFunction(() => (window as RenderWindow).__render?.ready === true, undefined, { timeout: 30_000 });

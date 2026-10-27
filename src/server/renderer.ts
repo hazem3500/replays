@@ -1,4 +1,6 @@
 import { spawn } from 'node:child_process';
+
+import { guardRenderRequests, type RenderAssetPolicy } from './media/browser-network.ts';
 import { randomBytes } from 'node:crypto';
 import { access, constants } from 'node:fs/promises';
 import { once } from 'node:events';
@@ -28,6 +30,7 @@ export interface RenderTools {
 }
 
 export interface RendererOptions {
+  assetPolicy?: RenderAssetPolicy;
   /** Loopback origin of this server, e.g. http://127.0.0.1:3000 (a function when the port is known only after listen). */
   origin: string | (() => string);
   /** URL of the render page for a replay. */
@@ -206,14 +209,17 @@ export function createRenderer(options: RendererOptions): RenderRunner {
     let framesSpan: SpanHandle = NOOP_SPAN;
     try {
       task.signal.throwIfAborted();
-      const context = await browser.newContext({ deviceScaleFactor: 1, ignoreHTTPSErrors: true, reducedMotion: 'no-preference' });
+      const context = await browser.newContext({
+        deviceScaleFactor: 1,
+        ignoreHTTPSErrors: true,
+        serviceWorkers: 'block',
+        reducedMotion: 'no-preference',
+      });
       // The token rides only on requests back to this server, never to the replay's third-party asset origins.
       const origin = typeof options.origin === 'function' ? options.origin() : options.origin;
       // The job's trace context too (tracing.ts; empty when off), so the page's requests join the job's trace.
       const trace = traceHeaders();
-      await context.route(`${origin}/**`, (route) =>
-        route.continue({ headers: { ...route.request().headers(), ...trace, [RENDER_TOKEN_HEADER]: options.token } }),
-      );
+      await guardRenderRequests(context, origin, { ...trace, [RENDER_TOKEN_HEADER]: options.token }, options.assetPolicy);
       const page = await context.newPage();
       await withSpan('render.page_load', { 'replay.id': task.id }, async () => {
         // An edited replay's page applies the edit list it is given the version of (and fails if it changed since).

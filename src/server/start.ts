@@ -10,6 +10,7 @@ import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
 import { coreVersion, findPackageRoot } from './package-info.ts';
 import { BridgeHub } from './bridge-hub.ts';
+import type { RenderAssetPolicy } from './media/browser-network.ts';
 import { createMediaRenderer, PosterQueue } from './posters.ts';
 import { createRenderHooks } from './render-hooks.ts';
 import { RenderQueue } from './render-queue.ts';
@@ -238,6 +239,15 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   });
   const origin = `${tlsCert && tlsKey ? 'https' : 'http'}://127.0.0.1:${port}`;
   // Dev serves the render page through Vite; production serves the built page on the loopback-only route.
+  const assets = env.RENDER_ASSETS ?? 'public';
+  if (assets !== 'public' && assets !== 'origin-only') throw new Error('RENDER_ASSETS must be public or origin-only');
+  const assetPolicy: RenderAssetPolicy = {
+    assets,
+    allowHosts: (env.RENDER_ASSET_ALLOWLIST ?? '')
+      .split(',')
+      .map((host) => host.trim())
+      .filter(Boolean),
+  };
   const renderPageUrl = (id: string) => (dev ? `${origin}${basePath}/render.html?id=${id}` : `${origin}/internal/render/${id}`);
   // `api.render`: the poster's moment, the check before each list-media job, and the call after each stored file.
   // (createApp runs `beforeRender` for video exports, on the request.)
@@ -252,6 +262,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
       log,
       ...(afterRender ? { afterRender } : {}),
       runner: createRenderer({
+        assetPolicy,
         origin,
         token: render.token,
         tools,
@@ -273,7 +284,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
 
   // List posters need only Chromium (no ffmpeg); POSTERS_DISABLED=1 or RENDER_DISABLED=1 turns them off (the index shows placeholders).
   if (tools.chromiumPath && env.POSTERS_DISABLED !== '1') {
-    const media = createMediaRenderer({ origin, token: render.token, tools, pageUrl: renderPageUrl });
+    const media = createMediaRenderer({ assetPolicy, origin, token: render.token, tools, pageUrl: renderPageUrl });
     render.posters = new PosterQueue({
       storage: store.storage,
       key: (id, choice) => store.posterKey(id, choice),
