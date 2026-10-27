@@ -94,6 +94,15 @@ describe('capture arguments: accepted', () => {
     });
   });
 
+  it('can opt into uploading to a saved server and explicitly start login', async () => {
+    await expect(parse('--upload', '--login', '--server', 'staging')).resolves.toMatchObject({
+      upload: true,
+      login: true,
+      serverName: 'staging',
+    });
+    await expect(usageError([...URL_FLAGS, '--login'])).resolves.toBe('--login requires --upload or --upload-url');
+  });
+
   it('accepts http only for localhost', async () => {
     for (const host of ['localhost:5173', '127.0.0.1:4173', '[::1]:8080'])
       await expect(parseArgs(['--url', `http://${host}/`, '--output', '/tmp/x'])).resolves.toMatchObject({ url: `http://${host}/` });
@@ -266,7 +275,8 @@ describe('the replays command', () => {
       expect(result.status).toBe(0);
       expect(result.stderr).toBe('');
       expect(result.stdout).toContain('replays <command> [options]');
-      for (const command of ['capture', 'import', 'upload', 'serve']) expect(result.stdout).toMatch(new RegExp(`^  ${command}\\s`, 'm'));
+      for (const command of ['capture', 'import', 'upload', 'connect', 'config', 'doctor', 'login', 'status', 'logout', 'serve'])
+        expect(result.stdout).toMatch(new RegExp(`^  ${command}\\s`, 'm'));
     }
     expect(invoke().stdout).toContain('Commands:');
   });

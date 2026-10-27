@@ -10,10 +10,29 @@ export interface Identity {
   name?: string;
   /** An https image URL for the person's avatar (shown beside their comments); optional. */
   avatarUrl?: string;
+  /** Populated only for narrowly scoped API tokens; ordinary browser sessions remain unrestricted. */
+  authScopes?: readonly string[];
+  /** Expiry of a verified bearer token, in Unix seconds. */
+  authExpiresAt?: number;
+}
+
+/** Public, credential-free description of a device flow explicitly enabled by an auth adapter. */
+export interface CliDeviceAuthCapability {
+  type: 'oidc-device';
+  issuer: string;
+  clientId: string;
+  audience: string;
+  deviceAuthorizationEndpoint: string;
+  tokenEndpoint: string;
+  revocationEndpoint?: string;
+  scopes: readonly ['openid', 'email', 'profile', 'replays:upload'];
+  /** RFC 8707 resource indicator, equal to the verified audience and bound to this server deployment. */
+  resource: string;
 }
 
 /**
- * An auth adapter decides who a request is from. Everything except the health check goes through it.
+ * An auth adapter decides who a request is from. Health and the public, credential-free CLI capability probe are
+ * available before authentication; protected viewer and upload routes go through it.
  *
  * - `authenticate` returns the identity, or undefined for "not signed in" (the server answers 401, or 403
  *   when the adapter has no way to sign in).
@@ -28,6 +47,8 @@ export interface AuthAdapter {
   authenticate(request: IncomingMessage): Promise<Identity | undefined> | Identity | undefined;
   handle?(request: IncomingMessage, response: ServerResponse, context: AuthRouteContext): Promise<boolean> | boolean;
   loginUrl?(request: IncomingMessage, context: AuthRouteContext): string | undefined;
+  /** Present only when this adapter can issue and validate a dedicated replay-upload-only token. */
+  cliDeviceAuth?(context: AuthRouteContext): Promise<CliDeviceAuthCapability | undefined> | CliDeviceAuthCapability | undefined;
   /** Paths (public, canonical, without the base path) that `handle` serves without an identity. */
   readonly routes?: readonly string[];
 }

@@ -3,7 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { cleanAvatarUrl } from '../../shared/comments.ts';
 import { jwksKeys, verifyJwtWith, type JwtClaims, type KeySource } from './jwt.ts';
-import type { AuthAdapter, AuthRouteContext, Identity } from './types.ts';
+import type { AuthAdapter, AuthRouteContext, CliDeviceAuthCapability, Identity } from './types.ts';
 
 export interface OidcOptions {
   /** The issuer URL; `/.well-known/openid-configuration` is read from it. */
@@ -17,6 +17,10 @@ export interface OidcOptions {
   scopes?: string;
   /** Accepted `aud` for bearer tokens (machine uploads); defaults to the client id. */
   audience?: string;
+  /** Opt in to OAuth device login only when the issuer publishes a device endpoint and this is a public client. */
+  deviceFlow?: boolean;
+  /** Optional RFC 8707 resource value requested by the CLI and independently checked through `audience`. */
+  deviceResource?: string;
   /** Optional allowlist: exact emails or `@domain` suffixes. Empty: every user the provider authenticates. */
   allow?: readonly string[];
   sessionHours?: number;
@@ -29,6 +33,8 @@ interface Discovery {
   authorization_endpoint: string;
   token_endpoint: string;
   jwks_uri: string;
+  device_authorization_endpoint?: string;
+  revocation_endpoint?: string;
 }
 
 const ROUTES = ['/auth/login', '/auth/callback', '/auth/logout'];
@@ -60,6 +66,8 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
   const nowMs = options.now ?? Date.now;
   const secure = options.publicOrigin.startsWith('https:');
   const issuer = options.issuer.replace(/\/+$/, '');
+  const audience = options.audience ?? options.clientId;
+  const deviceScopes = ['openid', 'email', 'profile', 'replays:upload'] as const;
   let discovery: Promise<Discovery> | undefined;
   let keys: KeySource | undefined;
 
@@ -69,6 +77,19 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       if (!response.ok) throw Object.assign(new Error(`OIDC discovery failed (${response.status})`), { status: 502 });
       const found = (await response.json()) as Discovery;
       if (found.issuer.replace(/\/+$/, '') !== issuer) throw Object.assign(new Error('OIDC discovery issuer mismatch'), { status: 502 });
+      for (const endpoint of [
+        found.authorization_endpoint,
+        found.token_endpoint,
+        found.jwks_uri,
+        found.device_authorization_endpoint,
+        found.revocation_endpoint,
+      ]) {
+        if (!endpoint) continue;
+        const parsed = new URL(endpoint);
+        const loopback = ['localhost', '127.0.0.1', '[::1]'].includes(parsed.hostname);
+        if (parsed.protocol !== 'https:' && !(loopback && parsed.protocol === 'http:'))
+          throw Object.assign(new Error('OIDC discovery endpoints must use HTTPS'), { status: 502 });
+      }
       keys = jwksKeys(found.jwks_uri, fetcher, nowMs);
       return found;
     })().catch((error: unknown) => {
@@ -140,10 +161,47 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       const claims = await verifyJwtWith(bearer, {
         keys: keys!,
         issuer,
-        audience: options.audience ?? options.clientId,
+        audience,
         now: nowMs() / 1000,
       });
-      return claims ? identityOf(claims) : undefined;
+      if (!claims) return undefined;
+      if (options.deviceFlow) {
+        const audiences = Array.isArray(claims.aud) ? claims.aud : claims.aud ? [claims.aud] : [];
+        if (audiences.length !== 1 || audiences[0] !== audience) return undefined;
+      }
+      const claimedScope =
+        typeof claims.scope === 'string'
+          ? claims.scope.split(/\s+/).filter(Boolean)
+          : Array.isArray(claims.scope) && claims.scope.every((scope) => typeof scope === 'string')
+            ? claims.scope
+            : undefined;
+      if (options.deviceFlow && !claimedScope?.includes('replays:upload')) return undefined;
+      if (claimedScope && !claimedScope.includes('replays:upload') && options.deviceFlow) return undefined;
+      const identity = identityOf(claims);
+      if (!identity) return undefined;
+      // Any token carrying the upload scope is restricted to the upload routes, even if the issuer over-grants scopes.
+      return claimedScope?.includes('replays:upload')
+        ? { ...identity, authScopes: ['replays:upload'], ...(typeof claims.exp === 'number' ? { authExpiresAt: claims.exp } : {}) }
+        : identity;
+    },
+
+    async cliDeviceAuth(context: AuthRouteContext): Promise<CliDeviceAuthCapability | undefined> {
+      if (!options.deviceFlow || options.clientSecret) return undefined;
+      const resource = options.deviceResource ?? `${options.publicOrigin.replace(/\/+$/, '')}${context.base}`;
+      if (audience !== resource) return undefined;
+      const found = await discover().catch(() => undefined);
+      if (!found?.device_authorization_endpoint) return undefined;
+      return {
+        type: 'oidc-device',
+        issuer,
+        clientId: options.clientId,
+        audience,
+        deviceAuthorizationEndpoint: found.device_authorization_endpoint,
+        tokenEndpoint: found.token_endpoint,
+        ...(found.revocation_endpoint ? { revocationEndpoint: found.revocation_endpoint } : {}),
+        scopes: deviceScopes,
+        resource,
+      };
     },
 
     loginUrl(request, context) {

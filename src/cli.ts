@@ -7,6 +7,12 @@ Commands:
   capture   record a page with scripted steps into replay.json (see: ${PRODUCT_SLUG} capture --help)
   import    convert a plain rrweb recording into a replay
   upload    POST an existing replay.json to a server
+  connect   save a named server URL for future uploads
+  login     sign in through an advertised OIDC device approval flow
+  status    show the configured server and CLI sign-in state
+  logout    remove saved CLI credentials and request provider revocation
+  config    show saved server names, or reset local CLI configuration
+  doctor    check whether the configured viewer server is reachable
   migrate   copy a store into another, converting stored replays (see: ${PRODUCT_SLUG} migrate --help)
   mcp       MCP server (stdio) for the plugin workshop's agent bridge (beta: REPLAYS_BETA_MALLEABLE)
   serve     start the viewer and upload server (configuration: environment variables, see the README)
@@ -26,6 +32,24 @@ switch (command) {
     break;
   case 'upload':
     await (await import('./capture/upload.ts')).runUploadCli(rest);
+    break;
+  case 'connect':
+    await (await import('./capture/upload.ts')).runConnectCli(rest);
+    break;
+  case 'config':
+    await (await import('./capture/upload.ts')).runConfigCli(rest);
+    break;
+  case 'doctor':
+    await (await import('./capture/upload.ts')).runDoctorCli(rest);
+    break;
+  case 'login':
+    await (await import('./capture/upload.ts')).runLoginCli(rest);
+    break;
+  case 'status':
+    await (await import('./capture/upload.ts')).runStatusCli(rest);
+    break;
+  case 'logout':
+    await (await import('./capture/upload.ts')).runLogoutCli(rest);
     break;
   case 'migrate':
     await (await import('./server/migrate-cli.ts')).runMigrateCli(rest);

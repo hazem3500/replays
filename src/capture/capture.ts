@@ -14,7 +14,8 @@ import { compileContextSchema } from '../server/context-schema.ts';
 import { loadConfig } from '../config/index.ts';
 import { resolvePlugins } from '../plugin/registry.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
-import { defaultId, flagMap, prepareOutputDirectory, upload } from './bundle-io.ts';
+import { defaultId, flagMap, prepareOutputDirectory } from './bundle-io.ts';
+import { uploadConfigured } from './upload.ts';
 import { buildReplayContext, readContextFile } from './context.ts';
 import { agentBrowserDriver } from './drivers/agent-browser.ts';
 import { playwrightDriver } from './drivers/playwright.ts';
@@ -39,6 +40,9 @@ export interface CaptureArgs extends CapturePacingOptions {
   viewport: { width: number; height: number };
   uploadUrl?: string;
   headerFile?: string;
+  upload?: boolean;
+  login?: boolean;
+  serverName?: string;
   context?: unknown;
   /** Source references (`github:owner/repo#12`) to add to the context. */
   sources: ReplaySourceInput[];
@@ -55,7 +59,7 @@ export interface CaptureArgs extends CapturePacingOptions {
   redaction?: RedactionRules;
 }
 
-const BOOLEAN_FLAGS = new Set(['video', 'headed']);
+const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login']);
 
 function requiredString(step: Record<string, unknown>, field: string, index: number) {
   const value = step[field];
@@ -148,6 +152,9 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --context-schema <file>  JSON Schema that context.fields must satisfy (same file as the server's)
   --suite-id <id> --run-id <id>   attach the replay to a suite run
   --upload-url <url>       POST the finished replay to <server>/api/replays
+  --upload                 upload to the saved default server
+  --login                  explicitly start sign-in before upload
+  --server <name>          use a saved server name with --upload
   --header-file <file>     JSON object of headers for the upload (e.g. Authorization)
   --headed                 show the browser window (playwright driver)
   --config <file>          replays.config.* whose redaction rules apply (default: REPLAYS_CONFIG, else
@@ -197,6 +204,8 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (!values.url) throw new Error('required: --url <https-url>');
   assertCaptureUrl(values.url, '--url');
   if (!values.output) throw new Error('required: --output <directory>');
+  if (booleans.has('login') && !booleans.has('upload') && !values['upload-url'])
+    throw new Error('--login requires --upload or --upload-url');
   const id = assertReplayId(values.id ?? defaultId(values.url));
   const driver = (values.driver ?? 'playwright') as DriverName;
   if (driver !== 'playwright' && driver !== 'agent-browser') throw new Error('--driver must be playwright or agent-browser');
@@ -232,6 +241,9 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     ...(values.title ? { title: values.title } : {}),
     ...(values['upload-url'] ? { uploadUrl: values['upload-url'] } : {}),
     ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
+    ...(booleans.has('upload') ? { upload: true } : {}),
+    ...(booleans.has('login') ? { login: true } : {}),
+    ...(values.server ? { serverName: values.server } : {}),
     ...(context !== undefined ? { context } : {}),
     ...(schema !== undefined ? { contextSchema: schema } : {}),
     ...(redaction ? { redaction } : {}),
@@ -412,7 +424,13 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });
     if (args.video) await copyFile(rawVideoPath, join(args.output, 'session.mp4'), constants.COPYFILE_EXCL);
-    if (args.uploadUrl) await upload(bundle, args.output, args.uploadUrl, args.headerFile);
+    if (args.upload || args.uploadUrl)
+      await uploadConfigured(bundle, args.output, {
+        ...(args.uploadUrl ? { uploadUrl: args.uploadUrl } : {}),
+        ...(args.serverName ? { serverName: args.serverName } : {}),
+        ...(args.headerFile ? { headerFile: args.headerFile } : {}),
+        ...(args.login ? { forceLogin: true } : {}),
+      });
     return {
       replayPath,
       eventCount: tracks.events.length,
@@ -441,6 +459,7 @@ export async function runCaptureCli(argv: string[]) {
     process.stdout.write(`${JSON.stringify({ success: true, ...result })}\n`);
   } catch (error) {
     process.stderr.write(`${JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) })}\n`);
-    process.exitCode = 1;
+    process.exitCode =
+      typeof error === 'object' && error !== null && 'exitCode' in error && typeof error.exitCode === 'number' ? error.exitCode : 1;
   }
 }

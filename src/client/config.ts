@@ -40,6 +40,8 @@ export interface ClientConfig {
   contextSchema?: FieldSchema;
   sourceProviders: string[];
   auth: string;
+  /** Present only when the host opted into and validated an OIDC public-client device flow. */
+  cliDeviceAuth?: import('../server/auth/types.ts').CliDeviceAuthCapability;
   signIn?: import('../shared/sign-in.ts').SignInConfig;
   /** This package's version. */
   core?: string;

@@ -31,6 +31,13 @@ so every change to the surface shows up in a diff).
 Deep imports are blocked by `exports`; if you need something that is not exported, open an issue instead of copying the path:
 it is a candidate for the surface.
 
+The capture entry also exports `normalizeServerUrl`, `normalizeUploadUrl`, `resolveServerUrl`,
+`resolveUploadEndpoint`, `saveServer`, and `uploadEndpoint` for CLI integrations. Server configuration stores
+addresses, not authentication credentials. A wrapper that supplies credentials for a fixed destination must pass
+that exact endpoint as `trustedUploadUrl` to `resolveUploadEndpoint`; saved targets and environment variables
+cannot override it, and a conflicting explicit upload URL is rejected. Resolving an endpoint does not sign in
+or attach credentials.
+
 ## Versions
 
 The package follows [Semantic Versioning](https://semver.org/).
