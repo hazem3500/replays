@@ -22,10 +22,15 @@
       "gzip": 1115,
       "brotli": 947
     },
+    "dist/client/assets/ComparisonWorkspace-HASH.js": {
+      "raw": 52846,
+      "gzip": 17816,
+      "brotli": 15415
+    },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 219,
-      "brotli": 219
+      "brotli": 189
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 17524,
@@ -43,9 +48,9 @@
       "brotli": 4779
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 186305,
-      "gzip": 63408,
-      "brotli": 54094
+      "raw": 182491,
+      "gzip": 62079,
+      "brotli": 52999
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -58,9 +63,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 200680,
-      "gzip": 34679,
-      "brotli": 29540
+      "raw": 216805,
+      "gzip": 37398,
+      "brotli": 31804
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 635386,
@@ -77,6 +82,11 @@
       "gzip": 25654,
       "brotli": 22782
     },
+    "dist/client/assets/performance-HASH.js": {
+      "raw": 4242,
+      "gzip": 1815,
+      "brotli": 1632
+    },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
       "gzip": 945,
@@ -85,7 +95,7 @@
     "dist/client/assets/player-HASH.js": {
       "raw": 308578,
       "gzip": 95021,
-      "brotli": 68407
+      "brotli": 68380
     },
     "dist/client/assets/queries-HASH.js": {
       "raw": 32628,
@@ -105,7 +115,7 @@
     "dist/client/assets/render-HASH.js": {
       "raw": 6721,
       "gzip": 2958,
-      "brotli": 2686
+      "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -119,7 +129,7 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
-      "gzip": 502,
+      "gzip": 500,
       "brotli": 456
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
@@ -129,8 +139,8 @@
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 38948,
-      "gzip": 13463,
-      "brotli": 12067
+      "gzip": 13458,
+      "brotli": 12058
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -144,13 +154,13 @@
     },
     "dist/client/index.html": {
       "raw": 10783,
-      "gzip": 3892,
-      "brotli": 3206
+      "gzip": 3889,
+      "brotli": 3204
     },
     "dist/client/render.html": {
       "raw": 1294,
       "gzip": 553,
-      "brotli": 412
+      "brotli": 411
     },
     "dist/lib/capture.mjs": {
       "raw": 1625,
@@ -235,7 +245,7 @@
     "dist/lib/index.mjs": {
       "raw": 1509,
       "gzip": 496,
-      "brotli": 423
+      "brotli": 422
     },
     "dist/lib/plugin.mjs": {
       "raw": 661,
@@ -244,13 +254,13 @@
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
-      "gzip": 4366,
+      "gzip": 4365,
       "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4025,
-      "gzip": 1599,
-      "brotli": 1378
+      "gzip": 1598,
+      "brotli": 1377
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
@@ -278,9 +288,9 @@
       "brotli": 255
     },
     "initial/index.html/css": {
-      "raw": 202600,
-      "gzip": 35623,
-      "brotli": 30357
+      "raw": 218726,
+      "gzip": 38342,
+      "brotli": 32621
     },
     "initial/index.html/js": {
       "raw": 1202822,
@@ -295,7 +305,49 @@
     "initial/render.html/js": {
       "raw": 542325,
       "gzip": 168433,
-      "brotli": 131801
+      "brotli": 131773
     }
-  }
+  },
+  "allowances": [
+    {
+      "file": "dist/client/assets/ComparisonWorkspace-HASH.js",
+      "cap": {
+        "raw": 52846,
+        "gzip": 17816,
+        "brotli": 15415
+      },
+      "reason": "Lazy pairwise comparison workspace with scenario-start alignment, synchronized playback and evidence panels.",
+      "pr": "https://github.com/hazem3500/replays/pull/59"
+    },
+    {
+      "file": "dist/client/assets/performance-HASH.js",
+      "cap": {
+        "raw": 4242,
+        "gzip": 1815,
+        "brotli": 1632
+      },
+      "reason": "Performance evidence extraction shared by the viewer and the new comparison route through a lazy chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/59"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 216805,
+        "gzip": 37398,
+        "brotli": 31804
+      },
+      "reason": "Comparison responsive panes, gallery controls and scenario alignment add reviewed shared shell styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/59"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 218726,
+        "gzip": 38342,
+        "brotli": 32621
+      },
+      "reason": "The comparison loading shell shares workspace CSS in the initial stylesheet; this allocates its measured baseline growth.",
+      "pr": "https://github.com/hazem3500/replays/pull/59"
+    }
+  ]
 }

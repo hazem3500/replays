@@ -10,7 +10,7 @@ import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
-import { editHref } from './route.ts';
+import { comparisonHref, editHref } from './route.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
@@ -387,6 +387,13 @@ export function Viewer({
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
+      {
+        label: 'Compare recordings',
+        icon: <AnimatedIcon name="search" />,
+        href: comparisonHref(bundle.meta.id, bundle.meta.id),
+        onSelect: () => {},
+        detail: 'Beta',
+      },
       ...pluginMenu.items,
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
@@ -404,7 +411,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, keepItem, mobile, pluginMenu.items],
+    [actions.openShortcuts, bundle.meta.id, keepItem, mobile, pluginMenu.items],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
