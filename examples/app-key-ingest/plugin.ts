@@ -50,6 +50,13 @@ function windowLimiter({ requests, windowSeconds }: { requests: number; windowSe
 
 const digest = (value: string) => createHash('sha256').update(value).digest();
 
+/** Why a known app's request is refused, if it is: disabled, or an `Origin` (or none) the app does not allow. */
+function refusalFor(app: IngestApp, origin: string | undefined) {
+  if (app.enabled === false) return 'app is disabled';
+  const allowed = origin === undefined ? app.allowServerSide === true : app.origins.includes(origin);
+  return allowed ? undefined : 'origin not allowed for this app';
+}
+
 /** One audit line per accepted or refused request: outcome, app and client address, never the payload or the key. */
 const audit = (outcome: string, detail: Record<string, unknown>) =>
   process.stdout.write(`${JSON.stringify({ event: 'ingest', outcome, ...detail })}\n`);
@@ -86,13 +93,7 @@ export function appKeyIngest(options: AppKeyIngestOptions) {
             return;
           }
           const { app } = match;
-          const origin = request.headers.origin;
-          const refusal =
-            app.enabled === false
-              ? 'app is disabled'
-              : (origin === undefined ? !app.allowServerSide : !app.origins.includes(origin))
-                ? 'origin not allowed for this app'
-                : undefined;
+          const refusal = refusalFor(app, request.headers.origin);
           audit(refusal ? 'refused' : 'authenticated', { ip, app: app.id, ...(refusal ? { reason: refusal } : {}) });
           if (refusal) throw new HttpError(403, refusal);
           return { id: `app:${app.id}`, name: app.id };
@@ -110,7 +111,7 @@ export function appKeyIngest(options: AppKeyIngestOptions) {
             ...rest,
             meta: {
               ...meta,
-              id: `${appOf(identity)!.id}-${new Date().toISOString().slice(0, 10)}-${randomBytes(6).toString('hex')}`,
+              id: `${identity.id.slice('app:'.length)}-${new Date().toISOString().slice(0, 10)}-${randomBytes(6).toString('hex')}`,
               title: meta.title.slice(0, 200),
               source: 'human',
               tags: [identity.id],
