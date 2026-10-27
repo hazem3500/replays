@@ -410,15 +410,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/59"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
-      "cap": {
-        "gzip": 72905,
-        "brotli": 59492
-      },
-      "reason": "Embed canonical replay/context schemas and validate upload envelopes before hooks; the shared server chunk source identity changes.",
-      "pr": "https://github.com/hazem3500/replays/pull/77"
-    },
-    {
       "file": "dist/lib/server-testing.mjs",
       "cap": {
         "raw": 11887,
@@ -746,9 +737,11 @@
     {
       "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
       "cap": {
-        "raw": 282591
+        "raw": 282591,
+        "gzip": 72905,
+        "brotli": 59492
       },
-      "reason": "The embedded edits schema gains the playback highlight list, enlarging the shared server schema chunk.",
+      "reason": "The embedded edits schema gains the playback highlight list, enlarging the shared server schema chunk that also embeds the canonical replay and context schemas.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     }
   ]
