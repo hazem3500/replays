@@ -48,7 +48,8 @@
     "quality:test": "node --test scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "lint:new-files": "node scripts/lint-new-files.mjs",
-    "lint:ratchet:test": "node --test scripts/lint-ratchet.test.mjs"
+    "lint:ratchet:test": "node --test scripts/lint-ratchet.test.mjs",
+    "typecheck:overrides": "node scripts/check-overrides.mjs"
   },
   "dependencies": {
     "@agent-native/core": "0.220.0",

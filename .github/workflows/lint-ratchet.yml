@@ -32,6 +32,7 @@ jobs:
       - run: pnpm build:cli
       - run: pnpm lint:ratchet:test
       - run: pnpm lint:ratchet
+      - run: pnpm typecheck:overrides
       - name: Final rules for added files
         if: github.event_name == 'pull_request'
         env:

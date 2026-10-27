@@ -39,7 +39,7 @@ export async function serveObject(
   const contentType = options.contentType ?? MIME[extname(key)] ?? 'application/octet-stream';
   const etag = objectEtag(info);
   const headers: Record<string, string> = { ...options.headers, 'content-type': contentType, 'cache-control': cacheControl };
-  // A 304 updates the stored representation's metadata: keep the same Vary as the 200.
+  // why: A 304 updates cached metadata, so it must carry the same Vary as a 200.
   const vary = [response.getHeader('vary'), headers.vary, COMPRESSIBLE.test(contentType) ? 'Accept-Encoding' : undefined]
     .filter(Boolean)
     .join(', ');

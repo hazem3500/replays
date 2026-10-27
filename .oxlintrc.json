@@ -3,7 +3,7 @@
   "plugins": ["typescript", "unicorn", "oxc", "react", "jsx-a11y", "vitest"],
   "categories": {
     "correctness": "error",
-    "suspicious": "warn"
+    "suspicious": "error"
   },
   "env": {
     "browser": true,
@@ -29,7 +29,17 @@
     "eslint/no-unmodified-loop-condition": "error",
     "eslint/no-unreachable-loop": "error",
     "eslint/no-unsafe-optional-chaining": "error",
-    "eslint/prefer-promise-reject-errors": "error"
+    "eslint/prefer-promise-reject-errors": "error",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": "allow-with-description",
+        "minimumDescriptionLength": 3
+      }
+    ],
+    "unicorn/prefer-node-protocol": "error",
+    "react/no-unstable-nested-components": "error",
+    "vitest/no-focused-tests": "error"
   },
   "ignorePatterns": [
     "dist/**",
