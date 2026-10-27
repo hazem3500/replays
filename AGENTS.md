@@ -31,7 +31,7 @@ Installs, checks, builds, tests, browsers, Docker and dev servers run on the ses
 ```sh
 oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm install --frozen-lockfile
 oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm check
-oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm test -- test/lint-policy.test.ts
+oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm exec vp test run --config vitest.config.ts test/lint-policy.test.ts
 oz-boat stop --session t3:<YOUR_THREAD_ID>
 ```
 
@@ -51,7 +51,7 @@ oz-boat stop --session t3:<YOUR_THREAD_ID>
 
 New code imports/calls effect hooks only in `src/client/hooks/`; derive values during render, handle actions in event handlers, and subscribe through `useSyncExternalStore`. Use a named hook for imperative setup. Do not move browser-recorder code into the client to satisfy this rule; coordinate an appropriate browser-only hook boundary first.
 
-React Compiler is enabled in the app build. Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.
+React Compiler is enabled in the app build. Run `pnpm quality:compiler` on Boat for the [bailout report and build-parity status](docs/compiler-health.md). Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.
 
 Keep files at most 400 lines; extract pure logic, then hooks, then views. Keep components focused, prefer children/slots over prop drilling, and render extensible lists from descriptors. Keep app data/navigation out of presentational components. Current transport/navigation live in `client/queries.ts`, `navigation.ts` and `route.ts`; Router/DB/Start work is separately owned. Do not duplicate those migrations.
 
