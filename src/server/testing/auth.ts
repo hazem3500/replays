@@ -1,7 +1,8 @@
 import assert from 'node:assert/strict';
 import type { IncomingMessage } from 'node:http';
 
-import type { AuthAdapter } from '../auth/types.ts';
+import type { AnyAuthAdapter } from '../auth/types.ts';
+import { toNodeAuthAdapter } from '../auth/web.ts';
 import { runnerOf, type TestRunner } from './runner.ts';
 
 export interface FakeRequestInit {
@@ -27,8 +28,8 @@ export function fakeRequest(init: FakeRequestInit = {}): IncomingMessage {
 }
 
 export interface AuthAdapterContract {
-  /** Builds the adapter; called once per test. */
-  create(): AuthAdapter | Promise<AuthAdapter>;
+  /** Builds the adapter, of either shape (`AuthAdapter` or `WebAuthAdapter`); called once per test. */
+  create(): AnyAuthAdapter | Promise<AnyAuthAdapter>;
   /** Requests the adapter must accept, with the identity `id` it should produce (optional). At least one. */
   accepts: ReadonlyArray<{ title: string; request: FakeRequestInit | (() => FakeRequestInit | Promise<FakeRequestInit>); id?: string }>;
   /** Requests it must refuse (`authenticate` returns undefined). */
@@ -57,7 +58,7 @@ export function describeAuthAdapter(name: string, contract: AuthAdapterContract,
   const { describe, it } = runnerOf(runner, 'describeAuthAdapter');
   describe(`${name} auth adapter (AuthAdapter contract)`, () => {
     it('has a name, and well-formed routes', async () => {
-      const adapter = await contract.create();
+      const adapter = toNodeAuthAdapter(await contract.create());
       assert.equal(typeof adapter.name, 'string');
       assert.match(adapter.name, ID);
       assert.equal(typeof adapter.authenticate, 'function');
@@ -69,7 +70,7 @@ export function describeAuthAdapter(name: string, contract: AuthAdapterContract,
 
     for (const accepted of contract.accepts)
       it(`accepts ${accepted.title}`, async () => {
-        const adapter = await contract.create();
+        const adapter = toNodeAuthAdapter(await contract.create());
         const identity = await adapter.authenticate(await requestOf(accepted.request));
         assert.ok(identity, 'authenticate returns an identity');
         assert.equal(typeof identity.id, 'string');
@@ -82,12 +83,12 @@ export function describeAuthAdapter(name: string, contract: AuthAdapterContract,
 
     for (const refused of contract.refuses)
       it(`refuses ${refused.title}`, async () => {
-        const adapter = await contract.create();
+        const adapter = toNodeAuthAdapter(await contract.create());
         assert.equal(await adapter.authenticate(await requestOf(refused.request)), undefined);
       });
 
     it('never throws on hostile input', async () => {
-      const adapter = await contract.create();
+      const adapter = toNodeAuthAdapter(await contract.create());
       const junk = ['', ' ', 'a'.repeat(16_384), 'Bearer', 'Bearer a.b.c', 'Bearer ...', '\u0000', '{"alg":"none"}'];
       const base = await requestOf(contract.accepts[0]!.request);
       for (const value of junk) {

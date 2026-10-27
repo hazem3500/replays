@@ -79,4 +79,22 @@ export interface AuthRouteContext {
 }
 
 /** A module loaded by `AUTH_MODE=plugin` (`AUTH_PLUGIN=./my-auth.mjs`): its default export is this factory. */
-export type AuthPluginFactory = (env: NodeJS.ProcessEnv) => AuthAdapter | Promise<AuthAdapter>;
+export type AuthPluginFactory = (env: NodeJS.ProcessEnv) => AnyAuthAdapter | Promise<AnyAuthAdapter>;
+
+/**
+ * An auth adapter over web-standard `Request`/`Response`, which runs on any fetch host. Same contract as `AuthAdapter`:
+ * `authenticateRequest` returns the identity (including `authScopes`) or undefined, `handleRequest` answers the adapter's
+ * own `routes` (return a `Response` when it answered), and `loginUrlFor` is where a browser page load without one goes.
+ */
+export interface WebAuthAdapter {
+  readonly name: string;
+  readonly signIn?: SignInConfig;
+  authenticateRequest(request: Request): Promise<Identity | undefined> | Identity | undefined;
+  handleRequest?(request: Request, context: AuthRouteContext): Promise<Response | undefined> | Response | undefined;
+  loginUrlFor?(request: Request, context: AuthRouteContext): string | undefined;
+  cliDeviceAuth?(context: AuthRouteContext): Promise<CliDeviceAuthCapability | undefined> | CliDeviceAuthCapability | undefined;
+  readonly routes?: readonly string[];
+}
+
+/** Either adapter shape: the server normalizes a `WebAuthAdapter` (auth/web.ts) where it takes one. */
+export type AnyAuthAdapter = AuthAdapter | WebAuthAdapter;
