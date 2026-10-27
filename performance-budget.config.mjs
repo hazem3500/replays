@@ -20,6 +20,7 @@ export default {
       ready: '.cmp-workspace iframe',
       player: true,
       feature: 'comparison',
+      tiles: 2,
     },
     settings: { path: '/', ready: '.feed-list:not(.feed-skeleton)', settings: true },
   },
@@ -38,6 +39,8 @@ export default {
       requests: 45,
       transferBytes: 1_500_000,
       heapBytes: 100_000_000,
+      frameTimeP95Ms: 50,
+      mainThreadBusyPct: 40,
     },
     phone: {
       lcpMs: 4000,
@@ -52,11 +55,24 @@ export default {
       requests: 45,
       transferBytes: 1_500_000,
       heapBytes: 100_000_000,
+      frameTimeP95Ms: 100,
+      mainThreadBusyPct: 70,
     },
   },
   server: {
     list: { path: '/api/replays', ttfbMs: 100, responseMs: 150, wireBytes: 40_000 },
     bundle: { path: '/api/replays/demo-seed-checkout-error', ttfbMs: 100, responseMs: 150, wireBytes: 100_000 },
     poster: { path: '/api/replays/demo-seed-checkout-error/poster', ttfbMs: 100, responseMs: 150, wireBytes: 60_000 },
+  },
+  ssrGate: {
+    mode: 'report-only',
+    indexRows: 100,
+    serverSamples: 20,
+    phone: { indexLcpMs: 1200, firstReplayTitleMs: 1000, viewerSkeletonFcpMs: 1000 },
+    server: { ttfbP50Ms: 30, ttfbP90Ms: 60, htmlBrBytes: 15_000 },
+    hydrationErrors: 0,
+    hydrationRefetches: 0,
+    // Compare viewer content-ready medians against an SPA run on the same source and seed.
+    maxViewerContentRegressionMs: 0,
   },
 };

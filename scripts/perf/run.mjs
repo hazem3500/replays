@@ -8,11 +8,32 @@ import { chromium } from 'playwright-core';
 import config from '../../performance-budget.config.mjs';
 import { startServer } from '../test-server.mjs';
 import { observe } from './observe.mjs';
-import { summarize, usedBytes, violations } from './model.mjs';
+import { percentile, summarize, usedBytes, violations } from './model.mjs';
 
 const root = resolve(import.meta.dirname, '../..');
 const out = resolve(process.env.PERF_OUTPUT ?? '.review-artifacts/perf/current');
 const samples = Number(process.env.PERF_SAMPLES ?? config.samples);
+const serverEnv = JSON.parse(process.env.PERF_SERVER_ENV ?? '{}');
+if (
+  !serverEnv ||
+  Array.isArray(serverEnv) ||
+  typeof serverEnv !== 'object' ||
+  Object.values(serverEnv).some((value) => typeof value !== 'string')
+)
+  throw new Error('PERF_SERVER_ENV must be a JSON object of string environment values');
+const basePath = (serverEnv.BASE_PATH ?? '').split('/').filter(Boolean).join('/');
+const prefix = basePath ? `/${basePath}` : '';
+const ssrGate = process.env.PERF_SSR_GATE === '1';
+const compareTiles = (process.env.PERF_COMPARE_TILES ?? '').split(',').filter(Boolean).map(Number);
+if (compareTiles.some((count) => !Number.isInteger(count) || count < 2 || count > 9))
+  throw new Error('PERF_COMPARE_TILES must contain tile counts from 2 through 9');
+const playbackMs = Number(process.env.PERF_PLAYBACK_MS ?? config.playbackMs);
+if (!Number.isFinite(playbackMs) || playbackMs < 500) throw new Error('PERF_PLAYBACK_MS must be >= 500');
+const selectedPages = process.env.PERF_PAGES?.split(',');
+const selectedProfiles = process.env.PERF_PROFILES?.split(',');
+if (selectedProfiles?.some((profile) => !config.profiles[profile])) throw new Error('PERF_PROFILES contains an unknown profile');
+const seedRows = Math.max(...compareTiles, Number(process.env.PERF_INDEX_ROWS ?? (ssrGate ? config.ssrGate.indexRows : 6)));
+if (!Number.isInteger(seedRows) || seedRows < 6) throw new Error('PERF_INDEX_ROWS must be an integer >= 6');
 if (!Number.isInteger(samples) || samples < 1) throw new Error('PERF_SAMPLES must be a positive integer');
 await readFile(join(root, 'dist/client/index.html')); // Never silently measure Vite dev mode.
 await mkdir(out, { recursive: true });
@@ -24,6 +45,7 @@ const report = {
   revision: process.env.PERF_REVISION ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
   generatedAt: new Date().toISOString(),
   samples,
+  experiment: { ssrGate, ssr: serverEnv.REPLAYS_SSR === '1', basePath: prefix, playbackMs },
   hardware: {
     platform: process.platform,
     arch: process.arch,
@@ -75,20 +97,61 @@ async function seed() {
     await cp(join(import.meta.dirname, 'fixtures'), join(seedRoot, 'sample'), { recursive: true, filter: (path) => !path.endsWith('.md') });
     report.seed = 'frozen demo-seed fixture (canonical generator not yet available)';
   }
+  const files = (await readdir(join(seedRoot, 'sample'))).filter((name) => name.endsWith('.json'));
+  for (let index = files.length; index < seedRows; index++) {
+    const bundle = JSON.parse(await readFile(join(seedRoot, 'sample', files[index % files.length]), 'utf8'));
+    bundle.meta.id = `perf-seed-${String(index).padStart(4, '0')}`;
+    bundle.meta.title = `${bundle.meta.title} ${index}`;
+    await writeFile(join(seedRoot, 'sample', `${bundle.meta.id}.json`), JSON.stringify(bundle));
+  }
+  report.seedRows = (await readdir(join(seedRoot, 'sample'))).filter((name) => name.endsWith('.json')).length;
 }
 
 async function waitForFrame(page) {
   await page.waitForFunction(() => window.__perf.firstFrameMs !== null, { timeout: 30_000 });
 }
 
-async function interaction(page, scenario) {
+const taskDuration = (metrics) => metrics.metrics.find((metric) => metric.name === 'TaskDuration')?.value;
+
+async function interaction(page, scenario, cdp) {
+  let playback = {};
   if (scenario.player) {
     await waitForFrame(page);
-    const play = page.getByRole('button', { name: /^(Play|Play the result|Play both recordings|Replay from start)$/ }).first();
+    const play = page
+      .getByRole('button', { name: /^(Play|Play the result|Play both recordings|Play all recordings|Play comparison|Replay from start)$/ })
+      .first();
     await play.click();
-    await page.waitForTimeout(config.playbackMs);
+    const before = await cdp.send('Performance.getMetrics');
+    await page.evaluate(() => {
+      window.__playback = { start: performance.now(), previous: null, gaps: [], running: true };
+      const tick = (at) => {
+        const state = window.__playback;
+        if (!state.running) return;
+        if (state.previous !== null) state.gaps.push(at - state.previous);
+        state.previous = at;
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    });
+    await page.waitForTimeout(playbackMs);
+    const after = await cdp.send('Performance.getMetrics');
+    const frames = await page.evaluate(() => {
+      window.__playback.running = false;
+      return { ...window.__playback, elapsedMs: performance.now() - window.__playback.start };
+    });
+    const tasks = await page.evaluate((start) => {
+      window.__flushPerf();
+      return window.__perf.tasks.filter((task) => task.start + task.duration >= start);
+    }, frames.start);
+    playback = {
+      frameTimeP95Ms: percentile(frames.gaps, 0.95),
+      mainThreadBusyPct: Math.min(100, ((taskDuration(after) - taskDuration(before)) * 100_000) / frames.elapsedMs),
+      playbackLongTasks: tasks.length,
+      playbackElapsedMs: frames.elapsedMs,
+      playbackFrameSamples: frames.gaps.length,
+    };
     await page
-      .getByRole('button', { name: /^(Pause|Pause both recordings)$/ })
+      .getByRole('button', { name: /^(Pause|Pause both recordings|Pause all recordings|Pause comparison)$/ })
       .first()
       .click();
   } else if (scenario.settings) {
@@ -109,6 +172,7 @@ async function interaction(page, scenario) {
   }
   // Let Event Timing and long-task observers deliver after the last interaction.
   await page.waitForTimeout(300);
+  return playback;
 }
 
 async function measurePage(profileName, scenarioName, scenario, index) {
@@ -121,7 +185,7 @@ async function measurePage(profileName, scenarioName, scenario, index) {
   if (trace) await context.tracing.start({ screenshots: false, snapshots: false, sources: false });
   const page = await context.newPage();
   page.setDefaultTimeout(30_000);
-  await page.addInitScript(observe);
+  await page.addInitScript(observe, { player: Boolean(scenario.player), title: !scenario.player });
   await page.addInitScript((view) => localStorage.setItem('replays-index-view', view), scenario.view ?? 'list');
   const cdp = await context.newCDPSession(page);
   let requests = 0,
@@ -159,14 +223,21 @@ async function measurePage(profileName, scenarioName, scenario, index) {
     if (!event.canceled) failedRequests.push(event.errorText);
   });
   const errors = [];
-  page.on('pageerror', (error) => errors.push(error.message));
+  const hydrationErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error' && /hydrat|server.rendered|#418|#423|#425/i.test(message.text())) hydrationErrors.push(message.text());
+  });
+  page.on('pageerror', (error) => {
+    errors.push(error.message);
+    if (/hydrat|server.rendered|#418|#423|#425/i.test(error.message)) hydrationErrors.push(error.message);
+  });
   try {
-    await page.goto(`${server.origin}${scenario.path}`, { waitUntil: 'load' });
+    await page.goto(`${server.origin}${prefix}${scenario.path}`, { waitUntil: 'load' });
     await page.locator(scenario.ready).first().waitFor();
     if (scenario.player) await waitForFrame(page);
     await page.waitForTimeout(config.settleMs);
     const readyAt = await page.evaluate(() => performance.now());
-    await interaction(page, scenario);
+    const playback = await interaction(page, scenario, cdp);
     const vitals = await page.evaluate((observationEnd) => {
       window.__flushPerf();
       const state = window.__perf;
@@ -177,6 +248,9 @@ async function measurePage(profileName, scenarioName, scenario, index) {
       const inpMs = durations[Math.floor(durations.length / 50)] ?? null;
       return {
         lcpMs: state.lcpMs,
+        fcpMs: fcp || null,
+        firstReplayTitleMs: state.firstReplayTitleMs,
+        contentReadyMs: state.firstFrameMs ?? state.firstReplayTitleMs,
         cls: state.supported.includes('layout-shift') ? state.cls : null,
         inpMs,
         ttfbMs: navigation.responseStart - navigation.startTime,
@@ -201,6 +275,7 @@ async function measurePage(profileName, scenarioName, scenario, index) {
       tasks: window.__perf.tasks,
       interactions: window.__perf.interactions,
       supported: window.__perf.supported,
+      frameGapsMs: window.__playback?.gaps,
       resources: performance.getEntriesByType('resource').map((entry) => entry.toJSON()),
     }));
     return {
@@ -208,6 +283,10 @@ async function measurePage(profileName, scenarioName, scenario, index) {
       observations,
       metrics: {
         ...vitals,
+        ...playback,
+        requestedTiles: scenario.tiles ?? (scenario.player ? 1 : null),
+        hydrationErrors: hydrationErrors.length,
+        hydrationRefetches: responses.filter((response) => new URL(response.url).pathname === `${prefix}/api/replays`).length,
         firstFrameMs: scenario.player ? vitals.firstFrameMs : null,
         scriptMs: metric('ScriptDuration') * 1000,
         heapBytes: metric('JSHeapUsedSize'),
@@ -236,6 +315,7 @@ try {
       EDITING_ENABLED: 'true',
       POSTERS_DISABLED: '1',
       RENDER_DISABLED: '1',
+      ...serverEnv,
     },
   });
   const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ?? process.env.CHROME_PATH;
@@ -247,7 +327,7 @@ try {
   // Pre-generate real 480px JPEG stills from the demo replay, outside timed regions. Measure serving, not rendering.
   const warm = await browser.newPage({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
   await warm.addInitScript(observe);
-  await warm.goto(`${server.origin}/r/demo-seed-checkout-error`);
+  await warm.goto(`${server.origin}${prefix}/r/demo-seed-checkout-error`);
   await waitForFrame(warm);
   const poster = await warm.locator('.replayer-wrapper').first().screenshot({ type: 'jpeg', quality: 70 });
   await warm.close();
@@ -271,14 +351,26 @@ try {
     await writeFile(join(server.dataDir, id, `poster.v${POSTER_VERSION}.jpg`), Buffer.from(jpeg, 'base64'));
     await writeFile(join(server.dataDir, id, `open.v${OPEN_STILL_VERSION}.jpg`), Buffer.from(jpeg, 'base64'));
   }
-  for (const [name, budget] of Object.entries(config.server)) {
+  for (const [name, budget] of Object.entries({
+    ...config.server,
+    ...(ssrGate ? { indexHtml: { path: '/', ...config.ssrGate.server } } : {}),
+  })) {
     const rows = [];
     for (const encoding of ['identity', 'gzip', 'br']) {
-      for (let index = 0; index < samples; index++) {
-        const row = await rawRequest(`${server.origin}${budget.path}`, { 'accept-encoding': encoding });
+      for (let index = 0; index < (name === 'indexHtml' ? config.ssrGate.serverSamples : samples); index++) {
+        const row = await rawRequest(`${server.origin}${prefix}${budget.path}`, {
+          'accept-encoding': encoding,
+          accept: 'text/html',
+          'sec-fetch-mode': 'navigate',
+        });
         if (row.status !== 200) throw new Error(`${name}: expected 200, got ${row.status}`);
         const conditional = row.headers.etag
-          ? await rawRequest(`${server.origin}${budget.path}`, { 'accept-encoding': encoding, 'if-none-match': row.headers.etag })
+          ? await rawRequest(`${server.origin}${prefix}${budget.path}`, {
+              'accept-encoding': encoding,
+              'if-none-match': row.headers.etag,
+              accept: 'text/html',
+              'sec-fetch-mode': 'navigate',
+            })
           : null;
         rows.push({ ...row, encoding, conditional });
       }
@@ -290,15 +382,39 @@ try {
       ),
       median: summarize(rows.filter((row) => row.encoding === 'br')),
       violations: violations(summarize(rows.filter((row) => row.encoding === 'br')), budget),
+      ttfbP50Ms: percentile(
+        rows.filter((row) => row.encoding === 'br').map((row) => row.metrics.ttfbMs),
+        0.5,
+      ),
+      ttfbP90Ms: percentile(
+        rows.filter((row) => row.encoding === 'br').map((row) => row.metrics.ttfbMs),
+        0.9,
+      ),
     };
   }
+  const scenarios = { ...config.pages };
+  if (compareTiles.length) {
+    const ids = (await readdir(join(seedRoot, 'sample')))
+      .filter((file) => file.endsWith('.json'))
+      .sort()
+      .map((file) => file.slice(0, -5));
+    for (const count of compareTiles)
+      scenarios[`comparison-${count}`] = {
+        ...config.pages.comparison,
+        path: `/compare?ids=${ids.slice(0, count).join(',')}`,
+        tiles: count,
+      };
+  }
+  if (selectedPages?.some((page) => !scenarios[page])) throw new Error('PERF_PAGES contains an unknown scenario');
   for (const [profileName] of Object.entries(config.profiles)) {
+    if (selectedProfiles && !selectedProfiles.includes(profileName)) continue;
     report.pages[profileName] = {};
-    for (const [name, scenario] of Object.entries(config.pages)) {
+    for (const [name, scenario] of Object.entries(scenarios)) {
+      if (selectedPages && !selectedPages.includes(name)) continue;
       // A route can intentionally be absent on the baseline. Never measure the fallback index as comparison.
       if (scenario.feature === 'comparison') {
         const probe = await browser.newPage();
-        await probe.goto(`${server.origin}${scenario.path}`);
+        await probe.goto(`${server.origin}${prefix}${scenario.path}`);
         const available = await probe
           .locator('.cmp-workspace')
           .waitFor({ timeout: 5000 })
@@ -329,7 +445,7 @@ try {
             'jsUsedBytes',
             'requests',
             'transferBytes',
-            ...(scenario.player ? ['firstFrameMs'] : []),
+            ...(scenario.player ? ['firstFrameMs', 'frameTimeP95Ms', 'mainThreadBusyPct'] : []),
           ]) {
             if (!Number.isFinite(row.metrics[key])) throw new Error(`missing required metric: ${key}`);
           }

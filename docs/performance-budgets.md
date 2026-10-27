@@ -29,3 +29,32 @@ CI builds and measures current `origin/main` and the candidate independently usi
 5. For a regression, reproduce with ≥5 samples on identical hardware, inspect traces and only then adjust code or limits. Keep the fixed deterministic seed when adding a separate large-replay stress case.
 
 Lighthouse CI is intentionally omitted. Its navigation score would duplicate LCP/CLS/TTFB under a different throttling model while missing scripted rrweb playback, editor/comparison interactions, executed coverage, heap, and authenticated media/API contracts. Add it later only for a distinct signal (for example an accessibility/SEO audit), not a second performance score to chase.
+
+## SSR comparison and default-flip gate
+
+The same harness accepts string-valued server overrides in `PERF_SERVER_ENV`, including `REPLAYS_SSR` and `BASE_PATH`. Browser and API URLs include that base automatically. It records only the SSR flag/base path in artifacts, rather than arbitrary environment values. `PERF_INDEX_ROWS` expands the fictional seed deterministically; the SSR gate defaults to 100 summaries and takes 20 server samples per encoding for nearest-rank p50/p90.
+
+Run SPA and SSR on the same source, hardware and dataset (inside your own Boat command):
+
+```sh
+PERF_SSR_GATE=1 PERF_REVISION=<source-sha> PERF_OUTPUT=.review-artifacts/perf/spa PERF_SERVER_ENV='{"BASE_PATH":"/replays"}' node scripts/perf/run.mjs
+PERF_SSR_GATE=1 PERF_REVISION=<same-source-sha> PERF_OUTPUT=.review-artifacts/perf/ssr PERF_SERVER_ENV='{"BASE_PATH":"/replays","REPLAYS_SSR":"1"}' node scripts/perf/run.mjs
+node scripts/perf/report.mjs .review-artifacts/perf/ssr/results.json .review-artifacts/perf/spa/results.json .review-artifacts/perf/ssr-gate.md
+```
+
+The `ssrGate` section is report-only until the architect's default-flip review: phone index LCP ≤1200ms, first visible replay title ≤1000ms, viewer skeleton FCP ≤1000ms, viewer content no slower than SPA on either profile, `/` TTFB p50 ≤30ms/p90 ≤60ms with100summaries, Brotli index HTML ≤15000bytes, and zero hydration errors or browser refetches of the index list. The title metric observes the first nonempty feed title across two animation frames; viewer content readiness uses the recorded first replay frame. Hydration errors include matching console diagnostics and page exceptions; refetches count browser list requests, including preloads. The initial server-rendered list should require none.
+
+A missing/mismatched SPA baseline never passes a relative gate. Keep SPA/SSR code revision, profile throttling and seed count identical. `ssrGate.mode = 'enforce'` makes the report command fail these gates when preparing the default flip; the ordinary runtime job remains report-only. Six-row default results and100-row SSR-gate results are separate datasets.
+
+## Comparison tile sweep
+
+On your own Boat checkout containing the comparison route, use:
+
+```sh
+PERF_COMPARE_TILES=2,4,6,9 PERF_PAGES=comparison-2,comparison-4,comparison-6,comparison-9 PERF_PLAYBACK_MS=5000 PERF_SAMPLES=3 node scripts/perf/run.mjs
+node scripts/perf/report.mjs
+```
+
+The harness expands the deterministic demo seed to nine IDs and measures `/compare?ids=...` for each requested count. Add `PERF_PROFILES=phone` or `desktop` to focus a run. The shared Play button should be named `Play all recordings`/`Pause all recordings` (existing pair labels also work). The report includes rAF-gap p95 during playback, renderer `TaskDuration` divided by elapsed playback time, long tasks during playback, requested tile count and JS heap after pause. These are main-thread scheduling measurements, not compositor/GPU FPS. Existing off-screen pause, gallery and thumbnail policies remain active; a request for nine tiles does not imply nine are visible and playing simultaneously.
+
+Initial report-only playback limits are desktop p95≤50ms/busy≤40%, phone p95≤100ms/busy≤70%, and both JS heap≤100MB. First-frame limits remain2500/5000ms. These are provisional targets to calibrate against the actual multi-player gallery and representative larger replay fixtures; the small demo cannot establish memory scalability. Cold-start and playback metrics are reported separately.

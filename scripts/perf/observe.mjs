@@ -1,11 +1,12 @@
 // Installed before page scripts. Lab INP covers only the scripted interactions in this visit.
-export function observe() {
+export function observe({ player = true, title: observeTitle = true } = {}) {
   const state = {
     lcpMs: null,
     cls: 0,
     interactions: {},
     tasks: [],
     firstFrameMs: null,
+    firstReplayTitleMs: null,
     supported: PerformanceObserver.supportedEntryTypes,
   };
   window.__perf = state;
@@ -62,5 +63,16 @@ export function observe() {
       );
     } else requestAnimationFrame(check);
   };
-  requestAnimationFrame(check);
+  if (player) requestAnimationFrame(check);
+  const title = () => {
+    const element = document.querySelector('.feed-title');
+    if (element?.textContent.trim()) {
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          state.firstReplayTitleMs = performance.now();
+        }),
+      );
+    } else requestAnimationFrame(title);
+  };
+  if (observeTitle) requestAnimationFrame(title);
 }
