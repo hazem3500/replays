@@ -6,6 +6,8 @@ export type { SignInConfig } from '../../shared/sign-in.ts';
 /** Who is making a request. `id` is the stable key (kept-by records, logs); the rest is display. */
 export interface Identity {
   id: string;
+  /** Trusted role claims supplied by the host auth adapter (for workspace plugin administration). */
+  roles?: readonly string[];
   email?: string;
   name?: string;
   /** An https image URL for the person's avatar (shown beside their comments); optional. */

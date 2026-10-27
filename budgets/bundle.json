@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 350187,
-      "gzip": 89552,
-      "brotli": 73824
+      "raw": 410510,
+      "gzip": 105480,
+      "brotli": 86221
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -18,9 +18,9 @@
       "brotli": 39185
     },
     "dist/client/assets/boot-HASH.js": {
-      "raw": 2326,
-      "gzip": 1115,
-      "brotli": 947
+      "raw": 2321,
+      "gzip": 1111,
+      "brotli": 945
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
@@ -68,14 +68,14 @@
       "brotli": 31804
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 635386,
-      "gzip": 205817,
+      "raw": 654800,
+      "gzip": 212055,
       "brotli": 167223
     },
     "dist/client/assets/MalleableHost-HASH.css": {
-      "raw": 7307,
-      "gzip": 1894,
-      "brotli": 1616
+      "raw": 8084,
+      "gzip": 2054,
+      "brotli": 1747
     },
     "dist/client/assets/MalleableHost-HASH.js": {
       "raw": 77463,
@@ -135,12 +135,12 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 18081,
       "gzip": 7488,
-      "brotli": 6354
+      "brotli": 6349
     },
     "dist/client/assets/tools-HASH.js": {
-      "raw": 38948,
-      "gzip": 13458,
-      "brotli": 12053
+      "raw": 34797,
+      "gzip": 12376,
+      "brotli": 11148
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -163,9 +163,9 @@
       "brotli": 411
     },
     "dist/lib/capture.mjs": {
-      "raw": 1625,
-      "gzip": 493,
-      "brotli": 417
+      "raw": 1703,
+      "gzip": 513,
+      "brotli": 434
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -175,7 +175,7 @@
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
       "gzip": 18876,
-      "brotli": 16354
+      "brotli": 16345
     },
     "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
       "raw": 272355,
@@ -187,10 +187,10 @@
       "gzip": 5324,
       "brotli": 4642
     },
-    "dist/lib/chunks/define.ts-b89f8e39bfa0.mjs": {
-      "raw": 32426,
-      "gzip": 9325,
-      "brotli": 8271
+    "dist/lib/chunks/define.ts-f3268e685655.mjs": {
+      "raw": 32079,
+      "gzip": 9254,
+      "brotli": 8218
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -199,18 +199,28 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "gzip": 9499,
+      "gzip": 9498,
       "brotli": 8394
+    },
+    "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
+      "raw": 434,
+      "gzip": 296,
+      "brotli": 231
     },
     "dist/lib/chunks/index.ts-21682b68ed82.mjs": {
       "raw": 0,
       "gzip": 21,
       "brotli": 2
     },
-    "dist/lib/chunks/index.ts-639c48001f12.mjs": {
-      "raw": 39102,
-      "gzip": 10732,
-      "brotli": 9330
+    "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
+      "raw": 27823,
+      "gzip": 8064,
+      "brotli": 7041
+    },
+    "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
+      "raw": 18258,
+      "gzip": 4951,
+      "brotli": 4342
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31393,
@@ -238,19 +248,19 @@
       "brotli": 884
     },
     "dist/lib/config.mjs": {
-      "raw": 269,
-      "gzip": 148,
-      "brotli": 131
+      "raw": 348,
+      "gzip": 169,
+      "brotli": 146
     },
     "dist/lib/index.mjs": {
-      "raw": 1509,
-      "gzip": 494,
-      "brotli": 420
+      "raw": 1588,
+      "gzip": 515,
+      "brotli": 440
     },
     "dist/lib/plugin.mjs": {
-      "raw": 661,
-      "gzip": 272,
-      "brotli": 222
+      "raw": 700,
+      "gzip": 284,
+      "brotli": 232
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
@@ -328,14 +338,14 @@
       "brotli": 3072
     },
     "dist/lib/server.mjs": {
-      "raw": 1590,
-      "gzip": 552,
-      "brotli": 458
+      "raw": 1668,
+      "gzip": 570,
+      "brotli": 477
     },
     "dist/lib/viewer.mjs": {
-      "raw": 470,
-      "gzip": 301,
-      "brotli": 255
+      "raw": 17093,
+      "gzip": 4814,
+      "brotli": 4239
     },
     "initial/index.html/css": {
       "raw": 218726,
@@ -417,14 +427,6 @@
         "brotli": 59492
       },
       "reason": "Embed canonical replay/context schemas and validate upload envelopes before hooks; the shared server chunk source identity changes.",
-      "pr": "https://github.com/hazem3500/replays/pull/77"
-    },
-    {
-      "file": "dist/lib/config.mjs",
-      "cap": {
-        "brotli": 131
-      },
-      "reason": "The generated import hash changes with the upload schema chunk; runtime source and entry footprint are measured in this PR.",
       "pr": "https://github.com/hazem3500/replays/pull/77"
     },
     {
@@ -536,6 +538,135 @@
       },
       "reason": "Privacy facts and block attribute chunk shared by the core and UI entries.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 410510,
+        "gzip": 105480,
+        "brotli": 86221
+      },
+      "reason": "The new replays plugin check command bundles the fixture-based plugin check harness and shared plugin validation into the CLI.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 654800,
+        "gzip": 212055
+      },
+      "reason": "Descriptor-based viewer slots, plugin settings and page registration add their registry code to the eager client graph.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/client/assets/MalleableHost-HASH.css",
+      "cap": {
+        "raw": 8084,
+        "gzip": 2054,
+        "brotli": 1747
+      },
+      "reason": "Workspace plugin review and per-person settings add reviewed host panel styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/capture.mjs",
+      "cap": {
+        "raw": 1703,
+        "gzip": 513,
+        "brotli": 434
+      },
+      "reason": "The shared plugin validation module is bundled into this library entry after unifying plugin contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-f3268e685655.mjs",
+      "cap": {
+        "raw": 32079,
+        "gzip": 9254,
+        "brotli": 8218
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
+      "cap": {
+        "raw": 434,
+        "gzip": 296,
+        "brotli": 231
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-67a29d5237e2.mjs",
+      "cap": {
+        "raw": 27823,
+        "gzip": 8064,
+        "brotli": 7041
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs",
+      "cap": {
+        "raw": 18258,
+        "gzip": 4951,
+        "brotli": 4342
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "raw": 348,
+        "gzip": 169,
+        "brotli": 146
+      },
+      "reason": "The config entry now carries the workspace plugin policy normalization added with the extension platform.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/index.mjs",
+      "cap": {
+        "raw": 1588,
+        "gzip": 515,
+        "brotli": 440
+      },
+      "reason": "The main library entry re-exports the extension platform plugin contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "raw": 700,
+        "gzip": 284,
+        "brotli": 232
+      },
+      "reason": "The server plugin entry exposes the extension platform settings and policy contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1668,
+        "gzip": 570,
+        "brotli": 477
+      },
+      "reason": "The server entry wires the workspace plugin policy and settings routes into the library.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/viewer.mjs",
+      "cap": {
+        "raw": 17093,
+        "gzip": 4814,
+        "brotli": 4239
+      },
+      "reason": "The published viewer plugin API now exports the slot registry, slot names and descriptor contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
     }
   ]
 }

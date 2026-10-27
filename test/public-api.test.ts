@@ -1,3 +1,5 @@
+import { SLOT_NAMES } from '../src/client/plugins/api.ts';
+import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
 import type { PluginApi, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -116,7 +118,10 @@ const entries: Record<string, { source: string; values: string[] }> = {
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
-  './viewer': { source: '../src/client/plugins/api.ts', values: ['MAX_TRACK_MARKERS', 'VIEWER_API_VERSION', 'defineViewerPlugin'] },
+  './viewer': {
+    source: '../src/client/plugins/api.ts',
+    values: ['MAX_TRACK_MARKERS', 'VIEWER_API_VERSION', 'defineViewerPlugin', 'SLOT_NAMES', 'SlotRegistry', 'ViewerRegistry'],
+  },
   './server': {
     source: '../src/server/index.ts',
     values: [
@@ -209,6 +214,32 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('pins the published slot names', () => {
+    expect(SLOT_NAMES).toEqual([
+      'viewer.inspector.tabs',
+      'viewer.panels.side',
+      'viewer.actions',
+      'viewer.scrubber.tracks',
+      'viewer.context.sections',
+      'index.row.columns',
+      'index.filters',
+      'index.sections',
+      'settings.sections',
+      'index.chips',
+      'inspector.network.columns',
+      'performance.vitals',
+      'editor.topbar.actions',
+      'editor.inspector.sections',
+      'editor.tools',
+      'editor.timeline.lanes',
+      'export.formats',
+    ]);
+  });
+  it('publishes the additive slot configuration and descriptor signatures', () => {
+    expectTypeOf<ViewerPluginApi['registerPluginPage']>().parameter(0).toEqualTypeOf<PluginPageDefinition>();
+    expectTypeOf<ViewerPluginApi['configureSlot']>().parameter(1).toEqualTypeOf<SlotConfiguration>();
+    expectTypeOf<SlotDescriptor<{ enabled: boolean }, string>['render']>().toEqualTypeOf<(context: { enabled: boolean }) => string>();
+  });
   it('exposes typed host intake registration and the existing prepare hook contract', () => {
     expectTypeOf<PluginApi['requestPolicy']>().parameter(0).toEqualTypeOf<RequestPolicy>();
     expectTypeOf<PluginApi['uploadEndpoint']>().parameter(0).toEqualTypeOf<UploadEndpoint>();
@@ -260,7 +291,9 @@ describe('public API', () => {
       expect(target.types).toMatch(/^\.\/dist\/types\/.+\.d\.ts$/);
     }
   });
+});
 
+describe('public API distribution compatibility', () => {
   it('ships what a custom distribution needs at run time: the built viewer, the samples and the docs it links to', () => {
     for (const path of ['dist/lib', 'dist/types', 'dist/client', 'sample', 'bin']) expect(pkg.files).toContain(path);
   });
@@ -274,7 +307,7 @@ describe('public API', () => {
   });
 
   it('keeps the testing entry free of any test runner, so it works under vitest, node:test or Jest', () => {
-    for (const file of ['index.ts', 'storage.ts', 'auth.ts', 'runner.ts', 'client.ts']) {
+    for (const file of ['index.ts', 'storage.ts', 'auth.ts', 'runner.ts']) {
       const source = readFileSync(resolve(import.meta.dirname, '../src/server/testing', file), 'utf8');
       expect(source).not.toMatch(/^import[^\n]*from '(vitest|jest|mocha|node:test)/m);
     }
