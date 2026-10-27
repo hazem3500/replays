@@ -17,7 +17,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = process.env.CI_EVENT;
   const files =
     event === 'pull_request'
-      ? execFileSync('git', ['diff', '--name-only', '-z', `${process.env.PR_BASE}...${process.env.PR_HEAD}`], {
+      ? execFileSync('git', ['diff', '--no-renames', '--name-only', '-z', `${process.env.PR_BASE}...${process.env.PR_HEAD}`], {
           encoding: 'utf8',
           maxBuffer: 16 * 1024 * 1024,
         })

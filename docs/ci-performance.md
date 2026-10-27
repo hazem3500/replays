@@ -34,6 +34,26 @@ Quality has one successful sampled run per tool because #57 had just landed. Rep
 
 The final verification after rebasing #60 passed 1,629 unit tests (11 skipped) in 58.30 seconds plus all 68 recorder tests. That expanded suite is not a like-for-like comparison with the earlier 1,589-test thread experiment.
 
+## Real CI comparison
+
+The first green speed-PR run is [40516163044](https://github.com/hazem3500/replays/actions/runs/40516163044), head `3da28b2`. All seven Quality jobs and PostgreSQL also passed. Critical path here means run creation through the last job completion; run `updatedAt` may move later when GitHub refreshes metadata. The baseline median on that definition is **300 seconds** (301 using `updatedAt`); the first cold PR run is **250 seconds**, 17% lower, with an expanded unit suite.
+
+| Job / execution step | Historical median seconds | First green cold run seconds |
+| --- | ---: | ---: |
+| Critical path | 300 | 250 |
+| Lint and format | 34.5 | 41 |
+| Typecheck job | 48 | 41 |
+| Root + Storybook typecheck commands | 18.5 | 2 |
+| Unit execution | 107 | 61 |
+| Unit job | 159 including build/host | 97; independent build/host 52 |
+| E2E job / longest shard | 263.5 | 201 (other shards 141, 141) |
+| E2E test/build step / longest shard | 190.5 | 107 (other shards 66, 49) |
+| Custom distribution | 144.5 | 137 |
+| Agent-Native and Storybook | 111.5 | 100 |
+| Docker build + health job | 115 | 220 |
+
+The cold install steps took 5–14 seconds while repopulating the new lockfile's pnpm cache. Docker's build step took 194 seconds, including 78.6 seconds exporting the new GHA cache and 37.7 seconds exporting/loading the image. That initial cache population is a regression versus the mixed historical median and is retained in the table. The packed-consumer test still took 53 seconds before its npm cache was populated. Warm-cache evidence will distinguish repeated-run savings from this initial cost.
+
 ## Changes and integrity
 
 - pnpm's lockfile-keyed store cache and Docker buildx `type=gha,mode=max` cache already existed. Keep both; use frozen, prefer-offline installs everywhere. Docker already orders manifests/install before source in separate dependency, build and runtime stages. No paid runner size changes.
