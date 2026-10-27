@@ -10,9 +10,64 @@ import { assertUploadBundle } from '../src/server/upload-validation.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const servers: Array<ReturnType<typeof createServer>> = [];
-afterEach(async () => {
-  await Promise.all(servers.splice(0).map((server) => new Promise<void>((done) => server.close(() => done()))));
-});
+
+function closeServer(server: ReturnType<typeof createServer>) {
+  return new Promise<void>((done) => server.close(() => done()));
+}
+
+async function closeServers() {
+  await Promise.all(servers.splice(0).map(closeServer));
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function merged(body: unknown, extra: Record<string, unknown>) {
+  return { ...(isRecord(body) ? body : {}), ...extra };
+}
+
+function withoutMeta(field: string) {
+  const value = replay();
+  return { ...value, meta: Object.fromEntries(Object.entries(value.meta).filter(([key]) => key !== field)) };
+}
+
+function trackingPlugin(calls: string[]) {
+  return (api: PluginApi) => {
+    api.prepareUpload(({ body }) => {
+      calls.push('prepare');
+      return body;
+    });
+    api.contextAdapter({
+      name: 'check',
+      normalize: (context) => {
+        calls.push('context');
+        return context;
+      },
+    });
+    api.beforeUpload(() => {
+      calls.push('before');
+    });
+  };
+}
+
+function foreignAliasPlugin(calls: string[]) {
+  return (api: PluginApi) => {
+    api.uploadEndpoint({ path: '/api/foreign', prepare: ({ body }) => (isRecord(body) ? body.recording : undefined) });
+    api.prepareUpload(({ body }) => {
+      calls.push('prepare');
+      return merged(body, { network: [null] });
+    });
+  };
+}
+
+function invalidBeforeUploadPlugin(api: PluginApi) {
+  api.beforeUpload(({ bundle }) => Object.assign({}, bundle, { meta: Object.assign({}, bundle.meta, { url: 3 }) }));
+}
+
+function sourceTranslationPlugin(api: PluginApi) {
+  api.prepareUpload(({ body }) => merged(body, { meta: { ...replay().meta, source: 'agent' } }));
+}
 
 async function start(setup: (api: PluginApi) => void = () => {}) {
   const store = new ReplayStore(new MemoryStorage(), '/nonexistent-samples');
@@ -33,29 +88,14 @@ async function start(setup: (api: PluginApi) => void = () => {}) {
 }
 
 describe('upload envelope', () => {
+  afterEach(closeServers);
+
   it.each(['id', 'title', 'url', 'capturedAt', 'duration', 'viewport', 'eventCount', 'version'])(
     'rejects missing meta.%s before hooks and persistence',
     async (field) => {
       const calls: string[] = [];
-      const { post, store } = await start((api) => {
-        api.prepareUpload(({ body }) => {
-          calls.push('prepare');
-          return body;
-        });
-        api.contextAdapter({
-          name: 'check',
-          normalize: (context) => {
-            calls.push('context');
-            return context;
-          },
-        });
-        api.beforeUpload(() => {
-          calls.push('before');
-        });
-      });
-      const value = replay();
-      delete (value.meta as unknown as Record<string, unknown>)[field];
-      const response = await post(value);
+      const { post, store } = await start(trackingPlugin(calls));
+      const response = await post(withoutMeta(field));
       expect(response.status).toBe(400);
       expect(await response.text()).toContain(field);
       expect(calls).toEqual([]);
@@ -82,16 +122,8 @@ describe('upload envelope', () => {
 
   it('validates alias output before global hooks and validates hook replacements again', async () => {
     const calls: string[] = [];
-    const { post, store } = await start((api) => {
-      api.uploadEndpoint({ path: '/api/foreign', prepare: ({ body }) => (body as { recording: unknown }).recording });
-      api.prepareUpload(({ body }) => {
-        calls.push('prepare');
-        return { ...(body as object), network: [null] };
-      });
-    });
-    const invalid = replay();
-    delete (invalid.meta as unknown as Record<string, unknown>).url;
-    expect((await post({ recording: invalid }, '/api/foreign')).status).toBe(400);
+    const { post, store } = await start(foreignAliasPlugin(calls));
+    expect((await post({ recording: withoutMeta('url') }, '/api/foreign')).status).toBe(400);
     expect(calls).toEqual([]);
     expect((await post({ recording: replay() }, '/api/foreign')).status).toBe(400);
     expect(calls).toEqual(['prepare']);
@@ -99,17 +131,13 @@ describe('upload envelope', () => {
   });
 
   it('checks beforeUpload replacements against the complete stored schema', async () => {
-    const { post, store } = await start((api) => {
-      api.beforeUpload(({ bundle }) => ({ ...bundle, meta: { ...bundle.meta, url: 3 } }) as never);
-    });
+    const { post, store } = await start(invalidBeforeUploadPlugin);
     expect((await post(replay())).status).toBe(400);
     expect(await store.list()).toEqual([]);
   });
 
   it('retains valid uploads and the existing source translation hook', async () => {
-    const { post, store } = await start((api) => {
-      api.prepareUpload(({ body }) => ({ ...(body as object), meta: { ...(body as ReturnType<typeof replay>).meta, source: 'agent' } }));
-    });
+    const { post, store } = await start(sourceTranslationPlugin);
     expect((await post({ ...replay(), meta: { ...replay().meta, source: 'legacy-runner' } })).status).toBe(201);
     expect(await store.list()).toHaveLength(1);
     expect(() => assertUploadBundle(replay())).not.toThrow();

@@ -4,11 +4,26 @@ import replaySchema from '../../docs/formats/replay.schema.json' with { type: 'j
 import { assertReplayBundle, assertReplayId, type ReplayBundle } from '../shared/replay.ts';
 import { compileJsonSchema } from './context-schema.ts';
 
-type Schema = Record<string, unknown>;
-const properties = replaySchema.properties as Record<string, Schema>;
-const meta = properties.meta!;
-const metaProperties = meta.properties as Record<string, Schema>;
-const requiredMeta = meta.required as string[];
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function schemaRecord(value: unknown): Record<string, unknown> {
+  if (!isRecord(value)) throw new Error('docs/formats/replay.schema.json is malformed');
+  return value;
+}
+
+function schemaStrings(value: unknown): string[] {
+  if (!Array.isArray(value) || !value.every((item): item is string => typeof item === 'string')) {
+    throw new Error('docs/formats/replay.schema.json is malformed');
+  }
+  return value;
+}
+
+const properties = schemaRecord(replaySchema.properties);
+const meta = schemaRecord(properties.meta);
+const metaProperties = schemaRecord(meta.properties);
+const requiredMeta = schemaStrings(meta.required);
 
 // why: validate the stable envelope before translators; optional semantic fields and source references may be normalized by plugins.
 const envelope = compileJsonSchema({
@@ -52,8 +67,8 @@ function validate(check: ReturnType<typeof compileJsonSchema>, value: unknown) {
 }
 
 export function assertUploadEnvelope(value: unknown): void {
-  const header = (value as { meta?: unknown } | null)?.meta;
-  if (header && typeof header === 'object' && 'id' in header) assertReplayId(String(header.id ?? ''));
+  const header = isRecord(value) ? value.meta : undefined;
+  if (isRecord(header) && typeof header.id === 'string') assertReplayId(header.id);
   validate(envelope, value);
 }
 
