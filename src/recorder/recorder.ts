@@ -1,7 +1,6 @@
 import { buildReplayBundle, type RawStep } from './bundle.ts';
 import type { ReplayBundle, ReplayRrwebEvent } from './bundle-types.ts';
 import { captureConsole, captureNetwork, type RawConsoleEntry, type RawNetworkEntry } from './capture.ts';
-import { createDefaultUi } from './default-ui.ts';
 import { DEFAULT_ALLOWED_HEADERS, maskText } from './redact.ts';
 import { createAttributeMasker } from './sanitize-events.ts';
 import type { Recorder, RecorderOptions, RecorderState, RecorderTrigger, RecordingSummary, RrwebModule } from './types.ts';
@@ -15,10 +14,8 @@ export const MAX_BYTES_CEILING = 20 * 1024 * 1024;
 const MAX_CONSOLE_ENTRIES = 500;
 const MAX_NETWORK_ENTRIES = 1_000;
 
-/** Elements carrying this attribute (the recorder's own UI) are never recorded. */
-export const UI_ATTRIBUTE = 'data-recorder-ui';
-/** Put this attribute on anything the recorder must never capture. */
-export const BLOCK_ATTRIBUTE = 'data-recorder-block';
+import { UI_ATTRIBUTE, BLOCK_ATTRIBUTE } from './privacy.ts';
+export { UI_ATTRIBUTE, BLOCK_ATTRIBUTE };
 
 const MEDIA_SELECTOR = 'img, picture, video, audio, canvas, iframe, object, embed';
 
@@ -81,12 +78,23 @@ type Recording = {
   summary: RecordingSummary;
 };
 
+const visible = (element: Element) => {
+  if (!element.isConnected || element.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
+  const style = getComputedStyle(element);
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    style.opacity !== '0' &&
+    (typeof element.checkVisibility !== 'function' || element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))
+  );
+};
+
 /**
  * Creates the recorder. Nothing is loaded or recorded until `start()` (or the
  * consent step of `request()`); rrweb is imported lazily at that point.
  */
 export function createRecorder(options: RecorderOptions): Recorder {
-  const ui = options.ui ?? createDefaultUi({ privacyMode: options.privacy?.sanitize === false ? 'visible' : 'masked' });
+  const ui = options.ui;
   const askForConsent = options.prompts?.consent !== false;
   const askToReview = options.prompts?.review !== false;
   const maxDurationMs = clamp(options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS, MIN_DURATION_MS, MAX_DURATION_CEILING_MS);
@@ -99,13 +107,35 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const listeners = new Set<(state: RecorderState) => void>();
   let session: Session | undefined;
   let recording: Recording | undefined;
-  let reportContext: Pick<IssueReport, 'crisp'> = {};
+  let reportContext: Pick<IssueReport, 'crisp' | 'metadata'> = {};
   let uploadAbort: AbortController | undefined;
   let promptAbort: AbortController | undefined;
   let stopWaiters: (() => void)[] = [];
   let destroyed = false;
   let lifecycleGeneration = 0;
   let requestGeneration = 0;
+  let reviewedReport: IssueReport | undefined;
+  const warnings = new Set<string>();
+  const warn = (message: string) => {
+    if (!warnings.has(message)) {
+      warnings.add(message);
+      console.warn(`[replays recorder] ${message}`);
+    }
+  };
+  const checkActivation = () => {
+    const activation =
+      options.activation ??
+      (typeof navigator !== 'undefined' && navigator.userActivation ? () => navigator.userActivation.isActive : undefined);
+    if (!activation) {
+      warn('User activation API unavailable; check skipped');
+      return;
+    }
+    if (!activation()) {
+      if (options.strictInvariants) throw new Error('A user activation is required');
+      warn('A user activation is required (warn-only migration)');
+    }
+  };
+  const stops = new Map<Element, () => void>();
 
   // A function, so TypeScript does not narrow `state` across awaits.
   const currentState = (): RecorderState => state;
@@ -130,6 +160,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
     }
     session = undefined;
+    for (const cleanup of stops.values()) cleanup();
+    stops.clear();
   };
 
   const blockSelector = [
@@ -188,6 +220,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         throw new Error('Recording needs the user’s explicit consent');
       }
       if (destroyed) throw new Error('The recorder was destroyed');
+      checkActivation();
       checkSelectors();
       if (
         state.status !== 'idle' &&
@@ -200,6 +233,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const trigger = startOptions.trigger ?? { source: 'user' };
       const generation = ++lifecycleGeneration;
       recording = undefined;
+      reviewedReport = undefined;
       setState({ status: 'starting', trigger });
 
       let rrweb: RrwebModule;
@@ -304,15 +338,17 @@ export function createRecorder(options: RecorderOptions): Recorder {
         addEventListener('pagehide', onPageHide);
         current.cleanups.push(() => removeEventListener('pagehide', onPageHide));
 
-        current.cleanups.push(
-          ui.showIndicator({
-            startedAt,
-            maxDurationMs,
-            stop: () => {
-              if (session === current) recorder.stop('user');
-            },
-          }),
-        );
+        if (ui)
+          current.cleanups.push(
+            ui.showIndicator({
+              startedAt,
+              maxDurationMs,
+              attestStop: recorder.attestStop,
+              stop: () => {
+                if (session === current) recorder.stop('user');
+              },
+            }),
+          );
       } catch (error) {
         teardownSession();
         setState({
@@ -324,11 +360,29 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
 
       setState({ status: 'recording', trigger, startedAt, maxDurationMs });
+      const checkStop = () => {
+        if (session !== current || [...stops.keys()].some(visible)) return;
+        if (options.strictInvariants) recorder.stop('no-indicator');
+        else warn('Register a visible Stop control with attestStop (warn-only migration)');
+      };
+      const grace = setTimeout(() => {
+        checkStop();
+        if (session === current) {
+          const monitor = setInterval(checkStop, 2000);
+          current.cleanups.push(() => clearInterval(monitor));
+        }
+      }, options.indicatorGraceMs ?? 1000);
+      current.cleanups.push(() => clearTimeout(grace));
     },
 
     stop(reason = 'user') {
       const current = session;
       if (!current || state.status !== 'recording') return undefined;
+      // A quick stop must not bypass the grace-period evidence check.
+      if (![...stops.keys()].some(visible) && reason !== 'page-hidden') {
+        if (options.strictInvariants) reason = 'no-indicator';
+        else warn('Register a visible Stop control with attestStop (warn-only migration)');
+      }
       const stoppedAt = Date.now();
       current.steps.push({
         at: stoppedAt,
@@ -337,7 +391,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       });
       teardownSession();
 
-      if (reason === 'page-hidden') {
+      if (reason === 'page-hidden' || reason === 'no-indicator') {
         // Never upload something the user did not get to review.
         recording = undefined;
         setState({ status: 'idle' });
@@ -381,6 +435,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       if ((uploadOptions as { confirmed?: unknown }).confirmed !== true) {
         throw new Error('Uploading needs the user’s explicit confirmation');
       }
+      checkActivation();
       const current = recording;
       if (!current || (state.status !== 'review' && !(state.status === 'error' && state.phase === 'upload'))) {
         throw new Error('There is no recording to upload');
@@ -390,18 +445,42 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const abort = new AbortController();
       uploadAbort = abort;
       setState({ status: 'uploading', summary: current.summary });
-      try {
-        const receipt: IssueReportReceipt = await options.upload(
-          {
-            bundle: current.bundle,
-            ...(note ? { note } : {}),
-            ...(reportContext.crisp ? { crisp: reportContext.crisp } : {}),
-            ...(options.app ? { app: options.app } : {}),
+      let lastProgress = 0;
+      let progressTimer: ReturnType<typeof setTimeout> | undefined;
+      let pendingProgress: { loaded: number; total?: number } | undefined;
+      const flushProgress = () => {
+        progressTimer = undefined;
+        if (abort.signal.aborted || generation !== lifecycleGeneration || state.status !== 'uploading' || !pendingProgress) return;
+        lastProgress = Date.now();
+        const { loaded, total } = pendingProgress;
+        setState({
+          status: 'uploading',
+          summary: current.summary,
+          progress: {
+            loaded: Math.max(0, loaded),
+            ...(total !== undefined ? { total, fraction: total > 0 ? Math.min(1, Math.max(0, loaded / total)) : 0 } : {}),
           },
-          { signal: abort.signal },
-        );
+        });
+      };
+      reviewedReport ??= {
+        bundle: current.bundle,
+        ...(note ? { note } : {}),
+        ...reportContext,
+        ...(options.app ? { app: options.app } : {}),
+      };
+      try {
+        const receipt: IssueReportReceipt = await options.upload(reviewedReport, {
+          signal: abort.signal,
+          onProgress(progress) {
+            if (!Number.isFinite(progress.loaded) || (progress.total !== undefined && !Number.isFinite(progress.total))) return;
+            pendingProgress = progress;
+            if (Date.now() - lastProgress >= 250) flushProgress();
+            else progressTimer ??= setTimeout(flushProgress, 250 - (Date.now() - lastProgress));
+          },
+        });
         if (abort.signal.aborted || generation !== lifecycleGeneration) throw new Error('Upload was discarded');
         recording = undefined;
+        reviewedReport = undefined;
         setState({ status: 'uploaded', receipt });
         return receipt;
       } catch (error) {
@@ -416,6 +495,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         }
         throw failure;
       } finally {
+        clearTimeout(progressTimer);
         if (uploadAbort === abort) uploadAbort = undefined;
       }
     },
@@ -423,18 +503,45 @@ export function createRecorder(options: RecorderOptions): Recorder {
     discard() {
       lifecycleGeneration++;
       requestGeneration++;
-      ui.dismiss?.();
+      ui?.dismiss?.();
       uploadAbort?.abort();
       uploadAbort = undefined;
       promptAbort?.abort();
       promptAbort = undefined;
       teardownSession();
       recording = undefined;
+      reviewedReport = undefined;
       if (state.status !== 'idle') setState({ status: 'idle' });
       resolveStopWaiters();
     },
 
+    respond(decision) {
+      ui?.respond?.(decision);
+    },
+    retryUpload() {
+      return recorder.upload({ confirmed: true });
+    },
+    getProgress() {
+      return session ? { bytes: session.bytes, maxBytes, events: session.events.length } : undefined;
+    },
+    attestStop(element) {
+      if (!session) throw new Error('Stop controls can only be registered while recording');
+      const owner = session;
+      const onClick = () => {
+        if (session === owner) recorder.stop('user');
+      };
+      stops.get(element)?.();
+      element.addEventListener('click', onClick);
+      const cleanup = () => {
+        element.removeEventListener('click', onClick);
+        if (stops.get(element) === cleanup) stops.delete(element);
+      };
+      stops.set(element, cleanup);
+      return cleanup;
+    },
+
     async request(trigger = { source: 'user' }) {
+      if (!ui) throw new Error('Pass ui (from @hazem3500/replays/recorder/ui) or use createGuidedRecorder');
       // In the one-click flow a failed upload stays behind a Retry toast;
       // pressing Record again drops it and starts over.
       if (!askToReview && state.status === 'error' && state.phase === 'upload') recorder.discard();
@@ -445,7 +552,25 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const ownsRequest = () => generation === requestGeneration;
       if (askForConsent) {
         setState({ status: 'consent', trigger });
-        const agreed = await ui.requestConsent({ trigger, maxDurationMs, signal: openPrompt() }).catch(() => false);
+        const agreed = await ui
+          .requestConsent({
+            trigger,
+            maxDurationMs,
+            privacy: {
+              mode: sanitize && maskAllText ? 'masked' : 'visible',
+              maxDurationMs,
+              reviewRequired: askToReview,
+              captures: {
+                pageText: !maskAllText || !!unmask,
+                inputs: !sanitize,
+                media: privacy.blockMedia === false,
+                console: (privacy.consoleLevels?.length ?? 2) > 0,
+                network: privacy.captureNetwork !== false,
+              },
+            },
+            signal: openPrompt(),
+          })
+          .catch(() => false);
         if (!ownsRequest() || currentState().status !== 'consent') return undefined;
         if (!agreed) {
           setState({ status: 'idle' });
@@ -459,6 +584,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
       } catch (error) {
         if (!ownsRequest()) return undefined;
         resolveStopWaiters();
+        if (currentState().status !== 'error')
+          setState({ status: 'error', phase: 'start', error: error instanceof Error ? error : new Error(String(error)) });
         ui.showResult?.({
           status: 'error',
           error: error instanceof Error ? error : new Error(String(error)),
@@ -536,7 +663,12 @@ export function createRecorder(options: RecorderOptions): Recorder {
     },
 
     setReportContext(context) {
-      reportContext = { ...reportContext, ...context };
+      reportContext = {
+        ...reportContext,
+        ...context,
+        ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
+        ...(context.crisp ? { crisp: { ...context.crisp } } : {}),
+      };
     },
 
     destroy() {

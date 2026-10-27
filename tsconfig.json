@@ -25,7 +25,11 @@
       "@hazem3500/replays/viewer": ["./src/client/plugins/api.ts"],
       "@hazem3500/replays/plugins/iap": ["./src/first-party/iap.ts"],
       "@hazem3500/replays/plugins/gcs": ["./src/first-party/gcs.ts"],
-      "@hazem3500/replays/recorder": ["./src/recorder/index.ts"]
+      "@hazem3500/replays/recorder": ["./src/recorder/index.ts"],
+      "@hazem3500/replays/recorder/kit": ["./src/recorder/kit/index.ts"],
+      "@hazem3500/replays/recorder/ui": ["./src/recorder/ui/index.ts"],
+      "@hazem3500/replays/recorder/react": ["./src/recorder/react/index.tsx"],
+      "@hazem3500/replays/recorder/testing": ["./src/recorder/testing/index.ts"]
     }
   },
   "include": [
