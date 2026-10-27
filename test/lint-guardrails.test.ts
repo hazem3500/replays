@@ -41,6 +41,8 @@ describe('project invariant lint rules', () => {
     ['no-effect-outside-hooks', 'src/client/example.tsx', "import React from 'react'; export const setup = React['useEffect'];"],
     ['no-effect-outside-hooks', 'src/recorder/react/example.tsx', "import { useEffect } from 'react'; export { useEffect };"],
     ['no-effect-outside-hooks', '.storybook/preview.tsx', "import { useEffect } from 'react'; export { useEffect };"],
+    ['no-effect-outside-hooks', 'stories/recorder-custom/Panel.tsx', "import { useEffect } from 'react'; export { useEffect };"],
+    ['no-effect-outside-hooks', 'src/recorder/react/hooks.ts', "import { useEffect } from 'react'; export { useEffect };"],
     ['no-effect-outside-hooks', 'src/client/example.tsx', "export { useEffect as setup } from 'react';"],
     [
       'no-effect-outside-hooks',
@@ -85,6 +87,8 @@ describe('project invariant lint rules', () => {
       '// oxlint-disable-next-line no-console -- why: CLI output is its public interface.\nconsole.log(1);',
     ],
     ['no-effect-outside-hooks', 'src/client/hooks/use-example.ts', "import { useEffect } from 'react'; export { useEffect };"],
+    ['no-effect-outside-hooks', 'src/recorder/react/hooks/lifecycle.ts', "import { useEffect } from 'react'; export { useEffect };"],
+    ['no-effect-outside-hooks', 'stories/recorder-custom/hooks/fixture.ts', "import { useEffect } from 'react'; export { useEffect };"],
     ['no-forward-ref', 'src/client/example.tsx', "import * as React from 'react'; export const Panel = () => React.createElement('div');"],
     ['max-component-props', 'src/server/example.ts', 'export function Parse({a,b,c,d,e,f,g,h,i}) { return a; }'],
     ['max-jsx-depth', 'src/client/example.tsx', `export const Panel = () => ${'<div>'.repeat(7)}value${'</div>'.repeat(7)};`],
