@@ -18,7 +18,7 @@ Run these after `pnpm install --frozen-lockfile`. Build once with `pnpm build &&
 | `pnpm quality:hooks` | `lefthook.yml` | Quality / hooks | Validate the hook configuration |
 | `pnpm quality:test` | `scripts/quality-tooling.test.mjs` | Quality / test | Prove boundaries and budget enforcement with synthetic fixtures |
 
-`pnpm quality` runs all checks after the build. Reports live in `.review-artifacts/quality/` (gitignored). CI uploads each audit's reports for 14 days. JSON, stderr and original exit statuses are retained; the size job also writes a per-file main/head comparison to its job summary. It uses read-only GitHub permissions and posts no comments.
+`pnpm quality` runs all checks after the build. Reports live in `.review-artifacts/quality/` (gitignored). CI uploads each audit's reports for 14 days on a best-effort basis and always prints the full reports to job logs. The initial CI run hit the account's Actions artifact-storage quota; only archive upload is non-blocking. Audit, build, test and budget steps retain their original gates. JSON, stderr and original exit statuses are retained; the size job also writes a per-file main/head comparison to its job summary. It uses read-only GitHub permissions and posts no comments.
 
 ## Initial inventory (2026-10-27)
 

@@ -58,8 +58,18 @@ jobs:
       # Tightening instructions and the initial inventory live in docs/quality-tooling.md.
       - if: matrix.tool != 'size'
         run: pnpm quality:${{ matrix.tool }}
+      - name: Preserve full reports in job logs
+        if: always() && matrix.tool != 'hooks' && matrix.tool != 'test'
+        run: |
+          for report in .review-artifacts/quality/*; do
+            [ -f "$report" ] || continue
+            printf '\nReport: %s\n' "$report"
+            cat "$report"
+          done
       - if: always() && matrix.tool != 'hooks' && matrix.tool != 'test'
         uses: actions/upload-artifact@v4
+        # Storage quota must not turn a successful audit into a failed check; logs above retain the evidence.
+        continue-on-error: true
         with:
           name: quality-${{ matrix.tool }}
           path: .review-artifacts/quality/
