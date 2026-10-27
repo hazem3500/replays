@@ -23,7 +23,7 @@ export function RecorderFixture({
     const ui = createDefaultUi({
       theme,
       privacyMode: 'masked',
-      container: compact ? () => document.querySelector<HTMLElement>('[data-recorder-stage]')! : undefined,
+      ...(compact ? { container: () => document.querySelector<HTMLElement>('[data-recorder-stage]')! } : {}),
       completion: {
         actions: [{ id: 'open-replay', kind: 'link', label: 'Open replay', href: 'https://replays.example/replay/demo-42' }],
       },
@@ -46,7 +46,10 @@ export function RecorderFixture({
     } else if (mode === 'uploading') {
       controller.uploading = ui.showUploading?.();
     } else if (mode === 'success') {
-      ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'demo-42', reference: 'SUP-2042', url: 'https://replays.example/replay/demo-42' } });
+      ui.showResult?.({
+        status: 'uploaded',
+        receipt: { replayId: 'demo-42', reference: 'SUP-2042', url: 'https://replays.example/replay/demo-42' },
+      });
     } else {
       ui.showResult?.({
         status: 'error',
