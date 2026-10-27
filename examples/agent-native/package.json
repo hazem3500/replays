@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsrs --fast false --noEmit",
     "start": "node --experimental-strip-types --no-warnings src/server.ts",
     "check": "pnpm build && pnpm typecheck",
     "test": "playwright test -c playwright.config.ts"
@@ -19,10 +19,10 @@
   },
   "devDependencies": {
     "esbuild": "0.28.2",
-    "typescript": "5.9.3",
     "@types/node": "22.18.10",
     "@playwright/test": "1.64.0",
     "vite": "npm:@voidzero-dev/vite-plus-core@1.4.0",
-    "vitest": "5.0.5"
+    "vitest": "5.0.5",
+    "tsrs": "0.20.0-ts7.1.0-beta"
   }
 }

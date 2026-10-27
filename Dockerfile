@@ -19,14 +19,14 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY examples/custom-distro/package.json ./examples/custom-distro/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --prod --ignore-scripts --filter @hazem3500/replays
+    pnpm install --frozen-lockfile --prefer-offline --prod --ignore-scripts --filter @hazem3500/replays
 
 # The viewer: Vite output in dist/client.
 FROM base AS build
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY examples/custom-distro/package.json ./examples/custom-distro/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
-    pnpm install --frozen-lockfile --filter @hazem3500/replays
+    pnpm install --frozen-lockfile --prefer-offline --filter @hazem3500/replays
 COPY . .
 RUN pnpm build
 

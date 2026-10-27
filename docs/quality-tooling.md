@@ -138,3 +138,33 @@ Versions were queried from the npm registry on 2026-10-27; exact versions are pi
 ## Verification
 
 On the implementation thread's own Boat: frozen install; full `pnpm check` (**1,582 passed, 11 skipped**); library/recorder/CLI builds; every new quality script and hook installation/validation; two synthetic enforcement tests; and a fresh-main/head per-file size comparison. All new checks complete successfully with the findings above. Earlier stale CLI output was rebuilt before the successful full check; no source violations were fixed.
+
+## tsrs compiler adoption
+
+The project pins `tsrs@0.20.0-ts7.1.0-beta`, published 26 October 2026. It is a Rust port of the TypeScript 7 checker/compiler and language server, distributed through npm with an optional native platform binary. It is a beta targeting TypeScript 7.1; the upstream stable-conformance goal is still future work. Install with pnpm's lockfile; invoke `tsrs -p <tsconfig> --noEmit` for checking and omit `--noEmit` for declaration-only configs. All repository invocations pass `--fast false`: upstream documents that the opt-in fast preset can change diagnostic presence/order and exit status in history/depth-sensitive cases.
+
+Measured on the same two-core Boat VM using each installed executable directly, without pnpm startup or package download time:
+
+| Config / operation | tsc 5.9.3 (s) | tsgo 7.0 preview (s) | tsrs 0.20 beta (s) |
+| --- | ---: | ---: | ---: |
+| Root check | 11.09 | 2.51 | 0.75 |
+| Library check | 3.82 | 0.84 | 0.26 |
+| Recorder check | 0.87 | 0.13 | 0.05 |
+| Storybook check, corrected ambient include | 3.56 | 0.87 | 0.27 |
+| Host application check | 0.94 | 0.20 | 0.07 |
+| Custom distribution check | 0.84 | 0.16 | 0.06 |
+| Agent-Native check, explicit Node types | 1.17 | 0.22 | 0.07 |
+| Library declaration emit | 4.03 | 0.79 | 0.25 |
+| Recorder declaration emit | 0.89 | 0.13 | 0.06 |
+
+All seven configs pass all three compilers after two config corrections: Storybook includes the existing `src/client/env.d.ts` CSS ambient module, and Agent-Native explicitly requests its installed `@types/node`. Before those corrections both tsgo and tsrs reported the same missing CSS imports / Node globals. These were TypeScript 7 configuration differences, not tsrs-only false positives; no missing-module diagnostic was disabled.
+
+A temporary negative probe produced the same five diagnostic codes in all three compilers: TS1294 for non-erasable parameter properties; three TS2322 errors for ordinary assignment, indexed access and invalid JSX props; TS2375 for exact optional properties. No false positive or false negative was observed in the checked configs or this probe. This does not prove universal compiler parity. Failures remain failures even where compilers use different nonzero exit codes.
+
+Emission succeeded for 113 library and 11 recorder declarations. tsrs output was byte-identical to tsgo for both configs; recorder output also matched tsc 5.9 exactly. Fifteen library files differed from 5.9 in quote style and member/union ordering. Existing declaration-specifier repair, downstream consumer checking and package audits remain in place.
+
+Upstream supports JSX, standard/legacy decorator transforms, ambient declarations, `extends`, paths, NodeNext/bundler resolution, declaration-only emit, incremental compilation and project-reference builds. This repository uses React JSX, NodeNext/bundler resolution, inherited configs and ambient modules; it has no project-reference graph or decorator transform pipeline, and retains `erasableSyntaxOnly`. The CLI has no `--showConfig` or `--init`; watch works on Linux/macOS but not Windows. Library declaration bundling is a separate feature request ([#819](https://github.com/oxc-project/tsrs/issues/819)); this repo emits individual declarations and does not need that feature. See [compatibility](https://github.com/oxc-project/tsrs/blob/main/docs/COMPATIBILITY.md), [CLI usage](https://github.com/oxc-project/tsrs/blob/main/docs/USAGE.md), [remaining runtime differences](https://github.com/oxc-project/tsrs/blob/main/docs/DEFAULTS.md) and [upstream synchronization tracking #618](https://github.com/oxc-project/tsrs/issues/618).
+
+Root, Storybook, examples, watch mode and library/recorder emit all use tsrs; no tsc/tsgo compiler fallback job remains. The TypeScript npm library remains for existing third-party tooling that uses its JavaScript API, rather than as a compiler gate. Lefthook remains staged-only syntax lint/format and does not perform a whole-project typecheck.
+
+Type-aware lint keeps the pinned Vite+/Oxlint `oxlint-tsgolint` backend. tsrs's npm CLI is not a replacement for its eight configured lint rules, including floating/misused promises and unsafe operations. The upstream headless Oxlint integration is still tracked by [tsrs #378](https://github.com/oxc-project/tsrs/issues/378); replacing that backend awaits supported rule/diagnostic parity. This is the only retained native-Go checking component; no lint rule or check is removed.

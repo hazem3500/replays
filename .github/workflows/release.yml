@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: 22.23.4
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm check
         env:
           CHROME_PATH: /usr/bin/google-chrome
@@ -41,10 +41,13 @@ jobs:
       - name: Pack
         run: pnpm pack --pack-destination dist/pack
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: replays-package
           path: dist/pack/*.tgz
-          retention-days: 30
+          retention-days: 3
+          if-no-files-found: ignore
+          compression-level: 0
       - name: Decide whether publishing is possible
         id: gate
         env:
@@ -76,7 +79,7 @@ jobs:
         with:
           node-version: 22.23.4
           registry-url: https://registry.npmjs.org
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build:cli
       - run: pnpm publish --access public --provenance --no-git-checks
         env:
