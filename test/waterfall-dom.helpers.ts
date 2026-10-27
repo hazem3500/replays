@@ -38,7 +38,7 @@ export async function inputValue(host: HTMLElement, element: HTMLInputElement, v
   if (element.closest('.wf-search-reveal')?.getAttribute('aria-hidden') === 'true')
     await click(findElement(host, '[data-testid="waterfall-search-toggle"]'));
   await flushDom(() => {
-    // Bypass React's value tracker, just as a user's native input would.
+    // why: using the native setter bypasses React's value tracker so the input event reproduces a user's edit.
     const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
     if (!descriptor?.set) throw new Error('Native input value setter is unavailable');
     descriptor.set.call(element, value);
