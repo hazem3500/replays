@@ -71,6 +71,10 @@ The cold install steps took 5–14 seconds while repopulating the new lockfile's
 
 Warm browser setup took 12–21 seconds versus 26–31 seconds cold. The unit suite is larger than the historical sample. The npm cache / prefer-offline trial did not make the consumer smoke meaningfully faster: 50 seconds versus 53 cold. Both trial changes were removed from the final implementation; preserve independent npm-consumer coverage and retain this as a remaining bottleneck. Quality's fresh-main build and report jobs remain unchanged gates; their startup variability is visible in the table.
 
+The rebased CI with the single final aggregate, [40520210037](https://github.com/hazem3500/replays/actions/runs/40520210037), passed in **242 seconds** (19% below the 300-second median). Unit and E2E jobs passed; Docker took 198 seconds while rebuilding against the newer main. Its separate Quality run correctly required four one-byte downward budget ratchets under the newly merged policy; no measurement exceeded a cap. Those generated reductions are committed. The rebased local full suite passed **1,645 tests / 11 skipped** in 56.79 seconds, and all 11 quality enforcement fixtures plus four scope fixtures passed.
+
+These are individual after runs against a historical median, with changing source and queue conditions; they demonstrate command/job improvements rather than a statistical latency guarantee. Detailed warm job values above retain regressions as well as wins.
+
 ## Changes and integrity
 
 - pnpm's lockfile-keyed store cache and Docker buildx `type=gha,mode=max` cache already existed. Keep both; use frozen, prefer-offline installs everywhere. Docker already orders manifests/install before source in separate dependency, build and runtime stages. No paid runner size changes.

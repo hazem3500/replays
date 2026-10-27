@@ -235,7 +235,7 @@
     "dist/lib/index.mjs": {
       "raw": 1509,
       "gzip": 496,
-      "brotli": 423
+      "brotli": 422
     },
     "dist/lib/plugin.mjs": {
       "raw": 661,
@@ -244,13 +244,13 @@
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
-      "gzip": 4366,
+      "gzip": 4365,
       "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4025,
-      "gzip": 1599,
-      "brotli": 1378
+      "gzip": 1598,
+      "brotli": 1377
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
