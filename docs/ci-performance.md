@@ -52,7 +52,24 @@ The first green speed-PR run is [40516163044](https://github.com/hazem3500/repla
 | Agent-Native and Storybook | 111.5 | 100 |
 | Docker build + health job | 115 | 220 |
 
-The cold install steps took 5–14 seconds while repopulating the new lockfile's pnpm cache. Docker's build step took 194 seconds, including 78.6 seconds exporting the new GHA cache and 37.7 seconds exporting/loading the image. That initial cache population is a regression versus the mixed historical median and is retained in the table. The packed-consumer test still took 53 seconds before its npm cache was populated. Warm-cache evidence will distinguish repeated-run savings from this initial cost.
+The cold install steps took 5–14 seconds while repopulating the new lockfile's pnpm cache. Docker's build step took 194 seconds, including 78.6 seconds exporting the new GHA cache and 37.7 seconds exporting/loading the image. That initial cache population is a regression versus the mixed historical median and is retained in the table. The packed-consumer test still took 53 seconds before its npm cache was populated. The next green run, [40518098412](https://github.com/hazem3500/replays/actions/runs/40518098412), exercised warm infrastructure caches on `c09c33a`. Its critical path was 263 seconds: faster tasks were offset by runner queues and the extra aggregate level. This is retained rather than claiming the warm run was faster overall. The final workflow uses the existing required `End-to-end smoke` name for the single final aggregate, directly depending on the work jobs.
+
+| Job | Baseline seconds | Warm run seconds |
+| --- | ---: | ---: |
+| Lint and format | 34.5 | 33 |
+| Typecheck | 48 | 37 |
+| Unit execution | 107 | 71 |
+| Unit job / independent build and host | 159 combined | 100 / 40 |
+| E2E / longest shard | 263.5 | 159 (other shards 124, 127) |
+| Custom distribution | 144.5 | 122 |
+| Agent-Native and Storybook | 111.5 | 82 |
+| Docker build and health | 115 | 122 |
+| PostgreSQL test job | 52 | 42 (plus scope 10 and aggregate 6) |
+| Quality / package | 57 | 51 |
+| Quality / size | 80 | 95 |
+| Quality / boundaries, test, hooks, dedupe, knip | 32, 37, 27, 32, 33 | 37, 38, 30, 44, 39 |
+
+Warm browser setup took 12–21 seconds versus 26–31 seconds cold. The unit suite is larger than the historical sample. The new cache did not make the npm consumer smoke fast: it still took 50 seconds versus 53 cold, so do not attribute a meaningful gain to that cache. Quality's fresh-main build and report jobs remain unchanged gates; their startup variability is visible in the table.
 
 ## Changes and integrity
 
@@ -62,7 +79,7 @@ The cold install steps took 5–14 seconds while repopulating the new lockfile's
 - Vite+ 1.4's `vp run` tracks file reads, directory listings, missing files and writes. Successful lint/format/type/build tasks can replay only when inputs match. Build-affecting environment variables are explicit. Package generation runs as one task that rebuilds and repairs all declarations; its output directories are excluded from inputs because repair intentionally reads and rewrites that same task's output. Repair is never independently cached, so a new source declaration cannot be overwritten by a stale repair result. Raw `pnpm check` still runs the complete lint/format/types/tests gates; tasks that call external services are not result-cached.
 - Root, Storybook, example typechecks and library/recorder declaration emission use pinned tsrs reference defaults. Storybook includes the existing CSS ambient declaration; Agent-Native explicitly includes installed Node types. All compiler error codes in the negative parity probe match tsc and tsgo; no diagnostics are suppressed. See [compiler parity and fallback scope](quality-tooling.md#tsrs-compiler-adoption).
 - On PRs only, root/docs Markdown can skip runtime jobs; Storybook-only changes retain lint, root/Storybook typechecks and Agent-Native/Storybook integration. Schema JSON, unknown paths, source, dependencies and workflow changes run all checks. Empty/unknown diffs fail conservatively; missing git history fails the scope job. Main, scheduled and manual CI always run everything.
-- Existing required check names `Unit tests and build`, `End-to-end smoke` and `PostgreSQL identity and credentials` remain aggregate checks. They require successful work or an explicit scope-selected skip. `CI status` validates the remaining CI jobs. Matrix jobs use `fail-fast:false`. Failures/cancellations cannot become successful aggregates. Workflow concurrency already cancelled superseded PRs; it remains enabled.
+- Existing required check names `Unit tests and build`, `End-to-end smoke` and `PostgreSQL identity and credentials` remain aggregate checks. They require successful work or an explicit scope-selected skip. `End-to-end smoke` also validates all remaining CI jobs directly, without a second aggregate level. Matrix jobs use `fail-fast:false`. Failures/cancellations cannot become successful aggregates. Workflow concurrency already cancelled superseded PRs; it remains enabled.
 - All seven Quality jobs, package smoke, host/custom-distro integrations, PostgreSQL coverage and performance/report-only workflows remain intact. Unit tests and build now run independently.
 
 ## Local loop
@@ -77,7 +94,7 @@ Evidence uploads are best-effort, ignore missing files and retain reports for th
 
 ## Costs and further options
 
-Standard GitHub-hosted Ubuntu runners provide four cores free for public repositories ([GitHub runner reference](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)); testing that route is a zero-runner-fee follow-up, with different queue/cache characteristics. GitHub's larger 8-core Linux runner lists $0.022/min and is always paid ([pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing)). Ubicloud's current page lists standard 4-core at $0.0025/min, premium 4-core at $0.004/min and standard 8-core at $0.005/min; verify account/region pricing before a switch ([Ubicloud](https://www.ubicloud.com/use-cases/github-actions)). No paid runner switch was made.
+This repository is private (verified through the repository API). Standard GitHub-hosted Linux runners provide two cores for private repositories and consume the account allowance, then list $0.006/min; they are not a free four-core upgrade ([GitHub runner reference](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job), [pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing)). GitHub's larger 8-core Linux runner lists $0.022/min and is always paid ([pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing)). Ubicloud's current page lists standard 4-core at $0.0025/min, premium 4-core at $0.004/min and standard 8-core at $0.005/min; verify account/region pricing before a switch ([Ubicloud](https://www.ubicloud.com/use-cases/github-actions)). No paid runner switch was made.
 
 Three E2E shards trade repeated setup and additional runner minutes for lower elapsed time. Keep the existing Ubicloud runner sizes. Extra unit shards, larger paid runners and a maintained browser/FFmpeg container should be reconsidered only against measured post-change bottlenecks. A prebuilt container saves apt work but adds image transfer, registry/storage and update maintenance; do not substitute system Chrome for the locked Playwright revision. PR-only `--changed`/`--only-changed` selection is deferred because dynamic imports, spawned CLI processes and filesystem fixtures are not a proven complete dependency graph here. Full PR coverage is preserved.
 

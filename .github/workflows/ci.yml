@@ -290,21 +290,7 @@ jobs:
   e2e:
     name: End-to-end smoke
     if: always()
-    needs: [scope, e2e-shards]
-    runs-on: ubicloud-standard-2
-    steps:
-      - env:
-          SCOPE: ${{ needs.scope.result }}
-          REQUIRED: ${{ needs.scope.outputs.runtime }}
-          TESTS: ${{ needs.e2e-shards.result }}
-        run: |
-          test "$SCOPE" = success
-          if [ "$REQUIRED" = true ]; then test "$TESTS" = success; else test "$TESTS" = skipped; fi
-
-  status:
-    name: CI status
-    if: always()
-    needs: [scope, lint, typecheck, unit, e2e, distro, agent-integrations, docker]
+    needs: [scope, lint, typecheck, unit-tests, build, e2e-shards, distro, agent-integrations, docker]
     runs-on: ubicloud-standard-2
     steps:
       - uses: actions/github-script@v7
@@ -316,6 +302,7 @@ jobs:
             const runtime = jobs.scope.outputs.runtime === 'true';
             const storybook = jobs.scope.outputs.storybook === 'true';
             for (const [name, job] of Object.entries(jobs)) {
-              const maySkip = (!runtime && ['distro', 'docker'].includes(name)) || (!storybook && name === 'agent-integrations');
+              const runtimeJob = ['unit-tests', 'build', 'e2e-shards', 'distro', 'docker'].includes(name);
+              const maySkip = (!runtime && runtimeJob) || (!storybook && name === 'agent-integrations');
               if (job.result !== (maySkip ? 'skipped' : 'success')) core.setFailed(`${name}: ${job.result}`);
             }
