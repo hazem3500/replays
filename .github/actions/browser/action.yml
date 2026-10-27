@@ -1,0 +1,11 @@
+name: Pinned Chromium
+description: Cache locked browser binaries while checking system dependencies on every runner
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: ~/.cache/ms-playwright
+        key: chromium-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('pnpm-lock.yaml') }}
+    - shell: bash
+      run: pnpm exec playwright install --with-deps chromium

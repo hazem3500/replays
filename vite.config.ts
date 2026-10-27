@@ -62,6 +62,27 @@ function renderBlockingEntry(): Plugin {
  * runtime), so the same image runs at a domain's root or under a prefix. The dev server needs an absolute base.
  */
 export default defineConfig(({ command }) => ({
+  run: {
+    tasks: {
+      'cached:lint': { command: 'vp lint --config .oxlintrc.json --deny-warnings && pnpm lint:types' },
+      'cached:format': { command: 'vp fmt --config .oxfmtrc.json --check .' },
+      'cached:types': { command: 'tsgo --noEmit' },
+      'cached:story-types': { command: 'tsc -p .storybook/tsconfig.json --noEmit' },
+      'cached:build': {
+        command: 'vp build',
+        cache: {
+          env: ['NODE_ENV', 'BASE_PATH', 'REPLAYS_BETA_EDITOR', 'REPLAYS_DEV_PLUGINS'],
+          input: [{ auto: true }, '!dist/**'],
+          output: ['dist/client/**', 'dist/client/.vite/**'],
+        },
+      },
+      'cached:package': {
+        command:
+          'node scripts/build-cli.mjs && node scripts/build-lib.mjs && tsc -p tsconfig.lib.json && node scripts/fix-types.mjs && pnpm build:recorder',
+        cache: { env: ['NODE_ENV', 'REPLAYS_BUILD_ROOT'], input: [{ auto: true }, '!dist/**'] },
+      },
+    },
+  },
   base: command === 'build' ? './' : `${devBase}/`,
   plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), renderBlockingEntry(), appBaseMeta()],
   // shadcn/ui convention: "@/components/ui/…" resolves inside the client.
