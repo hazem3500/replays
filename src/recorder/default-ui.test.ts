@@ -34,14 +34,14 @@ describe('default recorder surface', () => {
     ui.dismiss?.();
     expect(document.querySelector('[data-recorder-ui]')).toBeNull();
   });
-  it('uses tabular fixed-width time across digit changes without live ticks', () => {
+  it('uses tabular fixed-width time and announces the final warning once', () => {
     vi.useFakeTimers();
     const ui = createDefaultUi();
     ui.showIndicator({ startedAt: Date.now() - 599000, maxDurationMs: 600000, stop: vi.fn<() => void>() });
     expect(node('.time').textContent).toBe('9:59');
     vi.advanceTimersByTime(1000);
     expect(node('.time').textContent).toBe('10:00');
-    expect(node('[role=status]').textContent).toBe('Recording');
+    expect(node('[role=status]').textContent).toBe('10 seconds left');
     expect(node('style').textContent).toContain('tabular-nums');
     expect(node('style').textContent).toContain('prefers-reduced-motion: no-preference');
     ui.dismiss?.();

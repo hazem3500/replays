@@ -1,7 +1,13 @@
 /** Browser-only in-page recording. No server, Node or React imports. */
 export { buildReplayBundle } from './bundle.ts';
 export type * from './bundle-types.ts';
-export { createDefaultUi, DEFAULT_MESSAGES, formatDuration } from './default-ui.ts';
+export * from './compat.ts';
+export { DEFAULT_MESSAGES } from './messages.ts';
+export { formatDuration, formatDurationLong } from './format.ts';
+export * from './timer.ts';
+export * from './store.ts';
+export * from './deferred-ui.ts';
+export { blockSelector, blockProps, recorderUiProps, CHAT_WIDGET_PRESETS } from './privacy.ts';
 export type {
   DefaultUiOptions,
   RecorderMessages,

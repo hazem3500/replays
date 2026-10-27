@@ -1,0 +1,19 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="App/Recorder/Build your own UI" />
+
+# Build your own recorder UI
+
+Your app owns the question and its wording. The headless recorder owns capture, review, uploads, privacy facts, and lifecycle cleanup.
+
+Use `createGuidedRecorder` from `/recorder/ui` for the complete built-in flow. For your design system, use `RecorderProvider` from `/recorder/react` and copy `examples/recorder-shadcn/src`.
+
+- `useRecorderPrompt`: consent facts, review summary, and indicator context.
+- `useRecorderActions`: accept, decline, stop, send, discard, retry, dismiss.
+- `useRecordingTimer`: elapsed and remaining labels, 30/10-second warnings.
+- `useStopAttestation`: attach to the visible Stop button.
+- `RecorderRegion`: excludes recorder chrome from capture.
+- `/recorder/kit`: focus trap, focus return, live-region announcer, privacy selectors.
+- `/recorder/testing`: `testRecorderUi` checks the contract using your test runner.
+
+The custom stories use fake rrweb and upload transports. Consent, Stop, Send, Retry, and Dismiss remain interactive. Upload progress can be indeterminate when a transport cannot measure it.

@@ -7,7 +7,13 @@
     "rewriteRelativeImportExtensions": true,
     "outDir": "dist/types",
     "rootDir": "src",
-    "types": []
+    "types": ["node"]
   },
-  "include": ["src/recorder/index.ts"]
+  "include": [
+    "src/recorder/index.ts",
+    "src/recorder/kit/index.ts",
+    "src/recorder/ui/index.ts",
+    "src/recorder/react/index.tsx",
+    "src/recorder/testing/index.ts"
+  ]
 }
