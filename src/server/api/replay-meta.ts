@@ -2,11 +2,22 @@ import { replayMetaPatchSchema } from '../../shared/schemas/replay-meta.ts';
 import { readBytes } from '../http/body.ts';
 import { json } from '../http/respond.ts';
 import { defineRoute } from '../http/route.ts';
+import { HttpStatusError } from '../http/status-error.ts';
 import { decorateSummary } from '../people.ts';
 import { REPLAY_ID } from './replays.ts';
 import type { ApiServices } from './services.ts';
 
 const MAX_BODY = 16 * 1024;
+
+/** The request body as JSON: a malformed body is the client's mistake (400), never a server error. */
+async function jsonBody(request: Request): Promise<unknown> {
+  const text = (await readBytes(request, MAX_BODY)).toString('utf8');
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new HttpStatusError(400, 'body is not valid JSON');
+  }
+}
 
 /**
  * Additive replay writes, behind the same authentication, same-origin check and request policy as every core route:
@@ -26,8 +37,7 @@ export function replayMetaRoutes(services: ApiServices) {
       path: '/api/replays/:id/meta',
       params: { id: REPLAY_ID },
       async handler({ request, params, identity }) {
-        const body: unknown = JSON.parse((await readBytes(request, MAX_BODY)).toString('utf8'));
-        const patch = replayMetaPatchSchema.safeParse(body);
+        const patch = replayMetaPatchSchema.safeParse(await jsonBody(request));
         if (!patch.success)
           return json(400, {
             error: 'invalid replay meta',

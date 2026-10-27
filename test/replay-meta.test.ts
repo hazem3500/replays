@@ -86,9 +86,15 @@ describe('replay meta API', () => {
     expect([(await patch({})).status, (await patch({ purpose: 'not-a-purpose' })).status]).toEqual([400, 400]);
   });
 
-  it('refuses malformed JSON with 400', async () => {
+  it('refuses malformed JSON as the client’s mistake (400), not a server error', async () => {
     const { api, headers } = await start();
-    expect((await fetch(`${api}/replays/demo/meta`, { method: 'PATCH', headers, body: '{' })).status).toBe(400);
+    const response = await fetch(`${api}/replays/demo/meta`, { method: 'PATCH', headers, body: '{' });
+    expect([response.status, await response.text()]).toEqual([400, 'body is not valid JSON']);
+  });
+
+  it('refuses a body over 16 KB with 413', async () => {
+    const { patch } = await start();
+    expect((await patch({ title: 'x'.repeat(17 * 1024) })).status).toBe(413);
   });
 
   it('answers 404 for an unknown replay', async () => {
