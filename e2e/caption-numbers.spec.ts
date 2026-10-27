@@ -27,7 +27,7 @@ test('captions default to unnumbered; numbering toggles, persists, and survives 
   await expect(caption.locator('.step-caption-text')).toHaveCSS('animation-duration', '0s');
   await expect(caption.locator('.step-caption-number')).toHaveCount(0);
   const label = await caption.locator('.step-caption-label').textContent();
-  await expect(caption).toHaveAccessibleName(label!);
+  await expect(caption).toHaveAccessibleName(label ?? '');
   const numbers = await openNumbers(page);
   await expect(numbers).toHaveAttribute('aria-checked', 'false');
   await numbers.click();
@@ -134,9 +134,10 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await page.emulateMedia({ reducedMotion });
     await page.route('**/api/replays/demo-shop', async (route) => {
       const response = await route.fetch();
-      const bundle = await response.json();
-      bundle.steps = [0, 1000, 2000, 3000].map((at, index) => ({ at, kind: 'click', label: `Step ${index + 1}` }));
-      await route.fulfill({ response, json: bundle });
+      const steps = [0, 1000, 2000, 3000].map((at, index) => ({ at, kind: 'click', label: `Step ${index + 1}` }));
+      const bundle: unknown = await response.json();
+      if (typeof bundle !== 'object' || bundle === null) throw new Error('Expected a replay bundle object');
+      await route.fulfill({ response, json: { ...bundle, steps } });
     });
     await page.route('**/api/replays/demo-shop/edits', (route) =>
       route.fulfill({
@@ -157,15 +158,14 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     await steps.locator('[data-step-index="0"]').click();
     await expect(caption).toHaveAccessibleName('Review the cart');
     const mounted = await caption.locator('[data-caption-morph]').elementHandle();
-    expect(mounted).not.toBeNull();
-    // Actual step click handlers seek through a caption gap and repeatedly retarget the saved caption.
+    if (!mounted) throw new Error('Expected a mounted caption host');
     await steps.evaluate((rail) => {
-      for (const index of [3, 0, 2, 1, 3]) rail.querySelector<HTMLElement>(`[data-step-index="${index}"]`)!.click();
+      for (const index of [3, 0, 2, 1, 3]) rail.querySelector<HTMLElement>(`[data-step-index="${index}"]`)?.click();
     });
     await expect(caption).toHaveAccessibleName('Save the cart');
     await expect(caption).toHaveAttribute('aria-live', 'off');
     await expect(caption.locator('[data-caption-morph]')).toHaveText('Save the cart');
-    expect(await caption.locator('[data-caption-morph]').evaluate((node, before) => node === before, mounted!)).toBe(true);
+    expect(await caption.locator('[data-caption-morph]').evaluate((node, before) => node === before, mounted)).toBe(true);
     await expect(caption.locator('.step-caption-number')).toHaveCount(0);
     await expect(caption.locator('[data-caption-morph]')).toHaveAttribute('data-motion', reducedMotion === 'reduce' ? 'reduced' : 'full');
     if (reducedMotion === 'reduce') await expect(caption.locator('[data-calligraph]')).toHaveCount(0);

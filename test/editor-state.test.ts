@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { must } from './must.ts';
 
 import {
   addCut,
@@ -35,7 +36,7 @@ describe('editor state', () => {
   it('adds, edits, deletes, undoes and redoes point and period highlights', () => {
     const point = addPointHighlight(empty, 1250, 10_000);
     expect(addPointHighlight(point.edits, 1250, 10_000)).toEqual({ edits: point.edits, id: point.id });
-    const period = addPeriodHighlight(point.edits, 2000, 5000, 10_000)!;
+    const period = must(addPeriodHighlight(point.edits, 2000, 5000, 10_000));
     expect(period.edits.highlights).toHaveLength(2);
     let state = editorReducer(initialEditorState(empty), {
       type: 'change',
@@ -84,6 +85,9 @@ describe('editor state', () => {
     expect(state.future).toEqual([]);
   });
 
+});
+
+describe('editor state trims, cuts and keys', () => {
   it('keeps the trim sane', () => {
     expect(setTrimEdge(empty, 'start', 2000, 10_000).trim).toEqual({ start: 2000, end: 10_000 });
     expect(setTrimEdge({ ...empty, trim: { start: 2000, end: 3000 } }, 'end', 1000, 10_000).trim).toEqual({ start: 2000, end: 2100 });

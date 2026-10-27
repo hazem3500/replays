@@ -1,7 +1,6 @@
 import { FilmIcon, ScissorsIcon, XIcon } from 'lucide-react';
 import {
   createContext,
-  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -17,7 +16,8 @@ import { Hint } from '@/components/icon-button.tsx';
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
-import { highlightTargetOffsets } from '../highlights-layout.ts';
+import { cssVars } from '../lib/css-vars.ts';
+import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { type EditorAction, moveCut, type Selection, setTrimEdge, trimOf } from './state.ts';
 
 /** Room left and right of the track, so the trim edges at 0 and at the end stay easy to grab. */
@@ -95,6 +95,22 @@ export function timeKeys(event: ReactKeyboardEvent, value: number, min: number, 
 
 /** Tick spacing: the smallest of these with at least ~72 px between labels. */
 const TICK_STEPS = [100, 200, 500, 1000, 2000, 5000, 10_000, 15_000, 30_000, 60_000, 120_000, 300_000, 600_000];
+
+/** The trim stays selected on touch so its edges are always editable; elsewhere only an existing trim is. */
+function trimSelection(mobile: boolean | undefined, trim: unknown): Selection {
+  return mobile || trim ? { kind: 'trim' } : undefined;
+}
+
+function selectedHighlightId(selection: Selection) {
+  return selection?.kind === 'highlight' ? selection.id : undefined;
+}
+
+function rulerTicks(width: number, duration: number) {
+  const tick = TICK_STEPS.find((step) => width > 0 && (step / Math.max(1, duration)) * width >= 72) ?? TICK_STEPS.at(-1)!;
+  const ticks: number[] = [];
+  if (width > 0) for (let at = 0; at <= duration; at += tick) ticks.push(at);
+  return { tick, ticks };
+}
 
 function tickLabel(ms: number, step: number) {
   const minutes = Math.floor(ms / 60_000);
@@ -282,7 +298,7 @@ export function Lane({
  */
 export function Timeline({
   duration,
-  mobile = false,
+  mobile,
   edits,
   selection,
   dispatch,
@@ -354,30 +370,7 @@ export function Timeline({
 
   const trim = trimOf(edits, duration);
   const range = selection?.kind === 'range' ? selection : undefined;
-  const tick = TICK_STEPS.find((step) => scale.width > 0 && (step / Math.max(1, duration)) * scale.width >= 72) ?? TICK_STEPS.at(-1)!;
-  const ticks: number[] = [];
-  if (scale.width > 0) for (let at = 0; at <= duration; at += tick) ticks.push(at);
-  const highlightTargetSize = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches ? 44 : 28;
-  const highlightMarkers =
-    edits.highlights?.flatMap((highlight) =>
-      (highlight.kind === 'point' ? [highlight.at] : [highlight.from, highlight.to]).map((at, index) => ({
-        id: highlight.id,
-        index,
-        position: scale.x(at) - PAD,
-      })),
-    ) ?? [];
-  const highlightOffsets = new Map<string, number[]>();
-  const markerOffsets = highlightTargetOffsets(
-    highlightMarkers.map((marker) => marker.position),
-    scale.width,
-    highlightTargetSize,
-  );
-  for (const [index, marker] of highlightMarkers.entries()) {
-    const offsets = highlightOffsets.get(marker.id) ?? [];
-    offsets[marker.index] = markerOffsets[index] ?? 0;
-    highlightOffsets.set(marker.id, offsets);
-  }
-
+  const { tick, ticks } = rulerTicks(scale.width, duration);
   const trimEdge = (edge: 'start' | 'end') => (
     <span
       role="slider"
@@ -392,12 +385,12 @@ export function Timeline({
       aria-valuenow={trim[edge]}
       aria-valuetext={formatClock(trim[edge])}
       onPointerDown={(event) => {
-        dispatch({ type: 'select', selection: mobile || edits.trim ? { kind: 'trim' } : undefined });
+        dispatch({ type: 'select', selection: trimSelection(mobile, edits.trim) });
         player.beginScrub();
         startDrag(event, scale, {
           move: (time, first) => {
             const next = setTrimEdge(latest.current, edge, time, duration);
-            change(next, first, mobile || next.trim ? { kind: 'trim' } : undefined);
+            change(next, first, trimSelection(mobile, next.trim));
             player.seek(trimOf(next, duration)[edge]);
           },
           end: () => player.endScrub(),
@@ -406,7 +399,7 @@ export function Timeline({
       onKeyDown={(event) =>
         timeKeys(event, trim[edge], edge === 'start' ? 0 : trim.start, edge === 'start' ? trim.end : duration, (time) => {
           const next = setTrimEdge(latest.current, edge, time, duration);
-          change(next, true, mobile || next.trim ? { kind: 'trim' } : undefined);
+          change(next, true, trimSelection(mobile, next.trim));
           player.seek(trimOf(next, duration)[edge]);
         })
       }
@@ -416,7 +409,7 @@ export function Timeline({
   );
 
   return (
-    <MobileTimelineContext.Provider value={mobile}>
+    <MobileTimelineContext.Provider value={Boolean(mobile)}>
       <ScaleContext.Provider value={scale}>
         <div className="timeline" data-testid="timeline" data-ready={scale.width > 0 || undefined}>
           <div className="tl-ruler-row">
@@ -504,58 +497,15 @@ export function Timeline({
                 onRemove={() => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true)}
               />
             ))}
-            {edits.highlights?.map((highlight) => {
-              const selected = selection?.kind === 'highlight' && selection.id === highlight.id;
-              const positions = highlight.kind === 'point' ? [highlight.at] : [highlight.from, highlight.to];
-              const start = highlight.kind === 'point' ? highlight.at : highlight.from;
-              const end = highlight.kind === 'point' ? highlight.at : highlight.to;
-              const offsets = highlightOffsets.get(highlight.id) ?? [];
-              const title = `${highlight.kind === 'point' ? 'Point highlight' : 'Period highlight'}${highlight.label ? `: ${highlight.label}` : ''}`;
-              return (
-                <span key={highlight.id} className="tl-highlight" data-kind={highlight.kind} data-selected={selected || undefined}>
-                  {highlight.kind === 'period' ? (
-                    <span
-                      className="tl-highlight-band"
-                      aria-hidden="true"
-                      style={{ left: `${scale.x(start)}px`, width: `${Math.max(3, scale.x(end) - scale.x(start))}px` }}
-                    />
-                  ) : null}
-                  {positions.map((at, index) => {
-                    const targetOffset = offsets[index] ?? 0;
-                    const edge = highlight.kind === 'period' ? (index === 0 ? 'from' : 'to') : undefined;
-                    return (
-                      <button
-                        key={`${highlight.id}-${index}`}
-                        type="button"
-                        className="tl-highlight-marker"
-                        data-kind={highlight.kind}
-                        data-edge={edge}
-                        data-testid="timeline-highlight"
-                        data-highlight-id={highlight.id}
-                        aria-label={`${title} at ${formatClock(at)}`}
-                        aria-pressed={selected}
-                        title={`${title} · ${formatClock(at)}`}
-                        style={{ left: `${scale.x(at)}px`, '--target-offset': `${targetOffset}px` } as CSSProperties}
-                        onFocus={() => {
-                          if (!mobile) dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
-                        }}
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={() => {
-                          dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
-                          player.seek(at);
-                          if (mobile) player.pause();
-                        }}
-                      >
-                        <span className="tl-highlight-glyph" aria-hidden="true" />
-                        {selected && highlight.label && (highlight.kind === 'point' || index === 0) ? (
-                          <span className="tl-highlight-label">{highlight.label}</span>
-                        ) : null}
-                      </button>
-                    );
-                  })}
-                </span>
-              );
-            })}
+            <TimelineHighlights
+              highlights={edits.highlights}
+              selectedId={selectedHighlightId(selection)}
+              x={(time) => scale.x(time)}
+              width={scale.width}
+              pad={PAD}
+              mobile={Boolean(mobile)}
+              dispatch={dispatch}
+            />
             {range ? (
               <div
                 className="tl-range"
@@ -602,7 +552,7 @@ function MobileRulerSeek({ duration }: { duration: number }) {
       max={duration}
       step={100}
       value={time}
-      style={{ '--editor-seek-progress': `${duration > 0 ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0}%` } as CSSProperties}
+      style={cssVars({ '--editor-seek-progress': `${duration > 0 ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0}%` })}
       aria-label="Seek recording"
       aria-valuetext={`${formatClock(time)} of ${formatClock(duration)}`}
       onKeyDown={(event) => {

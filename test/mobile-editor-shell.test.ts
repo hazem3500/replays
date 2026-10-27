@@ -1,16 +1,21 @@
 // @vitest-environment happy-dom
-import { act, createElement, useEffect } from 'react';
+import { createElement, useEffect } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { Editor } from '../src/client/editor/Editor.tsx';
 import { saveEdits, type LoadedEdits } from '../src/client/edits.ts';
+import type * as editsModule from '../src/client/edits.ts';
 import { navigate } from '../src/client/navigation.ts';
+import type * as navigationModule from '../src/client/navigation.ts';
 import { type ReplayController, usePlayer } from '../src/client/player.ts';
+import { must } from './must.ts';
+import { settle } from './settle.ts';
+import { stubRulerLayout } from './ruler-layout.ts';
 import { waterfallFixture } from './waterfall-fixture.ts';
 
-// Motion rendering is covered in browser checks; happy-dom rejects canceled WAAPI promises.
+// why: motion rendering is covered in browser checks; happy-dom rejects canceled WAAPI promises.
 vi.mock('../src/client/components/animated-icon.tsx', () => ({ AnimatedIcon: () => createElement('svg', { 'aria-hidden': true }) }));
 
 let player: ReplayController | undefined;
@@ -35,94 +40,79 @@ vi.mock('../src/client/editor/EditorExport.tsx', () => ({
     ),
 }));
 vi.mock('../src/client/navigation.ts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../src/client/navigation.ts')>()),
-  navigate: vi.fn<typeof import('../src/client/navigation.ts').navigate>(),
+  ...(await importOriginal<typeof navigationModule>()),
+  navigate: vi.fn<typeof navigate>(),
 }));
 vi.mock('../src/client/edits.ts', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../src/client/edits.ts')>()),
-  saveEdits: vi.fn<typeof import('../src/client/edits.ts').saveEdits>(),
+  ...(await importOriginal<typeof editsModule>()),
+  saveEdits: vi.fn<typeof saveEdits>(),
 }));
 
 let root: Root;
 let host: HTMLDivElement;
 let client: QueryClient;
-let originalClientWidth: PropertyDescriptor | undefined;
+let restoreLayout: (() => void) | undefined;
 let mobile = true;
 const loaded: LoadedEdits = { stored: { version: 1, cuts: [], revision: 0 }, etag: '"e.none"' };
-const node = <T extends Element>(selector: string) => host.querySelector<T>(selector)!;
-const click = async (selector: string) => act(async () => node<HTMLButtonElement>(selector).click());
+const node = <T extends Element>(selector: string) => must(host.querySelector<T>(selector));
+const stage = () => must(player);
+const click = (selector: string) => settle(() => { node<HTMLButtonElement>(selector).click(); });
 
-beforeEach(() => {
-  mobile = true;
-  player = undefined;
-  vi.clearAllMocks();
-  vi.useFakeTimers();
-  vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-  originalClientWidth = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'clientWidth');
-  Object.defineProperty(HTMLElement.prototype, 'clientWidth', {
-    configurable: true,
-    get() {
-      return this.classList?.contains('tl-ruler') ? 340 : 0;
-    },
-  });
-  vi.stubGlobal(
-    'ResizeObserver',
-    class {
-      private readonly callback: ResizeObserverCallback;
-      constructor(callback: ResizeObserverCallback) {
-        this.callback = callback;
-      }
-      observe() {
-        this.callback([], this as unknown as ResizeObserver);
-      }
-      disconnect() {}
-      unobserve() {}
-    },
-  );
+/** Registers the shared happy-dom editor environment for the enclosing describe. */
+function useEditorHarness() {
+  beforeEach(() => {
+    mobile = true;
+    player = undefined;
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+    restoreLayout = stubRulerLayout();
   vi.stubGlobal('matchMedia', (media: string) => ({
-    matches:
-      media.includes('prefers-reduced-motion') || (mobile && (media.includes('max-width: 720px') || media.includes('pointer: coarse'))),
-    media,
-    addEventListener: () => undefined,
-    removeEventListener: () => undefined,
-  }));
-  vi.mocked(saveEdits).mockRejectedValue(new Error('Offline'));
-  host = document.createElement('div');
-  document.body.append(host);
-  root = createRoot(host);
-  client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-});
+      matches:
+        media.includes('prefers-reduced-motion') || (mobile && (media.includes('max-width: 720px') || media.includes('pointer: coarse'))),
+      media,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }));
+    vi.mocked(saveEdits).mockRejectedValue(new Error('Offline'));
+    host = document.createElement('div');
+    document.body.append(host);
+    root = createRoot(host);
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  });
 
-afterEach(async () => {
-  await act(async () => root.unmount());
-  client.clear();
-  host.remove();
-  vi.clearAllTimers();
-  vi.useRealTimers();
-  if (originalClientWidth) Object.defineProperty(HTMLElement.prototype, 'clientWidth', originalClientWidth);
-  else Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth');
-  vi.unstubAllGlobals();
-});
+  afterEach(async () => {
+    await settle(() => { root.unmount(); });
+    client.clear();
+    host.remove();
+    vi.clearAllTimers();
+    vi.useRealTimers();
+    restoreLayout?.();
+    vi.unstubAllGlobals();
+  });
+}
 
 async function renderEditor(initial = loaded) {
-  await act(async () =>
-    root.render(createElement(QueryClientProvider, { client }, createElement(Editor, { bundle: waterfallFixture(), loaded: initial }))),
-  );
+  await settle(() => {
+    root.render(createElement(QueryClientProvider, { client }, createElement(Editor, { bundle: waterfallFixture(), loaded: initial })));
+  });
 }
 async function input(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
-  await act(async () => {
+  await settle(() => {
     const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-    Object.getOwnPropertyDescriptor(prototype, 'value')!.set!.call(element, value);
+    Object.getOwnPropertyDescriptor(prototype, 'value')?.set?.call(element, value);
     element.dispatchEvent(new Event('input', { bubbles: true }));
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
 async function tool(selector: string) {
   await click('.editor-add-more');
-  await act(async () => (document.querySelector(selector) as HTMLElement).click());
+  await settle(() => { must(document.querySelector<HTMLElement>(selector)).click(); });
 }
 
-describe('timeline-first mobile editor', () => {
+describe('timeline-first mobile editor captions', () => {
+  useEditorHarness();
+
   it('starts with a visible editable clip, persistent trim handles and one keyboard-operable ruler seek', async () => {
     await renderEditor();
     expect(node('.editor-mobile-heading h1').textContent).toBe('Test replay');
@@ -139,18 +129,18 @@ describe('timeline-first mobile editor', () => {
     expect(node('[data-testid="undo"]').closest('.editor-mobile-header')).not.toBeNull();
     const seek = node<HTMLInputElement>('[aria-label="Seek recording"]');
     const key = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
-    await act(async () => seek.dispatchEvent(key));
+    await settle(() => { seek.dispatchEvent(key); });
     expect(key.defaultPrevented).toBe(false);
     const more = node<HTMLDetailsElement>('.editor-mobile-more');
     more.open = true;
-    await act(async () => more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    await settle(() => { more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
     expect(more.open).toBe(false);
     expect(document.activeElement).toBe(more.querySelector('summary'));
   });
 
   it('adds one caption at the playhead, focuses its text and follows undo without generating step captions', async () => {
     await renderEditor();
-    await act(async () => player!.seek(3000));
+    await settle(() => { stage().seek(3000); });
     const add = node<HTMLButtonElement>('[data-testid="add-caption"]');
     add.focus();
     await click('[data-testid="add-caption"]');
@@ -179,6 +169,11 @@ describe('timeline-first mobile editor', () => {
     expect(node<HTMLTextAreaElement>('[data-testid="caption-text"]').value).toBe('Open projects');
   });
 
+});
+
+describe('timeline-first mobile editor objects', () => {
+  useEditorHarness();
+
   it('selects a timeline object on activation and returns focus without reopening its properties', async () => {
     await renderEditor({
       etag: '"e.1"',
@@ -187,9 +182,9 @@ describe('timeline-first mobile editor', () => {
     const caption = node<HTMLButtonElement>('[data-testid="region-caption"] .tl-region-body');
     caption.focus();
     expect(host.querySelector('.editor-context-panel')).toBeNull();
-    await act(async () => caption.click());
+    await settle(() => { caption.click(); });
     expect(node('.editor-context-panel h2').textContent).toBe('Caption');
-    expect(player!.getTime()).toBe(2000);
+    expect(stage().getTime()).toBe(2000);
     await click('[data-testid="mobile-object-done"]');
     expect(document.activeElement).toBe(caption);
     expect(host.querySelector('.editor-context-panel')).toBeNull();
@@ -207,6 +202,11 @@ describe('timeline-first mobile editor', () => {
     expect(host.querySelector('.editor-context-panel')).toBeNull();
     expect(document.activeElement).toBe(node('.editor-ruler-seek'));
   });
+
+});
+
+describe('timeline-first mobile editor highlights and scrubbing', () => {
+  useEditorHarness();
 
   it('preserves point/range highlights, undo/redo, direct timeline selection and removal focus', async () => {
     await renderEditor();
@@ -235,16 +235,21 @@ describe('timeline-first mobile editor', () => {
     await renderEditor();
     const seek = node<HTMLInputElement>('.editor-ruler-seek');
     seek.setPointerCapture = vi.fn<(pointerId: number) => void>();
-    await act(async () => seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, bubbles: true })));
-    expect(player!.isScrubbing()).toBe(true);
+    await settle(() => { seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, bubbles: true })); });
+    expect(stage().isScrubbing()).toBe(true);
     await input(seek, '4000');
-    expect(player!.getTime()).toBe(4000);
-    await act(async () => seek.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, bubbles: true })));
-    expect(player!.isScrubbing()).toBe(false);
-    await act(async () => seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 2, bubbles: true })));
-    await act(async () => seek.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
-    expect(player!.isScrubbing()).toBe(false);
+    expect(stage().getTime()).toBe(4000);
+    await settle(() => { seek.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, bubbles: true })); });
+    expect(stage().isScrubbing()).toBe(false);
+    await settle(() => { seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 2, bubbles: true })); });
+    await settle(() => { seek.dispatchEvent(new FocusEvent('focusout', { bubbles: true })); });
+    expect(stage().isScrubbing()).toBe(false);
   });
+
+});
+
+describe('timeline-first mobile editor chrome', () => {
+  useEditorHarness();
 
   it('keeps cursor settings transient and blocks leaving when a real edit fails to save', async () => {
     await renderEditor();
@@ -254,11 +259,11 @@ describe('timeline-first mobile editor', () => {
     more.open = true;
     const cursor = [...more.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
       button.textContent?.includes('Cursor options'),
-    )!;
-    await act(async () => cursor.click());
+    );
+    await settle(() => { must(cursor).click(); });
     expect(node('.editor-context-panel h2').textContent).toBe('Cursor');
     expect(document.activeElement).toBe(node('.editor-context-panel h2'));
-    await act(async () => node('.editor-context-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    await settle(() => { node('.editor-context-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
     expect(host.querySelector('.editor-context-panel')).toBeNull();
     expect(document.activeElement).toBe(more.querySelector('summary'));
     more.open = true;
@@ -284,11 +289,12 @@ describe('timeline-first mobile editor', () => {
     });
     const more = node<HTMLElement>('.editor-add-more');
     await click('.editor-add-more');
-    const buttons = [...document.querySelector('[aria-label="On timeline"]')!.querySelectorAll<HTMLElement>('[role="menuitem"]')];
+    const buttons = [...must(document.querySelector('[aria-label="On timeline"]')).querySelectorAll<HTMLElement>('[role="menuitem"]')];
     expect(buttons).toHaveLength(3);
-    await act(async () => buttons.find((button) => button.textContent?.includes('Second short caption'))!.click());
+    const second = buttons.find((button) => button.textContent?.includes('Second short caption'));
+    await settle(() => { must(second).click(); });
     expect(more.getAttribute('aria-expanded')).toBe('false');
-    expect(player!.getTime()).toBe(2000);
+    expect(stage().getTime()).toBe(2000);
     expect(node<HTMLTextAreaElement>('[data-testid="caption-text"]').value).toBe('Second short caption');
     expect(node<HTMLInputElement>('.editor-object-time input').value).toBe('2');
     await click('[data-testid="mobile-object-done"]');
@@ -306,7 +312,7 @@ describe('timeline-first mobile editor', () => {
     expect(node<HTMLElement>('#editor-timeline').hidden).toBe(false);
     expect(host.querySelector('.editor-add-toolbar')).toBeNull();
     expect(host.querySelector('.editor-ruler-seek')).toBeNull();
-    await act(async () => node<HTMLButtonElement>('[data-testid="region-caption"] .tl-region-body').focus());
+    await settle(() => { node<HTMLButtonElement>('[data-testid="region-caption"] .tl-region-body').focus(); });
     expect(node('[data-testid="caption-text"]')).not.toBeNull();
   });
 });

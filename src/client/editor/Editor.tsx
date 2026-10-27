@@ -19,7 +19,7 @@ import {
   MapPinIcon,
   FileVideoCameraIcon,
 } from 'lucide-react';
-import { type CSSProperties, type ReactNode, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint, IconButton } from '@/components/icon-button.tsx';
@@ -102,6 +102,8 @@ import {
   withEffectList,
 } from './state.ts';
 import { handOff } from './handoff.ts';
+import { cssVars } from '../lib/css-vars.ts';
+import { editorHint } from './hint.ts';
 import { Timeline } from './Timeline.tsx';
 import { CursorInspector } from './CursorInspector.tsx';
 import { EditorExport } from './EditorExport.tsx';
@@ -604,7 +606,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   );
 
   const selection = state.selection;
-  // Opening the untouched clip is UI state: the reducer correctly stores no redundant full-duration trim.
+  // why: opening the untouched clip is UI state; the reducer correctly stores no redundant full-duration trim.
   const mobileSelection: Selection = mobileTrimOpen && !selection ? { kind: 'trim' } : selection;
   const timelineDispatch = (action: EditorAction) => {
     if (mobile && (action.type === 'select' || (action.type === 'change' && action.select))) {
@@ -618,9 +620,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   };
   useEffect(() => {
     if (!mobile || !focusCaption.current || selection?.kind !== 'caption') return;
-    const field = document.getElementById('mobile-caption-text') as HTMLTextAreaElement | null;
-    field?.focus({ preventScroll: true });
-    field?.select();
+    const field = document.getElementById('mobile-caption-text');
+    if (field instanceof HTMLTextAreaElement) {
+      field.focus({ preventScroll: true });
+      field.select();
+    }
     focusCaption.current = false;
   }, [mobile, selection]);
 
@@ -633,13 +637,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const finishMobileObject = () => {
     let target = mobileReturnFocus.current;
     if (!target?.isConnected || target.closest('.editor-context-panel')) target = null;
-    if (!target && selection && 'id' in selection) {
-      const regions = shell.current?.querySelectorAll<HTMLElement>('[data-region-id], [data-highlight-id]');
-      const object = [...(regions ?? [])].find(
-        (node) => node.dataset.regionId === selection.id || node.dataset.highlightId === selection.id,
-      );
-      target = object?.matches('button') ? object : (object?.querySelector<HTMLElement>('.tl-region-body') ?? null);
-    }
+    if (!target && selection && 'id' in selection) target = objectFocusTarget(shell.current, selection.id);
     dispatch({ type: 'select', selection: undefined });
     setCursorOpen(false);
     setMobileTrimOpen(false);
@@ -699,27 +697,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     />
   );
   const empty = isEmptyEdits(edits);
-  const hint = suggesting
-    ? null
-    : selection?.kind === 'range'
-      ? `${formatClock(selection.to - selection.from)} selected · C cuts it · Esc clears`
-      : selection?.kind === 'cut'
-        ? 'Drag the cut’s edges to adjust it · ⌫ removes it · Esc deselects'
-        : selection?.kind === 'highlight'
-          ? 'Edit the label or timing above · ⌫ removes this highlight'
-          : selection?.kind === 'zoom'
-            ? 'Drag the zoom to move it, its edges to resize · it follows the clicks inside it · ⌫ removes it'
-            : selection?.kind === 'speed'
-              ? 'This stretch plays faster in the viewer and the video · ⌫ removes it'
-              : selection?.kind === 'blur'
-                ? 'Drag the box on the preview to cover what to hide, its corners to resize · ⌫ removes it'
-                : selection?.kind === 'caption'
-                  ? 'Type the caption above · drag its edges on the lane to time it · ⌫ removes it'
-                  : selection?.kind === 'trim'
-                    ? 'Drag the clip’s edges to trim · ⌫ restores the whole replay'
-                    : empty
-                      ? 'Drag the clip’s edges to trim · drag across the clip to select a cut · W finds waits'
-                      : 'Space plays the result · cuts are skipped';
+  const hint = editorHint(selection, suggesting, empty);
 
   return (
     <PlayerContext.Provider value={player}>
@@ -729,7 +707,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
           className="app-shell editor-shell"
           data-mobile={mobile || undefined}
           data-testid="editor"
-          style={mobile ? undefined : ({ '--dock-height': `${dockHeight}px` } as CSSProperties)}
+          style={mobile ? undefined : cssVars({ '--dock-height': `${dockHeight}px` })}
         >
           {mobile ? (
             <header className="editor-mobile-header">
@@ -752,8 +730,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 <Undo2Icon aria-hidden="true" />
               </IconButton>
               <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
-              {/* Native details is interactive; Escape closes its disclosure from descendant controls. */}
-              {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+              {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: native details is interactive; Escape closes its disclosure from descendant controls. */}
               <details
                 ref={mobileMore}
                 className="editor-mobile-more"
@@ -1104,11 +1081,12 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         const present = live.current.state.present;
                         if (present.captions?.length) return;
                         const captions = proposeStepCaptions(bundle.steps, duration);
-                        if (captions.length) {
+                        const first = captions.at(0);
+                        if (first) {
                           setCursorOpen(false);
                           setMobileTrimOpen(false);
                           setBlurPlacement(undefined);
-                          change(withEffectList(present, 'caption', captions), { kind: 'caption', id: captions[0]!.id });
+                          change(withEffectList(present, 'caption', captions), { kind: 'caption', id: first.id });
                         } else say('No recorded steps to caption');
                       },
                       testId: 'generate-step-captions',
@@ -1124,10 +1102,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         const regions = proposeZoomRegions(clicksOf(bundle.events), duration, present.zooms ?? [], undefined, (index) =>
                           nextEffectId(present, 'zoom', index),
                         );
-                        if (regions.length)
+                        const firstRegion = regions.at(0);
+                        if (firstRegion)
                           change(withEffectList(present, 'zoom', [...(present.zooms ?? []), ...regions]), {
                             kind: 'zoom',
-                            id: regions[0]!.id,
+                            id: firstRegion.id,
                           });
                         else say('No clicks need a zoom');
                       },
@@ -1139,31 +1118,35 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   selection={mobileSelection}
                   duration={duration}
                   change={change}
-                  onSelectRange={(from, to) => dispatch({ type: 'select', selection: { kind: 'range', from, to } })}
-                  onDone={finishMobileObject}
-                  onDelete={() => {
-                    actions.deleteSelection();
-                    mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
-                    finishMobileObject();
+                  commands={{
+                    onSelectRange: (from, to) => dispatch({ type: 'select', selection: { kind: 'range', from, to } }),
+                    onDone: finishMobileObject,
+                    onDelete: () => {
+                      actions.deleteSelection();
+                      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
+                      finishMobileObject();
+                    },
+                    onCut: actions.cut,
+                    onPeriodHighlight: actions.periodHighlight,
                   }}
-                  onCut={actions.cut}
-                  onPeriodHighlight={actions.periodHighlight}
                   cursorOpen={cursorOpen}
                   placingBlur={Boolean(blurPlacement)}
-                  cursorInspector={cursorInspector}
-                  effectControls={<EffectControls mobile edits={edits} selection={selection} change={change} />}
-                  highlightControls={
-                    <HighlightControls
-                      edits={edits}
-                      selection={selection}
-                      duration={duration}
-                      change={change}
-                      afterRemove={() => {
-                        mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
-                        finishMobileObject();
-                      }}
-                    />
-                  }
+                  panels={{
+                    cursorInspector,
+                    effectControls: <EffectControls mobile edits={edits} selection={selection} change={change} />,
+                    highlightControls: (
+                      <HighlightControls
+                        edits={edits}
+                        selection={selection}
+                        duration={duration}
+                        change={change}
+                        afterRemove={() => {
+                          mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
+                          finishMobileObject();
+                        }}
+                      />
+                    ),
+                  }}
                 />
               </>
             ) : null}
@@ -1180,11 +1163,18 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   );
 }
 
+/** The timeline node for a region or highlight, so focus can return to it after its panel closes. */
+function objectFocusTarget(root: HTMLElement | null, id: string) {
+  const nodes = root?.querySelectorAll<HTMLElement>('[data-region-id], [data-highlight-id]') ?? [];
+  const object = [...nodes].find((node) => node.dataset.regionId === id || node.dataset.highlightId === id);
+  return object?.matches('button') ? object : (object?.querySelector<HTMLElement>('.tl-region-body') ?? null);
+}
+
 /** Follow the player's recorded viewport, including viewport changes during playback. */
 function EditorPreviewFrame({ children }: { children: ReactNode }) {
   const viewport = useViewport();
   return (
-    <div className="stage-wrap" style={{ '--editor-preview-ratio': viewport.width / viewport.height } as CSSProperties}>
+    <div className="stage-wrap" style={cssVars({ '--editor-preview-ratio': viewport.width / viewport.height })}>
       {children}
     </div>
   );
@@ -1235,40 +1225,63 @@ function EffectControls({
   if (!region) return null;
   const { kind, id } = selection;
   if (kind === 'caption' && 'text' in region) {
-    if (mobile)
-      return (
-        <MobileCaptionField key={id} text={region.text} onChange={(text) => change(updateEffect(edits, kind, id, { text }), selection)} />
-      );
-    return (
-      <>
-        <span className="editor-bar-divider editor-setting-divider" aria-hidden="true" />
-        <input
-          key={id}
-          className="editor-caption-field"
-          defaultValue={region.text}
-          maxLength={160}
-          aria-label="Caption text"
-          data-testid="caption-text"
-          onChange={(event) => {
-            const text = event.target.value;
-            if (text.trim()) change(updateEffect(edits, kind, id, { text }), selection);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' || event.key === 'Escape') (event.target as HTMLInputElement).blur();
-          }}
-        />
-      </>
+    const onText = (text: string) => change(updateEffect(edits, kind, id, { text }), selection);
+    return mobile ? (
+      <MobileCaptionField key={id} text={region.text} onChange={onText} />
+    ) : (
+      <DesktopCaptionField key={id} text={region.text} onChange={onText} />
     );
   }
+  if (kind !== 'zoom' && kind !== 'speed') return null;
+  const field = kind === 'zoom' ? 'scale' : 'rate';
+  const current = (region as unknown as Record<string, number>)[field]!;
+  return (
+    <EffectSettingMenu
+      kind={kind}
+      current={current}
+      mobile={mobile}
+      onPick={(value) => change(updateEffect(edits, kind, id, { [field]: value }), selection)}
+    />
+  );
+}
+
+function DesktopCaptionField({ text, onChange }: { text: string; onChange: (text: string) => void }) {
+  return (
+    <>
+      <span className="editor-bar-divider editor-setting-divider" aria-hidden="true" />
+      <input
+        className="editor-caption-field"
+        defaultValue={text}
+        maxLength={160}
+        aria-label="Caption text"
+        data-testid="caption-text"
+        onChange={(event) => {
+          const value = event.target.value;
+          if (value.trim()) onChange(value);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === 'Escape') event.currentTarget.blur();
+        }}
+      />
+    </>
+  );
+}
+
+function EffectSettingMenu({
+  kind,
+  current,
+  mobile,
+  onPick,
+}: {
+  kind: 'zoom' | 'speed';
+  current: number;
+  mobile: boolean;
+  onPick: (value: number) => void;
+}) {
   const options =
     kind === 'zoom'
       ? ZOOM_SCALES.map((value) => ({ value, label: `${value}× zoom` }))
-      : kind === 'speed'
-        ? SPEED_RATES.map((value) => ({ value, label: `${value}× faster` }))
-        : [];
-  if (!options.length) return null;
-  const field = kind === 'zoom' ? 'scale' : 'rate';
-  const current = (region as unknown as Record<string, number>)[field]!;
+      : SPEED_RATES.map((value) => ({ value, label: `${value}× faster` }));
   return (
     <>
       <span className="editor-bar-divider editor-setting-divider" aria-hidden="true" />
@@ -1280,10 +1293,7 @@ function EffectControls({
           <ChevronDownIcon aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent side="top" align="start" className={mobile ? 'editor-mobile-effect-menu w-auto min-w-36' : 'w-auto min-w-36'}>
-          <DropdownMenuRadioGroup
-            value={String(current)}
-            onValueChange={(value) => change(updateEffect(edits, kind, id, { [field]: Number(value) }), selection)}
-          >
+          <DropdownMenuRadioGroup value={String(current)} onValueChange={(value) => onPick(Number(value))}>
             {options.map((option) => (
               <DropdownMenuRadioItem key={option.value} value={String(option.value)}>
                 {option.label}

@@ -1,5 +1,5 @@
 import './tailwind.css';
-// Establish the cascade layers before any component stylesheet is evaluated.
+// invariant: the cascade layers are established before any component stylesheet is evaluated.
 import { StrictMode } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';

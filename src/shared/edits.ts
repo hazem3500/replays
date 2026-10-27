@@ -110,6 +110,11 @@ function object(value: unknown, name: string, allowed: readonly string[]) {
 function checkTime(value: unknown, name: string, duration: number | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new Error(`${name} must be a time in ms (0 or more)`);
   if (duration !== undefined && value > duration) throw new Error(`${name} is after the end of the replay`);
+  return value;
+}
+
+function kindOf(raw: unknown) {
+  return typeof raw === 'object' && raw !== null && 'kind' in raw ? raw.kind : undefined;
 }
 
 function fraction(value: unknown, name: string) {
@@ -180,19 +185,19 @@ function assertHighlights(value: unknown, duration: number | undefined, name: st
   if (value === undefined) return;
   if (!Array.isArray(value) || value.length > MAX_HIGHLIGHTS) throw new Error(`${name} must be an array of at most ${MAX_HIGHLIGHTS}`);
   const ids = new Set<string>();
-  for (const [index, raw] of value.entries()) {
+  const entries: unknown[] = value;
+  for (const [index, raw] of entries.entries()) {
     const field = `${name}[${index}]`;
-    const kind = raw && typeof raw === 'object' && !Array.isArray(raw) ? (raw as Record<string, unknown>).kind : undefined;
-    const item = object(raw, field, kind === 'point' ? ['id', 'kind', 'at', 'label'] : ['id', 'kind', 'from', 'to', 'label']);
+    const item = object(raw, field, kindOf(raw) === 'point' ? ['id', 'kind', 'at', 'label'] : ['id', 'kind', 'from', 'to', 'label']);
     if (typeof item.id !== 'string' || !EDIT_ID.test(item.id)) throw new Error(`${field}.id must be lowercase letters, digits and dashes`);
     if (ids.has(item.id)) throw new Error(`${field}.id is used twice`);
     ids.add(item.id);
     label(item.label, `${field}.label`);
     if (item.kind === 'point') checkTime(item.at, `${field}.at`, duration);
     else if (item.kind === 'period') {
-      checkTime(item.from, `${field}.from`, duration);
-      checkTime(item.to, `${field}.to`, duration);
-      if ((item.to as number) - (item.from as number) < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
+      const from = checkTime(item.from, `${field}.from`, duration);
+      const to = checkTime(item.to, `${field}.to`, duration);
+      if (to - from < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
     } else throw new Error(`${field}.kind must be point or period`);
   }
 }

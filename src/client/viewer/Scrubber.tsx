@@ -1,4 +1,4 @@
-import { memo, type CSSProperties, type RefObject, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, type RefObject, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import type { ProjectedHighlight } from '../../shared/highlights.ts';
@@ -9,7 +9,9 @@ import { FeatureScrubberOverlays } from '../plugins/features.tsx';
 import { PluginTimelineTracks } from '../plugins/PluginSlots.tsx';
 import { useViewer } from './context.ts';
 import { setPreviewTime } from './preview-time.ts';
-import { highlightTargetOffsets } from '../highlights-layout.ts';
+import { highlightEdge, highlightTargetOffsets } from '../highlights-layout.ts';
+import { useHighlightTargetSize } from '../hooks/use-highlight-target-size.ts';
+import { cssVars } from '../lib/css-vars.ts';
 import {
   barBox,
   clampCentre,
@@ -623,8 +625,8 @@ function HighlightMarks({
   onFocus: (id: string) => void;
   onSelect: (id: string, at: number) => void;
 }) {
+  const targetSize = useHighlightTargetSize();
   if (width <= 0 || duration <= 0 || marks.length === 0) return null;
-  const targetSize = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches ? 44 : 28;
   const x = (time: number) => Math.min(width, Math.max(0, (time / duration) * width));
   const markers = marks.flatMap((mark) => {
     const from = mark.kind === 'point' ? mark.at : mark.from;
@@ -655,10 +657,10 @@ function HighlightMarks({
             ) : null}
             {[from, ...(mark.kind === 'period' ? [to] : [])].map((at, index) => {
               const targetOffset = offsets[markerIndex++] ?? 0;
-              const edge = mark.kind === 'period' ? (index === 0 ? 'from' : 'to') : undefined;
+              const edge = highlightEdge(mark.kind, index);
               return (
                 <button
-                  key={`${mark.id}-${index}`}
+                  key={`${mark.id}-${edge ?? 'point'}`}
                   type="button"
                   className="scrubber-highlight-marker"
                   data-kind={mark.kind}
@@ -667,7 +669,7 @@ function HighlightMarks({
                   aria-label={`${title} at ${formatClock(at)}`}
                   aria-pressed={selected === mark.id}
                   title={`${label ? `${label} · ` : ''}${formatClock(at)}`}
-                  style={{ left: `${x(at)}px`, '--target-offset': `${targetOffset}px` } as CSSProperties}
+                  style={cssVars({ '--target-offset': `${targetOffset}px` }, { left: `${x(at)}px` })}
                   onFocus={() => onFocus(mark.id)}
                   onPointerDown={(event) => onPointerDown(event.nativeEvent)}
                   onClick={() => onSelect(mark.id, at)}

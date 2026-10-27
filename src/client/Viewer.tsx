@@ -852,7 +852,7 @@ function StepCaption() {
       aria-live="off"
       aria-label={label || undefined}
     >
-      {/* One stable caption host; Calligraph retargets characters as the current step changes. */}
+      {/* why: one stable caption host lets Calligraph retarget characters as the current step changes. */}
       <span className="step-caption-text">
         {active && captionNumbers ? (
           <span className="step-caption-number" aria-hidden="true">

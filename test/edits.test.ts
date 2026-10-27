@@ -45,7 +45,7 @@ describe('edit list schema', () => {
     expect(() => assertReplayEdits(edits({ cuts: [{ id: 'a', from: 0, to: 50 }] }))).toThrow('at least 100 ms');
     expect(() => assertReplayEdits(edits({ cuts: [{ id: 'a', from: Number.NaN, to: 500 }] }))).toThrow('edits.cuts[0].from');
     expect(() => assertReplayEdits(edits({ cuts: [{ id: 'a', from: 0, to: 500, label: 'x'.repeat(121) }] }))).toThrow('label');
-    expect(() => assertReplayEdits(edits({ highlights: [{ id: 'p', kind: 'point', at: 10, extra: true }] as never }))).toThrow(
+    expect(() => assertReplayEdits({ version: 1, cuts: [], highlights: [{ id: 'p', kind: 'point', at: 10, extra: true }] })).toThrow(
       'not a supported field',
     );
     expect(() =>

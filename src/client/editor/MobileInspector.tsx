@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef } from 'react';
+import { type ReactNode, useRef } from 'react';
 import { CaptionsIcon, EllipsisIcon, EyeOffIcon, ScissorsIcon, ZoomInIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button.tsx';
 import {
@@ -12,7 +12,13 @@ import {
 } from '@/components/ui/dropdown-menu.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock } from '../../shared/replay.ts';
+import { useFocusWhen } from '../hooks/use-focus-when.ts';
 import { effectList, moveCut, moveEffect, setTrimEdge, trimOf, type Selection } from './state.ts';
+
+function effectLabel(kind: 'zoom' | 'speed' | 'blur' | 'caption', text: string) {
+  if (text) return `Caption · ${text}`;
+  return kind.charAt(0).toUpperCase() + kind.slice(1);
+}
 
 /** Named access to short/coincident objects without distorting their timeline widths. */
 export function mobileTimelineObjects(edits: ReplayEdits) {
@@ -22,7 +28,7 @@ export function mobileTimelineObjects(edits: ReplayEdits) {
       const text = kind === 'caption' && 'text' in item ? item.text : '';
       objects.push({
         key: `${kind}:${item.id}`,
-        label: text ? `Caption · ${text}` : kind === 'speed' ? 'Speed' : kind[0]!.toUpperCase() + kind.slice(1),
+        label: effectLabel(kind, text),
         at: item.from,
         selection: { kind, id: item.id },
       });
@@ -45,6 +51,8 @@ export function mobileTimelineObjects(edits: ReplayEdits) {
   return objects.sort((a, b) => a.at - b.at || a.key.localeCompare(b.key));
 }
 
+const NO_OBJECTS: ReturnType<typeof mobileTimelineObjects> = [];
+
 /** Adding an object is a command, never a permanent inspector destination. */
 export function MobileAddToolbar({
   onTrim,
@@ -52,7 +60,7 @@ export function MobileAddToolbar({
   onBlur,
   onZoom,
   more,
-  objects = [],
+  objects = NO_OBJECTS,
   onSelectObject,
 }: {
   onTrim: () => void;
@@ -149,20 +157,160 @@ function TimeField({ label, value, max, onChange }: { label: string; value: numb
   );
 }
 
+const OBJECT_TITLES: Record<string, string> = {
+  trim: 'Trim clip',
+  range: 'Selected range',
+  caption: 'Caption',
+  zoom: 'Zoom',
+  speed: 'Speed',
+  blur: 'Blur',
+  highlight: 'Highlight',
+};
+
+function objectTitle(kind: string | undefined, cursorOpen: boolean, placingBlur: boolean) {
+  if (cursorOpen) return 'Cursor';
+  if (placingBlur) return 'Place blur';
+  return (kind ? OBJECT_TITLES[kind] : undefined) ?? 'Removed section';
+}
+
+function findRegion(edits: ReplayEdits, selection: Selection) {
+  if (!selection || !('id' in selection)) return;
+  const { kind } = selection;
+  if (kind === 'highlight') return;
+  if (kind === 'cut') return edits.cuts.find((item) => item.id === selection.id);
+  return effectList(edits, kind).find((item) => item.id === selection.id);
+}
+
+function selectionSpan(edits: ReplayEdits, selection: Selection, duration: number) {
+  if (selection?.kind === 'trim') {
+    const bounds = trimOf(edits, duration);
+    return { from: bounds.start, to: bounds.end };
+  }
+  if (selection?.kind === 'range') return { from: selection.from, to: selection.to };
+  const region = findRegion(edits, selection);
+  return { from: region?.from, to: region?.to };
+}
+
+function removeLabel(kind: string | undefined, title: string) {
+  if (kind === 'trim') return 'Reset trim';
+  if (kind === 'cut') return 'Restore section';
+  return `Remove ${title.toLowerCase()}`;
+}
+
+type MobileInspectorCommands = {
+  onSelectRange: (from: number, to: number) => void;
+  onDone: () => void;
+  onDelete: () => void;
+  onCut: () => void;
+  onPeriodHighlight: () => void;
+};
+
+type MobileInspectorPanels = {
+  effectControls: ReactNode;
+  highlightControls: ReactNode;
+  cursorInspector: ReactNode;
+};
+
+function ObjectActions({
+  kind,
+  title,
+  from,
+  to,
+  commands,
+}: {
+  kind: string | undefined;
+  title: string;
+  from: number | undefined;
+  to: number | undefined;
+  commands: MobileInspectorCommands;
+}) {
+  if (kind === 'range') {
+    return (
+      <div className="editor-object-actions">
+        <Button variant="secondary" onClick={commands.onCut} data-testid="cut-selection">
+          Cut selection
+        </Button>
+        <Button variant="ghost" onClick={commands.onPeriodHighlight} data-testid="add-period-highlight">
+          Highlight range
+        </Button>
+      </div>
+    );
+  }
+  if (kind === 'highlight') return null;
+  return (
+    <div className="editor-object-actions">
+      <small>{from !== undefined && to !== undefined ? `${formatClock(to - from)} · drag edges on the timeline to adjust` : null}</small>
+      <Button variant="ghost" onClick={commands.onDelete} data-testid="mobile-remove-object">
+        {removeLabel(kind, title)}
+      </Button>
+    </div>
+  );
+}
+
+type Retime = {
+  edits: ReplayEdits;
+  selection: Selection;
+  duration: number;
+  change: (edits: ReplayEdits, selection?: Selection) => void;
+  commands: MobileInspectorCommands;
+};
+
+function retimeSelection({ edits, selection, duration, change, commands }: Retime, edge: 'from' | 'to', time: number) {
+  if (!selection) return;
+  if (selection.kind === 'trim') change(setTrimEdge(edits, edge === 'from' ? 'start' : 'end', time, duration), selection);
+  else if (selection.kind === 'range') {
+    const next = Math.min(duration, Math.max(0, time));
+    commands.onSelectRange(
+      edge === 'from' ? Math.min(next, selection.to - 100) : selection.from,
+      edge === 'to' ? Math.max(selection.from + 100, next) : selection.to,
+    );
+  } else if (selection.kind === 'cut') change(moveCut(edits, selection.id, edge, time, duration), selection);
+  else if (selection.kind !== 'highlight') change(moveEffect(edits, selection.kind, selection.id, edge, time, duration), selection);
+}
+
+function InspectorBody({
+  retime,
+  title,
+  from,
+  to,
+  panels,
+  commands,
+}: {
+  retime: Retime;
+  title: string;
+  from: number | undefined;
+  to: number | undefined;
+  panels: MobileInspectorPanels;
+  commands: MobileInspectorCommands;
+}) {
+  const kind = retime.selection?.kind;
+  return (
+    <>
+      {kind === 'caption' ? (
+        <label className="editor-caption-label" htmlFor="mobile-caption-text">
+          Caption text
+        </label>
+      ) : null}
+      {kind === 'highlight' ? panels.highlightControls : panels.effectControls}
+      {from !== undefined && to !== undefined ? (
+        <div className="editor-object-timing" role="group" aria-label="Selected object timing">
+          <TimeField label="Start" value={from} max={Math.max(0, to - 100)} onChange={(time) => retimeSelection(retime, 'from', time)} />
+          <TimeField label="End" value={to} max={retime.duration} onChange={(time) => retimeSelection(retime, 'to', time)} />
+        </div>
+      ) : null}
+      <ObjectActions kind={kind} title={title} from={from} to={to} commands={commands} />
+    </>
+  );
+}
+
 /** Only the selected timeline object's properties. No selection means no settings panel. */
 export function MobileInspector({
   edits,
   selection,
   duration,
   change,
-  onSelectRange,
-  onDone,
-  onDelete,
-  onCut,
-  onPeriodHighlight,
-  effectControls,
-  highlightControls,
-  cursorInspector,
+  commands,
+  panels,
   cursorOpen,
   placingBlur,
 }: {
@@ -170,68 +318,18 @@ export function MobileInspector({
   selection: Selection;
   duration: number;
   change: (edits: ReplayEdits, selection?: Selection) => void;
-  onSelectRange: (from: number, to: number) => void;
-  onDone: () => void;
-  onDelete: () => void;
-  onCut: () => void;
-  onPeriodHighlight: () => void;
-  effectControls: ReactNode;
-  highlightControls: ReactNode;
-  cursorInspector: ReactNode;
+  commands: MobileInspectorCommands;
+  panels: MobileInspectorPanels;
   cursorOpen: boolean;
   placingBlur: boolean;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => {
-    if (cursorOpen || placingBlur) heading.current?.focus({ preventScroll: true });
-  }, [cursorOpen, placingBlur]);
+  useFocusWhen(heading, cursorOpen || placingBlur);
   if (!selection && !cursorOpen && !placingBlur) return null;
-  const kind = selection?.kind;
-  const region =
-    selection && 'id' in selection && kind !== 'highlight'
-      ? kind === 'cut'
-        ? edits.cuts.find((item) => item.id === selection.id)
-        : kind && kind !== 'range' && kind !== 'trim'
-          ? effectList(edits, kind).find((item) => item.id === selection.id)
-          : undefined
-      : undefined;
-  const bounds = kind === 'trim' ? trimOf(edits, duration) : undefined;
-  const range = selection?.kind === 'range' ? selection : undefined;
-  const from = bounds?.start ?? range?.from ?? region?.from;
-  const to = bounds?.end ?? range?.to ?? region?.to;
-  const title = cursorOpen
-    ? 'Cursor'
-    : placingBlur
-      ? 'Place blur'
-      : kind === 'trim'
-        ? 'Trim clip'
-        : kind === 'range'
-          ? 'Selected range'
-          : kind === 'caption'
-            ? 'Caption'
-            : kind === 'zoom'
-              ? 'Zoom'
-              : kind === 'speed'
-                ? 'Speed'
-                : kind === 'blur'
-                  ? 'Blur'
-                  : kind === 'highlight'
-                    ? 'Highlight'
-                    : 'Removed section';
-  const retime = (edge: 'from' | 'to', time: number) => {
-    if (!selection) return;
-    if (selection.kind === 'trim') change(setTrimEdge(edits, edge === 'from' ? 'start' : 'end', time, duration), selection);
-    else if (selection.kind === 'range') {
-      const next = Math.min(duration, Math.max(0, time));
-      onSelectRange(
-        edge === 'from' ? Math.min(next, selection.to - 100) : selection.from,
-        edge === 'to' ? Math.max(selection.from + 100, next) : selection.to,
-      );
-    } else if (selection.kind === 'cut') change(moveCut(edits, selection.id, edge, time, duration), selection);
-    else if (selection.kind !== 'highlight') change(moveEffect(edits, selection.kind, selection.id, edge, time, duration), selection);
-  };
+  const { from, to } = selectionSpan(edits, selection, duration);
+  const title = objectTitle(selection?.kind, cursorOpen, placingBlur);
   return (
-    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- Escape bubbles from the property controls; the section is not a focus target.
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: Escape bubbles from the property controls; the section is not a focus target.
     <section
       className="editor-context-panel"
       aria-label={`${title} properties`}
@@ -239,7 +337,7 @@ export function MobileInspector({
         if (event.key === 'Escape' && !event.defaultPrevented) {
           event.preventDefault();
           event.stopPropagation();
-          onDone();
+          commands.onDone();
         }
       }}
     >
@@ -247,48 +345,21 @@ export function MobileInspector({
         <h2 ref={heading} tabIndex={-1}>
           {title}
         </h2>
-        <Button variant="ghost" onClick={onDone} data-testid="mobile-object-done">
+        <Button variant="ghost" onClick={commands.onDone} data-testid="mobile-object-done">
           Done
         </Button>
       </header>
-      {cursorOpen ? (
-        cursorInspector
-      ) : placingBlur ? (
-        <p>Drag over the area to hide on the preview. Done cancels placement.</p>
-      ) : (
-        <>
-          {kind === 'caption' ? (
-            <label className="editor-caption-label" htmlFor="mobile-caption-text">
-              Caption text
-            </label>
-          ) : null}
-          {kind !== 'highlight' ? effectControls : highlightControls}
-          {from !== undefined && to !== undefined ? (
-            <div className="editor-object-timing" role="group" aria-label="Selected object timing">
-              <TimeField label="Start" value={from} max={Math.max(0, to - 100)} onChange={(time) => retime('from', time)} />
-              <TimeField label="End" value={to} max={duration} onChange={(time) => retime('to', time)} />
-            </div>
-          ) : null}
-          {kind === 'range' ? (
-            <div className="editor-object-actions">
-              <Button variant="secondary" onClick={onCut} data-testid="cut-selection">
-                Cut selection
-              </Button>
-              <Button variant="ghost" onClick={onPeriodHighlight} data-testid="add-period-highlight">
-                Highlight range
-              </Button>
-            </div>
-          ) : kind !== 'highlight' ? (
-            <div className="editor-object-actions">
-              <small>
-                {from !== undefined && to !== undefined ? `${formatClock(to - from)} · drag edges on the timeline to adjust` : null}
-              </small>
-              <Button variant="ghost" onClick={onDelete} data-testid="mobile-remove-object">
-                {kind === 'trim' ? 'Reset trim' : kind === 'cut' ? 'Restore section' : `Remove ${title.toLowerCase()}`}
-              </Button>
-            </div>
-          ) : null}
-        </>
+      {cursorOpen ? panels.cursorInspector : null}
+      {placingBlur && !cursorOpen ? <p>Drag over the area to hide on the preview. Done cancels placement.</p> : null}
+      {cursorOpen || placingBlur ? null : (
+        <InspectorBody
+          retime={{ edits, selection, duration, change, commands }}
+          title={title}
+          from={from}
+          to={to}
+          panels={panels}
+          commands={commands}
+        />
       )}
     </section>
   );

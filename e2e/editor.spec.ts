@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { serveApp } from './support.ts';
+import { boxOf, serveApp } from './support.ts';
 import { editListOf, editsVersion } from '../src/shared/edits.ts';
 
 // Edit mode (/r/<id>/edit), reached from the viewer's top-bar Edit button: "Remove waits" suggestions applied with
@@ -51,19 +51,18 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
   const frame = page.locator('.editor-stage > .stage-wrap');
   await expect(frame).toHaveCSS('box-shadow', 'none');
   await expect(frame).toHaveCSS('border-radius', '0px');
-  const frameBox = (await frame.boundingBox())!;
-  const panelBox = (await panel.boundingBox())!;
+  const frameBox = await boxOf(frame);
+  const panelBox = await boxOf(panel);
   expect(frameBox.width).toBeGreaterThan(500);
   expect(frameBox.x + frameBox.width).toBeLessThanOrEqual(panelBox.x + 1);
   const dock = page.getByRole('region', { name: 'Timeline', exact: true });
-  const dockBox = (await dock.boundingBox())!;
+  const dockBox = await boxOf(dock);
   expect(Math.abs(dockBox.y + dockBox.height - 800)).toBeLessThanOrEqual(1);
 
-  // Keyboard resizing still gives space to the timeline and takes it from the preview.
   const splitter = page.getByRole('separator', { name: 'Resize timeline' });
   await splitter.focus();
   await page.keyboard.press('ArrowUp');
-  await expect.poll(async () => (await dock.boundingBox())!.height).toBeCloseTo(dockBox.height + 24, 0);
+  await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(dockBox.height + 24, 0);
   await page.locator('body').press('t');
   const region = page.getByTestId('region-caption').first();
   const body = region.locator('.tl-region-body');
