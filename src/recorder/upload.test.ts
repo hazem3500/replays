@@ -73,6 +73,9 @@ describe('createTokenUpload', () => {
     });
     await expect(invalid({ bundle }, { signal })).rejects.toBeInstanceOf(IssueUploadError);
   });
+});
+
+describe('XHR upload progress', () => {
   it('reports XHR byte progress and aborts the request with its signal', async () => {
     class FakeXhr extends EventTarget {
       upload = new EventTarget();
@@ -91,7 +94,7 @@ describe('createTokenUpload', () => {
       return xhr;
     });
     try {
-      const upload = createTokenUpload({ endpoint: '/ingest', getToken: async () => 'token', compress: false });
+      const upload = createTokenUpload({ endpoint: '/ingest', getToken: () => Promise.resolve('token'), compress: false });
       const progress = vi.fn<(value: { loaded: number; total?: number }) => void>();
       const abort = new AbortController();
       const pending = upload({ bundle }, { signal: abort.signal, onProgress: progress });

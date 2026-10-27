@@ -132,7 +132,9 @@ const link = (label: string, href: string) => {
   return safe ? element('a', { href: safe, target: '_blank', rel: 'noopener noreferrer' }, [label]) : undefined;
 };
 
-export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
+export function createDefaultUi(
+  options: DefaultUiOptions = {},
+): RecorderUi & Required<Pick<RecorderUi, 'showUploading' | 'showResult' | 'dismiss'>> {
   const messages = {
     ...DEFAULT_MESSAGES,
     ...(options.privacyMode === 'visible'
@@ -287,14 +289,14 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
       }
       const { root, remove } = mount();
       const previous = focusReturn();
-      let releaseTrap: (() => void) | undefined;
+      const trap = { release: () => {} };
       let done = false;
       const onAbort = () => finish(cancelValue);
       const finish = (value: T) => {
         if (done) return;
         done = true;
         signal?.removeEventListener('abort', onAbort);
-        releaseTrap?.();
+        trap.release();
         remove();
         previous.restore();
         resolve(value);
@@ -311,7 +313,7 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
         if (event.key === 'Escape') finish(cancelValue);
       });
       root.append(element('div', { className: 'backdrop' }, [box]));
-      releaseTrap = trapFocus(box);
+      trap.release = trapFocus(box);
       focus.focus();
     });
 
@@ -452,26 +454,19 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
       const current = surface(receipt ? 'complete' : 'error', text);
       const ownGeneration = generation;
       const feedback = element('span', { className: 'sr-only' });
+      const announce = (text: string, control?: HTMLElement) => {
+        if (generation !== ownGeneration) return;
+        const target = control ?? feedback;
+        if (!control) target.className = 'copy-feedback';
+        target.textContent = text;
+        current.live.textContent = text;
+      };
       const copy = async (value?: string, control?: HTMLElement) => {
         try {
           await navigator.clipboard.writeText(value ?? receipt?.url ?? receipt?.reference ?? receipt?.replayId ?? '');
-          if (generation === ownGeneration) {
-            if (control) control.textContent = messages.copied ?? 'Copied';
-            else {
-              feedback.className = 'copy-feedback';
-              feedback.textContent = messages.copied ?? 'Copied';
-            }
-            current.live.textContent = messages.copied ?? 'Copied';
-          }
+          announce(messages.copied ?? 'Copied', control);
         } catch {
-          if (generation === ownGeneration) {
-            if (control) control.textContent = messages.copyFailed ?? 'Could not copy';
-            else {
-              feedback.className = 'copy-feedback';
-              feedback.textContent = messages.copyFailed ?? 'Could not copy';
-            }
-            current.live.textContent = messages.copyFailed ?? 'Could not copy';
-          }
+          announce(messages.copyFailed ?? 'Could not copy', control);
         }
       };
       const context: CompletionContext = {

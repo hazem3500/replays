@@ -12,6 +12,11 @@ export type TimerSnapshot = {
   label: string;
   remainingLabel: string;
 };
+function timerWarning(remainingMs: number, options: TimerOptions): TimerSnapshot['warning'] {
+  if (remainingMs <= (options.finalAtMs ?? 10000)) return 'final';
+  if (remainingMs <= (options.warnAtMs ?? 30000)) return 'soon';
+  return 'none';
+}
 export function recordingTimer(state: RecorderState, now = Date.now(), options: TimerOptions = {}): TimerSnapshot | undefined {
   if (state.status !== 'recording') return undefined;
   const elapsedMs = Math.max(0, now - state.startedAt);
@@ -21,7 +26,7 @@ export function recordingTimer(state: RecorderState, now = Date.now(), options: 
     remainingMs,
     maxDurationMs: state.maxDurationMs,
     fraction: Math.min(1, elapsedMs / state.maxDurationMs),
-    warning: remainingMs <= (options.finalAtMs ?? 10000) ? 'final' : remainingMs <= (options.warnAtMs ?? 30000) ? 'soon' : 'none',
+    warning: timerWarning(remainingMs, options),
     sizeWarning: 'none',
     label: formatDuration(elapsedMs),
     remainingLabel: formatDuration(remainingMs),

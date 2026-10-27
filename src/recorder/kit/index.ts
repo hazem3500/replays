@@ -4,16 +4,17 @@ export function markRecorderUi<T extends HTMLElement>(element: T): T {
   element.setAttribute('data-recorder-ui', '');
   return element;
 }
-export function mountRecorderRoot(container: HTMLElement = document.body) {
+export function mountRecorderRoot(container: HTMLElement = document.body): { root: HTMLDivElement; remove(): void } {
   const root = markRecorderUi(document.createElement('div'));
   container.append(root);
-  return { root, remove: () => root.remove() };
+  return { root, remove: (): void => root.remove() };
 }
-export function createAnnouncer(options: { container?: () => HTMLElement } = {}) {
+type Announcer = { say(text: string, politeness?: 'polite' | 'assertive'): void; dispose(): void };
+export function createAnnouncer(options: { container?: () => HTMLElement } = {}): Announcer {
   let region: HTMLElement | undefined;
   let last = '';
   return {
-    say(text: string, politeness: 'polite' | 'assertive' = 'polite') {
+    say(text: string, politeness: 'polite' | 'assertive' = 'polite'): void {
       if (last === text) return;
       last = text;
       if (!region) {
@@ -26,18 +27,18 @@ export function createAnnouncer(options: { container?: () => HTMLElement } = {})
       region.setAttribute('aria-live', politeness);
       region.textContent = text;
     },
-    dispose() {
+    dispose(): void {
       region?.remove();
       region = undefined;
       last = '';
     },
   };
 }
-export function focusReturn(fallback?: () => HTMLElement | null) {
+export function focusReturn(fallback?: () => HTMLElement | null): { restore: () => void } {
   let previous = document.activeElement;
   while (previous?.shadowRoot?.activeElement) previous = previous.shadowRoot.activeElement;
   return {
-    restore() {
+    restore(): void {
       const target = previous?.isConnected ? previous : fallback?.();
       if (target instanceof HTMLElement) target.focus();
     },
@@ -62,8 +63,9 @@ export function trapFocus(root: HTMLElement): () => void {
     const controls = [...root.querySelectorAll<HTMLElement>('button, a[href], input, textarea, select, [tabindex]')].filter(
       (node) => !node.hidden && !node.closest('[hidden], [inert]') && !node.hasAttribute('disabled') && node.tabIndex >= 0,
     );
-    const active = root.getRootNode() instanceof ShadowRoot ? (root.getRootNode() as ShadowRoot).activeElement : document.activeElement;
-    const index = controls.indexOf(active as HTMLElement);
+    const scope = root.getRootNode();
+    const active = scope instanceof ShadowRoot ? scope.activeElement : document.activeElement;
+    const index = active instanceof HTMLElement ? controls.indexOf(active) : -1;
     const next = controls[(index + (event.shiftKey ? -1 : 1) + controls.length) % controls.length];
     event.preventDefault();
     (next ?? root).focus();

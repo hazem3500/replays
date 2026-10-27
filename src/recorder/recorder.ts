@@ -6,6 +6,10 @@ import { createAttributeMasker } from './sanitize-events.ts';
 import type { Recorder, RecorderOptions, RecorderState, RecorderTrigger, RecordingSummary, RrwebModule } from './types.ts';
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
 
+import { UI_ATTRIBUTE, BLOCK_ATTRIBUTE } from './privacy.ts';
+
+import { createUploadProgress } from './upload-progress.ts';
+
 export const DEFAULT_MAX_DURATION_MS = 3 * 60_000;
 export const MAX_DURATION_CEILING_MS = 10 * 60_000;
 export const MIN_DURATION_MS = 5_000;
@@ -14,7 +18,6 @@ export const MAX_BYTES_CEILING = 20 * 1024 * 1024;
 const MAX_CONSOLE_ENTRIES = 500;
 const MAX_NETWORK_ENTRIES = 1_000;
 
-import { UI_ATTRIBUTE, BLOCK_ATTRIBUTE } from './privacy.ts';
 export { UI_ATTRIBUTE, BLOCK_ATTRIBUTE };
 
 const MEDIA_SELECTOR = 'img, picture, video, audio, canvas, iframe, object, embed';
@@ -125,7 +128,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const checkActivation = () => {
     const activation =
       options.activation ??
-      (typeof navigator !== 'undefined' && navigator.userActivation ? () => navigator.userActivation.isActive : undefined);
+      (typeof navigator !== 'undefined' && navigator?.userActivation ? () => navigator.userActivation.isActive : undefined);
     if (!activation) {
       warn('User activation API unavailable; check skipped');
       return;
@@ -343,7 +346,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
             ui.showIndicator({
               startedAt,
               maxDurationMs,
-              attestStop: recorder.attestStop,
+              attestStop: (element) => recorder.attestStop(element),
               stop: () => {
                 if (session === current) recorder.stop('user');
               },
@@ -375,10 +378,11 @@ export function createRecorder(options: RecorderOptions): Recorder {
       current.cleanups.push(() => clearTimeout(grace));
     },
 
-    stop(reason = 'user') {
+    stop(requestedReason = 'user') {
+      let reason = requestedReason;
       const current = session;
-      if (!current || state.status !== 'recording') return undefined;
-      // A quick stop must not bypass the grace-period evidence check.
+      if (!current || state.status !== 'recording') return;
+      // invariant: A quick stop must not bypass the grace-period evidence check.
       if (![...stops.keys()].some(visible) && reason !== 'page-hidden') {
         if (options.strictInvariants) reason = 'no-indicator';
         else warn('Register a visible Stop control with attestStop (warn-only migration)');
@@ -396,7 +400,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         recording = undefined;
         setState({ status: 'idle' });
         resolveStopWaiters();
-        return undefined;
+        return;
       }
 
       try {
@@ -425,7 +429,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
           phase: 'start',
           error: error instanceof Error ? error : new Error(String(error)),
         });
-        return undefined;
+        return;
       } finally {
         resolveStopWaiters();
       }
@@ -445,23 +449,12 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const abort = new AbortController();
       uploadAbort = abort;
       setState({ status: 'uploading', summary: current.summary });
-      let lastProgress = 0;
-      let progressTimer: ReturnType<typeof setTimeout> | undefined;
-      let pendingProgress: { loaded: number; total?: number } | undefined;
-      const flushProgress = () => {
-        progressTimer = undefined;
-        if (abort.signal.aborted || generation !== lifecycleGeneration || state.status !== 'uploading' || !pendingProgress) return;
-        lastProgress = Date.now();
-        const { loaded, total } = pendingProgress;
-        setState({
-          status: 'uploading',
-          summary: current.summary,
-          progress: {
-            loaded: Math.max(0, loaded),
-            ...(total !== undefined ? { total, fraction: total > 0 ? Math.min(1, Math.max(0, loaded / total)) : 0 } : {}),
-          },
-        });
-      };
+      const progress = createUploadProgress({
+        summary: current.summary,
+        state: currentState,
+        setState,
+        valid: () => !abort.signal.aborted && generation === lifecycleGeneration,
+      });
       reviewedReport ??= {
         bundle: current.bundle,
         ...(note ? { note } : {}),
@@ -471,12 +464,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       try {
         const receipt: IssueReportReceipt = await options.upload(reviewedReport, {
           signal: abort.signal,
-          onProgress(progress) {
-            if (!Number.isFinite(progress.loaded) || (progress.total !== undefined && !Number.isFinite(progress.total))) return;
-            pendingProgress = progress;
-            if (Date.now() - lastProgress >= 250) flushProgress();
-            else progressTimer ??= setTimeout(flushProgress, 250 - (Date.now() - lastProgress));
-          },
+          onProgress: (value) => progress.update(value),
         });
         if (abort.signal.aborted || generation !== lifecycleGeneration) throw new Error('Upload was discarded');
         recording = undefined;
@@ -495,7 +483,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         }
         throw failure;
       } finally {
-        clearTimeout(progressTimer);
+        progress.dispose();
         if (uploadAbort === abort) uploadAbort = undefined;
       }
     },
@@ -546,7 +534,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       // pressing Record again drops it and starts over.
       if (!askToReview && state.status === 'error' && state.phase === 'upload') recorder.discard();
       if (destroyed || !['idle', 'uploaded', 'error'].includes(state.status) || (state.status === 'error' && state.phase === 'upload')) {
-        return undefined;
+        return;
       }
       const generation = ++requestGeneration;
       const ownsRequest = () => generation === requestGeneration;
@@ -571,10 +559,10 @@ export function createRecorder(options: RecorderOptions): Recorder {
             signal: openPrompt(),
           })
           .catch(() => false);
-        if (!ownsRequest() || currentState().status !== 'consent') return undefined;
+        if (!ownsRequest() || currentState().status !== 'consent') return;
         if (!agreed) {
           setState({ status: 'idle' });
-          return undefined;
+          return;
         }
       }
 
@@ -582,7 +570,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       try {
         await recorder.start({ consent: true, trigger });
       } catch (error) {
-        if (!ownsRequest()) return undefined;
+        if (!ownsRequest()) return;
         resolveStopWaiters();
         if (currentState().status !== 'error')
           setState({ status: 'error', phase: 'start', error: error instanceof Error ? error : new Error(String(error)) });
@@ -590,14 +578,14 @@ export function createRecorder(options: RecorderOptions): Recorder {
           status: 'error',
           error: error instanceof Error ? error : new Error(String(error)),
         });
-        return undefined;
+        return;
       }
-      if (!ownsRequest()) return undefined;
+      if (!ownsRequest()) return;
       await stopped;
-      if (!ownsRequest()) return undefined;
+      if (!ownsRequest()) return;
 
       const sendReviewed = async (note?: string) => {
-        if (!ownsRequest()) return undefined;
+        if (!ownsRequest()) return;
         const hide = ui.showUploading?.();
         try {
           const receipt = await recorder.upload({
@@ -616,59 +604,54 @@ export function createRecorder(options: RecorderOptions): Recorder {
       };
 
       if (!askToReview) {
-        if (!ownsRequest()) return undefined;
+        if (!ownsRequest()) return;
         const current = currentState();
         if (current.status !== 'review') {
           if (current.status === 'error') ui.showResult?.({ status: 'error', error: current.error });
           recorder.discard();
-          return undefined;
+          return;
         }
         // Finishing the recording is the upload confirmation.
         const attempt = (): Promise<IssueReportReceipt | undefined> =>
-          sendReviewed().catch((error: unknown) => {
-            if (!ownsRequest() || currentState().status !== 'error') return undefined;
+          sendReviewed().catch((error: unknown): IssueReportReceipt | undefined => {
+            if (!ownsRequest() || currentState().status !== 'error') return;
             ui.showResult?.({
               status: 'error',
               error: error instanceof Error ? error : new Error(String(error)),
               retry: () => void attempt(),
             });
-            return undefined;
+            return;
           });
         return attempt();
       }
 
       const current = currentState();
-      if (!ownsRequest() || current.status !== 'review') return undefined;
+      if (!ownsRequest() || current.status !== 'review') return;
       const decision = await ui
         .confirmUpload({ summary: current.summary, signal: openPrompt() })
         .catch(() => ({ confirmed: false }) as const);
-      if (!ownsRequest()) return undefined;
+      if (!ownsRequest()) return;
       if (!decision.confirmed) {
         recorder.discard();
-        return undefined;
+        return;
       }
       // The upload was already reviewed. A network retry sends the same
       // payload/note without requiring consent or review a second time.
       const attempt = (): Promise<IssueReportReceipt | undefined> =>
-        sendReviewed(decision.note).catch((error: unknown) => {
-          if (!ownsRequest() || currentState().status !== 'error') return undefined;
+        sendReviewed(decision.note).catch((error: unknown): IssueReportReceipt | undefined => {
+          if (!ownsRequest() || currentState().status !== 'error') return;
           ui.showResult?.({
             status: 'error',
             error: error instanceof Error ? error : new Error(String(error)),
             retry: () => void attempt(),
           });
-          return undefined;
+          return;
         });
       return attempt();
     },
 
     setReportContext(context) {
-      reportContext = {
-        ...reportContext,
-        ...context,
-        ...(context.metadata ? { metadata: { ...context.metadata } } : {}),
-        ...(context.crisp ? { crisp: { ...context.crisp } } : {}),
-      };
+      reportContext = structuredClone({ ...reportContext, ...context });
     },
 
     destroy() {

@@ -1,7 +1,7 @@
 /** Browser-only in-page recording. No server, Node or React imports. */
 export { buildReplayBundle } from './bundle.ts';
 export type * from './bundle-types.ts';
-export { createDefaultUi } from './compat.ts';
+export * from './compat.ts';
 export { DEFAULT_MESSAGES } from './messages.ts';
 export { formatDuration, formatDurationLong } from './format.ts';
 export * from './timer.ts';

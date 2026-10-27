@@ -1,4 +1,4 @@
-import type { Recorder, RecorderState } from './types.ts';
+import type { Recorder, RecorderState, RecorderTrigger } from './types.ts';
 import type { IssueUploadErrorDetails } from './upload.ts';
 
 export type RecorderView =
@@ -23,7 +23,9 @@ export const selectView = (state: RecorderState): RecorderView => {
       return 'sent';
     case 'error':
       return state.phase === 'start' ? 'failed-start' : 'failed-upload';
-    default:
+    case 'idle':
+    case 'recording':
+    case 'starting':
       return state.status;
   }
 };
@@ -33,7 +35,7 @@ export const selectSummary = (state: RecorderState) => ('summary' in state ? sta
 export const selectReceipt = (state: RecorderState) => (state.status === 'uploaded' ? state.receipt : undefined);
 export const selectUploadProgress = (state: RecorderState) => (state.status === 'uploading' ? state.progress : undefined);
 export const selectError = (state: RecorderState) => {
-  if (state.status !== 'error') return undefined;
+  if (state.status !== 'error') return;
   const details = state.error as Error & IssueUploadErrorDetails;
   return {
     phase: state.phase,
@@ -43,7 +45,7 @@ export const selectError = (state: RecorderState) => {
 };
 export function createRecorderStore(recorder: Recorder) {
   return {
-    getState: recorder.getState,
+    getState: () => recorder.getState(),
     subscribe: (fn: () => void) => recorder.subscribe(fn),
     select<T>(selector: (state: RecorderState) => T, isEqual: (a: T, b: T) => boolean = Object.is) {
       let value = selector(recorder.getState());
@@ -67,16 +69,16 @@ export function createRecorderStore(recorder: Recorder) {
       };
     },
     actions: {
-      request: recorder.request,
+      request: (trigger?: RecorderTrigger) => recorder.request(trigger),
       accept: () => recorder.respond({ consent: true }),
       decline: () => recorder.respond({ consent: false }),
       stop: () => {
         recorder.stop();
       },
       send: (note?: string) => recorder.respond({ upload: true, ...(note !== undefined ? { note } : {}) }),
-      discard: recorder.discard,
-      retry: recorder.retryUpload,
-      dismiss: recorder.discard,
+      discard: () => recorder.discard(),
+      retry: () => recorder.retryUpload(),
+      dismiss: () => recorder.discard(),
     },
   };
 }

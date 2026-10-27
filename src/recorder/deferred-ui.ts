@@ -5,15 +5,21 @@ export type PendingPrompt =
   | ({ kind: 'review' } & Parameters<RecorderUi['confirmUpload']>[0])
   | ({ kind: 'indicator' } & Parameters<RecorderUi['showIndicator']>[0]);
 
+function subscribe(listeners: Set<() => void>, fn: () => void): () => void {
+  listeners.add(fn);
+  return () => {
+    listeners.delete(fn);
+  };
+}
 export function createDeferredUi() {
   let current: PendingPrompt | undefined;
   let respond: ((decision: RecorderDecision) => void) | undefined;
   let cancel: (() => void) | undefined;
   const listeners = new Set<() => void>();
-  const set = (prompt?: PendingPrompt) => {
+  function set(prompt?: PendingPrompt): void {
     current = prompt;
     for (const fn of listeners) fn();
-  };
+  }
   const ui: RecorderUi = {
     requestConsent(context) {
       cancel?.();
@@ -78,12 +84,7 @@ export function createDeferredUi() {
     ui,
     pending: {
       get: () => current,
-      subscribe(fn: () => void) {
-        listeners.add(fn);
-        return () => {
-          listeners.delete(fn);
-        };
-      },
+      subscribe: (fn: () => void) => subscribe(listeners, fn),
     },
   };
 }

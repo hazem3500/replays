@@ -1,145 +1,79 @@
-import {
-  createContext,
-  createElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  type ReactNode,
-} from 'react';
+import { createContext, createElement, useContext, useRef, useState, useSyncExternalStore } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 import { createRecorder } from '../recorder.ts';
 import { createDeferredUi } from '../deferred-ui.ts';
+import type { PendingPrompt } from '../deferred-ui.ts';
 import { createRecorderStore } from '../store.ts';
-import { createRecordingTimer, recordingTimer, type TimerOptions } from '../timer.ts';
-import { createAnnouncer } from '../kit/index.ts';
+import type { TimerOptions, TimerSnapshot } from '../timer.ts';
+import { useRecorderLifetime, useStopControl, useLiveAnnouncements } from './hooks/lifecycle.ts';
+import { useTimerSnapshot } from './hooks/timer.ts';
 import type { Recorder, RecorderOptions, RecorderState } from '../types.ts';
 
-const Context = createContext<
-  | {
-      recorder: Recorder;
-      store: ReturnType<typeof createRecorderStore>;
-      deferred?: ReturnType<typeof createDeferredUi>;
-    }
-  | undefined
->(undefined);
-
-export function RecorderProvider(props: {
+type ContextValue = { recorder: Recorder; store: ReturnType<typeof createRecorderStore>; deferred?: ReturnType<typeof createDeferredUi> };
+type ProviderProps = {
   recorder?: Recorder;
   options?: RecorderOptions;
   deferred?: ReturnType<typeof createDeferredUi>;
   children?: ReactNode;
-}) {
-  const [value] = useState(() => {
-    if (props.recorder)
-      return {
-        recorder: props.recorder,
-        store: createRecorderStore(props.recorder),
-        ...(props.deferred ? { deferred: props.deferred } : {}),
-      };
-    if (!props.options) throw new Error('RecorderProvider requires options or recorder');
-    const deferred = createDeferredUi();
-    const recorder = createRecorder({ ...props.options, ui: props.options.ui ?? deferred.ui });
-    return { recorder, store: createRecorderStore(recorder), ...(!props.options.ui ? { deferred } : {}) };
-  });
-  const lifetime = useRef(0);
-  useEffect(() => {
-    const token = ++lifetime.current;
-    return () => {
-      queueMicrotask(() => {
-        // oxlint-disable-next-line react/exhaustive-deps -- generation counter deliberately observes the next StrictMode setup.
-        if (lifetime.current === token && !props.recorder) value.recorder.destroy();
-      });
+};
+const Context = createContext<ContextValue | undefined>(undefined);
+function providerValue(props: ProviderProps): ContextValue {
+  if (props.recorder)
+    return {
+      recorder: props.recorder,
+      store: createRecorderStore(props.recorder),
+      ...(props.deferred ? { deferred: props.deferred } : {}),
     };
-  }, [props.recorder, value]);
+  if (!props.options) throw new Error('RecorderProvider requires options or recorder');
+  const deferred = createDeferredUi();
+  const recorder = createRecorder({ ...props.options, ui: props.options.ui ?? deferred.ui });
+  return { recorder, store: createRecorderStore(recorder), ...(!props.options.ui ? { deferred } : {}) };
+}
+export function RecorderProvider(props: ProviderProps): ReactElement {
+  const [value] = useState(() => providerValue(props));
+  useRecorderLifetime(value.recorder, !props.recorder);
   return createElement(Context.Provider, { value }, props.children);
 }
-function useValue() {
+function useValue(): ContextValue {
   const value = useContext(Context);
   if (!value) throw new Error('Use RecorderProvider');
   return value;
 }
-export const useRecorder = () => useValue().recorder;
-export const useRecorderActions = () => useValue().store.actions;
-export function useRecorderState<T = RecorderState>(
-  selector: (state: RecorderState) => T = (state) => state as T,
+export const useRecorder = (): Recorder => useValue().recorder;
+export const useRecorderActions = (): ReturnType<typeof createRecorderStore>['actions'] => useValue().store.actions;
+export function useRecorderState<T = RecorderState>(selector?: (state: RecorderState) => T, isEqual?: (a: T, b: T) => boolean): T;
+export function useRecorderState<T>(
+  selector?: (state: RecorderState) => T,
   isEqual: (a: T, b: T) => boolean = Object.is,
-): T {
-  const { recorder } = useValue();
-  const cache = useRef<{ value: T } | undefined>(undefined);
+): T | RecorderState {
+  const { recorder, store } = useValue();
+  const cache = useRef<{ kind: 'selected'; value: T } | { kind: 'state'; value: RecorderState } | undefined>(undefined);
   const get = () => {
-    const value = selector(recorder.getState());
-    if (!cache.current || !isEqual(cache.current.value, value)) cache.current = { value };
+    const state = recorder.getState();
+    if (!selector) return state;
+    const value = selector(state);
+    if (cache.current?.kind !== 'selected' || !isEqual(cache.current.value, value)) cache.current = { kind: 'selected', value };
     return cache.current.value;
   };
-  return useSyncExternalStore(recorder.subscribe, get, get);
+  return useSyncExternalStore(store.subscribe, get, get);
 }
-const noopSubscribe = () => () => {};
-const empty = () => undefined;
-export function useRecorderPrompt() {
+const noopSubscribe = (): (() => void) => () => {};
+function empty(): undefined {
+  return;
+}
+export function useRecorderPrompt(): PendingPrompt | undefined {
   const pending = useValue().deferred?.pending;
   return useSyncExternalStore(pending?.subscribe ?? noopSubscribe, pending?.get ?? empty, empty);
 }
-function timerSource(recorder: Recorder, config: TimerOptions) {
-  let snapshot = recordingTimer(recorder.getState(), config.now?.() ?? Date.now(), config);
-  return {
-    get: () => snapshot,
-    subscribe(listener: () => void) {
-      const timer = createRecordingTimer(recorder, config);
-      snapshot = timer.get();
-      const off = timer.subscribe(() => {
-        snapshot = timer.get();
-        listener();
-      });
-      return () => {
-        off();
-        timer.dispose();
-      };
-    },
-  };
-}
-export function useRecordingTimer(options: TimerOptions = {}) {
-  const recorder = useRecorder();
-  const { warnAtMs, finalAtMs, now } = options;
-  const store = useMemo(
-    () =>
-      timerSource(recorder, {
-        ...(warnAtMs !== undefined ? { warnAtMs } : {}),
-        ...(finalAtMs !== undefined ? { finalAtMs } : {}),
-        ...(now ? { now } : {}),
-      }),
-    [recorder, warnAtMs, finalAtMs, now],
-  );
-  return useSyncExternalStore(store.subscribe, store.get, store.get);
+export function useRecordingTimer(options: TimerOptions = {}): TimerSnapshot | undefined {
+  return useTimerSnapshot(useRecorder(), options);
 }
 export function useStopAttestation(): (element: HTMLElement | null) => void {
-  const recorder = useRecorder();
-  const release = useRef<(() => void) | undefined>(undefined);
-  return useCallback(
-    (element) => {
-      release.current?.();
-      release.current = undefined;
-      if (element) release.current = recorder.attestStop(element);
-    },
-    [recorder],
-  );
+  return useStopControl(useRecorder());
 }
-export function useAnnouncer() {
-  const announcer = useRef<ReturnType<typeof createAnnouncer> | undefined>(undefined);
-  useEffect(
-    () => () => {
-      announcer.current?.dispose();
-      announcer.current = undefined;
-    },
-    [],
-  );
-  return useCallback((text: string, politeness?: 'polite' | 'assertive') => {
-    announcer.current ??= createAnnouncer();
-    announcer.current.say(text, politeness);
-  }, []);
+export function useAnnouncer(): (text: string, politeness?: 'polite' | 'assertive') => void {
+  return useLiveAnnouncements();
 }
-export function RecorderRegion(props: { children?: ReactNode; className?: string }) {
+export function RecorderRegion(props: { children?: ReactNode; className?: string }): ReactElement {
   return createElement('div', { 'data-recorder-ui': '', ...props });
 }

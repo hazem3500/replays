@@ -1,27 +1,12 @@
-import { useEffect, useId, useRef, type ReactNode } from 'react';
-import { focusReturn, trapFocus } from '@hazem3500/replays/recorder/kit';
+import { useId, useRef } from 'react';
+import type { ReactNode } from 'react';
+import { useDialogFocus } from '../../hooks/dialog-focus.ts';
 /** Copy-owned dialog shell, with the recorder kit handling focus and inert siblings. */
-export function Dialog({ title, children, onCancel }: { title: string; children: ReactNode; onCancel(): void }) {
+export function Dialog({ title, children, onCancel }: { title: string; children: ReactNode; onCancel: () => void }) {
   const root = useRef<HTMLDivElement>(null);
   const id = useId();
-  useEffect(() => {
-    const node = root.current!;
-    const previous = focusReturn();
-    const release = trapFocus(node);
-    const key = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        onCancel();
-      }
-    };
-    node.addEventListener('keydown', key);
-    node.querySelector<HTMLElement>('[data-initial-focus]')?.focus();
-    return () => {
-      node.removeEventListener('keydown', key);
-      release();
-      previous.restore();
-    };
-  }, [onCancel]);
+  useDialogFocus(root, onCancel);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div

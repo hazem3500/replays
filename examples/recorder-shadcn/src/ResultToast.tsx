@@ -9,10 +9,13 @@ export function ResultToast() {
   const error = selectError(state);
   const progress = selectUploadProgress(state);
   if (!['uploading', 'uploaded', 'error'].includes(state.status)) return null;
+  let message = error?.message;
+  if (state.status === 'uploading') message = 'Sending…';
+  if (state.status === 'uploaded') message = 'Recording sent';
   return (
     <Toast>
       <p role="status" aria-live="polite" aria-atomic="true">
-        {state.status === 'uploading' ? 'Sending…' : state.status === 'uploaded' ? 'Recording sent' : error?.message}
+        {message}
       </p>
       {state.status === 'uploading' ? (
         <Progress value={progress?.fraction} />

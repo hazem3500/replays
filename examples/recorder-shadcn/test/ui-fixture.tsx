@@ -6,22 +6,21 @@ import type { Recorder, RecorderState, RecorderUi } from '@hazem3500/replays/rec
 import { RecorderUi as ReferenceUi } from '../src/RecorderUi.tsx';
 
 function actNow<T>(run: () => T): T {
-  let result!: T;
+  const result: { value?: T } = {};
   act(() => {
-    result = run();
+    result.value = run();
   });
-  return result;
+  if (!('value' in result)) throw new Error('React did not run the fixture action');
+  return result.value;
 }
-export function referenceFactory(): RecorderUi {
-  const deferred = createDeferredUi();
-  const container = document.createElement('div');
-  document.body.append(container);
-  const root = createRoot(container);
+function absent(): undefined {
+  return;
+}
+function referenceController(deferred: ReturnType<typeof createDeferredUi>, dismiss: () => void) {
   const listeners = new Set<(state: RecorderState) => void>();
   let state: RecorderState = { status: 'idle' };
   let indicator: Parameters<RecorderUi['showIndicator']>[0] | undefined;
   let retry: (() => void) | undefined;
-  let disposed = false;
   const set = (next: RecorderState) =>
     actNow(() => {
       state = next;
@@ -35,71 +34,90 @@ export function referenceFactory(): RecorderUi {
         listeners.delete(fn);
       };
     },
-    respond: (decision) => {
-      actNow(() => deferred.ui.respond!(decision));
+    respond(decision) {
+      actNow(() => deferred.ui.respond?.(decision));
     },
-    request: async () => undefined,
-    start: async () => {},
+    request: () => Promise.resolve(absent()),
+    start: () => Promise.resolve(),
     stop() {
       indicator?.stop();
-      return undefined;
+      return absent();
     },
-    upload: async () => ({ replayId: 'test' }),
-    retryUpload: async () => {
+    upload: () => Promise.resolve({ replayId: 'test' }),
+    retryUpload() {
       retry?.();
-      return { replayId: 'test' };
+      return Promise.resolve({ replayId: 'test' });
     },
     attestStop(element) {
       return indicator?.attestStop?.(element) ?? (() => {});
     },
-    getProgress: () => undefined,
+    getProgress: absent,
     setReportContext() {},
-    discard() {
-      ui.dismiss?.();
-    },
-    destroy() {
-      ui.dismiss?.();
-    },
+    discard: dismiss,
+    destroy: dismiss,
   };
-  const ui: RecorderUi = {
-    requestConsent(context) {
-      set({ status: 'consent', trigger: context.trigger });
-      return actNow(() => deferred.ui.requestConsent(context));
-    },
-    showIndicator(context) {
+  return {
+    recorder,
+    set,
+    indicator(context: Parameters<RecorderUi['showIndicator']>[0]) {
       indicator = context;
-      set({ status: 'recording', trigger: { source: 'user' }, startedAt: context.startedAt, maxDurationMs: context.maxDurationMs });
-      const hide = actNow(() => deferred.ui.showIndicator(context));
-      return () => {
-        actNow(hide);
-        set({ status: 'idle' });
-      };
     },
-    confirmUpload(context) {
-      set({ status: 'review', summary: context.summary });
-      return actNow(() => deferred.ui.confirmUpload(context));
-    },
-    showResult(result) {
+    result(result: Parameters<NonNullable<RecorderUi['showResult']>>[0]) {
       if (result.status === 'uploaded') set({ status: 'uploaded', receipt: result.receipt });
       else {
         retry = result.retry;
         set({ status: 'error', phase: 'upload', error: result.error });
       }
     },
-    dismiss() {
-      if (!disposed) {
-        disposed = true;
-        actNow(() => {
-          deferred.ui.dismiss?.();
-          root.unmount();
-        });
-        container.remove();
-      }
+  };
+}
+export function referenceFactory(): RecorderUi {
+  const deferred = createDeferredUi();
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  let disposed = false;
+  const dismiss = () => {
+    if (disposed) return;
+    disposed = true;
+    actNow(() => {
+      deferred.ui.dismiss?.();
+      root.unmount();
+    });
+    container.remove();
+  };
+  const controller = referenceController(deferred, dismiss);
+  const ui: RecorderUi = {
+    requestConsent(context) {
+      controller.set({ status: 'consent', trigger: context.trigger });
+      return actNow(() => deferred.ui.requestConsent(context));
     },
+    showIndicator(context) {
+      controller.indicator(context);
+      controller.set({
+        status: 'recording',
+        trigger: { source: 'user' },
+        startedAt: context.startedAt,
+        maxDurationMs: context.maxDurationMs,
+      });
+      const hide = actNow(() => deferred.ui.showIndicator(context));
+      return () => {
+        actNow(hide);
+        controller.set({ status: 'idle' });
+      };
+    },
+    confirmUpload(context) {
+      controller.set({ status: 'review', summary: context.summary });
+      return actNow(() => deferred.ui.confirmUpload(context));
+    },
+    showResult(result) {
+      controller.result(result);
+    },
+    dismiss,
   };
   actNow(() =>
     root.render(
-      <RecorderProvider recorder={recorder} deferred={deferred}>
+      <RecorderProvider recorder={controller.recorder} deferred={deferred}>
         <ReferenceUi />
       </RecorderProvider>,
     ),

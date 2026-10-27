@@ -10,7 +10,7 @@ export function formatDurationLong(ms: number, locale = 'en'): string {
     [Math.floor(seconds / 60) % 60, 'minute'],
     [seconds % 60, 'second'],
   ]
-    .filter(([value]) => value || seconds === 0)
+    .filter(([value]) => Boolean(value) || seconds === 0)
     .map(([value, unit]) => new Intl.NumberFormat(locale, { style: 'unit', unit: String(unit), unitDisplay: 'long' }).format(Number(value)))
     .filter((_, index) => seconds > 0 || index === 2)
     .join(' ');
