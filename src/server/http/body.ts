@@ -23,6 +23,11 @@ export async function readBytes(request: Request, maxBytes: number) {
   return Buffer.concat(chunks, size);
 }
 
+/** `25 MB` for whole megabytes, else the exact byte count. */
+function sizeLabel(maxBytes: number) {
+  return maxBytes % (1024 * 1024) === 0 ? `${maxBytes / 1024 / 1024} MB` : `${maxBytes} bytes`;
+}
+
 /**
  * A JSON upload of at most `maxBytes`, before and after decompression. `Content-Encoding: gzip` is accepted, so browsers can
  * send large recordings compressed. `trace` gets sizes only, never the body.
@@ -30,11 +35,11 @@ export async function readBytes(request: Request, maxBytes: number) {
 export async function readJsonUpload(request: Request, maxBytes: number, trace: (attributes: Record<string, number | boolean>) => void) {
   const encoding = (request.headers.get('content-encoding') ?? 'identity').trim().toLowerCase();
   if (encoding !== 'identity' && encoding !== 'gzip') throw new HttpStatusError(415, `unsupported content-encoding: ${encoding}`);
-  const megabytes = maxBytes / 1024 / 1024;
+  const tooLarge = `upload is larger than ${sizeLabel(maxBytes)}`;
+  // why: a declared oversize body is refused before any of it is buffered.
+  if (Number(request.headers.get('content-length') ?? 0) > maxBytes) throw new HttpStatusError(413, tooLarge);
   let body: Buffer = await readBytes(request, maxBytes).catch((error: unknown) => {
-    throw error instanceof HttpStatusError && error.status === 413
-      ? new HttpStatusError(413, `upload is larger than ${megabytes} MB`)
-      : error;
+    throw error instanceof HttpStatusError && error.status === 413 ? new HttpStatusError(413, tooLarge) : error;
   });
   trace({ 'http.request.body.size': body.byteLength });
   if (encoding === 'gzip') {
@@ -42,7 +47,7 @@ export async function readJsonUpload(request: Request, maxBytes: number, trace: 
       body = await gunzipAsync(body, { maxOutputLength: maxBytes });
     } catch (error) {
       if (error instanceof RangeError || (error instanceof Error && 'code' in error && error.code === 'ERR_BUFFER_TOO_LARGE'))
-        throw new HttpStatusError(413, `upload is larger than ${megabytes} MB once decompressed`);
+        throw new HttpStatusError(413, `${tooLarge} once decompressed`);
       throw new HttpStatusError(400, 'body is not valid gzip');
     }
   }

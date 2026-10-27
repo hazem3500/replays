@@ -1,4 +1,5 @@
 import type { ReplayContext, ReplaySourceInput } from '../../shared/context.ts';
+import type { ReplayBundle } from '../../shared/replay.ts';
 import { publicPath } from '../base-path.ts';
 import { readJsonUpload } from '../http/body.ts';
 import { json, REVALIDATE } from '../http/respond.ts';
@@ -8,7 +9,8 @@ import { assertUploadBundle, assertUploadEnvelope } from '../upload-validation.t
 import { applyContextAdapters, runAfterUpload, runBeforeUpload, runPrepareUpload } from '../plugin-runtime.ts';
 import { importRoute } from './import.ts';
 import type { ApiServices } from './services.ts';
-import { acceptUpload, MAX_REPLAY_BYTES, replayReceipt, requestListMedia, resolveContext, uploadAttributes } from './upload-checks.ts';
+import { acceptUpload, replayReceipt, requestListMedia, resolveContext, uploadAttributes } from './upload-checks.ts';
+import { enforceRateLimit, normalizeUpload, uploadLimit, uploadReceipt } from './upload-endpoints.ts';
 
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
@@ -40,6 +42,14 @@ function resolveSource(services: ApiServices, source: unknown, index: number) {
   return services.deployment.sources.resolve(source, name);
 }
 
+/** A normalized bundle checked like an upload again: sources resolved, the stored schema, the context schema. */
+function revalidate(services: ApiServices, bundle: unknown): ReplayBundle {
+  const resolved = resolveSources(services, bundle);
+  assertUploadBundle(resolved);
+  resolveContext(resolved, services.deployment);
+  return resolved;
+}
+
 /** `POST /api/replays` and the plugins' aliases: hooks, the privacy pass and validation, then the store. */
 function uploadHandler(services: ApiServices) {
   const { deployment, registry } = services;
@@ -47,7 +57,9 @@ function uploadHandler(services: ApiServices) {
   return async (context: RouteContext) => {
     const { request, path, base, identity: user, trace, legacy } = context;
     const endpoint = registry.uploadEndpoints.get(path)?.value;
-    const body = await readJsonUpload(request, MAX_REPLAY_BYTES, trace);
+    const endpointContext = { identity: user, request: legacy.request, path };
+    await enforceRateLimit(endpoint, endpointContext);
+    const body = await readJsonUpload(request, await uploadLimit(endpoint, endpointContext), trace);
     const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, request: legacy.request }) : body;
     assertUploadEnvelope(prepared);
     const hooked = await runPrepareUpload(registry, prepared, user, legacy.request);
@@ -58,16 +70,24 @@ function uploadHandler(services: ApiServices) {
     const replay = resolveSources(services, adapted);
     assertUploadBundle(replay);
     resolveContext(replay, deployment);
-    // invariant: stored data never depends on the uploader having sanitized it.
-    const bundle = acceptUpload(await runBeforeUpload(registry, services.sanitize(replay), user, legacy.request), store.purposes, registry);
+    const normalization = await normalizeUpload(registry, endpoint, replay, endpointContext);
+    const normalized = normalization.changed ? revalidate(services, normalization.bundle) : replay;
+    // invariant: stored data never depends on the uploader or a normalization hook having sanitized it.
+    const bundle = acceptUpload(await runBeforeUpload(registry, services.sanitize(normalized), user, legacy.request), store.purposes, registry);
     trace(uploadAttributes(bundle));
+    const receipt = (stored: typeof bundle) =>
+      uploadReceipt(
+        endpoint,
+        { ...endpointContext, bundle: stored, url: publicPath(`/r/${stored.meta.id}`, base), publicOrigin: deployment.publicOrigin },
+        replayReceipt(base, stored),
+      );
     if (bundle.suiteRun) {
       await store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);
       const existing = await store.load(bundle.meta.id);
       if (existing) {
         if (JSON.stringify(existing) !== JSON.stringify(bundle)) throw new HttpStatusError(409, 'replay already exists');
         await store.attachReplay(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle);
-        return json(200, replayReceipt(base, bundle), { cacheControl: REVALIDATE });
+        return json(200, receipt(bundle), { cacheControl: REVALIDATE });
       }
     }
     await store.save(bundle);
@@ -75,7 +95,7 @@ function uploadHandler(services: ApiServices) {
     requestListMedia(deployment, bundle.meta.id);
     void store.pruneSoon();
     await runAfterUpload(registry, bundle, user, legacy.request, publicPath(`/r/${bundle.meta.id}`, base));
-    return json(201, replayReceipt(base, bundle), { cacheControl: REVALIDATE });
+    return json(201, receipt(bundle), { cacheControl: REVALIDATE });
   };
 }
 
