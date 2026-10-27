@@ -26,6 +26,14 @@ export type {
 } from '../shared/replay.ts';
 export { assertReplayBundle, summarizeReplay } from '../shared/replay.ts';
 export {
+  normalizeServerUrl,
+  normalizeUploadUrl,
+  resolveServerUrl,
+  resolveUploadEndpoint,
+  saveServer,
+  uploadEndpoint,
+} from './server-config.ts';
+export {
   assertReplayPeople,
   parsePeopleFlags,
   personMatch,

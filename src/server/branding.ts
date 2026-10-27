@@ -102,6 +102,7 @@ export function publicConfig(
     contextSchema?: unknown;
     sourceProviders: string[];
     auth: string;
+    cliDeviceAuth?: import('./auth/types.ts').CliDeviceAuthCapability;
     signIn?: import('../shared/sign-in.ts').SignInConfig;
     plugins?: string[];
     /** The deployment's purposes (src/shared/purposes.ts); an empty list in a plain core. */
@@ -121,6 +122,7 @@ export function publicConfig(
     ...(extra.contextSchema ? { contextSchema: extra.contextSchema } : {}),
     sourceProviders: extra.sourceProviders,
     auth: extra.auth,
+    ...(extra.cliDeviceAuth ? { cliDeviceAuth: extra.cliDeviceAuth } : {}),
     ...(extra.signIn ? { signIn: extra.signIn } : {}),
     plugins: extra.plugins ?? [],
     purposes: extra.purposes ?? [],

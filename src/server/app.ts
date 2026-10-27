@@ -496,6 +496,18 @@ export function createApp(options: AppOptions) {
       if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
         return;
 
+      // Public, credential-free CLI auth contract. It is separate from the normal viewer config and works before sign-in.
+      if (path === '/api/cli/auth/capabilities' && request.method === 'GET') {
+        let capability;
+        try {
+          capability = await options.auth.cliDeviceAuth?.(routeContext);
+        } catch {
+          capability = undefined;
+        }
+        send(response, 200, JSON.stringify({ auth: options.auth.name, deviceFlow: capability ?? null }), json, 'no-store');
+        return;
+      }
+
       const authenticated: Identity | undefined = await options.auth.authenticate(request);
       if (!authenticated) {
         const recovery = signIn && path === signIn.path && request.method === 'GET' && isBrowserNavigation(request);
@@ -518,6 +530,16 @@ export function createApp(options: AppOptions) {
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
       const user = await resolveIdentity(authenticated, request);
       identities.set(request, user);
+      if (user.authScopes?.includes('replays:upload')) {
+        const uploadRoute =
+          (request.method === 'POST' && path === '/api/replays') ||
+          (request.method === 'PUT' && Boolean(parseReplayPath(path)?.video)) ||
+          (request.method === 'GET' && path === '/api/cli/auth/status');
+        if (!uploadRoute) {
+          send(response, 403, 'upload token cannot access this route');
+          return;
+        }
+      }
       if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !requestPolicy.csrfAllowed) {
         send(response, 403, 'cross-site request');
         return;
@@ -536,6 +558,45 @@ export function createApp(options: AppOptions) {
           ...(vary ? { vary } : {}),
         });
         response.end();
+        return;
+      }
+      if (path === '/api/cli/auth/status' && request.method === 'GET') {
+        send(
+          response,
+          200,
+          JSON.stringify({
+            identity: { id: user.id, ...(user.email ? { email: user.email } : {}), ...(user.name ? { name: user.name } : {}) },
+            ...(user.authExpiresAt ? { expiresAt: user.authExpiresAt } : {}),
+            scopes: user.authScopes ?? [],
+          }),
+          json,
+          'no-store',
+        );
+        return;
+      }
+      if (path === '/api/config' && request.method === 'GET') {
+        let cliDeviceAuth;
+        try {
+          cliDeviceAuth = await options.auth.cliDeviceAuth?.(routeContext);
+        } catch {
+          cliDeviceAuth = undefined;
+        }
+        const body = publicConfig(options.branding, {
+          ...(options.contextSchema ? { contextSchema: options.contextSchema.schema } : {}),
+          sourceProviders: options.sources.ids,
+          auth: options.auth.name,
+          ...(cliDeviceAuth ? { cliDeviceAuth } : {}),
+          ...(signIn ? { signIn } : {}),
+          plugins: [...registry.order],
+          purposes: options.store.purposes.list,
+          ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
+          beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
+          comments: commentsOn,
+          versions,
+          ...(options.beta?.malleable ? { malleable: policy } : {}),
+          editing,
+        });
+        send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;
       }
       if (await options.application?.handle(request, response, path, user)) return;
@@ -558,25 +619,6 @@ export function createApp(options: AppOptions) {
         // With api.people, also the roles and the handles a person can link for "For me".
         const people = peopleConfig(registry);
         send(response, 200, JSON.stringify({ ...user, ...(people ? { people } : {}) }), json, REVALIDATE);
-        return;
-      }
-      if (path === '/api/config' && request.method === 'GET') {
-        const body = publicConfig(options.branding, {
-          ...(options.contextSchema ? { contextSchema: options.contextSchema.schema } : {}),
-          sourceProviders: options.sources.ids,
-          auth: options.auth.name,
-          ...(signIn ? { signIn } : {}),
-          plugins: [...registry.order],
-          purposes: options.store.purposes.list,
-          ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
-          beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
-          comments: commentsOn,
-          versions,
-          // The user-plugin policy only exists with the feature on (off means nothing about it is exposed).
-          ...(options.beta?.malleable ? { malleable: policy } : {}),
-          editing,
-        });
-        send(response, 200, JSON.stringify(body), json, REVALIDATE);
         return;
       }
       if (path === '/api/replays' && request.method === 'GET') {

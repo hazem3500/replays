@@ -75,7 +75,7 @@ replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--i
                    [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
                    [--source github:owner/repo#12]…
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
-                   [--upload-url <server>/api/replays] [--header-file headers.json] [--headed]
+                   [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed]
 ```
 
 `replays` is the package's `bin` (`bin/replays.mjs`); from a checkout, `pnpm cli <command>` or
@@ -83,7 +83,48 @@ replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--i
 [docs/releasing.md](docs/releasing.md).
 
 Other commands: `replays import --rrweb events.json --title "…"` (a plain rrweb recording made by a person),
-`replays upload replay.json --upload-url …`, and `replays serve`.
+`replays upload replay.json`, `replays login|status|logout`, and `replays serve`.
+
+### Connect the CLI to a server
+
+Save a viewer base URL once, including any deployment base path, then upload recordings by filename:
+
+```bash
+replays connect https://replays.example.com/workspace
+replays doctor
+replays upload ./out/replay.json
+```
+
+`connect` stores a named server and makes it the default in the platform config directory (`$XDG_CONFIG_HOME/replays/config.json`,
+or the platform equivalent). It stores no credentials. Add another server with `--name staging`; select it with
+`--server staging`. Upload target precedence is explicit `--upload-url`, explicit `--server`, `REPLAYS_SERVER_URL`,
+`REPLAYS_SERVER`, then the saved default. Server URLs must use HTTPS except on loopback. `doctor` checks reachability and
+reports whether this server advertises a supported CLI login; it does not prove that a user can upload.
+Use `replays config` to list saved server names and URLs, and `replays config reset` to remove the saved configuration.
+
+If `doctor` reports OIDC device login, run `replays login` once. The CLI displays the provider's approval URL and short code;
+after approval it saves an upload-only session and resumes. Later uploads reuse it, refreshing tokens when the provider
+supports refresh tokens. `replays status` shows the signed-in identity and expiry; `replays logout` removes local credentials
+and requests provider revocation when advertised. macOS uses Keychain through the system Swift runtime; Linux uses Secret
+Service through `secret-tool` when available. Elsewhere, credentials live in a separate owner-only `0600` file under the
+platform config directory (on Windows, the directory inherits the current user's profile ACL). `REPLAYS_CREDENTIAL_STORE=file`
+forces the file fallback for managed environments.
+
+Device login is opt-in: an OIDC deployment must use a public client, publish a device authorization endpoint, accept the
+RFC 8707 resource indicator, issue an access token whose audience equals that resource and includes `replays:upload`, and
+set `OIDC_DEVICE_FLOW=true`. By default the resource is the configured public origin plus deployment base path, and
+`OIDC_AUDIENCE` must match it; `OIDC_DEVICE_RESOURCE` can set a deployment-specific resource explicitly, with
+`OIDC_AUDIENCE` set to the same value. In this mode the server accepts that token only on replay POST and video PUT uploads
+(plus a self-status response); it cannot read replays, approve Keep, manage credentials, or access the MCP bridge. The
+provider's device approval page is responsible for the user's sign-in and approval. Deployments behind IAP that intercept
+the provider endpoints, `header`, `plugin`, and OIDC without this explicit device capability do not get an automatic browser
+login. Use their existing host-auth headers with `--header-file headers.json`, or ask the deployment owner to add a trusted
+provider integration. The CLI never scrapes cookies or reuses browser sessions.
+
+`--header-file` explicitly uses host-managed headers and bypasses automatic device login. It must contain a private JSON object
+of header names and values; never commit it. A standalone `--upload-url` is never sent a saved token unless it exactly matches
+the configured server's canonical `/api/replays` endpoint. Captures stay local by default; use `capture --upload` for the
+saved server, or `capture --upload-url <endpoint>` for an explicit destination.
 
 ### Record from your own Playwright test
 
@@ -222,21 +263,23 @@ The config file takes `name`, `logoUrl`, `theme`, `basePath`, `hosts`, `trustFor
 
 ## Authentication
 
-One adapter per process, chosen by `AUTH_MODE`. Everything except `GET /healthz` (and `GET /` from a non-browser) goes
-through it, and state-changing requests from a browser must be same-origin (`Sec-Fetch-Site`).
+One adapter per process, chosen by `AUTH_MODE`. Protected routes go through it; `GET /healthz`, `GET /` from a
+non-browser, and the credential-free `GET /api/cli/auth/capabilities` probe are public. State-changing requests from a
+browser must be same-origin (`Sec-Fetch-Site`).
 
 | `AUTH_MODE` | Behaviour | Settings |
 | --- | --- | --- |
 | `none` (default) | Everyone is one anonymous user. For local use, or a network that already decides who may connect. A warning is logged when it listens on a non-loopback address | `DEV_USER` names the identity |
 | `header` | Trust an identity header set by a reverse proxy that already authenticated the user (oauth2-proxy, an ingress, …). Only requests from `AUTH_TRUSTED_PROXIES` count | `AUTH_HEADER`, `AUTH_TRUSTED_PROXIES` (IPs or IPv4 CIDRs, **required**), `AUTH_NAME_HEADER`, `AUTH_ALLOW` (`@domain` or exact ids) |
-| `oidc` | OpenID Connect sign-in (authorization code + PKCE, signed session cookie). `Authorization: Bearer <jwt>` is accepted for machine uploads | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_SESSION_SECRET`, `PUBLIC_ORIGIN`, `OIDC_SCOPES`, `OIDC_AUDIENCE`, `AUTH_ALLOW` |
+| `oidc` | OpenID Connect sign-in (authorization code + PKCE, signed session cookie). Bearer JWTs are accepted for machine uploads. Device login is off unless `OIDC_DEVICE_FLOW=true`; then bearer JWTs must include `replays:upload` and are restricted to upload routes. | `OIDC_ISSUER`, `OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET` (omit for public device client), `OIDC_SESSION_SECRET`, `PUBLIC_ORIGIN`, `OIDC_SCOPES`, `OIDC_AUDIENCE`, `OIDC_DEVICE_FLOW`, `OIDC_DEVICE_RESOURCE`, `AUTH_ALLOW` |
 | `plugin` | Your own adapter: `AUTH_PLUGIN=./my-auth.mjs`, default export `(env) => AuthAdapter` | whatever the plugin reads |
 
 [`examples/auth-signed-header`](examples/auth-signed-header) is a worked plugin: it verifies a signed JWT that an
 identity-aware proxy forwards in a header (signature, issuer, audience, expiry).
 
-Uploads from CI need credentials the adapter understands: a bearer token for `oidc`, or whatever your proxy requires
-(`--header-file headers.json` adds headers to the upload).
+Uploads from CI need credentials the adapter understands. Automatic device login is only started by an interactive upload or
+an explicit `replays login`; noninteractive uploads fail quickly with the login command when the session is missing. For
+`header`, IAP, and custom adapters, `--header-file` carries the host's expected upload headers.
 
 ## Extension points
 
