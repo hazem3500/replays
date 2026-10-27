@@ -254,13 +254,13 @@
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
-      "gzip": 4364,
+      "gzip": 4363,
       "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4025,
-      "gzip": 1598,
-      "brotli": 1375
+      "gzip": 1596,
+      "brotli": 1370
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
