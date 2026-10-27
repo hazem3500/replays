@@ -26,7 +26,10 @@
       "@hazem3500/replays/plugins/iap": ["./src/first-party/iap.ts"],
       "@hazem3500/replays/plugins/gcs": ["./src/first-party/gcs.ts"],
       "@hazem3500/replays/recorder": ["./src/recorder/index.ts"]
-    }
+    },
+    "noFallthroughCasesInSwitch": true,
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false
   },
   "include": [
     "src",

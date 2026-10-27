@@ -9,6 +9,8 @@ import {
   ListOrderedIcon,
   type LucideIcon,
   PuzzleIcon,
+  FilterIcon,
+  XIcon,
   SearchIcon,
   SquareTerminalIcon,
   TriangleAlertIcon,
@@ -16,6 +18,7 @@ import {
 import {
   Fragment,
   memo,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type RefObject,
@@ -48,7 +51,7 @@ import { HoverGlide } from '@/components/sliding-highlight.tsx';
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select.tsx';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../navigation.ts';
@@ -65,6 +68,9 @@ export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const DEFAULT_INSPECTOR_HEIGHT = 260;
 export const MIN_INSPECTOR_HEIGHT = 120;
 const NO_RESPONSE = 'No response recorded: a redirect hop, or still in flight when capture stopped';
+const stopPlayerKeyboard = (event: ReactKeyboardEvent<HTMLElement>) => {
+  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) event.stopPropagation();
+};
 
 function maxInspectorHeight() {
   return Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
@@ -692,6 +698,10 @@ const NetworkPanel = memo(function NetworkPanel({
   const player = usePlayer();
   const [query, setQuery] = useState('');
   const [state, setState] = useState('all');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchTrigger = useRef<HTMLButtonElement>(null);
   const entries = useMemo(() => {
     const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
     return allEntries.filter(
@@ -711,6 +721,8 @@ const NetworkPanel = memo(function NetworkPanel({
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLTableSectionElement>(null);
   const total = entries.length;
+  const activeFilters = Number(query.trim().length > 0) + Number(state !== 'all');
+  const filtered = activeFilters > 0;
   const ats = useMemo(() => entries.map((entry) => entry.at), [entries]);
   const rowHeight = useRowHeight(body, 'tr.network-row', total > 0);
   const expandedIndex = useMemo(() => (expanded ? entries.findIndex((entry) => entry.id === expanded) : -1), [entries, expanded]);
@@ -722,6 +734,19 @@ const NetworkPanel = memo(function NetworkPanel({
   const instantScroll = useRef(false);
   // The switch to move to once the request it belongs to has rendered (↑ / ↓).
   const pendingSwitch = useRef<string | undefined>(undefined);
+  const openSearch = () => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInput.current?.focus());
+  };
+  const closeSearch = (restoreFocus = true) => {
+    setQuery('');
+    setSearchOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => searchTrigger.current?.focus());
+  };
+  const clearFilters = () => {
+    setQuery('');
+    setState('all');
+  };
   // Stable across playhead ticks, so memoised rows skip re-rendering unless they cross the playhead.
   const flip = useCallback(
     (id: string) => {
@@ -863,41 +888,152 @@ const NetworkPanel = memo(function NetworkPanel({
   return (
     <div className="network-workspace">
       <div className="diagnostic-toolbar network-toolbar">
-        <div className="network-toolbar-filters">
-          <label className="network-search">
-            <SearchIcon aria-hidden="true" />
-            <span className="visually-hidden">Search network requests</span>
-            <input type="search" placeholder="Filter requests…" value={query} onChange={(event) => setQuery(event.target.value)} />
-          </label>
-          <Select value={state} onValueChange={(value) => setState(value ?? 'all')}>
-            <SelectTrigger size="sm" className="network-status-filter" aria-label="Request status filter">
-              <SelectValue>
-                {state === 'failed'
-                  ? 'Failed'
-                  : state === 'slow'
-                    ? 'Slow (≥ 500 ms)'
-                    : state === 'incomplete'
-                      ? 'Incomplete'
-                      : 'All requests'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
-              <SelectItem value="all">All requests</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="slow">Slow (≥ 500 ms)</SelectItem>
-              <SelectItem value="incomplete">Incomplete</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="network-toolbar-main">
+          <div className="network-toolbar-controls">
+            <Button
+              ref={searchTrigger}
+              className="network-toolbar-button network-search-trigger"
+              variant="ghost"
+              size="icon-lg"
+              aria-label={searchOpen ? 'Close network search' : 'Search network requests'}
+              aria-expanded={searchOpen}
+              aria-controls="network-search-panel"
+              data-testid="network-search-toggle"
+              onClick={() => (searchOpen ? closeSearch() : openSearch())}
+              onKeyDown={stopPlayerKeyboard}
+            >
+              <SearchIcon aria-hidden="true" />
+            </Button>
+            <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger
+                className="network-toolbar-button network-filter-trigger"
+                aria-label={activeFilters ? `Request filters, ${activeFilters} active` : 'Request filters'}
+                aria-haspopup="dialog"
+                data-testid="network-filter-toggle"
+                onKeyDown={stopPlayerKeyboard}
+              >
+                <FilterIcon aria-hidden="true" />
+                <span>Filter</span>
+                {activeFilters ? (
+                  <span className="network-filter-count" aria-hidden="true">
+                    {activeFilters}
+                  </span>
+                ) : null}
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                side="bottom"
+                sideOffset={6}
+                className="network-filter-popover"
+                aria-label="Request filters"
+                onKeyDown={(event) => {
+                  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) event.stopPropagation();
+                }}
+              >
+                <PopoverTitle className="network-filter-title">Request status</PopoverTitle>
+                <div className="network-filter-options" role="group" aria-label="Request status">
+                  {(
+                    [
+                      ['all', 'All requests'],
+                      ['failed', 'Failed'],
+                      ['slow', 'Slow · 500 ms+'],
+                      ['incomplete', 'Incomplete'],
+                    ] as const
+                  ).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className="network-filter-option"
+                      aria-pressed={state === value}
+                      onClick={() => setState(value)}
+                    >
+                      <span>{label}</span>
+                      {state === value ? <span aria-hidden="true">Selected</span> : null}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {activeFilters ? (
+              <Button
+                className="network-clear-filters"
+                variant="ghost"
+                size="sm"
+                aria-label="Clear active network filters"
+                onClick={clearFilters}
+                onKeyDown={stopPlayerKeyboard}
+              >
+                <XIcon aria-hidden="true" />
+                Clear
+              </Button>
+            ) : null}
+          </div>
+          <span className="network-result-count" aria-live="polite">
+            {filtered ? `${total} of ${allEntries.length} requests` : `${total} ${total === 1 ? 'request' : 'requests'}`}
+          </span>
         </div>
         <Button
-          className="network-timing-toggle"
+          className="network-toolbar-button network-timing-toggle"
           variant="ghost"
           size="sm"
           aria-pressed={showTiming}
+          aria-label="Show or hide request waterfall"
           onClick={() => setShowTiming((shown) => !shown)}
+          onKeyDown={stopPlayerKeyboard}
         >
-          <ChartNoAxesGanttIcon aria-hidden="true" /> Waterfall
+          <ChartNoAxesGanttIcon aria-hidden="true" />
+          <span>Waterfall</span>
         </Button>
+      </div>
+      <div
+        id="network-search-panel"
+        className="network-search-panel"
+        data-open={searchOpen || undefined}
+        aria-hidden={!searchOpen}
+        inert={!searchOpen}
+      >
+        <label className="network-search-field">
+          <SearchIcon aria-hidden="true" />
+          <span className="visually-hidden">Search network requests</span>
+          <input
+            ref={searchInput}
+            type="search"
+            placeholder="URL, method, or status"
+            value={query}
+            disabled={!searchOpen}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key !== 'Escape') return;
+              event.preventDefault();
+              if (query) setQuery('');
+              else closeSearch();
+            }}
+          />
+          {query ? (
+            <button
+              type="button"
+              className="network-search-clear"
+              aria-label="Clear network search"
+              onKeyDown={stopPlayerKeyboard}
+              onClick={() => {
+                setQuery('');
+                searchInput.current?.focus();
+              }}
+            >
+              <XIcon aria-hidden="true" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="network-search-close"
+            aria-label="Close network search"
+            onKeyDown={stopPlayerKeyboard}
+            onClick={() => closeSearch()}
+          >
+            <XIcon aria-hidden="true" />
+          </button>
+        </label>
       </div>
       <TrackList
         testId="network-list"

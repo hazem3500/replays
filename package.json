@@ -49,7 +49,12 @@
     "check:quick": "vp run cached:lint && vp run cached:format && vp run cached:types && pnpm test:changed",
     "test:changed": "vp test run --config vitest.config.ts --changed=origin/main --passWithNoTests",
     "test:watch": "vp test --config vitest.config.ts",
-    "typecheck:watch": "tsrs --fast false --noEmit --watch"
+    "typecheck:watch": "tsrs --fast false --noEmit --watch",
+    "lint:ratchet": "node scripts/lint-ratchet.mjs",
+    "lint:new-files": "node scripts/lint-new-files.mjs",
+    "lint:ratchet:test": "node --test scripts/lint-ratchet.test.mjs",
+    "typecheck:overrides": "node scripts/check-overrides.mjs",
+    "quality:compiler": "node scripts/compiler-report.mjs"
   },
   "dependencies": {
     "@agent-native/core": "0.220.0",
