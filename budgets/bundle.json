@@ -30,27 +30,27 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 218,
-      "brotli": 185
+      "brotli": 219
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 17524,
-      "gzip": 3874,
-      "brotli": 3391
+      "raw": 35060,
+      "gzip": 6742,
+      "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 53233,
-      "gzip": 18818,
-      "brotli": 16302
+      "raw": 82500,
+      "gzip": 26552,
+      "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 29642,
-      "gzip": 5826,
-      "brotli": 5188
+      "raw": 33095,
+      "gzip": 6332,
+      "brotli": 5643
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 182491,
-      "gzip": 62079,
-      "brotli": 52999
+      "raw": 332366,
+      "gzip": 110268,
+      "brotli": 95018
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -105,7 +105,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225484,
       "gzip": 69512,
-      "brotli": 59861
+      "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1516,
@@ -118,14 +118,14 @@
       "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 748,
-      "gzip": 442,
-      "brotli": 394
+      "raw": 939,
+      "gzip": 528,
+      "brotli": 474
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1373,
-      "gzip": 671,
-      "brotli": 547
+      "raw": 1816,
+      "gzip": 805,
+      "brotli": 657
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -150,7 +150,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 51366,
       "gzip": 18505,
-      "brotli": 16134
+      "brotli": 16557
     },
     "dist/client/index.html": {
       "raw": 10783,
@@ -339,7 +339,7 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1668,
-      "gzip": 570,
+      "gzip": 569,
       "brotli": 477
     },
     "dist/lib/viewer.mjs": {
@@ -358,9 +358,9 @@
       "brotli": 305226
     },
     "initial/render.html/css": {
-      "raw": 4810,
-      "gzip": 2321,
-      "brotli": 1929
+      "raw": 5252,
+      "gzip": 2455,
+      "brotli": 2038
     },
     "initial/render.html/js": {
       "raw": 542325,
