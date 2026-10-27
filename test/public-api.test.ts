@@ -168,7 +168,10 @@ const entries: Record<string, { source: string; values: string[] }> = {
     source: '../src/first-party/gcs.ts',
     values: ['GcsError', 'GcsStorage', 'RESUMABLE_BYTES', 'default', 'gcsStorageFromEnv'],
   },
-  './server/testing': { source: '../src/server/testing/index.ts', values: ['describeAuthAdapter', 'describeObjectStorage', 'fakeRequest'] },
+  './server/testing': {
+    source: '../src/server/testing/index.ts',
+    values: ['createTestClient', 'describeAuthAdapter', 'describeObjectStorage', 'fakeRequest'],
+  },
   './capture': {
     source: '../src/capture/index.ts',
     values: [
