@@ -85,7 +85,9 @@
     "sonner": "2.0.8",
     "tailwind-merge": "3.7.0",
     "ws": "8.22.0",
-    "xstate": "5.33.3"
+    "xstate": "5.33.3",
+    "srvx": "1.0.7",
+    "rou3": "1.0.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",

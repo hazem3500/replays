@@ -84,12 +84,18 @@ importers:
       react-dom:
         specifier: 19.3.0
         version: 19.3.0(react@19.3.0)
+      rou3:
+        specifier: 1.0.0
+        version: 1.0.0
       rrweb:
         specifier: 2.1.7
         version: 2.1.7
       sonner:
         specifier: 2.0.8
         version: 2.0.8(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      srvx:
+        specifier: 1.0.7
+        version: 1.0.7
       tailwind-merge:
         specifier: 3.7.0
         version: 3.7.0
