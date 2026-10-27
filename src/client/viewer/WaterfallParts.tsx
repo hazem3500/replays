@@ -40,8 +40,7 @@ export function WaterfallDetails({
       id={id}
       className="wf-detail"
       aria-label="Selected waterfall event"
-      // The independent scroll region must be reachable for native keyboard scrolling.
-      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+      // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex -- why: the independent scroll region needs keyboard focus for native scrolling.
       tabIndex={0}
       hidden={!selected}
     >
