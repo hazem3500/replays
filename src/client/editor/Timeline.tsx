@@ -317,6 +317,7 @@ export function Timeline({
   lanes?: ReactNode;
 }) {
   const player = usePlayer();
+  const touch = mobile === true;
   // The track column (the ruler): held in state, so the scale is rebuilt once it exists and when it resizes.
   const [column, setColumn] = useState<HTMLDivElement | null>(null);
   const playhead = useRef<HTMLDivElement>(null);
@@ -409,7 +410,7 @@ export function Timeline({
   );
 
   return (
-    <MobileTimelineContext.Provider value={Boolean(mobile)}>
+    <MobileTimelineContext.Provider value={touch}>
       <ScaleContext.Provider value={scale}>
         <div className="timeline" data-testid="timeline" data-ready={scale.width > 0 || undefined}>
           <div className="tl-ruler-row">
@@ -503,7 +504,7 @@ export function Timeline({
               x={(time) => scale.x(time)}
               width={scale.width}
               pad={PAD}
-              mobile={Boolean(mobile)}
+              mobile={touch}
               dispatch={dispatch}
             />
             {range ? (
