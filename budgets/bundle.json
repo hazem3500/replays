@@ -29,8 +29,8 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "gzip": 219,
-      "brotli": 188
+      "gzip": 218,
+      "brotli": 185
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 17524,
@@ -84,7 +84,7 @@
     },
     "dist/client/assets/performance-HASH.js": {
       "raw": 4242,
-      "gzip": 1814,
+      "gzip": 1811,
       "brotli": 1627
     },
     "dist/client/assets/player-HASH.css": {
@@ -140,7 +140,7 @@
     "dist/client/assets/tools-HASH.js": {
       "raw": 38948,
       "gzip": 13458,
-      "brotli": 12055
+      "brotli": 12053
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -262,15 +262,65 @@
       "gzip": 1596,
       "brotli": 1370
     },
+    "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs": {
+      "raw": 48604,
+      "gzip": 13176,
+      "brotli": 11629
+    },
+    "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
+      "raw": 6769,
+      "gzip": 1901,
+      "brotli": 1709
+    },
+    "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs": {
+      "raw": 752,
+      "gzip": 401,
+      "brotli": 335
+    },
+    "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
+      "raw": 2889,
+      "gzip": 1146,
+      "brotli": 939
+    },
+    "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs": {
+      "raw": 863,
+      "gzip": 461,
+      "brotli": 367
+    },
+    "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs": {
+      "raw": 1644,
+      "gzip": 767,
+      "brotli": 630
+    },
+    "dist/lib/recorder-kit.mjs": {
+      "raw": 525,
+      "gzip": 238,
+      "brotli": 202
+    },
+    "dist/lib/recorder-react.mjs": {
+      "raw": 5462,
+      "gzip": 1661,
+      "brotli": 1525
+    },
+    "dist/lib/recorder-testing.mjs": {
+      "raw": 10357,
+      "gzip": 3161,
+      "brotli": 2719
+    },
+    "dist/lib/recorder-ui.mjs": {
+      "raw": 27207,
+      "gzip": 7884,
+      "brotli": 6908
+    },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
       "gzip": 60962,
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 69788,
-      "gzip": 19129,
-      "brotli": 16709
+      "raw": 6031,
+      "gzip": 1928,
+      "brotli": 1680
     },
     "dist/lib/server-testing.mjs": {
       "raw": 11887,
@@ -386,6 +436,106 @@
       },
       "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
       "pr": "https://github.com/hazem3500/replays/pull/63"
+    },
+    {
+      "file": "dist/lib/recorder-kit.mjs",
+      "cap": {
+        "raw": 525,
+        "gzip": 238,
+        "brotli": 202
+      },
+      "reason": "The new headless recorder kit entry is a published subpath export that did not exist before the core split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-react.mjs",
+      "cap": {
+        "raw": 5462,
+        "gzip": 1661,
+        "brotli": 1525
+      },
+      "reason": "The new React recorder adapter is a published subpath export built on the headless kit.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-testing.mjs",
+      "cap": {
+        "raw": 10357,
+        "gzip": 3161,
+        "brotli": 2719
+      },
+      "reason": "The new recorder testing subpath ships the fakes and contract suite for custom UI authors.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-ui.mjs",
+      "cap": {
+        "raw": 27207,
+        "gzip": 7884,
+        "brotli": 6908
+      },
+      "reason": "The default guided recorder UI moved to its own published subpath when the core was split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs",
+      "cap": {
+        "raw": 48604,
+        "gzip": 13176,
+        "brotli": 11629
+      },
+      "reason": "Shared recorder core chunk now shared between the recorder entries instead of bundled once.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
+      "cap": {
+        "raw": 6769,
+        "gzip": 1901,
+        "brotli": 1709
+      },
+      "reason": "Deferred default-UI loader chunk shared by the recorder entries after the core split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs",
+      "cap": {
+        "raw": 752,
+        "gzip": 401,
+        "brotli": 335
+      },
+      "reason": "Message formatting chunk shared by the recorder core and UI entries after the split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs",
+      "cap": {
+        "raw": 2889,
+        "gzip": 1146,
+        "brotli": 939
+      },
+      "reason": "Recorder kit store and timer chunk shared by the kit, React and UI entries.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs",
+      "cap": {
+        "raw": 863,
+        "gzip": 461,
+        "brotli": 367
+      },
+      "reason": "Recorder message catalog chunk shared by the core and UI entries after the split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs",
+      "cap": {
+        "raw": 1644,
+        "gzip": 767,
+        "brotli": 630
+      },
+      "reason": "Privacy facts and block attribute chunk shared by the core and UI entries.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
     }
   ]
 }
