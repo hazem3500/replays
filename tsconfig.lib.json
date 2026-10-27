@@ -10,6 +10,7 @@
     "types": ["node"]
   },
   "include": [
+    "src/server/json-schema.d.ts",
     "src/index.ts",
     "src/capture/index.ts",
     "src/server/index.ts",
