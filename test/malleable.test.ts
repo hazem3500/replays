@@ -1,3 +1,4 @@
+import { pluginPolicyHash } from '../src/shared/malleable-policy.ts';
 import { mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -24,17 +25,17 @@ const who = definePlugin({
       name: 'who-am-i',
       authenticate(request) {
         const id = request.headers['x-who'];
-        return typeof id === 'string' ? { id, name: id } : undefined;
+        return typeof id === 'string' ? { id, name: id, roles: id === 'ada' ? ['admin'] : ['member'] } : undefined;
       },
     });
   },
 });
 
-async function boot(env: Record<string, string> = {}, plugins = [who]) {
+async function boot(env: Record<string, string> = {}, plugins = [who], file: import('../src/server/config.ts').FileConfig = {}) {
   const server = await startServer({
     env: { DATA_DIR: await mkdtemp(join(tmpdir(), 'replays-mall-')), POSTERS_DISABLED: '1', RENDER_DISABLED: '1', ...env },
     port: 0,
-    config: { dir: process.cwd(), file: {}, plugins: [] },
+    config: { dir: process.cwd(), file, plugins: [] },
     plugins,
     log: () => {},
   });
@@ -95,6 +96,105 @@ describe('with beta.malleable off (the default)', () => {
 });
 
 describe('with beta.malleable on', () => {
+  it('role-gates workspace writes and requires per-person acceptance of each new version', async () => {
+    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' }, [who], { malleable: { scopes: ['user', 'workspace'] } });
+    const content = starterPlugin('workspace-review');
+    const requestApproval = (user: string) =>
+      fetch(`${server.origin}/api/malleable/approvals`, {
+        method: 'POST',
+        headers: asUser(user),
+        body: JSON.stringify({ action: 'save', scope: 'workspace', id: content.manifest.id, ...content }),
+      });
+    expect((await requestApproval('grace')).status).toBe(403);
+    expect(
+      (
+        await fetch(`${server.origin}/api/malleable/plugins/workspace/workspace-review`, {
+          method: 'PUT',
+          headers: asUser('grace'),
+          body: JSON.stringify({ ...content, baseVersion: 0, approval: 'fake' }),
+        })
+      ).status,
+    ).toBe(403);
+    expect((await save(server, 'ada', 'workspace', content, 0)).status).toBe(200);
+    const list = async (user: string) =>
+      (await (await fetch(`${server.origin}/api/malleable/plugins`, { headers: asUser(user) })).json()).plugins as Array<{
+        id: string;
+        requiresReview: boolean;
+        sha256: string;
+      }>;
+    expect((await list('ada'))[0]?.requiresReview).toBe(false);
+    const notice = (await list('grace'))[0]!;
+    expect(notice.requiresReview).toBe(true);
+    const accept = (sha256: string) =>
+      fetch(`${server.origin}/api/malleable/notices/workspace-review`, {
+        method: 'POST',
+        headers: asUser('grace'),
+        body: JSON.stringify({ sha256 }),
+      });
+    expect((await accept('0'.repeat(64))).status).toBe(409);
+    expect((await accept(notice.sha256)).status).toBe(200);
+    expect((await list('grace'))[0]?.requiresReview).toBe(false);
+    expect((await list('alan'))[0]?.requiresReview).toBe(true);
+    expect((await save(server, 'ada', 'workspace', { ...content, source: `${content.source}\n// new version` }, 1)).status).toBe(200);
+    expect((await list('grace'))[0]?.requiresReview).toBe(true);
+    expect((await accept(notice.sha256)).status).toBe(409);
+    const deleteApproval = await fetch(`${server.origin}/api/malleable/approvals`, {
+      method: 'POST',
+      headers: asUser('grace'),
+      body: JSON.stringify({ action: 'delete', scope: 'workspace', id: content.manifest.id }),
+    });
+    expect(deleteApproval.status).toBe(403);
+  });
+
+  it('enforces host allow/deny selectors by id and hash before minting approval', async () => {
+    const content = starterPlugin('hash-approved');
+    const hash = await pluginPolicyHash(content.manifest, content.source);
+    const dataDir = await mkdtemp(join(tmpdir(), 'replays-admission-'));
+    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true', DATA_DIR: dataDir }, [who], { malleable: { allow: [`sha256:${hash}`] } });
+    expect((await save(server, 'ada', 'user', content, 0)).status).toBe(200);
+    const changed = await fetch(`${server.origin}/api/malleable/approvals`, {
+      method: 'POST',
+      headers: asUser('ada'),
+      body: JSON.stringify({ action: 'save', scope: 'user', id: content.manifest.id, ...content, source: `${content.source}\n// changed` }),
+    });
+    expect(changed.status).toBe(403);
+    const blocked = await boot({ REPLAYS_BETA_MALLEABLE: 'true', DATA_DIR: dataDir }, [who], {
+      malleable: { allow: [`sha256:${hash}`], deny: [`id:${content.manifest.id}`] },
+    });
+    expect((await (await fetch(`${blocked.origin}/api/malleable/plugins`, { headers: asUser('ada') })).json()).plugins).toEqual([]);
+    expect((await fetch(`${blocked.origin}/api/malleable/plugins/user/${content.manifest.id}`, { headers: asUser('ada') })).status).toBe(
+      403,
+    );
+    const denied = await fetch(`${blocked.origin}/api/malleable/approvals`, {
+      method: 'POST',
+      headers: asUser('ada'),
+      body: JSON.stringify({ action: 'save', scope: 'user', id: content.manifest.id, ...content }),
+    });
+    expect(denied.status).toBe(403);
+    const personalOnly = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
+    const workspace = await fetch(`${personalOnly.origin}/api/malleable/approvals`, {
+      method: 'POST',
+      headers: asUser('ada'),
+      body: JSON.stringify({ action: 'save', scope: 'workspace', id: content.manifest.id, ...content }),
+    });
+    expect(workspace.status).toBe(403);
+  });
+
+  it('stores declared plugin settings per signed-in person with version checks', async () => {
+    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
+    const content = starter();
+    content.manifest.settings = [{ id: 'compact', label: 'Compact', type: 'boolean', default: false }];
+    expect((await save(server, 'ada', 'user', content, 0)).status).toBe(200);
+    const url = `${server.origin}/api/malleable/settings/user/${content.manifest.id}`;
+    expect(await (await fetch(url, { headers: asUser('ada') })).json()).toEqual({ version: 0, values: { compact: false } });
+    const update = (body: unknown) => fetch(url, { method: 'PUT', headers: asUser('ada'), body: JSON.stringify(body) });
+    expect((await update({ id: 'compact', value: true, baseVersion: 0 })).status).toBe(200);
+    expect((await update({ id: 'compact', value: false, baseVersion: 0 })).status).toBe(409);
+    expect((await update({ id: 'compact', value: 'yes', baseVersion: 1 })).status).toBe(400);
+    expect((await fetch(url, { headers: asUser('grace') })).status).toBe(404);
+    expect(await (await fetch(url, { headers: asUser('ada') })).json()).toEqual({ version: 1, values: { compact: true } });
+  });
+
   it('serves the sandbox page with a CSP that forbids every outgoing request, and tells the page', async () => {
     const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
     const page = await fetch(`${server.origin}/_malleable/sandbox.html`);
@@ -183,7 +283,7 @@ describe('with beta.malleable on', () => {
   });
 
   it('keeps user plugins private and shares workspace plugins', async () => {
-    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
+    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' }, [who], { malleable: { scopes: ['user', 'workspace'] } });
     const mine = starterPlugin('mine');
     const shared = starterPlugin('shared');
     expect((await save(server, 'ada', 'user', mine, 0)).status).toBe(200);

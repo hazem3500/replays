@@ -1,3 +1,9 @@
+export type { PluginPageLoadContext, PluginPageContext, PluginPageDefinition } from './pages.ts';
+import type { PluginPageDefinition } from './pages.ts';
+export { ViewerRegistry } from './registry.ts';
+export { SLOT_NAMES, SlotRegistry } from './slots.ts';
+export type { SlotDescriptor, SlotConfiguration, SlotMountContext } from './slots.ts';
+import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
 import type { ReplayBundle, ReplaySummary } from '../../shared/replay.ts';
 
 /*
@@ -195,21 +201,14 @@ export interface ContextSectionDefinition {
   render(container: HTMLElement, context: ViewerPluginContext): Cleanup;
 }
 
-export type SettingDefinition =
-  | { id: string; label: string; order?: number; type: 'boolean'; default: boolean }
-  | {
-      id: string;
-      label: string;
-      order?: number;
-      type: 'choice';
-      /** At least two; `value` is what `settings.get` returns, `label` what the menu shows (defaults to the value). */
-      options: readonly { value: string; label?: string }[];
-      default: string;
-    };
+export type SettingDefinition = import('../../shared/plugin-settings.ts').PluginSettingDefinition;
 
 export interface ViewerPluginApi {
   /** The server plugin's name (the one that served this script). */
   readonly pluginName: string;
+  registerPluginPage(definition: PluginPageDefinition): void;
+  configureSlot(slot: string, configuration: SlotConfiguration): void;
+  registerSlotItem<C, R>(slot: string, descriptor: SlotDescriptor<C, R>): void;
   registerInspectorTab(definition: InspectorTabDefinition): void;
   registerViewerAction(definition: ViewerActionDefinition): void;
   registerViewerPanel(definition: ViewerPanelDefinition): void;

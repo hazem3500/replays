@@ -4,7 +4,16 @@ import { definePlugin } from '../plugin/define.ts';
 import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import { BRIDGE_TOOLS } from '../shared/malleable-tools.ts';
 import { isScope, parseManifest, parseSource, PluginFormatError, type PluginScope, type UserPluginManifest } from '../shared/malleable.ts';
-import { defaultPolicy, type HostVersions, type MalleablePolicy, policyProblems, targetsFor } from '../shared/malleable-policy.ts';
+import {
+  defaultPolicy,
+  pluginAdmissionProblems,
+  pluginPolicyHash,
+  mayWriteWorkspace,
+  type HostVersions,
+  type MalleablePolicy,
+  policyProblems,
+  targetsFor,
+} from '../shared/malleable-policy.ts';
 import { SANDBOX_CSP, SANDBOX_HTML, SANDBOX_PATH } from '../shared/sandbox-runtime.ts';
 import { send } from './app.ts';
 import type { Identity } from './auth/types.ts';
@@ -84,9 +93,17 @@ export function malleablePlugin(deps: {
   const policy = deps.policy ?? defaultPolicy();
   const versions = deps.versions ?? { core: coreVersion() };
   /** The host narrows: a scope it turned off, or a capability it denies, is refused before any approval is spent. */
-  const allowed = (manifest: UserPluginManifest, scope: PluginScope) => {
-    const problems = policyProblems(policy, manifest, scope);
+  const allowed = async (manifest: UserPluginManifest, scope: PluginScope, source: string) => {
+    const problems = [
+      ...policyProblems(policy, manifest, scope),
+      ...pluginAdmissionProblems(policy, manifest.id, await pluginPolicyHash(manifest, source)),
+    ];
     if (problems.length) throw new PluginStoreError(403, `not kept: ${problems.join('; ')}`);
+  };
+  const requireWriter = (scope: PluginScope, identity: Identity) => {
+    if (!policy.scopes.includes(scope)) throw new PluginStoreError(403, `not kept: ${scope} plugin scope is disabled`);
+    if (scope === 'workspace' && !mayWriteWorkspace(policy, identity))
+      throw new PluginStoreError(403, 'workspace plugin changes require a role in malleable.workspaceRoles');
   };
   const hub = deps.hub ?? new BridgeHub();
   const approvals = deps.approvals ?? new ApprovalBook();
@@ -142,7 +159,55 @@ export function malleablePlugin(deps: {
             // A scope the host turned off is not listed, so its plugins do not load (they stay stored, untouched).
             const scopes = (scope ? [scope] : (['user', 'workspace'] as PluginScope[])).filter((entry) => policy.scopes.includes(entry));
             const lists = await Promise.all(scopes.map((entry) => store.list(entry, identity.id)));
-            reply(response, 200, { plugins: lists.flat() });
+            const plugins = [];
+            for (const summary of lists.flat()) {
+              const latest = (await store.history(summary.scope, identity.id, summary.id))?.versions.at(-1);
+              if (!latest) continue;
+              try {
+                await allowed(latest.manifest, summary.scope, latest.source);
+              } catch (error) {
+                if (error instanceof PluginStoreError && error.status === 403) continue;
+                throw error;
+              }
+              plugins.push({
+                ...summary,
+                sha256: latest.sha256,
+                ...(summary.scope === 'workspace'
+                  ? { requiresReview: !(await store.hasAccepted(identity.id, summary.id, latest.sha256)) }
+                  : {}),
+              });
+            }
+            reply(response, 200, { plugins });
+            return true;
+          }
+          const notice = /^notices\/([a-z][a-z0-9-]{0,31})$/.exec(rest);
+          if (notice && method === 'POST') {
+            const latest = (await store.history('workspace', identity.id, notice[1]!))?.versions.at(-1);
+            if (!latest) throw new PluginStoreError(404, 'no such workspace plugin');
+            await allowed(latest.manifest, 'workspace', latest.source);
+            const body = await readBody(request);
+            if (body.sha256 !== latest.sha256) throw new PluginStoreError(409, 'workspace plugin changed; review the new version');
+            await store.acceptWorkspace(identity.id, notice[1]!, latest.sha256);
+            reply(response, 200, { accepted: true });
+            return true;
+          }
+          const settings = /^settings\/(user|workspace)\/([a-z][a-z0-9-]{0,31})$/.exec(rest);
+          if (settings && (method === 'GET' || method === 'PUT')) {
+            const scope = settings[1] as PluginScope;
+            const id = settings[2]!;
+            if (!policy.scopes.includes(scope)) throw new PluginStoreError(404, 'no such plugin');
+            const history = await store.history(scope, identity.id, id);
+            const latest = history?.versions.at(-1);
+            if (!latest) throw new PluginStoreError(404, 'no such plugin');
+            await allowed(latest.manifest, scope, latest.source);
+            const definitions = latest.manifest.settings ?? [];
+            const result =
+              method === 'GET'
+                ? await store.readSettings(scope, identity.id, id, definitions)
+                : await store.setSetting(scope, identity.id, id, definitions, {
+                    ...(await readBody(request)),
+                  } as { id: unknown; value: unknown; baseVersion: unknown });
+            reply(response, 200, result);
             return true;
           }
           const one = /^plugins\/(user|workspace)\/([a-z][a-z0-9-]{0,31})$/.exec(rest);
@@ -153,6 +218,8 @@ export function malleablePlugin(deps: {
               if (!policy.scopes.includes(scope)) throw new PluginStoreError(404, 'no such plugin');
               const history = await store.history(scope, identity.id, id);
               if (!history) throw new PluginStoreError(404, 'no such plugin');
+              const latest = history.versions.at(-1);
+              if (latest) await allowed(latest.manifest, scope, latest.source);
               reply(response, 200, history);
               return true;
             }
@@ -160,7 +227,8 @@ export function malleablePlugin(deps: {
               const body = await readBody(request);
               const manifest = parseManifest(body.manifest);
               const source = parseSource(body.source);
-              allowed(manifest, scope);
+              requireWriter(scope, identity);
+              await allowed(manifest, scope, source);
               const digest = ApprovalBook.digest('save', scope, id, manifest, source);
               if (!approvals.consume(body.approval, identity.id, digest))
                 throw new PluginStoreError(
@@ -177,11 +245,13 @@ export function malleablePlugin(deps: {
                 by: displayName(identity),
                 baseVersion,
               });
+              if (scope === 'workspace') await store.acceptWorkspace(identity.id, id, version.sha256);
               console.log(`malleable: ${scope} plugin ${id} saved as version ${version.n} by ${displayName(identity)}`);
               reply(response, 200, { version: version.n, sha256: version.sha256 });
               return true;
             }
             if (method === 'DELETE') {
+              requireWriter(scope, identity);
               const token = new URL(request.url ?? '/', 'http://x').searchParams.get('approval');
               if (!approvals.consume(token, identity.id, ApprovalBook.digest('delete', scope, id)))
                 throw new PluginStoreError(403, 'deleting needs the person’s approval');
@@ -196,7 +266,8 @@ export function malleablePlugin(deps: {
             const save = body.action === 'save';
             const manifest = save ? parseManifest(body.manifest) : undefined;
             const source = save ? parseSource(body.source) : undefined;
-            if (manifest) allowed(manifest, body.scope);
+            requireWriter(body.scope, identity);
+            if (manifest) await allowed(manifest, body.scope, source!);
             reply(response, 200, approvals.mint(identity.id, ApprovalBook.digest(body.action, body.scope, body.id, manifest, source)));
             return true;
           }
