@@ -6,4 +6,4 @@ Queue shutdown closes admission, aborts queued/running jobs and drains their res
 
 This does not make an uncooperative Promise interruptible, make object-store uploads transactional with cancellation, or create durable render jobs. Existing portable render state and recovery remain authoritative.
 
-Focused checks: `pnpm exec vitest run test/render-scope.test.ts test/render-queue.test.ts test/render-hooks.test.ts --maxWorkers=1`. They cover success/failure cleanup, timeout, cancellation with a delayed runner, upload failure, shutdown during cache lookup and failed state deletion.
+Focused checks: `pnpm exec vp test run --config vitest.config.ts test/render-scope.test.ts test/render-queue.test.ts test/render-hooks.test.ts --maxWorkers=1`. They cover success/failure cleanup, timeout, cancellation with a delayed runner, upload failure, shutdown during cache lookup and failed state deletion.

@@ -24,8 +24,8 @@ The size slider commits once when a drag or keyboard adjustment completes. Its p
 Integration validation runs in its own Boat session, independently of the live preview box. The reproducible scripts and logs are in `.review-artifacts/ui-integration/`: `check.sh` runs the focused unit/API suite, typecheck, scoped lint and production build; `browser.sh` runs caption, brand, cursor and export-page checks with one worker, a maximum 1280 × 800 viewport, device scale factor 1 and WebGL disabled. Run these commands through the caller's own Boat session:
 
 ```sh
-pnpm exec biome format --write src/shared/cursor.ts src/shared/edits.ts src/shared/effects.ts src/client/cursor-motion.ts src/client/replay-cursor.ts src/client/player.ts src/client/render/main.ts src/client/editor/CursorInspector.tsx src/client/editor/Editor.tsx src/client/editor/editor.css docs/formats/edits.schema.json test/cursor-settings.test.ts
-pnpm exec vitest run test/cursor-settings.test.ts test/cursor-motion.test.ts test/edits.test.ts test/effects.test.ts test/editor-state.test.ts test/render-frames.test.ts test/edits-api.test.ts
+pnpm exec vp fmt --config .oxfmtrc.json --write src/shared/cursor.ts src/shared/edits.ts src/shared/effects.ts src/client/cursor-motion.ts src/client/replay-cursor.ts src/client/player.ts src/client/render/main.ts src/client/editor/CursorInspector.tsx src/client/editor/Editor.tsx docs/formats/edits.schema.json test/cursor-settings.test.ts
+pnpm exec vp test run --config vitest.config.ts test/cursor-settings.test.ts test/cursor-motion.test.ts test/edits.test.ts test/effects.test.ts test/editor-state.test.ts test/render-frames.test.ts test/edits-api.test.ts
 pnpm typecheck
 ```
 

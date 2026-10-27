@@ -33,5 +33,5 @@ Token requests are restricted before post-auth plugin hooks to the matching meta
 
 ## Validation
 
-Run focused dispatcher and security tests with `pnpm exec vitest run test/agent-native-runtime.test.ts --maxWorkers=1`. PostgreSQL tests require a disposable local database: `REPLAYS_TEST_DATABASE_URL=postgresql://… pnpm exec vitest run test/agent-native-postgres.test.ts --maxWorkers=1`. Never point the test URL at production: the suite deletes its own fixed test workspace rows. Tests without this variable explicitly skip SQL coverage.
+Run focused dispatcher and security tests with `pnpm exec vp test run --config vitest.config.ts test/agent-native-runtime.test.ts --maxWorkers=1`. PostgreSQL tests require a disposable local database: `REPLAYS_TEST_DATABASE_URL=postgresql://… pnpm exec vp test run --config vitest.config.ts test/agent-native-postgres.test.ts --maxWorkers=1`. Never point the test URL at production: the suite deletes its own fixed test workspace rows. Tests without this variable explicitly skip SQL coverage.
 

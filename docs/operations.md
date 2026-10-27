@@ -2,7 +2,7 @@
 
 ## Deploying
 
-The server is one Node process (`node --experimental-strip-types src/server/main.ts`, Node 22.12+). The Dockerfile
+The server is one Node process (`node --experimental-strip-types src/server/main.ts`, Node 22.22+ in 22.x, 24.11+ in 24.x, or 26+). The Dockerfile
 builds the viewer and runs the server as an unprivileged user on port 8080 with a `/data` volume:
 
 ```bash
