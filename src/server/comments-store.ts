@@ -4,6 +4,8 @@ import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import {
   type CommentsFile,
   COMMENTS_VERSION,
+  COMMENT_ID,
+  MAX_COMMENT_BODY,
   EMPTY_COMMENTS,
   MAX_COMMENTS,
   MAX_REPLIES,
@@ -12,7 +14,7 @@ import {
   type StoredComment,
   cleanBody,
 } from '../shared/comments.ts';
-import { ObjectExistsError, type ObjectStorage, PreconditionFailedError, readJson } from './storage/types.ts';
+import { ObjectExistsError, type ObjectStorage, PreconditionFailedError, readJson, StoredDataError } from './storage/types.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
 /** A write that loses to another replica's is retried on the fresh file this many times (with a little jitter). */
@@ -45,10 +47,45 @@ export interface NewComment {
 /** `<id>/comments.json`: all of a replay's comments in one generation-checked document, deleted with the replay. */
 export const commentsKey = (id: string) => `${id}/comments.json`;
 
+function record(value: unknown): value is Record<string, unknown> {
+  return Boolean(value && typeof value === 'object' && !Array.isArray(value));
+}
+
+const date = (value: unknown) => typeof value === 'string' && Number.isFinite(Date.parse(value));
+const optionalText = (value: unknown) => value === undefined || typeof value === 'string';
+
+function validComment(value: unknown): boolean {
+  if (!record(value) || !record(value.author)) return false;
+  return (
+    typeof value.id === 'string' &&
+    COMMENT_ID.test(value.id) &&
+    typeof value.body === 'string' &&
+    [...value.body].length <= MAX_COMMENT_BODY &&
+    typeof value.author.id === 'string' &&
+    optionalText(value.author.name) &&
+    optionalText(value.author.avatarUrl) &&
+    (value.author.anonymous === undefined || value.author.anonymous === true) &&
+    optionalText(value.parentId) &&
+    date(value.createdAt) &&
+    (value.editedAt === undefined || date(value.editedAt)) &&
+    (value.at === undefined || (typeof value.at === 'number' && Number.isFinite(value.at) && value.at >= 0)) &&
+    (value.emoji === undefined || REACTION_EMOJI.some((emoji) => emoji === value.emoji)) &&
+    (value.resolved === undefined || (record(value.resolved) && typeof value.resolved.by === 'string' && date(value.resolved.at)))
+  );
+}
+
 function parse(value: unknown): CommentsFile {
-  const file = value as Partial<CommentsFile> | undefined;
-  if (!file || file.version !== COMMENTS_VERSION || !Array.isArray(file.comments)) return EMPTY_COMMENTS;
-  return file as CommentsFile;
+  if (record(value) && typeof value.version === 'number' && value.version !== COMMENTS_VERSION)
+    throw new StoredDataError('Stored comments use an unsupported version; upgrade the server before saving.', 409);
+  if (
+    !record(value) ||
+    value.version !== COMMENTS_VERSION ||
+    !Array.isArray(value.comments) ||
+    value.comments.length > MAX_COMMENTS ||
+    !value.comments.every(validComment)
+  )
+    throw new StoredDataError('Stored comments are corrupt or unavailable; restore them before saving.');
+  return value as unknown as CommentsFile;
 }
 
 /**
@@ -66,7 +103,8 @@ export class CommentsStore {
   }
 
   async list(replayId: string): Promise<StoredComment[]> {
-    return parse(await readJson(this.storage, commentsKey(replayId)).catch(() => undefined)).comments;
+    const value = await readJson(this.storage, commentsKey(replayId));
+    return value === undefined ? [] : parse(value).comments;
   }
 
   /** Applies `change` to the stored comments and writes the result; retried on a concurrent write. */
@@ -84,8 +122,13 @@ export class CommentsStore {
 
   private async write<T>(key: string, change: (comments: StoredComment[]) => T): Promise<T> {
     for (let attempt = 1; ; attempt++) {
-      const info = await this.storage.stat(key);
-      const current = info ? parse(await readJson(this.storage, key).catch(() => undefined)) : EMPTY_COMMENTS;
+      let info;
+      try {
+        info = await this.storage.stat(key);
+      } catch (cause) {
+        throw new StoredDataError('Stored comments could not be read; retry before saving.', 503, { cause });
+      }
+      const current = info ? parse(await readJson(this.storage, key)) : EMPTY_COMMENTS;
       const comments = [...current.comments];
       const result = change(comments);
       try {

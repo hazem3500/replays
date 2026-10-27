@@ -1,3 +1,4 @@
+import { StoredDataError } from './storage/types.ts';
 import type { ApplicationRuntime } from './agent-native/runtime.ts';
 import { applyRequestPolicy } from './request-policy.ts';
 import { normalizeSignIn, signInReturn } from '../shared/sign-in.ts';
@@ -918,6 +919,8 @@ function fail(request: IncomingMessage, response: ServerResponse, error: unknown
   const requestId = request.headers['x-request-id'] ?? request.headers['x-cloud-trace-context'] ?? '-';
   console.error(`request failed: ${request.method} ${request.url?.split('?')[0]} (request ${String(requestId)}, status ${status})`, error);
   if (response.headersSent) response.end();
+  else if (error instanceof StoredDataError)
+    send(response, status, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8');
   else if (status >= 500) send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8');
   else send(response, status, (error as Error).message);
 }

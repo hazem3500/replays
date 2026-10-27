@@ -147,13 +147,28 @@ export async function readText(storage: ObjectStorage, key: string) {
   return (await storage.read(key))?.toString('utf8');
 }
 
-/** The object parsed as JSON; undefined when missing or unparsable (a torn legacy write). */
+/** A safe, actionable storage failure; callers must never replace the unreadable object. */
+export class StoredDataError extends Error {
+  readonly status: 409 | 503;
+  constructor(message: string, status: 409 | 503 = 503, options?: ErrorOptions) {
+    super(message, options);
+    this.name = 'StoredDataError';
+    this.status = status;
+  }
+}
+
+/** The object parsed as JSON; only a missing object returns undefined. */
 export async function readJson<T = unknown>(storage: ObjectStorage, key: string): Promise<T | undefined> {
-  const text = await readText(storage, key);
+  let text: string | undefined;
+  try {
+    text = await readText(storage, key);
+  } catch (cause) {
+    throw new StoredDataError('Stored data could not be read; retry before saving.', 503, { cause });
+  }
   if (text === undefined) return undefined;
   try {
     return JSON.parse(text) as T;
-  } catch {
-    return undefined;
+  } catch (cause) {
+    throw new StoredDataError('Stored data is corrupt; restore it before saving.', 503, { cause });
   }
 }

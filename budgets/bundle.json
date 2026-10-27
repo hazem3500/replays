@@ -228,9 +228,9 @@
       "brotli": 1224
     },
     "dist/lib/chunks/types.ts-b4e3b7897b28.mjs": {
-      "raw": 2251,
-      "gzip": 913,
-      "brotli": 761
+      "raw": 2714,
+      "gzip": 1051,
+      "brotli": 884
     },
     "dist/lib/config.mjs": {
       "raw": 269,
