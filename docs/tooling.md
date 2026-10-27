@@ -48,3 +48,12 @@ separate commit; coordinate broad formatting passes with concurrent work.
 References: [Vite+ migration rules](https://viteplus.dev/guide/migrate-rules),
 [format](https://viteplus.dev/guide/fmt), [lint](https://viteplus.dev/guide/lint),
 [test](https://viteplus.dev/guide/test), [pack](https://viteplus.dev/guide/pack).
+
+## Request mocking
+
+Unit tests that exercise client network code use [MSW](https://mswjs.io) through `test/msw/`. `setupMockApi(...shared)` starts
+an interception server for one test file, resets per-test overrides after each test and fails any request without a handler
+(`onUnhandledFrame: 'error'`), so a missing mock is a test failure rather than a real connection. `handlers.ts` holds one
+builder per API route (`config`, `previewProbe`); add a builder there when a second test needs a route.
+happy-dom files need `// @vitest-environment-options {"url": "http://localhost/"}` so relative `/api/...` URLs resolve.
+Opt in per file: server integration tests keep talking to their own listeners. Storybook is not wired to MSW yet.

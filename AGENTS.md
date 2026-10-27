@@ -67,7 +67,7 @@ No narrating comments. Inside functions, JSX, trailing positions and standalone 
 
 ## Tests
 
-Test public behavior and real failure modes. Mock only process boundaries (network, clock, filesystem, browser APIs), never our own modules. Do not export private helpers just for tests. No snapshot-only tests, trivial getter/constant tests or type-shape tests. One behavior per `it`, named as a sentence. Logic goes in Vitest; UI behavior in story `play` or e2e; workflows in e2e. Ask: which mutant would this test kill? If none, remove it.
+Test public behavior and real failure modes. Mock only process boundaries (network, clock, filesystem, browser APIs), never our own modules. Mock client network calls with the shared MSW handlers in `test/msw/` (`setupMockApi`) instead of stubbing `fetch`; Storybook adopts them separately. Do not export private helpers just for tests. No snapshot-only tests, trivial getter/constant tests or type-shape tests. One behavior per `it`, named as a sentence. Logic goes in Vitest; UI behavior in story `play` or e2e; workflows in e2e. Ask: which mutant would this test kill? If none, remove it.
 
 ## Dependencies and files
 
