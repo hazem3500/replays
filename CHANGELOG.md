@@ -9,6 +9,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
+  or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
+- An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of
+  the app (the Node handler today, a web `fetch` handler and a CI-only TanStack Start mount later) has to match it.
 - Capture pacing: optional `CaptureArgs.stepPauseMs`, config `capture.stepPauseMs`, and CLI `--step-pause`
   (0–10000ms after non-wait actions; default 0 for compatibility, set 1200 for demonstration captures).
   Built-in drivers type at 80ms/character, selector-derived labels omit typed values, and unlabelled waits

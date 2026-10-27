@@ -29,28 +29,28 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "gzip": 217,
-      "brotli": 219
+      "gzip": 219,
+      "brotli": 188
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 35060,
-      "gzip": 6742,
-      "brotli": 5984
+      "raw": 17524,
+      "gzip": 3874,
+      "brotli": 3391
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 79876,
-      "gzip": 26552,
-      "brotli": 23404
+      "raw": 53233,
+      "gzip": 18818,
+      "brotli": 16302
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 33095,
-      "gzip": 6332,
-      "brotli": 5643
+      "raw": 29642,
+      "gzip": 5826,
+      "brotli": 5188
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 332366,
-      "gzip": 110268,
-      "brotli": 95018
+      "raw": 182491,
+      "gzip": 62079,
+      "brotli": 52999
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -105,7 +105,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225484,
       "gzip": 69512,
-      "brotli": 59853
+      "brotli": 59861
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1516,
@@ -118,14 +118,14 @@
       "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 939,
-      "gzip": 528,
-      "brotli": 474
+      "raw": 748,
+      "gzip": 442,
+      "brotli": 394
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1816,
-      "gzip": 805,
-      "brotli": 657
+      "raw": 1373,
+      "gzip": 671,
+      "brotli": 547
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -133,14 +133,14 @@
       "brotli": 456
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 18080,
+      "raw": 18081,
       "gzip": 7488,
-      "brotli": 6340
+      "brotli": 6354
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 38948,
       "gzip": 13458,
-      "brotli": 12053
+      "brotli": 12055
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -273,14 +273,14 @@
       "brotli": 16709
     },
     "dist/lib/server-testing.mjs": {
-      "raw": 10845,
-      "gzip": 3154,
-      "brotli": 2774
+      "raw": 11887,
+      "gzip": 3494,
+      "brotli": 3072
     },
     "dist/lib/server.mjs": {
       "raw": 1590,
       "gzip": 552,
-      "brotli": 454
+      "brotli": 458
     },
     "dist/lib/viewer.mjs": {
       "raw": 470,
@@ -298,9 +298,9 @@
       "brotli": 305226
     },
     "initial/render.html/css": {
-      "raw": 5252,
-      "gzip": 2455,
-      "brotli": 2038
+      "raw": 4810,
+      "gzip": 2321,
+      "brotli": 1929
     },
     "initial/render.html/js": {
       "raw": 542325,
@@ -366,6 +366,16 @@
       },
       "reason": "The generated import hash changes with the upload schema chunk; runtime source and entry footprint are measured in this PR.",
       "pr": "https://github.com/hazem3500/replays/pull/77"
+    },
+    {
+      "file": "dist/lib/server-testing.mjs",
+      "cap": {
+        "raw": 11887,
+        "gzip": 3494,
+        "brotli": 3072
+      },
+      "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
+      "pr": "https://github.com/hazem3500/replays/pull/63"
     },
     {
       "file": "dist/client/assets/Editor-HASH.css",

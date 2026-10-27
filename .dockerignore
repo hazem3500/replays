@@ -7,6 +7,7 @@ dist
 .data
 shots
 coverage
+.stryker-tmp
 playwright-report
 test-results
 **/playwright-report

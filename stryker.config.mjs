@@ -1,0 +1,36 @@
+export const criticalModules = [
+  { file: 'src/shared/edits.ts', tests: ['test/edits.test.ts', 'test/edit-limit-boundaries.test.ts', 'test/edits-api.test.ts'] },
+  { file: 'src/shared/replay.ts', tests: ['test/bundle-rejections.test.ts', 'test/import.test.ts', 'test/upload.test.ts'] },
+  { file: 'src/shared/people.ts', tests: ['test/people.test.ts'] },
+  { file: 'src/shared/purposes.ts', tests: ['test/purposes.test.ts'] },
+  { file: 'src/capture/sanitize.ts', tests: ['test/sanitize.test.ts', 'test/redaction.test.ts', 'test/redaction-integrity.test.ts'] },
+  { file: 'src/recorder/sanitize-events.ts', tests: ['src/recorder/sanitize-events.test.ts', 'src/recorder/redact.test.ts'] },
+  { file: 'src/server/store.ts', tests: ['test/store.test.ts', 'test/store-drivers.test.ts', 'test/sidecar-integrity.test.ts'] },
+  {
+    file: 'src/server/storage/types.ts',
+    tests: ['test/storage-key-boundaries.test.ts', 'test/storage.test.ts', 'test/sidecar-integrity.test.ts'],
+  },
+  { file: 'src/client/editor/state.ts', tests: ['test/editor-state.test.ts'] },
+  { file: 'src/server/migrate.ts', tests: ['test/migrate.test.ts'] },
+  { file: 'src/client/route.ts', tests: ['test/route.test.ts', 'test/replay-preload.test.ts'] },
+];
+
+export default {
+  $schema: './node_modules/@stryker-mutator/core/schema/stryker-schema.json',
+  testRunner: 'vitest',
+  plugins: ['@stryker-mutator/vitest-runner'],
+  vitest: { configFile: 'vitest.mutation.config.mjs', related: true, pool: 'forks' },
+  mutate: criticalModules.map((entry) => entry.file),
+  coverageAnalysis: 'perTest',
+  reporters: ['clear-text', 'progress', 'html', 'json'],
+  thresholds: { high: 80, low: 60, break: 0 },
+  incremental: true,
+  incrementalFile: '.review-artifacts/mutation/incremental.json',
+  jsonReporter: { fileName: '.review-artifacts/mutation/mutation.json' },
+  htmlReporter: { fileName: '.review-artifacts/mutation/index.html' },
+  concurrency: 2,
+  timeoutMS: 10000,
+  dryRunTimeoutMinutes: 10,
+  tempDirName: '.stryker-tmp',
+  ignorePatterns: ['.review-artifacts/**', '.ship/**', '.claude/**', '.agents/**', 'storybook-static/**', 'dist/**'],
+};
