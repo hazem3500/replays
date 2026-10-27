@@ -14,7 +14,7 @@ const run = { id: 'attempt-1', sequence: 1, label: 'Desktop checkout', status: '
 
 const registerSuiteAnswer = {
   body: {
-    createdAt: '<now-17d>',
+    createdAt: '2026-10-10T12:00:00.000Z',
     id: 'contract-suite',
     runs: [],
     subject: {
@@ -35,14 +35,14 @@ const registerSuiteAnswer = {
 
 const registerRunAnswer = {
   body: {
-    createdAt: '<now-17d>',
+    createdAt: '2026-10-10T12:00:00.000Z',
     id: 'contract-suite',
     runs: [
       {
         id: 'attempt-1',
         label: 'Desktop checkout',
         sequence: 1,
-        startedAt: '<now-17d>',
+        startedAt: '2026-10-10T12:01:00.000Z',
         status: 'running',
       },
     ],
@@ -73,14 +73,14 @@ const runConflictAnswer = {
 
 const suiteAnswer = {
   body: {
-    createdAt: '<now-17d>',
+    createdAt: '2026-10-10T12:00:00.000Z',
     id: 'contract-suite',
     runs: [
       {
         id: 'attempt-1',
         label: 'Desktop checkout',
         sequence: 1,
-        startedAt: '<now-17d>',
+        startedAt: '2026-10-10T12:01:00.000Z',
         status: 'running',
       },
     ],
@@ -104,14 +104,14 @@ const suiteAnswer = {
 
 const suiteExpandedAnswer = {
   body: {
-    createdAt: '<now-17d>',
+    createdAt: '2026-10-10T12:00:00.000Z',
     id: 'contract-suite',
     runDetails: [
       {
         id: 'attempt-1',
         label: 'Desktop checkout',
         sequence: 1,
-        startedAt: '<now-17d>',
+        startedAt: '2026-10-10T12:01:00.000Z',
         status: 'running',
       },
     ],
@@ -120,7 +120,7 @@ const suiteExpandedAnswer = {
         id: 'attempt-1',
         label: 'Desktop checkout',
         sequence: 1,
-        startedAt: '<now-17d>',
+        startedAt: '2026-10-10T12:01:00.000Z',
         status: 'running',
       },
     ],
@@ -145,7 +145,7 @@ const suiteExpandedAnswer = {
 const suiteListAnswer = {
   body: [
     {
-      createdAt: '<now-17d>',
+      createdAt: '2026-10-10T12:00:00.000Z',
       duration: 0,
       expiresAt: '<now+30d>',
       failed: 0,
@@ -174,7 +174,7 @@ const suiteListAnswer = {
 const suiteIndexAnswer = {
   body: [
     {
-      createdAt: '<now-17d>',
+      createdAt: '2026-10-10T12:00:00.000Z',
       duration: 0,
       expiresAt: '<now+30d>',
       failed: 0,
@@ -186,7 +186,7 @@ const suiteIndexAnswer = {
           id: 'attempt-1',
           label: 'Desktop checkout',
           sequence: 1,
-          startedAt: '<now-17d>',
+          startedAt: '2026-10-10T12:01:00.000Z',
           status: 'running',
         },
       ],

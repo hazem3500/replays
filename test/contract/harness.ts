@@ -51,12 +51,15 @@ export async function startContract(options: Partial<AppOptions> = {}): Promise<
 
 const HOUR = 60 * 60_000;
 
+/** invariant: only values minutes from the clock count as derived, so fixed fixture dates never turn relative by time of day. */
+const CLOCK_SKEW = 2 * 60 * 1000;
+
 /** Timestamps the server derives from the clock: `<now>`, or `<now+30d>` for retention deadlines (fixture dates stay). */
 function relativeTime(value: string) {
   const offset = Date.parse(value) - Date.now();
-  if (Math.abs(offset) < 6 * HOUR) return '<now>';
+  if (Math.abs(offset) < CLOCK_SKEW) return '<now>';
   const days = Math.round(offset / (24 * HOUR));
-  return Math.abs(offset - days * 24 * HOUR) < 6 * HOUR ? `<now${days < 0 ? '' : '+'}${days}d>` : value;
+  return days !== 0 && Math.abs(offset - days * 24 * HOUR) < CLOCK_SKEW ? `<now${days < 0 ? '' : '+'}${days}d>` : value;
 }
 
 function normalize(value: unknown): unknown {
