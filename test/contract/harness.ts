@@ -50,24 +50,25 @@ export async function startContract(options: Partial<AppOptions> = {}): Promise<
 }
 
 const HOUR = 60 * 60_000;
+/** The response fields the server sets from its own clock; everything else (fixture dates included) stays literal. */
+const CLOCK_KEYS = new Set(['at', 'expiresAt']);
 
-/** Timestamps the server derives from the clock: `<now>`, or `<now+30d>` for retention deadlines (fixture dates stay). */
+/** A clock-derived timestamp as `<now>`, or `<now+30d>` for a retention deadline. */
 function relativeTime(value: string) {
   const offset = Date.parse(value) - Date.now();
   if (Math.abs(offset) < 6 * HOUR) return '<now>';
   const days = Math.round(offset / (24 * HOUR));
-  return Math.abs(offset - days * 24 * HOUR) < 6 * HOUR ? `<now${days < 0 ? '' : '+'}${days}d>` : value;
+  return `<now${days < 0 ? '' : '+'}${days}d>`;
 }
 
-function normalize(value: unknown): unknown {
-  if (typeof value === 'string') {
-    return /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(value) ? relativeTime(value) : value;
-  }
-  if (Array.isArray(value)) return value.map(normalize);
+const isTimestamp = (value: unknown): value is string => typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/.test(value);
+
+function normalize(value: unknown, key = ''): unknown {
+  if (isTimestamp(value) && CLOCK_KEYS.has(key)) return relativeTime(value);
+  if (key === 'core' && typeof value === 'string') return '<version>';
+  if (Array.isArray(value)) return value.map((entry) => normalize(entry));
   if (value && typeof value === 'object')
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [key, key === 'core' && typeof entry === 'string' ? '<version>' : normalize(entry)]),
-    );
+    return Object.fromEntries(Object.entries(value).map(([name, entry]) => [name, normalize(entry, name)]));
   return value;
 }
 
