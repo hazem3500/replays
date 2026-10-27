@@ -4,6 +4,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 
 import { send, serveFile } from './app.ts';
+import { parseJsonBody } from './http/body.ts';
 import type { RenderJob } from '../plugin/types.ts';
 import type { Identity } from './auth/types.ts';
 import { editsVersion } from '../shared/edits.ts';
@@ -127,7 +128,7 @@ async function readSmallJson(request: IncomingMessage): Promise<Record<string, u
   }
   const text = Buffer.concat(chunks).toString('utf8').trim();
   if (!text) return {};
-  const value: unknown = JSON.parse(text);
+  const value: unknown = parseJsonBody(text);
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw Object.assign(new Error('body must be a JSON object'), { status: 400 });
   return value as Record<string, unknown>;

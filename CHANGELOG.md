@@ -5,6 +5,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+### Security
+
+- Error responses no longer pass on what the server didn't decide itself. A storage provider's status
+  (`GcsError`/`S3Error` 403/404/429) and a corrupt stored file are now a generic `500 internal error`, not a 4xx
+  carrying the provider's or the parser's message. Storage `NotFoundError`/`ObjectExistsError`/`PreconditionFailedError`
+  keep their status (404/409) but no longer name the object key. Malformed JSON request bodies are `400 body is not
+  valid JSON` everywhere. `rejectUpload()` and the documented 4xx answers are unchanged.
+
 - Add adapter-owned/configurable sign-in recovery for public CDN viewers: safe authenticated return endpoints, page-load recovery and a bounded automatic attempt with manual fallback.
 
 ### Added
