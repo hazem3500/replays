@@ -30,7 +30,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 219,
-      "brotli": 189
+      "brotli": 188
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 17524,
@@ -39,13 +39,13 @@
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 53233,
-      "gzip": 18820,
+      "gzip": 18818,
       "brotli": 16302
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 26409,
-      "gzip": 5385,
-      "brotli": 4779
+      "raw": 29642,
+      "gzip": 5826,
+      "brotli": 5188
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 182491,
@@ -84,8 +84,8 @@
     },
     "dist/client/assets/performance-HASH.js": {
       "raw": 4242,
-      "gzip": 1815,
-      "brotli": 1632
+      "gzip": 1814,
+      "brotli": 1627
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -140,7 +140,7 @@
     "dist/client/assets/tools-HASH.js": {
       "raw": 38948,
       "gzip": 13458,
-      "brotli": 12058
+      "brotli": 12055
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -155,7 +155,7 @@
     "dist/client/index.html": {
       "raw": 10783,
       "gzip": 3889,
-      "brotli": 3204
+      "brotli": 3202
     },
     "dist/client/render.html": {
       "raw": 1294,
@@ -348,6 +348,16 @@
       },
       "reason": "The comparison loading shell shares workspace CSS in the initial stylesheet; this allocates its measured baseline growth.",
       "pr": "https://github.com/hazem3500/replays/pull/59"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 29642,
+        "gzip": 5826,
+        "brotli": 5188
+      },
+      "reason": "Network request search and filter toolbar, phone tap targets and waterfall request controls add these reviewed styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/62"
     }
   ]
 }
