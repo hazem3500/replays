@@ -14,6 +14,22 @@ export interface Identity {
   authScopes?: readonly string[];
   /** Expiry of a verified bearer token, in Unix seconds. */
   authExpiresAt?: number;
+  /**
+   * Confines the identity to these exact routes: every other request answers 403 before the CSRF check, application
+   * authorization, post-auth hooks, plugin routes or core dispatch. Absent means unrestricted (subject to `authScopes`).
+   */
+  capabilities?: IdentityCapabilities;
+}
+
+/** One permitted request: an uppercase method and a canonical path without the deployment's base prefix. */
+export interface RouteGrant {
+  readonly method: string;
+  readonly path: string;
+}
+
+export interface IdentityCapabilities {
+  /** Exact matches only: no patterns, and `GET` does not imply `HEAD`. Empty allows nothing. */
+  readonly routes: readonly RouteGrant[];
 }
 
 /** Public, credential-free description of a device flow explicitly enabled by an auth adapter. */

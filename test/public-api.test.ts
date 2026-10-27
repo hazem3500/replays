@@ -1,4 +1,12 @@
-import type { PluginApi, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
+import type {
+  Identity,
+  IdentityCapabilities,
+  NormalizeUploadHook,
+  PluginApi,
+  PrepareUploadHook,
+  RequestPolicy,
+  UploadEndpoint,
+} from '../src/plugin/index.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -39,6 +47,7 @@ const entries: Record<string, { source: string; values: string[] }> = {
   './plugin': {
     source: '../src/plugin/index.ts',
     values: [
+      'HttpError',
       'PLUGIN_API_VERSION',
       'PluginError',
       'assertPlugin',
@@ -50,6 +59,7 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'resolvePlugins',
       'resolvePluginsSync',
       'SUMMARY_FIELD_LIMITS',
+      'tooManyRequests',
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
@@ -150,6 +160,9 @@ describe('public API', () => {
     expectTypeOf<PluginApi['requestPolicy']>().parameter(0).toEqualTypeOf<RequestPolicy>();
     expectTypeOf<PluginApi['uploadEndpoint']>().parameter(0).toEqualTypeOf<UploadEndpoint>();
     expectTypeOf<UploadEndpoint['prepare']>().toEqualTypeOf<PrepareUploadHook | undefined>();
+    expectTypeOf<UploadEndpoint['normalize']>().toEqualTypeOf<NormalizeUploadHook | undefined>();
+    expectTypeOf<PluginApi['normalizeUpload']>().parameter(0).toEqualTypeOf<NormalizeUploadHook>();
+    expectTypeOf<Identity['capabilities']>().toEqualTypeOf<IdentityCapabilities | undefined>();
   });
   it.each(Object.entries(entries))('%s exports exactly the documented values', async (_subpath, { source, values }) => {
     const module = (await import(source)) as Record<string, unknown>;

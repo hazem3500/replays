@@ -1,4 +1,5 @@
 import { StoredDataError } from './storage/types.ts';
+import { HttpError } from '../shared/http-error.ts';
 import type { ApplicationRuntime } from './agent-native/runtime.ts';
 import { applyRequestPolicy } from './request-policy.ts';
 import { normalizeSignIn, signInReturn } from '../shared/sign-in.ts';
@@ -58,6 +59,18 @@ import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import type { PurposeCatalog } from './purposes.ts';
 import { serveObject } from './serve-object.ts';
+import {
+  assertDeclaredLength,
+  confineToEndpoint,
+  enforceRateLimit,
+  MAX_REPLAY_BYTES,
+  normalizeUpload,
+  routeAllowed,
+  sizeLabel,
+  uploadEndpointAt,
+  uploadLimit,
+  uploadReceipt,
+} from './upload-endpoints.ts';
 import { ReplayConflictError, type ReplayStore } from './store.ts';
 import { applyIndexFilters, publicIndexFilters } from './summary-fields.ts';
 import { recordError, setRequestAttributes, traceRequest, withSpan } from './tracing.ts';
@@ -224,7 +237,6 @@ async function readBody(request: IncomingMessage, maxBytes: number) {
   return Buffer.concat(chunks);
 }
 
-const MAX_REPLAY_BYTES = 25 * 1024 * 1024;
 const gunzipAsync = promisify(gunzip);
 
 function httpError(status: number, message: string) {
@@ -240,8 +252,10 @@ async function readJsonUpload(request: IncomingMessage, maxBytes: number): Promi
     .trim()
     .toLowerCase();
   if (encoding !== 'identity' && encoding !== 'gzip') throw httpError(415, `unsupported content-encoding: ${encoding}`);
+  const tooLarge = `upload is larger than ${sizeLabel(maxBytes)}`;
+  assertDeclaredLength(request, maxBytes, tooLarge);
   let body: Buffer = await readBody(request, maxBytes).catch((error: unknown) => {
-    throw (error as { status?: number }).status === 413 ? httpError(413, `upload is larger than ${maxBytes / 1024 / 1024} MB`) : error;
+    throw (error as { status?: number }).status === 413 ? httpError(413, tooLarge) : error;
   });
   setRequestAttributes(request, { 'http.request.body.size': body.byteLength });
   if (encoding === 'gzip') {
@@ -249,7 +263,7 @@ async function readJsonUpload(request: IncomingMessage, maxBytes: number): Promi
       body = await gunzipAsync(body, { maxOutputLength: maxBytes });
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code === 'ERR_BUFFER_TOO_LARGE' || error instanceof RangeError)
-        throw httpError(413, `upload is larger than ${maxBytes / 1024 / 1024} MB once decompressed`);
+        throw httpError(413, `${tooLarge} once decompressed`);
       throw httpError(400, 'body is not valid gzip');
     }
   }
@@ -512,7 +526,14 @@ export function createApp(options: AppOptions) {
         return;
       }
 
-      const authenticated: Identity | undefined = await options.auth.authenticate(request);
+      // invariant: an endpoint's own credentials replace the deployment adapter on its path only, and confine the identity to it.
+      const uploadEndpoint = uploadEndpointAt(registry, path);
+      const endpointAuth = uploadEndpoint?.authenticate;
+      const authenticated: Identity | undefined = endpointAuth ? await endpointAuth(request) : await options.auth.authenticate(request);
+      if (!authenticated && endpointAuth) {
+        send(response, 401, 'credentials required', 'text/plain; charset=utf-8', 'no-store');
+        return;
+      }
       if (!authenticated) {
         const recovery = signIn && path === signIn.path && request.method === 'GET' && isBrowserNavigation(request);
         // loginUrl adapters (including OIDC) return to this authenticated endpoint after their callback.
@@ -532,17 +553,12 @@ export function createApp(options: AppOptions) {
         return;
       }
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
-      const user = await resolveIdentity(authenticated, request);
+      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, request);
       identities.set(request, user);
-      if (user.authScopes?.includes('replays:upload')) {
-        const uploadRoute =
-          (request.method === 'POST' && path === '/api/replays') ||
-          (request.method === 'PUT' && Boolean(parseReplayPath(path)?.video)) ||
-          (request.method === 'GET' && path === '/api/cli/auth/status');
-        if (!uploadRoute) {
-          send(response, 403, 'upload token cannot access this route');
-          return;
-        }
+      const denied = routeAllowed(registry, user, request.method ?? 'GET', path);
+      if (denied) {
+        send(response, 403, denied);
+        return;
       }
       if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !requestPolicy.csrfAllowed) {
         send(response, 403, 'cross-site request');
@@ -744,10 +760,11 @@ export function createApp(options: AppOptions) {
         send(response, 201, replayReceipt(base, accepted), json, REVALIDATE);
         return;
       }
-      const endpoint = registry.uploadEndpoints.get(path)?.value;
-      if ((path === '/api/replays' || endpoint) && request.method === 'POST') {
-        const body = await readJsonUpload(request, MAX_REPLAY_BYTES);
-        const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, request }) : body;
+      if ((path === '/api/replays' || uploadEndpoint) && request.method === 'POST') {
+        const endpointContext = { identity: user, request, path };
+        await enforceRateLimit(uploadEndpoint, endpointContext);
+        const body = await readJsonUpload(request, await uploadLimit(uploadEndpoint, endpointContext));
+        const prepared = uploadEndpoint?.prepare ? await uploadEndpoint.prepare({ body, identity: user, request }) : body;
         assertUploadEnvelope(prepared);
         const replay = await runPrepareUpload(registry, prepared, user, request);
         assertUploadEnvelope(replay);
@@ -766,13 +783,35 @@ export function createApp(options: AppOptions) {
         }
         assertUploadBundle(replay);
         resolveContext(replay, options);
-        // Stored data never depends on the uploader having sanitized it.
+        const normalized = await normalizeUpload(registry, uploadEndpoint, replay, endpointContext);
+        const { bundle: candidate } = normalized;
+        if (normalized.changed) {
+          // invariant: a normalized bundle is checked like an upload again; resolving an existing link returns it unchanged.
+          if (candidate.context?.sources)
+            candidate.context.sources = candidate.context.sources.map((source, index) =>
+              options.sources.resolve(source, `replay.context.sources[${index}]`),
+            );
+          assertUploadBundle(candidate);
+          resolveContext(candidate, options);
+        }
+        // invariant: stored data never depends on the uploader or a normalization hook having sanitized it.
         const bundle = await acceptUpload(
-          await runBeforeUpload(registry, sanitize(replay), user, request),
+          await runBeforeUpload(registry, sanitize(candidate), user, request),
           options.store.purposes,
           registry,
         );
         setRequestAttributes(request, uploadAttributes(bundle));
+        const receipt = (stored: ReplayBundle) =>
+          uploadReceipt(
+            uploadEndpoint,
+            {
+              ...endpointContext,
+              bundle: stored,
+              url: publicPath(`/r/${stored.meta.id}`, base),
+              ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}),
+            },
+            replayReceipt(base, stored),
+          );
         if (bundle.suiteRun) {
           await options.store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);
           const existing = await options.store.load(bundle.meta.id);
@@ -780,7 +819,7 @@ export function createApp(options: AppOptions) {
             if (JSON.stringify(existing) !== JSON.stringify(bundle))
               throw Object.assign(new Error('replay already exists'), { status: 409 });
             await options.store.attachReplay(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle);
-            send(response, 200, replayReceipt(base, bundle), json, REVALIDATE);
+            send(response, 200, receipt(bundle), json, REVALIDATE);
             return;
           }
         }
@@ -789,7 +828,7 @@ export function createApp(options: AppOptions) {
         requestListMedia(options, bundle.meta.id);
         void options.store.pruneSoon();
         await runAfterUpload(registry, bundle, user, request, publicPath(`/r/${bundle.meta.id}`, base));
-        send(response, 201, replayReceipt(base, bundle), json, REVALIDATE);
+        send(response, 201, receipt(bundle), json, REVALIDATE);
         return;
       }
 
@@ -916,6 +955,9 @@ export function createApp(options: AppOptions) {
   };
 }
 
+/** Headers a thrown `HttpError` carries onto its response (`Retry-After`); none for other errors. */
+const errorHeaders = (error: unknown): Record<string, string> => (error instanceof HttpError ? { ...error.headers } : {});
+
 /**
  * The error response for a failed request: explicit statuses win; input validation (assert* throws plain
  * Errors), bad JSON and bad URLs are 400s with their message; anything else (fs, programming errors) is a
@@ -931,9 +973,11 @@ function fail(request: IncomingMessage, response: ServerResponse, error: unknown
   recordError(error, status);
   const requestId = request.headers['x-request-id'] ?? request.headers['x-cloud-trace-context'] ?? '-';
   console.error(`request failed: ${request.method} ${request.url?.split('?')[0]} (request ${String(requestId)}, status ${status})`, error);
+  const headers = errorHeaders(error);
   if (response.headersSent) response.end();
   else if (error instanceof StoredDataError)
     send(response, status, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8');
-  else if (status >= 500) send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8');
-  else send(response, status, (error as Error).message);
+  else if (status >= 500)
+    send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8', REVALIDATE, headers);
+  else send(response, status, (error as Error).message, 'text/plain; charset=utf-8', REVALIDATE, headers);
 }
