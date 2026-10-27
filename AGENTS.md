@@ -31,11 +31,17 @@ Installs, checks, builds, tests, browsers, Docker and dev servers run on the ses
 ```sh
 oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm install --frozen-lockfile
 oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm check
-oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm test -- test/lint-policy.test.ts
+oz-boat exec --session t3:<YOUR_THREAD_ID> -- pnpm exec vp test run --config vitest.config.ts test/lint-policy.test.ts
 oz-boat stop --session t3:<YOUR_THREAD_ID>
 ```
 
 `check` runs lint, formatting, root typecheck, unit tests and app build. Also run relevant `typecheck:storybook`, `test:recorder`, `build:recorder`, `build:storybook`, `test:e2e`, `test:distro`, `test:pack` or `test:host-app`. `storybook` starts the story server. Read `package.json` for available scripts; do not invent a Storybook test command. Stop Boat at handoff.
+
+## Fast feedback
+
+On your own Boat, use `pnpm check:quick` for cached lint/format/tsrs types plus units affected by fetched `origin/main`. Run `pnpm test:changed` directly for that unit subset; `pnpm test:watch` and `pnpm typecheck:watch` keep feedback live. `pnpm dev` provides API + Vite HMR. Install the optional staged-only, read-only hook with `pnpm hooks:install`. Stop watch/server processes before stopping Boat.
+
+`pnpm check` remains the full pre-handoff check; also run the relevant browser/example/Storybook checks. Root, Storybook, examples and declaration emission use pinned tsrs with reference defaults (`--fast false`). Type-aware lint retains the Oxlint backend until tsrs supports the same rules; see `docs/quality-tooling.md`. `pnpm build` and `pnpm build:cli` replay successful Vite Task results only while tracked inputs/environment match; `pnpm exec vp run --no-cache cached:build` forces a fresh viewer build. See [CI timings and tradeoffs](docs/ci-performance.md).
 
 ## Invariants
 
@@ -51,7 +57,7 @@ oz-boat stop --session t3:<YOUR_THREAD_ID>
 
 New code imports/calls effect hooks only in `src/client/hooks/`; derive values during render, handle actions in event handlers, and subscribe through `useSyncExternalStore`. Use a named hook for imperative setup. Do not move browser-recorder code into the client to satisfy this rule; coordinate an appropriate browser-only hook boundary first.
 
-React Compiler is enabled in the app build. Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.
+React Compiler is enabled in the app build. Run `pnpm quality:compiler` on Boat for the [bailout report and build-parity status](docs/compiler-health.md). Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.
 
 Keep files at most 400 lines; extract pure logic, then hooks, then views. Keep components focused, prefer children/slots over prop drilling, and render extensible lists from descriptors. Keep app data/navigation out of presentational components. Current transport/navigation live in `client/queries.ts`, `navigation.ts` and `route.ts`; Router/DB/Start work is separately owned. Do not duplicate those migrations.
 
@@ -61,7 +67,7 @@ No narrating comments. Inside functions, JSX, trailing positions and standalone 
 
 ## Tests
 
-Test public behavior and real failure modes. Mock only process boundaries (network, clock, filesystem, browser APIs), never our own modules. Do not export private helpers just for tests. No snapshot-only tests, trivial getter/constant tests or type-shape tests. One behavior per `it`, named as a sentence. Logic goes in Vitest; UI behavior in story `play` or e2e; workflows in e2e. Ask: which mutant would this test kill? If none, remove it.
+Test public behavior and real failure modes. Mock only process boundaries (network, clock, filesystem, browser APIs), never our own modules. Mock client network calls with the shared MSW handlers in `test/msw/` (`setupMockApi`) instead of stubbing `fetch`; Storybook adopts them separately. Do not export private helpers just for tests. No snapshot-only tests, trivial getter/constant tests or type-shape tests. One behavior per `it`, named as a sentence. Logic goes in Vitest; UI behavior in story `play` or e2e; workflows in e2e. Ask: which mutant would this test kill? If none, remove it.
 
 ## Dependencies and files
 

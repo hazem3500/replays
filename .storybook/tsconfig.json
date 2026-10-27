@@ -1,5 +1,8 @@
 {
   "extends": "../tsconfig.json",
-  "compilerOptions": { "module": "ESNext", "moduleResolution": "Bundler" },
-  "include": ["./*.ts", "./*.tsx", "../stories"]
+  "compilerOptions": {
+    "module": "ESNext",
+    "moduleResolution": "Bundler"
+  },
+  "include": ["./*.ts", "./*.tsx", "../stories", "../src/client/env.d.ts"]
 }

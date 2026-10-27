@@ -1,0 +1,19 @@
+name: Select affected checks
+description: Skip runtime checks only for documentation or Storybook-only pull requests
+outputs:
+  runtime:
+    description: Whether runtime checks are affected
+    value: ${{ steps.scope.outputs.runtime }}
+  storybook:
+    description: Whether Storybook integration checks are affected
+    value: ${{ steps.scope.outputs.storybook }}
+runs:
+  using: composite
+  steps:
+    - id: scope
+      shell: bash
+      env:
+        CI_EVENT: ${{ github.event_name }}
+        PR_BASE: ${{ github.event.pull_request.base.sha }}
+        PR_HEAD: ${{ github.event.pull_request.head.sha }}
+      run: node scripts/ci-scope.mjs

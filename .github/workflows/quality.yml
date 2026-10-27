@@ -32,7 +32,11 @@ jobs:
         with:
           node-version: 22.23.4
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - if: matrix.tool == 'package' || matrix.tool == 'size'
+        uses: ./.github/actions/task-cache
+        with:
+          namespace: quality-${{ matrix.tool }}
       - if: matrix.tool == 'package' || matrix.tool == 'size'
         run: pnpm build && pnpm build:cli
       - name: Measure fresh main for the size diff
@@ -44,7 +48,7 @@ jobs:
           git archive origin/main | tar -x -C ../quality-main
           (
             cd ../quality-main
-            pnpm install --frozen-lockfile
+            pnpm install --frozen-lockfile --prefer-offline
             pnpm exec vp build --manifest
             pnpm build:cli
           )
@@ -75,5 +79,6 @@ jobs:
         with:
           name: quality-${{ matrix.tool }}
           path: .review-artifacts/quality/
-          if-no-files-found: error
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 6

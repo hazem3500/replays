@@ -1,0 +1,15 @@
+name: Vite task cache
+description: Restore successful task results; Vite verifies content and environment fingerprints
+inputs:
+  namespace:
+    required: true
+    description: Separate concurrent writers by workflow job and matrix entry
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache@v4
+      with:
+        path: node_modules/.vite/task-cache
+        key: vite-task-v1-${{ runner.os }}-${{ runner.arch }}-node22-${{ inputs.namespace }}-${{ github.run_id }}-${{ github.run_attempt }}
+        restore-keys: |
+          vite-task-v1-${{ runner.os }}-${{ runner.arch }}-node22-${{ inputs.namespace }}-

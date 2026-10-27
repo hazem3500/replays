@@ -211,11 +211,15 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   });
 
   let devMiddleware: Parameters<typeof createApp>[0]['devMiddleware'];
+  let devIndexHtml: Parameters<typeof createApp>[0]['devIndexHtml'];
   if (dev) {
     const { createServer: createViteServer } = await import('vite');
     // Share the public listener so reverse proxies need only forward the app port, including WebSockets.
     const vite = await createViteServer({ root, appType: 'spa', server: { middlewareMode: true, hmr: { server } } });
     devMiddleware = (request, response, next) => vite.middlewares(request, response, next);
+    // Queries must not make Vite parse inline styles as script modules.
+    devIndexHtml = async (url) =>
+      vite.transformIndexHtml(new URL(url, 'http://dev.invalid').pathname, await readFile(resolve(root, 'index.html'), 'utf8'));
     resources.closeDev = () => vite.close();
   }
 
@@ -332,6 +336,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     clientDir,
     render,
     ...(devMiddleware ? { devMiddleware } : {}),
+    ...(devIndexHtml ? { devIndexHtml } : {}),
   });
 
   server.on('request', (request, response) => void handle(request, response));

@@ -20,9 +20,7 @@ export interface ContextSchema {
 export function compileContextSchema(schema: unknown): ContextSchema {
   if (!schema || typeof schema !== 'object' || Array.isArray(schema)) throw new Error('the context schema must be a JSON Schema object');
   if ((schema as { type?: unknown }).type !== 'object') throw new Error('the context schema must describe an object ("type": "object")');
-  const ajv = new Ajv2020({ allErrors: false, strict: false });
-  addFormats(ajv);
-  const validate = ajv.compile(schema);
+  const validate = compileJsonSchema(schema);
   return {
     schema: schema as Record<string, unknown>,
     validate(fields) {
@@ -41,4 +39,12 @@ export async function loadContextSchema(file: string): Promise<ContextSchema> {
     throw new Error(`cannot read CONTEXT_SCHEMA_FILE ${file}: ${error instanceof Error ? error.message : String(error)}`, { cause: error });
   }
   return compileContextSchema(parsed);
+}
+
+/** Compile the existing JSON Schema contracts with the same formats as host context schemas. */
+export function compileJsonSchema(schema: object, references: object[] = []) {
+  const ajv = new Ajv2020({ allErrors: false, strict: false });
+  addFormats(ajv);
+  for (const reference of references) ajv.addSchema(reference);
+  return ajv.compile(schema);
 }
