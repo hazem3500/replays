@@ -1,9 +1,8 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 import { boxOf, cloneBundle, postBundle, serveApp } from './support.ts';
 
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
-
 
 async function dragOnClip(page: Page, x1: number, x2: number, touch: boolean) {
   const clip = await boxOf(page.getByTestId('lane-clip'));
@@ -44,6 +43,17 @@ async function dragFromViewerMarker(page: Page, touch: boolean) {
   }
 }
 
+async function activate(marker: Locator, page: Page, touch: boolean) {
+  if (!touch) return marker.click();
+  await marker.focus();
+  await page.keyboard.press('Enter');
+}
+
+async function finishEditing(page: Page, touch: boolean) {
+  if (touch) await page.locator('.editor-mobile-more > summary').click();
+  await page.getByTestId('editor-done').click();
+}
+
 async function runHighlightFlow(page: Page, width: number, height: number, touch: boolean) {
   await page.setViewportSize({ width, height });
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -64,19 +74,19 @@ async function runHighlightFlow(page: Page, width: number, height: number, touch
   await page.getByRole('spinbutton', { name: 'Time in seconds' }).fill('0.5');
   await expect(page.getByRole('spinbutton', { name: 'Time in seconds' })).toHaveValue('0.5');
 
-  await dragOnClip(page, 0.2, 0.52, touch);
+  await dragOnClip(page, 0.3, 0.7, touch);
   await expect(page.getByTestId('range-selection')).toBeVisible();
-  await page.getByTestId('add-effect').click();
+  if (!touch) await page.getByTestId('add-effect').click();
   await page.getByTestId('add-period-highlight').click();
   await expect(page.getByTestId('timeline-highlight')).toHaveCount(3);
   const label = page.getByRole('textbox', { name: 'Highlight label' });
   await label.fill('Checkout flow');
   await expect(page.getByTestId('save-state')).toHaveText('Saved');
 
-  await dragOnClip(page, 0.32, 0.38, touch);
+  await dragOnClip(page, 0.45, 0.55, touch);
   await page.keyboard.press('c');
   await expect(page.getByTestId('region-cut')).toHaveCount(1);
-  await page.getByTestId('editor-done').click();
+  await finishEditing(page, touch);
   await expect(page.getByTestId('scrubber-highlights')).toBeVisible();
   await expect(page.locator('.scrubber-highlight-marker')).toHaveCount(5);
   const seek = page.getByRole('slider', { name: 'Seek' });
@@ -93,21 +103,23 @@ async function runHighlightFlow(page: Page, width: number, height: number, touch
 
   const stored: unknown = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
   expect(stored).toHaveProperty('highlights.length', 2);
-  expect(stored).toMatchObject({ highlights: expect.arrayContaining([expect.objectContaining({ kind: 'period' }), expect.objectContaining({ kind: 'point' })]) });
+  expect(stored).toMatchObject({
+    highlights: expect.arrayContaining([expect.objectContaining({ kind: 'period' }), expect.objectContaining({ kind: 'point' })]),
+  });
   await page.goto(`${base}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
   await page.locator('.tl-highlight-marker[data-kind="period"]').first().click();
   await expect(page.getByRole('textbox', { name: 'Highlight label' })).toHaveValue('Checkout flow');
-  await page.locator('.tl-highlight-marker[data-kind="point"]').click();
+  await activate(page.locator('.tl-highlight-marker[data-kind="point"]'), page, touch);
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('i');
   await expect(page.getByTestId('save-state')).toHaveText('Saved');
-  await page.getByTestId('editor-done').click();
+  await finishEditing(page, touch);
   await expect(page.locator('.scrubber-highlight-marker')).toHaveCount(4);
 
   await page.goto(`${base}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await page.locator('.tl-highlight-marker[data-kind="point"]').click();
+  await activate(page.locator('.tl-highlight-marker[data-kind="point"]'), page, touch);
   await page.getByTestId('remove-highlight').click();
   await expect(page.getByTestId('timeline-highlight')).toHaveCount(2);
   await expect(page.getByTestId('save-state')).toHaveText('Saved');

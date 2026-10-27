@@ -56,7 +56,10 @@ let mobile = true;
 const loaded: LoadedEdits = { stored: { version: 1, cuts: [], revision: 0 }, etag: '"e.none"' };
 const node = <T extends Element>(selector: string) => must(host.querySelector<T>(selector));
 const stage = () => must(player);
-const click = (selector: string) => settle(() => { node<HTMLButtonElement>(selector).click(); });
+const click = (selector: string) =>
+  settle(() => {
+    node<HTMLButtonElement>(selector).click();
+  });
 
 /** Registers the shared happy-dom editor environment for the enclosing describe. */
 function useEditorHarness() {
@@ -67,7 +70,7 @@ function useEditorHarness() {
     vi.useFakeTimers();
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     restoreLayout = stubRulerLayout();
-  vi.stubGlobal('matchMedia', (media: string) => ({
+    vi.stubGlobal('matchMedia', (media: string) => ({
       matches:
         media.includes('prefers-reduced-motion') || (mobile && (media.includes('max-width: 720px') || media.includes('pointer: coarse'))),
       media,
@@ -82,7 +85,9 @@ function useEditorHarness() {
   });
 
   afterEach(async () => {
-    await settle(() => { root.unmount(); });
+    await settle(() => {
+      root.unmount();
+    });
     client.clear();
     host.remove();
     vi.clearAllTimers();
@@ -107,7 +112,9 @@ async function input(element: HTMLInputElement | HTMLTextAreaElement, value: str
 }
 async function tool(selector: string) {
   await click('.editor-add-more');
-  await settle(() => { must(document.querySelector<HTMLElement>(selector)).click(); });
+  await settle(() => {
+    must(document.querySelector<HTMLElement>(selector)).click();
+  });
 }
 
 describe('timeline-first mobile editor captions', () => {
@@ -129,18 +136,24 @@ describe('timeline-first mobile editor captions', () => {
     expect(node('[data-testid="undo"]').closest('.editor-mobile-header')).not.toBeNull();
     const seek = node<HTMLInputElement>('[aria-label="Seek recording"]');
     const key = new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true });
-    await settle(() => { seek.dispatchEvent(key); });
+    await settle(() => {
+      seek.dispatchEvent(key);
+    });
     expect(key.defaultPrevented).toBe(false);
     const more = node<HTMLDetailsElement>('.editor-mobile-more');
     more.open = true;
-    await settle(() => { more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    await settle(() => {
+      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
     expect(more.open).toBe(false);
     expect(document.activeElement).toBe(more.querySelector('summary'));
   });
 
   it('adds one caption at the playhead, focuses its text and follows undo without generating step captions', async () => {
     await renderEditor();
-    await settle(() => { stage().seek(3000); });
+    await settle(() => {
+      stage().seek(3000);
+    });
     const add = node<HTMLButtonElement>('[data-testid="add-caption"]');
     add.focus();
     await click('[data-testid="add-caption"]');
@@ -168,7 +181,6 @@ describe('timeline-first mobile editor captions', () => {
     expect(node<HTMLInputElement>('.editor-object-time input').value).toBe('1.5');
     expect(node<HTMLTextAreaElement>('[data-testid="caption-text"]').value).toBe('Open projects');
   });
-
 });
 
 describe('timeline-first mobile editor objects', () => {
@@ -182,7 +194,9 @@ describe('timeline-first mobile editor objects', () => {
     const caption = node<HTMLButtonElement>('[data-testid="region-caption"] .tl-region-body');
     caption.focus();
     expect(host.querySelector('.editor-context-panel')).toBeNull();
-    await settle(() => { caption.click(); });
+    await settle(() => {
+      caption.click();
+    });
     expect(node('.editor-context-panel h2').textContent).toBe('Caption');
     expect(stage().getTime()).toBe(2000);
     await click('[data-testid="mobile-object-done"]');
@@ -202,7 +216,6 @@ describe('timeline-first mobile editor objects', () => {
     expect(host.querySelector('.editor-context-panel')).toBeNull();
     expect(document.activeElement).toBe(node('.editor-ruler-seek'));
   });
-
 });
 
 describe('timeline-first mobile editor highlights and scrubbing', () => {
@@ -235,17 +248,24 @@ describe('timeline-first mobile editor highlights and scrubbing', () => {
     await renderEditor();
     const seek = node<HTMLInputElement>('.editor-ruler-seek');
     seek.setPointerCapture = vi.fn<(pointerId: number) => void>();
-    await settle(() => { seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, bubbles: true })); });
+    await settle(() => {
+      seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 1, bubbles: true }));
+    });
     expect(stage().isScrubbing()).toBe(true);
     await input(seek, '4000');
     expect(stage().getTime()).toBe(4000);
-    await settle(() => { seek.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, bubbles: true })); });
+    await settle(() => {
+      seek.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1, bubbles: true }));
+    });
     expect(stage().isScrubbing()).toBe(false);
-    await settle(() => { seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 2, bubbles: true })); });
-    await settle(() => { seek.dispatchEvent(new FocusEvent('focusout', { bubbles: true })); });
+    await settle(() => {
+      seek.dispatchEvent(new PointerEvent('pointerdown', { pointerId: 2, bubbles: true }));
+    });
+    await settle(() => {
+      seek.dispatchEvent(new FocusEvent('focusout', { bubbles: true }));
+    });
     expect(stage().isScrubbing()).toBe(false);
   });
-
 });
 
 describe('timeline-first mobile editor chrome', () => {
@@ -257,13 +277,15 @@ describe('timeline-first mobile editor chrome', () => {
     await click('[data-testid="mobile-object-done"]');
     const more = node<HTMLDetailsElement>('.editor-mobile-more');
     more.open = true;
-    const cursor = [...more.querySelectorAll<HTMLButtonElement>('button')].find((button) =>
-      button.textContent?.includes('Cursor options'),
-    );
-    await settle(() => { must(cursor).click(); });
+    const cursor = [...more.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Cursor options'));
+    await settle(() => {
+      must(cursor).click();
+    });
     expect(node('.editor-context-panel h2').textContent).toBe('Cursor');
     expect(document.activeElement).toBe(node('.editor-context-panel h2'));
-    await settle(() => { node('.editor-context-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    await settle(() => {
+      node('.editor-context-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
     expect(host.querySelector('.editor-context-panel')).toBeNull();
     expect(document.activeElement).toBe(more.querySelector('summary'));
     more.open = true;
@@ -292,7 +314,9 @@ describe('timeline-first mobile editor chrome', () => {
     const buttons = [...must(document.querySelector('[aria-label="On timeline"]')).querySelectorAll<HTMLElement>('[role="menuitem"]')];
     expect(buttons).toHaveLength(3);
     const second = buttons.find((button) => button.textContent?.includes('Second short caption'));
-    await settle(() => { must(second).click(); });
+    await settle(() => {
+      must(second).click();
+    });
     expect(more.getAttribute('aria-expanded')).toBe('false');
     expect(stage().getTime()).toBe(2000);
     expect(node<HTMLTextAreaElement>('[data-testid="caption-text"]').value).toBe('Second short caption');
@@ -312,7 +336,9 @@ describe('timeline-first mobile editor chrome', () => {
     expect(node<HTMLElement>('#editor-timeline').hidden).toBe(false);
     expect(host.querySelector('.editor-add-toolbar')).toBeNull();
     expect(host.querySelector('.editor-ruler-seek')).toBeNull();
-    await settle(() => { node<HTMLButtonElement>('[data-testid="region-caption"] .tl-region-body').focus(); });
+    await settle(() => {
+      node<HTMLButtonElement>('[data-testid="region-caption"] .tl-region-body').focus();
+    });
     expect(node('[data-testid="caption-text"]')).not.toBeNull();
   });
 });

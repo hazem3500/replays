@@ -25,15 +25,7 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 
-import {
-  EMPTY_EDITS,
-  editListOf,
-  editTimeline,
-  isEmptyEdits,
-  MAX_HIGHLIGHTS,
-  type ReplayEdits,
-  type StoredReplayEdits,
-} from '../../shared/edits.ts';
+import { EMPTY_EDITS, editListOf, editTimeline, isEmptyEdits, type ReplayEdits, type StoredReplayEdits } from '../../shared/edits.ts';
 import {
   clicksOf,
   IDENTITY_TIME,
@@ -90,8 +82,6 @@ import {
   clearTrim,
   waitSuggestions,
   addEffect,
-  addPointHighlight,
-  addPeriodHighlight,
   type EffectKind,
   effectList,
   NEW_EFFECT_MS,
@@ -104,6 +94,7 @@ import {
 import { handOff } from './handoff.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { editorHint } from './hint.ts';
+import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
 import { CursorInspector } from './CursorInspector.tsx';
 import { EditorExport } from './EditorExport.tsx';
@@ -369,42 +360,20 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         else if (selection && selection.kind !== 'range') change(removeEffect(present, selection.kind, selection.id));
       },
       pointHighlight: () => {
-        const at = player.getTime();
-        const present = live.current.state.present;
-        if (
-          !present.highlights?.some((highlight) => highlight.kind === 'point' && highlight.at === at) &&
-          (present.highlights?.length ?? 0) >= MAX_HIGHLIGHTS
-        ) {
-          say(`A replay can have up to ${MAX_HIGHLIGHTS} highlights`);
-          return;
-        }
-        if (live.current.timeline.isRemoved(at)) {
-          say('Move to a kept moment to add a highlight');
-          return;
-        }
-        const added = addPointHighlight(present, at, duration);
-        change(added.edits, { kind: 'highlight', id: added.id });
+        const { state: current, timeline: kept } = live.current;
+        applyHighlight(
+          change,
+          say,
+          pointHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
+        );
       },
       periodHighlight: () => {
-        const { present, selection } = live.current.state;
-        if ((present.highlights?.length ?? 0) >= MAX_HIGHLIGHTS) {
-          say(`A replay can have up to ${MAX_HIGHLIGHTS} highlights`);
-          return;
-        }
-        if (selection?.kind !== 'range') {
-          say('Select a stretch on the clip first');
-          return;
-        }
-        const bounds = trimOf(present, duration);
-        const from = Math.max(bounds.start, selection.from);
-        const to = Math.min(bounds.end, selection.to);
-        if (live.current.timeline.toEdited(to) <= live.current.timeline.toEdited(from)) {
-          say('Select a stretch that remains in the edited replay');
-          return;
-        }
-        const added = addPeriodHighlight(present, from, to, duration);
-        if (added) change(added.edits, { kind: 'highlight', id: added.id });
-        else say('Select at least 0.1 seconds of the clip');
+        const { state: current, timeline: kept } = live.current;
+        applyHighlight(
+          change,
+          say,
+          periodHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
+        );
       },
       /**
        * Z / F / B / T: an effect over the selected range, else at the playhead. Zoom with nothing selected zooms in on

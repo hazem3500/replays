@@ -84,7 +84,6 @@ describe('editor state', () => {
     state = editorReducer(state, { type: 'change', edits: setTrimEdge(state.present, 'start', 500, 10_000) });
     expect(state.future).toEqual([]);
   });
-
 });
 
 describe('editor state trims, cuts and keys', () => {

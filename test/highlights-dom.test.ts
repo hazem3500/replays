@@ -20,7 +20,7 @@ describe('highlight timeline DOM', () => {
   beforeEach(() => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     restoreLayout = stubRulerLayout();
-  vi.stubGlobal('matchMedia', (media: string) => ({
+    vi.stubGlobal('matchMedia', (media: string) => ({
       matches: media.includes('pointer: coarse'),
       media,
       addEventListener: () => {},
@@ -35,7 +35,9 @@ describe('highlight timeline DOM', () => {
   });
 
   afterEach(async () => {
-    await settle(() => { root.unmount(); });
+    await settle(() => {
+      root.unmount();
+    });
     host.remove();
     restoreLayout?.();
     vi.unstubAllGlobals();
@@ -86,7 +88,9 @@ describe('highlight timeline DOM', () => {
     expect(markers.slice(1).map((marker) => marker.getAttribute('data-edge'))).toEqual(['from', 'to']);
     expect(host.querySelector('.tl-highlight-band')).not.toBeNull();
 
-    await settle(() => { lastMarker.click(); });
+    await settle(() => {
+      lastMarker.click();
+    });
     expect(player.getTime()).toBe(5000);
     expect(dispatch).toHaveBeenCalledWith({ type: 'select', selection: { kind: 'highlight', id: 'period' } });
   });

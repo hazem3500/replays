@@ -49,7 +49,8 @@ async function input(element: HTMLInputElement, value: string) {
 }
 
 /** Registers the shared happy-dom host for the enclosing describe. */
-function useHostHarness() {  beforeEach(() => {
+function useHostHarness() {
+  beforeEach(() => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     vi.clearAllMocks();
     host = document.createElement('div');
@@ -57,7 +58,9 @@ function useHostHarness() {  beforeEach(() => {
     root = createRoot(host);
   });
   afterEach(async () => {
-    await settle(() => { root.unmount(); });
+    await settle(() => {
+      root.unmount();
+    });
     host.remove();
     vi.unstubAllGlobals();
   });
@@ -86,9 +89,13 @@ describe('selected mobile object properties', () => {
       }),
       selection,
     );
-    await settle(() => { must(host.querySelector<HTMLButtonElement>('[data-testid="mobile-remove-object"]')).click(); });
+    await settle(() => {
+      must(host.querySelector<HTMLButtonElement>('[data-testid="mobile-remove-object"]')).click();
+    });
     expect(remove).toHaveBeenCalledOnce();
-    await settle(() => { must(host.querySelector('section')).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); });
+    await settle(() => {
+      must(host.querySelector('section')).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    });
     expect(done).toHaveBeenCalledOnce();
   });
 
@@ -96,13 +103,16 @@ describe('selected mobile object properties', () => {
     await renderPanel({ kind: 'range', from: 1000, to: 4000 });
     await input(must(host.querySelector<HTMLInputElement>('input')), '5');
     expect(range).toHaveBeenCalledWith(3900, 4000);
-    await settle(() => { must(host.querySelector<HTMLButtonElement>('[data-testid="cut-selection"]')).click(); });
-    await settle(() => { must(host.querySelector<HTMLButtonElement>('[data-testid="add-period-highlight"]')).click(); });
+    await settle(() => {
+      must(host.querySelector<HTMLButtonElement>('[data-testid="cut-selection"]')).click();
+    });
+    await settle(() => {
+      must(host.querySelector<HTMLButtonElement>('[data-testid="add-period-highlight"]')).click();
+    });
     expect(cut).toHaveBeenCalledOnce();
     expect(highlight).toHaveBeenCalledOnce();
     expect(host.textContent).not.toContain('Split');
   });
-
 });
 
 describe('mobile add toolbar', () => {
@@ -121,12 +131,18 @@ describe('mobile add toolbar', () => {
       );
     });
     const trigger = must(host.querySelector<HTMLButtonElement>('[aria-label="More editing tools"]'));
-    await settle(() => { trigger.click(); });
-    await settle(() => { must(document.querySelector<HTMLElement>('[role="menuitem"]')).click(); });
+    await settle(() => {
+      trigger.click();
+    });
+    await settle(() => {
+      must(document.querySelector<HTMLElement>('[role="menuitem"]')).click();
+    });
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(trigger);
     expect(command).toHaveBeenCalledOnce();
-    await settle(() => { trigger.click(); });
+    await settle(() => {
+      trigger.click();
+    });
     await settle(() => {
       must(document.querySelector('[role="menu"]')).dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });

@@ -32,7 +32,7 @@ export function CursorInspector({
   const update = (patch: ReplayCursorSettings) => onChange(normalizeCursor({ ...settings, ...patch }));
 
   return (
-    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions -- why: the role is dialog or group, which the lint cannot read through the expression; the handler delegates Escape and shields contained controls from global editor shortcuts.
+    // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- why: the role is dialog or group, which the lint cannot read through the expression; the handler delegates Escape and shields contained controls from global editor shortcuts.
     <div
       role={embedded ? 'group' : 'dialog'}
       aria-modal={embedded ? undefined : false}
