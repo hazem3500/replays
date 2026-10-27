@@ -13,7 +13,7 @@ import { gunzip } from 'node:zlib';
 import { buildHumanBundle, defaultId } from '../capture/human-bundle.ts';
 import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
 import { mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
-import { assertReplayBundle, assertReplayTags, type ReplayBundle, type ReplayFilters, isReplayTag } from '../shared/replay.ts';
+import { assertReplayTags, type ReplayBundle, type ReplayFilters, isReplayTag } from '../shared/replay.ts';
 import {
   assertReviewRunRegistration,
   assertReviewSuite,
@@ -33,6 +33,7 @@ import { appPath, type HostConfig, type HostRouting, hostBase, hostVary, normali
 import { type BrandingConfig, publicConfig } from './branding.ts';
 import { renderIndexHtml } from './index-page.ts';
 import type { ContextSchema } from './context-schema.ts';
+import { assertUploadBundle, assertUploadEnvelope } from './upload-validation.ts';
 import type { BetaFlags } from './beta.ts';
 import { type CommentsSettings } from './comments-config.ts';
 import { BridgeHub } from './bridge-hub.ts';
@@ -387,7 +388,7 @@ export function isBrowserNavigation(request: IncomingMessage) {
  * `meta.purpose` must be one the deployment defines (src/server/purposes.ts); with none defined it must be absent.
  */
 async function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog, registry: PluginRegistry) {
-  assertReplayBundle(bundle);
+  assertUploadBundle(bundle);
   const problem = purposes.problem(bundle.meta.purpose);
   if (problem) throw httpError(400, problem);
   checkPeople(registry, bundle.meta.people, 'replay.meta.people');
@@ -747,12 +748,15 @@ export function createApp(options: AppOptions) {
       if ((path === '/api/replays' || endpoint) && request.method === 'POST') {
         const body = await readJsonUpload(request, MAX_REPLAY_BYTES);
         const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, request }) : body;
+        assertUploadEnvelope(prepared);
         const replay = await runPrepareUpload(registry, prepared, user, request);
+        assertUploadEnvelope(replay);
         if (replay && typeof replay === 'object' && !Array.isArray(replay)) {
           const upload = replay as { context?: ReplayContext | undefined };
           const adapted = await applyContextAdapters(registry, upload.context, { kind: 'replay', identity: user, request });
           if (adapted) upload.context = adapted;
         }
+        assertUploadEnvelope(replay);
         // Source references are resolved into links first: the stored shape always has a link.
         const sources = (replay as { context?: { sources?: unknown } } | null)?.context?.sources;
         if (Array.isArray(sources)) {
@@ -760,7 +764,7 @@ export function createApp(options: AppOptions) {
             options.sources.resolve(source as never, `replay.context.sources[${index}]`),
           );
         }
-        assertReplayBundle(replay);
+        assertUploadBundle(replay);
         resolveContext(replay, options);
         // Stored data never depends on the uploader having sanitized it.
         const bundle = await acceptUpload(
