@@ -484,6 +484,8 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 | `GET /api/replays`, `GET /api/replays/<id>` | List summaries (`?q=&host=&errors=1&source=&tag=`) / the bundle |
 | `GET /api/suites`, `GET /api/suites/<id>`, `PUT /api/suites/<id>[/runs/<run>]` | Suites |
 | `PUT\|DELETE /api/replays/<id>/keep` | Keep / release |
+| `PATCH /api/replays/<id>/meta` | Rename, retag or set the purpose (`{ title?, tags?, purpose? }`, `purpose: null` drops the override) → the summary; the bundle stays as uploaded |
+| `DELETE /api/replays/<id>`, `POST /api/replays/<id>/restore` | Delete (restorable for 7 days, then retention removes it; `409` while kept) / restore → the summary |
 | `GET\|POST /api/replays/<id>/comments`, `PATCH\|DELETE …/comments/<comment>` | Comments (`{ body, at?, parentId? }`, `{ emoji, at }`, `{ body }` / `{ resolved }`); `at` is source ms |
 | `GET /api/me`, `GET /api/config` | Identity; branding and context schema |
 | `GET /api/malleable/plugins[/<scope>/<id>]`, `POST …/approvals`, `PUT\|DELETE …/plugins/<scope>/<id>`, `…/bridge/*`, `GET /_malleable/sandbox.html` | User plugins and the agent bridge (beta, `REPLAYS_BETA_MALLEABLE`; `404` when off). Saves need an approval token |

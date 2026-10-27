@@ -37,6 +37,8 @@ import { PurposeCatalog } from './purposes.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
 import type { SummaryFieldsRunner } from './summary-fields.ts';
 import { captureLink, withSpan } from './tracing.ts';
+import { nextOverrides, parseOverrides, parseTrash, trashExpiryMs, withOverrides } from './replay-meta.ts';
+import { type MetaOverrides, type ReplayMetaPatch, type TrashRecord } from '../shared/schemas/replay-meta.ts';
 
 export type { ReplaySummary } from '../shared/replay.ts';
 
@@ -139,6 +141,7 @@ export class ReplayStore {
   /** Parsed summaries keyed by id, valid while the sidecar's version (generation / mtime) is unchanged. */
   private readonly summaryCache = new Map<string, { version: string; summary: ReplaySummary | undefined }>();
   private readonly keepCache = new Map<string, { version: string; keep: KeepRecord | undefined }>();
+  private readonly overridesCache = new Map<string, { version: string; overrides: MetaOverrides | undefined }>();
   /** Replay spans (ms) keyed by id, valid while the bundle's version is unchanged: an edit save checks its times against it. */
   private readonly spanCache = new Map<string, { version: string; span: number }>();
   private readonly suiteWrites = new Map<string, Promise<void>>();
@@ -202,6 +205,16 @@ export class ReplayStore {
 
   editsKey(id: string) {
     return `${assertReplayId(id)}/edits.json`;
+  }
+
+  /** Title, tags and purpose changed after upload (the bundle never changes). */
+  overridesKey(id: string) {
+    return `${assertReplayId(id)}/overrides.json`;
+  }
+
+  /** A soft delete: present while the replay is in the trash. */
+  trashKey(id: string) {
+    return `${assertReplayId(id)}/trash.json`;
   }
 
   suiteKey(id: string) {
@@ -508,6 +521,7 @@ export class ReplayStore {
 
   async load(id: string): Promise<ReplayBundle | undefined> {
     assertReplayId(id);
+    if (await this.storage.stat(this.trashKey(id))) return;
     for (const [storage, key] of [
       [this.storage, this.replayKey(id)],
       [this.samples, this.sampleKey(id)],
@@ -527,7 +541,8 @@ export class ReplayStore {
    */
   async locate(id: string): Promise<LocatedReplay | undefined> {
     assertReplayId(id);
-    const uploaded = await this.storage.stat(this.replayKey(id));
+    const [uploaded, trashed] = await Promise.all([this.storage.stat(this.replayKey(id)), this.storage.stat(this.trashKey(id))]);
+    if (trashed) return;
     if (uploaded) return { storage: this.storage, key: this.replayKey(id), info: uploaded, uploaded: true };
     const sample = await this.samples.stat(this.sampleKey(id));
     if (sample) return { storage: this.samples, key: this.sampleKey(id), info: sample, uploaded: false };
@@ -606,6 +621,16 @@ export class ReplayStore {
     return summary;
   }
 
+  private async overridesOf(id: string, info: ObjectInfo | undefined) {
+    if (!info) return;
+    const key = this.overridesKey(id);
+    const cached = this.overridesCache.get(key);
+    if (cached?.version === info.version) return cached.overrides;
+    const overrides = parseOverrides(await readJson(this.storage, key).catch(() => null));
+    this.overridesCache.set(key, { version: info.version, overrides });
+    return overrides;
+  }
+
   private async keepOf(key: string, info: ObjectInfo | undefined) {
     if (!info) return undefined;
     const cached = this.keepCache.get(key);
@@ -650,15 +675,18 @@ export class ReplayStore {
    */
   async summary(id: string, { suites = true }: { suites?: boolean } = {}): Promise<ReplaySummary | undefined> {
     assertReplayId(id);
-    const [replay, meta, keepInfo] = await Promise.all([
+    const [replay, meta, keepInfo, overridesInfo, trashed] = await Promise.all([
       this.storage.stat(this.replayKey(id)),
       this.storage.stat(this.metaKey(id)),
       this.storage.stat(this.keepKey(id)),
+      this.storage.stat(this.overridesKey(id)),
+      this.storage.stat(this.trashKey(id)),
     ]);
     if (replay) {
+      if (trashed) return;
       const stored = await this.uploadedSummary(id, replay, meta);
       if (!stored) return undefined;
-      const summary = this.purposes.apply(stored);
+      const summary = this.purposes.apply(withOverrides(stored, await this.overridesOf(id, overridesInfo)));
       const keep = await this.keepOf(this.keepKey(id), keepInfo);
       const keptBySuite = suites && !keep && (await this.keptSuiteReplays()).has(id);
       return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite)) };
@@ -690,29 +718,32 @@ export class ReplayStore {
   private async listAll(): Promise<ReplaySummary[]> {
     // One listing of just the small JSON objects (GCS matchGlob): ~4 pages for 2000 replays, no media.
     const [objects, samples, suites] = await Promise.all([
-      this.storage.list({ glob: '*/{replay,meta,keep}.json' }),
+      this.storage.list({ glob: '*/{replay,meta,keep,overrides,trash}.json' }),
       this.samples.list({ glob: '*.json' }),
       this.suiteObjects(),
     ]);
     const keptBySuite = suites.kept.size ? await this.keptSuiteReplays(suites.kept) : new Set<string>();
-    const uploads = new Map<string, { replay?: ObjectInfo; meta?: ObjectInfo; keep?: ObjectInfo }>();
+    const uploads = new Map<
+      string,
+      { replay?: ObjectInfo; meta?: ObjectInfo; keep?: ObjectInfo; overrides?: ObjectInfo; trash?: ObjectInfo }
+    >();
     for (const object of objects) {
       const [id, name] = object.key.split('/') as [string, string];
       if (!ID.test(id)) continue;
       const entry = uploads.get(id) ?? {};
-      entry[name.slice(0, -'.json'.length) as 'replay' | 'meta' | 'keep'] = object;
+      entry[name.slice(0, -'.json'.length) as 'replay' | 'meta' | 'keep' | 'overrides' | 'trash'] = object;
       uploads.set(id, entry);
     }
     // Sidecar reads (only the changed ones once warm) go a few dozen at a time, not 2000 sockets at once.
     const gate = limiter(32);
     const summaries = await Promise.all([
-      ...[...uploads].map(async ([id, { replay, meta, keep: keepInfo }]) => {
-        if (!replay) return undefined;
+      ...[...uploads].map(async ([id, { replay, meta, keep: keepInfo, overrides, trash }]) => {
+        if (!replay || trash) return undefined;
         await gate.acquire();
         try {
           const stored = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
           if (!stored) return undefined;
-          const summary = this.purposes.apply(stored);
+          const summary = this.purposes.apply(withOverrides(stored, await this.overridesOf(id, overrides)));
           const keep = await this.keepOf(this.keepKey(id), keepInfo);
           return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite.has(id))) };
         } finally {
@@ -721,7 +752,7 @@ export class ReplayStore {
       }),
       ...samples.map(async (sample) => {
         const id = sample.key.slice(0, -'.json'.length);
-        if (!ID.test(id) || uploads.get(id)?.replay) return undefined;
+        if (!ID.test(id) || uploads.get(id)?.replay || uploads.get(id)?.trash) return undefined;
         const summary = await this.sampleSummary(id, sample);
         return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
       }),
@@ -856,6 +887,70 @@ export class ReplayStore {
     return (await this.replayRetention(id))!;
   }
 
+  /** Removes a deleted replay for good once its restore window (from its trash record's server time) has passed. */
+  private async dropExpiredTrash(id: string, trashed: ObjectInfo | undefined, now: number) {
+    if (!trashed || trashExpiryMs(trashed.updatedMs) >= now) return false;
+    await this.storage.deletePrefix(`${id}/`);
+    this.summaryCache.delete(id);
+    this.keepCache.delete(this.keepKey(id));
+    this.overridesCache.delete(this.overridesKey(id));
+    return true;
+  }
+
+  /** Uploaded, not deleted: the only replays whose meta can change or that can be deleted. */
+  private async assertWritable(id: string) {
+    assertReplayId(id);
+    const [replay, trashed] = await Promise.all([this.storage.stat(this.replayKey(id)), this.storage.stat(this.trashKey(id))]);
+    if (replay && !trashed) return;
+    if (!replay && (await this.samples.stat(this.sampleKey(id)))) throw httpError(409, 'committed samples are read-only');
+    throw httpError(404, 'replay not found');
+  }
+
+  /** Changes a replay's title, tags or purpose (`purpose: null` drops the override); returns its summary as listed. */
+  async updateMeta(id: string, patch: ReplayMetaPatch, by: string, now = new Date()): Promise<ReplaySummary> {
+    await this.assertWritable(id);
+    const problem = patch.purpose ? this.purposes.problem(patch.purpose) : undefined;
+    if (problem) throw httpError(400, problem.replace('replay.meta.purpose', 'purpose'));
+    const current = await this.overridesOf(id, await this.storage.stat(this.overridesKey(id)));
+    const next = nextOverrides(current, patch, by, now);
+    await this.storage.write(this.overridesKey(id), `${JSON.stringify(next)}\n`, { contentType: JSON_TYPE });
+    this.overridesCache.delete(this.overridesKey(id));
+    this.changed();
+    const summary = await this.summary(id);
+    if (!summary) throw httpError(404, 'replay not found');
+    return summary;
+  }
+
+  /**
+   * Soft-deletes a replay: it leaves the list and its URLs answer 404, and it is restorable for TRASH_DAYS from now.
+   * A kept replay (or one kept through its suite) refuses: release it first.
+   */
+  async trash(id: string, by: string, now = new Date()): Promise<{ trashed: TrashRecord; restorableUntil: string }> {
+    await this.assertWritable(id);
+    const kept = Boolean(await this.storage.stat(this.keepKey(id))) || (await this.keptSuiteReplays()).has(id);
+    if (kept) throw httpError(409, 'release the keep before deleting this replay');
+    const record: TrashRecord = { by, at: now.toISOString() };
+    await this.storage
+      .write(this.trashKey(id), `${JSON.stringify(record)}\n`, { createOnly: true, contentType: JSON_TYPE })
+      .catch((error: unknown) => {
+        if (!(error instanceof ObjectExistsError)) throw error;
+      });
+    this.changed();
+    const stored = parseTrash(await readJson(this.storage, this.trashKey(id)).catch(() => null)) ?? record;
+    return { trashed: stored, restorableUntil: new Date(trashExpiryMs(Date.parse(stored.at))).toISOString() };
+  }
+
+  /** Takes a replay out of the trash. */
+  async restore(id: string): Promise<ReplaySummary> {
+    assertReplayId(id);
+    if (!(await this.storage.stat(this.trashKey(id)))) throw httpError(404, 'replay is not deleted');
+    await this.storage.delete(this.trashKey(id));
+    this.changed();
+    const summary = await this.summary(id);
+    if (!summary) throw httpError(404, 'replay not found');
+    return summary;
+  }
+
   /**
    * A suite's age counts from its file's server time (`createdAt` comes from the reviewer's clock). Suite
    * files are rewritten as runs register, so that is the last registration: never earlier than the upload.
@@ -928,6 +1023,10 @@ export class ReplayStore {
         const removed: string[] = [];
         for (const [id, group] of groups) {
           const name = (file: string) => group.find((object) => object.key === `${id}/${file}`);
+          if (await this.dropExpiredTrash(id, name('trash.json'), now)) {
+            removed.push(id);
+            continue;
+          }
           if (name('keep.json') || keptBySuite.has(id)) continue;
           const replay = name('replay.json');
           // A committed sample's sidecars (its edit list) live as long as the sample: forever.

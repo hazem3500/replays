@@ -9,6 +9,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- `PATCH /api/replays/<id>/meta` renames, retags or sets the purpose of a replay; `DELETE /api/replays/<id>` deletes it softly
+  (restorable with `POST /api/replays/<id>/restore` for 7 days, refused with `409` while kept). Bodies are validated against
+  shared schemas (`400` with the issues). Uploaded bundles stay immutable: changes live in `<id>/overrides.json` and
+  `<id>/trash.json`, and the list, summaries and retention read them.
 - `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
   or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
 - An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of

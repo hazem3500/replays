@@ -87,7 +87,8 @@
     "ws": "8.22.0",
     "xstate": "5.33.3",
     "srvx": "1.0.7",
-    "rou3": "1.0.0"
+    "rou3": "1.0.0",
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",

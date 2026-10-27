@@ -105,6 +105,9 @@ importers:
       xstate:
         specifier: 5.33.3
         version: 5.33.3
+      zod:
+        specifier: 4.6.7
+        version: 4.6.7
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.5
