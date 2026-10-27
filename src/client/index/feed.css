@@ -171,7 +171,9 @@
 
 /* ---------- Posters ---------- */
 .poster { position: relative; z-index: 0; display: block; flex: 0 0 auto; overflow: hidden; border-radius: var(--radius-sm); background: var(--surface-raised); clip-path: inset(0 round var(--radius-sm)); isolation: isolate; }
+.poster[data-phase="loading"]::before { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; background: linear-gradient(105deg, transparent 35%, color-mix(in srgb, var(--text-tertiary) 14%, transparent) 50%, transparent 65%); transform: translateX(-100%); animation: poster-shimmer 1.6s ease-in-out infinite; }
 .poster::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line); pointer-events: none; }
+@keyframes poster-shimmer { to { transform: translateX(100%); } }
 /* Dark: bright white screenshots glare against the dark page, so posters and previews sit at 88 % brightness behind a
    faint light hairline, and come back to full brightness while hovered, keyboard-selected or previewing. Light keeps the hairline only. */
 :root:not([data-theme="light"]) .poster::after { box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06); }
@@ -181,20 +183,24 @@
 .poster-row { width: 96px; height: 60px; }
 .poster-mini { width: 72px; height: 45px; }
 .poster-card { width: 100%; height: auto; aspect-ratio: 16 / 10; }
-.poster img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity var(--motion) var(--ease-out); }
+.poster img { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] img { opacity: 1; }
-.poster-placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-md); font-weight: 600; }
+.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-md); font-weight: 600; opacity: 1; transition: opacity 200ms var(--ease-out); }
 .poster-card .poster-placeholder { font-size: var(--text-lg); }
-.poster[data-phase="ready"] .poster-placeholder { visibility: hidden; }
+.poster[data-phase="ready"] .poster-placeholder { opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .poster[data-phase="loading"]::before { transform: none; animation: none; background: color-mix(in srgb, var(--text-tertiary) 5%, transparent); }
+  .poster img, .poster-placeholder { transition-duration: 0ms; }
+}
 /* Suites: a second sheet peeks out above the poster, a quiet "several recordings" cue. */
 /* Hover preview (Poster.tsx PreviewVideo): fades in over the poster once it actually plays. */
 .poster-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity var(--motion) var(--ease-out); }
 .poster-video[data-shown] { opacity: 1; }
-.poster-progress { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; height: 2px; background: rgb(255 255 255 / 0.18); opacity: 0; transition: opacity var(--motion) var(--ease-out); }
+.poster-progress { position: absolute; z-index: 3; right: 0; bottom: 0; left: 0; height: 2px; background: rgb(255 255 255 / 0.18); opacity: 0; transition: opacity var(--motion) var(--ease-out); }
 .poster-progress[data-shown] { opacity: 1; }
 .poster-progress > span { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; }
 /* Thumbnail overlays: a replay's duration, or a suite's run count (bottom-right, like a video player). */
-.poster-badge { position: absolute; z-index: 1; right: 4px; bottom: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; border-radius: 3px; background: rgb(16 14 18 / 0.78); color: #f6f2f7; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 15px; }
+.poster-badge { position: absolute; z-index: 3; right: 4px; bottom: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; border-radius: 3px; background: rgb(16 14 18 / 0.78); color: #f6f2f7; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 15px; }
 .poster-badge svg { width: 10px; height: 10px; }
 .poster-card .poster-badge { right: 6px; bottom: 6px; padding: 0 5px; font-size: var(--text-xs); line-height: 17px; }
 .poster-card .poster-badge svg { width: 11px; height: 11px; }
@@ -204,9 +210,8 @@
  * List rows: one or two plain sheets above the 96 × 60 thumbnail, each the thumbnail's own box scaled about its
  * top centre and lifted so the edges sit 4 / 8 px above; on hover they fan out to 7 / 13 px. Grid cards: see
  * "Grid suites" below — whole card-shaped backs behind the card.
- * Motion: a soft spring (≤ 4 % overshoot) 420 ms in, the back sheet 40 ms behind; 240 ms ease-out back.
+ * Motion: the same 240 ms ease-out on entry and exit, without delayed sheets.
  */
-.index-shell { --stack-spring: linear(0, 0.22 8%, 0.55 19%, 0.82 31%, 0.97 43%, 1.035 56%, 1.03 68%, 1.01 82%, 1); }
 .poster-stack { position: relative; isolation: isolate; display: block; align-self: start; padding-top: 15px; }
 .stack-front { position: relative; z-index: 2; display: block; border-radius: var(--radius-sm); }
 .stack-layer { position: absolute; top: 15px; right: 0; bottom: 0; left: 0; overflow: hidden; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 70%, var(--text-tertiary)); transform-origin: 50% 0; transition: transform 240ms var(--ease-out); }
@@ -215,12 +220,11 @@
 /* Fans are straight, centred and symmetric: sheets only rise and widen a little, always narrower than the front. */
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   /* The pile fans open: sheets rise straight up and widen a little (a smaller grid fan-out). */
-  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .stack-layer { will-change: transform; transition-duration: 300ms; transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .stack-layer-2 { transform: translate3d(0, -11px, 0) scale(0.88, 1); transition-delay: 30ms; }
-  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .stack-layer-1 { transform: translate3d(0, -6px, 0) scale(0.95, 1); }
+  .feed-suite:hover .stack-layer-2 { transform: translate3d(0, -11px, 0) scale(0.88, 1); }
+  .feed-suite:hover .stack-layer-1 { transform: translate3d(0, -6px, 0) scale(0.95, 1); }
   /* The other runs' screenshots brighten as the veil lifts. */
-  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) .back-poster[data-phase="ready"] img { opacity: 0.95; }
-  :is(.feed-suite):is(:hover, :has(.row-target:focus-visible)) :is(.stack-layer, .card-back)::before { opacity: 0.35; }
+  .feed-suite:hover .back-poster[data-phase="ready"] img { opacity: 0.95; }
+  .feed-suite:hover :is(.stack-layer, .card-back)::before { opacity: 0.35; }
 }
 /* The sheets carry the other runs' screenshots (Feed.tsx BackPoster): filling the sheet, cropped below the
    recorded app's own header (so it never reads as yet another card edge), dimmed under a soft veil, with the
@@ -346,7 +350,8 @@
 .feed-list[data-view="grid"] .feed-meta-end > :is(.run-strip, .run-strip-note) { margin-left: auto; }
 .feed-list[data-view="grid"] .feed-suite .feed-meta .feed-facts { flex: 1 1 auto; min-width: 0; white-space: nowrap; }
 /* Narrow cards drop the commit before anything would truncate. */
-.feed-list[data-view="grid"] .feed-suite .feed-body { container-type: inline-size; }
+/* Keep containment away from the stretched title link: its containing block must remain the whole card. */
+.feed-list[data-view="grid"] .feed-suite .feed-meta-end { container-type: inline-size; }
 @container (max-width: 250px) { .feed-meta-end .feed-facts > * + *::before { display: none; } }
 
 
@@ -368,8 +373,8 @@
  * the 28 px row gap (both above the stack's highest hover offset), so headings sit close to their cards and front
  * cards stay top-aligned across a row. In a suite cell the face is the li's ::before (z −1) and two card-shaped backs
  * sit behind it (z −2/−3), straight and centred, scaled about their top centre and always narrower than the front:
- * 5 / 10 px peeking at rest (0.94 / 0.88), rising to 10 / 20 px on hover (0.96 / 0.92; 300 ms ease-out, the back
- * one 30 ms later). The backs count as the card (hover and click). Only
+ * 5 / 10 px peeking at rest (0.94 / 0.88), rising to 10 / 20 px relative to the lifted face on hover
+ * (0.96 / 0.92; 240 ms ease-out in either direction). The backs count as the card (hover and click). Only
  * transform and opacity animate: the deeper hover shadow is a pre-rendered layer (::after) whose opacity changes.
  *
  * Every grid card lifts 3 px on hover. The pointer must not lose the card as it moves: while lifted, the card's
@@ -381,11 +386,11 @@
 .feed-list[data-view="grid"] .feed-suite::before,
 .feed-list[data-view="grid"] .feed-suite::after { content: ""; position: absolute; z-index: -1; inset: var(--peek) 0 0; border-radius: var(--card-radius); pointer-events: none; }
 .feed-list[data-view="grid"] .feed-suite::before { background: var(--surface-raised); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.05), 0 1px 2px rgb(0 0 0 / 0.06), 0 4px 12px rgb(0 0 0 / 0.08); }
-.feed-list[data-view="grid"] .feed-suite::after { box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.06), 0 14px 32px rgb(0 0 0 / 0.16); opacity: 0; transition: opacity 300ms var(--ease-out); }
+.feed-list[data-view="grid"] .feed-suite::after { box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.06), 0 14px 32px rgb(0 0 0 / 0.16); opacity: 0; transition: opacity 240ms var(--ease-out); }
 :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite::before { background: var(--surface-raised); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4), 0 6px 16px rgb(0 0 0 / 0.32); }
 :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite::after { box-shadow: 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 16px 34px rgb(0 0 0 / 0.5); }
 .card-back { display: none; }
-.feed-list[data-view="grid"] .card-back { position: absolute; inset: var(--peek) 0 0; display: block; overflow: hidden; border-radius: var(--card-radius); background: color-mix(in srgb, var(--surface-raised) 88%, var(--line-strong)); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.08); transform-origin: 50% 0; transition: transform 240ms var(--ease-out), box-shadow 300ms var(--ease-out), opacity 240ms var(--ease-out); }
+.feed-list[data-view="grid"] .card-back { position: absolute; inset: var(--peek) 0 0; display: block; overflow: hidden; border-radius: var(--card-radius); background: color-mix(in srgb, var(--surface-raised) 88%, var(--line-strong)); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 6px rgb(0 0 0 / 0.08); transform-origin: 50% 0; transition: transform 240ms var(--ease-out), opacity 240ms var(--ease-out); }
 :root:not([data-theme="light"]) .feed-list[data-view="grid"] .card-back { background: color-mix(in srgb, var(--surface-raised) 80%, var(--canvas)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04), 0 0 0 1px rgb(255 255 255 / 0.05), 0 2px 8px rgb(0 0 0 / 0.35); }
 .feed-list[data-view="grid"] .card-back-1 { z-index: -2; transform: translate3d(0, -5px, 0) scale(0.94); }
 .feed-list[data-view="grid"] .card-back-2 { z-index: -3; transform: translate3d(0, -10px, 0) scale(0.88); }
@@ -398,11 +403,14 @@
 
 
 /* ---------- Hover, keyboard selection, press: calm surface/border change, a tiny thumbnail zoom inside its frame ---------- */
-.feed-item { transition: background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), box-shadow 200ms var(--ease-out), transform 200ms var(--ease-out); }
-.poster > img, .poster > .poster-video { transition: opacity var(--motion) var(--ease-out), transform 240ms var(--ease-out), filter 200ms var(--ease-out); }
+.feed-item { transition: background-color 200ms var(--ease-out), border-color 200ms var(--ease-out), transform 240ms var(--ease-out); }
+/* The deeper card shadow is painted once; only its opacity changes during hover. */
+.feed-list[data-view="grid"] .feed-item:not(.feed-suite)::after { content: ""; position: absolute; inset: 0; border-radius: var(--card-radius); pointer-events: none; box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.06), 0 12px 28px rgb(0 0 0 / 0.13); opacity: 0; transition: opacity 240ms var(--ease-out); }
+:root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-item:not(.feed-suite)::after { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 14px 30px rgb(0 0 0 / 0.45); }
+.poster > img, .poster > .poster-video { transition: opacity 200ms var(--ease-out), transform 240ms var(--ease-out), filter 200ms var(--ease-out); }
 .feed-list[data-view="grid"] .feed-item .row-target:focus-visible::after { border-radius: var(--card-radius); }
 .source-link:focus-visible { border-radius: 2px; box-shadow: 0 0 0 2px var(--ring); }
-/* Keyboard selection shows the hover state plus the keyboard ring. */
+/* Keyboard selection keeps the immediate ring without moving the card or its sheets. */
 .feed-item:has(.row-target:focus-visible) { background: var(--surface-hover); }
 .feed-list[data-view="grid"] .feed-item:has(.row-target:focus-visible) { background: var(--surface-raised); }
 /* Press: a 0.99 squeeze, also on touch, only when the row's own link is pressed: a control inside it (the run strip,
@@ -410,31 +418,25 @@
 .feed-item:has(.row-target:active) { transform: scale(0.99); transition-duration: 100ms; }
 .feed-list[data-view="list"] .feed-item:not(.feed-suite):has(.row-target:active) { background: var(--surface-pressed); }
 @media (hover: hover) and (pointer: fine) {
-  .feed-item:hover { background: var(--surface-hover); transition-duration: 160ms; }
-  .feed-list[data-view="grid"] .feed-item:hover { background: var(--surface-raised); box-shadow: 0 0 0 1px rgb(0 0 0 / 0.06), 0 2px 4px rgb(0 0 0 / 0.06), 0 12px 28px rgb(0 0 0 / 0.13); }
-  :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-item:hover { background: color-mix(in srgb, var(--surface-hover) 70%, var(--surface-raised)); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07), 0 2px 4px rgb(0 0 0 / 0.4), 0 14px 30px rgb(0 0 0 / 0.45); }
+  .feed-item:hover { background: var(--surface-hover); }
+  .feed-list[data-view="grid"] .feed-item:hover { background: var(--surface-raised); }
+  :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-item:hover { background: color-mix(in srgb, var(--surface-hover) 70%, var(--surface-raised)); }
   /* Grid suites: the pre-rendered deeper shadow fades in while the card lifts and the backs fan out. */
   .feed-list[data-view="grid"] .feed-suite:hover { background: none; box-shadow: none; }
   :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite:hover { background: none; box-shadow: none; }
-  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible))::after { opacity: 1; }
+  .feed-list[data-view="grid"] .feed-item:hover::after { opacity: 1; }
 }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-  /* Grid cards lift 3 px (spring); the click overlay reaches down to where the card was, so hover holds. */
-  .feed-list[data-view="grid"] .feed-item:is(:hover, :has(.row-target:focus-visible)) { transform: translate3d(0, -3px, 0); transition: transform 420ms var(--stack-spring), background-color 200ms var(--ease-out), box-shadow 300ms var(--ease-out); }
+  /* Grid cards lift 3 px; the click overlay reaches down to where the card was, so hover holds. */
+  .feed-list[data-view="grid"] .feed-item:hover { transform: translate3d(0, -3px, 0); }
   .feed-list[data-view="grid"] .feed-item:hover .row-target::after { bottom: -3px; }
   .feed-list[data-view="grid"] .feed-item:hover:has(.row-target:active) { transform: translate3d(0, -3px, 0) scale(0.99); transition-duration: 100ms; }
   /* The stack fans open: backs rise straight up (−10 / −20 px) and widen a little, always narrower than the front. */
-  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back { will-change: transform; transition-duration: 300ms; transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
-  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back-2 { transform: translate3d(0, -20px, 0) scale(0.92); transition-delay: 30ms; }
-  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back-1 { transform: translate3d(0, -10px, 0) scale(0.96); }
-  /* Shadows deepen with the lift. */
-  .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back { box-shadow: 0 0 0 1px rgb(0 0 0 / 0.08), 0 4px 10px rgb(0 0 0 / 0.12), 0 10px 24px rgb(0 0 0 / 0.1); }
-  :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite:is(:hover, :has(.row-target:focus-visible)) .card-back { box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.06), 0 0 0 1px rgb(255 255 255 / 0.07), 0 4px 12px rgb(0 0 0 / 0.45), 0 12px 28px rgb(0 0 0 / 0.35); }
+  .feed-list[data-view="grid"] .feed-suite:hover .card-back-2 { transform: translate3d(0, -20px, 0) scale(0.92); }
+  .feed-list[data-view="grid"] .feed-suite:hover .card-back-1 { transform: translate3d(0, -10px, 0) scale(0.96); }
   /* Thumbnail zoom: the poster and its hover preview scale together (and stay scaled while the preview plays),
      so the preview crossfades in over the zoomed poster instead of snapping back to 1×. */
-  :is(.feed-item:hover, .feed-item:has(.row-target:focus-visible)) .poster > :is(img, .poster-video) { transform: scale(1.02); }
-  /* The zooming thumbnail gets its own layer while the row is hovered: the zoom composites, it does not repaint. */
-  .feed-item:hover .poster > :is(img, .poster-video) { will-change: transform; }
+  .feed-item:hover .poster > :is(img, .poster-video) { transform: scale(1.02); }
   .source-link:hover { color: var(--text); }
   .source-more:hover { color: var(--text); }
   .source-more-link:hover { background: var(--surface-hover); color: var(--text); }
