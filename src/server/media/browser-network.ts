@@ -83,6 +83,7 @@ async function forward(route: Route, url: URL, address: Address, headers: Record
     const transportOptions: RequestOptions & { autoSelectFamily: boolean } = {
       method: route.request().method(),
       headers,
+      agent: false,
       autoSelectFamily: false,
       lookup: (_host, _options, done) => done(null, address.address, address.family),
       // security: ignoreHTTPSErrors is needed by self-hosted render origins only.

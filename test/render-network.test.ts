@@ -94,10 +94,14 @@ describe('render destinations', () => {
 
   it('connects to the checked IP, does not follow redirects, and strips the render token off-origin', async () => {
     const received: Array<string | undefined> = [];
+    let connections = 0;
     const server = createServer((request, response) => {
       received.push(request.headers['x-render-token'] as string | undefined);
       response.writeHead(302, { location: 'http://169.254.169.254/latest/' });
       response.end('redirect');
+    });
+    server.on('connection', () => {
+      connections++;
     });
     await new Promise<void>((done) => server.listen(0, '127.0.0.1', done));
     try {
@@ -131,6 +135,9 @@ describe('render destinations', () => {
       );
       expect(route.abort).not.toHaveBeenCalled();
       expect(received).toEqual([undefined]);
+      await handle(route as unknown as Route);
+      expect(connections).toBe(2);
+      expect(received).toEqual([undefined, undefined]);
       route.request = () => ({
         url: () => 'http://169.254.169.254/latest/',
         method: () => 'GET',
