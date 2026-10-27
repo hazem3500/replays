@@ -49,7 +49,8 @@
     "lint:ratchet": "node scripts/lint-ratchet.mjs",
     "lint:new-files": "node scripts/lint-new-files.mjs",
     "lint:ratchet:test": "node --test scripts/lint-ratchet.test.mjs",
-    "typecheck:overrides": "node scripts/check-overrides.mjs"
+    "typecheck:overrides": "node scripts/check-overrides.mjs",
+    "quality:compiler": "node scripts/compiler-report.mjs"
   },
   "dependencies": {
     "@agent-native/core": "0.220.0",
