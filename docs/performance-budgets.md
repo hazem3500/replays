@@ -1,6 +1,6 @@
 # Runtime performance budgets
 
-`performance-budget.config.mjs` sits beside the bundle-size budget `.size-limit.json`. The runtime job is **report-only**: numeric overruns are warnings; build failures, harness errors, missing required pages, and incomplete samples fail the job. Bundle bytes are owned by the separate size-limit job.
+`budgets/runtime.mjs` sits beside the canonical bundle-size budget `budgets/bundle.json`. The root `performance-budget.config.mjs` remains a compatibility export for existing harness commands. The runtime job is **report-only**: numeric overruns are warnings; build failures, harness errors, missing required pages, and incomplete samples fail the job. Bundle bytes are owned by the separate size-limit job.
 
 Run on Boat (never oz-box):
 
@@ -42,7 +42,7 @@ PERF_SSR_GATE=1 PERF_REVISION=<same-source-sha> PERF_OUTPUT=.review-artifacts/pe
 node scripts/perf/report.mjs .review-artifacts/perf/ssr/results.json .review-artifacts/perf/spa/results.json .review-artifacts/perf/ssr-gate.md
 ```
 
-The `ssrGate` section is report-only until the architect's default-flip review: phone index LCP ≤1200ms, first visible replay title ≤1000ms, viewer skeleton FCP ≤1000ms, viewer content no slower than SPA on either profile, `/` TTFB p50 ≤30ms/p90 ≤60ms with100summaries, Brotli index HTML ≤15000bytes, and zero hydration errors or browser refetches of the index list. The title metric observes the first nonempty feed title across two animation frames; viewer content readiness uses the recorded first replay frame. Hydration errors include matching console diagnostics and page exceptions; refetches count browser list requests, including preloads. The initial server-rendered list should require none.
+The `ssrGate` section in `budgets/runtime.mjs` is report-only until the architect's default-flip review: phone index LCP ≤1200ms, first visible replay title ≤1000ms, viewer skeleton FCP ≤1000ms, viewer content no slower than SPA on either profile, `/` TTFB p50 ≤30ms/p90 ≤60ms with100summaries, Brotli index HTML ≤15000bytes, and zero hydration errors or browser refetches of the index list. The title metric observes the first nonempty feed title across two animation frames; viewer content readiness uses the recorded first replay frame. Hydration errors include matching console diagnostics and page exceptions; refetches count browser list requests, including preloads. The initial server-rendered list should require none.
 
 A missing/mismatched SPA baseline never passes a relative gate. Keep SPA/SSR code revision, profile throttling and seed count identical. `ssrGate.mode = 'enforce'` makes the report command fail these gates when preparing the default flip; the ordinary runtime job remains report-only. Six-row default results and100-row SSR-gate results are separate datasets.
 

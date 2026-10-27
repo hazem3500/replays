@@ -20,13 +20,13 @@ export function observe({ player = true, title: observeTitle = true } = {}) {
   watch('largest-contentful-paint', (entries) => {
     if (entries.length) state.lcpMs = entries.at(-1).startTime;
   });
-  let sessionStart = 0,
+  let sessionStart = null,
     lastShift = 0,
     sessionValue = 0;
   watch('layout-shift', (entries) => {
     for (const entry of entries) {
       if (entry.hadRecentInput) continue;
-      if (entry.startTime - lastShift > 1000 || entry.startTime - sessionStart > 5000) {
+      if (sessionStart === null || entry.startTime - lastShift > 1000 || entry.startTime - sessionStart > 5000) {
         sessionStart = entry.startTime;
         sessionValue = 0;
       }
@@ -66,7 +66,15 @@ export function observe({ player = true, title: observeTitle = true } = {}) {
   if (player) requestAnimationFrame(check);
   const title = () => {
     const element = document.querySelector('.feed-title');
-    if (element?.textContent.trim()) {
+    const box = element?.getBoundingClientRect();
+    if (
+      element?.textContent.trim() &&
+      box?.width > 0 &&
+      box.height > 0 &&
+      box.top < innerHeight &&
+      box.bottom > 0 &&
+      getComputedStyle(element).visibility !== 'hidden'
+    ) {
       requestAnimationFrame(() =>
         requestAnimationFrame(() => {
           state.firstReplayTitleMs = performance.now();

@@ -249,7 +249,7 @@ async function measurePage(profileName, scenarioName, scenario, index) {
         ttfbMs: navigation.responseStart - navigation.startTime,
         tbtMs: state.supported.includes('longtask')
           ? state.tasks.reduce(
-              (sum, task) => sum + Math.max(0, Math.min(task.start + task.duration, observationEnd) - Math.max(task.start, fcp) - 50),
+              (sum, task) => sum + Math.max(0, Math.min(task.start + task.duration, observationEnd) - Math.max(task.start + 50, fcp)),
               0,
             )
           : null,

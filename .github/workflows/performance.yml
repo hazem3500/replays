@@ -42,9 +42,10 @@ jobs:
           mkdir -p ../runtime-perf-main
           echo "PERF_MAIN_REVISION=$(git rev-parse origin/main)" >> "$GITHUB_ENV"
           git archive origin/main | tar -x -C ../runtime-perf-main
-          mkdir -p ../runtime-perf-main/scripts/perf
+          mkdir -p ../runtime-perf-main/scripts/perf ../runtime-perf-main/budgets
           cp -R scripts/perf/. ../runtime-perf-main/scripts/perf/
           cp performance-budget.config.mjs ../runtime-perf-main/
+          cp budgets/runtime.mjs ../runtime-perf-main/budgets/
           cd ../runtime-perf-main
           pnpm install --frozen-lockfile
           pnpm build
