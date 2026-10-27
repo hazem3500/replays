@@ -36,3 +36,14 @@ storybook-static/
 # Local review and shipping evidence
 .review-artifacts/
 .ship/
+
+# Agent transcripts and local planning output (keep project skills versioned)
+.claude/*
+!.claude/skills/
+.claude/skills/*
+!.claude/skills/*/
+.claude/skills/*/*
+!.claude/skills/*/SKILL.md
+demo-seed-output/
+animation-plans/
+design-plans/
