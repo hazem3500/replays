@@ -310,7 +310,8 @@ describe('context adapters', () => {
           name: 'second',
           schema: { type: 'object', properties: { n: { type: 'number' } } },
           normalize: (context) => (
-            order.push('second'), { version: 1, capturedAt: '2026-10-10T12:00:00.000Z', ...context, fields: { n: 'not a number' } }
+            order.push('second'),
+            { version: 1, capturedAt: '2026-10-10T12:00:00.000Z', ...context, fields: { n: 'not a number' } }
           ),
         });
       }),

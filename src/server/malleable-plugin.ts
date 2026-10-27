@@ -111,7 +111,7 @@ export function malleablePlugin(deps: {
             return true;
           }
           if (path === '/api/malleable/bridge/tools' && method === 'GET') {
-            if (!hub.connected(bearer(request))) return reply(response, 401, { error: 'unknown token or no viewer connected' }), true;
+            if (!hub.connected(bearer(request))) return (reply(response, 401, { error: 'unknown token or no viewer connected' }), true);
             reply(response, 200, { tools: BRIDGE_TOOLS });
             return true;
           }

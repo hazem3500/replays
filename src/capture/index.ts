@@ -2,14 +2,7 @@
  * `@hazem3500/replays/capture`: record a browser page, build and validate replay bundles, resolve source links. No server code.
  */
 export { PRODUCT_NAME, PRODUCT_SLUG } from '../shared/brand.ts';
-export {
-  RecorderSession,
-  recorderSource,
-  normalizeConsole,
-  normalizePerformance,
-  type CdpLike,
-  type RecordedTracks,
-} from './session.ts';
+export { RecorderSession, recorderSource, normalizeConsole, normalizePerformance, type CdpLike, type RecordedTracks } from './session.ts';
 export type { CapturePacingOptions } from '../shared/capture-pacing.ts';
 export { capture, parseArgs, type CaptureArgs, type DriverName } from './capture.ts';
 export { playwrightDriver, type PlaywrightDriverOptions } from './drivers/playwright.ts';

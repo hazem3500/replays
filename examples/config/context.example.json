@@ -1,7 +1,10 @@
 {
   "app": { "name": "Demo shop", "environment": "staging", "version": "2.4.1", "commit": "a1b2c3d" },
   "test": { "suite": "checkout", "case": "rejects an unknown coupon", "runId": "ci-8421" },
-  "sources": [{ "provider": "github", "ref": "example-org/shop-demo#42" }, { "provider": "jira", "ref": "SHOP-17" }],
+  "sources": [
+    { "provider": "github", "ref": "example-org/shop-demo#42" },
+    { "provider": "jira", "ref": "SHOP-17" }
+  ],
   "fields": {
     "plan": "trial",
     "adminUrl": "https://admin.example.com/accounts/1234",

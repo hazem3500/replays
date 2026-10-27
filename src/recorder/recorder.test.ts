@@ -41,8 +41,8 @@ function fakeUi(overrides: Partial<RecorderUi> = {}) {
       stop = context.stop;
       return hide;
     }),
-    confirmUpload: vi.fn<RecorderUi['confirmUpload']>(
-      (): Promise<UploadDecision> => Promise.resolve({ confirmed: true, note: 'It broke' }),
+    confirmUpload: vi.fn<RecorderUi['confirmUpload']>((): Promise<UploadDecision> =>
+      Promise.resolve({ confirmed: true, note: 'It broke' }),
     ),
     showResult: vi.fn<NonNullable<RecorderUi['showResult']>>(),
     ...overrides,
