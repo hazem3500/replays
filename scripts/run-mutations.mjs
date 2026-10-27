@@ -26,9 +26,14 @@ for (const target of targets) {
     htmlReporter: { fileName: `${directory}/modules/${slug}.html` },
   };
   const config = `${directory}/${slug}.config.mjs`;
-  writeFileSync(config, `import base from ${JSON.stringify(pathToFileURL(resolve('stryker.config.mjs')).href)};\nexport default {...base,...${JSON.stringify(overrides)}};\n`);
+  writeFileSync(
+    config,
+    `import base from ${JSON.stringify(pathToFileURL(resolve('stryker.config.mjs')).href)};\nexport default {...base,...${JSON.stringify(overrides)}};\n`,
+  );
   console.log(`Measuring ${target.file} with ${overrides.testFiles.join(', ')}; static mutants remain enabled.`);
-  const result = spawnSync(process.execPath, [resolve('node_modules/@stryker-mutator/core/bin/stryker.js'), 'run', config], { stdio: 'inherit' });
+  const result = spawnSync(process.execPath, [resolve('node_modules/@stryker-mutator/core/bin/stryker.js'), 'run', config], {
+    stdio: 'inherit',
+  });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status ?? 1);
   summarizeMutations(JSON.parse(readFileSync(output, 'utf8')));

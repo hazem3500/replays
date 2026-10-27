@@ -38,7 +38,13 @@ export function summarizeMutations(report) {
     return { file, counts, score: total ? (detected / total) * 100 : null };
   });
   if (!modules.some((entry) => Object.keys(entry.counts).length)) throw new Error('No mutants were measured.');
-  return { modules, tests: tests.length, candidates: tests.filter((test) => !killedBy.has(test.id)), inventory: tests, killers: tests.filter((test) => killedBy.has(test.id)) };
+  return {
+    modules,
+    tests: tests.length,
+    candidates: tests.filter((test) => !killedBy.has(test.id)),
+    inventory: tests,
+    killers: tests.filter((test) => killedBy.has(test.id)),
+  };
 }
 
 const cell = (value) => String(value).replaceAll('|', '\\|').replaceAll('\n', ' ');

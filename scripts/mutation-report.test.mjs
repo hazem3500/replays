@@ -26,11 +26,17 @@ it('combines kill attribution across reports with different test ids and refuses
   const root = mkdtempSync(join(tmpdir(), 'replays-mutation-report-'));
   const script = resolve('scripts/mutation-report.mjs');
   try {
-    for (const [name, id, status] of [['first', 'one', 'Killed'], ['second', 'two', 'Survived']]) {
-      writeFileSync(join(root, `${name}.json`), JSON.stringify({
-        files: { [`${name}.ts`]: { mutants: [{ status, ...(status === 'Killed' ? { killedBy: [id] } : {}) }] } },
-        testFiles: { 'contract.test.ts': { tests: [{ id, name: 'preserves the contract' }] } },
-      }));
+    for (const [name, id, status] of [
+      ['first', 'one', 'Killed'],
+      ['second', 'two', 'Survived'],
+    ]) {
+      writeFileSync(
+        join(root, `${name}.json`),
+        JSON.stringify({
+          files: { [`${name}.ts`]: { mutants: [{ status, ...(status === 'Killed' ? { killedBy: [id] } : {}) }] } },
+          testFiles: { 'contract.test.ts': { tests: [{ id, name: 'preserves the contract' }] } },
+        }),
+      );
     }
     const manifest = join(root, 'manifest.json');
     writeFileSync(manifest, JSON.stringify({ expected: 2, reports: ['first.json', 'second.json'] }));

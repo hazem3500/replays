@@ -6,7 +6,10 @@ export const criticalModules = [
   { file: 'src/capture/sanitize.ts', tests: ['test/sanitize.test.ts', 'test/redaction.test.ts', 'test/redaction-integrity.test.ts'] },
   { file: 'src/recorder/sanitize-events.ts', tests: ['src/recorder/sanitize-events.test.ts', 'src/recorder/redact.test.ts'] },
   { file: 'src/server/store.ts', tests: ['test/store.test.ts', 'test/store-drivers.test.ts', 'test/sidecar-integrity.test.ts'] },
-  { file: 'src/server/storage/types.ts', tests: ['test/storage-key-boundaries.test.ts', 'test/storage.test.ts', 'test/sidecar-integrity.test.ts'] },
+  {
+    file: 'src/server/storage/types.ts',
+    tests: ['test/storage-key-boundaries.test.ts', 'test/storage.test.ts', 'test/sidecar-integrity.test.ts'],
+  },
   { file: 'src/client/editor/state.ts', tests: ['test/editor-state.test.ts'] },
   { file: 'src/server/migrate.ts', tests: ['test/migrate.test.ts'] },
   { file: 'src/client/route.ts', tests: ['test/route.test.ts', 'test/replay-preload.test.ts'] },
