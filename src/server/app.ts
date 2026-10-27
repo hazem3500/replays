@@ -87,6 +87,8 @@ export interface AppOptions {
   /** Optional JSON Schema for `context.fields` (context-schema.ts). */
   contextSchema?: ContextSchema;
   devMiddleware?: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
+  /** Vite-transformed dev HTML, rendered through the shared server metadata contract. */
+  devIndexHtml?: (url: string) => Promise<string>;
   /** Server-side video renders; absent means every render route answers 503. */
   render?: RenderService;
   /** Where the app lives publicly (base-path.ts): `''` at the root of its own domain, else e.g. `/replays`. */
@@ -836,6 +838,13 @@ export function createApp(options: AppOptions) {
       // An unknown or malformed API path is a JSON 404, never the SPA page (the viewer would try to parse HTML).
       if (path.startsWith('/api/')) {
         send(response, 404, JSON.stringify({ error: 'not found' }), json);
+        return;
+      }
+
+      if (options.devIndexHtml && request.method === 'GET' && request.headers.accept?.includes('text/html')) {
+        const html = await options.devIndexHtml(`${publicPath(path, defaultBase)}${raw.search}`);
+        if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
+        await sendCompressed(request, response, 200, indexPage(html, base), 'text/html; charset=utf-8');
         return;
       }
 
