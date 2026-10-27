@@ -41,6 +41,7 @@ const RUNTIME = String.raw`
   var timeListeners = [];
   var lastTime = 0;
   var cleanups = [];
+  var heartbeatTimer = null;
 
   function call(method, params) {
     return new Promise(function (resolve, reject) {
@@ -92,6 +93,10 @@ const RUNTIME = String.raw`
       },
       seek: function (ms) { return call('seek', { ms: ms }); },
       notify: function (message) { return call('notify', { message: String(message) }); },
+      settings: {
+        get: function (id) { return call('settings.get', { id: id }); },
+        set: function (id, value) { return call('settings.set', { id: id, value: value }); },
+      },
       comments: {
         list: function () { return call('comments.list', {}); },
         add: function (input) { return call('comments.add', input); },
@@ -111,6 +116,8 @@ const RUNTIME = String.raw`
   }
 
   function start(init) {
+    heartbeatTimer = setInterval(function () { fire('heartbeat', {}); }, 1000);
+    fire('heartbeat', {});
     applyTheme(init.theme, init.vars || {});
     lastTime = init.time || 0;
     var script = document.createElement('script');
@@ -126,8 +133,8 @@ const RUNTIME = String.raw`
     }
     Promise.resolve()
       .then(function () { return fn(init.mode === 'action' ? ctx : root, ctx); })
-      .then(function (result) { if (typeof result === 'function') cleanups.push(result); if (init.mode === 'action') fire('done', {}); })
-      .catch(function (error) { reportError(error); if (init.mode === 'action') fire('done', {}); });
+      .then(function (result) { if (typeof result === 'function') cleanups.push(result); if (init.mode === 'action') fire('done', {}); else fire('rendered', {}); })
+      .catch(function (error) { reportError(error); if (init.mode === 'action') fire('done', {}); else fire('rendered', {}); });
   }
 
   window.addEventListener('message', function onInit(event) {
@@ -141,6 +148,7 @@ const RUNTIME = String.raw`
         timeListeners.slice().forEach(function (l) { try { l(lastTime); } catch (e) { reportError(e); } });
       } else if (data.type === 'theme') applyTheme(data.theme, data.vars || {});
       else if (data.type === 'dispose') {
+        clearInterval(heartbeatTimer);
         cleanups.forEach(function (c) { try { c(); } catch (e) {} });
         cleanups = [];
       } else if (data.id && pending[data.id]) {

@@ -1,3 +1,6 @@
+import { bindUserSettings } from '../plugins/settings.ts';
+import { getPluginSettings, setPluginSetting } from './api.ts';
+import { settingAccepts } from '../../shared/plugin-settings.ts';
 import { useSyncExternalStore } from 'react';
 
 import { CAPABILITIES, type Capability, isCapability, isWriteCapability, type UserPluginManifest } from '../../shared/malleable.ts';
@@ -23,6 +26,7 @@ export interface PluginRef {
   id: string;
   manifest: UserPluginManifest;
   source: string;
+  scope?: import('../../shared/malleable.ts').PluginScope;
   log(level: string, message: string): void;
 }
 
@@ -182,6 +186,19 @@ function safeFileName(name: unknown) {
 export async function handleCall(plugin: PluginRef, ctx: ViewerPluginContext, method: string, params: unknown): Promise<unknown> {
   const input = (params ?? {}) as Record<string, unknown>;
   switch (method) {
+    case 'settings.get':
+    case 'settings.set': {
+      const definition = plugin.manifest.settings?.find((item) => item.id === input.id);
+      if (!definition) throw new BrokerError('unknown setting');
+      const scope = plugin.scope ?? 'user';
+      const current = await getPluginSettings(scope, plugin.id);
+      if (method === 'settings.get') return current.values[definition.id];
+      if (!settingAccepts(definition, input.value)) throw new BrokerError('invalid setting value');
+      const next = await setPluginSetting(scope, plugin.id, { id: definition.id, value: input.value, baseVersion: current.version });
+      bindUserSettings(`user:${plugin.id}`, scope, plugin.id);
+      return next.values[definition.id];
+    }
+
     case 'seek': {
       await check(plugin, 'playback:seek');
       if (typeof input.ms !== 'number' || !Number.isFinite(input.ms) || input.ms < 0)

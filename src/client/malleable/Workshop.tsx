@@ -34,11 +34,15 @@ const originLabel = { agent: 'agent draft', workshop: 'draft', saved: 'saved' } 
  * nothing is stored until the approval dialog (KeepDialog) is accepted.
  */
 export function Workshop() {
-  const { workshopOpen } = useMalleableUi();
+  const { workshopOpen, workshopPlugin } = useMalleableUi();
   const { entries, disabled } = useManager();
   const [selectedId, setSelectedId] = useState<string>();
   const [view, setView] = useState<'plugins' | 'agent'>('plugins');
-  const entry = entries.find((candidate) => candidate.id === (selectedId ?? entries[0]?.id));
+  const entry = entries.find((candidate) => candidate.id === (workshopPlugin ?? selectedId ?? entries[0]?.id));
+  const selectPlugin = (id: string | undefined) => {
+    setSelectedId(id);
+    setMalleableUi({ workshopPlugin: undefined });
+  };
   if (!workshopOpen) return null;
   return (
     <Modal title="Plugin workshop" wide testId="workshop" onClose={close}>
@@ -63,7 +67,7 @@ export function Workshop() {
         <AgentPane />
       ) : (
         <>
-          <ReviewNotice entries={entries} onSelect={setSelectedId} />
+          <ReviewNotice entries={entries} onSelect={selectPlugin} />
           <div className="mall-split">
             <nav className="mall-list" aria-label="Plugins">
               <ul>
@@ -73,7 +77,7 @@ export function Workshop() {
                       type="button"
                       aria-current={candidate.id === entry?.id}
                       data-testid={`plugin-item:${candidate.id}`}
-                      onClick={() => setSelectedId(candidate.id)}
+                      onClick={() => selectPlugin(candidate.id)}
                     >
                       <span className="mall-name">{candidate.manifest.name}</span>
                       <span className="mall-badges">
@@ -96,7 +100,7 @@ export function Workshop() {
                     let n = 1;
                     while (taken.has(n === 1 ? 'my-tab' : `my-tab-${n}`)) n++;
                     const { manifest, source } = starterPlugin(n === 1 ? 'my-tab' : `my-tab-${n}`);
-                    setSelectedId(
+                    selectPlugin(
                       manager.upsert({ manifest: { ...manifest, ...(n > 1 ? { name: `My tab ${n}` } : {}) }, source, origin: 'workshop' })
                         .id,
                     );
@@ -104,11 +108,11 @@ export function Workshop() {
                 >
                   <PlusIcon aria-hidden="true" /> New plugin
                 </button>
-                <ImportButton onImported={setSelectedId} />
+                <ImportButton onImported={selectPlugin} />
               </div>
             </nav>
             {entry ? (
-              <Editor key={entry.id} entry={entry} onGone={() => setSelectedId(undefined)} />
+              <Editor key={entry.id} entry={entry} onGone={() => selectPlugin(undefined)} />
             ) : (
               <div className="mall-empty" data-testid="workshop-empty">
                 <p>No plugins yet.</p>

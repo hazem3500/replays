@@ -1,3 +1,6 @@
+import { PluginPageRegistry } from './pages.ts';
+import { defaultPolicy, type MalleablePolicy } from '../../shared/malleable-policy.ts';
+import { SlotRegistry, type SlotConfiguration, type SlotDescriptor } from './slots.ts';
 import { isSafeIconUrl } from '../../shared/icon-url.ts';
 import type {
   ContextSectionDefinition,
@@ -59,6 +62,17 @@ const EMPTY: Snapshot = {
   tracks: [],
   contextSections: [],
   settings: [],
+};
+const SLOT_BY_KIND: Record<keyof Snapshot, string> = {
+  tabs: 'viewer.inspector.tabs',
+  panels: 'viewer.panels.side',
+  actions: 'viewer.actions',
+  tracks: 'viewer.scrubber.tracks',
+  contextSections: 'viewer.context.sections',
+  columns: 'index.row.columns',
+  filters: 'index.filters',
+  sections: 'index.sections',
+  settings: 'settings.sections',
 };
 const KINDS = Object.keys(EMPTY) as (keyof Snapshot)[];
 
@@ -128,16 +142,80 @@ function check(kind: keyof Snapshot, plugin: string, definition: Record<string, 
 
 /** What loaded client entries registered. A store: the UI subscribes and re-renders when plugins arrive. */
 export class ViewerRegistry {
+  readonly pages = new PluginPageRegistry();
   private snapshotValue: Snapshot = EMPTY;
   private readonly listeners = new Set<() => void>();
   private seq = 0;
+  private readonly slots = new Map<string, SlotRegistry<unknown>>();
+  private readonly policy: () => MalleablePolicy;
+  private policyValue: MalleablePolicy | undefined;
+  constructor(policy: () => MalleablePolicy = defaultPolicy) {
+    this.policy = policy;
+  }
+  setPolicy(policy: MalleablePolicy) {
+    this.policyValue = policy;
+    this.snapshotValue = { ...this.snapshotValue };
+    for (const listener of this.listeners) listener();
+  }
+
+  private slot(name: string) {
+    let slot = this.slots.get(name);
+    if (!slot) {
+      slot = new SlotRegistry(name, () => this.policyValue ?? this.policy());
+      this.slots.set(name, slot);
+    }
+    return slot;
+  }
+
+  configureSlot(name: string, configuration: SlotConfiguration, notify = true) {
+    this.slot(name).configure(configuration);
+    // Refresh the external-store identity so consumers re-resolve in render.
+    this.snapshotValue = { ...this.snapshotValue };
+    if (notify) for (const listener of this.listeners) listener();
+  }
+
+  registerSlotItem<C, R>(name: string, descriptor: SlotDescriptor<C, R>, notify = true) {
+    this.slot(name).register(descriptor as SlotDescriptor<unknown>);
+    this.snapshotValue = { ...this.snapshotValue };
+    if (notify) for (const listener of this.listeners) listener();
+  }
+
+  resolveSlot<C, R>(name: string, builtins: readonly SlotDescriptor<C, R>[], context: C): readonly SlotDescriptor<C, R>[] {
+    return this.slot(name).resolve(context, builtins as readonly SlotDescriptor<unknown>[]) as readonly SlotDescriptor<C, R>[];
+  }
+
+  /** Apply the same slot policy to legacy entries, preserving their metadata for existing renderers. */
+  private visibleSnapshot(): Snapshot {
+    const snapshot = { ...this.snapshotValue };
+    for (const kind of KINDS) {
+      const entries = this.snapshotValue[kind];
+      const ids = new Set(
+        this.slot(SLOT_BY_KIND[kind])
+          .resolve(undefined, [], false)
+          .map((item) => item.id),
+      );
+      const rank = [...ids];
+      (snapshot as Record<keyof Snapshot, unknown>)[kind] = entries
+        .filter((entry) => ids.has(entry.key))
+        .sort((a, b) => rank.indexOf(a.key) - rank.indexOf(b.key));
+    }
+    return snapshot;
+  }
+  private cachedSnapshot: Snapshot | undefined;
+  private cachedSource: Snapshot | undefined;
 
   readonly subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
 
-  readonly getSnapshot = () => this.snapshotValue;
+  readonly getSnapshot = () => {
+    if (this.cachedSource !== this.snapshotValue) {
+      this.cachedSnapshot = this.visibleSnapshot();
+      this.cachedSource = this.snapshotValue;
+    }
+    return this.cachedSnapshot!;
+  };
 
   private add<K extends keyof Snapshot>(
     kind: K,
@@ -163,6 +241,16 @@ export class ViewerRegistry {
       throw new ViewerPluginError(`${plugin}: ${kind} "${d.id}" is registered twice`);
     if (kind === 'filters') checkFilter(plugin, definition as IndexFilterDefinition, this.snapshotValue.filters);
     const entry = { plugin, key, definition, seq: this.seq++ };
+    this.slot(SLOT_BY_KIND[kind]).register({
+      id: key,
+      order: 1000 + ((d.order as number | undefined) ?? 0),
+      render: (input: unknown) => {
+        const mount = input as { container: HTMLElement; context: unknown };
+        if (needs === 'render') return (d.render as (container: HTMLElement, context: unknown) => unknown)(mount.container, mount.context);
+        if (needs) return (d[needs] as (context: unknown) => unknown)(input);
+        return definition;
+      },
+    });
     const next = [...this.snapshotValue[kind], entry].sort(byOrder as never);
     this.snapshotValue = { ...this.snapshotValue, [kind]: next };
     if (notify) for (const listener of this.listeners) listener();
@@ -172,6 +260,18 @@ export class ViewerRegistry {
   apiFor(plugin: string, notify = true): ViewerPluginApi {
     return {
       pluginName: plugin,
+      registerPluginPage: (definition) => {
+        if (!OWNER.test(plugin) || plugin.startsWith('user:')) throw new ViewerPluginError('only host plugins may register pages');
+        this.pages.register(plugin, definition);
+      },
+      configureSlot: (name, configuration) => {
+        if (plugin.startsWith('user:')) throw new ViewerPluginError('sandboxed plugins cannot configure host slots');
+        this.configureSlot(name, configuration, notify);
+      },
+      registerSlotItem: (name, descriptor) => {
+        if (!descriptor.id.startsWith(`plugin:${plugin}:`)) throw new ViewerPluginError('slot items must use their plugin namespace');
+        this.registerSlotItem(name, descriptor, notify);
+      },
       registerInspectorTab: (definition) => this.add('tabs', plugin, definition, definition?.label, notify),
       registerViewerAction: (definition) => this.add('actions', plugin, definition, definition?.label, notify),
       registerViewerPanel: (definition) => this.add('panels', plugin, definition, definition?.title, notify),
@@ -190,6 +290,10 @@ export class ViewerRegistry {
    */
   replacePlugin(plugin: string, register: (api: ViewerPluginApi) => void) {
     const before = this.snapshotValue;
+    const pageState = this.pages.checkpoint();
+    this.pages.removeOwner(plugin);
+    const slotState = new Map([...this.slots].map(([name, slot]) => [name, slot.checkpoint()]));
+    for (const slot of this.slots.values()) slot.removeOwner(plugin);
     const without = <T>(list: readonly Registered<T>[]) => list.filter((entry) => entry.plugin !== plugin);
     const next = { ...before };
     for (const kind of KINDS) (next as Record<keyof Snapshot, unknown>)[kind] = without(before[kind] as readonly Registered<unknown>[]);
@@ -198,6 +302,12 @@ export class ViewerRegistry {
       register(this.apiFor(plugin, false));
     } catch (error) {
       this.snapshotValue = before;
+      this.pages.restore(pageState);
+      for (const [name, slot] of this.slots) {
+        const state = slotState.get(name);
+        if (state) slot.restore(state);
+        else this.slots.delete(name);
+      }
       throw error;
     } finally {
       for (const listener of this.listeners) listener();
@@ -211,9 +321,13 @@ export class ViewerRegistry {
   /** Tests only. */
   reset() {
     this.snapshotValue = EMPTY;
+    this.slots.clear();
+    this.pages.restore({ pages: new Map() });
     this.seq = 0;
     for (const listener of this.listeners) listener();
   }
 }
 
 export const viewerRegistry = new ViewerRegistry();
+export const resolveSlot = <C, R>(name: string, builtins: readonly SlotDescriptor<C, R>[], context: C) =>
+  viewerRegistry.resolveSlot(name, builtins, context);

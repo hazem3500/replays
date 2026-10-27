@@ -19,7 +19,7 @@ export const PluginTimelineTracks = memo(function PluginTimelineTracks({ width, 
   const tracks = usePluginSnapshot().tracks;
   if (!contextFor || tracks.length === 0 || width <= 0) return null;
   return (
-    <div className="plugin-tracks" data-testid="plugin-tracks">
+    <div className="plugin-tracks" data-slot="viewer.scrubber.tracks" data-testid="plugin-tracks">
       {tracks.map((track, row) => (
         <TrackRow
           key={track.key}
@@ -88,7 +88,13 @@ function TrackRow({
     buttons[next]?.focus();
   };
   return (
-    <div ref={element} className="plugin-track" style={{ '--track-row': row } as CSSProperties} data-testid={testId}>
+    <div
+      ref={element}
+      className="plugin-track"
+      data-slot-item={testId.replace(/^plugin-track:/, 'plugin:')}
+      style={{ '--track-row': row } as CSSProperties}
+      data-testid={testId}
+    >
       {markers.map((marker, index) => {
         const x = inset + toX(marker.at);
         const span = marker.duration ? Math.max(3, toX(marker.at + marker.duration) - toX(marker.at)) : 0;
@@ -134,6 +140,8 @@ export function usePluginContextSections() {
     <ContextSection key={section.key} title={section.definition.title} testId={`${section.key}-section`}>
       <PluginMount
         render={section.definition.render}
+        slot="viewer.context.sections"
+        itemId={section.key}
         context={contextFor(section.plugin)}
         label={section.definition.title}
         className="plugin-mount ctx-plugin-body"
