@@ -178,7 +178,7 @@
       "brotli": 16345
     },
     "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
-      "raw": 272355,
+      "raw": 282591,
       "gzip": 72905,
       "brotli": 59492
     },
@@ -412,7 +412,6 @@
     {
       "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
       "cap": {
-        "raw": 272355,
         "gzip": 72905,
         "brotli": 59492
       },
@@ -742,6 +741,14 @@
         "brotli": 16623
       },
       "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
+      "cap": {
+        "raw": 282591
+      },
+      "reason": "The embedded edits schema gains the playback highlight list, enlarging the shared server schema chunk.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     }
   ]
