@@ -1,3 +1,4 @@
+import type { PluginSettingsRecord, PluginSettingValue } from '../../shared/plugin-settings.ts';
 import type { PluginHistory, PluginScope, PluginSummary, UserPluginManifest } from '../../shared/malleable.ts';
 import { apiUrl } from '../route.ts';
 
@@ -52,3 +53,9 @@ export const revokeBridge = (token: string) => request<{ revoked: boolean }>('DE
 export const answerBridge = (token: string, id: number, outcome: { ok: boolean; result?: unknown; error?: string }) =>
   request<{ ok: boolean }>('POST', 'bridge/results', { token, id, ...outcome });
 export const bridgeEventsUrl = (token: string) => apiUrl(`malleable/bridge/events?token=${encodeURIComponent(token)}`);
+
+export const getPluginSettings = (scope: PluginScope, id: string) => request<PluginSettingsRecord>('GET', `settings/${scope}/${id}`);
+export const setPluginSetting = (scope: PluginScope, id: string, input: { id: string; value: PluginSettingValue; baseVersion: number }) =>
+  request<PluginSettingsRecord>('PUT', `settings/${scope}/${id}`, input);
+
+export const acceptWorkspacePlugin = (id: string, sha256: string) => request<{ accepted: boolean }>('POST', `notices/${id}`, { sha256 });

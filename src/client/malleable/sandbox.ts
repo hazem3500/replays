@@ -1,3 +1,6 @@
+import { defaultPolicy, pluginAdmissionProblems, pluginPolicyHash, policyProblems } from '../../shared/malleable-policy.ts';
+import { hostInfo, hostPolicy } from './host.ts';
+import { PluginWatchdog } from './watchdog.ts';
 import { SANDBOX_PATH } from '../../shared/sandbox-runtime.ts';
 import type { ViewerPluginContext } from '../plugins/api.ts';
 import { appBase } from '../route.ts';
@@ -24,6 +27,9 @@ export interface SandboxHandle {
   done: Promise<void>;
 }
 
+const activeFrames = new Set<HTMLIFrameElement>();
+const MAX_ACTIVE_FRAMES = 8;
+
 const START_TIMEOUT_MS = 5_000;
 const ACTION_TIMEOUT_MS = 60_000;
 
@@ -41,7 +47,12 @@ export function mountSandbox(options: {
   context: ViewerPluginContext;
 }): SandboxHandle {
   const { plugin, mode, contribution, container, context } = options;
+  if (activeFrames.size >= MAX_ACTIVE_FRAMES) {
+    plugin.log('error', 'active plugin frame budget exceeded (8)');
+    return { dispose: () => {}, done: Promise.resolve() };
+  }
   const iframe = document.createElement('iframe');
+  activeFrames.add(iframe);
   iframe.setAttribute('sandbox', 'allow-scripts');
   iframe.setAttribute('referrerpolicy', 'no-referrer');
   iframe.setAttribute('allow', '');
@@ -60,8 +71,13 @@ export function mountSandbox(options: {
   });
   const unsubscribeTime = context.onTime((ms) => port?.postMessage({ type: 'time', ms }));
 
+  let watchdog: PluginWatchdog | undefined;
+  const watchdogTimer = setInterval(() => watchdog?.check(), 500);
   const startTimer = setTimeout(() => {
-    if (!started) plugin.log('error', 'the sandbox did not start (is the sandbox page reachable?)');
+    if (!started) {
+      plugin.log('error', 'the sandbox did not start (is the sandbox page reachable?)');
+      dispose();
+    }
   }, START_TIMEOUT_MS);
   const actionTimer =
     mode === 'action'
@@ -78,13 +94,20 @@ export function mountSandbox(options: {
     const channel = new MessageChannel();
     port = channel.port1;
     const onPortMessage = async (message: MessageEvent) => {
+      watchdog?.call();
+      if (disposed) return;
       const { id, method, params } = (message.data ?? {}) as { id?: number; method?: string; params?: Record<string, unknown> };
-      if (typeof method !== 'string') return;
+      if (disposed || typeof method !== 'string') return;
+      if (method === 'heartbeat') {
+        watchdog?.heartbeat();
+        return;
+      }
       // Fire-and-forget reports from the frame: id 0.
       if (method === 'log' || method === 'error') {
         plugin.log(method === 'error' ? 'error' : String(params?.level ?? 'log'), String(params?.message ?? ''));
         return;
       }
+      if (method === 'rendered') return;
       if (method === 'done') {
         if (mode === 'action') dispose();
         return;
@@ -101,37 +124,46 @@ export function mountSandbox(options: {
     };
     port.addEventListener('message', onPortMessage);
     port.start();
-    // The copy of the replay is the one capability handed over rather than called, so the host's policy is checked here.
-    void (plugin.manifest.permissions.includes('replay:read') ? mayReadReplay(plugin) : Promise.resolve(false)).then((readable) => {
-      if (disposed) return;
-      const replay = readable
-        ? (() => {
-            const { meta, steps, console: consoleEntries, network, performance, context: replayContext } = context.replay;
-            return {
-              meta,
-              steps,
-              console: consoleEntries,
-              network,
-              ...(performance ? { performance } : {}),
-              ...(replayContext ? { context: replayContext } : {}),
-            };
-          })()
-        : undefined;
-      iframe.contentWindow?.postMessage(
-        {
-          type: 'init',
-          mode,
-          contribution,
-          source: plugin.source,
-          theme: context.theme,
-          vars: themeVars(),
-          time: context.getTime(),
-          replay,
-        },
-        '*',
-        [channel.port2],
-      );
-    });
+    // invariant: check policy before handing the replay copy to the frame.
+    void readableReplay(plugin, dispose)
+      .then((readable) => {
+        if (disposed) return;
+        const replay = readable
+          ? (() => {
+              const { meta, steps, console: consoleEntries, network, performance, context: replayContext } = context.replay;
+              return {
+                meta,
+                steps,
+                console: consoleEntries,
+                network,
+                ...(performance ? { performance } : {}),
+                ...(replayContext ? { context: replayContext } : {}),
+              };
+            })()
+          : undefined;
+        watchdog = new PluginWatchdog(hostInfo().policy.watchdog ?? defaultPolicy().watchdog, (reason) => {
+          plugin.log('error', reason);
+          dispose();
+        });
+        iframe.contentWindow?.postMessage(
+          {
+            type: 'init',
+            mode,
+            contribution,
+            source: plugin.source,
+            theme: context.theme,
+            vars: themeVars(),
+            time: context.getTime(),
+            replay,
+          },
+          '*',
+          [channel.port2],
+        );
+      })
+      .catch((error: unknown) => {
+        plugin.log('error', String(error));
+        dispose();
+      });
   };
   window.addEventListener('message', onMessage);
 
@@ -148,6 +180,8 @@ export function mountSandbox(options: {
     if (disposed) return;
     disposed = true;
     clearTimeout(startTimer);
+    clearInterval(watchdogTimer);
+    activeFrames.delete(iframe);
     if (actionTimer) clearTimeout(actionTimer);
     window.removeEventListener('message', onMessage);
     unsubscribeTime();
@@ -163,4 +197,24 @@ export function mountSandbox(options: {
 
   container.append(iframe);
   return { dispose, done };
+}
+
+async function readableReplay(plugin: PluginRef, dispose: () => void): Promise<boolean> {
+  const policy = await hostPolicy();
+  const problems = [
+    ...policyProblems(policy, plugin.manifest, plugin.scope ?? 'user'),
+    ...pluginAdmissionProblems(
+      policy,
+      plugin.id,
+      [...(policy.allow ?? []), ...(policy.deny ?? [])].some((selector) => selector.startsWith('sha256:'))
+        ? await pluginPolicyHash(plugin.manifest, plugin.source)
+        : '',
+    ),
+  ];
+  if (problems.length) {
+    plugin.log('error', problems.join('; '));
+    dispose();
+    return false;
+  }
+  return plugin.manifest.permissions.includes('replay:read') ? mayReadReplay(plugin) : false;
 }

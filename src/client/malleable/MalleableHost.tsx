@@ -1,3 +1,4 @@
+import { WorkspacePluginNotices } from './WorkspacePluginNotices.tsx';
 import { useEffect } from 'react';
 
 import type { ReplayBundle } from '../../shared/replay.ts';
@@ -18,6 +19,7 @@ export default function MalleableHost({ bundle, player }: { bundle: ReplayBundle
   }, [context]);
   return (
     <>
+      <WorkspacePluginNotices />
       <Workshop />
       <KeepDialog />
       <PermissionPrompt />
