@@ -9,3 +9,6 @@ pre-commit:
     lint:
       glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'
       run: pnpm exec vp lint --config .oxlintrc.json --deny-warnings {staged_files}
+    new-files:
+      glob: '*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}'
+      run: pnpm lint:new-files --staged
