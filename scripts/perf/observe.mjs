@@ -1,4 +1,4 @@
-// Installed before page scripts. Lab INP covers only the scripted interactions in this visit.
+/** Installed before page scripts. Lab INP covers only the scripted interactions in this visit. */
 export function observe({ player = true, title: observeTitle = true } = {}) {
   const state = {
     lcpMs: null,
@@ -51,36 +51,31 @@ export function observe({ player = true, title: observeTitle = true } = {}) {
   window.__flushPerf = () => {
     for (const [observer, callback] of observers) callback(observer.takeRecords());
   };
-  // A frame is ready only once the rrweb iframe contains the recorded body and has crossed two paints.
-  const check = () => {
-    if (state.firstFrameMs !== null) return;
-    const frames = [...document.querySelectorAll('.replayer-wrapper iframe')];
-    if (frames.length && frames.every((frame) => frame.contentDocument?.body?.childElementCount > 0)) {
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          state.firstFrameMs = performance.now();
-        }),
-      );
-    } else requestAnimationFrame(check);
+  // invariant: a measurement lands only once its element is ready and two paints have crossed.
+  const settle = (key, isReady) => {
+    const tick = () => {
+      if (isReady()) {
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            state[key] = performance.now();
+          }),
+        );
+      } else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
   };
-  if (player) requestAnimationFrame(check);
-  const title = () => {
-    const element = document.querySelector('.feed-title');
-    const box = element?.getBoundingClientRect();
-    if (
-      element?.textContent.trim() &&
-      box?.width > 0 &&
-      box.height > 0 &&
-      box.top < innerHeight &&
-      box.bottom > 0 &&
-      getComputedStyle(element).visibility !== 'hidden'
-    ) {
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          state.firstReplayTitleMs = performance.now();
-        }),
-      );
-    } else requestAnimationFrame(title);
-  };
-  if (observeTitle) requestAnimationFrame(title);
+  if (player) {
+    settle('firstFrameMs', () => {
+      const frames = [...document.querySelectorAll('.replayer-wrapper iframe')];
+      return frames.length > 0 && frames.every((frame) => frame.contentDocument?.body?.childElementCount > 0);
+    });
+  }
+  if (observeTitle) {
+    settle('firstReplayTitleMs', () => {
+      const element = document.querySelector('.feed-title');
+      const box = element?.getBoundingClientRect();
+      const visible = box?.width > 0 && box.height > 0 && box.top < innerHeight && box.bottom > 0;
+      return Boolean(element?.textContent.trim()) && visible && getComputedStyle(element).visibility !== 'hidden';
+    });
+  }
 }

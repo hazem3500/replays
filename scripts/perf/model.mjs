@@ -5,7 +5,7 @@ export const median = (values) => {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
 };
 
-// V8 reports nested ranges. Count a source code unit only if its innermost range was executed.
+/** V8 reports nested ranges. Counts a source code unit only if its innermost range was executed. */
 export function usedBytes(functions) {
   const ranges = functions.flatMap((fn) => fn.ranges);
   const events = ranges
@@ -46,40 +46,58 @@ export function percentile(values, fraction) {
   return sorted.length ? sorted[Math.max(0, Math.ceil(sorted.length * fraction) - 1)] : null;
 }
 
-export function assessSsr(current, baseline, gate) {
-  const rows = [];
-  const check = (name, value, limit) => rows.push({ name, value, limit, pass: Number.isFinite(value) && value <= limit });
-  const comparable =
+const finite = (value) => Number.isFinite(value);
+
+function sameHardware(baseline, current) {
+  return baseline?.hardware?.cpu === current.hardware?.cpu && baseline?.hardware?.cpus === current.hardware?.cpus;
+}
+
+function isComparable(baseline, current) {
+  return (
     baseline?.revision === current.revision &&
     baseline?.seedRows === current.seedRows &&
-    baseline?.hardware?.cpu === current.hardware?.cpu &&
-    baseline?.hardware?.cpus === current.hardware?.cpus &&
+    sameHardware(baseline, current) &&
     !baseline?.experiment?.ssr &&
-    JSON.stringify(baseline?.profiles) === JSON.stringify(current.profiles);
-  rows.push({ name: 'matching SPA baseline', value: comparable ? 0 : null, limit: 0, pass: comparable });
+    JSON.stringify(baseline?.profiles) === JSON.stringify(current.profiles)
+  );
+}
+
+function phoneRows(check, current, gate) {
   const phone = current.pages.phone ?? {};
   check('phone index LCP ms', phone['index-list']?.median?.lcpMs, gate.phone.indexLcpMs);
   check('phone first replay title ms', phone['index-list']?.median?.firstReplayTitleMs, gate.phone.firstReplayTitleMs);
   check('phone viewer skeleton FCP ms', phone.viewer?.median?.fcpMs, gate.phone.viewerSkeletonFcpMs);
-  for (const profile of Object.keys(current.pages)) {
-    const content = current.pages[profile].viewer?.median?.contentReadyMs;
-    const spa = baseline?.pages[profile]?.viewer?.median?.contentReadyMs;
-    check(
-      `${profile} viewer content regression ms`,
-      comparable && Number.isFinite(content) && Number.isFinite(spa) ? content - spa : null,
-      gate.maxViewerContentRegressionMs,
-    );
-    for (const [name, page] of Object.entries(current.pages[profile])) {
-      if (!page.median) continue;
-      check(`${profile}/${name} hydration errors`, page.median.hydrationErrors, gate.hydrationErrors);
-      if (name.startsWith('index'))
-        check(`${profile}/${name} hydration list refetches`, page.median.hydrationRefetches, gate.hydrationRefetches);
+}
+
+function profileRows(check, { current, baseline, comparable, gate, profile }) {
+  const content = current.pages[profile].viewer?.median?.contentReadyMs;
+  const spa = baseline?.pages[profile]?.viewer?.median?.contentReadyMs;
+  const regression = comparable && finite(content) && finite(spa) ? content - spa : null;
+  check(`${profile} viewer content regression ms`, regression, gate.maxViewerContentRegressionMs);
+  for (const [name, page] of Object.entries(current.pages[profile])) {
+    if (!page.median) continue;
+    check(`${profile}/${name} hydration errors`, page.median.hydrationErrors, gate.hydrationErrors);
+    if (name.startsWith('index')) {
+      check(`${profile}/${name} hydration list refetches`, page.median.hydrationRefetches, gate.hydrationRefetches);
     }
   }
+}
+
+function serverRows(check, current, gate) {
   const html = current.server.indexHtml;
   check('index server TTFB p50 ms', html?.ttfbP50Ms, gate.server.ttfbP50Ms);
   check('index server TTFB p90 ms', html?.ttfbP90Ms, gate.server.ttfbP90Ms);
   check('index HTML br body bytes', html?.byEncoding?.br?.wireBytes, gate.server.htmlBrBytes);
+}
+
+export function assessSsr(current, baseline, gate) {
+  const rows = [];
+  const check = (name, value, limit) => rows.push({ name, value, limit, pass: finite(value) && value <= limit });
+  const comparable = isComparable(baseline, current);
+  rows.push({ name: 'matching SPA baseline', value: comparable ? 0 : null, limit: 0, pass: comparable });
+  phoneRows(check, current, gate);
+  for (const profile of Object.keys(current.pages)) profileRows(check, { current, baseline, comparable, gate, profile });
+  serverRows(check, current, gate);
   rows.push({
     name: 'seed contains 100 summaries',
     value: current.seedRows,

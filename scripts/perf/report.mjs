@@ -1,6 +1,6 @@
 import { readFile, writeFile, appendFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import config from '../../performance-budget.config.mjs';
+import { runtimeBudgets as config } from '../../budgets/runtime.mjs';
 import { assessSsr } from './model.mjs';
 
 const [currentPath = '.review-artifacts/perf/current/results.json', basePath, outputPath = '.review-artifacts/perf/report.md'] =

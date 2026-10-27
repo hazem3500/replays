@@ -1,17 +1,17 @@
-// Runtime budgets live beside bundle.json. All limits are upper bounds.
-export default {
+/** Runtime budgets live beside bundle.json. All limits are upper bounds. */
+export const runtimeBudgets = {
   mode: 'report-only',
   samples: 3,
   settleMs: 1500,
   playbackMs: 2000,
   profiles: {
     desktop: { viewport: { width: 1280, height: 800 }, cpu: 1, latency: 0, download: -1, upload: -1 },
-    // A synthetic mid-range phone, not a claim about a particular physical device.
+    // why: a synthetic mid-range phone, not a claim about a particular physical device.
     phone: { viewport: { width: 390, height: 780 }, cpu: 4, latency: 150, download: 200_000, upload: 93_750 },
   },
   pages: {
     'index-list': { path: '/', ready: '.feed-list:not(.feed-skeleton)', view: 'list' },
-    // Phones deliberately use list layout; a wide viewport + 4x CPU measures the grid on the phone profile.
+    // why: phones deliberately use list layout; a wide viewport + 4x CPU measures the grid on the phone profile.
     'index-grid': { path: '/', ready: '.feed-list[data-view="grid"]', view: 'grid', wide: true },
     viewer: { path: '/r/demo-seed-checkout-error', ready: '[data-testid="replay-player"] iframe', player: true },
     editor: { path: '/r/demo-seed-checkout-error/edit', ready: '[data-testid="timeline"][data-ready="true"]', player: true },
@@ -24,7 +24,7 @@ export default {
     },
     settings: { path: '/', ready: '.feed-list:not(.feed-skeleton)', settings: true },
   },
-  // Provisional targets: calibrate against 10 main runs on the same runner before enabling enforcement.
+  // why: provisional targets; calibrate against 10 main runs on the same runner before enabling enforcement.
   budgets: {
     desktop: {
       lcpMs: 2500,
@@ -72,7 +72,7 @@ export default {
     server: { ttfbP50Ms: 30, ttfbP90Ms: 60, htmlBrBytes: 15_000 },
     hydrationErrors: 0,
     hydrationRefetches: 0,
-    // Compare viewer content-ready medians against an SPA run on the same source and seed.
+    // why: compare viewer content-ready medians against an SPA run on the same source and seed.
     maxViewerContentRegressionMs: 0,
   },
 };
