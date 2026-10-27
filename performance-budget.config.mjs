@@ -17,7 +17,7 @@ export default {
     editor: { path: '/r/demo-seed-checkout-error/edit', ready: '[data-testid="timeline"][data-ready="true"]', player: true },
     comparison: {
       path: '/compare?before=demo-seed-checkout-error&after=demo-seed-signup',
-      ready: '.cmp-workspace iframe',
+      ready: '.mt-workspace iframe, .cmp-workspace iframe',
       player: true,
       feature: 'comparison',
       tiles: 2,

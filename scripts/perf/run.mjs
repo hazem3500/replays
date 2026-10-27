@@ -1,6 +1,6 @@
 // Run only against a production build: pnpm build && node scripts/perf/run.mjs
 import { execFileSync } from 'node:child_process';
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { cpus, freemem, totalmem, tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { request as httpRequest } from 'node:http';
@@ -86,17 +86,10 @@ function rawRequest(url, headers) {
 }
 
 async function seed() {
-  try {
-    await readFile(join(root, 'scripts/demo-seed.mjs'));
-    execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', 'scripts/demo-seed.mjs', '--output', seedRoot], {
-      cwd: root,
-    });
-    report.seed = 'scripts/demo-seed.mjs';
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-    await cp(join(import.meta.dirname, 'fixtures'), join(seedRoot, 'sample'), { recursive: true, filter: (path) => !path.endsWith('.md') });
-    report.seed = 'frozen demo-seed fixture (canonical generator not yet available)';
-  }
+  execFileSync(process.execPath, ['--experimental-strip-types', '--no-warnings', 'scripts/demo-seed.mjs', '--output', seedRoot], {
+    cwd: root,
+  });
+  report.seed = 'scripts/demo-seed.mjs';
   const files = (await readdir(join(seedRoot, 'sample'))).filter((name) => name.endsWith('.json'));
   for (let index = files.length; index < seedRows; index++) {
     const bundle = JSON.parse(await readFile(join(seedRoot, 'sample', files[index % files.length]), 'utf8'));
@@ -401,7 +394,7 @@ try {
     for (const count of compareTiles)
       scenarios[`comparison-${count}`] = {
         ...config.pages.comparison,
-        path: `/compare?ids=${ids.slice(0, count).join(',')}`,
+        path: `/compare?ids=${ids.slice(0, count).join(',')}&before=${ids[0]}&after=${ids[1]}`,
         tiles: count,
       };
   }
@@ -416,7 +409,7 @@ try {
         const probe = await browser.newPage();
         await probe.goto(`${server.origin}${prefix}${scenario.path}`);
         const available = await probe
-          .locator('.cmp-workspace')
+          .locator('.mt-workspace, .cmp-workspace')
           .waitFor({ timeout: 5000 })
           .then(
             () => true,

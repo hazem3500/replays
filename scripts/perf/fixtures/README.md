@@ -1,1 +1,0 @@
-Frozen fictional demo replays from `scripts/demo-seed.mjs` (2026-10-27). This fallback lets the runtime harness run on older main revisions before the canonical generator lands. Their recorded performance entries are synthetic scene data, never performance measurements. The harness prefers the canonical generator whenever present.
