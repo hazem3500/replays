@@ -42,10 +42,13 @@ function importRule(names, allowed, message) {
   };
 }
 
+/** The three documented effect boundaries: the viewer, the browser-only recorder React adapter, and story-local fixtures. */
+const EFFECT_HOOK_DIRECTORY = /(?:^|\/)(?:src\/client\/hooks|src\/recorder\/react\/hooks|stories(?:\/[^/]+)*\/hooks)\//;
+
 export const noEffectOutsideHooks = importRule(
   effects,
-  (context) => /(?:^|\/)src\/client\/hooks\//.test(filename(context)),
-  'Effects belong in a named hook under src/client/hooks/. Derive state, use events or subscribe to an external store.',
+  (context) => EFFECT_HOOK_DIRECTORY.test(filename(context)),
+  'Effects belong in a named hook under src/client/hooks/, src/recorder/react/hooks/ or a story-local hooks/ directory. Derive state, use events or subscribe to an external store.',
 );
 export const noManualMemo = importRule(
   memo,
