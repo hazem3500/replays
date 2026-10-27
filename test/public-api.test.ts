@@ -28,6 +28,7 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'UI_ATTRIBUTE',
       'CHAT_WIDGET_PRESETS',
       'blockProps',
+      'createHttpUpload',
       'blockSelector',
       'recorderUiProps',
       'createDeferredUi',
