@@ -5,7 +5,7 @@ import { publicPath } from '../base-path.ts';
 import { readJsonUpload } from '../http/body.ts';
 import { json, REVALIDATE } from '../http/respond.ts';
 import { defineRoute } from '../http/route.ts';
-import { HttpStatusError } from '../http/status-error.ts';
+import { HttpError } from '../http/errors.ts';
 import { runAfterUpload, runBeforeUpload } from '../plugin-runtime.ts';
 import type { PurposeCatalog } from '../purposes.ts';
 import type { ApiServices } from './services.ts';
@@ -25,7 +25,7 @@ function importOptions(params: URLSearchParams, purposes: PurposeCatalog) {
   const tags = params.getAll('tag');
   if (tags.length) assertReplayTags(tags, 'tag');
   const problem = purposes.problem(purpose);
-  if (problem) throw new HttpStatusError(400, problem.replace('replay.meta.purpose', 'purpose'));
+  if (problem) throw new HttpError(400, problem.replace('replay.meta.purpose', 'purpose'));
   const people = parsePeopleFlags(params.getAll('person'), 'person');
   return {
     title: param(params, 'title')?.slice(0, 200) ?? 'Imported recording',

@@ -165,7 +165,7 @@
     "dist/lib/capture.mjs": {
       "raw": 1625,
       "gzip": 493,
-      "brotli": 417
+      "brotli": 415
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -177,20 +177,20 @@
       "gzip": 18876,
       "brotli": 16354
     },
-    "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs": {
-      "raw": 281901,
-      "gzip": 75138,
-      "brotli": 61304
+    "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs": {
+      "raw": 282635,
+      "gzip": 75335,
+      "brotli": 61508
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
     },
-    "dist/lib/chunks/define.ts-b89f8e39bfa0.mjs": {
-      "raw": 32426,
-      "gzip": 9325,
-      "brotli": 8271
+    "dist/lib/chunks/define.ts-fa732c9dbf03.mjs": {
+      "raw": 32713,
+      "gzip": 9377,
+      "brotli": 8313
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -215,7 +215,7 @@
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31393,
       "gzip": 8181,
-      "brotli": 7133
+      "brotli": 7129
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -378,14 +378,24 @@
       "pr": "https://github.com/hazem3500/replays/pull/63"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs",
+      "file": "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs",
       "cap": {
-        "raw": 281901,
-        "gzip": 75138,
-        "brotli": 61304
+        "raw": 282635,
+        "gzip": 75335,
+        "brotli": 61508
       },
-      "reason": "The server entry carries the API route table (src/server/api, src/server/http), which renames the shared server chunk; head 273690 raw vs main's 272355 (+1.3 KB raw, +44 B gzip).",
-      "pr": "https://github.com/hazem3500/replays/pull/90"
+      "reason": "The error classifier (src/server/http/errors.ts) joins the route table in the shared server chunk, renaming it; head 274402 raw vs main's 272355 (+2.0 KB raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-fa732c9dbf03.mjs",
+      "cap": {
+        "raw": 32713,
+        "gzip": 9377,
+        "brotli": 8313
+      },
+      "reason": "HttpError (src/shared/http-error.ts) joins the shared plugin-definition chunk so rejectUpload() returns it; the chunk is renamed and smaller than main's (31760 vs 32426 raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
 }

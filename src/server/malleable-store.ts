@@ -15,6 +15,7 @@ const JSON_TYPE = 'application/json; charset=utf-8';
 
 export class PluginStoreError extends Error {
   readonly status: number;
+  readonly expose = true;
   constructor(status: number, message: string) {
     super(message);
     this.name = 'PluginStoreError';
