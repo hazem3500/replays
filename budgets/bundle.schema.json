@@ -4,8 +4,12 @@
   "required": ["headroomPercent", "files"],
   "additionalProperties": false,
   "properties": {
-    "$schema": { "type": "string" },
-    "headroomPercent": { "const": 3 },
+    "$schema": {
+      "type": "string"
+    },
+    "headroomPercent": {
+      "const": 3
+    },
     "files": {
       "type": "object",
       "additionalProperties": {
@@ -13,9 +17,59 @@
         "required": ["raw", "gzip", "brotli"],
         "additionalProperties": false,
         "properties": {
-          "raw": { "type": "integer", "minimum": 0 },
-          "gzip": { "type": "integer", "minimum": 0 },
-          "brotli": { "type": "integer", "minimum": 0 }
+          "raw": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gzip": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "brotli": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "allowances": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["file", "cap", "reason", "pr"],
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cap": {
+            "type": "object",
+            "minProperties": 1,
+            "additionalProperties": false,
+            "properties": {
+              "raw": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "gzip": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "brotli": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 20
+          },
+          "pr": {
+            "type": "string",
+            "pattern": "^https://github\\.com/hazem3500/replays/pull/[1-9]\\d*$"
+          }
         }
       }
     }

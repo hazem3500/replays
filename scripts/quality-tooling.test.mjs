@@ -58,19 +58,32 @@ test('bundle budgets cover lazy files, static entry closures, growth and new art
           resolve(root, 'reports'),
           '--budgets',
           budgets,
+          '--baseline-budgets',
+          resolve(root, 'main-budgets.json'),
           '--output',
           resolve(root, 'sizes.json'),
           ...args,
         ],
         { encoding: 'utf8' },
       );
-    const seed = run('--ratchet');
-    assert.equal(seed.status, 0, seed.stderr);
+    assert.equal(run('--measure').status, 0);
+    const initialSizes = JSON.parse(await readFile(resolve(root, 'sizes.json'), 'utf8')).files;
+    const initialBudget = {
+      headroomPercent: 3,
+      files: Object.fromEntries(
+        Object.entries(initialSizes).map(([file, sizes]) => [
+          file,
+          Object.fromEntries(Object.entries(sizes).map(([metric, size]) => [metric, Math.ceil(size * 1.03)])),
+        ]),
+      ),
+    };
+    await put('budgets.json', initialBudget);
+    await put('main-budgets.json', initialBudget);
     assert.equal(run().status, 0);
     const original = JSON.parse(await readFile(budgets, 'utf8'));
     await put('dist/client/assets/lazy-ABCDEFGH.js', `export const lazy = ${JSON.stringify('bigger'.repeat(100))};`);
     assert.equal(run().status, 1, 'growth must block');
-    assert.equal(run('--ratchet').status, 0);
+    assert.equal(run('--ratchet').status, 1, 'ratchet must retain the blocking size gate');
     const after = JSON.parse(await readFile(budgets, 'utf8'));
     assert.deepEqual(
       after.files['dist/client/assets/lazy-HASH.js'],

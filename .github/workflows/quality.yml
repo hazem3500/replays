@@ -53,7 +53,9 @@ jobs:
           node scripts/quality-size.mjs --measure --root ../quality-main --output .review-artifacts/quality/main-bundle-sizes.json
       - name: Check bundle ratchet and summarize deltas
         if: matrix.tool == 'size'
-        run: pnpm quality:size --baseline .review-artifacts/quality/main-bundle-sizes.json
+        env:
+          BUNDLE_PR_URL: ${{ github.event.pull_request.html_url }}
+        run: pnpm quality:size --baseline .review-artifacts/quality/main-bundle-sizes.json --baseline-budgets ../quality-main/budgets/bundle.json --check-ratchet
       # Report-only wrappers retain findings/status; invalid JSON, crashes and build errors still fail.
       # Tightening instructions and the initial inventory live in docs/quality-tooling.md.
       - if: matrix.tool != 'size'

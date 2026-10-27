@@ -70,3 +70,7 @@ A dependency must delete more hand-written code than the bytes it adds, have mai
 Plugin contracts: `src/plugin/types.ts`, `src/client/plugins/api.ts`; slots: `src/client/plugins/registry.ts`; settings: `src/client/settings/`; theme: `src/client/styles.css`; stories: `stories/`; schemas: `docs/formats/`; ownership: `docs/ownership.md`. Consult the actual files before extending a pattern.
 
 Do not edit build outputs under `dist/`, commit local transcripts/evidence, sweep-format unrelated code, weaken existing safety gates, or raise a baseline to hide new debt. Existing violations are report-only/baselined; added files must meet final rules. Credit Hazem only: no AI co-author trailers or generated-by text.
+
+## Bundle budget changes
+
+`budgets/bundle.json` owns bundle caps. Run builds and `pnpm quality:size` on your own Boat; commit its automatic cap decreases. Growth needs a specific `allowances` entry containing the stable file name, new metric caps, reason and current feature PR URL, reviewed with the measured main/head diff. Never raise `files` caps directly, reuse an old allowance, or refresh main from feature output. See [quality-tooling.md](docs/quality-tooling.md#reviewed-feature-growth). The gate stays blocking.

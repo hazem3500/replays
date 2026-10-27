@@ -1,0 +1,64 @@
+import assert from 'node:assert/strict';
+import { describe, it } from 'node:test';
+import { authorizeBudget, budgetDiff, ratchetBudget } from './bundle-budgets.mjs';
+
+const file = 'dist/client/assets/Inspector-HASH.css';
+const pr = 'https://github.com/hazem3500/replays/pull/62';
+const base = () => ({ headroomPercent: 3, files: { [file]: { raw: 100, gzip: 50, brotli: 40 } } });
+const allowance = () => ({ file, cap: { raw: 130 }, reason: 'Reviewed CSS growth for mobile network search controls.', pr });
+
+describe('reviewed bundle allowances', () => {
+  it('rejects a direct cap increase with no allowance', () => {
+    const head = base();
+    head.files[file].raw = 130;
+    assert.equal(authorizeBudget(head, base(), pr).failures.length, 1);
+  });
+  it('applies a specific allowance without widening other metrics or files', () => {
+    const head = { ...base(), allowances: [allowance()] };
+    const result = authorizeBudget(head, base(), pr);
+    assert.deepEqual(result.failures, []);
+    assert.deepEqual(result.approved.files[file], { raw: 130, gzip: 50, brotli: 40 });
+    assert.match(budgetDiff(base(), result.approved, result.allowances), /mobile network search controls/);
+    assert.match(budgetDiff(base(), result.approved, result.allowances), /pull\/62/);
+  });
+  it('rejects an allowance pointing to another PR', () => {
+    const head = { ...base(), allowances: [allowance()] };
+    const result = authorizeBudget(head, base(), 'https://github.com/hazem3500/replays/pull/66');
+    assert.equal(result.approved.files[file].raw, 100);
+    assert.match(result.failures.join('\n'), /allowance must link this PR/);
+  });
+  it('does not recycle an old allowance after an optimization lowered its cap', () => {
+    const main = { ...base(), allowances: [allowance()] };
+    const head = structuredClone(main);
+    head.files[file].raw = 130;
+    assert.equal(authorizeBudget(head, main).failures.length, 1);
+  });
+  it('cannot renew an old allowance by reordering its JSON fields', () => {
+    const main = { ...base(), allowances: [allowance()] };
+    const record = allowance();
+    const head = { ...base(), allowances: [{ pr: record.pr, cap: record.cap, file: record.file, reason: record.reason }] };
+    head.files[file].raw = 130;
+    assert.equal(authorizeBudget(head, main).failures.length, 1);
+  });
+  it('requires all metrics when an allowance introduces a new artifact', () => {
+    const head = { ...base(), allowances: [{ ...allowance(), file: 'dist/client/assets/new-HASH.js' }] };
+    assert.throws(() => authorizeBudget(head, base(), pr), /Invalid bundle ceilings/);
+  });
+  it('rejects empty reasons and duplicate metric allowances', () => {
+    assert.throws(
+      () => authorizeBudget({ ...base(), allowances: [{ ...allowance(), reason: 'approved' }] }, base(), pr),
+      /specific reason/,
+    );
+    assert.throws(() => authorizeBudget({ ...base(), allowances: [allowance(), allowance()] }, base(), pr), /Duplicate/);
+  });
+  it('automatically lowers optimized budgets and never raises an over-budget file', () => {
+    const next = ratchetBudget(base(), { [file]: { raw: 60, gzip: 30, brotli: 50 } });
+    assert.deepEqual(next.files[file], { raw: 62, gzip: 31, brotli: 40 });
+    assert.match(budgetDiff(base(), next, []), /Automatic downward ratchet/);
+  });
+  it('removes budgets and allowance entries when their artifacts disappear', () => {
+    const next = ratchetBudget({ ...base(), allowances: [allowance()] }, {});
+    assert.deepEqual(next.files, {});
+    assert.deepEqual(next.allowances, []);
+  });
+});
