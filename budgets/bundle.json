@@ -164,8 +164,8 @@
     },
     "dist/lib/capture.mjs": {
       "raw": 1625,
-      "gzip": 494,
-      "brotli": 419
+      "gzip": 493,
+      "brotli": 417
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -174,8 +174,13 @@
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
-      "gzip": 18878,
+      "gzip": 18876,
       "brotli": 16354
+    },
+    "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
+      "raw": 272355,
+      "gzip": 72905,
+      "brotli": 59492
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
@@ -186,11 +191,6 @@
       "raw": 32426,
       "gzip": 9325,
       "brotli": 8271
-    },
-    "dist/lib/chunks/frames.ts-703f5c18f3bf.mjs": {
-      "raw": 259911,
-      "gzip": 69909,
-      "brotli": 57127
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -240,12 +240,12 @@
     "dist/lib/config.mjs": {
       "raw": 269,
       "gzip": 148,
-      "brotli": 123
+      "brotli": 131
     },
     "dist/lib/index.mjs": {
       "raw": 1509,
-      "gzip": 496,
-      "brotli": 422
+      "gzip": 494,
+      "brotli": 420
     },
     "dist/lib/plugin.mjs": {
       "raw": 661,
@@ -254,13 +254,13 @@
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
-      "gzip": 4365,
+      "gzip": 4364,
       "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4025,
       "gzip": 1598,
-      "brotli": 1376
+      "brotli": 1375
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
@@ -279,7 +279,7 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1590,
-      "gzip": 553,
+      "gzip": 552,
       "brotli": 458
     },
     "dist/lib/viewer.mjs": {
@@ -358,6 +358,24 @@
       },
       "reason": "Network request search and filter toolbar, phone tap targets and waterfall request controls add these reviewed styles.",
       "pr": "https://github.com/hazem3500/replays/pull/62"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
+      "cap": {
+        "raw": 272355,
+        "gzip": 72905,
+        "brotli": 59492
+      },
+      "reason": "Embed canonical replay/context schemas and validate upload envelopes before hooks; the shared server chunk source identity changes.",
+      "pr": "https://github.com/hazem3500/replays/pull/77"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "brotli": 131
+      },
+      "reason": "The generated import hash changes with the upload schema chunk; runtime source and entry footprint are measured in this PR.",
+      "pr": "https://github.com/hazem3500/replays/pull/77"
     }
   ]
 }

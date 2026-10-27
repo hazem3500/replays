@@ -70,6 +70,7 @@ COPY --chown=node:node src/shared ./src/shared
 COPY --chown=node:node src/capture ./src/capture
 COPY --chown=node:node src/plugin ./src/plugin
 COPY --chown=node:node src/config ./src/config
+COPY --chown=node:node docs/formats/context.schema.json docs/formats/replay.schema.json ./docs/formats/
 COPY --chown=node:node src/client/render/frames.ts ./src/client/render/frames.ts
 COPY --chown=node:node sample ./sample
 COPY --chown=node:node examples ./examples

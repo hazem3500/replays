@@ -10,7 +10,7 @@ const meta = properties.meta!;
 const metaProperties = meta.properties as Record<string, Schema>;
 const requiredMeta = meta.required as string[];
 
-// security: validate the stable envelope before translators; optional semantic fields and source references may be normalized by plugins.
+// why: validate the stable envelope before translators; optional semantic fields and source references may be normalized by plugins.
 const envelope = compileJsonSchema({
   type: 'object',
   required: replaySchema.required,
