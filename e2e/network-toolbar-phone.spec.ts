@@ -93,7 +93,7 @@ async function checkSearch(page: Page) {
   await expect(search).toBeFocused();
   await search.press('Escape');
   await expect(searchToggle).toBeFocused();
-  // Collapsing makes the field inert and removes it from the accessible tree.
+  // why: collapsed inert fields leave the accessible tree, so assert disabled state through the DOM locator.
   await expect(page.locator('.network-search-field input')).toBeDisabled();
   await expect(page.locator('.network-row')).toHaveCount(2);
 }
