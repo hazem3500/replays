@@ -1,0 +1,30 @@
+# Single maintainer; area guides and active reservations are in docs/ownership.md.
+/src/shared/ @hazem3500
+/docs/formats/ @hazem3500
+# HTTP, auth, storage and media; app.ts is reserved for Start integration.
+/src/server/ @hazem3500
+# Public host and browser plugin APIs; coordinate with extension platform.
+/src/plugin/ @hazem3500
+/src/client/plugins/ @hazem3500
+/docs/extension-api.md @hazem3500
+/src/config/ @hazem3500
+/src/first-party/ @hazem3500
+/src/capture/ @hazem3500
+# Browser-only package; recorder-kit lane.
+/src/recorder/ @hazem3500
+# Design lead and loading states.
+/src/client/ @hazem3500
+# Storybook lane.
+/stories/ @hazem3500
+/.storybook/ @hazem3500
+/test/ @hazem3500
+/e2e/ @hazem3500
+# Guardrail changes explain their reason in the PR.
+/.oxlintrc*.json @hazem3500
+/tsconfig*.json @hazem3500
+/budgets/ @hazem3500
+/tools/ @hazem3500
+/scripts/ @hazem3500
+/.claude/skills/ @hazem3500
+/AGENTS.md @hazem3500
+/CLAUDE.md @hazem3500

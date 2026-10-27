@@ -19,3 +19,12 @@ site
 *.pem
 *.key
 *.crt
+
+# Local agent evidence and planning output
+.review-artifacts
+.ship
+.claude
+.agents
+demo-seed-output
+animation-plans
+design-plans
