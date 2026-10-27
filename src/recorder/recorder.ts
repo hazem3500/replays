@@ -128,7 +128,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const checkActivation = () => {
     const activation =
       options.activation ??
-      (typeof navigator !== 'undefined' && navigator?.userActivation ? () => navigator.userActivation.isActive : undefined);
+      (typeof navigator !== 'undefined' && navigator.userActivation ? () => navigator.userActivation.isActive : undefined);
     if (!activation) {
       warn('User activation API unavailable; check skipped');
       return;

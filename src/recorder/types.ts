@@ -2,9 +2,11 @@ import type { ReplayConsoleLevel } from './bundle-types.ts';
 import type { IssueReport, IssueReportReceipt, IssueReportUpload, RecorderApp } from './upload.ts';
 
 /** Who asked for the recording. Recording still needs the user's consent. */
-/** @deprecated Use source: 'host', reason: 'crisp' for two minors / 90 days. */
-type CrispRecorderTrigger = { source: 'crisp' };
-export type RecorderTrigger = { source: 'user' } | CrispRecorderTrigger | { source: 'host'; reason?: string };
+export type RecorderTrigger =
+  | { source: 'user' }
+  // why: deprecated for two minors / 90 days; use source: 'host', reason: 'crisp'.
+  | { source: 'crisp' }
+  | { source: 'host'; reason?: string };
 
 export type StopReason = 'user' | 'max-duration' | 'max-size' | 'page-hidden' | 'no-indicator';
 
