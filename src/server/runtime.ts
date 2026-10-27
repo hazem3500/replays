@@ -6,7 +6,8 @@ import { type PluginRegistry, resolvePlugins } from '../plugin/registry.ts';
 import type { ReplaysPlugin } from '../plugin/types.ts';
 import { type AppSettings, type FileConfig, loadSettings } from './config.ts';
 import { authFromEnv } from './auth/index.ts';
-import type { AuthAdapter } from './auth/types.ts';
+import type { AnyAuthAdapter, AuthAdapter } from './auth/types.ts';
+import { toNodeAuthAdapter } from './auth/web.ts';
 import { type ContextSchema, compileContextSchema } from './context-schema.ts';
 import { createPurposeCatalog, wrapRetentionRules } from './purposes.ts';
 import { storageFromEnv } from './storage/index.ts';
@@ -67,6 +68,10 @@ export function mergeContextSchemas(base: ContextSchema | undefined, registry: P
 }
 
 async function chooseAuth(env: NodeJS.ProcessEnv, file: FileConfig, registry: PluginRegistry): Promise<AuthAdapter> {
+  return toNodeAuthAdapter(await chooseAnyAuth(env, file, registry));
+}
+
+async function chooseAnyAuth(env: NodeJS.ProcessEnv, file: FileConfig, registry: PluginRegistry): Promise<AnyAuthAdapter> {
   const requested = env.AUTH_MODE?.trim().toLowerCase() || file.auth?.trim().toLowerCase() || undefined;
   const names = [...registry.auth.keys()];
   if (requested && registry.auth.has(requested)) return await registry.auth.get(requested)!.value(env);

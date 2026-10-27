@@ -200,6 +200,25 @@ AUTH_MODE (env)  →  config.auth  →  the only plugin adapter  →  built-in d
 A name is looked up among plugin adapters first, then the built-ins. `AUTH_MODE=plugin AUTH_PLUGIN=./x.mjs` (the older
 mechanism) still works.
 
+#### Web-standard adapters
+
+An adapter can be written over web `Request`/`Response` instead of Node's request objects. A `WebAuthAdapter` has the
+same contract with web-standard methods, and `api.auth`, `AUTH_PLUGIN`, `createApp({ auth })` and `describeAuthAdapter`
+take either shape. The `AuthAdapter` interface is unchanged.
+
+```ts
+api.auth({
+  name: 'acme-sso',
+  routes: ['/auth/callback'],
+  authenticateRequest: async (request) => verify(request.headers.get('authorization')), // Identity | undefined, authScopes kept
+  handleRequest: async (request, { base }) => (new URL(request.url).pathname === '/auth/callback' ? finishSignIn(request, base) : undefined),
+  loginUrlFor: (request, { base }) => `${base}/auth/login`,
+});
+```
+
+`handleRequest` returns a `Response` when it answered one of its `routes`, or nothing. `signIn`, `routes` and
+`cliDeviceAuth` mean what they mean on `AuthAdapter`.
+
 ## Purposes and retention
 
 A purpose answers "why was this recorded?" (a bug triage, a design review, a walkthrough) and changes how a replay is kept,

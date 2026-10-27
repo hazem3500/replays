@@ -15,7 +15,15 @@ export { loadSettings, readConfigFile, type AppSettings, type FileConfig } from 
 export { authFromEnv, headerAuth, noneAuth, oidcAuth } from './auth/index.ts';
 export type { OidcOptions } from './auth/oidc.ts';
 export { verifyJwt, type JsonWebKeySet, type JwtAlgorithm, type JwtClaims, type VerifyJwtOptions } from './auth/jwt.ts';
-export type { AuthAdapter, AuthPluginFactory, AuthRouteContext, Identity, SignInConfig } from './auth/types.ts';
+export type {
+  AnyAuthAdapter,
+  AuthAdapter,
+  AuthPluginFactory,
+  AuthRouteContext,
+  Identity,
+  SignInConfig,
+  WebAuthAdapter,
+} from './auth/types.ts';
 export {
   assertKey,
   FsStorage,

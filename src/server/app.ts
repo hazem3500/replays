@@ -12,7 +12,8 @@ import { mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts
 import { type ReplayBundle } from '../shared/replay.ts';
 import { defaultPolicy, type MalleablePolicy, type HostVersions } from '../shared/malleable-policy.ts';
 import { EMPTY_REGISTRY, mergeRegistries, resolvePluginsSync, type PluginRegistry } from '../plugin/registry.ts';
-import type { Identity, AuthAdapter } from './auth/types.ts';
+import type { AnyAuthAdapter, Identity } from './auth/types.ts';
+import { toNodeAuthAdapter } from './auth/web.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
 import { appPath, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath, type HostConfig } from './base-path.ts';
 import { renderIndexHtml } from './index-page.ts';
@@ -60,7 +61,8 @@ export interface AppOptions {
   /** Main application dispatcher, behind host auth and request policy. */
   application?: ApplicationRuntime;
   signIn?: SignInConfig | false;
-  auth: AuthAdapter;
+  /** Either adapter shape (auth/types.ts); a `WebAuthAdapter` is normalized for the Node server. */
+  auth: AnyAuthAdapter;
   store: ReplayStore;
   clientDir: string;
   branding: BrandingConfig;
@@ -273,15 +275,16 @@ function signInDestination(next: string | null, base: string, path: string) {
 }
 
 export function createApp(options: AppOptions) {
+  const auth = toNodeAuthAdapter(options.auth);
   const defaultBase = options.basePath ?? '';
-  const signIn = normalizeSignIn(options.signIn ?? options.auth.signIn);
+  const signIn = normalizeSignIn(options.signIn ?? auth.signIn);
   const routing = hostRouting(options);
   // With per-host bases the same path is a different route from one host to the next, so every response varies by it.
   const vary = hostVary(routing);
   const editing = { enabled: editingFromEnv({}, options.editing).enabled && Boolean(options.beta?.editor) };
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
-  const anonymous = options.auth.name === 'none';
+  const anonymous = auth.name === 'none';
   const policy = options.malleable ?? defaultPolicy();
   const versions = options.versions ?? { core: coreVersion() };
   const builtIns = [
@@ -307,7 +310,7 @@ export function createApp(options: AppOptions) {
     ...coreRoutes({
       deployment: {
         store: options.store,
-        auth: options.auth,
+        auth,
         sources: options.sources,
         branding: options.branding,
         contextSchema: options.contextSchema,
@@ -373,8 +376,7 @@ export function createApp(options: AppOptions) {
         return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
-      if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
-        return;
+      if (auth.handle && auth.routes?.includes(path) && (await auth.handle(request, response, routeContext))) return;
 
       if (
         registry.routes.length &&
@@ -388,15 +390,15 @@ export function createApp(options: AppOptions) {
       if (path === '/api/cli/auth/capabilities' && request.method === 'GET') {
         let capability;
         try {
-          capability = await options.auth.cliDeviceAuth?.(routeContext);
+          capability = await auth.cliDeviceAuth?.(routeContext);
         } catch {
           capability = undefined;
         }
-        send(response, 200, JSON.stringify({ auth: options.auth.name, deviceFlow: capability ?? null }), json, 'no-store');
+        send(response, 200, JSON.stringify({ auth: auth.name, deviceFlow: capability ?? null }), json, 'no-store');
         return;
       }
 
-      const authenticated: Identity | undefined = await options.auth.authenticate(request);
+      const authenticated: Identity | undefined = await auth.authenticate(request);
       if (!authenticated) {
         const recovery = signIn && path === signIn.path && request.method === 'GET' && isBrowserNavigation(request);
         // loginUrl adapters (including OIDC) return to this authenticated endpoint after their callback.
@@ -406,7 +408,7 @@ export function createApp(options: AppOptions) {
               url: `${publicPath(signIn.path, base)}?${new URLSearchParams({ next: signInDestination(raw.searchParams.get('next'), base, signIn.path) })}`,
             })
           : request;
-        const login = options.auth.loginUrl?.(loginRequest, routeContext);
+        const login = auth.loginUrl?.(loginRequest, routeContext);
         if (login && request.method === 'GET' && isBrowserNavigation(request) && (recovery || !path.startsWith('/api/'))) {
           response.writeHead(302, { location: login, 'cache-control': 'no-store' });
           response.end();
