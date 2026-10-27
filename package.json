@@ -45,7 +45,10 @@
     "hooks:install": "lefthook install",
     "quality": "pnpm quality:knip && pnpm quality:boundaries && pnpm quality:package && pnpm quality:size && pnpm quality:dedupe && pnpm quality:hooks && pnpm quality:test",
     "quality:size:ratchet": "node scripts/quality-size.mjs --ratchet",
-    "quality:test": "node --test scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs"
+    "quality:test": "node --test scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs",
+    "lint:ratchet": "node scripts/lint-ratchet.mjs",
+    "lint:new-files": "node scripts/lint-new-files.mjs",
+    "lint:ratchet:test": "node --test scripts/lint-ratchet.test.mjs"
   },
   "dependencies": {
     "@agent-native/core": "0.220.0",

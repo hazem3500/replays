@@ -1,0 +1,176 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "extends": ["./.oxlintrc.json"],
+  "plugins": ["typescript", "unicorn", "oxc", "import", "react", "jsx-a11y", "vitest"],
+  "rules": {
+    "typescript/no-non-null-assertion": "warn",
+    "typescript/consistent-type-assertions": [
+      "warn",
+      {
+        "assertionStyle": "as",
+        "objectLiteralTypeAssertions": "never"
+      }
+    ],
+    "typescript/ban-ts-comment": [
+      "warn",
+      {
+        "ts-expect-error": "allow-with-description",
+        "minimumDescriptionLength": 3
+      }
+    ],
+    "typescript/consistent-type-imports": "warn",
+    "typescript/no-explicit-any": "warn",
+    "eslint/max-lines": [
+      "warn",
+      {
+        "max": 400,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "eslint/max-lines-per-function": [
+      "warn",
+      {
+        "max": 80,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
+    "eslint/complexity": [
+      "warn",
+      {
+        "max": 15
+      }
+    ],
+    "eslint/max-depth": ["warn", 4],
+    "eslint/max-params": ["warn", 4],
+    "eslint/max-nested-callbacks": ["warn", 3],
+    "eslint/no-nested-ternary": "warn",
+    "eslint/no-console": [
+      "warn",
+      {
+        "allow": ["warn", "error"]
+      }
+    ],
+    "eslint/no-param-reassign": [
+      "warn",
+      {
+        "props": true
+      }
+    ],
+    "eslint/prefer-const": "warn",
+    "eslint/no-var": "warn",
+    "eslint/object-shorthand": "warn",
+    "eslint/no-else-return": "warn",
+    "unicorn/prefer-node-protocol": "warn",
+    "unicorn/no-array-for-each": "warn",
+    "unicorn/prefer-at": "warn",
+    "unicorn/no-useless-undefined": "warn",
+    "unicorn/filename-case": [
+      "warn",
+      {
+        "cases": {
+          "kebabCase": true,
+          "pascalCase": true
+        }
+      }
+    ],
+    "oxc/no-barrel-file": "warn",
+    "oxc/no-accumulating-spread": "warn",
+    "import/no-default-export": "warn",
+    "import/no-duplicates": "warn",
+    "import/first": "warn",
+    "import/no-self-import": "warn",
+    "react/exhaustive-deps": "warn",
+    "react/no-array-index-key": "warn",
+    "react/no-unstable-nested-components": "warn",
+    "react/jsx-no-constructed-context-values": "warn",
+    "react/no-danger": "warn",
+    "react/button-has-type": "warn",
+    "react/jsx-no-useless-fragment": "warn",
+    "react/self-closing-comp": "warn",
+    "react/no-object-type-as-default-prop": "warn",
+    "jsx-a11y/interactive-supports-focus": "warn",
+    "jsx-a11y/control-has-associated-label": "warn",
+    "jsx-a11y/no-autofocus": "warn",
+    "jsx-a11y/anchor-is-valid": "warn"
+  },
+  "overrides": [
+    {
+      "files": ["test/**", "e2e/**", "stories/**", "src/**/*.test.ts", "src/**/*.test.tsx"],
+      "rules": {
+        "eslint/max-lines": [
+          "warn",
+          {
+            "max": 400,
+            "skipBlankLines": true,
+            "skipComments": true
+          }
+        ]
+      }
+    },
+    {
+      "files": ["scripts/**", "tools/**", "bin/**", "src/cli.ts", "src/server/main.ts", "src/mcp/main.ts"],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    },
+    {
+      "files": ["**/*.config.*", ".storybook/**", "stories/**", "examples/**"],
+      "rules": {
+        "import/no-default-export": "off"
+      }
+    },
+    {
+      "files": ["**/*Skeleton*.tsx"],
+      "rules": {
+        "react/no-array-index-key": "off"
+      }
+    },
+    {
+      "files": [
+        "src/plugin/**",
+        "src/config/**",
+        "src/client/plugins/api.ts",
+        "src/first-party/**",
+        "src/server/index.ts",
+        "src/recorder/index.ts",
+        "src/recorder/kit/**",
+        "src/recorder/ui/**",
+        "src/recorder/react/**",
+        "src/recorder/testing/**"
+      ],
+      "rules": {
+        "typescript/explicit-module-boundary-types": "warn"
+      }
+    },
+    {
+      "files": ["test/**", "src/**/*.test.ts", "src/**/*.test.tsx"],
+      "rules": {
+        "vitest/expect-expect": "warn",
+        "vitest/no-conditional-tests": "warn",
+        "vitest/no-disabled-tests": "warn",
+        "vitest/no-focused-tests": "warn",
+        "vitest/no-identical-title": "warn",
+        "vitest/valid-expect": "warn",
+        "vitest/no-standalone-expect": "warn",
+        "vitest/prefer-to-be": "warn",
+        "vitest/require-top-level-describe": "warn",
+        "vitest/no-mocks-import": "warn",
+        "vitest/max-nested-describe": [
+          "warn",
+          {
+            "max": 2
+          }
+        ],
+        "vitest/no-restricted-matchers": [
+          "warn",
+          {
+            "toMatchSnapshot": "Test public behavior instead of snapshots.",
+            "toMatchInlineSnapshot": "Test public behavior instead of snapshots."
+          }
+        ]
+      }
+    }
+  ]
+}
