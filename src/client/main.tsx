@@ -3,12 +3,17 @@ import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
+import { persistIndexQueries } from './data/persist.ts';
+import { queryClient } from './queries.ts';
 import { registerCommentsFeature } from './comments/feature.tsx';
 import { betaMalleable } from './malleable/flag.ts';
 import { loadClientPlugins } from './plugins/load.ts';
 import './tailwind.css';
 
 registerCommentsFeature();
+
+// why: the first render stays synchronous (page transitions snapshot it); restored lists land within the skeleton delay.
+void persistIndexQueries(queryClient);
 
 const root = document.querySelector('#root');
 if (!root) throw new Error('Missing #root');

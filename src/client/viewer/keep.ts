@@ -1,29 +1,18 @@
-import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 
 import type { Retention } from '../../shared/retention.ts';
-import { apiUrl } from '../route.ts';
+import { requestRetention, retentionKey, setKept, useRetention } from '../data/retention.ts';
 import { notify } from '../toast.ts';
 
 /** `GET /api/replays/<id>/keep`; `committed` marks a sample shipped with the app (never expires, cannot be kept). */
 export type ReplayRetention = Retention & { committed?: boolean };
 
-async function request(
-  id: string,
-  method: 'GET' | 'PUT' | 'DELETE',
-  signal?: AbortSignal,
-  kind: 'replays' | 'suites' = 'replays',
-): Promise<ReplayRetention> {
-  const response = await fetch(apiUrl(`${kind}/${encodeURIComponent(id)}/keep`), { method, ...(signal ? { signal } : {}) });
-  if (!response.ok) throw new Error(`Retention failed to load (${response.status})`);
-  return (await response.json()) as ReplayRetention;
-}
-
 /** When the replay expires and who kept it; refreshed in the background (another person may keep it). */
 export const retentionQuery = (id: string) =>
   queryOptions({
-    queryKey: ['retention', id] as const,
-    queryFn: ({ signal }) => request(id, 'GET', signal),
+    queryKey: retentionKey('replay', id),
+    queryFn: ({ signal }) => requestRetention('replay', id, 'GET', signal),
     staleTime: 30_000,
     retry: false,
   });
@@ -31,8 +20,8 @@ export const retentionQuery = (id: string) =>
 /** `GET /api/suites/<id>/keep`: a kept suite keeps all its runs (the server applies it to their replays). */
 export const suiteRetentionQuery = (id: string) =>
   queryOptions({
-    queryKey: ['suite-retention', id] as const,
-    queryFn: ({ signal }) => request(id, 'GET', signal, 'suites'),
+    queryKey: retentionKey('suite', id),
+    queryFn: ({ signal }) => requestRetention('suite', id, 'GET', signal),
     staleTime: 30_000,
     retry: false,
   });
@@ -51,14 +40,16 @@ export function retentionLabel(retention: Retention, now = Date.now()) {
   return `Expires in ${days} ${days === 1 ? 'day' : 'days'}`;
 }
 
-/** The replay's retention plus a Keep / release switch with a toast; the Replay details row shares the cache. */
+/**
+ * The replay's retention plus a Keep / release switch with a toast. The switch flips on the frame it is pressed
+ * (data/retention.ts) and rolls back if the server refuses; the Replay details row shares the cache.
+ */
 export function useKeep(id: string) {
   const client = useQueryClient();
-  const { data: retention } = useQuery(retentionQuery(id));
+  const retention = useRetention('replay', id);
   const mutation = useMutation({
-    mutationFn: (keep: boolean) => request(id, keep ? 'PUT' : 'DELETE'),
+    mutationFn: (keep: boolean) => setKept(client, { kind: 'replay', id, keep }),
     onSuccess: (next, keep) => {
-      client.setQueryData(retentionQuery(id).queryKey, next);
       if (keep) notify('Kept', 'success', 'This replay won’t expire.');
       else notify('No longer kept', 'info', next.expiresAt ? `${retentionLabel(next)}.` : undefined);
     },
@@ -84,11 +75,10 @@ export function useKeep(id: string) {
  */
 export function useKeepSuite(id: string) {
   const client = useQueryClient();
-  const { data: retention } = useQuery(suiteRetentionQuery(id));
+  const retention = useRetention('suite', id);
   const mutation = useMutation({
-    mutationFn: (keep: boolean) => request(id, keep ? 'PUT' : 'DELETE', undefined, 'suites'),
+    mutationFn: (keep: boolean) => setKept(client, { kind: 'suite', id, keep }),
     onSuccess: (next, keep) => {
-      client.setQueryData(suiteRetentionQuery(id).queryKey, next);
       void client.invalidateQueries({ queryKey: ['retention'] });
       void client.invalidateQueries({ queryKey: ['suite', id] });
       if (keep) notify('Suite kept', 'success', 'This suite and its runs won’t expire.');

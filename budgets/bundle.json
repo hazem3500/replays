@@ -17,10 +17,20 @@
       "gzip": 60962,
       "brotli": 39185
     },
+    "dist/client/assets/api-HASH.js": {
+      "raw": 1877,
+      "gzip": 927,
+      "brotli": 792
+    },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2326,
       "gzip": 1115,
       "brotli": 947
+    },
+    "dist/client/assets/CommentRowsSource-HASH.js": {
+      "raw": 2369,
+      "gzip": 1234,
+      "brotli": 1125
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
@@ -30,7 +40,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 219,
-      "brotli": 188
+      "brotli": 208
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 17524,
@@ -68,9 +78,9 @@
       "brotli": 31804
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 635386,
-      "gzip": 205817,
-      "brotli": 167223
+      "raw": 437933,
+      "gzip": 141877,
+      "brotli": 116502
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 7307,
@@ -132,6 +142,11 @@
       "gzip": 500,
       "brotli": 456
     },
+    "dist/client/assets/storage-HASH.js": {
+      "raw": 217760,
+      "gzip": 71536,
+      "brotli": 61397
+    },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 18081,
       "gzip": 7488,
@@ -147,10 +162,20 @@
       "gzip": 265,
       "brotli": 238
     },
+    "dist/client/assets/useQuery-HASH.js": {
+      "raw": 8292,
+      "gzip": 3056,
+      "brotli": 2802
+    },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 51366,
-      "gzip": 18505,
-      "brotli": 16134
+      "raw": 52484,
+      "gzip": 19203,
+      "brotli": 16820
+    },
+    "dist/client/assets/write-HASH.js": {
+      "raw": 334238,
+      "gzip": 97047,
+      "brotli": 84146
     },
     "dist/client/index.html": {
       "raw": 10783,
@@ -294,8 +319,8 @@
     },
     "initial/index.html/js": {
       "raw": 1202822,
-      "gzip": 381052,
-      "brotli": 305226
+      "gzip": 382627,
+      "brotli": 311376
     },
     "initial/render.html/css": {
       "raw": 4810,
@@ -386,6 +411,83 @@
       },
       "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
       "pr": "https://github.com/hazem3500/replays/pull/63"
+    },
+    {
+      "file": "dist/client/assets/write-HASH.js",
+      "cap": {
+        "raw": 334238,
+        "gzip": 97047,
+        "brotli": 84146
+      },
+      "reason": "TanStack DB (collections, live queries, optimistic transactions) as a lazy chunk the viewer loads; never in the index entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/storage-HASH.js",
+      "cap": {
+        "raw": 217760,
+        "gzip": 71536,
+        "brotli": 61397
+      },
+      "reason": "Shared modules split out of the entry chunk (main shrinks by the same amount); zod/mini wire schemas and the IndexedDB cache.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/useQuery-HASH.js",
+      "cap": {
+        "raw": 8292,
+        "gzip": 3056,
+        "brotli": 2802
+      },
+      "reason": "TanStack Query observer shared by the entry and the lazy data-layer chunks.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/CommentRowsSource-HASH.js",
+      "cap": {
+        "raw": 2369,
+        "gzip": 1234,
+        "brotli": 1125
+      },
+      "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/api-HASH.js",
+      "cap": {
+        "raw": 1877,
+        "gzip": 927,
+        "brotli": 792
+      },
+      "reason": "Comments API calls validated with the shared zod/mini schemas, shared by the provider and the lazy rows chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 52484,
+        "gzip": 19203,
+        "brotli": 16820
+      },
+      "reason": "Keep and release flip on the press frame through the optimistic retention collection.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 208
+      },
+      "reason": "Same code; its imports point at the re-split shared chunks.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "gzip": 382627,
+        "brotli": 311376
+      },
+      "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
     }
   ]
 }
