@@ -77,12 +77,14 @@ export function authorizeBudget(budget, baseline, prUrl) {
   return { approved, failures, allowances };
 }
 
-export function ratchetBudget(budget, measured) {
+export function ratchetBudget(budget, measured, mainMeasured) {
   const next = structuredClone(budget);
   for (const [file, sizes] of Object.entries(measured)) {
     const caps = next.files[file];
     if (!caps) continue;
     for (const metric of metrics) {
+      const mainSize = mainMeasured?.[file]?.[metric];
+      if (mainSize !== undefined && sizes[metric] >= mainSize) continue;
       if (caps[metric] !== undefined) caps[metric] = Math.min(caps[metric], Math.ceil(sizes[metric] * 1.03));
     }
   }

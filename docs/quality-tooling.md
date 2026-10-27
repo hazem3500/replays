@@ -88,7 +88,7 @@ pnpm quality:size:ratchet
 pnpm quality:size
 ```
 
-`quality:size` automatically lowers each existing ceiling to `min(previous cap, ceil(current bytes × 1.03))`, removes budgets for deleted artifacts, and writes the result to `budgets/bundle.json`. `quality:size:ratchet` is an alias for the same operation. Neither command can bypass an over-budget result or allocate an unreviewed new chunk. Commit the automatic decreases with the optimization; CI uses `--check-ratchet` to require them without rewriting its checkout.
+`quality:size` automatically lowers each existing ceiling to `min(previous cap, ceil(current bytes × 1.03))`, removes budgets for deleted artifacts, and writes the result to `budgets/bundle.json`. `quality:size:ratchet` is an alias for the same operation. Neither command can bypass an over-budget result or allocate an unreviewed new chunk. Commit the automatic decreases with the optimization; CI uses `--check-ratchet` to require them without rewriting its checkout. CI demands a decrease only when head is smaller than the fresh main build measured on that same runner. Identical artifacts keep their caps, avoiding compression-version rounding noise; over-budget artifacts still fail.
 
 ### Reviewed feature growth
 

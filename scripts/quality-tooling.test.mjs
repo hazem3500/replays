@@ -81,8 +81,26 @@ test('bundle budgets cover lazy files, static entry closures, growth and new art
     await put('main-budgets.json', initialBudget);
     assert.equal(run().status, 0);
     const original = JSON.parse(await readFile(budgets, 'utf8'));
+    await put('main-sizes.json', { files: initialSizes });
+    const generous = structuredClone(original);
+    for (const caps of Object.values(generous.files)) for (const metric of ['raw', 'gzip', 'brotli']) caps[metric] += 1;
+    await put('budgets.json', generous);
+    await put('main-budgets.json', generous);
+    assert.equal(
+      run('--baseline', resolve(root, 'main-sizes.json'), '--check-ratchet').status,
+      0,
+      'unchanged fresh-main artifacts must not demand rounding-only cap reductions',
+    );
+    await put('budgets.json', original);
+    await put('main-budgets.json', original);
+
     await put('dist/client/assets/lazy-ABCDEFGH.js', `export const lazy = ${JSON.stringify('bigger'.repeat(100))};`);
     assert.equal(run().status, 1, 'growth must block');
+    assert.equal(
+      run('--baseline', resolve(root, 'main-sizes.json'), '--check-ratchet').status,
+      1,
+      'growth still blocks against fresh main',
+    );
     assert.equal(run('--ratchet').status, 1, 'ratchet must retain the blocking size gate');
     const after = JSON.parse(await readFile(budgets, 'utf8'));
     assert.deepEqual(

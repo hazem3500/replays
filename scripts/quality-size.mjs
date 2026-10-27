@@ -84,12 +84,12 @@ await writeFile(
   values.output ? resolve(values.output) : resolve(directory, 'bundle-sizes.json'),
   JSON.stringify({ files, violations, unknown, allowanceErrors: authorization.failures }, null, 2) + '\n',
 );
-const nextBudgets = values.measure ? budgets : ratchetBudget(budgets, files);
+const baseline = values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : {};
+const nextBudgets = values.measure ? budgets : ratchetBudget(budgets, files, values.baseline ? baseline : undefined);
 const budgetChanged = JSON.stringify(original) !== JSON.stringify(nextBudgets);
 if (!values.measure && !values['check-ratchet'] && !authorization.failures.length) {
   await writeFile(budgetPath, JSON.stringify(nextBudgets, null, 2) + '\n');
 }
-const baseline = values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : {};
 const delta = (size, old) => (old === undefined ? 'new' : `${size - old >= 0 ? '+' : ''}${size - old}`);
 const rows = [
   '## Bundle sizes (bytes)',
