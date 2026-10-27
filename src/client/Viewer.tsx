@@ -60,8 +60,6 @@ const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
 const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
-/** A folded panel keeps just its tab row (36 px) and the hairline above it. */
-const INSPECTOR_TABS_HEIGHT = 37;
 /** An expanded request grows a shorter desktop panel to this share of the window… */
 const REQUEST_PANEL_SHARE = 0.45;
 /** …but never so far that the player gets less than this share of the viewer's height. */
@@ -163,7 +161,7 @@ export function Viewer({
   const [speedHud, setSpeedHud] = useState<{ speed: number; id: number }>();
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
   const workspace = useRef<HTMLDivElement>(null);
-  const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
+  const [tab, setTabState] = useState<InspectorTab | 'steps'>(() => opened.tab ?? initialTab);
   // Step captions on the player: the person's stored choice, else the purpose's default (off without one).
   const [captions, setCaptionsState] = useState(() => {
     const saved = readStorage(CAPTIONS_KEY);
@@ -210,10 +208,10 @@ export function Viewer({
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [stepsSelected, setStepsSelected] = useState(true);
   const setTab = useCallback(
-    (next: InspectorTab) => {
+    (next: InspectorTab | 'steps') => {
       setTabState(next);
       setStepsSelected(false);
-      onTabChange?.(next);
+      if (next !== 'steps') onTabChange?.(next);
     },
     [onTabChange],
   );
@@ -523,7 +521,9 @@ export function Viewer({
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
         data-purpose={purpose?.id}
-        style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
+        style={
+          { '--inspector-height': collapsed && !mobile ? 'var(--inspector-tabs-height, 37px)' : `${inspectorHeight}px` } as CSSProperties
+        }
       >
         {skipLink ? (
           <a className="skip-link" href="#replay-player">

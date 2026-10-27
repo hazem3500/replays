@@ -7,9 +7,18 @@ import { defineConfig, type Plugin } from 'vite-plus';
 
 import { PRODUCT_NAME } from './src/shared/brand.ts';
 import { normalizeBasePath } from './src/server/base-path.ts';
+import { betaFromEnv } from './src/server/beta.ts';
 
 /** The public base in dev (src/server/base-path.ts): '' at a domain's root, else e.g. `/replays`. */
 const devBase = normalizeBasePath(process.env.BASE_PATH);
+const devBeta = betaFromEnv(process.env);
+const devBetaTokens = [
+  devBeta.editor ? 'editor' : '',
+  devBeta.malleable ? 'malleable' : '',
+  devBeta.groupedInspector ? 'grouped-inspector' : '',
+]
+  .filter(Boolean)
+  .join(' ');
 
 /**
  * index.html carries `<meta name="app-base" content="">`; the server fills it per request (base-path.ts withBase),
@@ -22,10 +31,7 @@ function appBaseMeta(): Plugin {
     transformIndexHtml: (html) =>
       html
         .replace('<meta name="app-base" content="" />', `<meta name="app-base" content="${devBase || '/'}" />`)
-        .replace(
-          '<meta name="app-beta" content="" />',
-          `<meta name="app-beta" content="${/^(true|1|yes|on)$/i.test(process.env.REPLAYS_BETA_EDITOR ?? '') ? 'editor' : ''}" />`,
-        )
+        .replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${devBetaTokens}" />`)
         .replace(
           '<meta name="app-plugins" content="" />',
           `<meta name="app-plugins" content="${(process.env.REPLAYS_DEV_PLUGINS ?? '').replaceAll('"', '&quot;')}" />`,

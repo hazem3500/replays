@@ -15,9 +15,10 @@
 export interface BetaFlags {
   editor: boolean;
   malleable: boolean;
+  groupedInspector: boolean;
 }
 
-export const NO_BETA: BetaFlags = { editor: false, malleable: false };
+export const NO_BETA: BetaFlags = { editor: false, malleable: false, groupedInspector: false };
 
 const TRUE = new Set(['true', '1', 'yes', 'on']);
 const FALSE = new Set(['false', '0', 'no', 'off', '']);
@@ -31,11 +32,18 @@ export function parseFlag(name: string, value: string | undefined): boolean | un
   throw new Error(`${name} must be true or false (got ${JSON.stringify(value)})`);
 }
 
-export function betaFromEnv(env: Record<string, string | undefined>, file?: { editor?: unknown; malleable?: unknown }): BetaFlags {
-  for (const key of ['editor', 'malleable'] as const)
+export function betaFromEnv(
+  env: Record<string, string | undefined>,
+  file?: { editor?: unknown; malleable?: unknown; groupedInspector?: unknown },
+): BetaFlags {
+  for (const key of ['editor', 'malleable', 'groupedInspector'] as const)
     if (file?.[key] !== undefined && typeof file[key] !== 'boolean') throw new Error(`the config file's beta.${key} must be true or false`);
   return {
     editor: parseFlag('REPLAYS_BETA_EDITOR', env.REPLAYS_BETA_EDITOR) ?? (file?.editor as boolean | undefined) ?? false,
     malleable: parseFlag('REPLAYS_BETA_MALLEABLE', env.REPLAYS_BETA_MALLEABLE) ?? (file?.malleable as boolean | undefined) ?? false,
+    groupedInspector:
+      parseFlag('REPLAYS_BETA_GROUPED_INSPECTOR', env.REPLAYS_BETA_GROUPED_INSPECTOR) ??
+      (file?.groupedInspector as boolean | undefined) ??
+      false,
   };
 }

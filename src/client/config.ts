@@ -49,6 +49,7 @@ export interface ClientConfig {
   distribution?: { name: string; version: string };
   /** The host's policy for user plugins (only with beta.malleable on): src/shared/malleable-policy.ts. */
   malleable?: MalleablePolicy;
+  beta?: { editor: boolean; malleable: boolean; groupedInspector: boolean };
   /** Plugin index filters the server matches (`api.indexFilter`); absent when there are none. */
   indexFilters?: Array<{ plugin: string; id: string; param: string }>;
   /** Effective edit write capability, with beta.editor as the outer gate. */
@@ -67,6 +68,13 @@ export function betaEditor() {
   if (typeof document === 'undefined') return false;
   const content = document.querySelector<HTMLMetaElement>('meta[name="app-beta"]')?.content ?? '';
   return content.split(/[\s,]+/).includes('editor');
+}
+
+/** Whether the grouped/direct Inspector layout chooser is enabled for this deployment. */
+export function betaGroupedInspector() {
+  if (typeof document === 'undefined') return false;
+  const content = document.querySelector<HTMLMetaElement>('meta[name="app-beta"]')?.content ?? '';
+  return content.split(/[\s,]+/).includes('grouped-inspector');
 }
 
 /** Tests only: force the flag without a document. */

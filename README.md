@@ -411,6 +411,17 @@ plays. Threads take replies and can be **resolved** and reopened by anyone; **ed
 ![The Comments tab: a thread with replies, a resolved one](docs/screenshots/comments-panel.png)
 ![Comments on a phone (390×844)](docs/screenshots/comments-mobile.png)
 
+## Grouped Inspector navigation (beta, off by default)
+
+The Inspector can group its existing panels into **Journey** (Steps), **Diagnostics** (Console, Network and Performance),
+**Context**, and **More** when feature or plugin panels are available. The panel contents and replay data stay the same; the
+layout choice is saved in this browser. With the flag off, the existing direct tabs remain the default.
+
+- **Flag.** `REPLAYS_BETA_GROUPED_INSPECTOR=true`, or `{ "beta": { "groupedInspector": true } }` in the config file (the
+  environment variable wins). The page receives this in `<meta name="app-beta">` and `GET /api/config` (`beta.groupedInspector`).
+- With the flag on, choose **Grouped** or **Direct** in the Inspector navigation. The choice persists across replays and the
+  selected panel is retained when switching layouts.
+
 ## Replay editor (beta, off by default)
 
 Edit mode lets you tidy a recording without touching it: trim the start and end, cut ranges, **Remove waits** (cuts the

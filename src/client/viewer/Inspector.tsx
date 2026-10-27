@@ -1,21 +1,9 @@
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import {
-  BadgeInfoIcon,
-  ChevronRightIcon,
-  CircleXIcon,
-  GaugeIcon,
-  ChartNoAxesGanttIcon,
-  GlobeIcon,
-  ListOrderedIcon,
-  type LucideIcon,
-  PuzzleIcon,
-  SearchIcon,
-  SquareTerminalIcon,
-  TriangleAlertIcon,
-} from 'lucide-react';
+import { ChevronRightIcon, CircleXIcon, ChartNoAxesGanttIcon, FilterIcon, SearchIcon, TriangleAlertIcon, XIcon } from 'lucide-react';
 import {
   Fragment,
   memo,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
   type RefObject,
@@ -31,9 +19,9 @@ import { formatClock, type ReplayBundle, type ReplayConsoleEntry, type ReplayNet
 import { domain, entrySize, formatBytes, hasNoResponse, isFailedRequest } from '../format.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
 import { countAtOrBefore, sortByAt } from '../timeline.ts';
-import { type ShortcutAction, shortcutLabel } from '../shortcuts.ts';
+import { shortcutLabel } from '../shortcuts.ts';
 import { useWindowedRows } from '../windowing.ts';
-import { type BuiltinInspectorTab, type InspectorTab, useViewer } from './context.ts';
+import { type InspectorTab, useViewer } from './context.ts';
 import { PluginContexts, PluginMount, usePluginContexts, usePluginSnapshot } from '../plugins/PluginUi.tsx';
 import { usePluginContextSections } from '../plugins/PluginSlots.tsx';
 import { Empty } from './Empty.tsx';
@@ -43,13 +31,11 @@ import { activeStepIndex } from './Transport.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
 import { activeFeatures, useFeatureBadges } from '../plugins/features.tsx';
 import { useContextSchema } from './context-schema.ts';
-import { Count, countLabel } from '@/components/count.tsx';
-import { HoverGlide } from '@/components/sliding-highlight.tsx';
-import { Hint, IconButton } from '@/components/icon-button.tsx';
+import { IconButton } from '@/components/icon-button.tsx';
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select.tsx';
-import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { Tabs, TabsContent } from '@/components/ui/tabs.tsx';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../navigation.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
@@ -60,11 +46,16 @@ import { TrackList, SeekTime, HEADER_HEIGHT, TRACK_GAP, TRAILING_GAP, prefersRed
 export { edgeVelocity } from './TrackList.tsx';
 import { PerformanceDiagnostics } from './Performance.tsx';
 import { buildPerformance } from './performance.ts';
+import { betaGroupedInspector } from '../config.ts';
+import { buildInspectorNavigationModel, InspectorNavigation, useInspectorNavigationLayout } from './InspectorNavigation.tsx';
 
 export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const DEFAULT_INSPECTOR_HEIGHT = 260;
 export const MIN_INSPECTOR_HEIGHT = 120;
 const NO_RESPONSE = 'No response recorded: a redirect hop, or still in flight when capture stopped';
+const stopPlayerKeyboard = (event: ReactKeyboardEvent<HTMLElement>) => {
+  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) event.stopPropagation();
+};
 
 function maxInspectorHeight() {
   return Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
@@ -174,15 +165,6 @@ export function InspectorResizer({
 /** The panel's collapse shortcut. */
 const BACKSLASH = '\\';
 
-/** Tabs with a key: their tooltip shows it (single source: shortcuts.ts). */
-const TAB_SHORTCUTS: Partial<Record<BuiltinInspectorTab, ShortcutAction>> = {
-  console: 'console-tab',
-  network: 'network-tab',
-  performance: 'performance-tab',
-};
-
-const TABS: BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
-
 export interface MobilePanel {
   /** The Steps tab is showing (it sits in front of the diagnostics tabs on phones). */
   stepsSelected: boolean;
@@ -202,7 +184,8 @@ export const Inspector = memo(function Inspector({
   /** Original captured data: measured spans must be mapped, including starts inside cuts. */
   sourceBundle?: ReplayBundle;
   timeline?: EditTimeline | undefined;
-  tab: InspectorTab;
+  /** `steps` is accepted from the poster-first loader when grouped layout is on, including on desktop. */
+  tab: InspectorTab | 'steps';
   expandedRequest: string | undefined;
   mobile?: MobilePanel;
   /** The panel folds to its tab row (desktop and phones alike); any tab click unfolds it. */
@@ -243,16 +226,42 @@ export const Inspector = memo(function Inspector({
   const ownContexts = usePluginContexts(bundle, player);
   const pluginContextFor = useContext(PluginContexts) ?? ownContexts;
   const contextSections = usePluginContextSections();
-  const stepTabs = mobile && bundle.steps.length > 0;
+  const betaNavigation = betaGroupedInspector();
+  const navigation = useInspectorNavigationLayout(betaNavigation);
+  const stepTabs = bundle.steps.length > 0 && (Boolean(mobile) || navigation.layout === 'grouped' || tab === 'steps');
   const activeStep = usePlayhead((time) => (stepTabs ? activeStepIndex(bundle.steps, time, player.duration) : -1));
-  const labels = mobile ? MOBILE_TAB_LABELS : TAB_LABELS;
-  // Narrow panels (below ~480 px) show each tab as its icon, with the name in a tooltip and for screen readers.
   const tabsBar = useRef<HTMLDivElement>(null);
-  const iconTabs = useNarrowerThan(tabsBar, ICON_TABS_BELOW);
-  // Base UI's indicator measures the active tab during render. One element instance means it re-renders only
-  // when the tab changes or a tab resizes (its own observer), not on every count tick of the playhead.
-  const indicator = useMemo(() => <TabsIndicator className="inspector-tab-indicator" />, []);
-  const current = stepTabs && mobile.stepsSelected ? 'steps' : tab === 'waterfall' ? 'network' : tab;
+  const current = stepTabs && (tab === 'steps' || mobile?.stepsSelected) ? 'steps' : tab === 'waterfall' ? 'network' : tab;
+  const navigationModel = buildInspectorNavigationModel({
+    stepCount: stepTabs ? bundle.steps.length : 0,
+    counts: {
+      steps: { value: Math.max(0, activeStep + 1), total: bundle.steps.length, noun: 'step', plural: 'steps' },
+      console: { value: consoleCount, total: consoleTrack.entries.length, noun: 'entry', plural: 'entries' },
+      network: { value: networkCount, total: networkTrack.entries.length, noun: 'request', plural: 'requests' },
+      performance: { value: performanceCount, total: performanceTrack.entries.length, noun: 'signal', plural: 'signals' },
+    },
+    descriptions: {
+      console: `Shortcut ${shortcutLabel('console-tab')}; next error ${shortcutLabel('next-error')}`,
+      network: `Shortcut ${shortcutLabel('network-tab')}; next error ${shortcutLabel('next-error')}`,
+      performance: `Shortcut ${shortcutLabel('performance-tab')}`,
+    },
+    extraItems: [
+      ...featureTabs.map(({ id, featureTab }) => ({
+        id,
+        label: featureTab.label,
+        kind: 'feature' as const,
+        icon: <featureTab.Icon />,
+        ...(featureBadges[id] !== undefined ? { badge: String(featureBadges[id]) } : {}),
+        ...(featureBadges[id] !== undefined ? { badgeLabel: `${featureBadges[id]} unread` } : {}),
+        ...(featureTab.shortcut ? { description: `Shortcut ${shortcutLabel(featureTab.shortcut)}` } : {}),
+      })),
+      ...pluginTabs.map((pluginTab) => ({
+        id: pluginTab.key,
+        label: pluginTab.definition.label,
+        kind: 'plugin' as const,
+      })),
+    ],
+  });
   // The chosen panel's visible rows rise in (stagger.ts): with the step rail, on one clock, when the page is revealed
   // (filled after the page transition); alone on each later tab switch. The rows' own layout effects (initial scroll,
   // divider placement) have run by now. The step list staggers itself.
@@ -269,172 +278,89 @@ export const Inspector = memo(function Inspector({
     else staggerIn(panel, INSPECTOR_ROWS);
   }, [filled, current]);
 
+  const selectPanel = (next: string) => {
+    const section = tabsBar.current?.parentElement;
+    const outgoing = section?.querySelector<HTMLElement>('.inspector-panel:not([data-ending-style]):not([hidden])');
+    const rapid = noteTabSwitch();
+    if (section && outgoing) {
+      section.style.setProperty('--outgoing-top', `${outgoing.offsetTop}px`);
+      section.style.setProperty('--outgoing-height', `${outgoing.offsetHeight}px`);
+    }
+    if (rapid) section?.setAttribute('data-instant-switch', '');
+    else section?.removeAttribute('data-instant-switch');
+    if (collapse?.collapsed) collapse.onCollapsedChange(false);
+    if (next === 'steps') {
+      setTab('steps');
+      mobile?.onSelectSteps();
+    } else {
+      setTab(next as InspectorTab);
+    }
+  };
+
   return (
     <Tabs
       value={current}
-      onValueChange={(next) => {
-        // The outgoing panel fades out where it stood (styles.css), or goes at once when switches come quickly.
-        const section = tabsBar.current?.parentElement;
-        const outgoing = section?.querySelector<HTMLElement>('.inspector-panel:not([data-ending-style]):not([hidden])');
-        const rapid = noteTabSwitch();
-        if (section && outgoing) {
-          section.style.setProperty('--outgoing-top', `${outgoing.offsetTop}px`);
-          section.style.setProperty('--outgoing-height', `${outgoing.offsetHeight}px`);
-        }
-        if (rapid) section?.setAttribute('data-instant-switch', '');
-        else section?.removeAttribute('data-instant-switch');
-        if (collapse?.collapsed) collapse.onCollapsedChange(false);
-        if (next === 'steps') mobile?.onSelectSteps();
-        else setTab(next as InspectorTab);
-      }}
+      onValueChange={selectPanel}
       className="inspector gap-0"
       data-collapsed={collapse?.collapsed || undefined}
       render={<section aria-label="Diagnostics" />}
     >
-      <div ref={tabsBar} className="inspector-tabs" data-icon-tabs={iconTabs || undefined}>
-        <HoverGlide container={tabsBar} itemSelector=".inspector-tab" />
-        <TabsList
-          // Remount when the Steps tab comes or goes: Base UI keeps its keyboard order from first registration.
-          key={stepTabs ? 'with-steps' : 'diagnostics'}
-          variant="line"
-          activateOnFocus
-          aria-label="Replay diagnostics"
-          className="inspector-tablist"
-          // The already-active tab does not change value: a click on it still unfolds a folded panel.
-          onClick={() => {
-            if (collapse?.collapsed) collapse.onCollapsedChange(false);
-          }}
-          onKeyDown={(event) => {
-            // Base UI moves the keyboard cursor; keep arrows/Home/End from also seeking the replay.
-            if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) event.stopPropagation();
-          }}
-        >
-          {stepTabs ? (
-            <Hint label="Steps" side="top" disabled={!iconTabs}>
-              <TabsTrigger value="steps" id="steps-tab" data-testid="steps-tab" className="inspector-tab">
-                <TabLabel icon={ListOrderedIcon} label="Steps" iconOnly={iconTabs} />
-                <span className="count">
-                  {activeStep + 1}/{bundle.steps.length}
+      <div ref={tabsBar} className="inspector-tabs">
+        <InspectorNavigation
+          {...navigationModel}
+          activePanel={current}
+          onPanelChange={selectPanel}
+          layout={navigation.layout}
+          onLayoutChange={navigation.setLayout}
+          betaEnabled={betaNavigation}
+          ariaLabel="Replay diagnostics"
+          trailing={
+            collapse && mobile ? (
+              // Phones: the same fold as desktop's backslash control, as a 44 px end cap on the tab row. Folded, the player
+              // and transport take the space; a tab tap (or this chevron) brings the panel back.
+              <button
+                type="button"
+                className="panel-expand"
+                aria-expanded={!collapse.collapsed}
+                aria-label={collapse.collapsed ? 'Expand panel' : 'Collapse panel'}
+                aria-keyshortcuts={BACKSLASH}
+                data-testid="inspector-collapse"
+                onClick={() => collapse.onCollapsedChange(!collapse.collapsed)}
+              >
+                <span className="icon-swap" data-state={collapse.collapsed ? 'a' : 'b'} aria-hidden="true">
+                  <AnimatedIcon name="chevron-up" className="icon-a" trigger="state" play={collapse.collapsed ? 'up' : false} />
+                  <AnimatedIcon name="chevron-down" className="icon-b" trigger="state" play={collapse.collapsed ? false : 'down'} />
                 </span>
-              </TabsTrigger>
-            </Hint>
-          ) : null}
-          {TABS.map((value) => (
-            <Hint
-              key={value}
-              // Console and Network also say how to jump to the next error.
-              label={
-                value === 'console' || value === 'network'
-                  ? `${TAB_LABELS[value]} · next error ${shortcutLabel('next-error')}`
-                  : TAB_LABELS[value]
-              }
-              side="top"
-              {...(TAB_SHORTCUTS[value] ? { shortcut: shortcutLabel(TAB_SHORTCUTS[value]) } : {})}
-              disabled={!iconTabs && !TAB_SHORTCUTS[value]}
-            >
-              <TabsTrigger
-                value={value}
-                id={`${value}-tab`}
-                data-testid={`${value}-tab`}
-                className="inspector-tab"
-                aria-label={`${TAB_LABELS[value]}${
-                  value === 'console'
-                    ? countLabel(consoleCount, consoleTrack.entries.length, 'entry', 'entries')
-                    : value === 'network'
-                      ? countLabel(networkCount, networkTrack.entries.length, 'request')
-                      : value === 'performance'
-                        ? countLabel(performanceCount, performanceTrack.entries.length, 'signal')
-                        : ''
-                }`}
+              </button>
+            ) : collapse ? (
+              <IconButton
+                className="inspector-collapse"
+                label={collapse.collapsed ? 'Expand panel' : 'Collapse panel'}
+                shortcut={shortcutLabel('switch-inspector')}
+                tooltipSide="top"
+                tooltipAlign="end"
+                aria-expanded={!collapse.collapsed}
+                aria-keyshortcuts={BACKSLASH}
+                onClick={() => collapse.onCollapsedChange(!collapse.collapsed)}
+                data-testid="inspector-collapse"
               >
-                <TabLabel icon={TAB_ICONS[value]} label={labels[value]} iconOnly={iconTabs} />
-                {value === 'console' ? (
-                  <Count value={consoleCount} total={consoleTrack.entries.length} hideZero />
-                ) : value === 'network' ? (
-                  <Count value={networkCount} total={networkTrack.entries.length} hideZero />
-                ) : value === 'performance' ? (
-                  <Count value={performanceCount} total={performanceTrack.entries.length} hideZero />
-                ) : null}
-              </TabsTrigger>
-            </Hint>
-          ))}
-          {featureTabs.map(({ id, featureTab }) => (
-            <Hint
-              key={id}
-              label={featureTab.label}
-              side="top"
-              {...(featureTab.shortcut ? { shortcut: shortcutLabel(featureTab.shortcut) } : {})}
-              disabled={!iconTabs && !featureTab.shortcut}
-            >
-              <TabsTrigger
-                value={id}
-                id={`${id}-tab`}
-                data-testid={`${id}-tab`}
-                className="inspector-tab"
-                aria-label={`${featureTab.label}${featureBadges[id] ? ` (${featureBadges[id]})` : ''}`}
-              >
-                <TabLabel icon={featureTab.Icon} label={featureTab.label} iconOnly={iconTabs} />
-                {featureBadges[id] ? <span className="count">{featureBadges[id]}</span> : null}
-              </TabsTrigger>
-            </Hint>
-          ))}
-          {pluginTabs.map((pluginTab) => (
-            <TabsTrigger
-              key={pluginTab.key}
-              value={pluginTab.key}
-              id={`${pluginTab.key}-tab`}
-              data-testid={`${pluginTab.key}-tab`}
-              className="inspector-tab"
-            >
-              <TabLabel icon={PuzzleIcon} label={pluginTab.definition.label} iconOnly={iconTabs} />
-            </TabsTrigger>
-          ))}
-          {indicator}
-        </TabsList>
-        {collapse && mobile ? (
-          // Phones: the same fold as desktop's backslash control, as a 44 px end cap on the tab row. Folded, the player
-          // and transport take the space; a tab tap (or this chevron) brings the panel back.
-          <button
-            type="button"
-            className="panel-expand"
-            aria-expanded={!collapse.collapsed}
-            aria-label={collapse.collapsed ? 'Expand panel' : 'Collapse panel'}
-            aria-keyshortcuts={BACKSLASH}
-            data-testid="inspector-collapse"
-            onClick={() => collapse.onCollapsedChange(!collapse.collapsed)}
-          >
-            <span className="icon-swap" data-state={collapse.collapsed ? 'a' : 'b'} aria-hidden="true">
-              <AnimatedIcon name="chevron-up" className="icon-a" trigger="state" play={collapse.collapsed ? 'up' : false} />
-              <AnimatedIcon name="chevron-down" className="icon-b" trigger="state" play={collapse.collapsed ? false : 'down'} />
-            </span>
-          </button>
-        ) : collapse ? (
-          <IconButton
-            className="inspector-collapse"
-            label={collapse.collapsed ? 'Expand panel' : 'Collapse panel'}
-            shortcut={shortcutLabel('switch-inspector')}
-            tooltipSide="top"
-            tooltipAlign="end"
-            aria-expanded={!collapse.collapsed}
-            aria-keyshortcuts={BACKSLASH}
-            onClick={() => collapse.onCollapsedChange(!collapse.collapsed)}
-            data-testid="inspector-collapse"
-          >
-            {collapse.collapsed ? <AnimatedIcon name="chevron-up" /> : <AnimatedIcon name="chevron-down" />}
-          </IconButton>
-        ) : null}
+                {collapse.collapsed ? <AnimatedIcon name="chevron-up" /> : <AnimatedIcon name="chevron-down" />}
+              </IconButton>
+            ) : null
+          }
+        />
       </div>
 
       {stepTabs ? (
-        <TabsContent value="steps" className="inspector-panel">
+        <TabsContent id="steps-panel" aria-labelledby="steps-tab" value="steps" className="inspector-panel">
           {filled ? <StepList /> : null}
         </TabsContent>
       ) : null}
 
-      <TabsContent value="console" className="inspector-panel">
+      <TabsContent id="console-panel" aria-labelledby="console-tab" value="console" className="inspector-panel">
         {filled ? <ConsolePanel entries={consoleTrack.entries} reached={consoleCount} human={human} /> : null}
       </TabsContent>
-      <TabsContent value="network" className="inspector-panel">
+      <TabsContent id="network-panel" aria-labelledby="network-tab" value="network" className="inspector-panel">
         {filled ? (
           <NetworkPanel
             entries={networkTrack.entries}
@@ -448,7 +374,7 @@ export const Inspector = memo(function Inspector({
           />
         ) : null}
       </TabsContent>
-      <TabsContent value="performance" className="inspector-panel">
+      <TabsContent id="performance-panel" aria-labelledby="performance-tab" value="performance" className="inspector-panel">
         {filled ? (
           <PerformanceDiagnostics
             model={performanceModel}
@@ -458,16 +384,22 @@ export const Inspector = memo(function Inspector({
           />
         ) : null}
       </TabsContent>
-      <TabsContent value="context" className="inspector-panel">
+      <TabsContent id="context-panel" aria-labelledby="context-tab" value="context" className="inspector-panel">
         {filled ? <ContextPanel bundle={bundle} schema={contextSchema} sections={contextSections} /> : null}
       </TabsContent>
       {featureTabs.map(({ id, featureTab }) => (
-        <TabsContent key={id} value={id} className="inspector-panel">
+        <TabsContent key={id} id={`${id}-panel`} aria-labelledby={`${id}-tab`} value={id} className="inspector-panel">
           <featureTab.Panel />
         </TabsContent>
       ))}
       {pluginTabs.map((pluginTab) => (
-        <TabsContent key={pluginTab.key} value={pluginTab.key} className="inspector-panel">
+        <TabsContent
+          key={pluginTab.key}
+          id={`${pluginTab.key}-panel`}
+          aria-labelledby={`${pluginTab.key}-tab`}
+          value={pluginTab.key}
+          className="inspector-panel"
+        >
           {filled ? (
             <PluginMount
               render={pluginTab.definition.render}
@@ -482,51 +414,8 @@ export const Inspector = memo(function Inspector({
   );
 });
 
-const ICON_TABS_BELOW = 480;
 /** The rows of the inspector's panels that stagger in (never the windowing spacers). */
 const INSPECTOR_ROWS = 'tbody > tr:not(.spacer-row):not(.gap-row), .ctx-summary, .ctx-heading, .ctx-source, .ctx-row, .empty';
-
-const TAB_ICONS: Record<BuiltinInspectorTab, LucideIcon> = {
-  console: SquareTerminalIcon,
-  network: GlobeIcon,
-  waterfall: ChartNoAxesGanttIcon,
-  performance: GaugeIcon,
-  context: BadgeInfoIcon,
-};
-
-function TabLabel({ icon: Icon, label, iconOnly }: { icon: LucideIcon; label: string; iconOnly: boolean }) {
-  return iconOnly ? (
-    <>
-      <Icon className="inspector-tab-icon" aria-hidden="true" />
-      <span className="visually-hidden">{label}</span>
-    </>
-  ) : (
-    <>{label}</>
-  );
-}
-
-/** True while the element is narrower than `width`; re-renders only when it crosses the threshold. */
-function useNarrowerThan(element: RefObject<HTMLElement | null>, width: number) {
-  const [narrow, setNarrow] = useState(false);
-  useLayoutEffect(() => {
-    const target = element.current;
-    if (!target) return;
-    const observer = new ResizeObserver(([entry]) => setNarrow((entry?.contentRect.width ?? width) < width));
-    observer.observe(target);
-    return () => observer.disconnect();
-  }, [element, width]);
-  return narrow;
-}
-
-const TAB_LABELS: Record<BuiltinInspectorTab, string> = {
-  console: 'Console',
-  network: 'Network',
-  waterfall: 'Waterfall',
-  performance: 'Performance',
-  context: 'Context',
-};
-
-const MOBILE_TAB_LABELS: Record<BuiltinInspectorTab, string> = { ...TAB_LABELS, performance: 'Perf' };
 
 /** Measures the rendered height of a data row (fallback until mounted), re-measuring as the body resizes. */
 function useRowHeight(body: RefObject<HTMLTableSectionElement | null>, selector: string, mounted: boolean, fallback = 31) {
@@ -692,6 +581,10 @@ const NetworkPanel = memo(function NetworkPanel({
   const player = usePlayer();
   const [query, setQuery] = useState('');
   const [state, setState] = useState('all');
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchTrigger = useRef<HTMLButtonElement>(null);
   const entries = useMemo(() => {
     const words = query.toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
     return allEntries.filter(
@@ -711,6 +604,8 @@ const NetworkPanel = memo(function NetworkPanel({
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLTableSectionElement>(null);
   const total = entries.length;
+  const filtered = query.trim().length > 0 || state !== 'all';
+  const activeFilters = Number(query.trim().length > 0) + Number(state !== 'all');
   const ats = useMemo(() => entries.map((entry) => entry.at), [entries]);
   const rowHeight = useRowHeight(body, 'tr.network-row', total > 0);
   const expandedIndex = useMemo(() => (expanded ? entries.findIndex((entry) => entry.id === expanded) : -1), [entries, expanded]);
@@ -722,6 +617,19 @@ const NetworkPanel = memo(function NetworkPanel({
   const instantScroll = useRef(false);
   // The switch to move to once the request it belongs to has rendered (↑ / ↓).
   const pendingSwitch = useRef<string | undefined>(undefined);
+  const openSearch = () => {
+    setSearchOpen(true);
+    requestAnimationFrame(() => searchInput.current?.focus());
+  };
+  const closeSearch = (restoreFocus = true) => {
+    setQuery('');
+    setSearchOpen(false);
+    if (restoreFocus) requestAnimationFrame(() => searchTrigger.current?.focus());
+  };
+  const clearFilters = () => {
+    setQuery('');
+    setState('all');
+  };
   // Stable across playhead ticks, so memoised rows skip re-rendering unless they cross the playhead.
   const flip = useCallback(
     (id: string) => {
@@ -863,41 +771,150 @@ const NetworkPanel = memo(function NetworkPanel({
   return (
     <div className="network-workspace">
       <div className="diagnostic-toolbar network-toolbar">
-        <div className="network-toolbar-filters">
-          <label className="network-search">
-            <SearchIcon aria-hidden="true" />
-            <span className="visually-hidden">Search network requests</span>
-            <input type="search" placeholder="Filter requests…" value={query} onChange={(event) => setQuery(event.target.value)} />
-          </label>
-          <Select value={state} onValueChange={(value) => setState(value ?? 'all')}>
-            <SelectTrigger size="sm" className="network-status-filter" aria-label="Request status filter">
-              <SelectValue>
-                {state === 'failed'
-                  ? 'Failed'
-                  : state === 'slow'
-                    ? 'Slow (≥ 500 ms)'
-                    : state === 'incomplete'
-                      ? 'Incomplete'
-                      : 'All requests'}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent align="start" alignItemWithTrigger={false}>
-              <SelectItem value="all">All requests</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-              <SelectItem value="slow">Slow (≥ 500 ms)</SelectItem>
-              <SelectItem value="incomplete">Incomplete</SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="network-toolbar-main">
+          <div className="network-toolbar-controls">
+            <Button
+              ref={searchTrigger}
+              className="network-toolbar-button network-search-trigger"
+              variant="ghost"
+              size="icon-lg"
+              aria-label={searchOpen ? 'Close network search' : 'Search network requests'}
+              aria-expanded={searchOpen}
+              aria-controls="network-search-panel"
+              data-testid="network-search-toggle"
+              onClick={() => (searchOpen ? closeSearch() : openSearch())}
+              onKeyDown={stopPlayerKeyboard}
+            >
+              <SearchIcon aria-hidden="true" />
+            </Button>
+            <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger
+                className="network-toolbar-button network-filter-trigger"
+                aria-label={activeFilters ? `Request filters, ${activeFilters} active` : 'Request filters'}
+                aria-haspopup="dialog"
+                data-testid="network-filter-toggle"
+                onKeyDown={stopPlayerKeyboard}
+              >
+                <FilterIcon aria-hidden="true" />
+                <span>Filter</span>
+                {activeFilters ? (
+                  <span className="network-filter-count" aria-hidden="true">
+                    {activeFilters}
+                  </span>
+                ) : null}
+              </PopoverTrigger>
+              <PopoverContent
+                align="start"
+                side="bottom"
+                sideOffset={6}
+                className="network-filter-popover"
+                aria-label="Request filters"
+                onKeyDown={(event) => {
+                  if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) event.stopPropagation();
+                }}
+              >
+                <PopoverTitle className="network-filter-title">Request status</PopoverTitle>
+                <div className="network-filter-options" role="group" aria-label="Request status">
+                  {[
+                    ['all', 'All requests'],
+                    ['failed', 'Failed'],
+                    ['slow', 'Slow · 500 ms+'],
+                    ['incomplete', 'Incomplete'],
+                  ].map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className="network-filter-option"
+                      aria-pressed={state === value}
+                      onClick={() => setState(value!)}
+                    >
+                      <span>{label}</span>
+                      {state === value ? <span aria-hidden="true">Selected</span> : null}
+                    </button>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            {activeFilters ? (
+              <Button
+                className="network-clear-filters"
+                variant="ghost"
+                size="sm"
+                aria-label="Clear active network filters"
+                onClick={clearFilters}
+                onKeyDown={stopPlayerKeyboard}
+              >
+                <XIcon aria-hidden="true" />
+                Clear
+              </Button>
+            ) : null}
+          </div>
+          <span className="network-result-count" aria-live="polite">
+            {filtered ? `${total} of ${allEntries.length} requests` : `${total} ${total === 1 ? 'request' : 'requests'}`}
+          </span>
         </div>
         <Button
-          className="network-timing-toggle"
+          className="network-toolbar-button network-timing-toggle"
           variant="ghost"
           size="sm"
           aria-pressed={showTiming}
+          aria-label="Show or hide request waterfall"
           onClick={() => setShowTiming((shown) => !shown)}
+          onKeyDown={stopPlayerKeyboard}
         >
-          <ChartNoAxesGanttIcon aria-hidden="true" /> Waterfall
+          <ChartNoAxesGanttIcon aria-hidden="true" />
+          <span>Waterfall</span>
         </Button>
+      </div>
+      <div
+        id="network-search-panel"
+        className="network-search-panel"
+        data-open={searchOpen || undefined}
+        aria-hidden={!searchOpen}
+        inert={!searchOpen}
+      >
+        <label className="network-search-field">
+          <SearchIcon aria-hidden="true" />
+          <span className="visually-hidden">Search network requests</span>
+          <input
+            ref={searchInput}
+            type="search"
+            placeholder="URL, method, or status"
+            value={query}
+            disabled={!searchOpen}
+            onChange={(event) => setQuery(event.target.value)}
+            onKeyDown={(event) => {
+              event.stopPropagation();
+              if (event.key !== 'Escape') return;
+              event.preventDefault();
+              if (query) setQuery('');
+              else closeSearch();
+            }}
+          />
+          {query ? (
+            <button
+              type="button"
+              className="network-search-clear"
+              aria-label="Clear network search"
+              onKeyDown={stopPlayerKeyboard}
+              onClick={() => {
+                setQuery('');
+                searchInput.current?.focus();
+              }}
+            >
+              <XIcon aria-hidden="true" />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className="network-search-close"
+            aria-label="Close network search"
+            onKeyDown={stopPlayerKeyboard}
+            onClick={() => closeSearch()}
+          >
+            <XIcon aria-hidden="true" />
+          </button>
+        </label>
       </div>
       <TrackList
         testId="network-list"

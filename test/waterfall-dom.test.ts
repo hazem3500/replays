@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { act, createElement, useState } from 'react';
+import { act, createElement, useEffect, useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,6 +10,7 @@ import { PlayerContext, ReplayController } from '../src/client/player.ts';
 import { ViewerContext, type ViewerActions } from '../src/client/viewer/context.ts';
 import { Inspector } from '../src/client/viewer/Inspector.tsx';
 import { Waterfall } from '../src/client/viewer/Waterfall.tsx';
+import { INSPECTOR_NAVIGATION_LAYOUT_KEY } from '../src/client/viewer/InspectorNavigation.tsx';
 import { request, waterfallEdits, waterfallFixture } from './waterfall-fixture.ts';
 
 // NumberFlow's animation custom element requires browser layout; keep the count text in DOM tests.
@@ -42,14 +43,24 @@ async function key(element: HTMLElement, value: string) {
   await act(async () => element.dispatchEvent(new KeyboardEvent('keydown', { key: value, bubbles: true, cancelable: true })));
 }
 async function changeSelect(label: string, value: string) {
-  if (!document.querySelector(`select[aria-label="${label}"]`)) await click(find('[data-testid="waterfall-filters"]'));
-  await act(async () => {
-    const select = find<HTMLSelectElement>(`select[aria-label="${label}"]`);
-    select.value = value;
-    select.dispatchEvent(new Event('change', { bubbles: true }));
+  if (!document.querySelector('.wf-filter-popover')) await click(find('[data-testid="waterfall-filters"]'));
+  const options = label === 'Waterfall state' ? '.wf-state-options' : '.wf-track-options';
+  const option = [...find(options).querySelectorAll<HTMLButtonElement>('button')].find((button) => {
+    const text = button.textContent?.trim().toLowerCase() ?? '';
+    return (
+      text === value ||
+      (value === 'invalid' && text === 'unknown duration') ||
+      (value === 'slow' && text.startsWith('slow')) ||
+      (value === 'action' && text === 'actions') ||
+      (value === 'all' && (text === 'all' || text === 'all requests'))
+    );
   });
+  expect(option).toBeDefined();
+  await click(option!);
 }
 async function input(element: HTMLInputElement, value: string) {
+  if (element.closest('.wf-search-reveal')?.getAttribute('aria-hidden') === 'true')
+    await click(find('[data-testid="waterfall-search-toggle"]'));
   await act(async () => {
     // Bypass React's value tracker, just as a user's native input would.
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(element, value);
@@ -130,6 +141,7 @@ describe('waterfall DOM controls and replay selection', () => {
     await input(find('input[type="search"]'), 'not present');
     expect(host.querySelectorAll('.wf-row')).toHaveLength(0);
     expect(host.textContent).toContain('No matching events');
+    await click(find('[data-testid="waterfall-filters"]'));
     await click(Array.from(document.querySelectorAll('button')).find((button) => button.textContent === 'Clear filters')!);
     expect(host.querySelectorAll('.wf-row')).toHaveLength(4);
     await changeSelect('Waterfall state', 'slow');
@@ -142,6 +154,40 @@ describe('waterfall DOM controls and replay selection', () => {
     expect(host.querySelectorAll('.wf-row')).toHaveLength(1);
     await input(find('input[type="search"]'), '#projects');
     expect(find('.wf-row').textContent).toContain('Open projects');
+  });
+
+  it('opens search on demand, clears before closing on Escape, and returns focus to its trigger', async () => {
+    await renderWaterfall(waterfallFixture());
+    const toggle = find<HTMLButtonElement>('[data-testid="waterfall-search-toggle"]');
+    const reveal = find('.wf-search-reveal');
+    expect(reveal.getAttribute('aria-hidden')).toBe('true');
+    await click(toggle);
+    const search = find<HTMLInputElement>('input[type="search"]');
+    expect(reveal.getAttribute('aria-hidden')).toBe('false');
+    expect(document.activeElement).toBe(search);
+    await input(search, 'projects');
+    await key(search, 'Escape');
+    expect(search.value).toBe('');
+    expect(reveal.getAttribute('aria-hidden')).toBe('false');
+    await key(search, 'Escape');
+    expect(reveal.getAttribute('aria-hidden')).toBe('true');
+    expect(document.activeElement).toBe(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('announces useful event totals and exposes a clear action for active filters', async () => {
+    const bundle = waterfallFixture();
+    bundle.steps = [];
+    bundle.network = [request({ status: 503 }), request({ id: 'ok', at: 2000, status: 200 })];
+    await renderWaterfall(bundle);
+    expect(find('.wf-count-value').textContent).toBe('2');
+    await changeSelect('Waterfall state', 'failed');
+    expect(find('.wf-count-value').textContent).toBe('1 / 2');
+    expect(find('.wf-event-count').getAttribute('aria-label')).toBe('1 of 2 events');
+    expect(find('[data-testid="waterfall-filters"]').getAttribute('aria-label')).toBe('Filters, 1 active');
+    await click(find('.wf-clear-filters'));
+    expect(find('.wf-count-value').textContent).toBe('2');
+    expect(find('[data-testid="waterfall-filters"]').getAttribute('aria-label')).toBe('Filters');
   });
 
   it('keeps ruler, controls and playhead on the existing player and isolates keyboard shortcuts', async () => {
@@ -174,8 +220,8 @@ describe('waterfall DOM controls and replay selection', () => {
     expect(find('.wf-workspace').contains(popup)).toBe(false);
     expect(find('.wf-tools').contains(popup)).toBe(false);
     await changeSelect('Waterfall state', 'failed');
-    expect(find('[data-testid="waterfall-filters"]').textContent).toBe('Filters (1)');
-    await key(find('select[aria-label="Waterfall state"]'), 'Escape');
+    expect(find('[data-testid="waterfall-filters"]').getAttribute('aria-label')).toBe('Filters, 1 active');
+    await key(find('.wf-state-options button[aria-pressed="true"]'), 'Escape');
     expect(find('[data-testid="waterfall-filters"]').getAttribute('aria-expanded')).toBe('false');
     expect(find('.wf-detail').hidden).toBe(false);
     expect(find('[data-waterfall-id="network-0"]').getAttribute('aria-expanded')).toBe('true');
@@ -287,6 +333,110 @@ describe('waterfall DOM controls and replay selection', () => {
     expect(host.querySelector('.network-timing-heading')).toBeNull();
     expect(find('[data-request-id="req"]').getAttribute('aria-expanded')).toBe('true');
     expect(find('.request-detail-row td').getAttribute('colspan')).toBe('4');
+  });
+
+  it('uses the compact, focus-safe toolbar on the actual Inspector Network panel', async () => {
+    const bundle = waterfallFixture();
+    bundle.network = [
+      request({ id: 'ok', status: 200 }),
+      request({ id: 'checkout', at: 2200, status: 503, url: 'https://shop.test/api/checkout' }),
+    ];
+    const player = new ReplayController(bundle);
+    const queries = new QueryClient({ defaultOptions: { queries: { enabled: false, retry: false } } });
+    function Harness() {
+      const [expanded, setExpandedRequest] = useState<string>();
+      const actions = { setTab: () => {}, setExpandedRequest } as unknown as ViewerActions;
+      return createElement(
+        PlayerContext,
+        { value: player },
+        createElement(ViewerContext, { value: actions }, createElement(Inspector, { bundle, tab: 'network', expandedRequest: expanded })),
+      );
+    }
+    await act(async () => root.render(createElement(QueryClientProvider, { client: queries }, createElement(Harness))));
+
+    const toolbar = find('.network-toolbar');
+    expect(toolbar.textContent).toContain('2 requests');
+    expect(host.querySelector('.network-toolbar input[type="search"]')).toBeNull();
+    const searchToggle = find<HTMLButtonElement>('[data-testid="network-search-toggle"]');
+    await click(searchToggle);
+    const search = find<HTMLInputElement>('.network-search-panel input[type="search"]');
+    expect(document.activeElement).toBe(search);
+
+    let bubbled = false;
+    const observeKey = () => {
+      bubbled = true;
+    };
+    document.addEventListener('keydown', observeKey, { once: true });
+    await key(search, 'ArrowDown');
+    expect(bubbled).toBe(false);
+    document.removeEventListener('keydown', observeKey);
+    await input(search, 'checkout');
+    expect(host.querySelectorAll('.network-row')).toHaveLength(1);
+    expect(host.textContent).toContain('1 of 2 requests');
+    await key(search, 'Escape');
+    expect(search.value).toBe('');
+    expect(document.activeElement).toBe(search);
+    await key(search, 'Escape');
+    expect(search.disabled).toBe(true);
+    expect(document.activeElement).toBe(searchToggle);
+    expect(host.querySelectorAll('.network-row')).toHaveLength(2);
+
+    await click(find('[data-testid="network-filter-toggle"]'));
+    await click(
+      [...document.querySelectorAll<HTMLButtonElement>('.network-filter-option')].find((button) => button.textContent?.includes('Failed'))!,
+    );
+    expect(host.querySelectorAll('.network-row')).toHaveLength(1);
+    expect(host.textContent).toContain('1 of 2 requests');
+    await click(find('[aria-label="Clear active network filters"]'));
+    expect(host.querySelectorAll('.network-row')).toHaveLength(2);
+    expect(find('[data-testid="network-filter-toggle"]').getAttribute('aria-label')).toBe('Request filters');
+  });
+
+  it('keeps a loader-provided Steps leaf active on desktop while switching navigation layouts', async () => {
+    const beta = document.createElement('meta');
+    beta.name = 'app-beta';
+    beta.content = 'grouped-inspector';
+    document.head.append(beta);
+    const bundle = waterfallFixture();
+    bundle.steps = [{ at: 1000, kind: 'click', label: 'Open checkout' }];
+    const player = new ReplayController(bundle);
+    const queries = new QueryClient({ defaultOptions: { queries: { enabled: false, retry: false } } });
+    let selectPanel!: ViewerActions['setTab'];
+    function Harness() {
+      const [tab, setTab] = useState<Parameters<typeof Inspector>[0]['tab']>('steps');
+      useEffect(() => {
+        selectPanel = setTab;
+      }, [setTab]);
+      const actions = { steps: bundle.steps, setTab, setExpandedRequest: () => {} } as unknown as ViewerActions;
+      return createElement(
+        PlayerContext,
+        { value: player },
+        createElement(ViewerContext, { value: actions }, createElement(Inspector, { bundle, tab, expandedRequest: undefined })),
+      );
+    }
+    await act(async () => root.render(createElement(QueryClientProvider, { client: queries }, createElement(Harness))));
+    expect(find('[data-testid="inspector-group-journey"]').getAttribute('aria-pressed')).toBe('true');
+    expect(find('[data-testid="steps-tab"]').getAttribute('aria-selected')).toBe('true');
+    expect(find('#steps-panel').getAttribute('aria-labelledby')).toBe('steps-tab');
+    expect(find('#steps-panel').textContent).toContain('Open checkout');
+
+    await act(async () => {
+      localStorage.setItem(INSPECTOR_NAVIGATION_LAYOUT_KEY, 'direct');
+      window.dispatchEvent(new Event('storage'));
+    });
+    expect(find('[role="tablist"] [data-testid="steps-tab"]').getAttribute('aria-selected')).toBe('true');
+    expect(find('#steps-panel').textContent).toContain('Open checkout');
+    await act(async () => selectPanel('network'));
+    await act(async () => {
+      localStorage.setItem(INSPECTOR_NAVIGATION_LAYOUT_KEY, 'grouped');
+      window.dispatchEvent(new Event('storage'));
+    });
+    await click(find('[data-testid="inspector-group-journey"]'));
+    expect(find('[data-testid="steps-tab"]').getAttribute('aria-selected')).toBe('true');
+    // The keyboard/error-navigation path uses the provider setter, even when Network was the last diagnostic.
+    await act(async () => selectPanel('network'));
+    expect(find('[data-testid="network-tab"]').getAttribute('aria-selected')).toBe('true');
+    beta.remove();
   });
 
   it('passes original diagnostics through Inspector for edited crossing requests and exposes honest source details', async () => {

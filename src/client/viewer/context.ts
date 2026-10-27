@@ -18,7 +18,7 @@ export type InspectorTab = BuiltinInspectorTab | PluginInspectorTab | FeatureIns
 export interface ViewerActions {
   steps: ReplayStep[];
   errors: ReplayError[];
-  setTab: (tab: InspectorTab) => void;
+  setTab: (tab: InspectorTab | 'steps') => void;
   setExpandedRequest: (id: string | undefined) => void;
   goToStep: (index: number) => void;
   goToNextStep: () => void;

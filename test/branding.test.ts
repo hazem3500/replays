@@ -180,7 +180,7 @@ describe('pageBranding and publicConfig', () => {
       auth: 'oidc',
       plugins: [],
       purposes: [],
-      beta: { editor: false, malleable: false },
+      beta: { editor: false, malleable: false, groupedInspector: false },
     });
     expect(publicConfig({ name: 'Plain' }, { sourceProviders: [], auth: 'none' })).toEqual({
       name: 'Plain',
@@ -188,7 +188,7 @@ describe('pageBranding and publicConfig', () => {
       auth: 'none',
       plugins: [],
       purposes: [],
-      beta: { editor: false, malleable: false },
+      beta: { editor: false, malleable: false, groupedInspector: false },
     });
   });
 });

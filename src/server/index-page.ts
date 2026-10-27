@@ -32,7 +32,13 @@ export interface IndexPageOptions {
  * the static build, so a CDN-hosted viewer gets exactly what the server would have sent.
  */
 export function renderIndexHtml(html: string, options: IndexPageOptions) {
-  const beta = [options.beta?.editor ? 'editor' : '', options.beta?.malleable ? 'malleable' : ''].filter(Boolean).join(' ');
+  const beta = [
+    options.beta?.editor ? 'editor' : '',
+    options.beta?.malleable ? 'malleable' : '',
+    options.beta?.groupedInspector ? 'grouped-inspector' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
   const entries = options.clientEntries ?? [];
   return withBase(html, options.base, {
     ...pageBranding(options.branding),

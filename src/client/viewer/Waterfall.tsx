@@ -1,4 +1,5 @@
 import { type ReactNode, useId, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { ListFilterIcon, SearchIcon, XIcon } from 'lucide-react';
 
 import type { EditTimeline } from '../../shared/edits.ts';
 import { formatClock, type ReplayBundle, type ReplayNetworkEntry } from '../../shared/replay.ts';
@@ -42,6 +43,10 @@ export function Waterfall({
   const [state, setState] = useState<WaterfallState>('all');
   const [selection, setSelection] = useState<string>();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
+  const searchToggle = useRef<HTMLButtonElement>(null);
+  const wasSearchOpen = useRef(false);
   const detail = useRef<HTMLElement>(null);
   const pendingFocus = useRef<string | undefined>(undefined);
   const scroller = useRef<HTMLDivElement>(null);
@@ -50,6 +55,7 @@ export function Waterfall({
   const selected = rows.find((row) => row.id === selection);
   const selectedId = selected?.id;
   const activeFilters = Number(kind !== 'all') + Number(state !== 'all');
+  const hasQuery = Boolean(query.trim());
   useLayoutEffect(() => {
     if (selectedId && detail.current) detail.current.scrollTop = 0;
   }, [selectedId]);
@@ -69,6 +75,11 @@ export function Waterfall({
       pendingFocus.current = undefined;
     }
   });
+  useLayoutEffect(() => {
+    if (searchOpen && !wasSearchOpen.current) searchInput.current?.focus();
+    else if (!searchOpen && wasSearchOpen.current) searchToggle.current?.focus();
+    wasSearchOpen.current = searchOpen;
+  }, [searchOpen]);
   const focusRow = (index: number) => {
     const row = rows[index];
     if (!row) return;
@@ -107,99 +118,191 @@ export function Waterfall({
       }}
     >
       <div className="wf-tools">
-        <label className="wf-search" htmlFor={`${id}-search`}>
-          <span className="visually-hidden">Search</span>
-          <input
-            id={`${id}-search`}
-            type="search"
-            placeholder="URL, action, signal…"
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              if (scroller.current) scroller.current.scrollTop = 0;
-            }}
-          />
-        </label>
-        <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
-          <PopoverTrigger render={<button type="button" className="wf-clear" data-testid="waterfall-filters" />}>
-            Filters{activeFilters ? ` (${activeFilters})` : ''}
-          </PopoverTrigger>
-          <PopoverContent
-            className="wf-filter-popover"
-            align="end"
-            aria-label="Waterfall filters and timing"
-            onKeyDown={(event) => {
-              event.stopPropagation();
-              if (event.key === 'Escape') {
-                event.preventDefault();
-                setFiltersOpen(false);
-              }
-            }}
+        <div className="wf-tools-main">
+          <div
+            className="wf-event-count"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            aria-label={rows.length === model.rows.length ? `${model.rows.length} events` : `${rows.length} of ${model.rows.length} events`}
           >
-            <PopoverTitle>Filters &amp; timing</PopoverTitle>
-            <div className="wf-filter-controls">
-              <label>
-                Track
-                <select
-                  aria-label="Waterfall track"
-                  value={kind}
-                  onChange={(event) => {
-                    setKind(event.target.value as WaterfallKind | 'all');
-                    if (scroller.current) scroller.current.scrollTop = 0;
-                  }}
-                >
-                  <option value="all">All tracks</option>
-                  <option value="network">Network</option>
-                  <option value="action">Actions</option>
-                  <option value="performance">Performance</option>
-                </select>
-              </label>
-              <label>
-                State
-                <select
-                  aria-label="Waterfall state"
-                  value={state}
-                  onChange={(event) => {
-                    setState(event.target.value as WaterfallState);
-                    if (scroller.current) scroller.current.scrollTop = 0;
-                  }}
-                >
-                  <option value="all">All events</option>
-                  <option value="failed">Failed requests</option>
-                  <option value="slow">Slow requests ≥500 ms</option>
-                  <option value="incomplete">Incomplete requests</option>
-                  <option value="invalid">Invalid / unknown duration</option>
-                </select>
-              </label>
-              <button
-                type="button"
-                className="wf-clear"
-                disabled={!query && kind === 'all' && state === 'all'}
-                onClick={() => {
-                  setQuery('');
-                  setKind('all');
-                  setState('all');
-                  if (scroller.current) scroller.current.scrollTop = 0;
+            <span className="wf-count-value">
+              {rows.length === model.rows.length ? model.rows.length : `${rows.length} / ${model.rows.length}`}
+            </span>
+            <span>{rows.length === 1 ? 'event' : 'events'}</span>
+          </div>
+          <div className="wf-tool-actions">
+            <button
+              ref={searchToggle}
+              type="button"
+              className="wf-tool-button wf-search-toggle"
+              data-testid="waterfall-search-toggle"
+              aria-label={searchOpen ? 'Close event search' : 'Search events'}
+              aria-expanded={searchOpen}
+              aria-controls={`${id}-search-panel`}
+              onClick={() => {
+                if (searchOpen) setQuery('');
+                setSearchOpen(!searchOpen);
+              }}
+            >
+              {searchOpen ? <XIcon aria-hidden="true" /> : <SearchIcon aria-hidden="true" />}
+              <span>{searchOpen ? 'Close search' : 'Search'}</span>
+            </button>
+            <Popover open={filtersOpen} onOpenChange={setFiltersOpen}>
+              <PopoverTrigger
+                render={
+                  <button
+                    type="button"
+                    className="wf-tool-button wf-filter-trigger"
+                    data-testid="waterfall-filters"
+                    aria-label={activeFilters ? `Filters, ${activeFilters} active` : 'Filters'}
+                  />
+                }
+              >
+                <ListFilterIcon aria-hidden="true" />
+                <span>Filters</span>
+                {activeFilters ? (
+                  <span className="wf-filter-count" aria-hidden="true">
+                    {activeFilters}
+                  </span>
+                ) : null}
+              </PopoverTrigger>
+              <PopoverContent
+                className="wf-filter-popover"
+                align="end"
+                aria-label="Waterfall filters"
+                onKeyDown={(event) => {
+                  event.stopPropagation();
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setFiltersOpen(false);
+                  }
                 }}
               >
-                Clear filters
-              </button>
-            </div>
-            <p className="wf-note">
-              {timeline ? 'Edited replay clock' : 'Replay clock'} · Bars show visible elapsed time; labels show measured source duration.
-              Actions and paints are points. ↑/↓ selects and seeks; Escape closes details.
-            </p>
-            {model.invalidTimes ? <p className="wf-note">{model.invalidTimes} invalid timestamps omitted</p> : null}
-          </PopoverContent>
-        </Popover>
-        <span
-          className="wf-count"
-          role="status"
-          aria-label={`${rows.length} of ${model.rows.length} events`}
-          title={`${rows.length} of ${model.rows.length} events`}
+                <PopoverTitle>Filter events</PopoverTitle>
+                <div className="wf-filter-controls">
+                  <fieldset className="wf-filter-group">
+                    <legend>Tracks</legend>
+                    <div className="wf-track-options" role="group" aria-label="Event tracks">
+                      {(
+                        [
+                          ['all', 'All'],
+                          ['network', 'Network'],
+                          ['action', 'Actions'],
+                          ['performance', 'Performance'],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className="wf-option"
+                          aria-pressed={kind === value}
+                          onClick={() => {
+                            setKind(value);
+                            if (scroller.current) scroller.current.scrollTop = 0;
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                  <fieldset className="wf-filter-group">
+                    <legend>Request status</legend>
+                    <div className="wf-state-options" role="group" aria-label="Request status">
+                      {(
+                        [
+                          ['all', 'All requests'],
+                          ['failed', 'Failed'],
+                          ['slow', 'Slow · 500 ms or more'],
+                          ['incomplete', 'Incomplete'],
+                          ['invalid', 'Unknown duration'],
+                        ] as const
+                      ).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          className="wf-option"
+                          aria-pressed={state === value}
+                          onClick={() => {
+                            setState(value);
+                            if (scroller.current) scroller.current.scrollTop = 0;
+                          }}
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </fieldset>
+                  {activeFilters ? (
+                    <button
+                      type="button"
+                      className="wf-clear-filters"
+                      onClick={() => {
+                        setQuery('');
+                        setKind('all');
+                        setState('all');
+                        if (scroller.current) scroller.current.scrollTop = 0;
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  ) : null}
+                </div>
+                <p className="wf-note">Bars show time kept in the replay; durations use source timing.</p>
+                <p className="wf-note">↑/↓ selects and seeks · Escape closes details</p>
+                {model.invalidTimes ? <p className="wf-note">{model.invalidTimes} invalid timestamps omitted</p> : null}
+              </PopoverContent>
+            </Popover>
+          </div>
+        </div>
+        <div
+          id={`${id}-search-panel`}
+          className="wf-search-reveal"
+          data-open={searchOpen || undefined}
+          aria-hidden={!searchOpen}
+          inert={!searchOpen}
         >
-          {rows.length}/{model.rows.length}
-        </span>
+          <div className="wf-search-inner">
+            <label className="wf-search-field" htmlFor={`${id}-search`}>
+              <SearchIcon aria-hidden="true" />
+              <span className="visually-hidden">Search network requests, actions, and performance events</span>
+              <input
+                ref={searchInput}
+                id={`${id}-search`}
+                type="search"
+                tabIndex={searchOpen ? 0 : -1}
+                placeholder="URL, action, or signal"
+                value={query}
+                onChange={(event) => {
+                  setQuery(event.target.value);
+                  if (scroller.current) scroller.current.scrollTop = 0;
+                }}
+                onKeyDown={(event) => {
+                  event.stopPropagation();
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    if (hasQuery) setQuery('');
+                    else setSearchOpen(false);
+                  }
+                }}
+              />
+              {hasQuery ? (
+                <button
+                  type="button"
+                  className="wf-search-clear"
+                  aria-label="Clear search"
+                  onClick={() => {
+                    setQuery('');
+                    searchInput.current?.focus();
+                  }}
+                >
+                  <XIcon aria-hidden="true" />
+                </button>
+              ) : null}
+            </label>
+          </div>
+        </div>
       </div>
       <div className="wf-workspace" data-detail-open={Boolean(selected) || undefined}>
         <div className="wf-scroll" ref={scroller} data-testid="waterfall-scroll">

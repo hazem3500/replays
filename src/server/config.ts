@@ -41,7 +41,7 @@ import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
  *     "githubHost": "github.example.com",          GITHUB_HOST
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
  *     "sourceProviders": [{ "id": "jira", "template": "https://jira.example.com/browse/{ref}" }],
- *     "beta": { "editor": false, "malleable": false },  REPLAYS_BETA_EDITOR, REPLAYS_BETA_MALLEABLE (off by default; src/server/beta.ts)
+ *     "beta": { "editor": false, "malleable": false, "groupedInspector": false },  REPLAYS_BETA_* (off by default; src/server/beta.ts)
  *     "malleable": { "scopes": ["user"], "capabilities": { "export:download": "deny" }, "lockedSurfaces": [] },
  *                                                  the host's policy for user plugins (file only; src/shared/malleable-policy.ts)
  *     "distribution": { "name": "acme-replays", "version": "2.3.0" },  what this deployment is (file only)
@@ -75,7 +75,7 @@ export interface FileConfig {
   githubHost?: string;
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
-  beta?: { editor?: boolean; malleable?: boolean };
+  beta?: { editor?: boolean; malleable?: boolean; groupedInspector?: boolean };
   /** The host's policy for sandboxed user plugins; `malleable.enabled` is the same switch as `beta.malleable`. */
   malleable?: MalleableConfig;
   /** The deployment built on this package (`name@version`), shown in `/api/config` and recorded by kept user plugins. */

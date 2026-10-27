@@ -590,7 +590,11 @@ export function createApp(options: AppOptions) {
           plugins: [...registry.order],
           purposes: options.store.purposes.list,
           ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
-          beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
+          beta: {
+            editor: Boolean(options.beta?.editor),
+            malleable: Boolean(options.beta?.malleable),
+            groupedInspector: Boolean(options.beta?.groupedInspector),
+          },
           comments: commentsOn,
           versions,
           ...(options.beta?.malleable ? { malleable: policy } : {}),
