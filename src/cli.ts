@@ -59,7 +59,7 @@ switch (command) {
     if (rest[0] !== 'check') {
       process.stderr.write('usage: replays plugin check <file> [options]\n');
       process.exitCode = 2;
-    } else await (await import('./plugin/check.ts')).runPluginCheckCli(rest.slice(1));
+    } else await (await import('./plugin/check.ts')).runPluginCheckCli(rest.slice(1), process.env);
     break;
   case 'mcp':
     await (await import('./mcp/main.ts')).runMcpCli(rest);

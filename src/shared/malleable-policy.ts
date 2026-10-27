@@ -1,5 +1,6 @@
-import { authoredManifest } from './malleable.ts';
+import { isRecord } from './plugin-validation.ts';
 import {
+  authoredManifest,
   CAPABILITIES,
   type Capability,
   isCapability,
@@ -54,12 +55,16 @@ export interface MalleableConfig {
   watchdog?: Partial<MalleablePolicy['watchdog']>;
 }
 
-const RULES: readonly CapabilityRule[] = ['allow', 'ask', 'deny'];
-
 /** What applies with no `malleable` block: user scope only, read-only capabilities granted when declared, writes ask. */
 export function defaultPolicy(): MalleablePolicy {
-  const capabilities = {} as Record<Capability, CapabilityRule>;
-  for (const name of Object.keys(CAPABILITIES) as Capability[]) capabilities[name] = isWriteCapability(name) ? 'ask' : 'allow';
+  const capabilities: Record<Capability, CapabilityRule> = {
+    'replay:read': 'allow',
+    'comments:read': 'allow',
+    'comments:write': 'ask',
+    'playback:seek': 'allow',
+    notify: 'allow',
+    'export:download': 'ask',
+  };
   return {
     scopes: ['user'],
     capabilities,
@@ -73,7 +78,7 @@ export function defaultPolicy(): MalleablePolicy {
 /** What the viewer assumes when it cannot read the host's policy: nothing is written. */
 export function closedPolicy(): MalleablePolicy {
   const policy = defaultPolicy();
-  for (const name of Object.keys(policy.capabilities) as Capability[]) if (isWriteCapability(name)) policy.capabilities[name] = 'deny';
+  for (const name of Object.keys(policy.capabilities).filter(isCapability)) if (isWriteCapability(name)) policy.capabilities[name] = 'deny';
   return policy;
 }
 
@@ -88,7 +93,8 @@ export const SURFACE_ID = new RegExp(`^(inspector:${LOCAL}|inspector:${NAME}:${L
 
 /** The surface id of something in the viewer registry (src/client/plugins/registry.ts). */
 export function surfaceId(kind: 'tabs' | 'panels' | 'actions', plugin: string, id: string) {
-  return `${kind === 'tabs' ? 'inspector' : kind === 'panels' ? 'panel' : 'action'}:${plugin}:${id}`;
+  const names = { tabs: 'inspector', panels: 'panel', actions: 'action' };
+  return `${names[kind]}:${plugin}:${id}`;
 }
 
 export class PolicyError extends Error {
@@ -102,73 +108,83 @@ export class PolicyError extends Error {
 export function parseMalleablePolicy(input: unknown): MalleablePolicy {
   const policy = defaultPolicy();
   if (input === undefined) return policy;
-  if (!input || typeof input !== 'object' || Array.isArray(input)) throw new PolicyError("the config file's malleable must be an object");
-  const value = input as Record<string, unknown>;
-  const extra = Object.keys(value).find(
+  if (!isRecord(input)) throw new PolicyError("the config file's malleable must be an object");
+  const extra = Object.keys(input).find(
     (key) => !['enabled', 'scopes', 'capabilities', 'lockedSurfaces', 'workspaceRoles', 'allow', 'deny', 'watchdog'].includes(key),
   );
   if (extra) throw new PolicyError(`malleable.${extra} is not a supported key (enabled, scopes, capabilities, lockedSurfaces)`);
-  if (value.enabled !== undefined && typeof value.enabled !== 'boolean') throw new PolicyError('malleable.enabled must be true or false');
-  if (value.scopes !== undefined) {
-    if (!Array.isArray(value.scopes) || !value.scopes.every(isScope) || new Set(value.scopes).size !== value.scopes.length)
-      throw new PolicyError('malleable.scopes must list "user" and/or "workspace", each at most once');
-    policy.scopes = (['user', 'workspace'] as const).filter((scope) => (value.scopes as string[]).includes(scope));
+  if (input.enabled !== undefined && typeof input.enabled !== 'boolean') throw new PolicyError('malleable.enabled must be true or false');
+  if (input.scopes !== undefined) policy.scopes = parseScopes(input.scopes);
+  if (input.capabilities !== undefined) policy.capabilities = { ...policy.capabilities, ...parseCapabilities(input.capabilities) };
+  if (input.lockedSurfaces !== undefined) policy.lockedSurfaces = parseLocks(input.lockedSurfaces);
+  for (const key of ['workspaceRoles', 'allow', 'deny'] as const)
+    if (input[key] !== undefined) policy[key] = parseSelectors(input[key], key);
+  if (input.watchdog !== undefined) policy.watchdog = { ...policy.watchdog, ...parseWatchdog(input.watchdog) };
+
+  return policy;
+}
+
+function parseScopes(input: unknown): PluginScope[] {
+  if (!Array.isArray(input) || !input.every(isScope) || new Set(input).size !== input.length)
+    throw new PolicyError('malleable.scopes must list "user" and/or "workspace", each at most once');
+  return (['user', 'workspace'] as const).filter((scope) => input.includes(scope));
+}
+function parseCapabilities(input: unknown): Partial<MalleablePolicy['capabilities']> {
+  if (!isRecord(input)) throw new PolicyError('malleable.capabilities must be an object of capability → "allow" | "ask" | "deny"');
+  const values: Partial<MalleablePolicy['capabilities']> = {};
+  for (const [name, rule] of Object.entries(input)) {
+    if (!isCapability(name))
+      throw new PolicyError(`malleable.capabilities.${name} is not a capability (${Object.keys(CAPABILITIES).join(', ')})`);
+    if (rule !== 'allow' && rule !== 'ask' && rule !== 'deny')
+      throw new PolicyError(`malleable.capabilities['${name}'] must be "allow", "ask" or "deny"`);
+    if (isWriteCapability(name) && rule === 'allow')
+      throw new PolicyError(
+        `malleable.capabilities['${name}'] can be "ask" or "deny", not "allow": a write capability always asks the person first`,
+      );
+    values[name] = rule;
   }
-  if (value.capabilities !== undefined) {
-    if (!value.capabilities || typeof value.capabilities !== 'object' || Array.isArray(value.capabilities))
-      throw new PolicyError('malleable.capabilities must be an object of capability → "allow" | "ask" | "deny"');
-    for (const [name, rule] of Object.entries(value.capabilities)) {
-      if (!isCapability(name))
-        throw new PolicyError(`malleable.capabilities.${name} is not a capability (${Object.keys(CAPABILITIES).join(', ')})`);
-      if (!RULES.includes(rule as CapabilityRule))
-        throw new PolicyError(`malleable.capabilities['${name}'] must be "allow", "ask" or "deny"`);
-      if (isWriteCapability(name) && rule === 'allow')
-        throw new PolicyError(
-          `malleable.capabilities['${name}'] can be "ask" or "deny", not "allow": a write capability always asks the person first`,
-        );
-      policy.capabilities[name] = rule as CapabilityRule;
-    }
-  }
-  if (value.lockedSurfaces !== undefined) {
-    if (!Array.isArray(value.lockedSurfaces) || value.lockedSurfaces.length > 200)
-      throw new PolicyError('malleable.lockedSurfaces must be a list of surface ids');
-    for (const surface of value.lockedSurfaces)
-      if (
-        typeof surface !== 'string' ||
-        (!SURFACE_ID.test(surface) && !/^[a-z][a-z0-9.-]*\/(core:[a-z][a-z0-9-]*|plugin:[a-z][a-z0-9-]*:[a-z][a-z0-9-]*)$/.test(surface))
-      )
-        throw new PolicyError(
-          `malleable.lockedSurfaces: ${JSON.stringify(surface)} is not a surface id (inspector:<tab>, inspector:<plugin>:<tab>, panel:<plugin>:<id>, action:<plugin>:<id>)`,
-        );
-    policy.lockedSurfaces = [...new Set(value.lockedSurfaces as string[])];
-  }
-  for (const key of ['workspaceRoles', 'allow', 'deny'] as const) {
-    const items = value[key];
-    if (items === undefined) continue;
-    const pattern = key === 'workspaceRoles' ? /^[a-zA-Z][a-zA-Z0-9:_-]{0,79}$/ : /^(id:[a-z][a-z0-9-]{0,31}|sha256:[a-f0-9]{64})$/;
+  return values;
+}
+function parseLocks(input: unknown): string[] {
+  if (!Array.isArray(input) || input.length > 200) throw new PolicyError('malleable.lockedSurfaces must be a list of surface ids');
+  const locks: string[] = [];
+  for (const surface of input) {
     if (
-      !Array.isArray(items) ||
-      items.length > 200 ||
-      items.some((item) => typeof item !== 'string' || !pattern.test(item)) ||
-      new Set(items).size !== items.length
+      typeof surface !== 'string' ||
+      (!SURFACE_ID.test(surface) && !/^[a-z][a-z0-9.-]*\/(core:[a-z][a-z0-9-]*|plugin:[a-z][a-z0-9-]*:[a-z][a-z0-9-]*)$/.test(surface))
     )
       throw new PolicyError(
-        `malleable.${key} must be a list of unique ${key === 'workspaceRoles' ? 'role names' : 'id:<id> or sha256:<hash> selectors'}`,
+        `malleable.lockedSurfaces: ${JSON.stringify(surface)} is not a surface id (inspector:<tab>, inspector:<plugin>:<tab>, panel:<plugin>:<id>, action:<plugin>:<id>)`,
       );
-    policy[key] = (items as string[]).slice();
+    locks.push(surface);
   }
-  if (value.watchdog !== undefined) {
-    if (!value.watchdog || typeof value.watchdog !== 'object' || Array.isArray(value.watchdog))
-      throw new PolicyError('malleable.watchdog must be an object');
-    const limits = { heartbeatTimeoutMs: [1000, 30000], frameBudgetMs: [1000, 3600000], maxCallsPerSecond: [1, 1000] } as const;
-    for (const [key, number] of Object.entries(value.watchdog)) {
-      const range = limits[key as keyof typeof limits];
-      if (!range || typeof number !== 'number' || !Number.isInteger(number) || number < range[0] || number > range[1])
-        throw new PolicyError(`malleable.watchdog.${key} is outside its allowed integer range`);
-      policy.watchdog[key as keyof typeof limits] = number;
-    }
+  return [...new Set(locks)];
+}
+function parseSelectors(input: unknown, key: 'workspaceRoles' | 'allow' | 'deny'): string[] {
+  const pattern = key === 'workspaceRoles' ? /^[a-zA-Z][a-zA-Z0-9:_-]{0,79}$/ : /^(id:[a-z][a-z0-9-]{0,31}|sha256:[a-f0-9]{64})$/;
+  const message = `malleable.${key} must be a list of unique ${key === 'workspaceRoles' ? 'role names' : 'id:<id> or sha256:<hash> selectors'}`;
+  if (!Array.isArray(input) || input.length > 200) throw new PolicyError(message);
+  const values: string[] = [];
+  for (const item of input) {
+    if (typeof item !== 'string' || !pattern.test(item)) throw new PolicyError(message);
+    values.push(item);
   }
-  return policy;
+  if (new Set(values).size !== values.length) throw new PolicyError(message);
+  return values;
+}
+function parseWatchdog(input: unknown): Partial<MalleablePolicy['watchdog']> {
+  if (!isRecord(input)) throw new PolicyError('malleable.watchdog must be an object');
+  const limits = { heartbeatTimeoutMs: [1000, 30000], frameBudgetMs: [1000, 3600000], maxCallsPerSecond: [1, 1000] } as const;
+  const values: Partial<MalleablePolicy['watchdog']> = {};
+  for (const [key, number] of Object.entries(input)) {
+    if (key !== 'heartbeatTimeoutMs' && key !== 'frameBudgetMs' && key !== 'maxCallsPerSecond')
+      throw new PolicyError(`malleable.watchdog.${key} is outside its allowed integer range`);
+    const range = limits[key];
+    if (typeof number !== 'number' || !Number.isInteger(number) || number < range[0] || number > range[1])
+      throw new PolicyError(`malleable.watchdog.${key} is outside its allowed integer range`);
+    values[key] = number;
+  }
+  return values;
 }
 
 /** Stable across host upgrades: targets are deployment metadata, not author-authored code. */
@@ -230,9 +246,8 @@ export const versionsKey = (versions: HostVersions) => {
 /** Validates the config's `distribution: { name, version }` (the deployment built on this package, e.g. `acme-replays@2.3.0`). */
 export function parseDistribution(input: unknown): HostVersions['distribution'] {
   if (input === undefined) return undefined;
-  if (!input || typeof input !== 'object' || Array.isArray(input))
-    throw new PolicyError("the config file's distribution must be { name, version }");
-  const value = input as Record<string, unknown>;
+  if (!isRecord(input)) throw new PolicyError("the config file's distribution must be { name, version }");
+  const value = input;
   const extra = Object.keys(value).find((key) => key !== 'name' && key !== 'version');
   if (extra) throw new PolicyError(`distribution.${extra} is not a supported key (name, version)`);
   if (typeof value.name !== 'string' || !/^(@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]{0,79}$/i.test(value.name))

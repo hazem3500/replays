@@ -1,11 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import { PluginWatchdog } from '../src/client/malleable/watchdog.ts';
-import { pluginAdmissionProblems, pluginPolicyHash, mayWriteWorkspace, parseMalleablePolicy } from '../src/shared/malleable-policy.ts';
+import {
+  pluginAdmissionProblems,
+  pluginPolicyHash,
+  mayWriteWorkspace,
+  parseMalleablePolicy,
+  defaultPolicy,
+} from '../src/shared/malleable-policy.ts';
 import { starterPlugin } from '../src/shared/malleable.ts';
 
 describe('plugin host admission and budgets', () => {
   it('defaults to personal scope and role-gates workspace changes', () => {
-    const policy = parseMalleablePolicy(undefined);
+    const policy = defaultPolicy();
     expect(policy.scopes).toEqual(['user']);
     expect(mayWriteWorkspace(policy, {})).toBe(false);
     expect(mayWriteWorkspace(policy, { roles: ['member'] })).toBe(false);

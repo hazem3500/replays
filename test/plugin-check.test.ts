@@ -5,9 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { checkPlugin, parseCheckArgs } from '../src/plugin/check.ts';
 
 const temporary: string[] = [];
-afterEach(async () => {
-  await Promise.all(temporary.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
-});
+
 async function plugin(source: string) {
   const dir = await mkdtemp(join(tmpdir(), 'replays-check-test-'));
   temporary.push(dir);
@@ -17,6 +15,9 @@ async function plugin(source: string) {
 }
 
 describe('replays plugin check', () => {
+  afterEach(async () => {
+    await Promise.all(temporary.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
   it('parses files and rejects unknown options or missing values', () => {
     expect(parseCheckArgs(['plugin.mjs', '--kind', 'browser', '--cdp', 'http://localhost:9222'])).toMatchObject({
       kind: 'browser',
@@ -60,9 +61,9 @@ describe('replays plugin check', () => {
   it('runs the storage contract inside disposable namespaces', async () => {
     const memory = new URL('../src/server/storage/memory.ts', import.meta.url).href;
     const file = await plugin(
-      `import {MemoryStorage} from ${JSON.stringify(memory)}; const store=new MemoryStorage(); export default {name:'memory-check',apiVersion:1,setup(api){api.storage({id:'fixture',create:()=>store})}};`,
+      `import {MemoryStorage} from ${JSON.stringify(memory)}; const store=new MemoryStorage(); export default {name:'memory-check',apiVersion:1,setup(api){api.storage({id:'fixture',create:({env})=>{if(env.PLATFORM_CHECK_FIXTURE!=='ok')throw new Error('missing fixture env');return store}})}};`,
     );
-    const result = await checkPlugin({ file });
+    const result = await checkPlugin({ file }, { PLATFORM_CHECK_FIXTURE: 'ok' });
     expect(result.errors).toEqual([]);
     expect(result.output.filter((line) => line.startsWith('PASS ')).length).toBeGreaterThan(5);
   });

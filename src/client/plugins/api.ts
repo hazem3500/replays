@@ -1,10 +1,11 @@
-export type { PluginPageLoadContext, PluginPageContext, PluginPageDefinition } from './pages.ts';
+import type { PluginSettingDefinition } from '../../shared/plugin-settings.ts';
 import type { PluginPageDefinition } from './pages.ts';
+import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
+import type { ReplayBundle, ReplaySummary } from '../../shared/replay.ts';
+export type { PluginPageLoadContext, PluginPageContext, PluginPageDefinition } from './pages.ts';
 export { ViewerRegistry } from './registry.ts';
 export { SLOT_NAMES, SlotRegistry } from './slots.ts';
 export type { SlotDescriptor, SlotConfiguration, SlotMountContext } from './slots.ts';
-import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
-import type { ReplayBundle, ReplaySummary } from '../../shared/replay.ts';
 
 /*
  * The browser-side plugin API (`@hazem3500/replays/viewer`). A server plugin names a script with `api.client({ id, script })`;
@@ -201,7 +202,7 @@ export interface ContextSectionDefinition {
   render(container: HTMLElement, context: ViewerPluginContext): Cleanup;
 }
 
-export type SettingDefinition = import('../../shared/plugin-settings.ts').PluginSettingDefinition;
+export type SettingDefinition = PluginSettingDefinition;
 
 export interface ViewerPluginApi {
   /** The server plugin's name (the one that served this script). */

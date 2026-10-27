@@ -27,7 +27,7 @@ describe('user plugin settings', () => {
       version: 0,
       values: { compact: false, format: 'csv' },
     });
-    const first = await store.setSetting('workspace', 'ada', 'test', definitions, { id: 'compact', value: true, baseVersion: 0 });
+    const first = await store.setSetting('workspace', 'ada', 'test', { definitions, id: 'compact', value: true, baseVersion: 0 });
     expect(first).toEqual({ version: 1, values: { compact: true, format: 'csv' } });
     for (const [scope, who, id] of [
       ['workspace', 'grace', 'test'],
@@ -36,10 +36,10 @@ describe('user plugin settings', () => {
     ] as const)
       expect((await store.readSettings(scope, who, id, definitions)).values.compact).toBe(false);
     await expect(
-      store.setSetting('workspace', 'ada', 'test', definitions, { id: 'compact', value: false, baseVersion: 0 }),
+      store.setSetting('workspace', 'ada', 'test', { definitions, id: 'compact', value: false, baseVersion: 0 }),
     ).rejects.toMatchObject({ status: 409 });
     await expect(
-      store.setSetting('workspace', 'ada', 'test', definitions, { id: 'format', value: 'xml', baseVersion: 1 }),
+      store.setSetting('workspace', 'ada', 'test', { definitions, id: 'format', value: 'xml', baseVersion: 1 }),
     ).rejects.toMatchObject({ status: 400 });
     const changed = [
       { id: 'compact', label: 'Compact', type: 'choice', default: 'off', options: [{ value: 'off' }, { value: 'on' }] },
@@ -50,7 +50,7 @@ describe('user plugin settings', () => {
   it('allows only one of two competing saves to win', async () => {
     const store = new UserPluginStore(new MemoryStorage());
     const results = await Promise.allSettled(
-      [true, false].map((value) => store.setSetting('user', 'ada', 'test', definitions, { id: 'compact', value, baseVersion: 0 })),
+      [true, false].map((value) => store.setSetting('user', 'ada', 'test', { definitions, id: 'compact', value, baseVersion: 0 })),
     );
     expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
     expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);

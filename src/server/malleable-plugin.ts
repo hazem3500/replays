@@ -100,6 +100,15 @@ export function malleablePlugin(deps: {
     ];
     if (problems.length) throw new PluginStoreError(403, `not kept: ${problems.join('; ')}`);
   };
+  const admitted = async (manifest: UserPluginManifest, scope: PluginScope, source: string) => {
+    try {
+      await allowed(manifest, scope, source);
+      return true;
+    } catch (error) {
+      if (error instanceof PluginStoreError && error.status === 403) return false;
+      throw error;
+    }
+  };
   const requireWriter = (scope: PluginScope, identity: Identity) => {
     if (!policy.scopes.includes(scope)) throw new PluginStoreError(403, `not kept: ${scope} plugin scope is disabled`);
     if (scope === 'workspace' && !mayWriteWorkspace(policy, identity))
@@ -163,12 +172,7 @@ export function malleablePlugin(deps: {
             for (const summary of lists.flat()) {
               const latest = (await store.history(summary.scope, identity.id, summary.id))?.versions.at(-1);
               if (!latest) continue;
-              try {
-                await allowed(latest.manifest, summary.scope, latest.source);
-              } catch (error) {
-                if (error instanceof PluginStoreError && error.status === 403) continue;
-                throw error;
-              }
+              if (!(await admitted(latest.manifest, summary.scope, latest.source))) continue;
               plugins.push({
                 ...summary,
                 sha256: latest.sha256,
@@ -181,39 +185,43 @@ export function malleablePlugin(deps: {
             return true;
           }
           const notice = /^notices\/([a-z][a-z0-9-]{0,31})$/.exec(rest);
-          if (notice && method === 'POST') {
-            const latest = (await store.history('workspace', identity.id, notice[1]!))?.versions.at(-1);
+          if (notice?.[1] && method === 'POST') {
+            const latest = (await store.history('workspace', identity.id, notice[1]))?.versions.at(-1);
             if (!latest) throw new PluginStoreError(404, 'no such workspace plugin');
             await allowed(latest.manifest, 'workspace', latest.source);
             const body = await readBody(request);
             if (body.sha256 !== latest.sha256) throw new PluginStoreError(409, 'workspace plugin changed; review the new version');
-            await store.acceptWorkspace(identity.id, notice[1]!, latest.sha256);
+            await store.acceptWorkspace(identity.id, notice[1], latest.sha256);
             reply(response, 200, { accepted: true });
             return true;
           }
           const settings = /^settings\/(user|workspace)\/([a-z][a-z0-9-]{0,31})$/.exec(rest);
-          if (settings && (method === 'GET' || method === 'PUT')) {
+          if (settings?.[2] && (method === 'GET' || method === 'PUT')) {
             const scope = settings[1] as PluginScope;
-            const id = settings[2]!;
+            const id = settings[2];
             if (!policy.scopes.includes(scope)) throw new PluginStoreError(404, 'no such plugin');
             const history = await store.history(scope, identity.id, id);
             const latest = history?.versions.at(-1);
             if (!latest) throw new PluginStoreError(404, 'no such plugin');
             await allowed(latest.manifest, scope, latest.source);
             const definitions = latest.manifest.settings ?? [];
+            const body = method === 'PUT' ? await readBody(request) : {};
             const result =
               method === 'GET'
                 ? await store.readSettings(scope, identity.id, id, definitions)
-                : await store.setSetting(scope, identity.id, id, definitions, {
-                    ...(await readBody(request)),
-                  } as { id: unknown; value: unknown; baseVersion: unknown });
+                : await store.setSetting(scope, identity.id, id, {
+                    definitions,
+                    id: body.id,
+                    value: body.value,
+                    baseVersion: body.baseVersion,
+                  });
             reply(response, 200, result);
             return true;
           }
           const one = /^plugins\/(user|workspace)\/([a-z][a-z0-9-]{0,31})$/.exec(rest);
-          if (one) {
+          if (one?.[2]) {
             const scope = one[1] as PluginScope;
-            const id = one[2]!;
+            const id = one[2];
             if (method === 'GET') {
               if (!policy.scopes.includes(scope)) throw new PluginStoreError(404, 'no such plugin');
               const history = await store.history(scope, identity.id, id);
@@ -267,7 +275,7 @@ export function malleablePlugin(deps: {
             const manifest = save ? parseManifest(body.manifest) : undefined;
             const source = save ? parseSource(body.source) : undefined;
             requireWriter(body.scope, identity);
-            if (manifest) await allowed(manifest, body.scope, source!);
+            if (manifest && source !== undefined) await allowed(manifest, body.scope, source);
             reply(response, 200, approvals.mint(identity.id, ApprovalBook.digest(body.action, body.scope, body.id, manifest, source)));
             return true;
           }

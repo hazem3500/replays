@@ -169,19 +169,19 @@ export class ViewerRegistry {
 
   configureSlot(name: string, configuration: SlotConfiguration, notify = true) {
     this.slot(name).configure(configuration);
-    // Refresh the external-store identity so consumers re-resolve in render.
+    // why: slot configuration needs a new store snapshot so subscribed views resolve the new order.
     this.snapshotValue = { ...this.snapshotValue };
     if (notify) for (const listener of this.listeners) listener();
   }
 
   registerSlotItem<C, R>(name: string, descriptor: SlotDescriptor<C, R>, notify = true) {
-    this.slot(name).register(descriptor as SlotDescriptor<unknown>);
+    this.slot(name).register(descriptor);
     this.snapshotValue = { ...this.snapshotValue };
     if (notify) for (const listener of this.listeners) listener();
   }
 
   resolveSlot<C, R>(name: string, builtins: readonly SlotDescriptor<C, R>[], context: C): readonly SlotDescriptor<C, R>[] {
-    return this.slot(name).resolve(context, builtins as readonly SlotDescriptor<unknown>[]) as readonly SlotDescriptor<C, R>[];
+    return this.slot(name).resolve(context, builtins) as readonly SlotDescriptor<C, R>[];
   }
 
   /** Apply the same slot policy to legacy entries, preserving their metadata for existing renderers. */
@@ -214,7 +214,7 @@ export class ViewerRegistry {
       this.cachedSnapshot = this.visibleSnapshot();
       this.cachedSource = this.snapshotValue;
     }
-    return this.cachedSnapshot!;
+    return this.cachedSnapshot ?? this.visibleSnapshot();
   };
 
   private add<K extends keyof Snapshot>(

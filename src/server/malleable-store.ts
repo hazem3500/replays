@@ -153,9 +153,9 @@ export class UserPluginStore {
     scope: PluginScope,
     identity: string,
     id: string,
-    definitions: readonly PluginSettingDefinition[],
-    input: { id: unknown; value: unknown; baseVersion: unknown },
+    input: { definitions: readonly PluginSettingDefinition[]; id: unknown; value: unknown; baseVersion: unknown },
   ): Promise<PluginSettingsRecord> {
+    const { definitions } = input;
     const definition = definitions.find((item) => item.id === input.id);
     if (!definition || !settingAccepts(definition, input.value)) throw new PluginStoreError(400, 'unknown setting or invalid value');
     const key = this.settingsKey(scope, identity, id);

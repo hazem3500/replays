@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { replay } from './fixtures.ts';
 import { webcrypto } from 'node:crypto';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { mountSandbox } from '../src/client/malleable/sandbox.ts';
@@ -7,14 +8,13 @@ import { defaultPolicy } from '../src/shared/malleable-policy.ts';
 import { starterPlugin } from '../src/shared/malleable.ts';
 import type { ViewerPluginContext } from '../src/client/plugins/api.ts';
 
-afterEach(() => {
-  vi.useRealTimers();
-  vi.unstubAllGlobals();
-  document.body.replaceChildren();
-  setHostForTests(undefined);
-});
-
 describe('sandbox watchdog lifecycle', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    document.body.replaceChildren();
+    setHostForTests(undefined);
+  });
   it('removes a started frame when heartbeats stop and releases its subscriptions', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('crypto', webcrypto);
@@ -30,7 +30,7 @@ describe('sandbox watchdog lifecycle', () => {
     manifest.permissions = [];
     const log = vi.fn<(level: string, message: string) => void>();
     const unsubscribe = vi.fn<() => void>();
-    const context = { onTime: () => unsubscribe, theme: 'dark', getTime: () => 0 } as unknown as ViewerPluginContext;
+    const context = sandboxContext(unsubscribe);
     const handle = mountSandbox({
       plugin: { id: manifest.id, manifest, source, log },
       mode: 'tab',
@@ -38,9 +38,10 @@ describe('sandbox watchdog lifecycle', () => {
       container: document.body,
       context,
     });
-    const iframe = document.querySelector('iframe')!;
-    const init = vi.spyOn(iframe.contentWindow!, 'postMessage').mockImplementation(() => {});
-    window.dispatchEvent(new MessageEvent('message', { source: iframe.contentWindow!, data: { replaysSandbox: 'ready' } }));
+    const iframe = document.querySelector('iframe');
+    if (!iframe?.contentWindow) throw new Error('sandbox frame not mounted');
+    const init = vi.spyOn(iframe.contentWindow, 'postMessage').mockImplementation(() => {});
+    window.dispatchEvent(new MessageEvent('message', { source: iframe.contentWindow, data: { replaysSandbox: 'ready' } }));
     await vi.waitFor(() => expect(init).toHaveBeenCalled());
     await vi.advanceTimersByTimeAsync(3500);
     expect(iframe.isConnected).toBe(false);
@@ -55,7 +56,7 @@ describe('sandbox watchdog lifecycle', () => {
     vi.useFakeTimers();
     const { manifest, source } = starterPlugin();
     const log = vi.fn<(level: string, message: string) => void>();
-    const context = { onTime: () => () => {} } as unknown as ViewerPluginContext;
+    const context = sandboxContext(() => {});
     const handle = mountSandbox({
       plugin: { id: manifest.id, manifest, source, log },
       mode: 'action',
@@ -69,3 +70,17 @@ describe('sandbox watchdog lifecycle', () => {
     await expect(handle.done).resolves.toBeUndefined();
   });
 });
+
+function sandboxContext(unsubscribe: () => void): ViewerPluginContext {
+  return {
+    replay: replay(),
+    onTime: () => unsubscribe,
+    theme: 'dark',
+    getTime: () => 0,
+    basePath: '',
+    apiUrl: (path) => path,
+    seek: () => {},
+    notify: () => {},
+    settings: { get: () => false, onChange: () => () => {} },
+  };
+}

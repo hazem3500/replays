@@ -296,8 +296,7 @@ class PluginManager {
   async acceptWorkspace(id: string) {
     const entry = this.get(id);
     const version = entry && latestSaved(entry);
-    if (!entry || entry.scope !== 'workspace' || !version || !entry.needsAcceptance)
-      throw new Error('no workspace version awaiting review');
+    if (entry?.scope !== 'workspace' || !version || !entry.needsAcceptance) throw new Error('no workspace version awaiting review');
     if (isDirty(entry)) throw new Error('discard the draft before enabling the saved workspace version');
     await acceptWorkspacePlugin(id, version.sha256);
     if (this.get(id) !== entry) throw new Error('plugin changed; review it again');

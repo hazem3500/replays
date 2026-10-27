@@ -124,26 +124,8 @@ export function mountSandbox(options: {
     };
     port.addEventListener('message', onPortMessage);
     port.start();
-    // The copy of the replay is the one capability handed over rather than called, so the host's policy is checked here.
-    void (async () => {
-      const policy = await hostPolicy();
-      const problems = [
-        ...policyProblems(policy, plugin.manifest, plugin.scope ?? 'user'),
-        ...pluginAdmissionProblems(
-          policy,
-          plugin.id,
-          [...(policy.allow ?? []), ...(policy.deny ?? [])].some((selector) => selector.startsWith('sha256:'))
-            ? await pluginPolicyHash(plugin.manifest, plugin.source)
-            : '',
-        ),
-      ];
-      if (problems.length) {
-        plugin.log('error', problems.join('; '));
-        dispose();
-        return false;
-      }
-      return plugin.manifest.permissions.includes('replay:read') ? mayReadReplay(plugin) : false;
-    })()
+    // invariant: check policy before handing the replay copy to the frame.
+    void readableReplay(plugin, dispose)
       .then((readable) => {
         if (disposed) return;
         const replay = readable
@@ -215,4 +197,24 @@ export function mountSandbox(options: {
 
   container.append(iframe);
   return { dispose, done };
+}
+
+async function readableReplay(plugin: PluginRef, dispose: () => void): Promise<boolean> {
+  const policy = await hostPolicy();
+  const problems = [
+    ...policyProblems(policy, plugin.manifest, plugin.scope ?? 'user'),
+    ...pluginAdmissionProblems(
+      policy,
+      plugin.id,
+      [...(policy.allow ?? []), ...(policy.deny ?? [])].some((selector) => selector.startsWith('sha256:'))
+        ? await pluginPolicyHash(plugin.manifest, plugin.source)
+        : '',
+    ),
+  ];
+  if (problems.length) {
+    plugin.log('error', problems.join('; '));
+    dispose();
+    return false;
+  }
+  return plugin.manifest.permissions.includes('replay:read') ? mayReadReplay(plugin) : false;
 }

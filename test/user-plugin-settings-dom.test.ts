@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
+import { isRecord } from '../src/shared/plugin-validation.ts';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { bindUserSettings, readSetting, subscribeSettings, writeSettingValue } from '../src/client/plugins/settings.ts';
 import type { SettingDefinition } from '../src/client/plugins/api.ts';
 
-afterEach(() => vi.unstubAllGlobals());
 const setting: SettingDefinition = { id: 'compact', label: 'Compact', type: 'boolean', default: false };
 
 describe('Settings server preference adapter', () => {
+  afterEach(() => vi.unstubAllGlobals());
   it('hydrates the contribution, serializes writes and publishes values without local storage', async () => {
     const requests: string[] = [];
     let version = 0;
@@ -14,15 +15,18 @@ describe('Settings server preference adapter', () => {
     let value = true;
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (url: string, init?: RequestInit) => {
+      vi.fn((url: string, init?: RequestInit) => {
         requests.push(url);
         if (init?.method === 'PUT') {
-          const body = JSON.parse(init.body as string) as { value: boolean; baseVersion: number };
+          if (typeof init.body !== 'string') throw new Error('expected JSON request');
+          const body: unknown = JSON.parse(init.body);
+          if (!isRecord(body) || typeof body.value !== 'boolean' || typeof body.baseVersion !== 'number')
+            throw new Error('invalid settings write');
           baseVersions.push(body.baseVersion);
           value = body.value;
           version++;
         }
-        return new Response(JSON.stringify({ version, values: { compact: value } }), { status: 200 });
+        return Promise.resolve(new Response(JSON.stringify({ version, values: { compact: value } }), { status: 200 }));
       }),
     );
     const listener = vi.fn<() => void>();

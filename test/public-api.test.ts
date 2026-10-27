@@ -168,10 +168,7 @@ const entries: Record<string, { source: string; values: string[] }> = {
     source: '../src/first-party/gcs.ts',
     values: ['GcsError', 'GcsStorage', 'RESUMABLE_BYTES', 'default', 'gcsStorageFromEnv'],
   },
-  './server/testing': {
-    source: '../src/server/testing/index.ts',
-    values: ['createTestClient', 'describeAuthAdapter', 'describeObjectStorage', 'fakeRequest'],
-  },
+  './server/testing': { source: '../src/server/testing/index.ts', values: ['describeAuthAdapter', 'describeObjectStorage', 'fakeRequest'] },
   './capture': {
     source: '../src/capture/index.ts',
     values: [
@@ -291,7 +288,9 @@ describe('public API', () => {
       expect(target.types).toMatch(/^\.\/dist\/types\/.+\.d\.ts$/);
     }
   });
+});
 
+describe('public API distribution compatibility', () => {
   it('ships what a custom distribution needs at run time: the built viewer, the samples and the docs it links to', () => {
     for (const path of ['dist/lib', 'dist/types', 'dist/client', 'sample', 'bin']) expect(pkg.files).toContain(path);
   });
@@ -305,7 +304,7 @@ describe('public API', () => {
   });
 
   it('keeps the testing entry free of any test runner, so it works under vitest, node:test or Jest', () => {
-    for (const file of ['index.ts', 'storage.ts', 'auth.ts', 'runner.ts', 'client.ts']) {
+    for (const file of ['index.ts', 'storage.ts', 'auth.ts', 'runner.ts']) {
       const source = readFileSync(resolve(import.meta.dirname, '../src/server/testing', file), 'utf8');
       expect(source).not.toMatch(/^import[^\n]*from '(vitest|jest|mocha|node:test)/m);
     }

@@ -21,11 +21,7 @@ describe('unified slots', () => {
     const page = { title: 'Reports', render: () => {} };
     registry.apiFor('reports').registerPluginPage(page);
     expect(registry.pages.get('reports')).toEqual(page);
-    expect(() =>
-      registry.replacePlugin('reports', () => {
-        throw new Error('reload failed');
-      }),
-    ).toThrow('reload failed');
+    expect(() => registry.replacePlugin('reports', failReload)).toThrow('reload failed');
     expect(registry.pages.get('reports')).toEqual(page);
     registry.removePlugin('reports');
     expect(registry.pages.get('reports')).toBeUndefined();
@@ -60,11 +56,7 @@ describe('unified slots', () => {
     ]);
     registry.configureSlot('viewer.inspector.tabs', { hide: ['plugin:acme:build'] });
     expect(registry.getSnapshot().tabs).toEqual([]);
-    expect(() =>
-      registry.replacePlugin('acme', () => {
-        throw new Error('failed');
-      }),
-    ).toThrow('failed');
+    expect(() => registry.replacePlugin('acme', failReload)).toThrow('reload failed');
     registry.configureSlot('viewer.inspector.tabs', {});
     expect(registry.getSnapshot().tabs).toHaveLength(1);
     registry.removePlugin('acme');
@@ -72,3 +64,7 @@ describe('unified slots', () => {
     expect(() => registry.apiFor('user:draft').configureSlot('index.filters', { hide: ['core:owner'] })).toThrow(/cannot configure/);
   });
 });
+
+function failReload(): never {
+  throw new Error('reload failed');
+}

@@ -39,7 +39,7 @@ export function bindUserSettings(plugin: string, scope: PluginScope, id: string)
       if (remote.get(plugin) === bound) publish(plugin, record);
     })
     .catch((error: unknown) => {
-      // A draft has no persisted settings until its first approved save.
+      // why: an unsaved draft has no settings object to hydrate until its first approved save.
       if (!(error && typeof error === 'object' && 'status' in error && error.status === 404))
         console.warn(`plugin ${plugin}: settings could not be loaded`, error);
     });

@@ -45,14 +45,12 @@ export interface SlotMountContext<C> {
 const ITEM_ID = /^(core:[a-z][a-z0-9-]*|plugin:(?:user:)?[a-z][a-z0-9-]*:[a-z][a-z0-9-]*)$/;
 
 function surface(slot: string, id: string) {
-  const kind =
-    slot === 'viewer.inspector.tabs'
-      ? 'inspector'
-      : slot === 'viewer.panels.side'
-        ? 'panel'
-        : slot === 'viewer.actions'
-          ? 'action'
-          : undefined;
+  const kinds: Record<string, string> = {
+    'viewer.inspector.tabs': 'inspector',
+    'viewer.panels.side': 'panel',
+    'viewer.actions': 'action',
+  };
+  const kind = kinds[slot];
   return kind ? `${kind}:${id.replace(/^(core|plugin):/, '')}` : `${slot}/${id}`;
 }
 
@@ -87,7 +85,7 @@ export class SlotRegistry<C, R = unknown> {
       if (!Array.isArray(ids) || new Set(ids).size !== ids.length || ids.some((id) => typeof id !== 'string' || !ITEM_ID.test(id)))
         throw new TypeError('slot order/hide must contain unique namespaced item ids');
       for (const id of ids) {
-        assertMayOverride(this.policy(), surface(this.name, id));
+        assertMayOverride(this.policy(), surface(this.name, String(id)));
         assertMayOverride(this.policy(), `${this.name}/${id}`);
       }
     }
@@ -103,7 +101,7 @@ export class SlotRegistry<C, R = unknown> {
       ids.add(item.id);
     }
     const { order = [], hide = [] } = this.configuration;
-    // Re-check locks at resolution too: loading a stricter host policy cannot leave an earlier override in force.
+    // invariant: a stricter policy cannot leave an earlier override in force.
     const locked = (id: string) =>
       this.policy().lockedSurfaces.includes(surface(this.name, id)) || this.policy().lockedSurfaces.includes(`${this.name}/${id}`);
     const rank = (id: string) => (locked(id) ? -1 : order.indexOf(id));

@@ -1,23 +1,21 @@
 import { pluginPolicyHash } from '../shared/malleable-policy.ts';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
-import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { existsSync } from 'node:fs';
-import { build } from 'esbuild';
-import { chromium } from 'playwright-core';
 import { loadConfig, loadPluginSpec } from '../config/index.ts';
 import { assertReplayBundle } from '../shared/replay.ts';
 import { parsePluginFile } from '../shared/malleable.ts';
+import { isRecord } from '../shared/plugin-validation.ts';
+import { checkBrowser } from './check-browser-host.ts';
+import type { FakeRequestInit } from '../server/testing/auth.ts';
+import type { PluginRegistry } from './registry.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
-import { SANDBOX_CSP, SANDBOX_HTML, SANDBOX_PATH } from '../shared/sandbox-runtime.ts';
 import { describeAuthAdapter, describeObjectStorage, fakeRequest } from '../server/testing/index.ts';
 import type { TestRunner } from '../server/testing/runner.ts';
 import { assertKey, type ObjectStorage } from '../server/storage/types.ts';
 import { capSummaryFields } from '../server/summary-fields.ts';
 import { resolvePlugins } from './registry.ts';
-import { checkBrowserEntry, checkUserPlugin } from './check-browser.ts';
 
 export const PLUGIN_CHECK_USAGE = `replays plugin check <file> [--replay fixture.json] [--config replays.config.ts]
   [--request request.json] [--kind server|browser|user] [--cdp http://127.0.0.1:9222] [--out screenshots-dir] [--headless] [--port 19081]
@@ -57,19 +55,24 @@ export function parseCheckArgs(argv: string[]): PluginCheckOptions {
     }
     const value = argv[i + 1];
     if (!value || value.startsWith('--')) throw new Error(`${flag} needs a value`);
-    if (flag === '--kind') {
-      if (!['server', 'browser', 'user'].includes(value)) throw new Error('--kind must be server, browser or user');
-      options.kind = value as PluginCheckOptions['kind'] & string;
-    } else if (flag === '--replay') options.replay = resolve(value);
-    else if (flag === '--config') options.config = resolve(value);
-    else if (flag === '--request') options.request = resolve(value);
-    else if (flag === '--cdp') options.cdp = value;
-    else if (flag === '--out') options.out = resolve(value);
-    else if (flag === '--port' && /^\d+$/.test(value) && Number(value) > 0 && Number(value) < 65536) options.port = Number(value);
-    else throw new Error(`unknown option ${flag}`);
+    applyFlag(options, flag, value);
   }
   if (options.headless && options.cdp) throw new Error('--headless and --cdp are mutually exclusive');
   return options;
+}
+
+function applyFlag(options: PluginCheckOptions, flag: string | undefined, value: string): void {
+  const next = options;
+  if (flag === '--kind') {
+    if (value !== 'server' && value !== 'browser' && value !== 'user') throw new Error('--kind must be server, browser or user');
+    next.kind = value;
+  } else if (flag === '--replay') next.replay = resolve(value);
+  else if (flag === '--config') next.config = resolve(value);
+  else if (flag === '--request') next.request = resolve(value);
+  else if (flag === '--cdp') next.cdp = value;
+  else if (flag === '--out') next.out = resolve(value);
+  else if (flag === '--port' && /^\d+$/.test(value) && Number(value) > 0 && Number(value) < 65536) next.port = Number(value);
+  else throw new Error(`unknown option ${flag}`);
 }
 
 const fixtureReplay = (): ReplayBundle => ({
@@ -120,9 +123,58 @@ function isolatedStorage(storage: ObjectStorage, prefix: string): ObjectStorage 
   };
 }
 
-async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, result: PluginCheckResult) {
+interface FixtureTest {
+  name: string;
+  run: () => Promise<void>;
+}
+function registerFixtureChecks(
+  registry: PluginRegistry,
+  replay: ReplayBundle,
+  state: { tests: FixtureTest[]; result: PluginCheckResult },
+): void {
+  const { tests, result } = state;
+  const request = fakeRequest();
+  const identity = { id: 'plugin-check', name: 'Plugin check' };
+  for (const { plugin: owner, value } of registry.hooks.beforeUpload)
+    tests.push({
+      name: `${owner} beforeUpload fixture`,
+      run: async () => {
+        const transformed = await value({ bundle: structuredClone(replay), identity, request });
+        if (transformed) assertReplayBundle(transformed);
+      },
+    });
+  for (const { plugin: owner, value } of registry.summaryFields)
+    tests.push({
+      name: `${owner} summaryFields ${value.name}`,
+      run: async () => {
+        result.output.push(`${owner}/${value.name}: ${JSON.stringify(capSummaryFields(await value.fields(structuredClone(replay))))}`);
+      },
+    });
+}
+function parseAuthFixture(value: unknown): FakeRequestInit {
+  if (!isRecord(value)) throw new TypeError('request fixture must be an object');
+  const result: FakeRequestInit = {};
+  for (const key of ['method', 'url', 'remoteAddress'] as const) {
+    if (value[key] === undefined) continue;
+    if (typeof value[key] !== 'string') throw new TypeError(`request fixture ${key} must be a string`);
+    result[key] = value[key];
+  }
+  if (value.headers !== undefined) {
+    if (!isRecord(value.headers)) throw new TypeError('request fixture headers must be an object');
+    const headers: NonNullable<FakeRequestInit['headers']> = {};
+    for (const [key, header] of Object.entries(value.headers)) {
+      if (typeof header === 'string' || header === undefined) headers[key] = header;
+      else if (Array.isArray(header) && header.every((part: unknown): part is string => typeof part === 'string')) headers[key] = header;
+      else throw new TypeError('request fixture headers must contain strings');
+    }
+    result.headers = headers;
+  }
+  return result;
+}
+
+async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, result: PluginCheckResult, env: NodeJS.ProcessEnv) {
   const loaded = options.config
-    ? await loadConfig({ cwd: dirname(options.config), env: { ...process.env, REPLAYS_CONFIG: options.config } })
+    ? await loadConfig({ cwd: dirname(options.config), env: { ...env, REPLAYS_CONFIG: options.config } })
     : undefined;
   const plugin = await loadPluginSpec(options.file, dirname(options.file));
   const registry = await resolvePlugins([...(loaded?.plugins ?? []).filter((entry) => entry.name !== plugin.name), plugin]);
@@ -142,7 +194,7 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
       describeObjectStorage(
         name,
         async () => {
-          const store = await registration.value.create({ env: process.env, dataDir: temp });
+          const store = await registration.value.create({ env, dataDir: temp });
           const prefix = `_plugin-check/${crypto.randomUUID()}/`;
           cleanup.push(() => store.deletePrefix(prefix));
           return isolatedStorage(store, prefix);
@@ -150,11 +202,9 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
         runner,
       );
     }
-    const authRequest = options.request
-      ? (JSON.parse(await readFile(options.request, 'utf8')) as import('../server/testing/auth.ts').FakeRequestInit)
-      : {};
+    const authRequest = options.request ? parseAuthFixture(JSON.parse(await readFile(options.request, 'utf8'))) : {};
     for (const [name, registration] of registry.auth) {
-      const adapter = await registration.value(process.env);
+      const adapter = await registration.value(env);
       const identity = await adapter.authenticate(fakeRequest(authRequest));
       describeAuthAdapter(
         name,
@@ -170,23 +220,7 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
           `auth ${name}: provide --request request.json for an accepted identity; the generic contract will report the missing acceptance case`,
         );
     }
-    const request = fakeRequest();
-    const identity = { id: 'plugin-check', name: 'Plugin check' };
-    for (const { plugin: owner, value } of registry.hooks.beforeUpload)
-      tests.push({
-        name: `${owner} beforeUpload fixture`,
-        run: async () => {
-          const transformed = await value({ bundle: structuredClone(replay), identity, request });
-          if (transformed) assertReplayBundle(transformed);
-        },
-      });
-    for (const { plugin: owner, value } of registry.summaryFields)
-      tests.push({
-        name: `${owner} summaryFields ${value.name}`,
-        run: async () => {
-          result.output.push(`${owner}/${value.name}: ${JSON.stringify(capSummaryFields(await value.fields(structuredClone(replay))))}`);
-        },
-      });
+    registerFixtureChecks(registry, replay, { tests, result });
     for (const test of tests) {
       try {
         await test.run();
@@ -203,105 +237,8 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
   }
 }
 
-async function checkBrowser(
-  options: PluginCheckOptions,
-  replay: ReplayBundle,
-  result: PluginCheckResult,
-  file?: ReturnType<typeof parsePluginFile>,
-) {
-  const viewerEntry = [resolve(import.meta.dirname, '../client/plugins/api.ts'), resolve(import.meta.dirname, '../lib/viewer.mjs')].find(
-    existsSync,
-  );
-  if (!viewerEntry) throw new Error('cannot locate the viewer API; build the package before checking browser entries');
-  const contents = file
-    ? `(${checkUserPlugin.toString()})(${JSON.stringify(file)});`
-    : `import entry from ${JSON.stringify(options.file)}; import {ViewerRegistry} from ${JSON.stringify(viewerEntry)}; (${checkBrowserEntry.toString()})(entry,ViewerRegistry);`;
-  const compiled = await build({
-    stdin: { contents, resolveDir: dirname(options.file), loader: 'js' },
-    alias: { '@hazem3500/replays/viewer': viewerEntry },
-    bundle: true,
-    platform: 'browser',
-    format: 'esm',
-    write: false,
-    logLevel: 'silent',
-  });
-  const server = createServer((request, response) => {
-    if (request.url === SANDBOX_PATH) {
-      response.writeHead(200, { 'content-type': 'text/html', 'content-security-policy': SANDBOX_CSP });
-      response.end(SANDBOX_HTML);
-    } else if (request.url === '/fixture.json') {
-      response.writeHead(200, { 'content-type': 'application/json' });
-      response.end(JSON.stringify(replay));
-    } else if (request.url === '/entry.js') {
-      response.writeHead(200, { 'content-type': 'text/javascript' });
-      response.end(compiled.outputFiles[0]!.text);
-    } else if (request.url === '/favicon.ico') {
-      response.writeHead(204);
-      response.end();
-    } else if (request.url === '/') {
-      response.writeHead(200, { 'content-type': 'text/html' });
-      response.end('<!doctype html><html><body><script type="module" src="/entry.js"></script></body></html>');
-    } else {
-      response.writeHead(404);
-      response.end();
-    }
-  });
-  await new Promise<void>((resolveListen, reject) => {
-    server.once('error', reject);
-    server.listen(options.port ?? 0, '127.0.0.1', resolveListen);
-  });
-  let browser: Awaited<ReturnType<typeof chromium.connectOverCDP>> | undefined;
-  try {
-    browser = options.headless
-      ? await chromium.launch({ headless: true, args: ['--disable-dev-shm-usage', '--disable-gpu', '--disable-webgl'] })
-      : await chromium.connectOverCDP(options.cdp ?? process.env.REPLAYS_PLUGIN_CDP ?? 'http://127.0.0.1:9222', { timeout: 5000 });
-    const context = await browser.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 1 });
-    try {
-      const page = await context.newPage();
-      page.on('pageerror', (error) => result.errors.push(error.message));
-      page.on('console', (message) => {
-        if (message.type() === 'error') result.errors.push(message.text());
-        else result.output.push(message.text());
-      });
-      const address = server.address();
-      if (!address || typeof address === 'string') throw new Error('check server did not bind');
-      const origin = `http://127.0.0.1:${address.port}`;
-      await context.route('**/*', (route) => (route.request().url().startsWith(`${origin}/`) ? route.continue() : route.abort()));
-      await page.goto(`${origin}/`);
-      await page.waitForFunction(() => (window as unknown as { __pluginCheck?: { done: boolean } }).__pluginCheck?.done, undefined, {
-        timeout: 30_000,
-      });
-      const report = await page.evaluate(
-        () => (window as unknown as { __pluginCheck: { output: string[]; errors: string[] } }).__pluginCheck,
-      );
-      result.output.push(...report.output);
-      result.errors.push(...report.errors);
-      if (options.out) {
-        const { mkdir } = await import('node:fs/promises');
-        await mkdir(options.out, { recursive: true });
-        const items = page.locator('[data-slot-item], iframe');
-        const count = Math.min(await items.count(), 8);
-        if (!count) {
-          const path = join(options.out, 'plugin-check.png');
-          await page.screenshot({ path });
-          result.output.push(`screenshot: ${path}`);
-        }
-        for (let i = 0; i < count; i++) {
-          const path = join(options.out, `slot-${i + 1}.png`);
-          await items.nth(i).screenshot({ path });
-          result.output.push(`screenshot: ${path}`);
-        }
-      }
-    } finally {
-      await context.close();
-    }
-  } finally {
-    await browser?.close();
-    await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
-  }
-}
-
-export async function checkPlugin(options: PluginCheckOptions): Promise<PluginCheckResult> {
+export async function checkPlugin(options: PluginCheckOptions, env: NodeJS.ProcessEnv = {}): Promise<PluginCheckResult> {
+  const browserOptions = { ...options, ...(env.REPLAYS_PLUGIN_CDP && !options.cdp ? { cdp: env.REPLAYS_PLUGIN_CDP } : {}) };
   const result: PluginCheckResult = {
     kind: options.kind ?? (options.file.endsWith('.replays-plugin.json') ? 'user' : 'server'),
     output: [],
@@ -313,14 +250,14 @@ export async function checkPlugin(options: PluginCheckOptions): Promise<PluginCh
     if (result.kind === 'user') {
       const file = parsePluginFile(JSON.parse(await readFile(options.file, 'utf8')));
       result.output.push(`policy-sha256: ${await pluginPolicyHash(file.manifest, file.source)}`);
-      await checkBrowser(options, replay, result, file);
-    } else if (result.kind === 'browser') await checkBrowser(options, replay, result);
+      await checkBrowser(browserOptions, replay, result, file);
+    } else if (result.kind === 'browser') await checkBrowser(browserOptions, replay, result);
     else {
-      const loaded = (await import(pathToFileURL(options.file).href)) as { default?: unknown };
-      if (!options.kind && typeof loaded.default === 'function' && 'apiVersion' in loaded.default) {
+      const loaded: unknown = await import(pathToFileURL(options.file).href);
+      if (!options.kind && isRecord(loaded) && typeof loaded.default === 'function' && 'apiVersion' in loaded.default) {
         result.kind = 'browser';
-        await checkBrowser(options, replay, result);
-      } else await checkServer(options, replay, result);
+        await checkBrowser(browserOptions, replay, result);
+      } else await checkServer(options, replay, result, env);
     }
   } catch (error) {
     result.errors.push(errorText(error));
@@ -328,7 +265,7 @@ export async function checkPlugin(options: PluginCheckOptions): Promise<PluginCh
   return result;
 }
 
-export async function runPluginCheckCli(argv: string[]) {
+export async function runPluginCheckCli(argv: string[], env: NodeJS.ProcessEnv = {}): Promise<void> {
   if (argv.includes('--help') || argv.includes('-h')) {
     process.stdout.write(`${PLUGIN_CHECK_USAGE}\n`);
     return;
@@ -341,7 +278,7 @@ export async function runPluginCheckCli(argv: string[]) {
     process.exitCode = 2;
     return;
   }
-  const result = await checkPlugin(options);
+  const result = await checkPlugin(options, env);
   for (const line of result.output) process.stdout.write(`${line}\n`);
   for (const line of result.errors) process.stderr.write(`ERROR ${line}\n`);
   process.stdout.write(`${result.errors.length ? 'FAIL' : 'PASS'} ${result.kind} plugin check\n`);

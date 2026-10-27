@@ -6,9 +6,7 @@ import { checkPlugin } from '../src/plugin/check.ts';
 import { pluginFile, starterPlugin } from '../src/shared/malleable.ts';
 
 const dirs: string[] = [];
-afterEach(async () => {
-  await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
-});
+
 async function file(name: string, source: string) {
   const dir = await mkdtemp(join(tmpdir(), 'replays-browser-check-'));
   dirs.push(dir);
@@ -18,6 +16,9 @@ async function file(name: string, source: string) {
 }
 
 describe.skipIf(process.env.REPLAYS_PLUGIN_BROWSER_TESTS !== '1')('plugin check with isolated Chromium', () => {
+  afterEach(async () => {
+    await Promise.all(dirs.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
+  });
   it('runs a browser entry against the real viewer registry and captures fixture output', async () => {
     const path = await file(
       'entry.mjs',
