@@ -29,28 +29,28 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "gzip": 219,
-      "brotli": 188
+      "gzip": 217,
+      "brotli": 219
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 17524,
-      "gzip": 3874,
-      "brotli": 3391
+      "raw": 35060,
+      "gzip": 6742,
+      "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 53233,
-      "gzip": 18818,
-      "brotli": 16302
+      "raw": 79876,
+      "gzip": 26552,
+      "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 29642,
-      "gzip": 5826,
-      "brotli": 5188
+      "raw": 33095,
+      "gzip": 6332,
+      "brotli": 5643
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 182491,
-      "gzip": 62079,
-      "brotli": 52999
+      "raw": 332366,
+      "gzip": 110268,
+      "brotli": 95018
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -118,14 +118,14 @@
       "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 748,
-      "gzip": 442,
-      "brotli": 394
+      "raw": 939,
+      "gzip": 528,
+      "brotli": 474
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1373,
-      "gzip": 671,
-      "brotli": 547
+      "raw": 1816,
+      "gzip": 805,
+      "brotli": 657
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -135,12 +135,12 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 18080,
       "gzip": 7488,
-      "brotli": 6349
+      "brotli": 6340
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 38948,
       "gzip": 13458,
-      "brotli": 12055
+      "brotli": 12053
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -192,11 +192,6 @@
       "gzip": 9325,
       "brotli": 8271
     },
-    "dist/lib/chunks/frames.ts-703f5c18f3bf.mjs": {
-      "raw": 259911,
-      "gzip": 69909,
-      "brotli": 57127
-    },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
       "gzip": 10764,
@@ -245,7 +240,7 @@
     "dist/lib/config.mjs": {
       "raw": 269,
       "gzip": 148,
-      "brotli": 123
+      "brotli": 131
     },
     "dist/lib/index.mjs": {
       "raw": 1509,
@@ -303,9 +298,9 @@
       "brotli": 305226
     },
     "initial/render.html/css": {
-      "raw": 4810,
-      "gzip": 2321,
-      "brotli": 1929
+      "raw": 5252,
+      "gzip": 2455,
+      "brotli": 2038
     },
     "initial/render.html/js": {
       "raw": 542325,
@@ -387,7 +382,7 @@
       "cap": {
         "raw": 79876,
         "gzip": 26552,
-        "brotli": 22715
+        "brotli": 23404
       },
       "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
@@ -395,9 +390,9 @@
     {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
-        "raw": 29862,
-        "gzip": 5902,
-        "brotli": 5240
+        "raw": 33095,
+        "gzip": 6332,
+        "brotli": 5643
       },
       "reason": "Highlight scrubber markers and caption morph presentation share the lazy inspector stylesheet and add these reviewed styles.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
@@ -440,6 +435,14 @@
         "brotli": 2038
       },
       "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 219
+      },
+      "reason": "Highlight and caption exports added to the shared main chunk lengthen the minified import binding of this 261-byte icon chunk and shift its Brotli size.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     }
   ]
