@@ -9,22 +9,35 @@ export function bundleKey(file) {
 
 export async function bundleInventory(root) {
   const checks = new Map();
-  const library = JSON.parse(await readFile(resolve(root, 'dist/lib/.metafile.json'), 'utf8'));
   const chunks = new Map();
-  for (const [output, details] of Object.entries(library.outputs)) {
-    const absolute = resolve(root, output);
-    if (!relative(root, absolute).startsWith('dist/lib/chunks/')) continue;
-    const sources = Object.keys(details.inputs)
-      .map((input) => relative(root, resolve(root, input)))
-      .sort();
-    if (!sources.length) throw new Error(`Shared chunk has no source identity: ${output}`);
-    const hash = createHash('sha256').update(sources.join('\n')).digest('hex').slice(0, 12);
-    chunks.set(absolute, `dist/lib/chunks/${basename(sources[0])}-${hash}.mjs`);
+  for (const [metadata, directory] of [
+    ['dist/lib/.metafile.json', 'dist/lib/chunks/'],
+    ['dist/lib/.recorder-metafile.json', 'dist/lib/recorder-chunks/'],
+  ]) {
+    const raw = await readFile(resolve(root, metadata), 'utf8').catch((error) => {
+      if (metadata.endsWith('/.recorder-metafile.json') && error.code === 'ENOENT') return null;
+      throw error;
+    });
+    if (raw === null) continue;
+    const library = JSON.parse(raw);
+    for (const [output, details] of Object.entries(library.outputs)) {
+      const absolute = resolve(root, output);
+      if (!relative(root, absolute).startsWith(directory)) continue;
+      const sources = Object.keys(details.inputs)
+        .map((input) => relative(root, resolve(root, input)))
+        .sort();
+      if (!sources.length) throw new Error(`Shared chunk has no source identity: ${output}`);
+      const hash = createHash('sha256').update(sources.join('\n')).digest('hex').slice(0, 12);
+      chunks.set(absolute, `${directory}${basename(sources[0])}-${hash}.mjs`);
+    }
   }
   async function walk(directory) {
     for (const entry of await readdir(resolve(root, directory), { withFileTypes: true })) {
       // Only these unpublished build metadata files are exempt; new hidden runtime assets need budgets too.
-      if ((directory === 'dist/client' && entry.name === '.vite') || (directory === 'dist/lib' && entry.name === '.metafile.json'))
+      if (
+        (directory === 'dist/client' && entry.name === '.vite') ||
+        (directory === 'dist/lib' && ['.metafile.json', '.recorder-metafile.json'].includes(entry.name))
+      )
         continue;
       const file = join(directory, entry.name);
       if (entry.isDirectory()) await walk(file);

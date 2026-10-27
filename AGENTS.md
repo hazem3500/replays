@@ -55,7 +55,7 @@ On your own Boat, use `pnpm check:quick` for cached lint/format/tsrs types plus 
 
 ## React and composition
 
-New code imports/calls effect hooks only in `src/client/hooks/`; derive values during render, handle actions in event handlers, and subscribe through `useSyncExternalStore`. Use a named hook for imperative setup. Do not move browser-recorder code into the client to satisfy this rule; coordinate an appropriate browser-only hook boundary first.
+New code imports/calls effect hooks only in `src/client/hooks/`, the browser-only recorder adapter boundary `src/recorder/react/hooks/`, and story-local `stories/**/hooks/` fixtures; derive values during render, handle actions in event handlers, and subscribe through `useSyncExternalStore`. Use a named hook for imperative setup. Do not move browser-recorder code into the client to satisfy this rule.
 
 React Compiler is enabled in the app build. Run `pnpm quality:compiler` on Boat for the [bailout report and build-parity status](docs/compiler-health.md). Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.
 
