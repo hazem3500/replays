@@ -56,6 +56,14 @@ describe('reviewed bundle allowances', () => {
     assert.deepEqual(next.files[file], { raw: 62, gzip: 31, brotli: 40 });
     assert.match(budgetDiff(base(), next, []), /Automatic downward ratchet/);
   });
+  it('requires an actual same-run optimization before CI demands lower caps', () => {
+    const measured = { [file]: { raw: 90, gzip: 40, brotli: 30 } };
+    assert.deepEqual(ratchetBudget(base(), measured, measured).files, base().files);
+    const reduced = { [file]: { raw: 60, gzip: 30, brotli: 20 } };
+    assert.deepEqual(ratchetBudget(base(), reduced, measured).files[file], { raw: 62, gzip: 31, brotli: 21 });
+    const growth = { [file]: { raw: 120, gzip: 60, brotli: 50 } };
+    assert.deepEqual(ratchetBudget(base(), growth, measured).files, base().files);
+  });
   it('removes budgets and allowance entries when their artifacts disappear', () => {
     const next = ratchetBudget({ ...base(), allowances: [allowance()] }, {});
     assert.deepEqual(next.files, {});
