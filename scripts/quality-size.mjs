@@ -4,6 +4,7 @@ import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { bundleInventory } from './bundle-inventory.mjs';
+import { authorizeBudget, budgetDiff, ratchetBudget, validateBudget } from './bundle-budgets.mjs';
 
 const { values } = parseArgs({
   options: {
@@ -11,6 +12,9 @@ const { values } = parseArgs({
     output: { type: 'string' },
     'report-directory': { type: 'string', default: '.review-artifacts/quality' },
     baseline: { type: 'string' },
+    'baseline-budgets': { type: 'string' },
+    'pr-url': { type: 'string' },
+    'check-ratchet': { type: 'boolean', default: false },
     budgets: { type: 'string', default: 'budgets/bundle.json' },
     measure: { type: 'boolean', default: false },
     ratchet: { type: 'boolean', default: false },
@@ -21,13 +25,21 @@ const directory = resolve(values['report-directory']);
 await mkdir(directory, { recursive: true });
 const inventory = await bundleInventory(resolve(values.root));
 const budgetPath = resolve(values.budgets);
-const budgets = JSON.parse(await readFile(budgetPath, 'utf8'));
-if (budgets.headroomPercent !== 3) throw new Error('Bundle ratchet headroom must stay at 3%');
-for (const [name, limits] of Object.entries(budgets.files)) {
-  if (['raw', 'gzip', 'brotli'].some((metric) => !Number.isInteger(limits[metric]) || limits[metric] < 0)) {
-    throw new Error(`Invalid bundle ceilings: ${name}`);
+const original = JSON.parse(await readFile(budgetPath, 'utf8'));
+validateBudget(original);
+let mainBudgets = original;
+if (!values.measure) {
+  if (values['baseline-budgets']) mainBudgets = JSON.parse(await readFile(resolve(values['baseline-budgets']), 'utf8'));
+  else {
+    const result = spawnSync('git', ['show', 'origin/main:budgets/bundle.json'], { encoding: 'utf8' });
+    if (result.status !== 0) throw new Error('Fetch origin/main or pass --baseline-budgets before checking bundle caps');
+    mainBudgets = JSON.parse(result.stdout);
   }
 }
+const authorization = values.measure
+  ? { approved: original, failures: [], allowances: [] }
+  : authorizeBudget(original, mainBudgets, values['pr-url'] ?? process.env.BUNDLE_PR_URL);
+const budgets = authorization.approved;
 const checks = [];
 const unknown = [];
 for (const [name, files] of Object.entries(inventory)) {
@@ -39,7 +51,7 @@ for (const [name, files] of Object.entries(inventory)) {
       path: files,
       gzip: compression === 'gzip',
       brotli: compression === 'brotli',
-      ...(!values.measure && !values.ratchet && limit !== undefined ? { limit: `${limit} B` } : {}),
+      ...(!values.measure && limit !== undefined ? { limit: `${limit} B` } : {}),
     });
   }
 }
@@ -70,21 +82,12 @@ for (const [name, sizes] of Object.entries(files)) {
 }
 await writeFile(
   values.output ? resolve(values.output) : resolve(directory, 'bundle-sizes.json'),
-  JSON.stringify({ files, violations, unknown }, null, 2) + '\n',
+  JSON.stringify({ files, violations, unknown, allowanceErrors: authorization.failures }, null, 2) + '\n',
 );
-if (values.ratchet) {
-  // Optimizations only lower existing ceilings. New/split files receive reviewed ceilings.
-  for (const [name, sizes] of Object.entries(files)) {
-    const previous = budgets.files[name];
-    budgets.files[name] = Object.fromEntries(
-      Object.entries(sizes).map(([metric, size]) => [
-        metric,
-        Math.min(previous?.[metric] ?? Infinity, Math.ceil(size * (1 + budgets.headroomPercent / 100))),
-      ]),
-    );
-  }
-  for (const name of Object.keys(budgets.files)) if (!files[name]) delete budgets.files[name];
-  await writeFile(budgetPath, JSON.stringify(budgets, null, 2) + '\n');
+const nextBudgets = values.measure ? budgets : ratchetBudget(budgets, files);
+const budgetChanged = JSON.stringify(original) !== JSON.stringify(nextBudgets);
+if (!values.measure && !values['check-ratchet'] && !authorization.failures.length) {
+  await writeFile(budgetPath, JSON.stringify(nextBudgets, null, 2) + '\n');
 }
 const baseline = values.baseline ? JSON.parse(await readFile(resolve(values.baseline), 'utf8')).files : {};
 const delta = (size, old) => (old === undefined ? 'new' : `${size - old >= 0 ? '+' : ''}${size - old}`);
@@ -113,8 +116,15 @@ rows.push(
   ...unknown.map((name) => `Unbudgeted: ${name}`),
   '',
 );
-const summary = rows.join('\n');
+rows.push(
+  ...authorization.failures,
+  ...(values['check-ratchet'] && budgetChanged
+    ? ['Run pnpm quality:size and commit the automatically ratcheted budgets/bundle.json.']
+    : []),
+);
+const summary = rows.join('\n') + budgetDiff(mainBudgets, nextBudgets, authorization.allowances);
 console.log(summary);
 await writeFile(resolve(directory, 'bundle-sizes.md'), summary);
 if (process.env.GITHUB_STEP_SUMMARY) await appendFile(process.env.GITHUB_STEP_SUMMARY, summary);
-if (!values.measure && !values.ratchet && (violations.length || unknown.length)) process.exitCode = 1;
+if (!values.measure && (violations.length || unknown.length || authorization.failures.length || (values['check-ratchet'] && budgetChanged)))
+  process.exitCode = 1;

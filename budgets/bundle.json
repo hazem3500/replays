@@ -177,11 +177,6 @@
       "gzip": 9325,
       "brotli": 8271
     },
-    "dist/lib/chunks/frames.ts-43e9eb9f958e.mjs": {
-      "raw": 254847,
-      "gzip": 68168,
-      "brotli": 55823
-    },
     "dist/lib/chunks/frames.ts-703f5c18f3bf.mjs": {
       "raw": 259911,
       "gzip": 69909,
@@ -274,7 +269,7 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1590,
-      "gzip": 554,
+      "gzip": 553,
       "brotli": 461
     },
     "dist/lib/viewer.mjs": {

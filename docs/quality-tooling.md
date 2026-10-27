@@ -88,7 +88,26 @@ pnpm quality:size:ratchet
 pnpm quality:size
 ```
 
-`quality:size:ratchet` sets each ceiling to the **smaller** of its previous value and `ceil(current bytes × 1.03)`. It cannot raise an existing ceiling. Commit the lowered limits with the optimization. It also seeds explicit limits for newly split chunks and removes limits for removed files; review that diff. A new route/chunk without a budget fails until its allocation is reviewed. When the TanStack Router split lands, budget the newly emitted chunks and let the initial-graph ceiling fall automatically. An intentional growth requires a reviewed edit to the affected limits, with the reason and main/head diff in its PR; do not reset all limits.
+`quality:size` automatically lowers each existing ceiling to `min(previous cap, ceil(current bytes × 1.03))`, removes budgets for deleted artifacts, and writes the result to `budgets/bundle.json`. `quality:size:ratchet` is an alias for the same operation. Neither command can bypass an over-budget result or allocate an unreviewed new chunk. Commit the automatic decreases with the optimization; CI uses `--check-ratchet` to require them without rewriting its checkout.
+
+### Reviewed feature growth
+
+Caps only rise through a specific allowance in the budget file. Add an entry with the stable artifact name, only the metrics that need more room, a concrete reason, and the feature PR's full URL:
+
+```json
+{
+  "file": "dist/client/assets/Inspector-HASH.css",
+  "cap": { "raw": 29642 },
+  "reason": "Mobile network search and request filters need the reviewed control styles.",
+  "pr": "https://github.com/hazem3500/replays/pull/62"
+}
+```
+
+Place entries in the top-level `allowances` array. Do not raise unrelated entries in `files`. Run `pnpm quality:size` after building; it applies the new allowance, keeps the 3% downward ratchet, and writes the resulting caps. Include gzip/Brotli caps as well if those metrics exceed their current ceilings. A new chunk needs all three metrics explicitly allocated. Do not add a broad wildcard or reset every cap.
+
+The allowance is a review artifact: the maintainer reviews its reason and measured main/head delta in the feature PR. CI validates the metadata and requires each changed allowance to link the current PR. It compares caps against freshly fetched main's budget file, so a direct cap increase without a matching new allowance fails. An old allowance cannot be reused after an optimization. Replace its entry with a newly reviewed reason/cap/PR if the same metric needs more room later. The job summary includes a budget-diff table with the old/new cap, metric, reason and PR, alongside the existing measured byte deltas. No PR-comment write permission is needed.
+
+For an already-stale main baseline, measure a clean main archive on Boat and land a baseline-only correction before feature allowances. Never absorb an unmerged feature into that correction.
 
 Vite's native manifest supplies each entry's static dependency closure, including imported CSS. Dynamic imports are kept out of the initial group and budgeted per emitted file. Hashed client filenames normalize to stable logical names. Esbuild's shared library chunks use source-membership identities from its metafile, avoiding collisions between generic `chunk-HASH.mjs` filenames. The library build clears its generated chunks directory so old graph outputs cannot be packed or measured. A changed source-membership set is shown as a new/removed artifact rather than misattributed growth.
 
