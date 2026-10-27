@@ -260,7 +260,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4025,
       "gzip": 1598,
-      "brotli": 1377
+      "brotli": 1376
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
@@ -280,7 +280,7 @@
     "dist/lib/server.mjs": {
       "raw": 1590,
       "gzip": 553,
-      "brotli": 461
+      "brotli": 458
     },
     "dist/lib/viewer.mjs": {
       "raw": 470,
