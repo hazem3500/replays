@@ -1,0 +1,280 @@
+{
+  "meta": {
+    "id": "demo-seed-network-retry",
+    "title": "Report export · timeout followed by retry",
+    "url": "https://reports.northstar.demo.test/exports",
+    "capturedAt": "2026-10-20T14:05:00.000Z",
+    "duration": 19800,
+    "viewport": { "width": 1365, "height": 850 },
+    "eventCount": 13,
+    "version": 1,
+    "source": "agent",
+    "tags": ["demo", "synthetic", "network", "retry", "recovery"]
+  },
+  "events": [
+    {
+      "type": 4,
+      "data": { "href": "https://reports.northstar.demo.test/exports", "width": 1365, "height": 850 },
+      "timestamp": 1792505100000
+    },
+    {
+      "type": 2,
+      "data": {
+        "node": {
+          "type": 0,
+          "childNodes": [
+            { "type": 1, "name": "html", "publicId": "", "systemId": "", "id": 147 },
+            {
+              "type": 2,
+              "tagName": "html",
+              "attributes": { "lang": "en" },
+              "childNodes": [
+                {
+                  "type": 2,
+                  "tagName": "head",
+                  "attributes": { "lang": "en" },
+                  "childNodes": [
+                    { "type": 2, "tagName": "meta", "attributes": { "charset": "utf-8" }, "childNodes": [], "id": 148 },
+                    {
+                      "type": 2,
+                      "tagName": "title",
+                      "attributes": {},
+                      "childNodes": [{ "type": 3, "textContent": "Export is ready", "id": 149 }],
+                      "id": 150
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "style",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "\n  :root{font:15px/1.5 system-ui,sans-serif;color:#24313d;background:#f4f7f6}*{box-sizing:border-box}\n  body{margin:0;padding:36px}main{max-width:850px;margin:auto;background:white;border:1px solid #dce5e1;border-radius:16px;padding:30px;box-shadow:0 12px 32px #22332212}\n  h1{font-size:26px;margin:0 0 6px}p{color:#66756f;margin:0 0 20px}.eyebrow{color:#26765c;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}\n  .row{display:flex;gap:12px;align-items:center}.card{border:1px solid #dce5e1;border-radius:10px;padding:16px;margin:12px 0;background:#fbfdfc}\n  button{border:0;border-radius:7px;padding:9px 13px;background:#26765c;color:white;font:inherit;font-weight:650}.quiet{background:#edf4f0;color:#26765c}\n  label{display:block;font-weight:650;margin:12px 0 5px}input{font:inherit;border:1px solid #cbd7d1;border-radius:7px;padding:9px;width:100%}\n  .error{color:#a43b32;background:#fff2ef;padding:10px 12px;border-radius:8px}.ok{color:#236846}.muted{color:#7b8982}.pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#edf4f0;color:#26765c;font-size:12px}\n  ul{padding-left:20px}li{margin:5px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}\n",
+                          "id": 151
+                        }
+                      ],
+                      "id": 152
+                    }
+                  ],
+                  "id": 153
+                },
+                {
+                  "type": 2,
+                  "tagName": "body",
+                  "attributes": {},
+                  "childNodes": [
+                    {
+                      "type": 2,
+                      "tagName": "main",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "eyebrow" },
+                          "childNodes": [{ "type": 3, "textContent": "Northstar reports · demo", "id": 141 }],
+                          "id": 142
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "h1",
+                          "attributes": {},
+                          "childNodes": [{ "type": 3, "textContent": "Export is ready", "id": 143 }],
+                          "id": 144
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "p",
+                          "attributes": {},
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "The first request timed out. A retry completed and produced a fictional report.",
+                              "id": 145
+                            }
+                          ],
+                          "id": 146
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "error card", "id": "export-status" },
+                          "childNodes": [{ "type": 3, "textContent": "Export queued. Waiting for the first response…", "id": 126 }],
+                          "id": 127
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "ok card", "id": "retry-status" },
+                          "childNodes": [{ "type": 3, "textContent": "Retry has not started yet.", "id": 128 }],
+                          "id": 129
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "row card" },
+                          "childNodes": [
+                            {
+                              "type": 2,
+                              "tagName": "strong",
+                              "attributes": {},
+                              "childNodes": [{ "type": 3, "textContent": "Quarterly activity summary.csv", "id": 130 }],
+                              "id": 131
+                            },
+                            {
+                              "type": 2,
+                              "tagName": "span",
+                              "attributes": {},
+                              "childNodes": [{ "type": 3, "textContent": " 42 KB · expires in 1 hour", "id": 132 }],
+                              "id": 133
+                            }
+                          ],
+                          "id": 134
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "button",
+                          "attributes": {},
+                          "childNodes": [{ "type": 3, "textContent": "Download report", "id": 135 }],
+                          "id": 136
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "button",
+                          "attributes": { "class": "quiet", "id": "export" },
+                          "childNodes": [{ "type": 3, "textContent": "Start export", "id": 137 }],
+                          "id": 138
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "button",
+                          "attributes": { "class": "quiet", "id": "retry" },
+                          "childNodes": [{ "type": 3, "textContent": "Retry export", "id": 139 }],
+                          "id": 140
+                        }
+                      ],
+                      "id": 154
+                    }
+                  ],
+                  "id": 155
+                }
+              ],
+              "id": 156
+            }
+          ],
+          "initialOffset": { "left": 0, "top": 0 },
+          "id": 157
+        },
+        "initialOffset": { "left": 0, "top": 0 }
+      },
+      "timestamp": 1792505100020
+    },
+    { "type": 3, "data": { "source": 1, "positions": [{ "x": 180, "y": 150, "id": 138, "timeOffset": 0 }] }, "timestamp": 1792505100630 },
+    { "type": 3, "data": { "source": 2, "type": 1, "id": 138, "x": 180, "y": 150 }, "timestamp": 1792505100700 },
+    { "type": 3, "data": { "source": 2, "type": 2, "id": 138, "x": 180, "y": 150 }, "timestamp": 1792505100701 },
+    { "type": 3, "data": { "source": 2, "type": 0, "id": 138, "x": 180, "y": 150 }, "timestamp": 1792505100702 },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 126, "value": "First attempt timed out after 10 seconds." }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1792505110710
+    },
+    { "type": 3, "data": { "source": 1, "positions": [{ "x": 470, "y": 150, "id": 140, "timeOffset": 0 }] }, "timestamp": 1792505112530 },
+    { "type": 3, "data": { "source": 2, "type": 1, "id": 140, "x": 470, "y": 150 }, "timestamp": 1792505112600 },
+    { "type": 3, "data": { "source": 2, "type": 2, "id": 140, "x": 470, "y": 150 }, "timestamp": 1792505112601 },
+    { "type": 3, "data": { "source": 2, "type": 0, "id": 140, "x": 470, "y": 150 }, "timestamp": 1792505112602 },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 128, "value": "Retry 2 of 2 · completed at 14:05:13" }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1792505113220
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 126, "value": "Retry completed · fictional report is ready." }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1792505119800
+    }
+  ],
+  "steps": [
+    { "at": 700, "kind": "click", "label": "Start a report export", "selector": "#export" },
+    { "at": 11200, "kind": "wait", "label": "Observe the request timeout" },
+    { "at": 12600, "kind": "click", "label": "Retry the export", "selector": "#retry" },
+    { "at": 18300, "kind": "wait", "label": "Confirm the completed export" }
+  ],
+  "console": [
+    {
+      "at": 10710,
+      "level": "error",
+      "message": "Export request failed: network timeout (demo fixture).",
+      "url": "https://reports.northstar.demo.test/exports"
+    },
+    {
+      "at": 13220,
+      "level": "info",
+      "message": "Export retry completed with status 200.",
+      "url": "https://reports.northstar.demo.test/exports"
+    }
+  ],
+  "network": [
+    {
+      "id": "export-first",
+      "at": 700,
+      "duration": 10000,
+      "method": "POST",
+      "url": "https://api.northstar.demo.test/v1/exports",
+      "status": 0,
+      "statusText": "Network Error",
+      "requestHeaders": [{ "name": "content-type", "value": "application/json" }],
+      "responseHeaders": []
+    },
+    {
+      "id": "export-retry",
+      "at": 12600,
+      "duration": 620,
+      "method": "POST",
+      "url": "https://api.northstar.demo.test/v1/exports",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "application/json",
+      "requestHeaders": [{ "name": "content-type", "value": "application/json" }],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    },
+    {
+      "id": "export-download",
+      "at": 18400,
+      "duration": 198,
+      "method": "GET",
+      "url": "https://cdn.northstar.demo.test/demo/quarterly-activity-summary.csv",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "text/csv",
+      "requestHeaders": [],
+      "responseHeaders": [{ "name": "content-type", "value": "text/csv" }]
+    }
+  ],
+  "performance": { "supported": [], "entries": [] },
+  "context": {
+    "version": 1,
+    "capturedAt": "2026-10-20T14:05:00.000Z",
+    "app": { "name": "Northstar Reports", "environment": "demo", "origin": "https://reports.northstar.demo.test", "version": "demo-1.0" },
+    "test": { "suite": "Network retry", "case": "demo seed network retry", "runId": "demo-seed-network-retry" },
+    "fields": { "demo": true, "fictional": true }
+  },
+  "suiteRun": { "suiteId": "demo-suite-reliability", "runId": "export-first-attempt" }
+}

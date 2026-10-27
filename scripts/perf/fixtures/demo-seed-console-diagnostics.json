@@ -1,0 +1,255 @@
+{
+  "meta": {
+    "id": "demo-seed-console-diagnostics",
+    "title": "Settings diagnostics · warning and recovered preference",
+    "url": "https://settings.northstar.demo.test/preferences",
+    "capturedAt": "2026-10-22T11:15:00.000Z",
+    "duration": 8400,
+    "viewport": { "width": 1280, "height": 800 },
+    "eventCount": 13,
+    "version": 1,
+    "source": "agent",
+    "tags": ["demo", "synthetic", "console", "settings", "warning"]
+  },
+  "events": [
+    {
+      "type": 4,
+      "data": { "href": "https://settings.northstar.demo.test/preferences", "width": 1280, "height": 800 },
+      "timestamp": 1792667700000
+    },
+    {
+      "type": 2,
+      "data": {
+        "node": {
+          "type": 0,
+          "childNodes": [
+            { "type": 1, "name": "html", "publicId": "", "systemId": "", "id": 176 },
+            {
+              "type": 2,
+              "tagName": "html",
+              "attributes": { "lang": "en" },
+              "childNodes": [
+                {
+                  "type": 2,
+                  "tagName": "head",
+                  "attributes": { "lang": "en" },
+                  "childNodes": [
+                    { "type": 2, "tagName": "meta", "attributes": { "charset": "utf-8" }, "childNodes": [], "id": 177 },
+                    {
+                      "type": 2,
+                      "tagName": "title",
+                      "attributes": {},
+                      "childNodes": [{ "type": 3, "textContent": "Notification settings", "id": 178 }],
+                      "id": 179
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "style",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "\n  :root{font:15px/1.5 system-ui,sans-serif;color:#24313d;background:#f4f7f6}*{box-sizing:border-box}\n  body{margin:0;padding:36px}main{max-width:850px;margin:auto;background:white;border:1px solid #dce5e1;border-radius:16px;padding:30px;box-shadow:0 12px 32px #22332212}\n  h1{font-size:26px;margin:0 0 6px}p{color:#66756f;margin:0 0 20px}.eyebrow{color:#26765c;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}\n  .row{display:flex;gap:12px;align-items:center}.card{border:1px solid #dce5e1;border-radius:10px;padding:16px;margin:12px 0;background:#fbfdfc}\n  button{border:0;border-radius:7px;padding:9px 13px;background:#26765c;color:white;font:inherit;font-weight:650}.quiet{background:#edf4f0;color:#26765c}\n  label{display:block;font-weight:650;margin:12px 0 5px}input{font:inherit;border:1px solid #cbd7d1;border-radius:7px;padding:9px;width:100%}\n  .error{color:#a43b32;background:#fff2ef;padding:10px 12px;border-radius:8px}.ok{color:#236846}.muted{color:#7b8982}.pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#edf4f0;color:#26765c;font-size:12px}\n  ul{padding-left:20px}li{margin:5px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}\n",
+                          "id": 180
+                        }
+                      ],
+                      "id": 181
+                    }
+                  ],
+                  "id": 182
+                },
+                {
+                  "type": 2,
+                  "tagName": "body",
+                  "attributes": {},
+                  "childNodes": [
+                    {
+                      "type": 2,
+                      "tagName": "main",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "eyebrow" },
+                          "childNodes": [{ "type": 3, "textContent": "Northstar preferences · demo", "id": 170 }],
+                          "id": 171
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "h1",
+                          "attributes": {},
+                          "childNodes": [{ "type": 3, "textContent": "Notification settings", "id": 172 }],
+                          "id": 173
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "p",
+                          "attributes": {},
+                          "childNodes": [
+                            { "type": 3, "textContent": "A stale preference is ignored and the safe default is restored.", "id": 174 }
+                          ],
+                          "id": 175
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "error card" },
+                          "childNodes": [{ "type": 3, "textContent": "Checking the saved digest preference…", "id": 158 }],
+                          "id": 159
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "label",
+                          "attributes": { "class": "card" },
+                          "childNodes": [
+                            {
+                              "type": 2,
+                              "tagName": "input",
+                              "attributes": { "type": "checkbox", "checked": "checked" },
+                              "childNodes": [],
+                              "id": 160
+                            },
+                            { "type": 3, "textContent": " Email me a weekly summary", "id": 161 }
+                          ],
+                          "id": 162
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "label",
+                          "attributes": { "class": "card" },
+                          "childNodes": [
+                            { "type": 2, "tagName": "input", "attributes": { "type": "checkbox" }, "childNodes": [], "id": 163 },
+                            { "type": 3, "textContent": " Notify me about product updates", "id": 164 }
+                          ],
+                          "id": 165
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "ok card" },
+                          "childNodes": [{ "type": 3, "textContent": "Changes are ready to save.", "id": 166 }],
+                          "id": 167
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "button",
+                          "attributes": {},
+                          "childNodes": [{ "type": 3, "textContent": "Save preferences", "id": 168 }],
+                          "id": 169
+                        }
+                      ],
+                      "id": 183
+                    }
+                  ],
+                  "id": 184
+                }
+              ],
+              "id": 185
+            }
+          ],
+          "initialOffset": { "left": 0, "top": 0 },
+          "id": 186
+        },
+        "initialOffset": { "left": 0, "top": 0 }
+      },
+      "timestamp": 1792667700020
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 158, "value": "Digest value was not recognized. Weekly default restored." }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1792667702000
+    },
+    { "type": 3, "data": { "source": 1, "positions": [{ "x": 325, "y": 150, "id": 160, "timeOffset": 0 }] }, "timestamp": 1792667702130 },
+    { "type": 3, "data": { "source": 2, "type": 1, "id": 160, "x": 325, "y": 150 }, "timestamp": 1792667702200 },
+    { "type": 3, "data": { "source": 2, "type": 2, "id": 160, "x": 325, "y": 150 }, "timestamp": 1792667702201 },
+    { "type": 3, "data": { "source": 2, "type": 0, "id": 160, "x": 325, "y": 150 }, "timestamp": 1792667702202 },
+    { "type": 3, "data": { "source": 1, "positions": [{ "x": 470, "y": 150, "id": 169, "timeOffset": 0 }] }, "timestamp": 1792667704530 },
+    { "type": 3, "data": { "source": 2, "type": 1, "id": 169, "x": 470, "y": 150 }, "timestamp": 1792667704600 },
+    { "type": 3, "data": { "source": 2, "type": 2, "id": 169, "x": 470, "y": 150 }, "timestamp": 1792667704601 },
+    { "type": 3, "data": { "source": 2, "type": 0, "id": 169, "x": 470, "y": 150 }, "timestamp": 1792667704602 },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 166, "value": "Preferences saved with the weekly default." }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1792667705100
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 166, "value": "Preferences saved · weekly email selected." }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1792667708400
+    }
+  ],
+  "steps": [
+    { "at": 500, "kind": "goto", "label": "Open notification settings" },
+    { "at": 2200, "kind": "click", "label": "Review the restored weekly setting", "selector": "input[type=checkbox]" },
+    { "at": 4600, "kind": "click", "label": "Save the safe preferences", "selector": "button" },
+    { "at": 7200, "kind": "wait", "label": "Confirm the saved state" }
+  ],
+  "console": [
+    {
+      "at": 350,
+      "level": "warn",
+      "message": "Unknown digestSchedule value; falling back to weekly.",
+      "url": "https://settings.northstar.demo.test/preferences"
+    },
+    { "at": 4810, "level": "info", "message": "Preference update saved.", "url": "https://settings.northstar.demo.test/preferences" }
+  ],
+  "network": [
+    {
+      "id": "preferences-read",
+      "at": 250,
+      "duration": 114,
+      "method": "GET",
+      "url": "https://api.northstar.demo.test/v1/preferences",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "application/json",
+      "requestHeaders": [],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    },
+    {
+      "id": "preferences-save",
+      "at": 4600,
+      "duration": 176,
+      "method": "PUT",
+      "url": "https://api.northstar.demo.test/v1/preferences",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "application/json",
+      "requestHeaders": [{ "name": "content-type", "value": "application/json" }],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    }
+  ],
+  "performance": { "supported": [], "entries": [] },
+  "context": {
+    "version": 1,
+    "capturedAt": "2026-10-22T11:15:00.000Z",
+    "app": {
+      "name": "Northstar Preferences",
+      "environment": "demo",
+      "origin": "https://settings.northstar.demo.test",
+      "version": "demo-1.0"
+    },
+    "test": { "suite": "Console diagnostics", "case": "demo seed console diagnostics", "runId": "demo-seed-console-diagnostics" },
+    "fields": { "demo": true, "fictional": true }
+  },
+  "suiteRun": { "suiteId": "demo-suite-reliability", "runId": "settings-recovery" }
+}
