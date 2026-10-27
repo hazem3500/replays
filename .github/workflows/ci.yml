@@ -180,12 +180,6 @@ jobs:
       # The viewer and the library entries (what package.json `exports` points at), then the example on top of them.
       - run: pnpm build
       - run: pnpm build:cli
-      - uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: npm-consumer-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('package.json', 'pnpm-lock.yaml') }}
-          restore-keys: |
-            npm-consumer-${{ runner.os }}-${{ runner.arch }}-
       - name: The packed tarball works when installed outside the repository
         run: pnpm test:pack
       - run: pnpm --filter @hazem3500/replays-example-custom-distro build

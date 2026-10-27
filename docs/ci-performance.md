@@ -69,7 +69,7 @@ The cold install steps took 5–14 seconds while repopulating the new lockfile's
 | Quality / size | 80 | 95 |
 | Quality / boundaries, test, hooks, dedupe, knip | 32, 37, 27, 32, 33 | 37, 38, 30, 44, 39 |
 
-Warm browser setup took 12–21 seconds versus 26–31 seconds cold. The unit suite is larger than the historical sample. The new cache did not make the npm consumer smoke fast: it still took 50 seconds versus 53 cold, so do not attribute a meaningful gain to that cache. Quality's fresh-main build and report jobs remain unchanged gates; their startup variability is visible in the table.
+Warm browser setup took 12–21 seconds versus 26–31 seconds cold. The unit suite is larger than the historical sample. The npm cache / prefer-offline trial did not make the consumer smoke meaningfully faster: 50 seconds versus 53 cold. Both trial changes were removed from the final implementation; preserve independent npm-consumer coverage and retain this as a remaining bottleneck. Quality's fresh-main build and report jobs remain unchanged gates; their startup variability is visible in the table.
 
 ## Changes and integrity
 
