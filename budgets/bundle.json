@@ -165,7 +165,7 @@
     "dist/lib/capture.mjs": {
       "raw": 1625,
       "gzip": 493,
-      "brotli": 415
+      "brotli": 435
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -175,12 +175,12 @@
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
       "gzip": 18876,
-      "brotli": 16354
+      "brotli": 16339
     },
-    "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs": {
-      "raw": 282635,
-      "gzip": 75335,
-      "brotli": 61508
+    "dist/lib/chunks/context.schema.json-aaa0d4314420.mjs": {
+      "raw": 285941,
+      "gzip": 76217,
+      "brotli": 62135
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
@@ -199,8 +199,8 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "gzip": 9499,
-      "brotli": 8394
+      "gzip": 9498,
+      "brotli": 8389
     },
     "dist/lib/chunks/index.ts-21682b68ed82.mjs": {
       "raw": 0,
@@ -212,10 +212,10 @@
       "gzip": 10732,
       "brotli": 9330
     },
-    "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
-      "raw": 31393,
-      "gzip": 8181,
-      "brotli": 7129
+    "dist/lib/chunks/registry.ts-e9358072f05f.mjs": {
+      "raw": 35814,
+      "gzip": 9254,
+      "brotli": 8095
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -280,7 +280,7 @@
     "dist/lib/server.mjs": {
       "raw": 1590,
       "gzip": 552,
-      "brotli": 458
+      "brotli": 457
     },
     "dist/lib/viewer.mjs": {
       "raw": 470,
@@ -378,16 +378,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/63"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs",
-      "cap": {
-        "raw": 282635,
-        "gzip": 75335,
-        "brotli": 61508
-      },
-      "reason": "The error classifier (src/server/http/errors.ts) joins the route table in the shared server chunk, renaming it; head 274402 raw vs main's 272355 (+2.0 KB raw).",
-      "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
       "file": "dist/lib/chunks/define.ts-fa732c9dbf03.mjs",
       "cap": {
         "raw": 32713,
@@ -396,6 +386,34 @@
       },
       "reason": "HttpError (src/shared/http-error.ts) joins the shared plugin-definition chunk so rejectUpload() returns it; the chunk is renamed and smaller than main's (31760 vs 32426 raw).",
       "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-aaa0d4314420.mjs",
+      "cap": {
+        "raw": 285941,
+        "gzip": 76217,
+        "brotli": 62135
+      },
+      "reason": "Plugin Web API runtime (src/server/api/plugin-routes.ts: routes, middleware, body schemas) joins the shared server chunk, renaming it; head 277612 raw vs main's 272355 (+5.3 KB raw across the stack).",
+      "pr": "https://github.com/hazem3500/replays/pull/89"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-e9358072f05f.mjs",
+      "cap": {
+        "raw": 35814,
+        "gzip": 9254,
+        "brotli": 8095
+      },
+      "reason": "api.route and api.middleware registration checks (src/plugin/web-registry.ts) join the plugin registry chunk, renaming it; head 34770 raw vs main's 31393.",
+      "pr": "https://github.com/hazem3500/replays/pull/89"
+    },
+    {
+      "file": "dist/lib/capture.mjs",
+      "cap": {
+        "brotli": 435
+      },
+      "reason": "Its import of the renamed shared chunk adds 7 bytes brotli (head 422 vs cap 415); no code change in the capture entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/89"
     }
   ]
 }

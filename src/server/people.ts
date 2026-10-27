@@ -1,5 +1,6 @@
 import type { IncomingMessage } from 'node:http';
 
+import type { HookRequests } from './plugin-runtime.ts';
 import type { PluginRegistry } from '../plugin/registry.ts';
 import type { PersonHandle } from '../plugin/types.ts';
 import {
@@ -165,12 +166,12 @@ export function peopleConfig(registry: PluginRegistry) {
  */
 export function identityResolver(registry: PluginRegistry) {
   const cache = new WeakMap<IncomingMessage, Promise<Identity>>();
-  async function run(identity: Identity, request: IncomingMessage) {
+  async function run(identity: Identity, requests: HookRequests) {
     let current = identity;
     for (const { plugin, value } of registry.identityResolvers) {
       let next: Identity | undefined | void;
       try {
-        next = await value.resolve({ ...current }, { request });
+        next = await value.resolve({ ...current }, { ...requests });
       } catch (error) {
         log(plugin, 'identity.resolve', error);
         continue;
@@ -187,10 +188,10 @@ export function identityResolver(registry: PluginRegistry) {
     }
     return current;
   }
-  return (identity: Identity, request: IncomingMessage): Promise<Identity> => {
+  return (identity: Identity, requests: HookRequests): Promise<Identity> => {
     if (!registry.identityResolvers.length) return Promise.resolve(identity);
-    let pending = cache.get(request);
-    if (!pending) cache.set(request, (pending = run(identity, request)));
+    let pending = cache.get(requests.request);
+    if (!pending) cache.set(requests.request, (pending = run(identity, requests)));
     return pending;
   };
 }

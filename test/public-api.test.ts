@@ -1,4 +1,4 @@
-import type { PluginApi, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
+import type { PluginApi, PluginMiddleware, PluginRoute, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
@@ -150,6 +150,11 @@ describe('public API', () => {
     expectTypeOf<PluginApi['requestPolicy']>().parameter(0).toEqualTypeOf<RequestPolicy>();
     expectTypeOf<PluginApi['uploadEndpoint']>().parameter(0).toEqualTypeOf<UploadEndpoint>();
     expectTypeOf<UploadEndpoint['prepare']>().toEqualTypeOf<PrepareUploadHook | undefined>();
+  });
+  it('exposes the web-standard route and middleware registrations', () => {
+    expectTypeOf<PluginApi['route']>().toBeCallableWith({ method: 'GET', path: '/api/plugins/acme', handler: () => new Response('') });
+    expectTypeOf<PluginApi['middleware']>().parameter(0).toEqualTypeOf<PluginMiddleware>();
+    expectTypeOf<ReturnType<PluginRoute['handler']>>().toEqualTypeOf<Response | Promise<Response>>();
   });
   it.each(Object.entries(entries))('%s exports exactly the documented values', async (_subpath, { source, values }) => {
     const module = (await import(source)) as Record<string, unknown>;

@@ -12,7 +12,7 @@ so every change to the surface shows up in a diff).
 | Surface | Where | Status |
 | --- | --- | --- |
 | Config file keys and `defineConfig` | `@hazem3500/replays/config` | Public |
-| Plugin API: `definePlugin`, `PluginApi` methods and their hook contexts, `PluginError` codes, `rejectUpload`, `PLUGIN_API_VERSION` | `/plugin` | Public |
+| Plugin API: `definePlugin`, `PluginApi` methods (including the web-standard `route` and `middleware`, with `PluginRoute`, `PluginMiddleware` and `StandardSchemaV1`) and their hook contexts, `PluginError` codes, `rejectUpload`, `PLUGIN_API_VERSION` | `/plugin` | Public |
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions | `/viewer` | Public |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |

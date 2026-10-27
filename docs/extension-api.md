@@ -514,6 +514,44 @@ a `render` that throws shows an error line in its slot (`data-plugin-error`) and
   the list shows now (after the filters), `me` the signed-in person from `GET /api/me` once known. When the list changes, `update(container,
   context)` is called if given; otherwise the previous render is cleaned up and `render` runs again.
 
+## Web APIs: routes and middleware
+
+Plugins can serve HTTP with web-standard handlers: a `Request` comes in and a `Response` goes out. The same handler runs on
+the built-in Node server and on any fetch host (the TanStack Start mount included). These additions sit alongside
+`onRequest`, which keeps working.
+
+```ts
+import { definePlugin } from '@hazem3500/replays/plugin';
+import { z } from 'zod'; // any Standard Schema library: Zod 4, Valibot, ArkType
+
+export default definePlugin({
+  name: 'acme',
+  setup(api) {
+    api.route({
+      method: 'POST',
+      path: '/api/plugins/acme/notes/:id',
+      body: z.object({ text: z.string().max(500) }),
+      handler: ({ params, body, identity }) => Response.json({ id: params.id, by: identity?.id, text: body.text }),
+    });
+    api.middleware({ phase: 'pre-auth', handle: ({ path }) => (path === '/api/plugins/acme/ping' ? new Response('pong') : undefined) });
+  },
+});
+```
+
+- **`api.route({ method, path, auth?, write?, body?, handler })`**
+  - `method` is one method or a list.
+  - `path` is matched without the public base and must be `/api/plugins/<plugin name>` or below it. Use `:name` segments, and an optional final `**:name` splat whose value is `params.name`. A trailing slash never matches.
+  - `auth: 'required'` (the default) runs after authentication, scopes, CSRF and the `post-auth` hooks, like core routes, and `identity` is set. `auth: 'none'` runs right after the auth adapter's own routes, before authentication, and `identity` is undefined.
+  - A route with `write` (the default for any method but GET and HEAD) refuses cross-site browser requests, on `auth: 'none'` routes too, unless a `requestPolicy` allows the origin.
+  - With `body`, the JSON body (at most 1 MiB) is read and validated once before the handler runs. Validation issues answer `400` with `path: message` text, and the handler gets the parsed value as `body`. With a body schema the request body has already been consumed; without one, read `request` yourself.
+  - Throw `rejectUpload(status, message)` or an error with a 4xx `status` to answer with that status; anything else is a `500`.
+- **`api.middleware({ phase, handle })`**
+  - It runs for every request in its phase: `pre-auth` after the `onRequest` pre-auth hooks, `post-auth` after the `onRequest` post-auth hooks.
+  - Return a `Response` to answer the request, or nothing to let it continue. There is no `next`.
+  - Middleware must not read the request body; routes own it.
+- **`webRequest`**
+  - Upload hooks (`prepareUpload`, `beforeUpload`, `afterUpload`, upload endpoints' `prepare`), context adapters and `identity.resolve` now receive `webRequest`, the same request as a web `Request`, next to the Node `request`.
+
 ## Starting the server
 
 `replays serve` reads `replays.config.*` and the environment. To own the entry point:
