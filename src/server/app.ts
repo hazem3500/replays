@@ -19,6 +19,7 @@ import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compre
 import { appPath, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath, type HostConfig } from './base-path.ts';
 import { renderIndexHtml } from './index-page.ts';
 import { coreRoutes } from './api/index.ts';
+import { authenticatedPluginRoutes, publicPluginRoutes, runWebMiddleware } from './api/plugin-routes.ts';
 import { sendWebResponse, toWebRequest } from './http/node.ts';
 import { classifyError } from './http/errors.ts';
 import { RouteTable } from './http/route.ts';
@@ -303,8 +304,9 @@ export function createApp(options: AppOptions) {
   /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
   const sanitize = (bundle: ReplayBundle) =>
     withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle, redaction));
-  const routes = new RouteTable(
-    coreRoutes({
+  const answerPublicRoute = publicPluginRoutes(registry);
+  const routes = new RouteTable([
+    ...coreRoutes({
       deployment: {
         store: options.store,
         auth: options.auth,
@@ -325,7 +327,8 @@ export function createApp(options: AppOptions) {
       versions,
       inferable,
     }),
-  );
+    ...authenticatedPluginRoutes(registry),
+  ]);
   /** index.html as served at `base` (index-page.ts, shared with `replays build-static`). */
   const indexPage = (html: string, base: string) =>
     renderIndexHtml(html, {
@@ -348,6 +351,12 @@ export function createApp(options: AppOptions) {
   /** Everything past the health checks, inside the request's span. */
   async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string, base: string) {
     const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
+    let web: Request | undefined;
+    const webRequest = () => (web ??= toWebRequest(request, response));
+    const answer = async (page: Response | undefined) => {
+      if (page) await sendWebResponse(response, page, request.method);
+      return Boolean(page);
+    };
     try {
       // Loopback + per-process token only (render-routes.ts); never reachable through the public path.
       if (path.startsWith('/internal/render/')) {
@@ -359,9 +368,22 @@ export function createApp(options: AppOptions) {
       if (requestPolicy.handled) return;
 
       if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return;
+      if (
+        registry.hooks.webPreAuth.length &&
+        (await answer(await runWebMiddleware(registry, 'pre-auth', { request: webRequest(), url: raw, path, base })))
+      )
+        return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
       if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
+        return;
+
+      if (
+        registry.routes.length &&
+        (await answer(
+          await answerPublicRoute({ request: webRequest(), url: raw, path, base, crossSiteAllowed: requestPolicy.csrfAllowed }),
+        ))
+      )
         return;
 
       // Public, credential-free CLI auth contract. It is separate from the normal viewer config and works before sign-in.
@@ -402,7 +424,7 @@ export function createApp(options: AppOptions) {
         return;
       }
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
-      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, request);
+      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, { request, webRequest: webRequest() });
       identities.set(request, user);
       const denied = routeAllowed(registry, user, request.method ?? 'GET', path);
       if (denied) {
@@ -415,6 +437,11 @@ export function createApp(options: AppOptions) {
       }
       await options.application?.authorize(request, path, user);
       if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
+        return;
+      if (
+        registry.hooks.webPostAuth.length &&
+        (await answer(await runWebMiddleware(registry, 'post-auth', { request: webRequest(), url: raw, path, base, identity: user })))
+      )
         return;
       if (signIn && path === signIn.path) {
         if (request.method !== 'GET') {
@@ -432,14 +459,15 @@ export function createApp(options: AppOptions) {
       const route = request.method ? routes.match(request.method, path) : undefined;
       if (route) {
         const page = await route.route.handler({
-          request: toWebRequest(request, response),
+          request: webRequest(),
           url: raw,
           path,
           params: route.params,
           base,
           identity: user,
           trace: (attributes) => setRequestAttributes(request, attributes),
-          legacy: { request },
+          crossSiteAllowed: requestPolicy.csrfAllowed,
+          hooks: { request, webRequest: webRequest() },
         });
         await sendWebResponse(response, page, request.method);
         return;

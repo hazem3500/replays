@@ -5,6 +5,8 @@ import type {
   IdentityCapabilities,
   NormalizeUploadHook,
   PluginApi,
+  PluginMiddleware,
+  PluginRoute,
   PrepareUploadHook,
   RequestPolicy,
   UploadEndpoint,
@@ -257,6 +259,11 @@ describe('public API', () => {
     expectTypeOf<UploadEndpoint['normalize']>().toEqualTypeOf<NormalizeUploadHook | undefined>();
     expectTypeOf<PluginApi['normalizeUpload']>().parameter(0).toEqualTypeOf<NormalizeUploadHook>();
     expectTypeOf<Identity['capabilities']>().toEqualTypeOf<IdentityCapabilities | undefined>();
+  });
+  it('exposes the web-standard route and middleware registrations', () => {
+    expectTypeOf<PluginApi['route']>().toBeCallableWith({ method: 'GET', path: '/api/plugins/acme', handler: () => new Response('') });
+    expectTypeOf<PluginApi['middleware']>().parameter(0).toEqualTypeOf<PluginMiddleware>();
+    expectTypeOf<ReturnType<PluginRoute['handler']>>().toEqualTypeOf<Response | Promise<Response>>();
   });
   it.each(Object.entries(entries))('%s exports exactly the documented values', async (_subpath, { source, values }) => {
     const module = (await import(source)) as Record<string, unknown>;

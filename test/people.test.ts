@@ -1,4 +1,4 @@
-import { createServer } from 'node:http';
+import { createServer, type IncomingMessage } from 'node:http';
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -16,6 +16,8 @@ import { suitePersonMatch } from '../src/shared/review-suite.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const ROLES = ['pr-author', 'reviewer', 'requester', 'assignee', 'uploader', 'mentioned'];
+
+const hooks = (request: IncomingMessage) => ({ request, webRequest: new Request('http://replays.test/') });
 
 describe('meta.people: shape and size', () => {
   it('accepts up to ten people with an email or a handle each', () => {
@@ -196,11 +198,11 @@ describe('identity resolvers', () => {
     ]);
     const run = identityResolver(registry);
     const one = request();
-    const first = await run({ id: 'ada', email: 'ada@example.com' }, one);
+    const first = await run({ id: 'ada', email: 'ada@example.com' }, hooks(one));
     expect(first).toEqual({ id: 'ada', email: 'ada@example.com', name: 'Ada Lovelace!', avatarUrl: 'https://img.example.com/ada.png' });
-    expect(await run({ id: 'ada' }, one)).toBe(first);
+    expect(await run({ id: 'ada' }, hooks(one))).toBe(first);
     expect(resolve).toHaveBeenCalledTimes(1);
-    await run({ id: 'ada' }, request());
+    await run({ id: 'ada' }, hooks(request()));
     expect(resolve).toHaveBeenCalledTimes(2);
   });
 
@@ -223,7 +225,7 @@ describe('identity resolvers', () => {
           api.identity({ resolve: (identity) => ({ ...identity, avatarUrl: 'javascript:alert(1)', email: 'other@example.com' }) }),
       }),
     ]);
-    const result = await identityResolver(registry)({ id: 'ada', email: 'ada@example.com' }, request());
+    const result = await identityResolver(registry)({ id: 'ada', email: 'ada@example.com' }, hooks(request()));
     expect(result).toEqual({ id: 'ada', email: 'ada@example.com' });
     expect(error.mock.calls.map((call) => String(call[0]))).toEqual([
       'plugin swap: identity.resolve failed:',
