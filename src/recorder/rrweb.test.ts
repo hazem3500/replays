@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// why: happy-dom 21.0.4 lacks window.DOMTokenList and serializes unmasked text empty, so the unmask assertions cannot run there.
 import { describe, expect, it } from 'vitest';
 import { createRecorder } from './recorder.ts';
 import type { IssueReport } from './upload.ts';
