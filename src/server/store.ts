@@ -1,3 +1,4 @@
+import { StoredDataError } from './storage/types.ts';
 import {
   assertReplayBundle,
   assertReplayId,
@@ -749,23 +750,31 @@ export class ReplayStore {
     return span;
   }
 
-  /**
-   * The stored edit list and its storage version (undefined when none was ever saved). A sidecar that does not
-   * validate reads as no edits, with its version, so the next save can replace it.
-   */
+  /** The stored edit list and its version; unreadable sidecars must never be replaced by a save. */
   async readEdits(id: string): Promise<{ edits: StoredReplayEdits; version: string | undefined }> {
     const key = this.editsKey(id);
-    const info = await this.storage.stat(key);
-    const none = { ...EMPTY_EDITS, revision: 0 };
-    if (!info) return { edits: none, version: undefined };
-    const parsed = await readJson(this.storage, key).catch(() => undefined);
+    let info;
+    try {
+      info = await this.storage.stat(key);
+    } catch (cause) {
+      throw new StoredDataError('Stored edits could not be read; retry before saving.', 503, { cause });
+    }
+    if (!info) return { edits: { ...EMPTY_EDITS, revision: 0 }, version: undefined };
+    const parsed = await readJson(this.storage, key);
+    if (
+      parsed &&
+      typeof parsed === 'object' &&
+      'version' in parsed &&
+      typeof parsed.version === 'number' &&
+      parsed.version !== EMPTY_EDITS.version
+    )
+      throw new StoredDataError('Stored edits use an unsupported version; upgrade the server before saving.', 409);
     try {
       assertStoredReplayEdits(parsed);
-      return { edits: parsed, version: info.version };
-    } catch (error) {
-      console.error(`edits ${id}: unreadable sidecar ignored:`, error instanceof Error ? error.message : error);
-      return { edits: none, version: info.version };
+    } catch (cause) {
+      throw new StoredDataError('Stored edits are corrupt or unavailable; restore them before saving.', 503, { cause });
     }
+    return { edits: parsed, version: info.version };
   }
 
   /**
