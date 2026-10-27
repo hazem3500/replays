@@ -148,9 +148,9 @@
       "brotli": 3206
     },
     "dist/client/render.html": {
-      "raw": 977,
-      "gzip": 415,
-      "brotli": 302
+      "raw": 1294,
+      "gzip": 553,
+      "brotli": 412
     },
     "dist/lib/capture.mjs": {
       "raw": 1625,
@@ -181,6 +181,11 @@
       "raw": 254847,
       "gzip": 68168,
       "brotli": 55823
+    },
+    "dist/lib/chunks/frames.ts-703f5c18f3bf.mjs": {
+      "raw": 259911,
+      "gzip": 69909,
+      "brotli": 57127
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
