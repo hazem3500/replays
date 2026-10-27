@@ -79,5 +79,6 @@ jobs:
         with:
           name: quality-${{ matrix.tool }}
           path: .review-artifacts/quality/
-          if-no-files-found: error
-          retention-days: 14
+          if-no-files-found: ignore
+          retention-days: 3
+          compression-level: 6

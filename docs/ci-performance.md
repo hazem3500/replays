@@ -47,7 +47,15 @@ Quality has one successful sampled run per tool because #57 had just landed. Rep
 
 Run these on your session's Boat. `pnpm check:quick` caches lint/format/types and runs `test:changed` against fetched `origin/main`; it is a feedback loop, not a replacement for `pnpm check` before handoff. `pnpm test:watch` watches units; `pnpm typecheck:watch` watches native TypeScript; `pnpm dev` serves API + Vite HMR. Lefthook from #57 already checks only staged paths, in parallel, without rewriting or restaging: opt in with `pnpm hooks:install`.
 
+## Artifact storage
+
+On 27 October the repository artifact API listed 13 run artifacts (all Docker build records from 14–16 October), totaling 701,227 bytes (0.67 MiB). Listed first, then deleted only those older than three days; the follow-up inventory returned zero artifacts/zero bytes. No releases or caches were touched. Account-wide billing storage was unavailable to the current token (404, missing `user` scope), so repository storage is not a claim about account usage.
+
+Evidence uploads are best-effort, ignore missing files and retain reports for three days. Already-compressed browser traces/package tarballs use compression level 0; text quality reports use 6. Optional Docker build-record uploads are disabled; Docker's build summary remains enabled. Size/budget tables are already emitted to the job summary before the gate returns its failure status. Upload failures cannot hide gate failures.
+
 ## Costs and further options
+
+Standard GitHub-hosted Ubuntu runners provide four cores free for public repositories ([GitHub runner reference](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job)); testing that route is a zero-runner-fee follow-up, with different queue/cache characteristics. GitHub's larger 8-core Linux runner lists $0.022/min and is always paid ([pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing)). Ubicloud's current page lists standard 4-core at $0.0025/min, premium 4-core at $0.004/min and standard 8-core at $0.005/min; verify account/region pricing before a switch ([Ubicloud](https://www.ubicloud.com/use-cases/github-actions)). No paid runner switch was made.
 
 Three E2E shards trade repeated setup and additional runner minutes for lower elapsed time. Keep the existing Ubicloud runner sizes. Extra unit shards, larger paid runners and a maintained browser/FFmpeg container should be reconsidered only against measured post-change bottlenecks. A prebuilt container saves apt work but adds image transfer, registry/storage and update maintenance; do not substitute system Chrome for the locked Playwright revision. PR-only `--changed`/`--only-changed` selection is deferred because dynamic imports, spawned CLI processes and filesystem fixtures are not a proven complete dependency graph here. Full PR coverage is preserved.
 

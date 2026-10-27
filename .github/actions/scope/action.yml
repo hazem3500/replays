@@ -2,8 +2,10 @@ name: Select affected checks
 description: Skip runtime checks only for documentation or Storybook-only pull requests
 outputs:
   runtime:
+    description: Whether runtime checks are affected
     value: ${{ steps.scope.outputs.runtime }}
   storybook:
+    description: Whether Storybook integration checks are affected
     value: ${{ steps.scope.outputs.storybook }}
 runs:
   using: composite

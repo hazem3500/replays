@@ -41,10 +41,13 @@ jobs:
       - name: Pack
         run: pnpm pack --pack-destination dist/pack
       - uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: replays-package
           path: dist/pack/*.tgz
-          retention-days: 30
+          retention-days: 3
+          if-no-files-found: ignore
+          compression-level: 0
       - name: Decide whether publishing is possible
         id: gate
         env:
