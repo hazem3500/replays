@@ -1,9 +1,11 @@
+import { assertReplayId } from '../shared/replay.ts';
 import { PRODUCT_SLUG } from '../shared/brand.ts';
 import { editingEnabled } from './config.ts';
 
 export type Route =
   | { kind: 'index' }
   | { kind: 'replay'; id: string }
+  | { kind: 'comparison'; id: string; beforeId: string; afterId: string }
   /** Edit mode for a replay (`/r/<id>/edit`): trims and cuts, saved next to the replay. */
   | { kind: 'edit'; id: string }
   /** The suite workspace; without `replayId` it picks the first failed run (else the first recording). */
@@ -44,6 +46,16 @@ export function isAppPage(pathname: string, base = appBase()) {
  */
 export function parseRoute(pathname: string, search = '', base = appBase()): Route {
   const rest = base && under(pathname, base) ? pathname.slice(base.length) : pathname;
+  if (/^\/compare\/?$/.test(rest)) {
+    const params = new URLSearchParams(search);
+    try {
+      const beforeId = assertReplayId(params.get('before') ?? '');
+      const afterId = assertReplayId(params.get('after') ?? '');
+      return { kind: 'comparison', id: `${beforeId}~${afterId}`, beforeId, afterId };
+    } catch {
+      return { kind: 'index' };
+    }
+  }
   const suite = /^\/s\/([^/]+)(?:\/r\/([^/]+))?\/?$/.exec(rest);
   if (suite) {
     const id = decode(suite[1]!);
@@ -108,4 +120,9 @@ export function replayInSuiteHref(id: string, suiteId: string) {
 
 export function apiUrl(path: string) {
   return `${appBase()}/api/${path}`;
+}
+
+/** Compare original recording timelines within this workspace. */
+export function comparisonHref(beforeId: string, afterId: string) {
+  return `${appBase()}/compare?${new URLSearchParams({ before: assertReplayId(beforeId), after: assertReplayId(afterId) })}`;
 }
