@@ -454,12 +454,12 @@ export function createDefaultUi(
       const current = surface(receipt ? 'complete' : 'error', text);
       const ownGeneration = generation;
       const feedback = element('span', { className: 'sr-only' });
-      const announce = (text: string, control?: HTMLElement) => {
+      const announce = (message: string, control?: HTMLElement) => {
         if (generation !== ownGeneration) return;
         const target = control ?? feedback;
         if (!control) target.className = 'copy-feedback';
-        target.textContent = text;
-        current.live.textContent = text;
+        target.textContent = message;
+        current.live.textContent = message;
       };
       const copy = async (value?: string, control?: HTMLElement) => {
         try {
