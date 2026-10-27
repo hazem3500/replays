@@ -66,8 +66,8 @@ export default defineConfig(({ command }) => ({
     tasks: {
       'cached:lint': { command: 'vp lint --config .oxlintrc.json --deny-warnings && pnpm lint:types' },
       'cached:format': { command: 'vp fmt --config .oxfmtrc.json --check .' },
-      'cached:types': { command: 'tsgo --noEmit' },
-      'cached:story-types': { command: 'tsc -p .storybook/tsconfig.json --noEmit' },
+      'cached:types': { command: 'tsrs --fast false --noEmit' },
+      'cached:story-types': { command: 'tsrs --fast false -p .storybook/tsconfig.json --noEmit' },
       'cached:build': {
         command: 'vp build',
         cache: {
@@ -77,9 +77,12 @@ export default defineConfig(({ command }) => ({
         },
       },
       'cached:package': {
-        command:
-          'node scripts/build-cli.mjs && node scripts/build-lib.mjs && tsc -p tsconfig.lib.json && node scripts/fix-types.mjs && pnpm build:recorder',
-        cache: { env: ['NODE_ENV', 'REPLAYS_BUILD_ROOT'], input: [{ auto: true }, '!dist/**'] },
+        command: 'node scripts/build-package.mjs',
+        cache: {
+          env: ['NODE_ENV', 'REPLAYS_BUILD_ROOT'],
+          input: [{ auto: true }, '!dist/**'],
+          output: ['dist/cli/**', 'dist/lib/**', 'dist/lib/.metafile.json', 'dist/types/**'],
+        },
       },
     },
   },

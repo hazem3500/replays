@@ -39,9 +39,9 @@ oz-boat stop --session t3:<YOUR_THREAD_ID>
 
 ## Fast feedback
 
-On your own Boat, use `pnpm check:quick` for cached lint/format/native root types plus units affected by fetched `origin/main`. Run `pnpm test:changed` directly for that unit subset; `pnpm test:watch` and `pnpm typecheck:watch` keep feedback live. `pnpm dev` provides API + Vite HMR. Install the optional staged-only, read-only hook with `pnpm hooks:install`. Stop watch/server processes before stopping Boat.
+On your own Boat, use `pnpm check:quick` for cached lint/format/tsrs types plus units affected by fetched `origin/main`. Run `pnpm test:changed` directly for that unit subset; `pnpm test:watch` and `pnpm typecheck:watch` keep feedback live. `pnpm dev` provides API + Vite HMR. Install the optional staged-only, read-only hook with `pnpm hooks:install`. Stop watch/server processes before stopping Boat.
 
-`pnpm check` remains the full pre-handoff check; also run the relevant browser/example/Storybook checks. Root typechecking uses pinned native TypeScript; Storybook and declaration emission retain tsc. `pnpm typecheck:tsc` diagnoses compiler differences. `pnpm build` and `pnpm build:cli` replay successful Vite Task results only while tracked inputs/environment match; `pnpm exec vp run --no-cache cached:build` forces a fresh viewer build. See [CI timings and tradeoffs](docs/ci-performance.md).
+`pnpm check` remains the full pre-handoff check; also run the relevant browser/example/Storybook checks. Root, Storybook, examples and declaration emission use pinned tsrs with reference defaults (`--fast false`). Type-aware lint retains the Oxlint backend until tsrs supports the same rules; see `docs/quality-tooling.md`. `pnpm build` and `pnpm build:cli` replay successful Vite Task results only while tracked inputs/environment match; `pnpm exec vp run --no-cache cached:build` forces a fresh viewer build. See [CI timings and tradeoffs](docs/ci-performance.md).
 
 ## Invariants
 

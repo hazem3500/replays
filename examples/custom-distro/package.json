@@ -6,7 +6,7 @@
   "description": "Example custom distribution: replays plus a plugin, a config file and a browser entry. Not published.",
   "scripts": {
     "build": "node scripts/build.mjs",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsrs --fast false --noEmit",
     "start": "node --experimental-strip-types --no-warnings src/server.ts"
   },
   "dependencies": {
@@ -15,6 +15,6 @@
   "devDependencies": {
     "@types/node": "22.18.10",
     "esbuild": "0.28.2",
-    "typescript": "5.9.3"
+    "tsrs": "0.20.0-ts7.1.0-beta"
   }
 }

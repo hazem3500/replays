@@ -58,7 +58,7 @@ await server.close();
 console.log('pack smoke ok');
 `,
   );
-  run('npm', ['install', '--no-audit', '--no-fund', '--silent', join(out, tarball)], app);
+  run('npm', ['install', '--prefer-offline', '--no-audit', '--no-fund', '--silent', join(out, tarball)], app);
   console.log(run(process.execPath, ['check.mjs'], app).trim());
 } finally {
   await rm(work, { recursive: true, force: true });

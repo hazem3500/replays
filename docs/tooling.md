@@ -13,7 +13,7 @@ Node support is 22.22+ in 22.x, 24.11+ in 24.x, or 26+; CI and Docker use Node 2
 | `pnpm lint` | `vp lint` with the existing base config, then type-aware shared-contract gate |
 | `pnpm lint:types:audit` | Type-aware audit across the repository |
 | `pnpm format` / `pnpm format:check` | `vp fmt` with explicit `.oxfmtrc.json` |
-| `pnpm typecheck` | Pinned native TypeScript, same strict/erasable-syntax tsconfig; `typecheck:tsc` retains the 5.9 compatibility check |
+| `pnpm typecheck` | Pinned tsrs, same strict/erasable-syntax tsconfig and reference defaults |
 | `pnpm check` | Lint, formatting, types, unit tests and viewer build |
 | `pnpm dev` | Node server with API, storage/auth and Vite middleware/HMR |
 | `pnpm build:cli` | Existing CLI/library/recorder bundling and declaration generation |
@@ -24,7 +24,7 @@ both commands. The Vite alias points to `@voidzero-dev/vite-plus-core@1.4.0`; wo
 transitive Vite/Vitest consumers aligned. The Agent-Native example explicitly provides these peers too. Direct Vitest remains for existing test imports and global types;
 direct Oxlint remains for policy tests. Both match the versions bundled by Vite+.
 
-The full project check deliberately remains broader than `vp check`. Native root typechecking, Vite task caching and staged-only hooks are documented in
+The full project check deliberately remains broader than `vp check`. tsrs typechecking and declaration emission, Vite task caching and staged-only hooks are documented in
 [CI performance](ci-performance.md). Rewriting every test import or replacing the library builders with `vp pack`
 can be evaluated independently. The library's entry names, external dependencies, shared chunk identity,
 recorder browser boundary and repaired declaration specifiers must survive any future pack migration.

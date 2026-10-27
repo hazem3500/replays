@@ -26,26 +26,28 @@ Quality has one successful sampled run per tool because #57 had just landed. Rep
 | --- | ---: | ---: | --- |
 | pnpm install | 8.39 | 0.67 | Fresh dependencies vs existing dependencies/store; not a like-for-like flag speedup |
 | pnpm lint | 2.42 | 0.44 | Warm quick-check cache; uncached full gate retained |
-| Root typecheck | 10.62 | 2.53 | tsc 5.9.3 vs pinned native preview, same tsconfig |
+| Root typecheck | 11.09 | 0.75 | tsc 5.9.3 vs tsrs 0.20 beta; intermediate tsgo 2.51 |
 | Full unit suite | 78.99 | 43.46 | Same 1,589 passes / 11 skips; isolated threads, two workers |
 | Viewer build | 7.21 | 0.38 | Warm Vite Task content cache; first cached run 7.76 |
-| Cached root native types | 10.62 | 0.38 | Warm quick-check cache; cold native 2.53 |
-| Package build | 5.08 | 0.41 | Same CLI/library/recorder/declarations, warm cache |
+| Cached root types | 10.62 | 0.38 | Intermediate native-cache measurement; final tsrs measured below |
+| Package build | 5.08 | 0.51 | Final single-task cache restores complete CLI/library/recorder/declarations |
+
+The final verification after rebasing #60 passed 1,629 unit tests (11 skipped) in 58.30 seconds plus all 68 recorder tests. That expanded suite is not a like-for-like comparison with the earlier 1,589-test thread experiment.
 
 ## Changes and integrity
 
 - pnpm's lockfile-keyed store cache and Docker buildx `type=gha,mode=max` cache already existed. Keep both; use frozen, prefer-offline installs everywhere. Docker already orders manifests/install before source in separate dependency, build and runtime stages. No paid runner size changes.
 - Vitest uses two isolated thread workers. Global/environment mutation in existing tests makes `isolate:false` inappropriate. The full suite stays on every relevant PR, main and nightly; native affected-test selection is available locally. Thread tuning makes extra unit shards unnecessary for the critical path.
 - Playwright runs all tests across three independent shards, retaining two workers per runner, retries, timeouts, FFmpeg and browser dependencies. Cache the exact lockfile's browser binaries; still run `install --with-deps` to provision/check host libraries. Keep shard-specific failure reports. Browser caches do not cache test results.
-- Vite+ 1.4's `vp run` tracks file reads, directory listings, missing files and writes. Successful lint/format/type/build tasks can replay only when inputs match. Build-affecting environment variables are explicit. Library output directories are excluded from inputs because declaration repair intentionally reads and rewrites its own output. Raw `pnpm check` still runs the complete lint/format/types/tests gates; tasks that call external services are not result-cached.
-- Root `typecheck` uses pinned `@typescript/native-preview`; Storybook retains TypeScript 5.9 because the native compiler reports undeclared CSS side-effect imports there. `pnpm typecheck:tsc` remains available for compatibility diagnosis; declaration emission still uses TypeScript 5.9. Native failures are never swallowed.
+- Vite+ 1.4's `vp run` tracks file reads, directory listings, missing files and writes. Successful lint/format/type/build tasks can replay only when inputs match. Build-affecting environment variables are explicit. Package generation runs as one task that rebuilds and repairs all declarations; its output directories are excluded from inputs because repair intentionally reads and rewrites that same task's output. Repair is never independently cached, so a new source declaration cannot be overwritten by a stale repair result. Raw `pnpm check` still runs the complete lint/format/types/tests gates; tasks that call external services are not result-cached.
+- Root, Storybook, example typechecks and library/recorder declaration emission use pinned tsrs reference defaults. Storybook includes the existing CSS ambient declaration; Agent-Native explicitly includes installed Node types. All compiler error codes in the negative parity probe match tsc and tsgo; no diagnostics are suppressed. See [compiler parity and fallback scope](quality-tooling.md#tsrs-compiler-adoption).
 - On PRs only, root/docs Markdown can skip runtime jobs; Storybook-only changes retain lint, root/Storybook typechecks and Agent-Native/Storybook integration. Schema JSON, unknown paths, source, dependencies and workflow changes run all checks. Empty/unknown diffs fail conservatively; missing git history fails the scope job. Main, scheduled and manual CI always run everything.
 - Existing required check names `Unit tests and build`, `End-to-end smoke` and `PostgreSQL identity and credentials` remain aggregate checks. They require successful work or an explicit scope-selected skip. `CI status` validates the remaining CI jobs. Matrix jobs use `fail-fast:false`. Failures/cancellations cannot become successful aggregates. Workflow concurrency already cancelled superseded PRs; it remains enabled.
 - All seven Quality jobs, package smoke, host/custom-distro integrations, PostgreSQL coverage and performance/report-only workflows remain intact. Unit tests and build now run independently.
 
 ## Local loop
 
-Run these on your session's Boat. `pnpm check:quick` caches lint/format/types and runs `test:changed` against fetched `origin/main`; it is a feedback loop, not a replacement for `pnpm check` before handoff. `pnpm test:watch` watches units; `pnpm typecheck:watch` watches native TypeScript; `pnpm dev` serves API + Vite HMR. Lefthook from #57 already checks only staged paths, in parallel, without rewriting or restaging: opt in with `pnpm hooks:install`.
+Run these on your session's Boat. `pnpm check:quick` caches lint/format/types and runs `test:changed` against fetched `origin/main`; it is a feedback loop, not a replacement for `pnpm check` before handoff. `pnpm test:watch` watches units; `pnpm typecheck:watch` watches tsrs; `pnpm dev` serves API + Vite HMR. Lefthook from #57 already checks only staged paths, in parallel, without rewriting or restaging: opt in with `pnpm hooks:install`.
 
 ## Artifact storage
 
