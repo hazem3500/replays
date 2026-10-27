@@ -30,27 +30,27 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 219,
-      "brotli": 189
+      "brotli": 188
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 17524,
-      "gzip": 3874,
-      "brotli": 3391
+      "raw": 35060,
+      "gzip": 6742,
+      "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 53233,
-      "gzip": 18820,
-      "brotli": 16302
+      "raw": 79876,
+      "gzip": 26552,
+      "brotli": 22715
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 26409,
-      "gzip": 5385,
-      "brotli": 4779
+      "raw": 29862,
+      "gzip": 5902,
+      "brotli": 5240
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 182491,
-      "gzip": 62079,
-      "brotli": 52999
+      "raw": 332366,
+      "gzip": 110268,
+      "brotli": 95018
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -85,7 +85,7 @@
     "dist/client/assets/performance-HASH.js": {
       "raw": 4242,
       "gzip": 1815,
-      "brotli": 1632
+      "brotli": 1631
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -105,7 +105,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225484,
       "gzip": 69512,
-      "brotli": 59861
+      "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1516,
@@ -118,14 +118,14 @@
       "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 748,
-      "gzip": 442,
-      "brotli": 394
+      "raw": 939,
+      "gzip": 528,
+      "brotli": 474
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1373,
-      "gzip": 671,
-      "brotli": 547
+      "raw": 1816,
+      "gzip": 805,
+      "brotli": 657
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -133,9 +133,9 @@
       "brotli": 456
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 18081,
+      "raw": 18080,
       "gzip": 7488,
-      "brotli": 6354
+      "brotli": 6349
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 38948,
@@ -280,7 +280,7 @@
     "dist/lib/server.mjs": {
       "raw": 1590,
       "gzip": 553,
-      "brotli": 461
+      "brotli": 454
     },
     "dist/lib/viewer.mjs": {
       "raw": 470,
@@ -298,9 +298,9 @@
       "brotli": 305226
     },
     "initial/render.html/css": {
-      "raw": 4810,
-      "gzip": 2321,
-      "brotli": 1929
+      "raw": 5252,
+      "gzip": 2455,
+      "brotli": 2038
     },
     "initial/render.html/js": {
       "raw": 542325,
@@ -348,6 +348,76 @@
       },
       "reason": "The comparison loading shell shares workspace CSS in the initial stylesheet; this allocates its measured baseline growth.",
       "pr": "https://github.com/hazem3500/replays/pull/59"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 35060,
+        "gzip": 6742,
+        "brotli": 5984
+      },
+      "reason": "Playback highlights, the mobile timeline toolbar and object picker, plus the standing Appearance panel require these reviewed editor styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 79876,
+        "gzip": 26552,
+        "brotli": 22715
+      },
+      "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 29862,
+        "gzip": 5902,
+        "brotli": 5240
+      },
+      "reason": "Highlight scrubber markers and caption morph presentation share the lazy inspector stylesheet and add these reviewed styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 332366,
+        "gzip": 110268,
+        "brotli": 95018
+      },
+      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/rolldown-runtime-HASH.js",
+      "cap": {
+        "raw": 939,
+        "gzip": 528,
+        "brotli": 474
+      },
+      "reason": "Caption morph modules require additional bundler module interop helpers in this shared runtime.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 1816,
+        "gzip": 805,
+        "brotli": 657
+      },
+      "reason": "Caption morphing and wrapped step captions add presentation styles shared by viewer and video export.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5252,
+        "gzip": 2455,
+        "brotli": 2038
+      },
+      "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
     }
   ]
 }

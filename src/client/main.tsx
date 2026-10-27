@@ -1,3 +1,5 @@
+import './tailwind.css';
+// Establish the cascade layers before any component stylesheet is evaluated.
 import { StrictMode } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
@@ -6,7 +8,6 @@ import { App } from './App.tsx';
 import { registerCommentsFeature } from './comments/feature.tsx';
 import { betaMalleable } from './malleable/flag.ts';
 import { loadClientPlugins } from './plugins/load.ts';
-import './tailwind.css';
 
 registerCommentsFeature();
 

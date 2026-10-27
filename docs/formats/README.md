@@ -16,3 +16,5 @@ validator for sizes and the privacy pass), and `test/formats.test.ts` keeps them
 
 Versioning: each format carries a `version` or `format` field. Changes are additive, or the version is bumped and the old one stays
 readable ([../api-stability.md](../api-stability.md)). Design background: [../malleability.md](../malleability.md#data-as-the-stable-core).
+
+See [edits.md](edits.md) for how saved edits, including viewer-only highlights, affect playback and video exports.

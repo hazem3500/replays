@@ -41,6 +41,58 @@ async function dragOnClip(page: Page, from: number, to: number) {
   await page.mouse.up();
 }
 
+test('desktop editor fills the viewport and keeps timeline regions still across interaction states', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const id = await uploadCopy(page, 'editor-layout');
+  await openEditor(page, id);
+  const panel = page.getByRole('complementary', { name: 'Replay presentation' });
+  await expect(panel).toBeVisible();
+  const frame = page.locator('.editor-stage > .stage-wrap');
+  await expect(frame).toHaveCSS('box-shadow', 'none');
+  await expect(frame).toHaveCSS('border-radius', '0px');
+  const frameBox = (await frame.boundingBox())!;
+  const panelBox = (await panel.boundingBox())!;
+  expect(frameBox.width).toBeGreaterThan(500);
+  expect(frameBox.x + frameBox.width).toBeLessThanOrEqual(panelBox.x + 1);
+  const dock = page.getByRole('region', { name: 'Timeline', exact: true });
+  const dockBox = (await dock.boundingBox())!;
+  expect(Math.abs(dockBox.y + dockBox.height - 800)).toBeLessThanOrEqual(1);
+
+  // Keyboard resizing still gives space to the timeline and takes it from the preview.
+  const splitter = page.getByRole('separator', { name: 'Resize timeline' });
+  await splitter.focus();
+  await page.keyboard.press('ArrowUp');
+  await expect.poll(async () => (await dock.boundingBox())!.height).toBeCloseTo(dockBox.height + 24, 0);
+  await page.locator('body').press('t');
+  const region = page.getByTestId('region-caption').first();
+  const body = region.locator('.tl-region-body');
+  await body.scrollIntoViewIfNeeded();
+  const geometry = () =>
+    body.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return { width: box.width, height: box.height, padding: style.padding, transform: style.transform, scale: style.scale };
+    });
+  const resting = await geometry();
+  await body.hover();
+  expect(await geometry()).toEqual(resting);
+  await body.click();
+  expect(await geometry()).toEqual(resting);
+  await expect(body).toHaveAttribute('aria-pressed', 'true');
+
+  const play = page.getByTestId('editor-play');
+  await play.hover();
+  await page.mouse.down();
+  await expect(play).toHaveCSS('scale', '1');
+  await expect(play).toHaveCSS('transform', 'none');
+  await page.mouse.up();
+  await play.click();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(body).toHaveCSS('transition-duration', '0s');
+  await expect(play).toHaveCSS('transition-duration', '0s');
+});
+
 test('edit mode: remove waits, cut a range, undo, trim; Done plays the edits with the Edited label', async ({ page }) => {
   test.setTimeout(45_000);
   const id = await uploadCopy(page, 'editor-e2e');

@@ -12,10 +12,12 @@ export function CursorInspector({
   settings,
   onChange,
   onClose,
+  embedded = false,
 }: {
   settings: ReplayCursorSettings | undefined;
   onChange: (settings: ReplayCursorSettings | undefined) => void;
   onClose: () => void;
+  embedded?: boolean;
 }) {
   const heading = useRef<HTMLHeadingElement>(null);
   const savedSize = settings?.size ?? 1;
@@ -23,21 +25,24 @@ export function CursorInspector({
   // Undo, redo and reset replace the saved size; discard a stale drag before painting.
   if (draft.saved !== savedSize) setDraft({ saved: savedSize, value: savedSize });
   const size = draft.saved === savedSize ? draft.value : savedSize;
-  useEffect(() => heading.current?.focus(), []);
+  useEffect(() => {
+    if (!embedded) heading.current?.focus();
+  }, [embedded]);
   const visible = settings?.visible !== false;
   const update = (patch: ReplayCursorSettings) => onChange(normalizeCursor({ ...settings, ...patch }));
 
   return (
     // Delegates Escape and shields contained controls from global editor shortcuts.
-    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
+    // The role is dialog or group, which the lint cannot read through the expression.
+    // oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-static-element-interactions
     <div
-      role="dialog"
-      aria-modal="false"
+      role={embedded ? 'group' : 'dialog'}
+      aria-modal={embedded ? undefined : false}
       className="cursor-inspector"
       id="cursor-inspector"
       aria-labelledby="cursor-heading"
       onKeyDown={(event) => {
-        if (event.key === 'Escape') {
+        if (event.key === 'Escape' && !embedded) {
           event.preventDefault();
           onClose();
         } else if (!event.metaKey && !event.ctrlKey && !event.altKey) {
@@ -50,9 +55,11 @@ export function CursorInspector({
         <h2 id="cursor-heading" ref={heading} tabIndex={-1}>
           Cursor
         </h2>
-        <IconButton label="Close cursor options" onClick={onClose}>
-          <XIcon aria-hidden="true" />
-        </IconButton>
+        {embedded ? null : (
+          <IconButton label="Close cursor options" onClick={onClose}>
+            <XIcon aria-hidden="true" />
+          </IconButton>
+        )}
       </header>
       <div className="cursor-option-row">
         <label htmlFor="cursor-visible">Show cursor</label>

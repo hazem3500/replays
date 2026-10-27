@@ -45,6 +45,24 @@ describe('edit list schema', () => {
     expect(() => assertReplayEdits(edits({ cuts: [{ id: 'a', from: 0, to: 50 }] }))).toThrow('at least 100 ms');
     expect(() => assertReplayEdits(edits({ cuts: [{ id: 'a', from: Number.NaN, to: 500 }] }))).toThrow('edits.cuts[0].from');
     expect(() => assertReplayEdits(edits({ cuts: [{ id: 'a', from: 0, to: 500, label: 'x'.repeat(121) }] }))).toThrow('label');
+    expect(() => assertReplayEdits(edits({ highlights: [{ id: 'p', kind: 'point', at: 10, extra: true }] as never }))).toThrow(
+      'not a supported field',
+    );
+    expect(() =>
+      assertReplayEdits(
+        edits({
+          highlights: [
+            { id: 'p', kind: 'point', at: 10 },
+            { id: 'p', kind: 'point', at: 20 },
+          ],
+        }),
+      ),
+    ).toThrow('id is used twice');
+    expect(() => assertReplayEdits(edits({ highlights: [{ id: 'p', kind: 'point', at: 1001 }] }), 1000)).toThrow('after the end');
+    expect(() => assertReplayEdits(edits({ highlights: [{ id: 'h', kind: 'period', from: 0, to: 99 }] }))).toThrow('at least 100 ms');
+    expect(() => assertReplayEdits(edits({ highlights: [{ id: 'h', kind: 'period', from: 0, to: 100, label: 'x'.repeat(121) }] }))).toThrow(
+      'label',
+    );
   });
 
   it('checks times against the replay, and that something remains', () => {
@@ -71,6 +89,10 @@ describe('edit list schema', () => {
     expect(editsVersion(edits())).toBe('');
     expect(isEmptyEdits(edits())).toBe(true);
     expect(isEmptyEdits(a)).toBe(false);
+    const marked = edits({ highlights: [{ id: 'p', kind: 'point', at: 250.4, label: '  Start  ' }] });
+    expect(normalizeEdits(marked).highlights).toEqual([{ id: 'p', kind: 'point', at: 250, label: 'Start' }]);
+    expect(isEmptyEdits(marked)).toBe(false);
+    expect(editsVersion(marked)).not.toBe(editsVersion(edits()));
   });
 });
 
@@ -127,6 +149,15 @@ describe('editTimeline', () => {
     );
     expect(timeline.removed).toEqual([{ from: 100, to: 700 }]);
     expect(timeline.duration).toBe(400);
+  });
+});
+
+describe('highlight export boundary', () => {
+  it('keeps navigation annotations out of the playback effects bundle used by video rendering', () => {
+    const source = bundle();
+    const applied = applyEdits(source, edits({ highlights: [{ id: 'mark', kind: 'point', at: 500, label: 'Only in the viewer' }] }));
+    expect(applied.bundle).toBe(source);
+    expect(applied.effects).toEqual({ zooms: [], blurs: [], captions: [] });
   });
 });
 

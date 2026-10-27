@@ -1,3 +1,5 @@
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
 @layer app {
   .app-shell.editor-loading { grid-template-rows: auto minmax(0, 1fr) auto var(--editor-loading-height, 168px); background: var(--canvas); }
   .app-shell.editor-loading[data-mobile] { grid-template-rows: auto minmax(0, 1fr) auto; }
