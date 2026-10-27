@@ -45,7 +45,7 @@
     "hooks:install": "lefthook install",
     "quality": "pnpm quality:knip && pnpm quality:boundaries && pnpm quality:package && pnpm quality:size && pnpm quality:dedupe && pnpm quality:hooks && pnpm quality:test",
     "quality:size:ratchet": "node scripts/quality-size.mjs --ratchet",
-    "quality:test": "node --test scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs",
+    "quality:test": "node --test scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs scripts/mutation-report.test.mjs",
     "check:quick": "vp run cached:lint && vp run cached:format && vp run cached:types && pnpm test:changed",
     "test:changed": "vp test run --config vitest.config.ts --changed=origin/main --passWithNoTests",
     "test:watch": "vp test --config vitest.config.ts",
@@ -54,7 +54,10 @@
     "lint:new-files": "node scripts/lint-new-files.mjs",
     "lint:ratchet:test": "node --test scripts/lint-ratchet.test.mjs",
     "typecheck:overrides": "node scripts/check-overrides.mjs",
-    "quality:compiler": "node scripts/compiler-report.mjs"
+    "quality:compiler": "node scripts/compiler-report.mjs",
+    "mutation": "node scripts/run-mutations.mjs",
+    "mutation:report": "node scripts/mutation-report.mjs",
+    "mutation:report:test": "node --test scripts/mutation-report.test.mjs"
   },
   "dependencies": {
     "@agent-native/core": "0.220.0",
@@ -95,6 +98,8 @@
     "@rolldown/plugin-babel": "0.2.4",
     "@size-limit/file": "14.3.0",
     "@storybook/react-vite": "10.6.3",
+    "@stryker-mutator/core": "10.1.1",
+    "@stryker-mutator/vitest-runner": "10.1.1",
     "@tailwindcss/vite": "4.3.3",
     "@types/babel__core": "7.20.5",
     "@types/node": "22.18.10",
