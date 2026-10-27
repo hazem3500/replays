@@ -22,3 +22,7 @@ Custom invariant rules will join the report configuration in a separate follow-u
 No global strict-boolean or React performance category is enabled. We keep `prefer-tag-over-role` off to avoid churn in intentional status/group containers. Public module boundary types are checked only on package API entries; internal return types remain inferred.
 
 Initial native baseline measured on Boat from main `54e582e`: 2,123 syntax findings, 1,689 type-aware findings, and 2 unused disables. No legacy source fixes are included.
+
+The base config promotes confirmed zero-debt rules for described TypeScript suppression comments, Node import protocols, nested component declarations and focused tests. Type-only imports, import ordering and duplicates remain reported because their counts are nonzero. The precise forwardRef check belongs to the custom plugin; a native import restriction conservatively rejects unrelated namespace imports.
+
+Root TypeScript flags reject switch fallthrough, unreachable code and unused labels. `pnpm typecheck:overrides` additionally enables `noImplicitOverride` and allows only the two existing TS4114 findings in the actively owned comparison loading boundary. Its per-file baseline rejects every new file or count increase; other compiler errors fail. Remove the baseline and enable the root flag when the owner adds those modifiers. No reserved source is edited for this rollout.

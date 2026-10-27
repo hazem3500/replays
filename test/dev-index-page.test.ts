@@ -14,12 +14,15 @@ import { appDefaults } from './fixtures.ts';
 const servers: Array<ReturnType<typeof createServer>> = [];
 const devServers: RunningServer[] = [];
 
-afterEach(async () => {
-  await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
-  await Promise.all(devServers.splice(0).map((server) => server.close()));
-});
+function closeServer(server: ReturnType<typeof createServer>) {
+  return new Promise<void>((resolve) => server.close(() => resolve()));
+}
 
 describe('dev index page', () => {
+  afterEach(async () => {
+    await Promise.all(servers.splice(0).map(closeServer));
+    await Promise.all(devServers.splice(0).map((server) => server.close()));
+  });
   it('transforms query-string navigations with Vite and retains server-owned metadata', async () => {
     const root = await mkdtemp(join(tmpdir(), 'replays-dev-query-'));
     const server = await startServer({
@@ -56,9 +59,11 @@ describe('dev index page', () => {
       clientDir: join(root, 'client'),
       beta: { editor: true, malleable: false },
       editing: { enabled: true },
-      devIndexHtml: async (url) => {
+      devIndexHtml: (url) => {
         transformedUrl = url;
-        return '<!doctype html><html><head><meta name="app-base" content="" /><meta name="app-purposes" content="" /><meta name="app-beta" content="" /><meta name="app-editing" content="" /></head><body></body></html>';
+        return Promise.resolve(
+          '<!doctype html><html><head><meta name="app-base" content="" /><meta name="app-purposes" content="" /><meta name="app-beta" content="" /><meta name="app-editing" content="" /></head><body></body></html>',
+        );
       },
     });
     const server = createServer((request, response) => void handle(request, response));
