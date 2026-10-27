@@ -563,6 +563,16 @@ adds its files with `COPY` and sets nothing else.
   and that hostile headers never make `authenticate` throw. `fakeRequest({ method, url, headers, remoteAddress })` builds the request
   an adapter sees.
 - Unit-test registration with `resolvePlugins([plugin])` from `@hazem3500/replays/plugin`; it returns what was registered, or throws the `PluginError`.
+- Test HTTP behaviour with `createTestClient(handler)` from `@hazem3500/replays/server/testing`. It mounts `createApp(options)` (a
+  Node handler) or any `{ fetch(request) }` handler on a loopback port, and returns `{ origin, fetch, close }`, where `fetch('/api/replays')`
+  resolves paths against the origin. It's the web-standard twin of `fakeRequest`, so plugin routes and hooks get the same bytes a CLI or
+  browser sees:
+
+  ```ts
+  const client = await createTestClient(createApp({ ...options, plugins: resolvePluginsSync([plugin]) }));
+  expect((await client.fetch('/api/acme/status')).status).toBe(200);
+  await client.close();
+  ```
 - Test behaviour with `startServer({ port: 0, config: { dir, file: {}, plugins: [plugin] } , env: { DATA_DIR, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' } })`.
 - `examples/custom-distro/e2e/smoke.spec.ts` shows a browser-level check of each extension point.
 

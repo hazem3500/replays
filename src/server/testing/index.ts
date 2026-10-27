@@ -10,3 +10,4 @@
 export { describeObjectStorage, type ObjectStorageFactory } from './storage.ts';
 export { describeAuthAdapter, fakeRequest, type AuthAdapterContract, type FakeRequestInit } from './auth.ts';
 export type { TestRunner } from './runner.ts';
+export { createTestClient, type FetchHandler, type NodeRequestHandler, type TestClient } from './client.ts';

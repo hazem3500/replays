@@ -273,9 +273,9 @@
       "brotli": 16709
     },
     "dist/lib/server-testing.mjs": {
-      "raw": 10845,
-      "gzip": 3154,
-      "brotli": 2774
+      "raw": 11887,
+      "gzip": 3494,
+      "brotli": 3072
     },
     "dist/lib/server.mjs": {
       "raw": 1590,
@@ -376,6 +376,16 @@
       },
       "reason": "The generated import hash changes with the upload schema chunk; runtime source and entry footprint are measured in this PR.",
       "pr": "https://github.com/hazem3500/replays/pull/77"
+    },
+    {
+      "file": "dist/lib/server-testing.mjs",
+      "cap": {
+        "raw": 11887,
+        "gzip": 3494,
+        "brotli": 3072
+      },
+      "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
+      "pr": "https://github.com/hazem3500/replays/pull/63"
     }
   ]
 }
