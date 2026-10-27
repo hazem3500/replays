@@ -9,6 +9,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
+  from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
+  (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
+
 - `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
   or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
 - An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of
