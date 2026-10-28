@@ -164,8 +164,8 @@
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
-      "gzip": 513,
-      "brotli": 434
+      "gzip": 512,
+      "brotli": 433
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -174,23 +174,23 @@
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
-      "gzip": 18876,
+      "gzip": 18875,
       "brotli": 16345
     },
-    "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs": {
-      "raw": 290792,
-      "gzip": 75138,
-      "brotli": 61304
+    "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs": {
+      "raw": 291526,
+      "gzip": 77111,
+      "brotli": 62901
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
     },
-    "dist/lib/chunks/define.ts-f3268e685655.mjs": {
-      "raw": 32079,
-      "gzip": 9254,
-      "brotli": 8218
+    "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
+      "raw": 32366,
+      "gzip": 9306,
+      "brotli": 8251
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -199,7 +199,7 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "gzip": 9498,
+      "gzip": 9497,
       "brotli": 8394
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
@@ -214,7 +214,7 @@
     },
     "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
       "raw": 27823,
-      "gzip": 8064,
+      "gzip": 8063,
       "brotli": 7041
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
@@ -249,18 +249,18 @@
     },
     "dist/lib/config.mjs": {
       "raw": 348,
-      "gzip": 169,
-      "brotli": 146
+      "gzip": 167,
+      "brotli": 133
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
-      "gzip": 515,
-      "brotli": 440
+      "gzip": 514,
+      "brotli": 439
     },
     "dist/lib/plugin.mjs": {
       "raw": 700,
       "gzip": 284,
-      "brotli": 232
+      "brotli": 231
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
@@ -520,16 +520,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/chunks/define.ts-f3268e685655.mjs",
-      "cap": {
-        "raw": 32079,
-        "gzip": 9254,
-        "brotli": 8218
-      },
-      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
       "cap": {
         "raw": 434,
@@ -738,14 +728,24 @@
       "pr": "https://github.com/hazem3500/replays/pull/101"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs",
+      "file": "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs",
       "cap": {
-        "raw": 290792,
-        "gzip": 75138,
-        "brotli": 61304
+        "raw": 291526,
+        "gzip": 77111,
+        "brotli": 62901
       },
-      "reason": "The server entry carries the API route table (src/server/api, src/server/http), which renames the shared server chunk; head 273690 raw vs main's 272355 (+1.3 KB raw, +44 B gzip).",
-      "pr": "https://github.com/hazem3500/replays/pull/90"
+      "reason": "Mapping provider failures to safe public errors changes the server entry source set, which renames the shared schema chunk; its size is the embedded schema, as before.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs",
+      "cap": {
+        "raw": 32366,
+        "gzip": 9306,
+        "brotli": 8251
+      },
+      "reason": "The safe-error helpers join the shared define chunk, which renames its source-set identity; the chunk is 1.7 KB raw smaller than the route-table build it replaces.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
 }
