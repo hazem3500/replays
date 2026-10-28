@@ -45,6 +45,8 @@ export const THUMB_INTERVAL_MS = 1000;
 
 const clamp = (value: number, max: number) => Math.max(0, Math.min(max, value));
 
+const sameSet = (a: ReadonlySet<string>, b: ReadonlySet<string>) => a.size === b.size && [...a].every((id) => b.has(id));
+
 /** What playback becomes at `time`: playing past the end ends it, a seek back from the end pauses it. */
 function nextStatus(status: PlayStatus, time: number, duration: number): PlayStatus {
   if (duration === 0) return 'paused';
@@ -214,26 +216,32 @@ export class SharedClock {
     this.anchorNow = this.clock.now();
   }
 
+  private longest() {
+    let duration = 0;
+    for (const tile of this.tiles.values()) duration = Math.max(duration, tile.player.duration);
+    return duration;
+  }
+
+  private endedAt(time: number) {
+    const ended = new Set<string>();
+    for (const [id, tile] of this.tiles) if (time >= tile.player.duration) ended.add(id);
+    return ended;
+  }
+
   /** Recomputes the duration and ended tiles; notifies React only when something structural changed. */
   private publish(force: boolean, status: PlayStatus = this.snapshot.status) {
     const previous = this.snapshot;
-    let duration = 0;
-    for (const tile of this.tiles.values()) duration = Math.max(duration, tile.player.duration);
+    const duration = this.longest();
     if (this.pendingTime !== undefined && duration > 0) {
       this.time = this.pendingTime;
       this.pendingTime = undefined;
       this.reanchor();
     }
     this.time = clamp(this.time, duration);
-    const ended = new Set<string>();
-    for (const [id, tile] of this.tiles) if (this.time >= tile.player.duration) ended.add(id);
+    const ended = this.endedAt(this.time);
     const next = nextStatus(status, this.time, duration);
     if (next !== 'playing') this.cancelFrame();
-    const changed =
-      next !== previous.status ||
-      duration !== previous.duration ||
-      ended.size !== previous.ended.size ||
-      [...ended].some((id) => !previous.ended.has(id));
+    const changed = next !== previous.status || duration !== previous.duration || !sameSet(ended, previous.ended);
     if (changed) this.snapshot = { ...previous, status: next, duration, ended };
     this.sync(force || changed);
     for (const listener of this.timeListeners) listener();
@@ -254,21 +262,30 @@ export class SharedClock {
     const tile = this.tiles.get(id);
     const fidelity = this.getFidelity(id);
     if (!tile || fidelity === 'off') return;
+    if (fidelity === 'thumb') this.syncThumb(id, force);
+    else this.syncLive(tile.player, force);
+  }
+
+  /** A thumbnail stays paused and is re-seeked at most once a second (never mid-scrub). */
+  private syncThumb(id: string, force: boolean) {
+    const tile = this.tiles.get(id);
+    const now = this.clock.now();
+    if (!tile || this.scrubbing || (!force && now - tile.syncedAt < THUMB_INTERVAL_MS)) return;
+    tile.syncedAt = now;
     const { player } = tile;
     const target = clamp(this.time, player.duration);
-    if (fidelity === 'thumb') {
-      if (this.scrubbing) return;
-      const now = this.clock.now();
-      if (!force && now - tile.syncedAt < THUMB_INTERVAL_MS) return;
-      tile.syncedAt = now;
-      if (player.getState().status === 'playing') player.pause();
-      if (Math.abs(player.getTime() - target) > 1) player.seek(target);
-      return;
-    }
+    if (player.getState().status === 'playing') player.pause();
+    if (Math.abs(player.getTime() - target) > 1) player.seek(target);
+  }
+
+  /** A live player plays while the clock does and its recording lasts, re-seeked when it drifts. */
+  private syncLive(player: ClockPlayer, force: boolean) {
+    const target = clamp(this.time, player.duration);
     const shouldPlay = this.snapshot.status === 'playing' && this.time < player.duration;
-    if (!shouldPlay && player.getState().status === 'playing') player.pause();
+    const playing = player.getState().status === 'playing';
+    if (!shouldPlay && playing) player.pause();
     if (force || Math.abs(player.getTime() - target) > LIVE_DRIFT_MS) player.seek(target);
-    if (shouldPlay && player.getState().status !== 'playing') player.play();
+    if (shouldPlay && !playing) player.play();
   }
 
   private readonly tick = () => {

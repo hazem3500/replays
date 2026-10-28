@@ -36,6 +36,12 @@ export interface TileInput {
   removable?: boolean;
 }
 
+function labelOf(id: string, label: string | undefined, bundle: ReplayBundle | undefined) {
+  if (label) return label;
+  const title = bundle?.meta.title;
+  return title ? title : id;
+}
+
 function aspectOf(bundle: ReplayBundle | undefined) {
   const width = bundle?.meta.viewport.width ?? 0;
   const height = bundle?.meta.viewport.height ?? 0;
@@ -48,7 +54,7 @@ export function compareTiles(inputs: readonly TileInput[]): CompareTile[] {
     id,
     letter: tileLetter(index),
     colour: (index % TILE_COLOURS) + 1,
-    label: label || bundle?.meta.title || id,
+    label: labelOf(id, label, bundle),
     bundle,
     failure,
     errors: bundle ? collectErrors(bundle).length : 0,

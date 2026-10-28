@@ -25,14 +25,14 @@ const TILE_STRINGS = {
 } as const;
 
 export interface TileCommands {
-  onFocus(id: string): void;
+  onFocus: (id: string) => void;
   /** Spotlight this tile, or back to the grid when it already is. */
-  onSpotlight(id: string): void;
-  onPlayPause(): void;
+  onSpotlight: (id: string) => void;
+  onPlayPause: () => void;
   /** Takes a removable tile off the stage. */
   onRemove?: ((id: string) => void) | undefined;
   /** The recording on its own at `seconds`. */
-  href(id: string, seconds: string): string;
+  href: (id: string, seconds: string) => string;
 }
 
 function placementStyle(placement: Placement | undefined): CSSProperties | undefined {
@@ -91,7 +91,7 @@ export function CompareTileView({
       {tile.bundle ? (
         <TilePicture session={session} id={tile.id} bundle={tile.bundle} fidelity={fidelity} />
       ) : (
-        <TileNotice busy={!tile.failure} text={tile.failure || TILE_STRINGS.loading} />
+        <TileNotice busy={!tile.failure} text={tile.failure ? tile.failure : TILE_STRINGS.loading} />
       )}
       <button
         type="button"
@@ -170,7 +170,8 @@ function TileActions({
           rel="noopener"
           aria-label={TILE_STRINGS.open}
           onClick={(event) => {
-            event.currentTarget.href = commands.href(tile.id, here());
+            event.preventDefault();
+            window.open(commands.href(tile.id, here()), '_blank', 'noopener');
           }}
         >
           <ArrowUpRightIcon aria-hidden="true" />
@@ -201,7 +202,17 @@ function TileNotice({ busy, text }: { busy: boolean; text: string }) {
   );
 }
 
-function TilePicture({ session, id, bundle, fidelity }: { session: CompareSession; id: string; bundle: ReplayBundle; fidelity: Fidelity }) {
+function TilePicture({
+  session,
+  id,
+  bundle,
+  fidelity,
+}: {
+  session: CompareSession;
+  id: string;
+  bundle: ReplayBundle;
+  fidelity: Fidelity;
+}) {
   const controller = session.controller({ id, bundle });
   const { stage, failure } = useTilePlayer({ session, id, controller, fidelity });
   if (failure) return <TileNotice busy={false} text={TILE_STRINGS.unavailable(failure)} />;

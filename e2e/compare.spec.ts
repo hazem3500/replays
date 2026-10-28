@@ -5,7 +5,11 @@ import { openReplay, origin } from './support.ts';
 const compareUrl = (layout = 'grid') => `${origin()}/r/demo-shop?with=human-demo&layout=${layout}`;
 
 async function titleOf(page: Page, id: string) {
-  return ((await (await page.request.get(`${origin()}/api/replays/${id}`)).json()) as { meta: { title: string } }).meta.title;
+  const body: unknown = await (await page.request.get(`${origin()}/api/replays/${id}`)).json();
+  const meta = typeof body === 'object' && body !== null && 'meta' in body ? body.meta : undefined;
+  const title = typeof meta === 'object' && meta !== null && 'title' in meta ? meta.title : undefined;
+  if (typeof title !== 'string') throw new Error(`${id} has no title`);
+  return title;
 }
 
 /** Tags every tile's iframe, so a remount (a new iframe) is visible afterwards. */

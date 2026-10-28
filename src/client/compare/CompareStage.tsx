@@ -43,7 +43,10 @@ export function CompareStage({
   const area = useRef<HTMLDivElement>(null);
   const box = useElementSize(area);
   const carousel = mobile && layout !== 'single' && tiles.length > 1;
-  const focusIndex = Math.max(0, tiles.findIndex((tile) => tile.id === focus));
+  const focusIndex = Math.max(
+    0,
+    tiles.findIndex((tile) => tile.id === focus),
+  );
   const placements = carousel ? [] : placementsFor({ layout, count: tiles.length, focus: focusIndex, box, aspect: cellAspect(tiles) });
   useCarouselFocus(area, carousel, focusIndex);
 

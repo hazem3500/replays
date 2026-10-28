@@ -16,11 +16,21 @@ const LAYOUT_STRINGS = {
   },
 } as const;
 
+const ARROW_STEPS: Partial<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
+
 const LAYOUTS: readonly CompareLayout[] = ['single', 'grid', 'spotlight'];
 const ICONS = { single: RectangleHorizontalIcon, grid: LayoutGridIcon, spotlight: LayoutPanelLeftIcon } as const;
 
 /** Single · Grid · Spotlight in the viewer's top bar: one radio group, icons with their names as hints, a gliding thumb. */
-export function LayoutSwitch({ value, onChange, phone }: { value: CompareLayout; onChange(layout: CompareLayout): void; phone: boolean }) {
+export function LayoutSwitch({
+  value,
+  onChange,
+  phone,
+}: {
+  value: CompareLayout;
+  onChange: (layout: CompareLayout) => void;
+  phone: boolean;
+}) {
   const group = useRef<HTMLDivElement>(null);
   // why: a phone shows one tile at a time either way; its choice is one recording or swiping through them all.
   const options = phone ? LAYOUTS.filter((layout) => layout !== 'spotlight') : LAYOUTS;
@@ -28,7 +38,7 @@ export function LayoutSwitch({ value, onChange, phone }: { value: CompareLayout;
   const index = options.indexOf(shown);
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    const step = ARROW_STEPS[event.key] ?? 0;
     if (!step) return;
     event.preventDefault();
     event.stopPropagation();

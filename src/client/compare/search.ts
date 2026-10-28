@@ -13,13 +13,13 @@ export interface CompareSearch {
   focus?: string;
 }
 
-const LAYOUTS = new Set<string>(['single', 'grid', 'spotlight']);
+const isLayout = (value: string): value is CompareLayout => value === 'single' || value === 'grid' || value === 'spotlight';
 
 function validId(value: string) {
   try {
     return assertReplayId(value);
   } catch {
-    return undefined;
+    return;
   }
 }
 
@@ -39,7 +39,7 @@ export function parseCompareSearch(search: string, own: string, fallback: Compar
   const focus = params.get('focus') ?? '';
   return {
     with: ids,
-    layout: LAYOUTS.has(layout) ? (layout as CompareLayout) : fallback,
+    layout: isLayout(layout) ? layout : fallback,
     ...(focus && (focus === own || ids.includes(focus)) ? { focus } : {}),
   };
 }

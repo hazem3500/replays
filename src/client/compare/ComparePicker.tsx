@@ -1,7 +1,7 @@
 import { queryOptions, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { formatClock, type ReplaySummary } from '../../shared/replay.ts';
+import { formatClock, isReplaySummary, type ReplaySummary } from '../../shared/replay.ts';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { plural } from '../plural.ts';
 import { apiUrl } from '../route.ts';
@@ -24,9 +24,10 @@ const PICKER_STRINGS = {
 const summariesQuery = queryOptions({
   queryKey: ['replay-summaries'] as const,
   queryFn: async ({ signal }) => {
-    const response = await fetchPage(apiUrl('replays'), { signal });
+    const response = await fetchPage(apiUrl(`replays`), { signal });
     if (!response.ok) throw new Error(`Recordings failed to load (${response.status})`);
-    return (await response.json()) as ReplaySummary[];
+    const body: unknown = await response.json();
+    return Array.isArray(body) ? body.filter(isReplaySummary) : [];
   },
   staleTime: 30_000,
 });
@@ -46,8 +47,8 @@ export function ComparePicker({
   /** Already on the stage. */
   exclude: readonly string[];
   open: boolean;
-  onOpenChange(open: boolean): void;
-  onPick(id: string): void;
+  onOpenChange: (open: boolean) => void;
+  onPick: (id: string) => void;
 }) {
   const list = useQuery({ ...summariesQuery, enabled: open });
   const [filter, setFilter] = useState('');
@@ -95,7 +96,7 @@ function PickerList({
   exclude: readonly string[];
   filter: string;
   list: { data?: ReplaySummary[] | undefined; isPending: boolean; isError: boolean };
-  onPick(id: string): void;
+  onPick: (id: string) => void;
 }) {
   if (list.isPending) return <p className="compare-picker-note">{PICKER_STRINGS.loading}</p>;
   if (list.isError)
@@ -124,7 +125,7 @@ function PickerList({
   ));
 }
 
-function PickerRow({ replay, onPick }: { replay: ReplaySummary; onPick(id: string): void }) {
+function PickerRow({ replay, onPick }: { replay: ReplaySummary; onPick: (id: string) => void }) {
   const errors = replay.consoleErrors + replay.failedRequests;
   return (
     <button type="button" className="compare-picker-row" onClick={() => onPick(replay.id)}>

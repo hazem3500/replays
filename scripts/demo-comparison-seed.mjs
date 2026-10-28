@@ -50,6 +50,32 @@ const SUITES = [
   },
 ];
 
+/** Synthetic examples, not measurements: a slow run paints late and blocks longer. */
+function syntheticPerformance(slow, leadIn) {
+  return {
+    supported: ['paint', 'largest-contentful-paint', 'longtask', 'event'],
+    entries: [
+      { at: leadIn + (slow ? 1700 : 540), kind: 'first-contentful-paint', value: slow ? 1700 : 540 },
+      { at: leadIn + (slow ? 2900 : 880), kind: 'largest-contentful-paint', value: slow ? 2900 : 880 },
+      { at: leadIn + 3200, kind: 'long-task', value: slow ? 310 : 62 },
+      { at: leadIn + 4100, kind: 'slow-interaction', value: slow ? 380 : 96, eventType: 'click' },
+    ],
+  };
+}
+
+/** Puts the run's label on the recorded shop's name, so each tile shows which run it is. */
+function relabel(root, label) {
+  const pending = [root];
+  while (pending.length) {
+    const node = pending.pop();
+    if (typeof node.textContent === 'string') {
+      const text = node.textContent.replace('Pinecone Goods', `Pinecone · ${label}`);
+      node.textContent = text.replace('PINECONE GOODS', `PINECONE · ${label.toUpperCase()}`);
+    }
+    pending.push(...(node.childNodes ?? []));
+  }
+}
+
 function variant(source, suite, { side, label, scale, leadIn = 0 }) {
   const replay = structuredClone(source);
   const at = (value) => leadIn + Math.round(value * scale);
@@ -67,19 +93,7 @@ function variant(source, suite, { side, label, scale, leadIn = 0 }) {
     entry.at = at(entry.at);
     entry.duration = Math.round(entry.duration * scale);
   }
-  const slow = scale > 1.2;
-  replay.performance =
-    suite.name === 'design'
-      ? { supported: [], entries: [] }
-      : {
-          supported: ['paint', 'largest-contentful-paint', 'longtask', 'event'],
-          entries: [
-            { at: leadIn + (slow ? 1700 : 540), kind: 'first-contentful-paint', value: slow ? 1700 : 540 },
-            { at: leadIn + (slow ? 2900 : 880), kind: 'largest-contentful-paint', value: slow ? 2900 : 880 },
-            { at: leadIn + 3200, kind: 'long-task', value: slow ? 310 : 62 },
-            { at: leadIn + 4100, kind: 'slow-interaction', value: slow ? 380 : 96, eventType: 'click' },
-          ],
-        };
+  replay.performance = suite.name === 'design' ? { supported: [], entries: [] } : syntheticPerformance(scale > 1.2, leadIn);
   replay.context.fields = {
     ...replay.context.fields,
     demo: true,
@@ -88,12 +102,7 @@ function variant(source, suite, { side, label, scale, leadIn = 0 }) {
     variant: side,
     performanceValues: 'synthetic examples, not measurements',
   };
-  const relabel = (node) => {
-    if (typeof node.textContent === 'string')
-      node.textContent = node.textContent.replace('Pinecone Goods', `Pinecone · ${label}`).replace('PINECONE GOODS', `PINECONE · ${label.toUpperCase()}`);
-    for (const child of node.childNodes ?? []) relabel(child);
-  };
-  for (const event of replay.events) if (event.type === 2) relabel(event.data.node);
+  for (const event of replay.events) if (event.type === 2) relabel(event.data.node, label);
   assertReplayBundle(replay);
   return replay;
 }
@@ -137,7 +146,8 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const args = process.argv.slice(2);
   const index = args.indexOf('--output');
   try {
-    if (args.length && (index !== 0 || args.length !== 2)) throw new Error('usage: node scripts/demo-comparison-seed.mjs [--output <directory>]');
+    const usage = 'usage: node scripts/demo-comparison-seed.mjs [--output <directory>]';
+    if (args.length && (index !== 0 || args.length !== 2)) throw new Error(usage);
     console.log(JSON.stringify(await writeComparisonSeed(index === 0 ? args[1] : undefined), null, 2));
   } catch (error) {
     console.error(error instanceof Error ? error.message : String(error));

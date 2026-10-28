@@ -25,7 +25,8 @@ describe('compare search', () => {
   });
 
   it('writes compare keys while keeping the playhead and leaving defaults out', () => {
-    expect(writeCompareSearch('?t=4.0&layout=grid', { with: ['b', 'c'], layout: 'grid', focus: 'b' })).toBe('?t=4.0&with=b,c&layout=grid&focus=b');
+    const written = writeCompareSearch('?t=4.0&layout=grid', { with: ['b', 'c'], layout: 'grid', focus: 'b' });
+    expect(written).toBe('?t=4.0&with=b,c&layout=grid&focus=b');
     expect(writeCompareSearch('?with=b&layout=grid', { with: [], layout: 'single' })).toBe('');
     expect(writeCompareSearch('?layout=single', { with: [], layout: 'grid' }, 'grid')).toBe('');
   });

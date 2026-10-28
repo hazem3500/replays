@@ -16,6 +16,7 @@ import { PerformanceComparison } from './PerformanceComparison.tsx';
 import { ScopeSwitch } from './ScopeSwitch.tsx';
 import type { CompareLayout } from './search.ts';
 import { type CompareTile, compareTiles, isLoaded, type LoadedTile } from './tiles.ts';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the comparison's styles load with its lazy chunk, not with every page.
 import './compare.css';
 
 export interface CompareRecording {
@@ -36,13 +37,13 @@ export interface CompareViewerProps {
   recordings: readonly CompareRecording[];
   focus: string;
   layout: CompareLayout;
-  onFocus(id: string): void;
-  onLayout(layout: CompareLayout): void;
+  onFocus: (id: string) => void;
+  onLayout: (layout: CompareLayout) => void;
   /** "Compare with…" picked another recording. */
-  onAdd(id: string): void;
+  onAdd: (id: string) => void;
   onRemove?: ((id: string) => void) | undefined;
   /** The recording on its own at `seconds` (its viewer page). */
-  href(id: string, seconds: string): string;
+  href: (id: string, seconds: string) => string;
   /** The page's own viewer props for the focused recording (a suite run's title, status and menus). */
   page?: ComparePageProps | undefined;
 }
@@ -71,12 +72,17 @@ export function CompareViewer(props: CompareViewerProps) {
   return <CompareSessionView compare={props} tiles={tiles} focused={focused} />;
 }
 
+function failureOf(tiles: readonly CompareTile[]) {
+  const reason = tiles.find((tile) => tile.failure)?.failure;
+  return reason ? reason : 'The recordings could not be loaded';
+}
+
 function CompareFailed({ tiles }: { tiles: readonly CompareTile[] }) {
   return (
     <main className="state-shell">
       <section className="state-content" role="alert">
         <span className="state-kicker">Could not compare recordings</span>
-        <h1>{tiles[0]?.failure || 'The recordings could not be loaded'}</h1>
+        <h1>{failureOf(tiles)}</h1>
         <p>They may have expired, or the link may be incomplete.</p>
       </section>
     </main>

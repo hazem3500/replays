@@ -19,8 +19,8 @@ describe('demo comparison seed', () => {
   });
 
   it('gives every run its own recording, titled after that run', () => {
-    const titles = suites.flatMap((suite) => suite.runs.map((run) => [byId.get(run.replayId ?? '')?.meta.title, `${suite.title} · ${run.label}`]));
-    for (const [actual, expected] of titles) expect(actual).toBe(expected);
+    for (const suite of suites)
+      for (const run of suite.runs) expect(byId.get(run.replayId ?? '')?.meta.title).toBe(`${suite.title} · ${run.label}`);
   });
 
   it('writes valid, distinct, fictional bundles', () => {

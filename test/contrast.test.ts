@@ -75,11 +75,12 @@ function hue(hex: string) {
 
 describe.each(['dark', 'light'] as const)('%s compared-recording identities', (theme) => {
   const css = readFileSync(resolve(import.meta.dirname, '../src/client/compare/compare.css'), 'utf8');
-  const scoped = (selector: string) =>
-    Object.fromEntries(
-      [...(css.split(`${selector} {`)[1]?.split('}')[0] ?? '').matchAll(/(--tile-\d+):\s*(#[0-9a-f]{6})/g)].map((match) => [match[1]!, match[2]!]),
-    );
-  const tiles = theme === 'dark' ? scoped('.compare-viewer') : { ...scoped('.compare-viewer'), ...scoped(':root[data-theme="light"] .compare-viewer') };
+  const scoped = (selector: string) => {
+    const block = css.split(`${selector} {`)[1]?.split('}')[0] ?? '';
+    return Object.fromEntries([...block.matchAll(/(--tile-\d+):\s*(#[0-9a-f]{6})/g)].map((match) => [match[1]!, match[2]!]));
+  };
+  const light = scoped(':root[data-theme="light"] .compare-viewer');
+  const tiles = theme === 'dark' ? scoped('.compare-viewer') : { ...scoped('.compare-viewer'), ...light };
   const tokens = themes[theme];
   const names = Array.from({ length: 9 }, (_, index) => `--tile-${index + 1}`);
 

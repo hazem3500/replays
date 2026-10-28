@@ -17,7 +17,7 @@ export function SuiteCompare({
 }: {
   runs: ReadonlyArray<{ replayId: string; label: string }>;
   focus: string;
-  onFocus(replayId: string): void;
+  onFocus: (replayId: string) => void;
   page: ComparePageProps;
 }) {
   const { layout } = parseCompareSearch(useLocationSearch(), '', 'grid');

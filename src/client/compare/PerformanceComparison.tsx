@@ -22,7 +22,7 @@ export function PerformanceComparison({
 }: {
   tiles: readonly CompareTile[];
   focus: string;
-  onFocus(id: string): void;
+  onFocus: (id: string) => void;
 }) {
   const rows = tiles.filter(isLoaded).map((tile) => ({ tile, values: metricValues(tile.bundle) }));
   const baseline = rows.find((row) => row.tile.id === focus) ?? rows[0];
@@ -74,7 +74,7 @@ function MetricRow({
   /** The focused recording's values; absent on its own row. */
   baseline: MetricValues | undefined;
   metrics: readonly Metric[];
-  onFocus(id: string): void;
+  onFocus: (id: string) => void;
 }) {
   return (
     <tr data-focused={!baseline || undefined} data-tile={tile.colour}>

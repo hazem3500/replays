@@ -23,7 +23,7 @@ const parsed = (url: string) => {
   try {
     return new URL(url);
   } catch {
-    return undefined;
+    return;
   }
 };
 const page = (url: string) => {
@@ -31,6 +31,13 @@ const page = (url: string) => {
   return address ? `${address.host}${address.pathname.replace(/\/+$/, '')}` : url;
 };
 const hostOf = (item: Comparable) => item.host ?? parsed(item.url)?.host;
+
+/** The same page scores 2, the same host 1. */
+function placeScore(base: Comparable, other: Comparable) {
+  if (page(base.url) === page(other.url)) return 2;
+  const host = hostOf(base);
+  return host && host === hostOf(other) ? 1 : 0;
+}
 
 /**
  * How likely `other` is a useful counterpart to `base`: the same scenario (a suite run id), a similar title (shared
@@ -41,7 +48,7 @@ export function similarity(base: Comparable, other: Comparable) {
   return (
     (base.suiteRun && base.suiteRun.runId === other.suiteRun?.runId ? 3 : 0) +
     (title >= 0.5 ? 3 * title : 0) +
-    (page(base.url) === page(other.url) ? 2 : hostOf(base) && hostOf(base) === hostOf(other) ? 1 : 0)
+    placeScore(base, other)
   );
 }
 

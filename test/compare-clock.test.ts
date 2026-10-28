@@ -163,10 +163,8 @@ describe('SharedClock tiles', () => {
 
   it('scrubs live players throttled and resumes after the drop', () => {
     const frames = fakeFrames();
-    const {
-      clock,
-      players: [live],
-    } = liveClock(frames, [9000]);
+    const { clock, players } = liveClock(frames, [9000]);
+    const [live] = players;
     clock.play();
     clock.beginScrub();
     expect(live?.scrubs).toBe(1);

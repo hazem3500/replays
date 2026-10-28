@@ -1,5 +1,7 @@
 import type { ReplayBundle, ReplayPerformanceKind } from '../../shared/replay.ts';
 
+type WithPerformance = Pick<ReplayBundle, 'performance'>;
+
 export type CompareMetric = 'fcp' | 'lcp' | 'long-task' | 'interaction';
 
 export const COMPARE_METRICS: readonly { id: CompareMetric; label: string; kind: ReplayPerformanceKind }[] = [
@@ -12,20 +14,29 @@ export const COMPARE_METRICS: readonly { id: CompareMetric; label: string; kind:
 /** Each metric in ms, or undefined when the recording never captured one (not captured is not fast). */
 export type MetricValues = Record<CompareMetric, number | undefined>;
 
-/** The worst value of each kind a recording captured: the last paint candidate, the longest task and interaction. */
-export function metricValues(bundle: ReplayBundle): MetricValues {
+function valuesOf(bundle: WithPerformance, kind: ReplayPerformanceKind) {
   const entries = bundle.performance?.entries ?? [];
-  const of = (kind: ReplayPerformanceKind) => entries.filter((entry) => entry.kind === kind && Number.isFinite(entry.value));
-  const last = (kind: ReplayPerformanceKind) => of(kind).toSorted((a, b) => a.at - b.at).at(-1)?.value;
-  const most = (kind: ReplayPerformanceKind) => {
-    const values = of(kind).map((entry) => entry.value);
-    return values.length ? Math.max(...values) : undefined;
-  };
+  return entries.filter((entry) => entry.kind === kind && Number.isFinite(entry.value));
+}
+
+function lastValue(bundle: WithPerformance, kind: ReplayPerformanceKind) {
+  const ordered = valuesOf(bundle, kind).toSorted((a, b) => a.at - b.at);
+  return ordered.at(-1)?.value;
+}
+
+function largestValue(bundle: WithPerformance, kind: ReplayPerformanceKind) {
+  const values = valuesOf(bundle, kind).map((entry) => entry.value);
+  if (!values.length) return;
+  return Math.max(...values);
+}
+
+/** The worst value of each kind a recording captured: the last paint candidate, the longest task and interaction. */
+export function metricValues(bundle: WithPerformance): MetricValues {
   return {
-    fcp: of('first-contentful-paint')[0]?.value,
-    lcp: last('largest-contentful-paint'),
-    'long-task': most('long-task'),
-    interaction: most('slow-interaction'),
+    fcp: valuesOf(bundle, 'first-contentful-paint')[0]?.value,
+    lcp: lastValue(bundle, 'largest-contentful-paint'),
+    'long-task': largestValue(bundle, 'long-task'),
+    interaction: largestValue(bundle, 'slow-interaction'),
   };
 }
 
@@ -34,21 +45,26 @@ export const SAME_WITHIN_MS = 20;
 
 export type DeltaTone = 'slower' | 'faster' | 'same';
 
+function toneOf(difference: number): DeltaTone {
+  if (Math.abs(difference) < SAME_WITHIN_MS) return 'same';
+  return difference > 0 ? 'slower' : 'faster';
+}
+
 /** `value` against the baseline (the focused recording); undefined when either side was not captured. */
 export function metricDelta(value: number | undefined, baseline: number | undefined) {
-  if (value === undefined || baseline === undefined) return undefined;
+  if (value === undefined || baseline === undefined) return;
   const difference = value - baseline;
-  const tone: DeltaTone = Math.abs(difference) < SAME_WITHIN_MS ? 'same' : difference > 0 ? 'slower' : 'faster';
-  return { difference, tone };
+  return { difference, tone: toneOf(difference) };
 }
 
 export function metricLabel(ms: number) {
   const value = Math.abs(ms);
-  return value < 1000 ? `${Math.round(value)} ms` : `${(value / 1000).toFixed(value < 10_000 ? 2 : 1)} s`;
+  if (value < 1000) return `${Math.round(value)} ms`;
+  return `${(value / 1000).toFixed(value < 10_000 ? 2 : 1)} s`;
 }
 
 /** "+1.20 s", "−48 ms", "Same": the sign says which way, the tone says whether that is worse. */
-export function deltaLabel(delta: NonNullable<ReturnType<typeof metricDelta>>) {
+export function deltaLabel(delta: { difference: number; tone: DeltaTone }) {
   if (delta.tone === 'same') return 'Same';
   return `${delta.difference > 0 ? '+' : '−'}${metricLabel(delta.difference)}`;
 }

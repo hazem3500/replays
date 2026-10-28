@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { deltaLabel, metricDelta, metricValues } from '../src/client/compare/performance-compare.ts';
-import type { ReplayBundle, ReplayPerformanceEntry } from '../src/shared/replay.ts';
+import type { ReplayPerformanceEntry } from '../src/shared/replay.ts';
 
-const bundle = (entries: ReplayPerformanceEntry[]) => ({ performance: { supported: [], entries } }) as unknown as ReplayBundle;
+const bundle = (entries: ReplayPerformanceEntry[]) => ({ performance: { supported: [], entries } });
 
 describe('performance across compared recordings', () => {
   it('takes the last paint candidate and the worst task and interaction', () => {

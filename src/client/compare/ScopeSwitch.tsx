@@ -8,14 +8,16 @@ const SCOPE_STRINGS = {
   hint: (letter: string, label: string) => `${letter}: ${label}`,
 } as const;
 
+const ARROW_STEPS: Partial<Record<string, number>> = { ArrowRight: 1, ArrowLeft: -1 };
+
 /**
  * At the end of the inspector's tab row: which compared recording the panels, steps and seek-bar markers describe.
  * Switching scope never touches the stage's layout or players; clicking a tile does the same.
  */
-export function ScopeSwitch({ tiles, focus, onFocus }: { tiles: readonly CompareTile[]; focus: string; onFocus(id: string): void }) {
+export function ScopeSwitch({ tiles, focus, onFocus }: { tiles: readonly CompareTile[]; focus: string; onFocus: (id: string) => void }) {
   const index = tiles.findIndex((tile) => tile.id === focus);
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
+    const step = ARROW_STEPS[event.key] ?? 0;
     if (!step) return;
     event.preventDefault();
     event.stopPropagation();
