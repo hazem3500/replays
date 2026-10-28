@@ -197,6 +197,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   Keyboard, Labs, Plugins (when a plugin registers a setting) and About. The colour theme lives only in the top bar.
 - Beta flags have one model shared by the server and the page (`src/shared/beta-flags.ts`): the server allows a flag
   (`REPLAYS_BETA_*` or `beta.*`, parsed as before) and each person can opt out under Settings › Labs, saved in the browser.
+- The built-in mark (timeline segments and a playhead) is the favicon too, with a home-screen icon and web manifest in
+  `public/assets/brand` (`scripts/build-icons.mjs`). A deployment `logoUrl` replaces the tab icon and drops the built-in
+  home-screen icon and manifest. Under reduced motion the header mark still fills on click, without movement.
 - User plugins register in the viewer registry as `user:<id>` (keys `plugin:user:<id>:<contribution>`) instead of `user-<id>`, so a
   user plugin can no longer collide with, replace or remove the registrations of a host plugin named `user-<something>`.
 - `GET /api/config` also lists the loaded `plugins`. `src/server/main.ts` is now a thin wrapper around `startServer()`.
