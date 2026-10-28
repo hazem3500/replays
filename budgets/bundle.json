@@ -60,7 +60,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 218,
-      "brotli": 219
+      "brotli": 188
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
@@ -68,7 +68,7 @@
       "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82497,
+      "raw": 82495,
       "gzip": 26552,
       "brotli": 23404
     },
@@ -93,14 +93,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 248879,
-      "gzip": 42798,
-      "brotli": 35643
+      "raw": 252078,
+      "gzip": 43332,
+      "brotli": 36049
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 720540,
-      "gzip": 233107,
-      "brotli": 189394
+      "raw": 727142,
+      "gzip": 236638,
+      "brotli": 191694
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -168,7 +168,7 @@
       "brotli": 6349
     },
     "dist/client/assets/tools-HASH.js": {
-      "raw": 34796,
+      "raw": 34795,
       "gzip": 12373,
       "brotli": 11139
     },
@@ -207,10 +207,20 @@
       "gzip": 18875,
       "brotli": 16324
     },
+    "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs": {
+      "raw": 294982,
+      "gzip": 77629,
+      "brotli": 63591
+    },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
+    },
+    "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
+      "raw": 32734,
+      "gzip": 9422,
+      "brotli": 8354
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -246,6 +256,11 @@
       "raw": 31954,
       "gzip": 8369,
       "brotli": 7500
+    },
+    "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
+      "raw": 3950,
+      "gzip": 1449,
+      "brotli": 1306
     },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
@@ -363,14 +378,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 250762,
-      "gzip": 43724,
-      "brotli": 36444
+      "raw": 253962,
+      "gzip": 44258,
+      "brotli": 36850
     },
     "initial/index.html/js": {
-      "raw": 1281967,
-      "gzip": 406675,
-      "brotli": 326185
+      "raw": 1288570,
+      "gzip": 410206,
+      "brotli": 328486
     },
     "initial/render.html/css": {
       "raw": 5252,
@@ -381,21 +396,6 @@
       "raw": 542325,
       "gzip": 168433,
       "brotli": 131773
-    },
-    "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs": {
-      "raw": 294982,
-      "gzip": 77629,
-      "brotli": 63591
-    },
-    "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
-      "raw": 32734,
-      "gzip": 9422,
-      "brotli": 8354
-    },
-    "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
-      "raw": 3950,
-      "gzip": 1449,
-      "brotli": 1306
     }
   },
   "allowances": [
@@ -678,26 +678,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 248879,
-        "gzip": 42798,
-        "brotli": 35643
-      },
-      "reason": "The Settings dialog and the shared EmptyState join the app stylesheet (about 16 KB raw over main): sidebar and phone-sheet layouts, rows, command fields and switches.",
-      "pr": "https://github.com/hazem3500/replays/pull/102"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 250762,
-        "gzip": 43724,
-        "brotli": 36444
-      },
-      "reason": "The initial index style group carries the same Settings and EmptyState stylesheets added to the app stylesheet.",
-      "pr": "https://github.com/hazem3500/replays/pull/102"
-    },
-    {
       "file": "dist/client/assets/performance-HASH.js",
       "cap": {
         "raw": 21000,
@@ -798,26 +778,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/104"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 720540,
-        "gzip": 233107,
-        "brotli": 189394
-      },
-      "reason": "The six built-in source-provider marks (Simple Icons paths) and the phone source sheet join the eager index rows, about 5.5 KB raw over main, which already carries the Settings dialog.",
-      "pr": "https://github.com/hazem3500/replays/pull/106"
-    },
-    {
-      "file": "initial/index.html/js",
-      "cap": {
-        "raw": 1281967,
-        "gzip": 406675,
-        "brotli": 326185
-      },
-      "reason": "The index route's initial script group carries the same provider marks and source sheet as the main chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/106"
-    },
-    {
       "file": "dist/lib/plugin.mjs",
       "cap": {
         "brotli": 250
@@ -832,6 +792,46 @@
       },
       "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 727142,
+        "gzip": 236638,
+        "brotli": 191694
+      },
+      "reason": "The replay list's empty and error states (per-state copy and actions, active-filter chips) and the auto-retry hook join the eager index graph, about 6.5 KB raw over main, which already carries the Settings dialog and the provider marks.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "raw": 1288570,
+        "gzip": 410206,
+        "brotli": 328486
+      },
+      "reason": "The index route's initial script group carries the same empty and error states and auto-retry hook as the main chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 252078,
+        "gzip": 43332,
+        "brotli": 36049
+      },
+      "reason": "EmptyState's active-filter chips and retry status line return to the app stylesheet (under 1 KB raw), on top of the Settings and EmptyState styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 253962,
+        "gzip": 44258,
+        "brotli": 36850
+      },
+      "reason": "The initial index style group carries the same EmptyState chips and status styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
     },
     {
       "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",

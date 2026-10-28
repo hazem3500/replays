@@ -1,12 +1,23 @@
-import { CircleAlertIcon, InboxIcon, type LucideIcon, SparklesIcon, WifiOffIcon } from 'lucide-react';
+import {
+  CircleAlertIcon,
+  FilterIcon,
+  FolderOpenIcon,
+  InboxIcon,
+  type LucideIcon,
+  SearchIcon,
+  SparklesIcon,
+  WifiOffIcon,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button.tsx';
-import { cn } from '@/lib/utils.ts';
 
 const ICONS = {
   alert: CircleAlertIcon,
+  filter: FilterIcon,
+  folder: FolderOpenIcon,
   inbox: InboxIcon,
   offline: WifiOffIcon,
+  search: SearchIcon,
   sparkles: SparklesIcon,
 } satisfies Record<string, LucideIcon>;
 
@@ -31,8 +42,16 @@ export interface EmptyStateProps {
   tone?: EmptyStateTone;
   variant?: EmptyStateVariant;
   actions?: readonly EmptyStateAction[];
-  className?: string;
+  details?: EmptyStateDetails;
   testId?: string;
+}
+
+/** Quiet lines under the body. */
+export interface EmptyStateDetails {
+  /** What is narrowing the view ("Host demo.example", "Has errors"), listed under an accessible name. */
+  chips?: { label: string; items: readonly string[] };
+  /** A status line, e.g. an automatic retry countdown. */
+  status?: string;
 }
 
 const DEFAULT_ICON: Record<EmptyStateTone, EmptyStateIcon> = { empty: 'inbox', error: 'alert', offline: 'offline' };
@@ -51,13 +70,13 @@ export function EmptyState({
   tone = 'empty',
   variant = 'region',
   actions = NO_ACTIONS,
-  className,
+  details,
   testId,
 }: EmptyStateProps) {
   const name = icon === undefined ? DEFAULT_ICON[tone] : icon;
   const Icon = name ? ICONS[name] : undefined;
   return (
-    <div className={cn('empty-state', className)} data-tone={tone} data-variant={variant} role={ROLE[tone]} data-testid={testId}>
+    <div className="empty-state" data-tone={tone} data-variant={variant} role={ROLE[tone]} data-testid={testId}>
       {Icon ? (
         <span className="empty-state-icon" aria-hidden="true">
           <Icon />
@@ -66,6 +85,14 @@ export function EmptyState({
       <div className="empty-state-text">
         <p className="empty-state-title">{title}</p>
         {body ? <p className="empty-state-body">{body}</p> : null}
+        {details?.chips?.items.length ? (
+          <ul className="empty-state-chips" aria-label={details.chips.label}>
+            {details.chips.items.map((chip) => (
+              <li key={chip}>{chip}</li>
+            ))}
+          </ul>
+        ) : null}
+        {details?.status ? <p className="empty-state-status">{details.status}</p> : null}
       </div>
       {actions.length ? (
         <div className="empty-state-actions">

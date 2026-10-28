@@ -196,6 +196,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
+  backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
+  refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters
+  that leave nothing list the active filters with Clear search, Search all replays or Clear filters.
+
 - Settings is a fixed-size dialog with a section sidebar (a full-screen section list with Back on phones): CLI & agents,
   Keyboard, Labs, Plugins (when a plugin registers a setting) and About. The colour theme lives only in the top bar.
 - Beta flags have one model shared by the server and the page (`src/shared/beta-flags.ts`): the server allows a flag
