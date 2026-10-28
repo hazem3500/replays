@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
+  hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
+  inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
+  during a press; the CUA arrow keeps its press squish. Viewer, editor preview and MP4 export draw the same glyph.
 - Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a

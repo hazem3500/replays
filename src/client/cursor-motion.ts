@@ -343,6 +343,8 @@ export interface Pose {
   scale: number;
   /** 1 while in use; 0 while idle (before the first move, and IDLE_MS after the last move or click). */
   opacity: number;
+  /** Ms since the click being shown, for a theme's click effect; -1 outside one, with click feedback off or under reduced motion. */
+  press?: number;
 }
 
 /** A cursor still this long since its last move or click fades out: it is not pointing at anything. */
@@ -464,6 +466,7 @@ export function cursorPose(
 ) {
   into.scale = 1;
   into.opacity = 1;
+  into.press = -1;
   if (track.settings?.visible === false || !track.first || !(t >= track.appearsAt)) {
     into.visible = false;
     into.opacity = 0;
@@ -483,7 +486,10 @@ export function cursorPose(
   }
   if (!track.reducedMotion && track.settings?.clickFeedback !== false) {
     const press = track.presses[lastAtOrBefore(track.presses, t)];
-    if (press !== undefined && t - press < CLICK_FX_MS) into.scale = 1 - squish(t - press);
+    if (press !== undefined && t - press < CLICK_FX_MS) {
+      into.scale = 1 - squish(t - press);
+      into.press = t - press;
+    }
   }
   into.opacity = track.settings?.hideWhenIdle === false ? 1 : idlePresence(track, t);
   if (!track.reducedMotion && into.opacity < 1) into.scale *= IDLE_SCALE + (1 - IDLE_SCALE) * into.opacity;
