@@ -359,13 +359,13 @@
     },
     "dist/lib/recorder-react.mjs": {
       "raw": 5462,
-      "gzip": 1661,
-      "brotli": 1525
+      "gzip": 1660,
+      "brotli": 1510
     },
     "dist/lib/recorder-testing.mjs": {
       "raw": 10357,
       "gzip": 3161,
-      "brotli": 2719
+      "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
       "raw": 27207,
@@ -378,9 +378,9 @@
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 6031,
-      "gzip": 1928,
-      "brotli": 1680
+      "raw": 2904,
+      "gzip": 854,
+      "brotli": 740
     },
     "dist/lib/server-testing.mjs": {
       "raw": 11887,
