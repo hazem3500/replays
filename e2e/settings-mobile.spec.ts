@@ -10,7 +10,8 @@ async function openSettings(page: Page, tap: boolean) {
 
 function overflow(page: Page) {
   return page.evaluate(async () => {
-    const dialog = document.querySelector<HTMLElement>('[role="dialog"]')!;
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    if (!dialog) throw new Error('the Settings dialog is not open');
     await Promise.all(dialog.getAnimations({ subtree: true }).map((animation) => animation.finished));
     const rect = dialog.getBoundingClientRect();
     return {
@@ -93,9 +94,14 @@ test.describe('desktop settings', () => {
     const tabs = dialog.getByRole('tablist', { name: 'Settings sections' });
     await expect(tabs.getByRole('tab', { name: 'CLI & agents' })).toBeFocused();
     const sizes = new Set<string>();
-    for (const name of ['CLI & agents', 'Keyboard', 'Labs', 'About']) {
+    for (const [name, id] of [
+      ['CLI & agents', 'cli'],
+      ['Keyboard', 'keyboard'],
+      ['Labs', 'labs'],
+      ['About', 'about'],
+    ]) {
       await tabs.getByRole('tab', { name }).click();
-      await expect(dialog.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', `settings-tab-${name === 'CLI & agents' ? 'cli' : name.toLowerCase()}`);
+      await expect(dialog.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', `settings-tab-${id}`);
       const geometry = await overflow(page);
       expect(geometry.dialogOverflow).toBe(0);
       expect(geometry.documentOverflow).toBe(0);

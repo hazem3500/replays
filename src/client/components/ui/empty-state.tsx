@@ -1,48 +1,13 @@
-import {
-  CircleAlertIcon,
-  CircleSlashIcon,
-  type LucideIcon,
-  FilterIcon,
-  FolderOpenIcon,
-  GaugeIcon,
-  GitCompareIcon,
-  InboxIcon,
-  ListOrderedIcon,
-  MessageSquareIcon,
-  NetworkIcon,
-  SearchIcon,
-  SparklesIcon,
-  TerminalIcon,
-  UploadIcon,
-  WifiOffIcon,
-} from 'lucide-react';
+import { CircleAlertIcon, InboxIcon, type LucideIcon, SparklesIcon, WifiOffIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
-import './empty-state.css';
-
-export const emptyStateStrings = {
-  retryIn: (seconds: number) => `Retrying in ${seconds}s`,
-  retrying: 'Retrying…',
-  activeLabel: 'Active',
-} as const;
 
 const ICONS = {
   alert: CircleAlertIcon,
-  comment: MessageSquareIcon,
-  compare: GitCompareIcon,
-  console: TerminalIcon,
-  filter: FilterIcon,
-  folder: FolderOpenIcon,
   inbox: InboxIcon,
-  network: NetworkIcon,
-  none: CircleSlashIcon,
   offline: WifiOffIcon,
-  performance: GaugeIcon,
-  search: SearchIcon,
   sparkles: SparklesIcon,
-  steps: ListOrderedIcon,
-  upload: UploadIcon,
 } satisfies Record<string, LucideIcon>;
 
 export type EmptyStateIcon = keyof typeof ICONS;
@@ -66,16 +31,14 @@ export interface EmptyStateProps {
   tone?: EmptyStateTone;
   variant?: EmptyStateVariant;
   actions?: readonly EmptyStateAction[];
-  /** What is narrowing the view ("Host demo.example", "Has errors"), listed under the body. */
-  chips?: readonly string[];
-  chipsLabel?: string;
-  /** A quiet status line, e.g. the auto-retry countdown (`emptyStateStrings.retryIn`). */
-  status?: string;
   className?: string;
   testId?: string;
 }
 
 const DEFAULT_ICON: Record<EmptyStateTone, EmptyStateIcon> = { empty: 'inbox', error: 'alert', offline: 'offline' };
+// why: an error replaces what the person asked for, so it is announced; an offline banner or an empty list is not urgent.
+const ROLE: Partial<Record<EmptyStateTone, 'alert' | 'status'>> = { error: 'alert', offline: 'status' };
+const NO_ACTIONS: readonly EmptyStateAction[] = [];
 
 /**
  * One empty/error state for every surface. Props are plain data (strings, an icon name, action descriptors), so a
@@ -87,19 +50,14 @@ export function EmptyState({
   icon,
   tone = 'empty',
   variant = 'region',
-  actions = [],
-  chips = [],
-  chipsLabel = emptyStateStrings.activeLabel,
-  status,
+  actions = NO_ACTIONS,
   className,
   testId,
 }: EmptyStateProps) {
   const name = icon === undefined ? DEFAULT_ICON[tone] : icon;
   const Icon = name ? ICONS[name] : undefined;
-  // why: an error replaces what the person asked for, so it is announced; an offline banner or an empty list is not urgent.
-  const role = tone === 'error' ? 'alert' : tone === 'offline' ? 'status' : undefined;
   return (
-    <div className={cn('empty-state', className)} data-tone={tone} data-variant={variant} role={role} data-testid={testId}>
+    <div className={cn('empty-state', className)} data-tone={tone} data-variant={variant} role={ROLE[tone]} data-testid={testId}>
       {Icon ? (
         <span className="empty-state-icon" aria-hidden="true">
           <Icon />
@@ -108,14 +66,6 @@ export function EmptyState({
       <div className="empty-state-text">
         <p className="empty-state-title">{title}</p>
         {body ? <p className="empty-state-body">{body}</p> : null}
-        {chips.length ? (
-          <ul className="empty-state-chips" aria-label={chipsLabel}>
-            {chips.map((chip) => (
-              <li key={chip}>{chip}</li>
-            ))}
-          </ul>
-        ) : null}
-        {status ? <p className="empty-state-status">{status}</p> : null}
       </div>
       {actions.length ? (
         <div className="empty-state-actions">
@@ -133,7 +83,7 @@ function EmptyStateButton({ action }: { action: EmptyStateAction }) {
     variant: action.primary ? 'default' : 'outline',
     size: 'lg',
     className: 'empty-state-action',
-    'data-primary': action.primary || undefined,
+    'data-primary': action.primary ? '' : undefined,
     'data-action-id': action.id,
     disabled: action.disabled,
   } as const;

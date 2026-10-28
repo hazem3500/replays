@@ -56,6 +56,8 @@ export function ExternalLink({ href, children }: { href: string; children: React
   );
 }
 
+const ARROW_STEPS: Partial<Record<string, 1 | -1>> = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+
 /** A small radio group drawn as a segmented control: arrow keys move the choice, one tab stop. */
 export function Segmented<T extends string>({
   value,
@@ -69,9 +71,8 @@ export function Segmented<T extends string>({
   labelledBy: string;
 }) {
   const group = useRef<HTMLDivElement>(null);
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
-    const step =
-      event.key === 'ArrowRight' || event.key === 'ArrowDown' ? 1 : event.key === 'ArrowLeft' || event.key === 'ArrowUp' ? -1 : 0;
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
+    const step = ARROW_STEPS[event.key];
     if (!step) return;
     event.preventDefault();
     const index = options.findIndex((option) => option.value === value);
@@ -81,7 +82,7 @@ export function Segmented<T extends string>({
     requestAnimationFrame(() => group.current?.querySelector<HTMLElement>(`[data-value="${next.value}"]`)?.focus());
   }
   return (
-    <div ref={group} className="settings-segmented" role="radiogroup" aria-labelledby={labelledBy} onKeyDown={onKeyDown}>
+    <div ref={group} className="settings-segmented" role="radiogroup" aria-labelledby={labelledBy}>
       {options.map((option) => (
         <button
           key={option.value}
@@ -91,6 +92,7 @@ export function Segmented<T extends string>({
           aria-checked={option.value === value}
           tabIndex={option.value === value ? 0 : -1}
           onClick={() => onChange(option.value)}
+          onKeyDown={onKeyDown}
         >
           {option.label}
         </button>

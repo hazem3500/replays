@@ -1,5 +1,20 @@
 import { BETA_FLAGS, type BetaFlagId, type BetaFlags, NO_BETA } from '../shared/beta-flags.ts';
 
+export type { BetaFlags } from '../shared/beta-flags.ts';
+export { NO_BETA };
+
+const TRUE = new Set(['true', '1', 'yes', 'on']);
+const FALSE = new Set(['false', '0', 'no', 'off', '']);
+
+/** A boolean environment variable: undefined when unset, else true/false (or a readable error). */
+export function parseFlag(name: string, value: string | undefined): boolean | undefined {
+  if (value === undefined) return undefined;
+  const lower = value.trim().toLowerCase();
+  if (TRUE.has(lower)) return true;
+  if (FALSE.has(lower)) return false;
+  throw new Error(`${name} must be true or false (got ${JSON.stringify(value)})`);
+}
+
 /**
  * Beta features: every one is OFF unless switched on explicitly, so a default deployment exposes none of their UI,
  * routes or code paths. The flags themselves are listed once, in src/shared/beta-flags.ts.
@@ -17,21 +32,6 @@ import { BETA_FLAGS, type BetaFlagId, type BetaFlags, NO_BETA } from '../shared/
  * agents outside it): docs/malleability.md. Off means none of those exist: no UI, 404s, nothing exposed to agents.
  * The environment variables win over the file; `true`/`1`/`yes`/`on` and `false`/`0`/`no`/`off` are accepted.
  */
-export type { BetaFlags } from '../shared/beta-flags.ts';
-export { NO_BETA };
-
-const TRUE = new Set(['true', '1', 'yes', 'on']);
-const FALSE = new Set(['false', '0', 'no', 'off', '']);
-
-/** A boolean environment variable: undefined when unset, else true/false (or a readable error). */
-export function parseFlag(name: string, value: string | undefined): boolean | undefined {
-  if (value === undefined) return undefined;
-  const lower = value.trim().toLowerCase();
-  if (TRUE.has(lower)) return true;
-  if (FALSE.has(lower)) return false;
-  throw new Error(`${name} must be true or false (got ${JSON.stringify(value)})`);
-}
-
 export function betaFromEnv(env: Record<string, string | undefined>, file?: { [key in BetaFlagId]?: unknown }): BetaFlags {
   const values: Record<string, unknown> = file ?? {};
   for (const flag of BETA_FLAGS) {
@@ -40,6 +40,6 @@ export function betaFromEnv(env: Record<string, string | undefined>, file?: { [k
   }
   const allowed: BetaFlags = { ...NO_BETA };
   for (const flag of BETA_FLAGS)
-    allowed[flag.id] = parseFlag(flag.env, env[flag.env]) ?? (values[flag.configKey] as boolean | undefined) ?? false;
+    allowed[flag.id] = parseFlag(flag.env, env[flag.env]) ?? values[flag.configKey] === true;
   return allowed;
 }

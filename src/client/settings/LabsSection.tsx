@@ -3,14 +3,14 @@ import { useId } from 'react';
 import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 
-import { type BetaFlagDefinition, type BetaFlagId, labsFlags } from '../../shared/beta-flags.ts';
+import { type BetaFlag, labsFlags } from '../../shared/beta-flags.ts';
 import { SETTINGS_LINKS } from './config-query.ts';
 import { betaAllowedFlags, useBetaFlag } from './labs.ts';
 import { ExternalLink, SettingsGroup, SettingsRow } from './rows.tsx';
 import { strings } from './strings.ts';
 
-function LabsRow({ flag }: { flag: BetaFlagDefinition }) {
-  const { enabled, pendingReload, setEnabled } = useBetaFlag(flag.id as BetaFlagId);
+function LabsRow({ flag }: { flag: BetaFlag }) {
+  const { enabled, pendingReload, setEnabled } = useBetaFlag(flag.id);
   const labelId = useId();
   return (
     <SettingsRow

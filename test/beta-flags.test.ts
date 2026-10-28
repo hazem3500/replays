@@ -8,7 +8,6 @@ import {
   betaTokens,
   labsFlags,
   NO_BETA,
-  REMOVED_BETA_FLAGS,
   resolveBetaFlags,
 } from '../src/shared/beta-flags.ts';
 
@@ -17,7 +16,6 @@ describe('beta flag registry', () => {
     expect(BETA_FLAG_IDS).toEqual(['editor', 'malleable']);
     expect(BETA_FLAGS.map((flag) => flag.env)).toEqual(['REPLAYS_BETA_EDITOR', 'REPLAYS_BETA_MALLEABLE']);
     expect(BETA_FLAGS.map((flag) => flag.token)).toEqual(['editor', 'malleable']);
-    expect(REMOVED_BETA_FLAGS.map((flag) => flag.env)).toEqual(['REPLAYS_BETA_GROUPED_INSPECTOR']);
     for (const flag of BETA_FLAGS) {
       expect(flag.configKey).toBe(flag.id);
       expect(flag.label.length).toBeGreaterThan(0);
@@ -31,15 +29,15 @@ describe('beta flag registry', () => {
   it('round-trips the allowed set through the index.html meta tokens', () => {
     expect(betaTokens(NO_BETA)).toBe('');
     expect(betaTokens({ editor: true, malleable: true })).toBe('editor malleable');
-    expect(betaTokens({ malleable: true, groupedInspector: true })).toBe('malleable');
-    expect(betaFromTokens('editor grouped-inspector')).toEqual({ editor: true, malleable: false });
+    expect(betaTokens({ malleable: true })).toBe('malleable');
+    expect(betaFromTokens('editor retired-flag')).toEqual({ editor: true, malleable: false });
     expect(betaFromTokens('malleable,editor unknown')).toEqual({ editor: true, malleable: true });
-    expect(betaFromTokens(undefined)).toEqual(NO_BETA);
+    expect(betaFromTokens(null)).toEqual(NO_BETA);
   });
 
   it('treats the server as the ceiling and the person’s choice as an opt-out (on by default)', () => {
     expect(betaEffective('editor', false, true)).toBe(false);
-    expect(betaEffective('editor', true, undefined)).toBe(true);
+    expect(betaEffective('editor', true)).toBe(true);
     expect(betaEffective('editor', true, false)).toBe(false);
     expect(betaEffective('malleable', true, true)).toBe(true);
     expect(resolveBetaFlags({ editor: true, malleable: true }, { malleable: false })).toEqual({

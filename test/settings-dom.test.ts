@@ -1,11 +1,12 @@
 // @vitest-environment happy-dom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { act, createElement } from 'react';
+import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { closeSettings, openSettings, SettingsButton } from '../src/client/settings/Settings.tsx';
 import { setBetaAllowedForTests } from '../src/client/settings/labs.ts';
+import { settle } from './settle.ts';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -20,8 +21,8 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
-  await act(async () => closeSettings());
-  await act(async () => root.unmount());
+  await settle(() => closeSettings());
+  await settle(() => root.unmount());
   client.clear();
   host.remove();
   document.querySelector('meta[name="app-base"]')?.remove();
@@ -30,33 +31,34 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+function present(element: Element | null) {
+  if (!(element instanceof HTMLElement)) throw new Error('expected the element to be rendered');
+  return element;
+}
+
 async function click(element: Element | null) {
-  expect(element).not.toBeNull();
-  await act(async () => (element as HTMLElement).click());
+  const target = present(element);
+  await settle(() => target.click());
 }
 
 async function key(element: Element | null, keyName: string) {
-  expect(element).not.toBeNull();
-  await act(async () => element!.dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true })));
+  const target = present(element);
+  await settle(() => target.dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true })));
 }
 
+const announced = (text: string) => [...document.querySelectorAll('[role="status"]')].some((element) => element.textContent === text);
+
 function mockConfig(auth = 'oidc', deviceLogin = false) {
-  const fetchConfig = vi.fn<typeof fetch>().mockImplementation(async (input) =>
-    String(input).endsWith('/agent-capabilities')
-      ? new Response(null, { status: 404 })
-      : new Response(
-          JSON.stringify({ auth, core: '1.2.3', name: 'replays', ...(deviceLogin ? { cliDeviceAuth: { type: 'oidc-device' } } : {}) }),
-          {
-            status: 200,
-          },
-        ),
-  );
+  const config = { auth, core: '1.2.3', name: 'replays', ...(deviceLogin ? { cliDeviceAuth: { type: 'oidc-device' } } : {}) };
+  const respond = (input: RequestInfo | URL) =>
+    String(input).endsWith('/agent-capabilities') ? new Response(null, { status: 404 }) : new Response(JSON.stringify(config));
+  const fetchConfig = vi.fn<typeof fetch>().mockImplementation((input) => Promise.resolve(respond(input)));
   vi.stubGlobal('fetch', fetchConfig);
   return fetchConfig;
 }
 
 async function render() {
-  await act(async () => root.render(createElement(QueryClientProvider, { client }, createElement(SettingsButton))));
+  await settle(() => root.render(createElement(QueryClientProvider, { client }, createElement(SettingsButton))));
 }
 
 async function openFromButton(auth = 'oidc', deviceLogin = false) {
@@ -104,9 +106,9 @@ describe('Settings', () => {
     for (const section of ['CLI & agents', 'Keyboard', 'Labs', 'About']) {
       await click(tab(section));
       expect(panel()?.querySelector('[role="radiogroup"]')).toBeNull();
-      expect(
-        [...(dialog()?.querySelectorAll('button') ?? [])].filter((button) => /^(Light|Dark)$/.test(button.textContent ?? '')),
-      ).toEqual([]);
+      const labels = [...(dialog()?.querySelectorAll('button') ?? [])].map((button) => button.textContent);
+      expect(labels).not.toContain('Light');
+      expect(labels).not.toContain('Dark');
     }
   });
 
@@ -127,9 +129,7 @@ describe('Settings', () => {
     document.head.append(base);
     const fetchConfig = mockConfig();
     await render();
-    await act(async () => {
-      openSettings('cli');
-    });
+    await settle(() => openSettings('cli'));
     expect(fetchConfig).toHaveBeenCalledWith('/workspace/api/config', expect.objectContaining({ signal: expect.any(AbortSignal) }));
     await vi.waitFor(() => expect(panel()?.textContent).toContain('Host-managed sign-in'));
     expect(panel()?.textContent).toContain('Credential creation isn’t enabled for this deployment.');
@@ -137,21 +137,17 @@ describe('Settings', () => {
     expect(setup?.readOnly).toBe(true);
     expect(setup?.value).toBe("replays connect 'http://localhost:3000/workspace' && replays doctor");
     expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toContain('--header-file headers.json');
-    const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue(undefined);
+    const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     await click(document.querySelector('[aria-label="Copy server setup command"]'));
     expect(writeText).toHaveBeenCalledWith("replays connect 'http://localhost:3000/workspace' && replays doctor");
-    await vi.waitFor(() =>
-      expect([...document.querySelectorAll('[role="status"]')].some((element) => element.textContent === 'Copied')).toBe(true),
-    );
+    await vi.waitFor(() => expect(announced('Copied')).toBe(true));
   });
 
   it('leaves out the header file for an open-access deployment', async () => {
     mockConfig('none');
     await render();
-    await act(async () => {
-      openSettings('cli');
-    });
+    await settle(() => openSettings('cli'));
     await vi.waitFor(() => expect(panel()?.textContent).toContain('Open access · use only on a trusted network.'));
     expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toBe('replays upload replay.json');
   });
@@ -159,9 +155,7 @@ describe('Settings', () => {
   it('says plainly when the server offers no experiments', async () => {
     mockConfig();
     await render();
-    await act(async () => {
-      openSettings('labs');
-    });
+    await settle(() => openSettings('labs'));
     expect(tab('Labs')?.getAttribute('aria-selected')).toBe('true');
     const empty = panel()?.querySelector('[data-testid="labs-empty"]');
     expect(empty?.textContent).toContain('No experiments are available');
@@ -175,9 +169,7 @@ describe('Settings', () => {
     setBetaAllowedForTests({ editor: true, malleable: true });
     mockConfig();
     await render();
-    await act(async () => {
-      openSettings('labs');
-    });
+    await settle(() => openSettings('labs'));
     const text = panel()?.textContent ?? '';
     expect(text).toContain('Replay editor');
     expect(text).toContain('Plugin workshop');
@@ -185,10 +177,10 @@ describe('Settings', () => {
     expect(text).not.toContain('Reload to apply');
     const switches = [...(panel()?.querySelectorAll<HTMLElement>('[role="switch"]') ?? [])];
     expect(switches.map((element) => element.getAttribute('aria-checked'))).toEqual(['true', 'true']);
-    await click(switches[0]!);
+    await click(switches[0] ?? null);
     expect(localStorage.getItem('replays-labs-editor')).toBe('off');
     expect(panel()?.textContent).not.toContain('Reload to apply');
-    await click(switches[1]!);
+    await click(switches[1] ?? null);
     expect(localStorage.getItem('replays-labs-malleable')).toBe('off');
     expect(panel()?.querySelectorAll('[role="switch"][aria-checked="false"]')).toHaveLength(2);
     expect(panel()?.textContent).toContain('Reload to apply');

@@ -63,14 +63,22 @@ export const BETA_FLAGS = [
   },
 ] as const satisfies readonly BetaFlagDefinition[];
 
-export type BetaFlagId = (typeof BETA_FLAGS)[number]['id'];
+/** One registry entry, with its literal id. */
+export type BetaFlag = (typeof BETA_FLAGS)[number];
+export type BetaFlagId = BetaFlag['id'];
 export type BetaFlags = Record<BetaFlagId, boolean>;
 /** A person's saved choices; a missing id means "no choice" (the flag's default applies). */
 export type BetaChoices = Partial<Record<BetaFlagId, boolean>>;
 
 export const BETA_FLAG_IDS: readonly BetaFlagId[] = BETA_FLAGS.map((flag) => flag.id);
 
-export const NO_BETA: BetaFlags = Object.freeze(Object.fromEntries(BETA_FLAG_IDS.map((id) => [id, false])) as BetaFlags);
+export const NO_BETA: Readonly<BetaFlags> = Object.freeze({ editor: false, malleable: false });
+
+function flagsWhere(on: (flag: BetaFlag) => boolean): BetaFlags {
+  const flags: BetaFlags = { ...NO_BETA };
+  for (const flag of BETA_FLAGS) flags[flag.id] = on(flag);
+  return flags;
+}
 
 export function betaFlag(id: BetaFlagId): BetaFlagDefinition {
   const flag = BETA_FLAGS.find((candidate) => candidate.id === id);
@@ -88,11 +96,11 @@ export function betaTokens(allowed: Partial<BetaFlags> | undefined): string {
 /** The allowed set back from `<meta name="app-beta">` content (space or comma separated; unknown tokens ignored). */
 export function betaFromTokens(content: string | null | undefined): BetaFlags {
   const tokens = new Set((content ?? '').split(/[\s,]+/).filter(Boolean));
-  return Object.fromEntries(BETA_FLAGS.map((flag) => [flag.id, tokens.has(flag.token)])) as BetaFlags;
+  return flagsWhere((flag) => tokens.has(flag.token));
 }
 
 /** One flag's effective value: the server's ceiling, then the person's choice, then the default. */
-export function betaEffective(id: BetaFlagId, allowed: boolean, choice: boolean | undefined): boolean {
+export function betaEffective(id: BetaFlagId, allowed: boolean, choice?: boolean): boolean {
   if (!allowed) return false;
   const flag = betaFlag(id);
   if (!flag.userToggle) return true;
@@ -100,12 +108,10 @@ export function betaEffective(id: BetaFlagId, allowed: boolean, choice: boolean 
 }
 
 export function resolveBetaFlags(allowed: Partial<BetaFlags>, choices: BetaChoices = {}): BetaFlags {
-  return Object.fromEntries(
-    BETA_FLAGS.map((flag) => [flag.id, betaEffective(flag.id, Boolean(allowed[flag.id]), choices[flag.id])]),
-  ) as BetaFlags;
+  return flagsWhere((flag) => betaEffective(flag.id, Boolean(allowed[flag.id]), choices[flag.id]));
 }
 
 /** The flags a person can switch under Settings › Labs on this deployment (allowed and user-toggleable). */
-export function labsFlags(allowed: Partial<BetaFlags>): BetaFlagDefinition[] {
+export function labsFlags(allowed: Partial<BetaFlags>): BetaFlag[] {
   return BETA_FLAGS.filter((flag) => flag.userToggle && allowed[flag.id]);
 }

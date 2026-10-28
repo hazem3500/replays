@@ -32,7 +32,10 @@ describe('beta flags', () => {
     const path = join(dir, 'config.json');
     await writeFile(path, JSON.stringify({ beta: { editor: true } }));
     expect((await loadSettings({}, await readConfigFile(path))).beta).toEqual({ editor: true, malleable: false });
-    expect((await loadSettings({ REPLAYS_BETA_EDITOR: 'false' }, await readConfigFile(path))).beta).toEqual({ editor: false, malleable: false });
+    expect((await loadSettings({ REPLAYS_BETA_EDITOR: 'false' }, await readConfigFile(path))).beta).toEqual({
+      editor: false,
+      malleable: false,
+    });
     expect((await loadSettings({})).beta).toEqual({ editor: false, malleable: false });
   });
 

@@ -1,11 +1,4 @@
-import {
-  FlaskConicalIcon,
-  InfoIcon,
-  KeyboardIcon,
-  type LucideIcon,
-  PuzzleIcon,
-  SquareTerminalIcon,
-} from 'lucide-react';
+import { FlaskConicalIcon, InfoIcon, KeyboardIcon, type LucideIcon, PuzzleIcon, SquareTerminalIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { viewerRegistry } from '../plugins/registry.ts';

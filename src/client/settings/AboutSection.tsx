@@ -1,15 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { productName } from '../config.ts';
-import { configQuery, serverUrl, SETTINGS_LINKS } from './config-query.ts';
+import { configQuery } from '../queries.ts';
+import { serverUrl, SETTINGS_LINKS } from './config-query.ts';
 import { ExternalLink, SettingsGroup, SettingsRow } from './rows.tsx';
 import { strings } from './strings.ts';
 
 export function AboutSection() {
   const config = useQuery(configQuery);
   const data = config.data;
-  const version = data?.core ?? (config.isPending ? '…' : strings.about.unknown);
-  const auth = data ? (strings.about.auth[data.auth] ?? data.auth) : config.isPending ? '…' : strings.about.unknown;
+  const missing = config.isPending ? '…' : strings.about.unknown;
+  const version = data?.core ?? missing;
+  const auth = data ? (strings.about.auth[data.auth] ?? data.auth) : missing;
   return (
     <>
       <SettingsGroup>

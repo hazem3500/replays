@@ -5,6 +5,7 @@ import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { DialogTrigger } from '@/components/ui/dialog.tsx';
 
+import { currentSearchParam, dropSearchParam } from '../route.ts';
 import { isSettingsSection, type SettingsSectionId } from './sections.tsx';
 import { SettingsDialog } from './SettingsDialog.tsx';
 import { strings } from './strings.ts';
@@ -35,7 +36,7 @@ function subscribe(listener: () => void) {
   return () => listeners.delete(listener);
 }
 
-/** Open Settings, optionally on one section (e.g. the ⌘K palette's "Settings › Labs"). Needs a mounted SettingsButton. */
+/** Open Settings, optionally on one section (`openSettings('labs')`). Needs a mounted SettingsButton. */
 export function openSettings(section?: SettingsSectionId) {
   setState({ open: true, ...(section ? { section, showList: false } : { showList: true }) });
 }
@@ -45,17 +46,9 @@ export function closeSettings() {
 }
 
 function applyDeepLink() {
-  if (typeof window === 'undefined') return;
-  const value = new URLSearchParams(window.location.search).get(SEARCH_PARAM);
+  const value = currentSearchParam(SEARCH_PARAM);
   if (value === null || (state.open && state.section === value)) return;
   state = { open: true, section: isSettingsSection(value) ? value : 'cli', showList: false };
-}
-
-function clearDeepLink() {
-  const url = new URL(window.location.href);
-  if (!url.searchParams.has(SEARCH_PARAM)) return;
-  url.searchParams.delete(SEARCH_PARAM);
-  window.history.replaceState(window.history.state, '', url);
 }
 
 /** The account button in the top bar and the Settings dialog it opens. */
@@ -75,7 +68,7 @@ export function SettingsButton() {
       onSectionChange={(section) => setState({ section })}
       onOpenChange={(open) => {
         setState(open ? { open, showList: true } : { open });
-        if (!open) clearDeepLink();
+        if (!open) dropSearchParam(SEARCH_PARAM);
       }}
       trigger={
         <Hint label={strings.open} side="bottom" align="end">

@@ -35,13 +35,13 @@ export function SplitLayout({
   instant: boolean;
   onSelect: (section: SettingsSectionId, viaKeyboard: boolean) => void;
 }) {
-  function onKeyDown(event: KeyboardEvent<HTMLDivElement>) {
+  function onKeyDown(event: KeyboardEvent<HTMLButtonElement>) {
     const next = nextIndex(event.key, sections.indexOf(current), sections.length);
     const target = sections[next];
     if (!target) return;
     event.preventDefault();
     onSelect(target.section, true);
-    event.currentTarget.querySelector<HTMLElement>(`[data-slot-item="${target.id}"]`)?.focus();
+    event.currentTarget.parentElement?.querySelector<HTMLElement>(`[data-slot-item="${target.id}"]`)?.focus();
   }
   return (
     <>
@@ -53,7 +53,6 @@ export function SplitLayout({
           aria-label={strings.sectionsLabel}
           className="settings-tabs"
           data-slot="settings.sections"
-          onKeyDown={onKeyDown}
         >
           {sections.map((candidate) => {
             const Icon = candidate.icon;
@@ -70,6 +69,7 @@ export function SplitLayout({
                 className="settings-tab"
                 data-slot-item={candidate.id}
                 onClick={() => onSelect(candidate.section, false)}
+                onKeyDown={onKeyDown}
               >
                 <Icon className="settings-tab-icon" aria-hidden="true" />
                 {candidate.label}

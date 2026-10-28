@@ -24,6 +24,9 @@
 @import "./index/filter-menu.css";
 @import "./index/scope-bar.css";
 @import "./index/first-run/first-run.css";
+/* why: Settings and EmptyState restyle DialogContent and Button, whose utility classes sit in the utilities layer. */
+@import "./components/ui/empty-state.css";
+@import "./settings/settings.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 

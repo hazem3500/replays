@@ -13,13 +13,6 @@ import {
   setLabsChoiceStore,
 } from '../src/client/settings/labs.ts';
 
-afterEach(() => {
-  setBetaAllowedForTests(undefined);
-  setLabsChoiceStore(browserLabsChoices);
-  localStorage.clear();
-  document.querySelector('meta[name="app-beta"]')?.remove();
-});
-
 function allow(content: string) {
   const meta = document.createElement('meta');
   meta.name = 'app-beta';
@@ -28,6 +21,13 @@ function allow(content: string) {
 }
 
 describe('Labs choices', () => {
+  afterEach(() => {
+    setBetaAllowedForTests(undefined);
+    setLabsChoiceStore(browserLabsChoices);
+    localStorage.clear();
+    document.querySelector('meta[name="app-beta"]')?.remove();
+  });
+
   it('read what the server allows from index.html', () => {
     expect(betaAllowed('editor')).toBe(false);
     allow('editor grouped-inspector');
@@ -59,7 +59,7 @@ describe('Labs choices', () => {
       set: (id, value) => {
         saved[id] = value;
       },
-      subscribe: () => () => undefined,
+      subscribe: () => () => {},
     };
     setLabsChoiceStore(store);
     setBetaAllowedForTests({ editor: true });

@@ -10,7 +10,7 @@ import {
   betaFromTokens,
   NO_BETA,
 } from '../../shared/beta-flags.ts';
-import { readStorage, writeStorage } from '../storage.ts';
+import { readStorage, removeStorage, writeStorage } from '../storage.ts';
 
 /**
  * The page's side of the beta flags (src/shared/beta-flags.ts): what the server allows (`<meta name="app-beta">`, written
@@ -47,18 +47,14 @@ export const browserLabsChoices: LabsChoiceStore = {
     const storage = STORAGE[id];
     if (value === undefined) {
       delete volatile[id];
-      try {
-        localStorage.removeItem(storage.key);
-      } catch {
-        // why: blocked storage (privacy modes) throws; the volatile copy above is already cleared.
-      }
+      removeStorage(storage.key);
     } else {
       volatile[id] = value;
       writeStorage(storage.key, value ? storage.on : storage.off);
     }
   },
   subscribe(listener) {
-    if (typeof window === 'undefined') return () => undefined;
+    if (typeof window === 'undefined') return () => {};
     window.addEventListener('storage', listener);
     return () => window.removeEventListener('storage', listener);
   },

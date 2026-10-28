@@ -1,3 +1,6 @@
+/** Sign-in mode names by auth adapter; an adapter not listed shows its own name. */
+const AUTH_LABELS: Partial<Record<string, string>> = { none: 'Open access', oidc: 'OpenID Connect', header: 'Trusted proxy headers' };
+
 /** Every user-visible string in Settings (one place, so extraction for translation is mechanical later). */
 export const strings = {
   title: 'Settings',
@@ -70,11 +73,7 @@ export const strings = {
     server: 'Server',
     signIn: 'Sign-in',
     unknown: 'Unknown',
-    auth: {
-      none: 'Open access',
-      oidc: 'OpenID Connect',
-      header: 'Trusted proxy headers',
-    } as Record<string, string>,
+    auth: AUTH_LABELS,
     links: 'Links',
     docs: 'Documentation',
     issues: 'Report an issue',

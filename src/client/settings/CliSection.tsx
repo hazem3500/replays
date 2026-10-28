@@ -2,9 +2,28 @@ import { useQuery } from '@tanstack/react-query';
 
 import { AgentCredentials } from './AgentCredentials.tsx';
 import { CommandField } from './CommandField.tsx';
-import { configQuery, serverUrl, SETTINGS_LINKS, shellQuote } from './config-query.ts';
+import { configQuery } from '../queries.ts';
+import { serverUrl, SETTINGS_LINKS, shellQuote } from './config-query.ts';
 import { ExternalLink, SettingsGroup } from './rows.tsx';
 import { strings } from './strings.ts';
+
+type SignInMode = 'open' | 'device' | 'managed';
+
+function signInMode(auth: string, deviceLogin: boolean): SignInMode {
+  if (auth === 'none') return 'open';
+  return deviceLogin ? 'device' : 'managed';
+}
+
+const ACCESS: Record<SignInMode, string> = {
+  open: strings.cli.accessOpen,
+  device: strings.cli.accessDevice,
+  managed: strings.cli.accessManaged,
+};
+
+const UPLOAD_HINTS: Record<Exclude<SignInMode, 'managed'>, string> = { open: strings.cli.uploadOpen, device: strings.cli.uploadDevice };
+
+/** Host-managed sign-in: what headers.json carries depends on the auth adapter. */
+const MANAGED_UPLOAD_HINTS: Partial<Record<string, string>> = { oidc: strings.cli.uploadOidc, header: strings.cli.uploadHeader };
 
 export function CliSection() {
   const config = useQuery(configQuery);
@@ -32,20 +51,10 @@ export function CliSection() {
   const auth = config.data.auth;
   const anonymous = auth === 'none';
   const deviceLogin = Boolean(config.data.cliDeviceAuth);
-  const uploadHint = anonymous
-    ? strings.cli.uploadOpen
-    : deviceLogin
-      ? strings.cli.uploadDevice
-      : auth === 'oidc'
-        ? strings.cli.uploadOidc
-        : auth === 'header'
-          ? strings.cli.uploadHeader
-          : strings.cli.uploadOther;
+  const mode = signInMode(auth, deviceLogin);
   return (
     <>
-      <p className="settings-intro">
-        {anonymous ? strings.cli.accessOpen : deviceLogin ? strings.cli.accessDevice : strings.cli.accessManaged}
-      </p>
+      <p className="settings-intro">{ACCESS[mode]}</p>
       <SettingsGroup title={strings.cli.connect}>
         <CommandField
           label={strings.cli.connectCommand}
@@ -62,7 +71,7 @@ export function CliSection() {
         <CommandField
           label={strings.cli.uploadCommand}
           command={`replays upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
-          hint={uploadHint}
+          hint={mode === 'managed' ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther) : UPLOAD_HINTS[mode]}
         />
       </SettingsGroup>
       <div className="settings-group settings-credentials">
