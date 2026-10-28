@@ -9,6 +9,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
+  the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
+  and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
+  slider primitive that positions its thumb when it sits beside the track.
 - **Custom upload endpoints** ([docs/extension-api.md](docs/extension-api.md#custom-upload-endpoints)), additive in plugin API 1:
   - `api.uploadEndpoint` gains `authenticate` (its own credentials instead of the auth adapter, identity confined to the endpoint),
     `maxBytes` (a number or per-identity function, checked against `Content-Length`, the stream and the gunzipped size),

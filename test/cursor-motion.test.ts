@@ -9,13 +9,13 @@ import {
   IDLE_FADE_IN_MS,
   IDLE_FADE_OUT_MS,
   IDLE_MS,
-  moveDurationMs,
   onPage,
   planMove,
   REST_HEADING,
   sampleTrajectory,
   squish,
 } from '../src/client/cursor-motion.ts';
+import { moveDurationMs } from '../src/client/cursor-styles.ts';
 
 /** Mouse events from the suite-run-timer sample (timestamps relative to the first event), up to 6.1 s. */
 const SUITE_RUN_TIMER = [
