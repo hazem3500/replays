@@ -852,6 +852,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-topbar[data-untitled] .topbar-title-text { width: min(240px, 40vw); border-radius: var(--radius-sm); background: var(--surface-hover); color: transparent; animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
 .sk-actions { display: contents; }
 [data-loading-action]:disabled { opacity: 1; background: transparent; pointer-events: none; }
+/* invariant: while loading only the back link answers; More and the theme wait for the viewer's own bar, so nothing opens a stand-in menu. */
+.sk-topbar .topbar-actions { pointer-events: none; }
 .sk-panel { display: grid; align-content: start; padding-top: 4px; overflow: hidden; }
 .sk-panel-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 16px; height: 32px; padding: 0 10px; }
 .sk-scrub { display: flex; align-items: center; gap: 3px; height: 28px; padding-inline: 6px; }
