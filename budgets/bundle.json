@@ -88,14 +88,14 @@
       "brotli": 7157
     },
     "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5150,
-      "gzip": 1400,
-      "brotli": 1200
+      "raw": 5200,
+      "gzip": 1420,
+      "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 59480,
-      "gzip": 21120,
-      "brotli": 18380
+      "raw": 59620,
+      "gzip": 21200,
+      "brotli": 18490
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
@@ -1016,24 +1016,24 @@
       "pr": "https://github.com/hazem3500/replays/pull/117"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.css",
-      "cap": {
-        "raw": 5150,
-        "gzip": 1400,
-        "brotli": 1200
-      },
-      "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
-      "pr": "https://github.com/hazem3500/replays/pull/121"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 59480,
-        "gzip": 21120,
-        "brotli": 18380
+        "raw": 59620,
+        "gzip": 21200,
+        "brotli": 18490
       },
-      "reason": "Phone top bar: details, the copy-link choices and Compare become More items (with their icons), plus the long-press and copied-flash hooks; includes #121's Splitter, which CI measures in this stack.",
-      "pr": "https://github.com/hazem3500/replays/pull/125"
+      "reason": "Top bar actions, Context sections and seek bar tracks resolve through their viewer slots; includes the stacked Splitter (#121) and phone top bar (#125), which CI measures with it.",
+      "pr": "https://github.com/hazem3500/replays/pull/133"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.css",
+      "cap": {
+        "raw": 5200,
+        "gzip": 1420,
+        "brotli": 1220
+      },
+      "reason": "The slot wrappers' display: contents rule beside the viewer's layout tokens and seam styles (#121).",
+      "pr": "https://github.com/hazem3500/replays/pull/133"
     }
   ]
 }
