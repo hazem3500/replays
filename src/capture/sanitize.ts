@@ -1,5 +1,9 @@
 import { type CompiledRedaction, compileRedaction, type RedactionRules, redactJsonKeys, redactText } from '../shared/redaction.ts';
+import type { NetworkBodyLimits } from '../shared/capture-profile.ts';
+import { sanitizeBody } from '../shared/network-bodies.ts';
 import type { ReplayBundle, ReplayNetworkEntry } from '../shared/replay.ts';
+import { isRecord } from '../shared/validate.ts';
+import { harEntryBodies } from './har-bodies.ts';
 
 // Exact auth headers plus any `*-token` / `*-secret` / `*-jwt` / `*-assertion` (X-CSRF-Token, X-Amz-Security-Token,
 // signed-identity headers set by proxies, ...).
@@ -12,6 +16,7 @@ const EMBEDDED_URL = /\b(?:https?|wss?):\/\/[^\s"'`()<>\\]+/gi;
 /** CSS `url(...)` in styles and stylesheet text, relative or absolute. */
 const CSS_URL = /url\(\s*(['"]?)([^'"()\s]+)\1\s*\)/gi;
 const SRCSET_FIELD = /^(imagesrcset|srcset)$/i;
+const BODY_FIELDS = new Set(['requestBody', 'responseBody']);
 const NETWORK_FIELDS = new Set([
   'id',
   'at',
@@ -23,6 +28,8 @@ const NETWORK_FIELDS = new Set([
   'mimeType',
   'requestHeaders',
   'responseHeaders',
+  'requestBody',
+  'responseBody',
 ]);
 // Exact names plus any `*_token` / `*-secret` / `*_password` / `*-signature` suffix (`api_token`; login pages
 // that mirror the typed address into `?email=` links; presigned object-storage URLs carry `X-Amz-Signature`). Deliberately broad: `code` also hides invite
@@ -572,9 +579,10 @@ function defaultPass(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBund
   sanitized.events = maskCapturedInputs(sanitized.events);
   // Only the viewer's fields survive: raw HAR leftovers (request.postData, cookies, content) are dropped.
   sanitized.network = sanitized.network.map((entry) => ({
-    ...(Object.fromEntries(Object.entries(entry).filter(([key]) => NETWORK_FIELDS.has(key))) as typeof entry),
+    ...(Object.fromEntries(Object.entries(entry).filter(([key]) => NETWORK_FIELDS.has(key) && !BODY_FIELDS.has(key))) as typeof entry),
     ...(Array.isArray(entry.requestHeaders) ? { requestHeaders: headersWith(entry.requestHeaders, rules) } : {}),
     ...(Array.isArray(entry.responseHeaders) ? { responseHeaders: headersWith(entry.responseHeaders, rules) } : {}),
+    ...bodiesWith(entry, rules),
   }));
   return sanitized;
 }
@@ -612,9 +620,36 @@ export function sanitizeHar(input: unknown, redaction?: RedactionRules): Har {
   return har;
 }
 
-export function networkEntries(input: unknown, startedAt: number, redaction?: RedactionRules): ReplayNetworkEntry[] {
+/**
+ * An uploaded entry's bodies run through the body redaction again (src/shared/network-bodies.ts): only known fields,
+ * secrets replaced, oversized text cut. A body that is not a record is dropped.
+ */
+function bodiesWith(entry: ReplayNetworkEntry, rules: CompiledRedaction): Pick<ReplayNetworkEntry, 'requestBody' | 'responseBody'> {
+  const requestType = entry.requestHeaders?.find?.((header) => header?.name?.toLowerCase() === 'content-type')?.value;
+  const clean = (body: unknown, mimeType: string | undefined) => {
+    const kept = body === undefined ? undefined : sanitizeBody(body, mimeType, { rules });
+    return kept?.text === undefined ? kept : { ...kept, text: embeddedUrlsWith(kept.text, rules) };
+  };
+  const requestBody = clean(entry.requestBody, requestType);
+  const responseBody = clean(entry.responseBody, entry.mimeType);
+  return { ...(requestBody ? { requestBody } : {}), ...(responseBody ? { responseBody } : {}) };
+}
+
+/**
+ * The HAR as replay network entries. `bodies` (a capture with `network: 'bodies'`) keeps request and response bodies
+ * under its limits, redacted; without it no body is read.
+ */
+export function networkEntries(
+  input: unknown,
+  startedAt: number,
+  redaction?: RedactionRules,
+  bodies?: NetworkBodyLimits,
+): ReplayNetworkEntry[] {
+  const rules = compileRedaction(redaction);
+  const raw = bodies && isRecord(input) && isRecord(input.log) && Array.isArray(input.log.entries) ? input.log.entries : [];
   const har = sanitizeHar(input, redaction);
   return (har.log?.entries ?? []).map((entry, index) => ({
+    ...(bodies ? harEntryBodies(raw[index], bodies, rules) : {}),
     id: `request-${index + 1}`,
     at: Math.max(0, Date.parse(entry.startedDateTime ?? '') - startedAt) || 0,
     duration: Number(entry.time ?? 0),

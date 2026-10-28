@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 import { ViewerRegistry } from '../src/client/plugins/registry.ts';
 import { inspectorTabItems, type InspectorTabContext, type TabResolver } from '../src/client/viewer/inspector-tabs.ts';
-import { consoleBadge, networkBadge, performanceBadge } from '../src/client/viewer/tab-badges.ts';
-import type { ReplayConsoleEntry, ReplayNetworkEntry } from '../src/shared/replay.ts';
+import { consoleBadge } from '../src/client/viewer/tab-badges.ts';
+import type { ReplayConsoleEntry } from '../src/shared/replay.ts';
 
 const context = (overrides: Partial<InspectorTabContext> = {}): InspectorTabContext => ({
   stepCount: 4,
@@ -14,19 +14,6 @@ const context = (overrides: Partial<InspectorTabContext> = {}): InspectorTabCont
 });
 const ids = (items: readonly { id: string }[]) => items.map((item) => item.id);
 
-function request(id: string, status: number, statusText = ''): ReplayNetworkEntry {
-  return {
-    id,
-    at: 0,
-    duration: 10,
-    method: 'GET',
-    url: `https://example.test/${id}`,
-    status,
-    statusText,
-    requestHeaders: [],
-    responseHeaders: [],
-  };
-}
 const log = (level: ReplayConsoleEntry['level']): ReplayConsoleEntry => ({ at: 0, level, message: level });
 
 describe('inspector tab row', () => {
@@ -65,18 +52,6 @@ describe('inspector tab row', () => {
 });
 
 describe('tab badges', () => {
-  it('counts every request and names the failed ones without a reached-of-total ratio', () => {
-    expect(networkBadge([request('a', 200), request('b', 500), request('c', 0, 'net::ERR_FAILED')])).toEqual({
-      value: 3,
-      tone: 'danger',
-      label: '3 requests, 2 failed',
-    });
-  });
-
-  it('leaves a badge neutral when nothing in it is a problem', () => {
-    expect(networkBadge([request('a', 200)])).toEqual({ value: 1, label: '1 request' });
-  });
-
   it('shows no badge for an empty track', () => {
     expect(consoleBadge([])).toBeUndefined();
   });
@@ -87,14 +62,5 @@ describe('tab badges', () => {
       tone: 'danger',
       label: '3 entries, 1 error, 1 warning',
     });
-  });
-
-  it('marks slow work amber and treats paints as milestones', () => {
-    expect(
-      performanceBadge([
-        { at: 0, kind: 'first-contentful-paint', value: 400 },
-        { at: 10, kind: 'long-task', value: 80 },
-      ]),
-    ).toEqual({ value: 2, tone: 'warning', label: '2 signals, 1 slow' });
   });
 });

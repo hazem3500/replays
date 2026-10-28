@@ -4,7 +4,10 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { stepPauseMs, type CapturePacingOptions } from '../shared/capture-pacing.ts';
-import { profileOf } from '../shared/profiles.ts';
+import type { CaptureNetwork, NetworkBodyLimits } from '../shared/capture-profile.ts';
+import { type ProfileConfig, profileOf, profilesOf } from '../shared/profiles.ts';
+import type { ConsoleLevel } from '../shared/replay.ts';
+import { captureSettings, capturedRecord, networkFlag, profileCapture } from './capture-settings.ts';
 import { assertReplayId, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
@@ -59,9 +62,17 @@ export interface CaptureArgs extends CapturePacingOptions {
   sourceProviders?: readonly TemplateProviderConfig[];
   /** The deployment's redaction rules (config file and plugins), added to the sanitiser's defaults. */
   redaction?: RedactionRules;
+  /** Default `'headers'`; `'bodies'` keeps redacted request and response bodies under `bodies` limits. */
+  network?: CaptureNetwork;
+  /** Body limits with `network: 'bodies'`; they can only narrow the defaults. */
+  bodies?: NetworkBodyLimits;
+  /** Default true. */
+  performance?: boolean;
+  /** Console levels kept; default all. */
+  console?: readonly ConsoleLevel[];
 }
 
-const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login']);
+const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login', 'no-performance']);
 
 function requiredString(step: Record<string, unknown>, field: string, index: number) {
   const value = step[field];
@@ -148,7 +159,10 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --video                  also write session.mp4 (playwright driver needs ffmpeg)
   --tag <tag>              label for filtering; repeatable
   --profile <id>           why it was recorded: one of the server's profiles (GET /api/config lists them);
-                           --purpose is its deprecated name
+                           its capture defaults apply under the flags here. --purpose is its deprecated name
+  --network <mode>         headers (default), off, or bodies: also keep request and response bodies (JSON,
+                           text and form data only, cut at 64 KiB, secrets redacted)
+  --no-performance         leave out paint, long-task and interaction timings
   --person <spec>          someone related to it, role:email[:handle=value] (reviewer:ada@example.com); repeatable
   --source <p:ref>         link to the thing under test, e.g. github:owner/repo#12; repeatable
   --context-file <file>    JSON { app?, test?, sources?, fields? } from your test runner
@@ -182,9 +196,11 @@ function assertCaptureUrl(value: string, flag: string) {
  * `redaction` plus every plugin's `api.redaction`. The config is the server's (`--config`, else `REPLAYS_CONFIG`, else
  * `replays.config.*` in `cwd`); its plugins are imported and set up (registration only). Also reads capture defaults.
  */
-async function loadCaptureSettings(
-  options: { configFile?: string; cwd?: string; env?: NodeJS.ProcessEnv } = {},
-): Promise<{ redaction?: RedactionRules | undefined; pacing?: CapturePacingOptions | undefined }> {
+async function loadCaptureSettings(options: { configFile?: string; cwd?: string; env?: NodeJS.ProcessEnv } = {}): Promise<{
+  redaction?: RedactionRules | undefined;
+  pacing?: CapturePacingOptions | undefined;
+  profiles?: { config?: readonly ProfileConfig[] | undefined; plugins: readonly ProfileConfig[] };
+}> {
   const env = options.env ?? process.env;
   const cwd = options.cwd ?? process.cwd();
   const config = await loadConfig({ env: options.configFile ? { ...env, REPLAYS_CONFIG: options.configFile } : env, cwd });
@@ -192,7 +208,11 @@ async function loadCaptureSettings(
   if (config.file.redaction !== undefined) assertRedactionRules(config.file.redaction, `${config.path} redaction`);
   const registry = await resolvePlugins(config.plugins, { env, cwd });
   const rules = mergeRedactionRules(config.file.redaction, registry.redaction);
-  return { redaction: Object.keys(rules).length ? rules : undefined, pacing: config.file.capture };
+  return {
+    redaction: Object.keys(rules).length ? rules : undefined,
+    pacing: config.file.capture,
+    profiles: { config: profilesOf(config.file), plugins: registry.profiles.map(({ value }) => value) },
+  };
 }
 
 /** The config and plugins' additive redaction rules, also used by other producers. */
@@ -224,18 +244,32 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   const sources = (lists.source ?? []).map((spec) => providers.parse(spec));
   const schema: unknown = values['context-schema'] ? JSON.parse(await readFile(resolve(values['context-schema']), 'utf8')) : undefined;
   const context = await readContextFile(values['context-file']);
-  const { redaction, pacing } = await loadCaptureSettings(values.config ? { configFile: values.config } : {});
-  const pause = stepPauseMs(values['step-pause'] === undefined ? pacing?.stepPauseMs : Number(values['step-pause']));
+  const loaded = await loadCaptureSettings(values.config ? { configFile: values.config } : {});
+  const own = profileCapture(profile, loaded.profiles ?? {});
+  if (profile && own === undefined)
+    process.stderr.write(`warning: profile ${profile} is not declared here; its capture defaults are unknown\n`);
+  const settings = captureSettings(own, {
+    ...(values.network === undefined ? {} : { network: networkFlag(values.network) }),
+    ...(booleans.has('no-performance') ? { performance: false } : {}),
+  });
+  const redaction = settings.maskAllText ? mergeRedactionRules(loaded.redaction, { maskSelectors: ['body'] }) : loaded.redaction;
+  const pause = stepPauseMs(
+    values['step-pause'] === undefined ? (own?.stepPauseMs ?? loaded.pacing?.stepPauseMs) : Number(values['step-pause']),
+  );
   const args = {
     url: values.url,
     output: resolve(values.output),
     id,
     steps: await readSteps(values.steps),
     stepPauseMs: pause,
-    video: booleans.has('video'),
+    video: booleans.has('video') || own?.video === true,
     headed: booleans.has('headed'),
     driver,
-    viewport: parseViewport(values.viewport),
+    viewport: values.viewport === undefined && own?.viewport ? own.viewport : parseViewport(values.viewport),
+    network: settings.network,
+    ...(settings.bodies ? { bodies: settings.bodies } : {}),
+    performance: settings.performance,
+    ...(settings.console ? { console: settings.console } : {}),
     sources,
     tags,
     ...(profile ? { profile } : {}),
@@ -358,7 +392,16 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
   const rawSteps: Array<ReplayStep & { epoch: number }> = [];
   let session: RecorderSession | undefined;
   try {
-    const cdp = await driver.launch({ viewport: args.viewport, harPath, ...(args.video ? { videoPath: rawVideoPath } : {}) });
+    const wantsBodies = args.network === 'bodies';
+    const bodiesRecorded = wantsBodies && driver.recordsBodies === true;
+    if (wantsBodies && !bodiesRecorded)
+      process.stderr.write(`warning: the ${driver.name} driver cannot record bodies; keeping headers only\n`);
+    const cdp = await driver.launch({
+      viewport: args.viewport,
+      harPath,
+      ...(bodiesRecorded ? { bodies: true } : {}),
+      ...(args.video ? { videoPath: rawVideoPath } : {}),
+    });
     session = await RecorderSession.start(cdp, args.redaction ? { redaction: args.redaction } : {});
 
     rawSteps.push({
@@ -413,17 +456,25 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
         ...(args.tags.length ? { tags: args.tags } : {}),
         ...(profile ? { profile } : {}),
         ...(args.people?.length ? { people: args.people } : {}),
+        captured: capturedRecord(
+          { network: args.network ?? 'headers', performance: args.performance ?? true, ...(args.console ? { console: args.console } : {}) },
+          args.video,
+          bodiesRecorded,
+        ),
       },
       events: tracks.events,
-      console: tracks.console,
-      network: networkEntries(har, origin, args.redaction).sort((a, b) => a.at - b.at),
+      console: args.console ? tracks.console.filter((entry) => args.console?.includes(entry.level)) : tracks.console,
+      network:
+        args.network === 'off'
+          ? []
+          : networkEntries(har, origin, args.redaction, bodiesRecorded ? (args.bodies ?? {}) : undefined).sort((a, b) => a.at - b.at),
       steps,
-      performance: tracks.performance,
+      ...(args.performance === false ? {} : { performance: tracks.performance }),
       ...(context ? { context } : {}),
       ...(args.suiteRun ? { suiteRun: args.suiteRun } : {}),
     };
     // The host's rules over what the steps added too (labels, the title): the same pass the server runs on upload.
-    if (args.redaction) bundle = sanitizeReplayBundle(bundle, args.redaction);
+    if (args.redaction || bodiesRecorded) bundle = sanitizeReplayBundle(bundle, args.redaction);
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });
     if (args.video) await copyFile(rawVideoPath, join(args.output, 'session.mp4'), constants.COPYFILE_EXCL);

@@ -37,12 +37,13 @@ export interface DockFold {
 const DockReady = createContext(true);
 
 /**
- * One inspector panel. Before the dock is ready, or while its code loads, it shows its pending frame (PanelPending):
- * the panel's own toolbar, header and row height, never an empty panel.
+ * One inspector panel. Before the dock is ready, or while its code loads, it shows its pending frame: the panel's own
+ * (`pending` as a node), or a PanelPending frame by name, with the panel's toolbar, header and row height. Never empty.
  */
-export function DockPanel({ value, pending = value, children }: { value: string; pending?: string; children: ReactNode }) {
+export function DockPanel({ value, pending = value, children }: { value: string; pending?: ReactNode; children: ReactNode }) {
   const ready = use(DockReady);
-  const frame = <PanelPending panel={pending} />;
+  // why: a panel may bring its own pending frame (its exact loaded geometry); a name picks one of the generic frames.
+  const frame = typeof pending === 'string' ? <PanelPending panel={pending} /> : pending;
   return (
     <TabsContent value={value} className="inspector-panel">
       {ready ? <Suspense fallback={frame}>{children}</Suspense> : frame}

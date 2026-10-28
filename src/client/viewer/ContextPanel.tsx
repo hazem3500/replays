@@ -337,7 +337,7 @@ function FieldList({ rows, nested = false }: { rows: FieldRow[]; nested?: boolea
 function FieldValueView({ value }: { value: FieldValue }): ReactElement {
   switch (value.kind) {
     case 'empty':
-      return <span className="ctx-value ctx-muted">—</span>;
+      return <span className="ctx-value ctx-muted">Empty</span>;
     case 'text':
       return <Text value={value.text} />;
     case 'boolean':

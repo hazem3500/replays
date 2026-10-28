@@ -15,6 +15,8 @@ export interface LaunchOptions {
   harPath: string;
   /** Where the MP4 must be written by `finish()`, or undefined for no video. */
   videoPath?: string;
+  /** Embed request and response bodies in the HAR; only asked of drivers with `recordsBodies`. */
+  bodies?: boolean;
 }
 
 /**
@@ -23,6 +25,8 @@ export interface LaunchOptions {
  */
 export interface CaptureDriver {
   readonly name: string;
+  /** The HAR can carry bodies (`launch({ bodies: true })`); without it a capture asking for bodies keeps headers only. */
+  readonly recordsBodies?: boolean;
   /** Starts a browser on about:blank, begins the HAR (and video), and returns a CDP connection to the page. */
   launch(options: LaunchOptions): Promise<CdpLike>;
   open(url: string): Promise<void>;

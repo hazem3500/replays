@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dropdown-menu.tsx';
 import { RadioCard, RadioGroup } from '@/components/ui/radio-group.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
-import { SPEED_RATES, ZOOM_SCALES } from '../../shared/effects.ts';
+import { BLUR_STYLES, type BlurStyle, SPEED_RATES, ZOOM_SCALES } from '../../shared/effects.ts';
 import { effectList, type EffectKind, removeHighlight, type Selection, updateEffect, updateHighlight } from './state.ts';
 
 type EffectSelection = { kind: EffectKind; id: string };
@@ -46,14 +46,53 @@ export function EffectControls({
     const onText = (text: string) => change(updateEffect(edits, kind, id, { text }), selection);
     return <CaptionField key={id} id="selection-caption-text" text={region.text} onChange={onText} />;
   }
+  if (kind === 'blur') {
+    const style = 'style' in region && region.style === 'redact' ? 'redact' : 'blur';
+    return <BlurStyleChoice current={style} onPick={(next) => change(updateEffect(edits, kind, id, { style: next }), selection)} />;
+  }
   const current = settingOf(region);
-  if (kind === 'blur' || current === undefined) return null;
+  if (current === undefined) return null;
   const field = kind === 'zoom' ? 'scale' : 'rate';
   const onPick = (value: number) => change(updateEffect(edits, kind, id, { [field]: value }), selection);
   return mobile ? (
     <EffectSettingMenu kind={kind} current={current} onPick={onPick} />
   ) : (
     <EffectSettingChoice kind={kind} current={current} onPick={onPick} />
+  );
+}
+
+const BLUR_STYLE_COPY: Record<BlurStyle, { label: string; hint: string }> = {
+  blur: { label: 'Blur', hint: 'A strong blur with soft edges' },
+  redact: { label: 'Redact', hint: 'A solid block that hides shapes too' },
+};
+
+/** How the box hides what is under it, with the choice's effect spelled out under the control. */
+function BlurStyleChoice({ current, onPick }: { current: BlurStyle; onPick: (style: BlurStyle) => void }) {
+  return (
+    <div className="inspector-field">
+      <span className="inspector-field-label" id="inspector-blur-label">
+        Hide with
+      </span>
+      <RadioGroup
+        className="ui-segmented"
+        value={current}
+        aria-labelledby="inspector-blur-label"
+        aria-describedby="inspector-blur-hint"
+        data-testid="blur-setting"
+        onValueChange={(value) => {
+          if (BLUR_STYLES.includes(value)) onPick(value);
+        }}
+      >
+        {BLUR_STYLES.map((style) => (
+          <RadioCard key={style} value={style} className="ui-segment">
+            {BLUR_STYLE_COPY[style].label}
+          </RadioCard>
+        ))}
+      </RadioGroup>
+      <small className="inspector-field-hint" id="inspector-blur-hint">
+        {BLUR_STYLE_COPY[current].hint}
+      </small>
+    </div>
   );
 }
 
