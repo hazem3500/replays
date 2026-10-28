@@ -14,7 +14,7 @@ export type SessionOptions = {
 };
 
 export type TimelineEntry = { id: number; status: RecorderStatus };
-export type SessionSnapshot = { state: RecorderState; timeline: readonly TimelineEntry[] };
+type SessionSnapshot = { state: RecorderState; timeline: readonly TimelineEntry[] };
 
 const uploadFor = (transport: Transport) =>
   transport === 'token'
@@ -64,5 +64,3 @@ export function createSession(options: SessionOptions) {
     },
   };
 }
-
-export type Session = ReturnType<typeof createSession>;

@@ -2,9 +2,9 @@ import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { DEFAULT_MESSAGES } from '../../src/recorder/index.ts';
 import type { UploadEndpoint } from './upload-endpoint.ts';
 
-export const PRIVATE_NAME = 'Ada Private 7362';
-export const PASSWORD = 'hunter2-9047';
-export const NOTE = 'Checkout failed after I saved the delivery note.';
+const PRIVATE_NAME = 'Ada Private 7362';
+const PASSWORD = 'hunter2-9047';
+const NOTE = 'Checkout failed after I saved the delivery note.';
 
 const roots = () => [...document.querySelectorAll('[data-recorder-ui]')].flatMap((host) => (host.shadowRoot ? [host.shadowRoot] : []));
 const all = <T extends Element = Element>(selector: string) => roots().flatMap((root) => [...root.querySelectorAll<T>(selector)]);

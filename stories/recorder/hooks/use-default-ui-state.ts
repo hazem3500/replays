@@ -3,7 +3,7 @@ import { createDefaultUi, type DefaultUiOptions } from '../../../src/recorder/ui
 
 export type DefaultUiState = 'consent' | 'recording' | 'uploading' | 'sent' | 'failed';
 
-export const FIXED_NOW = new Date('2026-10-27T12:00:00.000Z').getTime();
+const FIXED_NOW = new Date('2026-10-27T12:00:00.000Z').getTime();
 
 type Shown = { hide?: () => void; abort: AbortController };
 

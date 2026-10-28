@@ -4,7 +4,7 @@ import type { ClientConfig } from '../../src/client/config.ts';
 /** The `/api` routes stories answer, matched under any origin and base path. */
 const api = (path: string) => `*/api/${path}`;
 
-export const CONFIG: ClientConfig = {
+const CONFIG: ClientConfig = {
   name: 'Replays',
   sourceProviders: ['github'],
   auth: 'none',

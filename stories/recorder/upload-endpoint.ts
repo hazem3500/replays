@@ -19,7 +19,7 @@ export type ReceivedUpload = {
 const noop = () => {};
 
 export const UPLOAD_PATH = '/storybook/ingest/replays';
-export const RECEIPT = { id: 'storybook-demo-42', reference: 'SB-1042', replayUrl: 'https://replays.example/r/storybook-demo-42' };
+const RECEIPT = { id: 'storybook-demo-42', reference: 'SB-1042', replayUrl: 'https://replays.example/r/storybook-demo-42' };
 
 function parseReport(body: string): ReceivedReport {
   const value: unknown = JSON.parse(body);
