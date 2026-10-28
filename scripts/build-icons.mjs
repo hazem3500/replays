@@ -1,8 +1,6 @@
-#!/usr/bin/env node
-/**
- * Regenerates public/assets/brand (favicon, app icons, web manifest) from the mark's geometry in
- * src/client/components/brand-mark-geometry.ts. Vite copies it to dist/client/assets/brand, which the server and
- * build-static already serve under the app's base. Needs Chrome to rasterise: CHROME_PATH, else Playwright's own browser.
+/* why: public/assets/brand (favicon, app icons, web manifest) is drawn from the mark's geometry in
+ * src/client/components/brand-mark-geometry.ts, so the tab icon cannot drift from the header mark. Vite copies it to
+ * dist/client/assets/brand. Needs Chrome to rasterise: CHROME_PATH, else Playwright's own browser.
  *   node --experimental-strip-types --no-warnings scripts/build-icons.mjs
  */
 import { mkdir, writeFile } from 'node:fs/promises';

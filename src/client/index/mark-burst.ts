@@ -125,7 +125,7 @@ export function createMarkMotion(svg: SVGSVGElement) {
   let disposed = false;
   let move: Animation | undefined;
   let x = playheadX(REST_FILLED - 1);
-  /** Reduced motion (set by the latest step): the same states, reached without movement. */
+  // why: under reduced motion (set by the latest step) the same states are reached without movement.
   let still = false;
   /** Removes the burst's caret and title overlay (set while a burst runs). */
   let cleanup: (() => void) | undefined;

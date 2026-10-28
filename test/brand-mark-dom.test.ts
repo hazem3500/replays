@@ -1,8 +1,9 @@
 // @vitest-environment happy-dom
 import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { runInNewContext } from 'node:vm';
 
-import { act, createElement } from 'react';
+import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -11,17 +12,34 @@ import { withBase } from '../src/server/base-path.ts';
 import { type BrandingConfig, pageBranding, validateBranding } from '../src/server/branding.ts';
 import { FAVICON_MARK, markShapes } from '../src/client/components/brand-mark-geometry.ts';
 import { PRODUCT_NAME } from '../src/shared/brand.ts';
+import { settle } from './settle.ts';
 
 const repo = (path: string) => resolve(import.meta.dirname, '..', path);
 const indexHtml = readFileSync(repo('index.html'), 'utf8');
 const brand = (file: string) => repo(`public/assets/brand/${file}`);
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null;
+const text = (value: unknown) => (typeof value === 'string' ? value : '');
+
+/** manifest.json's name and icons, checked field by field. */
+function readManifest() {
+  const parsed: unknown = JSON.parse(readFileSync(brand('manifest.json'), 'utf8'));
+  if (!isRecord(parsed) || !Array.isArray(parsed.icons)) throw new Error('manifest.json has no icons');
+  const icons: unknown[] = parsed.icons;
+  return { name: text(parsed.name), icons: icons.filter(isRecord).map((icon) => ({ src: text(icon.src), purpose: text(icon.purpose) })) };
+}
+
+function present<T extends Element>(element: T | null) {
+  if (!element) throw new Error('expected the element to be rendered');
+  return element;
+}
 
 /** index.html's icon links as a server with this branding serves the page, after its brand-icons script ran. */
 function servedIcons(branding: Partial<BrandingConfig> = {}) {
   const html = withBase(indexHtml, '', pageBranding(validateBranding(branding)));
   const page = new DOMParser().parseFromString(html, 'text/html');
   const script = page.querySelector('script[data-brand-icons]')?.textContent ?? '';
-  new Function('document', script)(page);
+  runInNewContext(script, { document: page });
   return [...page.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]')].map((link) => ({
     rel: link.getAttribute('rel'),
     href: link.getAttribute('href'),
@@ -48,7 +66,7 @@ describe('built-in icons', () => {
   });
 
   it('names the product in the manifest and points its icons at files beside it', () => {
-    const manifest = JSON.parse(readFileSync(brand('manifest.json'), 'utf8')) as { name: string; icons: Array<{ src: string; purpose: string }> };
+    const manifest = readManifest();
     expect(manifest.name).toBe(PRODUCT_NAME);
     expect(manifest.icons.filter((icon) => icon.purpose === 'maskable').map((icon) => icon.src)).toEqual(['icon-192.png', 'icon-512.png']);
     expect(manifest.icons.filter((icon) => !existsSync(brand(icon.src)))).toEqual([]);
@@ -93,14 +111,14 @@ describe('index header identity', () => {
   });
 
   afterEach(async () => {
-    await act(async () => root.unmount());
+    await settle(() => root.unmount());
     host.remove();
-    document.head.querySelectorAll('meta[name^="app-"]').forEach((element) => element.remove());
+    for (const element of document.head.querySelectorAll('meta[name^="app-"]')) element.remove();
     vi.unstubAllGlobals();
   });
 
   it('shows the built-in mark beside the product name', async () => {
-    await act(async () => root.render(createElement(IndexIdentity)));
+    await settle(() => root.render(createElement(IndexIdentity)));
     const mark = host.querySelector('.mark-button svg.product-mark');
     expect(mark?.querySelectorAll('.mark-seg')).toHaveLength(5);
     expect(mark?.querySelectorAll('.mark-seg[data-on]')).toHaveLength(2);
@@ -111,23 +129,24 @@ describe('index header identity', () => {
   it('under reduced motion, fills a segment per click without animating and only crossfades the title on the fifth', async () => {
     vi.useFakeTimers();
     vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
-    vi.stubGlobal('scrollTo', () => undefined);
+    vi.stubGlobal('scrollTo', () => {});
     const animated: Element[] = [];
     const animate = vi.spyOn(Element.prototype, 'animate').mockImplementation(function (this: Element) {
       animated.push(this);
+      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- why: the mark reads only `finished`; happy-dom returns no Animation.
       return { finished: Promise.resolve() } as unknown as Animation;
     });
     try {
-      await act(async () => root.render(createElement(IndexIdentity)));
-      const button = host.querySelector<HTMLButtonElement>('.mark-button')!;
-      const mark = host.querySelector<SVGSVGElement>('svg.product-mark')!;
-      await act(async () => button.click());
+      await settle(() => root.render(createElement(IndexIdentity)));
+      const button = present(host.querySelector<HTMLButtonElement>('.mark-button'));
+      const mark = present(host.querySelector<SVGSVGElement>('svg.product-mark'));
+      await settle(() => button.click());
       expect(mark.dataset.filled).toBe('3');
       expect(mark.querySelectorAll('.mark-seg[data-on]')).toHaveLength(3);
-      for (let click = 2; click <= 5; click++) await act(async () => button.click());
+      for (let click = 2; click <= 5; click++) await settle(() => button.click());
       expect(mark.dataset.filled).toBe('5');
       expect(animated).toEqual([host.querySelector('.index-title')]);
-      await act(async () => vi.advanceTimersByTime(1600));
+      await settle(() => vi.advanceTimersByTime(1600));
       expect(mark.dataset.filled).toBe('2');
       expect(mark.querySelectorAll('.mark-seg[data-on]')).toHaveLength(2);
     } finally {
@@ -139,7 +158,7 @@ describe('index header identity', () => {
   it('shows the deployment logo and name instead', async () => {
     meta('app-name', 'Acme Replays');
     meta('app-logo', 'https://example.com/logo.svg');
-    await act(async () => root.render(createElement(IndexIdentity)));
+    await settle(() => root.render(createElement(IndexIdentity)));
     expect(host.querySelector('.product-mark')).toBeNull();
     expect(host.querySelector('img.product-logo')?.getAttribute('src')).toBe('https://example.com/logo.svg');
     expect(host.querySelector('.index-title')?.textContent).toBe('Acme Replays');

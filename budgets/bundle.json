@@ -22,6 +22,36 @@
       "brotli": 943,
       "gzip": 1111
     },
+    "dist/client/assets/brand/apple-touch-icon.png": {
+      "raw": 3240,
+      "gzip": 2990,
+      "brotli": 2952
+    },
+    "dist/client/assets/brand/favicon-32.png": {
+      "raw": 921,
+      "gzip": 944,
+      "brotli": 925
+    },
+    "dist/client/assets/brand/favicon.svg": {
+      "raw": 622,
+      "gzip": 287,
+      "brotli": 250
+    },
+    "dist/client/assets/brand/icon-192.png": {
+      "raw": 3154,
+      "gzip": 2862,
+      "brotli": 2833
+    },
+    "dist/client/assets/brand/icon-512.png": {
+      "raw": 8906,
+      "gzip": 7364,
+      "brotli": 7331
+    },
+    "dist/client/assets/brand/manifest.json": {
+      "raw": 568,
+      "gzip": 241,
+      "brotli": 190
+    },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
       "brotli": 15415,
@@ -153,9 +183,9 @@
       "gzip": 17272
     },
     "dist/client/index.html": {
-      "raw": 10783,
-      "brotli": 3201,
-      "gzip": 3889
+      "raw": 11858,
+      "brotli": 3429,
+      "gzip": 4123
     },
     "dist/client/render.html": {
       "raw": 1294,
@@ -178,8 +208,8 @@
       "gzip": 18876
     },
     "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
-      "raw": 285690,
-      "gzip": 75125,
+      "raw": 286058,
+      "gzip": 75224,
       "brotli": 61620
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
@@ -708,16 +738,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/94"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
-      "cap": {
-        "raw": 285690,
-        "gzip": 75125,
-        "brotli": 61620
-      },
-      "reason": "The shared server chunk now also holds the upload-endpoint helpers (src/server/api/upload-endpoints.ts) and HttpError, so its source identity changes; measured against main's context.schema.json-87737fe6e2f1: +3368 B raw, +449 B gzip, +724 B brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 248879,
@@ -784,6 +804,85 @@
       },
       "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/brand/apple-touch-icon.png",
+      "cap": {
+        "raw": 3240,
+        "gzip": 2990,
+        "brotli": 2952
+      },
+      "reason": "The 180 px home-screen icon drawn from the mark (scripts/build-icons.mjs).",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/favicon-32.png",
+      "cap": {
+        "raw": 921,
+        "gzip": 944,
+        "brotli": 925
+      },
+      "reason": "The 32 px PNG favicon for browsers without SVG favicons.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/favicon.svg",
+      "cap": {
+        "raw": 622,
+        "gzip": 287,
+        "brotli": 250
+      },
+      "reason": "The four-segment favicon cut of the mark, with a dark-scheme colour.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/icon-192.png",
+      "cap": {
+        "raw": 3154,
+        "gzip": 2862,
+        "brotli": 2833
+      },
+      "reason": "The 192 px maskable web-app icon.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/icon-512.png",
+      "cap": {
+        "raw": 8906,
+        "gzip": 7364,
+        "brotli": 7331
+      },
+      "reason": "The 512 px maskable web-app icon.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/manifest.json",
+      "cap": {
+        "raw": 568,
+        "gzip": 241,
+        "brotli": 190
+      },
+      "reason": "The web app manifest naming the product and listing its icons.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/index.html",
+      "cap": {
+        "raw": 11858,
+        "gzip": 4123,
+        "brotli": 3429
+      },
+      "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
+      "cap": {
+        "raw": 286058,
+        "gzip": 75224
+      },
+      "reason": "The bundled server serves the fixed-name brand icons with a daily revalidating cache instead of an immutable one, on top of the upload-endpoint server code.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
     }
   ]
 }

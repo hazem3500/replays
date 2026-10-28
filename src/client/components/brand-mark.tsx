@@ -12,7 +12,16 @@ const { segments, top, height, played, playhead } = HEADER_MARK;
  */
 export function ProductMark({ size = 24, svgRef }: { size?: number; svgRef?: Ref<SVGSVGElement> }) {
   return (
-    <svg ref={svgRef} className="product-mark" width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" data-filled={played}>
+    <svg
+      ref={svgRef}
+      className="product-mark"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      data-filled={played}
+    >
       {segments.map(([x, width], index) => (
         <rect
           key={x}
@@ -26,7 +35,13 @@ export function ProductMark({ size = 24, svgRef }: { size?: number; svgRef?: Ref
         />
       ))}
       <g className="mark-playhead" style={{ transform: `translateX(${playhead.x}px)` }}>
-        <rect x={-playhead.width / 2} y={playhead.knob} width={playhead.width} height={playhead.bottom - playhead.knob} rx={playhead.width / 2} />
+        <rect
+          x={-playhead.width / 2}
+          y={playhead.knob}
+          width={playhead.width}
+          height={playhead.bottom - playhead.knob}
+          rx={playhead.width / 2}
+        />
         <circle cx="0" cy={playhead.knob} r={playhead.width} />
       </g>
     </svg>
@@ -38,7 +53,16 @@ export function ProductGlyph() {
   return (
     <>
       {segments.map(([x, width], index) => (
-        <rect key={x} x={x} y={top} width={width} height={height} rx={height / 2} fill="currentColor" fillOpacity={index < played ? 1 : 0.35} />
+        <rect
+          key={x}
+          x={x}
+          y={top}
+          width={width}
+          height={height}
+          rx={height / 2}
+          fill="currentColor"
+          fillOpacity={index < played ? 1 : 0.35}
+        />
       ))}
       <rect
         x={playhead.x - playhead.width / 2}
