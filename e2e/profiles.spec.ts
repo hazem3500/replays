@@ -81,7 +81,7 @@ test('the index shows profile segments with counts and narrows the list; the API
   expect(listed.map((item) => item.id)).toContain(triage);
   expect(listed.every((item) => item.profile === 'triage')).toBe(true);
   const config = (await (await page.request.get(`${base}/api/config`)).json()) as { profiles: Array<{ id: string }> };
-  expect(config.profiles.map((profile) => profile.id)).toEqual(['triage', 'walkthrough']);
+  expect(config.profiles.map((profile) => profile.id)).toEqual(['triage', 'walkthrough', 'performance']);
 });
 
 test('an upload with an unknown profile is refused, naming the allowed ids', async ({ request }) => {
@@ -89,7 +89,7 @@ test('an upload with an unknown profile is refused, naming the allowed ids', asy
   const bundle = await cloneBundle(request, base, 'demo-shop', uniqueId('bad-profile'));
   const response = await request.post(`${base}/api/replays`, { data: { ...bundle, meta: { ...bundle.meta, profile: 'demo' } } });
   expect(response.status()).toBe(400);
-  expect(await response.text()).toContain('must be one of triage, walkthrough');
+  expect(await response.text()).toContain('must be one of triage, walkthrough, performance');
 });
 
 test('a triage replay opens one second before its first error, on that tab; a permalink still wins', async ({ page }) => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AuthAdapter } from '../../src/server/auth/types.ts';
+import { ViewCatalog } from '../../src/server/views.ts';
 import { replay } from '../fixtures.ts';
 import { capture, contractApps, jsonInit } from './harness.ts';
 
@@ -163,6 +164,7 @@ const getApiConfigAnswer = {
     profiles: [],
     purposes: [],
     sourceProviders: ['github', 'gitlab', 'url'],
+    views: new ViewCatalog().list,
   },
   headers: {
     'cache-control': 'private, no-cache',

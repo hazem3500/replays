@@ -23,7 +23,7 @@ import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
 import { rememberListed } from './navigation.ts';
 import { CommandSearch, IndexIdentity, type ProfileCounts, ProfileSegments, ScopeBar } from './index/IndexHeader.tsx';
-import { pageProfiles } from './profiles.ts';
+import { indexProfiles, pageProfiles } from './profiles.ts';
 import { useMediaQuery } from './media.ts';
 import { SortMenu } from './ReplayIndexCompact.tsx';
 import { activeFilterTokens, FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
@@ -589,6 +589,7 @@ export function ReplayIndex() {
   );
   // The profile segment narrows what the other filters keep (client-side, so every tab can show its count).
   const counts = useMemo(() => (profiles.length && unsegmented ? profileCounts(unsegmented) : undefined), [profiles, unsegmented]);
+  const tabs = indexProfiles(profiles, counts, profile);
   const entries = useMemo(
     () => (profile && unsegmented ? unsegmented.filter((entry) => entryProfiles(entry).includes(profile)) : unsegmented),
     [unsegmented, profile],
@@ -757,9 +758,7 @@ export function ReplayIndex() {
         />
         <ScopeBar
           count={count}
-          lead={
-            profiles.length ? <ProfileSegments profiles={profiles} value={profile} counts={counts} onChange={changeProfile} /> : undefined
-          }
+          lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
         >
           {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
           <SortMenu sort={sort} onChange={changeSort} />
@@ -787,7 +786,7 @@ export function ReplayIndex() {
         ) : empty ? (
           <IndexEmpty input={empty} onUpload={() => upload.current?.open()} />
         ) : entries && entries.length === 0 ? (
-          <FirstRun onUpload={() => upload.current?.open()} profiles={profiles} />
+          <FirstRun onUpload={() => upload.current?.open()} profiles={profiles.filter((item) => !item.builtIn)} />
         ) : entries ? (
           <MeContext value={meContext}>
             <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />

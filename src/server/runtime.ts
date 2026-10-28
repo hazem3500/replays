@@ -9,6 +9,7 @@ import { authFromEnv } from './auth/index.ts';
 import type { AuthAdapter } from './auth/types.ts';
 import { type ContextSchema, compileContextSchema } from './context-schema.ts';
 import { configProfiles, createProfileCatalog, wrapRetentionRules } from './profiles.ts';
+import { createViewCatalog } from './views.ts';
 import { storageFromEnv } from './storage/index.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
@@ -122,9 +123,10 @@ export async function resolveSettings(options: RuntimeOptions): Promise<Omit<Run
   // Profiles: the config's merged with the plugins' (src/server/profiles.ts); their windows and the plugins' rules join retention.
   const profiles = createProfileCatalog({ config: configProfiles(file, warnLine), plugins: registry.profiles, env, log: warnLine });
   Object.assign(settings, { profiles, purposes: profiles });
+  settings.views = createViewCatalog({ config: file.views, plugins: registry.views, profiles: profiles.list });
   settings.retention = {
     ...settings.retention,
-    ...(settings.profiles.size ? { profiles: settings.profiles.retentionDays() } : {}),
+    ...(Object.keys(profiles.retentionDays()).length ? { profiles: profiles.retentionDays() } : {}),
     ...(registry.retention.length ? { rules: wrapRetentionRules(registry.retention) } : {}),
   };
   const contextSchema = mergeContextSchemas(settings.contextSchema, registry);

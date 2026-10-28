@@ -8,6 +8,7 @@ import type { AuthAdapter } from '../auth/types.ts';
 import type { BetaFlags } from '../beta.ts';
 import type { BrandingConfig } from '../branding.ts';
 import type { ContextSchema } from '../context-schema.ts';
+import type { ViewCatalog } from '../views.ts';
 import type { ReplayStore } from '../store.ts';
 
 /** The parts of the deployment the API routes read: only these, so the routes stay mountable without the Node app. */
@@ -15,6 +16,7 @@ export interface ApiDeployment {
   store: ReplayStore;
   auth: Pick<AuthAdapter, 'name' | 'cliDeviceAuth'>;
   sources: SourceProviders;
+  views: ViewCatalog;
   branding: BrandingConfig;
   contextSchema?: ContextSchema | undefined;
   beta?: BetaFlags | undefined;
