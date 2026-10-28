@@ -8,7 +8,6 @@ import { Slider, SliderControl, SliderTrack, SliderIndicator, SliderThumb } from
 import { useFocusWhen } from '../hooks/use-focus-when.ts';
 import { normalizeCursor, type ReplayCursorSettings } from '../../shared/cursor.ts';
 import { CursorMotionPicker } from './CursorMotionPicker.tsx';
-import './cursor-inspector.css';
 
 const percent = (size: number) => `${Math.round(size * 100)}%`;
 

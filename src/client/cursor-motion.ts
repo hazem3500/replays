@@ -80,9 +80,11 @@ export interface Trajectory {
 export function planMove(
   from: Pt,
   to: Pt,
-  fromHeading = REST_HEADING,
-  reducedMotion = false,
-  style: CursorMotionStyle = 'signature_arc',
+  {
+    fromHeading = REST_HEADING,
+    reducedMotion = false,
+    style = 'signature_arc',
+  }: { fromHeading?: number; reducedMotion?: boolean; style?: CursorMotionStyle | undefined } = {},
 ): Trajectory {
   const raw = reducedMotion
     ? sampleTimed(
@@ -394,13 +396,13 @@ export function buildCursorTrack(
   for (let i = 1; i < targets.length; i++) {
     const from = targets[i - 1] as CursorPoint;
     const to = targets[i] as CursorPoint;
-    let traj = planMove(from, to, REST_HEADING, reducedMotion, motion);
+    let traj = planMove(from, to, { reducedMotion, style: motion });
     const start = Math.max(from.t, to.t - traj.arrivalMs);
     const previous = moves.at(-1);
     if (previous && start < previous.end) {
       sampleTrajectory(previous.traj, (start - previous.start) / previous.scale, pose);
       previous.end = start;
-      traj = planMove({ x: pose.x, y: pose.y }, to, pose.heading, reducedMotion, motion);
+      traj = planMove({ x: pose.x, y: pose.y }, to, { fromHeading: pose.heading, reducedMotion, style: motion });
     }
     const available = to.t - start;
     const scale = available >= 1 ? Math.min(1, available / Math.max(traj.arrivalMs, 1)) : 0;

@@ -6,6 +6,7 @@
  */
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
+@import './cursor-inspector.css';
 @layer app {
   .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 168px)); background: var(--canvas); }
   /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */

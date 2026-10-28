@@ -33,8 +33,11 @@ export function bumpProfile(base: (t: number) => number, over: number, overAt: n
   return (tau: number) => base(tau) + over * ((tau ** a * (1 - tau) ** b) / peak);
 }
 
-/** Damped wobble around the end from `start` on. */
-export function wobbleProfile(base: (t: number) => number, amp: number, cycles: number, decay: number, start: number) {
+/** Damped wobble of `amp` around the end, from `start` on. */
+export function wobbleProfile(
+  base: (t: number) => number,
+  { amp, cycles, decay, start }: { amp: number; cycles: number; decay: number; start: number },
+) {
   const norm = Math.max(Math.exp(-decay * 0.12) * 0.77, 1e-6);
   return (tau: number) => {
     if (tau <= start) return base(tau);

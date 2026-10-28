@@ -54,7 +54,7 @@ export function CursorMotionPicker({
   disabled: boolean;
   onChange: (style: CursorMotionStyle) => void;
 }) {
-  const selected = CURSOR_MOTION_PREVIEWS.find((preview) => preview.style === value) ?? CURSOR_MOTION_PREVIEWS[0]!;
+  const selected = CURSOR_MOTION_PREVIEWS.find((preview) => preview.style === value);
   return (
     <div className="cursor-motion">
       <span className="cursor-section-label" id="cursor-motion-label">
@@ -78,7 +78,7 @@ export function CursorMotionPicker({
         ))}
       </RadioGroup>
       <p className="cursor-motion-description" id="cursor-motion-description">
-        {selected.description}
+        {selected?.description}
       </p>
     </div>
   );

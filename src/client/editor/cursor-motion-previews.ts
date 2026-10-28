@@ -54,23 +54,23 @@ function preview(style: CursorMotionStyle): CursorMotionPreview {
   const offsetX = PAD.left + (innerW - spanX * scale) / 2;
   const offsetY = PAD.top + (innerH - spanY * scale) / 2;
   const points = samples.map((p) => ({ x: round(offsetX + (p.x - minX) * scale), y: round(offsetY + (p.y - minY) * scale) }));
-  const lengths = [0];
-  for (let i = 1; i < points.length; i++) {
-    const a = points[i - 1]!;
-    const b = points[i]!;
-    lengths.push(lengths[i - 1]! + Math.hypot(b.x - a.x, b.y - a.y));
-  }
-  const total = Math.max(lengths.at(-1)!, 1e-6);
-  const moveMs = samples.at(-1)!.t;
-  const durationMs = REST_BEFORE_MS + moveMs + REST_AFTER_MS;
+  let length = 0;
+  let previous = points[0] ?? FROM;
+  const lengths = points.map((p) => {
+    length += Math.hypot(p.x - previous.x, p.y - previous.y);
+    previous = p;
+    return length;
+  });
+  const total = Math.max(length, 1e-6);
+  const durationMs = REST_BEFORE_MS + (samples.at(-1)?.t ?? 0) + REST_AFTER_MS;
   const times = samples.map((p) => (REST_BEFORE_MS + p.t) / durationMs);
-  const fractions = lengths.map((length) => Math.min(length / total, 1));
+  const fractions = lengths.map((at) => Math.min(at / total, 1));
   return {
     style,
     ...COPY[style],
     trace: points.map((p, i) => `${i ? 'L' : 'M'}${p.x} ${p.y}`).join(' '),
-    start: points[0]!,
-    end: points.at(-1)!,
+    start: points[0] ?? FROM,
+    end: points.at(-1) ?? TO,
     keyPoints: [0, ...fractions, 1].map((value) => value.toFixed(4)).join(';'),
     keyTimes: [0, ...times, 1].map((value) => value.toFixed(4)).join(';'),
     durationMs: Math.round(durationMs),

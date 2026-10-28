@@ -68,7 +68,7 @@ const pose = () => ({ visible: false, x: 0, y: 0, heading: 0, scale: 1, opacity:
 describe('Cua motion model', () => {
   it('starts and lands exactly on the endpoints', () => {
     for (const reduced of [false, true]) {
-      const traj = planMove({ x: 10, y: 20 }, { x: 610, y: 320 }, REST_HEADING, reduced);
+      const traj = planMove({ x: 10, y: 20 }, { x: 610, y: 320 }, { reducedMotion: reduced });
       const start = sampleTrajectory(traj, 0, pose());
       const end = sampleTrajectory(traj, traj.durationMs, pose());
       expect([start.x, start.y]).toEqual([10, 20]);
@@ -111,7 +111,7 @@ describe('Cua motion model', () => {
   });
 
   it('reduced motion is a short straight glide without rotation', () => {
-    const traj = planMove({ x: 0, y: 0 }, { x: 600, y: 0 }, REST_HEADING, true);
+    const traj = planMove({ x: 0, y: 0 }, { x: 600, y: 0 }, { reducedMotion: true });
     expect(traj.durationMs).toBeLessThanOrEqual(130);
     for (let ms = 0; ms <= traj.durationMs; ms += 5) {
       const p = sampleTrajectory(traj, ms, pose());

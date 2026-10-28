@@ -1,3 +1,12 @@
+/**
+ * Cua Cursor Motion's six built-in styles (`@trycua/cursor-motion` src/spec.ts
+ * and plan.ts at f982ea0, MIT License, Copyright (c) 2025 Cua AI, Inc.; see
+ * `cursor-motion.ts`). Each plans the hotspot only: Replays keeps the arrow
+ * upright and draws none of Cua's glow, trail, ripple or magnet effects.
+ * Replays never knows the target rect, so every move aims at Cua's default
+ * 24 pt target; `adaptive` therefore never picks its small-target generator.
+ */
+
 import type { CursorMotionStyle } from '../shared/cursor.ts';
 import { planDubins } from './cursor-dubins.ts';
 import {
@@ -17,14 +26,6 @@ import {
   type Raw,
 } from './cursor-path.ts';
 
-/**
- * Cua Cursor Motion's six built-in styles (`@trycua/cursor-motion` src/spec.ts
- * and plan.ts at f982ea0, MIT License, Copyright (c) 2025 Cua AI, Inc.; see
- * `cursor-motion.ts`). Each plans the hotspot only: Replays keeps the arrow
- * upright and draws none of Cua's glow, trail, ripple or magnet effects.
- * Replays never knows the target rect, so every move aims at Cua's default
- * 24 pt target; `adaptive` therefore never picks its small-target generator.
- */
 
 /** Target box assumed when a move has no element rect, pt. */
 const DEFAULT_TARGET_PT = 24;
@@ -53,7 +54,7 @@ const arc = (arcSize: number, arcFlow: number): ArcShape => ({ startHandle: 0.3,
 
 const distanceOf = (from: Pt, to: Pt) => Math.hypot(to.x - from.x, to.y - from.y);
 
-function glide(from: Pt, to: Pt, path: Path, profile: (t: number) => number, ms: number) {
+function glide({ from, to }: { from: Pt; to: Pt }, path: Path, profile: (t: number) => number, ms: number) {
   return sampleTimed((tau) => path.atFraction(profile(tau)), ms, from, to);
 }
 
@@ -62,20 +63,20 @@ function signatureArc(from: Pt, to: Pt) {
   const shape = arc(0.16, 0.15);
   const path = cuaPath(from, to, { ...shape, arcSize: shape.arcSize * naturalSide(from, to) });
   const over = Math.min(0.018, 8 / Math.max(distance, 1));
-  return glide(from, to, path, bumpProfile(minJerk, over, 0.82), moveDurationMs(distance));
+  return glide({ from, to }, path, bumpProfile(minJerk, over, 0.82), moveDurationMs(distance));
 }
 
 function springSettle(from: Pt, to: Pt) {
   const distance = distanceOf(from, to);
   const path = cuaPath(from, to, arc(0.12 * naturalSide(from, to), 0));
   const amp = Math.min(0.05, 6 / Math.max(distance, 1));
-  const profile = wobbleProfile((t) => minJerk(Math.min(t / 0.68, 1)), amp, 1.3, 2.6, 0.55);
-  return glide(from, to, path, profile, fittsMs(fitts(1.35), distance));
+  const profile = wobbleProfile((t) => minJerk(Math.min(t / 0.68, 1)), { amp, cycles: 1.3, decay: 2.6, start: 0.55 });
+  return glide({ from, to }, path, profile, fittsMs(fitts(1.35), distance));
 }
 
 function cometSwoop(from: Pt, to: Pt) {
   const path = cuaPath(from, to, arc(0.24 * naturalSide(from, to), 0.2));
-  return glide(from, to, path, inOutCubic, fittsMs(fitts(1.15), distanceOf(from, to)));
+  return glide({ from, to }, path, inOutCubic, fittsMs(fitts(1.15), distanceOf(from, to)));
 }
 
 /** Accelerates along a slight bow, then is pulled onto the target once within 40 pt. */
@@ -118,9 +119,9 @@ function adaptive(from: Pt, to: Pt) {
   if (distance > 900) {
     const ms = Math.min(Math.max(350 + 0.35 * distance, 450), 1100);
     const path = cuaPath(from, to, arc((0.25 + 0.1 * seededUnit(from, to)) * side, 0.2));
-    return glide(from, to, path, inOutCubic, ms);
+    return glide({ from, to }, path, inOutCubic, ms);
   }
-  return glide(from, to, bowPath(from, to, 0.02 * side), minJerk, fittsMs(ADAPTIVE_FITTS, distance));
+  return glide({ from, to }, bowPath(from, to, 0.02 * side), minJerk, fittsMs(ADAPTIVE_FITTS, distance));
 }
 
 /** Distance from the hotspot back to the arrow's body along its heading, pt. */
@@ -139,7 +140,8 @@ const CLASSIC = {
 function classic(from: Pt, to: Pt, heading: number) {
   const dt = DT_MS / 1000;
   const back = { x: Math.cos(heading) * POINTER_ANCHOR_OFFSET, y: Math.sin(heading) * POINTER_ANCHOR_OFFSET };
-  const path = planDubins(from.x + back.x, from.y + back.y, heading + Math.PI, to.x + back.x, to.y + back.y, heading + Math.PI, CLASSIC.turnRadius);
+  const start = { x: from.x + back.x, y: from.y + back.y, heading: heading + Math.PI };
+  const path = planDubins(start, { x: to.x + back.x, y: to.y + back.y, heading: heading + Math.PI }, CLASSIC.turnRadius);
   const length = Math.max(path.length, 1);
   const out: Raw[] = [{ t: 0, x: from.x, y: from.y }];
   let d = 0;

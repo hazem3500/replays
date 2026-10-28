@@ -6,7 +6,7 @@
 
 type Seg = 'L' | 'R' | 'S';
 
-interface PathState {
+export interface PathState {
   x: number;
   y: number;
   heading: number;
@@ -77,8 +77,10 @@ function lrl(d: number, a: number, b: number): Sol | null {
   return { t, p, q: mod2pi(mod2pi(b) - a - t + p), types: ['L', 'R', 'L'] };
 }
 
-/** The shortest path from `(x0, y0)` heading `th0` to `(x1, y1)` heading `th1` that never turns tighter than `turnRadius`. */
-export function planDubins(x0: number, y0: number, th0: number, x1: number, y1: number, th1: number, turnRadius: number): PlannedPath {
+/** The shortest path from `start` to `end`, matching both headings, that never turns tighter than `turnRadius`. */
+export function planDubins(start: PathState, end: PathState, turnRadius: number): PlannedPath {
+  const { x: x0, y: y0, heading: th0 } = start;
+  const { x: x1, y: y1, heading: th1 } = end;
   const r = Math.max(turnRadius, 1);
   const dx = x1 - x0;
   const dy = y1 - y0;
