@@ -10,7 +10,7 @@ import { useLocationSearch } from '../hooks/use-location-search.ts';
 import { usePageCode } from '../hooks/use-page-code.ts';
 import { replayQuery } from '../queries.ts';
 import { indexHref } from '../routing/links.ts';
-import { loadViewer, ReplayComparePage, Viewer, viewerLoaded } from '../routing/pages.ts';
+import { comparePage, viewerPage } from '../routing/pages.ts';
 import { StateShell, TryAgain } from '../routing/states.tsx';
 import { SignInError, SignInLink } from '../sign-in.tsx';
 import { LoadingSwap, ViewerSkeleton } from '../ViewerSkeleton.tsx';
@@ -20,7 +20,7 @@ export function ReplayPage({ id }: { id: string }) {
   if (parseCompareSearch(useLocationSearch(), id).with.length === 0) return <SingleReplayPage id={id} />;
   return (
     <Suspense fallback={<ViewerSkeleton label="Loading recordings" />}>
-      <ReplayComparePage id={id} />
+      <comparePage.Component id={id} />
     </Suspense>
   );
 }
@@ -34,7 +34,7 @@ function SingleReplayPage({ id }: { id: string }) {
   useEditsFailureNote(Boolean(bundle) && edits.isError && !(edits.error instanceof SignInError));
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure)?.message ?? '';
-  const ready = usePageCode(viewerLoaded, loadViewer);
+  const ready = usePageCode(viewerPage.loaded, viewerPage.preload);
   useDocumentTitle(bundle ? `${bundle.meta.title} · ${productName()}` : productName());
 
   if (error) {
@@ -59,7 +59,7 @@ function SingleReplayPage({ id }: { id: string }) {
     <LoadingSwap ready={Boolean(bundle) && ready && editsSettled} skeleton={<ViewerSkeleton />}>
       {bundle && editsSettled ? (
         <Suspense fallback={<ViewerSkeleton />}>
-          <Viewer bundle={bundle} edits={edits.data} />
+          <viewerPage.Component bundle={bundle} edits={edits.data} />
         </Suspense>
       ) : null}
     </LoadingSwap>

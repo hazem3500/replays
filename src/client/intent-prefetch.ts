@@ -6,7 +6,7 @@ import { prefetchReplay, queryClient, suiteQuery } from './queries.ts';
 import { clientRouter } from './routing/client.ts';
 import { isAppPage } from './routing/links.ts';
 import { pageOfPublicPath } from './routing/page-key.ts';
-import { loadSuiteWorkspace, loadViewer } from './routing/pages.ts';
+import { suitePage, viewerPage, warm } from './routing/pages.ts';
 import { initialRunReplayId } from './suite/runs.ts';
 
 /*
@@ -53,8 +53,8 @@ export function prefetchTarget(target: IntentTarget | undefined) {
   if (target.kind === 'suite') void queryClient.prefetchQuery(suiteQuery(target.id));
   const replayId = target.kind === 'replay' ? target.id : target.landing;
   if (replayId) void prefetchReplay(queryClient, replayId);
-  void loadViewer().catch(() => undefined);
-  if (target.kind === 'suite') void loadSuiteWorkspace().catch(() => undefined);
+  warm(viewerPage);
+  if (target.kind === 'suite') warm(suitePage);
 }
 
 type Landing = (suiteId: string) => string | undefined;
@@ -125,7 +125,7 @@ export function useIntentPrefetch(entries: readonly Entry[]) {
     if (!prefetchAllowed()) return;
     const idle = window.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 1500));
     const cancelIdle = window.cancelIdleCallback ?? clearTimeout;
-    const handle = idle(() => void loadViewer().catch(() => undefined), { timeout: 4000 });
+    const handle = idle(() => warm(viewerPage), { timeout: 4000 });
     return () => cancelIdle(handle as number);
   }, []);
 }

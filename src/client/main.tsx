@@ -8,7 +8,6 @@ import { StrictMode } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
-import { registerCommentsFeature } from './comments/feature.tsx';
 import { persistIndexQueries } from './data/persist.ts';
 import { betaMalleable } from './malleable/flag.ts';
 import { loadClientPlugins } from './plugins/load.ts';
@@ -17,8 +16,6 @@ import { setClientRouter } from './routing/client.ts';
 import { installIndexReturn } from './routing/index-return.ts';
 import { installLinkRouting } from './routing/navigate.ts';
 import { installPageMotion } from './transitions/page-motion.ts';
-
-registerCommentsFeature();
 
 const router = getRouter();
 setClientRouter(router);

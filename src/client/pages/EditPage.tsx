@@ -7,7 +7,7 @@ import { useDocumentTitle } from '../hooks/use-document-title.ts';
 import { usePageCode } from '../hooks/use-page-code.ts';
 import { replayQuery } from '../queries.ts';
 import { replayHref } from '../routing/links.ts';
-import { Editor, editorLoaded, loadEditor } from '../routing/pages.ts';
+import { editorPage } from '../routing/pages.ts';
 import { StateShell, TryAgain } from '../routing/states.tsx';
 import { SignInError, SignInLink } from '../sign-in.tsx';
 import { EditorSkeleton, LoadingSwap } from '../ViewerSkeleton.tsx';
@@ -16,7 +16,7 @@ import { EditorSkeleton, LoadingSwap } from '../ViewerSkeleton.tsx';
 export function EditPage({ id }: { id: string }) {
   const { data: bundle, error: failure } = useQuery(replayQuery(id));
   const edits = useQuery({ ...editsQuery(id), staleTime: 0, refetchOnMount: 'always' });
-  const ready = usePageCode(editorLoaded, loadEditor);
+  const ready = usePageCode(editorPage.loaded, editorPage.preload);
   useDocumentTitle(bundle ? `Edit · ${bundle.meta.title} · ${productName()}` : productName());
   const authFailure = [failure, edits.error].find((candidate) => candidate instanceof SignInError);
   const error = (authFailure ?? failure ?? edits.error)?.message ?? '';
@@ -39,7 +39,7 @@ export function EditPage({ id }: { id: string }) {
     <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={<EditorSkeleton />}>
       {bundle && loaded ? (
         <Suspense fallback={<EditorSkeleton />}>
-          <Editor bundle={bundle} loaded={loaded} />
+          <editorPage.Component bundle={bundle} loaded={loaded} />
         </Suspense>
       ) : null}
     </LoadingSwap>
