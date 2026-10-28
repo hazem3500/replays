@@ -152,7 +152,10 @@ time { font-variant-numeric: tabular-nums; }
 @keyframes pop-in { from { opacity: 0; transform: scale(0.97); } }
 /* Skeleton → content: the loaded viewer fades in (opacity only). */
 @keyframes content-in { from { opacity: 0; } }
-.app-shell:not(.skeleton-shell) { animation: content-in var(--motion-slow) var(--ease-out); }
+/* why: the shell is the page's first contentful paint; starting it fully transparent hides FCP/LCP from the browser,
+   so the hand-over fade starts part-way. */
+@keyframes shell-in { from { opacity: 0.6; } }
+.app-shell:not(.skeleton-shell) { animation: shell-in var(--motion-slow) var(--ease-out); }
 /* Theme switch: one short crossfade of the whole page (View Transitions). */
 ::view-transition-old(root), ::view-transition-new(root) { animation-duration: var(--motion); animation-timing-function: var(--ease-out); }
 /* Theme switch: the old theme stays fully opaque underneath while the new one fades in over it (normal blending),

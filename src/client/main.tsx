@@ -1,5 +1,8 @@
+/* invariant: tailwind.css is the first import. The bundle's CSS follows import order and tailwind.css declares the
+   cascade-layer order (theme < base < app < components < utilities); a component stylesheet with an `@layer app`
+   block loaded first would make `app` the lowest layer, so Tailwind's `--ease-out: var(--ease-out)` would win and
+   resolve the app's tokens to nothing. */
 import './tailwind.css';
-// invariant: the cascade layers are established before any component stylesheet is evaluated.
 import { StrictMode } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';

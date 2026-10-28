@@ -2,19 +2,18 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-/**
- * The app's hand-written CSS sits in the `app` cascade layer, above Tailwind's `theme` and `base`. The bundle's
- * CSS follows import order, so a component stylesheet with an `@layer app` block that loads before tailwind.css
- * would make `app` the lowest layer: Tailwind's theme layer (`--ease-out: var(--ease-out)`) then wins and the
- * app's easing and radius tokens resolve to nothing, silently dropping every transition that uses them.
- */
+/* why: the app's hand-written CSS sits in the `app` cascade layer, above Tailwind's `theme` and `base`. The bundle's
+   CSS follows import order, so a component stylesheet with an `@layer app` block that loads before tailwind.css
+   would make `app` the lowest layer: Tailwind's theme layer (`--ease-out: var(--ease-out)`) then wins and the
+   app's easing and radius tokens resolve to nothing, silently dropping every transition that uses them. */
 const CLIENT = join(import.meta.dirname, '../src/client');
 const ORDER = '@layer properties, theme, base, app, components, utilities;';
 
 function cssFiles(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.isDirectory()) return cssFiles(join(dir, entry.name));
-    return entry.name.endsWith('.css') ? [join(dir, entry.name)] : [];
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return cssFiles(path);
+    return entry.name.endsWith('.css') ? [path] : [];
   });
 }
 
