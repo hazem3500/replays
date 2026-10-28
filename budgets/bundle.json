@@ -250,12 +250,12 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "brotli": 140,
-      "gzip": 169
+      "gzip": 168
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
-      "brotli": 438,
-      "gzip": 514
+      "brotli": 436,
+      "gzip": 513
     },
     "dist/lib/plugin.mjs": {
       "raw": 743,
