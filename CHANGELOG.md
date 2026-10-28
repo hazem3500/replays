@@ -218,6 +218,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
+  line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
+  touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
+
 - The viewer's client router is TanStack Router: file routes in `src/client/routes/`, a router context of
   `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params, so every existing
   address (`/r/<id>?t=12.5`, `/?errors=1&sort=-duration`, `/r/<id>?suite=<suite>`, `/r/<id>/edit`) opens as before.

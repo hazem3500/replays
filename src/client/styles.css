@@ -48,6 +48,18 @@
   --ease-pop: cubic-bezier(0.2, 0.9, 0.25, 1.04);
   --radius: 6px;
   --radius-sm: 4px;
+  /* Dialogs (components/ui/dialog.tsx): one padding scale, the title and the close button on one 20 px line,
+     13 px body copy, 32 px actions on desktop and 44 px stacked actions on phones and touch. */
+  --dialog-padding: 20px;
+  --dialog-padding-compact: 16px;
+  --dialog-gap: 16px;
+  --dialog-title-line: 20px;
+  --dialog-body-size: 13px;
+  --dialog-body-line: 20px;
+  --dialog-close-size: 28px;
+  --dialog-close-size-touch: 40px;
+  --dialog-action-height: 32px;
+  --dialog-action-height-touch: 44px;
 
   color-scheme: dark;
   /* Elevation ramp, each step ~3.5 OKLCH L lighter on the same cool hue (about 260):
@@ -74,6 +86,12 @@
   --danger-soft: #3b1d23;
   /* Faint row tint for failed console/network rows; the red lives in the level/status text. */
   --danger-tint: #221619;
+  /* Solid danger fill for destructive buttons (white label ≥ 4.5:1 at rest, hover and pressed; the fill itself
+     clears 3:1 on raised surfaces so it reads as the primary action). Dark lightens on hover, light darkens. */
+  --danger-solid: #c93a2e;
+  --danger-solid-hover: #d23f31;
+  --danger-solid-pressed: #b8342a;
+  --danger-solid-foreground: #ffffff;
   --warning: #e8bd72;
   --success: #7ccfa2;
   --ring: #a9b6ff;
@@ -110,6 +128,10 @@
   --danger: #b42d24;
   --danger-soft: #fbeaec;
   --danger-tint: #fdf2f3;
+  --danger-solid: #c4352b;
+  --danger-solid-hover: #b02f26;
+  --danger-solid-pressed: #9e2a22;
+  --danger-solid-foreground: #ffffff;
   --warning: #85570f;
   --success: #1f7445;
   --ring: #3d4fd1;
@@ -1130,8 +1152,9 @@ svg.lucide.lucide { stroke-width: 2; }
   /* Grabbers: opacity only. */
   .inspector-resizer::after, .steps-resizer::after { scale: 1 !important; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0s !important; animation-iteration-count: 1 !important; }
-  /* Popovers and menus keep a plain fade (tailwind.css .motion-pop: no transform); everything else is instant. */
-  *:not(.motion-pop), *::before, *::after { transition-duration: 0s !important; }
+  /* Popovers, menus and modals keep a plain fade (tailwind.css .motion-pop/.motion-modal/.motion-backdrop: no
+     transform); everything else is instant. */
+  *:not(.motion-pop, .motion-modal, .motion-backdrop), *::before, *::after { transition-duration: 0s !important; }
   /* why: reduced motion keeps opacity cross-fades; the card's hover shadow layer only fades, never moves. */
   .feed-list .feed-item::after { transition-property: opacity !important; transition-duration: 120ms !important; }
 }

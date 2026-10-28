@@ -33,6 +33,10 @@ describe.each(['dark', 'light'] as const)('%s theme contrast', (theme) => {
     expect(contrast(tokens['--text-secondary']!, tokens['--surface']!)).toBeGreaterThanOrEqual(7);
   });
 
+  it('the destructive button fill stands out (3:1) on the raised surface dialogs use', () => {
+    expect(contrast(tokens['--danger-solid']!, tokens['--surface-raised']!)).toBeGreaterThanOrEqual(3);
+  });
+
   it('keyboard ring is at least 3:1 against the page', () => {
     expect(contrast(tokens['--ring']!, tokens['--page']!)).toBeGreaterThanOrEqual(3);
   });

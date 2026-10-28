@@ -596,9 +596,7 @@ export function Viewer({
           leadingActions={
             <>
               {headerActions}
-              {addInMenu ? null : (
-                <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />
-              )}
+              {addInMenu ? null : <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />}
             </>
           }
           hasEdits={Boolean(edited)}
