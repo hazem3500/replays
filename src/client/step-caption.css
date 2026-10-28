@@ -11,6 +11,15 @@
   /* A dark slate surface (78%), a faint hairline, white text in both themes (it sits on the video); no blur. */
   .step-caption-text { display: inline-flex; max-width: 70%; align-items: center; gap: calc(6px * var(--s)); overflow: hidden; padding: calc(6px * var(--s)) calc(12px * var(--s)); border: calc(1px * var(--s)) solid rgb(255 255 255 / 0.08); border-radius: calc(10px * var(--s)); background: rgb(12 14 18 / 0.78); color: #fff; font-size: calc(var(--caption-size, 14px) * var(--s)); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; animation: caption-in 200ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
   .step-caption-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  /* Live browser captions have a stable host for character retargeting. Exported video captions keep their
+     deterministic frame-render animation and markup unchanged. */
+  .step-caption-live { transition: opacity 120ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+  .step-caption-live[data-active="false"] { opacity: 0; }
+  .step-caption-live .caption-calligraph { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  @media (prefers-reduced-motion: reduce) {
+    .step-caption-live { transition: none; }
+    .step-caption-live .step-caption-text { animation: none; }
+  }
   /* The step index: a small 18 px pill before the label, tabular figures, harmonised with the dark surface. */
   .step-caption-number { flex: 0 0 auto; min-width: calc(18px * var(--s)); height: calc(18px * var(--s)); display: inline-grid; place-items: center; padding: 0 calc(5px * var(--s)); border-radius: 999px; background: rgb(255 255 255 / 0.14); color: rgb(255 255 255 / 0.75); font-size: calc(11px * var(--s)); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
   @keyframes caption-in { from { opacity: 0; transform: translateY(calc(4px * var(--s))); } }

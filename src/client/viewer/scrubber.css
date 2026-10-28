@@ -1,7 +1,7 @@
 /*
  * Scrubber (src/client/viewer/Scrubber.tsx). In the `app` layer with styles.css, whose tokens it uses.
  *
- * Geometry: a 28 px hit area (40 px on touch) with the bars' centre line at --center. Bars are drawn 6 px
+ * Geometry: a 28 px hit area (44 px on touch) with the bars' centre line at --center. Bars are drawn 6 px
  * tall with fully rounded caps and rest at scaleY(2/3) = 4 px, so growing under the pointer is one transform
  * about the centre line: no layout, no shift. On a whole-pixel centre both 4 and 6 px land on whole pixels.
  * Errors are red notches on the bars. Motion: transform and opacity only, ease-out,
@@ -130,6 +130,32 @@
     background: var(--danger);
     opacity: 0;
     transition: opacity 200ms var(--ease-out);
+  }
+
+  /* Saved highlights sit above the rail as small, real buttons. Their labels appear only while active, so a
+     busy replay stays readable; touch and keyboard activation work without changing the slider's drag/keys. */
+  .scrubber-highlight-layer { position: absolute; z-index: 4; inset: 0 var(--inset); pointer-events: none; }
+  .scrubber-highlight { position: absolute; inset: 0; pointer-events: none; }
+  .scrubber-highlight-band { position: absolute; top: calc(var(--center) - 2px); height: 4px; border-radius: 99px; background: color-mix(in srgb, var(--accent) 46%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 26%, transparent); pointer-events: none; }
+  .scrubber-highlight:has(.scrubber-highlight-marker[data-selected="true"], .scrubber-highlight-marker:focus-visible) .scrubber-highlight-band { top: calc(var(--center) - 7px); height: 14px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 21%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); }
+  .scrubber-highlight-marker { position: absolute; top: calc(var(--center) - 12px); display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--accent); cursor: pointer; pointer-events: auto; transform: translateX(calc(-50% + var(--target-offset, 0px))); -webkit-tap-highlight-color: transparent; }
+  .scrubber-highlight-glyph { display: block; width: 9px; height: 9px; border: 2px solid var(--surface-raised); background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .scrubber-highlight-marker[data-kind="point"] .scrubber-highlight-glyph { border-radius: 2px; rotate: 45deg; }
+  .scrubber-highlight-marker[data-kind="period"] .scrubber-highlight-glyph { width: 8px; height: 8px; border-radius: 50%; }
+  .scrubber-highlight-marker[data-selected="true"] .scrubber-highlight-glyph,
+  .scrubber-highlight-marker:focus-visible .scrubber-highlight-glyph { scale: 1.3; }
+  .scrubber-highlight-marker .scrubber-highlight-glyph { translate: calc(var(--target-offset, 0px) * -1) 0; }
+  @media (hover: hover) and (pointer: fine) {
+    .scrubber-highlight-marker:hover .scrubber-highlight-glyph { scale: 1.3; }
+  }
+  .scrubber-highlight-marker:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  .scrubber-highlight-label { position: absolute; bottom: calc(100% + 2px); left: 50%; max-width: min(220px, 70vw); overflow: hidden; padding: 3px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: var(--text-2xs); line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; box-shadow: 0 2px 8px rgb(0 0 0 / 0.18); transform: translateX(-50%); }
+  @media (hover: hover) and (pointer: fine) {
+    .scrubber-highlight:has(.scrubber-highlight-marker:hover) .scrubber-highlight-band { top: calc(var(--center) - 7px); height: 14px; border-radius: 4px; background: color-mix(in srgb, var(--accent) 21%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    .scrubber-highlight-band { transition: top 120ms var(--ease-out), height 120ms var(--ease-out), background-color 120ms var(--ease-out); }
+    .scrubber-highlight-glyph { transition: scale 120ms var(--ease-out); }
   }
   .app-shell[data-tab="console"] .error-notch,
   .app-shell[data-tab="network"] .error-notch,
@@ -292,16 +318,17 @@
     }
   }
 
-  /* Touch: a 40 px strip that owns the gesture; no hover. While dragging, the bubble rides high enough
+  /* Touch: a 44 px strip that owns the gesture; no hover. While dragging, the bubble rides high enough
      above the finger to stay readable. */
   @media (pointer: coarse) {
     /* The strip reaches 6 px up over the player's bottom edge (an inert picture), so the controls row sits
        closer to the bars without giving up any of the 40 px. */
     .scrubber {
       --center: 22px;
-      height: 40px;
+      height: 44px;
       margin-top: -6px;
     }
+    .scrubber-highlight-marker { top: calc(var(--center) - 22px); width: 44px; height: 44px; min-height: 44px; }
     .scrubber-knob {
       top: -6px;
       left: -6px;
@@ -320,6 +347,7 @@
     .scrubber-bars {
       transition-delay: 0ms;
     }
+    .scrubber-highlight-band, .scrubber-highlight-glyph { transition: none; }
   }
 
   @media (forced-colors: active) {
@@ -350,6 +378,9 @@
       background: CanvasText;
       box-shadow: none;
     }
+    .scrubber-highlight-marker { forced-color-adjust: none; color: Highlight; }
+    .scrubber-highlight-glyph { forced-color-adjust: none; border-color: Canvas; background: Highlight; box-shadow: 0 0 0 1px Highlight; }
+    .scrubber-highlight-band { forced-color-adjust: none; background: Highlight; box-shadow: none; }
     .scrubber-bubble {
       border: 1px solid CanvasText;
     }

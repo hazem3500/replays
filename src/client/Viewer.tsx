@@ -1,9 +1,20 @@
 import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
+import { CaptionMorph } from './CaptionMorph.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
+import {
+  applyEdits,
+  type EditTimeline,
+  editListOf,
+  editTimeline,
+  editsVersion,
+  isEmptyEdits,
+  type ReplayHighlight,
+  type StoredReplayEdits,
+} from '../shared/edits.ts';
+import { projectHighlights } from '../shared/highlights.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { editingEnabled } from './config.ts';
@@ -83,6 +94,7 @@ export function Viewer({
   edited,
   effects,
   timeline,
+  highlights,
   sourceBundle = bundle,
 }: {
   bundle: ReplayBundle;
@@ -90,6 +102,8 @@ export function Viewer({
   sourceBundle?: ReplayBundle;
   /** Saved edits' timeline (source ↔ edited time) when they are applied: comments are anchored to source time. */
   timeline?: EditTimeline;
+  /** Saved playback navigation annotations, stored on the source timeline. */
+  highlights?: ReplayHighlight[];
   /** Zoom, blur and captions from the saved edits, on this bundle's timeline. */
   effects?: PlaybackEffects;
   /** The replay has saved edits: who and when, whether the original is on screen, and the switch between them. */
@@ -347,6 +361,7 @@ export function Viewer({
       notify,
       editsVersion: edited ? editsVersion(editListOf(edited.stored)) : '',
       editCaptions: Boolean(effects?.captions.length),
+      highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
     };
   }, [
     bundle.steps,
@@ -354,6 +369,8 @@ export function Viewer({
     captions,
     edited,
     effects,
+    highlights,
+    timeline,
     errors,
     notify,
     player,
@@ -818,15 +835,14 @@ function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
 /**
  * Step captions: the current step's label as a calm caption at the bottom of the player while it plays, and
  * while you scrub or seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without
- * a seek, or the end, clears it. The caption fades in once; then the label morphs from step to step, and a fast
- * drag across many steps swaps it instantly, so it never flickers.
+ * a seek, or the end, clears it. The stable caption host retargets its shared characters between step labels.
  */
 function StepCaption() {
   const player = usePlayer();
   const { steps, captionNumbers } = useViewer();
   const { status } = usePlayerState();
   // The same step index the step rail shows (one source), so caption and rail never disagree at a boundary.
-  const active = useActiveStep(steps);
+  const activeIndex = useActiveStep(steps);
   const [seeked, setSeeked] = useState(false);
   useEffect(() => {
     const offSeek = player.subscribeSeek(() => setSeeked(true));
@@ -842,14 +858,27 @@ function StepCaption() {
   const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
   const step = steps[captionIndex];
   const playing = status === 'playing';
-  if (!step || !(playing || (seeked && status !== 'ended'))) return null;
+  const active = Boolean(step && (playing || (seeked && status !== 'ended')));
+  const label = active ? (step?.label ?? '') : '';
   return (
-    <div className="step-caption" aria-hidden="true" data-testid="step-caption">
-      {/* One persistent caption: it fades in once, then the label morphs from step to step (AnimatedText); a fast
-          scrub swaps it instantly. */}
+    <div
+      className="step-caption step-caption-live"
+      data-active={active ? 'true' : 'false'}
+      data-testid="step-caption"
+      role="status"
+      aria-live="off"
+      aria-label={label || undefined}
+    >
+      {/* why: one stable caption host lets Calligraph retarget characters as the current step changes. */}
       <span className="step-caption-text">
-        {captionNumbers ? <span className="step-caption-number">{active + 1}</span> : null}
-        <AnimatedText className="step-caption-label" text={step.label} />
+        {active && captionNumbers ? (
+          <span className="step-caption-number" aria-hidden="true">
+            {activeIndex + 1}
+          </span>
+        ) : null}
+        <span className="step-caption-label" aria-hidden="true">
+          <CaptionMorph text={label} />
+        </span>
       </span>
     </div>
   );
@@ -1147,6 +1176,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
       bundle={shown?.bundle ?? bundle}
       sourceBundle={bundle}
       {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
+      {...(stored?.highlights ? { highlights: stored.highlights } : {})}
       {...(edited ? { edited } : {})}
     />
   );

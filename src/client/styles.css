@@ -828,7 +828,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .loading-notice { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
 .loading-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
 .transport.loading-transport { display: flex; padding-inline: 16px; }
-@media (pointer: coarse) { .transport.loading-transport { min-height: 75px; } }
+@media (pointer: coarse) { .transport.loading-transport { min-height: 79px; } }
 .sk-stage { container-type: size; display: grid; place-items: center; }
 .sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }
 .sk-frame:has(.sk-poster) { overflow: hidden; }

@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { must } from './must.ts';
 
 import {
   addCut,
+  addPointHighlight,
+  addPeriodHighlight,
   cutRange,
   editorReducer,
   editorShortcutFor,
@@ -11,6 +14,8 @@ import {
   moveCut,
   parseClock,
   removeWaits,
+  removeHighlight,
+  updateHighlight,
   savedAgo,
   setTrimEdge,
   waitSuggestions,
@@ -28,6 +33,31 @@ const key = (name: string, extra: Partial<{ shiftKey: boolean; metaKey: boolean;
 });
 
 describe('editor state', () => {
+  it('adds, edits, deletes, undoes and redoes point and period highlights', () => {
+    const point = addPointHighlight(empty, 1250, 10_000);
+    expect(addPointHighlight(point.edits, 1250, 10_000)).toEqual({ edits: point.edits, id: point.id });
+    const period = must(addPeriodHighlight(point.edits, 2000, 5000, 10_000));
+    expect(period.edits.highlights).toHaveLength(2);
+    let state = editorReducer(initialEditorState(empty), {
+      type: 'change',
+      edits: period.edits,
+      select: { kind: 'highlight', id: period.id },
+    });
+    state = editorReducer(state, {
+      type: 'change',
+      edits: updateHighlight(state.present, period.id, { kind: 'period', from: 2200, label: 'Checkout' }, 10_000),
+      select: { kind: 'highlight', id: period.id },
+    });
+    expect(state.present.highlights?.find((item) => item.id === period.id)).toMatchObject({ from: 2200, to: 5000, label: 'Checkout' });
+    state = editorReducer(state, { type: 'undo' });
+    expect(state.present.highlights?.find((item) => item.id === period.id)).toMatchObject({ from: 2000, to: 5000 });
+    state = editorReducer(state, { type: 'redo' });
+    state = editorReducer(state, { type: 'change', edits: removeHighlight(state.present, point.id) });
+    expect(state.present.highlights?.map((item) => item.id)).toEqual([period.id]);
+    expect(addPeriodHighlight(empty, 100, 199, 10_000)).toBeUndefined();
+    expect(editorShortcutFor(key('m'))).toBe('highlight');
+  });
+
   it('undoes and redoes changes, and a drag is one step', () => {
     let state = initialEditorState(empty);
     const first = addCut(empty, 1000, 10_000)!;
@@ -54,7 +84,9 @@ describe('editor state', () => {
     state = editorReducer(state, { type: 'change', edits: setTrimEdge(state.present, 'start', 500, 10_000) });
     expect(state.future).toEqual([]);
   });
+});
 
+describe('editor state trims, cuts and keys', () => {
   it('keeps the trim sane', () => {
     expect(setTrimEdge(empty, 'start', 2000, 10_000).trim).toEqual({ start: 2000, end: 10_000 });
     expect(setTrimEdge({ ...empty, trim: { start: 2000, end: 3000 } }, 'end', 1000, 10_000).trim).toEqual({ start: 2000, end: 2100 });
