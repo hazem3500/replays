@@ -16,6 +16,7 @@ import { ThemeContext, useTheme } from './theme.tsx';
 import { EditorSkeleton, LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
 import { useLocationSearch } from './hooks/use-location-search.ts';
 import { parseCompareSearch } from './compare/compare-search.ts';
+import { compareDefaults } from './compare/defaults.ts';
 
 // The index ships alone; the viewer (rrweb + player) and the suite workspace are split chunks.
 // Each loader is memoised so the route can start the download before React asks for it.
@@ -175,7 +176,9 @@ function SuitePage({ id, replayId }: { id: string; replayId?: string }) {
 
 /** `/r/<id>`: the replay on its own, or with `?with=` the same viewer comparing it with others. */
 function ReplayPage({ id }: { id: string }) {
-  if (parseCompareSearch(useLocationSearch(), id).with.length === 0) return <SingleReplayPage id={id} />;
+  const search = useLocationSearch();
+  const { compare, layout } = compareDefaults({ page: 'replay', recordings: 1 });
+  if (!compare && parseCompareSearch(search, id, layout).with.length === 0) return <SingleReplayPage id={id} />;
   return (
     <Suspense fallback={<ViewerSkeleton label="Loading recordings" />}>
       <ReplayComparePage id={id} />

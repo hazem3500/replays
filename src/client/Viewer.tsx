@@ -1,4 +1,4 @@
-import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
+import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
 import { CaptionMorph } from './CaptionMorph.tsx';
@@ -427,9 +427,14 @@ export function Viewer({
   const pluginContexts = usePluginContexts(bundle, player);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
+  // why: a phone's top bar already carries the layout switch while comparing; adding one more recording waits in More.
+  const addInMenu = mobile && Boolean(sharedPlayer);
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
+      ...(addInMenu
+        ? [{ label: 'Add a recording', icon: <PlusIcon aria-hidden="true" />, onSelect: () => setPickerOpen(true), testId: 'compare-with' }]
+        : []),
       ...pluginMenu.items,
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
@@ -447,7 +452,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, keepItem, mobile, pluginMenu.items],
+    [actions.openShortcuts, addInMenu, keepItem, mobile, pluginMenu.items],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -590,7 +595,9 @@ export function Viewer({
           leadingActions={
             <>
               {headerActions}
-              <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />
+              {addInMenu ? null : (
+                <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />
+              )}
             </>
           }
           hasEdits={Boolean(edited)}
