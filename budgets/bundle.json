@@ -83,8 +83,8 @@
       "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82506,
-      "gzip": 27351,
+      "raw": 82360,
+      "gzip": 27292,
       "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -108,9 +108,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 254777,
-      "gzip": 44018,
-      "brotli": 36600
+      "raw": 257893,
+      "gzip": 44406,
+      "brotli": 36909
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 882638,
@@ -398,9 +398,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 256661,
-      "gzip": 44944,
-      "brotli": 37401
+      "raw": 259758,
+      "gzip": 45323,
+      "brotli": 37702
     },
     "initial/index.html/js": {
       "raw": 1688508,
@@ -916,22 +916,22 @@
     {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 254777,
-        "gzip": 44018,
-        "brotli": 36600
+        "raw": 257893,
+        "gzip": 44406,
+        "brotli": 36909
       },
-      "reason": "The dialog geometry utilities (token-driven padding, close size, title line, stacked touch actions) and the solid destructive button join the app stylesheet, about 2.7 KB raw over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
+      "reason": "Comments review feed (#116): docked composer, thread tools, reaction chips and the Open/Resolved filter replace the old panel styles (+3116 raw, +388 gzip, +309 brotli bytes over main's cap, measured on Boat at head).",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 256661,
-        "gzip": 44944,
-        "brotli": 37401
+        "raw": 259758,
+        "gzip": 45323,
+        "brotli": 37702
       },
-      "reason": "The initial index style group carries the same dialog and destructive-button utilities.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
+      "reason": "Comments review feed (#116): docked composer, thread tools, reaction chips and the Open/Resolved filter replace the old panel styles (+3097 raw, +379 gzip, +301 brotli bytes over main's cap, measured on Boat at head).",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
       "file": "dist/client/assets/download-HASH.js",
