@@ -49,7 +49,7 @@ describe('index filter panels', () => {
       setKind: vi.fn<FilterState['setKind']>(),
       clearFilters: vi.fn<FilterState['clearFilters']>(),
     };
-    await act(() => {
+    act(() => {
       root.render(createElement(FilterSheet, state));
     });
     await click(host.querySelector<HTMLElement>('.index-filters-button')!);
@@ -58,7 +58,7 @@ describe('index filter panels', () => {
     const selected = document.querySelector<HTMLElement>('.filter-sheet [role="radio"][aria-checked="true"]')!;
     expect(document.activeElement).toBe(selected);
 
-    await act(() => {
+    act(() => {
       document
         .querySelector<HTMLElement>('.filter-sheet')!
         .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
