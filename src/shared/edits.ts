@@ -11,7 +11,7 @@
  * The format is deliberately plain (versioned, no derived data) so it can be handed to another tool later.
  */
 
-import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
+import { CURSOR_MOTION_STYLES, isCursorMotionStyle, normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
 import {
   MAX_CAPTION,
   MAX_EFFECTS,
@@ -231,7 +231,7 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
     label(cut.label, `${field}.label`);
   }
   if (edits.cursor !== undefined) {
-    const cursor = object(edits.cursor, `${name}.cursor`, ['visible', 'size', 'hideWhenIdle', 'clickFeedback']);
+    const cursor = object(edits.cursor, `${name}.cursor`, ['visible', 'size', 'hideWhenIdle', 'clickFeedback', 'motion']);
     for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
       if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
     }
@@ -240,6 +240,8 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
       (typeof cursor.size !== 'number' || !Number.isFinite(cursor.size) || cursor.size < 0.5 || cursor.size > 2)
     )
       throw new Error(`${name}.cursor.size must be from 0.5 to 2`);
+    if (cursor.motion !== undefined && !isCursorMotionStyle(cursor.motion))
+      throw new Error(`${name}.cursor.motion must be one of ${CURSOR_MOTION_STYLES.join(', ')}`);
   }
   assertEffects(edits, name, duration);
   assertHighlights(edits.highlights, duration, `${name}.highlights`);

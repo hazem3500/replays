@@ -217,7 +217,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
 | `STORAGE` | `fs` | `fs`, `s3`, or a backend a plugin registered |
 | `RETENTION_DAYS` | `30` | Days an upload lives, counted from its upload time; `0` keeps everything. "Kept" replays never expire |
-| `RETENTION_PURPOSE_<ID>_DAYS` | – | Days for replays of one [purpose](docs/extension-api.md#purposes-and-retention) (`RETENTION_PURPOSE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
+| `RETENTION_PROFILE_<ID>_DAYS` | – | Days for replays of one [profile](docs/extension-api.md#profiles-and-retention) (`RETENTION_PROFILE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
 | `REPLAYS_CONFIG` | `replays.config.{ts,mjs,js,json}` in the working directory | The config file (below); a script can also list [plugins](#extending-replays) |
 | `SAMPLE_DIR` | the bundled `sample/` | Directory of read-only demo replays; point it at an empty directory for none |
 | `PRODUCT_NAME`, `LOGO_URL` | `replays`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
@@ -503,7 +503,7 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 | `GET /api/replays`, `GET /api/replays/<id>` | List summaries (`?q=&host=&errors=1&source=&tag=`) / the bundle |
 | `GET /api/suites`, `GET /api/suites/<id>`, `PUT /api/suites/<id>[/runs/<run>]` | Suites |
 | `PUT\|DELETE /api/replays/<id>/keep` | Keep / release |
-| `PATCH /api/replays/<id>/meta` | Rename, retag or set the purpose (`{ title?, tags?, purpose? }`, `purpose: null` drops the override) → the summary; the bundle stays as uploaded |
+| `PATCH /api/replays/<id>/meta` | Rename, retag or set the profile (`{ title?, tags?, profile? }`, `profile: null` drops the override) → the summary; the bundle stays as uploaded |
 | `DELETE /api/replays/<id>`, `POST /api/replays/<id>/restore` | Delete (restorable for 7 days, then retention removes it; `409` while kept) / restore → the summary |
 | `GET\|POST /api/replays/<id>/comments`, `PATCH\|DELETE …/comments/<comment>` | Comments (`{ body, at?, parentId? }`, `{ emoji, at }`, `{ body }` / `{ resolved }`); `at` is source ms |
 | `GET /api/me`, `GET /api/config` | Identity; branding and context schema |

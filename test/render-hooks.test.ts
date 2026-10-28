@@ -48,12 +48,12 @@ describe('api.render registration', () => {
 
 describe('posterAt', () => {
   const bundle = replay();
-  const chooser = (hooks: Owned<RenderHooks>[], purposePoster?: (purpose: string | undefined) => 'first-error' | undefined) => {
+  const chooser = (hooks: Owned<RenderHooks>[], profilePoster?: (profile: string | undefined) => 'first-error' | undefined) => {
     const loads: string[] = [];
     const lines: string[] = [];
     const choose = createRenderHooks(hooks, (line) => lines.push(line)).posterChooser({
-      purpose: async () => 'triage',
-      purposePoster,
+      profile: async () => 'triage',
+      profilePoster,
       load: async (id) => {
         loads.push(id);
         return bundle;
@@ -62,13 +62,13 @@ describe('posterAt', () => {
     return { choose: choose!, loads, lines };
   };
 
-  it('takes the first number in plugin order, then the purpose setting, then the default', async () => {
+  it('takes the first number in plugin order, then the profile setting, then the default', async () => {
     const seen: string[] = [];
     const { choose } = chooser(
       [
         owned('a', {
-          posterAt: (_bundle, { purpose }) => {
-            seen.push(`a:${purpose}`);
+          posterAt: (_bundle, { profile }) => {
+            seen.push(`a:${profile}`);
             return undefined;
           },
         }),
@@ -94,11 +94,11 @@ describe('posterAt', () => {
     await expect(chooser([owned('a', { posterAt: () => undefined })]).choose('x')).resolves.toBeUndefined();
   });
 
-  it('is the purpose setting alone without hooks (no bundle read), and nothing at all without either', async () => {
+  it('is the profile setting alone without hooks (no bundle read), and nothing at all without either', async () => {
     const { choose, loads } = chooser([], () => 'first-error');
     await expect(choose('test-replay')).resolves.toBe('first-error');
     expect(loads).toEqual([]);
-    expect(createRenderHooks([]).posterChooser({ purpose: async () => undefined, load: async () => bundle })).toBeUndefined();
+    expect(createRenderHooks([]).posterChooser({ profile: async () => undefined, load: async () => bundle })).toBeUndefined();
   });
 
   it('skips a hook that throws or answers something that is not a time, and remembers the answer per replay', async () => {
@@ -281,7 +281,7 @@ async function posterQueue(hooks: Owned<RenderHooks>[], busy: () => boolean = ()
   const posters = new PosterQueue({
     storage: store.storage,
     key: (id, choice) => store.posterKey(id, choice),
-    posterAt: runner.posterChooser({ purpose: async () => undefined, load: (id) => store.load(id) }),
+    posterAt: runner.posterChooser({ profile: async () => undefined, load: (id) => store.load(id) }),
     beforeRender: runner.beforeRender,
     afterRender: runner.afterRender,
     busy,

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { inferDesignReview, inferTriage, inferWalkthrough } from '../examples/demo-purposes/plugin.ts';
-import type { PurposeInferInput } from '../src/plugin/index.ts';
+import { inferDesignReview, inferTriage, inferWalkthrough } from '../examples/demo-profiles/plugin.ts';
+import type { ProfileInferInput } from '../src/plugin/index.ts';
 
-function summary(extra: Partial<PurposeInferInput> = {}): PurposeInferInput {
+function summary(extra: Partial<ProfileInferInput> = {}): ProfileInferInput {
   return {
     id: 'demo-replay',
     title: 'Signup flow',
@@ -20,7 +20,7 @@ function summary(extra: Partial<PurposeInferInput> = {}): PurposeInferInput {
   };
 }
 
-describe('demo purpose inference', () => {
+describe('demo profile inference', () => {
   it('sends console and request errors to triage', () => {
     expect(inferTriage(summary({ errors: 1 }))).toBe(true);
     expect(inferTriage(summary())).toBe(false);

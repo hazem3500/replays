@@ -1,12 +1,14 @@
-import type { ReplayCursorSettings } from '../shared/cursor.ts';
+import type { CursorMotionStyle, ReplayCursorSettings } from '../shared/cursor.ts';
+import { DT_MS, minJerk, sampleTimed, type Pt, type Raw } from './cursor-path.ts';
+import { planStyle } from './cursor-styles.ts';
 
 /**
  * Replay cursor motion: a pure function from playhead time to cursor pose.
  *
  * The motion model is ported from Cua Cursor Motion (`@trycua/cursor-motion`,
- * the library behind Cua Driver's agent cursor), style `signature_arc`:
+ * the library behind Cua Driver's agent cursor), with its six built-in styles:
  * https://github.com/trycua/cua/tree/main/libs/typescript/cursor-motion
- * (src/path.ts, ease.ts, spec.ts, plan.ts, effects.ts, render.ts at f982ea0).
+ * (src/path.ts, ease.ts, spec.ts, style.ts, plan.ts, dubins.ts, effects.ts, render.ts at f982ea0).
  *
  *   MIT License. Copyright (c) 2025 Cua AI, Inc.
  *   Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -19,13 +21,14 @@ import type { ReplayCursorSettings } from '../shared/cursor.ts';
  *   substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS",
  *   WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED.
  *
- * What is ported: the Cua cubic-bezier arc (bent to the natural side), the
- * minimum-jerk speed curve applied by arc length, the follow-through bump past
- * the target, Fitts duration, the tangent heading (the tip leads, smoothed),
- * the click squish, and the reduced-motion glide. What is not: the glow, the
- * click ripple (a ring; the viewer wants none), the idle float and the canvas
- * player. Replays never know the target rect, so Fitts uses Cua's default
- * 24 pt target.
+ * What is ported: every style's hotspot path and timing (`cursor-styles.ts`:
+ * the Cua cubic-bezier arcs and bows bent to the natural side, speed curves
+ * applied by arc length, follow-through, spring wobble, magnetic pull, the
+ * `classic` Dubins glide, Fitts duration), the tangent heading (the tip leads,
+ * smoothed), the click squish, and the reduced-motion glide. What is not: the
+ * glow, trail, magnet and click ripple effects (the viewer wants none), the
+ * idle float and the canvas player. Replays never know the target rect, so
+ * Fitts uses Cua's default 24 pt target.
  *
  * Replay-specific: the recorded mouse stream is reduced to targets (rests,
  * clicks, and waypoints in long continuous runs), and each move is scheduled so
@@ -35,22 +38,11 @@ import type { ReplayCursorSettings } from '../shared/cursor.ts';
 
 // ---------- Cua Cursor Motion (ported) ----------
 
-/** Sample period of every planned move, ms (120 Hz). */
-const DT_MS = 1000 / 120;
-/** Target box assumed when a move has no element rect, pt. */
-export const DEFAULT_TARGET_PT = 24;
 /** The arrow's rest heading: pointing up and to the left. */
 export const REST_HEADING = Math.PI / 4;
 const TIP_ANGLE = -0.75 * Math.PI;
 const ARRIVAL_TOLERANCE_PT = 1;
 const REDUCED_MOTION_MS = 120;
-
-/** `signature_arc`: arc size 0.16 and flow 0.15 on Cua's default handles (0.3 / 0.3). */
-const ARC = { startHandle: 0.3, endHandle: 0.3, arcSize: 0.16, arcFlow: 0.15 };
-/** `signature_arc` follow-through: 1.8% of the distance (max 8 pt) past the target, peaking at 82%. */
-const FOLLOW_THROUGH = { amount: 0.018, maxPt: 8, at: 0.82 };
-/** `signature_arc` duration: Fitts `150 + 120 log2(D / W + 1)` ms, clamped 300..1000, scaled 1.1. */
-const FITTS = { a: 150, b: 120, minMs: 300, maxMs: 1000, scale: 1.1 };
 
 /** Click squish: press for 90 ms, spring back within 220 ms. 12% of the size at most. */
 export const CLICK_FX_MS = 550;
@@ -66,11 +58,6 @@ export const CURSOR_CANVAS = 128;
 export const CURSOR_HOTSPOT = { x: 55, y: 30 } as const;
 export const CURSOR_DISPLAY_SIZE = 42;
 
-interface Pt {
-  x: number;
-  y: number;
-}
-
 const wrapAngle = (a: number) => {
   const tau = 2 * Math.PI;
   let r = a % tau;
@@ -78,134 +65,6 @@ const wrapAngle = (a: number) => {
   if (r < -Math.PI) r += tau;
   return r;
 };
-
-/** Minimum-jerk: the profile of a relaxed human reach. */
-export const minJerk = (t: number) => t * t * t * (10 - 15 * t + 6 * t * t);
-
-/** Base plus a smooth bump that pushes `over` past the end, peaking at `overAt`. */
-function bumpProfile(base: (t: number) => number, over: number, overAt: number) {
-  const a = Math.max(overAt * 10, 1.5);
-  const b = Math.max((1 - overAt) * 10, 1.5);
-  const peak = (a / (a + b)) ** a * (b / (a + b)) ** b;
-  return (tau: number) => base(tau) + over * ((tau ** a * (1 - tau) ** b) / peak);
-}
-
-/** `signature_arc` duration for a move of `distance` pt onto a `width` pt target. */
-export function moveDurationMs(distance: number, width = DEFAULT_TARGET_PT) {
-  const raw = FITTS.a + FITTS.b * Math.log2(distance / Math.max(width, 4) + 1);
-  return Math.min(Math.max(raw, FITTS.minMs), FITTS.maxMs) * FITTS.scale;
-}
-
-/** A parametric path with an arc-length table, so speed curves act on distance. */
-class Path {
-  readonly length: number;
-  private readonly us: Float64Array;
-  private readonly ss: Float64Array;
-  private readonly p0: Pt;
-  private readonly p1: Pt;
-  private readonly t0: Pt;
-  private readonly t1: Pt;
-  private readonly f: (u: number) => Pt;
-
-  constructor(f: (u: number) => Pt, n: number) {
-    this.f = f;
-    this.us = new Float64Array(n + 1);
-    this.ss = new Float64Array(n + 1);
-    let prev = f(0);
-    let total = 0;
-    for (let i = 1; i <= n; i++) {
-      const u = i / n;
-      const p = f(u);
-      total += Math.hypot(p.x - prev.x, p.y - prev.y);
-      this.us[i] = u;
-      this.ss[i] = total;
-      prev = p;
-    }
-    this.length = total;
-    this.p0 = f(0);
-    this.p1 = f(1);
-    this.t0 = unit(f(1e-3), this.p0);
-    this.t1 = unit(f(1 - 1e-3), this.p1);
-  }
-
-  /** The point `frac` of the way along by distance; extrapolates past the ends. */
-  atFraction(frac: number): Pt {
-    const len = this.length;
-    if (len < 1e-9) return this.f(Math.min(Math.max(frac, 0), 1));
-    if (frac > 1) return { x: this.p1.x + this.t1.x * (frac - 1) * len, y: this.p1.y + this.t1.y * (frac - 1) * len };
-    if (frac < 0) return { x: this.p0.x + this.t0.x * -frac * len, y: this.p0.y + this.t0.y * -frac * len };
-    const target = frac * len;
-    let lo = 0;
-    let hi = this.ss.length - 1;
-    while (hi - lo > 1) {
-      const mid = (lo + hi) >> 1;
-      if ((this.ss[mid] as number) < target) lo = mid;
-      else hi = mid;
-    }
-    const slo = this.ss[lo] as number;
-    let span = (this.ss[hi] as number) - slo;
-    if (span === 0) span = 1;
-    const ulo = this.us[lo] as number;
-    return this.f(ulo + ((this.us[hi] as number) - ulo) * ((target - slo) / span));
-  }
-}
-
-function unit(a: Pt, b: Pt): Pt {
-  let d = Math.hypot(b.x - a.x, b.y - a.y);
-  if (d === 0) d = 1;
-  return { x: (b.x - a.x) / d, y: (b.y - a.y) / d };
-}
-
-/** The Cua bezier: control points along the chord, pushed sideways by `arcSize` of its length. */
-function cuaPath(a: Pt, b: Pt, arcSize: number) {
-  const dx = b.x - a.x;
-  const dy = b.y - a.y;
-  const len = Math.max(Math.hypot(dx, dy), 1);
-  const px = -dy / len;
-  const py = dx / len;
-  const deflection = len * arcSize;
-  const flow = (ARC.arcFlow + 1) / 2;
-  const c1d = deflection * (1 - 0.5 * flow);
-  const c2d = deflection * (1 - 0.5 * (1 - flow));
-  const c1 = { x: a.x + dx * ARC.startHandle + px * c1d, y: a.y + dy * ARC.startHandle + py * c1d };
-  const c2 = { x: b.x - dx * ARC.endHandle + px * c2d, y: b.y - dy * ARC.endHandle + py * c2d };
-  return new Path((u) => {
-    const v = 1 - u;
-    const k0 = v * v * v;
-    const k1 = 3 * v * v * u;
-    const k2 = 3 * v * u * u;
-    const k3 = u * u * u;
-    return { x: k0 * a.x + k1 * c1.x + k2 * c2.x + k3 * b.x, y: k0 * a.y + k1 * c1.y + k2 * c2.y + k3 * b.y };
-  }, 256);
-}
-
-/** Chord side that bends paths upward for horizontal moves. */
-const naturalSide = (a: Pt, b: Pt) => (unit(a, b).x >= 0 ? -1 : 1);
-
-interface Raw {
-  t: number;
-  x: number;
-  y: number;
-}
-
-function sampleTimed(pos: (tau: number) => Pt, ms: number, from: Pt, to: Pt): Raw[] {
-  const c = Math.ceil(ms / DT_MS);
-  const n = Math.max(Number.isFinite(c) && c > 0 ? c : 0, 2);
-  const out: Raw[] = [];
-  for (let i = 0; i <= n; i++) {
-    const tau = i / n;
-    const p = pos(tau);
-    out.push({ t: tau * ms, x: p.x, y: p.y });
-  }
-  // Pin the ends: the move starts and lands exactly on the requested points.
-  const first = out[0] as Raw;
-  const last = out[n] as Raw;
-  first.x = from.x;
-  first.y = from.y;
-  last.x = to.x;
-  last.y = to.y;
-  return out;
-}
 
 /**
  * A planned move: `[t, x, y, heading]` samples (t in ms from the move's start)
@@ -217,24 +76,25 @@ export interface Trajectory {
   durationMs: number;
 }
 
-/** Plans one move. `reducedMotion` is Cua's short straight glide without rotation or effects. */
-export function planMove(from: Pt, to: Pt, fromHeading = REST_HEADING, reducedMotion = false): Trajectory {
-  let raw: Raw[];
-  if (reducedMotion) {
-    raw = sampleTimed(
-      (tau) => ({ x: from.x + (to.x - from.x) * minJerk(tau), y: from.y + (to.y - from.y) * minJerk(tau) }),
-      REDUCED_MOTION_MS,
-      from,
-      to,
-    );
-  } else {
-    const distance = Math.hypot(to.x - from.x, to.y - from.y);
-    const path = cuaPath(from, to, ARC.arcSize * naturalSide(from, to));
-    const over = Math.min(FOLLOW_THROUGH.amount, FOLLOW_THROUGH.maxPt / Math.max(distance, 1));
-    const profile = bumpProfile(minJerk, over, FOLLOW_THROUGH.at);
-    raw = sampleTimed((tau) => path.atFraction(profile(tau)), moveDurationMs(distance), from, to);
-  }
-  // Upright pointer: CUA's tangent heading reads oddly as a mouse arrow in a debugging tool.
+/** Plans one move in `style`. `reducedMotion` is Cua's short straight glide without rotation or effects. */
+export function planMove(
+  from: Pt,
+  to: Pt,
+  {
+    fromHeading = REST_HEADING,
+    reducedMotion = false,
+    style = 'signature_arc',
+  }: { fromHeading?: number; reducedMotion?: boolean; style?: CursorMotionStyle | undefined } = {},
+): Trajectory {
+  const raw = reducedMotion
+    ? sampleTimed(
+        (tau) => ({ x: from.x + (to.x - from.x) * minJerk(tau), y: from.y + (to.y - from.y) * minJerk(tau) }),
+        REDUCED_MOTION_MS,
+        from,
+        to,
+      )
+    : planStyle(style, from, to, REST_HEADING);
+  // why: an upright pointer; CUA's tangent heading reads oddly as a mouse arrow in a debugging tool.
   return finish(raw, to, fromHeading, 'fixed');
 }
 
@@ -529,19 +389,20 @@ export function buildCursorTrack(
   options: { reducedMotion?: boolean; settings?: ReplayCursorSettings | undefined } = {},
 ): CursorTrack {
   const reducedMotion = options.reducedMotion ?? false;
+  const motion = options.settings?.motion;
   const targets = cursorTargets(onPage(input.points, input.viewport));
   const moves: Move[] = [];
   const pose: Pose = { visible: true, x: 0, y: 0, heading: REST_HEADING, scale: 1, opacity: 1 };
   for (let i = 1; i < targets.length; i++) {
     const from = targets[i - 1] as CursorPoint;
     const to = targets[i] as CursorPoint;
-    let traj = planMove(from, to, REST_HEADING, reducedMotion);
+    let traj = planMove(from, to, { reducedMotion, style: motion });
     const start = Math.max(from.t, to.t - traj.arrivalMs);
     const previous = moves.at(-1);
     if (previous && start < previous.end) {
       sampleTrajectory(previous.traj, (start - previous.start) / previous.scale, pose);
       previous.end = start;
-      traj = planMove({ x: pose.x, y: pose.y }, to, pose.heading, reducedMotion);
+      traj = planMove({ x: pose.x, y: pose.y }, to, { fromHeading: pose.heading, reducedMotion, style: motion });
     }
     const available = to.t - start;
     const scale = available >= 1 ? Math.min(1, available / Math.max(traj.arrivalMs, 1)) : 0;

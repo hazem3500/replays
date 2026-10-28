@@ -1,6 +1,6 @@
 /*
- * The index toolbar (index/IndexHeader.tsx ScopeBar): one 40 px row. Left: the purpose tabs when the deployment
- * defines purposes, else the result count while filtered. Right: the active filters as compact tokens
+ * The index toolbar (index/IndexHeader.tsx ScopeBar): one 40 px row. Left: the profile tabs when the deployment
+ * defines profiles, else the result count while filtered. Right: the active filters as compact tokens
  * (index/FilterMenu.tsx FilterTokens, desktop only), the Filter button, sort, and the layout switch.
  * Tokens: field dim, value strong, a separate × target; they scale in from the Filter button's side (180 ms ease-out)
  * and leave faster (120 ms), siblings glide (FLIP in FilterTokens). Imported by tailwind.css after feed.css, so it follows feed.css within the `app` layer.
@@ -19,8 +19,8 @@
 
 .scope-bar[data-lead] { gap: 16px; }
 .scope-bar[data-lead] .scope-count { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-/* The purpose tabs share the toolbar row: no row of their own, the indicator sits on the row's bottom edge. */
-.scope-bar .purpose-bar { min-width: 0; min-height: 0; flex: 0 1 auto; align-self: stretch; padding: 0; }
+/* The profile tabs share the toolbar row: no row of their own, the indicator sits on the row's bottom edge. */
+.scope-bar .profile-bar { min-width: 0; min-height: 0; flex: 0 1 auto; align-self: stretch; padding: 0; }
 .scope-bar-end { min-width: 0; }
 
 /* ---------- Active filters ---------- */

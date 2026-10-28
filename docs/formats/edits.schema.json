@@ -215,6 +215,10 @@
         "clickFeedback": {
           "type": "boolean",
           "default": true
+        },
+        "motion": {
+          "enum": ["signature_arc", "spring_settle", "magnetic", "comet_swoop", "adaptive", "classic"],
+          "default": "signature_arc"
         }
       }
     },

@@ -11,7 +11,7 @@ import { Progress } from '@/components/ui/progress.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 
 import { formatClock, MAX_TAGS } from '../../shared/replay.ts';
-import { pagePurposes } from '../purposes.ts';
+import { pageProfiles } from '../profiles.ts';
 import { replayHref, replayInSuiteHref } from '../route.ts';
 import { ACCEPTED_FILES, formatSize, type PreparedUpload, parseTags, prepareUpload, UploadError } from './prepare.ts';
 import { sendUpload } from './send.ts';
@@ -67,9 +67,9 @@ export function UploadReplay({
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
   const [tags, setTags] = useState('');
-  /** The picked purpose id, `''` for none; the picker only exists when the deployment defines purposes. */
-  const [purpose, setPurpose] = useState('');
-  const purposes = pagePurposes();
+  /** The picked profile id, `''` for none; the picker only exists when the deployment defines profiles. */
+  const [profile, setProfile] = useState('');
+  const profiles = pageProfiles();
   const [status, setStatus] = useState('');
   const [zoneActive, setZoneActive] = useState(false);
 
@@ -83,7 +83,7 @@ export function UploadReplay({
     setTitle('');
     setUrl('');
     setTags('');
-    setPurpose('');
+    setProfile('');
   }, []);
 
   const loadFile = useCallback(async (file: File) => {
@@ -97,8 +97,8 @@ export function UploadReplay({
       setTitle(prepared.title);
       setUrl('');
       setTags(prepared.bundle?.meta.tags?.join(', ') ?? '');
-      const own = prepared.bundle?.meta.purpose;
-      setPurpose(own && pagePurposes().some((item) => item.id === own) ? own : '');
+      const own = prepared.bundle?.meta.profile;
+      setProfile(own && pageProfiles().some((item) => item.id === own) ? own : '');
       setPhase({ name: 'preview', prepared });
       setStatus(
         `${prepared.kind === 'bundle' ? 'Replay bundle' : 'rrweb recording'} ready: ${plural(prepared.eventCount, 'event')}, ${formatClock(prepared.duration)} long.`,
@@ -173,7 +173,7 @@ export function UploadReplay({
     try {
       const { id, suiteId } = await sendUpload(
         prepared,
-        { title, url, tags: parsedTags.tags, ...(purposes.length ? { purpose } : {}) },
+        { title, url, tags: parsedTags.tags, ...(profiles.length ? { profile } : {}) },
         ({ loaded, total }) => {
           setPhase((current) => (current.name === 'uploading' ? { ...current, loaded, total } : current));
           const quarter = Math.floor(percent(loaded, total) / 25) * 25;
@@ -367,23 +367,23 @@ export function UploadReplay({
                   onChange={(event) => setTags(event.currentTarget.value)}
                 />
               </label>
-              {purposes.length ? (
+              {profiles.length ? (
                 <div className="upload-field">
-                  <span id="upload-purpose-label">
-                    Purpose <span className="upload-muted">optional</span>
+                  <span id="upload-profile-label">
+                    Profile <span className="upload-muted">optional</span>
                   </span>
                   <Select
-                    items={[{ value: '', label: 'None' }, ...purposes.map((item) => ({ value: item.id, label: item.label }))]}
-                    value={purpose}
+                    items={[{ value: '', label: 'None' }, ...profiles.map((item) => ({ value: item.id, label: item.label }))]}
+                    value={profile}
                     disabled={busy}
-                    onValueChange={(next) => setPurpose(String(next ?? ''))}
+                    onValueChange={(next) => setProfile(String(next ?? ''))}
                   >
-                    <SelectTrigger aria-labelledby="upload-purpose-label" data-testid="upload-purpose" className="w-full">
+                    <SelectTrigger aria-labelledby="upload-profile-label" data-testid="upload-profile" className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent alignItemWithTrigger={false}>
                       <SelectItem value="">None</SelectItem>
-                      {purposes.map((item) => (
+                      {profiles.map((item) => (
                         <SelectItem key={item.id} value={item.id}>
                           {item.label}
                         </SelectItem>

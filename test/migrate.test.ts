@@ -8,7 +8,7 @@ import translate, { translateSuite } from '../examples/migrate/translate.mjs';
 import { compareStores, type MigrateProgress, migrateStore } from '../src/server/migrate.ts';
 import { formatComparison, parseMigrateArgs, runMigrateCli } from '../src/server/migrate-cli.ts';
 import { FsStorage, MemoryStorage } from '../src/server/storage/index.ts';
-import { createPurposeCatalog } from '../src/server/purposes.ts';
+import { createProfileCatalog } from '../src/server/profiles.ts';
 import { summaryFieldsRunner } from '../src/server/summary-fields.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import { assertReplayBundle, summarizeReplay, SUMMARY_VERSION } from '../src/shared/replay.ts';
@@ -23,7 +23,7 @@ function legacyBundle(id: string) {
   const { meta, ...rest } = replay(id);
   return {
     ...rest,
-    meta: { ...meta, source: 'toki', purpose: 'triage', tags: ['smoke'] },
+    meta: { ...meta, source: 'toki', profile: 'triage', tags: ['smoke'] },
     context: {
       version: 1,
       capturedAt: '2026-10-06T00:00:00.000Z',
@@ -126,8 +126,8 @@ describe('migrateStore', () => {
     const bundle: unknown = JSON.parse((await target.read('old-one/replay.json'))!.toString('utf8'));
     assertReplayBundle(bundle);
     expect(bundle.meta.source).toBe('agent');
-    expect(bundle.meta.tags).toEqual(['smoke', 'purpose:triage']);
-    expect(bundle.meta).not.toHaveProperty('purpose');
+    expect(bundle.meta.tags).toEqual(['smoke', 'profile:triage']);
+    expect(bundle.meta).not.toHaveProperty('profile');
     expect(bundle.context).toEqual({
       version: 1,
       capturedAt: '2026-10-06T00:00:00.000Z',
@@ -240,12 +240,12 @@ describe('migrateStore', () => {
     expect(await again.read('_suites/aged-suite.json')).toBeUndefined();
   });
 
-  it('keeps meta.purpose when the target declares the purpose', async () => {
+  it('keeps meta.profile when the target declares the profile', async () => {
     const { source } = await legacyStore();
     const target = new MemoryStorage();
-    await migrateStore({ from: source, to: target, translate, purposes: ['triage'] });
+    await migrateStore({ from: source, to: target, translate, profiles: ['triage'] });
     const bundle = JSON.parse((await target.read('old-one/replay.json'))!.toString('utf8'));
-    expect(bundle.meta).toMatchObject({ purpose: 'triage', tags: ['smoke'] });
+    expect(bundle.meta).toMatchObject({ profile: 'triage', tags: ['smoke'] });
   });
 
   it('is idempotent: a second run converts nothing and resumes what is missing', async () => {
@@ -336,7 +336,7 @@ describe('compareStores', () => {
     expect(comparison.onlyInTarget).toEqual([]);
     expect(comparison.identical).toBe(1);
     const changed = comparison.changed.find(({ id }) => id === 'old-one')!;
-    expect(changed.fields.map(({ field }) => field).sort()).toEqual(['purpose', 'purposeInferred', 'source', 'sources', 'tags']);
+    expect(changed.fields.map(({ field }) => field).sort()).toEqual(['profile', 'profileInferred', 'source', 'sources', 'tags']);
     expect(changed.fields.find(({ field }) => field === 'source')).toEqual({ field: 'source', from: 'toki', to: 'agent' });
     expect(formatComparison(comparison)).toContain('    source: "toki" -> "agent"');
   });
@@ -364,20 +364,20 @@ describe('replays migrate', () => {
     expect((await target.read('private-recording/meta.json'))?.toString()).not.toContain('PRIVATE-123');
   });
 
-  it('passes purposes declared by config and plugins to the CLI translation', async () => {
+  it('passes profiles declared by config and plugins to the CLI translation', async () => {
     const sourceDir = await mkdtemp(join(tmpdir(), 'replays-migrate-source-'));
     const source = new FsStorage(sourceDir);
     await source.write('old-one/replay.json', JSON.stringify(legacyBundle('old-one')), JSON_TYPE);
-    const work = await mkdtemp(join(tmpdir(), 'replays-migrate-purposes-'));
+    const work = await mkdtemp(join(tmpdir(), 'replays-migrate-profiles-'));
     const target = new MemoryStorage();
     (globalThis as { __migrateTarget?: MemoryStorage }).__migrateTarget = target;
     await writeFile(
       join(work, 'replays.config.mjs'),
       `export default {
-      purposes: [{ id: 'demo', label: 'Demo' }],
+      profiles: [{ id: 'demo', label: 'Demo' }],
       plugins: [{ name: 'target', apiVersion: 1, setup(api) {
         api.storage({ id: 'mem', create: () => globalThis.__migrateTarget });
-        api.purpose({ id: 'triage', label: 'Triage' });
+        api.profile({ id: 'triage', label: 'Triage' });
       } }]
     };`,
     );
@@ -388,8 +388,8 @@ describe('replays migrate', () => {
       { cwd: work, env: {} },
     );
     const migrated = JSON.parse((await target.read('old-one/replay.json'))!.toString());
-    expect(migrated.meta.purpose).toBe('triage');
-    expect(migrated.meta.tags).not.toContain('purpose:triage');
+    expect(migrated.meta.profile).toBe('triage');
+    expect(migrated.meta.tags).not.toContain('profile:triage');
   });
 
   it('preserves current suite people and translates legacy GitHub handles', () => {
@@ -404,7 +404,7 @@ describe('replays migrate', () => {
     expect(() => assertReviewSuite(converted)).not.toThrow();
   });
 
-  it('compares configured purpose inference and plugin summary fields', async () => {
+  it('compares configured profile inference and plugin summary fields', async () => {
     const source = new MemoryStorage();
     const target = new MemoryStorage();
     const bundle = replay('derived');
@@ -418,19 +418,17 @@ describe('replays migrate', () => {
     const before = new ReplayStore(source, tmpdir(), undefined, { summaryFields: fields! });
     const after = new ReplayStore(target, tmpdir(), undefined, {
       summaryFields: fields!,
-      purposes: createPurposeCatalog({ plugins: [{ plugin: 'host', value: { id: 'triage', label: 'Triage', infer: () => true } }] }),
+      profiles: createProfileCatalog({ plugins: [{ plugin: 'host', value: { id: 'triage', label: 'Triage', infer: () => true } }] }),
     });
     const report = await compareStores({ from: before, to: after });
     expect(report.identical).toBe(0);
-    expect(report.changed[0]?.fields.map((field) => field.field)).toEqual(expect.arrayContaining(['ext', 'purpose', 'purposeInferred']));
+    expect(report.changed[0]?.fields.map((field) => field.field)).toEqual(expect.arrayContaining(['ext', 'profile', 'profileInferred']));
   });
 
   it('translates legacy replay handles and omits malformed source references', () => {
     const raw = legacyBundle('legacy-people');
-    const converted = translate(
-      { ...raw, meta: { ...raw.meta, people: [{ role: 'reviewer', github: 'octocat', slack: 'U123' }] } },
-      { id: 'legacy-people', key: 'legacy-people/replay.json', purposes: [] },
-    );
+    const info = { id: 'legacy-people', key: 'legacy-people/replay.json', profiles: [], purposes: [] };
+    const converted = translate({ ...raw, meta: { ...raw.meta, people: [{ role: 'reviewer', github: 'octocat', slack: 'U123' }] } }, info);
     assertReplayBundle(converted);
     expect(converted.meta.people).toEqual([{ role: 'reviewer', handles: { github: 'octocat', slack: 'U123' } }]);
     const suite = translateSuite({ ...legacySuite, review: { kind: 'github-pr', url: 'https://github.com/acme/web/pull/12' } });
@@ -438,10 +436,10 @@ describe('replays migrate', () => {
     expect(suite.subject?.ref).toBeUndefined();
   });
 
-  it('rebuilds partial-fleet v7 summaries with the final people, purposes and source attributes', async () => {
+  it('rebuilds partial-fleet v7 summaries with the final people, profiles and source attributes', async () => {
     const storage = new MemoryStorage();
     const bundle = replay('partial-cache');
-    bundle.meta.purpose = 'triage';
+    bundle.meta.profile = 'triage';
     bundle.meta.people = [{ role: 'reviewer', email: 'ada@example.com' }];
     bundle.context = {
       version: 1,
@@ -450,12 +448,12 @@ describe('replays migrate', () => {
     };
     await storage.write('partial-cache/replay.json', JSON.stringify(bundle), JSON_TYPE);
     const stale = { ...summarizeReplay(bundle), summaryVersion: 7, people: [], sources: [] };
-    delete stale.purpose;
+    delete stale.profile;
     await storage.write('partial-cache/meta.json', JSON.stringify(stale), JSON_TYPE);
     const store = new ReplayStore(storage, join(tmpdir(), 'missing-samples'));
     const summary = await store.summary('partial-cache');
     expect(summary?.summaryVersion).toBe(SUMMARY_VERSION);
-    expect(summary?.purpose).toBe('triage');
+    expect(summary?.profile).toBe('triage');
     expect(summary?.people?.[0]?.email).toBe('ada@example.com');
     expect(summary?.sources?.[0]?.attrs).toEqual({ channel: 'support' });
   });

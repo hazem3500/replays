@@ -76,7 +76,6 @@ async function runHighlightFlow(page: Page, width: number, height: number, touch
 
   await dragOnClip(page, 0.3, 0.7, touch);
   await expect(page.getByTestId('range-selection')).toBeVisible();
-  if (!touch) await page.getByTestId('add-effect').click();
   await page.getByTestId('add-period-highlight').click();
   await expect(page.getByTestId('timeline-highlight')).toHaveCount(3);
   const label = page.getByRole('textbox', { name: 'Highlight label' });
