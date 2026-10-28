@@ -620,26 +620,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/99"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "raw": 35060,
-        "gzip": 6742,
-        "brotli": 5984
-      },
-      "reason": "Playback highlights, the mobile timeline toolbar and object picker, plus the standing Appearance panel require these reviewed editor styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 82506,
-        "gzip": 26552,
-        "brotli": 23404
-      },
-      "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
         "raw": 33095,
@@ -764,7 +744,7 @@
         "gzip": 30600,
         "brotli": 26300
       },
-      "reason": "Cursor inspector motion picker: Base UI RadioGroup and Radio, the six-card picker and its preview planner (SVG traces and animateMotion timing per Cua style); measured against main: +10386 B raw, +4004 B gzip, +3450 B brotli.",
+      "reason": "Cursor inspector motion picker: Base UI RadioGroup and Radio, the six-card picker and its preview planner (SVG traces and animateMotion timing per Cua style); measured against main: +10386 B raw, +4004 B gzip, +3450 B brotli. Replaces #67's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
@@ -774,7 +754,7 @@
         "gzip": 6960,
         "brotli": 6180
       },
-      "reason": "Cursor inspector stylesheet (sections, rows, motion cards and previews, phone overrides) moved out of editor.css and extended; measured against main: +2692 B raw, +384 B gzip, +340 B brotli.",
+      "reason": "Cursor inspector stylesheet (sections, rows, motion cards and previews, phone overrides) moved out of editor.css and extended; measured against main: +2692 B raw, +384 B gzip, +340 B brotli. Replaces #67's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
