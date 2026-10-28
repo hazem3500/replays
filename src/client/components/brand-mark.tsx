@@ -47,32 +47,3 @@ export function ProductMark({ size = 24, svgRef }: { size?: number; svgRef?: Ref
     </svg>
   );
 }
-
-/** The same mark, still and in `currentColor` (unplayed at 35 %), for icon slots that set their own size and colour. */
-export function ProductGlyph() {
-  return (
-    <>
-      {segments.map(([x, width], index) => (
-        <rect
-          key={x}
-          x={x}
-          y={top}
-          width={width}
-          height={height}
-          rx={height / 2}
-          fill="currentColor"
-          fillOpacity={index < played ? 1 : 0.35}
-        />
-      ))}
-      <rect
-        x={playhead.x - playhead.width / 2}
-        y={playhead.knob}
-        width={playhead.width}
-        height={playhead.bottom - playhead.knob}
-        rx={playhead.width / 2}
-        fill="currentColor"
-      />
-      <circle cx={playhead.x} cy={playhead.knob} r={playhead.width} fill="currentColor" />
-    </>
-  );
-}
