@@ -81,7 +81,7 @@ export function CompareTileView({
       style={placementStyle(placement)}
       data-tile={tile.colour}
       data-role={role}
-      data-focused={(focused && !single && !alone) || undefined}
+      data-focused={ringed(focused, single, alone)}
       data-ended={ended || undefined}
       data-tile-id={tile.id}
       aria-label={tileName(tile, ended)}
@@ -101,7 +101,23 @@ export function CompareTileView({
         onClick={onHit}
         onDoubleClick={onSpotlight}
       />
-      {ended && !single ? (
+      <TileLabel tile={tile} ended={ended && !single} />
+      {single ? null : (
+        <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />
+      )}
+    </section>
+  );
+}
+
+/** A ring in the tile's colour marks the focus wherever there is more than one tile on the stage. */
+function ringed(focused: boolean, single: boolean, alone: boolean) {
+  return (focused && !single && !alone) || undefined;
+}
+
+function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
+  return (
+    <>
+      {ended ? (
         <span className="ct-ended" aria-hidden="true">
           {TILE_STRINGS.ended}
         </span>
@@ -111,10 +127,7 @@ export function CompareTileView({
         <span className="ct-label">{tile.label}</span>
         {tile.errors ? <span className="ct-errors">{tile.errors}</span> : null}
       </footer>
-      {single ? null : (
-        <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />
-      )}
-    </section>
+    </>
   );
 }
 
@@ -190,7 +203,7 @@ function TileNotice({ busy, text }: { busy: boolean; text: string }) {
 
 function TilePicture({ session, id, bundle, fidelity }: { session: CompareSession; id: string; bundle: ReplayBundle; fidelity: Fidelity }) {
   const controller = session.controller({ id, bundle });
-  const { stage, failure } = useTilePlayer({ clock: session.clock, id, controller, fidelity });
+  const { stage, failure } = useTilePlayer({ session, id, controller, fidelity });
   if (failure) return <TileNotice busy={false} text={TILE_STRINGS.unavailable(failure)} />;
   return (
     <div ref={stage} className="ct-picture" data-fidelity={fidelity}>

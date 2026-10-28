@@ -14,19 +14,19 @@ const SCOPE_STRINGS = {
  */
 export function ScopeSwitch({ tiles, focus, onFocus }: { tiles: readonly CompareTile[]; focus: string; onFocus(id: string): void }) {
   const index = tiles.findIndex((tile) => tile.id === focus);
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
     event.preventDefault();
     event.stopPropagation();
     const next = tiles[(index + step + tiles.length) % tiles.length];
     if (!next) return;
-    const group = event.currentTarget;
+    const group = event.currentTarget.closest('[role="radiogroup"]');
     onFocus(next.id);
-    requestAnimationFrame(() => group.querySelector<HTMLElement>(`[data-scope="${CSS.escape(next.id)}"]`)?.focus());
+    requestAnimationFrame(() => group?.querySelector<HTMLElement>(`[data-scope="${CSS.escape(next.id)}"]`)?.focus());
   };
   return (
-    <div className="ct-scope" role="radiogroup" aria-label={SCOPE_STRINGS.group} data-testid="compare-scope" onKeyDown={onKeyDown}>
+    <div className="ct-scope" role="radiogroup" aria-label={SCOPE_STRINGS.group} data-testid="compare-scope">
       {tiles.map((tile) => (
         <Hint key={tile.id} label={SCOPE_STRINGS.hint(tile.letter, tile.label)} side="top">
           <button
@@ -40,6 +40,7 @@ export function ScopeSwitch({ tiles, focus, onFocus }: { tiles: readonly Compare
             disabled={!tile.bundle}
             data-tile={tile.colour}
             onClick={() => onFocus(tile.id)}
+            onKeyDown={onKeyDown}
           >
             <span className="ct-chip" aria-hidden="true">
               {tile.letter}

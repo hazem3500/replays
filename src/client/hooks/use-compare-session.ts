@@ -12,7 +12,7 @@ export function useCompareSession(tiles: readonly CompareTile[], focus: string, 
   });
   // why: before paint, so the transport and inspector never draw a frame for the previous set or focus.
   useLayoutEffect(() => session.sync(tiles), [session, tiles]);
-  useLayoutEffect(() => session.focus(focus), [session, focus, tiles]);
+  useLayoutEffect(() => session.focus(focus), [session, focus]);
   useEffect(() => () => session.clock.pause(), [session]);
   return session;
 }

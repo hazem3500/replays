@@ -8,7 +8,6 @@ import { apiUrl } from '../route.ts';
 import { fetchPage } from '../sign-in.tsx';
 import { type Comparable, rankCandidates } from './candidates.ts';
 import { MAX_RECORDINGS } from './search.ts';
-import './compare-picker.css';
 
 const PICKER_STRINGS = {
   title: 'Compare with…',

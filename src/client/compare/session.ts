@@ -12,6 +12,8 @@ export class CompareSession {
   readonly clock = new SharedClock();
   readonly player: SharedPlayer;
   private readonly controllers = new Map<string, { bundle: ReplayBundle; controller: ReplayController }>();
+  private readonly failures = new Map<string, string>();
+  private readonly failureListeners = new Set<() => void>();
 
   /** invariant: at least one tile has loaded (the viewer waits for that before it compares). */
   constructor(tiles: readonly CompareTile[], focus: string) {
@@ -41,6 +43,19 @@ export class CompareSession {
     }
     for (const tile of tiles.filter(isLoaded)) this.clock.add(tile.id, this.controller(tile));
   }
+
+  /** A tile whose recorded page could not be mounted keeps the reason, shown in place of its picture. */
+  readonly fail = (id: string, reason: string) => {
+    this.failures.set(id, reason);
+    for (const listener of this.failureListeners) listener();
+  };
+
+  readonly failure = (id: string) => this.failures.get(id) ?? '';
+
+  readonly subscribeFailures = (listener: () => void) => {
+    this.failureListeners.add(listener);
+    return () => void this.failureListeners.delete(listener);
+  };
 
   /** The viewer's chrome follows the focused recording once it has loaded. */
   focus(id: string) {

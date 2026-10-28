@@ -70,7 +70,8 @@ function stripFor(box: Size, aspect: number, gap: number) {
  * Spotlight: one large tile and a strip of the rest, beside it on wide stages and under it on tall ones. Strip
  * tiles keep the grid aspect and shrink until they all fit along its edge.
  */
-export function spotlightRects(count: number, spotlight: number, box: Size, aspect: number, gap = GAP): Placement[] {
+export function spotlightRects(count: number, spotlight: number, box: Size, aspect: number): Placement[] {
+  const gap = GAP;
   const [hero] = gridRects(1, count > 1 ? stripFor(box, aspect, gap).main : box, aspect, gap);
   if (!hero) return [];
   if (count === 1) return [{ ...hero, role: 'spotlight' }];
@@ -95,7 +96,20 @@ export function spotlightRects(count: number, spotlight: number, box: Size, aspe
  * Every tile's place for a layout, in tile order. Single gives the focused tile the whole stage and leaves the
  * others where the grid would put them, hidden, so they glide back in from there.
  */
-export function placementsFor(layout: 'single' | 'grid' | 'spotlight', count: number, focus: number, box: Size, aspect: number): Placement[] {
+export function placementsFor({
+  layout,
+  count,
+  focus,
+  box,
+  aspect,
+}: {
+  layout: 'single' | 'grid' | 'spotlight';
+  count: number;
+  /** The focused tile's index. */
+  focus: number;
+  box: Size;
+  aspect: number;
+}): Placement[] {
   if (!(box.width > 0 && box.height > 0) || count === 0) return [];
   if (layout === 'spotlight' && count > 1) return spotlightRects(count, Math.max(0, focus), box, aspect);
   const grid = gridRects(count, box, aspect).map((rect) => ({ ...rect, role: 'grid' as const }));

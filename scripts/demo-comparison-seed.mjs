@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-// Fictional comparison suites built from the demo checkout recording: the same flow, re-timed per run.
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 

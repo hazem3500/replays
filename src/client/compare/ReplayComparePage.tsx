@@ -4,14 +4,15 @@ import { replayHref } from '../route.ts';
 import { CompareViewer } from './CompareViewer.tsx';
 import { type CompareSearch, parseCompareSearch, writeCompareSearch } from './search.ts';
 
+const write = (next: CompareSearch, push = false) => setSearch(writeCompareSearch(location.search, next), { push });
+const without = (next: CompareSearch): CompareSearch => ({ with: next.with, layout: next.layout });
+
 /**
  * `/r/<id>?with=…`: the replay's own page comparing it with other recordings. The URL is the state: layout and
  * focus changes replace it, adding or removing a recording adds a history entry (Back undoes it).
  */
 export function ReplayComparePage({ id }: { id: string }) {
   const state = parseCompareSearch(useLocationSearch(), id);
-  const write = (next: CompareSearch, push = false) => setSearch(writeCompareSearch(location.search, next), { push });
-  const without = (next: CompareSearch): CompareSearch => ({ with: next.with, layout: next.layout });
 
   return (
     <CompareViewer

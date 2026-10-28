@@ -59,7 +59,7 @@ export async function postBundle(request: APIRequestContext, base: string, bundl
 /** Opens a replay and waits until the player has mounted the recorded page. */
 export async function openReplay(page: Page, url: string) {
   await page.goto(url);
-  // A suite with two or more recordings opens comparing them; its tiles are the stage then.
+  // why: a suite with two or more recordings opens comparing them, and its tiles are the stage then.
   await expect(page.locator('[data-testid="replay-player"] iframe, [data-testid="compare-stage"] iframe').first()).toBeAttached();
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
 }

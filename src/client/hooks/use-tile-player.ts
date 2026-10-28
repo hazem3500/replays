@@ -1,32 +1,33 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 
-import type { Fidelity, SharedClock } from '../compare/clock.ts';
+import type { Fidelity } from '../compare/clock.ts';
+import type { CompareSession } from '../compare/session.ts';
 import type { ReplayController } from '../player.ts';
 import { fitViewport } from '../timeline.ts';
 
 /**
  * Mounts a tile's player into `stage` (its first child is rrweb's host) and keeps the recorded page fitted while
  * the tile glides and resizes. The player mounts once per controller: a layout change only moves the box.
- * The tile reports its fidelity to the clock, and `off` when it goes.
+ * The tile reports its fidelity to the clock, and `off` when it goes; a mount failure is kept by the session.
  */
 export function useTilePlayer({
-  clock,
+  session,
   id,
   controller,
   fidelity,
 }: {
-  clock: SharedClock;
+  session: CompareSession;
   id: string;
   controller: ReplayController;
   fidelity: Fidelity;
 }) {
   const stage = useRef<HTMLDivElement>(null);
-  const [failure, setFailure] = useState('');
+  const failure = useSyncExternalStore(session.subscribeFailures, () => session.failure(id));
 
   useEffect(() => {
     const box = stage.current;
-    const root = box?.firstElementChild as HTMLElement | null;
-    if (!box || !root) return;
+    const root = box?.firstElementChild;
+    if (!box || !(root instanceof HTMLElement)) return;
     const cleanups: Array<() => void> = [];
     const fit = () => {
       const viewport = controller.getViewport();
@@ -44,18 +45,18 @@ export function useTilePlayer({
       cleanups.push(() => observer.disconnect(), controller.subscribeViewport(fit));
       fit();
     } catch (cause) {
-      setFailure(cause instanceof Error ? cause.message : 'The recorded page could not be mounted.');
+      session.fail(id, cause instanceof Error ? cause.message : 'The recorded page could not be mounted.');
     }
     return () => {
       controller.endScrub();
       for (const cleanup of cleanups.toReversed()) cleanup();
     };
-  }, [controller]);
+  }, [controller, id, session]);
 
   useEffect(() => {
-    clock.setFidelity(id, failure ? 'off' : fidelity);
-    return () => clock.setFidelity(id, 'off');
-  }, [clock, failure, fidelity, id]);
+    session.clock.setFidelity(id, failure ? 'off' : fidelity);
+    return () => session.clock.setFidelity(id, 'off');
+  }, [failure, fidelity, id, session]);
 
   return { stage, failure };
 }

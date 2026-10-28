@@ -28,19 +28,19 @@ describe('compare layout', () => {
 
   it('gives the focused tile the whole stage in single and hides the others where the grid has them', () => {
     const box = { width: 1000, height: 600 };
-    const single = placementsFor('single', 3, 1, box, 1.6);
-    const grid = placementsFor('grid', 3, 1, box, 1.6);
+    const single = placementsFor({ layout: 'single', count: 3, focus: 1, box, aspect: 1.6 });
+    const grid = placementsFor({ layout: 'grid', count: 3, focus: 1, box, aspect: 1.6 });
     expect(single[1]).toEqual({ x: 0, y: 0, width: 1000, height: 600, role: 'single' });
     expect(single[0]).toEqual({ ...grid[0], role: 'hidden' });
     expect(single[2]?.role).toBe('hidden');
   });
 
   it('spotlights the focused tile', () => {
-    const placements = placementsFor('spotlight', 3, 2, { width: 1400, height: 700 }, 1.6);
+    const placements = placementsFor({ layout: 'spotlight', count: 3, focus: 2, box: { width: 1400, height: 700 }, aspect: 1.6 });
     expect(placements.map((item) => item.role)).toEqual(['strip', 'strip', 'spotlight']);
   });
 
   it('places nothing before the stage is measured', () => {
-    expect(placementsFor('grid', 2, 0, { width: 0, height: 0 }, 1.6)).toEqual([]);
+    expect(placementsFor({ layout: 'grid', count: 2, focus: 0, box: { width: 0, height: 0 }, aspect: 1.6 })).toEqual([]);
   });
 });

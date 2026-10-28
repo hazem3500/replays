@@ -173,9 +173,17 @@ function SuitePage({ id, replayId }: { id: string; replayId?: string }) {
   );
 }
 
+/** `/r/<id>`: the replay on its own, or with `?with=` the same viewer comparing it with others. */
 function ReplayPage({ id }: { id: string }) {
-  // `?with=` compares this replay with others in the same viewer (compare/ReplayComparePage.tsx).
-  const comparing = parseCompareSearch(useLocationSearch(), id).with.length > 0;
+  if (parseCompareSearch(useLocationSearch(), id).with.length === 0) return <SingleReplayPage id={id} />;
+  return (
+    <Suspense fallback={<ViewerSkeleton label="Loading recordings" />}>
+      <ReplayComparePage id={id} />
+    </Suspense>
+  );
+}
+
+function SingleReplayPage({ id }: { id: string }) {
   // Cached bundles (an in-page revisit) render at once; Query aborts the request if the page goes away.
   const { data: bundle, error: failure } = useQuery(replayQuery(id));
   // The saved edits come with it (small, revalidated); a failed load shows the replay as recorded.
@@ -229,13 +237,6 @@ function ReplayPage({ id }: { id: string }) {
       </main>
     );
   }
-
-  if (comparing)
-    return (
-      <Suspense fallback={<ViewerSkeleton label="Loading recordings" />}>
-        <ReplayComparePage id={id} />
-      </Suspense>
-    );
 
   // Fast loads skip the delayed skeleton; ready content replaces it immediately.
   return (

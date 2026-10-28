@@ -27,7 +27,7 @@ export function LayoutSwitch({ value, onChange, phone }: { value: CompareLayout;
   const shown = phone && value === 'spotlight' ? 'grid' : value;
   const index = options.indexOf(shown);
 
-  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+  const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const step = event.key === 'ArrowRight' ? 1 : event.key === 'ArrowLeft' ? -1 : 0;
     if (!step) return;
     event.preventDefault();
@@ -46,7 +46,6 @@ export function LayoutSwitch({ value, onChange, phone }: { value: CompareLayout;
       aria-label={LAYOUT_STRINGS.group}
       data-testid="layout-switch"
       data-index={index}
-      onKeyDown={onKeyDown}
     >
       <span className="layout-switch-thumb" aria-hidden="true" />
       {options.map((option) => {
@@ -61,6 +60,7 @@ export function LayoutSwitch({ value, onChange, phone }: { value: CompareLayout;
               aria-label={LAYOUT_STRINGS[option]}
               tabIndex={option === shown ? 0 : -1}
               onClick={() => onChange(option)}
+              onKeyDown={onKeyDown}
             >
               <Icon aria-hidden="true" />
             </button>
