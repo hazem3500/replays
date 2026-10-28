@@ -19,7 +19,7 @@
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "brotli": 942,
+      "brotli": 943,
       "gzip": 1111
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
@@ -54,8 +54,8 @@
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5464,
-      "gzip": 2483,
-      "brotli": 2245
+      "gzip": 2482,
+      "brotli": 2239
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -63,9 +63,9 @@
       "brotli": 1959
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38105,
+      "raw": 38104,
       "gzip": 13527,
-      "brotli": 12024
+      "brotli": 12026
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99443,
@@ -74,7 +74,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 219,
+      "brotli": 195,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -85,7 +85,7 @@
     "dist/client/assets/Editor-HASH.js": {
       "raw": 82506,
       "brotli": 23404,
-      "gzip": 27386
+      "gzip": 27376
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -93,9 +93,9 @@
       "gzip": 6332
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 357562,
-      "brotli": 101862,
-      "gzip": 118739
+      "raw": 359849,
+      "brotli": 102748,
+      "gzip": 119674
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -108,14 +108,14 @@
       "gzip": 49702
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 238703,
-      "brotli": 34294,
-      "gzip": 41096
+      "raw": 241174,
+      "brotli": 34595,
+      "gzip": 41502
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 456354,
-      "brotli": 122715,
-      "gzip": 149521
+      "raw": 462293,
+      "brotli": 124421,
+      "gzip": 151355
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -169,8 +169,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 957,
-      "gzip": 602,
-      "brotli": 557
+      "gzip": 601,
+      "brotli": 563
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 939,
@@ -189,13 +189,13 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1067,
-      "gzip": 641,
-      "brotli": 567
+      "gzip": 640,
+      "brotli": 583
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20252,
-      "brotli": 7118,
-      "gzip": 8282
+      "raw": 20249,
+      "brotli": 7106,
+      "gzip": 8267
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34796,
@@ -208,14 +208,14 @@
       "gzip": 265
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 49626,
+      "raw": 49624,
       "brotli": 15400,
-      "gzip": 18108
+      "gzip": 18113
     },
     "dist/client/index.html": {
       "raw": 12352,
       "brotli": 3540,
-      "gzip": 4256
+      "gzip": 4254
     },
     "dist/client/render.html": {
       "raw": 1294,
@@ -408,14 +408,14 @@
       "gzip": 4814
     },
     "initial/index.html/css": {
-      "raw": 240624,
-      "brotli": 35111,
-      "gzip": 42041
+      "raw": 243095,
+      "brotli": 35412,
+      "gzip": 42447
     },
     "initial/index.html/js": {
       "raw": 1281967,
-      "brotli": 342522,
-      "gzip": 406675
+      "brotli": 344229,
+      "gzip": 420120
     },
     "initial/render.html/css": {
       "raw": 5252,
@@ -844,8 +844,8 @@
       "file": "dist/client/assets/ComparePicker-HASH.js",
       "cap": {
         "raw": 5464,
-        "gzip": 2483,
-        "brotli": 2245
+        "gzip": 2482,
+        "brotli": 2239
       },
       "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -863,9 +863,9 @@
     {
       "file": "dist/client/assets/CompareViewer-HASH.js",
       "cap": {
-        "raw": 38105,
+        "raw": 38104,
         "gzip": 13527,
-        "brotli": 12024
+        "brotli": 12026
       },
       "reason": "Lazy compare mode of the viewer: shared clock, tile stage with Single/Grid/Spotlight glide, scope switch and performance comparison.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -874,7 +874,7 @@
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
         "raw": 82506,
-        "gzip": 27386,
+        "gzip": 27376,
         "brotli": 23404
       },
       "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior. Then: Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
@@ -883,9 +883,9 @@
     {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
-        "raw": 357562,
-        "gzip": 118739,
-        "brotli": 101862
+        "raw": 359849,
+        "gzip": 119674,
+        "brotli": 102748
       },
       "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged. Then: Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -904,8 +904,8 @@
       "file": "dist/client/assets/ReplayComparePage-HASH.js",
       "cap": {
         "raw": 957,
-        "gzip": 602,
-        "brotli": 557
+        "gzip": 601,
+        "brotli": 563
       },
       "reason": "Lazy /r/<id>?with= page glue: reads and writes the compare state in the viewer URL.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -914,8 +914,8 @@
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "raw": 1067,
-        "gzip": 641,
-        "brotli": 567
+        "gzip": 640,
+        "brotli": 583
       },
       "reason": "Lazy suite glue: a suite with two or more recordings opens the viewer comparing its runs.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -923,9 +923,9 @@
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
-        "raw": 20252,
-        "gzip": 8282,
-        "brotli": 7118
+        "raw": 20249,
+        "gzip": 8267,
+        "brotli": 7106
       },
       "reason": "Suite workspace routes runs into the compare mode (sidebar moves focus, lazy SuiteCompare entry).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -933,8 +933,8 @@
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 49626,
-        "gzip": 18108
+        "raw": 49624,
+        "gzip": 18113
       },
       "reason": "Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -973,7 +973,7 @@
       "file": "dist/client/index.html",
       "cap": {
         "raw": 12352,
-        "gzip": 4256,
+        "gzip": 4254,
         "brotli": 3540
       },
       "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name. Then: Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
@@ -983,8 +983,8 @@
       "file": "initial/index.html/js",
       "cap": {
         "raw": 1281967,
-        "gzip": 406675,
-        "brotli": 342522
+        "gzip": 420120,
+        "brotli": 344229
       },
       "reason": "The index route's initial script group carries the same provider marks and source sheet as the main chunk. Then: Removing the static ComparisonLoading import cut main by 66 KB brotli but split its shared modules into more preloaded chunks, which compress worse; plus the compare URL parser.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
