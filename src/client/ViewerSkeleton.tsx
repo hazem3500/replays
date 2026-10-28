@@ -5,6 +5,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
+import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
@@ -209,24 +210,27 @@ function DesktopSkeleton({
 }) {
   return (
     <>
-      <LoadingHeader hint={hint} />
+      <LoadingTopbar title={hint?.title} mobile={false} progress={<ProgressHint />} />
       <div
-        className="workspace"
+        className={hint?.steps === 0 ? 'workspace no-steps' : 'workspace'}
         aria-hidden="true"
         style={stepsWidth === undefined ? undefined : ({ '--steps-width': `${stepsWidth}px` } as CSSProperties)}
       >
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
-          <div className="transport loading-transport">
-            <LoadingNotice />
-          </div>
+          <LoadingTransport steps={hint?.steps} />
         </section>
-        <span />
-        <aside className="timeline-panel" />
+        {hint?.steps === 0 ? null : (
+          <>
+            <span />
+            <LoadingRail steps={hint?.steps} />
+          </>
+        )}
       </div>
       {collapsed ? null : <div className="skeleton-divider" aria-hidden="true" />}
       <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs" />
+        <LoadingTabs mobile={false} steps={hint?.steps} />
+        {collapsed ? null : <LoadingPanel />}
       </div>
     </>
   );
@@ -235,17 +239,16 @@ function DesktopSkeleton({
 function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
   return (
     <>
-      <LoadingHeader hint={hint} />
+      <LoadingTopbar title={hint?.title} mobile progress={<ProgressHint />} />
       <div className="workspace" aria-hidden="true">
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
-          <div className="transport loading-transport">
-            <LoadingNotice />
-          </div>
+          <LoadingTransport steps={hint?.steps} />
         </section>
       </div>
       <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs sk-tabs-phone" />
+        <LoadingTabs mobile steps={hint?.steps} />
+        <LoadingPanel />
       </div>
     </>
   );
