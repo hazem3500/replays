@@ -63,14 +63,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 216805,
-      "gzip": 37398,
+      "raw": 224854,
+      "gzip": 38561,
       "brotli": 31804
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 654366,
-      "gzip": 211924,
-      "brotli": 167223
+      "raw": 703087,
+      "gzip": 227115,
+      "brotli": 184414
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -348,14 +348,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 218726,
-      "gzip": 38342,
+      "raw": 226775,
+      "gzip": 39505,
       "brotli": 32621
     },
     "initial/index.html/js": {
-      "raw": 1202822,
-      "gzip": 381052,
-      "brotli": 305226
+      "raw": 1270898,
+      "gzip": 402499,
+      "brotli": 322504
     },
     "initial/render.html/css": {
       "raw": 4810,
@@ -677,16 +677,6 @@
         "brotli": 32621
       },
       "reason": "The index route ships the card and list motion stylesheets in its initial style group.",
-      "pr": "https://github.com/hazem3500/replays/pull/99"
-    },
-    {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 52253,
-        "gzip": 18865,
-        "brotli": 16511
-      },
-      "reason": "Measured against fresh main in CI: the viewer chunk grows by about 4.8 KB raw (45.9 to 50.7 KB) while the index feed change moves shared code into the main chunk (+28 KB raw); the chunk composition shift is not yet isolated, so reviewers should check the measured main/head delta.",
       "pr": "https://github.com/hazem3500/replays/pull/99"
     }
   ]
