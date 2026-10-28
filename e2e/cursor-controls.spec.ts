@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { cloneBundle, postBundle, serveApp } from './support.ts';
 
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
@@ -25,6 +25,18 @@ function cursorLocators(page: Page, mobile: boolean) {
     await page.getByRole('button', { name: 'Cursor options', exact: true }).click();
   };
   return { trigger, inspector, openCursor };
+}
+
+/** From the default style, the arrow key moves to and selects the next motion style. */
+async function pickSpringSettle(page: Page, inspector: Locator) {
+  const signature = inspector.getByRole('radio', { name: 'Signature arc' });
+  await expect(signature).toHaveAttribute('aria-checked', 'true');
+  await signature.focus();
+  await page.keyboard.press('ArrowRight');
+  const spring = inspector.getByRole('radio', { name: 'Spring settle' });
+  await expect(spring).toBeFocused();
+  await expect(spring).toHaveAttribute('aria-checked', 'true');
+  await expect(inspector.getByText('Lands with a small springy wobble')).toBeVisible();
 }
 
 for (const width of [1280, 390]) {
@@ -72,14 +84,7 @@ for (const width of [1280, 390]) {
     await expect(inspector.locator('output')).toHaveText('105%');
     await inspector.getByRole('switch', { name: 'Hide when idle' }).click();
     await inspector.getByRole('switch', { name: 'Click feedback' }).click();
-    const signature = inspector.getByRole('radio', { name: 'Signature arc' });
-    await expect(signature).toHaveAttribute('aria-checked', 'true');
-    await signature.focus();
-    await page.keyboard.press('ArrowRight');
-    const spring = inspector.getByRole('radio', { name: 'Spring settle' });
-    await expect(spring).toBeFocused();
-    await expect(spring).toHaveAttribute('aria-checked', 'true');
-    await expect(inspector.getByText('Lands with a small springy wobble')).toBeVisible();
+    await pickSpringSettle(page, inspector);
     await page.keyboard.press('Escape');
     if (mobile) {
       await expect(inspector).toHaveCount(0);
