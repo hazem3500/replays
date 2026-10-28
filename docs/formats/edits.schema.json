@@ -114,6 +114,10 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "style": {
+            "enum": ["blur", "redact"],
+            "default": "blur"
           }
         }
       }
