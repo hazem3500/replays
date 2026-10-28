@@ -164,7 +164,6 @@ export function RegionBlock({
   const naturalWidth = scale.x(to) - left;
   // Captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
   const width = kind === 'caption' ? Math.max(1, naturalWidth - 2) : Math.max(6, naturalWidth);
-  // why: a caption wide enough for a few letters shows them, truncated, instead of an anonymous block.
   const showLabel = kind !== 'caption' || width >= 56;
   const length = to - from;
   const edge = (side: 'from' | 'to') => (event: ReactPointerEvent) => {
