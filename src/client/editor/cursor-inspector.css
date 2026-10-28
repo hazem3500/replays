@@ -14,7 +14,8 @@
 
   .cursor-row { min-height: 32px; }
   .cursor-row-compact { min-height: 20px; }
-  .cursor-row + .cursor-row { margin-top: 6px; }
+  .cursor-row:has(small) { min-height: 40px; }
+  .cursor-row + .cursor-row { margin-top: 10px; }
   .cursor-row-label, .cursor-section-label { min-width: 0; color: var(--text); font-weight: 500; }
   .cursor-row-label { cursor: pointer; }
   .cursor-row-label small { display: block; margin-top: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 400; line-height: 14px; }
@@ -24,7 +25,7 @@
   .cursor-options:disabled .cursor-row-label { cursor: default; }
   .cursor-section { padding: 14px 0; border-top: 1px solid var(--line); }
 
-  .cursor-motion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 10px; }
+  .cursor-motion-grid { container-type: inline-size; display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; margin-top: 10px; }
   .cursor-motion-option { display: grid; gap: 5px; min-width: 0; padding: 4px 4px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); color: var(--text-secondary); cursor: pointer; outline: none; transition: border-color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
   .cursor-motion-option:hover { border-color: var(--line-strong); color: var(--text); }
   .cursor-motion-option[data-checked] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); color: var(--text); }
@@ -41,6 +42,7 @@
   .cursor-motion-moving { display: none; }
   .cursor-motion-option:is([data-checked], :hover, :focus-visible):not([data-disabled]) .cursor-motion-moving { display: inline; }
   .cursor-motion-option:is([data-checked], :hover, :focus-visible):not([data-disabled]) .cursor-motion-still { display: none; }
+  @container (max-width: 210px) { .cursor-motion-name { font-size: var(--text-2xs); } }
   .cursor-motion-description { margin: 8px 0 0; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 14px; }
 
   .cursor-size-slider { margin-top: 4px; }
@@ -54,6 +56,8 @@
   .editor-context-panel .cursor-inspector-header { display: none; }
   .editor-shell[data-mobile] .cursor-inspector small, .editor-shell[data-mobile] .cursor-motion-description { font-size: var(--text-xs); line-height: 16px; }
   .editor-shell[data-mobile] .cursor-row { min-height: 44px; }
+  .editor-shell[data-mobile] .cursor-inspector .ui-switch { min-width: 28px; min-height: 16px; }
+  .editor-shell[data-mobile] .cursor-inspector .ui-switch::after { inset: -14px -8px; } /* why: a 44 px touch target without stretching the 28 x 16 switch. */
   .editor-shell[data-mobile] .cursor-options { margin-top: 4px; }
   .editor-shell[data-mobile] .cursor-motion-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
 

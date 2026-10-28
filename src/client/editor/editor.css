@@ -7,6 +7,7 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @import './cursor-inspector.css';
+@import './inspector.css';
 @layer app {
   .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 168px)); background: var(--canvas); }
   /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
@@ -44,7 +45,7 @@
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
   .editor-stage .player-stage:focus-visible { box-shadow: none; }
 
-  .editor-presentation { flex: 0 0 clamp(224px, 22vw, 272px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
+  .editor-presentation { flex: 0 0 clamp(264px, 24vw, 320px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
   .editor-presentation-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
   .editor-presentation-header h2 { margin: 0; font-size: var(--text-sm); font-weight: 600; }
   .editor-presentation-header p { margin: 4px 0 0; color: var(--text-tertiary); font-size: var(--text-xs); }

@@ -31,6 +31,12 @@ export function CursorInspector({
   useFocusWhen(heading, !embedded);
   const visible = settings?.visible !== false;
   const update = (patch: ReplayCursorSettings) => onChange(normalizeCursor({ ...settings, ...patch }));
+  const reset = (
+    <Button variant="ghost" size="sm" disabled={!normalizeCursor(settings)} onClick={() => onChange(undefined)}>
+      <RotateCcwIcon aria-hidden="true" />
+      Reset
+    </Button>
+  );
 
   return (
     // oxlint-disable-next-line jsx-a11y/no-static-element-interactions -- why: the role is dialog or group, which the lint cannot read through the expression; the handler delegates Escape and shields contained controls from global editor shortcuts.
@@ -51,10 +57,15 @@ export function CursorInspector({
       }}
     >
       <header className="cursor-inspector-header">
-        <h2 id="cursor-heading" ref={heading} tabIndex={-1}>
-          Cursor
-        </h2>
-        {embedded ? null : (
+        <div className="cursor-inspector-title">
+          <h2 id="cursor-heading" ref={heading} tabIndex={-1}>
+            Cursor
+          </h2>
+          <p>Applies to the whole replay</p>
+        </div>
+        {embedded ? (
+          reset
+        ) : (
           <IconButton label="Close cursor options" onClick={onClose}>
             <XIcon aria-hidden="true" />
           </IconButton>
@@ -128,13 +139,12 @@ export function CursorInspector({
           </div>
         </section>
       </fieldset>
-      <footer className="cursor-inspector-footer">
-        {embedded ? null : <span>Applies to the whole replay</span>}
-        <Button variant="ghost" size="sm" disabled={!normalizeCursor(settings)} onClick={() => onChange(undefined)}>
-          <RotateCcwIcon aria-hidden="true" />
-          Reset
-        </Button>
-      </footer>
+      {embedded ? null : (
+        <footer className="cursor-inspector-footer">
+          <span>Applies to the whole replay</span>
+          {reset}
+        </footer>
+      )}
     </div>
   );
 }

@@ -18,7 +18,7 @@ function cursorLocators(page: Page, mobile: boolean) {
   const trigger = page.locator('.editor-mobile-more > summary');
   const inspector = mobile
     ? page.getByRole('region', { name: 'Cursor properties', exact: true })
-    : page.getByRole('complementary', { name: 'Replay presentation' }).getByRole('group', { name: 'Cursor', exact: true });
+    : page.getByRole('complementary', { name: 'Inspector' }).getByRole('group', { name: 'Cursor', exact: true });
   const openCursor = async () => {
     if (!mobile) return;
     await trigger.click();
