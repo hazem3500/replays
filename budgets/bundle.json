@@ -59,8 +59,8 @@
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2453,
-      "gzip": 1282,
-      "brotli": 1169
+      "gzip": 1281,
+      "brotli": 1167
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
@@ -69,11 +69,11 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 279,
-      "gzip": 218,
-      "brotli": 193
+      "gzip": 222,
+      "brotli": 230
     },
     "dist/client/assets/dropdown-menu-HASH.js": {
-      "raw": 224666,
+      "raw": 224637,
       "gzip": 73809,
       "brotli": 63264
     },
@@ -108,9 +108,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 252078,
-      "gzip": 43332,
-      "brotli": 36049
+      "raw": 254777,
+      "gzip": 44018,
+      "brotli": 36600
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 882638,
@@ -205,7 +205,7 @@
     "dist/client/index.html": {
       "raw": 12263,
       "gzip": 4123,
-      "brotli": 3429
+      "brotli": 3468
     },
     "dist/client/render.html": {
       "raw": 1294,
@@ -398,9 +398,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 253962,
-      "gzip": 44258,
-      "brotli": 36850
+      "raw": 256661,
+      "gzip": 44944,
+      "brotli": 37401
     },
     "initial/index.html/js": {
       "raw": 1688508,
@@ -766,26 +766,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/106"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 252078,
-        "gzip": 43332,
-        "brotli": 36049
-      },
-      "reason": "EmptyState's active-filter chips and retry status line return to the app stylesheet (under 1 KB raw), on top of the Settings and EmptyState styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/107"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 253962,
-        "gzip": 44258,
-        "brotli": 36850
-      },
-      "reason": "The initial index style group carries the same EmptyState chips and status styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/107"
-    },
-    {
       "file": "dist/lib/config.mjs",
       "cap": {
         "raw": 348,
@@ -864,15 +844,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "raw": 279,
-        "brotli": 219
-      },
-      "reason": "Same code; its imports point at the re-split shared chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
       "file": "dist/client/assets/dropdown-menu-HASH.js",
       "cap": {
         "raw": 224666,
@@ -900,16 +871,6 @@
         "brotli": 2889
       },
       "reason": "TanStack Query observer shared by the entry and the lazy data-layer chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
-      "file": "dist/client/index.html",
-      "cap": {
-        "raw": 12263,
-        "gzip": 4123,
-        "brotli": 3429
-      },
-      "reason": "Measured in CI against fresh main: raw 11858 to 11905 bytes with this change.",
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
@@ -951,6 +912,43 @@
       },
       "reason": "The CLI bundles the server, which gained the replay meta, delete and restore routes in #93 (raw 416314, gzip 106513 as measured there); with #108 merged on top, Brotli measures 87095 on main against #93s 87082 cap, so this replaces that entry with a Brotli cap measured on main.",
       "pr": "https://github.com/hazem3500/replays/pull/112"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 254777,
+        "gzip": 44018,
+        "brotli": 36600
+      },
+      "reason": "The dialog geometry utilities (token-driven padding, close size, title line, stacked touch actions) and the solid destructive button join the app stylesheet, about 2.7 KB raw over main.",
+      "pr": "https://github.com/hazem3500/replays/pull/109"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 256661,
+        "gzip": 44944,
+        "brotli": 37401
+      },
+      "reason": "The initial index style group carries the same dialog and destructive-button utilities.",
+      "pr": "https://github.com/hazem3500/replays/pull/109"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "gzip": 222,
+        "brotli": 230
+      },
+      "reason": "Compression drift in this 270-byte chunk when the main chunk hash in its import changes; raw is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/109"
+    },
+    {
+      "file": "dist/client/index.html",
+      "cap": {
+        "brotli": 3468
+      },
+      "reason": "Brotli drift of a few bytes when the hashed asset names in the page change; raw is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/109"
     }
   ]
 }
