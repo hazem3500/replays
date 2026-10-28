@@ -55,6 +55,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
 
   return {
     name: 'playwright',
+    recordsBodies: true,
     async launch(launch): Promise<CdpLike> {
       launched = launch;
       if (launch.videoPath) {
@@ -70,8 +71,8 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
       });
       context = await browser.newContext({
         viewport: launch.viewport,
-        // `omit`: bodies are never stored. Cookies and auth headers are removed again by the sanitizer.
-        recordHar: { path: launch.harPath, content: 'omit', mode: 'full' },
+        // why: bodies are only embedded when the capture asked for them; they are cut and redacted before storage.
+        recordHar: { path: launch.harPath, content: launch.bodies ? 'embed' : 'omit', mode: 'full' },
         ...(scratch ? { recordVideo: { dir: scratch, size: launch.viewport } } : {}),
       });
       page = await context.newPage();

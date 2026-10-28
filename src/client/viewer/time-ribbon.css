@@ -1,0 +1,55 @@
+/* The time ribbon: one strip on the seek bar's domain. Density in quiet ink, failures full height in danger,
+   slow spans as a warning cap, the future veiled; the playhead is the scrubber's accent. */
+.time-ribbon {
+  --ribbon-height: 28px;
+  --ribbon-mark-min: 2px;
+  position: relative;
+  flex: none;
+  height: var(--ribbon-height);
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+  cursor: crosshair;
+  touch-action: pan-y;
+  user-select: none;
+}
+.ribbon-density { position: absolute; inset: 6px 0 0; width: 100%; height: calc(100% - 6px); fill: var(--text-tertiary); opacity: 0.55; }
+.ribbon-mark { position: absolute; top: 3px; bottom: 3px; border-radius: 1px; background: var(--text-tertiary); pointer-events: none; }
+.ribbon-mark[data-lane="full"] { top: 0; bottom: 0; }
+.ribbon-mark[data-lane="cap"] { top: 2px; bottom: auto; height: 3px; }
+.ribbon-mark[data-lane="top"] { top: 4px; bottom: 52%; }
+.ribbon-mark[data-lane="bottom"] { top: 52%; bottom: 4px; }
+.ribbon-mark[data-tone="danger"] { background: var(--danger); }
+.ribbon-mark[data-tone="warning"] { background: var(--warning); }
+.ribbon-mark[data-tone="success"] { background: var(--success); }
+.ribbon-range { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; }
+.ribbon-range[data-live] { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+.ribbon-future { position: absolute; top: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--surface) 45%, transparent); pointer-events: none; }
+.ribbon-playhead { position: absolute; top: 0; bottom: 0; width: 1.5px; translate: -50% 0; background: var(--accent); pointer-events: none; }
+@media (pointer: coarse) {
+  .time-ribbon { --ribbon-height: 32px; --ribbon-mark-min: 3px; }
+}
+
+/* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */
+.local-timeline { --lt-label: minmax(0, 40%); container: local-timeline / inline-size; display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
+.lt-ruler { position: relative; grid-column: 2; height: 16px; margin-bottom: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+.lt-ruler span { position: absolute; top: 0; padding-left: 3px; border-left: 1px solid var(--line-strong); line-height: 14px; white-space: nowrap; }
+.lt-ruler span:last-child:not(:first-child) { translate: -100% 0; padding: 0 3px 0 0; border-right: 1px solid var(--line-strong); border-left: 0; }
+.lt-row { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: center; min-height: 22px; margin: 0 -6px; padding: 0 6px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font: inherit; text-align: left; }
+button.lt-row { cursor: pointer; }
+button.lt-row:hover { background: var(--surface-hover); color: var(--text); }
+button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+.lt-row[data-current] { color: var(--text); font-weight: 500; }
+.lt-label { overflow: hidden; font-family: var(--mono); text-overflow: ellipsis; white-space: nowrap; }
+.lt-track { position: relative; height: 8px; border-radius: 2px; background: repeating-linear-gradient(to right, color-mix(in srgb, var(--line) 70%, transparent) 0 1px, transparent 1px 20%); }
+.lt-bar { position: absolute; top: 0; bottom: 0; min-width: 3px; border-radius: 2px; background: var(--text-tertiary); }
+.lt-bar[data-tone="danger"] { background: var(--danger); }
+.lt-bar[data-tone="warning"] { background: var(--warning); }
+.lt-bar[data-tone="success"] { background: var(--success); }
+.lt-bar[data-tone="current"] { background: var(--accent); }
+.lt-value { color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+@media (pointer: coarse) { .lt-row { min-height: 36px; } }
+/* why: on a narrow detail the middle offsets would collide; their lines stay, only the ends are labelled. */
+@container local-timeline (max-width: 480px) {
+  .lt-ruler span:not(:first-child, :last-child) { color: transparent; }
+}

@@ -1,4 +1,6 @@
 import { assertReplayContext, type ReplayContext, type SourceAttrs, sourceAttrs } from './context.ts';
+import { assertCaptured } from './capture-profile.ts';
+import type { ReplayCaptured, ReplayNetworkBody } from './network-bodies.ts';
 import { type AliasedProfile, isProfileId, profileOf, readAliased } from './profiles.ts';
 import { assertReplayPeople, minimalPeople, type ReplayPerson, type ReplayPersonSummary } from './people.ts';
 import type { KeepRecord } from './retention.ts';
@@ -23,7 +25,13 @@ export interface ReplayNetworkEntry {
   mimeType?: string;
   requestHeaders: Array<{ name: string; value: string }>;
   responseHeaders: Array<{ name: string; value: string }>;
+  /** The request body, only when the capture asked for bodies (`network: 'bodies'`); src/shared/network-bodies.ts. */
+  requestBody?: ReplayNetworkBody;
+  /** The response body, under the same rules as `requestBody`. */
+  responseBody?: ReplayNetworkBody;
 }
+
+export type { ReplayCaptured, ReplayNetworkBody } from './network-bodies.ts';
 
 export interface ReplayStep {
   at: number;
@@ -76,6 +84,8 @@ export interface ReplayMeta {
   purpose?: string;
   /** People related to the recording (at most 10; src/shared/people.ts). */
   people?: ReplayPerson[];
+  /** What this recording captured (written by the CLI and the recorder). */
+  captured?: ReplayCaptured;
 }
 
 export const MAX_TAGS = 10;
@@ -146,6 +156,7 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
       throw new Error(`replay.meta.${key} must be a profile id (lower-case letters, digits and "-")`);
   replayProfileId(aliased);
   if (replay.meta.people !== undefined) assertReplayPeople(replay.meta.people);
+  if (replay.meta.captured !== undefined) assertCaptured(replay.meta.captured, 'replay.meta.captured');
   if (replay.context !== undefined) assertReplayContext(replay.context);
   if (replay.suiteRun !== undefined) {
     const suiteRun = replay.suiteRun;

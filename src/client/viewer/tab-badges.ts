@@ -1,4 +1,4 @@
-import { isFailedRequest, type ReplayConsoleEntry, type ReplayNetworkEntry, type ReplayPerformanceEntry } from '../../shared/replay.ts';
+import type { ReplayConsoleEntry } from '../../shared/replay.ts';
 import { plural } from '../plural.ts';
 
 /**
@@ -30,17 +30,6 @@ export function consoleBadge(entries: readonly ReplayConsoleEntry[]): TabBadge |
       [warnings, warnings === 1 ? 'warning' : 'warnings', 'warning'],
     ],
   );
-}
-
-export function networkBadge(entries: readonly ReplayNetworkEntry[]): TabBadge | undefined {
-  const failed = entries.filter(isFailedRequest).length;
-  return badge(entries.length, ['request', 'requests'], [[failed, 'failed', 'danger']]);
-}
-
-/** Long tasks and slow interactions are the problems among performance signals; paints are milestones. */
-export function performanceBadge(entries: readonly ReplayPerformanceEntry[]): TabBadge | undefined {
-  const slow = entries.filter((entry) => entry.kind === 'long-task' || entry.kind === 'slow-interaction').length;
-  return badge(entries.length, ['signal', 'signals'], [[slow, 'slow', 'warning']]);
 }
 
 export function stepsBadge(count: number): TabBadge | undefined {
