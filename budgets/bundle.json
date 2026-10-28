@@ -39,7 +39,7 @@
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 53233,
-      "gzip": 18818,
+      "gzip": 18813,
       "brotli": 16302
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -63,14 +63,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 216805,
-      "gzip": 37398,
+      "raw": 224854,
+      "gzip": 38561,
       "brotli": 31804
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 654366,
-      "gzip": 211924,
-      "brotli": 167223
+      "raw": 703087,
+      "gzip": 227115,
+      "brotli": 184414
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -148,9 +148,9 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 51366,
-      "gzip": 18505,
-      "brotli": 16134
+      "raw": 47311,
+      "gzip": 17272,
+      "brotli": 15057
     },
     "dist/client/index.html": {
       "raw": 10783,
@@ -348,14 +348,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 218726,
-      "gzip": 38342,
+      "raw": 226775,
+      "gzip": 39505,
       "brotli": 32621
     },
     "initial/index.html/js": {
-      "raw": 1202822,
-      "gzip": 381052,
-      "brotli": 305226
+      "raw": 1270898,
+      "gzip": 402499,
+      "brotli": 322504
     },
     "initial/render.html/css": {
       "raw": 4810,
@@ -387,26 +387,6 @@
         "brotli": 1632
       },
       "reason": "Performance evidence extraction shared by the viewer and the new comparison route through a lazy chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/59"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 216805,
-        "gzip": 37398,
-        "brotli": 31804
-      },
-      "reason": "Comparison responsive panes, gallery controls and scenario alignment add reviewed shared shell styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/59"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 218726,
-        "gzip": 38342,
-        "brotli": 32621
-      },
-      "reason": "The comparison loading shell shares workspace CSS in the initial stylesheet; this allocates its measured baseline growth.",
       "pr": "https://github.com/hazem3500/replays/pull/59"
     },
     {
@@ -550,15 +530,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 654800,
-        "gzip": 212055
-      },
-      "reason": "Descriptor-based viewer slots, plugin settings and page registration add their registry code to the eager client graph.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/client/assets/MalleableHost-HASH.css",
       "cap": {
         "raw": 8084,
@@ -667,6 +638,46 @@
       },
       "reason": "The published viewer plugin API now exports the slot registry, slot names and descriptor contracts.",
       "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 703087,
+        "gzip": 227115,
+        "brotli": 184414
+      },
+      "reason": "The windowed feed virtualizer and the card and list motion system join the eager index graph; the viewer chunk shrank by 4 KB raw as shared feed code moved into main.",
+      "pr": "https://github.com/hazem3500/replays/pull/99"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 224854,
+        "gzip": 38561,
+        "brotli": 31804
+      },
+      "reason": "The card hover motion and list motion stylesheets now load with the index styles inside the app layer.",
+      "pr": "https://github.com/hazem3500/replays/pull/99"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "raw": 1270898,
+        "gzip": 402499,
+        "brotli": 322504
+      },
+      "reason": "The index route ships the windowed feed virtualizer and the motion system in its initial script group.",
+      "pr": "https://github.com/hazem3500/replays/pull/99"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 226775,
+        "gzip": 39505,
+        "brotli": 32621
+      },
+      "reason": "The index route ships the card and list motion stylesheets in its initial style group.",
+      "pr": "https://github.com/hazem3500/replays/pull/99"
     }
   ]
 }

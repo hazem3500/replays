@@ -1162,6 +1162,8 @@ svg.lucide.lucide { stroke-width: 2; }
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: 0s !important; animation-iteration-count: 1 !important; }
   /* Popovers and menus keep a plain fade (tailwind.css .motion-pop: no transform); everything else is instant. */
   *:not(.motion-pop), *::before, *::after { transition-duration: 0s !important; }
+  /* why: reduced motion keeps opacity cross-fades; the card's hover shadow layer only fades, never moves. */
+  .feed-list .feed-item::after { transition-property: opacity !important; transition-duration: 120ms !important; }
 }
 
 /* video export */
