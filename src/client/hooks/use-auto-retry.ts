@@ -65,7 +65,7 @@ export function useAutoRetry({
   useEffect(() => {
     if (!waiting) return;
     const wake = () => {
-      if (document.visibilityState === 'visible' && navigator.onLine !== false) latestRetry.current();
+      if (document.visibilityState === 'visible' && navigator.onLine) latestRetry.current();
     };
     window.addEventListener('online', wake);
     document.addEventListener('visibilitychange', wake);
