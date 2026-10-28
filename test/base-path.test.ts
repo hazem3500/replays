@@ -23,6 +23,8 @@ async function start(basePath: string) {
   await mkdir(join(clientDir, 'assets'), { recursive: true });
   await writeFile(join(clientDir, 'index.html'), INDEX);
   await writeFile(join(clientDir, 'assets', 'main.js'), 'console.log(1)');
+  await mkdir(join(clientDir, 'assets', 'brand'));
+  await writeFile(join(clientDir, 'assets', 'brand', 'favicon.svg'), '<svg xmlns="http://www.w3.org/2000/svg"/>');
   const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
   await store.save(replay());
   const handle = createApp({ ...appDefaults(), basePath: normalizeBasePath(basePath), store, clientDir });
@@ -120,6 +122,14 @@ describe('served at the root', () => {
     const index = await fetch(`${origin}/`, { headers: html });
     expect(index.status).toBe(200);
     expect(await index.text()).toContain('<title>replays</title>');
+  });
+
+  it('caches hashed assets for good but lets the fixed-name brand icons revalidate', async () => {
+    const origin = await start('/');
+    expect((await fetch(`${origin}/assets/main.js`)).headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    const icon = await fetch(`${origin}/assets/brand/favicon.svg`);
+    expect(icon.status).toBe(200);
+    expect(icon.headers.get('cache-control')).toBe('public, max-age=86400');
   });
 
   it('writes upload receipts without a prefix', async () => {

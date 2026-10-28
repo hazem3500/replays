@@ -150,14 +150,17 @@ api.sourceProvider({
 
 - `icon` is shown on the topbar's source chip, in the Context tab's Sources and on the index row. It must be a
   `data:image/svg+xml` URL or an https URL (checked at start; at most 8 KB) and is always drawn as an `<img>`, never inlined as
-  markup, so an SVG cannot run script. Without one the viewer keeps its own mark (GitHub's, else a link glyph).
+  markup, so an SVG cannot run script. Without one the viewer draws the provider's `mark`.
+- `mark` names one of the viewer's built-in monochrome marks, drawn in the text colour so it follows the theme: `github`,
+  `gitlab`, `slack`, `linear`, `jira`, `notion` or `link` (the default). The built-in providers carry theirs, and a
+  config-file provider whose id is a mark's name (`"id": "jira"`) gets that mark without saying so.
 - `noun` is short text naming what a source is; it joins the chip's and index link's accessible names and leads the source's line in
   the Context tab.
 - `attrs` returned by `resolve` are kept on the stored source (`context.sources[].attrs`: at most 8 entries, keys like
   `[A-Za-z][\w-]*`, values short text or finite numbers; anything else is dropped) and, capped to 4 entries of 80 characters, on the
   index summary's `sources`. The Context tab lists their values after the noun; client plugins read them from
   `ctx.replay.context.sources`. A producer that sends an already resolved source (with a `url`) may send `attrs` too.
-- Config-file providers accept `icon` and `noun` as well: `{ "id": "jira", "template": "…", "noun": "Jira issue", "icon": "https://…" }`.
+- Config-file providers accept `icon`, `mark` and `noun` as well: `{ "id": "tickets", "template": "…", "noun": "Jira issue", "mark": "jira" }`.
 
 ## Storage
 
@@ -275,6 +278,12 @@ Tokens: `accent`, `accent-soft`, `accent-contrast`, `page`, `surface`, `surface-
 text/background pairs at WCAG AA (`test/contrast.test.ts` shows how the default palette is checked). The browser chrome
 colour (`<meta name="theme-color">`) follows `page` per scheme; give `page` as a plain colour (hex, `rgb()`, `oklch()`), not
 `var()`. `replays build-static` stamps the same into a CDN-hosted `index.html` ([operations](operations.md#static-viewer-on-a-cdn)).
+
+The built-in mark (timeline segments and a playhead, `src/client/components/brand-mark-geometry.ts`) is the header logo
+and, in a heavier four-segment cut, the favicon, with a home-screen icon and web manifest in `public/assets/brand`
+(`node --experimental-strip-types scripts/build-icons.mjs` regenerates them). `logoUrl` replaces the mark in the header and
+as the tab icon, and drops the built-in home-screen icon and manifest; a custom `name` alone drops only the manifest, which
+carries the built-in name.
 
 ## Capture drivers
 

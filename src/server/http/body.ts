@@ -2,7 +2,7 @@ import { promisify } from 'node:util';
 import { gunzip } from 'node:zlib';
 
 import { withSpan } from '../tracing.ts';
-import { HttpStatusError } from './status-error.ts';
+import { badJson, HttpError } from './errors.ts';
 
 const gunzipAsync = promisify(gunzip);
 
@@ -16,11 +16,16 @@ export async function readBytes(request: Request, maxBytes: number) {
     size += next.value.byteLength;
     if (size > maxBytes) {
       await reader.cancel().catch(() => null);
-      throw new HttpStatusError(413, 'body too large');
+      throw new HttpError(413, 'body too large');
     }
     chunks.push(next.value);
   }
   return Buffer.concat(chunks, size);
+}
+
+/** `25 MB` for whole megabytes, else the exact byte count. */
+function sizeLabel(maxBytes: number) {
+  return maxBytes % (1024 * 1024) === 0 ? `${maxBytes / 1024 / 1024} MB` : `${maxBytes} bytes`;
 }
 
 /**
@@ -29,12 +34,12 @@ export async function readBytes(request: Request, maxBytes: number) {
  */
 export async function readJsonUpload(request: Request, maxBytes: number, trace: (attributes: Record<string, number | boolean>) => void) {
   const encoding = (request.headers.get('content-encoding') ?? 'identity').trim().toLowerCase();
-  if (encoding !== 'identity' && encoding !== 'gzip') throw new HttpStatusError(415, `unsupported content-encoding: ${encoding}`);
-  const megabytes = maxBytes / 1024 / 1024;
+  if (encoding !== 'identity' && encoding !== 'gzip') throw new HttpError(415, `unsupported content-encoding: ${encoding}`);
+  const tooLarge = `upload is larger than ${sizeLabel(maxBytes)}`;
+  // why: a declared oversize body is refused before any of it is buffered.
+  if (Number(request.headers.get('content-length') ?? 0) > maxBytes) throw new HttpError(413, tooLarge);
   let body: Buffer = await readBytes(request, maxBytes).catch((error: unknown) => {
-    throw error instanceof HttpStatusError && error.status === 413
-      ? new HttpStatusError(413, `upload is larger than ${megabytes} MB`)
-      : error;
+    throw error instanceof HttpError && error.status === 413 ? new HttpError(413, tooLarge) : error;
   });
   trace({ 'http.request.body.size': body.byteLength });
   if (encoding === 'gzip') {
@@ -42,15 +47,24 @@ export async function readJsonUpload(request: Request, maxBytes: number, trace: 
       body = await gunzipAsync(body, { maxOutputLength: maxBytes });
     } catch (error) {
       if (error instanceof RangeError || (error instanceof Error && 'code' in error && error.code === 'ERR_BUFFER_TOO_LARGE'))
-        throw new HttpStatusError(413, `upload is larger than ${megabytes} MB once decompressed`);
-      throw new HttpStatusError(400, 'body is not valid gzip');
+        throw new HttpError(413, `${tooLarge} once decompressed`);
+      throw new HttpError(400, 'body is not valid gzip');
     }
   }
-  if (body.byteLength === 0) throw new HttpStatusError(400, 'body is empty');
+  if (body.byteLength === 0) throw new HttpError(400, 'body is empty');
   trace({ 'replay.upload.bytes': body.byteLength, 'replay.upload.gzip': encoding === 'gzip' });
   try {
     return withSpan('replay.parse', { 'replay.upload.bytes': body.byteLength }, () => JSON.parse(body.toString('utf8')) as unknown);
   } catch {
-    throw new HttpStatusError(400, 'body is not valid JSON');
+    throw badJson();
+  }
+}
+
+/** `JSON.parse` for a request body: a parse failure is the client's (400), never a server error. */
+export function parseJsonBody(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw badJson();
   }
 }

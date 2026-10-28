@@ -62,6 +62,8 @@ api.uploadEndpoint({
 
 The host owns authorization and normalization: the forwarder must be allowed by IAP **and** the customer-forwarder policy, and it must be refused on every other authenticated application route. Enforce that restriction in the verified auth adapter before built-in plugin hooks can answer; a later host post-auth hook alone does not cover every route. The alias gets no browser CORS exception. Generate the replay id server-side; set the human source and support purpose; discard producer people, privacy hints and suite attachment; replace context with the bounded, validated customer context. The result still passes normal validation, sanitization, upload hooks and storage. Do not copy the downstream HTTP handler into the host.
 
+The adapter can confine the forwarder declaratively: return its identity with `capabilities: { routes: [{ method: 'POST', path: '/api/customer-recordings' }] }`. The core then refuses every other route right after authentication. The path is canonical, so one entry covers every base path and gateway prefix. An existing wrapper that returns `undefined` for other paths keeps working unchanged. Server-chosen ids, the forced purpose and source, and dropped people or suite data can live in the endpoint's `prepare` (raw body) or `normalize` (validated bundle); both run before the privacy pass ([custom upload endpoints](extension-api.md#custom-upload-endpoints)).
+
 Test the forwarder's denied read/list/export/other-upload paths as well as successful forwarding. Retain staff upload and same-origin behavior. The pending branch's exact accepted envelope, metadata limits and service-account permissions need a final comparison when it lands.
 
 ### Staging privacy
