@@ -17,6 +17,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Capture profiles in the CLI and network bodies** ([docs/extension-api.md](docs/extension-api.md#capture-profiles)):
+  `replays capture --profile <id>` applies the profile's `capture` block under the explicit flags; new `--network
+  off|headers|bodies` and `--no-performance`. Every capture writes `meta.captured`. Network bodies are opt-in: JSON, text
+  and form only, cut at 64 KiB with `truncated`, and redacted (secret fields, credentials, JWTs, card numbers, email
+  addresses, the deployment's rules) at capture and again in the server's privacy pass. `requestBody`, `responseBody` and
+  `meta.captured` are in docs/formats/replay.schema.json.
+
 - **Views and capture profiles** ([docs/extension-api.md](docs/extension-api.md#views)): core ships seven views (`standard`,
   `compare`, `performance`, `debug`, `walkthrough`, `review`, `support`) as data. The config key `views` and `api.view` add or
   retune them, and `GET /api/config` and `<meta name="app-views">` serve them; `ViewCatalog`/`createViewCatalog` from `/server`.
