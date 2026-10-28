@@ -640,6 +640,8 @@ export class ReplayStore {
     const stored = await this.uploadedSummary(id, replay, await this.storage.stat(this.metaKey(id)));
     if (!stored || stored.thumbhash === thumbhash) return;
     await this.writeSummary(id, { ...stored, thumbhash });
+    // why: a rewrite within the same millisecond keeps the sidecar's version, so the cached summary would win.
+    this.summaryCache.delete(id);
     this.changed();
   }
 
