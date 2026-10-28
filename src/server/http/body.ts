@@ -2,7 +2,7 @@ import { promisify } from 'node:util';
 import { gunzip } from 'node:zlib';
 
 import { withSpan } from '../tracing.ts';
-import { HttpError } from '../../shared/http-error.ts';
+import { badJson, HttpError } from './errors.ts';
 
 const gunzipAsync = promisify(gunzip);
 
@@ -56,6 +56,15 @@ export async function readJsonUpload(request: Request, maxBytes: number, trace: 
   try {
     return withSpan('replay.parse', { 'replay.upload.bytes': body.byteLength }, () => JSON.parse(body.toString('utf8')) as unknown);
   } catch {
-    throw new HttpError(400, 'body is not valid JSON');
+    throw badJson();
+  }
+}
+
+/** `JSON.parse` for a request body: a parse failure is the client's (400), never a server error. */
+export function parseJsonBody(text: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw badJson();
   }
 }
