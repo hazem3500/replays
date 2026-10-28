@@ -145,7 +145,7 @@
     "dist/client/assets/player-HASH.js": {
       "raw": 316832,
       "gzip": 97939,
-      "brotli": 70913
+      "brotli": 70896
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -409,8 +409,8 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1829,
-      "gzip": 600,
-      "brotli": 509
+      "gzip": 598,
+      "brotli": 505
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
