@@ -24,10 +24,10 @@
 @import "./index/filter-menu.css";
 @import "./index/scope-bar.css";
 @import "./index/first-run/first-run.css";
+@import "./index/source-chip.css";
 /* why: Settings and EmptyState restyle DialogContent and Button, whose utility classes sit in the utilities layer. */
 @import "./components/ui/empty-state.css";
 @import "./settings/settings.css";
-@import "./index/source-chip.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
