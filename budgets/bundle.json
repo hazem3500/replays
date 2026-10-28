@@ -322,6 +322,11 @@
       "gzip": 1596,
       "brotli": 1370
     },
+    "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
+      "raw": 53813,
+      "gzip": 14538,
+      "brotli": 12809
+    },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1901,
