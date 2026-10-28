@@ -860,22 +860,22 @@
     {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 257893,
-        "gzip": 44406,
-        "brotli": 36909
+        "raw": 254777,
+        "gzip": 44018,
+        "brotli": 36600
       },
-      "reason": "Comments review feed (#116): docked composer, thread tools, reaction chips and the Open/Resolved filter replace the old panel styles (+3116 raw, +388 gzip, +309 brotli bytes over main's cap, measured on Boat at head).",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
+      "reason": "The dialog geometry utilities (token-driven padding, close size, title line, stacked touch actions) and the solid destructive button join the app stylesheet, about 2.7 KB raw over main.",
+      "pr": "https://github.com/hazem3500/replays/pull/109"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 259758,
-        "gzip": 45323,
-        "brotli": 37702
+        "raw": 256661,
+        "gzip": 44944,
+        "brotli": 37401
       },
-      "reason": "Comments review feed (#116): docked composer, thread tools, reaction chips and the Open/Resolved filter replace the old panel styles (+3097 raw, +379 gzip, +301 brotli bytes over main's cap, measured on Boat at head).",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
+      "reason": "The initial index style group carries the same dialog and destructive-button utilities.",
+      "pr": "https://github.com/hazem3500/replays/pull/109"
     },
     {
       "file": "dist/client/assets/download-HASH.js",

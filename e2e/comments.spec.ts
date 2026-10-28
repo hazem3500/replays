@@ -17,6 +17,7 @@ const base = () => server().origin;
 const ADA = { 'x-e2e-user': 'ada@example.com', 'x-e2e-name': 'Ada Lovelace' };
 const BOB = { 'x-e2e-user': 'bob@example.com', 'x-e2e-name': 'Bob Stone' };
 const CY = { 'x-e2e-user': 'cy@example.com', 'x-e2e-name': 'Cy Young' };
+const DEE = { 'x-e2e-user': 'dee@example.com', 'x-e2e-name': 'Dee Ray' };
 
 /** A copy of the sample under its own id, so each test owns its comments. */
 async function newReplay(request: APIRequestContext, origin = base()) {
@@ -247,6 +248,37 @@ test('the composer pins the playhead or the whole replay, and Open and Resolved 
     at?: number;
   }>;
   expect(stored.find((entry) => entry.body === 'About the whole flow')?.at).toBeUndefined();
+  await context.close();
+});
+
+test('comparing recordings, the panel follows the focused one: its threads, a fresh draft and new comments stored on it', async ({
+  browser,
+  request,
+}) => {
+  const first = await newReplay(request);
+  const second = await newReplay(request);
+  await comment(request, first, { body: 'On the first recording', at: 2000 }, DEE);
+  const { context, page } = await as(browser, DEE);
+  await openReplay(page, `${base()}/r/${first}?with=${second}&layout=grid`);
+  await page.getByTestId('comments-tab').click();
+  await expect(page.getByTestId('comment-body')).toHaveText(['On the first recording']);
+  await page.getByTestId('comment-input').fill('A draft about the first one');
+
+  await page.getByTestId('compare-scope').getByRole('radio', { name: /^B: / }).click();
+  await expect(page.getByTestId('comments-empty')).toBeVisible();
+  await expect(page.getByTestId('comment-input')).toHaveValue('');
+  await page.getByTestId('comment-input').fill('About the second one');
+  await page.keyboard.press('Control+Enter');
+  await expect(page.getByTestId('comment-body')).toHaveText(['About the second one']);
+
+  await page.getByTestId('compare-scope').getByRole('radio', { name: /^A: / }).click();
+  await expect(page.getByTestId('comment-body')).toHaveText(['On the first recording']);
+  const bodies = async (id: string) =>
+    ((await (await request.get(`${base()}/api/replays/${id}/comments`, { headers: DEE })).json()).comments as Array<{ body: string }>).map(
+      (entry) => entry.body,
+    );
+  expect(await bodies(first)).toEqual(['On the first recording']);
+  expect(await bodies(second)).toEqual(['About the second one']);
   await context.close();
 });
 
