@@ -148,9 +148,9 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 47311,
-      "gzip": 17272,
-      "brotli": 15057
+      "raw": 51366,
+      "gzip": 18505,
+      "brotli": 16134
     },
     "dist/client/index.html": {
       "raw": 10783,
