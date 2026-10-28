@@ -60,7 +60,7 @@
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2420,
       "gzip": 1256,
-      "brotli": 1145
+      "brotli": 1144
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38116,
       "gzip": 13524,
-      "brotli": 12013
+      "brotli": 12010
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 706,
-      "brotli": 616
+      "brotli": 629
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
@@ -223,9 +223,9 @@
       "brotli": 1200
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 57050,
-      "gzip": 20540,
-      "brotli": 17790
+      "raw": 59480,
+      "gzip": 21120,
+      "brotli": 18380
     },
     "dist/client/index.html": {
       "raw": 12263,
@@ -1018,16 +1018,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/121"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 57050,
-        "gzip": 20540,
-        "brotli": 17790
-      },
-      "reason": "Shared Splitter primitive and its headless hook replace the viewer's two hand-rolled resizers, adding snap, fold, reset, settle and the separator keyboard pattern plus the folded rail's edge tab.",
-      "pr": "https://github.com/hazem3500/replays/pull/121"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.css",
       "cap": {
         "raw": 5150,
@@ -1036,6 +1026,16 @@
       },
       "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
       "pr": "https://github.com/hazem3500/replays/pull/121"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 59480,
+        "gzip": 21120,
+        "brotli": 18380
+      },
+      "reason": "Phone top bar: details, the copy-link choices and Compare become More items (with their icons), plus the long-press and copied-flash hooks; includes #121's Splitter, which CI measures in this stack.",
+      "pr": "https://github.com/hazem3500/replays/pull/125"
     }
   ]
 }
