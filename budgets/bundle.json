@@ -322,11 +322,6 @@
       "gzip": 1596,
       "brotli": 1370
     },
-    "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs": {
-      "raw": 48604,
-      "gzip": 13176,
-      "brotli": 11629
-    },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1901,
@@ -477,16 +472,6 @@
         "brotli": 6908
       },
       "reason": "The default guided recorder UI moved to its own published subpath when the core was split.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs",
-      "cap": {
-        "raw": 48604,
-        "gzip": 13176,
-        "brotli": 11629
-      },
-      "reason": "Shared recorder core chunk now shared between the recorder entries instead of bundled once.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
