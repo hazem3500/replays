@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 import { cloneBundle, postBundle, serveApp } from './support.ts';
 
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
@@ -18,13 +18,25 @@ function cursorLocators(page: Page, mobile: boolean) {
   const trigger = page.locator('.editor-mobile-more > summary');
   const inspector = mobile
     ? page.getByRole('region', { name: 'Cursor properties', exact: true })
-    : page.getByRole('complementary', { name: 'Replay presentation' }).getByRole('group', { name: 'Cursor', exact: true });
+    : page.getByRole('complementary', { name: 'Inspector' }).getByRole('group', { name: 'Cursor', exact: true });
   const openCursor = async () => {
     if (!mobile) return;
     await trigger.click();
     await page.getByRole('button', { name: 'Cursor options', exact: true }).click();
   };
   return { trigger, inspector, openCursor };
+}
+
+/** From the default style, the arrow key moves to and selects the next motion style. */
+async function pickSpringSettle(page: Page, inspector: Locator) {
+  const signature = inspector.getByRole('radio', { name: 'Signature arc' });
+  await expect(signature).toHaveAttribute('aria-checked', 'true');
+  await signature.focus();
+  await page.keyboard.press('ArrowRight');
+  const spring = inspector.getByRole('radio', { name: 'Spring settle' });
+  await expect(spring).toBeFocused();
+  await expect(spring).toHaveAttribute('aria-checked', 'true');
+  await expect(inspector.getByText('Lands with a small springy wobble')).toBeVisible();
 }
 
 for (const width of [1280, 390]) {
@@ -72,6 +84,7 @@ for (const width of [1280, 390]) {
     await expect(inspector.locator('output')).toHaveText('105%');
     await inspector.getByRole('switch', { name: 'Hide when idle' }).click();
     await inspector.getByRole('switch', { name: 'Click feedback' }).click();
+    await pickSpringSettle(page, inspector);
     await page.keyboard.press('Escape');
     if (mobile) {
       await expect(inspector).toHaveCount(0);
@@ -79,12 +92,13 @@ for (const width of [1280, 390]) {
     } else await expect(inspector).toBeVisible();
     await expect(page.getByTestId('save-state')).toHaveText('Saved');
     const stored = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
-    expect(stored.cursor).toEqual({ size: 1.05, hideWhenIdle: false, clickFeedback: false });
+    expect(stored.cursor).toEqual({ size: 1.05, hideWhenIdle: false, clickFeedback: false, motion: 'spring_settle' });
     expect(stored.blurs).toEqual([blur]);
     await page.reload();
     await openCursor();
     await expect(inspector.locator('output')).toHaveText('105%');
     await expect(inspector.getByRole('switch', { name: 'Hide when idle' })).toHaveAttribute('aria-checked', 'false');
+    await expect(inspector.getByRole('radio', { name: 'Spring settle' })).toHaveAttribute('aria-checked', 'true');
     if (mobile) {
       await inspector.getByTestId('mobile-object-done').click();
       await trigger.click();
@@ -99,6 +113,7 @@ for (const width of [1280, 390]) {
     await openCursor();
     await inspector.getByRole('button', { name: 'Reset', exact: true }).click();
     await expect(inspector.locator('output')).toHaveText('100%');
+    await expect(inspector.getByRole('radio', { name: 'Signature arc' })).toHaveAttribute('aria-checked', 'true');
     await expect(page.getByTestId('save-state')).toHaveText('Saved');
     const reset = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
     expect(reset.cursor).toBeUndefined();

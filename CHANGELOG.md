@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
+  the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
+  and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
+  slider primitive that positions its thumb when it sits beside the track.
 - Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
   `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
   its link names). Single, Grid and Spotlight share one clock and the viewer's
