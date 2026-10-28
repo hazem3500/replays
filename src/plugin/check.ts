@@ -134,12 +134,13 @@ function registerFixtureChecks(
 ): void {
   const { tests, result } = state;
   const request = fakeRequest();
+  const webRequest = new Request('http://localhost/');
   const identity = { id: 'plugin-check', name: 'Plugin check' };
   for (const { plugin: owner, value } of registry.hooks.beforeUpload)
     tests.push({
       name: `${owner} beforeUpload fixture`,
       run: async () => {
-        const transformed = await value({ bundle: structuredClone(replay), identity, request });
+        const transformed = await value({ bundle: structuredClone(replay), identity, request, webRequest });
         if (transformed) assertReplayBundle(transformed);
       },
     });

@@ -15,10 +15,10 @@ import { enforceRateLimit, normalizeUpload, uploadLimit, uploadReceipt } from '.
 const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
 
 /** The raw upload with the context adapters applied; anything that is not an object is returned as-is, for validation to refuse. */
-async function applyAdapters(services: ApiServices, replay: unknown, { identity, legacy }: RouteContext): Promise<unknown> {
+async function applyAdapters(services: ApiServices, replay: unknown, { identity, hooks }: RouteContext): Promise<unknown> {
   if (!isRecord(replay)) return replay;
   const raw = isContextShape(replay.context) ? replay.context : undefined;
-  const adapted = await applyContextAdapters(services.registry, raw, { kind: 'replay', identity, request: legacy.request });
+  const adapted = await applyContextAdapters(services.registry, raw, { kind: 'replay', identity, ...hooks });
   return adapted ? { ...replay, context: adapted } : replay;
 }
 
@@ -55,14 +55,14 @@ function uploadHandler(services: ApiServices) {
   const { deployment, registry } = services;
   const store = deployment.store;
   return async (context: RouteContext) => {
-    const { request, path, base, identity: user, trace, legacy } = context;
+    const { request, path, base, identity: user, trace, hooks } = context;
     const endpoint = registry.uploadEndpoints.get(path)?.value;
-    const endpointContext = { identity: user, request: legacy.request, path };
+    const endpointContext = { identity: user, ...hooks, path };
     await enforceRateLimit(endpoint, endpointContext);
     const body = await readJsonUpload(request, await uploadLimit(endpoint, endpointContext), trace);
-    const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, request: legacy.request }) : body;
+    const prepared = endpoint?.prepare ? await endpoint.prepare({ body, identity: user, ...hooks }) : body;
     assertUploadEnvelope(prepared);
-    const hooked = await runPrepareUpload(registry, prepared, user, legacy.request);
+    const hooked = await runPrepareUpload(registry, prepared, user, hooks);
     assertUploadEnvelope(hooked);
     const adapted = await applyAdapters(services, hooked, context);
     assertUploadEnvelope(adapted);
@@ -73,11 +73,7 @@ function uploadHandler(services: ApiServices) {
     const normalization = await normalizeUpload(registry, endpoint, replay, endpointContext);
     const normalized = normalization.changed ? revalidate(services, normalization.bundle) : replay;
     // invariant: stored data never depends on the uploader or a normalization hook having sanitized it.
-    const bundle = acceptUpload(
-      await runBeforeUpload(registry, services.sanitize(normalized), user, legacy.request),
-      store.purposes,
-      registry,
-    );
+    const bundle = acceptUpload(await runBeforeUpload(registry, services.sanitize(normalized), user, hooks), store.purposes, registry);
     trace(uploadAttributes(bundle));
     const receipt = (stored: typeof bundle) =>
       uploadReceipt(
@@ -98,7 +94,7 @@ function uploadHandler(services: ApiServices) {
     if (bundle.suiteRun) await store.attachReplay(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle);
     requestListMedia(deployment, bundle.meta.id);
     void store.pruneSoon();
-    await runAfterUpload(registry, bundle, user, legacy.request, publicPath(`/r/${bundle.meta.id}`, base));
+    await runAfterUpload(registry, bundle, user, hooks, publicPath(`/r/${bundle.meta.id}`, base));
     return json(201, receipt(bundle), { cacheControl: REVALIDATE });
   };
 }
