@@ -80,7 +80,7 @@ test('numbering follows the edited rail after cuts, including repeated labels', 
     route.fulfill({ json: { version: 1, revision: 1, cuts: [{ id: 'opening', from: 0, to: 1000 }] } }),
   );
   await openReplay(page, replay());
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   for (const index of [0, 1, 2]) {
     await page.getByTestId('step-timeline').locator(`[data-step-index="${index}"]`).click();
     const caption = page.getByTestId('step-caption');

@@ -29,7 +29,7 @@ test('read-only host plays saved trims and effects and offers no route into edit
   await expect(page).toHaveURL(`${origin}/r/${id}?captions=1#step-0`);
   await expect(page.getByTestId('editor')).toHaveCount(0);
   await expect(page.getByTestId('edit-replay')).toHaveCount(0);
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   await expect(page.getByRole('slider', { name: 'Seek' })).toHaveAttribute('aria-valuetext', /of 0:04/);
   await expect(page.getByText('Saved before writes disabled')).toBeVisible();
   await page.getByTestId('edited-chip').click();

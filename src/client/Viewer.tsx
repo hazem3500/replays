@@ -1,4 +1,4 @@
-import { FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
+import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
 import { CaptionMorph } from './CaptionMorph.tsx';
@@ -48,7 +48,7 @@ import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
 
-import { Topbar, TopbarChip, type TopbarMenuItem } from './Topbar.tsx';
+import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -568,6 +568,7 @@ export function Viewer({
           {...(prefix ? { prefix } : {})}
           {...(headerStatus ? { status: headerStatus } : {})}
           {...(suite ? { suite } : {})}
+          hasEdits={Boolean(edited)}
         />
         <div
           ref={workspace}
@@ -674,8 +675,11 @@ const ViewerHeader = memo(function ViewerHeader({
   backHref,
   titleMenu,
   titleFrom,
+  hasEdits = false,
 }: {
   bundle: ReplayBundle;
+  /** The replay has saved edits: a dot on the Edit button (the title shows "Edited …" as quiet text). */
+  hasEdits?: boolean;
   /** Client plugins' settings, at the bottom of the More menu. */
   menuFooter: ReactNode;
   /** Client plugins' bar actions (desktop): icon buttons after the built-in ones. */
@@ -703,7 +707,18 @@ const ViewerHeader = memo(function ViewerHeader({
     ...(titleFrom ? { titleFrom } : {}),
     titleId: 'replay-title',
   };
-  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} {...shared} />;
+  if (compact)
+    return (
+      <PhoneHeader
+        bundle={bundle}
+        suite={suite}
+        menu={menu}
+        menuItems={menuItems}
+        menuFooter={menuFooter}
+        hasEdits={hasEdits}
+        {...shared}
+      />
+    );
   return (
     <Topbar
       {...shared}
@@ -714,7 +729,7 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         // One quiet icon set: edit, details, copy link and download.
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
@@ -735,9 +750,11 @@ function PhoneHeader({
   menu,
   menuItems,
   menuFooter,
+  hasEdits = false,
   ...props
 }: {
   bundle: ReplayBundle;
+  hasEdits?: boolean;
   suite: SuiteDetails | undefined;
   menu: ReactNode;
   menuFooter: ReactNode;
@@ -761,7 +778,7 @@ function PhoneHeader({
       menuFooter={menuFooter}
       actions={
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -1046,18 +1063,19 @@ function SpeedHud({ speed }: { speed: number }) {
   );
 }
 
-/** Edit uses the same quiet icon button as the viewer's other toolbar actions. */
-function EditButton({ id }: { id: string }) {
+/** Edit uses the same quiet icon button as the viewer's other toolbar actions; a dot on it says the replay has edits. */
+function EditButton({ id, hasEdits = false }: { id: string; hasEdits?: boolean }) {
   return (
-    <Hint label="Edit replay · Trim, cut and add effects" side="bottom" align="end">
+    <Hint label={hasEdits ? 'Edit replay · This replay has edits' : 'Edit replay · Trim, cut and add effects'} side="bottom" align="end">
       <a
         href={editHref(id)}
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),
           'edit-entry text-[var(--text-secondary)] hover:text-foreground [&_svg:not([class*=size-])]:size-4',
         )}
-        aria-label="Edit replay"
+        aria-label={hasEdits ? 'Edit replay (has edits)' : 'Edit replay'}
         data-testid="edit-replay"
+        data-has-edits={hasEdits || undefined}
       >
         <AnimatedIcon name="pencil" />
       </a>
@@ -1074,8 +1092,9 @@ export interface EditedState {
 }
 
 /**
- * The quiet "Edited" label beside the title (hairline chip, no colour), and its menu: who saved the edits and when,
- * a switch to the original recording (and back), and edit mode. Reads "Original" while the original is shown.
+ * The edit state as quiet text beside the title ("Edited 2h ago", no border — the run status is the row's one strong
+ * mark), and its menu: who saved the edits and when, a switch to the original recording (and back), and edit mode.
+ * Reads "Original recording" while the original is shown.
  */
 function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedState; fresh?: boolean }) {
   const { stored, original, setOriginal } = edited;
@@ -1092,7 +1111,10 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
           />
         }
       >
-        <TopbarChip>{original ? 'Original' : 'Edited'}</TopbarChip>
+        <span className="edited-label">
+          {original ? 'Original recording' : stored.updatedAt ? `Edited ${savedAgo(stored.updatedAt)}` : 'Edited'}
+          <ChevronDownIcon aria-hidden="true" />
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-56">
         <DropdownMenuGroup>

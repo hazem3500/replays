@@ -17,6 +17,8 @@
 @import "tw-animate-css";
 @import "./styles.css" layer(app);
 @import "./index/feed.css" layer(app);
+@import "./index/card-motion.css" layer(app);
+@import "./index/list-motion.css" layer(app);
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
