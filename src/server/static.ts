@@ -84,7 +84,7 @@ export async function buildStatic(options: BuildStaticOptions): Promise<StaticBu
     branding: settings.branding,
     ...(settings.signIn ? { signIn: settings.signIn } : {}),
     beta: settings.beta,
-    purposes: settings.purposes.list,
+    profiles: settings.profiles.list,
     sources: settings.sources.describe(),
     editing: settings.editing,
     comments: settings.comments.enabled,

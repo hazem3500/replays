@@ -5,14 +5,14 @@ import { fileURLToPath } from 'node:url';
 const root = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const sampleDir = join(root, 'demo-seed-output', 'sample');
 const sourcePath = join(sampleDir, 'demo-seed-signup.json');
-const targetPath = join(sampleDir, 'demo-purposes-walkthrough.json');
+const targetPath = join(sampleDir, 'demo-profiles-walkthrough.json');
 const source = JSON.parse(await readFile(sourcePath, 'utf8'));
 
 if (source.meta?.id !== 'demo-seed-signup' || source.meta?.tags?.includes('demo') !== true || !source.steps?.length)
   throw new Error('expected the generated demo-seed-signup replay with demo tags and steps');
 
 const walkthrough = structuredClone(source);
-walkthrough.meta.id = 'demo-purposes-walkthrough';
+walkthrough.meta.id = 'demo-profiles-walkthrough';
 walkthrough.meta.title = 'Signup walkthrough · masked demo form';
 walkthrough.meta.url = 'https://walkthrough.northstar.demo.test/join';
 walkthrough.meta.tags = [...new Set([...walkthrough.meta.tags, 'walkthrough'])];

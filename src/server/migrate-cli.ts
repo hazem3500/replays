@@ -150,14 +150,14 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
     if (args.compare) {
       const summaryFields = summaryFieldsRunner(registry.summaryFields);
       const store = (storage: ObjectStorage) =>
-        new ReplayStore(storage, cwd, settings.retention, { purposes: settings.purposes, ...(summaryFields ? { summaryFields } : {}) });
+        new ReplayStore(storage, cwd, settings.retention, { profiles: settings.profiles, ...(summaryFields ? { summaryFields } : {}) });
       const comparison = await compareStores({ from: store(from), to: store(to) });
       process.stdout.write(`${formatComparison(comparison)}\n`);
       if (args.report) await writeFile(resolve(cwd, args.report), `${JSON.stringify(comparison, null, 2)}\n`);
       return;
     }
     const contextSchema = settings.contextSchema;
-    const purposes = settings.purposes.ids;
+    const profiles = settings.profiles.ids;
     const translator = args.translate ? await loadTranslator(args.translate, cwd) : {};
     process.stderr.write(`${args.dryRun ? 'dry run: ' : ''}${from.description} -> ${to.description}\n`);
     const report = await migrateStore({
@@ -165,7 +165,7 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
       to,
       ...translator,
       ...(contextSchema ? { contextSchema } : {}),
-      purposes,
+      profiles,
       redaction: mergeRedactionRules(settings.redaction, registry.redaction),
       dryRun: args.dryRun,
       concurrency: args.concurrency,

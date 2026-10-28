@@ -7,7 +7,7 @@ import { Hint } from '@/components/icon-button.tsx';
 import { Kbd } from '@/components/ui/kbd.tsx';
 import { useSlidingPill } from '@/components/sliding-highlight.tsx';
 
-import type { PurposeInfo } from '../../shared/purposes.ts';
+import type { ProfileInfo } from '../../shared/profiles.ts';
 
 import { productLogo, productName } from '../config.ts';
 import { navigate } from '../navigation.ts';
@@ -320,7 +320,7 @@ export function CommandSearch({
 /* ---------- Scope bar ---------- */
 
 /**
- * Row 2, one toolbar: the purpose tabs (`lead`) or, without purposes, the result count on the left; the active
+ * Row 2, one toolbar: the profile tabs (`lead`) or, without profiles, the result count on the left; the active
  * filters, Filter, sort and layout (desktop) on the right. With tabs the count stays for screen readers only.
  */
 export function ScopeBar({ count, lead, children }: { count: ReactNode; lead?: ReactNode; children?: ReactNode }) {
@@ -333,47 +333,47 @@ export function ScopeBar({ count, lead, children }: { count: ReactNode; lead?: R
   );
 }
 
-/* ---------- Purpose segments ---------- */
+/* ---------- Profile segments ---------- */
 
-/** Entries per purpose segment; `all` counts everything (an entry without a purpose only counts there). */
-export type PurposeCounts = Record<string, number> & { all: number };
+/** Entries per profile segment; `all` counts everything (an entry without a profile only counts there). */
+export type ProfileCounts = Record<string, number> & { all: number };
 
 /**
- * All · <each purpose>: native radios (arrow keys), muted counts, a sliding underline. Only rendered when the
- * deployment defines purposes (src/client/purposes.ts); the choice lives in the URL as `purpose=`.
+ * All · <each profile>: native radios (arrow keys), muted counts, a sliding underline. Only rendered when the
+ * deployment defines profiles (src/client/profiles.ts); the choice lives in the URL as `profile=`.
  */
-export function PurposeSegments({
-  purposes,
+export function ProfileSegments({
+  profiles,
   value,
   counts,
   onChange,
 }: {
-  purposes: readonly PurposeInfo[];
+  profiles: readonly ProfileInfo[];
   value: string | undefined;
-  counts: PurposeCounts | undefined;
+  counts: ProfileCounts | undefined;
   onChange: (value: string | undefined) => void;
 }) {
   const group = useRef<HTMLDivElement>(null);
-  const indicator = useSlidingPill(group, { selector: `.purpose-segment[data-segment="${value ?? ''}"]`, value });
-  const segments = [{ id: undefined, label: 'All' }, ...purposes];
+  const indicator = useSlidingPill(group, { selector: `.profile-segment[data-segment="${value ?? ''}"]`, value });
+  const segments = [{ id: undefined, label: 'All' }, ...profiles];
   return (
-    <div className="purpose-bar">
-      <div ref={group} className="purpose-segments" role="radiogroup" aria-label="Purpose" data-testid="purpose-segments">
-        <span ref={indicator} className="purpose-indicator" aria-hidden="true" />
+    <div className="profile-bar">
+      <div ref={group} className="profile-segments" role="radiogroup" aria-label="Profile" data-testid="profile-segments">
+        <span ref={indicator} className="profile-indicator" aria-hidden="true" />
         {segments.map((segment) => {
           const count = counts?.[segment.id ?? 'all'];
           return (
-            <label key={segment.id ?? ''} className="purpose-segment" data-segment={segment.id ?? ''}>
+            <label key={segment.id ?? ''} className="profile-segment" data-segment={segment.id ?? ''}>
               <input
                 type="radio"
-                name="purpose"
+                name="profile"
                 className="visually-hidden"
                 checked={value === segment.id}
                 onChange={() => onChange(segment.id)}
               />
-              <span className="purpose-segment-label">
+              <span className="profile-segment-label">
                 {segment.label}
-                {count === undefined ? null : <span className="purpose-segment-count">{count}</span>}
+                {count === undefined ? null : <span className="profile-segment-count">{count}</span>}
               </span>
             </label>
           );

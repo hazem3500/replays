@@ -1,5 +1,5 @@
 import { personMatch } from '../../shared/people.ts';
-import { isPurposeId } from '../../shared/purposes.ts';
+import { isProfileId } from '../../shared/profiles.ts';
 import { isReplayTag, type ReplayFilters } from '../../shared/replay.ts';
 import { readBytes } from '../http/body.ts';
 import { compressed, json, text } from '../http/respond.ts';
@@ -21,8 +21,8 @@ export function replayFilters(params: URLSearchParams): ReplayFilters {
   if (source === 'agent' || source === 'human') filters.source = source;
   const tag = params.get('tag');
   if (isReplayTag(tag)) filters.tag = tag;
-  const purpose = params.get('purpose');
-  if (isPurposeId(purpose)) filters.purpose = purpose;
+  const profile = params.get('profile') ?? params.get('purpose');
+  if (isProfileId(profile)) filters.profile = profile;
   return filters;
 }
 

@@ -1,3 +1,6 @@
+import type { ProfileConfig, ProfileInfo, ProfileOpenAt, ProfileViewerDefaults } from '../shared/profiles.ts';
+import type { ProfileDefinition, ProfileInferInput } from './types.ts';
+
 /** `@hazem3500/replays/plugin`: declare server plugins. See docs/extension-api.md. */
 export { definePlugin, assertPlugin } from './define.ts';
 export { PluginError, rejectUpload, type PluginErrorCode } from './errors.ts';
@@ -36,8 +39,8 @@ export type {
   PluginSpec,
   PrepareUploadContext,
   PrepareUploadHook,
-  PurposeDefinition,
-  PurposeInferInput,
+  ProfileDefinition,
+  ProfileInferInput,
   RateLimitDecision,
   RenderedFile,
   RenderHooks,
@@ -65,5 +68,18 @@ export type { AuthAdapter, AuthPluginFactory, Identity } from '../server/auth/ty
 export type { ObjectStorage } from '../server/storage/types.ts';
 export type { SourceProvider } from '../shared/source-providers.ts';
 export { assertRedactionRules, type RedactionPattern, type RedactionRules, type RedactionTextRule } from '../shared/redaction.ts';
-export type { PosterMoment, PurposeConfig, PurposeInfo, PurposeOpenAt, PurposeViewerDefaults } from '../shared/purposes.ts';
+export type { PosterMoment, ProfileConfig, ProfileInfo, ProfileOpenAt, ProfileViewerDefaults } from '../shared/profiles.ts';
+
+/** @deprecated Use `ProfileConfig`. */
+export type PurposeConfig = ProfileConfig;
+/** @deprecated Use `ProfileInfo`. */
+export type PurposeInfo = ProfileInfo;
+/** @deprecated Use `ProfileOpenAt`. */
+export type PurposeOpenAt = ProfileOpenAt;
+/** @deprecated Use `ProfileViewerDefaults`. */
+export type PurposeViewerDefaults = ProfileViewerDefaults;
+/** @deprecated Use `ProfileDefinition`. */
+export type PurposeDefinition = ProfileDefinition;
+/** @deprecated Use `ProfileInferInput`. */
+export type PurposeInferInput = ProfileInferInput;
 export type { ReplayPerson } from '../shared/people.ts';

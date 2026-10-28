@@ -81,9 +81,9 @@ describe('replay meta API', () => {
     expect(body.issues.map((issue) => issue.path)).toEqual(expect.arrayContaining(['title', 'tags.0']));
   });
 
-  it('refuses an empty patch and a purpose the deployment does not define', async () => {
+  it('refuses an empty patch and a profile the deployment does not define', async () => {
     const { patch } = await start();
-    expect([(await patch({})).status, (await patch({ purpose: 'not-a-purpose' })).status]).toEqual([400, 400]);
+    expect([(await patch({})).status, (await patch({ profile: 'not-a-profile' })).status]).toEqual([400, 400]);
   });
 
   it('refuses malformed JSON as the client’s mistake (400), not a server error', async () => {
