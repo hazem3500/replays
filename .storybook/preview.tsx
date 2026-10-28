@@ -48,7 +48,17 @@ const preview: Preview = {
     },
     options: {
       storySort: {
-        order: ['Introduction', 'Foundations', 'Components', 'Recorder', ['Overview', 'Default UI', '*'], 'Extensions', 'App', '*'],
+        order: [
+          'Introduction',
+          'Foundations',
+          'Components',
+          'Recorder',
+          ['Default UI', 'Custom UI (kit)', 'Build your own UI', 'End to end'],
+          'Extensions',
+          ['Overview', '*'],
+          'App',
+          '*',
+        ],
       },
     },
   },
