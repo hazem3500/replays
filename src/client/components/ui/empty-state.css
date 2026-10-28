@@ -18,6 +18,8 @@
   --empty-state-body-line: 19px;
   --empty-state-body-color: var(--text-secondary);
   --empty-state-body-measure: 48ch;
+  --empty-state-status-size: 12px;
+  --empty-state-status-color: var(--text-tertiary);
   --empty-state-icon-tile: 40px;
   --empty-state-icon-size: 20px;
   --empty-state-icon-size-compact: 16px;
@@ -47,6 +49,7 @@
   --empty-state-chip-bg: var(--surface-hover);
   --empty-state-chip-color: var(--text-secondary);
   --empty-state-chip-line: 18px;
+  --empty-state-chips-offset: 4px;
   --empty-state-compact-column-gap: 10px;
   --empty-state-compact-row-gap: 8px;
   --empty-state-banner-column-gap: 8px;
@@ -93,6 +96,12 @@
   text-wrap: pretty;
 }
 
+.empty-state-status {
+  margin: 0;
+  color: var(--empty-state-status-color);
+  font-size: var(--empty-state-status-size);
+  font-variant-numeric: tabular-nums;
+}
 
 .empty-state-icon {
   display: grid;
@@ -113,7 +122,25 @@
 }
 .empty-state[data-tone='offline'] .empty-state-icon { color: var(--empty-state-offline-color); }
 
-.empty-state[data-variant='region'] 
+.empty-state-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: inherit;
+  gap: var(--empty-state-chip-gap);
+  margin: var(--empty-state-chips-offset) 0 0;
+  padding: 0;
+  list-style: none;
+}
+.empty-state-chips li {
+  padding: var(--empty-state-chip-pad);
+  border-radius: var(--empty-state-chip-radius);
+  background: var(--empty-state-chip-bg);
+  color: var(--empty-state-chip-color);
+  font-size: var(--empty-state-chip-size);
+  line-height: var(--empty-state-chip-line);
+}
+.empty-state[data-variant='region'] .empty-state-chips { justify-content: center; }
+
 .empty-state-actions {
   display: flex;
   flex-wrap: wrap;
@@ -149,7 +176,8 @@
   width: var(--empty-state-icon-size-compact);
   height: var(--empty-state-icon-size-compact);
 }
-.empty-state[data-variant='compact'] .empty-state[data-variant='compact'] .empty-state-actions { grid-column: -2; justify-content: flex-start; }
+.empty-state[data-variant='compact'] .empty-state-chips { justify-content: flex-start; }
+.empty-state[data-variant='compact'] .empty-state-actions { grid-column: -2; justify-content: flex-start; }
 .empty-state[data-variant='compact']:not(:has(> .empty-state-icon)) { grid-template-columns: minmax(0, 1fr); }
 .empty-state[data-variant='compact'] .empty-state-action,
 .empty-state[data-variant='banner'] .empty-state-action { height: var(--empty-state-action-height-compact); }
