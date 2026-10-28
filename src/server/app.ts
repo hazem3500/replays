@@ -424,7 +424,10 @@ export function createApp(options: AppOptions) {
         return;
       }
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
-      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, { request, webRequest: webRequest() });
+      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, {
+        request,
+        webRequest: webRequest(),
+      });
       identities.set(request, user);
       const denied = routeAllowed(registry, user, request.method ?? 'GET', path);
       if (denied) {
