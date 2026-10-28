@@ -955,11 +955,11 @@
     {
       "file": "dist/lib/chunks/context.schema.json-ac455b893fb5.mjs",
       "cap": {
-        "raw": 302303,
-        "gzip": 79340,
-        "brotli": 64982
+        "raw": 302733,
+        "gzip": 79436,
+        "brotli": 65053
       },
-      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (caps 308545, 80878, 66289) and measures 302303 raw, 79340 gzip, 64982 brotli bytes, under those caps.",
+      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (caps 308545, 80878, 66289) and measures 302733 raw, 79436 gzip, 65053 brotli bytes, under those caps.",
       "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
@@ -1035,11 +1035,11 @@
     {
       "file": "dist/client/assets/render-HASH.js",
       "cap": {
-        "raw": 8807,
+        "raw": 8808,
         "gzip": 3880,
         "brotli": 3523
       },
-      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts and render/thumbhash-capture.ts); head measures 8807 raw, 3880 gzip, 3523 brotli bytes (+2086, +922, +841).",
+      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts and render/thumbhash-capture.ts); head measures 8808 raw, 3877 gzip, 3522 brotli bytes (+2087, +919, +840).",
       "pr": "https://github.com/hazem3500/replays/pull/123"
     }
   ]
