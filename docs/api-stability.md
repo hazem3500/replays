@@ -12,15 +12,15 @@ so every change to the surface shows up in a diff).
 | Surface | Where | Status |
 | --- | --- | --- |
 | Config file keys and `defineConfig` | `@hazem3500/replays/config` | Public |
-| Plugin API: `definePlugin`, `PluginApi` methods and their hook contexts, `PluginError` codes, `rejectUpload`, `PLUGIN_API_VERSION` | `/plugin` | Public |
+| Plugin API: `definePlugin`, `PluginApi` methods (including the web-standard `route` and `middleware`, with `PluginRoute`, `PluginMiddleware` and `StandardSchemaV1`) and their hook contexts, upload endpoint options, `PluginError` codes, `rejectUpload`, `HttpError`, `tooManyRequests`, `PLUGIN_API_VERSION` | `/plugin` | Public |
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions | `/viewer` | Public |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
-| Browser-safe in-page recorder, default UI, completion/theme contracts and upload helpers | `/recorder` | Public |
+| Browser-safe in-page recorder, default UI, completion/theme contracts and upload helpers (`createTokenUpload`, `createHttpUpload`, `IssueUploadError`) | `/recorder` | Public |
 | Capture and data model: recording, bundle building, sanitising, source providers, `ReplayBundle` and friends | `/capture`, `.` | Public |
 | The replay format (`replay.json`, `meta.version`, the context block) | – | Public: changes are additive, or bump `version` and keep reading the old one |
 | HTTP API (`/api/replays`, `/api/suites`, `/api/config`, `/api/me`, upload receipts) and environment variables | – | Public: changes are additive |
-| `Identity` (`id`, `email`, `name`, `avatarUrl`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
+| `Identity` (`id`, `email`, `name`, `avatarUrl`, `capabilities`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
 | The `comments` plugin name and the comments HTTP API | – | Public: the name is reserved; the API changes additively |
 | Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed |
 | Host edit write policy (`editing.enabled`, `EDITING_ENABLED`, `/api/config` effective capability) | – | Public: changes are additive; editor format remains beta |

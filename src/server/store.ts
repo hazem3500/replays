@@ -67,6 +67,7 @@ const PRUNE_THROTTLE_MS = 10 * 60_000;
 
 export class ReplayConflictError extends Error {
   readonly status = 409;
+  readonly expose = true;
 
   constructor(id: string) {
     super(`replay ${id} already exists`);

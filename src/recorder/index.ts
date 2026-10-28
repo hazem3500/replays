@@ -29,4 +29,5 @@ export {
 export { DEFAULT_ALLOWED_HEADERS, redactText, redactUrl } from './redact.ts';
 export type * from './types.ts';
 export { IssueUploadError, createTokenUpload, gzip } from './upload.ts';
+export { createHttpUpload, type HttpUploadHeaders, type HttpUploadOptions } from './http-upload.ts';
 export type * from './upload.ts';

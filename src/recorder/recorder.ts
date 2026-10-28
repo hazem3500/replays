@@ -9,6 +9,7 @@ import type { IssueReport, IssueReportReceipt } from './upload.ts';
 import { UI_ATTRIBUTE, BLOCK_ATTRIBUTE } from './privacy.ts';
 
 import { createUploadProgress } from './upload-progress.ts';
+import { toUpload } from './http-upload.ts';
 
 export const DEFAULT_MAX_DURATION_MS = 3 * 60_000;
 export const MAX_DURATION_CEILING_MS = 10 * 60_000;
@@ -98,6 +99,7 @@ const visible = (element: Element) => {
  */
 export function createRecorder(options: RecorderOptions): Recorder {
   const ui = options.ui;
+  const upload = toUpload(options.upload);
   const askForConsent = options.prompts?.consent !== false;
   const askToReview = options.prompts?.review !== false;
   const maxDurationMs = clamp(options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS, MIN_DURATION_MS, MAX_DURATION_CEILING_MS);
@@ -461,7 +463,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         ...(options.app ? { app: options.app } : {}),
       };
       try {
-        const receipt: IssueReportReceipt = await options.upload(reviewedReport, {
+        const receipt: IssueReportReceipt = await upload(reviewedReport, {
           signal: abort.signal,
           onProgress: (value) => progress.update(value),
         });

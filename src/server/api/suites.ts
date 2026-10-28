@@ -7,7 +7,7 @@ import {
   type ResolvedSuiteRegistration,
   suitePersonMatch,
 } from '../../shared/review-suite.ts';
-import { readBytes } from '../http/body.ts';
+import { parseJsonBody, readBytes } from '../http/body.ts';
 import { compressed, json } from '../http/respond.ts';
 import { defineRoute } from '../http/route.ts';
 import { checkPeople, decorateSuite, forMeQuery } from '../people.ts';
@@ -66,11 +66,11 @@ export function suiteRoutes(services: ApiServices) {
       method: 'PUT',
       path: '/api/suites/:suite',
       params: { suite: SUITE_ID },
-      async handler({ request, params, identity, legacy }) {
+      async handler({ request, params, identity, hooks }) {
         // invariant: the same privacy pass as replay uploads, and idempotent, so a re-registration compares equal.
-        const input: unknown = sanitizeUrlFields(JSON.parse((await readBytes(request, 64 * 1024)).toString('utf8')), redaction);
+        const input: unknown = sanitizeUrlFields(parseJsonBody((await readBytes(request, 64 * 1024)).toString('utf8')), redaction);
         assertReviewSuiteRegistration(input, params.suite);
-        const adapted = await applyContextAdapters(registry, input.context, { kind: 'suite', identity, request: legacy.request });
+        const adapted = await applyContextAdapters(registry, input.context, { kind: 'suite', identity, ...hooks });
         if (adapted) input.context = adapted;
         const { subject, ...rest } = input;
         const registration: ResolvedSuiteRegistration = {
@@ -88,10 +88,10 @@ export function suiteRoutes(services: ApiServices) {
       method: 'PUT',
       path: '/api/suites/:suite/runs/:run',
       params: { suite: SUITE_ID, run: RUN_ID },
-      async handler({ request, params, identity, legacy }) {
-        const input: unknown = sanitizeUrlFields(JSON.parse((await readBytes(request, 64 * 1024)).toString('utf8')), redaction);
+      async handler({ request, params, identity, hooks }) {
+        const input: unknown = sanitizeUrlFields(parseJsonBody((await readBytes(request, 64 * 1024)).toString('utf8')), redaction);
         assertReviewRunRegistration(input, params.run);
-        const adapted = await applyContextAdapters(registry, input.context, { kind: 'run', identity, request: legacy.request });
+        const adapted = await applyContextAdapters(registry, input.context, { kind: 'run', identity, ...hooks });
         if (adapted) input.context = adapted;
         if (input.context) {
           resolveContext({ context: input.context }, deployment);

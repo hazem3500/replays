@@ -2,7 +2,7 @@ import { defaultId } from '../../capture/human-bundle.ts';
 import type { PluginRegistry } from '../../plugin/registry.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import { publicPath } from '../base-path.ts';
-import { HttpStatusError } from '../http/status-error.ts';
+import { HttpError } from '../http/errors.ts';
 import { checkPeople } from '../people.ts';
 import type { PurposeCatalog } from '../purposes.ts';
 import { ReplayConflictError, type ReplayStore } from '../store.ts';
@@ -40,7 +40,7 @@ export function replayReceipt(base: string, bundle: ReplayBundle) {
 export function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog, registry: PluginRegistry) {
   assertUploadBundle(bundle);
   const problem = purposes.problem(bundle.meta.purpose);
-  if (problem) throw new HttpStatusError(400, problem);
+  if (problem) throw new HttpError(400, problem);
   checkPeople(registry, bundle.meta.people, 'replay.meta.people');
   return bundle;
 }
@@ -54,7 +54,7 @@ export function resolveContext(bundle: Pick<ReplayBundle, 'context'>, deployment
   }
   if (context.fields !== undefined && deployment.contextSchema) {
     const problem = deployment.contextSchema.validate(context.fields);
-    if (problem) throw new HttpStatusError(400, problem);
+    if (problem) throw new HttpError(400, problem);
   }
 }
 

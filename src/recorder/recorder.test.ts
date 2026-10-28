@@ -4,6 +4,7 @@ import { must } from './testing.ts';
 import { createDefaultUi } from './default-ui.ts';
 import { createRecorder, MASK_INPUT_OPTIONS } from './recorder.ts';
 import type { RecorderOptions, RecorderUi, RrwebModule, UploadDecision } from './types.ts';
+import type { IssueReportUpload } from './upload.ts';
 
 function fakeRrweb() {
   const stop = vi.fn<() => void>();
@@ -53,7 +54,7 @@ function fakeUi(overrides: Partial<RecorderUi> = {}) {
 function setup(overrides: Partial<RecorderOptions> = {}) {
   const rrweb = fakeRrweb();
   const ui = fakeUi();
-  const upload = vi.fn<RecorderOptions['upload']>(() => Promise.resolve({ replayId: 'issue-1' }));
+  const upload = vi.fn<IssueReportUpload>(() => Promise.resolve({ replayId: 'issue-1' }));
   const recorder = createRecorder({
     upload,
     ui: ui.ui,
@@ -251,10 +252,7 @@ describe('createRecorder', () => {
   });
 
   it('keeps the recording after a failed upload so the user can retry', async () => {
-    const upload = vi
-      .fn<RecorderOptions['upload']>()
-      .mockRejectedValueOnce(new Error('offline'))
-      .mockResolvedValueOnce({ replayId: 'issue-2' });
+    const upload = vi.fn<IssueReportUpload>().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce({ replayId: 'issue-2' });
     const { recorder, ui } = setup({ upload });
     const done = recorder.request();
     await flush();
@@ -328,7 +326,7 @@ describe('createRecorder', () => {
 
     it('offers a retry when the upload fails, and keeps the recording for it', async () => {
       const upload = vi
-        .fn<RecorderOptions['upload']>()
+        .fn<IssueReportUpload>()
         .mockRejectedValueOnce(new Error('Sign in first'))
         .mockResolvedValueOnce({ replayId: 'issue-2' });
       const { recorder, rrweb, ui } = setup({ ...quick, upload });
@@ -359,7 +357,7 @@ describe('createRecorder', () => {
     });
 
     it('drops a failed upload when the user records again', async () => {
-      const upload = vi.fn<RecorderOptions['upload']>().mockRejectedValue(new Error('down'));
+      const upload = vi.fn<IssueReportUpload>().mockRejectedValue(new Error('down'));
       const { recorder, rrweb, ui } = setup({ ...quick, upload });
       const first = recorder.request();
       await flush();
@@ -374,7 +372,7 @@ describe('createRecorder', () => {
 
     it.each(['resolve', 'reject'] as const)('does not let an old %s touch a new recording', async (completion) => {
       const pending = deferred<{ replayId: string }>();
-      const upload = vi.fn<RecorderOptions['upload']>().mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ replayId: 'new' });
+      const upload = vi.fn<IssueReportUpload>().mockReturnValueOnce(pending.promise).mockResolvedValueOnce({ replayId: 'new' });
       const oldHide = vi.fn<() => void>();
       const nextHide = vi.fn<() => void>();
       const showUploading = vi.fn<() => () => void>().mockReturnValueOnce(oldHide).mockReturnValueOnce(nextHide);

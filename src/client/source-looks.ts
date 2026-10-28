@@ -1,16 +1,17 @@
 import { isSafeIconUrl } from '../shared/icon-url.ts';
-import type { SourceProviderInfo } from '../shared/source-providers.ts';
+import { isProviderMark, type ProviderMark, type SourceProviderInfo } from '../shared/source-providers.ts';
 
 /*
- * How the deployment's source providers look: the icon and noun each declared (`<meta name="app-sources">`, written by
- * the server from SourceProviders.describe). Built-in providers and those without either are absent; the viewer falls
- * back to its own marks. Icons are re-checked here: only a safe image URL is ever drawn, and only as an <img>.
+ * How the deployment's source providers look: the icon, mark and noun each declared (`<meta name="app-sources">`, written
+ * by the server from SourceProviders.describe). Providers without any are absent; the viewer falls back to its own
+ * marks (by provider id, else a link glyph). Icons are re-checked here: only a safe image URL is ever drawn, and only as an <img>.
  */
 
 export interface SourceLook {
   label: string;
   noun?: string;
   icon?: string;
+  mark?: ProviderMark;
 }
 
 let cached: Map<string, SourceLook> | undefined;
@@ -29,6 +30,7 @@ function read(): Map<string, SourceLook> {
         label: typeof entry.label === 'string' ? entry.label : entry.id,
         ...(typeof entry.noun === 'string' && entry.noun ? { noun: entry.noun } : {}),
         ...(isSafeIconUrl(entry.icon) ? { icon: entry.icon } : {}),
+        ...(isProviderMark(entry.mark) ? { mark: entry.mark } : {}),
       });
     }
   } catch {

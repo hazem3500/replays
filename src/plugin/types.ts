@@ -9,6 +9,11 @@ import type { RedactionRules } from '../shared/redaction.ts';
 import type { PurposeConfig } from '../shared/purposes.ts';
 import type { ReplayBundle, ReplaySourceLink, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
+import type { PluginMiddleware, PluginRoute } from './web-types.ts';
+
+export type * from './web-types.ts';
+
+export type { IdentityCapabilities, RouteGrant } from '../server/auth/types.ts';
 
 /** The plugin API generation. A plugin declares the one it was written for; a mismatch is refused at start. */
 export const PLUGIN_API_VERSION = 1;
@@ -28,6 +33,8 @@ export interface ContextInfo {
   identity: Identity;
   /** The raw request, e.g. for proxy headers. Do not read the body. */
   request: IncomingMessage;
+  /** The same request, web-standard (do not read the body). */
+  webRequest: Request;
 }
 
 /**
@@ -99,6 +106,8 @@ export interface PrepareUploadContext {
   body: unknown;
   identity: Identity;
   request: IncomingMessage;
+  /** The upload request (its body already read into `body`). */
+  webRequest: Request;
 }
 
 /**
@@ -111,6 +120,8 @@ export interface UploadHookContext {
   bundle: ReplayBundle;
   identity: Identity;
   request: IncomingMessage;
+  /** The upload request (its body already read). */
+  webRequest: Request;
 }
 
 /** Runs on the sanitized, validated bundle before it is stored. Throw `rejectUpload(status, message)` to refuse; return a bundle to replace it. */
@@ -236,12 +247,69 @@ export interface RequestPolicy {
   readonly credentials?: boolean;
 }
 
-/** An additional POST route into the core upload pipeline; no CORS policy is implied. */
+/** What the per-request hooks of an upload endpoint see. */
+export interface UploadEndpointContext {
+  /** The endpoint's identity (its own `authenticate`, else the deployment's auth adapter). */
+  identity: Identity;
+  request: IncomingMessage;
+  /** The endpoint's canonical path. */
+  path: string;
+}
+
+/** Nothing to allow the request; `retryAfter` (seconds) to answer `429 Too Many Requests` with that `Retry-After`. */
+export type RateLimitDecision = void | undefined | { readonly retryAfter: number; readonly message?: string };
+
+export interface NormalizeUploadContext {
+  /** The validated bundle, sources resolved. Not yet sanitized. */
+  bundle: ReplayBundle;
+  identity: Identity;
+  request: IncomingMessage;
+  /** The canonical upload path: `/api/replays` or an upload endpoint's. */
+  path: string;
+}
+
+/**
+ * Server-side normalization of a validated upload before it is stored: force the id, title, purpose or source, drop what
+ * the client may not set, add derived context. Return a replacement bundle or mutate this one. The result is validated
+ * again and always goes through the privacy pass afterwards; a hook cannot skip it.
+ */
+export type NormalizeUploadHook = (context: NormalizeUploadContext) => ReplayBundle | void | Promise<ReplayBundle | void>;
+
+export interface UploadReceiptContext extends UploadEndpointContext {
+  /** The bundle as stored. */
+  bundle: ReplayBundle;
+  /** Public path of the stored replay, base path included (`/replays/r/<id>`). */
+  url: string;
+  /** The absolute viewer URL when the deployment knows its public origin, otherwise `url`. Behind normal staff auth. */
+  replayUrl: string;
+}
+
+/** An additional POST route into the core upload pipeline; no CORS policy is implied (pair it with `requestPolicy`). */
 export interface UploadEndpoint {
-  /** A distinct `/api/<name>` path, without the deployment base prefix. */
+  /**
+   * The canonical path, without the deployment base prefix: 2 to 8 lowercase `[a-z0-9][a-z0-9-]*` segments, such as
+   * `/api/customer-recordings` or `/backoffice/api/customer-recordings`. Core route prefixes are reserved.
+   */
   readonly path: string;
-  /** Runs before global prepareUpload hooks; the result still passes core validation and privacy checks. */
+  /** Runs on the raw parsed body before global prepareUpload hooks; the result still passes core validation and privacy checks. */
   readonly prepare?: PrepareUploadHook;
+  /**
+   * This path's own credential check, used instead of the deployment's auth adapter for every method on the path.
+   * Return nothing for `401`; throw an `HttpError` for another status. The identity is confined to `POST` on this
+   * path (`capabilities`), whatever it carries.
+   */
+  readonly authenticate?: (request: IncomingMessage) => Identity | undefined | Promise<Identity | undefined>;
+  /**
+   * Largest accepted body in bytes, compressed and once decompressed; default 25 MiB. `Content-Length` is checked before
+   * the body is read, and the stream while it is read.
+   */
+  readonly maxBytes?: number | ((context: UploadEndpointContext) => number | Promise<number>);
+  /** Runs after authentication and before the body is read. */
+  readonly rateLimit?: (context: UploadEndpointContext) => RateLimitDecision | Promise<RateLimitDecision>;
+  /** Runs on this endpoint's validated bundle before the global `normalizeUpload` hooks and the privacy pass. */
+  readonly normalize?: NormalizeUploadHook;
+  /** The JSON body of the `201` (default `{ id, url }`), e.g. `{ id, reference, replayUrl }`. */
+  readonly receipt?: (context: UploadReceiptContext) => Record<string, unknown>;
 }
 export interface RequestHookOptions {
   /** `post-auth` (default): only authenticated requests arrive, with `identity`. `pre-auth`: every request, before auth. */
@@ -279,7 +347,10 @@ export interface IdentityResolver {
    * gave none, `email` are taken; an identity with another `id` is refused (logged, and the request keeps the original).
    * Runs once per request.
    */
-  resolve(identity: Identity, context: { request: IncomingMessage }): Identity | undefined | void | Promise<Identity | undefined | void>;
+  resolve(
+    identity: Identity,
+    context: { request: IncomingMessage; webRequest: Request },
+  ): Identity | undefined | void | Promise<Identity | undefined | void>;
 }
 
 /** What `setup` registers against. Every method may be called any number of times, except where noted. */
@@ -302,12 +373,21 @@ export interface PluginApi {
   basePath(path: string): void;
   /** Exact-origin CORS and a narrow CSRF exception. Only preflights bypass authentication. */
   requestPolicy(policy: RequestPolicy): void;
-  /** Register a POST alias using the normal auth, CSRF and complete core upload pipeline. */
+  /**
+   * Register a POST upload endpoint using the complete core upload pipeline: the deployment's auth (or its own
+   * `authenticate`), CSRF, validation, normalization, the privacy pass and storage.
+   */
   uploadEndpoint(endpoint: UploadEndpoint): void;
   onRequest(hook: RequestHook, options?: RequestHookOptions): void;
+  /** A request interceptor in the `pre-auth` or `post-auth` phase (web-standard; see docs/extension-api.md). */
+  middleware(middleware: PluginMiddleware): void;
+  /** An HTTP route under `/api/plugins/<plugin name>`, as a web handler (see docs/extension-api.md). */
+  route<Body = undefined>(route: PluginRoute<Body>): void;
   onResponse(hook: ResponseHook): void;
   /** Translate the raw upload body before validation (legacy producers). */
   prepareUpload(hook: PrepareUploadHook): void;
+  /** Normalize every validated upload (`POST /api/replays` and upload endpoints) before the privacy pass. */
+  normalizeUpload(hook: NormalizeUploadHook): void;
   beforeUpload(hook: BeforeUploadHook): void;
   afterUpload(hook: AfterUploadHook): void;
   /** A browser entry that registers inspector tabs, viewer actions and panels, and index columns, filters and sections. */

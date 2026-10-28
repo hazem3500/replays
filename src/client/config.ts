@@ -1,5 +1,7 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
+import type { BetaFlags } from '../shared/beta-flags.ts';
 import type { MalleablePolicy } from '../shared/malleable-policy.ts';
+import { betaAllowed, betaEnabled } from './settings/labs.ts';
 
 /** The deployment's branding, written into index.html by the server (src/server/base-path.ts `withBase`). */
 export function productName() {
@@ -49,6 +51,8 @@ export interface ClientConfig {
   distribution?: { name: string; version: string };
   /** The host's policy for user plugins (only with beta.malleable on): src/shared/malleable-policy.ts. */
   malleable?: MalleablePolicy;
+  /** What the server allows (the ceiling); each person can opt out under Settings › Labs (src/shared/beta-flags.ts). */
+  beta?: BetaFlags;
   /** Plugin index filters the server matches (`api.indexFilter`); absent when there are none. */
   indexFilters?: Array<{ plugin: string; id: string; param: string }>;
   /** Effective edit write capability, with beta.editor as the outer gate. */
@@ -58,15 +62,13 @@ export interface ClientConfig {
 let betaEditorOverride: boolean | undefined;
 
 /**
- * Whether the beta editor is on (server: `REPLAYS_BETA_EDITOR=true` or `beta.editor` in the config file). The server
- * writes it into index.html (`<meta name="app-beta" content="editor">`); off by default. With it off the viewer shows no
- * editor UI, loads no edit lists and never fetches the editor's code.
+ * Whether this server allows the beta editor (`REPLAYS_BETA_EDITOR=true` or `beta.editor` in the config file; written into
+ * index.html as `<meta name="app-beta" content="editor">`; off by default). Saved edits load and play whenever it is allowed:
+ * they are content. Whether this person sees the editing UI is `editingEnabled()`.
  */
 export function betaEditor() {
   if (betaEditorOverride !== undefined) return betaEditorOverride;
-  if (typeof document === 'undefined') return false;
-  const content = document.querySelector<HTMLMetaElement>('meta[name="app-beta"]')?.content ?? '';
-  return content.split(/[\s,]+/).includes('editor');
+  return betaAllowed('editor');
 }
 
 /** Tests only: force the flag without a document. */
@@ -77,6 +79,8 @@ export function setBetaEditorForTests(value: boolean | undefined) {
 /** Host write capability. Absent metadata preserves compatibility with older beta-enabled hosts. */
 export function editingEnabled() {
   if (!betaEditor()) return false;
+  // why: a person who opted out under Settings › Labs sees no editing UI; saved edits still play.
+  if (betaEditorOverride === undefined && !betaEnabled('editor')) return false;
   if (typeof document === 'undefined') return true;
   return document.querySelector<HTMLMetaElement>('meta[name="app-editing"]')?.content !== 'off';
 }

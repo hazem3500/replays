@@ -10,6 +10,8 @@ import { assertPlugin } from './define.ts';
 import { PluginError } from './errors.ts';
 import { PACKAGE_VERSION, satisfies } from './version.ts';
 import { validateRequestPolicy, validateUploadEndpoint, assertDistinctPolicies } from './request-policy.ts';
+import { assertDistinctRoute, validateMiddleware, validateRoute, WebRegistrationError } from './web-registry.ts';
+import type { PluginMiddleware, PluginRoute } from './web-types.ts';
 import type {
   AfterUploadHook,
   BeforeUploadHook,
@@ -20,6 +22,7 @@ import type {
   IdentityResolver,
   PeopleOptions,
   PluginApi,
+  NormalizeUploadHook,
   PrepareUploadHook,
   PurposeDefinition,
   RenderHooks,
@@ -71,9 +74,15 @@ export interface PluginRegistry {
     readonly postAuth: readonly Owned<RequestHook>[];
     readonly response: readonly Owned<ResponseHook>[];
     readonly prepareUpload: readonly Owned<PrepareUploadHook>[];
+    readonly normalizeUpload: readonly Owned<NormalizeUploadHook>[];
     readonly beforeUpload: readonly Owned<BeforeUploadHook>[];
     readonly afterUpload: readonly Owned<AfterUploadHook>[];
+    /** `api.middleware`, by phase, in plugin order. */
+    readonly webPreAuth: readonly Owned<PluginMiddleware>[];
+    readonly webPostAuth: readonly Owned<PluginMiddleware>[];
   };
+  /** `api.route`, in plugin order. */
+  readonly routes: readonly Owned<PluginRoute<unknown>>[];
   readonly clientEntries: readonly ResolvedClientEntry[];
   /** `api.purpose`, in registration order (src/server/purposes.ts merges them with the config's). */
   readonly purposes: readonly Owned<PurposeDefinition>[];
@@ -99,7 +108,18 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   branding: {},
   basePath: undefined,
   redaction: {},
-  hooks: { preAuth: [], postAuth: [], response: [], prepareUpload: [], beforeUpload: [], afterUpload: [] },
+  hooks: {
+    preAuth: [],
+    postAuth: [],
+    response: [],
+    prepareUpload: [],
+    normalizeUpload: [],
+    beforeUpload: [],
+    afterUpload: [],
+    webPreAuth: [],
+    webPostAuth: [],
+  },
+  routes: [],
   clientEntries: [],
   purposes: [],
   retention: [],
@@ -193,9 +213,13 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     postAuth: [] as Owned<RequestHook>[],
     response: [] as Owned<ResponseHook>[],
     prepareUpload: [] as Owned<PrepareUploadHook>[],
+    normalizeUpload: [] as Owned<NormalizeUploadHook>[],
     beforeUpload: [] as Owned<BeforeUploadHook>[],
     afterUpload: [] as Owned<AfterUploadHook>[],
+    webPreAuth: [] as Owned<PluginMiddleware>[],
+    webPostAuth: [] as Owned<PluginMiddleware>[],
   };
+  const routes: Owned<PluginRoute<unknown>>[] = [];
   const requestPolicies: Owned<RequestPolicy>[] = [];
   const uploadEndpoints = new Map<string, Owned<UploadEndpoint>>();
   const clientEntries: ResolvedClientEntry[] = [];
@@ -216,6 +240,14 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   for (const plugin of ordered) {
     function fail(message: string, code: 'invalid-registration' | 'conflict' = 'invalid-registration'): never {
       throw new PluginError(code, message, { plugin: plugin.name });
+    }
+    function web<T>(check: () => T): T {
+      try {
+        return check();
+      } catch (error) {
+        if (error instanceof WebRegistrationError) fail(error.message, error.code);
+        throw error;
+      }
     }
     function needFunction(value: unknown, what: string) {
       if (typeof value !== 'function') fail(`${what} must be a function`);
@@ -329,6 +361,20 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         if (phase !== 'pre-auth' && phase !== 'post-auth') fail(`onRequest phase must be "pre-auth" or "post-auth"`);
         (phase === 'pre-auth' ? hooks.preAuth : hooks.postAuth).push({ plugin: plugin.name, value: hook });
       },
+      middleware(middleware) {
+        const value = web(() => validateMiddleware(middleware));
+        (value.phase === 'pre-auth' ? hooks.webPreAuth : hooks.webPostAuth).push({ plugin: plugin.name, value });
+      },
+      route(route) {
+        const value = web(() => validateRoute(route as PluginRoute<unknown>, plugin.name));
+        web(() =>
+          assertDistinctRoute(
+            routes.filter((owned) => owned.plugin === plugin.name).map((owned) => owned.value),
+            value,
+          ),
+        );
+        routes.push({ plugin: plugin.name, value });
+      },
       onResponse(hook) {
         needFunction(hook, 'onResponse hook');
         hooks.response.push({ plugin: plugin.name, value: hook });
@@ -336,6 +382,10 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
       prepareUpload(hook) {
         needFunction(hook, 'prepareUpload hook');
         hooks.prepareUpload.push({ plugin: plugin.name, value: hook });
+      },
+      normalizeUpload(hook) {
+        needFunction(hook, 'normalizeUpload hook');
+        hooks.normalizeUpload.push({ plugin: plugin.name, value: hook });
       },
       beforeUpload(hook) {
         needFunction(hook, 'beforeUpload hook');
@@ -477,6 +527,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     basePath: basePath?.value,
     redaction: mergeRedactionRules(...redaction),
     hooks,
+    routes,
     clientEntries,
     purposes,
     retention,
@@ -561,9 +612,13 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
       postAuth: [...first.hooks.postAuth, ...second.hooks.postAuth],
       response: [...first.hooks.response, ...second.hooks.response],
       prepareUpload: [...first.hooks.prepareUpload, ...second.hooks.prepareUpload],
+      normalizeUpload: [...first.hooks.normalizeUpload, ...second.hooks.normalizeUpload],
       beforeUpload: [...first.hooks.beforeUpload, ...second.hooks.beforeUpload],
       afterUpload: [...first.hooks.afterUpload, ...second.hooks.afterUpload],
+      webPreAuth: [...first.hooks.webPreAuth, ...second.hooks.webPreAuth],
+      webPostAuth: [...first.hooks.webPostAuth, ...second.hooks.webPostAuth],
     },
+    routes: [...first.routes, ...second.routes],
     clientEntries: [...first.clientEntries, ...second.clientEntries],
     purposes: [...first.purposes, ...second.purposes],
     retention: [...first.retention, ...second.retention],

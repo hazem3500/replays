@@ -340,12 +340,15 @@ describe('source provider looks and attributes', () => {
     expect(() => assertReplayContext({ version: 1, capturedAt: '2026-10-10T12:00:00.000Z', sources: [resolved] })).not.toThrow();
   });
 
-  it('describes the providers that bring an icon or a noun, for the page', () => {
+  it('describes the providers that bring an icon, a noun or a mark, for the page', () => {
     const providers = new SourceProviders({
       templates: [{ id: 'jira', template: 'https://jira.example.com/{ref}', noun: 'Jira issue' }],
     }).register(chat);
     expect(providers.describe()).toEqual([
-      { id: 'jira', label: 'jira', noun: 'Jira issue' },
+      { id: 'github', label: 'GitHub', mark: 'github' },
+      { id: 'gitlab', label: 'GitLab', mark: 'gitlab' },
+      { id: 'url', label: 'Link', mark: 'link' },
+      { id: 'jira', label: 'jira', noun: 'Jira issue', mark: 'jira' },
       { id: 'chat', label: 'Chat', noun: 'Chat thread', icon: SVG },
     ]);
   });
