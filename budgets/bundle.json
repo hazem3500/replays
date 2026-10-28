@@ -177,11 +177,6 @@
       "gzip": 18875,
       "brotli": 16324
     },
-    "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs": {
-      "raw": 294971,
-      "gzip": 77609,
-      "brotli": 63575
-    },
     "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
       "raw": 285690,
       "gzip": 75125,
@@ -191,11 +186,6 @@
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
-    },
-    "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
-      "raw": 32366,
-      "gzip": 9306,
-      "brotli": 8251
     },
     "dist/lib/chunks/define.ts-f3268e685655.mjs": {
       "raw": 32079,
@@ -222,11 +212,6 @@
       "gzip": 21,
       "brotli": 2
     },
-    "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
-      "raw": 27823,
-      "gzip": 8064,
-      "brotli": 7040
-    },
     "dist/lib/chunks/index.ts-7a66decb29dc.mjs": {
       "raw": 28475,
       "gzip": 8376,
@@ -247,11 +232,6 @@
       "gzip": 1658,
       "brotli": 1466
     },
-    "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
-      "raw": 3950,
-      "gzip": 1449,
-      "brotli": 1306
-    },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
       "gzip": 2922,
@@ -270,7 +250,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 140
+      "brotli": 149
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -570,16 +550,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/config.mjs",
-      "cap": {
-        "raw": 348,
-        "gzip": 169,
-        "brotli": 146
-      },
-      "reason": "The config entry now carries the workspace plugin policy normalization added with the extension platform.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/index.mjs",
       "cap": {
         "raw": 1588,
@@ -796,46 +766,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/102"
     },
     {
-      "file": "dist/lib/chunks/index.ts-67a29d5237e2.mjs",
-      "cap": {
-        "raw": 27823,
-        "gzip": 8064,
-        "brotli": 7041
-      },
-      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
-      "file": "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs",
-      "cap": {
-        "raw": 32366,
-        "gzip": 9306,
-        "brotli": 8251
-      },
-      "reason": "The safe-error change alters the shared define chunk source set and so its identity; measured 31423 raw bytes, 656 below the 32079 the previous identity measured on main.",
-      "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs",
-      "cap": {
-        "raw": 294971,
-        "gzip": 77609,
-        "brotli": 63575
-      },
-      "reason": "The safe-error change alters the server entry source set, so the shared schema chunk gets a new source-set identity; its size is the embedded edits schema plus upload-endpoint schema, 286379 raw bytes measured in CI.",
-      "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
-      "file": "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs",
-      "cap": {
-        "raw": 3950,
-        "gzip": 1449,
-        "brotli": 1306
-      },
-      "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
-      "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
       "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
       "cap": {
         "raw": 31954,
@@ -843,6 +773,16 @@
         "brotli": 7500
       },
       "reason": "The registry chunk compresses 1 byte over its previous Brotli cap after the error-classification import changes; measured 7281 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "raw": 348,
+        "gzip": 169,
+        "brotli": 149
+      },
+      "reason": "The config entry compresses 4 bytes of Brotli (140 to 144) and 1 byte of gzip over main after the error-classification changes; measured in CI.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
