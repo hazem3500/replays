@@ -7,6 +7,7 @@ import { type KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, u
 import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { StatusLabel, type StatusTone } from '@/components/ui/status-label.tsx';
 import {
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -24,7 +25,7 @@ import { swapInPlace } from '../navigation.ts';
 import { indexHref, indexReturnHref, parseRoute, replayInSuiteHref, suiteHref } from '../route.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
-import { Topbar, TopbarChip } from '../Topbar.tsx';
+import { Topbar } from '../Topbar.tsx';
 import { EditedViewer } from '../Viewer.tsx';
 import { editsQuery } from '../edits.ts';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
@@ -520,13 +521,14 @@ const TONE_LABELS: Record<string, string> = {
   waiting: 'No recording',
 };
 
-/** The topbar's one status chip for a suite run: a status dot and a word, never a filled block. */
+const STATUS_TONES: Record<string, StatusTone> = { passed: 'success', partial: 'warning', failed: 'danger', running: 'accent' };
+
+/** The topbar's run result: a dot and a word, never a bordered pill (the row's one strong mark); failures read first. */
 function RunStatusChip({ tone }: { tone: string }) {
   return (
-    <TopbarChip data-testid="run-status">
-      <span className={`status-dot tone-${tone}`} aria-hidden="true" />
-      <span className="chip-word">{TONE_LABELS[tone] ?? tone}</span>
-    </TopbarChip>
+    <StatusLabel tone={STATUS_TONES[tone] ?? 'neutral'} strong={tone === 'failed' || tone === 'partial'} data-testid="run-status">
+      {TONE_LABELS[tone] ?? tone}
+    </StatusLabel>
   );
 }
 

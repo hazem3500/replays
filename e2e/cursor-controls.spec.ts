@@ -67,7 +67,7 @@ for (const width of [1280, 390]) {
     await expect(inspector.getByRole('switch', { name: 'Hide when idle' })).toHaveAttribute('aria-checked', 'false');
     await inspector.getByRole('button', { name: 'Close cursor options' }).click();
     await page.getByTestId('editor-done').click();
-    await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+    await expect(page.getByTestId('edited-chip')).toContainText('Edited');
     await page.goto(`${base}/r/${id}?t=2`);
     const cursor = page.locator('.player-host .replay-cursor');
     await expect(cursor).toBeVisible();

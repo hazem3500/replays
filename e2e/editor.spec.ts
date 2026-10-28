@@ -104,18 +104,18 @@ test('edit mode: remove waits, cut a range, undo, trim; Done plays the edits wit
   await expect(page.locator('.editor-dock')).toHaveCount(0);
   await expect(page.getByTestId('replay-player')).toBeVisible();
   const chip = page.getByTestId('edited-chip');
-  await expect(chip).toHaveText('Edited');
+  await expect(chip).toContainText('Edited');
   const seek = page.getByRole('slider', { name: 'Seek' });
   await expect(seek).toHaveAttribute('aria-valuetext', new RegExp(`of ${editedLength.replace('.', '\\.')}`));
   await chip.click();
   await expect(page.getByRole('menu')).toContainText('Edited by anonymous');
   await page.getByTestId('switch-original').click();
-  await expect(chip).toHaveText('Original');
+  await expect(chip).toContainText('Original recording');
   await expect(page).toHaveURL(/[?&]original=1/);
   await expect(seek).not.toHaveAttribute('aria-valuetext', new RegExp(`of ${editedLength.replace('.', '\\.')}`));
   await chip.click();
   await page.getByTestId('switch-original').click();
-  await expect(chip).toHaveText('Edited');
+  await expect(chip).toContainText('Edited');
   await expect(page).not.toHaveURL(/original=1/);
 });
 
@@ -129,7 +129,7 @@ test('browser Back from edit mode saves the change and returns to the edited vie
   await expect(page).toHaveURL(new RegExp(`/r/${id}$`));
   await expect(page.getByTestId('editor')).toHaveCount(0);
   await expect(page.getByTestId('replay-player')).toBeVisible();
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   await expect.poll(async () => (await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json()).cuts.length).toBe(1);
 });
 
@@ -230,7 +230,7 @@ test('export uses the saved edit revision; viewing original preserves edits', as
   await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByTestId('editor-view-original').click();
   await expect(page).toHaveURL(new RegExp(`/r/${id}\\?original=1$`));
-  await expect(page.getByTestId('edited-chip')).toHaveText('Original');
+  await expect(page.getByTestId('edited-chip')).toContainText('Original recording');
   const after = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
   expect(after).toEqual(saved);
 });

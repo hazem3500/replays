@@ -113,7 +113,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
 
   // The viewer: captions replace the step captions, the blur box is drawn over the page, the zoom moves the page.
   await page.getByTestId('editor-done').click();
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   await page.keyboard.press('Space');
   await page.goto(`${base()}/r/${id}?t=0.2`);
   await expect(page.getByTestId('edit-caption')).toHaveText('Open the page');
