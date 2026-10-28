@@ -17,7 +17,7 @@ describe('cursor themes', () => {
   it('offers a theme for every saved appearance, with its hotspot inside its box', () => {
     expect(CURSOR_THEMES.map((theme) => theme.id)).toEqual([...CURSOR_APPEARANCES]);
     for (const theme of CURSOR_THEMES) {
-      const glyph = theme.create(document, undefined);
+      const glyph = theme.create(document);
       expect(glyph.hotspot.x).toBeGreaterThanOrEqual(0);
       expect(glyph.hotspot.x).toBeLessThanOrEqual(glyph.width);
       expect(glyph.hotspot.y).toBeGreaterThanOrEqual(0);
@@ -27,12 +27,12 @@ describe('cursor themes', () => {
 
   it('keeps the default arrow to the press squish, with no click ring', () => {
     expect(cursorTheme(undefined).id).toBe('arrow');
-    expect(effectOf(cursorTheme('arrow').create(document, undefined).nodes)).toBeUndefined();
+    expect(effectOf(cursorTheme('arrow').create(document).nodes)).toBeUndefined();
   });
 
   it('draws a ripple or pulse only while a press is under way', () => {
     for (const id of ['classic-arrow', 'hand', 'dot', 'ring'] as const) {
-      const glyph = cursorTheme(id).create(document, undefined);
+      const glyph = cursorTheme(id).create(document);
       const effect = effectOf(glyph.nodes);
       if (!(effect instanceof SVGElement)) throw new Error(`${id} has no click effect`);
       glyph.feedback(-1);

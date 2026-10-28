@@ -28,7 +28,7 @@ export interface CursorTheme {
   label: string;
   description: string;
   feedback: CursorFeedback;
-  create(doc: Document, color: string | undefined): CursorGlyph;
+  create(doc: Document, color?: string): CursorGlyph;
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -51,9 +51,8 @@ function svg(doc: Document, tag: string, attributes: Record<string, string | num
   return node;
 }
 
-function paint(node: SVGElement, fill: string, stroke: string, width: number) {
-  node.style.cssText = `fill:${fill};stroke:${stroke};stroke-width:${width};stroke-linejoin:round;stroke-linecap:round`;
-}
+const paint = (fill: string, stroke: string, width: number) =>
+  `fill:${fill};stroke:${stroke};stroke-width:${width};stroke-linejoin:round;stroke-linecap:round`;
 
 function channel(hex: string, at: number) {
   const c = Number.parseInt(hex.slice(at, at + 2), 16) / 255;
@@ -86,7 +85,7 @@ function clickEffect(doc: Document, kind: 'ripple' | 'pulse', { hotspot, color, 
   const peak = kind === 'ripple' ? 0.55 : 0.35;
   return {
     node,
-    draw(press: number) {
+    draw: (press: number) => {
       const p = press < 0 || press >= length ? -1 : press / length;
       if (p < 0) {
         // invariant: hidden is one state whatever came before, so a seek lands on the same DOM from any direction.
@@ -131,8 +130,7 @@ const ARROW: CursorTheme = {
   feedback: 'press',
   create(doc, color) {
     const root = svg(doc, 'svg', { viewBox: `0 0 ${CURSOR_CANVAS} ${CURSOR_CANVAS}`, 'aria-hidden': 'true' });
-    const path = svg(doc, 'path', { d: CURSOR_PATH });
-    paint(path, color ?? INK, OUTLINE, 8);
+    const path = svg(doc, 'path', { d: CURSOR_PATH, style: paint(color ?? INK, OUTLINE, 8) });
     root.append(path);
     const scale = BOX / CURSOR_CANVAS;
     return glyph(doc, {
@@ -153,8 +151,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     feedback: 'ripple',
     create(doc, color) {
       const root = boxSvg(doc);
-      const path = svg(doc, 'path', { d: CLASSIC_ARROW });
-      paint(path, color ?? INK, OUTLINE, 1.75);
+      const path = svg(doc, 'path', { d: CLASSIC_ARROW, style: paint(color ?? INK, OUTLINE, 1.75) });
       root.append(path);
       return glyph(doc, { root, hotspot: { x: 9, y: 5 }, feedback: 'ripple', color: color ?? INK });
     },
@@ -166,8 +163,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     feedback: 'ripple',
     create(doc, color) {
       const root = boxSvg(doc);
-      const path = svg(doc, 'path', { d: HAND });
-      paint(path, color ?? OUTLINE, color ? OUTLINE : INK, 1.5);
+      const path = svg(doc, 'path', { d: HAND, style: paint(color ?? OUTLINE, color ? OUTLINE : INK, 1.5) });
       root.append(path);
       return glyph(doc, { root, hotspot: { x: 13.5, y: 3.5 }, feedback: 'ripple', color: color ?? INK });
     },
@@ -180,8 +176,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     create(doc, color) {
       const fill = color ?? CURSOR_COLORS.accent;
       const root = boxSvg(doc);
-      const dot = svg(doc, 'circle', { cx: 16, cy: 16, r: 5.5 });
-      paint(dot, fill, OUTLINE, 2);
+      const dot = svg(doc, 'circle', { cx: 16, cy: 16, r: 5.5, style: paint(fill, OUTLINE, 2) });
       root.append(dot);
       return glyph(doc, { root, hotspot: { x: 16, y: 16 }, feedback: 'pulse', color: fill });
     },
@@ -194,13 +189,10 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     create(doc, color) {
       const tint = color ?? CURSOR_COLORS.accent;
       const root = boxSvg(doc);
-      const halo = svg(doc, 'circle', { cx: 16, cy: 16, r: 10 });
-      paint(halo, 'none', OUTLINE, 4.5);
-      const ring = svg(doc, 'circle', { cx: 16, cy: 16, r: 10 });
-      paint(ring, tint, tint, 2.25);
-      ring.style.fillOpacity = '0.16';
-      const centre = svg(doc, 'circle', { cx: 16, cy: 16, r: 1.75 });
-      paint(centre, tint, 'none', 0);
+      const halo = svg(doc, 'circle', { cx: 16, cy: 16, r: 10, style: paint('none', OUTLINE, 4.5) });
+      const ring = svg(doc, 'circle', { cx: 16, cy: 16, r: 10, style: paint(tint, tint, 2.25) });
+      ring.style.setProperty('fill-opacity', '0.16');
+      const centre = svg(doc, 'circle', { cx: 16, cy: 16, r: 1.75, style: paint(tint, 'none', 0) });
       root.append(halo, ring, centre);
       return glyph(doc, { root, hotspot: { x: 16, y: 16 }, feedback: 'pulse', color: tint, radius: [10, 20] });
     },
@@ -213,8 +205,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     create(doc, color) {
       const fill = color ?? CURSOR_COLORS.accent;
       const root = boxSvg(doc);
-      const path = svg(doc, 'path', { d: AGENT_ARROW });
-      paint(path, fill, OUTLINE, 1.5);
+      const path = svg(doc, 'path', { d: AGENT_ARROW, style: paint(fill, OUTLINE, 1.5) });
       root.append(path);
       const tag = doc.createElement('span');
       tag.className = 'replay-cursor-tag';
