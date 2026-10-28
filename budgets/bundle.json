@@ -269,7 +269,7 @@
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
-      "gzip": 513,
+      "gzip": 512,
       "brotli": 436
     },
     "dist/lib/plugin.mjs": {
