@@ -1,4 +1,6 @@
 import { StoredDataError } from './storage/types.ts';
+import { HttpError } from '../shared/http-error.ts';
+import { confineToEndpoint, routeAllowed, uploadEndpointAt } from './api/upload-endpoints.ts';
 import { applyRequestPolicy } from './request-policy.ts';
 import { normalizeSignIn, signInReturn, type SignInConfig } from '../shared/sign-in.ts';
 import { createHash } from 'node:crypto';
@@ -373,7 +375,13 @@ export function createApp(options: AppOptions) {
         return;
       }
 
-      const authenticated: Identity | undefined = await options.auth.authenticate(request);
+      // invariant: an endpoint's own credentials replace the deployment adapter on its path only, and confine the identity to it.
+      const endpointAuth = uploadEndpointAt(registry, path)?.authenticate;
+      const authenticated: Identity | undefined = endpointAuth ? await endpointAuth(request) : await options.auth.authenticate(request);
+      if (!authenticated && endpointAuth) {
+        send(response, 401, 'credentials required', 'text/plain; charset=utf-8', 'no-store');
+        return;
+      }
       if (!authenticated) {
         const recovery = signIn && path === signIn.path && request.method === 'GET' && isBrowserNavigation(request);
         // loginUrl adapters (including OIDC) return to this authenticated endpoint after their callback.
@@ -393,17 +401,12 @@ export function createApp(options: AppOptions) {
         return;
       }
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
-      const user = await resolveIdentity(authenticated, request);
+      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, request);
       identities.set(request, user);
-      if (user.authScopes?.includes('replays:upload')) {
-        const uploadRoute =
-          (request.method === 'POST' && path === '/api/replays') ||
-          (request.method === 'PUT' && Boolean(parseReplayPath(path)?.video)) ||
-          (request.method === 'GET' && path === '/api/cli/auth/status');
-        if (!uploadRoute) {
-          send(response, 403, 'upload token cannot access this route');
-          return;
-        }
+      const denied = routeAllowed(registry, user, request.method ?? 'GET', path);
+      if (denied) {
+        send(response, 403, denied);
+        return;
       }
       if (!['GET', 'HEAD'].includes(request.method ?? 'GET') && !sameOrigin(request) && !requestPolicy.csrfAllowed) {
         send(response, 403, 'cross-site request');
@@ -566,6 +569,9 @@ export function createApp(options: AppOptions) {
   };
 }
 
+/** Headers a thrown `HttpError` carries onto its response (`Retry-After`); none for other errors. */
+const errorHeaders = (error: unknown): Record<string, string> => (error instanceof HttpError ? { ...error.headers } : {});
+
 /**
  * The error response for a failed request: explicit statuses win; input validation (assert* throws plain
  * Errors), bad JSON and bad URLs are 400s with their message; anything else (fs, programming errors) is a
@@ -581,9 +587,11 @@ function fail(request: IncomingMessage, response: ServerResponse, error: unknown
   recordError(error, status);
   const requestId = request.headers['x-request-id'] ?? request.headers['x-cloud-trace-context'] ?? '-';
   console.error(`request failed: ${request.method} ${request.url?.split('?')[0]} (request ${String(requestId)}, status ${status})`, error);
+  const headers = errorHeaders(error);
   if (response.headersSent) response.end();
   else if (error instanceof StoredDataError)
     send(response, status, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8');
-  else if (status >= 500) send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8');
-  else send(response, status, (error as Error).message);
+  else if (status >= 500)
+    send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8', REVALIDATE, headers);
+  else send(response, status, (error as Error).message, 'text/plain; charset=utf-8', REVALIDATE, headers);
 }
