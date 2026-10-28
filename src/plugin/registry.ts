@@ -4,6 +4,7 @@ import type { AuthAdapter, AuthPluginFactory } from '../server/auth/types.ts';
 import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { assertProfileConfig } from '../shared/profiles.ts';
+import { assertViewPreset, BUILT_IN_VIEWS, type ViewPreset } from '../shared/views.ts';
 import { compileHandlePattern, HANDLE_ID, isPersonRole } from '../shared/people.ts';
 import { assertProviderLook, type SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
@@ -86,6 +87,8 @@ export interface PluginRegistry {
   readonly clientEntries: readonly ResolvedClientEntry[];
   /** `api.profile`, in registration order (src/server/profiles.ts merges them with the config's). */
   readonly profiles: readonly Owned<ProfileDefinition>[];
+  /** `api.view`, in registration order (src/server/views.ts merges them with the built-ins and the config's). */
+  readonly views: readonly Owned<ViewPreset>[];
   /** `api.retention` rules. */
   readonly retention: readonly Owned<RetentionRuleDefinition>[];
   /** `api.render` hooks, in plugin order (src/server/render-hooks.ts runs them). */
@@ -122,6 +125,7 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   routes: [],
   clientEntries: [],
   profiles: [],
+  views: [],
   retention: [],
   render: [],
   summaryFields: [],
@@ -224,6 +228,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   const uploadEndpoints = new Map<string, Owned<UploadEndpoint>>();
   const clientEntries: ResolvedClientEntry[] = [];
   const profiles: Owned<ProfileDefinition>[] = [];
+  const views: Owned<ViewPreset>[] = [];
   const retention: Owned<RetentionRuleDefinition>[] = [];
   const render: Owned<RenderHooks>[] = [];
   const summaryFields: Owned<SummaryFieldsDefinition>[] = [];
@@ -441,6 +446,18 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
       profile(definition) {
         addProfile(definition);
       },
+      view(preset) {
+        try {
+          assertViewPreset(preset, 'view');
+        } catch (error) {
+          fail((error as Error).message);
+        }
+        if (BUILT_IN_VIEWS.some((view) => view.id === preset.id))
+          fail(`view ${JSON.stringify(preset.id)} is built in; retune it with a views entry in the config file`, 'conflict');
+        const taken = views.find((entry) => entry.value.id === preset.id);
+        if (taken) fail(`view ${JSON.stringify(preset.id)} is already registered by ${taken.plugin}`, 'conflict');
+        views.push({ plugin: plugin.name, value: preset });
+      },
       retention(rule) {
         if (!rule || typeof rule !== 'object') fail('retention needs { days(summary) }');
         needFunction(rule.days, 'retention.days');
@@ -544,6 +561,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     routes,
     clientEntries,
     profiles,
+    views,
     retention,
     render,
     summaryFields,
@@ -605,6 +623,8 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
   const profile = second.profiles.find((entry) => first.profiles.some((other) => other.value.id === entry.value.id));
   if (profile)
     throw new PluginError('conflict', `profile ${JSON.stringify(profile.value.id)} is registered twice`, { plugin: profile.plugin });
+  const view = second.views.find((entry) => first.views.some((other) => other.value.id === entry.value.id));
+  if (view) throw new PluginError('conflict', `view ${JSON.stringify(view.value.id)} is registered twice`, { plugin: view.plugin });
   if (first.people && second.people)
     throw new PluginError('conflict', `registers people, but ${first.people.plugin} already did; a deployment has one`, {
       plugin: second.people.plugin,
@@ -635,6 +655,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     routes: [...first.routes, ...second.routes],
     clientEntries: [...first.clientEntries, ...second.clientEntries],
     profiles: [...first.profiles, ...second.profiles],
+    views: [...first.views, ...second.views],
     retention: [...first.retention, ...second.retention],
     render: [...first.render, ...second.render],
     summaryFields: [...first.summaryFields, ...second.summaryFields],

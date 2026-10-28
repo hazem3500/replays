@@ -116,6 +116,7 @@ describe('the profile catalog', () => {
       }),
     ]);
     const catalog = createProfileCatalog({
+      builtIns: false,
       config: [
         { id: 'triage', label: 'Triage', retentionDays: 90, viewer: { leadMs: 500 } },
         { id: 'review', label: 'Design review', order: 1 },
@@ -353,6 +354,7 @@ describe('profiles in the app', () => {
     ]);
     const origin = await start(
       createProfileCatalog({
+        builtIns: false,
         config: [{ id: 'walkthrough', label: 'Walkthrough', viewer: { captions: true } }],
         plugins: registry.profiles,
       }),
@@ -412,7 +414,7 @@ describe('profiles in the app', () => {
         ],
       },
     });
-    expect(runtime.settings.profiles.ids).toEqual(['walkthrough', 'triage']);
+    expect(runtime.settings.profiles.ids).toEqual(['walkthrough', 'triage', 'performance']);
     expect(runtime.settings.retention).toMatchObject({ days: 30, profiles: { walkthrough: 0, triage: 14 }, rules: [expect.any(Function)] });
     await expect(loadSettings({}, { profiles: [{ id: 'x', label: 'X', poster: 'nope' as never }] })).rejects.toThrow(
       /profiles\[0\].poster/,

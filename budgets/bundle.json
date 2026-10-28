@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 433323,
-      "gzip": 111155,
-      "brotli": 90907
+      "raw": 459670,
+      "gzip": 118130,
+      "brotli": 96249
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
       "gzip": 13521,
-      "brotli": 11998
+      "brotli": 11999
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -88,14 +88,14 @@
       "brotli": 225
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 42700,
-      "gzip": 7760,
-      "brotli": 6920
+      "raw": 41300,
+      "gzip": 7570,
+      "brotli": 6740
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 95100,
-      "gzip": 32050,
-      "brotli": 27400
+      "raw": 94200,
+      "gzip": 31800,
+      "brotli": 27250
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -104,7 +104,7 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 215881,
-      "gzip": 73373,
+      "gzip": 73366,
       "brotli": 62032
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -143,9 +143,9 @@
       "brotli": 817
     },
     "dist/client/assets/player-HASH.js": {
-      "raw": 312700,
-      "gzip": 97100,
-      "brotli": 70759
+      "raw": 316832,
+      "gzip": 97939,
+      "brotli": 70913
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -168,9 +168,9 @@
       "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
-      "raw": 1397,
-      "gzip": 666,
-      "brotli": 517
+      "raw": 1516,
+      "gzip": 706,
+      "brotli": 565
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 6721,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 705,
-      "brotli": 624
+      "brotli": 614
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
@@ -219,7 +219,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50387,
-      "gzip": 18326,
+      "gzip": 18344,
       "brotli": 15958
     },
     "dist/client/index.html": {
@@ -242,10 +242,10 @@
       "gzip": 106,
       "brotli": 101
     },
-    "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
-      "raw": 69161,
-      "gzip": 18872,
-      "brotli": 16324
+    "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs": {
+      "raw": 73309,
+      "gzip": 20114,
+      "brotli": 17393
     },
     "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
       "raw": 308545,
@@ -257,20 +257,20 @@
       "gzip": 5317,
       "brotli": 4640
     },
-    "dist/lib/chunks/define.ts-2cdb34849bf4.mjs": {
-      "raw": 39108,
-      "gzip": 11192,
-      "brotli": 9890
+    "dist/lib/chunks/define.ts-c99e647c6d2f.mjs": {
+      "raw": 46985,
+      "gzip": 13251,
+      "brotli": 11662
+    },
+    "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
+      "raw": 32268,
+      "gzip": 9209,
+      "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
       "gzip": 10764,
       "brotli": 9522
-    },
-    "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs": {
-      "raw": 25393,
-      "gzip": 7238,
-      "brotli": 6392
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
       "raw": 434,
@@ -282,10 +282,10 @@
       "gzip": 21,
       "brotli": 2
     },
-    "dist/lib/chunks/index.ts-3d8b996b5201.mjs": {
-      "raw": 39913,
-      "gzip": 11514,
-      "brotli": 10056
+    "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs": {
+      "raw": 43352,
+      "gzip": 12236,
+      "brotli": 10663
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
@@ -293,9 +293,9 @@
       "brotli": 4342
     },
     "dist/lib/chunks/registry.ts-2e034be27725.mjs": {
-      "raw": 32700,
-      "gzip": 8327,
-      "brotli": 7270
+      "raw": 33699,
+      "gzip": 8512,
+      "brotli": 7425
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -320,7 +320,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 145
+      "brotli": 144
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -408,9 +408,9 @@
       "brotli": 3072
     },
     "dist/lib/server.mjs": {
-      "raw": 1755,
-      "gzip": 570,
-      "brotli": 492
+      "raw": 1829,
+      "gzip": 598,
+      "brotli": 508
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -428,14 +428,14 @@
       "brotli": 434343
     },
     "initial/render.html/css": {
-      "raw": 5784,
+      "raw": 5788,
       "gzip": 2529,
-      "brotli": 2097
+      "brotli": 2103
     },
     "initial/render.html/js": {
       "raw": 542325,
       "gzip": 168433,
-      "brotli": 132200
+      "brotli": 131773
     }
   },
   "allowances": [
@@ -792,7 +792,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -862,7 +862,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -933,54 +933,64 @@
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
-      "file": "dist/lib/server.mjs",
-      "cap": {
-        "raw": 1755,
-        "gzip": 570,
-        "brotli": 492
-      },
-      "reason": "The /server entry declares the deprecated PurposeCatalog and createPurposeCatalog aliases on top of the workspace plugin policy and settings routes from #96 (main 1619/552/467, head 1703/566/477).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/chunks/define.ts-2cdb34849bf4.mjs",
-      "cap": {
-        "raw": 39108,
-        "gzip": 11192,
-        "brotli": 9890
-      },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs",
-      "cap": {
-        "raw": 25393,
-        "gzip": 7239,
-        "brotli": 6393
-      },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/chunks/index.ts-3d8b996b5201.mjs",
-      "cap": {
-        "raw": 39913,
-        "gzip": 11514,
-        "brotli": 10056
-      },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
       "cap": {
-        "raw": 32700,
-        "gzip": 8327,
-        "brotli": 7270
+        "raw": 33699,
+        "gzip": 8512,
+        "brotli": 7425
       },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1829,
+        "gzip": 600,
+        "brotli": 509
+      },
+      "reason": "The /server entry exports ViewCatalog and createViewCatalog (main 1703/567/477, head 1775/582/494).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-c99e647c6d2f.mjs",
+      "cap": {
+        "raw": 46985,
+        "gzip": 13251,
+        "brotli": 11662
+      },
+      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces define.ts-2cdb34849bf4 (main 39108/11192/9890).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs",
+      "cap": {
+        "raw": 43352,
+        "gzip": 12236,
+        "brotli": 10663
+      },
+      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces index.ts-3d8b996b5201 (main 39913/11514/10056).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs",
+      "cap": {
+        "raw": 73309,
+        "gzip": 20114,
+        "brotli": 17393
+      },
+      "reason": "Chunk membership moved when capture settings joined the capture library; replaces bundle-io.ts-9a2bdd34cb92 (main 69161 raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
+    },
+    {
+      "file": "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs",
+      "cap": {
+        "raw": 32268,
+        "gzip": 9209,
+        "brotli": 8197
+      },
+      "reason": "Network body capture and redaction shared by the capture library and the server privacy pass (src/shared/network-bodies.ts, src/capture/har-bodies.ts).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
     },
     {
       "file": "dist/cli/cli.mjs",

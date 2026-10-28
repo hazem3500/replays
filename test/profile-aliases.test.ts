@@ -94,10 +94,8 @@ describe('the deprecated purpose names over HTTP', () => {
   it('lists the profiles under purposes in /api/config too', async () => {
     const origin = await start(catalog());
     const config: unknown = await (await fetch(`${origin}/api/config`)).json();
-    expect(config).toMatchObject({
-      purposes: [{ id: 'triage' }, { id: 'walkthrough' }],
-      profiles: [{ id: 'triage' }, { id: 'walkthrough' }],
-    });
+    const ids = [{ id: 'triage' }, { id: 'walkthrough' }, { id: 'performance' }];
+    expect(config).toMatchObject({ purposes: ids, profiles: ids });
   });
 
   it('sends an inferred profile under x-replay-purpose too', async () => {

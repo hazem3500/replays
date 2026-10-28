@@ -22,6 +22,8 @@ import {
   type ReplayCursorSettings,
 } from './cursor.ts';
 import {
+  BLUR_STYLES,
+  type BlurStyle,
   MAX_CAPTION,
   MAX_EFFECTS,
   MAX_ZOOM_SCALE,
@@ -173,8 +175,10 @@ function assertEffects(edits: Record<string, unknown>, name: string, duration: n
       if (index > 0 && range.from < sorted[index - 1]!.to) throw new Error(`${name}.speeds must not overlap`);
     }
   }
-  stretches(edits.blurs, `${name}.blurs`, ['x', 'y', 'width', 'height'], duration, (item, field) => {
+  stretches(edits.blurs, `${name}.blurs`, ['x', 'y', 'width', 'height', 'style'], duration, (item, field) => {
     for (const key of ['x', 'y', 'width', 'height']) fraction(item[key], `${field}.${key}`);
+    if (item.style !== undefined && !BLUR_STYLES.includes(item.style as BlurStyle))
+      throw new Error(`${field}.style must be one of ${BLUR_STYLES.join(', ')}`);
     if ((item.width as number) < MIN_BLUR_SIZE || (item.height as number) < MIN_BLUR_SIZE) throw new Error(`${field} is too small`);
     if ((item.x as number) + (item.width as number) > 1.0001 || (item.y as number) + (item.height as number) > 1.0001)
       throw new Error(`${field} must stay inside the frame`);
@@ -358,6 +362,7 @@ function effectLists(edits: ReplayEdits): Pick<ReplayEdits, 'zooms' | 'speeds' |
         y: frac(blur.y),
         width: frac(blur.width),
         height: frac(blur.height),
+        ...(blur.style && blur.style !== 'blur' ? { style: blur.style } : {}),
       }))
       .sort(byTime);
   if (edits.captions?.length)
