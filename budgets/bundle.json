@@ -84,8 +84,8 @@
     },
     "dist/client/assets/performance-HASH.js": {
       "raw": 4242,
-      "brotli": 1629,
-      "gzip": 1818
+      "brotli": 1620,
+      "gzip": 1806
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -129,7 +129,7 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
-      "brotli": 456,
+      "brotli": 455,
       "gzip": 500
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
