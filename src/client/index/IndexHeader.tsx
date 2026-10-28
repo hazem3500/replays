@@ -353,10 +353,14 @@ export function CommandSearch({
 
 /* ---------- Scope bar ---------- */
 
-/** Row 2: the result count on the left; Filter, sort and layout (desktop) on the right. */
-export function ScopeBar({ count, children }: { count: ReactNode; children?: ReactNode }) {
+/**
+ * Row 2, one toolbar: the purpose tabs (`lead`) or, without purposes, the result count on the left; the active
+ * filters, Filter, sort and layout (desktop) on the right. With tabs the count stays for screen readers only.
+ */
+export function ScopeBar({ count, lead, children }: { count: ReactNode; lead?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="scope-bar">
+    <div className="scope-bar" data-lead={lead ? '' : undefined}>
+      {lead}
       {count}
       {children ? <div className="scope-bar-end">{children}</div> : null}
     </div>
