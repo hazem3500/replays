@@ -47,7 +47,11 @@ function rawPost(
     request.on('response', (response) => {
       let data = '';
       response.on('data', (part: Buffer) => (data += part.toString()));
-      response.on('end', () => resolve(`${response.statusCode} ${data}`));
+      response.on('end', () => {
+        // why: an unfinished request keeps its connection open, and server.close() waits for it for about six seconds.
+        request.destroy();
+        resolve(`${response.statusCode} ${data}`);
+      });
     });
     request.on('error', reject);
     for (const chunk of chunks) request.write(chunk);

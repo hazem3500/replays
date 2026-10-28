@@ -12,7 +12,8 @@ afterEach(async () => {
   await Promise.all(running.splice(0).map((server) => server.close()));
 });
 
-const quiet = { log: () => {} };
+/** `agent-native-runtime.test.ts` owns the default application runtime; these tests are about configuration and lifecycle. */
+const quiet = { application: false as const, log: () => {} };
 const baseEnv = async () => ({ DATA_DIR: await mkdtemp(join(tmpdir(), 'replays-start-')), POSTERS_DISABLED: '1', RENDER_DISABLED: '1' });
 
 describe('startServer', () => {
