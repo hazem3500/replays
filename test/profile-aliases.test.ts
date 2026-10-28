@@ -13,7 +13,7 @@ import { configProfiles, createProfileCatalog, type ProfileCatalog } from '../sr
 import { nextOverrides, withOverrides } from '../src/server/replay-meta.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import type { AliasedProfile } from '../src/shared/profiles.ts';
-import { type ReplaySummary, summarizeReplay } from '../src/shared/replay.ts';
+import { summarizeReplay } from '../src/shared/replay.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 // why: profiles were called purposes, and every old public name keeps working until the deprecation window ends.
@@ -64,9 +64,9 @@ describe('the deprecated purpose names over HTTP', () => {
   it('stores an upload with meta.purpose as meta.profile', async () => {
     const origin = await start(catalog());
     expect((await post(origin, legacy('old-producer', 'triage'))).status).toBe(201);
-    const stored = (await (await fetch(`${origin}/api/replays/old-producer`)).json()) as { meta: Record<string, unknown> };
-    expect(stored.meta).toMatchObject({ profile: 'triage' });
-    expect(stored.meta).not.toHaveProperty('purpose');
+    const stored: unknown = await (await fetch(`${origin}/api/replays/old-producer`)).json();
+    expect(stored).toMatchObject({ meta: { profile: 'triage' } });
+    expect(stored).not.toHaveProperty('meta.purpose');
   });
 
   it('refuses an upload whose meta.profile and meta.purpose disagree', async () => {
@@ -79,22 +79,22 @@ describe('the deprecated purpose names over HTTP', () => {
   it('keeps serving summary.purpose next to summary.profile', async () => {
     const origin = await start(catalog());
     await post(origin, legacy('old-producer', 'triage'));
-    const [listed] = (await (await fetch(`${origin}/api/replays`)).json()) as ReplaySummary[];
-    expect(listed).toMatchObject({ profile: 'triage', profileInferred: false, purpose: 'triage', purposeInferred: false });
+    const listed: unknown = await (await fetch(`${origin}/api/replays`)).json();
+    expect(listed).toMatchObject([{ profile: 'triage', profileInferred: false, purpose: 'triage', purposeInferred: false }]);
   });
 
   it('filters the list with ?purpose=', async () => {
     const origin = await start(catalog());
     await post(origin, legacy('kept', 'triage'));
     await post(origin, replay('other'));
-    const listed = (await (await fetch(`${origin}/api/replays?purpose=triage`)).json()) as ReplaySummary[];
-    expect(listed.map((item) => item.id)).toEqual(['kept']);
+    const listed: unknown = await (await fetch(`${origin}/api/replays?purpose=triage`)).json();
+    expect(listed).toEqual([expect.objectContaining({ id: 'kept' })]);
   });
 
   it('lists the profiles under purposes in /api/config too', async () => {
     const origin = await start(catalog());
-    const config = (await (await fetch(`${origin}/api/config`)).json()) as { profiles: unknown[]; purposes: unknown[] };
-    expect(config.purposes).toEqual(config.profiles);
+    const config: unknown = await (await fetch(`${origin}/api/config`)).json();
+    expect(config).toMatchObject({ purposes: [{ id: 'triage' }, { id: 'walkthrough' }], profiles: [{ id: 'triage' }, { id: 'walkthrough' }] });
   });
 
   it('sends an inferred profile under x-replay-purpose too', async () => {
@@ -149,7 +149,7 @@ describe('configuration and plugins', () => {
   });
 
   it('registers api.purpose as a profile and warns once per plugin', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const registry = await resolvePlugins([
       definePlugin({
         name: 'old-plugin',

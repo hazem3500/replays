@@ -79,42 +79,56 @@ export function isRetentionDays(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 3650;
 }
 
+type Check = (value: unknown) => boolean;
+
+const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
+const oneOf =
+  (allowed: readonly unknown[]): Check =>
+  (value) =>
+    allowed.includes(value);
+
+const PROFILE_CHECKS: Readonly<Record<string, readonly [Check, string]>> = {
+  order: [(value) => typeof value === 'number' && Number.isFinite(value), 'must be a finite number'],
+  retentionDays: [isRetentionDays, 'must be a whole number of days from 0 (never expire) to 3650'],
+  poster: [oneOf(POSTER_MOMENTS), `must be one of ${POSTER_MOMENTS.join(', ')}`],
+};
+
+const VIEWER_CHECKS: Readonly<Record<string, readonly [Check, string]>> = {
+  openAt: [oneOf(['start', 'first-error']), 'must be "start" or "first-error"'],
+  leadMs: [
+    (value) => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_LEAD_MS,
+    `must be a whole number of milliseconds from 0 to ${MAX_LEAD_MS}`,
+  ],
+  inspector: [oneOf(['open', 'collapsed']), 'must be "open" or "collapsed"'],
+  captions: [(value) => typeof value === 'boolean', 'must be a boolean'],
+};
+
+function assertKnownKeys(record: Record<string, unknown>, allowed: ReadonlySet<string>, where: string, extra: readonly string[] = []) {
+  const unknown = Object.keys(record).filter((key) => !allowed.has(key) && !extra.includes(key));
+  if (unknown.length) throw new Error(`${where} has unknown keys: ${unknown.join(', ')}`);
+}
+
+function assertFields(record: Record<string, unknown>, checks: Readonly<Record<string, readonly [Check, string]>>, where: string) {
+  for (const [key, [check, message]] of Object.entries(checks))
+    if (record[key] !== undefined && !check(record[key])) throw new Error(`${where}.${key} ${message}`);
+}
+
 /**
  * Throws a readable error unless `value` is a well-formed profile. `extra` lists keys allowed besides the config
  * ones (`infer` for plugins).
  */
 export function assertProfileConfig(value: unknown, where = 'profile', extra: readonly string[] = []): asserts value is ProfileConfig {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${where} must be an object { id, label }`);
-  const profile = value as Record<string, unknown>;
-  const unknown = Object.keys(profile).filter((key) => !CONFIG_KEYS.has(key) && !extra.includes(key));
-  if (unknown.length) throw new Error(`${where} has unknown keys: ${unknown.join(', ')}`);
-  if (!isProfileId(profile.id))
-    throw new Error(`${where}.id must look like "triage" or "design-review" (got ${JSON.stringify(profile.id)})`);
-  const label = profile.label;
+  if (!isRecord(value)) throw new Error(`${where} must be an object { id, label }`);
+  assertKnownKeys(value, CONFIG_KEYS, where, extra);
+  if (!isProfileId(value.id)) throw new Error(`${where}.id must look like "triage" or "design-review" (got ${JSON.stringify(value.id)})`);
+  const label = value.label;
   if (typeof label !== 'string' || !label.trim() || label.length > MAX_LABEL)
     throw new Error(`${where}.label must be a non-empty string of at most ${MAX_LABEL} characters`);
-  if (profile.order !== undefined && !Number.isFinite(profile.order)) throw new Error(`${where}.order must be a finite number`);
-  if (profile.retentionDays !== undefined && !isRetentionDays(profile.retentionDays))
-    throw new Error(`${where}.retentionDays must be a whole number of days from 0 (never expire) to 3650`);
-  if (profile.poster !== undefined && !POSTER_MOMENTS.includes(profile.poster as PosterMoment))
-    throw new Error(`${where}.poster must be one of ${POSTER_MOMENTS.join(', ')}`);
-  if (profile.viewer !== undefined) {
-    const viewer = profile.viewer as Record<string, unknown>;
-    if (!viewer || typeof viewer !== 'object' || Array.isArray(viewer)) throw new Error(`${where}.viewer must be an object`);
-    const extraViewer = Object.keys(viewer).filter((key) => !VIEWER_KEYS.has(key));
-    if (extraViewer.length) throw new Error(`${where}.viewer has unknown keys: ${extraViewer.join(', ')}`);
-    if (viewer.openAt !== undefined && viewer.openAt !== 'start' && viewer.openAt !== 'first-error')
-      throw new Error(`${where}.viewer.openAt must be "start" or "first-error"`);
-    if (
-      viewer.leadMs !== undefined &&
-      (typeof viewer.leadMs !== 'number' || !Number.isInteger(viewer.leadMs) || viewer.leadMs < 0 || viewer.leadMs > MAX_LEAD_MS)
-    )
-      throw new Error(`${where}.viewer.leadMs must be a whole number of milliseconds from 0 to ${MAX_LEAD_MS}`);
-    if (viewer.inspector !== undefined && viewer.inspector !== 'open' && viewer.inspector !== 'collapsed')
-      throw new Error(`${where}.viewer.inspector must be "open" or "collapsed"`);
-    if (viewer.captions !== undefined && typeof viewer.captions !== 'boolean')
-      throw new Error(`${where}.viewer.captions must be a boolean`);
-  }
+  assertFields(value, PROFILE_CHECKS, where);
+  if (value.viewer === undefined) return;
+  if (!isRecord(value.viewer)) throw new Error(`${where}.viewer must be an object`);
+  assertKnownKeys(value.viewer, VIEWER_KEYS, `${where}.viewer`);
+  assertFields(value.viewer, VIEWER_CHECKS, `${where}.viewer`);
 }
 
 /** `meta.profile` on an upload, checked against the deployment's profiles; `undefined` when it is fine. */

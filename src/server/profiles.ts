@@ -86,7 +86,8 @@ export class ProfileCatalog {
     for (const candidate of this.inferrers) {
       let match = false;
       try {
-        match = candidate.infer!(input) === true;
+        const answer: unknown = candidate.infer?.(input);
+        match = answer === true;
       } catch (error) {
         if (!this.failed.has(candidate.info.id)) {
           this.failed.add(candidate.info.id);
@@ -116,15 +117,14 @@ export function wrapRetentionRules(
     return (summary) => {
       try {
         const days = value.days(summary);
-        if (days === undefined || days === null) return undefined;
+        if (days === undefined || days === null) return;
         if (typeof days !== 'number' || !Number.isInteger(days) || days < 0) {
           report(`days() must return a whole number of days, 0 or undefined (got ${JSON.stringify(days)})`);
-          return undefined;
+          return;
         }
         return days;
       } catch (error) {
         report(`days() failed: ${error instanceof Error ? error.message : String(error)}`);
-        return undefined;
       }
     };
   });
@@ -134,11 +134,11 @@ export function wrapRetentionRules(
 export function assertConfigProfiles(value: unknown, key = 'profiles'): asserts value is ProfileConfig[] {
   if (!Array.isArray(value)) throw new Error(`the config file's ${key} must be an array of { id, label, … }`);
   const seen = new Set<string>();
-  value.forEach((profile, index) => {
+  for (const [index, profile] of value.entries()) {
     assertProfileConfig(profile, `${key}[${index}]`);
     if (seen.has(profile.id)) throw new Error(`${key}[${index}]: ${JSON.stringify(profile.id)} is declared twice`);
     seen.add(profile.id);
-  });
+  }
 }
 
 /**
@@ -224,7 +224,14 @@ export function createProfileCatalog(options: {
   return new ProfileCatalog(resolved, log);
 }
 
-function strip(definition: ProfileDefinition): ProfileConfig {
-  const { infer: _infer, ...rest } = definition;
-  return rest;
+/** The definition without `infer`, field by field: destructuring the method out would leave it unbound. */
+function strip({ id, label, order, retentionDays, viewer, poster }: ProfileDefinition): ProfileConfig {
+  return {
+    id,
+    label,
+    ...(order === undefined ? {} : { order }),
+    ...(retentionDays === undefined ? {} : { retentionDays }),
+    ...(viewer === undefined ? {} : { viewer }),
+    ...(poster === undefined ? {} : { poster }),
+  };
 }

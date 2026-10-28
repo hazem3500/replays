@@ -4,6 +4,10 @@ import { replayProfileId, type ReplayBundle } from '../shared/replay.ts';
 let cached: readonly ProfileInfo[] | undefined;
 let override: readonly ProfileInfo[] | undefined;
 
+function isProfileInfo(item: unknown): item is ProfileInfo {
+  return typeof item === 'object' && item !== null && 'id' in item && typeof item.id === 'string';
+}
+
 /**
  * The deployment's profiles, written into index.html by the server (`<meta name="app-profiles">`, in tab order).
  * Empty in a plain core: then the index has no segments, the upload dialog no picker and the viewer no defaults.
@@ -18,7 +22,7 @@ export function pageProfiles(): readonly ProfileInfo[] {
   const content = meta?.content ?? '';
   try {
     const parsed: unknown = content ? JSON.parse(content) : [];
-    cached = Array.isArray(parsed) ? (parsed as ProfileInfo[]).filter((item) => item && typeof item.id === 'string') : [];
+    cached = Array.isArray(parsed) ? parsed.filter(isProfileInfo) : [];
   } catch {
     cached = [];
   }
