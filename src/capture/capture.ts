@@ -4,17 +4,17 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 import { stepPauseMs, type CapturePacingOptions } from '../shared/capture-pacing.ts';
+import { profileOf } from '../shared/profiles.ts';
 import { assertReplayId, type ReplayBundle, type ReplayStep } from '../shared/replay.ts';
 import { assertReplayTags, type ReplayPerson } from '../shared/replay.ts';
 import { parsePeopleFlags } from '../shared/people.ts';
-import { isPurposeId } from '../shared/purposes.ts';
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
 import type { ReplaySourceInput } from '../shared/context.ts';
 import { compileContextSchema } from '../server/context-schema.ts';
 import { loadConfig } from '../config/index.ts';
 import { resolvePlugins } from '../plugin/registry.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
-import { defaultId, flagMap, prepareOutputDirectory } from './bundle-io.ts';
+import { defaultId, flagMap, prepareOutputDirectory, profileFlag } from './bundle-io.ts';
 import { uploadConfigured } from './upload.ts';
 import { buildReplayContext, readContextFile } from './context.ts';
 import { agentBrowserDriver } from './drivers/agent-browser.ts';
@@ -47,7 +47,9 @@ export interface CaptureArgs extends CapturePacingOptions {
   /** Source references (`github:owner/repo#12`) to add to the context. */
   sources: ReplaySourceInput[];
   tags: string[];
-  /** `meta.purpose`: one of the server's purposes (it refuses others). */
+  /** `meta.profile`: one of the server's profiles (it refuses others). */
+  profile?: string;
+  /** @deprecated Use `profile`. */
   purpose?: string;
   /** `meta.people`, from repeatable `--person role:email[:handle=value]` flags. */
   people?: ReplayPerson[];
@@ -145,7 +147,8 @@ export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output 
   --viewport <WxH>         default 1440x900
   --video                  also write session.mp4 (playwright driver needs ffmpeg)
   --tag <tag>              label for filtering; repeatable
-  --purpose <id>           why it was recorded: one of the server's purposes (GET /api/config lists them)
+  --profile <id>           why it was recorded: one of the server's profiles (GET /api/config lists them);
+                           --purpose is its deprecated name
   --person <spec>          someone related to it, role:email[:handle=value] (reviewer:ada@example.com); repeatable
   --source <p:ref>         link to the thing under test, e.g. github:owner/repo#12; repeatable
   --context-file <file>    JSON { app?, test?, sources?, fields? } from your test runner
@@ -211,8 +214,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
   if (driver !== 'playwright' && driver !== 'agent-browser') throw new Error('--driver must be playwright or agent-browser');
   const tags = lists.tag ?? [];
   if (tags.length) assertReplayTags(tags, '--tag');
-  if (values.purpose !== undefined && !isPurposeId(values.purpose))
-    throw new Error('--purpose must be a purpose id (lower-case letters, digits and "-")');
+  const profile = profileFlag(values);
   const people = parsePeopleFlags(lists.person ?? []);
   if (Boolean(values['suite-id']) !== Boolean(values['run-id'])) throw new Error('--suite-id and --run-id must be used together');
   if (values['run-id'] && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,79}$/.test(values['run-id'])) {
@@ -236,7 +238,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
     viewport: parseViewport(values.viewport),
     sources,
     tags,
-    ...(values.purpose ? { purpose: values.purpose } : {}),
+    ...(profile ? { profile } : {}),
     ...(people.length ? { people } : {}),
     ...(values.title ? { title: values.title } : {}),
     ...(values['upload-url'] ? { uploadUrl: values['upload-url'] } : {}),
@@ -395,6 +397,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
     const steps = rawSteps.map(({ epoch, ...step }) => ({ ...step, at: Math.max(0, epoch - origin) }));
     const { duration } = tracks;
     const context = buildContext(args, new Date(origin).toISOString());
+    const profile = profileOf(args);
     let bundle: ReplayBundle = {
       meta: {
         id: args.id,
@@ -408,7 +411,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
         source: 'agent',
         ...(args.video ? { videoFile: 'session.mp4' } : {}),
         ...(args.tags.length ? { tags: args.tags } : {}),
-        ...(args.purpose ? { purpose: args.purpose } : {}),
+        ...(profile ? { profile } : {}),
         ...(args.people?.length ? { people: args.people } : {}),
       },
       events: tracks.events,

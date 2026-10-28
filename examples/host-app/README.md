@@ -56,9 +56,9 @@ for readable automated walkthrough pacing; producers can override this with `--s
 ## What the host contributes
 
 The config declares Triage (90 days, open before the first error), Design review (90 days, collapsed inspector) and Walkthrough
-(0 means keep explicitly classified walkthroughs forever, with captions). `RETENTION_PURPOSE_TRIAGE_DAYS`,
-`RETENTION_PURPOSE_DESIGN_REVIEW_DAYS` and `RETENTION_PURPOSE_WALKTHROUGH_DAYS` override those windows. Recordings without a purpose
-use 90 days. A person's **Keep** choice still overrides retention; inferred purposes cannot make a recording permanent.
+(0 means keep explicitly classified walkthroughs forever, with captions). `RETENTION_PROFILE_TRIAGE_DAYS`,
+`RETENTION_PROFILE_DESIGN_REVIEW_DAYS` and `RETENTION_PROFILE_WALKTHROUGH_DAYS` override those windows. Recordings without a profile
+use 90 days. A person's **Keep** choice still overrides retention; inferred profiles cannot make a recording permanent.
 
 `src/plugin.ts` validates staff responsibility roles while allowing external customer participants as requester/mentioned, declares a
 staff handle and profile/avatar links, and enriches names from authenticated email without changing identity IDs. Its context adapter
@@ -97,14 +97,14 @@ pnpm test:host-app
 ```
 
 This builds the toolkit and host package, checks the host against installed public declaration files, and starts a real server with
-the local profile and temporary storage. The focused smoke checks theme/purposes/policy, uploads and privacy, people/identity,
+the local profile and temporary storage. The focused smoke checks theme/profiles/policy, uploads and privacy, people/identity,
 summary filtering, and imports the actual served browser module to execute its registrations and Environment renderer. It requires
 neither a browser install nor cloud credentials. It does not verify production IAP signatures or GCS connectivity; those adapters have
 their own contract suites and should be checked against the deployment in staging.
 
 ## Upgrade and rollback
 
-Pin the toolkit artifact and the distribution version together; build and run the smoke before promoting an image. Compare purpose
+Pin the toolkit artifact and the distribution version together; build and run the smoke before promoting an image. Compare profile
 retention, effective editing policy, authentication and a sample of replay/context/people responses in staging. Back up storage and
 trial data migrations on a copy before running them on the live bucket.
 

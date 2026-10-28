@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
 
-import type { PurposeInfo } from '../../../shared/purposes.ts';
+import type { ProfileInfo } from '../../../shared/profiles.ts';
 import { copyText } from '../../clipboard.ts';
 import { resolveSlot } from '../../plugins/registry.ts';
 import { apiUrl } from '../../route.ts';
@@ -11,7 +11,7 @@ import { coreWays, FIRST_RUN_SLOT, type FirstRunCommand, type FirstRunContext, t
 
 const ICONS = { record: CircleDotIcon, upload: UploadIcon, cli: TerminalIcon, agent: BotIcon, link: LinkIcon } as const;
 const COPY_RESET_MS = 2000;
-const NO_PURPOSES: readonly PurposeInfo[] = [];
+const NO_PROFILES: readonly ProfileInfo[] = [];
 
 function copyLabel(copied: boolean | undefined, idle: string) {
   if (copied === undefined) return idle;
@@ -86,15 +86,15 @@ function WayCard({ id, way }: { id: string; way: FirstRunWay }) {
   );
 }
 
-function Purposes({ purposes }: { purposes: readonly PurposeInfo[] }) {
+function Profiles({ profiles }: { profiles: readonly ProfileInfo[] }) {
   return (
-    <section className="first-run-purposes" aria-label={firstRunStrings.purposesTitle}>
-      <h3>{firstRunStrings.purposesTitle}</h3>
+    <section className="first-run-profiles" aria-label={firstRunStrings.profilesTitle}>
+      <h3>{firstRunStrings.profilesTitle}</h3>
       <ul>
-        {purposes.map((purpose) => (
-          <li key={purpose.id}>
-            <strong>{purpose.label}</strong>
-            {purpose.retentionDays === undefined ? null : <span>{firstRunStrings.keptFor(purpose.retentionDays)}</span>}
+        {profiles.map((profile) => (
+          <li key={profile.id}>
+            <strong>{profile.label}</strong>
+            {profile.retentionDays === undefined ? null : <span>{firstRunStrings.keptFor(profile.retentionDays)}</span>}
           </li>
         ))}
       </ul>
@@ -102,13 +102,13 @@ function Purposes({ purposes }: { purposes: readonly PurposeInfo[] }) {
   );
 }
 
-/** The index before any replay exists: the ways to make a first one (`index.empty.ways`), and the deployment's purposes. */
-export function FirstRun({ onUpload, purposes = NO_PURPOSES }: { onUpload: () => void; purposes?: readonly PurposeInfo[] }) {
+/** The index before any replay exists: the ways to make a first one (`index.empty.ways`), and the deployment's profiles. */
+export function FirstRun({ onUpload, profiles = NO_PROFILES }: { onUpload: () => void; profiles?: readonly ProfileInfo[] }) {
   const context: FirstRunContext = {
     origin: location.origin,
     uploadUrl: `${location.origin}${apiUrl(`replays`)}`,
     chooseFile: onUpload,
-    purposes,
+    profiles,
   };
   const ways = resolveSlot<FirstRunContext, FirstRunWay>(FIRST_RUN_SLOT, coreWays, context);
   return (
@@ -124,7 +124,7 @@ export function FirstRun({ onUpload, purposes = NO_PURPOSES }: { onUpload: () =>
           </div>
         ))}
       </div>
-      {purposes.length ? <Purposes purposes={purposes} /> : null}
+      {profiles.length ? <Profiles profiles={profiles} /> : null}
     </div>
   );
 }

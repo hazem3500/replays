@@ -33,7 +33,7 @@ What it does with each hook:
 | `uploadEndpoint.authenticate` | Per-IP limit, then a constant-time key match. A disabled app or a disallowed origin gets `403`, and a missing `Origin` is refused unless `allowServerSide` is set. Two keys per app allow rotation. |
 | `uploadEndpoint.rateLimit` | Per-key limit, answered `429` with `Retry-After`. |
 | `uploadEndpoint.maxBytes` | A per-app cap, checked against `Content-Length`, the stream and the gunzipped size. |
-| `uploadEndpoint.normalize` | Server-chosen id, `human` source, an `app:<id>` tag. Drops client people, purpose, suite membership and context. The core privacy pass still runs afterwards. |
+| `uploadEndpoint.normalize` | Server-chosen id, `human` source, an `app:<id>` tag. Drops client people, profile, suite membership and context. The core privacy pass still runs afterwards. |
 | `uploadEndpoint.receipt` | `{ id, reference, replayUrl }`. `replayUrl` stays behind staff auth. |
 | `retention` | Per-app `retentionDays`, found by the `app:<id>` tag. |
 

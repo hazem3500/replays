@@ -7,7 +7,7 @@ import { json, REVALIDATE } from '../http/respond.ts';
 import { defineRoute } from '../http/route.ts';
 import { HttpError } from '../http/errors.ts';
 import { runAfterUpload, runBeforeUpload } from '../plugin-runtime.ts';
-import type { PurposeCatalog } from '../purposes.ts';
+import type { ProfileCatalog } from '../profiles.ts';
 import type { ApiServices } from './services.ts';
 import { acceptUpload, MAX_REPLAY_BYTES, replayReceipt, saveWithFreshId, uploadAttributes } from './upload-checks.ts';
 
@@ -17,22 +17,25 @@ function param(params: URLSearchParams, name: string) {
   return value === '' ? undefined : value;
 }
 
-/** The import's bundle options from its query (`title`, `url`, `id`, `tag`, `purpose`, `person`), checked. */
-function importOptions(params: URLSearchParams, purposes: PurposeCatalog) {
+/**
+ * The import's bundle options from its query (`title`, `url`, `id`, `tag`, `profile`, `person`), checked. `purpose`
+ * is the deprecated name of `profile`.
+ */
+function importOptions(params: URLSearchParams, profiles: ProfileCatalog) {
   const id = param(params, 'id');
   const url = param(params, 'url');
-  const purpose = param(params, 'purpose');
+  const profile = param(params, 'profile') ?? param(params, 'purpose');
   const tags = params.getAll('tag');
   if (tags.length) assertReplayTags(tags, 'tag');
-  const problem = purposes.problem(purpose);
-  if (problem) throw new HttpError(400, problem.replace('replay.meta.purpose', 'purpose'));
+  const problem = profiles.problem(profile);
+  if (problem) throw new HttpError(400, problem.replace('replay.meta.profile', 'profile'));
   const people = parsePeopleFlags(params.getAll('person'), 'person');
   return {
     title: param(params, 'title')?.slice(0, 200) ?? 'Imported recording',
     ...(url ? { url } : {}),
     ...(id ? { id } : {}),
     ...(tags.length ? { tags } : {}),
-    ...(purpose ? { purpose } : {}),
+    ...(profile ? { profile } : {}),
     ...(people.length ? { people } : {}),
   };
 }
@@ -49,11 +52,11 @@ export function importRoute(services: ApiServices) {
     path: '/api/replays/import',
     async handler({ request, url, base, identity: user, trace, hooks }) {
       const input = await readJsonUpload(request, MAX_REPLAY_BYTES, trace);
-      const settings = importOptions(url.searchParams, store.purposes);
+      const settings = importOptions(url.searchParams, store.profiles);
       // invariant: the same privacy pass as POST /replays, so query-parameter text (the title) is redacted too.
       const bundle = services.sanitize(buildHumanBundle(input, settings));
       trace(uploadAttributes(bundle));
-      const accepted = acceptUpload(await runBeforeUpload(registry, bundle, user, hooks), store.purposes, registry);
+      const accepted = acceptUpload(await runBeforeUpload(registry, bundle, user, hooks), store.profiles, registry);
       const saved = await saveWithFreshId(store, accepted, Boolean(settings.id));
       trace({ 'replay.id': saved.meta.id });
       void store.pruneSoon();

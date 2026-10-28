@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/server/app.ts';
-import { PurposeCatalog } from '../src/server/purposes.ts';
+import { ProfileCatalog } from '../src/server/profiles.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import { startServer, type RunningServer } from '../src/server/start.ts';
 import { appDefaults } from './fixtures.ts';
@@ -32,17 +32,17 @@ describe('dev index page', () => {
       env: { DATA_DIR: root, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' },
       config: {
         dir: process.cwd(),
-        file: { name: 'Dev metadata', purposes: [{ id: 'triage', label: 'Triage' }] },
+        file: { name: 'Dev metadata', profiles: [{ id: 'triage', label: 'Triage' }] },
         plugins: [],
       },
       log: () => {},
     });
     devServers.push(server);
-    for (const path of ['/', '/?host=shop.test', '/?errors=1&purpose=triage']) {
+    for (const path of ['/', '/?host=shop.test', '/?errors=1&profile=triage']) {
       const response = await fetch(`${server.origin}${path}`, { headers: { accept: 'text/html' } });
       expect(response.status).toBe(200);
       const html = await response.text();
-      expect(html).toContain('name="app-purposes" content="[{&quot;id&quot;:&quot;triage&quot;');
+      expect(html).toContain('name="app-profiles" content="[{&quot;id&quot;:&quot;triage&quot;');
       expect(html).toContain('name="app-name" content="replays"');
     }
   }, 30_000);
@@ -51,7 +51,7 @@ describe('dev index page', () => {
     const root = await mkdtemp(join(tmpdir(), 'replays-dev-index-'));
     let transformedUrl = '';
     const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), 30, {
-      purposes: new PurposeCatalog([{ info: { id: 'triage', label: 'Triage', order: 0 } }]),
+      profiles: new ProfileCatalog([{ info: { id: 'triage', label: 'Triage', order: 0 } }]),
     });
     const handle = createApp({
       ...appDefaults(),
@@ -62,7 +62,7 @@ describe('dev index page', () => {
       devIndexHtml: (url) => {
         transformedUrl = url;
         return Promise.resolve(
-          '<!doctype html><html><head><meta name="app-base" content="" /><meta name="app-purposes" content="" /><meta name="app-beta" content="" /><meta name="app-editing" content="" /></head><body></body></html>',
+          '<!doctype html><html><head><meta name="app-base" content="" /><meta name="app-profiles" content="" /><meta name="app-beta" content="" /><meta name="app-editing" content="" /></head><body></body></html>',
         );
       },
     });
@@ -77,7 +77,7 @@ describe('dev index page', () => {
     expect(transformedUrl).toBe('/');
     const html = await response.text();
     expect(html).toContain(
-      '<meta name="app-purposes" content="[{&quot;id&quot;:&quot;triage&quot;,&quot;label&quot;:&quot;Triage&quot;,&quot;order&quot;:0}]" />',
+      '<meta name="app-profiles" content="[{&quot;id&quot;:&quot;triage&quot;,&quot;label&quot;:&quot;Triage&quot;,&quot;order&quot;:0}]" />',
     );
     expect(html).toContain('<meta name="app-beta" content="editor" />');
     expect(html).toContain('<meta name="app-editing" content="on" />');

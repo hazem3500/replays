@@ -5,7 +5,7 @@ import type { ReplayBundle } from '../shared/replay.ts';
 import type { ClientConfig } from './config.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { readTextWithProgress } from './load-progress.ts';
-import { rememberServedPurpose } from './purposes.ts';
+import { rememberServedProfile } from './profiles.ts';
 import { apiUrl } from './route.ts';
 
 /*
@@ -55,7 +55,7 @@ export async function fetchReplay(id: string, signal?: AbortSignal, priority: Pr
     throw new LoadError('Replay failed to load (unexpected response)');
   }
   if (bundle && typeof bundle === 'object') decodedBytes.set(bundle, text.length);
-  rememberServedPurpose(id, response.headers.get('x-replay-purpose'));
+  rememberServedProfile(id, response.headers.get('x-replay-profile') ?? response.headers.get('x-replay-purpose'));
   return bundle;
 }
 

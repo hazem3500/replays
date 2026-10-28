@@ -1262,12 +1262,13 @@ a.menu-link, a.menu-link:hover { color: inherit; text-decoration: none; }
 .plugin-drawer-body { min-height: 0; flex: 1; overflow: auto; padding: 12px 16px; font-size: 13px; }
 
 .ui-slider { width: 100%; touch-action: none; user-select: none; }
-.ui-slider-control { display: flex; align-items: center; min-height: 28px; cursor: pointer; }
-.ui-slider-track { position: relative; width: 100%; height: 4px; border-radius: 999px; background: var(--line); }
+.ui-slider-control { position: relative; display: flex; align-items: center; min-height: 24px; cursor: pointer; } /* invariant: positioned, so a thumb beside the track still centres on the control. */
+.ui-slider-track { position: relative; width: 100%; height: 4px; border-radius: 999px; background: var(--line-strong); }
 .ui-slider-indicator { height: 100%; border-radius: inherit; background: var(--accent); transition: width 140ms var(--ease-out); }
-.ui-slider-thumb { width: 13px; height: 13px; border: 2px solid var(--accent); border-radius: 50%; background: var(--text); box-shadow: 0 1px 3px rgb(0 0 0 / 0.2); transition: left 140ms var(--ease-out), box-shadow 140ms var(--ease-out); }
+.ui-slider-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--switch-thumb); box-shadow: 0 0 0 0.5px rgb(0 0 0 / 0.18), 0 1px 3px rgb(0 0 0 / 0.3); transition: left 140ms var(--ease-out), box-shadow 140ms var(--ease-out); }
 .ui-slider-thumb::after { content: ''; position: absolute; inset: -7px; }
-.ui-slider-thumb:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 3px; }
+.ui-slider-control:hover .ui-slider-thumb, .ui-slider[data-dragging] .ui-slider-thumb { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 1px 3px rgb(0 0 0 / 0.3); }
+.ui-slider-thumb:has(input:focus-visible) { outline: 2px solid var(--ring); outline-offset: 2px; }
 .ui-slider[data-dragging] .ui-slider-thumb, .ui-slider[data-dragging] .ui-slider-indicator { transition: none; }
 .ui-slider[data-disabled] { opacity: 0.45; pointer-events: none; }
 .ui-switch { position: relative; display: inline-flex; align-items: center; width: 28px; height: 16px; flex: 0 0 28px; padding: 2px; border-radius: 999px; background: var(--line); cursor: pointer; outline: none; }
