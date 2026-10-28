@@ -73,7 +73,11 @@ function uploadHandler(services: ApiServices) {
     const normalization = await normalizeUpload(registry, endpoint, replay, endpointContext);
     const normalized = normalization.changed ? revalidate(services, normalization.bundle) : replay;
     // invariant: stored data never depends on the uploader or a normalization hook having sanitized it.
-    const bundle = acceptUpload(await runBeforeUpload(registry, services.sanitize(normalized), user, legacy.request), store.purposes, registry);
+    const bundle = acceptUpload(
+      await runBeforeUpload(registry, services.sanitize(normalized), user, legacy.request),
+      store.purposes,
+      registry,
+    );
     trace(uploadAttributes(bundle));
     const receipt = (stored: typeof bundle) =>
       uploadReceipt(
