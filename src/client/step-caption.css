@@ -13,14 +13,25 @@
   .step-caption-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   /* Live browser captions have a stable host for character retargeting. Exported video captions keep their
      deterministic frame-render animation and markup unchanged. */
-  .step-caption-live { transition: opacity 120ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
-  .step-caption-live[data-active="false"] { opacity: 0; }
-  .step-caption-live .caption-calligraph { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Show: fade + rise over 200 ms. Hide: the same caption fades and drops 4 px, a little faster (140 ms), whole:
+     useCaptionPresence keeps its text and number so the box never collapses before it is gone. */
+  .step-caption-live {
+    --caption-enter: 200ms;
+    --caption-exit: 140ms;
+    --caption-drop: calc(4px * var(--s));
+    transition: opacity var(--caption-enter) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), translate var(--caption-enter) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  }
+  .step-caption-live[data-active="false"] { opacity: 0; translate: 0 var(--caption-drop); transition-duration: var(--caption-exit); }
+  .step-caption-live .caption-morph { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* A caption change swaps the whole line: the new text fades and rises 2 px (160 ms). Keyed by its text. */
+  .step-caption-live .caption-swap { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; animation: caption-swap-in 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) both; }
+  .step-caption-live[data-active="false"] .caption-swap { animation: none; }
   @media (prefers-reduced-motion: reduce) {
     .step-caption-live { transition: none; }
-    .step-caption-live .step-caption-text { animation: none; }
+    .step-caption-live .step-caption-text, .step-caption-live .caption-swap { animation: none; }
   }
   /* The step index: a small 18 px pill before the label, tabular figures, harmonised with the dark surface. */
   .step-caption-number { flex: 0 0 auto; min-width: calc(18px * var(--s)); height: calc(18px * var(--s)); display: inline-grid; place-items: center; padding: 0 calc(5px * var(--s)); border-radius: 999px; background: rgb(255 255 255 / 0.14); color: rgb(255 255 255 / 0.75); font-size: calc(11px * var(--s)); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
   @keyframes caption-in { from { opacity: 0; transform: translateY(calc(4px * var(--s))); } }
+  @keyframes caption-swap-in { from { opacity: 0; transform: translateY(calc(2px * var(--s))); } }
 }
