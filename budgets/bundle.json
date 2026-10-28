@@ -58,14 +58,14 @@
       "brotli": 190
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
-      "raw": 2421,
-      "gzip": 1263,
-      "brotli": 1152
+      "raw": 2420,
+      "gzip": 1256,
+      "brotli": 1145
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
       "gzip": 2350,
-      "brotli": 2126
+      "brotli": 2124
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -74,7 +74,7 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38116,
-      "gzip": 13526,
+      "gzip": 13524,
       "brotli": 12013
     },
     "dist/client/assets/composite-HASH.js": {
@@ -98,9 +98,9 @@
       "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 33095,
-      "gzip": 6332,
-      "brotli": 5643
+      "raw": 34420,
+      "gzip": 6620,
+      "brotli": 5910
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 359609,
@@ -123,9 +123,9 @@
       "brotli": 35276
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 847504,
-      "gzip": 264566,
-      "brotli": 220669
+      "raw": 847449,
+      "gzip": 264558,
+      "brotli": 220439
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -200,11 +200,11 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 706,
-      "brotli": 648
+      "brotli": 624
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
-      "gzip": 8355,
+      "gzip": 8347,
       "brotli": 7171
     },
     "dist/client/assets/tools-HASH.js": {
@@ -218,9 +218,9 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50998,
+      "raw": 50992,
       "gzip": 18530,
-      "brotli": 16623
+      "brotli": 16173
     },
     "dist/client/index.html": {
       "raw": 12263,
@@ -620,16 +620,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 33095,
-        "gzip": 6332,
-        "brotli": 5643
-      },
-      "reason": "Highlight scrubber markers and caption morph presentation share the lazy inspector stylesheet and add these reviewed styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/rolldown-runtime-HASH.js",
       "cap": {
         "raw": 939,
@@ -1021,6 +1011,16 @@
       },
       "reason": "Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 34420,
+        "gzip": 6620,
+        "brotli": 5910
+      },
+      "reason": "Pending frames for inspector panels (loaded geometry, never a blank panel) and the flat tab row's group hairlines and status dots.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
     }
   ]
 }
