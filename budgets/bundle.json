@@ -148,9 +148,9 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 51366,
-      "gzip": 18505,
-      "brotli": 16134
+      "raw": 47311,
+      "gzip": 17272,
+      "brotli": 15057
     },
     "dist/client/index.html": {
       "raw": 10783,
@@ -677,6 +677,16 @@
         "brotli": 32621
       },
       "reason": "The index route ships the card and list motion stylesheets in its initial style group.",
+      "pr": "https://github.com/hazem3500/replays/pull/99"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 52253,
+        "gzip": 18865,
+        "brotli": 16511
+      },
+      "reason": "The viewer chunk now carries the shared feed motion helpers and virtualization hooks that the index and the viewer both import.",
       "pr": "https://github.com/hazem3500/replays/pull/99"
     }
   ]
