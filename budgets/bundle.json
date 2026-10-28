@@ -74,7 +74,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 226,
+      "brotli": 219,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -200,7 +200,7 @@
     "dist/client/assets/tools-HASH.js": {
       "raw": 34796,
       "brotli": 11139,
-      "gzip": 12376
+      "gzip": 12373
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 49626,
-      "brotli": 15444,
+      "brotli": 15400,
       "gzip": 18108
     },
     "dist/client/index.html": {
@@ -225,7 +225,7 @@
     "dist/lib/capture.mjs": {
       "raw": 1703,
       "brotli": 428,
-      "gzip": 512
+      "gzip": 511
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -259,7 +259,7 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "brotli": 8394,
+      "brotli": 8390,
       "gzip": 9498
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
@@ -284,7 +284,7 @@
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31954,
-      "brotli": 7280,
+      "brotli": 7360,
       "gzip": 8369
     },
     "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
@@ -319,7 +319,7 @@
     },
     "dist/lib/plugin.mjs": {
       "raw": 743,
-      "brotli": 246,
+      "brotli": 250,
       "gzip": 299
     },
     "dist/lib/plugins-gcs.mjs": {
@@ -413,9 +413,9 @@
       "gzip": 42041
     },
     "initial/index.html/js": {
-      "raw": 1270898,
+      "raw": 1281967,
       "brotli": 342522,
-      "gzip": 418287
+      "gzip": 406675
     },
     "initial/render.html/css": {
       "raw": 5252,
@@ -708,26 +708,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/94"
     },
     {
-      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
-      "cap": {
-        "raw": 31954,
-        "gzip": 8369,
-        "brotli": 7280
-      },
-      "reason": "Upload endpoint option validation (authenticate, maxBytes, rateLimit, normalize, receipt, prefixed paths) and api.normalizeUpload registration.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
-      "file": "dist/lib/plugin.mjs",
-      "cap": {
-        "raw": 743,
-        "gzip": 299,
-        "brotli": 246
-      },
-      "reason": "The /plugin entry re-exports HttpError and tooManyRequests on top of #96's plugin settings exports; replaces #96's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 248879,
@@ -745,16 +725,6 @@
         "brotli": 36444
       },
       "reason": "The initial index style group carries the same Settings and EmptyState stylesheets added to the app stylesheet.",
-      "pr": "https://github.com/hazem3500/replays/pull/102"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 713951,
-        "gzip": 231040,
-        "brotli": 187440
-      },
-      "reason": "The sectioned Settings dialog (sidebar, phone sheet, CLI, Keyboard, Labs, Plugins and About sections), the EmptyState primitive and the shared beta-flag registry join the eager index graph, about 5 KB raw over main.",
       "pr": "https://github.com/hazem3500/replays/pull/102"
     },
     {
@@ -835,6 +805,40 @@
       },
       "reason": "The bundled server serves the fixed-name brand icons with a daily revalidating cache instead of an immutable one, on top of the upload-endpoint server code.",
       "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 720540,
+        "gzip": 233107,
+        "brotli": 189394
+      },
+      "reason": "The six built-in source-provider marks (Simple Icons paths) and the phone source sheet join the eager index rows, about 5.5 KB raw over main, which already carries the Settings dialog.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
+      "cap": {
+        "brotli": 7360
+      },
+      "reason": "Source providers gain an optional mark, which shifts this library chunk's Brotli output by a few bytes; raw and gzip are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "brotli": 250
+      },
+      "reason": "Brotli drift of one byte in the plugin entry after the source-provider types gained a mark.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 219
+      },
+      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
     },
     {
       "file": "dist/client/assets/ComparePicker-HASH.js",
@@ -946,14 +950,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "brotli": 226
-      },
-      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged. Then: Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/preload-helper-HASH.js",
       "cap": {
         "raw": 58534,
@@ -986,11 +982,11 @@
     {
       "file": "initial/index.html/js",
       "cap": {
-        "raw": 1270898,
-        "gzip": 418287,
+        "raw": 1281967,
+        "gzip": 406675,
         "brotli": 342522
       },
-      "reason": "The index route ships the windowed feed virtualizer and the motion system in its initial script group. Then: Removing the static ComparisonLoading import cut main by 66 KB brotli but split its shared modules into more preloaded chunks, which compress worse; plus the compare URL parser.",
+      "reason": "The index route's initial script group carries the same provider marks and source sheet as the main chunk. Then: Removing the static ComparisonLoading import cut main by 66 KB brotli but split its shared modules into more preloaded chunks, which compress worse; plus the compare URL parser.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     }
   ]
