@@ -127,3 +127,11 @@ test('a suite with two recordings opens comparing its runs; the sidebar moves th
   await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=single$`));
   await expect(page.locator('.ct-tile iframe[data-marked]')).toHaveCount(2);
 });
+
+test('a suite link that names a run opens comparing, that run in the spotlight', async ({ page }) => {
+  const { suite, two } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/s/${suite}/r/${two}`);
+  await expect(page.locator('.ct-tile[data-role="spotlight"]')).toHaveAttribute('data-tile-id', two);
+  await expect(page.getByTestId('layout-switch').getByRole('radio', { checked: true })).toHaveAttribute('data-layout', 'spotlight');
+});

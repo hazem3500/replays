@@ -33,6 +33,7 @@ import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
+import { compareDefaults } from '../compare/defaults.ts';
 
 // why: the comparison (tiles, shared clock) is only fetched for suites with two or more recordings.
 const SuiteCompare = lazy(() => import('./SuiteCompare.tsx').then((module) => ({ default: module.SuiteCompare })));
@@ -132,7 +133,9 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     const replayId = playableReplayId(run, detailed);
     return replayId ? [{ replayId, label: run.label }] : [];
   });
-  const comparing = playable.length > 1;
+  const [namedRun] = useState(() => Boolean(initialReplayId));
+  const defaults = compareDefaults({ page: 'suite', recordings: playable.length, namedRecording: namedRun });
+  const comparing = defaults.compare;
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
   // short wait), as one calm in-place transition (navigation.ts swapInPlace).
@@ -316,6 +319,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           <Suspense fallback={<ViewerSkeleton label="Loading runs" />}>
             <SuiteCompare
               runs={playable}
+              fallback={defaults.layout}
               focus={selected}
               onFocus={select}
               page={{

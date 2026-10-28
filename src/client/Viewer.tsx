@@ -26,6 +26,7 @@ import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
+import { CompareButton } from './compare/CompareButton.tsx';
 import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
 import { replayPurpose } from './purposes.ts';
@@ -429,12 +430,6 @@ export function Viewer({
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
-      {
-        label: 'Compare with…',
-        icon: <AnimatedIcon name="search" />,
-        onSelect: () => setPickerOpen(true),
-        testId: 'compare-with',
-      },
       ...pluginMenu.items,
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
@@ -592,7 +587,12 @@ export function Viewer({
           {...(prefix ? { prefix } : {})}
           {...(headerStatus ? { status: headerStatus } : {})}
           {...(suite ? { suite } : {})}
-          {...(headerActions ? { leadingActions: headerActions } : {})}
+          leadingActions={
+            <>
+              {headerActions}
+              <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />
+            </>
+          }
           hasEdits={Boolean(edited)}
         />
         <div
