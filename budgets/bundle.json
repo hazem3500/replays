@@ -88,14 +88,14 @@
       "brotli": 225
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 40600,
-      "gzip": 7460,
-      "brotli": 6640
+      "raw": 41300,
+      "gzip": 7570,
+      "brotli": 6740
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 92000,
-      "gzip": 31200,
-      "brotli": 26700
+      "raw": 94200,
+      "gzip": 31800,
+      "brotli": 27250
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -104,7 +104,7 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 215881,
-      "gzip": 73375,
+      "gzip": 73364,
       "brotli": 62032
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -179,7 +179,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 631,
+      "gzip": 630,
       "brotli": 568
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
@@ -219,7 +219,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50387,
-      "gzip": 18344,
+      "gzip": 18342,
       "brotli": 15958
     },
     "dist/client/index.html": {
@@ -792,7 +792,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -862,7 +862,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1019,16 +1019,18 @@
         "gzip": 31800,
         "brotli": 27250
       },
-      "reason": "Blur v2 in the editor: click-to-cover element snapping, edge handles, the Blur or Redact choice and lane labels; measured against main: +2319 B raw, +658 B gzip, +527 B brotli. Replaces #103's allowance for this file.",
+      "reason": "Blur v2 in the editor: click-to-cover element snapping, edge handles, the Blur or Redact choice and lane labels; measured against main: +2319 B raw, +657 B gzip, +560 B brotli. Replaces #103's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/132"
     },
     {
       "file": "dist/client/assets/player-HASH.js",
       "cap": {
-        "gzip": 95400
+        "raw": 316832,
+        "gzip": 97939,
+        "brotli": 70913
       },
-      "reason": "Blur rendering for playback and export: per-style inline styles, the feathered mask and the outward feather rect; measured against main: +966 B raw, +369 B gzip, +322 B brotli; only gzip passes the existing cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/132"
+      "reason": "The player chunk reads profiles, which now carry view and capture fields and the built-in performance profile (main 307323/94957/68698, head 307603/95086/68847).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     }
   ]
 }
