@@ -838,6 +838,8 @@
     {
       "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
       "cap": {
+        "raw": 31954,
+        "gzip": 8369,
         "brotli": 7500
       },
       "reason": "The registry chunk compresses 1 byte over its previous Brotli cap after the error-classification import changes; measured 7281 bytes.",
