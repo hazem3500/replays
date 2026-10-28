@@ -214,7 +214,7 @@
     },
     "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
       "raw": 27823,
-      "gzip": 8063,
+      "gzip": 8064,
       "brotli": 7040
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
@@ -225,7 +225,7 @@
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31954,
       "gzip": 8369,
-      "brotli": 7280
+      "brotli": 7500
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -249,8 +249,8 @@
     },
     "dist/lib/config.mjs": {
       "raw": 348,
-      "gzip": 167,
-      "brotli": 133
+      "gzip": 169,
+      "brotli": 145
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -718,16 +718,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/101"
     },
     {
-      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
-      "cap": {
-        "raw": 31954,
-        "gzip": 8369,
-        "brotli": 7280
-      },
-      "reason": "Upload endpoint option validation (authenticate, maxBytes, rateLimit, normalize, receipt, prefixed paths) and api.normalizeUpload registration.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
       "file": "dist/lib/plugin.mjs",
       "cap": {
         "raw": 743,
@@ -765,6 +755,14 @@
         "brotli": 1306
       },
       "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
+      "cap": {
+        "brotli": 7500
+      },
+      "reason": "The registry chunk compresses 1 byte over its previous Brotli cap after the error-classification import changes; measured 7281 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
