@@ -93,9 +93,9 @@
       "brotli": 1200
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50381,
+      "raw": 50387,
       "gzip": 18358,
-      "brotli": 16023
+      "brotli": 16055
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
