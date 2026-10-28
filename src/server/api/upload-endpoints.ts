@@ -1,13 +1,9 @@
-import type { IncomingMessage } from 'node:http';
-
-import type { PluginRegistry } from '../plugin/registry.ts';
-import type { NormalizeUploadContext, UploadEndpoint, UploadEndpointContext } from '../plugin/types.ts';
-import { HttpError, tooManyRequests } from '../shared/http-error.ts';
-import type { ReplayBundle } from '../shared/replay.ts';
-import type { Identity } from './auth/types.ts';
-
-/** The default and largest-by-default replay upload, compressed or decompressed. */
-export const MAX_REPLAY_BYTES = 25 * 1024 * 1024;
+import type { PluginRegistry } from '../../plugin/registry.ts';
+import type { NormalizeUploadContext, UploadEndpoint, UploadEndpointContext } from '../../plugin/types.ts';
+import { tooManyRequests } from '../../shared/http-error.ts';
+import type { ReplayBundle } from '../../shared/replay.ts';
+import type { Identity } from '../auth/types.ts';
+import { MAX_REPLAY_BYTES } from './upload-checks.ts';
 
 const VIDEO_PATH = /^\/api\/replays\/[a-z0-9][a-z0-9-]{0,79}\/video$/;
 
@@ -50,17 +46,6 @@ export async function enforceRateLimit(endpoint: UploadEndpoint | undefined, con
   if (decision) throw tooManyRequests(decision.retryAfter, decision.message);
 }
 
-/** `413` from the declared length alone, so an oversized body is refused before any of it is buffered. */
-export function assertDeclaredLength(request: IncomingMessage, maxBytes: number, message: string) {
-  const declared = request.headers['content-length'];
-  if (declared !== undefined && Number(declared) > maxBytes) throw new HttpError(413, message);
-}
-
-/** `upload is larger than 25 MB` for whole megabytes, else the exact byte count. */
-export function sizeLabel(maxBytes: number) {
-  return maxBytes % (1024 * 1024) === 0 ? `${maxBytes / 1024 / 1024} MB` : `${maxBytes} bytes`;
-}
-
 /**
  * The endpoint's `normalize`, then every `normalizeUpload` hook, each on the previous result. True in `changed` when
  * any ran, so the caller validates the result again before the privacy pass.
@@ -80,11 +65,10 @@ export async function normalizeUpload(
 /** The `201` body: the endpoint's receipt, else the core's `{ id, url }`. */
 export function uploadReceipt(
   endpoint: UploadEndpoint | undefined,
-  context: UploadEndpointContext & { bundle: ReplayBundle; url: string; publicOrigin?: string },
-  core: string,
-): string {
+  context: UploadEndpointContext & { bundle: ReplayBundle; url: string; publicOrigin?: string | undefined },
+  core: Record<string, unknown>,
+): Record<string, unknown> {
   if (!endpoint?.receipt) return core;
   const { publicOrigin, ...rest } = context;
-  const replayUrl = publicOrigin ? new URL(context.url, publicOrigin).href : context.url;
-  return JSON.stringify(endpoint.receipt({ ...rest, replayUrl }));
+  return endpoint.receipt({ ...rest, replayUrl: publicOrigin ? new URL(context.url, publicOrigin).href : context.url });
 }
