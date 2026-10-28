@@ -54,6 +54,14 @@ The imperative `RecorderUi` contract also works in any framework: consent return
 
 `createRecorderStore` exposes stable actions and selector subscriptions with an optional equality function. Selectors: `selectView`, `selectCanRequest`, `selectSummary`, `selectReceipt`, `selectError`, `selectUploadProgress`. `createRecordingTimer` ticks on elapsed whole seconds while recording, exposes elapsed/remaining milliseconds and labels, fraction, warnings at 30 seconds (`soon`) and 10 seconds (`final`), plus a size warning at 80%. Dispose timer stores you create. `recordingTimer` is the pure equivalent; `formatDuration` and localized `formatDurationLong` are independent helpers.
 
+`upload` is a transport function or plain HTTP options. `upload: { url, headers?, body?, timeoutMs?, credentials? }` (or `createHttpUpload(options)`) posts the report to any endpoint:
+
+- `headers` is an object, or a function called once per upload (for short-lived credentials such as an upload token or app key).
+- `body(report)` builds a custom body. The default is the report as JSON, gzipped with `Content-Encoding: gzip` when the browser has `CompressionStream`.
+- `credentials` defaults to `'omit'`, so no cookies are sent.
+
+The response `{ id, reference?, replayUrl? }` (or the core `{ id, url }`) becomes `{ replayId, reference, url }`. Failures are `IssueUploadError`s with the HTTP `status` (`0` without a response). `retryable` is true for network errors, timeouts, 408, 429 and 5xx, and `retryAfterMs` is set from `Retry-After`. An abort by the caller rejects with the abort itself.
+
 Uploads receive `{signal,onProgress}`. Report `{loaded,total?}` when your transport can measure bytes; the core publishes progress at most four times per second. `createTokenUpload` uses XHR progress in browsers and fetch otherwise (or when a custom fetch is supplied). Missing progress means indeterminate, never a fabricated percentage. `retryUpload()` / `store.actions.retry()` sends the identical reviewed report and note. Discard/destroy abort uploads and prompts and erase the retained recording.
 
 For React:

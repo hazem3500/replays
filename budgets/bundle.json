@@ -322,10 +322,10 @@
       "gzip": 1596,
       "brotli": 1370
     },
-    "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs": {
-      "raw": 48604,
-      "gzip": 13176,
-      "brotli": 11629
+    "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
+      "raw": 53813,
+      "gzip": 14538,
+      "brotli": 12809
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
@@ -359,13 +359,13 @@
     },
     "dist/lib/recorder-react.mjs": {
       "raw": 5462,
-      "gzip": 1661,
-      "brotli": 1525
+      "gzip": 1660,
+      "brotli": 1510
     },
     "dist/lib/recorder-testing.mjs": {
       "raw": 10357,
       "gzip": 3161,
-      "brotli": 2719
+      "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
       "raw": 27207,
@@ -378,9 +378,9 @@
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 6031,
-      "gzip": 1928,
-      "brotli": 1680
+      "raw": 2904,
+      "gzip": 854,
+      "brotli": 740
     },
     "dist/lib/server-testing.mjs": {
       "raw": 11887,
@@ -477,16 +477,6 @@
         "brotli": 6908
       },
       "reason": "The default guided recorder UI moved to its own published subpath when the core was split.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs",
-      "cap": {
-        "raw": 48604,
-        "gzip": 13176,
-        "brotli": 11629
-      },
-      "reason": "Shared recorder core chunk now shared between the recorder entries instead of bundled once.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
@@ -961,6 +951,16 @@
       },
       "reason": "The replay meta routes change the server entry source set, so the shared schema chunk gets a new source-set identity; it keeps the removed identity's caps and measures 297658 raw, 77962 gzip, 63852 brotli bytes in CI.",
       "pr": "https://github.com/hazem3500/replays/pull/93"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
+      "cap": {
+        "raw": 53813,
+        "gzip": 14538,
+        "brotli": 12809
+      },
+      "reason": "The recorder core now includes the plain HTTP upload transport (createHttpUpload, retryable IssueUploadError), so createRecorder can take { url, headers, ... }; it replaces bundle-types.ts-5850f68df54d (+5.2 KB raw, +1.4 KB gzip).",
+      "pr": "https://github.com/hazem3500/replays/pull/97"
     }
   ]
 }
