@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 447267,
-      "gzip": 114657,
-      "brotli": 93434
+      "raw": 459670,
+      "gzip": 118130,
+      "brotli": 96249
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 705,
-      "brotli": 624
+      "brotli": 618
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
@@ -242,10 +242,10 @@
       "gzip": 106,
       "brotli": 101
     },
-    "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
-      "raw": 69161,
-      "gzip": 18872,
-      "brotli": 16324
+    "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs": {
+      "raw": 73309,
+      "gzip": 20114,
+      "brotli": 17393
     },
     "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
       "raw": 308545,
@@ -262,15 +262,15 @@
       "gzip": 13251,
       "brotli": 11662
     },
+    "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
+      "raw": 32268,
+      "gzip": 9209,
+      "brotli": 8197
+    },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
       "gzip": 10764,
       "brotli": 9522
-    },
-    "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs": {
-      "raw": 25393,
-      "gzip": 7238,
-      "brotli": 6391
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
       "raw": 434,
@@ -409,8 +409,8 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1829,
-      "gzip": 600,
-      "brotli": 509
+      "gzip": 598,
+      "brotli": 508
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -963,26 +963,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/118"
     },
     {
-      "file": "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs",
-      "cap": {
-        "raw": 25393,
-        "gzip": 7239,
-        "brotli": 6393
-      },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 447267,
-        "gzip": 114657,
-        "brotli": 93434
-      },
-      "reason": "The CLI bundles the views catalog, the seven built-in view presets, capture-profile validation and the built-in performance profile (main 421230/108080/88368, head 434239/111317/90712).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
-    },
-    {
       "file": "dist/client/assets/player-HASH.js",
       "cap": {
         "raw": 316832,
@@ -1031,6 +1011,36 @@
       },
       "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces index.ts-3d8b996b5201 (main 39913/11514/10056).",
       "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 459670,
+        "gzip": 118130,
+        "brotli": 96249
+      },
+      "reason": "The CLI bundles capture-profile resolution, the --network and --no-performance flags and network body capture and redaction (main 434239/111317/90712, head 446281/114689/93445).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
+    },
+    {
+      "file": "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs",
+      "cap": {
+        "raw": 73309,
+        "gzip": 20114,
+        "brotli": 17393
+      },
+      "reason": "Chunk membership moved when capture settings joined the capture library; replaces bundle-io.ts-9a2bdd34cb92 (main 69161 raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
+    },
+    {
+      "file": "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs",
+      "cap": {
+        "raw": 32268,
+        "gzip": 9209,
+        "brotli": 8197
+      },
+      "reason": "Network body capture and redaction shared by the capture library and the server privacy pass (src/shared/network-bodies.ts, src/capture/har-bodies.ts).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
     }
   ]
 }
