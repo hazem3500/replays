@@ -1,9 +1,9 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
-import { purposeProblem } from '../shared/purposes.ts';
+import { profileProblem, profilesOf } from '../shared/profiles.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
-import { assertReplayBundle, type ReplayBundle, type ReplaySummary, summarizeReplay } from '../shared/replay.ts';
+import { assertReplayBundle, replayProfileId, withoutPurposeMirror, type ReplayBundle, type ReplaySummary, summarizeReplay } from '../shared/replay.ts';
 import { assertReviewSuite } from '../shared/review-suite.ts';
 import type { ContextSchema } from './context-schema.ts';
 import { ReplayStore } from './store.ts';
@@ -27,7 +27,9 @@ export interface MigrateInfo {
   id: string;
   /** The source key (`<id>/replay.json`, `_suites/<id>.json`). */
   key: string;
-  /** Purpose ids the target deployment knows; empty when it has none (then a purpose belongs in `meta.tags`). */
+  /** Profile ids the target deployment knows; empty when it has none (then a profile belongs in `meta.tags`). */
+  profiles: readonly string[];
+  /** @deprecated Use `profiles`; the same list. */
   purposes: readonly string[];
 }
 
@@ -43,7 +45,9 @@ export interface MigrateOptions {
   translateSuite?: MigrateTranslate;
   /** Validate `context.fields` against the target's schema too (the CLI passes the config's). */
   contextSchema?: ContextSchema;
-  /** Passed to the translation as `info.purposes`. */
+  /** Passed to the translation as `info.profiles`. */
+  profiles?: readonly string[];
+  /** @deprecated Use `profiles`. */
   purposes?: readonly string[];
   /** Additional privacy rules from the target deployment, applied with the built-in defaults. */
   redaction?: RedactionRules;
@@ -157,11 +161,8 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
     throw new Error(`${key} is not JSON`);
   }
   const original = structuredClone(raw);
-  const info: MigrateInfo = {
-    id: unit.id,
-    key,
-    purposes: options.purposes ?? (options.to instanceof ReplayStore ? options.to.purposes.ids : []),
-  };
+  const profiles = profilesOf(options) ?? (options.to instanceof ReplayStore ? options.to.profiles.ids : []);
+  const info = { id: unit.id, key, profiles, purposes: profiles };
   if (unit.kind === 'suite') {
     const translated = options.translateSuite ? await options.translateSuite(raw, info) : raw;
     const next = sanitizeUrlFields(translated, options.redaction);
@@ -177,11 +178,8 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
   // The same privacy pass an upload gets: stored data never depends on the translation having sanitized it.
   const bundle: ReplayBundle = sanitizeReplayBundle(next, options.redaction);
   assertReplayBundle(bundle);
-  const purposeError = purposeProblem(
-    bundle.meta.purpose,
-    options.purposes ?? (options.to instanceof ReplayStore ? options.to.purposes.ids : []),
-  );
-  if (purposeError) throw new Error(purposeError);
+  const profileError = profileProblem(replayProfileId(bundle.meta), profiles);
+  if (profileError) throw new Error(profileError);
   return { text: json(bundle), translated: !isDeepStrictEqual(bundle, original) };
 }
 
@@ -301,7 +299,7 @@ export async function migrateStore(options: MigrateOptions): Promise<MigrateRepo
 // Comparing two stores
 
 /** A list summary as GET /api/replays shows it, without the retention fields (they count from each store's write time). */
-export type ComparableSummary = Omit<ReplaySummary, 'expiresAt' | 'summaryVersion'>;
+export type ComparableSummary = Omit<ReplaySummary, 'expiresAt' | 'summaryVersion' | 'purpose' | 'purposeInferred'>;
 
 export interface StoreComparison {
   onlyInSource: string[];
@@ -321,7 +319,7 @@ async function summaries(value: ObjectStorage | ReplayStore, concurrency: number
     try {
       const bundle = JSON.parse((await readOrThrow(storage, `${id}/replay.json`)).toString('utf8')) as ReplayBundle;
       const derived = value instanceof ReplayStore ? await value.listSummary(bundle) : summarizeReplay(bundle);
-      const { summaryVersion: _version, ...summary } = derived;
+      const { summaryVersion: _version, ...summary } = withoutPurposeMirror(derived);
       const keep = await storage.read(`${id}/keep.json`).catch(() => undefined);
       const kept = keep ? (JSON.parse(keep.toString('utf8')) as ReplaySummary['kept']) : undefined;
       result.set(id, { ...summary, ...(kept ? { kept } : {}) });

@@ -1,4 +1,4 @@
-import type { ReplaySummary } from '../shared/replay.ts';
+import { profileOfSummary, summaryProfile, withoutProfile, type ReplaySummary } from '../shared/replay.ts';
 import {
   type MetaOverrides,
   metaOverridesSchema,
@@ -23,29 +23,34 @@ export function parseTrash(value: unknown): TrashRecord | undefined {
 
 /** The next overrides record: `patch` over what was there, stamped with who changed it and when. */
 export function nextOverrides(current: MetaOverrides | undefined, patch: ReplayMetaPatch, by: string, now: Date): MetaOverrides {
-  const { by: _by, at: _at, ...kept } = current ?? { by, at: '' };
-  return { ...kept, ...patch, by, at: now.toISOString() };
+  const { by: _by, at: _at, purpose: storedLegacy, ...kept } = current ?? { by, at: '' };
+  const { purpose: legacy, ...changes } = patch;
+  const stored = kept.profile !== undefined ? kept.profile : storedLegacy;
+  const profile = patch.profile !== undefined ? patch.profile : legacy !== undefined ? legacy : stored;
+  return { ...kept, ...changes, ...(profile === undefined ? {} : { profile }), by, at: now.toISOString() };
+}
+
+/** The override's profile: `null` drops it, `undefined` keeps the summary's. Overrides written before the rename say `purpose`. */
+function overriddenProfile(overrides: MetaOverrides) {
+  return overrides.profile !== undefined ? overrides.profile : overrides.purpose;
 }
 
 /**
- * The summary as overridden. An explicit purpose replaces the producer's (and any inferred one); `purpose: null`
- * removes the override's purpose so the catalog can infer again. Runs before `PurposeCatalog.apply`.
+ * The summary as overridden. An explicit profile replaces the producer's (and any inferred one); `profile: null`
+ * removes the override's profile so the catalog can infer again. Runs before `ProfileCatalog.apply`.
  */
-function purposeOf(summary: ReplaySummary, overrides: MetaOverrides): Pick<ReplaySummary, 'purpose' | 'purposeInferred'> {
-  if (overrides.purpose === null) return {};
-  if (overrides.purpose !== undefined) return { purpose: overrides.purpose };
-  return { ...(summary.purpose ? { purpose: summary.purpose } : {}), ...(summary.purposeInferred ? { purposeInferred: true } : {}) };
-}
-
 export function withOverrides(summary: ReplaySummary, overrides: MetaOverrides | undefined): ReplaySummary {
   if (!overrides) return summary;
-  const { purpose: _purpose, purposeInferred: _inferred, ...rest } = summary;
-  const purpose = purposeOf(summary, overrides);
+  const rest = withoutProfile(summary);
+  const override = overriddenProfile(overrides);
+  const own = profileOfSummary(summary);
+  const profile =
+    override === null ? {} : override !== undefined ? summaryProfile(override, false) : summaryProfile(own.id, own.inferred);
   return {
     ...rest,
     ...(overrides.title === undefined ? {} : { title: overrides.title }),
     ...(overrides.tags === undefined ? {} : { tags: overrides.tags }),
-    ...purpose,
+    ...profile,
   };
 }
 

@@ -17,6 +17,8 @@
  * (and index.html, redirects and upload receipts differ) from one host to the next.
  */
 
+import { profilesOf } from '../shared/profiles.ts';
+
 /** `''` at the root of a domain, else `/a/b` (no trailing slash). */
 export function normalizeBasePath(value: string | undefined) {
   const raw = (value ?? '').trim();
@@ -125,7 +127,9 @@ export interface PageBranding {
   beta?: string;
   /** Comments on replays are enabled (`<meta name="app-comments">`). */
   comments?: boolean;
-  /** JSON list of the deployment's purposes (`<meta name="app-purposes">`); absent when there are none. */
+  /** JSON list of the deployment's profiles (`<meta name="app-profiles">`); absent when there are none. */
+  profiles?: string;
+  /** @deprecated Use `profiles`. */
   purposes?: string;
   /** Effective host edit write capability (beta.editor and editing.enabled). */
   editing?: boolean;
@@ -162,8 +166,8 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
     out = out.replace('<meta name="app-comments" content="" />', `<meta name="app-comments" content="${branding.comments ? 'on' : ''}" />`);
     out = out.replace('<meta name="app-beta" content="" />', `<meta name="app-beta" content="${escapeHtml(branding.beta ?? '')}" />`);
     out = out.replace(
-      '<meta name="app-purposes" content="" />',
-      `<meta name="app-purposes" content="${escapeHtml(branding.purposes ?? '')}" />`,
+      '<meta name="app-profiles" content="" />',
+      `<meta name="app-profiles" content="${escapeHtml(profilesOf(branding) ?? '')}" />`,
     );
     out = out.replace(
       '<meta name="app-plugins" content="" />',

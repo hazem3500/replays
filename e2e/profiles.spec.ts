@@ -6,16 +6,16 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
 
-// Purposes declared in a config file (no plugin): index segments with counts, the `purpose=` filter, the upload picker,
-// and the viewer opening a triage replay just before its first error. The samples have no purpose.
+/* why: profiles declared in a config file (no plugin) drive index segments with counts, the `profile=` filter, the upload
+   picker, and the viewer opening a triage replay just before its first error. The samples have no profile. */
 
 let configDir: string;
 test.beforeAll(async () => {
-  configDir = await mkdtemp(join(tmpdir(), 'replays-e2e-purposes-'));
+  configDir = await mkdtemp(join(tmpdir(), 'replays-e2e-profiles-'));
   await writeFile(
     join(configDir, 'config.json'),
     JSON.stringify({
-      purposes: [
+      profiles: [
         {
           id: 'triage',
           label: 'Triage',
@@ -34,7 +34,7 @@ test.afterAll(async () => {
 
 const server = serveApp(() => ({ REPLAYS_CONFIG: join(configDir, 'config.json') }));
 
-// LoadingSwap can retain a busy skeleton beside the mounted viewer during its crossfade.
+// why: LoadingSwap can retain a busy skeleton beside the mounted viewer during its crossfade.
 const viewerShell = (page: Page) => page.getByRole('main').and(page.locator('.app-shell:not([aria-busy="true"]):visible'));
 
 async function loadedViewer(page: Page) {
@@ -45,49 +45,49 @@ async function loadedViewer(page: Page) {
   return viewer;
 }
 
-async function upload(request: Parameters<typeof cloneBundle>[0], purpose: string | undefined, title: string) {
+async function upload(request: Parameters<typeof cloneBundle>[0], profile: string | undefined, title: string) {
   const base = server().origin;
-  const id = uniqueId(purpose ?? 'plain');
+  const id = uniqueId(profile ?? 'plain');
   const bundle = await cloneBundle(request, base, 'demo-shop', id, title);
-  await postBundle(request, base, { ...bundle, meta: { ...bundle.meta, ...(purpose ? { purpose } : {}) } });
+  await postBundle(request, base, { ...bundle, meta: { ...bundle.meta, ...(profile ? { profile } : {}) } });
   return id;
 }
 
-test('the index shows purpose segments with counts and narrows the list; the API filters with ?purpose=', async ({ page }) => {
+test('the index shows profile segments with counts and narrows the list; the API filters with ?profile=', async ({ page }) => {
   const base = server().origin;
-  const triage = await upload(page.request, 'triage', 'Purpose triage check');
-  await upload(page.request, 'walkthrough', 'Purpose walkthrough check');
+  const triage = await upload(page.request, 'triage', 'Profile triage check');
+  await upload(page.request, 'walkthrough', 'Profile walkthrough check');
 
   await page.goto(`${base}/`);
-  const segments = page.getByRole('radiogroup', { name: 'Purpose' });
+  const segments = page.getByRole('radiogroup', { name: 'Profile' });
   await expect(segments.getByRole('radio')).toHaveCount(3);
   const segment = (name: string) => segments.locator('label', { hasText: name });
-  await expect(segment('Triage').locator('.purpose-segment-count')).not.toHaveText('0');
+  await expect(segment('Triage').locator('.profile-segment-count')).not.toHaveText('0');
   await expect(segments.getByRole('radio', { name: /^All/ })).toBeChecked();
 
   await segment('Triage').click();
-  await expect(page).toHaveURL(/[?&]purpose=triage/);
-  await expect(page.getByRole('link', { name: /^Purpose triage check/ })).toBeVisible();
-  await expect(page.getByRole('link', { name: /^Purpose walkthrough check/ })).toHaveCount(0);
+  await expect(page).toHaveURL(/[?&]profile=triage/);
+  await expect(page.getByRole('link', { name: /^Profile triage check/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /^Profile walkthrough check/ })).toHaveCount(0);
   await expect(page.getByRole('link', { name: /^Demo shop/ })).toHaveCount(0);
 
-  // The segment comes back from the URL.
-  await page.goto(`${base}/?purpose=walkthrough`);
+  // why: the segment must come back from the URL.
+  await page.goto(`${base}/?profile=walkthrough`);
   await expect(segments.getByRole('radio', { name: /^Walkthroughs/ })).toBeChecked();
-  await expect(page.getByRole('link', { name: /^Purpose walkthrough check/ }).first()).toBeVisible();
-  await expect(page.getByRole('link', { name: /^Purpose triage check/ })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: /^Profile walkthrough check/ }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /^Profile triage check/ })).toHaveCount(0);
 
-  const listed = (await (await page.request.get(`${base}/api/replays?purpose=triage`)).json()) as Array<{ id: string; purpose: string }>;
+  const listed = (await (await page.request.get(`${base}/api/replays?profile=triage`)).json()) as Array<{ id: string; profile: string }>;
   expect(listed.map((item) => item.id)).toContain(triage);
-  expect(listed.every((item) => item.purpose === 'triage')).toBe(true);
-  const config = (await (await page.request.get(`${base}/api/config`)).json()) as { purposes: Array<{ id: string }> };
-  expect(config.purposes.map((purpose) => purpose.id)).toEqual(['triage', 'walkthrough']);
+  expect(listed.every((item) => item.profile === 'triage')).toBe(true);
+  const config = (await (await page.request.get(`${base}/api/config`)).json()) as { profiles: Array<{ id: string }> };
+  expect(config.profiles.map((profile) => profile.id)).toEqual(['triage', 'walkthrough']);
 });
 
-test('an upload with an unknown purpose is refused, naming the allowed ids', async ({ request }) => {
+test('an upload with an unknown profile is refused, naming the allowed ids', async ({ request }) => {
   const base = server().origin;
-  const bundle = await cloneBundle(request, base, 'demo-shop', uniqueId('bad-purpose'));
-  const response = await request.post(`${base}/api/replays`, { data: { ...bundle, meta: { ...bundle.meta, purpose: 'demo' } } });
+  const bundle = await cloneBundle(request, base, 'demo-shop', uniqueId('bad-profile'));
+  const response = await request.post(`${base}/api/replays`, { data: { ...bundle, meta: { ...bundle.meta, profile: 'demo' } } });
   expect(response.status()).toBe(400);
   expect(await response.text()).toContain('must be one of triage, walkthrough');
 });
@@ -97,7 +97,7 @@ test('a triage replay opens one second before its first error, on that tab; a pe
   await openReplay(page, `${server().origin}/r/${id}`);
   const viewer = await loadedViewer(page);
   await expect(viewer).toHaveAttribute('data-purpose', 'triage');
-  // demo-shop's first error is the failed coupon request at 7.174 s.
+  // why: demo-shop's first error is the failed coupon request at 7.174 s.
   await expect(page.getByTestId('playhead')).toHaveText('0:06.2');
   await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
 
@@ -105,7 +105,7 @@ test('a triage replay opens one second before its first error, on that tab; a pe
   await expect(page.getByTestId('playhead')).toHaveText('0:02.0');
 });
 
-test('a walkthrough opens at the start with the panel folded and captions on; a replay without a purpose opens as before', async ({
+test('a walkthrough opens at the start with the panel folded and captions on; a replay without a profile opens as before', async ({
   page,
 }) => {
   const walkthrough = await upload(page.request, 'walkthrough', 'Walkthrough opening');
@@ -122,9 +122,9 @@ test('a walkthrough opens at the start with the panel folded and captions on; a 
   await expect(page.getByTestId('captions-switch')).toHaveAttribute('aria-pressed', 'false');
 });
 
-test('a loading shell cannot satisfy the purpose-free viewer assertions', async ({ page }) => {
+test('a loading shell cannot satisfy the profile-free viewer assertions', async ({ page }) => {
   const base = server().origin;
-  const id = await upload(page.request, undefined, 'Delayed purpose-free replay');
+  const id = await upload(page.request, undefined, 'Delayed profile-free replay');
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));
   await page.route(`${base}/api/replays/${id}`, async (route) => {
@@ -137,22 +137,22 @@ test('a loading shell cannot satisfy the purpose-free viewer assertions', async 
     const loading = page.getByRole('main', { name: 'Loading replay', exact: true });
     await expect(loading).toBeVisible();
     await expect(loading).toHaveAttribute('aria-busy', 'true');
-    // Absence alone would pass on this skeleton; the purpose assertions must first await a loaded viewer.
+    // why: absence alone would pass on this skeleton; the profile assertions must first await a loaded viewer.
     await expect(loading).not.toHaveAttribute('data-purpose');
     await expect(viewerShell(page)).toHaveCount(0);
 
     release();
     const viewer = await loadedViewer(page);
-    await expect(viewer.getByRole('heading', { level: 1 })).toHaveText('Delayed purpose-free replay');
+    await expect(viewer.getByRole('heading', { level: 1 })).toHaveText('Delayed profile-free replay');
     await expect(viewer).not.toHaveAttribute('data-purpose');
   } finally {
     release();
   }
 });
 
-test('the upload dialog offers the purposes and stores the one picked', async ({ page }) => {
+test('the upload dialog offers the profiles and stores the one picked', async ({ page }) => {
   const base = server().origin;
-  const bundle = await cloneBundle(page.request, base, 'demo-shop', uniqueId('picked'), 'Picked purpose');
+  const bundle = await cloneBundle(page.request, base, 'demo-shop', uniqueId('picked'), 'Picked profile');
   await page.goto(`${base}/`);
   await page.getByRole('button', { name: 'Upload', exact: true }).click();
   await page.getByTestId('upload-input').setInputFiles({
@@ -160,12 +160,12 @@ test('the upload dialog offers the purposes and stores the one picked', async ({
     mimeType: 'application/json',
     buffer: Buffer.from(JSON.stringify(bundle)),
   });
-  await page.getByTestId('upload-purpose').click();
+  await page.getByTestId('upload-profile').click();
   await page.getByRole('option', { name: 'Walkthroughs' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Upload', exact: true }).click();
   await expect(page).toHaveURL(`${base}/r/${bundle.meta.id}`, { timeout: 15_000 });
   const viewer = await loadedViewer(page);
   await expect(viewer).toHaveAttribute('data-purpose', 'walkthrough');
-  const stored = (await (await page.request.get(`${base}/api/replays/${bundle.meta.id}`)).json()) as { meta: { purpose?: string } };
-  expect(stored.meta.purpose).toBe('walkthrough');
+  const stored = (await (await page.request.get(`${base}/api/replays/${bundle.meta.id}`)).json()) as { meta: { profile?: string } };
+  expect(stored.meta.profile).toBe('walkthrough');
 });

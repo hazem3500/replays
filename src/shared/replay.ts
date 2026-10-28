@@ -1,5 +1,5 @@
 import { assertReplayContext, type ReplayContext, type SourceAttrs, sourceAttrs } from './context.ts';
-import { isPurposeId } from './purposes.ts';
+import { type AliasedProfile, isProfileId, profileOf, readAliased } from './profiles.ts';
 import { assertReplayPeople, minimalPeople, type ReplayPerson, type ReplayPersonSummary } from './people.ts';
 import type { KeepRecord } from './retention.ts';
 
@@ -70,7 +70,9 @@ export interface ReplayMeta {
   source?: ReplaySource;
   /** Free-form labels for filtering (`smoke`, `checkout`); lower-case, bounded. */
   tags?: string[];
-  /** Why it was recorded: one of the deployment's purposes (src/shared/purposes.ts), checked on upload. Absent: inferred, or none. */
+  /** Why it was recorded: one of the deployment's profiles (src/shared/profiles.ts), checked on upload. Absent: inferred, or none. */
+  profile?: string;
+  /** @deprecated Use `profile`. Still read (old bundles, old producers); the server stores it as `profile`. */
   purpose?: string;
   /** People related to the recording (at most 10; src/shared/people.ts). */
   people?: ReplayPerson[];
@@ -137,9 +139,12 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
     throw new Error("replay.meta.source must be 'agent' or 'human'");
   }
   if (replay.meta.tags !== undefined) assertReplayTags(replay.meta.tags);
-  // Only the shape here; the server checks the id against the purposes it defines.
-  if (replay.meta.purpose !== undefined && !isPurposeId(replay.meta.purpose))
-    throw new Error('replay.meta.purpose must be a purpose id (lower-case letters, digits and "-")');
+  // Only the shape here; the server checks the id against the profiles it defines.
+  const aliased: AliasedProfile = replay.meta;
+  for (const key of ['profile', 'purpose'] as const)
+    if (aliased[key] !== undefined && !isProfileId(aliased[key]))
+      throw new Error(`replay.meta.${key} must be a profile id (lower-case letters, digits and "-")`);
+  replayProfileId(aliased);
   if (replay.meta.people !== undefined) assertReplayPeople(replay.meta.people);
   if (replay.context !== undefined) assertReplayContext(replay.context);
   if (replay.suiteRun !== undefined) {
@@ -217,8 +222,8 @@ export interface ReplaySourceLink {
 }
 
 /** Bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily. */
-// Version 8 combines purposes, people, source attributes and plugin summary fields (partial fleets used 7).
-export const SUMMARY_VERSION = 8;
+// Version 9 renames purpose to profile (8 combined purposes, people, source attributes and plugin summary fields).
+export const SUMMARY_VERSION = 9;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
 const SUMMARY_SOURCE_ATTRS = 4;
@@ -251,11 +256,15 @@ export interface ReplaySummary {
   /** The review suite run the replay was recorded for. */
   suiteRun?: { suiteId: string; runId: string };
   /**
-   * Why it was recorded: `meta.purpose`, else what a plugin's `infer` says (the server applies that when it lists,
+   * Why it was recorded: `meta.profile`, else what a plugin's `infer` says (the server applies that when it lists,
    * so stored sidecars only ever hold the explicit one). Absent when neither applies.
    */
+  profile?: string;
+  /** True when `profile` was inferred rather than set by the producer. Inferred profiles never make a replay permanent. */
+  profileInferred?: boolean;
+  /** @deprecated Use `profile`; always equal to it. */
   purpose?: string;
-  /** True when `purpose` was inferred rather than set by the producer. Inferred purposes never make a replay permanent. */
+  /** @deprecated Use `profileInferred`; always equal to it. */
   purposeInferred?: boolean;
   /** Small values derived by plugins at upload (`api.summaryFields`), keyed by plugin name; capped per plugin. */
   ext?: Record<string, Record<string, SummaryFieldValue>>;
@@ -275,6 +284,8 @@ export interface ReplayFilters {
   errors?: boolean;
   source?: ReplaySource;
   tag?: string;
+  profile?: string;
+  /** @deprecated Use `profile`. */
   purpose?: string;
   /**
    * Plugin index filters, `x-<name>` query parameter → value (`api.indexFilter`). The server's plugin filters match these;
@@ -353,9 +364,50 @@ export function summarizeReplay(bundle: ReplayBundle): ReplaySummary {
     ...(meta.tags?.length ? { tags: meta.tags } : {}),
     ...(sources.length ? { sources } : {}),
     ...(bundle.suiteRun ? { suiteRun: { suiteId: bundle.suiteRun.suiteId, runId: bundle.suiteRun.runId } } : {}),
-    ...(meta.purpose ? { purpose: meta.purpose, purposeInferred: false } : {}),
+    ...summaryProfile(replayProfileId(meta), false),
     ...(meta.people?.length ? { people: minimalPeople(meta.people) } : {}),
   };
+}
+
+/** The replay's profile id: `meta.profile`, else the deprecated `meta.purpose`. Throws when they disagree. */
+export function replayProfileId(meta: AliasedProfile) {
+  return readAliased(meta.profile, meta.purpose, 'replay.meta.profile and replay.meta.purpose');
+}
+
+/** The meta with its profile under the current name only. */
+export function withMetaProfile<T extends AliasedProfile>(meta: T, profile: string | undefined): Omit<T, 'profile' | 'purpose'> & { profile?: string } {
+  const { profile: _profile, purpose: _purpose, ...rest } = meta;
+  return { ...rest, ...(profile ? { profile } : {}) };
+}
+
+/** The profile fields of a summary; `purpose` and `purposeInferred` mirror the others for older API clients. */
+interface SummaryProfile {
+  profile?: string;
+  profileInferred?: boolean;
+  purpose?: string;
+  purposeInferred?: boolean;
+}
+
+/** A summary's profile fields, with the deprecated `purpose` mirror the HTTP API keeps serving. */
+export function summaryProfile(id: string | undefined, inferred: boolean): SummaryProfile {
+  return id ? { profile: id, profileInferred: inferred, purpose: id, purposeInferred: inferred } : {};
+}
+
+/** A summary's own profile, read from a sidecar of any version (those from before the rename only say `purpose`). */
+export function profileOfSummary(summary: SummaryProfile): { id: string | undefined; inferred: boolean } {
+  return { id: summary.profile ?? summary.purpose, inferred: (summary.profileInferred ?? summary.purposeInferred) === true };
+}
+
+/** The summary without any profile, so the catalog can infer one again. */
+export function withoutProfile<T extends SummaryProfile>(summary: T): Omit<T, keyof SummaryProfile> {
+  const { profile: _profile, profileInferred: _inferred, purpose: _purpose, purposeInferred: _purposeInferred, ...rest } = summary;
+  return rest;
+}
+
+/** The summary without the deprecated mirror fields, for comparisons that would otherwise count every change twice. */
+export function withoutPurposeMirror<T extends SummaryProfile>(summary: T): Omit<T, 'purpose' | 'purposeInferred'> {
+  const { purpose: _purpose, purposeInferred: _inferred, ...rest } = summary;
+  return rest;
 }
 
 export function isReplaySummary(value: unknown): value is ReplaySummary {
@@ -375,7 +427,8 @@ export function matchesFilters(summary: ReplaySummary, filters: ReplayFilters) {
   if (filters.errors && summary.consoleErrors + summary.failedRequests === 0) return false;
   if (filters.source && summary.source !== filters.source) return false;
   if (filters.tag && !summary.tags?.includes(filters.tag)) return false;
-  if (filters.purpose && summary.purpose !== filters.purpose) return false;
+  const profile = profileOf(filters);
+  if (profile && summary.profile !== profile) return false;
   return true;
 }
 

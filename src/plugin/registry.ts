@@ -3,7 +3,7 @@ import { isDeepStrictEqual } from 'node:util';
 import type { AuthAdapter, AuthPluginFactory } from '../server/auth/types.ts';
 import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
-import { assertPurposeConfig } from '../shared/purposes.ts';
+import { assertProfileConfig } from '../shared/profiles.ts';
 import { compileHandlePattern, HANDLE_ID, isPersonRole } from '../shared/people.ts';
 import { assertProviderLook, type SourceProvider } from '../shared/source-providers.ts';
 import { assertPlugin } from './define.ts';
@@ -24,7 +24,7 @@ import type {
   PluginApi,
   NormalizeUploadHook,
   PrepareUploadHook,
-  PurposeDefinition,
+  ProfileDefinition,
   RenderHooks,
   ReplaysPlugin,
   RequestHook,
@@ -84,8 +84,8 @@ export interface PluginRegistry {
   /** `api.route`, in plugin order. */
   readonly routes: readonly Owned<PluginRoute<unknown>>[];
   readonly clientEntries: readonly ResolvedClientEntry[];
-  /** `api.purpose`, in registration order (src/server/purposes.ts merges them with the config's). */
-  readonly purposes: readonly Owned<PurposeDefinition>[];
+  /** `api.profile`, in registration order (src/server/profiles.ts merges them with the config's). */
+  readonly profiles: readonly Owned<ProfileDefinition>[];
   /** `api.retention` rules. */
   readonly retention: readonly Owned<RetentionRuleDefinition>[];
   /** `api.render` hooks, in plugin order (src/server/render-hooks.ts runs them). */
@@ -121,7 +121,7 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   },
   routes: [],
   clientEntries: [],
-  purposes: [],
+  profiles: [],
   retention: [],
   render: [],
   summaryFields: [],
@@ -223,7 +223,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   const requestPolicies: Owned<RequestPolicy>[] = [];
   const uploadEndpoints = new Map<string, Owned<UploadEndpoint>>();
   const clientEntries: ResolvedClientEntry[] = [];
-  const purposes: Owned<PurposeDefinition>[] = [];
+  const profiles: Owned<ProfileDefinition>[] = [];
   const retention: Owned<RetentionRuleDefinition>[] = [];
   const render: Owned<RenderHooks>[] = [];
   const summaryFields: Owned<SummaryFieldsDefinition>[] = [];
@@ -252,7 +252,29 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     function needFunction(value: unknown, what: string) {
       if (typeof value !== 'function') fail(`${what} must be a function`);
     }
+    let warnedPurpose = false;
+    const legacy = {
+      purpose(definition: ProfileDefinition) {
+        if (!warnedPurpose) {
+          warnedPurpose = true;
+          console.warn(`plugin ${plugin.name}: api.purpose is deprecated; call api.profile with the same definition`);
+        }
+        addProfile(definition);
+      },
+    };
+    function addProfile(definition: ProfileDefinition) {
+      try {
+        assertProfileConfig(definition, 'profile', ['infer']);
+      } catch (error) {
+        fail((error as Error).message);
+      }
+      if (definition.infer !== undefined) needFunction(definition.infer, `profile ${definition.id}: infer`);
+      const taken = profiles.find((entry) => entry.value.id === definition.id);
+      if (taken) fail(`profile ${JSON.stringify(definition.id)} is already registered by ${taken.plugin}`, 'conflict');
+      profiles.push({ plugin: plugin.name, value: definition });
+    }
     const api: PluginApi = {
+      ...legacy,
       pluginName: plugin.name,
       env: options.env ?? process.env,
       cwd: options.cwd ?? process.cwd(),
@@ -416,16 +438,8 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         }
         redaction.push(rules);
       },
-      purpose(definition) {
-        try {
-          assertPurposeConfig(definition, 'purpose', ['infer']);
-        } catch (error) {
-          fail((error as Error).message);
-        }
-        if (definition.infer !== undefined) needFunction(definition.infer, `purpose ${definition.id}: infer`);
-        const taken = purposes.find((entry) => entry.value.id === definition.id);
-        if (taken) fail(`purpose ${JSON.stringify(definition.id)} is already registered by ${taken.plugin}`, 'conflict');
-        purposes.push({ plugin: plugin.name, value: definition });
+      profile(definition) {
+        addProfile(definition);
       },
       retention(rule) {
         if (!rule || typeof rule !== 'object') fail('retention needs { days(summary) }');
@@ -529,7 +543,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     hooks,
     routes,
     clientEntries,
-    purposes,
+    profiles,
     retention,
     render,
     summaryFields,
@@ -588,9 +602,9 @@ function mergeIndexFilters(a: readonly Owned<IndexFilterDefinition>[], b: readon
 export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): PluginRegistry {
   const clash = first.order.find((name) => second.order.includes(name));
   if (clash) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: clash });
-  const purpose = second.purposes.find((entry) => first.purposes.some((other) => other.value.id === entry.value.id));
-  if (purpose)
-    throw new PluginError('conflict', `purpose ${JSON.stringify(purpose.value.id)} is registered twice`, { plugin: purpose.plugin });
+  const profile = second.profiles.find((entry) => first.profiles.some((other) => other.value.id === entry.value.id));
+  if (profile)
+    throw new PluginError('conflict', `profile ${JSON.stringify(profile.value.id)} is registered twice`, { plugin: profile.plugin });
   if (first.people && second.people)
     throw new PluginError('conflict', `registers people, but ${first.people.plugin} already did; a deployment has one`, {
       plugin: second.people.plugin,
@@ -620,7 +634,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
     },
     routes: [...first.routes, ...second.routes],
     clientEntries: [...first.clientEntries, ...second.clientEntries],
-    purposes: [...first.purposes, ...second.purposes],
+    profiles: [...first.profiles, ...second.profiles],
     retention: [...first.retention, ...second.retention],
     render: [...first.render, ...second.render],
     summaryFields: [...first.summaryFields, ...second.summaryFields],

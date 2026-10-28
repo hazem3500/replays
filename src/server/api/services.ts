@@ -35,6 +35,6 @@ export interface ApiServices {
   commentsOn: boolean;
   policy: MalleablePolicy;
   versions: HostVersions;
-  /** Some purpose can be inferred, so a served bundle may carry `x-replay-purpose`. */
+  /** Some profile can be inferred, so a served bundle may carry `x-replay-profile`. */
   inferable: boolean;
 }
