@@ -1,5 +1,6 @@
 import type { SourceProviderInfo } from '../shared/source-providers.ts';
 import { type ProfileInfo, profilesOf } from '../shared/profiles.ts';
+import type { ViewInfo } from '../shared/views.ts';
 import { betaTokens } from '../shared/beta-flags.ts';
 import type { ResolvedClientEntry } from '../plugin/registry.ts';
 import { withBase } from './base-path.ts';
@@ -19,6 +20,8 @@ export interface IndexPageOptions {
   profiles?: readonly ProfileInfo[];
   /** @deprecated Use `profiles`; read when `profiles` is absent. */
   purposes?: readonly ProfileInfo[];
+  /** The deployment's views (`<meta name="app-views">`). */
+  views?: readonly ViewInfo[];
   /** Provider icons and nouns for the source chips. */
   sources?: readonly SourceProviderInfo[];
   /** Host write policy, still gated by beta.editor. */
@@ -41,6 +44,7 @@ export function renderIndexHtml(html: string, options: IndexPageOptions) {
     ...pageBranding(options.branding),
     ...(options.sources?.length ? { sources: JSON.stringify(options.sources) } : {}),
     ...(profilesOf(options)?.length ? { profiles: JSON.stringify(profilesOf(options)) } : {}),
+    ...(options.views?.length ? { views: JSON.stringify(options.views) } : {}),
     ...(entries.length ? { plugins: JSON.stringify(publicClientEntries(entries, options.base)) } : {}),
     ...(options.signIn ? { signIn: `${options.base}${options.signIn.path}` } : {}),
     beta,

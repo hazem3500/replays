@@ -1,4 +1,5 @@
 import { createServer, get } from 'node:http';
+import { ViewCatalog } from '../src/server/views.ts';
 import { mkdtemp, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -108,6 +109,7 @@ describe('replay server', () => {
       plugins: [],
       profiles: [],
       purposes: [],
+      views: new ViewCatalog().list,
       beta: { editor: false, malleable: false },
       editing: { enabled: false },
       comments: false,

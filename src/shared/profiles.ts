@@ -1,3 +1,6 @@
+import { assertCaptureProfile, type CaptureProfile } from './capture-profile.ts';
+import { assertFields, assertKnownKeys, type Checks, isRecord, oneOf } from './validate.ts';
+
 /**
  * Profile ids, like plugin names: `triage`, `design-review`. A profile says why a replay was recorded (triage, a
  * design review, a walkthrough…) and so how it is kept (retention), opened (viewer defaults), listed (index segments)
@@ -42,6 +45,10 @@ export interface ProfileConfig {
   viewer?: ProfileViewerDefaults;
   /** Default `'middle-step'`. */
   poster?: PosterMoment;
+  /** The view replays and suites of this profile open in (src/shared/views.ts); default `'standard'`. */
+  view?: string;
+  /** Capture defaults for `replays capture --profile <id>` and the recorder kit; explicit flags win. */
+  capture?: CaptureProfile;
 }
 
 /** A profile as `GET /api/config` and the page (`<meta name="app-profiles">`) list it. */
@@ -53,14 +60,26 @@ export interface ProfileInfo {
   retentionDays?: number;
   viewer?: ProfileViewerDefaults;
   poster?: PosterMoment;
+  view?: string;
+  capture?: CaptureProfile;
   /** A plugin can infer it for replays uploaded without `meta.profile`. */
   inferable?: boolean;
+  /** Shipped by core (BUILT_IN_PROFILES) and not overridden by the deployment. */
+  builtIn?: true;
 }
+
+/**
+ * The profiles core ships, so `--profile performance` and the Performance view work in a plain core. A config or
+ * plugin entry with the same id overrides its fields.
+ */
+export const BUILT_IN_PROFILES: readonly ProfileConfig[] = [
+  { id: 'performance', label: 'Performance', order: 100, view: 'performance', capture: { performance: true, network: 'headers' } },
+];
 
 export const DEFAULT_LEAD_MS = 1000;
 const MAX_LEAD_MS = 60_000;
 const MAX_LABEL = 40;
-const CONFIG_KEYS = new Set(['id', 'label', 'order', 'retentionDays', 'viewer', 'poster']);
+const CONFIG_KEYS = new Set(['id', 'label', 'order', 'retentionDays', 'viewer', 'poster', 'view', 'capture']);
 const VIEWER_KEYS = new Set(['openAt', 'leadMs', 'inspector', 'captions']);
 
 const envId = (id: string) => id.toUpperCase().replaceAll('-', '_');
@@ -79,21 +98,14 @@ export function isRetentionDays(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 3650;
 }
 
-type Check = (value: unknown) => boolean;
-
-const isRecord = (value: unknown): value is Record<string, unknown> => typeof value === 'object' && value !== null && !Array.isArray(value);
-const oneOf =
-  (allowed: readonly unknown[]): Check =>
-  (value) =>
-    allowed.includes(value);
-
-const PROFILE_CHECKS: Readonly<Record<string, readonly [Check, string]>> = {
+const PROFILE_CHECKS: Checks = {
   order: [(value) => typeof value === 'number' && Number.isFinite(value), 'must be a finite number'],
   retentionDays: [isRetentionDays, 'must be a whole number of days from 0 (never expire) to 3650'],
   poster: [oneOf(POSTER_MOMENTS), `must be one of ${POSTER_MOMENTS.join(', ')}`],
+  view: [isProfileId, 'must be a view id like "debug"'],
 };
 
-const VIEWER_CHECKS: Readonly<Record<string, readonly [Check, string]>> = {
+const VIEWER_CHECKS: Checks = {
   openAt: [oneOf(['start', 'first-error']), 'must be "start" or "first-error"'],
   leadMs: [
     (value) => typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_LEAD_MS,
@@ -102,16 +114,6 @@ const VIEWER_CHECKS: Readonly<Record<string, readonly [Check, string]>> = {
   inspector: [oneOf(['open', 'collapsed']), 'must be "open" or "collapsed"'],
   captions: [(value) => typeof value === 'boolean', 'must be a boolean'],
 };
-
-function assertKnownKeys(record: Record<string, unknown>, allowed: ReadonlySet<string>, where: string, extra: readonly string[] = []) {
-  const unknown = Object.keys(record).filter((key) => !allowed.has(key) && !extra.includes(key));
-  if (unknown.length) throw new Error(`${where} has unknown keys: ${unknown.join(', ')}`);
-}
-
-function assertFields(record: Record<string, unknown>, checks: Readonly<Record<string, readonly [Check, string]>>, where: string) {
-  for (const [key, [check, message]] of Object.entries(checks))
-    if (record[key] !== undefined && !check(record[key])) throw new Error(`${where}.${key} ${message}`);
-}
 
 /**
  * Throws a readable error unless `value` is a well-formed profile. `extra` lists keys allowed besides the config
@@ -125,6 +127,7 @@ export function assertProfileConfig(value: unknown, where = 'profile', extra: re
   if (typeof label !== 'string' || !label.trim() || label.length > MAX_LABEL)
     throw new Error(`${where}.label must be a non-empty string of at most ${MAX_LABEL} characters`);
   assertFields(value, PROFILE_CHECKS, where);
+  if (value.capture !== undefined) assertCaptureProfile(value.capture, `${where}.capture`);
   if (value.viewer === undefined) return;
   if (!isRecord(value.viewer)) throw new Error(`${where}.viewer must be an object`);
   assertKnownKeys(value.viewer, VIEWER_KEYS, `${where}.viewer`);

@@ -2,6 +2,7 @@ import { PRODUCT_NAME } from '../shared/brand.ts';
 import type { HostVersions, MalleablePolicy } from '../shared/malleable-policy.ts';
 import type { PageBranding } from './base-path.ts';
 import type { ProfileInfo } from '../shared/profiles.ts';
+import type { ViewInfo } from '../shared/views.ts';
 
 /**
  * Theming without a rebuild. Every colour in the viewer is a CSS custom property (src/client/styles.css); a
@@ -107,6 +108,8 @@ export function publicConfig(
     plugins?: string[];
     /** The deployment's profiles (src/shared/profiles.ts); an empty list in a plain core. */
     profiles?: readonly ProfileInfo[];
+    /** The deployment's views (src/shared/views.ts). */
+    views?: readonly ViewInfo[];
     /** Plugin index filters (`api.indexFilter`): which `x-*` params `GET /api/replays` understands. */
     indexFilters?: Array<{ plugin: string; id: string; param: string }>;
     beta?: { editor: boolean; malleable?: boolean };
@@ -128,6 +131,7 @@ export function publicConfig(
     profiles: extra.profiles ?? [],
     // why: deprecated alias of `profiles`, kept for API clients written before the rename.
     purposes: extra.profiles ?? [],
+    ...(extra.views ? { views: extra.views } : {}),
     ...(extra.indexFilters ? { indexFilters: extra.indexFilters } : {}),
     beta: extra.beta ?? { editor: false, malleable: false },
     ...(extra.editing ? { editing: extra.editing } : {}),

@@ -322,6 +322,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     ...(settings.signIn !== undefined ? { signIn: settings.signIn } : {}),
     branding,
     sources: settings.sources,
+    views: settings.views,
     beta: settings.beta,
     malleable: settings.malleable,
     versions: { core: coreVersion(), ...(settings.distribution ? { distribution: settings.distribution } : {}) },
