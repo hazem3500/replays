@@ -39,6 +39,8 @@ function LoadedPluginPage({ plugin, page, path, search }: Props & { page: Plugin
     queryFn: async ({ signal }) => ({ data: await page.loader?.({ path, search, signal }) }),
     staleTime: 0,
     gcTime: 0,
+    // why: the page's data changes only when its address does; a refocus must not redraw the plugin.
+    refetchOnWindowFocus: false,
   });
   if (loaded.error)
     return (
@@ -49,7 +51,18 @@ function LoadedPluginPage({ plugin, page, path, search }: Props & { page: Plugin
       </StateShell>
     );
   if (!loaded.data) return null;
-  const context: Omit<PluginPageContext, 'signal'> = {
+  const context = pageContext(plugin, path, search, loaded.data.data);
+  const render = pageRenderer(page);
+  return (
+    <main className="plugin-page" data-plugin={plugin}>
+      <PluginMount render={render} context={context} label={`${plugin} page`} testId="plugin-page" slot="plugin.page" />
+    </main>
+  );
+}
+
+/** What a plugin's page gets besides its signal: theme, base path, API URLs, its address, its data and navigation. */
+function pageContext(plugin: string, path: string, search: Props['search'], data: unknown): Omit<PluginPageContext, 'signal'> {
+  return {
     get theme() {
       return document.documentElement.dataset.theme === 'light' ? 'light' : 'dark';
     },
@@ -57,14 +70,18 @@ function LoadedPluginPage({ plugin, page, path, search }: Props & { page: Plugin
     apiUrl,
     path,
     search,
-    data: loaded.data.data,
+    data,
     navigate: (next, nextSearch = {}) => {
       const splat = pluginPagePath(plugin, next);
       if (splat === undefined) throw new Error(`${plugin}: navigate("${next}") leaves the plugin's page`);
       navigate(`${appBase()}/p/${encodeURIComponent(plugin)}/${splat}${stringifySearch(nextSearch)}`);
     },
   };
-  const render = (container: HTMLElement, base: Omit<PluginPageContext, 'signal'>): Cleanup => {
+}
+
+/** Draws the page with a signal that aborts when it unmounts or draws again. */
+function pageRenderer(page: PluginPageDefinition) {
+  return (container: HTMLElement, base: Omit<PluginPageContext, 'signal'>): Cleanup => {
     const controller = new AbortController();
     const cleanup = page.render(container, { ...base, signal: controller.signal });
     return () => {
@@ -72,9 +89,4 @@ function LoadedPluginPage({ plugin, page, path, search }: Props & { page: Plugin
       if (typeof cleanup === 'function') cleanup();
     };
   };
-  return (
-    <main className="plugin-page" data-plugin={plugin}>
-      <PluginMount render={render} context={context} label={`${plugin} page`} testId="plugin-page" slot="plugin.page" />
-    </main>
-  );
 }
