@@ -96,7 +96,7 @@
     .disclosure { margin: -12px; padding: 12px; }
     .empty .button { min-height: 40px; }
     .step { min-height: 40px; }
-    .request-cell button { min-height: 40px; }
+    .np-request button { min-height: 40px; }
     .seek-time { min-width: 40px; min-height: 40px; }
     .empty-link, .sha-button { margin-block: -12px; padding-block: 12px; }
     [data-slot="dialog-content"] button, [data-slot="popover-content"] button, [data-slot="drawer-content"] button { min-height: 40px; }
