@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
       "gzip": 13521,
-      "brotli": 11999
+      "brotli": 11996
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -118,14 +118,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 244718,
-      "gzip": 42304,
-      "brotli": 35276
+      "raw": 252918,
+      "gzip": 43554,
+      "brotli": 36226
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 847504,
-      "gzip": 264560,
-      "brotli": 220597
+      "gzip": 263459,
+      "brotli": 219552
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 705,
-      "brotli": 618
+      "brotli": 614
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
@@ -219,8 +219,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50387,
-      "gzip": 18344,
-      "brotli": 15958
+      "gzip": 18343,
+      "brotli": 15951
     },
     "dist/client/index.html": {
       "raw": 12263,
@@ -418,9 +418,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 246639,
-      "gzip": 43248,
-      "brotli": 36093
+      "raw": 254839,
+      "gzip": 44498,
+      "brotli": 37043
     },
     "initial/index.html/js": {
       "raw": 1688508,
@@ -758,26 +758,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/97"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 254777,
-        "gzip": 44018,
-        "brotli": 36600
-      },
-      "reason": "The dialog geometry utilities (token-driven padding, close size, title line, stacked touch actions) and the solid destructive button join the app stylesheet, about 2.7 KB raw over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 256661,
-        "gzip": 44944,
-        "brotli": 37401
-      },
-      "reason": "The initial index style group carries the same dialog and destructive-button utilities.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
-    },
-    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3468
@@ -1041,6 +1021,26 @@
       },
       "reason": "Network body capture and redaction shared by the capture library and the server privacy pass (src/shared/network-bodies.ts, src/capture/har-bodies.ts).",
       "pr": "https://github.com/hazem3500/replays/pull/129"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 252918,
+        "gzip": 43554,
+        "brotli": 36226
+      },
+      "reason": "The phone index stylesheets (thumb-sized rows, quiet Filters and sort, the sort sheet and the header menu sheet) join the app stylesheet, about 8 KB raw over main.",
+      "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 254839,
+        "gzip": 44498,
+        "brotli": 37043
+      },
+      "reason": "The initial index style group carries the same phone index stylesheets.",
+      "pr": "https://github.com/hazem3500/replays/pull/111"
     }
   ]
 }
