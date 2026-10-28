@@ -110,3 +110,24 @@ testRecorderUi('our recorder', () => createOurUi(), {describe,it});
 Run with a DOM environment. Standard controls use `data-recorder-action="consent-accept|consent-decline|stop|send|discard|retry|dismiss"` and `data-recorder-field="note"`. Optional selector overrides and `render(flush)` support framework adapters. The suite checks consent, privacy-copy differences, focus, abort, attestation, review/note, retry, dismissal and the complete strict recording flow. This repository runs it for default UI, composed steps and the React example, plus a deliberately broken UI whose contract failure is asserted.
 
 `pnpm build:recorder` emits split ESM entries, shared chunks, declarations and a metafile. The build verifies that the core's static graph has no default UI, styles or React. Run recorder tests using `vitest.recorder.config.ts`; all repository builds and checks run on Boat.
+
+## Iterate in Storybook
+
+`pnpm storybook` (on Boat) opens the recorder under **Recorder** in the sidebar:
+
+- **Default UI**: each `createDefaultUi()` surface on its own (consent, recording, sending, sent, failed), in both themes and at phone width. Edit `src/recorder/default-ui.ts` or `messages.ts` and the story reloads with your change.
+- **Custom UI (kit)**: the `examples/recorder-shadcn` React UI on `@hazem3500/replays/recorder/react`, including warnings and upload progress.
+- **End to end**: the production `createRecorder()` and default UI on a demo checkout page. rrweb loads through its real dynamic import and the upload leaves the page through the real transport. A Mock Service Worker ([msw](https://mswjs.io), served by `msw/vite`) answers as the ingest endpoint, so nothing in the recorder is stubbed.
+
+End to end has an inspector beside the page. It shows the live recorder state, the history of states it went through, upload progress when the transport reports it, and every upload the endpoint received: its encoding, size on the wire, event count, console entries, requests and note. The **Next upload** buttons choose how the endpoint answers: Accept, Hold (the upload stays pending until **Release held upload**) or Return 503 (retryable). Use **Playground** to record by hand; the other stories play a flow and assert the outcome:
+
+| Story | Flow and assertions |
+| --- | --- |
+| Record And Upload | Consent, type into the page, a failing request and a console error, stop, add a note, send. The endpoint receives a gzipped report whose bundle has the events, the failed request, the console error and the note, and never the typed name or password. |
+| Review | Stops at the review dialog. |
+| Uploading | The endpoint holds the upload, so the default UI stays on "Sending…". |
+| Token Upload | Posts with `createTokenUpload` (XHR); the endpoint sees the bearer token. |
+| Upload Fails Then Retries | The endpoint returns 503, the UI shows "Couldn't send recording" and Retry; Retry succeeds once the endpoint accepts. |
+| Light Phone | Record And Upload in the light theme at 390 px. |
+
+Two limits: the recorder has no paused or stopping state (`stop()` moves straight to review), and a service worker answers before Chromium emits XHR upload progress events, so End to end shows the indeterminate sending state. The kit stories show the progress surface. The upload endpoint lives in `stories/recorder/upload-endpoint.ts`; add a mode there to try another server response.

@@ -1,0 +1,44 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Introduction" />
+
+# Replays UI
+
+Every surface here is the real component from `src/`, rendered with the app's tokens, fonts and providers. Nothing is
+restyled for Storybook.
+
+## Using it
+
+- **Theme**: the toolbar's Theme switch sets `data-theme` on the page, exactly as the app does. Stories that only make
+  sense in one theme pin it.
+- **Viewport**: pick Phone 390, Phone 320, Tablet 768 or Desktop 1280 from the viewport menu. Phone stories pin a phone
+  viewport.
+- **Backgrounds**: Page is the app's page colour; Surface, Raised and Player canvas preview components on the other
+  surfaces they sit on.
+- **Interactions**: stories with a `play` function drive the UI and assert the result. The Interactions panel shows
+  each step.
+- **Accessibility**: the Accessibility panel runs axe on every story.
+
+## Map
+
+| Group | What it holds |
+| --- | --- |
+| Foundations | Live colour and type tokens for the current theme |
+| Components | Base UI primitives from `src/client/components/ui` |
+| Recorder | The in-page recorder: default UI surfaces, the custom kit, and an end to end record and upload flow |
+| Extensions | What plugins render into: plugin mounts and the permission prompt |
+| App | Settings and stable viewer states |
+
+## Network
+
+Stories never reach a server. A Mock Service Worker, registered from `msw/vite`, answers the requests a story declares in
+`parameters.network.handlers`, so components fetch over the real network stack. Requests to `/api` without a handler
+fail with 501 instead of reaching anything.
+
+## Running it
+
+```sh
+pnpm storybook             # dev server on :6006
+pnpm build:storybook       # static build into storybook-static/
+pnpm typecheck:storybook
+```
