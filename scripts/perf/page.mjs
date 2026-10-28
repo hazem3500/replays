@@ -60,8 +60,10 @@ async function playbackInteraction(page, cdp, playbackMs) {
 
 async function settingsInteraction(page) {
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  await page.getByRole('dialog').waitFor();
-  await page.getByRole('tab').last().click();
+  const dialog = page.getByRole('dialog');
+  await dialog.waitFor();
+  // why: desktop shows the sections as tabs, phones as a list that pushes one section; both carry the slot markup.
+  await dialog.locator('[data-slot="settings.sections"] [data-slot-item]').last().click();
 }
 
 async function indexInteraction(page) {

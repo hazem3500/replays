@@ -55,16 +55,19 @@ test('reduced motion opens replay without starting a page transition', async ({ 
   expect(errors).toEqual([]);
 });
 
-test('settings opens a dialog and changes browser preferences without crashing', async ({ page }) => {
+test('settings opens a dialog of sections without its own theme buttons', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(origin());
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  const menu = page.getByRole('dialog', { name: 'Settings' });
-  await expect(menu).toContainText('Color theme');
-  const before = await page.locator('html').getAttribute('data-theme');
-  await menu.getByRole('button', { name: before === 'dark' ? 'Light' : 'Dark', exact: true }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-theme', before === 'dark' ? 'light' : 'dark');
-  await expect(menu).toBeVisible();
+  const trigger = page.getByRole('button', { name: 'Settings', exact: true });
+  await trigger.click();
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
+  await expect(dialog.getByRole('tab', { name: 'CLI & agents' })).toHaveAttribute('aria-selected', 'true');
+  await expect(dialog.getByRole('button', { name: /^(Light|Dark)$/ })).toHaveCount(0);
+  await dialog.getByRole('tab', { name: 'Keyboard' }).click();
+  await expect(dialog.getByRole('tabpanel')).toContainText('Play or pause');
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden();
+  await expect(trigger).toBeFocused();
   expect(errors).toEqual([]);
 });
