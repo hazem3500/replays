@@ -63,9 +63,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 224854,
-      "gzip": 38561,
-      "brotli": 32851
+      "raw": 237293,
+      "gzip": 41146,
+      "brotli": 34316
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 703087,
@@ -150,7 +150,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 47311,
       "gzip": 17272,
-      "brotli": 16623
+      "brotli": 15444
     },
     "dist/client/index.html": {
       "raw": 10783,
@@ -348,9 +348,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 226775,
-      "gzip": 39505,
-      "brotli": 33668
+      "raw": 239214,
+      "gzip": 42090,
+      "brotli": 35133
     },
     "initial/index.html/js": {
       "raw": 1270898,
@@ -718,26 +718,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 224854,
-        "gzip": 38561,
-        "brotli": 32851
-      },
-      "reason": "Highlight scrubber markers and caption morphing add a few reviewed index-shared styles on top of the card motion styles, 90 bytes of Brotli over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 226775,
-        "gzip": 39505,
-        "brotli": 33668
-      },
-      "reason": "The initial index style group carries the same highlight and caption styles that main.css gains in this PR, 66 bytes of Brotli over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/performance-HASH.js",
       "cap": {
         "raw": 4242,
@@ -746,6 +726,26 @@
       },
       "reason": "Highlight and caption exports added to the shared main chunk change the import bindings of this small chunk by 4 bytes gzip and 5 bytes Brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 237293,
+        "gzip": 41146,
+        "brotli": 34316
+      },
+      "reason": "The filters popover, choice panes, active-filter tokens and first-run state ship three new reviewed stylesheets in the app stylesheet, about 5.5 KB raw over main.",
+      "pr": "https://github.com/hazem3500/replays/pull/101"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 239214,
+        "gzip": 42090,
+        "brotli": 35133
+      },
+      "reason": "The initial index style group carries the same filters and first-run stylesheets added to the app stylesheet.",
+      "pr": "https://github.com/hazem3500/replays/pull/101"
     }
   ]
 }
