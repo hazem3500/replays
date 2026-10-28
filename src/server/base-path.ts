@@ -131,6 +131,8 @@ export interface PageBranding {
   profiles?: string;
   /** @deprecated Use `profiles`. */
   purposes?: string;
+  /** JSON list of the deployment's views (`<meta name="app-views">`). */
+  views?: string;
   /** Effective host edit write capability (beta.editor and editing.enabled). */
   editing?: boolean;
   /** JSON list of the plugins' browser entries (`<meta name="app-plugins">`); see src/server/plugin-runtime.ts. */
@@ -169,6 +171,7 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
       '<meta name="app-profiles" content="" />',
       `<meta name="app-profiles" content="${escapeHtml(profilesOf(branding) ?? '')}" />`,
     );
+    out = out.replace('<meta name="app-views" content="" />', `<meta name="app-views" content="${escapeHtml(branding.views ?? '')}" />`);
     out = out.replace(
       '<meta name="app-plugins" content="" />',
       `<meta name="app-plugins" content="${escapeHtml(branding.plugins ?? '')}" />`,

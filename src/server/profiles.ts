@@ -2,6 +2,7 @@ import type { Owned } from '../plugin/registry.ts';
 import type { ProfileDefinition, ProfileInferInput, RetentionRuleDefinition } from '../plugin/types.ts';
 import {
   assertProfileConfig,
+  BUILT_IN_PROFILES,
   legacyProfileRetentionEnv,
   type PosterMoment,
   type ProfileConfig,
@@ -159,6 +160,56 @@ export function configProfiles(
 
 const RETENTION_PROFILE_ENV = /^RETENTION_(PROFILE|PURPOSE)_[A-Z0-9_]+_DAYS$/;
 
+/** Core's built-in profiles: under a deployment entry with the same id (its fields win), else added as they are. */
+function addBuiltIns(merged: MergedProfile[]) {
+  for (const builtIn of BUILT_IN_PROFILES) {
+    const own = merged.find((entry) => entry.declared.id === builtIn.id);
+    if (own) own.declared = { ...builtIn, ...own.declared };
+    else merged.push({ declared: builtIn, builtIn: true });
+  }
+}
+
+/** Retention variables naming no profile, and the deprecated spelling, each get one warning. */
+function warnRetentionEnv(env: Record<string, string | undefined>, resolved: readonly ResolvedProfile[], log: (line: string) => void) {
+  const known = new Set(resolved.flatMap((profile) => [profileRetentionEnv(profile.info.id), legacyProfileRetentionEnv(profile.info.id)]));
+  for (const name of Object.keys(env)) {
+    if (!RETENTION_PROFILE_ENV.test(name)) continue;
+    if (!known.has(name)) log(`warning: ${name} is set, but no profile has that id; it is ignored`);
+    else if (name.startsWith('RETENTION_PURPOSE_'))
+      log(`warning: ${name} is deprecated; rename it to ${name.replace('RETENTION_PURPOSE_', 'RETENTION_PROFILE_')}`);
+  }
+}
+
+/** A profile after the config, plugin and built-in declarations of its id are merged. */
+interface MergedProfile {
+  declared: ProfileConfig;
+  infer?: (input: ProfileInferInput) => boolean;
+  plugin?: string;
+  builtIn?: true;
+}
+
+/** The public part of a merged profile, with its retention window from the environment, plus how to infer it. */
+function resolveProfile(profile: MergedProfile, env: Record<string, string | undefined>): ResolvedProfile {
+  const { declared } = profile;
+  const days =
+    daysFromEnv(env, profileRetentionEnv(declared.id)) ??
+    daysFromEnv(env, legacyProfileRetentionEnv(declared.id)) ??
+    declared.retentionDays;
+  const info: ProfileInfo = {
+    id: declared.id,
+    label: declared.label.trim(),
+    order: declared.order ?? 0,
+    ...(days === undefined ? {} : { retentionDays: days }),
+    ...(declared.viewer && Object.keys(declared.viewer).length ? { viewer: declared.viewer } : {}),
+    ...(declared.poster ? { poster: declared.poster } : {}),
+    ...(declared.view ? { view: declared.view } : {}),
+    ...(declared.capture ? { capture: declared.capture } : {}),
+    ...(profile.infer ? { inferable: true } : {}),
+    ...(profile.builtIn ? { builtIn: true as const } : {}),
+  };
+  return { info, ...(profile.infer ? { infer: profile.infer } : {}), ...(profile.plugin ? { plugin: profile.plugin } : {}) };
+}
+
 /**
  * Merges the config's profiles with the plugins': config entries come first (in file order) and override the
  * fields of a plugin profile with the same id (its `infer` is kept); then plugin-only profiles in plugin order;
@@ -171,13 +222,15 @@ export function createProfileCatalog(options: {
   env?: Record<string, string | undefined>;
   /** Warnings (an override for an unknown profile) and `infer` failures go here; without it, no warnings and failures to stderr. */
   log?: (line: string) => void;
+  /** Include core's BUILT_IN_PROFILES (default true); tests of the merge rules turn it off. */
+  builtIns?: boolean;
 }): ProfileCatalog {
   const env = options.env ?? {};
   const log = options.log;
   const config = options.config ?? [];
   assertConfigProfiles(config);
   const plugins = options.plugins ?? [];
-  const merged: Array<{ declared: ProfileConfig; infer?: (input: ProfileInferInput) => boolean; plugin?: string }> = [];
+  const merged: MergedProfile[] = [];
   const add = (declared: ProfileConfig, plugin?: Owned<ProfileDefinition>) =>
     merged.push({
       declared,
@@ -193,40 +246,18 @@ export function createProfileCatalog(options: {
     }
   }
   for (const plugin of plugins) if (!config.some((entry) => entry.id === plugin.value.id)) add(strip(plugin.value), plugin);
+  if (options.builtIns !== false) addBuiltIns(merged);
   const resolved = merged
     .map((profile, index) => ({ profile, index }))
     .sort((a, b) => (a.profile.declared.order ?? 0) - (b.profile.declared.order ?? 0) || a.index - b.index)
-    .map(({ profile }): ResolvedProfile => {
-      const { declared } = profile;
-      const days =
-        daysFromEnv(env, profileRetentionEnv(declared.id)) ??
-        daysFromEnv(env, legacyProfileRetentionEnv(declared.id)) ??
-        declared.retentionDays;
-      const info: ProfileInfo = {
-        id: declared.id,
-        label: declared.label.trim(),
-        order: declared.order ?? 0,
-        ...(days === undefined ? {} : { retentionDays: days }),
-        ...(declared.viewer && Object.keys(declared.viewer).length ? { viewer: declared.viewer } : {}),
-        ...(declared.poster ? { poster: declared.poster } : {}),
-        ...(profile.infer ? { inferable: true } : {}),
-      };
-      return { info, ...(profile.infer ? { infer: profile.infer } : {}), ...(profile.plugin ? { plugin: profile.plugin } : {}) };
-    });
+    .map(({ profile }) => resolveProfile(profile, env));
   // why: only the server's final catalog has `log`; a partial one (the config's alone) would flag the plugins' variables.
-  const known = new Set(resolved.flatMap((profile) => [profileRetentionEnv(profile.info.id), legacyProfileRetentionEnv(profile.info.id)]));
-  if (log)
-    for (const name of Object.keys(env)) {
-      if (!RETENTION_PROFILE_ENV.test(name)) continue;
-      if (!known.has(name)) log(`warning: ${name} is set, but no profile has that id; it is ignored`);
-      else if (name.startsWith('RETENTION_PURPOSE_'))
-        log(`warning: ${name} is deprecated; rename it to ${name.replace('RETENTION_PURPOSE_', 'RETENTION_PROFILE_')}`);
-    }
+  if (log) warnRetentionEnv(env, resolved, log);
   return new ProfileCatalog(resolved, log);
 }
 
 /** The definition without `infer`, field by field: destructuring the method out would leave it unbound. */
-function strip({ id, label, order, retentionDays, viewer, poster }: ProfileDefinition): ProfileConfig {
+function strip({ id, label, order, retentionDays, viewer, poster, view, capture }: ProfileDefinition): ProfileConfig {
   return {
     id,
     label,
@@ -234,5 +265,7 @@ function strip({ id, label, order, retentionDays, viewer, poster }: ProfileDefin
     ...(retentionDays === undefined ? {} : { retentionDays }),
     ...(viewer === undefined ? {} : { viewer }),
     ...(poster === undefined ? {} : { poster }),
+    ...(view === undefined ? {} : { view }),
+    ...(capture === undefined ? {} : { capture }),
   };
 }

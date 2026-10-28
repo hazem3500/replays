@@ -54,3 +54,15 @@ export function replayProfile(bundle: Pick<ReplayBundle, 'meta'>): ProfileInfo |
   }
   return id ? pageProfiles().find((profile) => profile.id === id) : undefined;
 }
+
+/**
+ * The profiles the index offers as tabs: the deployment's own, plus a built-in one once some replay has it or the URL
+ * names it, so a plain core shows no tabs until they would hold something.
+ */
+export function indexProfiles(
+  profiles: readonly ProfileInfo[],
+  counts: Readonly<Record<string, number>> | undefined,
+  selected?: string,
+): readonly ProfileInfo[] {
+  return profiles.filter((profile) => !profile.builtIn || profile.id === selected || (counts?.[profile.id] ?? 0) > 0);
+}
