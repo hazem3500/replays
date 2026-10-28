@@ -738,6 +738,17 @@ are retained so configuration can precede lazy registration. Locked surfaces rej
 before it changes anything. Hosts can lock legacy ids such as `inspector:context`, or any slot/item
 pair such as `index.filters/core:owner`. Sandboxed user plugins cannot configure host slots.
 
+Built-in viewer items and their default order:
+
+| Slot | Built-in items |
+| --- | --- |
+| `viewer.inspector.tabs` | `core:steps` (only without the steps rail, so on phones), `core:console`, `core:network`, `core:performance`, `core:context`, then built-in feature tabs such as `core:comments` |
+| `viewer.actions` | `core:compare`, `core:edit` (when editing is on), `core:info`, `core:link`, `core:download`; phones show `core:compare` and `core:edit` in the bar and the rest in More |
+| `viewer.context.sections` | `core:summary`, `core:sources` (when the replay has sources), `core:fields` |
+| `viewer.scrubber.tracks` | `core:steps`, `core:errors`, `core:highlights`; their geometry is fixed, so order only places plugin rows, and hiding `core:steps` leaves one unbroken bar |
+
+Plugin items rank after the built-ins unless a host orders them.
+
 Initial slots: `viewer.inspector.tabs`, `viewer.panels.side`, `viewer.actions`,
 `viewer.scrubber.tracks`, `viewer.context.sections`, `index.row.columns`, `index.filters`,
 `index.sections`, `settings.sections`. Distributions may define additional slot names. A view

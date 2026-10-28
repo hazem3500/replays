@@ -17,6 +17,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- The viewer's top bar actions (`core:compare`, `core:edit`, `core:info`, `core:link`, `core:download`), its Context
+  tab sections (`core:summary`, `core:sources`, `core:fields`) and its seek bar tracks (`core:steps`, `core:errors`,
+  `core:highlights`) are slot items: `configureSlot` can reorder or hide them like the inspector's tabs. Plugin
+  context sections are placed where a host's order puts them.
+
 - Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
   `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
   its link names). Single, Grid and Spotlight share one clock and the viewer's
