@@ -118,7 +118,7 @@ export function budgetDiff(baseline, next, allowances) {
       const allowance = allowances.find((entry) => entry.file === file && entry.cap[metric] !== undefined);
       const reason = changeReason(allowance, before, after);
       rows.push(
-        `| ${cell(file)} | ${metric} | ${before ?? 'new'} | ${after ?? 'removed'} | ${allowance?.cap[metric] ?? '—'} | ${reason} |`,
+        `| ${cell(file)} | ${metric} | ${before ?? 'new'} | ${after ?? 'removed'} | ${allowance?.cap[metric] ?? 'none'} | ${reason} |`,
       );
     }
   }

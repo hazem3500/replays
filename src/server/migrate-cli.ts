@@ -10,7 +10,7 @@ import { summaryFieldsRunner } from './summary-fields.ts';
 import { FsStorage, storageFromEnv } from './storage/index.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
-export const MIGRATE_USAGE = `replays migrate — copy a store into another, converting every replay on the way
+export const MIGRATE_USAGE = `replays migrate: copy a store into another, converting every replay on the way
 
   replays migrate --from <store> --to <store> [--translate ./translate.mjs] [--config path]
                   [--dry-run] [--report out.json] [--concurrency 4]

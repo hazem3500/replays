@@ -45,6 +45,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - `api.route(...)`: web-standard handlers under `/api/plugins/<plugin>`, with `auth`, `write` and a Standard Schema `body`
   - `api.middleware(...)`: `pre-auth`/`post-auth` interceptors that return a `Response` or nothing
   - `webRequest` next to `request` in upload hooks, context adapters and `identity.resolve`
+- `PATCH /api/replays/<id>/meta` renames, retags or sets the purpose of a replay; `DELETE /api/replays/<id>` deletes it softly
+  (restorable with `POST /api/replays/<id>/restore` for 7 days, refused with `409` while kept). Bodies are validated against
+  shared schemas (`400` with the issues). Uploaded bundles stay immutable: changes live in `<id>/overrides.json` and
+  `<id>/trash.json`, and the list, summaries and retention read them.
 - `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
   or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
 - An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of
@@ -207,6 +211,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - [docs/downstream-migration.md](docs/downstream-migration.md).
 
 ### Changed
+
+- Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
+  line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
+  touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
