@@ -6,7 +6,8 @@ import type { ObjectStorage } from '../server/storage/types.ts';
 import type { ReplayContext } from '../shared/context.ts';
 import type { ReplayPerson } from '../shared/people.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
-import type { PurposeConfig } from '../shared/purposes.ts';
+import type { ProfileConfig } from '../shared/profiles.ts';
+import type { ViewPreset } from '../shared/views.ts';
 import type { ReplayBundle, ReplaySourceLink, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 import type { PluginMiddleware, PluginRoute } from './web-types.ts';
@@ -136,21 +137,23 @@ export interface AfterUploadContext extends UploadHookContext {
 export type AfterUploadHook = (context: AfterUploadContext) => void | Promise<void>;
 
 /**
- * What a purpose's `infer` sees: the replay's summary (the index's data: counts, sources, tags, suite run…) plus
+ * What a profile's `infer` sees: the replay's summary (the index's data: counts, sources, tags, suite run…) plus
  * `errors` (console errors + failed requests). It runs whenever the server lists a replay without an explicit
- * `meta.purpose`, so a changed rule applies to stored replays too. Keep it cheap and pure.
+ * `meta.profile`, so a changed rule applies to stored replays too. Keep it cheap and pure.
  */
-export type PurposeInferInput = Readonly<Omit<ReplaySummary, 'purpose' | 'purposeInferred' | 'kept' | 'expiresAt'>> & {
+export type ProfileInferInput = Readonly<
+  Omit<ReplaySummary, 'profile' | 'profileInferred' | 'purpose' | 'purposeInferred' | 'kept' | 'expiresAt'>
+> & {
   readonly errors: number;
 };
 
-/** A purpose (src/shared/purposes.ts) plus, optionally, how to recognise one that was uploaded without `meta.purpose`. */
-export interface PurposeDefinition extends PurposeConfig {
-  /** True when a replay without an explicit purpose has this one. Purposes are tried in `order`; the first match wins. */
-  infer?(input: PurposeInferInput): boolean;
+/** A profile (src/shared/profiles.ts) plus, optionally, how to recognise one that was uploaded without `meta.profile`. */
+export interface ProfileDefinition extends ProfileConfig {
+  /** True when a replay without an explicit profile has this one. Profiles are tried in `order`; the first match wins. */
+  infer?(input: ProfileInferInput): boolean;
 }
 
-/** A retention policy that is not about purpose (`api.retention`). */
+/** A retention policy that is not about profile (`api.retention`). */
 export interface RetentionRuleDefinition {
   /** Whole days to keep the replay, or `0` / `undefined` for no limit. The shortest window wins; Keep still overrides. */
   days(summary: ReplaySummary): number | null | undefined;
@@ -194,10 +197,11 @@ export interface RenderedFile {
 export interface RenderHooks {
   /**
    * The poster's moment, in ms on the replay's timeline (clamped to the replay). The first hook that returns a finite
-   * number wins; `undefined` passes to the next, then to the purpose's `poster` setting, then to the default. Its
-   * answer is cached per replay for the life of the process, so keep it a pure function of the bundle and purpose.
+   * number wins; `undefined` passes to the next, then to the profile's `poster` setting, then to the default. Its
+   * answer is cached per replay for the life of the process, so keep it a pure function of the bundle and profile.
+   * `context.purpose` is the deprecated name of `context.profile` and always equals it.
    */
-  posterAt?(bundle: ReplayBundle, context: { purpose?: string }): number | undefined | Promise<number | undefined>;
+  posterAt?(bundle: ReplayBundle, context: { profile?: string; purpose?: string }): number | undefined | Promise<number | undefined>;
   /**
    * Before a render. Return `false` to refuse it, or some of `options` to change them (video exports only; other keys
    * are ignored). Video hooks run on every request that names an export (start, status, download, cancel), so the
@@ -269,7 +273,7 @@ export interface NormalizeUploadContext {
 }
 
 /**
- * Server-side normalization of a validated upload before it is stored: force the id, title, purpose or source, drop what
+ * Server-side normalization of a validated upload before it is stored: force the id, title, profile or source, drop what
  * the client may not set, add derived context. Return a replacement bundle or mutate this one. The result is validated
  * again and always goes through the privacy pass afterwards; a hook cannot skip it.
  */
@@ -398,11 +402,18 @@ export interface PluginApi {
    */
   redaction(rules: RedactionRules): void;
   /**
-   * A purpose. Ids are unique across plugins; a `purposes` entry in the config file with the same id overrides its
+   * A profile. Ids are unique across plugins; a `profiles` entry in the config file with the same id overrides its
    * fields (not `infer`).
    */
-  purpose(definition: PurposeDefinition): void;
-  /** A retention rule; the shortest window any rule, the purpose or the default gives wins. */
+  profile(definition: ProfileDefinition): void;
+  /**
+   * A view: a way to look at replays (src/shared/views.ts). Ids are unique across plugins and cannot be a built-in's;
+   * a `views` entry in the config file with the same id overrides its fields.
+   */
+  view(preset: ViewPreset): void;
+  /** @deprecated Use `profile`; registers the same thing and warns once per plugin at start. */
+  purpose(definition: ProfileDefinition): void;
+  /** A retention rule; the shortest window any rule, the profile or the default gives wins. */
   retention(rule: RetentionRuleDefinition): void;
   /** Render pipeline hooks: the poster's moment, a check before each render, and a call after each file is stored. */
   render(hooks: RenderHooks): void;

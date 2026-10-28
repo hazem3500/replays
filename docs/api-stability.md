@@ -76,6 +76,27 @@ release when that is feasible, and says so in the CHANGELOG; otherwise the CHANG
 4. Security fixes may shorten any window; the CHANGELOG says so.
 5. Behaviour that was never documented can change in a patch or minor release.
 
+### Deprecated purpose names
+
+Purposes were renamed to profiles in the next release after 0.1.0 (CHANGELOG, *Deprecated*). The old
+names keep working for the window above, each with a single start-up `console.warn` where it is used at run time:
+
+| Deprecated | Use | Notes |
+| --- | --- | --- |
+| Config key `purposes` | `profiles` | Both at once stops the server |
+| `api.purpose(definition)` | `api.profile(definition)` | Same definition; warns once per plugin |
+| `PurposeConfig`, `PurposeInfo`, `PurposeOpenAt`, `PurposeViewerDefaults`, `PurposeDefinition`, `PurposeInferInput` | `Profile…` | Type aliases in `/plugin` and `/config` |
+| `PurposeCatalog`, `createPurposeCatalog` | `ProfileCatalog`, `createProfileCatalog` | `/server`; also `AppSettings.purposes`, `ReplayStore.purposes`, `MigrateInfo.purposes` |
+| `meta.purpose` in `replay.json` | `meta.profile` | Read on upload and stored as `meta.profile`; old stored bundles are read as they are. Different values in both is a `400` |
+| `summary.purpose`, `summary.purposeInferred` | `profile`, `profileInferred` | Still in every API summary, always equal |
+| `GET /api/replays?purpose=`, import `?purpose=`, index URL `?purpose=` | `?profile=` | |
+| `PATCH /api/replays/<id>/meta` `{ purpose }` | `{ profile }` | Overrides saved before the rename are read as they are |
+| `purposes` in `GET /api/config` | `profiles` | The same list |
+| `x-replay-purpose` response header | `x-replay-profile` | Both are sent |
+| `RETENTION_PURPOSE_<ID>_DAYS` | `RETENTION_PROFILE_<ID>_DAYS` | The new one wins when both are set |
+| `--purpose <id>` (`capture`, `upload`, `import`) | `--profile <id>` | Warns on stderr |
+| `posterAt(bundle, { purpose })` | `{ profile }` | Both are passed |
+
 ## What a distribution should do
 
 - Depend on one version of `@hazem3500/replays`; do not mix versions of the subpath entries (they are one package, so this is natural).

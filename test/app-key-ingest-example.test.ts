@@ -7,7 +7,7 @@ import { appKeyIngest, type AppKeyIngestOptions } from '../examples/app-key-inge
 import { resolvePlugins } from '../src/plugin/index.ts';
 import { createApp } from '../src/server/app.ts';
 import type { AuthAdapter } from '../src/server/auth/types.ts';
-import { wrapRetentionRules } from '../src/server/purposes.ts';
+import { wrapRetentionRules } from '../src/server/profiles.ts';
 import { MemoryStorage } from '../src/server/storage/index.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import { appDefaults, replay } from './fixtures.ts';

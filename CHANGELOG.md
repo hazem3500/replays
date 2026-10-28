@@ -22,6 +22,17 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   `core:highlights`) are slot items: `configureSlot` can reorder or hide them like the inspector's tabs. Plugin
   context sections are placed where a host's order puts them.
 
+- **Views and capture profiles** ([docs/extension-api.md](docs/extension-api.md#views)): core ships seven views (`standard`,
+  `compare`, `performance`, `debug`, `walkthrough`, `review`, `support`) as data. The config key `views` and `api.view` add or
+  retune them, and `GET /api/config` and `<meta name="app-views">` serve them; `ViewCatalog`/`createViewCatalog` from `/server`.
+  Profiles gain `view` and a `capture` block (console levels, network `off`/`headers`/`bodies`, body limits, performance,
+  sampling, CLI defaults, stricter privacy only). Core ships a built-in `performance` profile, which the index shows as a tab
+  only once a replay has it.
+
+- Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
+  the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
+  and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
+  slider primitive that positions its thumb when it sits beside the track.
 - Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
   `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
   its link names). Single, Grid and Spotlight share one clock and the viewer's
@@ -29,6 +40,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
   (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
@@ -254,6 +266,17 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   URLs, and suite and run registrations go through the same privacy pass as replay uploads.
 
 - The suite index is built from the replay list instead of three lookups per run.
+
+### Deprecated
+
+- **Purposes are now profiles.** Everything that said purpose says profile: the config key `profiles`, `api.profile`,
+  `meta.profile`, `summary.profile`/`profileInferred`, `ProfileConfig`/`ProfileInfo`/`ProfileDefinition`/`ProfileInferInput`,
+  `ProfileCatalog`/`createProfileCatalog`, `--profile`, `?profile=`, `RETENTION_PROFILE_<ID>_DAYS`, `x-replay-profile`,
+  `profiles` in `GET /api/config`, and the index and upload copy. The old names keep working as deprecated aliases for at
+  least two minor releases and 90 days and warn once at start where they are used at run time; uploads with `meta.purpose`
+  are stored as `meta.profile`, and stored bundles and overrides are read as they are. `SUMMARY_VERSION` is 9, so sidecars are
+  rebuilt lazily. See [API stability](docs/api-stability.md#deprecated-purpose-names) and
+  [the migration steps](docs/downstream-migration.md#renaming-purposes-to-profiles).
 
 ## [0.1.0] - Unreleased
 

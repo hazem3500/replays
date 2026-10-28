@@ -8,13 +8,10 @@ import { cn } from '@/lib/utils.ts';
 import { editingEnabled } from './config.ts';
 import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 
-/*
- * The viewer's own parts while its code and the replay load: the real top bar (back link, the title the opening page
- * already knew, the action icons the viewer will show, inert), the transport's row, the steps rail's heading and the
- * inspector's tab row, each at its loaded geometry. Labels repeat the viewer chunk's (Viewer.tsx, StepRail.tsx,
- * viewer/inspector-tabs.ts); keep them in sync.
+/**
+ * The labels the viewer's own parts show while its code and the replay load. They repeat the viewer chunk's (Viewer.tsx,
+ * StepRail.tsx, viewer/inspector-tabs.ts) because this file renders before that chunk is there; keep them in sync.
  */
-
 const STRINGS = {
   untitled: 'Opening replay',
   compare: 'Compare',

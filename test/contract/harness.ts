@@ -27,6 +27,7 @@ const PINNED_HEADERS = [
   'etag',
   'location',
   'vary',
+  'x-replay-profile',
   'x-replay-purpose',
 ] as const;
 

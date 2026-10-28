@@ -1,4 +1,5 @@
 import './editor/skeleton.css';
+import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
@@ -137,6 +138,11 @@ export function EditorSkeleton() {
       <LoadingHeader hint={hint} />
       <section className="editor-loading-stage" aria-hidden="true">
         <PlayerSkeleton poster={hint?.poster} />
+        {mobile ? null : (
+          <aside className="editor-presentation">
+            <InspectorSkeleton />
+          </aside>
+        )}
       </section>
       {mobile ? null : <div className="editor-loading-divider" aria-hidden="true" />}
       <section className="editor-loading-dock" aria-hidden="true">
