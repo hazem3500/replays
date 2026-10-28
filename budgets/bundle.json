@@ -85,7 +85,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 222,
-      "brotli": 190
+      "brotli": 225
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 40600,
@@ -94,8 +94,8 @@
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 91800,
-      "gzip": 31000,
-      "brotli": 26550
+      "gzip": 31100,
+      "brotli": 26600
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -848,15 +848,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/109"
     },
     {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "gzip": 222,
-        "brotli": 230
-      },
-      "reason": "Compression drift in this 270-byte chunk when the main chunk hash in its import changes; raw is unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
-    },
-    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3468
@@ -986,10 +977,10 @@
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
         "raw": 91800,
-        "gzip": 31000,
-        "brotli": 26550
+        "gzip": 31100,
+        "brotli": 26600
       },
-      "reason": "Editor side panel v2: the contextual inspector (selection properties or replay settings), Base UI RadioGroup and Radio for the cursor motion picker and segmented settings, and the motion preview planner; measured against main: +11554 B raw, +4374 B gzip, +3600 B brotli. Replaces #78's allowance for this file.",
+      "reason": "Editor side panel v2: the contextual inspector (selection properties or replay settings), Base UI RadioGroup and Radio for the cursor motion picker and segmented settings, and the motion preview planner; measured against main: +11530 B raw, +4459 B gzip, +3695 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
@@ -1007,7 +998,7 @@
       "cap": {
         "brotli": 68600
       },
-      "reason": "Ported Cua Cursor Motion styles (spring settle, magnetic, comet swoop, adaptive, classic with its Dubins planner) used by replay playback; measured against main: +6097 B raw, +2224 B gzip, +1838 B brotli; only brotli passes the existing cap.",
+      "reason": "Ported Cua Cursor Motion styles (spring settle, magnetic, comet swoop, adaptive, classic with its Dubins planner) used by replay playback; measured against main: +6097 B raw, +2224 B gzip, +1806 B brotli; only brotli passes the existing cap.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
@@ -1017,7 +1008,7 @@
         "gzip": 106700,
         "brotli": 87966
       },
-      "reason": "The CLI bundles the shared edits validator, which now accepts cursor.motion and the six Cua style names; measured against main: +511 B raw, +149 B gzip. Replaces #112's allowance for this file; its Brotli cap is kept.",
+      "reason": "The CLI bundles the shared edits validator, which now accepts cursor.motion and the six Cua style names; measured against main: +525 B raw, +160 B gzip. Replaces #112's allowance for this file; its Brotli cap is kept.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
@@ -1029,6 +1020,15 @@
       },
       "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "gzip": 222,
+        "brotli": 225
+      },
+      "reason": "No source change: this tiny chunk names hashed sibling chunks, whose hashes change with the side panel; measured against main: +0 B raw, -1 B gzip, +34 B brotli. Replaces #109's allowance for this file; its gzip cap is kept.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
     }
   ]
 }
