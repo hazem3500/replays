@@ -2,9 +2,13 @@ import type { ReplayConsoleLevel } from './bundle-types.ts';
 import type { IssueReport, IssueReportReceipt, IssueReportUpload, RecorderApp } from './upload.ts';
 
 /** Who asked for the recording. Recording still needs the user's consent. */
-export type RecorderTrigger = { source: 'user' } | { source: 'crisp' } | { source: 'host'; reason?: string };
+export type RecorderTrigger =
+  | { source: 'user' }
+  // why: deprecated for two minors / 90 days; use source: 'host', reason: 'crisp'.
+  | { source: 'crisp' }
+  | { source: 'host'; reason?: string };
 
-export type StopReason = 'user' | 'max-duration' | 'max-size' | 'page-hidden';
+export type StopReason = 'user' | 'max-duration' | 'max-size' | 'page-hidden' | 'no-indicator';
 
 export type RecordingSummary = {
   durationMs: number;
@@ -27,7 +31,7 @@ export type RecorderState =
       maxDurationMs: number;
     }
   | { status: 'review'; summary: RecordingSummary }
-  | { status: 'uploading'; summary: RecordingSummary }
+  | { status: 'uploading'; summary: RecordingSummary; progress?: UploadProgress }
   | { status: 'uploaded'; receipt: IssueReportReceipt }
   | {
       status: 'error';
@@ -36,6 +40,15 @@ export type RecorderState =
       /** Present after a failed upload: the recording is kept for a retry. */
       summary?: RecordingSummary;
     };
+
+export type UploadProgress = { loaded: number; total?: number; fraction?: number };
+export type PrivacyFacts = {
+  mode: 'masked' | 'visible';
+  maxDurationMs: number;
+  captures: { pageText: boolean; inputs: boolean; media: boolean; console: boolean; network: boolean };
+  reviewRequired: boolean;
+};
+export type RecorderDecision = { consent: boolean } | { upload: boolean; note?: string };
 
 export type RecorderStatus = RecorderState['status'];
 
@@ -52,15 +65,26 @@ export type RecorderUi = {
    * `signal` aborts when the recorder is discarded or destroyed while the
    * prompt is open: close it then (the answer is ignored).
    */
-  requestConsent(context: { trigger: RecorderTrigger; maxDurationMs: number; signal: AbortSignal }): Promise<boolean>;
+  requestConsent(context: {
+    trigger: RecorderTrigger;
+    maxDurationMs: number;
+    privacy?: PrivacyFacts;
+    signal: AbortSignal;
+  }): Promise<boolean>;
   /** Shows the recording indicator; returns a function that hides it. */
-  showIndicator(context: { startedAt: number; maxDurationMs: number; stop: () => void }): () => void;
+  showIndicator(context: {
+    startedAt: number;
+    maxDurationMs: number;
+    stop: () => void;
+    attestStop?: (element: Element) => () => void;
+  }): () => void;
   /** `signal` works as in `requestConsent`. */
   confirmUpload(context: { summary: RecordingSummary; signal: AbortSignal }): Promise<UploadDecision>;
   /**
    * Shown while a confirmed recording uploads; returns a function that hides
    * it.
    */
+  respond?(decision: RecorderDecision): void;
   showUploading?(): () => void;
   /** Remove the persistent floating surface and custom renderer resources. */
   dismiss?(): void;
@@ -131,7 +155,7 @@ export type RecorderOptions = {
   upload: IssueReportUpload;
   /** Turn off the consent and review prompts. Default: both shown. */
   prompts?: RecorderPrompts;
-  /** Prompts; default `createDefaultUi()`. */
+  /** Optional UI. Use createGuidedRecorder from /recorder/ui for the built-in flow. */
   ui?: RecorderUi;
   app?: RecorderApp;
   /** Replay title support sees. Default `Issue report from <app name>`. */
@@ -147,6 +171,10 @@ export type RecorderOptions = {
    */
   ignoreUrls?: (string | RegExp)[];
   /** How to load rrweb; default `import('rrweb')`. For tests and custom builds. */
+  activation?: () => boolean;
+  indicatorGraceMs?: number;
+  /** Warn-only during the two-minor / 90-day migration window. */
+  strictInvariants?: boolean;
   loadRrweb?: () => Promise<RrwebModule>;
 };
 
@@ -173,9 +201,13 @@ export type Recorder = {
   stop(reason?: StopReason): RecordingSummary | undefined;
   /** Uploads the reviewed recording. Only call after the user confirmed. */
   upload(options: { confirmed: true; note?: string }): Promise<IssueReportReceipt>;
+  respond(decision: RecorderDecision): void;
+  retryUpload(): Promise<IssueReportReceipt>;
+  attestStop(element: Element): () => void;
+  getProgress(): { bytes: number; maxBytes: number; events: number } | undefined;
   /** Drops everything recorded and returns to `idle`. Aborts a running upload. */
   discard(): void;
-  /** Extra report fields, e.g. the Crisp session (set by the Crisp adapter). */
-  setReportContext(context: Pick<IssueReport, 'crisp'>): void;
+  /** Host metadata. The legacy crisp field is deprecated for two minors / 90 days. */
+  setReportContext(context: Pick<IssueReport, 'crisp' | 'metadata'>): void;
   destroy(): void;
 };

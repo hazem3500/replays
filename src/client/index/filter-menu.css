@@ -1,0 +1,286 @@
+/*
+ * Index filters (index/FilterMenu.tsx): the desktop popover and its choice panes, plus the shared switch.
+ * Imported by tailwind.css after feed.css, so within the `app` layer these rules follow the older `.filter-*` rules.
+ * Density: 32 px rows (40 px on coarse pointers), 4 px popup inset, rows 6 px radius inside a 10 px popup (6 + 4).
+ * Motion: Base UI's origin-aware pop (scale 0.96 → 1, 150 ms in / 100 ms out); panes slide 8 px; the switch thumb
+ * glides 200 ms and stretches while pressed; hovers are colour-only and instant-ish (100 ms). Reduced motion: no
+ * movement, colour changes only (styles.css zeroes transitions).
+ */
+:root {
+  --filter-menu-width: 272px;
+  --filter-menu-radius: 10px;
+  --filter-menu-inset: 4px;
+  --filter-menu-shadow: var(--shadow-pop);
+  --filter-menu-border: color-mix(in srgb, var(--line-strong) 70%, transparent);
+  --filter-row-height: 32px;
+  --filter-row-radius: 6px;
+  --filter-row-hover: var(--surface-hover);
+  --filter-list-max-height: 280px;
+  --switch-width: 28px;
+  --switch-height: 16px;
+  --switch-inset: 2px;
+  --switch-track: var(--line-strong);
+  --switch-track-on: var(--accent);
+}
+
+.filter-menu {
+  --filter-ease: var(--ease-out);
+  width: var(--filter-menu-width);
+  max-width: calc(100vw - 24px);
+  gap: 0;
+  padding: var(--filter-menu-inset);
+  border: 1px solid var(--filter-menu-border);
+  border-radius: var(--filter-menu-radius);
+  background: var(--surface-raised);
+  box-shadow: var(--filter-menu-shadow);
+  color: var(--text);
+  font-size: 13px;
+  overscroll-behavior: contain;
+}
+
+/* Base UI supplies the transform origin and starting/ending attributes. */
+.filter-menu.motion-pop {
+  transform-origin: var(--transform-origin);
+  transition: opacity 150ms var(--filter-ease), transform 150ms var(--filter-ease);
+}
+.filter-menu.motion-pop[data-starting-style],
+.filter-menu.motion-pop[data-ending-style] { opacity: 0; transform: scale(0.96); }
+.filter-menu.motion-pop[data-ending-style] { transition-duration: 100ms; }
+
+/* ---------- Head ---------- */
+.filter-menu .filter-menu-head,
+.filter-menu .filter-choice-head {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 2px 0 8px;
+}
+.filter-menu .filter-choice-head { padding-left: 2px; }
+.filter-menu .filter-menu-title { flex: 1 1 auto; margin: 0; color: var(--text); font-size: 13px; font-weight: 600; letter-spacing: -0.005em; }
+.filter-menu .filter-menu-clear {
+  height: 26px;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--filter-row-radius);
+  background: transparent;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.filter-menu .filter-back {
+  width: 28px;
+  height: 28px;
+  margin: 0;
+  border-radius: var(--filter-row-radius);
+  color: var(--text-tertiary);
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.filter-menu .filter-back svg { width: 16px; height: 16px; }
+
+/* ---------- Rows (choices, switches, plugin text fields) ---------- */
+.filter-menu .filter-list { display: flex; flex-direction: column; }
+.filter-menu .filter-separator { height: 1px; margin: var(--filter-menu-inset) calc(-1 * var(--filter-menu-inset)); background: var(--line); }
+.filter-menu .filter-row {
+  height: var(--filter-row-height);
+  min-height: var(--filter-row-height);
+  gap: 10px;
+  padding: 0 8px;
+  border-radius: var(--filter-row-radius);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.filter-menu .filter-kind-icon { flex: 0 0 auto; width: 15px; height: 15px; color: var(--text-tertiary); transition: color 100ms ease; }
+.filter-menu .filter-row-label { flex: 0 0 auto; }
+/* No dot after a set filter's label: the value itself turns accent. */
+.filter-menu .filter-row[data-active] .filter-row-label::after { display: none; }
+.filter-menu .filter-row-value {
+  min-width: 0;
+  max-width: 128px;
+  margin-left: auto;
+  overflow: hidden;
+  color: var(--text-tertiary);
+  font-size: 12px;
+  font-weight: 450;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.filter-menu .filter-chevron { flex: 0 0 auto; width: 14px; height: 14px; margin-left: 2px; color: var(--text-tertiary); }
+.filter-menu .filter-row[data-active] .filter-row-label,
+.filter-menu .filter-row[data-active] .filter-kind-icon { color: var(--text); }
+.filter-menu .filter-row[data-active] .filter-row-value { color: var(--accent); font-weight: 550; }
+.filter-menu .filter-text-input { height: 24px; }
+
+/* ---------- The switch (popover rows and the phone sheet) ---------- */
+.filter-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  margin-left: auto;
+  border-radius: calc(var(--switch-height) / 2);
+  background: var(--switch-track);
+  transition: background-color var(--switch-duration) ease;
+}
+.filter-switch::after {
+  content: "";
+  position: absolute;
+  top: var(--switch-inset);
+  left: var(--switch-inset);
+  width: calc(var(--switch-height) - 2 * var(--switch-inset));
+  height: calc(var(--switch-height) - 2 * var(--switch-inset));
+  border-radius: calc(var(--switch-height) / 2);
+  background: var(--switch-thumb);
+  box-shadow: var(--switch-thumb-shadow);
+  transition: transform var(--switch-duration) var(--ease-out), width 140ms var(--ease-out);
+}
+.filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch { background: var(--switch-track-on); }
+.filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after {
+  transform: translateX(calc(var(--switch-width) - var(--switch-height)));
+}
+/* Pressing stretches the thumb toward the far side (iOS), so the toggle feels like it was pulled, not snapped. */
+.filter-switch-row:active .filter-switch::after { width: calc(var(--switch-height) - 2 * var(--switch-inset) + 4px); }
+.filter-switch-row:is([data-checked], [aria-checked="true"]):active .filter-switch::after {
+  transform: translateX(calc(var(--switch-width) - var(--switch-height) - 4px));
+}
+.filter-sheet { --switch-width: 44px; --switch-height: 26px; --switch-inset: 3px; }
+
+/* ---------- Choice pane: a command list ---------- */
+.filter-menu .filter-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin: 0 calc(-1 * var(--filter-menu-inset)) var(--filter-menu-inset);
+  border-bottom: 1px solid var(--line);
+}
+.filter-menu .filter-search-field svg {
+  position: absolute;
+  left: 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+  pointer-events: none;
+}
+.filter-menu .filter-search {
+  width: 100%;
+  height: 36px;
+  margin: 0;
+  padding: 0 12px 0 34px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+.filter-menu .filter-search::placeholder { color: var(--text-tertiary); }
+.filter-menu .filter-search:focus-visible { box-shadow: none; }
+.filter-menu .filter-search-field:focus-within { border-bottom-color: var(--line-strong); }
+.filter-menu .filter-choice-list {
+  max-height: min(var(--filter-list-max-height), var(--available-height, 60vh));
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+.filter-menu .filter-choice-option {
+  width: 100%;
+  min-height: var(--filter-row-height);
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 0 8px 0 6px;
+  border: 0;
+  border-radius: var(--filter-row-radius);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 100ms ease, color 100ms ease;
+}
+.filter-menu .filter-choice-check { width: 16px; height: 16px; display: grid; flex: 0 0 auto; place-items: center; color: var(--accent); }
+.filter-menu .filter-choice-check svg { width: 14px; height: 14px; }
+.filter-menu .filter-choice-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.filter-menu .filter-choice-option[aria-selected="true"] { color: var(--text); font-weight: 550; }
+/* "All hosts" resets: set apart from the values by a hairline. */
+.filter-menu .filter-choice-option[data-reset]:not(:last-child) { position: relative; margin-bottom: calc(2 * var(--filter-menu-inset) + 1px); }
+.filter-menu .filter-choice-option[data-reset]:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  right: calc(-1 * var(--filter-menu-inset));
+  bottom: calc(-1 * var(--filter-menu-inset) - 1px);
+  left: calc(-1 * var(--filter-menu-inset));
+  height: 1px;
+  background: var(--line);
+}
+.filter-menu .filter-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 8px 8px;
+  color: var(--text-tertiary);
+  font-size: 12px;
+}
+.filter-menu .filter-empty .filter-menu-clear { margin-left: -8px; color: var(--text-secondary); }
+
+/* ---------- States ---------- */
+.filter-menu .filter-row:focus-visible,
+.filter-menu .filter-choice-option:focus-visible,
+.filter-menu .filter-menu-clear:focus-visible,
+.filter-menu .filter-back:focus-visible {
+  outline: none;
+  background: var(--filter-row-hover);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+.filter-menu .filter-row:active,
+.filter-menu .filter-choice-option:active { background: var(--surface-pressed); }
+@media (hover: hover) and (pointer: fine) {
+  .filter-menu .filter-row:hover,
+  .filter-menu .filter-choice-option:hover,
+  .filter-menu .filter-menu-clear:hover,
+  .filter-menu .filter-back:hover { background: var(--filter-row-hover); color: var(--text); }
+  .filter-menu .filter-row:hover .filter-kind-icon { color: var(--text-secondary); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .filter-menu .filter-pane { animation: filter-menu-pane-forward 160ms var(--filter-ease) both; }
+  .filter-menu .filter-pane[data-panel-direction="backward"] { animation-name: filter-menu-pane-backward; }
+  @keyframes filter-menu-pane-forward {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes filter-menu-pane-backward {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+}
+
+@media (pointer: coarse) {
+  .filter-menu { --filter-row-height: 40px; }
+  .filter-menu .filter-search { height: 44px; }
+}
+
+@media (forced-colors: active) {
+  .filter-switch, .filter-switch::after { forced-color-adjust: none; border: 1px solid CanvasText; background: Canvas; }
+  .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after { background: Highlight; }
+}
+
+/* Phone sheet: same list, larger rows (feed.css); hairlines between groups, labels aligned without row icons. */
+.filter-sheet .filter-separator { height: 1px; margin: 6px 0; background: var(--line); }
+.filter-sheet .filter-kind-icon { display: none; }

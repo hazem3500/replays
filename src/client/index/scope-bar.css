@@ -1,0 +1,114 @@
+/*
+ * The index toolbar (index/IndexHeader.tsx ScopeBar): one 40 px row. Left: the purpose tabs when the deployment
+ * defines purposes, else the result count while filtered. Right: the active filters as compact tokens
+ * (index/FilterMenu.tsx FilterTokens, desktop only), the Filter button, sort, and the layout switch.
+ * Tokens: field dim, value strong, a separate × target; they scale in from the Filter button's side (180 ms ease-out)
+ * and leave faster (120 ms), siblings glide (FLIP in FilterTokens). Imported by tailwind.css after feed.css, so it follows feed.css within the `app` layer.
+ */
+:root {
+  --chip-height: 26px;
+  --chip-radius: var(--radius);
+  --chip-bg: var(--surface-hover);
+  --chip-bg-hover: var(--surface-pressed);
+  --chip-fg: var(--text);
+  --chip-field-fg: var(--text-tertiary);
+  --chip-max-width: 200px;
+  --chip-enter: 180ms;
+  --chip-exit: 120ms;
+}
+
+.scope-bar[data-lead] { gap: 16px; }
+.scope-bar[data-lead] .scope-count { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* The purpose tabs share the toolbar row: no row of their own, the indicator sits on the row's bottom edge. */
+.scope-bar .purpose-bar { min-width: 0; min-height: 0; flex: 0 1 auto; align-self: stretch; padding: 0; }
+.scope-bar-end { min-width: 0; }
+
+/* ---------- Active filters ---------- */
+.filter-tokens { min-width: 0; display: flex; flex: 0 1 auto; align-items: center; gap: 4px; margin-right: 6px; }
+.filter-token {
+  max-width: var(--chip-max-width);
+  height: var(--chip-height);
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: stretch;
+  border-radius: var(--chip-radius);
+  background: var(--chip-bg);
+  color: var(--chip-fg);
+  font-size: 12px;
+  line-height: 1;
+  white-space: nowrap;
+  transform-origin: right center;
+  transition:
+    opacity var(--chip-enter) var(--ease-out),
+    transform var(--chip-enter) var(--ease-out),
+    background-color 100ms ease;
+}
+@starting-style {
+  .filter-token { opacity: 0; transform: scale(0.94); }
+}
+.filter-token[data-exiting] {
+  opacity: 0;
+  transform: scale(0.94);
+  transition-duration: var(--chip-exit), var(--chip-exit), 100ms;
+  pointer-events: none;
+}
+.filter-token-open,
+.filter-token-remove {
+  margin: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.filter-token-open {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 2px 0 9px;
+  border-radius: var(--chip-radius) 0 0 var(--chip-radius);
+}
+.filter-token-field { flex: 0 0 auto; color: var(--chip-field-fg); font-weight: 450; }
+.filter-token-value { min-width: 0; overflow: hidden; font-weight: 550; text-overflow: ellipsis; }
+.filter-token-remove {
+  width: 24px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 0 var(--chip-radius) var(--chip-radius) 0;
+  color: var(--text-tertiary);
+  transition: color 100ms ease;
+}
+.filter-token-remove svg { width: 12px; height: 12px; }
+/* "+2": the rest of the active filters, in the menu. */
+.filter-token-more { padding: 0 8px; border: 0; color: var(--text-secondary); font: inherit; font-size: 12px; font-weight: 550; cursor: pointer; }
+.filter-tokens-clear {
+  height: var(--chip-height);
+  margin: 0 0 0 2px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: var(--chip-radius);
+  background: transparent;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 100ms ease, background-color 100ms ease;
+}
+.filter-token-open:focus-visible,
+.filter-token-remove:focus-visible,
+.filter-token-more:focus-visible,
+.filter-tokens-clear:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
+.filter-token:has(:active) { background: var(--chip-bg-hover); }
+@media (hover: hover) and (pointer: fine) {
+  .filter-token:hover { background: var(--chip-bg-hover); }
+  .filter-token-remove:hover { color: var(--text); }
+  .filter-tokens-clear:hover { background: var(--surface-hover); color: var(--text); }
+}
+/* Narrower desktops: the value alone ("shop.example ×") still says what is filtered. */
+@media (max-width: 1100px) {
+  .filter-token-field { display: none; }
+  .filter-token-open { padding-left: 8px; }
+}

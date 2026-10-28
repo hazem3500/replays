@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { serveApp } from './support.ts';
+import { boxOf, serveApp } from './support.ts';
 import { editListOf, editsVersion } from '../src/shared/edits.ts';
 
 // Edit mode (/r/<id>/edit), reached from the viewer's top-bar Edit button: "Remove waits" suggestions applied with
@@ -40,6 +40,57 @@ async function dragOnClip(page: Page, from: number, to: number) {
   await page.mouse.move(box.x + box.width * to, y, { steps: 5 });
   await page.mouse.up();
 }
+
+test('desktop editor fills the viewport and keeps timeline regions still across interaction states', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const id = await uploadCopy(page, 'editor-layout');
+  await openEditor(page, id);
+  const panel = page.getByRole('complementary', { name: 'Replay presentation' });
+  await expect(panel).toBeVisible();
+  const frame = page.locator('.editor-stage > .stage-wrap');
+  await expect(frame).toHaveCSS('box-shadow', 'none');
+  await expect(frame).toHaveCSS('border-radius', '0px');
+  const frameBox = await boxOf(frame);
+  const panelBox = await boxOf(panel);
+  expect(frameBox.width).toBeGreaterThan(500);
+  expect(frameBox.x + frameBox.width).toBeLessThanOrEqual(panelBox.x + 1);
+  const dock = page.getByRole('region', { name: 'Timeline', exact: true });
+  const dockBox = await boxOf(dock);
+  expect(Math.abs(dockBox.y + dockBox.height - 800)).toBeLessThanOrEqual(1);
+
+  const splitter = page.getByRole('separator', { name: 'Resize timeline' });
+  await splitter.focus();
+  await page.keyboard.press('ArrowUp');
+  await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(dockBox.height + 24, 0);
+  await page.locator('body').press('t');
+  const region = page.getByTestId('region-caption').first();
+  const body = region.locator('.tl-region-body');
+  await body.scrollIntoViewIfNeeded();
+  const geometry = () =>
+    body.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      const style = getComputedStyle(element);
+      return { width: box.width, height: box.height, padding: style.padding, transform: style.transform, scale: style.scale };
+    });
+  const resting = await geometry();
+  await body.hover();
+  expect(await geometry()).toEqual(resting);
+  await body.click();
+  expect(await geometry()).toEqual(resting);
+  await expect(body).toHaveAttribute('aria-pressed', 'true');
+
+  const play = page.getByTestId('editor-play');
+  await play.hover();
+  await page.mouse.down();
+  await expect(play).toHaveCSS('scale', '1');
+  await expect(play).toHaveCSS('transform', 'none');
+  await page.mouse.up();
+  await play.click();
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await expect(body).toHaveCSS('transition-duration', '0s');
+  await expect(play).toHaveCSS('transition-duration', '0s');
+});
 
 test('edit mode: remove waits, cut a range, undo, trim; Done plays the edits with the Edited label', async ({ page }) => {
   test.setTimeout(45_000);
@@ -104,18 +155,18 @@ test('edit mode: remove waits, cut a range, undo, trim; Done plays the edits wit
   await expect(page.locator('.editor-dock')).toHaveCount(0);
   await expect(page.getByTestId('replay-player')).toBeVisible();
   const chip = page.getByTestId('edited-chip');
-  await expect(chip).toHaveText('Edited');
+  await expect(chip).toContainText('Edited');
   const seek = page.getByRole('slider', { name: 'Seek' });
   await expect(seek).toHaveAttribute('aria-valuetext', new RegExp(`of ${editedLength.replace('.', '\\.')}`));
   await chip.click();
   await expect(page.getByRole('menu')).toContainText('Edited by anonymous');
   await page.getByTestId('switch-original').click();
-  await expect(chip).toHaveText('Original');
+  await expect(chip).toContainText('Original recording');
   await expect(page).toHaveURL(/[?&]original=1/);
   await expect(seek).not.toHaveAttribute('aria-valuetext', new RegExp(`of ${editedLength.replace('.', '\\.')}`));
   await chip.click();
   await page.getByTestId('switch-original').click();
-  await expect(chip).toHaveText('Edited');
+  await expect(chip).toContainText('Edited');
   await expect(page).not.toHaveURL(/original=1/);
 });
 
@@ -129,7 +180,7 @@ test('browser Back from edit mode saves the change and returns to the edited vie
   await expect(page).toHaveURL(new RegExp(`/r/${id}$`));
   await expect(page.getByTestId('editor')).toHaveCount(0);
   await expect(page.getByTestId('replay-player')).toBeVisible();
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   await expect.poll(async () => (await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json()).cuts.length).toBe(1);
 });
 
@@ -177,6 +228,7 @@ test('on a phone the preview shows, nothing scrolls sideways, and a no-op says s
   await expect(page.getByTestId('editor-hint')).toBeVisible();
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
   await expect(page.getByTestId('editor-hint')).toBeHidden({ timeout: 5000 });
+  await page.locator('.editor-mobile-more > summary').click();
   await expect(page.getByTestId('editor-done')).toBeInViewport();
 });
 
@@ -230,7 +282,7 @@ test('export uses the saved edit revision; viewing original preserves edits', as
   await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByTestId('editor-view-original').click();
   await expect(page).toHaveURL(new RegExp(`/r/${id}\\?original=1$`));
-  await expect(page.getByTestId('edited-chip')).toHaveText('Original');
+  await expect(page.getByTestId('edited-chip')).toContainText('Original recording');
   const after = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
   expect(after).toEqual(saved);
 });

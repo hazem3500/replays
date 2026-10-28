@@ -1,3 +1,4 @@
+import { bindUserSettings } from '../plugins/settings.ts';
 import { useSyncExternalStore } from 'react';
 
 import {
@@ -13,7 +14,7 @@ import {
 } from '../../shared/malleable.ts';
 import type { ViewerPluginContext } from '../plugins/api.ts';
 import { viewerRegistry } from '../plugins/registry.ts';
-import { deletePlugin, getHistory, listPlugins, mintApproval, savePlugin } from './api.ts';
+import { acceptWorkspacePlugin, deletePlugin, getHistory, listPlugins, mintApproval, savePlugin } from './api.ts';
 import { permissions, type PluginRef } from './broker.ts';
 import { recordLoad } from './health.ts';
 import { hostInfo } from './host.ts';
@@ -40,6 +41,8 @@ export interface PluginEntry {
   /** Bumped on every (re)load: a hot reload is a new revision. */
   revision: number;
   diagnostics: Diagnostic[];
+  /** Saved workspace version is not run until this person accepts its notice. */
+  needsAcceptance?: boolean;
 }
 
 export interface ManagerState {
@@ -130,6 +133,7 @@ class PluginManager {
             manifest: authoredManifest(latest.manifest),
             source: latest.source,
             origin: 'saved',
+            needsAcceptance: summary.requiresReview === true,
             versions: history.versions,
             revision: ++this.revision,
             diagnostics: [],
@@ -153,7 +157,7 @@ class PluginManager {
     for (const handle of this.mounted.get(id) ?? []) handle.dispose();
     this.mounted.delete(id);
     permissions.drop(id);
-    if (!entry || this.state.disabled.includes(id)) {
+    if (!entry || entry.needsAcceptance || this.state.disabled.includes(id)) {
       viewerRegistry.removePlugin(registryName(id));
       return;
     }
@@ -169,7 +173,13 @@ class PluginManager {
     // The frame reads the entry at mount time, so a reload that lands while a tab is open shows the new source.
     const ref = (): PluginRef => {
       const current = this.get(id) ?? entry;
-      return { id, manifest: current.manifest, source: current.source, log: (level, message) => this.log(id, level, message) };
+      return {
+        id,
+        scope: current.scope,
+        manifest: current.manifest,
+        source: current.source,
+        log: (level, message) => this.log(id, level, message),
+      };
     };
     const saved = runningSaved(entry);
     try {
@@ -183,7 +193,9 @@ class PluginManager {
 
   private register(entry: PluginEntry, ref: () => PluginRef, track: (handle: { dispose(): void }) => () => void) {
     const { contributes } = entry.manifest;
+    if (entry.manifest.settings?.length) bindUserSettings(registryName(entry.id), entry.scope, entry.id);
     viewerRegistry.replacePlugin(registryName(entry.id), (api) => {
+      for (const setting of entry.manifest.settings ?? []) api.registerSetting(setting);
       for (const tab of contributes.tabs ?? [])
         api.registerInspectorTab({
           id: tab.id,
@@ -238,6 +250,7 @@ class PluginManager {
       manifest,
       source,
       origin: input.origin,
+      ...(existing?.needsAcceptance ? { needsAcceptance: true } : {}),
       versions: existing?.versions ?? [],
       revision: ++this.revision,
       diagnostics: [],
@@ -278,6 +291,16 @@ class PluginManager {
     const entry = this.get(id);
     if (!entry || entry.versions.length) return;
     this.put({ ...entry, scope, revision: ++this.revision }, false);
+  }
+
+  async acceptWorkspace(id: string) {
+    const entry = this.get(id);
+    const version = entry && latestSaved(entry);
+    if (entry?.scope !== 'workspace' || !version || !entry.needsAcceptance) throw new Error('no workspace version awaiting review');
+    if (isDirty(entry)) throw new Error('discard the draft before enabling the saved workspace version');
+    await acceptWorkspacePlugin(id, version.sha256);
+    if (this.get(id) !== entry) throw new Error('plugin changed; review it again');
+    this.put({ ...entry, needsAcceptance: false });
   }
 
   setEnabled(id: string, enabled: boolean) {

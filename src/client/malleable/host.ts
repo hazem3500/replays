@@ -1,3 +1,4 @@
+import { viewerRegistry } from '../plugins/registry.ts';
 import { useSyncExternalStore } from 'react';
 
 import { closedPolicy, type HostVersions, type MalleablePolicy } from '../../shared/malleable-policy.ts';
@@ -21,6 +22,7 @@ let loading: Promise<HostInfo> | undefined;
 
 function set(next: HostInfo) {
   info = next;
+  viewerRegistry.setPolicy(next.policy);
   for (const listener of listeners) listener();
 }
 

@@ -1,9 +1,20 @@
-import { FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
+import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
+import { CaptionMorph } from './CaptionMorph.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
+import {
+  applyEdits,
+  type EditTimeline,
+  editListOf,
+  editTimeline,
+  editsVersion,
+  isEmptyEdits,
+  type ReplayHighlight,
+  type StoredReplayEdits,
+} from '../shared/edits.ts';
+import { projectHighlights } from '../shared/highlights.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { editingEnabled } from './config.ts';
@@ -37,7 +48,7 @@ import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
 
-import { Topbar, TopbarChip, type TopbarMenuItem } from './Topbar.tsx';
+import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,6 +94,7 @@ export function Viewer({
   edited,
   effects,
   timeline,
+  highlights,
   sourceBundle = bundle,
 }: {
   bundle: ReplayBundle;
@@ -90,6 +102,8 @@ export function Viewer({
   sourceBundle?: ReplayBundle;
   /** Saved edits' timeline (source ↔ edited time) when they are applied: comments are anchored to source time. */
   timeline?: EditTimeline;
+  /** Saved playback navigation annotations, stored on the source timeline. */
+  highlights?: ReplayHighlight[];
   /** Zoom, blur and captions from the saved edits, on this bundle's timeline. */
   effects?: PlaybackEffects;
   /** The replay has saved edits: who and when, whether the original is on screen, and the switch between them. */
@@ -347,6 +361,7 @@ export function Viewer({
       notify,
       editsVersion: edited ? editsVersion(editListOf(edited.stored)) : '',
       editCaptions: Boolean(effects?.captions.length),
+      highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
     };
   }, [
     bundle.steps,
@@ -354,6 +369,8 @@ export function Viewer({
     captions,
     edited,
     effects,
+    highlights,
+    timeline,
     errors,
     notify,
     player,
@@ -551,6 +568,7 @@ export function Viewer({
           {...(prefix ? { prefix } : {})}
           {...(headerStatus ? { status: headerStatus } : {})}
           {...(suite ? { suite } : {})}
+          hasEdits={Boolean(edited)}
         />
         <div
           ref={workspace}
@@ -657,8 +675,11 @@ const ViewerHeader = memo(function ViewerHeader({
   backHref,
   titleMenu,
   titleFrom,
+  hasEdits = false,
 }: {
   bundle: ReplayBundle;
+  /** The replay has saved edits: a dot on the Edit button (the title shows "Edited …" as quiet text). */
+  hasEdits?: boolean;
   /** Client plugins' settings, at the bottom of the More menu. */
   menuFooter: ReactNode;
   /** Client plugins' bar actions (desktop): icon buttons after the built-in ones. */
@@ -686,7 +707,18 @@ const ViewerHeader = memo(function ViewerHeader({
     ...(titleFrom ? { titleFrom } : {}),
     titleId: 'replay-title',
   };
-  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} {...shared} />;
+  if (compact)
+    return (
+      <PhoneHeader
+        bundle={bundle}
+        suite={suite}
+        menu={menu}
+        menuItems={menuItems}
+        menuFooter={menuFooter}
+        hasEdits={hasEdits}
+        {...shared}
+      />
+    );
   return (
     <Topbar
       {...shared}
@@ -697,7 +729,7 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         // One quiet icon set: edit, details, copy link and download.
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
@@ -718,9 +750,11 @@ function PhoneHeader({
   menu,
   menuItems,
   menuFooter,
+  hasEdits = false,
   ...props
 }: {
   bundle: ReplayBundle;
+  hasEdits?: boolean;
   suite: SuiteDetails | undefined;
   menu: ReactNode;
   menuFooter: ReactNode;
@@ -744,7 +778,7 @@ function PhoneHeader({
       menuFooter={menuFooter}
       actions={
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -801,15 +835,14 @@ function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
 /**
  * Step captions: the current step's label as a calm caption at the bottom of the player while it plays, and
  * while you scrub or seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without
- * a seek, or the end, clears it. The caption fades in once; then the label morphs from step to step, and a fast
- * drag across many steps swaps it instantly, so it never flickers.
+ * a seek, or the end, clears it. The stable caption host retargets its shared characters between step labels.
  */
 function StepCaption() {
   const player = usePlayer();
   const { steps, captionNumbers } = useViewer();
   const { status } = usePlayerState();
   // The same step index the step rail shows (one source), so caption and rail never disagree at a boundary.
-  const active = useActiveStep(steps);
+  const activeIndex = useActiveStep(steps);
   const [seeked, setSeeked] = useState(false);
   useEffect(() => {
     const offSeek = player.subscribeSeek(() => setSeeked(true));
@@ -825,14 +858,27 @@ function StepCaption() {
   const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
   const step = steps[captionIndex];
   const playing = status === 'playing';
-  if (!step || !(playing || (seeked && status !== 'ended'))) return null;
+  const active = Boolean(step && (playing || (seeked && status !== 'ended')));
+  const label = active ? (step?.label ?? '') : '';
   return (
-    <div className="step-caption" aria-hidden="true" data-testid="step-caption">
-      {/* One persistent caption: it fades in once, then the label morphs from step to step (AnimatedText); a fast
-          scrub swaps it instantly. */}
+    <div
+      className="step-caption step-caption-live"
+      data-active={active ? 'true' : 'false'}
+      data-testid="step-caption"
+      role="status"
+      aria-live="off"
+      aria-label={label || undefined}
+    >
+      {/* why: one stable caption host lets Calligraph retarget characters as the current step changes. */}
       <span className="step-caption-text">
-        {captionNumbers ? <span className="step-caption-number">{active + 1}</span> : null}
-        <AnimatedText className="step-caption-label" text={step.label} />
+        {active && captionNumbers ? (
+          <span className="step-caption-number" aria-hidden="true">
+            {activeIndex + 1}
+          </span>
+        ) : null}
+        <span className="step-caption-label" aria-hidden="true">
+          <CaptionMorph text={label} />
+        </span>
       </span>
     </div>
   );
@@ -1017,18 +1063,19 @@ function SpeedHud({ speed }: { speed: number }) {
   );
 }
 
-/** Edit uses the same quiet icon button as the viewer's other toolbar actions. */
-function EditButton({ id }: { id: string }) {
+/** Edit uses the same quiet icon button as the viewer's other toolbar actions; a dot on it says the replay has edits. */
+function EditButton({ id, hasEdits = false }: { id: string; hasEdits?: boolean }) {
   return (
-    <Hint label="Edit replay · Trim, cut and add effects" side="bottom" align="end">
+    <Hint label={hasEdits ? 'Edit replay · This replay has edits' : 'Edit replay · Trim, cut and add effects'} side="bottom" align="end">
       <a
         href={editHref(id)}
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),
           'edit-entry text-[var(--text-secondary)] hover:text-foreground [&_svg:not([class*=size-])]:size-4',
         )}
-        aria-label="Edit replay"
+        aria-label={hasEdits ? 'Edit replay (has edits)' : 'Edit replay'}
         data-testid="edit-replay"
+        data-has-edits={hasEdits || undefined}
       >
         <AnimatedIcon name="pencil" />
       </a>
@@ -1045,8 +1092,9 @@ export interface EditedState {
 }
 
 /**
- * The quiet "Edited" label beside the title (hairline chip, no colour), and its menu: who saved the edits and when,
- * a switch to the original recording (and back), and edit mode. Reads "Original" while the original is shown.
+ * The edit state as quiet text beside the title ("Edited 2h ago", no border — the run status is the row's one strong
+ * mark), and its menu: who saved the edits and when, a switch to the original recording (and back), and edit mode.
+ * Reads "Original recording" while the original is shown.
  */
 function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedState; fresh?: boolean }) {
   const { stored, original, setOriginal } = edited;
@@ -1063,7 +1111,10 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
           />
         }
       >
-        <TopbarChip>{original ? 'Original' : 'Edited'}</TopbarChip>
+        <span className="edited-label">
+          {original ? 'Original recording' : stored.updatedAt ? `Edited ${savedAgo(stored.updatedAt)}` : 'Edited'}
+          <ChevronDownIcon aria-hidden="true" />
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-56">
         <DropdownMenuGroup>
@@ -1125,6 +1176,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
       bundle={shown?.bundle ?? bundle}
       sourceBundle={bundle}
       {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
+      {...(stored?.highlights ? { highlights: stored.highlights } : {})}
       {...(edited ? { edited } : {})}
     />
   );

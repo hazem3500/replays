@@ -17,6 +17,13 @@
 @import "tw-animate-css";
 @import "./styles.css" layer(app);
 @import "./index/feed.css" layer(app);
+@import "./index/card-motion.css" layer(app);
+@import "./index/list-motion.css" layer(app);
+/* why: the filter popover, toolbar tokens and first-run cards restyle shadcn primitives whose utility classes
+   (w-72, p-2.5, gap-4, ring-1, shadow-md) sit in the utilities layer; unlayered rules outrank them. */
+@import "./index/filter-menu.css";
+@import "./index/scope-bar.css";
+@import "./index/first-run/first-run.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 

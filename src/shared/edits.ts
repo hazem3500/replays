@@ -36,6 +36,25 @@ export const MAX_CUTS = 200;
 export const MIN_EDIT_MS = 100;
 /** Longest free-form label. */
 export const MAX_LABEL = 120;
+/** Playback navigation annotations kept in the edits sidecar, never drawn into exports. */
+export const MAX_HIGHLIGHTS = 200;
+
+export interface ReplayPointHighlight {
+  id: string;
+  kind: 'point';
+  at: number;
+  label?: string;
+}
+
+export interface ReplayPeriodHighlight {
+  id: string;
+  kind: 'period';
+  from: number;
+  to: number;
+  label?: string;
+}
+
+export type ReplayHighlight = ReplayPointHighlight | ReplayPeriodHighlight;
 
 /** A stretch of the original replay that playback and exports skip. */
 export interface ReplayCut {
@@ -59,6 +78,8 @@ export interface ReplayEdits {
   speeds?: ReplaySpeedRange[];
   blurs?: ReplayBlur[];
   captions?: ReplayCaption[];
+  /** Playback navigation marks on the original timeline; not burned into MP4s. */
+  highlights?: ReplayHighlight[];
   cursor?: ReplayCursorSettings;
 }
 
@@ -75,7 +96,7 @@ export interface StoredReplayEdits extends ReplayEdits {
 export const EMPTY_EDITS: ReplayEdits = { version: EDITS_VERSION, cuts: [] };
 
 const EDIT_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
-const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions', 'cursor'];
+const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions', 'highlights', 'cursor'];
 const STORED_FIELDS = [...EDIT_FIELDS, 'revision', 'updatedBy', 'updatedAt'];
 
 function object(value: unknown, name: string, allowed: readonly string[]) {
@@ -89,6 +110,11 @@ function object(value: unknown, name: string, allowed: readonly string[]) {
 function checkTime(value: unknown, name: string, duration: number | undefined) {
   if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new Error(`${name} must be a time in ms (0 or more)`);
   if (duration !== undefined && value > duration) throw new Error(`${name} is after the end of the replay`);
+  return value;
+}
+
+function kindOf(raw: unknown) {
+  return typeof raw === 'object' && raw !== null && 'kind' in raw ? raw.kind : undefined;
 }
 
 function fraction(value: unknown, name: string) {
@@ -155,6 +181,27 @@ function label(value: unknown, name: string) {
   if (typeof value !== 'string' || value.length > MAX_LABEL) throw new Error(`${name} must be text of at most ${MAX_LABEL} characters`);
 }
 
+function assertHighlights(value: unknown, duration: number | undefined, name: string) {
+  if (value === undefined) return;
+  if (!Array.isArray(value) || value.length > MAX_HIGHLIGHTS) throw new Error(`${name} must be an array of at most ${MAX_HIGHLIGHTS}`);
+  const ids = new Set<string>();
+  const entries: unknown[] = value;
+  for (const [index, raw] of entries.entries()) {
+    const field = `${name}[${index}]`;
+    const item = object(raw, field, kindOf(raw) === 'point' ? ['id', 'kind', 'at', 'label'] : ['id', 'kind', 'from', 'to', 'label']);
+    if (typeof item.id !== 'string' || !EDIT_ID.test(item.id)) throw new Error(`${field}.id must be lowercase letters, digits and dashes`);
+    if (ids.has(item.id)) throw new Error(`${field}.id is used twice`);
+    ids.add(item.id);
+    label(item.label, `${field}.label`);
+    if (item.kind === 'point') checkTime(item.at, `${field}.at`, duration);
+    else if (item.kind === 'period') {
+      const from = checkTime(item.from, `${field}.from`, duration);
+      const to = checkTime(item.to, `${field}.to`, duration);
+      if (to - from < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
+    } else throw new Error(`${field}.kind must be point or period`);
+  }
+}
+
 /**
  * Validates an edit list (the editor's PUT body). With `duration` (the replay's, ms) every time must fall inside
  * the replay and something must remain once trimmed and cut. Throws an Error naming the field, like the other
@@ -195,6 +242,7 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
       throw new Error(`${name}.cursor.size must be from 0.5 to 2`);
   }
   assertEffects(edits, name, duration);
+  assertHighlights(edits.highlights, duration, `${name}.highlights`);
   if (duration !== undefined && editTimeline(edits as unknown as ReplayEdits, duration).duration < MIN_EDIT_MS) {
     throw new Error(`${name} remove the whole replay`);
   }
@@ -228,6 +276,28 @@ export function normalizeEdits(edits: ReplayEdits): ReplayEdits {
       .map((cut) => ({ id: cut.id, from: round(cut.from), to: round(cut.to), ...(cut.label ? { label: cut.label } : {}) }))
       .sort((a, b) => a.from - b.from || a.to - b.to || a.id.localeCompare(b.id)),
     ...effectLists(edits),
+    ...(edits.highlights?.length
+      ? {
+          highlights: edits.highlights
+            .map((highlight) =>
+              highlight.kind === 'point'
+                ? {
+                    id: highlight.id,
+                    kind: 'point' as const,
+                    at: round(highlight.at),
+                    ...(highlight.label?.trim() ? { label: highlight.label.trim() } : {}),
+                  }
+                : {
+                    id: highlight.id,
+                    kind: 'period' as const,
+                    from: round(highlight.from),
+                    to: round(highlight.to),
+                    ...(highlight.label?.trim() ? { label: highlight.label.trim() } : {}),
+                  },
+            )
+            .sort((a, b) => (a.kind === 'point' ? a.at : a.from) - (b.kind === 'point' ? b.at : b.from) || a.id.localeCompare(b.id)),
+        }
+      : {}),
     ...(cursor ? { cursor } : {}),
   };
 }
@@ -274,9 +344,9 @@ function effectLists(edits: ReplayEdits): Pick<ReplayEdits, 'zooms' | 'speeds' |
   return lists;
 }
 
-/** True when the list changes nothing (no trim, no cuts): the replay plays as recorded. */
+/** True when the list has no saved edit or playback-navigation annotation. */
 export function isEmptyEdits(edits: ReplayEdits | undefined) {
-  return !edits || (!edits.trim && edits.cuts.length === 0 && !hasEffectEdits(edits));
+  return !edits || (!edits.trim && edits.cuts.length === 0 && !hasEffectEdits(edits) && !edits.highlights?.length);
 }
 
 /** True when the list has any effect (zoom, speed, blur, caption or cursor presentation). */

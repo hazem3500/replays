@@ -244,14 +244,14 @@ A deployment that turns user plugins on may narrow them, in the config file (no 
 ```ts
 malleable: {
   enabled: true,                                                          // = beta.malleable
-  scopes: ['user'],                                                       // where plugins may be kept (default: both)
+  scopes: ['user'],                                                       // where plugins may be kept (default: user only)
   capabilities: { 'comments:write': 'ask', 'export:download': 'deny' },   // allow | ask | deny per capability
   lockedSurfaces: ['inspector:context'],                                  // user plugins cannot replace or hide these
 },
 distribution: { name: 'acme-replays', version: '2.3.0' },                 // what this deployment is (see Upgrades)
 ```
 
-**The host can only narrow.** With no block, both scopes are on, the read-only capabilities are `allow` and the write ones `ask`
+**The host can only narrow.** With no block, only personal scope is on, the read-only capabilities are `allow` and the write ones `ask`
 (what the sections above describe). A read-only capability may be set to `ask` (the person is prompted, like for a write) or `deny`;
 a write capability (`comments:write`, `export:download`) may be `ask` or `deny`, and `allow` is refused **at start** with an error that
 says why: a write always shows the person what it is about to do. Unknown keys, capabilities, scopes and malformed surface ids stop
@@ -262,7 +262,7 @@ still wins over both. A `malleable` block without `enabled` sets the policy and 
 | Where | What the policy does |
 | --- | --- |
 | Server (`src/server/malleable-plugin.ts`) | Refuses (`403`, "not kept: …") to mint an approval for, or to store, a plugin whose manifest declares a denied capability or whose scope is turned off. A turned-off scope is not listed, so its plugins do not load; they stay in storage untouched and come back when the scope is turned on. |
-| Broker (`src/client/malleable/broker.ts`) | A denied capability fails with `permission-denied: this server does not allow …` and never prompts; `ask` on a read-only one prompts. `replay:read` is checked before the frame gets its copy. Until the policy has loaded, calls wait; if it cannot be read, writes are denied. Plugins already kept that declare a capability the host later denied still load: that capability just fails. |
+| Broker (`src/client/malleable/broker.ts`) | A denied capability fails with `permission-denied: this server does not allow …` and never prompts; `ask` on a read-only one prompts. `replay:read` is checked before the frame gets its copy. Until the policy has loaded, calls wait; if it cannot be read, writes are denied. Plugins with denied capabilities or blocked ids/hashes are excluded from saved loading; the broker also checks each requested capability. |
 | Workshop | "This server's rules for plugins" lists the scopes, every capability's rule, the locked surfaces and the versions. The keep dialog marks a denied capability, offers only the allowed scopes and disables *Approve* with the reason. |
 | `GET /api/config` | `malleable` (the resolved policy, only when the feature is on), `core` and `distribution`. |
 | Agents | `get_plugin_api` returns the policy, so an agent leaves denied capabilities out. |
@@ -273,9 +273,9 @@ still wins over both. A `malleable` block without `enabled` sets the policy and 
 name, and nothing else. The manifest has no `replaces` or `hides` field (unknown fields are refused), the registry keeps every
 registration in its owner's namespace, and a user plugin registers as `user:<id>` (keys `plugin:user:<id>:<contribution>`). Host
 plugin names cannot contain `:`, so a user plugin can neither collide with a host plugin nor remove one's registrations; before this
-change a user plugin `x` registered as `user-x` and could have taken over the registrations of a host plugin named `user-x`. So
-`lockedSurfaces` has nothing to refuse yet: it is validated, exposed and shown, and `assertMayOverride(policy, surface)` is the check
-any future override path (a `replaces`, a "hide this tab", reordering) must call. A user plugin's own surfaces cannot be locked.
+change a user plugin `x` registered as `user-x` and could have taken over the registrations of a host plugin named `user-x`. `configureSlot` now calls `assertMayOverride` before changing order or visibility. Locks accept legacy
+surface ids and `slot/core:item` or `slot/plugin:owner:item` pairs. A user plugin's own surfaces cannot be locked.
+
 
 ## Upgrades
 
@@ -322,19 +322,21 @@ The server trusts the auth adapter's identity and the approval token.
 | A user plugin of one person is read by another | Per-identity keys; list and read routes look only under the caller's key | `test/malleable.test.ts` |
 | The host wants less than the defaults (no workspace plugins, no downloads) | `malleable` policy: refused by the server on keep, by the broker on use, shown before approval; widening (`allow` for a write) stops the server at start | `test/malleable-policy.test.ts`, e2e `malleable-policy.spec.ts` |
 | A user plugin takes over a host plugin's surfaces | User plugins register as `user:<id>`; host names have no `:`; the registry refuses any other owner name | `test/malleable-policy.test.ts` |
+| Ordinary member publishes a plugin to everyone | Workspace scope opt-in; trusted role gate on approval, PUT and DELETE; default roles `admin` | `test/malleable.test.ts`, `test/plugin-watchdog.test.ts` |
+| Bad plugin or exact source version keeps loading | Host id/hash allow and deny lists; deny wins; saved list/history and frame startup enforce admission | `test/malleable.test.ts`, `test/plugin-watchdog.test.ts` |
+| Workspace code runs for someone who never reviewed it | Per-person digest-bound acceptance; new versions remain unloaded; stale acceptance returns 409 | `test/malleable.test.ts`, `test/workspace-plugin-review.test.ts` |
+| Plugin holds a frame or floods the broker | Heartbeat, lifetime, call-rate and active-frame limits; disable tears frames down | `test/plugin-watchdog.test.ts`, `test/plugin-sandbox-watchdog.test.ts` |
 | Flag off still exposes something | Absent plugin: 404s, no CSP header, no meta, no tools, code never requested | e2e `malleable-flag-off.spec.ts`, `test/malleable.test.ts` |
 
 ### Residual risks
 
-- **A plugin can burn CPU or memory in its frame** (a loop, a huge DOM). It is contained to the frame, removed on navigation or when
-  its tab closes, and actions stop after 60 s, but a tight loop can still slow the tab until the frame is closed (a sandboxed
-  opaque-origin frame is usually out-of-process, which is not guaranteed). A worker-based runner with a hard kill is the next step.
-- **Workshop writes are not role-gated.** `Identity` has no roles, so with `AUTH_MODE=none` or any adapter that admits many people,
-  anyone who can open the viewer can save a **workspace** plugin that then loads for everyone. It still runs sandboxed with only the
-  permissions its manifest declares, and any write asks the *viewer* first, but a malicious workspace plugin can try to talk someone
-  into a "wants to add a comment in your name" prompt. Keep the workspace scope for trusted deployments, or give the auth adapter a
-  role and gate `scope: workspace` on it (a small change in `malleable-plugin.ts`), or turn the workspace scope off with
-  `malleable.scopes: ['user']`. The prompt names the plugin and shows the text.
+- **A plugin can still exhaust a browser process.** The watchdog removes frames missing heartbeats, exceeding a
+  wall-time budget, or flooding broker calls, and there are at most eight active frames. This is not a hard CPU/memory
+  quota: a tight loop in a frame sharing the viewer's renderer may prevent the parent timer from running. A separately
+  killable worker for actions and reliable process/resource isolation for DOM plugins remain required before default-on.
+- **Role claims come from the auth adapter.** Workspace saves/deletes are gated by `malleable.workspaceRoles`
+  (default `['admin']`). Built-in anonymous/header adapters do not manufacture an administrator role; a host that opts
+  into workspace plugins must supply trusted roles explicitly. Client-provided role fields are not used.
 - **Read access is real access.** A plugin with `replay:read` sees the replay's console and network text, so a malicious plugin can
   *display* it misleadingly, though it cannot send it anywhere. The URL privacy pass still applies to what is stored; it is not a
   data-loss-prevention system.
@@ -428,3 +430,90 @@ REPLAYS_BETA_MALLEABLE=true pnpm dev            # the viewer; open a replay → 
 pnpm test:e2e                                     # includes e2e/malleable*.spec.ts (scripted agent, no LLM)
 pnpm shots:malleable                              # regenerates docs/screenshots/malleable/
 ```
+
+## Slot configuration and locked surfaces
+
+Host browser plugins now use one descriptor registry per slot, including descriptors supplied by
+built-in views. `configureSlot(slot, { order, hide })` is checked by `assertMayOverride` before
+configuration changes. `lockedSurfaces` accepts existing surface ids and `slot/core:item` or
+`slot/plugin:owner:item` pairs. Sandboxed plugins retain their own namespace and cannot obtain the
+host configuration API. See [extension-api.md](extension-api.md#unified-slots) for the descriptor
+and DOM attribute contract. Built-in views adopt these lists incrementally; a view still rendering
+hard-coded JSX does not gain hiding or reordering automatically.
+
+## Per-person plugin settings
+
+A manifest may declare `settings: [{ id: 'compact', label: 'Compact', type: 'boolean', default: false }]`.
+Choice settings use `type: 'choice'`, `options: [{ value, label? }, …]` and a matching string default.
+There are at most 32 settings and 32 choices each. Unknown fields, duplicate ids, invalid defaults
+and values are rejected. A changed definition falls back to its default when an old value no
+longer fits.
+
+In the sandbox, `await ctx.settings.get('compact')` reads the current preference;
+`await ctx.settings.set('compact', true)` saves it. These methods access only settings declared by
+this plugin. They need no extra capability: the broker binds the plugin id/scope and the server
+binds the signed-in identity. Settings are available after the plugin's first approved save.
+A workspace plugin's settings still belong to each person, never the entire workspace.
+
+`GET /api/malleable/settings/<scope>/<id>` returns `{ version, values }`; PUT accepts
+`{ id, value, baseVersion }`. Stale versions return 409. Values use the existing storage driver's
+conditional writes, under `_malleable/settings/<person-hash>/<scope>/<id>.json`.
+The manifest and source history is untouched by a preference change.
+
+The Settings redesign renders these through the same `registerSetting` contribution list as host
+plugins. Host preferences remain local to the browser; user plugin preferences follow the person
+on the server. This does not enable malleability by default.
+
+
+## Host admission, workspace review and runtime budgets
+
+User plugins remain **off by default** (`beta.malleable` / `malleable.enabled`). When enabled,
+`scopes` now defaults to `['user']`. Workspace scope requires explicit opt-in and trusted role
+claims from the auth adapter:
+
+```ts
+malleable: {
+  enabled: true,
+  scopes: ['user', 'workspace'],
+  workspaceRoles: ['admin', 'plugin-maintainer'],
+  allow: ['id:network-csv'], // omitted: admit all; []: admit none
+  deny: ['sha256:<64 lowercase hex characters>'], // deny wins
+  watchdog: { heartbeatTimeoutMs: 3000, frameBudgetMs: 300000, maxCallsPerSecond: 100 },
+}
+```
+
+Selectors are exact plugin ids (`id:<id>`) or policy hashes (`sha256:<hash>`). Obtain the hash from
+`replays plugin check file.replays-plugin.json --headless` (`policy-sha256` output). It hashes
+normalized authored manifest + source, excluding deployment-written `targets`, so upgrading the
+host does not change admission. The saved-history `sha256` separately identifies the exact saved
+manifest/source and binds review acceptance. Policies take effect on server restart and client
+reload; already handed-out replay copies cannot be recalled.
+
+Workspace writes and deletions require a trusted role in `workspaceRoles` (default `['admin']`),
+even with an approval token. Workspace plugin summaries include `requiresReview` and `sha256`.
+The viewer shows “New workspace plugin from X”, the requested permissions and review/enable/disable
+controls. Contributions remain absent until `POST /api/malleable/notices/<id>` accepts the current
+saved digest. Acceptance is per person, persisted on the existing storage driver. A new version
+requires review again. The author already reviewed their own approved save and is acknowledged
+at save time. A changed draft cannot silently use an old workspace acceptance.
+
+The frame watchdog expects a heartbeat every second. It removes a frame after 3 seconds without
+one, after 5 minutes total, or after more than 100 broker messages in a second (all configurable
+within validated bounds). Startup failure stops a frame after 5 seconds, actions retain the
+60-second deadline, and at most eight frames may be active. The Workshop disable switch is the
+manual kill control. Heartbeats start only after policy/capability approval, so time spent in a
+permission prompt does not count as unresponsive execution.
+
+### Before enabling malleability by default
+
+- Add a worker action runner with hard termination and reliable CPU/memory isolation for DOM
+  frames. The current watchdog depends on the host event loop remaining responsive.
+- Add end-to-end threat-table coverage of the review notice, admin role mapping, deny-on-reload
+  and hostile CPU workloads in supported browsers; current API/DOM/unit checks cover the gates.
+- Harden the viewer's own script CSP against XSS, which can currently mint approval tokens.
+- Complete built-in slot adoption in the owning views and review Settings/workspace onboarding
+  with real users. Persistent scoped grants need a separate consent design if prompt fatigue
+  becomes a problem.
+- Announce any future default-on flag change one minor release ahead and retain opt-out controls.
+
+This increment does not flip that flag.
