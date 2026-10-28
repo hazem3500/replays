@@ -39,6 +39,16 @@ Refresh preflights every required replay and suite before writing anything. Each
 
 The paths must be the actual configured `SAMPLE_DIR` and `DATA_DIR`; refresh does not guess storage locations. The known ID set in the script is deliberately fixed so the command cannot sweep customer records.
 
+## Comparison suites
+
+`scripts/demo-comparison-seed.mjs` adds four suites built from the demo checkout recording, re-timed per run, for comparing recordings in the viewer: `demo-compare-performance` and `demo-compare-design` (Before and After), `demo-compare-browsers` (four runs) and `demo-compare-nightly` (six runs). Their performance entries are synthetic examples, not measurements. It writes into the same output layout, next to the demo seed's files:
+
+```sh
+node --experimental-strip-types --no-warnings scripts/demo-comparison-seed.mjs --output /tmp/replays-demo-seed
+```
+
+Overlay them the same way, then open `/s/demo-compare-performance`, or compare any two recordings with `/r/<id>?with=<id>&layout=grid`.
+
 ## Demo comments
 
 `scripts/demo-comments.mjs` gives replays a few fictional review comments (a whole-replay note, threads with replies, a resolved thread and reactions), so the Comments tab and the seek-bar markers have a populated state. It writes `DATA_DIR/<replay-id>/comments.json` only for replays that have no comments yet, and times each comment as a fraction of the replay's duration:

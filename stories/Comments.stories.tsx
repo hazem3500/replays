@@ -3,7 +3,7 @@ import { expect, userEvent, within } from 'storybook/test';
 
 import { CommentsPanelView } from '../src/client/comments/CommentsPanel.tsx';
 import type { CommentsApi, PlacedThread } from '../src/client/comments/CommentsProvider.tsx';
-import { PlayerContext, type ReplayController } from '../src/client/player.ts';
+import { PlayerContext, ReplayController } from '../src/client/player.ts';
 import { placeComment, type PublicComment, threadsOf } from '../src/shared/comments.ts';
 
 const NOW = Date.parse('2026-10-28T12:00:00Z');
@@ -47,16 +47,24 @@ const THREADS: PublicComment[] = [
   },
 ];
 
-/** A paused player at 2.0 s: enough of the controller for the panel (playhead, seek, pause). */
-const stub = {
-  duration: 11_000,
-  getTime: () => 2000,
-  subscribeTime: () => () => {},
-  seek: () => {},
-  pause: () => {},
-};
-// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- why: the panel reads only the playhead, seek and pause; a real controller needs an rrweb replay in the story.
-const player = stub as unknown as ReplayController;
+/** A real controller over an empty recording, never mounted: the panel only needs its playhead, seek and pause. */
+const player = new ReplayController({
+  meta: {
+    id: 'storybook',
+    title: 'Checkout review',
+    capturedAt: '2026-10-28T10:00:00Z',
+    version: 1,
+    url: 'https://example.com/checkout',
+    duration: 11_000,
+    viewport: { width: 1280, height: 800 },
+    eventCount: 0,
+  },
+  events: [],
+  console: [],
+  network: [],
+  steps: [],
+});
+player.seek(2000);
 
 const rejected = () => Promise.reject(new Error('Storybook fixture: nothing is saved'));
 

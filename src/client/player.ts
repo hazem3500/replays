@@ -412,7 +412,44 @@ function subscribe(listeners: Set<Listener>, listener: Listener) {
   };
 }
 
-export const PlayerContext = createContext<ReplayController | null>(null);
+/**
+ * What the viewer's chrome (transport, shortcuts, steps, inspector) drives: one recording's controller, or a
+ * comparison's shared clock scoped to its focused recording (compare/shared-player.ts).
+ */
+export type Playback = Pick<
+  ReplayController,
+  | 'duration'
+  | 'idleGaps'
+  | 'eventCount'
+  | 'wrapper'
+  | 'mount'
+  | 'getEffects'
+  | 'setEffects'
+  | 'setZoomSuspended'
+  | 'highlightTarget'
+  | 'clearTarget'
+  | 'play'
+  | 'pause'
+  | 'playPause'
+  | 'seek'
+  | 'isScrubbing'
+  | 'beginScrub'
+  | 'endScrub'
+  | 'setSpeed'
+  | 'setSkipInactive'
+  | 'getTime'
+  | 'getState'
+  | 'getViewport'
+  | 'subscribeTime'
+  | 'subscribeSeek'
+  | 'subscribeState'
+  | 'subscribeViewport'
+> & {
+  /** False when the playback cannot fast-forward idle stretches (a shared clock: one ruler for every recording). */
+  readonly canSkipInactive?: boolean;
+};
+
+export const PlayerContext = createContext<Playback | null>(null);
 
 export function usePlayer() {
   const player = useContext(PlayerContext);
