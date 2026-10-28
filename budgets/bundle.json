@@ -8,8 +8,8 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 416314,
-      "gzip": 106513,
+      "raw": 416900,
+      "gzip": 106700,
       "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
       "gzip": 956,
-      "brotli": 824
+      "brotli": 823
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -59,13 +59,13 @@
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
-      "gzip": 1263,
-      "brotli": 1152
+      "gzip": 1256,
+      "brotli": 1145
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
       "gzip": 2350,
-      "brotli": 2126
+      "brotli": 2120
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -73,9 +73,9 @@
       "brotli": 1959
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38116,
+      "raw": 38110,
       "gzip": 13526,
-      "brotli": 12013
+      "brotli": 12010
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -88,14 +88,14 @@
       "brotli": 190
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 35060,
-      "gzip": 6742,
-      "brotli": 5984
+      "raw": 40600,
+      "gzip": 7460,
+      "brotli": 6640
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82506,
-      "gzip": 27351,
-      "brotli": 23404
+      "raw": 91800,
+      "gzip": 31000,
+      "brotli": 26550
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -145,10 +145,10 @@
     "dist/client/assets/player-HASH.js": {
       "raw": 308578,
       "gzip": 95021,
-      "brotli": 68380
+      "brotli": 68600
     },
     "dist/client/assets/PluginUi-HASH.js": {
-      "raw": 133395,
+      "raw": 133380,
       "gzip": 44750,
       "brotli": 38604
     },
@@ -200,12 +200,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 706,
-      "brotli": 648
+      "brotli": 625
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
-      "gzip": 8355,
-      "brotli": 7171
+      "gzip": 8351,
+      "brotli": 7163
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -219,8 +219,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50998,
-      "gzip": 18530,
-      "brotli": 16623
+      "gzip": 18521,
+      "brotli": 16144
     },
     "dist/client/index.html": {
       "raw": 12263,
@@ -871,7 +871,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1027,7 +1027,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     }
   ]
