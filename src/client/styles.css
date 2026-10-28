@@ -611,8 +611,8 @@ svg.lucide.lucide { stroke-width: 2; }
    rows keep their height and hit areas; a "now" divider marks the playhead. Text stays ≥ 4.5:1 (axe). */
 .track-panel { position: relative; min-height: 0; flex: 1; display: flex; flex-direction: column; }
 .track-scroll { position: relative; }
-.diagnostic-table tr[data-future] td, .diagnostic-table tr[data-future] td code, .diagnostic-table tr[data-future] .status-code, .diagnostic-table tr[data-future] .method { color: var(--text-tertiary); }
-.diagnostic-table tr[data-future] .level-icon, .diagnostic-table tr[data-future] .status-icon, .diagnostic-table tr[data-future] .request-cell svg { opacity: 0.5; }
+.diagnostic-table tr[data-future] td, .diagnostic-table tr[data-future] td code { color: var(--text-tertiary); }
+.diagnostic-table tr[data-future] .level-icon { opacity: 0.5; }
 .diagnostic-table tr[data-future].error td, .diagnostic-table tr[data-future].failed td { background: color-mix(in srgb, var(--danger-tint) 45%, transparent); }
 .diagnostic-table tr td { transition: color var(--motion-fast) var(--ease-out); }
 .diagnostic-table .gap-row td { height: auto; padding: 0; border: 0; }
@@ -698,7 +698,7 @@ svg.lucide.lucide { stroke-width: 2; }
 /* Rows: 32 px, soft hairlines (half the panel line), a hover fill; one family across Console, Network, Performance. */
 .diagnostic-table td { height: 32px; padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); vertical-align: middle; }
 .diagnostic-table .spacer-row td { height: auto; padding: 0; border: 0; }
-.diagnostic-table time, .number-cell { font-variant-numeric: tabular-nums; }
+.diagnostic-table time { font-variant-numeric: tabular-nums; }
 .diagnostic-table time { color: var(--text-tertiary); }
 .console-table th:nth-child(1), .console-table td:nth-child(1) { width: 72px; }
 .console-message { min-width: 0; display: flex; align-items: center; gap: 6px; }
@@ -708,7 +708,6 @@ svg.lucide.lucide { stroke-width: 2; }
 .level-icon.error { color: var(--danger); }
 .level-icon.warn { color: var(--warning); }
 .level-icon.info { color: var(--text-tertiary); }
-.status-code { display: inline-flex; align-items: center; vertical-align: middle; line-height: 1; }
 .console-table th:nth-child(3), .console-table td:nth-child(3) { width: 180px; }
 .console-row code { display: block; overflow: hidden; color: var(--text); font-size: var(--text-xs); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 /* While the scrubber is dragged its time bubble rises over the player's bottom edge: the caption steps up clear of it. */
@@ -717,102 +716,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .console-row.error td { background: var(--danger-tint); }
 .source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Network: time · request (method label, path; the origin only when it is another host) · status · duration.
-   Durations are quiet tertiary figures; only slow requests carry more ink (no colour). Type, size and the timing
-   relative to the first request live in the expanded detail. */
-.network-table th:nth-child(1), .network-table td:nth-child(1) { width: 66px; }
-.network-table th:nth-child(3), .network-table td:nth-child(3) { width: 64px; }
-.network-table th:nth-child(4), .network-table td:nth-child(4) { width: 84px; text-align: right; }
-.duration-cell { white-space: nowrap; }
-.duration-value { color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
-.duration-value[data-slow] { color: var(--text-secondary); font-weight: 500; }
-.duration-value[data-slow="very"] { color: var(--text); font-weight: 600; }
-.diagnostic-table tr[data-future] .duration-value { color: var(--text-tertiary); }
-.detail-muted { color: var(--text-tertiary); }
-.performance-table th:nth-child(1), .performance-table td:nth-child(1) { width: 72px; }
-.performance-table th:nth-child(3), .performance-table td:nth-child(3) { width: 88px; text-align: right; }
-.performance-table th:nth-child(4), .performance-table td:nth-child(4) { width: 96px; font-variant-numeric: tabular-nums; }
-.performance-row.long-task td:first-child, .performance-row.slow-interaction td:first-child { color: var(--warning); }
-.performance-row.largest-contentful-paint td:first-child { color: var(--accent); }
-.performance-detail { color: var(--text-tertiary); }
-.network-row.failed td { background: var(--danger-tint); }
-.network-row.expanded td { border-bottom-color: transparent; background: var(--surface-hover); }
-.network-row.failed.expanded td { background: var(--danger-tint); }
-/* The open request's row sticks under the header while its detail scrolls beneath it (Inspector pins it with
-   --pin-top and lets the detail's end push it up), so its switch and time stay in reach. Opaque fills only. */
-.network-row.expanded td { position: sticky; z-index: 1; top: var(--pin-top, 28px); }
-.network-row.expanded[data-pinned] td { box-shadow: inset 0 1px 0 var(--line), inset 0 -1px 0 var(--line); }
-.diagnostic-table tr.network-row.expanded[data-future].failed td { background: color-mix(in srgb, var(--danger-tint) 45%, var(--surface)); }
-.mime-type { font-family: var(--mono); font-size: var(--text-xs); }
-.status-code, .number-cell { font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 /* The method is a small muted label in front of the path, not a column of capitals. */
 .method { flex: 0 0 auto; min-width: 3.4em; line-height: 16px; color: var(--text-tertiary); font-family: var(--sans); font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0.02em; }
-.status-code { color: var(--text-tertiary); }
-.status-code.bad { color: var(--danger); font-weight: 500; }
-.status-code.none { color: var(--text-tertiary); }
-.mime-type { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.number-cell { color: var(--text-tertiary); text-align: right; }
-.request-cell { padding: 0 !important; }
-.request-cell button { scroll-margin-top: 30px; width: 100%; min-height: 31px; display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; background: transparent; color: var(--text); cursor: pointer; text-align: left; }
-.request-cell button:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
-.request-cell button svg { width: 12px; height: 12px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.6; transition: transform 160ms var(--ease-out); }
-.request-cell button[aria-expanded="true"] svg { transform: rotate(90deg); }
-.request-url { min-width: 0; overflow: hidden; font-family: var(--mono); font-size: var(--text-xs); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.request-origin { color: var(--text-tertiary); }
-.request-path { color: var(--text); }
-.diagnostic-table tr[data-future] .request-path { color: var(--text-tertiary); }
-
-.request-detail-row td { height: auto; padding: 0; background: var(--surface-raised); }
-/* Accordion: the detail opens by its grid row (0fr → 1fr, 200 ms) with the content fading and settling 4 px
-   (160 ms, after 40 ms); it closes a little faster without the drift. Rows below move with it. */
-.request-detail-reveal { display: grid; grid-template-rows: 1fr; transition: grid-template-rows 200ms var(--ease-out); }
-.request-detail-reveal > .request-detail { min-height: 0; overflow: hidden; transition: opacity 160ms var(--ease-out) 40ms, transform 160ms var(--ease-out) 40ms; }
-@starting-style {
-  .request-detail-reveal { grid-template-rows: 0fr; }
-  .request-detail-reveal > .request-detail { opacity: 0; transform: translateY(-4px); }
-}
-.request-detail-row[data-closing] .request-detail-reveal { grid-template-rows: 0fr; transition-duration: 160ms; }
-.request-detail-row[data-closing] .request-detail { opacity: 0; transition: opacity 120ms var(--ease-out); }
-/* Swapped in for another request (a click on another row, ↑ / ↓): no accordion, it is just there. */
-.request-detail-row[data-instant]:not([data-closing]) .request-detail-reveal, .request-detail-row[data-instant]:not([data-closing]) .request-detail-reveal > .request-detail { transition: none; }
-/* The open detail: an inset on --surface-raised, a hairline above and a firmer one before the next row. It takes
-   keyboard-inert on click only (for Escape), so it draws no ring. */
-.request-detail:focus { outline: none; }
-.request-detail { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line-strong); }
-/* One four-column grid for the whole detail (two on phones): the facts' dividers and the headers' split sit on the
-   same column lines. Cells use the table's own insets (10 px; 14 px before the scrollbar), so the detail's text lines
-   up with the Time column's and its right edge with Duration's. Labels are quiet sans, data is mono. */
-.rd-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-.rd-url, .rd-facts, .rd-headers, .rd-note { grid-column: 1 / -1; }
-.rd-facts, .rd-headers { display: grid; grid-template-columns: subgrid; margin: 0; }
-.rd-url { padding: 8px 14px 8px 10px; border-bottom: 1px solid var(--line); }
-.rd-heading { min-height: 20px; display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-.rd-heading h2, .rd-fact dt { margin: 0; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0.01em; line-height: 16px; }
-.rd-heading h2 { display: flex; align-items: baseline; gap: 6px; }
-.rd-count { color: var(--text-tertiary); font-variant-numeric: tabular-nums; font-weight: 400; }
-.rd-url-value { display: block; color: var(--text); font-family: var(--mono); font-size: var(--text-xs); line-height: 18px; overflow-wrap: anywhere; }
-.rd-dim { color: var(--text-tertiary); }
-.rd-copy.rd-copy { margin: -4px 0; color: var(--text-tertiary); }
-/* Facts: two rows of four, hairlines between columns only. */
-.rd-facts { padding: 4px 0; border-bottom: 1px solid var(--line); }
-.rd-fact { min-width: 0; padding: 4px 10px; }
-.rd-fact:not(:nth-child(4n + 1)) { border-left: 1px solid var(--line); }
-.rd-fact:nth-child(4n) { padding-right: 14px; }
-.rd-fact dd { margin: 0; color: var(--text); font-family: var(--mono); font-size: var(--text-xs); font-variant-numeric: tabular-nums; line-height: 18px; overflow-wrap: anywhere; }
-/* Headers: request | response, each two columns wide; name and value columns, values wrap. */
-.rd-section { min-width: 0; grid-column: span 2; padding: 8px 10px 10px; }
-.rd-section + .rd-section { padding-right: 14px; border-left: 1px solid var(--line); }
-.rd-headers-list { margin: 0; }
-.rd-headers-list div { display: grid; grid-template-columns: minmax(96px, 34%) minmax(0, 1fr); gap: 12px; padding: 2px 0; font-family: var(--mono); font-size: var(--text-xs); line-height: 18px; }
-.rd-headers-list dt { overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
-.rd-headers-list dd { min-width: 0; margin: 0; color: var(--text-secondary); overflow-wrap: anywhere; }
-.rd-empty, .rd-note { margin: 0; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 16px; }
-.rd-note { padding: 7px 14px 8px 10px; border-top: 1px solid var(--line); }
-/* Copy buttons show on hover or keyboard navigation where there is a pointer; touch keeps them. */
-@media (hover: hover) and (pointer: fine) {
-  .rd-copy.rd-copy { opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
-  .rd-url:hover .rd-copy, .rd-url:focus-within .rd-copy, .rd-section:hover .rd-copy, .rd-section:focus-within .rd-copy { opacity: 1; }
-}
 
 .empty { min-height: 120px; height: 100%; display: grid; place-content: center; gap: 4px; padding: 24px; color: var(--text-tertiary); text-align: center; }
 .empty strong { color: var(--text-secondary); font-size: var(--text-sm); font-weight: 600; }
@@ -1003,8 +908,7 @@ svg.lucide.lucide { stroke-width: 2; }
   .copy-command:hover { border-color: var(--accent); }
   .inspector-resizer:hover { border-top-color: var(--line-strong); transition-delay: 120ms; }
   .inspector-resizer:hover::after, .steps-resizer:hover::after { opacity: 1; scale: 1; transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1) 120ms, scale 200ms cubic-bezier(0.22, 1, 0.36, 1) 120ms, background-color 180ms var(--ease-out); }
-  .diagnostic-table tbody tr:not(.request-detail-row):not(.failed):not(.error):hover td { background: var(--surface-hover); }
-  .request-cell button:hover { color: var(--accent); }
+  .diagnostic-table tbody tr:not(.error):hover td { background: var(--surface-hover); }
   .button:hover { filter: brightness(1.06); }
 }
 
@@ -1046,23 +950,9 @@ svg.lucide.lucide { stroke-width: 2; }
   .inspector-context { display: none; }
   .inspector-tabs { padding: 0 4px; }
   .inspector-tab.inspector-tab { padding: 0 7px; font-size: var(--text-xs); }
-  /* Responsive columns collapse to zero width instead of display: none, so the
-     column grid keeps matching the expanded request's colSpan and every row spans the table. */
-  .console-table th:nth-child(3), .console-row td:nth-child(3),
-  .performance-table th:nth-child(1), .performance-row td:nth-child(1) { width: 0; padding: 0; overflow: hidden; visibility: hidden; white-space: nowrap; }
-  .performance-table th:nth-child(4), .performance-row td:nth-child(4) { width: 78px; }
-  /* Phones keep time, method, path, status and duration; the timing bar steps aside. */
-  .network-table th:nth-child(1), .network-row td:nth-child(1) { width: 56px; padding-right: 4px; }
-  .network-table th:nth-child(3), .network-row td:nth-child(3) { width: 44px; padding-inline: 4px; }
-  .network-table th:nth-child(4), .network-row td:nth-child(4) { width: 64px; }
-  .request-cell button { gap: 4px; padding-inline: 4px 6px; }
-  /* Phones: two columns; facts in pairs, the header lists stacked (name above value). */
-  .rd-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .rd-fact:not(:nth-child(4n + 1)) { border-left: 0; }
-  .rd-fact:nth-child(2n) { padding-right: 14px; border-left: 1px solid var(--line); }
-  .rd-section { padding-right: 14px; }
-  .rd-section + .rd-section { border-top: 1px solid var(--line); border-left: 0; }
-  .rd-headers-list div { grid-template-columns: minmax(0, 1fr); gap: 0; padding: 3px 0; }
+  /* Responsive columns collapse to zero width instead of display: none, so the column grid keeps
+     every row spanning the table. */
+  .console-table th:nth-child(3), .console-row td:nth-child(3) { width: 0; padding: 0; overflow: hidden; visibility: hidden; white-space: nowrap; }
 }
 
 /* ---------- Phone app shell (Viewer data-mobile; MOBILE_QUERY in media.ts) ----------
