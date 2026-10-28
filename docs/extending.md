@@ -275,6 +275,12 @@ text/background pairs at WCAG AA (`test/contrast.test.ts` shows how the default 
 colour (`<meta name="theme-color">`) follows `page` per scheme; give `page` as a plain colour (hex, `rgb()`, `oklch()`), not
 `var()`. `replays build-static` stamps the same into a CDN-hosted `index.html` ([operations](operations.md#static-viewer-on-a-cdn)).
 
+The built-in mark (timeline segments and a playhead, `src/client/components/brand-mark-geometry.ts`) is the header logo
+and, in a heavier four-segment cut, the favicon, with a home-screen icon and web manifest in `public/assets/brand`
+(`node --experimental-strip-types scripts/build-icons.mjs` regenerates them). `logoUrl` replaces the mark in the header and
+as the tab icon, and drops the built-in home-screen icon and manifest; a custom `name` alone drops only the manifest, which
+carries the built-in name.
+
 ## Capture drivers
 
 ```ts
