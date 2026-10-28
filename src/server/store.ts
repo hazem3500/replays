@@ -19,7 +19,7 @@ import {
   sameEdits,
   type StoredReplayEdits,
 } from '../shared/edits.ts';
-import type { PosterMoment } from '../shared/purposes.ts';
+import { type PosterMoment, profilesOf } from '../shared/profiles.ts';
 import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
 import {
   assertReviewRunRegistration,
@@ -33,7 +33,7 @@ import {
   summarizeReviewSuite,
 } from '../shared/review-suite.ts';
 import { serverUploadMs, uploadAgeKey } from './upload-age.ts';
-import { PurposeCatalog } from './purposes.ts';
+import { ProfileCatalog } from './profiles.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
 import type { SummaryFieldsRunner } from './summary-fields.ts';
 import { captureLink, withSpan } from './tracing.ts';
@@ -45,7 +45,7 @@ export type { ReplaySummary } from '../shared/replay.ts';
 /** Bump when the poster moment or format changes (the client's poster URL carries it too). */
 export const POSTER_VERSION = 2;
 /**
- * A poster moment other than the default: a purpose's named moment or a time (ms) a plugin's `posterAt` chose. The
+ * A poster moment other than the default: a profile's named moment or a time (ms) a plugin's `posterAt` chose. The
  * poster's key names it (posterKey), so a changed choice is a different file: nothing stale is served, the old one is
  * pruned with the replay. The default moment keeps the plain key, so stored posters stay valid where nothing chooses.
  */
@@ -137,8 +137,8 @@ export class ReplayStore {
   readonly samples: FsStorage;
   readonly sampleDir: string;
   readonly retention: RetentionPolicy;
-  /** The deployment's purposes: listed summaries get their (inferred) purpose from here. Empty by default. */
-  readonly purposes: PurposeCatalog;
+  /** The deployment's profiles: listed summaries get their (inferred) profile from here. Empty by default. */
+  readonly profiles: ProfileCatalog;
   /** Parsed summaries keyed by id, valid while the sidecar's version (generation / mtime) is unchanged. */
   private readonly summaryCache = new Map<string, { version: string; summary: ReplaySummary | undefined }>();
   private readonly keepCache = new Map<string, { version: string; keep: KeepRecord | undefined }>();
@@ -162,13 +162,19 @@ export class ReplayStore {
     data: string | ObjectStorage,
     sampleDir: string,
     retention?: number | Partial<RetentionPolicy>,
-    options: { listTtlMs?: number; purposes?: PurposeCatalog; summaryFields?: SummaryFieldsRunner } = {},
+    options: {
+      listTtlMs?: number;
+      profiles?: ProfileCatalog;
+      /** @deprecated Use `profiles`. */
+      purposes?: ProfileCatalog;
+      summaryFields?: SummaryFieldsRunner;
+    } = {},
   ) {
     this.storage = typeof data === 'string' ? new FsStorage(data) : data;
     this.sampleDir = sampleDir;
     this.samples = new FsStorage(sampleDir);
     this.retention = policyFrom(retention);
-    this.purposes = options.purposes ?? new PurposeCatalog();
+    this.profiles = profilesOf(options) ?? new ProfileCatalog();
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
     this.summaryFields = options.summaryFields;
   }
@@ -183,7 +189,12 @@ export class ReplayStore {
 
   /** Derives the same summary the list uses, without reading/writing cached sidecars or retention metadata. */
   async listSummary(bundle: ReplayBundle): Promise<ReplaySummary> {
-    return this.purposes.apply(await this.summarize(bundle));
+    return this.profiles.apply(await this.summarize(bundle));
+  }
+
+  /** @deprecated Use `profiles`. */
+  get purposes(): ProfileCatalog {
+    return this.profiles;
   }
 
   /** DATA_DIR with the fs driver; tests and scripts only. */
@@ -208,7 +219,7 @@ export class ReplayStore {
     return `${assertReplayId(id)}/edits.json`;
   }
 
-  /** Title, tags and purpose changed after upload (the bundle never changes). */
+  /** Title, tags and profile changed after upload (the bundle never changes). */
   overridesKey(id: string) {
     return `${assertReplayId(id)}/overrides.json`;
   }
@@ -650,8 +661,8 @@ export class ReplayStore {
     if (keptBySuite && !keep) return { expiresAt: null };
     return retentionOf(this.retention, {
       uploadedMs: await serverUploadMs(this.storage, replay),
-      purpose: summary.purpose,
-      purposeInferred: summary.purposeInferred,
+      profile: summary.profile,
+      profileInferred: summary.profileInferred,
       summary,
       ...(keep ? { kept: keep } : {}),
     });
@@ -687,7 +698,7 @@ export class ReplayStore {
       if (trashed) return;
       const stored = await this.uploadedSummary(id, replay, meta);
       if (!stored) return undefined;
-      const summary = this.purposes.apply(withOverrides(stored, await this.overridesOf(id, overridesInfo)));
+      const summary = this.profiles.apply(withOverrides(stored, await this.overridesOf(id, overridesInfo)));
       const keep = await this.keepOf(this.keepKey(id), keepInfo);
       const keptBySuite = suites && !keep && (await this.keptSuiteReplays()).has(id);
       return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite)) };
@@ -695,7 +706,7 @@ export class ReplayStore {
     const sample = await this.samples.stat(this.sampleKey(id));
     if (!sample) return undefined;
     const summary = await this.sampleSummary(id, sample);
-    return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
+    return summary ? { ...this.profiles.apply(summary), expiresAt: null } : undefined;
   }
 
   async list(filters: ReplayFilters = {}): Promise<ReplaySummary[]> {
@@ -744,7 +755,7 @@ export class ReplayStore {
         try {
           const stored = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
           if (!stored) return undefined;
-          const summary = this.purposes.apply(withOverrides(stored, await this.overridesOf(id, overrides)));
+          const summary = this.profiles.apply(withOverrides(stored, await this.overridesOf(id, overrides)));
           const keep = await this.keepOf(this.keepKey(id), keepInfo);
           return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite.has(id))) };
         } finally {
@@ -755,7 +766,7 @@ export class ReplayStore {
         const id = sample.key.slice(0, -'.json'.length);
         if (!ID.test(id) || uploads.get(id)?.replay || uploads.get(id)?.trash) return undefined;
         const summary = await this.sampleSummary(id, sample);
-        return summary ? { ...this.purposes.apply(summary), expiresAt: null } : undefined;
+        return summary ? { ...this.profiles.apply(summary), expiresAt: null } : undefined;
       }),
     ]);
     return summaries
@@ -907,11 +918,12 @@ export class ReplayStore {
     throw httpError(404, 'replay not found');
   }
 
-  /** Changes a replay's title, tags or purpose (`purpose: null` drops the override); returns its summary as listed. */
+  /** Changes a replay's title, tags or profile (`profile: null` drops the override); returns its summary as listed. */
   async updateMeta(id: string, patch: ReplayMetaPatch, by: string, now = new Date()): Promise<ReplaySummary> {
     await this.assertWritable(id);
-    const problem = patch.purpose ? this.purposes.problem(patch.purpose) : undefined;
-    if (problem) throw httpError(400, problem.replace('replay.meta.purpose', 'purpose'));
+    const profile = patch.profile ?? patch.purpose;
+    const problem = profile ? this.profiles.problem(profile) : undefined;
+    if (problem) throw httpError(400, problem.replace('replay.meta.profile', 'profile'));
     const current = await this.overridesOf(id, await this.storage.stat(this.overridesKey(id)));
     const next = nextOverrides(current, patch, by, now);
     await this.storage.write(this.overridesKey(id), `${JSON.stringify(next)}\n`, { contentType: JSON_TYPE });
@@ -1034,13 +1046,13 @@ export class ReplayStore {
           if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
           let expires: number | undefined;
           if (replay) {
-            // Per purpose and rule: the summary (sidecar, cached) says which applies.
+            // Per profile and rule: the summary (sidecar, cached) says which applies.
             const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
-            const summary = stored && this.purposes.apply(stored);
+            const summary = stored && this.profiles.apply(stored);
             expires = expiryMs(this.retention, {
               uploadedMs: await serverUploadMs(this.storage, replay),
-              purpose: summary?.purpose,
-              purposeInferred: summary?.purposeInferred,
+              profile: summary?.profile,
+              profileInferred: summary?.profileInferred,
               summary,
             });
           } else {

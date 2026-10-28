@@ -7,6 +7,9 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { definePlugin } from '../src/plugin/index.ts';
 import { startServer, type RunningServer } from '../src/server/start.ts';
 
+// why: the first start imports @agent-native/core (about a second of CPU, several on a loaded 2-CPU runner). Loading it at collection keeps that out of the first test's 5 s budget.
+await import('../src/server/agent-native/runtime.ts');
+
 const servers: RunningServer[] = [];
 afterEach(async () => {
   for (const server of servers.splice(0)) await server.close();

@@ -26,15 +26,7 @@ import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 
 import { EMPTY_EDITS, editListOf, editTimeline, isEmptyEdits, type ReplayEdits, type StoredReplayEdits } from '../../shared/edits.ts';
-import {
-  clicksOf,
-  IDENTITY_TIME,
-  playbackEffects,
-  proposeStepCaptions,
-  proposeZoomRegions,
-  SPEED_RATES,
-  ZOOM_SCALES,
-} from '../../shared/effects.ts';
+import { clicksOf, IDENTITY_TIME, playbackEffects, proposeStepCaptions, proposeZoomRegions } from '../../shared/effects.ts';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,8 +34,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 import { EditCaption } from '../edit-caption.tsx';
@@ -87,8 +77,6 @@ import {
   NEW_EFFECT_MS,
   removeEffect,
   removeHighlight,
-  updateHighlight,
-  updateEffect,
   withEffectList,
 } from './state.ts';
 import { handOff } from './handoff.ts';
@@ -97,6 +85,8 @@ import { editorHint } from './hint.ts';
 import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
 import { CursorInspector } from './CursorInspector.tsx';
+import { EditorInspector } from './EditorInspector.tsx';
+import { EffectControls, HighlightControls } from './SelectionControls.tsx';
 import { EditorExport } from './EditorExport.tsx';
 import { MobileInspector, MobileAddToolbar, mobileTimelineObjects } from './MobileInspector.tsx';
 import { ThemeSwitch } from '../theme.tsx';
@@ -589,7 +579,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   };
   useEffect(() => {
     if (!mobile || !focusCaption.current || selection?.kind !== 'caption') return;
-    const field = document.getElementById('mobile-caption-text');
+    const field = document.getElementById('selection-caption-text');
     if (field instanceof HTMLTextAreaElement) {
       field.focus({ preventScroll: true });
       field.select();
@@ -665,6 +655,18 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       onClose={finishMobileObject}
     />
   );
+  const selectionCommands = {
+    onSelectRange: (from: number, to: number) => dispatch({ type: 'select', selection: { kind: 'range', from, to } }),
+    onDone: mobile ? finishMobileObject : () => dispatch({ type: 'select', selection: undefined }),
+    onDelete: () => {
+      actions.deleteSelection();
+      if (!mobile) return;
+      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
+      finishMobileObject();
+    },
+    onCut: actions.cut,
+    onPeriodHighlight: actions.periodHighlight,
+  };
   const empty = isEmptyEdits(edits);
   const hint = editorHint(selection, suggesting, empty);
 
@@ -835,12 +837,19 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
               {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
             </EditorPreviewFrame>
             {!mobile ? (
-              <aside className="editor-presentation" aria-label="Replay presentation">
-                <header className="editor-presentation-header">
-                  <h2>Appearance</h2>
-                  <p>Applies to the whole replay</p>
-                </header>
-                {cursorInspector}
+              <aside className="editor-presentation" aria-label="Inspector">
+                <EditorInspector
+                  edits={edits}
+                  selection={selection}
+                  duration={duration}
+                  change={change}
+                  commands={selectionCommands}
+                  panels={{
+                    effectControls: <EffectControls edits={edits} selection={selection} change={change} />,
+                    highlightControls: <HighlightControls edits={edits} selection={selection} duration={duration} change={change} />,
+                  }}
+                  replay={cursorInspector}
+                />
               </aside>
             ) : null}
           </section>
@@ -919,8 +928,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                     </DropdownMenuCheckboxItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-                <EffectControls edits={edits} selection={selection} change={change} />
-                <HighlightControls edits={edits} selection={selection} duration={duration} change={change} />
                 <div className="editor-bar-end">
                   {suggesting && suggestions.length ? (
                     <span className="editor-suggest" role="status" data-testid="wait-suggestions">
@@ -1087,17 +1094,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   selection={mobileSelection}
                   duration={duration}
                   change={change}
-                  commands={{
-                    onSelectRange: (from, to) => dispatch({ type: 'select', selection: { kind: 'range', from, to } }),
-                    onDone: finishMobileObject,
-                    onDelete: () => {
-                      actions.deleteSelection();
-                      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
-                      finishMobileObject();
-                    },
-                    onCut: actions.cut,
-                    onPeriodHighlight: actions.periodHighlight,
-                  }}
+                  commands={selectionCommands}
                   cursorOpen={cursorOpen}
                   placingBlur={Boolean(blurPlacement)}
                   panels={{
@@ -1177,219 +1174,6 @@ function nextEffectId(edits: ReplayEdits, kind: EffectKind, index: number) {
  * The selected effect's one setting, right after the tools (next to what you just used, not by the lengths): a zoom's depth and a speed-up's rate as a trigger and
  * menu, a caption's text as an inline field. Nothing for other selections.
  */
-function EffectControls({
-  edits,
-  selection,
-  change,
-  mobile = false,
-}: {
-  mobile?: boolean;
-  edits: ReplayEdits;
-  selection: Selection;
-  change: (edits: ReplayEdits, select?: Selection) => void;
-}) {
-  if (!selection || selection.kind === 'range' || selection.kind === 'trim' || selection.kind === 'cut' || selection.kind === 'highlight')
-    return null;
-  const region = effectList(edits, selection.kind).find((item) => item.id === selection.id);
-  if (!region) return null;
-  const { kind, id } = selection;
-  if (kind === 'caption' && 'text' in region) {
-    const onText = (text: string) => change(updateEffect(edits, kind, id, { text }), selection);
-    return mobile ? (
-      <MobileCaptionField key={id} text={region.text} onChange={onText} />
-    ) : (
-      <DesktopCaptionField key={id} text={region.text} onChange={onText} />
-    );
-  }
-  if (kind !== 'zoom' && kind !== 'speed') return null;
-  const field = kind === 'zoom' ? 'scale' : 'rate';
-  const current = (region as unknown as Record<string, number>)[field]!;
-  return (
-    <EffectSettingMenu
-      kind={kind}
-      current={current}
-      mobile={mobile}
-      onPick={(value) => change(updateEffect(edits, kind, id, { [field]: value }), selection)}
-    />
-  );
-}
-
-function DesktopCaptionField({ text, onChange }: { text: string; onChange: (text: string) => void }) {
-  return (
-    <>
-      <span className="editor-bar-divider editor-setting-divider" aria-hidden="true" />
-      <input
-        className="editor-caption-field"
-        defaultValue={text}
-        maxLength={160}
-        aria-label="Caption text"
-        data-testid="caption-text"
-        onChange={(event) => {
-          const value = event.target.value;
-          if (value.trim()) onChange(value);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === 'Escape') event.currentTarget.blur();
-        }}
-      />
-    </>
-  );
-}
-
-function EffectSettingMenu({
-  kind,
-  current,
-  mobile,
-  onPick,
-}: {
-  kind: 'zoom' | 'speed';
-  current: number;
-  mobile: boolean;
-  onPick: (value: number) => void;
-}) {
-  const options =
-    kind === 'zoom'
-      ? ZOOM_SCALES.map((value) => ({ value, label: `${value}× zoom` }))
-      : SPEED_RATES.map((value) => ({ value, label: `${value}× faster` }));
-  return (
-    <>
-      <span className="editor-bar-divider editor-setting-divider" aria-hidden="true" />
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          render={<Button size="sm" variant="ghost" className="editor-effect-trigger" data-testid={`${kind}-setting`} />}
-        >
-          {kind === 'zoom' ? `Zoom ${current}×` : `Speed ${current}×`}
-          <ChevronDownIcon aria-hidden="true" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent side="top" align="start" className={mobile ? 'editor-mobile-effect-menu w-auto min-w-36' : 'w-auto min-w-36'}>
-          <DropdownMenuRadioGroup value={String(current)} onValueChange={(value) => onPick(Number(value))}>
-            {options.map((option) => (
-              <DropdownMenuRadioItem key={option.value} value={String(option.value)}>
-                {option.label}
-              </DropdownMenuRadioItem>
-            ))}
-          </DropdownMenuRadioGroup>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
-}
-
-/** Keep an unfinished empty draft local; undo/redo still replace the visible saved text. */
-function MobileCaptionField({ text, onChange }: { text: string; onChange: (text: string) => void }) {
-  const [draft, setDraft] = useState({ saved: text, value: text });
-  if (draft.saved !== text) setDraft({ saved: text, value: text });
-  return (
-    <textarea
-      id="mobile-caption-text"
-      className="editor-caption-field"
-      rows={3}
-      value={draft.saved === text ? draft.value : text}
-      maxLength={160}
-      aria-label="Caption text"
-      data-testid="caption-text"
-      onChange={(event) => {
-        const value = event.currentTarget.value;
-        setDraft({ saved: text, value });
-        if (value.trim()) onChange(value);
-      }}
-      onBlur={() => {
-        if (!draft.value.trim()) setDraft({ saved: text, value: text });
-      }}
-    />
-  );
-}
-
-function HighlightTimeInput({
-  label,
-  value,
-  onChange,
-  max,
-}: {
-  label: string;
-  value: number;
-  onChange: (time: number) => void;
-  max: number;
-}) {
-  return (
-    <label className="editor-highlight-time">
-      <span>{label} (s)</span>
-      <input
-        type="number"
-        min="0"
-        max={(max / 1000).toFixed(1)}
-        step="0.1"
-        value={(value / 1000).toFixed(1)}
-        aria-label={`${label} in seconds`}
-        onChange={(event) => {
-          const seconds = event.currentTarget.valueAsNumber;
-          if (Number.isFinite(seconds)) onChange(Math.round(seconds * 1000));
-        }}
-      />
-    </label>
-  );
-}
-
-function HighlightControls({
-  edits,
-  selection,
-  duration,
-  change,
-  afterRemove,
-}: {
-  afterRemove?: () => void;
-  edits: ReplayEdits;
-  selection: Selection;
-  duration: number;
-  change: (edits: ReplayEdits, select?: Selection) => void;
-}) {
-  if (selection?.kind !== 'highlight') return null;
-  const highlight = edits.highlights?.find((item) => item.id === selection.id);
-  if (!highlight) return null;
-  const update = (patch: Parameters<typeof updateHighlight>[2]) => change(updateHighlight(edits, highlight.id, patch, duration), selection);
-  return (
-    <div className="editor-highlight-controls" role="group" aria-label="Selected highlight">
-      <span className="editor-bar-divider editor-setting-divider" aria-hidden="true" />
-      <label className="editor-highlight-label">
-        <span>Label</span>
-        <input
-          key={highlight.id}
-          type="text"
-          maxLength={120}
-          value={highlight.label ?? ''}
-          aria-label="Highlight label"
-          placeholder="Add a label"
-          onChange={(event) => update({ label: event.currentTarget.value })}
-        />
-      </label>
-      {highlight.kind === 'point' ? (
-        <HighlightTimeInput label="Time" value={highlight.at} onChange={(at) => update({ kind: 'point', at })} max={duration} />
-      ) : (
-        <>
-          <HighlightTimeInput
-            label="From"
-            value={highlight.from}
-            onChange={(from) => update({ kind: 'period', from })}
-            max={Math.max(0, highlight.to - 100)}
-          />
-          <HighlightTimeInput label="To" value={highlight.to} onChange={(to) => update({ kind: 'period', to })} max={duration} />
-        </>
-      )}
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => {
-          change(removeHighlight(edits, highlight.id));
-          afterRemove?.();
-        }}
-        data-testid="remove-highlight"
-      >
-        Remove
-      </Button>
-    </div>
-  );
-}
-
 function EditorPlayButton({ onSwitch }: { onSwitch: () => void }) {
   const { status } = usePlayerState();
   const label = status === 'playing' ? 'Pause' : 'Play the result';

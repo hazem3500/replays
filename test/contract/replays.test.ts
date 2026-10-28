@@ -49,7 +49,7 @@ const listAnswer = {
       id: 'contract-a',
       source: 'agent',
       steps: 1,
-      summaryVersion: 8,
+      summaryVersion: 9,
       timeline: {
         errors: [],
         steps: [0],
@@ -93,7 +93,7 @@ const listBrAnswer = {
       id: 'contract-a',
       source: 'agent',
       steps: 1,
-      summaryVersion: 8,
+      summaryVersion: 9,
       timeline: {
         errors: [],
         steps: [0],
@@ -230,8 +230,8 @@ const import201Answer = {
   status: 201,
 };
 
-const import400PurposeAnswer = {
-  body: 'purpose is set, but this server defines no purposes (remove it, or declare purposes in the config)',
+const import400ProfileAnswer = {
+  body: 'profile is set, but this server defines no profiles (remove it, or declare profiles in the config)',
   headers: {
     'cache-control': 'private, no-cache',
     'content-type': 'text/plain; charset=utf-8',
@@ -323,10 +323,10 @@ describe('HTTP contract: rrweb import', () => {
       ),
     ).toEqual(import201Answer);
   });
-  it('refuses an import with a purpose the deployment lacks', async () => {
+  it('refuses an import with a profile the deployment lacks', async () => {
     const { client } = await boot();
-    expect(await capture(await client.fetch('/api/replays/import?purpose=nope', jsonInit('POST', replay('src').events)))).toEqual(
-      import400PurposeAnswer,
+    expect(await capture(await client.fetch('/api/replays/import?profile=nope', jsonInit('POST', replay('src').events)))).toEqual(
+      import400ProfileAnswer,
     );
   });
 });

@@ -8,7 +8,8 @@ import { type AppSettings, type FileConfig, loadSettings } from './config.ts';
 import { authFromEnv } from './auth/index.ts';
 import type { AuthAdapter } from './auth/types.ts';
 import { type ContextSchema, compileContextSchema } from './context-schema.ts';
-import { createPurposeCatalog, wrapRetentionRules } from './purposes.ts';
+import { configProfiles, createProfileCatalog, wrapRetentionRules } from './profiles.ts';
+import { createViewCatalog } from './views.ts';
 import { storageFromEnv } from './storage/index.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
@@ -22,6 +23,8 @@ export interface Runtime {
 const BUILTIN_AUTH_MODES = ['none', 'header', 'oidc', 'plugin'];
 
 /** Plugin contributions as config-file values, under what the file itself says (the file wins, token by token). */
+const warnLine = (line: string) => console.warn(line);
+
 function withPluginDefaults(file: FileConfig, registry: PluginRegistry): FileConfig {
   const { branding } = registry;
   const theme = { ...branding.theme, ...file.theme };
@@ -117,16 +120,13 @@ export async function resolveSettings(options: RuntimeOptions): Promise<Omit<Run
       });
     settings.sources.register(provider.value);
   }
-  // Purposes: the config's merged with the plugins' (src/server/purposes.ts); their windows and the plugins' rules join retention.
-  settings.purposes = createPurposeCatalog({
-    config: file.purposes,
-    plugins: registry.purposes,
-    env,
-    log: (line) => console.warn(line),
-  });
+  // Profiles: the config's merged with the plugins' (src/server/profiles.ts); their windows and the plugins' rules join retention.
+  const profiles = createProfileCatalog({ config: configProfiles(file, warnLine), plugins: registry.profiles, env, log: warnLine });
+  Object.assign(settings, { profiles, purposes: profiles });
+  settings.views = createViewCatalog({ config: file.views, plugins: registry.views, profiles: profiles.list });
   settings.retention = {
     ...settings.retention,
-    ...(settings.purposes.size ? { purposes: settings.purposes.retentionDays() } : {}),
+    ...(Object.keys(profiles.retentionDays()).length ? { profiles: profiles.retentionDays() } : {}),
     ...(registry.retention.length ? { rules: wrapRetentionRules(registry.retention) } : {}),
   };
   const contextSchema = mergeContextSchemas(settings.contextSchema, registry);
