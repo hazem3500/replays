@@ -792,7 +792,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -848,12 +848,12 @@
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
-        "raw": 20385,
-        "gzip": 8355,
-        "brotli": 7171
+        "raw": 20430,
+        "gzip": 8386,
+        "brotli": 7197
       },
-      "reason": "Measured in CI against fresh main: raw 18081 to 18096 bytes with this change. Then: Suite workspace routes runs into the compare mode (sidebar moves focus, lazy SuiteCompare entry).",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
+      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 20430 raw, 8386 gzip, 7197 brotli bytes (+45, +31, +26 over the previous caps).",
+      "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.js",
@@ -862,7 +862,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -953,14 +953,14 @@
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "file": "dist/lib/chunks/context.schema.json-4e76cfd0bfaf.mjs",
       "cap": {
-        "raw": 308545,
-        "gzip": 80878,
-        "brotli": 66289
+        "raw": 304980,
+        "gzip": 79829,
+        "brotli": 65431
       },
-      "reason": "replay.schema.json documents meta.profile and the deprecated meta.purpose (main 297658/77964/63870, head 299558/78522/64358).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (caps 308545, 80878, 66289) and measures 304980 raw, 79829 gzip, 65431 brotli bytes, under those caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
       "file": "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs",
