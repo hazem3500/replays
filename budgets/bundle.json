@@ -210,7 +210,7 @@
     "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs": {
       "raw": 294982,
       "gzip": 77629,
-      "brotli": 63591
+      "brotli": 63543
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
