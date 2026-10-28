@@ -62,7 +62,7 @@
   .editor-bar-divider { width: 8px; height: 1px; margin: 0; }
   .editor-clock { min-width: 52px; margin-left: 4px; color: var(--text); font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
   .editor-durations { display: inline-flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--text-tertiary); white-space: nowrap; }
-  .editor-durations-original[data-changed] { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--text-tertiary) 60%, transparent); }
+  .editor-durations-note { color: var(--text-tertiary); font-size: var(--text-2xs); }
   .editor-durations strong { color: var(--text); font-weight: 600; }
   .editor-suggest { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
   .editor-suggest kbd { min-width: 0; margin-left: 2px; padding: 0 4px; border: 0; background: none; color: inherit; font-family: var(--sans); opacity: 0.7; }
@@ -72,7 +72,7 @@
   .editor-hint[data-note] { color: var(--text-secondary); }
 
   /* ---------- Timeline ---------- */
-  .timeline { --gutter: 40px; flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding-bottom: 6px; }
+  .timeline { --gutter: 56px; flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding-bottom: 6px; }
   .tl-ruler-row, .tl-lane { display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr); }
   .tl-gutter-spacer { display: block; }
   .tl-ruler-row { flex: none; }
@@ -84,7 +84,9 @@
   /* Lanes share the dock's height: a taller dock gives taller lanes (up to a comfortable maximum each). */
   .tl-lane { flex: 1 1 30px; min-height: 30px; max-height: 64px; margin-top: 6px; }
   .tl-lane[data-tall] { flex: 1 1 44px; min-height: 44px; max-height: 64px; }
-  .tl-gutter { display: grid; place-items: center; width: 28px; height: 100%; color: var(--text-tertiary); }
+  .tl-gutter { display: grid; place-items: center; align-content: center; gap: 1px; width: 100%; height: 100%; color: var(--text-tertiary); }
+  .tl-gutter-label { font-size: var(--text-2xs); line-height: 12px; }
+  .editor-shell[data-mobile] .tl-gutter-label { display: none; }
   .tl-gutter svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .tl-track { position: relative; height: 100%; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); box-shadow: inset 0 0 0 1px var(--line); overflow: visible; cursor: crosshair; }
 
@@ -94,7 +96,9 @@
   /* Clip lane: the clip (its edges are the trim), trimmed-off ends dimmed. The clip rests neutral and
      takes the accent while it is held (an edge hovered, keyed or dragged, or the trim selected): the accent stays
      for where you are. */
-  .tl-outside { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--canvas) 70%, transparent); pointer-events: none; }
+  .tl-outside { container-type: inline-size; position: absolute; top: 0; bottom: 0; display: grid; place-items: center; overflow: hidden; border-radius: 8px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--canvas) 70%, transparent) 0 6px, color-mix(in srgb, var(--canvas) 55%, transparent) 6px 12px); pointer-events: none; }
+  .tl-outside-label { color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
+  @container (max-width: 72px) { .tl-outside-label { display: none; } }
   .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--text-tertiary) 70%, transparent); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
   .tl-clip:has(.tl-trim:is(:hover, :focus-visible)), .tl-clip[data-selected] { box-shadow: inset 0 0 0 2px var(--accent); }
   .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 8%, transparent); }
