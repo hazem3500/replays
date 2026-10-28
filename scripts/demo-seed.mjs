@@ -819,7 +819,7 @@ export function createDemoSeed() {
   return { replays, suites };
 }
 
-async function writeStable(path, value) {
+export async function writeStable(path, value) {
   const body = typeof value === 'string' ? value : `${JSON.stringify(value)}\n`;
   await mkdir(dirname(path), { recursive: true });
   try {

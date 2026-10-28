@@ -109,3 +109,21 @@ test('the sidebar pin keeps the suite on click', async ({ page }) => {
   await pin.click();
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('a suite with two recordings opens comparing its runs; the sidebar moves the focus, not the players', async ({ page }) => {
+  const { suite, one } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/s/${suite}`);
+  const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
+  await expect(tiles.locator('.ct-label')).toHaveText(['Desktop: run 1', 'Desktop: run 2']);
+  await expect(page.locator('.ct-tile iframe')).toHaveCount(2);
+  await page.locator('.ct-tile iframe').evaluateAll((frames) => {
+    for (const frame of frames) frame.setAttribute('data-marked', '');
+  });
+  await page.getByRole('complementary', { name: 'Review suite' }).locator(`[data-replay-id="${one}"]`).click();
+  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+  await page.getByTestId('layout-switch').getByRole('radio', { name: 'Single' }).click();
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=single$`));
+  await expect(page.locator('.ct-tile iframe[data-marked]')).toHaveCount(2);
+});

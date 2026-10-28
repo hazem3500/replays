@@ -335,19 +335,21 @@ function PlaybackOptions() {
             </button>
           ))}
         </div>
-        <div className="playback-skip">
-          <label id={`${rateId}-skip-label`} htmlFor={`${rateId}-skip`}>
-            Skip inactive parts
-          </label>
-          <Switch
-            id={`${rateId}-skip`}
-            nativeButton
-            render={<button type="button" />}
-            aria-labelledby={`${rateId}-skip-label`}
-            checked={skipInactive}
-            onCheckedChange={(checked) => player.setSkipInactive(checked)}
-          />
-        </div>
+        {player.canSkipInactive === false ? null : (
+          <div className="playback-skip">
+            <label id={`${rateId}-skip-label`} htmlFor={`${rateId}-skip`}>
+              Skip inactive parts
+            </label>
+            <Switch
+              id={`${rateId}-skip`}
+              nativeButton
+              render={<button type="button" />}
+              aria-labelledby={`${rateId}-skip-label`}
+              checked={skipInactive}
+              onCheckedChange={(checked) => player.setSkipInactive(checked)}
+            />
+          </div>
+        )}
         {steps.length > 0 && !editCaptions && setCaptionNumbers ? (
           <div className="playback-skip">
             <label id={`${rateId}-numbers-label`} htmlFor={`${rateId}-numbers`}>

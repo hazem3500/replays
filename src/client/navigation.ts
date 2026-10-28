@@ -519,3 +519,34 @@ export function installNavigation() {
   document.addEventListener('focusin', onIntent);
   setClientNavigation(true);
 }
+
+const SEARCH_CHANGE = 'replays:search';
+
+/**
+ * The query string as a store, for state a page keeps in its own URL (a viewer's compare layout). Same-route
+ * history steps never become a page change here, so Back and Forward are heard directly, as are setPageUrl's writes.
+ */
+export function subscribeSearch(listener: () => void) {
+  window.addEventListener('popstate', listener);
+  window.addEventListener(SEARCH_CHANGE, listener);
+  return () => {
+    window.removeEventListener('popstate', listener);
+    window.removeEventListener(SEARCH_CHANGE, listener);
+  };
+}
+
+export const currentSearch = () => location.search;
+
+/** Rewrites this page's own URL (no page change); `push` adds a history entry, so Back undoes it. */
+export function setPageUrl(url: string, { push = false }: { push?: boolean } = {}) {
+  const next = new URL(url, location.href);
+  if (next.href === location.href) return;
+  if (push) history.pushState(history.state, '', next);
+  else history.replaceState(history.state, '', next);
+  window.dispatchEvent(new Event(SEARCH_CHANGE));
+}
+
+/** The same page with another query string (path and hash kept). */
+export function setSearch(search: string, options: { push?: boolean } = {}) {
+  setPageUrl(`${location.pathname}${search}${location.hash}`, options);
+}

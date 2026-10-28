@@ -21,11 +21,12 @@ import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
-import { comparisonHref, editHref } from './route.ts';
+import { editHref } from './route.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
+import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
 import { replayPurpose } from './purposes.ts';
 import { DEFAULT_LEAD_MS } from '../shared/purposes.ts';
@@ -33,7 +34,7 @@ import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
-import { PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState, usePlayhead } from './player.ts';
+import { type Playback, PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState, usePlayhead } from './player.ts';
 import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
@@ -67,6 +68,7 @@ import { useKeep } from './viewer/keep.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
+const ComparePicker = lazy(() => import('./compare/ComparePicker.tsx').then((module) => ({ default: module.ComparePicker })));
 
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
@@ -96,6 +98,13 @@ export function Viewer({
   timeline,
   highlights,
   sourceBundle = bundle,
+  player: sharedPlayer,
+  stage,
+  headerActions,
+  inspectorScope,
+  performanceExtra,
+  comparing,
+  onCompareWith,
 }: {
   bundle: ReplayBundle;
   /** Original diagnostics for the waterfall's measured spans when playback has saved edits. */
@@ -128,11 +137,26 @@ export function Viewer({
   backHref?: string;
   /** False when the page already starts with its own skip link (the suite workspace, whose runs sidebar comes first). */
   skipLink?: boolean;
+  /** Compared recordings' shared clock, scoped to `bundle` (the focused one): it replaces this replay's own player. */
+  player?: Playback;
+  /** In place of the player stage: the compared recordings' tiles. */
+  stage?: ReactNode;
+  /** Before the header's icon actions: the comparison's layout switch. */
+  headerActions?: ReactNode;
+  /** In the inspector's tab row: which compared recording the panels describe. */
+  inspectorScope?: ReactNode;
+  /** Above the performance events: how the compared recordings differ. */
+  performanceExtra?: ReactNode;
+  /** Recordings already on the stage, left out of "Compare with…". */
+  comparing?: readonly string[];
+  /** "Compare with…" picked a recording; by default this replay's URL gains it and shows both in a grid. */
+  onCompareWith?: (id: string) => void;
 }) {
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
   // The deployment's purpose for this replay (src/client/purposes.ts) sets how it first opens.
   const purpose = useMemo(() => replayPurpose(bundle), [bundle]);
   const opened = useMemo(() => {
+    if (sharedPlayer) return { controller: sharedPlayer, step: undefined, resume: false, tab: undefined };
     const controller = new ReplayController(bundle, effects ? { effects } : {});
     // Permalinks open paused at their moment.
     const target = parsePermalink(location.search, location.hash, bundle.steps.length);
@@ -146,8 +170,8 @@ export function Viewer({
     const step = target.step === undefined ? undefined : { index: target.step, time: controller.getTime() };
     return { controller, step, resume: Boolean(handoff), tab: firstError?.kind };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
-  }, [bundle]);
-  const player = opened.controller;
+  }, [bundle, sharedPlayer]);
+  const player: Playback = opened.controller;
   // Resuming from the editor: play as soon as the replay is mounted (it mounts after the page transition).
   useEffect(() => {
     if (!opened.resume) return;
@@ -169,6 +193,7 @@ export function Viewer({
   const playerRegion = useRef<HTMLElement>(null);
   const shell = useRef<HTMLElement>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const shortcutsOpenRef = useRef(false);
   useEffect(() => {
     shortcutsOpenRef.current = shortcutsOpen;
@@ -405,11 +430,10 @@ export function Viewer({
     () => [
       ...(keepItem ? [keepItem] : []),
       {
-        label: 'Compare recordings',
+        label: 'Compare with…',
         icon: <AnimatedIcon name="search" />,
-        href: comparisonHref(bundle.meta.id, bundle.meta.id),
-        onSelect: () => {},
-        detail: 'Beta',
+        onSelect: () => setPickerOpen(true),
+        testId: 'compare-with',
       },
       ...pluginMenu.items,
       ...(betaMalleable()
@@ -428,7 +452,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, bundle.meta.id, keepItem, mobile, pluginMenu.items],
+    [actions.openShortcuts, keepItem, mobile, pluginMenu.items],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -568,6 +592,7 @@ export function Viewer({
           {...(prefix ? { prefix } : {})}
           {...(headerStatus ? { status: headerStatus } : {})}
           {...(suite ? { suite } : {})}
+          {...(headerActions ? { leadingActions: headerActions } : {})}
           hasEdits={Boolean(edited)}
         />
         <div
@@ -577,7 +602,7 @@ export function Viewer({
         >
           <section ref={playerRegion} className="player-region" aria-label="Replay">
             <div className="stage-wrap">
-              <PlayerStage />
+              {stage ?? <PlayerStage />}
               {effects?.captions.length ? (
                 <EditCaption captions={effects.captions} />
               ) : captions && bundle.steps.length > 0 ? (
@@ -601,6 +626,7 @@ export function Viewer({
           expandedRequest={expandedRequest}
           collapse={inspectorCollapse}
           {...(mobilePanel ? { mobile: mobilePanel } : {})}
+          compare={inspectorScope || performanceExtra ? { scope: inspectorScope, performance: performanceExtra } : undefined}
         />
         <StepAnnouncer />
         {pluginMenu.drawer}
@@ -610,6 +636,21 @@ export function Viewer({
           </Suspense>
         ) : null}
         <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        {pickerOpen ? (
+          <Suspense fallback={null}>
+            <ComparePicker
+              base={bundle.meta}
+              exclude={comparing ?? [bundle.meta.id]}
+              open
+              onOpenChange={setPickerOpen}
+              onPick={(id) => {
+                setPickerOpen(false);
+                if (onCompareWith) onCompareWith(id);
+                else compareWith(bundle.meta.id, id);
+              }}
+            />
+          </Suspense>
+        ) : null}
       </main>
     </ViewerContext.Provider>
   );
@@ -675,9 +716,12 @@ const ViewerHeader = memo(function ViewerHeader({
   backHref,
   titleMenu,
   titleFrom,
+  leadingActions,
   hasEdits = false,
 }: {
   bundle: ReplayBundle;
+  /** Before the built-in icon actions (a comparison's layout switch). */
+  leadingActions?: ReactNode;
   /** The replay has saved edits: a dot on the Edit button (the title shows "Edited …" as quiet text). */
   hasEdits?: boolean;
   /** Client plugins' settings, at the bottom of the More menu. */
@@ -716,6 +760,7 @@ const ViewerHeader = memo(function ViewerHeader({
         menuItems={menuItems}
         menuFooter={menuFooter}
         hasEdits={hasEdits}
+        leadingActions={leadingActions}
         {...shared}
       />
     );
@@ -729,6 +774,7 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         // One quiet icon set: edit, details, copy link and download.
         <>
+          {leadingActions}
           {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
@@ -751,10 +797,12 @@ function PhoneHeader({
   menuItems,
   menuFooter,
   hasEdits = false,
+  leadingActions,
   ...props
 }: {
   bundle: ReplayBundle;
   hasEdits?: boolean;
+  leadingActions: ReactNode;
   suite: SuiteDetails | undefined;
   menu: ReactNode;
   menuFooter: ReactNode;
@@ -778,6 +826,7 @@ function PhoneHeader({
       menuFooter={menuFooter}
       actions={
         <>
+          {leadingActions}
           {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />

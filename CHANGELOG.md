@@ -9,6 +9,12 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Comparing recordings is a mode of the replay viewer: "Compare with…" in the viewer's More menu adds recordings to
+  `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`. Single, Grid and Spotlight share one clock and the viewer's
+  own transport, shortcuts and inspector, scoped to the focused recording; tiles glide between layouts without
+  remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
+  its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
+  `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
 - `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
   or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
 - An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of
@@ -169,6 +175,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
     unchanged; plugin auth adapters' identities (with `avatarUrl`) become comment authors.
   - `examples/custom-distro` (workspace package) with an end-to-end smoke in CI, and `pnpm test:pack`.
   - [docs/downstream-migration.md](docs/downstream-migration.md).
+
+### Removed
+
+- The separate `/compare?before=&after=` page and its workspace, evidence panels and route.
 
 ### Changed
 

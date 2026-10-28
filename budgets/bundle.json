@@ -370,16 +370,6 @@
   },
   "allowances": [
     {
-      "file": "dist/client/assets/ComparisonWorkspace-HASH.js",
-      "cap": {
-        "raw": 52846,
-        "gzip": 17816,
-        "brotli": 15415
-      },
-      "reason": "Lazy pairwise comparison workspace with scenario-start alignment, synchronized playback and evidence panels.",
-      "pr": "https://github.com/hazem3500/replays/pull/59"
-    },
-    {
       "file": "dist/lib/server-testing.mjs",
       "cap": {
         "raw": 11887,

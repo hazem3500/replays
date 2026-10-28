@@ -16,8 +16,8 @@ export const runtimeBudgets = {
     viewer: { path: '/r/demo-seed-checkout-error', ready: '[data-testid="replay-player"] iframe', player: true },
     editor: { path: '/r/demo-seed-checkout-error/edit', ready: '[data-testid="timeline"][data-ready="true"]', player: true },
     comparison: {
-      path: '/compare?before=demo-seed-checkout-error&after=demo-seed-signup',
-      ready: '.mt-workspace iframe, .cmp-workspace iframe',
+      path: '/r/demo-seed-checkout-error?with=demo-seed-signup&layout=grid',
+      ready: '[data-testid="compare-stage"] iframe',
       player: true,
       feature: 'comparison',
       tiles: 2,

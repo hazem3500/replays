@@ -2,7 +2,7 @@ import { SignInError, SignInLink } from '../sign-in.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
-import { type KeyboardEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type KeyboardEvent, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
@@ -21,7 +21,7 @@ import { formatClock } from '../../shared/replay.ts';
 import { type ReviewSuite, type ReviewSuiteIndexRun, suiteOverallStatus } from '../../shared/review-suite.ts';
 import { productName } from '../config.ts';
 import { prefetchReplay, replayQuery, type SuiteWithRuns, suiteQuery } from '../queries.ts';
-import { swapInPlace } from '../navigation.ts';
+import { setPageUrl, swapInPlace } from '../navigation.ts';
 import { indexHref, indexReturnHref, parseRoute, replayInSuiteHref, suiteHref } from '../route.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
@@ -33,6 +33,9 @@ import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
+
+// why: the comparison (tiles, shared clock) is only fetched for suites with two or more recordings.
+const SuiteCompare = lazy(() => import('./SuiteCompare.tsx').then((module) => ({ default: module.SuiteCompare })));
 
 type WorkspaceRun = ReviewSuiteIndexRun & { duration?: number };
 
@@ -124,6 +127,12 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
 
   const runs = useMemo(() => workspaceRuns(suite), [suite]);
   const detailed = Boolean(suite?.runDetails);
+  // why: with two or more recordings the viewer compares them all, and picking a run only moves its focus.
+  const playable = runs.flatMap((run) => {
+    const replayId = playableReplayId(run, detailed);
+    return replayId ? [{ replayId, label: run.label }] : [];
+  });
+  const comparing = playable.length > 1;
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
   // short wait), as one calm in-place transition (navigation.ts swapInPlace).
@@ -153,19 +162,26 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   useEffect(() => {
     const onPop = () => {
       const route = parseRoute(location.pathname, location.search);
-      if (route.kind === 'suite' && route.id === id) switchTo(route.replayId);
+      if (route.kind !== 'suite' || route.id !== id) return;
+      if (comparing) setSelected(route.replayId);
+      else switchTo(route.replayId);
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
-  }, [id, switchTo]);
+  }, [comparing, id, switchTo]);
 
   const select = useCallback(
     (replayId: string | undefined, instant = false) => {
       if (!replayId || replayId === target) return;
+      if (comparing) {
+        setPageUrl(`${replayInSuiteHref(replayId, id)}${location.search}`, { push: true });
+        setSelected(replayId);
+        return;
+      }
       history.pushState(null, '', replayInSuiteHref(replayId, id));
       switchTo(replayId, instant);
     },
-    [id, switchTo, target],
+    [comparing, id, switchTo, target],
   );
 
   // J / Shift+J anywhere in the workspace (K stays play/pause).
@@ -173,14 +189,15 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     const onKeyDown = (event: globalThis.KeyboardEvent) => {
       const action = shortcutFor(event, event.target instanceof HTMLElement ? event.target : null);
       if (action !== 'next-run' && action !== 'previous-run') return;
-      if (document.querySelector('[role="dialog"]')) return;
+      // why: the comparison moves its own focus with these keys.
+      if (comparing || document.querySelector('[role="dialog"]')) return;
       event.preventDefault();
       // A held key steps run by run without queueing a transition per step.
       select(neighbourReplayId(runs, target, action === 'next-run' ? 1 : -1, detailed), event.repeat);
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [detailed, runs, select, target]);
+  }, [comparing, detailed, runs, select, target]);
 
   // The neighbouring runs load at low priority once the suite is up, so J / Shift+J and a click on the next
   // or previous run swap in place without a skeleton (bundles are capped, so only the two neighbours).
@@ -295,7 +312,27 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         />
       ) : null}
       <div className="suite-viewer">
-        {bundle && bundle.meta.id === selected && editsSettled ? (
+        {comparing && selected ? (
+          <Suspense fallback={<ViewerSkeleton label="Loading runs" />}>
+            <SuiteCompare
+              runs={playable}
+              focus={selected}
+              onFocus={select}
+              page={{
+                ...(runTitle ? { title: runTitle } : {}),
+                ...(runPrefix ? { prefix: runPrefix } : {}),
+                ...(runStatus ? { status: runStatus } : {}),
+                ...(suiteDetails ? { suite: suiteDetails } : {}),
+                ...(runMenu ? { titleMenu: runMenu } : {}),
+                ...(keepMenu ? { menu: keepMenu } : {}),
+                backHref,
+                skipLink: false,
+                initialTab: tab,
+                onTabChange: setTab,
+              }}
+            />
+          </Suspense>
+        ) : bundle && bundle.meta.id === selected && editsSettled ? (
           <EditedViewer
             key={bundle.meta.id}
             bundle={bundle}
