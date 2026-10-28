@@ -29,7 +29,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 188,
+      "brotli": 226,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -38,7 +38,7 @@
       "gzip": 6742
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82506,
+      "raw": 82503,
       "brotli": 23404,
       "gzip": 26552
     },
@@ -164,7 +164,7 @@
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
-      "brotli": 434,
+      "brotli": 428,
       "gzip": 512
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
@@ -174,7 +174,7 @@
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
-      "brotli": 16340,
+      "brotli": 16324,
       "gzip": 18876
     },
     "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
@@ -212,10 +212,10 @@
       "brotli": 2,
       "gzip": 21
     },
-    "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
-      "raw": 27823,
-      "brotli": 7041,
-      "gzip": 8064
+    "dist/lib/chunks/index.ts-7a66decb29dc.mjs": {
+      "raw": 28475,
+      "gzip": 8376,
+      "brotli": 7278
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
@@ -249,13 +249,13 @@
     },
     "dist/lib/config.mjs": {
       "raw": 348,
-      "brotli": 146,
+      "brotli": 140,
       "gzip": 169
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
       "brotli": 438,
-      "gzip": 515
+      "gzip": 514
     },
     "dist/lib/plugin.mjs": {
       "raw": 743,
@@ -540,16 +540,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/chunks/index.ts-67a29d5237e2.mjs",
-      "cap": {
-        "raw": 27823,
-        "gzip": 8064,
-        "brotli": 7041
-      },
-      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs",
       "cap": {
         "raw": 18258,
@@ -775,6 +765,24 @@
         "brotli": 10326
       },
       "reason": "The client config module now reads the server's allowed beta flags and the person's Labs choices (labs.ts and the shared beta-flag registry), and the one config query lives here.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-7a66decb29dc.mjs",
+      "cap": {
+        "raw": 28475,
+        "gzip": 8376,
+        "brotli": 7278
+      },
+      "reason": "The shared library chunk that holds plugin contracts now also carries the beta-flag registry the server parses flags from; it replaces index.ts-67a29d5237e2.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 226
+      },
+      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/102"
     }
   ]

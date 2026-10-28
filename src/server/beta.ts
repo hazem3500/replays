@@ -39,7 +39,6 @@ export function betaFromEnv(env: Record<string, string | undefined>, file?: { [k
       throw new Error(`the config file's beta.${flag.configKey} must be true or false`);
   }
   const allowed: BetaFlags = { ...NO_BETA };
-  for (const flag of BETA_FLAGS)
-    allowed[flag.id] = parseFlag(flag.env, env[flag.env]) ?? values[flag.configKey] === true;
+  for (const flag of BETA_FLAGS) allowed[flag.id] = parseFlag(flag.env, env[flag.env]) ?? values[flag.configKey] === true;
   return allowed;
 }

@@ -15,7 +15,9 @@ type Pane = 'list' | 'section';
 
 /** Focus moves with the pushed screen either way; the ring only shows when a key moved it. */
 function focusQuietly(element: HTMLElement | null | undefined, viaKeyboard: boolean) {
-  element?.focus({ focusVisible: viaKeyboard });
+  // why: focusVisible is newer than the DOM types this build checks against.
+  const options: FocusOptions & { focusVisible?: boolean } = { focusVisible: viaKeyboard };
+  element?.focus(options);
 }
 
 /** Desktop focuses the selected tab; on touch a focused first control reads as a stray selection, so the sheet takes it. */
