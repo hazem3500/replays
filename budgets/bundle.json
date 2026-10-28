@@ -836,16 +836,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "raw": 1164,
-        "gzip": 706,
-        "brotli": 648
-      },
-      "reason": "Lazy suite glue: a suite with two or more recordings opens the viewer comparing its runs.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 20385,
@@ -1040,6 +1030,14 @@
         "brotli": 3523
       },
       "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts and render/thumbhash-capture.ts); head measures 8808 raw, 3877 gzip, 3522 brotli bytes (+2087, +919, +840).",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 628
+      },
+      "reason": "The lazy suite glue's chunk now references the poster placeholder's ThumbHash decoder module; it measures 1130 raw, 686 gzip, 628 brotli bytes (raw and gzip shrink, Brotli +4 over its ratcheted cap).",
       "pr": "https://github.com/hazem3500/replays/pull/123"
     }
   ]
