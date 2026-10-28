@@ -132,6 +132,16 @@ describe('template provider', () => {
     expect(plain.resolve('x'.repeat(200))).toBeDefined();
   });
 
+  it('gets the mark its id names, unless it names its own; an unknown mark is refused', () => {
+    expect(jira.mark).toBe('jira');
+    expect(templateProvider({ id: 'tickets', template: 'https://t.example.com/{ref}' }).mark).toBeUndefined();
+    expect(templateProvider({ id: 'tickets', template: 'https://t.example.com/{ref}', mark: 'linear' }).mark).toBe('linear');
+    expect(
+      () => new SourceProviders({ templates: [{ id: 'x', template: 'https://x.example.com/{ref}', mark: 'myspace' as never }] }),
+    ).toThrow(/mark must be one of/);
+    expect([githubProvider().mark, gitlabProvider().mark, urlProvider.mark]).toEqual(['github', 'gitlab', 'link']);
+  });
+
   it('fails at configuration time for a bad id, a template without {ref} or an unsafe template', () => {
     expect(() => templateProvider({ id: 'Jira!', template: 'https://jira.example.com/{ref}' })).toThrow(/id "Jira!" is invalid/);
     expect(() => templateProvider({ id: 'jira', template: 'https://jira.example.com/browse/' })).toThrow(/needs \{ref\}/);

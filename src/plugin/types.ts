@@ -9,6 +9,9 @@ import type { RedactionRules } from '../shared/redaction.ts';
 import type { PurposeConfig } from '../shared/purposes.ts';
 import type { ReplayBundle, ReplaySourceLink, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
+import type { PluginMiddleware, PluginRoute } from './web-types.ts';
+
+export type * from './web-types.ts';
 
 export type { IdentityCapabilities, RouteGrant } from '../server/auth/types.ts';
 
@@ -30,6 +33,8 @@ export interface ContextInfo {
   identity: Identity;
   /** The raw request, e.g. for proxy headers. Do not read the body. */
   request: IncomingMessage;
+  /** The same request, web-standard (do not read the body). */
+  webRequest: Request;
 }
 
 /**
@@ -101,6 +106,8 @@ export interface PrepareUploadContext {
   body: unknown;
   identity: Identity;
   request: IncomingMessage;
+  /** The upload request (its body already read into `body`). */
+  webRequest: Request;
 }
 
 /**
@@ -113,6 +120,8 @@ export interface UploadHookContext {
   bundle: ReplayBundle;
   identity: Identity;
   request: IncomingMessage;
+  /** The upload request (its body already read). */
+  webRequest: Request;
 }
 
 /** Runs on the sanitized, validated bundle before it is stored. Throw `rejectUpload(status, message)` to refuse; return a bundle to replace it. */
@@ -338,7 +347,10 @@ export interface IdentityResolver {
    * gave none, `email` are taken; an identity with another `id` is refused (logged, and the request keeps the original).
    * Runs once per request.
    */
-  resolve(identity: Identity, context: { request: IncomingMessage }): Identity | undefined | void | Promise<Identity | undefined | void>;
+  resolve(
+    identity: Identity,
+    context: { request: IncomingMessage; webRequest: Request },
+  ): Identity | undefined | void | Promise<Identity | undefined | void>;
 }
 
 /** What `setup` registers against. Every method may be called any number of times, except where noted. */
@@ -367,6 +379,10 @@ export interface PluginApi {
    */
   uploadEndpoint(endpoint: UploadEndpoint): void;
   onRequest(hook: RequestHook, options?: RequestHookOptions): void;
+  /** A request interceptor in the `pre-auth` or `post-auth` phase (web-standard; see docs/extension-api.md). */
+  middleware(middleware: PluginMiddleware): void;
+  /** An HTTP route under `/api/plugins/<plugin name>`, as a web handler (see docs/extension-api.md). */
+  route<Body = undefined>(route: PluginRoute<Body>): void;
   onResponse(hook: ResponseHook): void;
   /** Translate the raw upload body before validation (legacy producers). */
   prepareUpload(hook: PrepareUploadHook): void;

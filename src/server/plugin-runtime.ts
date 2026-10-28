@@ -52,6 +52,12 @@ export function watchResponse(
   });
 }
 
+/** The request a hook sees, as the Node request (deprecated in the hook API) and as a web `Request`. */
+export interface HookRequests {
+  request: IncomingMessage;
+  webRequest: Request;
+}
+
 /**
  * Passes the producer's context through every adapter, in order. The caller resolves the sources, applies the schema
  * and validates the result like any producer's context, so an adapter cannot smuggle data past the core checks.
@@ -76,17 +82,17 @@ export async function applyContextAdapters(
 }
 
 /** `prepareUpload` hooks in order, on the raw parsed body. */
-export async function runPrepareUpload(registry: PluginRegistry, body: unknown, identity: Identity, request: IncomingMessage) {
+export async function runPrepareUpload(registry: PluginRegistry, body: unknown, identity: Identity, requests: HookRequests) {
   let current = body;
-  for (const hook of registry.hooks.prepareUpload) current = await hook.value({ body: current, identity, request });
+  for (const hook of registry.hooks.prepareUpload) current = await hook.value({ body: current, identity, ...requests });
   return current;
 }
 
 /** `beforeUpload` hooks in order; each may return a replacement bundle. Throw from a hook to refuse the upload. */
-export async function runBeforeUpload(registry: PluginRegistry, bundle: ReplayBundle, identity: Identity, request: IncomingMessage) {
+export async function runBeforeUpload(registry: PluginRegistry, bundle: ReplayBundle, identity: Identity, requests: HookRequests) {
   let current = bundle;
   for (const hook of registry.hooks.beforeUpload) {
-    const replaced = await hook.value({ bundle: current, identity, request });
+    const replaced = await hook.value({ bundle: current, identity, ...requests });
     if (replaced) current = replaced;
   }
   return current;
@@ -97,12 +103,12 @@ export async function runAfterUpload(
   registry: PluginRegistry,
   bundle: ReplayBundle,
   identity: Identity,
-  request: IncomingMessage,
+  requests: HookRequests,
   url: string,
 ) {
   for (const hook of registry.hooks.afterUpload) {
     try {
-      await hook.value({ bundle, identity, request, url });
+      await hook.value({ bundle, identity, ...requests, url });
     } catch (error) {
       log(hook.plugin, 'afterUpload', error);
     }

@@ -19,7 +19,9 @@ import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compre
 import { appPath, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath, type HostConfig } from './base-path.ts';
 import { renderIndexHtml } from './index-page.ts';
 import { coreRoutes } from './api/index.ts';
+import { authenticatedPluginRoutes, publicPluginRoutes, runWebMiddleware } from './api/plugin-routes.ts';
 import { sendWebResponse, toWebRequest } from './http/node.ts';
+import { classifyError } from './http/errors.ts';
 import { RouteTable } from './http/route.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
@@ -302,8 +304,9 @@ export function createApp(options: AppOptions) {
   /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
   const sanitize = (bundle: ReplayBundle) =>
     withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle, redaction));
-  const routes = new RouteTable(
-    coreRoutes({
+  const answerPublicRoute = publicPluginRoutes(registry);
+  const routes = new RouteTable([
+    ...coreRoutes({
       deployment: {
         store: options.store,
         auth: options.auth,
@@ -324,7 +327,8 @@ export function createApp(options: AppOptions) {
       versions,
       inferable,
     }),
-  );
+    ...authenticatedPluginRoutes(registry),
+  ]);
   /** index.html as served at `base` (index-page.ts, shared with `replays build-static`). */
   const indexPage = (html: string, base: string) =>
     renderIndexHtml(html, {
@@ -347,6 +351,12 @@ export function createApp(options: AppOptions) {
   /** Everything past the health checks, inside the request's span. */
   async function serve(request: IncomingMessage, response: ServerResponse, raw: URL, path: string, base: string) {
     const routeContext = { base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) };
+    let web: Request | undefined;
+    const webRequest = () => (web ??= toWebRequest(request, response));
+    const answer = async (page: Response | undefined) => {
+      if (page) await sendWebResponse(response, page, request.method);
+      return Boolean(page);
+    };
     try {
       // Loopback + per-process token only (render-routes.ts); never reachable through the public path.
       if (path.startsWith('/internal/render/')) {
@@ -358,9 +368,22 @@ export function createApp(options: AppOptions) {
       if (requestPolicy.handled) return;
 
       if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return;
+      if (
+        registry.hooks.webPreAuth.length &&
+        (await answer(await runWebMiddleware(registry, 'pre-auth', { request: webRequest(), url: raw, path, base })))
+      )
+        return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
       if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
+        return;
+
+      if (
+        registry.routes.length &&
+        (await answer(
+          await answerPublicRoute({ request: webRequest(), url: raw, path, base, crossSiteAllowed: requestPolicy.csrfAllowed }),
+        ))
+      )
         return;
 
       // Public, credential-free CLI auth contract. It is separate from the normal viewer config and works before sign-in.
@@ -401,7 +424,10 @@ export function createApp(options: AppOptions) {
         return;
       }
       // Identity resolvers (api.identity) may add a name and avatar; never another id.
-      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, request);
+      const user = await resolveIdentity(endpointAuth ? confineToEndpoint(authenticated, path) : authenticated, {
+        request,
+        webRequest: webRequest(),
+      });
       identities.set(request, user);
       const denied = routeAllowed(registry, user, request.method ?? 'GET', path);
       if (denied) {
@@ -414,6 +440,11 @@ export function createApp(options: AppOptions) {
       }
       await options.application?.authorize(request, path, user);
       if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
+        return;
+      if (
+        registry.hooks.webPostAuth.length &&
+        (await answer(await runWebMiddleware(registry, 'post-auth', { request: webRequest(), url: raw, path, base, identity: user })))
+      )
         return;
       if (signIn && path === signIn.path) {
         if (request.method !== 'GET') {
@@ -431,14 +462,15 @@ export function createApp(options: AppOptions) {
       const route = request.method ? routes.match(request.method, path) : undefined;
       if (route) {
         const page = await route.route.handler({
-          request: toWebRequest(request, response),
+          request: webRequest(),
           url: raw,
           path,
           params: route.params,
           base,
           identity: user,
           trace: (attributes) => setRequestAttributes(request, attributes),
-          legacy: { request },
+          crossSiteAllowed: requestPolicy.csrfAllowed,
+          hooks: { request, webRequest: webRequest() },
         });
         await sendWebResponse(response, page, request.method);
         return;
@@ -522,11 +554,9 @@ export function createApp(options: AppOptions) {
         if (response.writableEnded) return;
       } else if (path.startsWith('/assets/')) {
         const file = resolve(options.clientDir, `.${path}`);
-        if (
-          file.startsWith(`${resolve(options.clientDir)}/`) &&
-          (await serveFile(request, response, file, 'public, max-age=31536000, immutable'))
-        )
-          return;
+        // why: assets/brand/* (favicon, manifest) keep fixed names for index.html, so they must revalidate.
+        const cache = path.startsWith('/assets/brand/') ? 'public, max-age=86400' : 'public, max-age=31536000, immutable';
+        if (file.startsWith(`${resolve(options.clientDir)}/`) && (await serveFile(request, response, file, cache))) return;
       }
 
       if (request.method === 'GET' && request.headers.accept?.includes('text/html')) {
@@ -573,25 +603,17 @@ export function createApp(options: AppOptions) {
 const errorHeaders = (error: unknown): Record<string, string> => (error instanceof HttpError ? { ...error.headers } : {});
 
 /**
- * The error response for a failed request: explicit statuses win; input validation (assert* throws plain
- * Errors), bad JSON and bad URLs are 400s with their message; anything else (fs, programming errors) is a
- * generic 500. The request's span gets the error's type only (tracing.ts), never its message.
+ * The error response for a failed request (http/errors.ts `classifyError`): 4xx answer with their message as text, 5xx with
+ * a JSON body (`StoredDataError`'s own message, else `internal error`). The span gets the error's type only, never its message.
  */
 function fail(request: IncomingMessage, response: ServerResponse, error: unknown) {
-  const { status: explicit, code, syscall } = (error ?? {}) as { status?: unknown; code?: unknown; syscall?: unknown };
-  const invalidInput =
-    error instanceof SyntaxError ||
-    code === 'ERR_INVALID_URL' ||
-    (error instanceof Error && error.constructor === Error && code === undefined && syscall === undefined);
-  const status = explicit !== undefined ? Number(explicit) : invalidInput ? 400 : 500;
+  const { status, message } = classifyError(error);
   recordError(error, status);
   const requestId = request.headers['x-request-id'] ?? request.headers['x-cloud-trace-context'] ?? '-';
   console.error(`request failed: ${request.method} ${request.url?.split('?')[0]} (request ${String(requestId)}, status ${status})`, error);
   const headers = errorHeaders(error);
   if (response.headersSent) response.end();
-  else if (error instanceof StoredDataError)
-    send(response, status, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8');
-  else if (status >= 500)
-    send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8', REVALIDATE, headers);
-  else send(response, status, (error as Error).message, 'text/plain; charset=utf-8', REVALIDATE, headers);
+  else if (status >= 500 || error instanceof StoredDataError)
+    send(response, status, JSON.stringify({ error: message }), 'application/json; charset=utf-8', REVALIDATE, headers);
+  else send(response, status, message, 'text/plain; charset=utf-8', REVALIDATE, headers);
 }

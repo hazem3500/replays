@@ -54,17 +54,25 @@ describe('agent credentials settings', () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(response({}, status));
     vi.stubGlobal('fetch', request);
     await render();
-    await vi.waitFor(() => expect(host.textContent).toContain(status === 404 ? 'not available' : 'Sign in'));
+    await vi.waitFor(() =>
+      expect(host.textContent).toContain(
+        status === 404
+          ? 'Credential creation isn’t enabled for this deployment.'
+          : 'Sign in through this deployment’s authentication provider',
+      ),
+    );
     expect(host.textContent).not.toContain('New credential');
     expect(request).toHaveBeenCalledOnce();
+    expect(request.mock.calls[0]?.[1]?.method).not.toBe('POST');
   });
 
   it('does not fetch credentials when the host disables issuance', async () => {
     const request = vi.fn<typeof fetch>().mockResolvedValue(response({ credentials: { enabled: false } }));
     vi.stubGlobal('fetch', request);
     await render();
-    await vi.waitFor(() => expect(host.textContent).toContain('not available'));
+    await vi.waitFor(() => expect(host.textContent).toContain('Credential creation isn’t enabled for this deployment.'));
     expect(request).toHaveBeenCalledOnce();
+    expect(request.mock.calls[0]?.[1]?.method).not.toBe('POST');
   });
 
   it('creates only selected scopes with a bounded expiry, shows the secret once, and revokes', async () => {
@@ -87,7 +95,8 @@ describe('agent credentials settings', () => {
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText: copy } });
     await render();
     await vi.waitFor(() => expect(host.textContent).toContain('New credential'));
-    expect(host.textContent).toContain('cannot use these credentials to record or upload');
+    expect(host.textContent).toContain('cannot record or upload');
+    expect(host.textContent).toContain('Host sign-in is still required.');
     await click(button('New credential'));
     const name = host.querySelector<HTMLInputElement>('input[placeholder="My development agent"]')!;
     await act(async () => {
@@ -131,6 +140,6 @@ describe('agent credentials settings', () => {
     await vi.waitFor(() => expect(host.textContent).toContain('could not be loaded'));
     expect(host.textContent).not.toContain('never-display-this');
     await click(button('Retry credential settings'));
-    await vi.waitFor(() => expect(host.textContent).toContain('not available'));
+    await vi.waitFor(() => expect(host.textContent).toContain('Credential creation isn’t enabled for this deployment.'));
   });
 });

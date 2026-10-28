@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { withBase } from '../src/server/base-path.ts';
 import { betaFromEnv } from '../src/server/beta.ts';
+import { BETA_FLAG_IDS, BETA_FLAGS, betaFromTokens, betaTokens } from '../src/shared/beta-flags.ts';
 import { loadSettings, readConfigFile } from '../src/server/config.ts';
+import { renderIndexHtml } from '../src/server/index-page.ts';
 import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -41,6 +43,31 @@ describe('beta flags', () => {
     const html = '<head><meta name="app-base" content="" /><meta name="app-beta" content="" /></head>';
     const branding = { name: 'x', tokensCss: '' };
     expect(withBase(html, '', branding)).toContain('<meta name="app-beta" content="" />');
-    expect(withBase(html, '', { ...branding, beta: 'editor' })).toContain('<meta name="app-beta" content="editor" />');
+    expect(withBase(html, '', { ...branding, beta: 'editor malleable' })).toContain('<meta name="app-beta" content="editor malleable" />');
+    expect(
+      renderIndexHtml(html, {
+        base: '',
+        branding: { name: 'x' },
+        beta: { editor: true, malleable: false },
+      }),
+    ).toContain('<meta name="app-beta" content="editor" />');
+  });
+
+  it('parse every flag in the shared registry, and the page reads back exactly what the server allowed', () => {
+    for (const flag of BETA_FLAGS) {
+      const fromEnv = betaFromEnv({ [flag.env]: 'true' });
+      expect(
+        Object.entries(fromEnv)
+          .filter(([, on]) => on)
+          .map(([id]) => id),
+      ).toEqual([flag.id]);
+      expect(betaFromEnv({}, { [flag.configKey]: true })[flag.id]).toBe(true);
+      expect(() => betaFromEnv({}, { [flag.configKey]: 'yes' })).toThrow(new RegExp(`beta\\.${flag.configKey} must be true or false`));
+      const html = renderIndexHtml('<meta name="app-beta" content="" />', { base: '', branding: { name: 'x' }, beta: fromEnv });
+      const content = /content="([^"]*)"/.exec(html)?.[1];
+      expect(content).toBe(betaTokens(fromEnv));
+      const readBack = betaFromTokens(content);
+      for (const id of BETA_FLAG_IDS) expect(readBack[id]).toBe(fromEnv[id]);
+    }
   });
 });
