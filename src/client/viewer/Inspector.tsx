@@ -37,12 +37,12 @@ import { TimingBar } from './TimingBar.tsx';
 import './diagnostic-timing.css';
 import { validDuration, type WaterfallRow } from './waterfall.ts';
 import { TrackList, SeekTime, HEADER_HEIGHT, TRACK_GAP, TRAILING_GAP, prefersReducedMotion, scrollListTo } from './TrackList.tsx';
-export { edgeVelocity } from './TrackList.tsx';
-import { PerformanceDiagnostics } from './Performance.tsx';
 import { resolveSlot } from '../plugins/registry.ts';
 import { DockPanel, InspectorDock } from './InspectorDock.tsx';
 import { inspectorTabItems } from './inspector-tabs.ts';
 import { consoleBadge, networkBadge, performanceBadge } from './tab-badges.ts';
+export { edgeVelocity } from './TrackList.tsx';
+import { PerformanceDiagnostics } from './Performance.tsx';
 import { buildPerformance } from './performance.ts';
 
 export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';

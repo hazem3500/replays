@@ -11,6 +11,7 @@ import { shortcutLabel } from '../shortcuts.ts';
 import type { InspectorTabItem } from './inspector-tabs.ts';
 import { PanelPending } from './PanelPending.tsx';
 import { noteTabSwitch } from './stagger.ts';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the dock's styles load with the lazy inspector chunk, not with every page.
 import './inspector-dock.css';
 
 const STRINGS = {
@@ -188,7 +189,7 @@ export function InspectorDock({
       value={tab}
       onValueChange={(next) => select(String(next))}
       className="inspector gap-0"
-      data-collapsed={fold?.collapsed || undefined}
+      data-collapsed={fold?.collapsed ? '' : undefined}
       render={<section ref={dock} aria-label={STRINGS.region} />}
     >
       <div ref={row} className="inspector-tabs" data-slot="viewer.inspector.tabs" data-icon-tabs={iconOnly || undefined}>
