@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/hazem3500/replays/docs/formats/replay-summary.schema.json",
   "title": "Replay summary",
-  "description": "What the index lists for one replay without loading its bundle: the `<id>/meta.json` sidecar and each item of `GET /api/replays`. The server derives it from `replay.json` (rebuilt when `summaryVersion` is older), then adds per request what is not stored: `kept`, `expiresAt`, an inferred `purpose`, people's avatars. `thumbhash` is the one stored field not derived from the bundle: the server sets it once it has rendered the poster. Readers must ignore fields they do not know. Source of truth: src/shared/replay.ts (ReplaySummary).",
+  "description": "What the index lists for one replay without loading its bundle: the `<id>/meta.json` sidecar and each item of `GET /api/replays`. The server derives it from `replay.json` (rebuilt when `summaryVersion` is older), then adds per request what is not stored: `kept`, `expiresAt`, an inferred `profile`, people's avatars. `thumbhash` is the one stored field not derived from the bundle: the server sets it once it has rendered the poster. Readers must ignore fields they do not know. Source of truth: src/shared/replay.ts (ReplaySummary).",
   "type": "object",
   "required": ["id", "title", "url", "host", "capturedAt", "duration", "steps", "consoleErrors", "failedRequests", "source"],
   "properties": {
@@ -57,8 +57,18 @@
       "required": ["suiteId", "runId"],
       "properties": { "suiteId": { "type": "string" }, "runId": { "type": "string" } }
     },
-    "purpose": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" },
-    "purposeInferred": { "type": "boolean" },
+    "profile": {
+      "description": "Why it was recorded: `meta.profile`, else what a plugin infers.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+    },
+    "profileInferred": { "type": "boolean" },
+    "purpose": {
+      "description": "Deprecated alias of `profile`, always equal to it.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+    },
+    "purposeInferred": { "description": "Deprecated alias of `profileInferred`.", "type": "boolean" },
     "ext": {
       "type": "object",
       "additionalProperties": {
