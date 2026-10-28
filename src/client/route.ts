@@ -65,6 +65,20 @@ export function indexHref() {
   return `${appBase()}/`;
 }
 
+/** One search parameter of the current page (a deep link such as `?settings=labs`), or null. */
+export function currentSearchParam(name: string) {
+  if (typeof window === 'undefined') return null;
+  return new URLSearchParams(window.location.search).get(name);
+}
+
+/** Drops one search parameter from the current URL in place: no navigation, no new history entry. */
+export function dropSearchParam(name: string) {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has(name)) return;
+  url.searchParams.delete(name);
+  window.history.replaceState(window.history.state, '', url);
+}
+
 const INDEX_SEARCH_KEY = `${PRODUCT_SLUG}-index-search`;
 
 /** The index stores its current filters and sort so "back to Replays" links return to the same list. */

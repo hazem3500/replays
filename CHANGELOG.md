@@ -193,6 +193,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- Settings is a fixed-size dialog with a section sidebar (a full-screen section list with Back on phones): CLI & agents,
+  Keyboard, Labs, Plugins (when a plugin registers a setting) and About. The colour theme lives only in the top bar.
+- Beta flags have one model shared by the server and the page (`src/shared/beta-flags.ts`): the server allows a flag
+  (`REPLAYS_BETA_*` or `beta.*`, parsed as before) and each person can opt out under Settings › Labs, saved in the browser.
 - User plugins register in the viewer registry as `user:<id>` (keys `plugin:user:<id>:<contribution>`) instead of `user-<id>`, so a
   user plugin can no longer collide with, replace or remove the registrations of a host plugin named `user-<something>`.
 - `GET /api/config` also lists the loaded `plugins`. `src/server/main.ts` is now a thin wrapper around `startServer()`.

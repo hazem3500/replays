@@ -29,7 +29,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 188,
+      "brotli": 226,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -38,7 +38,7 @@
       "gzip": 6742
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82506,
+      "raw": 82503,
       "brotli": 23404,
       "gzip": 26552
     },
@@ -63,14 +63,14 @@
       "gzip": 49702
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 237293,
-      "brotli": 34316,
-      "gzip": 41146
+      "raw": 248879,
+      "brotli": 35643,
+      "gzip": 42798
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 703087,
-      "brotli": 184414,
-      "gzip": 227113
+      "raw": 713951,
+      "brotli": 187440,
+      "gzip": 231040
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -83,9 +83,9 @@
       "gzip": 25654
     },
     "dist/client/assets/performance-HASH.js": {
-      "raw": 4242,
-      "brotli": 1629,
-      "gzip": 1818
+      "raw": 21000,
+      "brotli": 7176,
+      "gzip": 7952
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -98,9 +98,9 @@
       "gzip": 95021
     },
     "dist/client/assets/queries-HASH.js": {
-      "raw": 32628,
-      "brotli": 9343,
-      "gzip": 10261
+      "raw": 35581,
+      "brotli": 10326,
+      "gzip": 11427
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225484,
@@ -164,7 +164,7 @@
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
-      "brotli": 434,
+      "brotli": 428,
       "gzip": 512
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
@@ -174,7 +174,7 @@
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
-      "brotli": 16340,
+      "brotli": 16324,
       "gzip": 18876
     },
     "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
@@ -212,10 +212,10 @@
       "brotli": 2,
       "gzip": 21
     },
-    "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
-      "raw": 27823,
-      "brotli": 7041,
-      "gzip": 8064
+    "dist/lib/chunks/index.ts-7a66decb29dc.mjs": {
+      "raw": 28475,
+      "gzip": 8376,
+      "brotli": 7278
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
@@ -249,13 +249,13 @@
     },
     "dist/lib/config.mjs": {
       "raw": 348,
-      "brotli": 146,
-      "gzip": 169
+      "brotli": 140,
+      "gzip": 168
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
-      "brotli": 438,
-      "gzip": 515
+      "brotli": 436,
+      "gzip": 513
     },
     "dist/lib/plugin.mjs": {
       "raw": 743,
@@ -348,9 +348,9 @@
       "gzip": 4814
     },
     "initial/index.html/css": {
-      "raw": 239214,
-      "brotli": 35133,
-      "gzip": 42090
+      "raw": 250762,
+      "brotli": 36444,
+      "gzip": 43724
     },
     "initial/index.html/js": {
       "raw": 1270898,
@@ -530,16 +530,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/chunks/index.ts-67a29d5237e2.mjs",
-      "cap": {
-        "raw": 27823,
-        "gzip": 8064,
-        "brotli": 7041
-      },
-      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs",
       "cap": {
         "raw": 18258,
@@ -588,16 +578,6 @@
       },
       "reason": "The published viewer plugin API now exports the slot registry, slot names and descriptor contracts.",
       "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 703087,
-        "gzip": 227115,
-        "brotli": 184414
-      },
-      "reason": "The windowed feed virtualizer and the card and list motion system join the eager index graph; the viewer chunk shrank by 4 KB raw as shared feed code moved into main.",
-      "pr": "https://github.com/hazem3500/replays/pull/99"
     },
     {
       "file": "initial/index.html/js",
@@ -688,36 +668,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/performance-HASH.js",
-      "cap": {
-        "raw": 4242,
-        "gzip": 1870,
-        "brotli": 1629
-      },
-      "reason": "Highlight and caption exports added to the shared main chunk change the import bindings of this small chunk by 4 bytes gzip and 5 bytes Brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 237293,
-        "gzip": 41146,
-        "brotli": 34316
-      },
-      "reason": "The filters popover, choice panes, active-filter tokens and first-run state ship three new reviewed stylesheets in the app stylesheet, about 5.5 KB raw over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/101"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 239214,
-        "gzip": 42090,
-        "brotli": 35133
-      },
-      "reason": "The initial index style group carries the same filters and first-run stylesheets added to the app stylesheet.",
-      "pr": "https://github.com/hazem3500/replays/pull/101"
-    },
-    {
       "file": "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs",
       "cap": {
         "raw": 4485,
@@ -756,6 +706,74 @@
       },
       "reason": "The shared server chunk now also holds the upload-endpoint helpers (src/server/api/upload-endpoints.ts) and HttpError, so its source identity changes; measured against main's context.schema.json-87737fe6e2f1: +3368 B raw, +449 B gzip, +724 B brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 248879,
+        "gzip": 42798,
+        "brotli": 35643
+      },
+      "reason": "The Settings dialog and the shared EmptyState join the app stylesheet (about 16 KB raw over main): sidebar and phone-sheet layouts, rows, command fields and switches.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 250762,
+        "gzip": 43724,
+        "brotli": 36444
+      },
+      "reason": "The initial index style group carries the same Settings and EmptyState stylesheets added to the app stylesheet.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 713951,
+        "gzip": 231040,
+        "brotli": 187440
+      },
+      "reason": "The sectioned Settings dialog (sidebar, phone sheet, CLI, Keyboard, Labs, Plugins and About sections), the EmptyState primitive and the shared beta-flag registry join the eager index graph, about 5 KB raw over main.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/performance-HASH.js",
+      "cap": {
+        "raw": 21000,
+        "gzip": 7952,
+        "brotli": 7176
+      },
+      "reason": "Settings no longer uses Base UI Tabs, so the lazy Inspector and comparison chunks share Tabs through this chunk instead of the eager main chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/queries-HASH.js",
+      "cap": {
+        "raw": 35581,
+        "gzip": 11427,
+        "brotli": 10326
+      },
+      "reason": "The client config module now reads the server's allowed beta flags and the person's Labs choices (labs.ts and the shared beta-flag registry), and the one config query lives here.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-7a66decb29dc.mjs",
+      "cap": {
+        "raw": 28475,
+        "gzip": 8376,
+        "brotli": 7278
+      },
+      "reason": "The shared library chunk that holds plugin contracts now also carries the beta-flag registry the server parses flags from; it replaces index.ts-67a29d5237e2.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 226
+      },
+      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
     }
   ]
 }

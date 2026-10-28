@@ -1,0 +1,199 @@
+/*
+ * EmptyState (components/ui/empty-state.tsx): one look for every empty, error and offline state.
+ * Unlayered, so the action sizing wins over the Button's utility classes.
+ * region: centred in a page or large area · compact: left-aligned in a panel · banner: one line above content still shown.
+ * Motion: a single entrance (opacity + 4 px rise, 180 ms ease-out) on mount; none under reduced motion.
+ */
+:root {
+  --empty-state-gap: 12px;
+  --empty-state-text-gap: 4px;
+  --empty-state-pad-region: 48px 24px;
+  --empty-state-pad-compact: 14px 14px 16px;
+  --empty-state-pad-banner: 8px 8px 8px 12px;
+  --empty-state-title-size: 14px;
+  --empty-state-title-line: 20px;
+  --empty-state-title-weight: 600;
+  --empty-state-title-color: var(--text);
+  --empty-state-body-size: 13px;
+  --empty-state-body-line: 19px;
+  --empty-state-body-color: var(--text-secondary);
+  --empty-state-body-measure: 48ch;
+  --empty-state-icon-tile: 40px;
+  --empty-state-icon-size: 20px;
+  --empty-state-icon-size-compact: 16px;
+  --empty-state-icon-radius: 10px;
+  --empty-state-icon-color: var(--text-tertiary);
+  --empty-state-icon-bg: var(--surface-raised);
+  --empty-state-icon-border: var(--line);
+  --empty-state-error-color: var(--danger);
+  --empty-state-error-bg: var(--danger-tint);
+  --empty-state-error-border: var(--danger-soft);
+  --empty-state-offline-color: var(--warning);
+  --empty-state-banner-bg: var(--surface-raised);
+  --empty-state-banner-border: var(--line);
+  --empty-state-banner-radius: 8px;
+  --empty-state-banner-margin-block: 12px;
+  --empty-state-banner-margin-inline: 0px;
+  --empty-state-action-gap: 8px;
+  --empty-state-action-height: 32px;
+  --empty-state-action-height-compact: 28px;
+  --empty-state-action-height-touch: 44px;
+  --empty-state-action-pad: 12px;
+  --empty-state-action-size: 13px;
+  --empty-state-chip-gap: 6px;
+  --empty-state-chip-pad: 2px 8px;
+  --empty-state-chip-radius: 999px;
+  --empty-state-chip-size: 12px;
+  --empty-state-chip-bg: var(--surface-hover);
+  --empty-state-chip-color: var(--text-secondary);
+  --empty-state-chip-line: 18px;
+  --empty-state-compact-column-gap: 10px;
+  --empty-state-compact-row-gap: 8px;
+  --empty-state-banner-column-gap: 8px;
+  --empty-state-banner-row-gap: 4px;
+  --empty-state-banner-text-min: 24ch;
+  --empty-state-enter-duration: 180ms;
+  --empty-state-enter-rise: 4px;
+  --empty-state-enter-ease: var(--ease-out);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--empty-state-gap);
+  padding: var(--empty-state-pad-region);
+  text-align: center;
+  color: var(--empty-state-body-color);
+}
+
+.empty-state-text {
+  display: flex;
+  flex-direction: column;
+  align-items: inherit;
+  gap: var(--empty-state-text-gap);
+  min-width: 0;
+}
+
+.empty-state-title {
+  margin: 0;
+  color: var(--empty-state-title-color);
+  font-size: var(--empty-state-title-size);
+  font-weight: var(--empty-state-title-weight);
+  line-height: var(--empty-state-title-line);
+  text-wrap: balance;
+}
+
+.empty-state-body {
+  max-width: var(--empty-state-body-measure);
+  margin: 0;
+  color: var(--empty-state-body-color);
+  font-size: var(--empty-state-body-size);
+  line-height: var(--empty-state-body-line);
+  text-wrap: pretty;
+}
+
+
+.empty-state-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--empty-state-icon-tile);
+  height: var(--empty-state-icon-tile);
+  border: 1px solid var(--empty-state-icon-border);
+  border-radius: var(--empty-state-icon-radius);
+  background: var(--empty-state-icon-bg);
+  color: var(--empty-state-icon-color);
+}
+.empty-state-icon svg { width: var(--empty-state-icon-size); height: var(--empty-state-icon-size); }
+.empty-state[data-tone='error'] .empty-state-icon {
+  border-color: var(--empty-state-error-border);
+  background: var(--empty-state-error-bg);
+  color: var(--empty-state-error-color);
+}
+.empty-state[data-tone='offline'] .empty-state-icon { color: var(--empty-state-offline-color); }
+
+.empty-state[data-variant='region'] 
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--empty-state-action-gap);
+}
+.empty-state .empty-state-action {
+  height: var(--empty-state-action-height);
+  padding-inline: var(--empty-state-action-pad);
+  font-size: var(--empty-state-action-size);
+}
+
+/* Panels: icon beside the text, everything on the left edge, tighter actions. */
+.empty-state[data-variant='compact'] {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--empty-state-compact-column-gap);
+  row-gap: var(--empty-state-compact-row-gap);
+  padding: var(--empty-state-pad-compact);
+  text-align: left;
+}
+.empty-state[data-variant='compact'] .empty-state-text { align-items: flex-start; grid-column: -2; }
+.empty-state[data-variant='compact'] .empty-state-icon,
+.empty-state[data-variant='banner'] .empty-state-icon {
+  width: auto;
+  height: var(--empty-state-title-line);
+  border: 0;
+  background: none;
+}
+.empty-state[data-variant='compact'] .empty-state-icon svg,
+.empty-state[data-variant='banner'] .empty-state-icon svg {
+  width: var(--empty-state-icon-size-compact);
+  height: var(--empty-state-icon-size-compact);
+}
+.empty-state[data-variant='compact'] .empty-state[data-variant='compact'] .empty-state-actions { grid-column: -2; justify-content: flex-start; }
+.empty-state[data-variant='compact']:not(:has(> .empty-state-icon)) { grid-template-columns: minmax(0, 1fr); }
+.empty-state[data-variant='compact'] .empty-state-action,
+.empty-state[data-variant='banner'] .empty-state-action { height: var(--empty-state-action-height-compact); }
+
+/* Above content that is still shown (saved results while offline): one quiet line. */
+.empty-state[data-variant='banner'] {
+  flex-direction: row;
+  flex-wrap: wrap;
+  column-gap: var(--empty-state-banner-column-gap);
+  row-gap: var(--empty-state-banner-row-gap);
+  padding: var(--empty-state-pad-banner);
+  border: 1px solid var(--empty-state-banner-border);
+  /* why: read --gutter here, not in :root (it would resolve there, before a page sets it), so the banner shares the rows' edge. */
+  margin: var(--empty-state-banner-margin-block) var(--gutter, var(--empty-state-banner-margin-inline));
+  border-radius: var(--empty-state-banner-radius);
+  background: var(--empty-state-banner-bg);
+  text-align: left;
+}
+.empty-state[data-variant='banner'] .empty-state-text {
+  flex: 1 1 var(--empty-state-banner-text-min);
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--empty-state-banner-column-gap);
+}
+.empty-state[data-variant='banner'] .empty-state-title { font-size: var(--empty-state-body-size); }
+.empty-state[data-variant='banner'] .empty-state-body { max-width: none; }
+.empty-state[data-variant='banner'] .empty-state-actions { margin-left: auto; }
+/* why: when the text wraps (phones) the icon and action stay on the title's line; one line still centres. */
+.empty-state[data-variant='banner'] { align-items: flex-start; }
+.empty-state[data-variant='banner'] .empty-state-icon { height: var(--empty-state-action-height-compact); }
+.empty-state[data-variant='banner'] .empty-state-text {
+  padding-block: calc((var(--empty-state-action-height-compact) - var(--empty-state-title-line)) / 2);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .empty-state { animation: empty-state-in var(--empty-state-enter-duration) var(--empty-state-enter-ease) both; }
+}
+@keyframes empty-state-in {
+  from { opacity: 0; translate: 0 var(--empty-state-enter-rise); }
+}
+
+@media (pointer: coarse) {
+  .empty-state .empty-state-action,
+  .empty-state[data-variant='compact'] .empty-state-action,
+  .empty-state[data-variant='banner'] .empty-state-action { height: var(--empty-state-action-height-touch); }
+}
