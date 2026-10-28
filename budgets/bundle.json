@@ -10,7 +10,7 @@
     "dist/cli/cli.mjs": {
       "raw": 416314,
       "gzip": 106513,
-      "brotli": 87082
+      "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -865,16 +865,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 416314,
-        "gzip": 106513,
-        "brotli": 87082
-      },
-      "reason": "The CLI bundles the server, which gains the replay meta, delete and restore routes, their store paths and zod/mini body schemas; measured in CI against fresh main: raw 408843 to 416314, gzip 104933 to 106513, brotli 85806 to 87082 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/93"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
       "cap": {
         "raw": 298271,
@@ -901,7 +891,7 @@
         "gzip": 2355,
         "brotli": 2119
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -980,7 +970,7 @@
         "raw": 49654,
         "gzip": 18147
       },
-      "reason": "Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1022,6 +1012,16 @@
       },
       "reason": "Measured in CI against fresh main: raw 11858 to 11905 bytes with this change. Then: Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 416314,
+        "gzip": 106513,
+        "brotli": 87966
+      },
+      "reason": "The CLI bundles the server, which gained the replay meta, delete and restore routes in #93 (raw 416314, gzip 106513 as measured there); with #108 merged on top, Brotli measures 87095 on main against #93s 87082 cap, so this replaces that entry with a Brotli cap measured on main.",
+      "pr": "https://github.com/hazem3500/replays/pull/112"
     }
   ]
 }
