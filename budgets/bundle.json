@@ -10,7 +10,7 @@
     "dist/cli/cli.mjs": {
       "raw": 416314,
       "gzip": 106513,
-      "brotli": 87082
+      "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -59,13 +59,13 @@
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2420,
-      "gzip": 1258,
+      "gzip": 1255,
       "brotli": 1147
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
-      "gzip": 2355,
-      "brotli": 2119
+      "gzip": 2353,
+      "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -74,13 +74,18 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38116,
-      "gzip": 13522,
-      "brotli": 12018
+      "gzip": 13521,
+      "brotli": 12011
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99443,
       "gzip": 33179,
       "brotli": 29443
+    },
+    "dist/client/assets/defaults-HASH.js": {
+      "raw": 169,
+      "gzip": 150,
+      "brotli": 116
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
@@ -103,9 +108,9 @@
       "brotli": 5643
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 359595,
-      "gzip": 119579,
-      "brotli": 102670
+      "raw": 359596,
+      "gzip": 119576,
+      "brotli": 102540
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -123,9 +128,9 @@
       "brotli": 34672
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 846262,
-      "gzip": 264114,
-      "brotli": 220201
+      "raw": 846303,
+      "gzip": 264128,
+      "brotli": 220178
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -178,9 +183,9 @@
       "brotli": 2682
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 967,
-      "gzip": 606,
-      "brotli": 546
+      "raw": 1059,
+      "gzip": 649,
+      "brotli": 592
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 939,
@@ -198,14 +203,14 @@
       "brotli": 456
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1097,
-      "gzip": 652,
-      "brotli": 594
+      "raw": 1164,
+      "gzip": 705,
+      "brotli": 637
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20252,
-      "gzip": 8282,
-      "brotli": 7125
+      "raw": 20417,
+      "gzip": 8363,
+      "brotli": 7175
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -218,14 +223,14 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 49654,
-      "gzip": 18147,
-      "brotli": 15400
+      "raw": 50852,
+      "gzip": 18507,
+      "brotli": 16623
     },
     "dist/client/index.html": {
       "raw": 12263,
-      "gzip": 4259,
-      "brotli": 3548
+      "gzip": 4254,
+      "brotli": 3546
     },
     "dist/client/render.html": {
       "raw": 1294,
@@ -660,14 +665,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "brotli": 16623
-      },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/lib/chunks/index.ts-7a66decb29dc.mjs",
       "cap": {
         "raw": 28475,
@@ -865,16 +862,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 416314,
-        "gzip": 106513,
-        "brotli": 87082
-      },
-      "reason": "The CLI bundles the server, which gains the replay meta, delete and restore routes, their store paths and zod/mini body schemas; measured in CI against fresh main: raw 408843 to 416314, gzip 104933 to 106513, brotli 85806 to 87082 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/93"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
       "cap": {
         "raw": 298271,
@@ -895,11 +882,21 @@
       "pr": "https://github.com/hazem3500/replays/pull/97"
     },
     {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 416314,
+        "gzip": 106513,
+        "brotli": 87966
+      },
+      "reason": "The CLI bundles the server, which gained the replay meta, delete and restore routes in #93 (raw 416314, gzip 106513 as measured there); with #108 merged on top, Brotli measures 87095 on main against #93s 87082 cap, so this replaces that entry with a Brotli cap measured on main.",
+      "pr": "https://github.com/hazem3500/replays/pull/112"
+    },
+    {
       "file": "dist/client/assets/ComparePicker-HASH.js",
       "cap": {
         "raw": 5232,
-        "gzip": 2355,
-        "brotli": 2119
+        "gzip": 2353,
+        "brotli": 2118
       },
       "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -918,8 +915,8 @@
       "file": "dist/client/assets/CompareViewer-HASH.js",
       "cap": {
         "raw": 38116,
-        "gzip": 13522,
-        "brotli": 12018
+        "gzip": 13521,
+        "brotli": 12011
       },
       "reason": "Lazy compare mode of the viewer: shared clock, tile stage with Single/Grid/Spotlight glide, scope switch and performance comparison.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -927,9 +924,9 @@
     {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
-        "raw": 359595,
-        "gzip": 119579,
-        "brotli": 102670
+        "raw": 359596,
+        "gzip": 119576,
+        "brotli": 102540
       },
       "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged. Then: Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -947,9 +944,9 @@
     {
       "file": "dist/client/assets/ReplayComparePage-HASH.js",
       "cap": {
-        "raw": 967,
-        "gzip": 606,
-        "brotli": 546
+        "raw": 1059,
+        "gzip": 649,
+        "brotli": 592
       },
       "reason": "Lazy /r/<id>?with= page glue: reads and writes the compare state in the viewer URL.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -957,9 +954,9 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "raw": 1097,
-        "gzip": 652,
-        "brotli": 594
+        "raw": 1164,
+        "gzip": 705,
+        "brotli": 637
       },
       "reason": "Lazy suite glue: a suite with two or more recordings opens the viewer comparing its runs.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -967,9 +964,9 @@
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
-        "raw": 20252,
-        "gzip": 8282,
-        "brotli": 7125
+        "raw": 20417,
+        "gzip": 8363,
+        "brotli": 7175
       },
       "reason": "Measured in CI against fresh main: raw 18081 to 18096 bytes with this change. Then: Suite workspace routes runs into the compare mode (sidebar moves focus, lazy SuiteCompare entry).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -977,10 +974,11 @@
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 49654,
-        "gzip": 18147
+        "raw": 50852,
+        "gzip": 18507,
+        "brotli": 16623
       },
-      "reason": "Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -989,6 +987,16 @@
         "raw": 99443,
         "gzip": 33179,
         "brotli": 29443
+      },
+      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
+      "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/defaults-HASH.js",
+      "cap": {
+        "raw": 169,
+        "gzip": 150,
+        "brotli": 116
       },
       "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
@@ -1017,8 +1025,8 @@
       "file": "dist/client/index.html",
       "cap": {
         "raw": 12263,
-        "gzip": 4259,
-        "brotli": 3548
+        "gzip": 4254,
+        "brotli": 3546
       },
       "reason": "Measured in CI against fresh main: raw 11858 to 11905 bytes with this change. Then: Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
