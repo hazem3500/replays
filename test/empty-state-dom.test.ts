@@ -215,10 +215,10 @@ describe('index empty states', () => {
     expect(indexEmptyState({ kind: 'offline', connection: true, retry: retrying })).toMatchObject({ variant: 'banner', title: 'Offline' });
   });
 
-  it('names the purpose and its retention on an empty purpose tab', () => {
+  it('names the profile and its retention on an empty profile tab', () => {
     const props = indexEmptyState({
-      kind: 'purpose',
-      purpose: { id: 'walkthrough', label: 'Walkthroughs', order: 3, retentionDays: 30 },
+      kind: 'profile',
+      profile: { id: 'walkthrough', label: 'Walkthroughs', order: 3, retentionDays: 30 },
       onShowAll: () => {},
     });
     expect([props.title, props.body]).toEqual([
@@ -227,9 +227,9 @@ describe('index empty states', () => {
     ]);
   });
 
-  it('leads an empty purpose tab with upload when the dialog is available', () => {
-    const purpose = { id: 'walkthrough', label: 'Walkthroughs', order: 3 };
-    const actions = indexEmptyState({ kind: 'purpose', purpose, onShowAll: () => {} }, () => {}).actions ?? [];
+  it('leads an empty profile tab with upload when the dialog is available', () => {
+    const profile = { id: 'walkthrough', label: 'Walkthroughs', order: 3 };
+    const actions = indexEmptyState({ kind: 'profile', profile, onShowAll: () => {} }, () => {}).actions ?? [];
     expect(actions.map((action) => [action.id, Boolean(action.primary)])).toEqual([
       ['upload', true],
       ['show-all', false],

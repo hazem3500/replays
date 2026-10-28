@@ -13,7 +13,7 @@ Implementation status is tracked by the architecture roadmap and linked pull req
 | IAP JWT authentication, domain and service-account allowlists | `/plugins/iap`, selected with `auth: 'iap'`; explicitly select `none` only in the local profile | Missing, forged, expired, wrong-issuer/audience and unlisted-account assertions fail; staff and listed runner accounts succeed |
 | Browser sign-in redirect | Adapter sign-in metadata plus host `signIn` configuration and generic failed-fetch recovery; API requests retain machine-readable refusals | Preserve query/deep links; avoid redirect loops; never redirect uploads or renderer calls to a sign-in page |
 | GCS persistence | `/plugins/gcs`, a private bucket/prefix and workload credentials supplied through the environment | Run exported storage contracts, including create-only and conditional-write conflicts |
-| Purposes, purpose retention, initial viewer position and poster moment | Config `purposes`, or `api.purpose` for inference; `api.retention` for other rules | Preserve explicit versus inferred purposes, keep markers and per-purpose expiry |
+| Profiles, profile retention, initial viewer position and poster moment | Config `profiles`, or `api.profile` for inference; `api.retention` for other rules | Preserve explicit versus inferred profiles, keep markers and per-profile expiry |
 | People, identity enrichment and “For you” | `api.people`, `api.identity`, core replay/suite people and a browser index section | Check roles, handles, signed-in email and suite people after conversion |
 | Product context, flag chips and admin links | A context adapter/schema plus `registerContextSection` for bespoke rendering | Preserve the typed values under `context.fields`; validate producer fixtures |
 | Chat, support and VCS provenance | Source providers with `icon`, `noun` and bounded `attrs` | Preserve references, resolve only accepted hosts/paths and retain accessible labels |
@@ -49,7 +49,7 @@ api.requestPolicy({
 
 This enables a narrow preflight/CORS and CSRF exception; it does not authenticate the upload or give a caller access to any other endpoint. Keep allowed origins in host configuration. Do not add a global CORS header or disable same-origin checks globally.
 
-The host plugin can assign the staff intake's default purpose and uploader person. Preserve explicit purposes and existing people. Trusted identity comes from the auth adapter, not a producer-supplied email.
+The host plugin can assign the staff intake's default profile and uploader person. Preserve explicit profiles and existing people. Trusted identity comes from the auth adapter, not a producer-supplied email.
 
 The pending customer-forwarding branch is a separate trust boundary. If adopted, register a backend-only upload alias and use the same core upload pipeline:
 
@@ -60,9 +60,9 @@ api.uploadEndpoint({
 });
 ```
 
-The host owns authorization and normalization: the forwarder must be allowed by IAP **and** the customer-forwarder policy, and it must be refused on every other authenticated application route. Enforce that restriction in the verified auth adapter before built-in plugin hooks can answer; a later host post-auth hook alone does not cover every route. The alias gets no browser CORS exception. Generate the replay id server-side; set the human source and support purpose; discard producer people, privacy hints and suite attachment; replace context with the bounded, validated customer context. The result still passes normal validation, sanitization, upload hooks and storage. Do not copy the downstream HTTP handler into the host.
+The host owns authorization and normalization: the forwarder must be allowed by IAP **and** the customer-forwarder policy, and it must be refused on every other authenticated application route. Enforce that restriction in the verified auth adapter before built-in plugin hooks can answer; a later host post-auth hook alone does not cover every route. The alias gets no browser CORS exception. Generate the replay id server-side; set the human source and support profile; discard producer people, privacy hints and suite attachment; replace context with the bounded, validated customer context. The result still passes normal validation, sanitization, upload hooks and storage. Do not copy the downstream HTTP handler into the host.
 
-The adapter can confine the forwarder declaratively: return its identity with `capabilities: { routes: [{ method: 'POST', path: '/api/customer-recordings' }] }`. The core then refuses every other route right after authentication. The path is canonical, so one entry covers every base path and gateway prefix. An existing wrapper that returns `undefined` for other paths keeps working unchanged. Server-chosen ids, the forced purpose and source, and dropped people or suite data can live in the endpoint's `prepare` (raw body) or `normalize` (validated bundle); both run before the privacy pass ([custom upload endpoints](extension-api.md#custom-upload-endpoints)).
+The adapter can confine the forwarder declaratively: return its identity with `capabilities: { routes: [{ method: 'POST', path: '/api/customer-recordings' }] }`. The core then refuses every other route right after authentication. The path is canonical, so one entry covers every base path and gateway prefix. An existing wrapper that returns `undefined` for other paths keeps working unchanged. Server-chosen ids, the forced profile and source, and dropped people or suite data can live in the endpoint's `prepare` (raw body) or `normalize` (validated bundle); both run before the privacy pass ([custom upload endpoints](extension-api.md#custom-upload-endpoints)).
 
 Test the forwarder's denied read/list/export/other-upload paths as well as successful forwarding. Retain staff upload and same-origin behavior. The pending branch's exact accepted envelope, metadata limits and service-account permissions need a final comparison when it lands.
 
@@ -80,12 +80,29 @@ The refreshed downstream pins Node 22.23.4; align the package's image and CI pat
 
 A pending monorepo reorganization changes host workspace/build wiring, not the extension contract. Its gateway and frontend should both depend on the same pinned package artifact. Check the final downstream workspace layout before preparing the later migration PR.
 
+### Renaming purposes to profiles
+
+Purposes are now called profiles. Nothing breaks on upgrade: every old name is a deprecated alias for at least two minor
+releases and 90 days ([the list](api-stability.md#deprecated-purpose-names)). Move over in this order, one PR each if that is easier:
+
+1. **Config.** Rename the `purposes` key to `profiles` and any `RETENTION_PURPOSE_<ID>_DAYS` variable to
+   `RETENTION_PROFILE_<ID>_DAYS`. The start-up log stops warning about them.
+2. **Plugins.** `api.purpose(...)` becomes `api.profile(...)`; type imports `PurposeConfig` / `PurposeDefinition` /
+   `PurposeInferInput` become `ProfileConfig` / `ProfileDefinition` / `ProfileInferInput`. A `posterAt` hook reads
+   `context.profile`. `normalize` and `prepare` hooks that force a purpose set `meta.profile` (setting `meta.purpose` still
+   works and is stored as `meta.profile`).
+3. **Producers and readers.** Pass `--profile` instead of `--purpose`, and `?profile=` instead of `?purpose=`. Code that reads
+   API summaries reads `profile`/`profileInferred`; code that reads `GET /api/config` reads `profiles`; code that reads the
+   bundle response reads `x-replay-profile`. Stored `replay.json` files keep `meta.purpose` and need no migration: the
+   server and viewer read it as the profile.
+4. **Links.** Saved index links with `?purpose=<id>` keep opening the same tab; new links use `?profile=`.
+
 ## Target host layout
 
 ```text
 host/
   package.json                 exact dependency and committed lockfile
-  replays.config.mjs           deployed auth/storage/theme/purposes/policy
+  replays.config.mjs           deployed auth/storage/theme/profiles/policy
   replays.local.config.mjs     explicit local fs/none profile
   context.schema.json
   src/server.mjs               startServer entry
@@ -106,8 +123,8 @@ Each step must be reviewable and reversible. Do not change the downstream in thi
 
 1. **Freeze the comparison.** Record the current downstream main SHA, deployed image and pending PRs. Inventory producers, routes, bucket prefixes, users and storage sidecars. Re-run this mapping if main advances.
 2. **Choose an immutable artifact.** Build a tarball from the tested upstream commit/tag and pin its content/checksum, or pin an exact published release when available. The package is currently private/unpublished; a registry version shown in examples is not proof that it exists. Commit the host lockfile.
-3. **Add the host layer beside the old app.** Start from `examples/host-app`: config, theme, purposes, people, source/context plugins and compiled browser entry. Use a distinct staging data prefix and explicit local profile. Compare the pages without replacing the live app.
-4. **Port producer normalization.** Exercise automated captures, human imports, review suites and staff browser uploads against the replacement. Verify default purposes, provenance, uploader identity, gzip/size/error behavior and duplicate replay handling. Preserve suite people during translation.
+3. **Add the host layer beside the old app.** Start from `examples/host-app`: config, theme, profiles, people, source/context plugins and compiled browser entry. Use a distinct staging data prefix and explicit local profile. Compare the pages without replacing the live app.
+4. **Port producer normalization.** Exercise automated captures, human imports, review suites and staff browser uploads against the replacement. Verify default profiles, provenance, uploader identity, gzip/size/error behavior and duplicate replay handling. Preserve suite people during translation.
 5. **Validate auth and routing.** Test the IAP allow/deny matrix, browser sign-in/deep links, health checks, forwarded hosts, CDN paths, gateway prefix rewriting and private renderer origin. Test allowed staff-origin preflight/upload and refused origins/methods/headers. Keep backend-only forwarders out of unrelated routes if customer intake is adopted.
 6. **Validate saved edits and rendering.** Disable edit writes while leaving saved edits active. Confirm PUT 403, GET/HEAD/304, viewer trim/cuts/effects and MP4 variant behavior. Posters, opening stills and hover previews continue to show the recording as captured. Compare pacing on real multi-navigation and user recordings.
 7. **Rehearse data conversion on a copy.** Snapshot the source. Run `replays migrate --dry-run`, then convert into an empty destination prefix using the same legacy translator and host config. Preserve replay ids, suites, people, comments, edits, keep markers, plugin data and the original server upload age used for retention. Do not substitute the producer-controlled recording timestamp for trusted upload age. Rebuild summaries from converted bundles and regenerate derived media if sanitization changes the underlying content. Source `session.mp4` is dropped by default because the sanitizer cannot clean its pixels; the public migration API can opt into `sourceVideo: 'copy-if-unchanged'` only for an unchanged bundle after review. Never perform the first rehearsal against the live destination.
@@ -121,7 +138,7 @@ Rollback uses the old image **and its matching source data snapshot/prefix**. Be
 
 ## Conversion commands and remaining boundaries
 
-Adapt [`examples/migrate/translate.mjs`](../examples/migrate/translate.mjs) to the current producer fixtures. The translation must be idempotent and must retain the purposes/people supported by the target artifact.
+Adapt [`examples/migrate/translate.mjs`](../examples/migrate/translate.mjs) to the current producer fixtures. The translation must be idempotent and must retain the profiles/people supported by the target artifact.
 
 ```sh
 replays migrate --from fs:/backup/replays --to fs:/tmp/converted \

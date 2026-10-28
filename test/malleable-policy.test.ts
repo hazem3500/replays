@@ -157,6 +157,7 @@ async function boot(file: Record<string, unknown>) {
   const server = await startServer({
     env: { DATA_DIR: await mkdtemp(join(tmpdir(), 'replays-policy-')), POSTERS_DISABLED: '1', RENDER_DISABLED: '1' },
     port: 0,
+    application: false,
     config: { dir: process.cwd(), file, plugins: [] },
     plugins: [who],
     log: () => {},

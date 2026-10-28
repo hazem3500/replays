@@ -179,6 +179,7 @@ describe('pageBranding and publicConfig', () => {
       sourceProviders: ['github', 'url'],
       auth: 'oidc',
       plugins: [],
+      profiles: [],
       purposes: [],
       beta: { editor: false, malleable: false },
     });
@@ -187,6 +188,7 @@ describe('pageBranding and publicConfig', () => {
       sourceProviders: [],
       auth: 'none',
       plugins: [],
+      profiles: [],
       purposes: [],
       beta: { editor: false, malleable: false },
     });

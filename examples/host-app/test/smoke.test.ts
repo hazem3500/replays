@@ -14,7 +14,7 @@ process.env.HOST_APP_PROFILE = 'local';
 const { hostConfig } = await import('../replays.config.ts');
 const cwd = fileURLToPath(new URL('../', import.meta.url));
 
-test('built host loads its theme, purposes, server hooks, browser contributions and read-only editing policy', async () => {
+test('built host loads its theme, profiles, server hooks, browser contributions and read-only editing policy', async () => {
   const data = await mkdtemp(join(tmpdir(), 'replays-host-app-'));
   const env = {
     HOST_APP_PROFILE: 'local',
@@ -33,7 +33,7 @@ test('built host loads its theme, purposes, server hooks, browser contributions 
     assert.equal(config.name, 'Example Replays');
     assert.equal(server.runtime.settings.branding.theme?.dark?.page, '#19131f');
     assert.deepEqual(
-      config.purposes.map((purpose: { id: string; retentionDays: number }) => [purpose.id, purpose.retentionDays]),
+      config.profiles.map((profile: { id: string; retentionDays: number }) => [profile.id, profile.retentionDays]),
       [
         ['triage', 90],
         ['design-review', 90],
@@ -69,7 +69,7 @@ test('built host loads its theme, purposes, server hooks, browser contributions 
         duration: 1000,
         viewport: { width: 800, height: 600 },
         eventCount: 3,
-        purpose: 'triage',
+        profile: 'triage',
         people: [{ role: 'reviewer', email: 'reviewer@example.com', handles: { staff: 'reviewer' } }],
       },
       events: [
@@ -140,7 +140,7 @@ test('built host loads its theme, purposes, server hooks, browser contributions 
     assert.deepEqual(await editWrite.json(), { error: 'editing is turned off' });
     const summaries = await (await fetch(url('/api/replays?for=me&x-customer-session=1'))).json();
     assert.equal(summaries.length, 1);
-    assert.equal(summaries[0].purpose, 'triage');
+    assert.equal(summaries[0].profile, 'triage');
     assert.equal(summaries[0].ext['company-host'].environment, 'staging');
     assert.equal(summaries[0].people[0].profileUrl, 'https://people.example.com/people/reviewer');
     const expires = Date.parse(summaries[0].expiresAt);

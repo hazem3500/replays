@@ -13,7 +13,8 @@ afterEach(async () => {
   await Promise.all(running.splice(0).map((server) => server.close()));
 });
 
-const quiet = { log: () => {} };
+/** The comments tests never touch the Agent-Native runtime, whose import costs over a second on a cold worker. */
+const quiet = { application: false as const, log: () => {} };
 
 async function boot(env: Record<string, string> = {}, plugins: ReplaysPlugin[] = []) {
   const server = await startServer({

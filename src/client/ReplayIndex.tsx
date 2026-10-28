@@ -22,8 +22,8 @@ import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
 import { rememberListed } from './navigation.ts';
-import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, ScopeBar } from './index/IndexHeader.tsx';
-import { pagePurposes } from './purposes.ts';
+import { CommandSearch, IndexIdentity, type ProfileCounts, ProfileSegments, ScopeBar } from './index/IndexHeader.tsx';
+import { pageProfiles } from './profiles.ts';
 import { useMediaQuery } from './media.ts';
 import { SortMenu } from './ReplayIndexCompact.tsx';
 import { activeFilterTokens, FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
@@ -156,22 +156,23 @@ export function sortFromSearch(search: string): Sort {
   return { key: key as SortKey, direction: raw.startsWith('-') ? 'descending' : 'ascending' };
 }
 
-/** The purpose segment, `purpose=`: one of the deployment's purposes, else none (All). */
-export function purposeFromSearch(search: string, purposes = pagePurposes()): string | undefined {
-  const purpose = new URLSearchParams(search).get('purpose');
-  return purposes.some((item) => item.id === purpose) ? purpose! : undefined;
+/** The profile segment, `profile=` (or the older `purpose=`): one of the deployment's profiles, else none (All). */
+export function profileFromSearch(search: string, profiles = pageProfiles()): string | undefined {
+  const params = new URLSearchParams(search);
+  const profile = params.get('profile') ?? params.get('purpose');
+  return profiles.some((item) => item.id === profile) ? profile! : undefined;
 }
 
-/** The purposes an entry counts under: a replay's own; a suite's, those of its runs' replays. */
-export function entryPurposes(entry: IndexEntry): string[] {
-  if (entry.kind === 'session') return entry.summary.purpose ? [entry.summary.purpose] : [];
-  return [...new Set(entry.suite.runDetails.flatMap((run) => (run.replay?.purpose ? [run.replay.purpose] : [])))];
+/** The profiles an entry counts under: a replay's own; a suite's, those of its runs' replays. */
+export function entryProfiles(entry: IndexEntry): string[] {
+  if (entry.kind === 'session') return entry.summary.profile ? [entry.summary.profile] : [];
+  return [...new Set(entry.suite.runDetails.flatMap((run) => (run.replay?.profile ? [run.replay.profile] : [])))];
 }
 
-/** Entries per purpose segment. The segments narrow the list after the other filters, so every tab shows its count. */
-export function purposeCounts(entries: readonly IndexEntry[]): PurposeCounts {
-  const counts: PurposeCounts = { all: entries.length };
-  for (const entry of entries) for (const purpose of entryPurposes(entry)) counts[purpose] = (counts[purpose] ?? 0) + 1;
+/** Entries per profile segment. The segments narrow the list after the other filters, so every tab shows its count. */
+export function profileCounts(entries: readonly IndexEntry[]): ProfileCounts {
+  const counts: ProfileCounts = { all: entries.length };
+  for (const entry of entries) for (const profile of entryProfiles(entry)) counts[profile] = (counts[profile] ?? 0) + 1;
   return counts;
 }
 
@@ -179,13 +180,13 @@ export function indexSearch(
   filters: ReplayFilters,
   kind: IndexKind | undefined,
   sort: Sort = DEFAULT_SORT,
-  purposeOrForMe?: string | boolean,
+  profileOrForMe?: string | boolean,
   forMe = false,
 ) {
-  const purpose = typeof purposeOrForMe === 'string' ? purposeOrForMe : undefined;
-  if (typeof purposeOrForMe === 'boolean') forMe = purposeOrForMe;
+  const profile = typeof profileOrForMe === 'string' ? profileOrForMe : undefined;
+  if (typeof profileOrForMe === 'boolean') forMe = profileOrForMe;
   const params = new URLSearchParams(searchFromFilters(filters));
-  if (purpose) params.set('purpose', purpose);
+  if (profile) params.set('profile', profile);
   if (kind) params.set('kind', kind);
   if (forMe) params.set('for', 'me');
   if (sort.key !== DEFAULT_SORT.key || sort.direction !== DEFAULT_SORT.direction)
@@ -418,8 +419,8 @@ export function ReplayIndex() {
   const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
   const [restored] = useState(() => restoredIndex(listSearch));
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
-  const purposes = pagePurposes();
-  const [purpose, setPurpose] = useState<string | undefined>(() => purposeFromSearch(location.search, purposes));
+  const profiles = pageProfiles();
+  const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(location.search, profiles));
   const [query, setQuery] = useState(filters.q ?? '');
   const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
   const [loadError, setError] = useState('');
@@ -464,10 +465,10 @@ export function ReplayIndex() {
   }, [query]);
 
   useEffect(() => {
-    const search = indexSearch(filters, kind, sort, purpose, forMe);
+    const search = indexSearch(filters, kind, sort, profile, forMe);
     history.replaceState(history.state, '', `${location.pathname}${search}`);
     rememberIndexSearch(search);
-  }, [filters, kind, sort, purpose, forMe]);
+  }, [filters, kind, sort, profile, forMe]);
 
   // Who "me" is, and which handles the deployment lets a person link (used only where people exist).
   useEffect(() => {
@@ -586,11 +587,11 @@ export function ReplayIndex() {
     // Filter suites with the filters the session list was loaded for, so both kinds update together.
     [items, suites, settledFilters, filters, kind, sort],
   );
-  // The purpose segment narrows what the other filters keep (client-side, so every tab can show its count).
-  const counts = useMemo(() => (purposes.length && unsegmented ? purposeCounts(unsegmented) : undefined), [purposes, unsegmented]);
+  // The profile segment narrows what the other filters keep (client-side, so every tab can show its count).
+  const counts = useMemo(() => (profiles.length && unsegmented ? profileCounts(unsegmented) : undefined), [profiles, unsegmented]);
   const entries = useMemo(
-    () => (purpose && unsegmented ? unsegmented.filter((entry) => entryPurposes(entry).includes(purpose)) : unsegmented),
-    [unsegmented, purpose],
+    () => (profile && unsegmented ? unsegmented.filter((entry) => entryProfiles(entry).includes(profile)) : unsegmented),
+    [unsegmented, profile],
   );
   const listed = Boolean(entries);
   // Effects re-run when the index is shown again behind a viewer page (App.tsx keeps it in an Activity).
@@ -614,7 +615,7 @@ export function ReplayIndex() {
     saveIndexCache({ search: listSearch, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
   }, [items, suites, settledFilters, filters, restored, listSearch]);
   const filtered = Boolean(
-    filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || forMe || hasPluginFilters(filters),
+    filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || profile || forMe || hasPluginFilters(filters),
   );
   // People UI (For me, avatar stacks) only where people exist: the deployment registered them, or the list has some.
   const peopleOn =
@@ -646,7 +647,7 @@ export function ReplayIndex() {
   // Feed changes cross-fade (feed-transition.ts).
   const changeSort = (next: Sort) => feedTransition(() => setSort(next));
   const changeKind = (next: IndexKind | undefined) => feedTransition(() => setKind(next));
-  const changePurpose = (next: string | undefined) => feedTransition(() => setPurpose(next));
+  const changeProfile = (next: string | undefined) => feedTransition(() => setProfile(next));
   const update = <K extends keyof ReplayFilters>(key: K, value: ReplayFilters[K] | undefined) =>
     feedTransition(() => setFilters((current) => withFilter(current, key, value)));
   /** A plugin filter's `x-*` param (registerIndexFilter); undefined or '' removes it. */
@@ -662,7 +663,7 @@ export function ReplayIndex() {
   const clear = () => {
     setQuery('');
     setKind(undefined);
-    setPurpose(undefined);
+    setProfile(undefined);
     setForMe(false);
     setFilters({});
   };
@@ -715,18 +716,18 @@ export function ReplayIndex() {
     ...(peopleOn ? { forMe, setForMe: changeForMe, handles: me?.people?.handles ?? [], linked, setLinked: changeLinked } : {}),
   };
 
-  const purposeInfo = purpose ? purposes.find((item) => item.id === purpose) : undefined;
+  const profileInfo = profile ? profiles.find((item) => item.id === profile) : undefined;
   const tokens = activeFilterTokens(filterState, pluginFilters).map((token) => token.name);
-  const narrowing = purposeInfo ? [purposeInfo.label, ...tokens] : tokens;
+  const narrowing = profileInfo ? [profileInfo.label, ...tokens] : tokens;
   const searchText = filters.q?.trim() ?? '';
   const searchEverything = () =>
     feedTransition(() => {
       setKind(undefined);
       setForMe(false);
-      setPurpose(undefined);
+      setProfile(undefined);
       setFilters((current) => (current.q ? { q: current.q } : {}));
     });
-  // why: an empty view names what narrowed it (purpose first, then each filter) so the way back is obvious.
+  // why: an empty view names what narrowed it (profile first, then each filter) so the way back is obvious.
   const emptyView = (): IndexEmptyInput | undefined => {
     if (!entries || entries.length > 0) return undefined;
     if (searchText) {
@@ -736,14 +737,14 @@ export function ReplayIndex() {
       };
       return { kind: 'search', query: searchText, narrowing, onClearSearch, onSearchEverything: searchEverything };
     }
-    if (purposeInfo && !tokens.length) return { kind: 'purpose', purpose: purposeInfo, onShowAll: () => changePurpose(undefined) };
+    if (profileInfo && !tokens.length) return { kind: 'profile', profile: profileInfo, onShowAll: () => changeProfile(undefined) };
     return filtered ? { kind: 'filtered', active: narrowing, onClearFilters: clear } : undefined;
   };
   const empty = emptyView();
 
   return (
     <main className="index-shell" ref={shell}>
-      {/* One sticky block: identity + search + actions, then the toolbar (purposes, active filters, filter, sort, layout). */}
+      {/* One sticky block: identity + search + actions, then the toolbar (profiles, active filters, filter, sort, layout). */}
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
@@ -757,7 +758,7 @@ export function ReplayIndex() {
         <ScopeBar
           count={count}
           lead={
-            purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : undefined
+            profiles.length ? <ProfileSegments profiles={profiles} value={profile} counts={counts} onChange={changeProfile} /> : undefined
           }
         >
           {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
@@ -786,7 +787,7 @@ export function ReplayIndex() {
         ) : empty ? (
           <IndexEmpty input={empty} onUpload={() => upload.current?.open()} />
         ) : entries && entries.length === 0 ? (
-          <FirstRun onUpload={() => upload.current?.open()} purposes={purposes} />
+          <FirstRun onUpload={() => upload.current?.open()} profiles={profiles} />
         ) : entries ? (
           <MeContext value={meContext}>
             <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />

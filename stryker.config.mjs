@@ -2,7 +2,7 @@ export const criticalModules = [
   { file: 'src/shared/edits.ts', tests: ['test/edits.test.ts', 'test/edit-limit-boundaries.test.ts', 'test/edits-api.test.ts'] },
   { file: 'src/shared/replay.ts', tests: ['test/bundle-rejections.test.ts', 'test/import.test.ts', 'test/upload.test.ts'] },
   { file: 'src/shared/people.ts', tests: ['test/people.test.ts'] },
-  { file: 'src/shared/purposes.ts', tests: ['test/purposes.test.ts'] },
+  { file: 'src/shared/profiles.ts', tests: ['test/profiles.test.ts'] },
   { file: 'src/capture/sanitize.ts', tests: ['test/sanitize.test.ts', 'test/redaction.test.ts', 'test/redaction-integrity.test.ts'] },
   { file: 'src/recorder/sanitize-events.ts', tests: ['src/recorder/sanitize-events.test.ts', 'src/recorder/redact.test.ts'] },
   { file: 'src/server/store.ts', tests: ['test/store.test.ts', 'test/store-drivers.test.ts', 'test/sidecar-integrity.test.ts'] },

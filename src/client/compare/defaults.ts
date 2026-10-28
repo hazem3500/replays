@@ -19,7 +19,7 @@ export interface CompareDefaults {
 /**
  * The one place that decides how a page opens: a suite with two or more recordings compares them (Grid, or
  * Spotlight on the run its URL names); a replay on its own shows Single until "Compare" adds another. Capture
- * profiles (the deployment's purposes) can plug in here to pick other defaults.
+ * profiles (the deployment's profiles) can plug in here to pick other defaults.
  */
 export function compareDefaults({ page, recordings, namedRecording = false }: CompareEntry): CompareDefaults {
   if (page === 'replay' || recordings < 2) return { compare: false, layout: 'single' };

@@ -160,6 +160,7 @@ const getApiConfigAnswer = {
     },
     name: 'replays',
     plugins: [],
+    profiles: [],
     purposes: [],
     sourceProviders: ['github', 'gitlab', 'url'],
   },

@@ -100,12 +100,12 @@
 }
 .first-run-link svg { width: 14px; height: 14px; }
 
-.first-run-purposes { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); }
-.first-run-purposes h3 { margin: 0 0 10px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
-.first-run-purposes ul { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; }
-.first-run-purposes li { display: flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); }
-.first-run-purposes strong { color: var(--text); font-weight: 600; }
-.first-run-purposes span { color: var(--text-tertiary); }
+.first-run-profiles { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); }
+.first-run-profiles h3 { margin: 0 0 10px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
+.first-run-profiles ul { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; }
+.first-run-profiles li { display: flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); }
+.first-run-profiles strong { color: var(--text); font-weight: 600; }
+.first-run-profiles span { color: var(--text-tertiary); }
 
 .first-run-more-trigger:focus-visible,
 .first-run-link:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
