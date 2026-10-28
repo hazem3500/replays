@@ -178,24 +178,14 @@
       "brotli": 16345
     },
     "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs": {
-      "raw": 281901,
+      "raw": 290792,
       "gzip": 75138,
       "brotli": 61304
-    },
-    "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
-      "raw": 282591,
-      "gzip": 72905,
-      "brotli": 59492
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
-    },
-    "dist/lib/chunks/define.ts-b89f8e39bfa0.mjs": {
-      "raw": 32426,
-      "gzip": 9325,
-      "brotli": 8271
     },
     "dist/lib/chunks/define.ts-f3268e685655.mjs": {
       "raw": 32079,
@@ -221,11 +211,6 @@
       "raw": 0,
       "gzip": 21,
       "brotli": 2
-    },
-    "dist/lib/chunks/index.ts-639c48001f12.mjs": {
-      "raw": 39102,
-      "gzip": 10732,
-      "brotli": 9330
     },
     "dist/lib/chunks/index.ts-67a29d5237e2.mjs": {
       "raw": 27823,
@@ -355,7 +340,7 @@
     "dist/lib/server.mjs": {
       "raw": 1668,
       "gzip": 569,
-      "brotli": 477
+      "brotli": 474
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -723,16 +708,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
-      "cap": {
-        "raw": 282591,
-        "gzip": 72905,
-        "brotli": 59492
-      },
-      "reason": "The embedded edits schema gains the playback highlight list, enlarging the shared server schema chunk that also embeds the canonical replay and context schemas.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/performance-HASH.js",
       "cap": {
         "raw": 4242,
@@ -765,7 +740,7 @@
     {
       "file": "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs",
       "cap": {
-        "raw": 281901,
+        "raw": 290792,
         "gzip": 75138,
         "brotli": 61304
       },
