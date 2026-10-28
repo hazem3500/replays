@@ -27,7 +27,10 @@ describe('feed row actions', () => {
     root = createRoot(host);
     const kept = { kept: { by: 'me', at: new Date().toISOString() }, expiresAt: null };
     const respond = (init?: RequestInit) => Response.json(init?.method === 'PUT' ? kept : { expiresAt: null });
-    vi.stubGlobal('fetch', vi.fn<typeof fetch>((_input, init) => Promise.resolve(respond(init))));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((_input, init) => Promise.resolve(respond(init))),
+    );
     vi.stubGlobal('matchMedia', (query: string) => ({ matches: false, media: query, addEventListener() {}, removeEventListener() {} }));
   });
 
