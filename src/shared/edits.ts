@@ -11,7 +11,16 @@
  * The format is deliberately plain (versioned, no derived data) so it can be handed to another tool later.
  */
 
-import { CURSOR_MOTION_STYLES, isCursorMotionStyle, normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
+import {
+  CURSOR_APPEARANCES,
+  CURSOR_COLORS,
+  CURSOR_MOTION_STYLES,
+  isCursorAppearance,
+  isCursorColor,
+  isCursorMotionStyle,
+  normalizeCursor,
+  type ReplayCursorSettings,
+} from './cursor.ts';
 import {
   BLUR_STYLES,
   type BlurStyle,
@@ -235,7 +244,15 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
     label(cut.label, `${field}.label`);
   }
   if (edits.cursor !== undefined) {
-    const cursor = object(edits.cursor, `${name}.cursor`, ['visible', 'size', 'hideWhenIdle', 'clickFeedback', 'motion']);
+    const cursor = object(edits.cursor, `${name}.cursor`, [
+      'visible',
+      'size',
+      'hideWhenIdle',
+      'clickFeedback',
+      'motion',
+      'appearance',
+      'color',
+    ]);
     for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
       if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
     }
@@ -246,6 +263,10 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
       throw new Error(`${name}.cursor.size must be from 0.5 to 2`);
     if (cursor.motion !== undefined && !isCursorMotionStyle(cursor.motion))
       throw new Error(`${name}.cursor.motion must be one of ${CURSOR_MOTION_STYLES.join(', ')}`);
+    if (cursor.appearance !== undefined && !isCursorAppearance(cursor.appearance))
+      throw new Error(`${name}.cursor.appearance must be one of ${CURSOR_APPEARANCES.join(', ')}`);
+    if (cursor.color !== undefined && !isCursorColor(cursor.color))
+      throw new Error(`${name}.cursor.color must be one of ${Object.keys(CURSOR_COLORS).join(', ')}`);
   }
   assertEffects(edits, name, duration);
   assertHighlights(edits.highlights, duration, `${name}.highlights`);

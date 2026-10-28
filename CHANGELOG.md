@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
+  hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
+  inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
+  during a press; the CUA arrow keeps its press squish. Viewer, editor preview and MP4 export draw the same glyph.
 - Editor blur rethought: blurs draw a strong blur with soft edges (no grey veil), feathered outside the box so the box
   itself stays fully hidden. `ReplayBlur.style: 'redact'` draws a solid block instead. While placing a blur, a click
   covers the recorded element under the pointer. The selected box has edge and corner handles and a style label, the

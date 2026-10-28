@@ -223,6 +223,13 @@
         "motion": {
           "enum": ["signature_arc", "spring_settle", "magnetic", "comet_swoop", "adaptive", "classic"],
           "default": "signature_arc"
+        },
+        "appearance": {
+          "enum": ["arrow", "classic-arrow", "hand", "dot", "ring", "agent"],
+          "default": "arrow"
+        },
+        "color": {
+          "enum": ["accent", "periwinkle", "green", "amber", "coral", "graphite"]
         }
       }
     },

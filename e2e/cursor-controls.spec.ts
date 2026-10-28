@@ -120,3 +120,24 @@ for (const width of [1280, 390]) {
     expect(reset.blurs).toEqual([blur]);
   });
 }
+
+test('cursor styles: the chosen style is saved and is the only cursor drawn in the viewer', async ({ page }) => {
+  const base = server().origin;
+  const id = `cursor-style-${Date.now().toString(36)}`;
+  await postBundle(page.request, base, await cloneBundle(page.request, base, 'human-demo', id));
+  await page.goto(`${base}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  const { inspector } = cursorLocators(page, false);
+  await inspector.getByRole('radio', { name: 'Ring', exact: true }).click();
+  await expect(inspector.getByText('A halo around the point, for touch-style demos')).toBeVisible();
+  await inspector.getByRole('radio', { name: 'Green', exact: true }).click();
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+  const stored = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
+  expect(stored.cursor).toEqual({ appearance: 'ring', color: 'green' });
+  await page.getByTestId('editor-done').click();
+  await page.goto(`${base}/r/${id}?t=2`);
+  const cursor = page.locator('.player-host .replay-cursor');
+  await expect(cursor).toHaveCount(1);
+  await expect(cursor.locator('circle').first()).toBeAttached();
+  await expect(cursor.locator('path')).toHaveCount(0);
+});
