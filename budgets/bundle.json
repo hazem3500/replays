@@ -177,10 +177,10 @@
       "brotli": 16340,
       "gzip": 18876
     },
-    "dist/lib/chunks/context.schema.json-87737fe6e2f1.mjs": {
-      "raw": 290792,
-      "gzip": 75138,
-      "brotli": 61304
+    "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
+      "raw": 285690,
+      "gzip": 75125,
+      "brotli": 61620
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
@@ -223,19 +223,14 @@
       "gzip": 4951
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
-      "raw": 31393,
-      "brotli": 7133,
-      "gzip": 8181
+      "raw": 31954,
+      "brotli": 7280,
+      "gzip": 8369
     },
     "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
       "raw": 4485,
       "gzip": 1658,
       "brotli": 1466
-    },
-    "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
-      "raw": 3950,
-      "gzip": 1449,
-      "brotli": 1306
     },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
@@ -263,9 +258,9 @@
       "gzip": 515
     },
     "dist/lib/plugin.mjs": {
-      "raw": 700,
-      "brotli": 232,
-      "gzip": 284
+      "raw": 743,
+      "brotli": 246,
+      "gzip": 299
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
