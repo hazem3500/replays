@@ -24,6 +24,7 @@ interface Session {
 
 export class BridgeError extends Error {
   readonly status: number;
+  readonly expose = true;
   constructor(status: number, message: string) {
     super(message);
     this.name = 'BridgeError';

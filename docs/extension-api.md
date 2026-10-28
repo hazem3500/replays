@@ -117,10 +117,11 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.branding({ name?, logoUrl?, theme? })` | Name, logo (https URL or base64 data image) and [theme tokens](extending.md#theming-and-branding) | the same field set to different values by two plugins; the config file and environment override plugins without error |
 | `api.basePath('/replays')` | The default base path | two plugins disagree; config and `BASE_PATH` override |
 | `api.requestPolicy({ path, methods, origins, headers, credentials? })` | [Trusted route policy](#trusted-browser-intake-and-upload-aliases): exact-origin CORS, preflight validation and a narrow CSRF exception; actual requests retain auth | overlapping path/method registration |
-| `api.uploadEndpoint({ path, prepare? })` | [POST upload alias](#trusted-browser-intake-and-upload-aliases) using the normal core upload pipeline; no implicit CORS | duplicate alias or built-in path |
+| `api.uploadEndpoint({ path, prepare?, authenticate?, maxBytes?, rateLimit?, normalize?, receipt? })` | A [custom upload endpoint](#custom-upload-endpoints) into the core upload pipeline, optionally with its own credentials, body cap, rate limit, normalization and receipt; no implicit CORS | duplicate path or a reserved core path |
 | `api.onRequest(hook, { phase? })` | `hook({ request, response, path, identity? })`, return `true` after answering. `post-auth` (default): only authenticated requests, with `identity`, after the same-origin check. `pre-auth`: requests not already answered by health checks or route policies. `path` has the base path removed | – |
 | `api.onResponse(hook)` | `hook({ method, path, status, durationMs, identity? })` after each response; errors are logged | – |
 | `api.prepareUpload(hook)` | `hook({ body, identity, request })` on the raw canonical or alias upload body before any validation; return the body to use (translate a producer's older shape) | – |
+| `api.normalizeUpload(hook)` | `hook({ bundle, identity, request, path })` on every validated upload (`POST /api/replays` and [upload endpoints](#custom-upload-endpoints)) before the privacy pass; return or mutate the bundle. The result is validated again, then sanitized | – |
 | `api.beforeUpload(hook)` | `hook({ bundle, identity, request })` on the validated, sanitised bundle before it is stored. Throw `rejectUpload(status, message)` to refuse; return a bundle to replace it (it is validated again). Also runs for `POST /api/replays/import` | – |
 | `api.afterUpload(hook)` | `hook({ bundle, identity, request, url })` after the bundle is stored; errors are logged and never fail the upload | – |
 | `api.redaction({ headers?, queryParams?, jsonKeys?, text?, maskSelectors? })` | [Redaction rules](extending.md#redaction-rules) added to the sanitiser's defaults, in the capture CLI (which reads the same config) and the server's privacy pass. Rules from several plugins and the config's `redaction` add up; they cannot turn a default off. Validate your own with `assertRedactionRules` (`/plugin`, `/capture`) | – (invalid rules are an `invalid-registration`) |
@@ -326,7 +327,7 @@ Comments ship as a plugin, `comments`, so they use the same surface as yours and
   A user plugin registers as `user:<id>` (keys `plugin:user:<id>:<contribution>`); a host plugin's name cannot contain `:`, so the two
   never collide and a user plugin cannot replace or remove a host plugin's tabs, panels or actions.
 - **The host's policy for user plugins** (`malleable` in the config, typed `MalleableConfig` from `/config`): the deployment can only
-  narrow. `scopes` (`'user'`, `'workspace'`; default both) says where a plugin may be kept; `capabilities` maps each capability to
+  narrow. `scopes` (`'user'`, `'workspace'`; default personal scope only) says where a plugin may be kept; `capabilities` maps each capability to
   `'allow' | 'ask' | 'deny'` (a write capability, `comments:write` or `export:download`, is `'ask'` or `'deny'`; `'allow'` is a start-up
   error); `lockedSurfaces` lists surfaces user plugins may not replace or hide (`inspector:<tab>`, `inspector:<plugin>:<tab>`,
   `panel:<plugin>:<id>`, `action:<plugin>:<id>`). The server refuses (403) to keep a plugin that declares a denied capability or targets a
@@ -514,6 +515,44 @@ a `render` that throws shows an error line in its slot (`data-plugin-error`) and
   the list shows now (after the filters), `me` the signed-in person from `GET /api/me` once known. When the list changes, `update(container,
   context)` is called if given; otherwise the previous render is cleaned up and `render` runs again.
 
+## Web APIs: routes and middleware
+
+Plugins can serve HTTP with web-standard handlers: a `Request` comes in and a `Response` goes out. The same handler runs on
+the built-in Node server and on any fetch host (the TanStack Start mount included). These additions sit alongside
+`onRequest`, which keeps working.
+
+```ts
+import { definePlugin } from '@hazem3500/replays/plugin';
+import { z } from 'zod'; // any Standard Schema library: Zod 4, Valibot, ArkType
+
+export default definePlugin({
+  name: 'acme',
+  setup(api) {
+    api.route({
+      method: 'POST',
+      path: '/api/plugins/acme/notes/:id',
+      body: z.object({ text: z.string().max(500) }),
+      handler: ({ params, body, identity }) => Response.json({ id: params.id, by: identity?.id, text: body.text }),
+    });
+    api.middleware({ phase: 'pre-auth', handle: ({ path }) => (path === '/api/plugins/acme/ping' ? new Response('pong') : undefined) });
+  },
+});
+```
+
+- **`api.route({ method, path, auth?, write?, body?, handler })`**
+  - `method` is one method or a list.
+  - `path` is matched without the public base and must be `/api/plugins/<plugin name>` or below it. Use `:name` segments, and an optional final `**:name` splat whose value is `params.name`. A trailing slash never matches.
+  - `auth: 'required'` (the default) runs after authentication, scopes, CSRF and the `post-auth` hooks, like core routes, and `identity` is set. `auth: 'none'` runs right after the auth adapter's own routes, before authentication, and `identity` is undefined.
+  - A route with `write` (the default for any method but GET and HEAD) refuses cross-site browser requests, on `auth: 'none'` routes too, unless a `requestPolicy` allows the origin.
+  - With `body`, the JSON body (at most 1 MiB) is read and validated once before the handler runs. Validation issues answer `400` with `path: message` text, and the handler gets the parsed value as `body`. With a body schema the request body has already been consumed; without one, read `request` yourself.
+  - Throw `rejectUpload(status, message)` or an error with a 4xx `status` to answer with that status; anything else is a `500`.
+- **`api.middleware({ phase, handle })`**
+  - It runs for every request in its phase: `pre-auth` after the `onRequest` pre-auth hooks, `post-auth` after the `onRequest` post-auth hooks.
+  - Return a `Response` to answer the request, or nothing to let it continue. There is no `next`.
+  - Middleware must not read the request body; routes own it.
+- **`webRequest`**
+  - Upload hooks (`prepareUpload`, `beforeUpload`, `afterUpload`, upload endpoints' `prepare`), context adapters and `identity.resolve` now receive `webRequest`, the same request as a web `Request`, next to the Node `request`.
+
 ## Starting the server
 
 `replays serve` reads `replays.config.*` and the environment. To own the entry point:
@@ -620,7 +659,7 @@ api.uploadEndpoint({
 ```
 
 `RequestPolicy` and `UploadEndpoint` are exported types from `@hazem3500/replays/plugin`. These are trusted server
-registrations, never values accepted from an incoming request. Policy paths are exact canonical `/api/…` paths without
+registrations, never values accepted from an incoming request. Policy paths are exact canonical application paths (2 to 8 segments, such as `/api/replays` or an upload endpoint's) without
 query strings, patterns or the deployment base prefix. Methods are uppercase `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, or
 `DELETE`; origins are serialized HTTP(S) origins without paths, trailing slashes, credentials or wildcards. Header names
 are case insensitive explicit HTTP tokens, never `*`. Overlapping path/method policies are rejected even across plugins;
@@ -634,21 +673,20 @@ before auth, request hooks or data access; a denied preflight returns `403`. Bot
 other core or host `Vary` fields. Allowed actual requests retain CORS headers on authentication, validation, duplicate,
 host-policy and server errors.
 
-**Actual data requests always run the configured auth adapter.** Only an exact path/method/origin match exempts that
+**Actual data requests always authenticate**: with the configured auth adapter, or with an upload endpoint's own `authenticate` on that endpoint's path. Only an exact path/method/origin match exempts that
 request from the core cross-site CSRF rejection. Unlisted cross-site origins on a configured mutating route are refused.
 Same-origin browser requests retain their normal CSRF behavior. Other routes keep normal CSRF checks. Clients without Origin use the existing auth and CSRF behavior; a missing Origin never
 grants an exception. `credentials: true` is browser permission to send credentials, not an identity or an auth bypass.
 
-An upload endpoint is a distinct `/api/<name>` (one lowercase kebab-case segment); built-in routes such as `/api/replays`,
-`/api/suites`, `/api/me`, `/api/config` and `/api/malleable` are reserved. It accepts POST through normal auth, CSRF and
-post-auth request hooks. It implies no CORS permission. The optional endpoint `prepare` uses `PrepareUploadHook` and runs
+An upload endpoint is a distinct lowercase path of 2 to 8 segments ([details](#custom-upload-endpoints)); core route prefixes are
+reserved. It accepts POST through normal auth (or its own `authenticate`), CSRF and post-auth request hooks. It implies no CORS permission. The optional endpoint `prepare` uses `PrepareUploadHook` and runs
 on the parsed raw JSON before global `prepareUpload` hooks. Both see the original request, including its URL and base
 prefix. Then the same context adapters, source resolution, schema/bundle validation, sanitizer, `beforeUpload`, immutable
-storage/duplicate checks and `afterUpload` hooks run as for the canonical upload endpoint. Body limits and JSON errors
-are identical. Prepared bodies remain untrusted.
+storage/duplicate checks and `afterUpload` hooks run as for the canonical upload endpoint. JSON errors are identical; the
+body limit is the endpoint's `maxBytes` (25 MiB by default). Prepared bodies remain untrusted.
 
-Backend identities are a host authentication concern: verify the service identity and restrict its request URL and
-method in the auth adapter on every application route. Built-in plugins may answer their routes before a host post-auth
+Backend identities are a host authentication concern: verify the service identity and confine it in the auth adapter,
+most simply by returning it with `capabilities` ([below](#write-only-identities)). Built-in plugins may answer their routes before a host post-auth
 hook runs, so auth is the enforcement boundary for a universal restriction. A post-auth hook can additionally restrict
 host requests by **both** canonical `path` and request method:
 
@@ -682,3 +720,185 @@ const auth: AuthAdapter = { name: 'proxy', signIn: { path: '/auth/return' }, aut
 ```
 
 `SignInConfig` is exported as a type from `/server`. Existing adapters remain unchanged unless they opt in.
+
+## Unified slots
+
+The viewer entry exports `SlotRegistry`, `SLOT_NAMES`, and the types `SlotDescriptor<C, R>`,
+`SlotConfiguration` and `SlotMountContext<C>`. A descriptor is
+`{ id, order, when?: (context) => boolean, render: (context) => result }`.
+Use `core:<id>` for built-ins and `plugin:<owner>:<id>` for plugin items. Numeric order is ascending;
+built-ins use gaps (100, 200, …). Equal orders retain registration order. Resolution is pure: it
+filters and sorts without mutating descriptors or calling `render`.
+
+Host browser entries can call `api.configureSlot('viewer.inspector.tabs', {
+  order: ['plugin:acme:build', 'core:console'], hide: ['core:performance'],
+})` and `api.registerSlotItem(slot, descriptor)`. Explicitly ordered ids precede unspecified items;
+`hide` removes items. Configuration replaces the previous configuration for that slot. Unknown ids
+are retained so configuration can precede lazy registration. Locked surfaces reject configuration
+before it changes anything. Hosts can lock legacy ids such as `inspector:context`, or any slot/item
+pair such as `index.filters/core:owner`. Sandboxed user plugins cannot configure host slots.
+
+Initial slots: `viewer.inspector.tabs`, `viewer.panels.side`, `viewer.actions`,
+`viewer.scrubber.tracks`, `viewer.context.sections`, `index.row.columns`, `index.filters`,
+`index.sections`, `settings.sections`. Distributions may define additional slot names. A view
+supplies its built-ins as the same descriptor list; it must render the resolved list to support
+core item configuration. The registry does not discover JSX automatically.
+
+Existing `register*` methods remain supported. Their DOM descriptors receive
+`{ container, context }`; action descriptors receive the viewer context, track descriptors return
+markers, and filter/settings descriptors return the definition for the host renderer. Registry
+snapshots continue to expose the original metadata. Slot containers use `data-slot="<slot>"` and
+items use `data-slot-item="<namespaced id>"`; these two attributes are public hooks for host CSS.
+Other DOM structure and classes remain private.
+
+Sandboxed plugin manifests now accept the same boolean/choice setting definition as
+`registerSetting`. Their `ctx.settings.get(id)` / `set(id, value)` are asynchronous and persisted
+per person and plugin through the malleable API. Host `ViewerPluginContext.settings` retains its
+synchronous `get` and `onChange` contract. Internal Settings renderers use the combined registry
+settings list, `readSetting`, `subscribeSettings` and `writeSettingValue` (awaitable, reports failed
+saves); `writeSetting` remains the existing fire-and-forget menu helper.
+
+## Check a plugin from the CLI
+
+`replays plugin check ./plugin.mjs --replay ./fixture.json` runs server setup, fixture before-upload
+hooks, summary derivation, and registered auth/storage contracts. `--config ./replays.config.ts`
+loads dependencies and host configuration. Storage contracts use disposable `_plugin-check/…`
+namespaces and clean them up; configure adapters for a test backend. Use `--request request.json` (method, URL and headers) to supply an accepted auth request. Auth contracts report a missing acceptance fixture rather than silently skipping it.
+
+`replays plugin check ./entry.mjs --kind browser --cdp http://127.0.0.1:9222` checks a browser entry.
+`replays plugin check ./example.replays-plugin.json` validates and runs each declared contribution
+in the real sandbox. By default these connect to an existing browser. Use `--headless` to launch a fresh local Chromium (install it separately with `pnpm exec playwright install --with-deps chromium`); this is suitable for CI or an isolated Boat box. The
+CDP browser must be able to reach the CLI's loopback check server (run them on the same host, or
+forward both loopback endpoints). Each check creates and closes one browser context. External
+requests are blocked; fixture comments/downloads are printed. `--out ./shots` captures at most
+eight contribution screenshots. Output includes registrations, fixture results and errors;
+failures exit 1, argument errors exit 2. The default fixture is a small valid in-memory replay.
+
+The viewer entry now exports `ViewerRegistry` for hosts and harnesses needing an isolated registry;
+its documented `apiFor`, `configureSlot`, `registerSlotItem`, `resolveSlot`, `getSnapshot` and
+subscription lifecycle share the API used by the running app. The application singleton remains
+internal. These additions keep plugin and viewer API generation 1.
+
+
+## Plugin pages
+
+Host browser entries register one page with `api.registerPluginPage({ title, loader?, render })`.
+The owner is always `api.pluginName`; sandboxed user plugins cannot register routes. The route is
+`/p/<plugin>/<path>` and preserves plugin search parameters. The optional loader receives
+`PluginPageLoadContext` (`path`, `search`, `signal`), and may return a value or promise. The DOM
+renderer receives `PluginPageContext`: those fields, the loader's `data`, theme/base-path/API URL
+helpers and `navigate(path, search?)`. Return a cleanup function as with tabs.
+
+Navigation stays under the plugin's root: schemes, other plugins, backslashes and dot traversal
+are rejected. The route waits for browser plugin loading before deciding a page is missing and
+subscribes to later registrations. Page registrations participate in plugin removal, reset and
+failed-hot-reload rollback. Page title, loader and DOM render are the public surface; head metadata
+and automatic navigation entries are not provided yet. The TanStack route integration is owned
+by the router increment.
+
+Host policy additionally accepts `workspaceRoles`, exact `allow`/`deny` selectors by id or policy
+hash, and validated `watchdog` limits. `Identity.roles` is an optional trusted claim from the auth
+adapter. See [malleability.md](malleability.md#host-admission-workspace-review-and-runtime-budgets)
+for defaults, enforcement and the remaining requirements before default-on.
+
+Additional published slot names used by the redesign are `index.chips`, `inspector.network.columns`,
+`performance.vitals`, `editor.topbar.actions`, `editor.inspector.sections`, `editor.tools`,
+`editor.timeline.lanes` and `export.formats`. All legacy `register*` contributions receive slot order
+`1000 + (definition.order ?? 0)` so default plugin contributions remain after core items; their
+snapshot definition order retains its original value. Generic descriptors use their numeric
+order directly.
+
+## Custom upload endpoints
+
+`api.uploadEndpoint` registers a `POST` route into the same core upload pipeline as `POST /api/replays`. A host can
+build a backend forwarder, a service-to-service intake or a public app-key ingest on it without the core knowing about
+any of them. Replays enables none by default.
+
+```ts
+api.uploadEndpoint({
+  path: '/api/ingest/v1/recordings',
+  authenticate: (request) => appForKey(request.headers['x-app-key']),
+  maxBytes: ({ identity }) => limitFor(identity),
+  rateLimit: ({ identity }) => (bucket.take(identity.id) ? undefined : { retryAfter: bucket.wait(identity.id) }),
+  prepare: ({ body }) => unwrapEnvelope(body),
+  normalize: ({ bundle, identity }) => ({ ...bundle, meta: { ...bundle.meta, id: serverId(), source: 'human' } }),
+  receipt: ({ bundle, replayUrl }) => ({ id: bundle.meta.id, reference: shortReference(bundle), replayUrl }),
+});
+```
+
+| Option | Contract |
+| --- | --- |
+| `path` | Canonical, without the deployment base prefix: 2 to 8 lowercase `[a-z0-9][a-z0-9-]*` segments, such as `/api/customer-recordings` or `/backoffice/api/customer-recordings`. Paths under `/api/replays`, `/api/suites`, `/api/me`, `/api/config`, `/api/cli`, `/api/malleable`, `/api/agent-*`, `/api/sign-in`, `/auth`, `/internal`, `/_plugins`, `/assets` and `/r`, and `/healthz` itself, are reserved |
+| `prepare({ body, identity, request })` | The raw parsed body, before global `prepareUpload` hooks and any validation. Return the replay envelope (unwrap a forwarding wrapper, translate a foreign shape) |
+| `authenticate(request)` | This path's own credential check, used **instead of** the deployment's auth adapter for every method on the path. Return an `Identity`, or nothing for `401 credentials required`; throw an `HttpError` (such as `403` for a disabled app) or `tooManyRequests(seconds)` for anything else. The identity is always confined to `POST` on this path (see [write-only identities](#write-only-identities)) |
+| `maxBytes` | A positive byte count or `({ identity, request, path }) => number`; default 25 MiB. A larger `Content-Length` answers `413` before the body is read; the stream is cut off at the cap; a gzip body is capped again once decompressed |
+| `rateLimit({ identity, request, path })` | After authentication, before the body is read. Return `{ retryAfter, message? }` (seconds) to answer `429` with `Retry-After`; nothing to continue |
+| `normalize({ bundle, identity, request, path })` | On the validated bundle, before the global `normalizeUpload` hooks. Return a replacement or mutate it: force the id, title, purpose or source; drop client people, suite membership or context; add derived context and source links |
+| `receipt({ bundle, identity, request, path, url, replayUrl })` | The `201` JSON body; default `{ id, url }`. `url` is the base-prefixed path, and `replayUrl` is absolute when the deployment's public origin is set. Both stay behind the viewer's normal auth |
+
+### The pipeline
+
+For a `POST` to an endpoint the order is:
+
+1. request policy (CORS, preflight)
+2. `pre-auth` hooks
+3. the adapter's own routes
+4. `authenticate` (or the adapter), then `api.identity` resolvers
+5. the capability and scope check, then CSRF, application authorization and `post-auth` hooks
+6. `rateLimit`, then `maxBytes` (declared length, stream, decompressed size)
+7. `prepare`, then `prepareUpload`, context adapters, source resolution and the stored and context schemas
+8. `normalize`, then `normalizeUpload`, then the same validation again
+9. **the privacy pass**, then `beforeUpload`, the purpose and people checks, storage, retention and `afterUpload`
+10. `receipt`
+
+The privacy pass (the default redaction plus the deployment's and plugins' rules) always runs after every
+normalization step and cannot be turned off from a hook. Purposes, retention rules and Keep apply to endpoint uploads
+as to any other.
+
+### Errors
+
+An endpoint answers errors exactly like `POST /api/replays`: a `text/plain` message with the status.
+
+| Case | Status |
+| --- | --- |
+| invalid envelope or bundle (the schema or a validator) | `400` with the validator's message, such as `replay.meta.url must be a string` |
+| body is not JSON | `400 body is not valid JSON` |
+| corrupt gzip stream | `400 body is not valid gzip` |
+| `Content-Encoding` other than `gzip` or `identity` | `415 unsupported content-encoding: <value>` |
+| over `maxBytes` | `413 upload is larger than <size>`, or `… once decompressed` |
+| `HttpError(status, message, { headers })`, `tooManyRequests(seconds)` | that status and message, with its headers (`Retry-After`) |
+
+`Content-Type` is not inspected, as on `POST /api/replays`. A gzip body labelled `text/plain` is accepted if it
+decompresses to valid JSON. A host that wants a `415` for other content types throws `new HttpError(415, …)` from
+`authenticate` or a request hook. Server errors (`5xx`) answer `{ "error": "internal error" }` and never expose a
+message.
+
+### Write-only identities
+
+`Identity.capabilities` confines an identity to exact routes: `{ routes: [{ method: 'POST', path: '/api/forwarded' }] }`,
+as canonical paths without the base prefix. Any other request answers `403 identity cannot access this route`. The
+check runs right after authentication and the identity resolvers, before CSRF, application authorization, `post-auth`
+hooks, plugin routes and core dispatch, so no route can be reached around it. Any adapter can return capabilities;
+an endpoint's own `authenticate` always gets `[{ method: 'POST', path }]`. That one identity therefore cannot read,
+list, edit, delete, comment on, keep or export a replay, or reach the agent bridge.
+
+An upload-only token (`authScopes: ['replays:upload']`) may post to `/api/replays` and to every registered upload
+endpoint, as well as the video `PUT` and `GET /api/cli/auth/status` it could use before.
+
+### Browser uploads and the gateway
+
+An endpoint implies no CORS. For pages on other origins, register a `requestPolicy` for the endpoint path with the
+exact origins and headers, for example
+`{ path, methods: ['POST'], origins, headers: ['content-type', 'content-encoding', 'x-app-key'] }` without
+`credentials`. Preflights are answered before `authenticate`, so a preflight never needs a key. Where several
+callers each have their own origins, register the union and check the caller's own list inside `authenticate`, where
+the key is known.
+
+An endpoint with its own `authenticate` usually sits outside the staff gateway. Exempt **exactly** that path (with the
+deployment's base prefix) from IAP or the identity-aware proxy, and nothing else: every other route still needs the
+staff identity, and the endpoint's identity cannot reach them anyway.
+
+[`examples/app-key-ingest`](../examples/app-key-ingest/README.md) is a complete public app-key ingest built only from these
+hooks. It has per-app keys with rotation, origin lists, per-key and per-IP limits, a per-app body cap and retention,
+server-chosen ids and an audit line per request. Its counters are per process, so with several replicas use a
+shared store.

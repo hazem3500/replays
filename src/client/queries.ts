@@ -2,6 +2,7 @@ import { fetchPage } from './sign-in.tsx';
 import { QueryClient, type QueryCache, queryOptions } from '@tanstack/react-query';
 
 import type { ReplayBundle } from '../shared/replay.ts';
+import type { ClientConfig } from './config.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { readTextWithProgress } from './load-progress.ts';
 import { rememberServedPurpose } from './purposes.ts';
@@ -85,6 +86,18 @@ export const suiteQuery = (id: string) =>
     queryFn: ({ signal }) => fetchSuite(id, signal),
     staleTime: 30_000,
   });
+
+/** `GET /api/config`: one cache entry for every reader; a deployment's configuration does not change while a page is open. */
+export const configQuery = queryOptions({
+  queryKey: ['config'] as const,
+  queryFn: async ({ signal }) => {
+    const response = await fetch(apiUrl('config'), { signal });
+    if (!response.ok) throw new Error(`Config failed to load (${response.status})`);
+    return (await response.json()) as ClientConfig;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+  retry: false,
+});
 
 /** Warms a bundle at low network priority (a hover or keyboard visit on a suite run). */
 export function prefetchReplay(client: QueryClient, id: string) {

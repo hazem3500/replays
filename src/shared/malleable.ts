@@ -1,3 +1,4 @@
+import { parsePluginSettings, type PluginSettingDefinition } from './plugin-settings.ts';
 /**
  * User plugins (beta.malleable): small programs a user or an agent writes for the running viewer. A plugin is one
  * manifest (what it contributes and which capabilities it asks for) plus one JavaScript source. It runs in a sandboxed
@@ -44,6 +45,7 @@ export interface UserPluginManifest {
   name: string;
   description?: string;
   permissions: Capability[];
+  settings?: PluginSettingDefinition[];
   contributes: {
     /** Inspector tabs (bottom panel, next to Console and Network). */
     tabs?: Contribution[];
@@ -102,6 +104,9 @@ export interface PluginSummary {
   version: number;
   updatedAt: string;
   by: string;
+  /** Per-person notice for a new workspace version; it must be accepted before loading. */
+  requiresReview?: boolean;
+  sha256?: string;
 }
 
 export class PluginFormatError extends Error {
@@ -136,7 +141,7 @@ function contributions(value: unknown, kind: string): Contribution[] | undefined
 export function parseManifest(value: unknown): UserPluginManifest {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new PluginFormatError('the manifest must be an object');
   const input = value as Record<string, unknown>;
-  const known = ['format', 'id', 'name', 'description', 'permissions', 'contributes', 'targets'];
+  const known = ['format', 'id', 'name', 'description', 'permissions', 'contributes', 'targets', 'settings'];
   const extra = Object.keys(input).find((key) => !known.includes(key));
   if (extra) throw new PluginFormatError(`manifest.${extra} is not a supported field`);
   if (input.format !== USER_PLUGIN_FORMAT) throw new PluginFormatError(`manifest.format must be "${USER_PLUGIN_FORMAT}"`);
@@ -160,6 +165,12 @@ export function parseManifest(value: unknown): UserPluginManifest {
   if (!tabs?.length && !panels?.length && !actions?.length)
     throw new PluginFormatError('a plugin must contribute at least one tab, panel or action');
   const targets = parseTargets(input.targets);
+  let settings: PluginSettingDefinition[] | undefined;
+  try {
+    settings = input.settings === undefined ? undefined : parsePluginSettings(input.settings);
+  } catch (error) {
+    throw new PluginFormatError(`manifest.settings: ${error instanceof Error ? error.message : String(error)}`);
+  }
   return {
     format: USER_PLUGIN_FORMAT,
     id: input.id,
@@ -168,6 +179,7 @@ export function parseManifest(value: unknown): UserPluginManifest {
     permissions: [...new Set(permissions as Capability[])],
     contributes: { ...(tabs?.length ? { tabs } : {}), ...(panels?.length ? { panels } : {}), ...(actions?.length ? { actions } : {}) },
     ...(targets ? { targets } : {}),
+    ...(settings ? { settings } : {}),
   };
 }
 

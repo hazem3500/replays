@@ -20,8 +20,24 @@ test('bundle budgets cover lazy files, static entry closures, growth and new art
     await put('dist/lib/chunks/chunk-IJKLMNOP.mjs', 'export const b = 2;');
     await put('dist/lib/.metafile.json', {
       outputs: {
-        [resolve(root, 'dist/lib/chunks/chunk-ABCDEFGH.mjs')]: { inputs: { [resolve(root, 'src/shared/a.ts')]: {} } },
-        [resolve(root, 'dist/lib/chunks/chunk-IJKLMNOP.mjs')]: { inputs: { [resolve(root, 'src/shared/b.ts')]: {} } },
+        [resolve(root, 'dist/lib/chunks/chunk-ABCDEFGH.mjs')]: {
+          inputs: { [resolve(root, 'src/shared/a.ts')]: {} },
+        },
+        [resolve(root, 'dist/lib/chunks/chunk-IJKLMNOP.mjs')]: {
+          inputs: { [resolve(root, 'src/shared/b.ts')]: {} },
+        },
+      },
+    });
+    await put('dist/lib/recorder-chunks/chunk-QRSTUVWX.mjs', 'export const recorder = 1;');
+    await put('dist/lib/recorder-chunks/chunk-YZabcdef.mjs', 'export const ui = 2;');
+    await put('dist/lib/.recorder-metafile.json', {
+      outputs: {
+        [resolve(root, 'dist/lib/recorder-chunks/chunk-QRSTUVWX.mjs')]: {
+          inputs: { [resolve(root, 'src/recorder/recorder.ts')]: {} },
+        },
+        [resolve(root, 'dist/lib/recorder-chunks/chunk-YZabcdef.mjs')]: {
+          inputs: { [resolve(root, 'src/recorder/default-ui.ts')]: {} },
+        },
       },
     });
     await put('dist/client/assets/main-ABCDEFGH.js', 'import "./shared-ABCDEFGH.js";');
@@ -42,6 +58,8 @@ test('bundle budgets cover lazy files, static entry closures, growth and new art
     const inventory = await bundleInventory(root);
     assert.equal(inventory['initial/index.html/js'].length, 2);
     assert.equal(Object.keys(inventory).filter((name) => name.startsWith('dist/lib/chunks/')).length, 2);
+    assert.equal(Object.keys(inventory).filter((name) => name.startsWith('dist/lib/recorder-chunks/')).length, 2);
+    assert.ok(!inventory['dist/lib/.recorder-metafile.json']);
     assert.equal(inventory['initial/index.html/css'].length, 1);
     assert.ok(inventory['dist/client/assets/lazy-HASH.js']);
     assert.equal(bundleKey('dist/client/assets/main-12345678.js'), bundleKey('dist/client/assets/main-ABCDEFGH.js'));
@@ -139,7 +157,9 @@ test('resolved boundary rules catch aliases, Node, frameworks, cycles and layer 
       'src/cli.ts': 'import "./client/a.ts";',
       'node_modules/react/package.json': '{"name":"react","main":"index.js"}',
       'node_modules/react/index.js': 'export const react = true;',
-      'tsconfig.json': JSON.stringify({ compilerOptions: { paths: { '@/*': ['./src/client/*'] } } }),
+      'tsconfig.json': JSON.stringify({
+        compilerOptions: { paths: { '@/*': ['./src/client/*'] } },
+      }),
     };
     for (const [file, content] of Object.entries(fixtures)) {
       const path = resolve(root, file);

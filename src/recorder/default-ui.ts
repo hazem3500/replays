@@ -2,53 +2,10 @@ import { updateText, cleanupText } from './text-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
 import type { IssueReportReceipt, IssueUploadErrorDetails } from './upload.ts';
 
-/** Recorder UI copy. Every string can be replaced (e.g. for translations). */
-export type RecorderMessages = {
-  consentTitle: string;
-  /** `{minutes}` is replaced with the time limit. */
-  consentBody: string;
-  consentPrivacy: string;
-  consentAccept: string;
-  consentDecline: string;
-  recording: string;
-  stop: string;
-  reviewTitle: string;
-  /** `{duration}` is replaced with the recording length. */
-  reviewBody: string;
-  noteLabel: string;
-  send: string;
-  discard: string;
-  /** `{reference}` is replaced with the replay id. */
-  sent: string;
-  failed: string;
-  close: string;
-  /** Shown while the recording uploads. */
-  uploading: string;
-  /** Link to the replay, when the transport returns one. */
-  openReplay: string;
-  retry: string;
-};
-
-export const DEFAULT_MESSAGES: RecorderMessages = {
-  consentTitle: 'Record the problem?',
-  consentBody: 'We will record this tab while you show the problem, for up to {minutes} minutes. You can stop at any time.',
-  consentPrivacy: 'Text, typed values and images are hidden in the recording. Nothing is sent until you review it.',
-  consentAccept: 'Start recording',
-  consentDecline: 'Not now',
-  recording: 'Recording',
-  stop: 'Stop',
-  reviewTitle: 'Send the recording to support?',
-  reviewBody: 'The recording is {duration} long. Review it before sending.',
-  noteLabel: 'What went wrong? (optional)',
-  send: 'Send to support',
-  discard: 'Discard',
-  sent: 'Recording sent',
-  failed: 'The recording could not be sent.',
-  close: 'Close',
-  uploading: 'Sending…',
-  openReplay: 'Open replay',
-  retry: 'Retry',
-};
+import { DEFAULT_MESSAGES, type RecorderMessages } from './messages.ts';
+import { formatDuration } from './format.ts';
+import { focusReturn, trapFocus } from './kit/index.ts';
+export { DEFAULT_MESSAGES, type RecorderMessages, formatDuration };
 
 /** CSS colors/fonts/radii. Omitted values inherit Replays host tokens. */
 export type RecorderTheme = Partial<
@@ -145,11 +102,6 @@ function format(template: string, values: Record<string, string>) {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
 }
 
-export function formatDuration(ms: number) {
-  const seconds = Math.max(0, Math.round(ms / 1000));
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
-}
-
 /**
  * The built-in, framework-free UI: a consent dialog, a recording pill with a
  * Stop button, a review dialog and a result toast. It lives in a shadow root
@@ -180,7 +132,9 @@ const link = (label: string, href: string) => {
   return safe ? element('a', { href: safe, target: '_blank', rel: 'noopener noreferrer' }, [label]) : undefined;
 };
 
-export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
+export function createDefaultUi(
+  options: DefaultUiOptions = {},
+): RecorderUi & Required<Pick<RecorderUi, 'showUploading' | 'showResult' | 'dismiss'>> {
   const messages = {
     ...DEFAULT_MESSAGES,
     ...(options.privacyMode === 'visible'
@@ -334,15 +288,17 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
         return;
       }
       const { root, remove } = mount();
-      const previous = document.activeElement as HTMLElement | null;
+      const previous = focusReturn();
+      const trap = { release: () => {} };
       let done = false;
       const onAbort = () => finish(cancelValue);
       const finish = (value: T) => {
         if (done) return;
         done = true;
         signal?.removeEventListener('abort', onAbort);
+        trap.release();
         remove();
-        previous?.focus();
+        previous.restore();
         resolve(value);
       };
       // discard() or destroy() while the dialog is open.
@@ -357,11 +313,12 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
         if (event.key === 'Escape') finish(cancelValue);
       });
       root.append(element('div', { className: 'backdrop' }, [box]));
+      trap.release = trapFocus(box);
       focus.focus();
     });
 
   return {
-    requestConsent: ({ maxDurationMs, signal }) =>
+    requestConsent: ({ maxDurationMs, signal, privacy }) =>
       dialog<boolean>(
         (finish) => {
           const accept = element(
@@ -373,7 +330,9 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
             },
             [messages.consentAccept],
           );
+          accept.dataset.recorderAction = 'consent-accept';
           const decline = element('button', { type: 'button', onclick: () => finish(false) }, [messages.consentDecline]);
+          decline.dataset.recorderAction = 'consent-decline';
           return {
             title: messages.consentTitle,
             body: [
@@ -382,7 +341,12 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
                   minutes: String(Math.max(1, Math.round(maxDurationMs / 60_000))),
                 }),
               ]),
-              element('p', {}, [messages.consentPrivacy]),
+              element('p', {}, [
+                options.messages?.consentPrivacy ??
+                  (privacy
+                    ? `${privacy.captures.pageText ? 'Visible page text is recorded.' : 'Page text is masked.'} ${privacy.captures.inputs ? 'Ordinary inputs are recorded; passwords stay masked.' : 'Inputs are masked.'} ${privacy.captures.media ? 'Media may be recorded.' : 'Media is blocked.'} ${privacy.reviewRequired ? 'Review before sending.' : 'Sent when you stop.'}`
+                    : messages.consentPrivacy),
+              ]),
               element('div', { className: 'actions' }, [decline, accept]),
             ],
             // Declining is the safe default for an accidental Enter.
@@ -394,7 +358,7 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
       ),
 
     dismiss,
-    showIndicator: ({ startedAt, stop }) => {
+    showIndicator: ({ startedAt, maxDurationMs, stop, attestStop }) => {
       const { content, label } = surface('recording', messages.recording);
       label.className = 'message recording-label';
       updateText(label, messages.recording);
@@ -408,12 +372,24 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
         icon,
         element('span', { className: 'sr-only' }, [messages.stop]),
       ]);
+      stopButton.dataset.recorderAction = 'stop';
       content.append(dot, label, time, stopButton);
+      const releaseStop = attestStop?.(stopButton);
       settleSurface();
+      let warning = 'none';
       timer = setInterval(() => {
         updateText(time, formatDuration(Date.now() - startedAt));
+        const remaining = maxDurationMs - (Date.now() - startedAt);
+        const next = remaining <= 10000 ? 'final' : remaining <= 30000 ? 'soon' : 'none';
+        if (next !== warning && next !== 'none' && floating)
+          floating.live.textContent =
+            next === 'final' ? (messages.warningFinal ?? '10 seconds left') : (messages.warningSoon ?? '30 seconds left');
+        warning = next;
       }, 1000);
-      return hideSurface;
+      return () => {
+        releaseStop?.();
+        hideSurface();
+      };
     },
 
     confirmUpload: ({ summary, signal }) =>
@@ -423,6 +399,7 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
             id: 'recorder-note',
             maxLength: 2_000,
           });
+          note.dataset.recorderField = 'note';
           const send = element(
             'button',
             {
@@ -432,7 +409,9 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
             },
             [messages.send],
           );
+          send.dataset.recorderAction = 'send';
           const discard = element('button', { type: 'button', onclick: () => finish({ confirmed: false }) }, [messages.discard]);
+          discard.dataset.recorderAction = 'discard';
           return {
             title: messages.reviewTitle,
             body: [
@@ -475,26 +454,19 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
       const current = surface(receipt ? 'complete' : 'error', text);
       const ownGeneration = generation;
       const feedback = element('span', { className: 'sr-only' });
+      const announce = (message: string, control?: HTMLElement) => {
+        if (generation !== ownGeneration) return;
+        const target = control ?? feedback;
+        if (!control) target.className = 'copy-feedback';
+        target.textContent = message;
+        current.live.textContent = message;
+      };
       const copy = async (value?: string, control?: HTMLElement) => {
         try {
           await navigator.clipboard.writeText(value ?? receipt?.url ?? receipt?.reference ?? receipt?.replayId ?? '');
-          if (generation === ownGeneration) {
-            if (control) control.textContent = 'Copied';
-            else {
-              feedback.className = 'copy-feedback';
-              feedback.textContent = 'Copied';
-            }
-            current.live.textContent = 'Copied';
-          }
+          announce(messages.copied ?? 'Copied', control);
         } catch {
-          if (generation === ownGeneration) {
-            if (control) control.textContent = 'Could not copy';
-            else {
-              feedback.className = 'copy-feedback';
-              feedback.textContent = 'Could not copy';
-            }
-            current.live.textContent = 'Could not copy';
-          }
+          announce(messages.copyFailed ?? 'Could not copy', control);
         }
       };
       const context: CompletionContext = {
@@ -516,7 +488,7 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
           const actions: readonly CompletionAction[] =
             completion?.actions ??
             (receipt.url && safeHref(receipt.url)
-              ? [{ id: 'copy-link', label: 'Copy link', kind: 'copy', value: safeHref(receipt.url)! }]
+              ? [{ id: 'copy-link', label: messages.copyLink ?? 'Copy link', kind: 'copy', value: safeHref(receipt.url)! }]
               : []);
           for (const action of actions) {
             let control: HTMLElement | undefined;
@@ -544,12 +516,16 @@ export function createDefaultUi(options: DefaultUiOptions = {}): RecorderUi {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
           }
-          if (result.status === 'error' && result.retry)
-            controls.append(element('button', { type: 'button', onclick: result.retry }, [messages.retry]));
+          if (result.status === 'error' && result.retry) {
+            const retry = element('button', { type: 'button', onclick: result.retry }, [messages.retry]);
+            retry.dataset.recorderAction = 'retry';
+            controls.append(retry);
+          }
         }
         current.content.append(feedback);
       }
       const close = element('button', { type: 'button', className: 'icon-button', title: messages.close, onclick: dismiss }, ['×']);
+      close.dataset.recorderAction = 'dismiss';
       close.setAttribute('aria-label', messages.close);
       controls.append(close);
       current.content.append(controls);

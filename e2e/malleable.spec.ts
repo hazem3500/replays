@@ -296,7 +296,7 @@ test('an agent, through the MCP server, builds "failed requests by endpoint"; th
     const deployment = JSON.parse(/## This deployment\s+```json\n([\s\S]*?)\n```/.exec(api.text)![1]!);
     expect(deployment.theme.tokens['--accent']).toBeTruthy();
     expect(deployment.policy).toMatchObject({
-      scopes: ['user', 'workspace'],
+      scopes: ['user'],
       capabilities: { 'comments:write': 'ask' },
       lockedSurfaces: [],
     });

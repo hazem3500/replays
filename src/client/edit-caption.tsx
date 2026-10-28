@@ -1,9 +1,8 @@
 import './step-caption.css';
 
-import { AnimatedText } from '@/components/animated-text.tsx';
-
 import { editCaptionAt, type PlaybackEffects } from '../shared/effects.ts';
 import { usePlayhead } from './player.ts';
+import { CaptionMorph } from './CaptionMorph.tsx';
 
 /**
  * A caption from the edit list (src/shared/effects.ts), at the bottom of the recorded frame while the playhead is
@@ -12,11 +11,19 @@ import { usePlayhead } from './player.ts';
  */
 export function EditCaption({ captions }: { captions: PlaybackEffects['captions'] }) {
   const label = usePlayhead((time) => editCaptionAt(captions, time)?.label ?? '');
-  if (!label) return null;
   return (
-    <div className="step-caption" aria-hidden="true" data-testid="edit-caption">
+    <div
+      className="step-caption step-caption-live"
+      data-active={label ? 'true' : 'false'}
+      data-testid="edit-caption"
+      role="status"
+      aria-live="off"
+      aria-label={label || undefined}
+    >
       <span className="step-caption-text">
-        <AnimatedText className="step-caption-label" text={label} />
+        <span className="step-caption-label" aria-hidden="true">
+          <CaptionMorph text={label} />
+        </span>
       </span>
     </div>
   );

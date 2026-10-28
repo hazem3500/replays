@@ -190,7 +190,7 @@ describe('createRecorder', () => {
     recorder.stop();
     await flush();
     expect([...document.querySelectorAll('[data-recorder-ui]')].map((host) => host.shadowRoot?.textContent).join(' ')).toContain(
-      'Send the recording to support?',
+      'Send recording?',
     );
     recorder.discard();
     await expect(request).resolves.toBeUndefined();

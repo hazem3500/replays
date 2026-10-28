@@ -75,6 +75,7 @@
     "@tanstack/query-db-collection": "1.4.8",
     "@tanstack/react-db": "0.5.12",
     "@tanstack/react-query": "5.104.2",
+    "@tanstack/react-virtual": "3.14.23",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
     "class-variance-authority": "0.7.1",
@@ -91,8 +92,10 @@
     "tailwind-merge": "3.7.0",
     "ws": "8.22.0",
     "xstate": "5.33.3",
-    "srvx": "1.0.7",
+    "calligraph": "1.4.1",
+    "motion": "12.43.0",
     "rou3": "1.0.0",
+    "srvx": "1.0.7",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -197,10 +200,34 @@
       "default": "./dist/lib/plugins-gcs.mjs"
     },
     "./package.json": "./package.json",
+    "./recorder/kit": {
+      "types": "./dist/types/recorder/kit/index.d.ts",
+      "default": "./dist/lib/recorder-kit.mjs"
+    },
+    "./recorder/ui": {
+      "types": "./dist/types/recorder/ui/index.d.ts",
+      "default": "./dist/lib/recorder-ui.mjs"
+    },
+    "./recorder/react": {
+      "types": "./dist/types/recorder/react/index.d.ts",
+      "default": "./dist/lib/recorder-react.mjs"
+    },
+    "./recorder/testing": {
+      "types": "./dist/types/recorder/testing/index.d.ts",
+      "default": "./dist/lib/recorder-testing.mjs"
+    },
     "./recorder": {
       "types": "./dist/types/recorder/index.d.ts",
       "browser": "./dist/lib/recorder.mjs",
       "default": "./dist/lib/recorder.mjs"
+    }
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
     }
   }
 }

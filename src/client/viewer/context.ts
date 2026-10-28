@@ -2,6 +2,7 @@ import { createContext, useContext } from 'react';
 
 import type { ReplayStep } from '../../shared/replay.ts';
 import type { ReplayError } from '../issues.ts';
+import type { ProjectedHighlight } from '../../shared/highlights.ts';
 
 export type BuiltinInspectorTab = 'console' | 'network' | 'waterfall' | 'performance' | 'context';
 /** A tab a client plugin registered: `plugin:<plugin>:<id>` (src/client/plugins/). */
@@ -43,6 +44,8 @@ export interface ViewerActions {
   editsVersion?: string;
   /** The saved edits carry their own captions: they replace the step captions (and their switch). */
   editCaptions?: boolean;
+  /** Saved navigation marks mapped onto the playback timeline. */
+  highlights?: ProjectedHighlight[];
 }
 
 export const ViewerContext = createContext<ViewerActions | null>(null);

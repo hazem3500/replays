@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 350187,
-      "gzip": 89552,
-      "brotli": 73824
+      "raw": 410510,
+      "gzip": 105480,
+      "brotli": 86221
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -23,9 +23,39 @@
       "brotli": 792
     },
     "dist/client/assets/boot-HASH.js": {
-      "raw": 2326,
-      "gzip": 1115,
-      "brotli": 947
+      "raw": 2321,
+      "gzip": 1111,
+      "brotli": 943
+    },
+    "dist/client/assets/brand/apple-touch-icon.png": {
+      "raw": 3240,
+      "gzip": 2990,
+      "brotli": 2952
+    },
+    "dist/client/assets/brand/favicon-32.png": {
+      "raw": 921,
+      "gzip": 944,
+      "brotli": 925
+    },
+    "dist/client/assets/brand/favicon.svg": {
+      "raw": 622,
+      "gzip": 287,
+      "brotli": 250
+    },
+    "dist/client/assets/brand/icon-192.png": {
+      "raw": 3154,
+      "gzip": 2862,
+      "brotli": 2833
+    },
+    "dist/client/assets/brand/icon-512.png": {
+      "raw": 8906,
+      "gzip": 7364,
+      "brotli": 7331
+    },
+    "dist/client/assets/brand/manifest.json": {
+      "raw": 568,
+      "gzip": 241,
+      "brotli": 190
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2369,
@@ -34,33 +64,33 @@
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
-      "gzip": 17816,
+      "gzip": 17815,
       "brotli": 15415
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "gzip": 219,
+      "gzip": 218,
       "brotli": 208
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 17524,
-      "gzip": 3874,
-      "brotli": 3391
+      "raw": 35060,
+      "gzip": 6742,
+      "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 53233,
-      "gzip": 18818,
-      "brotli": 16302
+      "raw": 82495,
+      "gzip": 26552,
+      "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 29642,
-      "gzip": 5826,
-      "brotli": 5188
+      "raw": 33095,
+      "gzip": 6332,
+      "brotli": 5643
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 182491,
-      "gzip": 62079,
-      "brotli": 52999
+      "raw": 332366,
+      "gzip": 110268,
+      "brotli": 95018
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -73,19 +103,19 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 216805,
-      "gzip": 37398,
-      "brotli": 31804
+      "raw": 252078,
+      "gzip": 43332,
+      "brotli": 36049
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 437933,
-      "gzip": 141877,
-      "brotli": 116502
+      "raw": 727142,
+      "gzip": 236638,
+      "brotli": 191694
     },
     "dist/client/assets/MalleableHost-HASH.css": {
-      "raw": 7307,
-      "gzip": 1894,
-      "brotli": 1616
+      "raw": 8084,
+      "gzip": 2054,
+      "brotli": 1747
     },
     "dist/client/assets/MalleableHost-HASH.js": {
       "raw": 77463,
@@ -93,9 +123,9 @@
       "brotli": 22782
     },
     "dist/client/assets/performance-HASH.js": {
-      "raw": 4242,
-      "gzip": 1814,
-      "brotli": 1627
+      "raw": 21000,
+      "gzip": 7952,
+      "brotli": 7176
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -108,14 +138,14 @@
       "brotli": 68380
     },
     "dist/client/assets/queries-HASH.js": {
-      "raw": 32628,
-      "gzip": 10261,
-      "brotli": 9343
+      "raw": 35581,
+      "gzip": 11427,
+      "brotli": 10326
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225484,
       "gzip": 69512,
-      "brotli": 59861
+      "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1516,
@@ -128,14 +158,14 @@
       "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 748,
-      "gzip": 442,
-      "brotli": 394
+      "raw": 939,
+      "gzip": 528,
+      "brotli": 474
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1373,
-      "gzip": 671,
-      "brotli": 547
+      "raw": 1816,
+      "gzip": 805,
+      "brotli": 657
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -150,12 +180,12 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 18081,
       "gzip": 7488,
-      "brotli": 6354
+      "brotli": 6349
     },
     "dist/client/assets/tools-HASH.js": {
-      "raw": 38948,
-      "gzip": 13458,
-      "brotli": 12055
+      "raw": 34795,
+      "gzip": 12373,
+      "brotli": 11139
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -178,9 +208,9 @@
       "brotli": 84146
     },
     "dist/client/index.html": {
-      "raw": 10783,
-      "gzip": 3889,
-      "brotli": 3202
+      "raw": 11858,
+      "gzip": 4123,
+      "brotli": 3429
     },
     "dist/client/render.html": {
       "raw": 1294,
@@ -188,9 +218,9 @@
       "brotli": 411
     },
     "dist/lib/capture.mjs": {
-      "raw": 1625,
-      "gzip": 493,
-      "brotli": 417
+      "raw": 1703,
+      "gzip": 510,
+      "brotli": 428
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -199,18 +229,28 @@
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
-      "gzip": 18876,
-      "brotli": 16354
+      "gzip": 18875,
+      "brotli": 16324
     },
     "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
       "raw": 272355,
       "gzip": 72905,
       "brotli": 59492
     },
+    "dist/lib/chunks/context.schema.json-e7797a970d02.mjs": {
+      "raw": 298271,
+      "gzip": 78441,
+      "brotli": 64244
+    },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
+    },
+    "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
+      "raw": 32734,
+      "gzip": 9422,
+      "brotli": 8354
     },
     "dist/lib/chunks/define.ts-b89f8e39bfa0.mjs": {
       "raw": 32426,
@@ -224,8 +264,13 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "gzip": 9499,
-      "brotli": 8394
+      "gzip": 9497,
+      "brotli": 8390
+    },
+    "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
+      "raw": 434,
+      "gzip": 296,
+      "brotli": 231
     },
     "dist/lib/chunks/index.ts-21682b68ed82.mjs": {
       "raw": 0,
@@ -237,10 +282,25 @@
       "gzip": 10732,
       "brotli": 9330
     },
+    "dist/lib/chunks/index.ts-7a66decb29dc.mjs": {
+      "raw": 28475,
+      "gzip": 8376,
+      "brotli": 7278
+    },
+    "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
+      "raw": 18258,
+      "gzip": 4951,
+      "brotli": 4342
+    },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31393,
       "gzip": 8181,
       "brotli": 7133
+    },
+    "dist/lib/chunks/registry.ts-e9358072f05f.mjs": {
+      "raw": 37373,
+      "gzip": 9635,
+      "brotli": 8407
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -263,19 +323,19 @@
       "brotli": 884
     },
     "dist/lib/config.mjs": {
-      "raw": 269,
-      "gzip": 148,
-      "brotli": 131
+      "raw": 348,
+      "gzip": 169,
+      "brotli": 149
     },
     "dist/lib/index.mjs": {
-      "raw": 1509,
-      "gzip": 494,
-      "brotli": 420
+      "raw": 1588,
+      "gzip": 512,
+      "brotli": 436
     },
     "dist/lib/plugin.mjs": {
-      "raw": 661,
-      "gzip": 272,
-      "brotli": 222
+      "raw": 743,
+      "gzip": 299,
+      "brotli": 250
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
@@ -287,15 +347,65 @@
       "gzip": 1596,
       "brotli": 1370
     },
+    "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs": {
+      "raw": 48604,
+      "gzip": 13176,
+      "brotli": 11629
+    },
+    "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
+      "raw": 6769,
+      "gzip": 1901,
+      "brotli": 1709
+    },
+    "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs": {
+      "raw": 752,
+      "gzip": 401,
+      "brotli": 335
+    },
+    "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
+      "raw": 2889,
+      "gzip": 1146,
+      "brotli": 939
+    },
+    "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs": {
+      "raw": 863,
+      "gzip": 461,
+      "brotli": 367
+    },
+    "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs": {
+      "raw": 1644,
+      "gzip": 767,
+      "brotli": 630
+    },
+    "dist/lib/recorder-kit.mjs": {
+      "raw": 525,
+      "gzip": 238,
+      "brotli": 202
+    },
+    "dist/lib/recorder-react.mjs": {
+      "raw": 5462,
+      "gzip": 1661,
+      "brotli": 1525
+    },
+    "dist/lib/recorder-testing.mjs": {
+      "raw": 10357,
+      "gzip": 3161,
+      "brotli": 2719
+    },
+    "dist/lib/recorder-ui.mjs": {
+      "raw": 27207,
+      "gzip": 7884,
+      "brotli": 6908
+    },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
       "gzip": 60962,
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 69788,
-      "gzip": 19129,
-      "brotli": 16709
+      "raw": 6031,
+      "gzip": 1928,
+      "brotli": 1680
     },
     "dist/lib/server-testing.mjs": {
       "raw": 11887,
@@ -303,29 +413,29 @@
       "brotli": 3072
     },
     "dist/lib/server.mjs": {
-      "raw": 1590,
-      "gzip": 552,
-      "brotli": 458
+      "raw": 1668,
+      "gzip": 568,
+      "brotli": 474
     },
     "dist/lib/viewer.mjs": {
-      "raw": 470,
-      "gzip": 301,
-      "brotli": 255
+      "raw": 17093,
+      "gzip": 4814,
+      "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 218726,
-      "gzip": 38342,
-      "brotli": 32621
+      "raw": 253962,
+      "gzip": 44258,
+      "brotli": 36850
     },
     "initial/index.html/js": {
-      "raw": 1202822,
-      "gzip": 382627,
-      "brotli": 311376
+      "raw": 1288570,
+      "gzip": 410206,
+      "brotli": 328486
     },
     "initial/render.html/css": {
-      "raw": 4810,
-      "gzip": 2321,
-      "brotli": 1929
+      "raw": 5252,
+      "gzip": 2455,
+      "brotli": 2038
     },
     "initial/render.html/js": {
       "raw": 542325,
@@ -345,44 +455,452 @@
       "pr": "https://github.com/hazem3500/replays/pull/59"
     },
     {
-      "file": "dist/client/assets/performance-HASH.js",
+      "file": "dist/lib/server-testing.mjs",
       "cap": {
-        "raw": 4242,
-        "gzip": 1815,
-        "brotli": 1632
+        "raw": 11887,
+        "gzip": 3494,
+        "brotli": 3072
       },
-      "reason": "Performance evidence extraction shared by the viewer and the new comparison route through a lazy chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/59"
+      "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
+      "pr": "https://github.com/hazem3500/replays/pull/63"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
+      "file": "dist/lib/recorder-kit.mjs",
       "cap": {
-        "raw": 216805,
-        "gzip": 37398,
-        "brotli": 31804
+        "raw": 525,
+        "gzip": 238,
+        "brotli": 202
       },
-      "reason": "Comparison responsive panes, gallery controls and scenario alignment add reviewed shared shell styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/59"
+      "reason": "The new headless recorder kit entry is a published subpath export that did not exist before the core split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
-      "file": "initial/index.html/css",
+      "file": "dist/lib/recorder-react.mjs",
       "cap": {
-        "raw": 218726,
-        "gzip": 38342,
-        "brotli": 32621
+        "raw": 5462,
+        "gzip": 1661,
+        "brotli": 1525
       },
-      "reason": "The comparison loading shell shares workspace CSS in the initial stylesheet; this allocates its measured baseline growth.",
-      "pr": "https://github.com/hazem3500/replays/pull/59"
+      "reason": "The new React recorder adapter is a published subpath export built on the headless kit.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-testing.mjs",
+      "cap": {
+        "raw": 10357,
+        "gzip": 3161,
+        "brotli": 2719
+      },
+      "reason": "The new recorder testing subpath ships the fakes and contract suite for custom UI authors.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-ui.mjs",
+      "cap": {
+        "raw": 27207,
+        "gzip": 7884,
+        "brotli": 6908
+      },
+      "reason": "The default guided recorder UI moved to its own published subpath when the core was split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs",
+      "cap": {
+        "raw": 48604,
+        "gzip": 13176,
+        "brotli": 11629
+      },
+      "reason": "Shared recorder core chunk now shared between the recorder entries instead of bundled once.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
+      "cap": {
+        "raw": 6769,
+        "gzip": 1901,
+        "brotli": 1709
+      },
+      "reason": "Deferred default-UI loader chunk shared by the recorder entries after the core split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs",
+      "cap": {
+        "raw": 752,
+        "gzip": 401,
+        "brotli": 335
+      },
+      "reason": "Message formatting chunk shared by the recorder core and UI entries after the split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs",
+      "cap": {
+        "raw": 2889,
+        "gzip": 1146,
+        "brotli": 939
+      },
+      "reason": "Recorder kit store and timer chunk shared by the kit, React and UI entries.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs",
+      "cap": {
+        "raw": 863,
+        "gzip": 461,
+        "brotli": 367
+      },
+      "reason": "Recorder message catalog chunk shared by the core and UI entries after the split.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs",
+      "cap": {
+        "raw": 1644,
+        "gzip": 767,
+        "brotli": 630
+      },
+      "reason": "Privacy facts and block attribute chunk shared by the core and UI entries.",
+      "pr": "https://github.com/hazem3500/replays/pull/69"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 410510,
+        "gzip": 105480,
+        "brotli": 86221
+      },
+      "reason": "The new replays plugin check command bundles the fixture-based plugin check harness and shared plugin validation into the CLI.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/client/assets/MalleableHost-HASH.css",
+      "cap": {
+        "raw": 8084,
+        "gzip": 2054,
+        "brotli": 1747
+      },
+      "reason": "Workspace plugin review and per-person settings add reviewed host panel styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/capture.mjs",
+      "cap": {
+        "raw": 1703,
+        "gzip": 513,
+        "brotli": 434
+      },
+      "reason": "The shared plugin validation module is bundled into this library entry after unifying plugin contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
+      "cap": {
+        "raw": 434,
+        "gzip": 296,
+        "brotli": 231
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs",
+      "cap": {
+        "raw": 18258,
+        "gzip": 4951,
+        "brotli": 4342
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/index.mjs",
+      "cap": {
+        "raw": 1588,
+        "gzip": 515,
+        "brotli": 440
+      },
+      "reason": "The main library entry re-exports the extension platform plugin contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1668,
+        "gzip": 570,
+        "brotli": 477
+      },
+      "reason": "The server entry wires the workspace plugin policy and settings routes into the library.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/lib/viewer.mjs",
+      "cap": {
+        "raw": 17093,
+        "gzip": 4814,
+        "brotli": 4239
+      },
+      "reason": "The published viewer plugin API now exports the slot registry, slot names and descriptor contracts.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 35060,
+        "gzip": 6742,
+        "brotli": 5984
+      },
+      "reason": "Playback highlights, the mobile timeline toolbar and object picker, plus the standing Appearance panel require these reviewed editor styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 82506,
+        "gzip": 26552,
+        "brotli": 23404
+      },
+      "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
-        "raw": 29642,
-        "gzip": 5826,
-        "brotli": 5188
+        "raw": 33095,
+        "gzip": 6332,
+        "brotli": 5643
       },
-      "reason": "Network request search and filter toolbar, phone tap targets and waterfall request controls add these reviewed styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/62"
+      "reason": "Highlight scrubber markers and caption morph presentation share the lazy inspector stylesheet and add these reviewed styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 332366,
+        "gzip": 110268,
+        "brotli": 95018
+      },
+      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/rolldown-runtime-HASH.js",
+      "cap": {
+        "raw": 939,
+        "gzip": 528,
+        "brotli": 474
+      },
+      "reason": "Caption morph modules require additional bundler module interop helpers in this shared runtime.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 1816,
+        "gzip": 805,
+        "brotli": 657
+      },
+      "reason": "Caption morphing and wrapped step captions add presentation styles shared by viewer and video export.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5252,
+        "gzip": 2455,
+        "brotli": 2038
+      },
+      "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/performance-HASH.js",
+      "cap": {
+        "raw": 21000,
+        "gzip": 7952,
+        "brotli": 7176
+      },
+      "reason": "Settings no longer uses Base UI Tabs, so the lazy Inspector and comparison chunks share Tabs through this chunk instead of the eager main chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/queries-HASH.js",
+      "cap": {
+        "raw": 35581,
+        "gzip": 11427,
+        "brotli": 10326
+      },
+      "reason": "The client config module now reads the server's allowed beta flags and the person's Labs choices (labs.ts and the shared beta-flag registry), and the one config query lives here.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-7a66decb29dc.mjs",
+      "cap": {
+        "raw": 28475,
+        "gzip": 8376,
+        "brotli": 7278
+      },
+      "reason": "The shared library chunk that holds plugin contracts now also carries the beta-flag registry the server parses flags from; it replaces index.ts-67a29d5237e2.",
+      "pr": "https://github.com/hazem3500/replays/pull/102"
+    },
+    {
+      "file": "dist/client/assets/brand/apple-touch-icon.png",
+      "cap": {
+        "raw": 3240,
+        "gzip": 2990,
+        "brotli": 2952
+      },
+      "reason": "The 180 px home-screen icon drawn from the mark (scripts/build-icons.mjs).",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/favicon-32.png",
+      "cap": {
+        "raw": 921,
+        "gzip": 944,
+        "brotli": 925
+      },
+      "reason": "The 32 px PNG favicon for browsers without SVG favicons.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/favicon.svg",
+      "cap": {
+        "raw": 622,
+        "gzip": 287,
+        "brotli": 250
+      },
+      "reason": "The four-segment favicon cut of the mark, with a dark-scheme colour.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/icon-192.png",
+      "cap": {
+        "raw": 3154,
+        "gzip": 2862,
+        "brotli": 2833
+      },
+      "reason": "The 192 px maskable web-app icon.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/icon-512.png",
+      "cap": {
+        "raw": 8906,
+        "gzip": 7364,
+        "brotli": 7331
+      },
+      "reason": "The 512 px maskable web-app icon.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/brand/manifest.json",
+      "cap": {
+        "raw": 568,
+        "gzip": 241,
+        "brotli": 190
+      },
+      "reason": "The web app manifest naming the product and listing its icons.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/index.html",
+      "cap": {
+        "raw": 11858,
+        "gzip": 4123,
+        "brotli": 3429
+      },
+      "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name.",
+      "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "brotli": 250
+      },
+      "reason": "Brotli drift of one byte in the plugin entry after the source-provider types gained a mark.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 727142,
+        "gzip": 236638,
+        "brotli": 191694
+      },
+      "reason": "The replay list's empty and error states (per-state copy and actions, active-filter chips) and the auto-retry hook join the eager index graph, about 6.5 KB raw over main, which already carries the Settings dialog and the provider marks.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 252078,
+        "gzip": 43332,
+        "brotli": 36049
+      },
+      "reason": "EmptyState's active-filter chips and retry status line return to the app stylesheet (under 1 KB raw), on top of the Settings and EmptyState styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 253962,
+        "gzip": 44258,
+        "brotli": 36850
+      },
+      "reason": "The initial index style group carries the same EmptyState chips and status styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "raw": 348,
+        "gzip": 169,
+        "brotli": 149
+      },
+      "reason": "The config entry compresses 4 bytes of Brotli (140 to 144) and 1 byte of gzip over main after the error-classification changes; measured in CI.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs",
+      "cap": {
+        "raw": 32734,
+        "gzip": 9422,
+        "brotli": 8354
+      },
+      "reason": "The safe-error change alters the shared define chunk source set and so its identity; measured 31780 raw bytes, 299 below the 32079 the previous identity measured on main.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs",
+      "cap": {
+        "raw": 3950,
+        "gzip": 1449,
+        "brotli": 1306
+      },
+      "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-e7797a970d02.mjs",
+      "cap": {
+        "raw": 298271,
+        "gzip": 78441,
+        "brotli": 64244
+      },
+      "reason": "The web-standard plugin route and middleware types change the server entry source set, so the shared schema chunk gets a new source-set identity; its size is the embedded schemas, 289583 raw bytes measured in CI.",
+      "pr": "https://github.com/hazem3500/replays/pull/89"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-e9358072f05f.mjs",
+      "cap": {
+        "raw": 37373,
+        "gzip": 9635,
+        "brotli": 8407
+      },
+      "reason": "The plugin registry chunk now also registers web routes and middleware (api.route, api.middleware, their validation and ordering), growing from 31954 to 36284 raw bytes in CI.",
+      "pr": "https://github.com/hazem3500/replays/pull/89"
     },
     {
       "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
@@ -393,24 +911,6 @@
       },
       "reason": "Embed canonical replay/context schemas and validate upload envelopes before hooks; the shared server chunk source identity changes.",
       "pr": "https://github.com/hazem3500/replays/pull/77"
-    },
-    {
-      "file": "dist/lib/config.mjs",
-      "cap": {
-        "brotli": 131
-      },
-      "reason": "The generated import hash changes with the upload schema chunk; runtime source and entry footprint are measured in this PR.",
-      "pr": "https://github.com/hazem3500/replays/pull/77"
-    },
-    {
-      "file": "dist/lib/server-testing.mjs",
-      "cap": {
-        "raw": 11887,
-        "gzip": 3494,
-        "brotli": 3072
-      },
-      "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
-      "pr": "https://github.com/hazem3500/replays/pull/63"
     },
     {
       "file": "dist/client/assets/write-HASH.js",

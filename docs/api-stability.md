@@ -12,7 +12,7 @@ so every change to the surface shows up in a diff).
 | Surface | Where | Status |
 | --- | --- | --- |
 | Config file keys and `defineConfig` | `@hazem3500/replays/config` | Public |
-| Plugin API: `definePlugin`, `PluginApi` methods and their hook contexts, `PluginError` codes, `rejectUpload`, `PLUGIN_API_VERSION` | `/plugin` | Public |
+| Plugin API: `definePlugin`, `PluginApi` methods (including the web-standard `route` and `middleware`, with `PluginRoute`, `PluginMiddleware` and `StandardSchemaV1`) and their hook contexts, upload endpoint options, `PluginError` codes, `rejectUpload`, `HttpError`, `tooManyRequests`, `PLUGIN_API_VERSION` | `/plugin` | Public |
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions | `/viewer` | Public |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
@@ -20,7 +20,7 @@ so every change to the surface shows up in a diff).
 | Capture and data model: recording, bundle building, sanitising, source providers, `ReplayBundle` and friends | `/capture`, `.` | Public |
 | The replay format (`replay.json`, `meta.version`, the context block) | – | Public: changes are additive, or bump `version` and keep reading the old one |
 | HTTP API (`/api/replays`, `/api/suites`, `/api/config`, `/api/me`, upload receipts) and environment variables | – | Public: changes are additive |
-| `Identity` (`id`, `email`, `name`, `avatarUrl`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
+| `Identity` (`id`, `email`, `name`, `avatarUrl`, `capabilities`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
 | The `comments` plugin name and the comments HTTP API | – | Public: the name is reserved; the API changes additively |
 | Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed |
 | Host edit write policy (`editing.enabled`, `EDITING_ENABLED`, `/api/config` effective capability) | – | Public: changes are additive; editor format remains beta |
@@ -82,3 +82,26 @@ release when that is feasible, and says so in the CHANGELOG; otherwise the CHANG
 - Import only from the subpaths in `exports`.
 - Keep a test that starts the server with your config and plugins (see "Testing a plugin" in extension-api.md); it is the cheapest upgrade check.
 - Run `pnpm up @hazem3500/replays` on a branch, read the CHANGELOG range, fix deprecation warnings, merge.
+
+The additive slot API (`SlotRegistry`, `SLOT_NAMES`, `SlotDescriptor`, `SlotConfiguration`,
+`SlotMountContext`, `ViewerPluginApi.configureSlot` and `registerSlotItem`) remains in viewer
+API generation 1. `PLUGIN_API_VERSION` remains 1: generations increase for incompatible major
+changes, not additions. Documented slot names, core item ids published by each view, and
+`data-slot`/`data-slot-item` are public. A new slot or core id is additive; removing or renaming one
+follows the deprecation rules above.
+
+Sandboxed plugin settings (`manifest.settings`, asynchronous `ctx.settings.get/set`, and the
+versioned per-person settings HTTP routes) are additive to the beta user-plugin format. The host
+browser setting definitions and synchronous read/subscription contract are unchanged.
+
+`replays plugin check` is an additive CLI command. `ViewerRegistry` is exported from `/viewer` for
+isolated hosts and plugin harnesses; this is an additive browser API change in generation 1.
+
+
+`ViewerPluginApi.registerPluginPage` and `PluginPageDefinition` / `PluginPageContext` /
+`PluginPageLoadContext` are additive host-browser APIs. Plugin routes use `/p/<plugin>/…` and
+scoped navigation. `Identity.roles`, host allow/deny selectors, workspace role policy and
+watchdog configuration are additive. The beta malleable scope default changes to personal-only;
+workspace publishing now requires an administrator role and per-person acceptance before code
+runs. The malleable feature flag remains off by default. API generations remain 1; a future
+flag-default change requires an announced minor release as described in malleability.md.

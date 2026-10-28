@@ -7,6 +7,14 @@ export function readStorage(key: string): string | null {
   }
 }
 
+export function removeStorage(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // why: blocked storage throws; there is nothing to remove then.
+  }
+}
+
 export function writeStorage(key: string, value: string) {
   try {
     localStorage.setItem(key, value);

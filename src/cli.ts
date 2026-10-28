@@ -14,6 +14,7 @@ Commands:
   config    show saved server names, or reset local CLI configuration
   doctor    check whether the configured viewer server is reachable
   migrate   copy a store into another, converting stored replays (see: ${PRODUCT_SLUG} migrate --help)
+  plugin    check a server/browser/user plugin against a fixture (plugin check --help)
   mcp       MCP server (stdio) for the plugin workshop's agent bridge (beta: REPLAYS_BETA_MALLEABLE)
   serve     start the viewer and upload server (configuration: environment variables, see the README)
   build-static  copy the built viewer to --out <dir> with the base, name, logo and theme stamped in (CDN hosting;
@@ -53,6 +54,12 @@ switch (command) {
     break;
   case 'migrate':
     await (await import('./server/migrate-cli.ts')).runMigrateCli(rest);
+    break;
+  case 'plugin':
+    if (rest[0] !== 'check') {
+      process.stderr.write('usage: replays plugin check <file> [options]\n');
+      process.exitCode = 2;
+    } else await (await import('./plugin/check.ts')).runPluginCheckCli(rest.slice(1), process.env);
     break;
   case 'mcp':
     await (await import('./mcp/main.ts')).runMcpCli(rest);

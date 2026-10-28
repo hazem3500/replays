@@ -2,6 +2,7 @@ import { LayersIcon } from 'lucide-react';
 import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { ProductMark } from '@/components/brand-mark.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Kbd } from '@/components/ui/kbd.tsx';
 import { useSlidingPill } from '@/components/sliding-highlight.tsx';
@@ -14,7 +15,7 @@ import { formatRelative } from '../format.ts';
 import { INDEX_SEARCH_ALT_KEY, indexSearchShortcut } from '../shortcuts.ts';
 import { replayHref, suiteHref } from '../route.ts';
 import { entryTime, type FeedEntry, suitePosterRun } from './Feed.tsx';
-import { createMarkMotion, createStreak, crossfadeTitle, playheadX, REST_FILLED, SEGMENTS } from './mark-burst.ts';
+import { createMarkMotion, createStreak, crossfadeTitle } from './mark-burst.ts';
 import { Poster } from './Poster.tsx';
 import { sourceText } from './SourceLine.tsx';
 
@@ -25,46 +26,9 @@ import { sourceText } from './SourceLine.tsx';
  */
 
 /**
- * The built-in product mark: a line of five timeline segments, two played (accent), and the playhead after them.
- * Unplayed segments are the text colour at 35 %. mark-burst.ts animates it. A deployment's own logo (config.ts
- * productLogo) replaces it with a plain image.
- */
-export function ProductMark({ size = 24, svgRef }: { size?: number; svgRef?: React.Ref<SVGSVGElement> }) {
-  return (
-    <svg
-      ref={svgRef}
-      className="product-mark"
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      data-filled={REST_FILLED}
-    >
-      {SEGMENTS.map(([x, width], index) => (
-        <rect
-          key={x}
-          className="mark-seg"
-          x={x}
-          y="10"
-          width={width}
-          height="4.2"
-          rx="2.1"
-          data-on={index < REST_FILLED ? '' : undefined}
-        />
-      ))}
-      <g className="mark-playhead" style={{ transform: `translateX(${playheadX(REST_FILLED - 1)}px)` }}>
-        <rect x="-0.95" y="6.6" width="1.9" height="11.2" rx="0.95" />
-        <circle cx="0" cy="6.6" r="1.9" />
-      </g>
-    </svg>
-  );
-}
-
-/**
- * The mark as the "Replays home" button: scrolls the index to the top, with a short brand moment (the built-in mark only) — each click
- * scrubs the mark one segment forward (it drains back 1.5 s after the last); the fifth rapid click lets the playhead
- * backspace the product name and type it back in (mark-burst.ts), then a cooldown.
+ * The mark as the "Replays home" button: scrolls the index to the top, with a short brand moment (the built-in mark
+ * only): each click scrubs the mark one segment forward (it drains back 1.5 s after the last); the fifth rapid click
+ * lets the playhead backspace the product name and type it back in (mark-burst.ts), then a cooldown.
  */
 export function MarkButton() {
   const logo = productLogo();
@@ -89,8 +53,10 @@ export function MarkButton() {
     const step = streak.current.click();
     const title = button.current?.parentElement?.querySelector<HTMLElement>('.index-title');
     if (reduced) {
-      // No mark motion, no typing: the word only crossfades.
-      if (step.burst && title) crossfadeTitle(title);
+      // why: reduced motion keeps the scrub as a state change (segments fill, no movement); the burst only
+      // crossfades the word.
+      if (!step.burst) motion.current?.step(true);
+      else if (title) crossfadeTitle(title);
       return;
     }
     if (step.burst) void motion.current?.burst(title);
@@ -353,10 +319,14 @@ export function CommandSearch({
 
 /* ---------- Scope bar ---------- */
 
-/** Row 2: the result count on the left; Filter, sort and layout (desktop) on the right. */
-export function ScopeBar({ count, children }: { count: ReactNode; children?: ReactNode }) {
+/**
+ * Row 2, one toolbar: the purpose tabs (`lead`) or, without purposes, the result count on the left; the active
+ * filters, Filter, sort and layout (desktop) on the right. With tabs the count stays for screen readers only.
+ */
+export function ScopeBar({ count, lead, children }: { count: ReactNode; lead?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="scope-bar">
+    <div className="scope-bar" data-lead={lead ? '' : undefined}>
+      {lead}
       {count}
       {children ? <div className="scope-bar-end">{children}</div> : null}
     </div>

@@ -24,12 +24,15 @@ import {
 import type { ReplayStep } from '../../shared/replay.ts';
 import { isTypingTarget, type KeyLike, type TargetLike } from '../shortcuts.ts';
 
+export { addPeriodHighlight, addPointHighlight, removeHighlight, updateHighlight } from './highlight-edits.ts';
+
 /**
  * What is selected: the trim, a cut by id, or a range dragged out on the track (not an edit yet: C or S cuts it).
  */
 export type Selection =
   | { kind: 'trim' }
   | { kind: 'cut'; id: string }
+  | { kind: 'highlight'; id: string }
   | { kind: EffectKind; id: string }
   | { kind: 'range'; from: number; to: number }
   | undefined;
@@ -72,6 +75,7 @@ export function initialEditorState(edits: ReplayEdits = EMPTY_EDITS): EditorStat
 function validSelection(edits: ReplayEdits, selection: Selection): Selection {
   if (selection?.kind === 'trim') return edits.trim ? selection : undefined;
   if (selection?.kind === 'cut') return edits.cuts.some((cut) => cut.id === selection.id) ? selection : undefined;
+  if (selection?.kind === 'highlight') return edits.highlights?.some((item) => item.id === selection.id) ? selection : undefined;
   if (selection && selection.kind !== 'range')
     return effectList(edits, selection.kind).some((item) => item.id === selection.id) ? selection : undefined;
   return selection;
@@ -376,6 +380,7 @@ export type EditorShortcut =
   | 'speed'
   | 'blur'
   | 'caption'
+  | 'highlight'
   | 'apply'
   | 'delete'
   | 'deselect';
@@ -444,6 +449,9 @@ export function editorShortcutFor(event: KeyLike, target?: TargetLike | null, ma
     case 't':
     case 'T':
       return 'caption';
+    case 'm':
+    case 'M':
+      return 'highlight';
     case 'Delete':
     case 'Backspace':
       return 'delete';

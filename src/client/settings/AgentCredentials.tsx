@@ -2,6 +2,7 @@ import { CheckIcon, CopyIcon, PlusIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button.tsx';
+import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { Input } from '@/components/ui/input.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
@@ -172,12 +173,12 @@ export function AgentCredentials() {
     expiryChoices.push({ seconds: capability.maxExpirySeconds, label: `${Math.floor(capability.maxExpirySeconds / 60)} minutes` });
 
   return (
-    <section aria-labelledby="agent-credentials-title" className="space-y-3 border-t border-border pt-4">
+    <section aria-labelledby="agent-credentials-title" className="space-y-2 text-xs/relaxed">
       <div className="flex items-center justify-between gap-3">
-        <h3 id="agent-credentials-title" className="font-medium">
+        <h3 id="agent-credentials-title" className="settings-group-title">
           Agent credentials
         </h3>
-        {status === 'ready' && !editing && !secret ? (
+        {status === 'ready' && !editing && !secret && records.length ? (
           <Button
             variant="outline"
             size="sm"
@@ -196,11 +197,7 @@ export function AgentCredentials() {
           Checking credential support…
         </p>
       ) : null}
-      {status === 'unavailable' ? (
-        <p className="text-muted-foreground">
-          API token creation is not available on this deployment. Credentials are issued by its authentication provider.
-        </p>
-      ) : null}
+      {status === 'unavailable' ? <p className="text-muted-foreground">Credential creation isn’t enabled for this deployment.</p> : null}
       {status === 'signin' ? (
         <p className="text-muted-foreground">Sign in through this deployment’s authentication provider to manage agent credentials.</p>
       ) : null}
@@ -222,10 +219,7 @@ export function AgentCredentials() {
       ) : null}
       {status === 'ready' ? (
         <>
-          <p className="text-muted-foreground">
-            These credentials narrow an agent’s access to your account. Agents must also authenticate with this deployment’s host. They
-            cannot use these credentials to record or upload replays.
-          </p>
+          <p className="text-muted-foreground">Restricted to these scopes; cannot record or upload. Host sign-in is still required.</p>
           {secret ? (
             <div
               className="space-y-3 rounded-lg border border-primary/40 bg-primary/5 p-3"
@@ -362,7 +356,28 @@ export function AgentCredentials() {
               })}
             </ul>
           ) : (
-            <p className="text-muted-foreground">No agent credentials yet.</p>
+            <EmptyState
+              variant="compact"
+              icon="inbox"
+              title="No credentials yet"
+              body="A credential lets an agent read replays and conversations with only the scopes you choose."
+              actions={
+                editing || secret
+                  ? []
+                  : [
+                      {
+                        id: 'new-credential',
+                        label: 'New credential',
+                        primary: true,
+                        onSelect: () => {
+                          setEditing(true);
+                          setError('');
+                        },
+                      },
+                    ]
+              }
+              testId="credentials-empty"
+            />
           )}
         </>
       ) : null}

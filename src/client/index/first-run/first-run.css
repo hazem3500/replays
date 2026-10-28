@@ -1,0 +1,121 @@
+/*
+ * The index's first-run state (index/first-run/FirstRun.tsx). Equal-height cards in a 2 × 2 grid (one column on
+ * phones), one badge style, the commands in the app's command blocks. Imported by tailwind.css into the `app` layer.
+ */
+:root {
+  --first-run-width: 880px;
+  --first-run-card-padding: 16px;
+  --first-run-card-radius: 10px;
+  --first-run-gap: 12px;
+}
+
+.first-run { width: min(var(--first-run-width), 100% - 32px); min-width: 0; margin: 40px auto 56px; }
+.first-run-intro { max-width: 60ch; margin-bottom: 20px; }
+.first-run-intro h2 { margin: 0 0 6px; color: var(--text); font-size: var(--text-lg); font-weight: 650; letter-spacing: -0.01em; text-wrap: balance; }
+.first-run-intro p { margin: 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.5; text-wrap: pretty; }
+
+.first-run-ways { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--first-run-gap); }
+.first-run-way-cell { min-width: 0; display: flex; }
+.first-run-way {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 10px;
+  padding: var(--first-run-card-padding);
+  border: 1px solid var(--line);
+  border-radius: var(--first-run-card-radius);
+  background: var(--surface-raised);
+}
+.first-run-way-head { min-height: 22px; display: flex; align-items: center; gap: 8px; }
+.first-run-way-icon { flex: 0 0 auto; width: 16px; height: 16px; color: var(--text-tertiary); }
+.first-run-way h3 { min-width: 0; flex: 1; margin: 0; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
+.first-run-badge {
+  flex: 0 0 auto;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  line-height: 1;
+}
+.first-run-way-description { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.55; text-wrap: pretty; }
+
+/* Upload: a real drop zone with its button inside (the whole page also accepts a drop). */
+.first-run-drop {
+  min-height: 112px;
+  display: grid;
+  flex: 1;
+  justify-items: center;
+  align-content: center;
+  gap: 8px;
+  padding: 14px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+.first-run-drop > svg { width: 18px; height: 18px; }
+.first-run-drop-button.button { min-height: 30px; margin: 2px 0 0; padding: 0 12px; font-size: var(--text-xs); white-space: nowrap; }
+
+.first-run-command { min-width: 0; margin: 0; }
+.first-run-command pre { white-space: pre; }
+
+.first-run-more { margin-top: -2px; }
+.first-run-more-trigger {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 4px 0 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: color 100ms ease;
+}
+.first-run-more-trigger svg { width: 14px; height: 14px; transition: rotate 160ms var(--ease-out); }
+.first-run-more-trigger[data-panel-open] svg { rotate: 90deg; }
+.first-run-more-panel { padding-top: 6px; }
+
+.first-run-link {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: auto;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 550;
+  text-decoration: none;
+}
+.first-run-link svg { width: 14px; height: 14px; }
+
+.first-run-purposes { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); }
+.first-run-purposes h3 { margin: 0 0 10px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 600; }
+.first-run-purposes ul { display: flex; flex-wrap: wrap; gap: 8px 20px; margin: 0; padding: 0; list-style: none; }
+.first-run-purposes li { display: flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); }
+.first-run-purposes strong { color: var(--text); font-weight: 600; }
+.first-run-purposes span { color: var(--text-tertiary); }
+
+.first-run-more-trigger:focus-visible,
+.first-run-link:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+@media (hover: hover) and (pointer: fine) {
+  .first-run-more-trigger:hover { color: var(--text); }
+  .first-run-link:hover { text-decoration: underline; text-underline-offset: 3px; }
+}
+@media (max-width: 720px) {
+  .first-run { margin-top: 24px; }
+  .first-run-ways { grid-template-columns: minmax(0, 1fr); }
+  .first-run-drop-button.button { min-height: 44px; }
+  .first-run-more-trigger { min-height: 44px; }
+}
