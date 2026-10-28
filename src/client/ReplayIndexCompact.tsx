@@ -1,6 +1,4 @@
-import { XIcon } from 'lucide-react';
 import { AnimatedText } from '@/components/animated-text.tsx';
-import type { MouseEvent } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import {
@@ -11,17 +9,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 
-import { type FilterState, KIND_OPTIONS, pluginFilterLabel, SOURCE_OPTIONS } from './index/FilterMenu.tsx';
-import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { COLUMNS, type Sort, sortFromSearch } from './ReplayIndex.tsx';
 
 /*
- * The replay index's compact controls: the sort menu (every width), and on phones (≤ 640 px,
- * INDEX_COMPACT_QUERY) a bottom sheet plus removable chips instead of the row of filter selects.
- * Every control writes the same URL state as the desktop toolbar.
+ * The replay index's sort menu. Active filters live with the Filter control (index/filters/): tokens beside it on
+ * desktop, the count inside the button and the bottom sheet on phones.
  */
-
-/* ---------- Sort menu ---------- */
 
 const SORT_OPTIONS = [
   { value: '-capturedAt', label: 'Newest' },
@@ -59,63 +52,5 @@ export function SortMenu({ sort, onChange }: { sort: Sort; onChange: (sort: Sort
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-// The removed chip takes the keyboard position with it: hand it to a neighbour, or back to the Filters button.
-function handOff(event: MouseEvent<HTMLButtonElement>) {
-  const buttons = [...(event.currentTarget.parentElement?.querySelectorAll('button') ?? [])];
-  const index = buttons.indexOf(event.currentTarget);
-  const next =
-    buttons[index + 1] ??
-    buttons[index - 1] ??
-    event.currentTarget.closest('.index-shell')?.querySelector<HTMLElement>('.index-filters-button, .scope-button');
-  next?.focus();
-}
-
-/** Active filters as small removable chips under the search; nothing when none are set. */
-export function CompactFilterChips({ filters, kind, update, setParam, setKind, forMe, setForMe }: FilterState) {
-  const plugins = usePluginSnapshot().filters;
-  const chips: Array<{ id: string; label: string; name: string; remove: () => void }> = [];
-  if (forMe && setForMe) chips.push({ id: 'for-me', label: 'For me', name: 'For me', remove: () => setForMe(false) });
-  if (filters.host) chips.push({ id: 'host', label: filters.host, name: `Host ${filters.host}`, remove: () => update('host', undefined) });
-  if (filters.tag) chips.push({ id: 'tag', label: filters.tag, name: `Tag ${filters.tag}`, remove: () => update('tag', undefined) });
-  if (filters.source) {
-    const label = SOURCE_OPTIONS.find((option) => option.value === filters.source)?.label ?? filters.source;
-    chips.push({ id: 'source', label, name: `Source ${label}`, remove: () => update('source', undefined) });
-  }
-  if (kind) {
-    const label = KIND_OPTIONS.find((option) => option.value === kind)?.label ?? kind;
-    chips.push({ id: 'kind', label, name: `Kind ${label}`, remove: () => setKind(undefined) });
-  }
-  if (filters.errors) chips.push({ id: 'errors', label: 'Has errors', name: 'Has errors', remove: () => update('errors', undefined) });
-  // Plugin filters; a param whose plugin has not loaded (yet) shows as itself, so it can still be removed.
-  for (const [param, value] of Object.entries(filters.params ?? {})) {
-    const filter = plugins.find((candidate) => candidate.definition.param === param);
-    const label = filter ? pluginFilterLabel(filter, value) : `${param}: ${value}`;
-    chips.push({ id: param, label, name: label, remove: () => setParam(param, undefined) });
-  }
-  if (chips.length === 0) return null;
-
-  return (
-    <div className="index-chips" role="group" aria-label="Active filters">
-      {chips.map((chip) => (
-        <button
-          key={chip.id}
-          type="button"
-          className="index-chip"
-          aria-label={`Remove filter: ${chip.name}`}
-          onClick={(event) => {
-            handOff(event);
-            chip.remove();
-          }}
-        >
-          <span className="index-chip-pill">
-            {chip.label}
-            <XIcon aria-hidden="true" />
-          </span>
-        </button>
-      ))}
-    </div>
   );
 }

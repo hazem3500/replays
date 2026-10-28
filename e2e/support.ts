@@ -1,4 +1,4 @@
-import { expect, type APIRequestContext, type Page, test } from '@playwright/test';
+import { expect, type APIRequestContext, type Locator, type Page, test } from '@playwright/test';
 
 import { startServer } from '../scripts/test-server.mjs';
 
@@ -105,4 +105,11 @@ export async function createSuite(
     const { context: _context, ...bundle } = await cloneBundle(request, base, 'demo-shop', run.replayId, `Recording ${run.replayId}`);
     await postBundle(request, base, { ...bundle, suiteRun: { suiteId, runId: run.id } });
   }
+}
+
+/** The laid-out box of a locator, failing clearly when it is hidden or detached. */
+export async function boxOf(locator: Locator) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('Expected element to be laid out');
+  return box;
 }

@@ -36,10 +36,10 @@ import {
 } from '../src/shared/malleable-policy.ts';
 
 describe('the host policy (malleable in the config)', () => {
-  it('defaults to both scopes, read-only capabilities allowed and writes asking', () => {
+  it('defaults to user scope only, read-only capabilities allowed and writes asking', () => {
     const policy = parseMalleablePolicy(undefined);
     expect(policy).toEqual(defaultPolicy());
-    expect(policy.scopes).toEqual(['user', 'workspace']);
+    expect(policy.scopes).toEqual(['user']);
     expect(policy.capabilities).toMatchObject({ 'replay:read': 'allow', 'comments:write': 'ask', 'export:download': 'ask' });
     expect(closedPolicy().capabilities).toMatchObject({ 'replay:read': 'allow', 'comments:write': 'deny', 'export:download': 'deny' });
   });
@@ -192,7 +192,7 @@ describe('the server enforces the policy', () => {
     expect(config.core).toBe(coreVersion());
     expect(config.distribution).toEqual({ name: 'acme-replays', version: '2.0.0' });
     expect(config.malleable).toMatchObject({
-      scopes: ['user', 'workspace'],
+      scopes: ['user'],
       capabilities: { 'export:download': 'deny', 'comments:write': 'ask' },
       lockedSurfaces: ['inspector:context'],
     });

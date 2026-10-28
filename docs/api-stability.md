@@ -82,3 +82,26 @@ release when that is feasible, and says so in the CHANGELOG; otherwise the CHANG
 - Import only from the subpaths in `exports`.
 - Keep a test that starts the server with your config and plugins (see "Testing a plugin" in extension-api.md); it is the cheapest upgrade check.
 - Run `pnpm up @hazem3500/replays` on a branch, read the CHANGELOG range, fix deprecation warnings, merge.
+
+The additive slot API (`SlotRegistry`, `SLOT_NAMES`, `SlotDescriptor`, `SlotConfiguration`,
+`SlotMountContext`, `ViewerPluginApi.configureSlot` and `registerSlotItem`) remains in viewer
+API generation 1. `PLUGIN_API_VERSION` remains 1: generations increase for incompatible major
+changes, not additions. Documented slot names, core item ids published by each view, and
+`data-slot`/`data-slot-item` are public. A new slot or core id is additive; removing or renaming one
+follows the deprecation rules above.
+
+Sandboxed plugin settings (`manifest.settings`, asynchronous `ctx.settings.get/set`, and the
+versioned per-person settings HTTP routes) are additive to the beta user-plugin format. The host
+browser setting definitions and synchronous read/subscription contract are unchanged.
+
+`replays plugin check` is an additive CLI command. `ViewerRegistry` is exported from `/viewer` for
+isolated hosts and plugin harnesses; this is an additive browser API change in generation 1.
+
+
+`ViewerPluginApi.registerPluginPage` and `PluginPageDefinition` / `PluginPageContext` /
+`PluginPageLoadContext` are additive host-browser APIs. Plugin routes use `/p/<plugin>/…` and
+scoped navigation. `Identity.roles`, host allow/deny selectors, workspace role policy and
+watchdog configuration are additive. The beta malleable scope default changes to personal-only;
+workspace publishing now requires an administrator role and per-person acceptance before code
+runs. The malleable feature flag remains off by default. API generations remain 1; a future
+flag-default change requires an announced minor release as described in malleability.md.
