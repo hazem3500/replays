@@ -252,6 +252,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
 
+- Network and Performance are rethought around "what went wrong or slow, and when". Network has one toolbar row,
+  where the status chips (All, Failed, Slow, No response) are both filters and summary. A ribbon on the seek bar's
+  axis shows when requests happened (drag to filter a stretch), duration bars use a log scale so 6 ms and 2.4 s both
+  read, and the request detail sits beside the list with the request's step, its neighbours on its own scale and its
+  headers. Performance leads with a vitals bar, then slow moments worst first, each explained by what it waited on.
+  In compare mode both panels show deltas against the other recordings (`compare.peers`). The standalone Waterfall
+  and its toggle are gone.
+
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
   refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters
