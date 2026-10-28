@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 428804,
-      "gzip": 109709,
-      "brotli": 89695
+      "raw": 416314,
+      "gzip": 106513,
+      "brotli": 87082
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -530,16 +530,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 410510,
-        "gzip": 105480,
-        "brotli": 86221
-      },
-      "reason": "The new replays plugin check command bundles the fixture-based plugin check harness and shared plugin validation into the CLI.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/client/assets/MalleableHost-HASH.css",
       "cap": {
         "raw": 8084,
@@ -935,9 +925,9 @@
     {
       "file": "dist/cli/cli.mjs",
       "cap": {
-        "raw": 428804,
-        "gzip": 109709,
-        "brotli": 89695
+        "raw": 416314,
+        "gzip": 106513,
+        "brotli": 87082
       },
       "reason": "The CLI bundles the server, which gains the replay meta, delete and restore routes, their store paths and zod/mini body schemas; measured in CI against fresh main: raw 408843 to 416314, gzip 104933 to 106513, brotli 85806 to 87082 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/93"
