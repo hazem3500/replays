@@ -68,12 +68,14 @@ intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/
 Use `--step-pause 1200` to hold each non-wait action for a readable beat (default: 0ms, or
 `capture.stepPauseMs` in your config). Built-in drivers type at 80ms per character; `fill` is immediate.
 Unlabelled waits execute without adding a step. Labels use selector names without typed values.
-See [capture pacing](docs/extending.md#capture-pacing) for host configuration.
+See [capture pacing](docs/extending.md#capture-pacing) for host configuration. `--profile <id>` applies that profile's
+[capture defaults](docs/extension-api.md#capture-profiles) under the explicit flags; `--network bodies` also keeps redacted
+request and response bodies (off by default).
 
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
                    [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
-                   [--source github:owner/repo#12]…
+                   [--source github:owner/repo#12]… [--profile id] [--network headers|off|bodies] [--no-performance]
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed]
 ```
