@@ -13,17 +13,7 @@ import {
   sortFromSearch,
   sortSummaries,
 } from '../src/client/ReplayIndex.tsx';
-import {
-  comparisonHref,
-  apiUrl,
-  appBase,
-  indexHref,
-  isAppPage,
-  parseRoute,
-  replayHref,
-  replayInSuiteHref,
-  suiteHref,
-} from '../src/client/route.ts';
+import { apiUrl, appBase, indexHref, isAppPage, parseRoute, replayHref, replayInSuiteHref, suiteHref } from '../src/client/route.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, playableReplayId } from '../src/client/suite/runs.ts';
 import type { ReplaySummary } from '../src/shared/replay.ts';
 import type { ReviewSuiteIndexEntry } from '../src/shared/review-suite.ts';
@@ -51,14 +41,6 @@ describe('routes under either base', () => {
     expect(parseRoute('/r/example-dot-com')).toEqual({ kind: 'replay', id: 'example-dot-com' });
     expect(parseRoute('/s/review-1/r/capture%201')).toEqual({ kind: 'suite', id: 'review-1', replayId: 'capture 1' });
     expect(parseRoute('/r/x', '?suite=s-1')).toEqual({ kind: 'suite', id: 's-1', replayId: 'x' });
-    expect(parseRoute('/compare', '?before=before-1&after=after-2')).toEqual({
-      kind: 'comparison',
-      id: 'before-1~after-2',
-      beforeId: 'before-1',
-      afterId: 'after-2',
-    });
-    expect(parseRoute('/compare', '?before=../bad&after=after-2')).toEqual({ kind: 'index' });
-    expect(comparisonHref('before-1', 'after-2')).toBe('/compare?before=before-1&after=after-2');
     expect(indexHref()).toBe('/');
     expect(replayHref('a b')).toBe('/r/a%20b');
     expect(suiteHref('s')).toBe('/s/s');

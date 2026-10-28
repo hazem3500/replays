@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { contrast, oklchLightness, TEXT_PAIRS, themeTokens } from './contrast.ts';
@@ -73,3 +76,25 @@ function hue(hex: string) {
   const raw = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
   return (raw * 60 + 360) % 360;
 }
+
+describe.each(['dark', 'light'] as const)('%s compared-recording identities', (theme) => {
+  const css = readFileSync(resolve(import.meta.dirname, '../src/client/compare/compare.css'), 'utf8');
+  const scoped = (selector: string) => {
+    const block = css.split(`${selector} {`)[1]?.split('}')[0] ?? '';
+    return Object.fromEntries([...block.matchAll(/(--tile-\d+):\s*(#[0-9a-f]{6})/g)].map((match) => [match[1]!, match[2]!]));
+  };
+  const light = scoped(':root[data-theme="light"] .compare-viewer');
+  const tiles = theme === 'dark' ? scoped('.compare-viewer') : { ...scoped('.compare-viewer'), ...light };
+  const tokens = themes[theme];
+  const names = Array.from({ length: 9 }, (_, index) => `--tile-${index + 1}`);
+
+  it('defines nine hues', () => expect(Object.keys(tiles)).toHaveLength(9));
+
+  it.each(names)('the letter on %s is at least 4.5:1', (tile) => {
+    expect(contrast(tokens['--accent-contrast']!, tiles[tile]!), `${tile} ${tiles[tile]}`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(names)('the %s focus ring is at least 3:1 on the stage', (tile) => {
+    expect(contrast(tiles[tile]!, tokens['--surface']!), `${tile} ${tiles[tile]}`).toBeGreaterThanOrEqual(3);
+  });
+});

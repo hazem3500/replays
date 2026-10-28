@@ -14,7 +14,9 @@ import { indexHref, replayHref, type Route } from './route.ts';
 import { notify } from './toast.ts';
 import { ThemeContext, useTheme } from './theme.tsx';
 import { EditorSkeleton, LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
-import { ComparisonLoading, ComparisonLoadBoundary } from './comparison/ComparisonLoading.tsx';
+import { useLocationSearch } from './hooks/use-location-search.ts';
+import { parseCompareSearch } from './compare/compare-search.ts';
+import { compareDefaults } from './compare/defaults.ts';
 
 // The index ships alone; the viewer (rrweb + player) and the suite workspace are split chunks.
 // Each loader is memoised so the route can start the download before React asks for it.
@@ -25,8 +27,7 @@ let editorModule: typeof import('./editor/Editor.tsx') | undefined;
 const loadViewer = once(() => import('./Viewer.tsx').then((module) => ((viewerLoaded = true), (viewerModule = module))));
 const loadEditor = once(() => import('./editor/Editor.tsx').then((module) => (editorModule = module)));
 const loadSuiteWorkspace = once(() => import('./suite/SuiteWorkspace.tsx').then((module) => (suiteModule = module)));
-const loadComparison = once(() => import('./comparison/ComparisonWorkspace.tsx'));
-const ComparisonWorkspace = lazy(() => loadComparison().then((module) => ({ default: module.ComparisonWorkspace })));
+const ReplayComparePage = lazy(() => import('./compare/ReplayComparePage.tsx').then((module) => ({ default: module.ReplayComparePage })));
 const Viewer = lazy(() =>
   settled(
     () => viewerModule,
@@ -87,8 +88,6 @@ function inCache(key: readonly unknown[]) {
  */
 function prepareRoute(next: Route) {
   if (next.kind === 'index') return Promise.resolve();
-  if (next.kind === 'comparison')
-    return Promise.all([loadComparison(), inCache(replayQuery(next.beforeId).queryKey), inCache(replayQuery(next.afterId).queryKey)]);
   if (next.kind === 'suite')
     return Promise.all([
       loadSuiteWorkspace(),
@@ -115,8 +114,7 @@ export function App() {
   const [indexShown, setIndexShown] = useState(route.kind === 'index');
   if (route.kind === 'index' && !indexShown) setIndexShown(true);
   // Fetch the route's chunk in parallel with its data instead of after it; the index warms the viewer's when idle.
-  if (route.kind === 'comparison') void loadComparison();
-  else if (route.kind === 'suite') void loadSuiteWorkspace();
+  if (route.kind === 'suite') void loadSuiteWorkspace();
   else if (route.kind === 'edit') void loadEditor();
   else if (route.kind !== 'index') void loadViewer();
   useEffect(() => {
@@ -134,13 +132,7 @@ export function App() {
       <ThemeContext.Provider value={themeControls}>
         <TooltipProvider delay={500} closeDelay={0} timeout={400}>
           {indexShown ? <Activity mode={route.kind === 'index' ? 'visible' : 'hidden'}>{index}</Activity> : null}
-          {route.kind === 'comparison' ? (
-            <ComparisonLoadBoundary>
-              <Suspense fallback={<ComparisonLoading />}>
-                <ComparisonWorkspace beforeId={route.beforeId} afterId={route.afterId} />
-              </Suspense>
-            </ComparisonLoadBoundary>
-          ) : route.kind === 'suite' ? (
+          {route.kind === 'suite' ? (
             <SuitePage key={route.id} id={route.id} {...(route.replayId ? { replayId: route.replayId } : {})} />
           ) : route.kind === 'replay' ? (
             <ReplayPage key={route.id} id={route.id} />
@@ -182,7 +174,19 @@ function SuitePage({ id, replayId }: { id: string; replayId?: string }) {
   );
 }
 
+/** `/r/<id>`: the replay on its own, or with `?with=` the same viewer comparing it with others. */
 function ReplayPage({ id }: { id: string }) {
+  const search = useLocationSearch();
+  const { compare, layout } = compareDefaults({ page: 'replay', recordings: 1 });
+  if (!compare && parseCompareSearch(search, id, layout).with.length === 0) return <SingleReplayPage id={id} />;
+  return (
+    <Suspense fallback={<ViewerSkeleton label="Loading recordings" />}>
+      <ReplayComparePage id={id} />
+    </Suspense>
+  );
+}
+
+function SingleReplayPage({ id }: { id: string }) {
   // Cached bundles (an in-page revisit) render at once; Query aborts the request if the page goes away.
   const { data: bundle, error: failure } = useQuery(replayQuery(id));
   // The saved edits come with it (small, revalidated); a failed load shows the replay as recorded.

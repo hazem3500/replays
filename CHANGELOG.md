@@ -21,6 +21,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
   slider primitive that positions its thumb when it sits beside the track.
+- Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
+  `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
+  its link names). Single, Grid and Spotlight share one clock and the viewer's
+  own transport, shortcuts and inspector, scoped to the focused recording; tiles glide between layouts without
+  remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
+  its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
+  `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
   (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
@@ -28,7 +35,6 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Source-provider marks: `SourceProvider.mark` names a built-in monochrome mark (`github`, `gitlab`, `slack`, `linear`,
   `jira`, `notion`, `link`); built-ins carry theirs and a config provider named like a mark gets it. Index rows show the
   mark beside the source label; on phones one icon chip opens a sheet of every source instead of linking out.
-
 - **Custom upload endpoints** ([docs/extension-api.md](docs/extension-api.md#custom-upload-endpoints)), additive in plugin API 1:
   - `api.uploadEndpoint` gains `authenticate` (its own credentials instead of the auth adapter, identity confined to the endpoint),
     `maxBytes` (a number or per-identity function, checked against `Content-Length`, the stream and the gunzipped size),
@@ -209,6 +215,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
     unchanged; plugin auth adapters' identities (with `avatarUrl`) become comment authors.
   - `examples/custom-distro` (workspace package) with an end-to-end smoke in CI, and `pnpm test:pack`.
   - [docs/downstream-migration.md](docs/downstream-migration.md).
+
+### Removed
+
+- The separate `/compare?before=&after=` page and its workspace, evidence panels and route.
 
 ### Changed
 
