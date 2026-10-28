@@ -20,6 +20,7 @@ import type {
   IdentityResolver,
   PeopleOptions,
   PluginApi,
+  NormalizeUploadHook,
   PrepareUploadHook,
   PurposeDefinition,
   RenderHooks,
@@ -71,6 +72,7 @@ export interface PluginRegistry {
     readonly postAuth: readonly Owned<RequestHook>[];
     readonly response: readonly Owned<ResponseHook>[];
     readonly prepareUpload: readonly Owned<PrepareUploadHook>[];
+    readonly normalizeUpload: readonly Owned<NormalizeUploadHook>[];
     readonly beforeUpload: readonly Owned<BeforeUploadHook>[];
     readonly afterUpload: readonly Owned<AfterUploadHook>[];
   };
@@ -99,7 +101,7 @@ export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
   branding: {},
   basePath: undefined,
   redaction: {},
-  hooks: { preAuth: [], postAuth: [], response: [], prepareUpload: [], beforeUpload: [], afterUpload: [] },
+  hooks: { preAuth: [], postAuth: [], response: [], prepareUpload: [], normalizeUpload: [], beforeUpload: [], afterUpload: [] },
   clientEntries: [],
   purposes: [],
   retention: [],
@@ -193,6 +195,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     postAuth: [] as Owned<RequestHook>[],
     response: [] as Owned<ResponseHook>[],
     prepareUpload: [] as Owned<PrepareUploadHook>[],
+    normalizeUpload: [] as Owned<NormalizeUploadHook>[],
     beforeUpload: [] as Owned<BeforeUploadHook>[],
     afterUpload: [] as Owned<AfterUploadHook>[],
   };
@@ -336,6 +339,10 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
       prepareUpload(hook) {
         needFunction(hook, 'prepareUpload hook');
         hooks.prepareUpload.push({ plugin: plugin.name, value: hook });
+      },
+      normalizeUpload(hook) {
+        needFunction(hook, 'normalizeUpload hook');
+        hooks.normalizeUpload.push({ plugin: plugin.name, value: hook });
       },
       beforeUpload(hook) {
         needFunction(hook, 'beforeUpload hook');
@@ -561,6 +568,7 @@ export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): 
       postAuth: [...first.hooks.postAuth, ...second.hooks.postAuth],
       response: [...first.hooks.response, ...second.hooks.response],
       prepareUpload: [...first.hooks.prepareUpload, ...second.hooks.prepareUpload],
+      normalizeUpload: [...first.hooks.normalizeUpload, ...second.hooks.normalizeUpload],
       beforeUpload: [...first.hooks.beforeUpload, ...second.hooks.beforeUpload],
       afterUpload: [...first.hooks.afterUpload, ...second.hooks.afterUpload],
     },
