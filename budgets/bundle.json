@@ -20,7 +20,7 @@
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
       "gzip": 1111,
-      "brotli": 945
+      "brotli": 944
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
@@ -339,7 +339,7 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1668,
-      "gzip": 570,
+      "gzip": 569,
       "brotli": 477
     },
     "dist/lib/viewer.mjs": {
