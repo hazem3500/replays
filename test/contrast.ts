@@ -51,6 +51,9 @@ export function contrast(a: string, b: string) {
 
 /** Text token on background token pairs that the UI actually renders. */
 export const TEXT_PAIRS: Array<[string, string]> = [
+  ['--danger-solid-foreground', '--danger-solid'],
+  ['--danger-solid-foreground', '--danger-solid-hover'],
+  ['--danger-solid-foreground', '--danger-solid-pressed'],
   ...['--text', '--text-secondary', '--text-tertiary'].flatMap((text) =>
     ['--page', '--surface', '--surface-raised', '--surface-hover', '--accent-soft'].map((background): [string, string] => [
       text,

@@ -218,6 +218,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
+  line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
+  touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
+
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
   refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters
