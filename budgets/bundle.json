@@ -74,7 +74,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 195,
+      "brotli": 226,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -83,7 +83,7 @@
       "gzip": 6742
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82503,
+      "raw": 82506,
       "brotli": 23404,
       "gzip": 27386
     },
@@ -640,16 +640,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "initial/index.html/js",
-      "cap": {
-        "raw": 1270898,
-        "gzip": 402499,
-        "brotli": 322504
-      },
-      "reason": "The index route ships the windowed feed virtualizer and the motion system in its initial script group.",
-      "pr": "https://github.com/hazem3500/replays/pull/99"
-    },
-    {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
         "raw": 35060,
@@ -660,16 +650,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 82506,
-        "gzip": 26552,
-        "brotli": 23404
-      },
-      "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
         "raw": 33095,
@@ -677,16 +657,6 @@
         "brotli": 5643
       },
       "reason": "Highlight scrubber markers and caption morph presentation share the lazy inspector stylesheet and add these reviewed styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 332366,
-        "gzip": 110268,
-        "brotli": 95018
-      },
-      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
@@ -798,14 +768,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/102"
     },
     {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "brotli": 226
-      },
-      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/102"
-    },
-    {
       "file": "dist/client/assets/brand/apple-touch-icon.png",
       "cap": {
         "raw": 3240,
@@ -866,16 +828,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/104"
     },
     {
-      "file": "dist/client/index.html",
-      "cap": {
-        "raw": 11858,
-        "gzip": 4123,
-        "brotli": 3429
-      },
-      "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name.",
-      "pr": "https://github.com/hazem3500/replays/pull/104"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
       "cap": {
         "raw": 286058,
@@ -917,9 +869,11 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "gzip": 27386
+        "raw": 82506,
+        "gzip": 27386,
+        "brotli": 23404
       },
-      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
+      "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior. Then: Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -929,7 +883,7 @@
         "gzip": 118739,
         "brotli": 101862
       },
-      "reason": "Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
+      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged. Then: Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -994,9 +948,9 @@
     {
       "file": "dist/client/assets/download-HASH.js",
       "cap": {
-        "brotli": 195
+        "brotli": 226
       },
-      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
+      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged. Then: Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1026,16 +980,17 @@
         "gzip": 4256,
         "brotli": 3540
       },
-      "reason": "Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
+      "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name. Then: Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
       "file": "initial/index.html/js",
       "cap": {
+        "raw": 1270898,
         "gzip": 418287,
         "brotli": 342522
       },
-      "reason": "Removing the static ComparisonLoading import cut main by 66 KB brotli but split its shared modules into more preloaded chunks, which compress worse; plus the compare URL parser.",
+      "reason": "The index route ships the windowed feed virtualizer and the motion system in its initial script group. Then: Removing the static ComparisonLoading import cut main by 66 KB brotli but split its shared modules into more preloaded chunks, which compress worse; plus the compare URL parser.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     }
   ]
