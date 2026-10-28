@@ -25,7 +25,13 @@ const AROUND_MAX_REQUESTS = 8;
 
 const TONES: Readonly<Record<Verdict, RibbonTone>> = { poor: 'danger', 'needs-work': 'warning', good: 'neutral' };
 
-function aroundItems(target: Moment, moments: readonly Moment[], requests: readonly NetworkRow[], from: number, to: number): LocalItem[] {
+function aroundItems(
+  target: Moment,
+  moments: readonly Moment[],
+  requests: readonly NetworkRow[],
+  span: { from: number; to: number },
+): LocalItem[] {
+  const { from, to } = span;
   const inWindow = (item: { at: number; end: number }) => item.end >= from && item.at <= to;
   const momentItems = moments.filter(inWindow).map((item) => ({
     id: item.id,
@@ -68,14 +74,14 @@ export function MomentDetail({
   requests: readonly NetworkRow[];
   steps: readonly ReplayStep[];
   stacked: boolean;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
   onOpenRequest: (id: string) => void;
 }) {
   const [good, poor] = moment.kind === 'task' ? BUDGETS.task : BUDGETS.interaction;
   const from = moment.at - AROUND_PAD_MS;
   const to = moment.end + AROUND_PAD_MS;
   const close = () => {
-    onSelect(undefined);
+    onSelect();
     requestAnimationFrame(() => document.getElementById(`moment-switch-${moment.id}`)?.focus());
   };
   return (
@@ -110,7 +116,7 @@ export function MomentDetail({
           from={from}
           to={to}
           origin={moment.at}
-          items={aroundItems(moment, moments, requests, from, to)}
+          items={aroundItems(moment, moments, requests, { from, to })}
           label={STRINGS.around}
           onPick={(id) => (id.startsWith('request:') ? onOpenRequest(id.slice('request:'.length)) : onSelect(id))}
         />

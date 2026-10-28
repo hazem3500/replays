@@ -36,7 +36,7 @@ function deltaText(difference: number, letter: string) {
 }
 
 function deltaTone(difference: number) {
-  if (Math.abs(difference) < SAME_WITHIN_MS) return undefined;
+  if (Math.abs(difference) < SAME_WITHIN_MS) return;
   return difference > 0 ? 'worse' : 'better';
 }
 

@@ -22,7 +22,9 @@ import {
   vitalDeltas,
 } from './model.ts';
 import { type VitalPeer, VitalsBar } from './VitalsBar.tsx';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the panel shares the network panel's frame styles, loaded with the lazy inspector.
 import '../network/network.css';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
 import './performance.css';
 
 /** Another recording being compared: its letter and vitals. */
@@ -110,9 +112,9 @@ export function PerformancePanel({
   const player = usePlayer();
   const panel = useRef<HTMLDivElement>(null);
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
-  const [selected, setSelected] = useState<string | undefined>(undefined);
+  const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
-  const [range, setRange] = useState<RibbonRange | undefined>(undefined);
+  const [range, setRange] = useState<RibbonRange>();
   const moments = buildMoments(model.signals);
   const vitals = buildVitals(model.signals, moments, model.track);
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);

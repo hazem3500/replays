@@ -1,4 +1,5 @@
 import type { RibbonTone } from './TimeRibbon.tsx';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the chart's styles load with the lazy inspector chunk, not with every page.
 import './time-ribbon.css';
 
 export interface LocalItem {
@@ -74,7 +75,7 @@ export function LocalTimeline({
             <span className="lt-value">{item.value}</span>
           </>
         );
-        return item.current || !onPick ? (
+        return item.current === true || !onPick ? (
           <div key={item.id} className="lt-row" data-current={item.current || undefined}>
             {bar}
           </div>

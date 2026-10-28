@@ -15,6 +15,7 @@ import {
   statusCounts,
   stepAt,
 } from '../src/client/viewer/network/model.ts';
+import { must } from './must.ts';
 import { request, waterfallEdits, waterfallFixture } from './waterfall-fixture.ts';
 
 function busy() {
@@ -129,14 +130,14 @@ describe('request context', () => {
     const bundle = busy();
     bundle.network = Array.from({ length: 30 }, (_, index) => request({ id: `r${index}`, at: 1000 + index * 5, duration: 50 }));
     const rows = buildNetworkRows(bundle);
-    const around = neighbours(rows[29]!, rows, 10);
+    const around = neighbours(must(rows[29]), rows, 10);
     expect(around.rows).toHaveLength(10);
     expect(around.rows).toContain(rows[29]);
     expect(around.more).toBe(20);
   });
 
   it('finds the same call in another recording, query aside, nearest in time', () => {
-    const mine = buildNetworkRows(busy()).find((row) => row.id === 'slow')!;
+    const mine = must(buildNetworkRows(busy()).find((row) => row.id === 'slow'));
     const other = busy();
     other.network = [
       request({ id: 'far', at: 9000, url: 'https://example.com/api/recommendations?for=cart' }),

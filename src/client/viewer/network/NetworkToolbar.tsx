@@ -9,7 +9,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
-import type { NetworkFilter, RequestType, StatusFilter } from './model.ts';
+import { type NetworkFilter, REQUEST_TYPES, type RequestType, type StatusFilter } from './model.ts';
 
 const STATUS_CHIPS: ReadonlyArray<{ id: StatusFilter; label: string }> = [
   { id: 'all', label: 'All' },
@@ -175,6 +175,8 @@ function StatusChips({
   );
 }
 
+const isTypeFilter = (value: string): value is RequestType | 'all' => value === 'all' || REQUEST_TYPES.some((type) => type === value);
+
 function TypeMenu({
   types,
   value,
@@ -197,7 +199,7 @@ function TypeMenu({
         <ChevronDownIcon aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto min-w-44">
-        <DropdownMenuRadioGroup value={value} onValueChange={(next: string) => onChange(next as RequestType | 'all')}>
+        <DropdownMenuRadioGroup value={value} onValueChange={(next: string) => onChange(isTypeFilter(next) ? next : 'all')}>
           <DropdownMenuRadioItem value="all" closeOnClick className="pointer-coarse:min-h-10">
             {TYPE_LABELS.all}
           </DropdownMenuRadioItem>

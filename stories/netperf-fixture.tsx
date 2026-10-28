@@ -16,26 +16,17 @@ function sequence(seed: number) {
   };
 }
 
-function entry(
-  id: string,
-  at: number,
-  duration: number,
-  url: string,
-  status = 200,
-  extra: Partial<ReplayNetworkEntry> = {},
-): ReplayNetworkEntry {
+type EntryFields = Pick<ReplayNetworkEntry, 'id' | 'at' | 'duration' | 'url'> & Partial<ReplayNetworkEntry>;
+
+function entry({ status = 200, ...fields }: EntryFields): ReplayNetworkEntry {
   return {
-    id,
-    at,
-    duration,
     method: 'GET',
-    url,
     status,
     statusText: status >= 400 ? 'Error' : 'OK',
     ...(status ? { mimeType: 'application/json' } : {}),
     requestHeaders: [{ name: 'accept', value: 'application/json' }],
     responseHeaders: [{ name: 'content-length', value: '2048' }],
-    ...extra,
+    ...fields,
   };
 }
 
@@ -49,37 +40,54 @@ export const STEPS = [
 
 /** The three requests from Hazem's screenshot: a sparse recording. */
 export const SPARSE: ReplayNetworkEntry[] = [
-  entry('cart', 400, 96, `${API}/v1/cart`),
-  entry('coupon', 5700, 140, `${API}/v1/coupons/SPRING10`, 422, { method: 'POST', statusText: 'Unprocessable Entity' }),
-  entry('order', 9900, 305, 'https://orders.pinecone.demo.test/v1/orders', 201, { method: 'POST', statusText: 'Created' }),
+  entry({ id: 'cart', at: 400, duration: 96, url: `${API}/v1/cart` }),
+  entry({
+    id: 'coupon',
+    at: 5700,
+    duration: 140,
+    url: `${API}/v1/coupons/SPRING10`,
+    status: 422,
+    method: 'POST',
+    statusText: 'Unprocessable Entity',
+  }),
+  entry({
+    id: 'order',
+    at: 9900,
+    duration: 305,
+    url: 'https://orders.pinecone.demo.test/v1/orders',
+    status: 201,
+    method: 'POST',
+    statusText: 'Created',
+  }),
 ];
 
 /** Three hundred requests: assets at load, polling, bursts per step, a few failures and one 2.4 s outlier. */
 export function busyNetwork(): ReplayNetworkEntry[] {
   const random = sequence(7);
   const list: ReplayNetworkEntry[] = [
-    entry('doc', 0, 42, 'https://shop.pinecone.demo.test/', 200, { mimeType: 'text/html' }),
-    entry('recommendations', 170, 2400, `${API}/v1/recommendations?for=home`),
-    entry('tiles', 4520, 0, 'https://maps.demo.test/v3/tiles', 0, { statusText: 'net::ERR_BLOCKED_BY_CLIENT' }),
+    entry({ id: 'doc', at: 0, duration: 42, url: 'https://shop.pinecone.demo.test/', mimeType: 'text/html' }),
+    entry({ id: 'recommendations', at: 170, duration: 2400, url: `${API}/v1/recommendations?for=home` }),
+    entry({
+      id: 'tiles',
+      at: 4520,
+      duration: 0,
+      url: 'https://maps.demo.test/v3/tiles',
+      status: 0,
+      statusText: 'net::ERR_BLOCKED_BY_CLIENT',
+    }),
     ...SPARSE,
-    entry('order-fail', 10_010, 305, 'https://orders.pinecone.demo.test/v1/orders', 500, { method: 'POST' }),
+    entry({ id: 'order-fail', at: 10_010, duration: 305, url: 'https://orders.pinecone.demo.test/v1/orders', status: 500, method: 'POST' }),
   ];
   for (let index = 0; list.length < 300; index++) {
     const at = Math.round(random() * 11_000);
     const image = index % 3 !== 0;
     const url = image ? `${CDN}/img/thumbs/${index}.webp` : `${API}/v1/notifications/poll`;
+    const status = at > 5200 && at < 5600 && !image ? 503 : 200;
     list.push(
-      entry(
-        `r${index}`,
-        at,
-        Math.round(8 + random() * 140),
-        url,
-        at > 5200 && at < 5600 && !image ? 503 : 200,
-        image ? { mimeType: 'image/webp' } : {},
-      ),
+      entry({ id: `r${index}`, at, duration: Math.round(8 + random() * 140), url, status, ...(image ? { mimeType: 'image/webp' } : {}) }),
     );
   }
-  return list.toSorted((a, b) => a.at - b.at);
+  return [...list].sort((a, b) => a.at - b.at);
 }
 
 export const PERFORMANCE: ReplayPerformanceEntry[] = [
@@ -120,7 +128,7 @@ export function storyBundle(network: ReplayNetworkEntry[], performance?: ReplayP
   };
 }
 
-const noop = () => undefined;
+const noop = () => {};
 
 const VIEWER: ViewerActions = {
   steps: STEPS,

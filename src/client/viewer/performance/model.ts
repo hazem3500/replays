@@ -109,6 +109,12 @@ export function orderMoments(moments: readonly Moment[], order: MomentOrder) {
 
 const overlapping = (a: { at: number; end: number }, b: { at: number; end: number }) => a.at < b.end && b.at < a.end;
 
+function longestOf(moments: readonly Moment[]) {
+  const [first, ...rest] = moments;
+  if (!first) return;
+  return rest.reduce((top, other) => (other.value > top.value ? other : top), first);
+}
+
 export type Cause =
   | { kind: 'task'; task: Moment }
   | { kind: 'network'; requests: readonly NetworkRow[] }
@@ -120,9 +126,7 @@ export type Cause =
  * task blocked the main thread; else requests were in flight; else, for an interaction, the page's own code ran long.
  */
 export function causeOf(target: Moment, moments: readonly Moment[], requests: readonly NetworkRow[]): Cause {
-  const task = moments
-    .filter((other) => other.kind === 'task' && other.id !== target.id && overlapping(other, target))
-    .reduce<Moment | undefined>((longest, other) => (!longest || other.value > longest.value ? other : longest), undefined);
+  const task = longestOf(moments.filter((other) => other.kind === 'task' && other.id !== target.id && overlapping(other, target)));
   if (task && target.kind === 'interaction') return { kind: 'task', task };
   const inFlight = requests.filter((row) => overlapping({ at: row.at, end: Math.max(row.end, row.at + 1) }, target));
   if (inFlight.length) return { kind: 'network', requests: inFlight };
@@ -168,9 +172,6 @@ export function totalBlockingTime(tasks: readonly Moment[]) {
   return tasks.reduce((sum, task) => sum + Math.max(0, task.value - 50), 0);
 }
 
-const worst = (moments: readonly Moment[]) =>
-  moments.reduce<Moment | undefined>((top, other) => (!top || other.value > top.value ? other : top), undefined);
-
 /** The vitals bar, from what was captured and nothing else: an unsupported observer is "Not captured", never 0. */
 export function buildVitals(signals: readonly PerformanceSignal[], moments: readonly Moment[], track: ReplayPerformanceTrack | undefined) {
   const watched = (id: VitalId) => Boolean(track?.supported.includes(OBSERVER[id]));
@@ -184,8 +185,8 @@ export function buildVitals(signals: readonly PerformanceSignal[], moments: read
   // why: LCP is the latest candidate the browser reported, not the largest value.
   const lcp = paints('largest-contentful-paint').at(-1);
   const tasks = moments.filter((item) => item.kind === 'task');
-  const interaction = worst(moments.filter((item) => item.kind === 'interaction'));
-  const task = worst(tasks);
+  const interaction = longestOf(moments.filter((item) => item.kind === 'interaction'));
+  const task = longestOf(tasks);
   const blocking = watched('tbt') || tasks.length ? totalBlockingTime(tasks) : undefined;
   return [
     judged('fcp', fcp?.entry.value, { at: fcp?.at }),

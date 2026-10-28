@@ -18,6 +18,7 @@ import {
 import { NetworkList } from './NetworkList.tsx';
 import { NetworkToolbar } from './NetworkToolbar.tsx';
 import { type NetworkPeer, RequestDetail } from './RequestDetail.tsx';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
 import './network.css';
 
 export type { NetworkPeer } from './RequestDetail.tsx';
@@ -73,7 +74,7 @@ export function NetworkPanel({
   duration: number;
   human: boolean;
   selected: string | undefined;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
   peers?: readonly NetworkPeer[] | undefined;
 }) {
   const panel = useRef<HTMLDivElement>(null);

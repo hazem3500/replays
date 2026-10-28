@@ -69,10 +69,10 @@ export function RequestDetail({
   steps: readonly ReplayStep[];
   peers: readonly NetworkPeer[];
   stacked: boolean;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
 }) {
   const close = () => {
-    onSelect(undefined);
+    onSelect();
     requestAnimationFrame(() => document.getElementById(`request-switch-${row.id}`)?.focus());
   };
   return (

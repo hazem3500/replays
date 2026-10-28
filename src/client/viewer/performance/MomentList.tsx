@@ -41,7 +41,7 @@ export function MomentList({
   steps: readonly ReplayStep[];
   explain: (moment: Moment) => string;
   selected: string | undefined;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
   empty: ReactNode;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -111,7 +111,7 @@ function MomentRow({
   rowIndex: number;
   selected: boolean;
   why: string;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
   onStep: (id: string, move: StepMove) => void;
 }) {
   const future = usePlayhead((time) => time < moment.at);
@@ -124,7 +124,7 @@ function MomentRow({
       onStep(moment.id, move);
     } else if (event.key === 'Escape' && selected) {
       event.stopPropagation();
-      onSelect(undefined);
+      onSelect();
     } else if (event.key === ' ') event.stopPropagation();
   };
   return (

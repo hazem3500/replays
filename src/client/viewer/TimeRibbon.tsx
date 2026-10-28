@@ -1,5 +1,6 @@
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the ribbon's styles load with the lazy inspector chunk, not with every page.
 import './time-ribbon.css';
 
 export type RibbonTone = 'danger' | 'warning' | 'neutral' | 'success';

@@ -46,7 +46,7 @@ export function NetworkList({
   /** The slowest measured request: the top of every duration bar's log scale. */
   ceiling: number;
   selected: string | undefined;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
   empty: ReactNode;
 }) {
   const player = usePlayer();
@@ -138,7 +138,7 @@ function RequestRow({
   selected: boolean;
   step: ReplayStep | undefined;
   ceiling: number;
-  onSelect: (id: string | undefined) => void;
+  onSelect: (id?: string) => void;
   onStep: (id: string, move: StepMove) => void;
 }) {
   const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -150,7 +150,7 @@ function RequestRow({
       onStep(row.id, move);
     } else if (event.key === 'Escape' && selected) {
       event.stopPropagation();
-      onSelect(undefined);
+      onSelect();
     } else if (event.key === ' ') event.stopPropagation();
   };
   return (
@@ -211,8 +211,13 @@ export function StatusText({ row }: { row: NetworkRow }) {
   );
 }
 
+function durationTone(row: NetworkRow) {
+  if (row.failed) return 'bad';
+  return row.slow ? 'slow' : undefined;
+}
+
 function DurationBar({ row, ceiling }: { row: NetworkRow; ceiling: number }) {
-  const tone = row.failed ? 'bad' : row.slow ? 'slow' : undefined;
+  const tone = durationTone(row);
   return (
     <>
       <span className="np-ms" data-tone={tone}>

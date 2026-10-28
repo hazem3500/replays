@@ -54,7 +54,7 @@ const MIME_TYPES: ReadonlyArray<[(mime: string) => boolean, RequestType]> = [
 /** The capture has no initiator, so the type comes from the MIME type, then the URL's extension. */
 export function requestType(entry: Pick<ReplayNetworkEntry, 'mimeType' | 'url'>): RequestType {
   const mime = (entry.mimeType ?? '').toLowerCase().split(';')[0]?.trim() ?? '';
-  const byMime = mime ? MIME_TYPES.find(([test]) => test(mime))?.[1] : undefined;
+  const byMime = mime && MIME_TYPES.find(([test]) => test(mime))?.[1];
   if (byMime) return byMime;
   const path = parseUrl(entry.url).path.toLowerCase();
   return EXTENSIONS.find(([pattern]) => pattern.test(path))?.[1] ?? 'other';
@@ -180,7 +180,7 @@ export function slowestMeasured(rows: readonly NetworkRow[]) {
 
 export function medianMeasured(rows: readonly NetworkRow[]) {
   const values = rows.flatMap((row) => (row.measured === undefined ? [] : [row.measured])).toSorted((a, b) => a - b);
-  if (!values.length) return undefined;
+  if (!values.length) return;
   const middle = Math.floor(values.length / 2);
   return values.length % 2 ? values[middle] : ((values[middle - 1] ?? 0) + (values[middle] ?? 0)) / 2;
 }
@@ -237,12 +237,12 @@ function pathKey(entry: Pick<ReplayNetworkEntry, 'method' | 'url'>) {
 /** The same call in another recording: same method, host and path (query aside), the nearest in time. */
 export function matchRequest(row: NetworkRow, others: readonly NetworkRow[]) {
   const key = pathKey(row.entry);
-  return others
-    .filter((other) => pathKey(other.entry) === key)
-    .reduce<NetworkRow | undefined>(
-      (best, other) => (!best || Math.abs(other.at - row.at) < Math.abs(best.at - row.at) ? other : best),
-      undefined,
-    );
+  let best: NetworkRow | undefined;
+  for (const other of others) {
+    if (pathKey(other.entry) !== key) continue;
+    if (!best || Math.abs(other.at - row.at) < Math.abs(best.at - row.at)) best = other;
+  }
+  return best;
 }
 
 /** At the very end every entry counts as reached (some trail the last DOM event); at 0 none has happened yet. */

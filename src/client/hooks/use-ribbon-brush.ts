@@ -13,13 +13,13 @@ const DRAG_PX = 4;
  * `brush` and ends in `onRange`. Pointer capture keeps the drag going outside the strip.
  */
 export function useRibbonBrush(span: number, onClick: (time: number) => void, onRange: (range: BrushRange) => void) {
-  const drag = useRef<{ x: number; left: number; width: number; from: number } | undefined>(undefined);
-  const [brush, setBrush] = useState<BrushRange | undefined>(undefined);
+  const drag = useRef<{ x: number; left: number; width: number; from: number } | null>(null);
+  const [brush, setBrush] = useState<BrushRange | null>(null);
   const timeAt = (clientX: number, left: number, width: number) =>
     Math.min(span, Math.max(0, ((clientX - left) / Math.max(1, width)) * span));
   const cancel = () => {
-    drag.current = undefined;
-    setBrush(undefined);
+    drag.current = null;
+    setBrush(null);
   };
   return {
     brush,
