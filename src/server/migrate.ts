@@ -3,7 +3,14 @@ import { isDeepStrictEqual } from 'node:util';
 import { sanitizeReplayBundle, sanitizeUrlFields } from '../capture/sanitize.ts';
 import { profileProblem, profilesOf } from '../shared/profiles.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
-import { assertReplayBundle, replayProfileId, withoutPurposeMirror, type ReplayBundle, type ReplaySummary, summarizeReplay } from '../shared/replay.ts';
+import {
+  assertReplayBundle,
+  replayProfileId,
+  withoutPurposeMirror,
+  type ReplayBundle,
+  type ReplaySummary,
+  summarizeReplay,
+} from '../shared/replay.ts';
 import { assertReviewSuite } from '../shared/review-suite.ts';
 import type { ContextSchema } from './context-schema.ts';
 import { ReplayStore } from './store.ts';

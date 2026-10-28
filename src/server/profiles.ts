@@ -150,7 +150,8 @@ export function configProfiles(
   warn?: (line: string) => void,
 ): readonly ProfileConfig[] | undefined {
   if (file.purposes === undefined) return file.profiles;
-  if (file.profiles !== undefined) throw new Error("the config file sets both profiles and purposes: keep profiles (purposes is its deprecated name)");
+  if (file.profiles !== undefined)
+    throw new Error('the config file sets both profiles and purposes: keep profiles (purposes is its deprecated name)');
   assertConfigProfiles(file.purposes, 'purposes');
   warn?.("warning: the config file's purposes key is deprecated; rename it to profiles");
   return file.purposes;

@@ -590,16 +590,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/server.mjs",
-      "cap": {
-        "raw": 1668,
-        "gzip": 570,
-        "brotli": 477
-      },
-      "reason": "The server entry wires the workspace plugin policy and settings routes into the library.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/viewer.mjs",
       "cap": {
         "raw": 17093,
@@ -786,16 +776,6 @@
       },
       "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
       "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
-      "cap": {
-        "raw": 298271,
-        "gzip": 78441,
-        "brotli": 64244
-      },
-      "reason": "The replay meta routes change the server entry source set, so the shared schema chunk gets a new source-set identity; it keeps the removed identity's caps and measures 297658 raw, 77962 gzip, 63852 brotli bytes in CI.",
-      "pr": "https://github.com/hazem3500/replays/pull/93"
     },
     {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
@@ -1002,16 +982,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 416900,
-        "gzip": 106700,
-        "brotli": 87966
-      },
-      "reason": "The CLI bundles the shared edits validator, which now accepts cursor.motion and the six Cua style names; measured against main: +525 B raw, +160 B gzip. Replaces #112's allowance for this file; its Brotli cap is kept.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
       "file": "dist/client/assets/download-HASH.js",
       "cap": {
         "gzip": 222,
@@ -1019,6 +989,76 @@
       },
       "reason": "No source change: this tiny chunk names hashed sibling chunks, whose hashes change with the side panel; measured against main: +0 B raw, -1 B gzip, +34 B brotli. Replaces #109's allowance for this file; its gzip cap is kept.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 433323,
+        "gzip": 111155,
+        "brotli": 90907
+      },
+      "reason": "The purpose to profile rename keeps every old CLI, config and API name as a deprecated alias (main 416300/106502/87095, head 420701/107917/88259).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "cap": {
+        "raw": 308545,
+        "gzip": 80878,
+        "brotli": 66289
+      },
+      "reason": "replay.schema.json documents meta.profile and the deprecated meta.purpose (main 297658/77964/63870, head 299558/78522/64358).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1755,
+        "gzip": 570,
+        "brotli": 492
+      },
+      "reason": "The /server entry declares the deprecated PurposeCatalog and createPurposeCatalog aliases on top of the workspace plugin policy and settings routes from #96 (main 1619/552/467, head 1703/566/477).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-2cdb34849bf4.mjs",
+      "cap": {
+        "raw": 39108,
+        "gzip": 11192,
+        "brotli": 9890
+      },
+      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
+    },
+    {
+      "file": "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs",
+      "cap": {
+        "raw": 25393,
+        "gzip": 7239,
+        "brotli": 6393
+      },
+      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-3d8b996b5201.mjs",
+      "cap": {
+        "raw": 39913,
+        "gzip": 11514,
+        "brotli": 10056
+      },
+      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
+      "cap": {
+        "raw": 32700,
+        "gzip": 8327,
+        "brotli": 7270
+      },
+      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
+      "pr": "https://github.com/hazem3500/replays/pull/118"
     }
   ]
 }

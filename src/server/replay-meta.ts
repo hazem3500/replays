@@ -44,8 +44,7 @@ export function withOverrides(summary: ReplaySummary, overrides: MetaOverrides |
   const rest = withoutProfile(summary);
   const override = overriddenProfile(overrides);
   const own = profileOfSummary(summary);
-  const profile =
-    override === null ? {} : override !== undefined ? summaryProfile(override, false) : summaryProfile(own.id, own.inferred);
+  const profile = override === null ? {} : override !== undefined ? summaryProfile(override, false) : summaryProfile(own.id, own.inferred);
   return {
     ...rest,
     ...(overrides.title === undefined ? {} : { title: overrides.title }),

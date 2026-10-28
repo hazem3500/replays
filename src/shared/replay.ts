@@ -375,7 +375,10 @@ export function replayProfileId(meta: AliasedProfile) {
 }
 
 /** The meta with its profile under the current name only. */
-export function withMetaProfile<T extends AliasedProfile>(meta: T, profile: string | undefined): Omit<T, 'profile' | 'purpose'> & { profile?: string } {
+export function withMetaProfile<T extends AliasedProfile>(
+  meta: T,
+  profile: string | undefined,
+): Omit<T, 'profile' | 'purpose'> & { profile?: string } {
   const { profile: _profile, purpose: _purpose, ...rest } = meta;
   return { ...rest, ...(profile ? { profile } : {}) };
 }

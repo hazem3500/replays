@@ -18,7 +18,8 @@ export function pageProfiles(): readonly ProfileInfo[] {
   if (cached) return cached;
   if (typeof document === 'undefined') return [];
   const meta =
-    document.querySelector<HTMLMetaElement>('meta[name="app-profiles"]') ?? document.querySelector<HTMLMetaElement>('meta[name="app-purposes"]');
+    document.querySelector<HTMLMetaElement>('meta[name="app-profiles"]') ??
+    document.querySelector<HTMLMetaElement>('meta[name="app-purposes"]');
   const content = meta?.content ?? '';
   try {
     const parsed: unknown = content ? JSON.parse(content) : [];
