@@ -69,20 +69,14 @@ export function CursorInspector({
       <fieldset disabled={!visible} className="cursor-options">
         <legend className="sr-only">Cursor appearance and behavior</legend>
         <section className="cursor-section">
-          <CursorMotionPicker
-            value={settings?.motion ?? 'signature_arc'}
-            disabled={!visible}
-            onChange={(motion) => update({ motion })}
-          />
+          <CursorMotionPicker value={settings?.motion ?? 'signature_arc'} disabled={!visible} onChange={(motion) => update({ motion })} />
         </section>
         <section className="cursor-section">
           <div className="cursor-row cursor-row-compact">
             <span id="cursor-size-label" className="cursor-section-label">
               Size
             </span>
-            <output className="cursor-value">
-              {percent(size)}
-            </output>
+            <output className="cursor-value">{percent(size)}</output>
           </div>
           <Slider
             className="cursor-size-slider"

@@ -758,14 +758,42 @@
       "pr": "https://github.com/hazem3500/replays/pull/94"
     },
     {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 90700,
+        "gzip": 30600,
+        "brotli": 26300
+      },
+      "reason": "Cursor inspector motion picker: Base UI RadioGroup and Radio, the six-card picker and its preview planner (SVG traces and animateMotion timing per Cua style); measured against main: +10386 B raw, +4004 B gzip, +3450 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 36800,
+        "gzip": 6960,
+        "brotli": 6180
+      },
+      "reason": "Cursor inspector stylesheet (sections, rows, motion cards and previews, phone overrides) moved out of editor.css and extended; measured against main: +2692 B raw, +384 B gzip, +340 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
+    },
+    {
+      "file": "dist/client/assets/player-HASH.js",
+      "cap": {
+        "brotli": 68600
+      },
+      "reason": "Ported Cua Cursor Motion styles (spring settle, magnetic, comet swoop, adaptive, classic with its Dubins planner) used by replay playback; measured against main: +6076 B raw, +2207 B gzip, +1858 B brotli; only brotli passes the existing cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
+    },
+    {
       "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
       "cap": {
-        "raw": 285690,
-        "gzip": 75125,
-        "brotli": 61620
+        "raw": 286300,
+        "gzip": 75330,
+        "brotli": 61780
       },
-      "reason": "The shared server chunk now also holds the upload-endpoint helpers (src/server/api/upload-endpoints.ts) and HttpError, so its source identity changes; measured against main's context.schema.json-87737fe6e2f1: +3368 B raw, +449 B gzip, +724 B brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
+      "reason": "The shared chunk holds the edits validator, which now accepts cursor.motion and its style list; measured against main: +478 B raw, +155 B gzip, +111 B brotli. Replaces #94's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
     }
   ]
 }

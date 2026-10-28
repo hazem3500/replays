@@ -26,7 +26,6 @@ import {
   type Raw,
 } from './cursor-path.ts';
 
-
 /** Target box assumed when a move has no element rect, pt. */
 const DEFAULT_TARGET_PT = 24;
 

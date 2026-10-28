@@ -96,14 +96,14 @@ export class Path {
     let hi = this.ss.length - 1;
     while (hi - lo > 1) {
       const mid = (lo + hi) >> 1;
-      if ((this.ss[mid] as number) < target) lo = mid;
+      if ((this.ss[mid] ?? 0) < target) lo = mid;
       else hi = mid;
     }
-    const slo = this.ss[lo] as number;
-    let span = (this.ss[hi] as number) - slo;
+    const slo = this.ss[lo] ?? 0;
+    let span = (this.ss[hi] ?? slo) - slo;
     if (span === 0) span = 1;
-    const ulo = this.us[lo] as number;
-    return this.f(ulo + ((this.us[hi] as number) - ulo) * ((target - slo) / span));
+    const ulo = this.us[lo] ?? 0;
+    return this.f(ulo + ((this.us[hi] ?? ulo) - ulo) * ((target - slo) / span));
   }
 }
 
