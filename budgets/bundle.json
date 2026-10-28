@@ -59,7 +59,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 226,
+      "brotli": 187,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
