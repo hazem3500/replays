@@ -1,10 +1,11 @@
 /*
- * The product mark (IndexHeader.tsx ProductMark / MarkButton): a line of five timeline segments with an accent-coloured
+ * The product mark (components/brand-mark.tsx ProductMark, IndexHeader.tsx MarkButton): a line of five timeline segments with an accent-coloured
  * playhead. Each click "scrubs" one segment forward; 1.5 s after the last click it drains back to rest. Rapid
  * clicks build a streak; the fifth within the window plays the "reverse typewriter": the playhead leaves the mark as a
  * text caret, glides across the product name to its end, backspaces it right to left (faster and faster, like a held key) while the segments drain, types
  * it back in while they refill, blinks once and docks back into the mark at rest. Then a cooldown so a streak cannot
- * re-trigger it. Reduced motion: no mark motion, the title only crossfades.
+ * re-trigger it. Reduced motion: clicks still fill segments, as plain state changes (no pop, spring or nod); the burst
+ * only crossfades the title.
  */
 
 /** Clicks closer together than this belong to one streak. */
@@ -124,6 +125,8 @@ export function createMarkMotion(svg: SVGSVGElement) {
   let disposed = false;
   let move: Animation | undefined;
   let x = playheadX(REST_FILLED - 1);
+  /** Reduced motion (set by the latest step): the same states, reached without movement. */
+  let still = false;
   /** Removes the burst's caret and title overlay (set while a burst runs). */
   let cleanup: (() => void) | undefined;
 
@@ -155,6 +158,7 @@ export function createMarkMotion(svg: SVGSVGElement) {
     move?.cancel();
     x = to;
     playhead.style.transform = `translateX(${to}px)`;
+    if (still) return;
     move = playhead.animate(
       nod
         ? [
@@ -167,22 +171,28 @@ export function createMarkMotion(svg: SVGSVGElement) {
     );
   };
   const pop = (index: number) =>
-    segments[index]?.animate([{ transform: 'scale(1, 1)' }, { transform: 'scale(1.12, 1.7)' }, { transform: 'scale(1, 1)' }], {
-      duration: 360,
-      easing: EASE,
-    });
+    still
+      ? undefined
+      : segments[index]?.animate([{ transform: 'scale(1, 1)' }, { transform: 'scale(1.12, 1.7)' }, { transform: 'scale(1, 1)' }], {
+          duration: 360,
+          easing: EASE,
+        });
   /** Streak over: extra segments drain right to left while the playhead glides back to rest. */
   const settle = () => {
     const from = filled;
-    for (let index = from - 1; index >= REST_FILLED; index--) later((from - 1 - index) * 50, () => paint(index, false));
+    for (let index = from - 1; index >= REST_FILLED; index--) later(still ? 0 : (from - 1 - index) * 50, () => paint(index, false));
     setFilled(REST_FILLED);
     moveTo(playheadX(REST_FILLED - 1), 520, EASE);
   };
 
   return {
-    /** One scrub click: the next segment fills with a pop and the playhead springs to its end (or nods). */
-    step() {
+    /**
+     * One scrub click: the next segment fills with a pop and the playhead springs to its end (or nods). `stillMotion`
+     * (reduced motion): the segment just fills and the playhead stands at its end, with no pop, spring or nod.
+     */
+    step(stillMotion = false) {
       if (busy || disposed) return;
+      still = stillMotion;
       window.clearTimeout(idle);
       // A drain still in flight snaps to the logical state before the next segment fills.
       clearLater();
@@ -207,6 +217,7 @@ export function createMarkMotion(svg: SVGSVGElement) {
       const host = title?.parentElement;
       if (busy || disposed || !title || !host || title.dataset.rewinding !== undefined) return;
       busy = true;
+      still = false;
       window.clearTimeout(idle);
       clearLater();
       move?.cancel();

@@ -2,12 +2,14 @@ import { LinkIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.ts';
 
+import { ProductGlyph } from './brand-mark.tsx';
+
 import { sourceLook } from '../source-looks.ts';
 
 /*
  * Marks, 14 px by default, all drawn in currentColor so they follow the theme:
- * - `product`: the neutral mark of this app (a play triangle in a rounded square). A deployment replaces it with
- *   its own logo through `productLogo()` (config.ts) where the header shows one.
+ * - `product`: the built-in mark of this app (brand-mark.tsx: timeline segments and the playhead). A deployment replaces
+ *   it with its own logo through `productLogo()` (config.ts) where the header shows one.
  * - `github`: Octicons `mark-github` (16 px grid), MIT licence, github.com/primer/octicons.
  * - `link`: a plain link glyph for every other source provider.
  * A provider that declares its own `icon` (source-looks.ts) is drawn as that image instead: an <img>, never inline markup.
@@ -36,8 +38,7 @@ export function BrandIcon({ brand = 'product', size = 14, className }: { brand?:
   if (brand === 'link') return <LinkIcon {...props} />;
   return (
     <svg viewBox="0 0 24 24" {...props}>
-      <rect x="1.5" y="1.5" width="21" height="21" rx="6" fill="none" stroke="currentColor" strokeWidth="2" />
-      <path fill="currentColor" d="M9.5 7.6v8.8a.6.6 0 0 0 .9.5l7.2-4.4a.6.6 0 0 0 0-1l-7.2-4.4a.6.6 0 0 0-.9.5Z" />
+      <ProductGlyph />
     </svg>
   );
 }
