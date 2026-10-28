@@ -31,7 +31,7 @@
 }
 
 /* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */
-.local-timeline { --lt-label: minmax(0, 40%); display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
+.local-timeline { --lt-label: minmax(0, 40%); container: local-timeline / inline-size; display: grid; grid-template-columns: var(--lt-label) minmax(0, 1fr) 56px; column-gap: 10px; font-size: var(--text-xs); }
 .lt-ruler { position: relative; grid-column: 2; height: 16px; margin-bottom: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
 .lt-ruler span { position: absolute; top: 0; padding-left: 3px; border-left: 1px solid var(--line-strong); line-height: 14px; white-space: nowrap; }
 .lt-ruler span:last-child:not(:first-child) { translate: -100% 0; padding: 0 3px 0 0; border-right: 1px solid var(--line-strong); border-left: 0; }
@@ -49,3 +49,7 @@ button.lt-row:focus-visible { outline: 2px solid var(--ring); outline-offset: -2
 .lt-bar[data-tone="current"] { background: var(--accent); }
 .lt-value { color: var(--text-tertiary); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
 @media (pointer: coarse) { .lt-row { min-height: 36px; } }
+/* why: on a narrow detail the middle offsets would collide; their lines stay, only the ends are labelled. */
+@container local-timeline (max-width: 480px) {
+  .lt-ruler span:not(:first-child, :last-child) { color: transparent; }
+}
