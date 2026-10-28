@@ -33,6 +33,7 @@ import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
+import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults } from '../compare/defaults.ts';
 
 // why: the comparison (tiles, shared clock) is only fetched for suites with two or more recordings.
@@ -372,10 +373,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           <main className="app-shell">
             <Topbar title={suite.title} backHref={backHref} compact={narrow} />
             {runs.some((item) => isExpired(item, detailed)) ? (
-              <div className="empty">
-                <strong>Recordings expired</strong>
-                <span>This suite's recordings are past retention.</span>
-              </div>
+              <SuiteExpired replayIds={runs.flatMap((item) => (item.replayId ? [item.replayId] : []))} />
             ) : (
               <div className="empty">
                 <strong>No recordings yet</strong>
