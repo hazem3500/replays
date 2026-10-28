@@ -20,6 +20,20 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
   mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
   `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
+- Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
+  hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
+  inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
+  during a press; the CUA arrow keeps its press squish. Viewer, editor preview and MP4 export draw the same glyph.
+- Editor blur rethought: blurs draw a strong blur with soft edges (no grey veil), feathered outside the box so the box
+  itself stays fully hidden. `ReplayBlur.style: 'redact'` draws a solid block instead. While placing a blur, a click
+  covers the recorded element under the pointer. The selected box has edge and corner handles and a style label, the
+  inspector picks Blur or Redact, and lane items are labelled with their style. Viewer and MP4 export draw the same.
+- **Capture profiles in the CLI and network bodies** ([docs/extension-api.md](docs/extension-api.md#capture-profiles)):
+  `replays capture --profile <id>` applies the profile's `capture` block under the explicit flags; new `--network
+  off|headers|bodies` and `--no-performance`. Every capture writes `meta.captured`. Network bodies are opt-in: JSON, text
+  and form only, cut at 64 KiB with `truncated`, and redacted (secret fields, credentials, JWTs, card numbers, email
+  addresses, the deployment's rules) at capture and again in the server's privacy pass. `requestBody`, `responseBody` and
+  `meta.captured` are in docs/formats/replay.schema.json.
 
 - **Views and capture profiles** ([docs/extension-api.md](docs/extension-api.md#views)): core ships seven views (`standard`,
   `compare`, `performance`, `debug`, `walkthrough`, `review`, `support`) as data. The config key `views` and `api.view` add or
@@ -240,6 +254,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
+
+- Network and Performance are rethought around "what went wrong or slow, and when". Network has one toolbar row,
+  where the status chips (All, Failed, Slow, No response) are both filters and summary. A ribbon on the seek bar's
+  axis shows when requests happened (drag to filter a stretch), duration bars use a log scale so 6 ms and 2.4 s both
+  read, and the request detail sits beside the list with the request's step, its neighbours on its own scale and its
+  headers. Performance leads with a vitals bar, then slow moments worst first, each explained by what it waited on.
+  In compare mode both panels show deltas against the other recordings (`compare.peers`). The standalone Waterfall
+  and its toggle are gone.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed

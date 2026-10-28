@@ -281,8 +281,29 @@ A profile's `capture` block sets how its replays are recorded. A profile can onl
 | `bodies` | With `network: 'bodies'`: `{ maxBytes?, contentTypes? }`. Both can only narrow the defaults: 65536 bytes per body; JSON, `*+json`, `text/*` and form data. Binary bodies are never kept |
 | `performance` | Paint, LCP, long tasks and slow interactions; default true |
 | `sampling` | rrweb sampling: `'full'`, `'balanced'` (default) or `'light'` |
-| `video`, `stepPauseMs`, `viewport`, `runs` | CLI defaults for `--video`, `--step-pause`, `--viewport` and `--runs` (1 to 10) |
-| `privacy` | `{ maskAllText: true, blockMedia: true }`: stricter masking only |
+| `video`, `stepPauseMs`, `viewport`, `runs` | CLI defaults for `--video`, `--step-pause` and `--viewport`; `runs` (1 to 10) is reserved for recording a suite |
+| `privacy` | `{ maskAllText: true, blockMedia: true }`: stricter masking only. The capture CLI masks all text; it refuses `blockMedia`, which only the recorder can apply |
+
+`replays capture --profile <id>` reads the profile from the same config (and plugins) it reads redaction rules from; explicit
+flags win: `--network off|headers|bodies`, `--no-performance`, `--video`, `--viewport`, `--step-pause`. The recorder kit reads
+`sampling` and `privacy` (later release). Every capture writes `meta.captured` (`{ console, network, performance, video }`),
+so a view can say "Not captured in this recording" instead of drawing an empty table; a bundle without it predates profiles
+and is read as "everything but bodies".
+
+#### Network bodies
+
+Bodies are opt-in (`network: 'bodies'` or `--network bodies`) and never loosen anything else. A body is kept as
+`requestBody` / `responseBody` on its network entry (`{ text?, size?, truncated?, omitted? }`, docs/formats/replay.schema.json):
+
+- Only JSON, `*+json`, `text/*` and form bodies; binary or other types are recorded as `{ omitted: 'content-type' }`.
+- Cut at `maxBytes` (65536 at most) on a character boundary, with `truncated: true` and the original `size`.
+- Redacted before storage, and again by the server's privacy pass on every upload: secret fields at any depth (password,
+  token, secret, auth, cookie, session, API keys, card number, CVV, SSN, IBAN, OTP, PIN, and any name ending in token,
+  secret, password, signature or apikey, in any spelling), the deployment's `redaction.jsonKeys` and text rules,
+  `Bearer`/`Basic` credentials, JWTs, Luhn-valid card numbers, email addresses and tokens in embedded URLs.
+
+Viewers render bodies in a network row's details from these fields; with `meta.captured.network !== 'bodies'` they say the
+bodies were not captured.
 
 ## Views
 

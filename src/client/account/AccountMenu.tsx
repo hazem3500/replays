@@ -75,7 +75,7 @@ export function AccountMenu({ account }: { account: Account }) {
         {signOutUrl ? (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem render={<a href={signOutUrl} className="menu-link" />} data-testid="sign-out">
+            <DropdownMenuItem render={<a href={signOutUrl} className="menu-link" aria-label={STRINGS.signOut} />} data-testid="sign-out">
               <LogOutIcon aria-hidden="true" />
               {STRINGS.signOut}
             </DropdownMenuItem>

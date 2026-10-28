@@ -17,7 +17,5 @@ export function editorHint(selection: Selection, suggesting: boolean, empty: boo
   if (selection?.kind === 'range') return `${formatClock(selection.to - selection.from)} selected · C cuts it · Esc clears`;
   const forSelection = selection ? SELECTION_HINTS[selection.kind] : undefined;
   if (forSelection) return forSelection;
-  return empty
-    ? 'Drag the clip’s edges to trim · drag across the clip to select a cut · W finds waits'
-    : 'Space plays the result · cuts are skipped';
+  return empty ? 'Drag the clip’s edges to trim · drag across the clip to select a cut · W finds waits' : 'Space plays the edited result';
 }

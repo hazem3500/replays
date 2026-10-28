@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { applyEdits, editTimeline } from '../src/shared/edits.ts';
-import { buildWaterfall, filterWaterfall, rowDuration, visibleSegments } from '../src/client/viewer/waterfall.ts';
+import { buildWaterfall, visibleSegments } from '../src/client/viewer/waterfall.ts';
 import { request, waterfallFixture, waterfallEdits as edits } from './waterfall-fixture.ts';
 
 describe('waterfall source spans on the player clock', () => {
@@ -37,7 +37,7 @@ describe('waterfall source spans on the player clock', () => {
     });
     expect(rows[1]).toMatchObject({ at: 2000, measured: 1000, visible: 250, segments: [{ from: 2000, to: 2250 }] });
     expect(rows[2]).toMatchObject({ at: 4500, measured: 2000, visible: 500, segments: [{ from: 4500, to: 5000 }] });
-    expect(rowDuration(rows[0]!)).toBe('8.00 s measured');
+    expect(rows[0]).toMatchObject({ measured: 8000 });
     expect(bundle).toEqual(before);
     // Source data is required: the existing list intentionally omits rows whose start was removed.
     expect(applyEdits(bundle, edits).bundle.network.map((entry) => entry.id)).not.toContain('cut-start');
@@ -73,7 +73,7 @@ describe('waterfall source spans on the player clock', () => {
     ).toBe(true);
     const task = rows.find((row) => row.kind === 'performance' && row.entry.kind === 'long-task');
     expect(task).toMatchObject({ at: 2250, measured: 1000, visible: 500, segments: [{ from: 2250, to: 2750 }] });
-    expect(rowDuration(rows.find((row) => row.label === 'First contentful paint')!)).toBe('20.00 s from navigation');
+    expect(rows.find((row) => row.label === 'First contentful paint')).toMatchObject({ timing: 'point', segments: [] });
   });
 
   it('marks invalid and incomplete durations explicitly, preserving legitimate zero durations and failures', () => {
@@ -113,22 +113,5 @@ describe('waterfall source spans on the player clock', () => {
     expect(model.rows[0]).toMatchObject({ measured: 1000, visible: 10, segments: [{ from: 9990, to: 10000 }] });
     expect(visibleSegments(1, Infinity, editTimeline(undefined, 0))).toEqual([]);
     expect(visibleSegments(0, 100, editTimeline(undefined, 0))).toEqual([]);
-  });
-
-  it('filters removed events out before search and applies failed/slow/incomplete and track filters truthfully', () => {
-    const bundle = waterfallFixture();
-    bundle.network = [
-      request({ status: 503 }),
-      request({ id: 'fast', duration: 20 }),
-      request({ id: 'unknown', status: 0, statusText: '' }),
-      request({ id: 'gone', at: 3100, duration: 20 }),
-    ];
-    const rows = buildWaterfall(bundle, editTimeline(edits, 10000)).rows;
-    expect(filterWaterfall(rows, 'GET PROJECTS 503', 'network', 'failed').map((row) => row.id)).toEqual(['network-0']);
-    expect(filterWaterfall(rows, '', 'all', 'slow').map((row) => row.id)).toEqual(['network-0']);
-    expect(filterWaterfall(rows, '', 'all', 'incomplete').map((row) => row.id)).toEqual(['network-2']);
-    expect(filterWaterfall(rows, '#projects', 'action', 'all')).toHaveLength(1);
-    expect(filterWaterfall(rows, '', 'performance', 'all')).toEqual([]);
-    expect(rows.some((row) => row.id === 'network-3')).toBe(false);
   });
 });
