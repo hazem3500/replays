@@ -46,9 +46,7 @@ function placeScore(base: Comparable, other: Comparable) {
 export function similarity(base: Comparable, other: Comparable) {
   const title = overlap(words(base.title), words(other.title));
   return (
-    (base.suiteRun && base.suiteRun.runId === other.suiteRun?.runId ? 3 : 0) +
-    (title >= 0.5 ? 3 * title : 0) +
-    placeScore(base, other)
+    (base.suiteRun && base.suiteRun.runId === other.suiteRun?.runId ? 3 : 0) + (title >= 0.5 ? 3 * title : 0) + placeScore(base, other)
   );
 }
 

@@ -102,9 +102,7 @@ export function CompareTileView({
         onDoubleClick={onSpotlight}
       />
       <TileLabel tile={tile} ended={ended && !single} />
-      {single ? null : (
-        <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />
-      )}
+      {single ? null : <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />}
     </section>
   );
 }
@@ -202,17 +200,7 @@ function TileNotice({ busy, text }: { busy: boolean; text: string }) {
   );
 }
 
-function TilePicture({
-  session,
-  id,
-  bundle,
-  fidelity,
-}: {
-  session: CompareSession;
-  id: string;
-  bundle: ReplayBundle;
-  fidelity: Fidelity;
-}) {
+function TilePicture({ session, id, bundle, fidelity }: { session: CompareSession; id: string; bundle: ReplayBundle; fidelity: Fidelity }) {
   const controller = session.controller({ id, bundle });
   const { stage, failure } = useTilePlayer({ session, id, controller, fidelity });
   if (failure) return <TileNotice busy={false} text={TILE_STRINGS.unavailable(failure)} />;

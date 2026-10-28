@@ -302,6 +302,37 @@
   inset: 8px;
 }
 
+/* why: stacked and phone viewers size the stage from the recordings' shape, as styles.css does for the single player. */
+@media (max-width: 840px), (max-height: 560px) {
+  .ct-area {
+    flex: none;
+    aspect-ratio: var(--stage-aspect, 16 / 10);
+    max-height: 70dvh;
+  }
+}
+
+.app-shell[data-mobile] .ct-area {
+  flex: none;
+  aspect-ratio: var(--stage-aspect, 16 / 10);
+  max-height: 45dvh;
+}
+
+.app-shell[data-mobile]:is([data-inspector-collapsed], [data-panel-sizing]) .ct-area {
+  flex: 1;
+  min-height: 0;
+  aspect-ratio: auto;
+  max-height: none;
+}
+
+@media (orientation: landscape) and (min-width: 560px) {
+  .app-shell[data-mobile] .ct-area {
+    flex: 1;
+    min-height: 0;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+}
+
 @media (hover: none) {
   .ct-actions {
     opacity: 1;

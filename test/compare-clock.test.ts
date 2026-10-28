@@ -118,7 +118,6 @@ describe('SharedClock playback', () => {
     clock.seek(2000);
     expect(seeks).toBe(1);
   });
-
 });
 
 describe('SharedClock tiles', () => {

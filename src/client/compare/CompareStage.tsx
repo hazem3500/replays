@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { type CSSProperties, useRef } from 'react';
 
 import { useCarouselFocus } from '../hooks/use-carousel-focus.ts';
 import { useElementSize } from '../hooks/use-element-size.ts';
@@ -8,6 +8,11 @@ import type { CompareLayout } from './search.ts';
 import type { CompareSession } from './session.ts';
 import { CompareTileView, type TileCommands } from './CompareTile.tsx';
 import { cellAspect, type CompareTile } from './tiles.ts';
+
+/** The recordings' shared shape, so a stacked or phone viewer sizes the stage like its single player. */
+interface StageStyle extends CSSProperties {
+  '--stage-aspect': string;
+}
 
 /** Grid tiles beyond this many play as low-rate thumbnails, except the focused one. */
 const LIVE_BUDGET = 6;
@@ -49,6 +54,7 @@ export function CompareStage({
   );
   const placements = carousel ? [] : placementsFor({ layout, count: tiles.length, focus: focusIndex, box, aspect: cellAspect(tiles) });
   useCarouselFocus(area, carousel, focusIndex);
+  const style: StageStyle = { '--stage-aspect': String(cellAspect(tiles)) };
 
   return (
     <div
@@ -58,6 +64,7 @@ export function CompareStage({
       data-testid="compare-stage"
       data-layout={carousel ? 'carousel' : layout}
       data-count={tiles.length}
+      style={style}
       tabIndex={-1}
       role="group"
       aria-label="Compared recordings"
