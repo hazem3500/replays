@@ -10,7 +10,7 @@
     "dist/cli/cli.mjs": {
       "raw": 416314,
       "gzip": 106513,
-      "brotli": 87082
+      "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -923,16 +923,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 416314,
-        "gzip": 106513,
-        "brotli": 87082
-      },
-      "reason": "The CLI bundles the server, which gains the replay meta, delete and restore routes, their store paths and zod/mini body schemas; measured in CI against fresh main: raw 408843 to 416314, gzip 104933 to 106513, brotli 85806 to 87082 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/93"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
       "cap": {
         "raw": 298271,
@@ -951,6 +941,16 @@
       },
       "reason": "The recorder core now includes the plain HTTP upload transport (createHttpUpload, retryable IssueUploadError), so createRecorder can take { url, headers, ... }; it replaces bundle-types.ts-5850f68df54d (+5.2 KB raw, +1.4 KB gzip).",
       "pr": "https://github.com/hazem3500/replays/pull/97"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 416314,
+        "gzip": 106513,
+        "brotli": 87966
+      },
+      "reason": "The CLI bundles the server, which gained the replay meta, delete and restore routes in #93 (raw 416314, gzip 106513 as measured there); with #108 merged on top, Brotli measures 87095 on main against #93s 87082 cap, so this replaces that entry with a Brotli cap measured on main.",
+      "pr": "https://github.com/hazem3500/replays/pull/112"
     }
   ]
 }
