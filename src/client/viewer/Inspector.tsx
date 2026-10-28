@@ -47,13 +47,13 @@ import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../navigation.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
 import { TrackList, SeekTime, HEADER_HEIGHT, TRACK_GAP, TRAILING_GAP } from './TrackList.tsx';
-export { edgeVelocity } from './TrackList.tsx';
-import { buildPerformance } from './performance.ts';
 import { useRowHeight } from '../hooks/use-row-height.ts';
 import { buildNetworkRows } from './network/model.ts';
 import { type NetworkPeer, NetworkPanel } from './network/NetworkPanel.tsx';
 import { vitalsOf } from './performance/model.ts';
 import { type PerformancePeer, PerformancePanel } from './performance/PerformancePanel.tsx';
+export { edgeVelocity } from './TrackList.tsx';
+import { buildPerformance } from './performance.ts';
 
 export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const DEFAULT_INSPECTOR_HEIGHT = 260;

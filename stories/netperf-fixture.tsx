@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 
 import type { ReplayBundle, ReplayNetworkEntry, ReplayPerformanceEntry } from '../src/shared/replay.ts';
 import { PlayerContext, ReplayController } from '../src/client/player.ts';
@@ -141,20 +141,11 @@ const VIEWER: ViewerActions = {
   switchCaptions: noop,
 };
 
-const players = new WeakMap<ReplayBundle, ReplayController>();
-
-function playerFor(bundle: ReplayBundle) {
-  const known = players.get(bundle);
-  if (known) return known;
-  const player = new ReplayController(bundle);
-  players.set(bundle, player);
-  return player;
-}
-
 /** A player for `bundle` (never mounted: the panels only read its clock) and stub viewer actions, in a dock-sized frame. */
 export function PanelFrame({ bundle, width, children }: { bundle: ReplayBundle; width?: number; children: ReactNode }) {
+  const [player] = useState(() => new ReplayController(bundle));
   return (
-    <PlayerContext.Provider value={playerFor(bundle)}>
+    <PlayerContext.Provider value={player}>
       <ViewerContext.Provider value={VIEWER}>
         <div className="inspector" style={{ height: 320, width: width ?? '100%', display: 'flex', flexDirection: 'column' }}>
           <div className="inspector-panel">{children}</div>

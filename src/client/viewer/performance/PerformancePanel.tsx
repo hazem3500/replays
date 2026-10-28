@@ -93,7 +93,7 @@ export function PerformancePanel({
   requests,
   steps,
   duration,
-  peers = [],
+  peers,
   extra,
   onOpenRequest,
 }: {
@@ -117,7 +117,11 @@ export function PerformancePanel({
   const vitals = buildVitals(model.signals, moments, model.track);
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
-  const vitalPeers: VitalPeer[] = peers.map((peer) => ({ id: peer.id, letter: peer.letter, deltas: vitalDeltas(vitals, peer.vitals) }));
+  const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
+    id: peer.id,
+    letter: peer.letter,
+    deltas: vitalDeltas(vitals, peer.vitals),
+  }));
   if (!model.track) return <Empty title={STRINGS.noneTitle}>{STRINGS.none}</Empty>;
   const empty = range ? (
     <Empty title={STRINGS.outsideTitle}>{STRINGS.outside}</Empty>

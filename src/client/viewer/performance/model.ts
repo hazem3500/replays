@@ -88,7 +88,7 @@ export function buildMoments(signals: readonly PerformanceSignal[]): Moment[] {
     if (!validDuration(value)) continue;
     if (signal.entry.kind === 'long-task') moments.push(moment('task', signal, value, 'Long task'));
     if (signal.entry.kind !== 'slow-interaction') continue;
-    const joins = open && open.signal.entry.value === value && signal.at - open.signal.at <= SAME_INTERACTION_MS;
+    const joins = open?.signal.entry.value === value && signal.at - open.signal.at <= SAME_INTERACTION_MS;
     if (!joins) close();
     if (open) open.events.push(signal.entry.eventType ?? '');
     else open = { signal, events: [signal.entry.eventType ?? ''] };

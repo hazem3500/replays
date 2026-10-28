@@ -187,7 +187,12 @@ function TypeMenu({
   if (types.length < 2 && value === 'all') return null;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="np-type" aria-label={`${STRINGS.type}: ${TYPE_LABELS[value]}`} data-testid="network-type" onKeyDown={keepKeys}>
+      <DropdownMenuTrigger
+        className="np-type"
+        aria-label={`${STRINGS.type}: ${TYPE_LABELS[value]}`}
+        data-testid="network-type"
+        onKeyDown={keepKeys}
+      >
         {TYPE_LABELS[value]}
         <ChevronDownIcon aria-hidden="true" />
       </DropdownMenuTrigger>

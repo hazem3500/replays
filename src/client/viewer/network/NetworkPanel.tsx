@@ -27,6 +27,7 @@ const RIBBON_MIN_ROWS = 12;
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
 const DENSITY_BINS = 160;
+const NO_PEERS: readonly NetworkPeer[] = [];
 const PENDING_ROWS = ['a', 'b', 'c', 'd', 'e', 'f'];
 
 const STRINGS = {
@@ -65,7 +66,7 @@ export function NetworkPanel({
   human,
   selected,
   onSelect,
-  peers = [],
+  peers,
 }: {
   rows: readonly NetworkRow[];
   steps: readonly ReplayStep[];
@@ -113,7 +114,9 @@ export function NetworkPanel({
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
           <NetworkList rows={shown} steps={steps} ceiling={slowestMeasured(rows)} selected={selected} onSelect={onSelect} empty={empty} />
         </div>
-        {open ? <RequestDetail row={open} rows={rows} steps={steps} peers={peers} stacked={stacked} onSelect={onSelect} /> : null}
+        {open ? (
+          <RequestDetail row={open} rows={rows} steps={steps} peers={peers ?? NO_PEERS} stacked={stacked} onSelect={onSelect} />
+        ) : null}
       </div>
     </div>
   );
