@@ -213,6 +213,12 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- The viewer's client router is TanStack Router: file routes in `src/client/routes/`, a router context of
+  `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params, so every existing
+  address (`/r/<id>?t=12.5`, `/?errors=1&sort=-duration`, `/r/<id>?suite=<suite>`, `/r/<id>/edit`) opens as before.
+  Plugin pages (`api.registerPluginPage`) are routed at `/p/<plugin>/<path>`. An address that is no page now shows a
+  not-found page instead of the index.
+
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
   refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters

@@ -59,7 +59,7 @@ New code imports/calls effect hooks only in `src/client/hooks/`, the browser-onl
 
 React Compiler is enabled in the app build. Run `pnpm quality:compiler` on Boat for the [bailout report and build-parity status](docs/compiler-health.md). Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.
 
-Keep files at most 400 lines; extract pure logic, then hooks, then views. Keep components focused, prefer children/slots over prop drilling, and render extensible lists from descriptors. Keep app data/navigation out of presentational components. Current transport/navigation live in `client/queries.ts`, `navigation.ts` and `route.ts`; Router/DB/Start work is separately owned. Do not duplicate those migrations.
+Keep files at most 400 lines; extract pure logic, then hooks, then views. Keep components focused, prefer children/slots over prop drilling, and render extensible lists from descriptors. Keep app data/navigation out of presentational components. Transport lives in `client/queries.ts` and the DB collections; navigation is TanStack Router (`client/routes/`, `client/router.tsx`, `client/routing/`; see [client routing](docs/architecture/client-routing.md)). Start work is separately owned; do not duplicate it.
 
 ## Comments
 
