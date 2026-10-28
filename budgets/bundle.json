@@ -18,9 +18,9 @@
       "brotli": 39185
     },
     "dist/client/assets/api-HASH.js": {
-      "raw": 1877,
-      "gzip": 927,
-      "brotli": 792
+      "raw": 1938,
+      "gzip": 957,
+      "brotli": 827
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -58,9 +58,9 @@
       "brotli": 190
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
-      "raw": 2369,
-      "gzip": 1234,
-      "brotli": 1125
+      "raw": 2453,
+      "gzip": 1282,
+      "brotli": 1169
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
@@ -68,9 +68,14 @@
       "brotli": 15415
     },
     "dist/client/assets/download-HASH.js": {
-      "raw": 269,
+      "raw": 279,
       "gzip": 218,
-      "brotli": 208
+      "brotli": 219
+    },
+    "dist/client/assets/dropdown-menu-HASH.js": {
+      "raw": 224666,
+      "gzip": 73809,
+      "brotli": 63264
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
@@ -78,8 +83,8 @@
       "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82495,
-      "gzip": 26552,
+      "raw": 82506,
+      "gzip": 27351,
       "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -108,9 +113,9 @@
       "brotli": 36049
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 727142,
-      "gzip": 236638,
-      "brotli": 191694
+      "raw": 882638,
+      "gzip": 275706,
+      "brotli": 228656
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -172,13 +177,8 @@
       "gzip": 500,
       "brotli": 456
     },
-    "dist/client/assets/storage-HASH.js": {
-      "raw": 217760,
-      "gzip": 71536,
-      "brotli": 61397
-    },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 18081,
+      "raw": 18639,
       "gzip": 7488,
       "brotli": 6349
     },
@@ -193,22 +193,17 @@
       "brotli": 238
     },
     "dist/client/assets/useQuery-HASH.js": {
-      "raw": 8292,
-      "gzip": 3056,
-      "brotli": 2802
+      "raw": 8541,
+      "gzip": 3152,
+      "brotli": 2889
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 52484,
-      "gzip": 19203,
-      "brotli": 16820
-    },
-    "dist/client/assets/write-HASH.js": {
-      "raw": 334238,
-      "gzip": 97047,
-      "brotli": 84146
+      "raw": 47311,
+      "gzip": 17272,
+      "brotli": 15400
     },
     "dist/client/index.html": {
-      "raw": 11858,
+      "raw": 12263,
       "gzip": 4123,
       "brotli": 3429
     },
@@ -232,11 +227,6 @@
       "gzip": 18875,
       "brotli": 16324
     },
-    "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs": {
-      "raw": 272355,
-      "gzip": 72905,
-      "brotli": 59492
-    },
     "dist/lib/chunks/context.schema.json-e7797a970d02.mjs": {
       "raw": 298271,
       "gzip": 78441,
@@ -251,11 +241,6 @@
       "raw": 32734,
       "gzip": 9422,
       "brotli": 8354
-    },
-    "dist/lib/chunks/define.ts-b89f8e39bfa0.mjs": {
-      "raw": 32426,
-      "gzip": 9325,
-      "brotli": 8271
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -277,11 +262,6 @@
       "gzip": 21,
       "brotli": 2
     },
-    "dist/lib/chunks/index.ts-639c48001f12.mjs": {
-      "raw": 39102,
-      "gzip": 10732,
-      "brotli": 9330
-    },
     "dist/lib/chunks/index.ts-7a66decb29dc.mjs": {
       "raw": 28475,
       "gzip": 8376,
@@ -291,11 +271,6 @@
       "raw": 18258,
       "gzip": 4951,
       "brotli": 4342
-    },
-    "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
-      "raw": 31393,
-      "gzip": 8181,
-      "brotli": 7133
     },
     "dist/lib/chunks/registry.ts-e9358072f05f.mjs": {
       "raw": 37373,
@@ -428,9 +403,9 @@
       "brotli": 36850
     },
     "initial/index.html/js": {
-      "raw": 1288570,
-      "gzip": 410206,
-      "brotli": 328486
+      "raw": 1688508,
+      "gzip": 529707,
+      "brotli": 434343
     },
     "initial/render.html/css": {
       "raw": 5252,
@@ -655,16 +630,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 82506,
-        "gzip": 26552,
-        "brotli": 23404
-      },
-      "reason": "Playback highlight editing, original/view time projection and accessible mobile object selection add this lazy editor behavior.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
         "raw": 33095,
@@ -712,6 +677,14 @@
         "brotli": 2038
       },
       "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
+      "pr": "https://github.com/hazem3500/replays/pull/67"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "brotli": 16623
+      },
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
@@ -805,32 +778,12 @@
       "pr": "https://github.com/hazem3500/replays/pull/104"
     },
     {
-      "file": "dist/client/index.html",
-      "cap": {
-        "raw": 11858,
-        "gzip": 4123,
-        "brotli": 3429
-      },
-      "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name.",
-      "pr": "https://github.com/hazem3500/replays/pull/104"
-    },
-    {
       "file": "dist/lib/plugin.mjs",
       "cap": {
         "brotli": 250
       },
       "reason": "Brotli drift of one byte in the plugin entry after the source-provider types gained a mark.",
       "pr": "https://github.com/hazem3500/replays/pull/106"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 727142,
-        "gzip": 236638,
-        "brotli": 191694
-      },
-      "reason": "The replay list's empty and error states (per-state copy and actions, active-filter chips) and the auto-retry hook join the eager index graph, about 6.5 KB raw over main, which already carries the Settings dialog and the provider marks.",
-      "pr": "https://github.com/hazem3500/replays/pull/107"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
@@ -903,88 +856,98 @@
       "pr": "https://github.com/hazem3500/replays/pull/89"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-d5791ba8f4b9.mjs",
-      "cap": {
-        "raw": 272355,
-        "gzip": 72905,
-        "brotli": 59492
-      },
-      "reason": "Embed canonical replay/context schemas and validate upload envelopes before hooks; the shared server chunk source identity changes.",
-      "pr": "https://github.com/hazem3500/replays/pull/77"
-    },
-    {
-      "file": "dist/client/assets/write-HASH.js",
-      "cap": {
-        "raw": 334238,
-        "gzip": 97047,
-        "brotli": 84146
-      },
-      "reason": "TanStack DB (collections, live queries, optimistic transactions) as a lazy chunk the viewer loads; never in the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
-      "file": "dist/client/assets/storage-HASH.js",
-      "cap": {
-        "raw": 217760,
-        "gzip": 71536,
-        "brotli": 61397
-      },
-      "reason": "Shared modules split out of the entry chunk (main shrinks by the same amount); zod/mini wire schemas and the IndexedDB cache.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
-      "file": "dist/client/assets/useQuery-HASH.js",
-      "cap": {
-        "raw": 8292,
-        "gzip": 3056,
-        "brotli": 2802
-      },
-      "reason": "TanStack Query observer shared by the entry and the lazy data-layer chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
       "file": "dist/client/assets/CommentRowsSource-HASH.js",
       "cap": {
-        "raw": 2369,
-        "gzip": 1234,
-        "brotli": 1125
+        "raw": 2453,
+        "gzip": 1282,
+        "brotli": 1169
       },
       "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 82506,
+        "gzip": 27351,
+        "brotli": 23404
+      },
+      "reason": "Measured in CI against fresh main: gzip 26552 to 26554 bytes with this change.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 18639
+      },
+      "reason": "Measured in CI against fresh main: raw 18081 to 18096 bytes with this change.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
       "file": "dist/client/assets/api-HASH.js",
       "cap": {
-        "raw": 1877,
-        "gzip": 927,
-        "brotli": 792
+        "raw": 1938,
+        "gzip": 957,
+        "brotli": 827
       },
       "reason": "Comments API calls validated with the shared zod/mini schemas, shared by the provider and the lazy rows chunk.",
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 52484,
-        "gzip": 19203,
-        "brotli": 16820
-      },
-      "reason": "Keep and release flip on the press frame through the optimistic retention collection.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
       "file": "dist/client/assets/download-HASH.js",
       "cap": {
-        "brotli": 208
+        "raw": 279,
+        "brotli": 219
       },
       "reason": "Same code; its imports point at the re-split shared chunks.",
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 224666,
+        "gzip": 73809,
+        "brotli": 63264
+      },
+      "reason": "Measured in CI against fresh main: raw new 218122, gzip new 71659, brotli new 61421 bytes with this change.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 882638,
+        "gzip": 275706,
+        "brotli": 228656
+      },
+      "reason": "Measured in CI against fresh main: raw 727142 to 856930, gzip 236638 to 267675, brotli 191694 to 221996 bytes with this change.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/assets/useQuery-HASH.js",
+      "cap": {
+        "raw": 8541,
+        "gzip": 3152,
+        "brotli": 2889
+      },
+      "reason": "TanStack Query observer shared by the entry and the lazy data-layer chunks.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/client/index.html",
+      "cap": {
+        "raw": 12263,
+        "gzip": 4123,
+        "brotli": 3429
+      },
+      "reason": "Measured in CI against fresh main: raw 11858 to 11905 bytes with this change.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
       "file": "initial/index.html/js",
       "cap": {
-        "gzip": 382627,
-        "brotli": 311376
+        "raw": 1688508,
+        "gzip": 529707,
+        "brotli": 434343
       },
       "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
       "pr": "https://github.com/hazem3500/replays/pull/78"
