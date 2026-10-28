@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Source-provider marks: `SourceProvider.mark` names a built-in monochrome mark (`github`, `gitlab`, `slack`, `linear`,
+  `jira`, `notion`, `link`); built-ins carry theirs and a config provider named like a mark gets it. Index rows show the
+  mark beside the source label; on phones one icon chip opens a sheet of every source instead of linking out.
+
 - **Custom upload endpoints** ([docs/extension-api.md](docs/extension-api.md#custom-upload-endpoints)), additive in plugin API 1:
   - `api.uploadEndpoint` gains `authenticate` (its own credentials instead of the auth adapter, identity confined to the endpoint),
     `maxBytes` (a number or per-identity function, checked against `Content-Length`, the stream and the gunzipped size),
