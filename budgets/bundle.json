@@ -792,7 +792,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -862,7 +862,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -953,14 +953,14 @@
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "file": "dist/lib/chunks/context.schema.json-ac455b893fb5.mjs",
       "cap": {
-        "raw": 308545,
-        "gzip": 80878,
-        "brotli": 66289
+        "raw": 302303,
+        "gzip": 79340,
+        "brotli": 64982
       },
-      "reason": "replay.schema.json documents meta.profile and the deprecated meta.purpose (main 297658/77964/63870, head 299558/78522/64358).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (caps 308545, 80878, 66289) and measures 302303 raw, 79340 gzip, 64982 brotli bytes, under those caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
       "file": "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs",
@@ -979,8 +979,8 @@
         "gzip": 114657,
         "brotli": 93434
       },
-      "reason": "The CLI bundles the views catalog, the seven built-in view presets, capture-profile validation and the built-in performance profile (main 421230/108080/88368, head 434239/111317/90712).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
+      "reason": "The CLI bundles the server, which now keeps a rendered poster's ThumbHash (store.setThumbHash, the queue's sidecar handoff, isThumbHash); head measures 417996 raw, 106963 gzip, 87508 brotli bytes (+1682 raw, +450 gzip over the previous caps; Brotli keeps its cap).",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
       "file": "dist/client/assets/player-HASH.js",
@@ -1031,6 +1031,16 @@
       },
       "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces index.ts-3d8b996b5201 (main 39913/11514/10056).",
       "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 8807,
+        "gzip": 3880,
+        "brotli": 3523
+      },
+      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts and render/thumbhash-capture.ts); head measures 8807 raw, 3880 gzip, 3523 brotli bytes (+2086, +922, +841).",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
     }
   ]
 }
