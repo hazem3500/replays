@@ -38,8 +38,8 @@ export interface TileInput {
 
 function labelOf(id: string, label: string | undefined, bundle: ReplayBundle | undefined) {
   if (label) return label;
-  const title = bundle?.meta.title;
-  return title ? title : id;
+  if (bundle?.meta.title) return bundle.meta.title;
+  return id;
 }
 
 function aspectOf(bundle: ReplayBundle | undefined) {

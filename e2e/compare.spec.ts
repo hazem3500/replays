@@ -76,7 +76,7 @@ test('“Compare with…” adds a recording, and Back returns to the replay alo
   await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByTestId('compare-with').click();
   const picker = page.getByTestId('compare-picker');
-  await picker.getByRole('button', { name: new RegExp(await titleOf(page, 'human-demo')) }).click();
+  await picker.getByRole('button', { name: await titleOf(page, 'human-demo') }).click();
   await expect(page).toHaveURL(/\?with=human-demo&layout=grid$/);
   await expect(page.locator('.ct-tile')).toHaveCount(2);
   await page.goBack();

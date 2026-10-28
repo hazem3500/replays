@@ -74,7 +74,8 @@ export function CompareViewer(props: CompareViewerProps) {
 
 function failureOf(tiles: readonly CompareTile[]) {
   const reason = tiles.find((tile) => tile.failure)?.failure;
-  return reason ? reason : 'The recordings could not be loaded';
+  if (reason) return reason;
+  return 'The recordings could not be loaded';
 }
 
 function CompareFailed({ tiles }: { tiles: readonly CompareTile[] }) {

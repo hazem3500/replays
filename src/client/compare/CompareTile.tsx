@@ -91,7 +91,7 @@ export function CompareTileView({
       {tile.bundle ? (
         <TilePicture session={session} id={tile.id} bundle={tile.bundle} fidelity={fidelity} />
       ) : (
-        <TileNotice busy={!tile.failure} text={tile.failure ? tile.failure : TILE_STRINGS.loading} />
+        <TileNotice busy={!tile.failure} text={tile.failure || TILE_STRINGS.loading} />
       )}
       <button
         type="button"

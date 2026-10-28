@@ -61,10 +61,13 @@ export function CompareStage({
       tabIndex={-1}
       role="group"
       aria-label="Compared recordings"
-      onScrollEnd={(event) => {
+      onScroll={(event) => {
         if (!carousel) return;
         const element = event.currentTarget;
-        const id = tiles[Math.round(element.scrollLeft / Math.max(1, element.clientWidth))]?.id;
+        const position = element.scrollLeft / Math.max(1, element.clientWidth);
+        // why: a swipe passes other tiles on its way; only the snapped tile it settles on takes the focus.
+        if (Math.abs(position - Math.round(position)) > 0.02) return;
+        const id = tiles[Math.round(position)]?.id;
         if (id && id !== focus) commands.onFocus(id);
       }}
     >
