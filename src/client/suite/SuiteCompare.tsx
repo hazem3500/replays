@@ -1,5 +1,5 @@
 import { type ComparePageProps, CompareViewer } from '../compare/CompareViewer.tsx';
-import { parseCompareSearch, writeCompareSearch } from '../compare/search.ts';
+import { parseCompareSearch, writeCompareSearch } from '../compare/compare-search.ts';
 import { useLocationSearch } from '../hooks/use-location-search.ts';
 import { navigate, setSearch } from '../navigation.ts';
 import { replayHref } from '../route.ts';
@@ -20,12 +20,13 @@ export function SuiteCompare({
   onFocus: (replayId: string) => void;
   page: ComparePageProps;
 }) {
-  const { layout } = parseCompareSearch(useLocationSearch(), '', 'grid');
+  const { layout, t } = parseCompareSearch(useLocationSearch(), '', 'grid');
   return (
     <CompareViewer
       recordings={runs.map((run) => ({ id: run.replayId, label: run.label }))}
       focus={focus}
       layout={layout}
+      time={t}
       onFocus={onFocus}
       onLayout={(next) => setSearch(writeCompareSearch(location.search, { with: [], layout: next }, 'grid'))}
       onAdd={(other) => {

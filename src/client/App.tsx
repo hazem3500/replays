@@ -15,7 +15,7 @@ import { notify } from './toast.ts';
 import { ThemeContext, useTheme } from './theme.tsx';
 import { EditorSkeleton, LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
 import { useLocationSearch } from './hooks/use-location-search.ts';
-import { parseCompareSearch } from './compare/search.ts';
+import { parseCompareSearch } from './compare/compare-search.ts';
 
 // The index ships alone; the viewer (rrweb + player) and the suite workspace are split chunks.
 // Each loader is memoised so the route can start the download before React asks for it.

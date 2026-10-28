@@ -4,7 +4,7 @@ import { useCarouselFocus } from '../hooks/use-carousel-focus.ts';
 import { useElementSize } from '../hooks/use-element-size.ts';
 import type { Fidelity } from './clock.ts';
 import { type Placement, placementsFor } from './layout.ts';
-import type { CompareLayout } from './search.ts';
+import type { CompareLayout } from './compare-search.ts';
 import type { CompareSession } from './session.ts';
 import { CompareTileView, type TileCommands } from './CompareTile.tsx';
 import { cellAspect, type CompareTile } from './tiles.ts';

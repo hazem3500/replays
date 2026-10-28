@@ -2,7 +2,7 @@ import { useLocationSearch } from '../hooks/use-location-search.ts';
 import { setSearch } from '../navigation.ts';
 import { replayHref } from '../route.ts';
 import { CompareViewer } from './CompareViewer.tsx';
-import { type CompareSearch, parseCompareSearch, writeCompareSearch } from './search.ts';
+import { type CompareSearch, parseCompareSearch, writeCompareSearch } from './compare-search.ts';
 
 const write = (next: CompareSearch, push = false) => setSearch(writeCompareSearch(location.search, next), { push });
 const without = (next: CompareSearch): CompareSearch => ({ with: next.with, layout: next.layout });
@@ -19,6 +19,7 @@ export function ReplayComparePage({ id }: { id: string }) {
       recordings={[{ id }, ...state.with.map((other) => ({ id: other, removable: true }))]}
       focus={state.focus ?? id}
       layout={state.layout}
+      time={state.t}
       onFocus={(focus) => write(focus === id ? without(state) : { ...state, focus })}
       onLayout={(layout) => write({ ...state, layout })}
       onAdd={(other) => write({ ...state, with: [...state.with, other] }, true)}

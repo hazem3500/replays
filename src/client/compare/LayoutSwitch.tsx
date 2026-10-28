@@ -2,7 +2,7 @@ import { LayoutGridIcon, LayoutPanelLeftIcon, RectangleHorizontalIcon } from 'lu
 import { type KeyboardEvent, useRef } from 'react';
 
 import { Hint } from '@/components/icon-button.tsx';
-import type { CompareLayout } from './search.ts';
+import type { CompareLayout } from './compare-search.ts';
 
 const LAYOUT_STRINGS = {
   group: 'Layout',

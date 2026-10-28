@@ -14,7 +14,7 @@ import type { TileCommands } from './CompareTile.tsx';
 import { LayoutSwitch } from './LayoutSwitch.tsx';
 import { PerformanceComparison } from './PerformanceComparison.tsx';
 import { ScopeSwitch } from './ScopeSwitch.tsx';
-import type { CompareLayout } from './search.ts';
+import type { CompareLayout } from './compare-search.ts';
 import { type CompareTile, compareTiles, isLoaded, type LoadedTile } from './tiles.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the comparison's styles load with its lazy chunk, not with every page.
 import './compare.css';
@@ -44,6 +44,8 @@ export interface CompareViewerProps {
   onRemove?: ((id: string) => void) | undefined;
   /** The recording on its own at `seconds` (its viewer page). */
   href: (id: string, seconds: string) => string;
+  /** The shared playhead the link opens at (`t` from compare-search.ts), in ms. */
+  time?: number | undefined;
   /** The page's own viewer props for the focused recording (a suite run's title, status and menus). */
   page?: ComparePageProps | undefined;
 }
@@ -90,16 +92,16 @@ function CompareFailed({ tiles }: { tiles: readonly CompareTile[] }) {
   );
 }
 
-/** `?t=` and `#step-n` open at their moment, as in the single viewer; a step is the focused recording's. */
-function linkedTime(focused: LoadedTile) {
+/** `#step-n` wins over `t`, as in the single viewer; a step is the focused recording's. */
+function linkedTime(focused: LoadedTile, time: number | undefined) {
   const { steps } = focused.bundle;
-  const target = parsePermalink(location.search, location.hash, steps.length);
-  return target.step === undefined ? target.time : steps[target.step]?.at;
+  const { step } = parsePermalink('', location.hash, steps.length);
+  return step === undefined ? time : steps[step]?.at;
 }
 
 function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewerProps; tiles: CompareTile[]; focused: LoadedTile }) {
   const { layout, onFocus, onLayout } = compare;
-  const [initialTime] = useState(() => linkedTime(focused));
+  const [initialTime] = useState(() => linkedTime(focused, compare.time));
   const session = useCompareSession(tiles, focused.id, initialTime);
   const mobile = useMediaQuery(MOBILE_QUERY);
   const ready = tiles.filter(isLoaded);

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { plural } from '../plural.ts';
 import { indexReplaysQuery } from '../index/index-queries.ts';
 import { type Comparable, rankCandidates } from './candidates.ts';
-import { MAX_RECORDINGS } from './search.ts';
+import { MAX_RECORDINGS } from './compare-search.ts';
 
 const PICKER_STRINGS = {
   title: 'Compare with…',

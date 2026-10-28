@@ -1,10 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_RECORDINGS, parseCompareSearch, writeCompareSearch } from '../src/client/compare/search.ts';
+import { MAX_RECORDINGS, parseCompareSearch, writeCompareSearch } from '../src/client/compare/compare-search.ts';
 
 describe('compare search', () => {
   it('reads the recordings, layout and focus from a viewer URL', () => {
     expect(parseCompareSearch('?with=b,c&layout=spotlight&focus=c', 'a')).toEqual({ with: ['b', 'c'], layout: 'spotlight', focus: 'c' });
+  });
+
+  it('reads the shared playhead in milliseconds and ignores a malformed one', () => {
+    expect(parseCompareSearch('?with=b&t=4.2', 'a').t).toBe(4200);
+    expect(parseCompareSearch('?with=b&t=soon', 'a')).not.toHaveProperty('t');
   });
 
   it('shows one recording at a time without a layout, or the page default', () => {
@@ -29,6 +34,11 @@ describe('compare search', () => {
     expect(written).toBe('?t=4.0&with=b,c&layout=grid&focus=b');
     expect(writeCompareSearch('?with=b&layout=grid', { with: [], layout: 'single' })).toBe('');
     expect(writeCompareSearch('?layout=single', { with: [], layout: 'grid' }, 'grid')).toBe('');
+  });
+
+  it('writes a new playhead in seconds and keeps the URL’s own when none is given', () => {
+    expect(writeCompareSearch('?t=1.0', { with: ['b'], layout: 'single', t: 2500 })).toBe('?t=2.5&with=b');
+    expect(writeCompareSearch('?t=1.0', { with: ['b'], layout: 'single' })).toBe('?t=1.0&with=b');
   });
 
   it('round-trips what it writes', () => {
