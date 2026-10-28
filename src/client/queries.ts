@@ -73,6 +73,7 @@ export async function fetchSuite(id: string, signal?: AbortSignal): Promise<Suit
 export const replayQuery = (id: string) =>
   queryOptions({
     queryKey: ['replay', id] as const,
+    meta: { ssr: false },
     queryFn: ({ signal }) => fetchReplay(id, signal),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 10 * 60_000,

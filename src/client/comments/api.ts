@@ -1,6 +1,8 @@
 import { queryOptions } from '@tanstack/react-query';
+import * as z from 'zod/mini';
 
-import type { CommentsResponse, PublicComment } from '../../shared/comments.ts';
+import type { CommentsResponse } from '../../shared/comments.ts';
+import { commentsResponseSchema, publicCommentSchema, removedCommentsSchema } from '../../shared/schemas/comments.ts';
 import { LoadError } from '../queries.ts';
 import { apiUrl } from '../route.ts';
 
@@ -17,15 +19,17 @@ export class CommentRequestError extends Error {
   }
 }
 
+const errorBodySchema = z.object({ error: z.string() });
+
 async function failure(response: Response) {
-  const body = (await response.json().catch(() => undefined)) as { error?: string } | undefined;
-  return new CommentRequestError(body?.error ?? `Request failed (${response.status})`, response.status);
+  const body = errorBodySchema.safeParse(await response.json().catch(() => null));
+  return new CommentRequestError(body.success ? body.data.error : `Request failed (${response.status})`, response.status);
 }
 
 export async function fetchComments(replayId: string, signal?: AbortSignal): Promise<CommentsResponse> {
   const response = await fetch(url(replayId), signal ? { signal } : {});
   if (!response.ok) throw new LoadError(`Comments failed to load (${response.status})`, response.status);
-  return (await response.json()) as CommentsResponse;
+  return commentsResponseSchema.parse(await response.json());
 }
 
 export const commentsQuery = (replayId: string) =>
@@ -33,7 +37,7 @@ export const commentsQuery = (replayId: string) =>
     queryKey: ['comments', replayId] as const,
     queryFn: ({ signal }) => fetchComments(replayId, signal),
     staleTime: 10_000,
-    // Other people's comments show up without a reload, but only while the tab is in front.
+    // why: other people's comments show up without a reload, but only while the tab is in front.
     refetchInterval: 30_000,
     retry: false,
   });
@@ -46,16 +50,28 @@ export interface NewCommentInput {
   emoji?: string;
 }
 
-async function send<T>(method: string, replayId: string, commentId: string | undefined, body?: unknown): Promise<T> {
+interface Send<T> {
+  method: string;
+  replayId: string;
+  commentId?: string | undefined;
+  body?: unknown;
+  schema: z.ZodMiniType<T>;
+}
+
+async function send<T>({ method, replayId, commentId, body, schema }: Send<T>): Promise<T> {
   const response = await fetch(url(replayId, commentId), {
     method,
     ...(body === undefined ? {} : { headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }),
   });
   if (!response.ok) throw await failure(response);
-  return (await response.json()) as T;
+  return schema.parse(await response.json());
 }
 
-export const createComment = (replayId: string, input: NewCommentInput) => send<PublicComment>('POST', replayId, undefined, input);
-export const editComment = (replayId: string, id: string, body: string) => send<PublicComment>('PATCH', replayId, id, { body });
-export const resolveComment = (replayId: string, id: string, resolved: boolean) => send<PublicComment>('PATCH', replayId, id, { resolved });
-export const deleteComment = (replayId: string, id: string) => send<{ removed: number }>('DELETE', replayId, id);
+export const createComment = (replayId: string, input: NewCommentInput) =>
+  send({ method: 'POST', replayId, body: input, schema: publicCommentSchema });
+export const editComment = (replayId: string, id: string, body: string) =>
+  send({ method: 'PATCH', replayId, commentId: id, body: { body }, schema: publicCommentSchema });
+export const resolveComment = (replayId: string, id: string, resolved: boolean) =>
+  send({ method: 'PATCH', replayId, commentId: id, body: { resolved }, schema: publicCommentSchema });
+export const deleteComment = (replayId: string, id: string) =>
+  send({ method: 'DELETE', replayId, commentId: id, schema: removedCommentsSchema });

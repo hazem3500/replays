@@ -1,5 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, lazy, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   type CommentsResponse,
@@ -16,7 +15,9 @@ import { commentPermalink, parsePermalink } from '../permalink.ts';
 import { usePlayer } from '../player.ts';
 import { notify } from '../toast.ts';
 import { formatClock } from '../../shared/replay.ts';
-import { commentsQuery, createComment, deleteComment, editComment, type NewCommentInput, resolveComment } from './api.ts';
+import type { NewCommentInput } from './api.ts';
+import type { CommentRows } from '../data/comments.ts';
+import { loadCommentRowsSource } from './rows.ts';
 
 export interface PlacedThread extends CommentThread {
   placement: Placement;
@@ -32,6 +33,8 @@ export interface CommentsApi {
   replayId: string;
   loaded: boolean;
   error: string | undefined;
+  /** Loads the comments again (the failed-load state's "Try again"). */
+  retry: () => void;
   me: CommentsResponse['me'] | undefined;
   /** No sign-in: comments are labelled "Anonymous" and anyone may change anonymous ones. */
   anonymous: boolean;
@@ -67,36 +70,39 @@ export function useComments() {
   return useContext(CommentsContext);
 }
 
-/**
- * The open replay's comments: loaded once and refreshed in the background, placed on the timeline being watched
- * (`placeComment`: source time → edited time, with trimmed and cut moments marked removed), and the actions the
- * panel and the seek bar share. Mounted by the viewer only when comments are enabled.
- *
- * `openPanel` is how the viewer brings the Comments tab up (unfolding the bottom panel when it is folded).
- */
-export function CommentsProvider({
-  replayId,
-  timeline,
-  openPanel,
-  children,
-}: {
+interface CommentsProviderProps {
   replayId: string;
   /** The saved edits' timeline when they are applied (beta editor), else undefined: times are source times. */
   timeline: EditTimeline | undefined;
   openPanel: () => void;
   children: ReactNode;
-}) {
+}
+
+const CommentRowsSource = lazy(() => loadCommentRowsSource().then((module) => ({ default: module.CommentRowsSource })));
+
+/**
+ * The open replay's comments: loaded once and refreshed in the background, placed on the timeline being watched
+ * (`placeComment`: source time → edited time, with trimmed and cut moments marked removed), and the actions the
+ * panel and the seek bar share. Mounted by the viewer only when comments are enabled. The rows come from a chunk of
+ * their own (the TanStack DB data layer): a viewer that opens before the idle prefetch has it waits once, behind its
+ * own skeleton.
+ *
+ * `openPanel` is how the viewer brings the Comments tab up (unfolding the bottom panel when it is folded).
+ */
+export function CommentsProvider(props: CommentsProviderProps) {
+  return <CommentRowsSource replayId={props.replayId}>{(rows) => <CommentsBody {...props} rows={rows} />}</CommentRowsSource>;
+}
+
+function CommentsBody({ replayId, timeline, openPanel, children, rows }: CommentsProviderProps & { rows: CommentRows }) {
   const player = usePlayer();
-  const client = useQueryClient();
-  const query = useQuery(commentsQuery(replayId));
-  const key = commentsQuery(replayId).queryKey;
+  const { comments, loaded, error, me, anonymous, retry, create, edit, resolve, remove } = rows;
   const [selectedId, setSelectedId] = useState<string>();
   const [composerRequest, setComposerRequest] = useState<ComposerRequest>();
   const requests = useRef(0);
 
   const threads = useMemo<PlacedThread[]>(
-    () => threadsOf(query.data?.comments ?? []).map((thread) => ({ ...thread, placement: placeComment(thread.root.at, timeline) })),
-    [query.data?.comments, timeline],
+    () => threadsOf(comments).map((thread) => ({ ...thread, placement: placeComment(thread.root.at, timeline) })),
+    [comments, timeline],
   );
   const pins = useMemo(
     () =>
@@ -105,7 +111,7 @@ export function CommentsProvider({
         .sort((a, b) => a.at - b.at),
     [threads],
   );
-  const count = useMemo(() => (query.data?.comments ?? []).filter((comment) => !comment.emoji).length, [query.data?.comments]);
+  const count = useMemo(() => comments.filter((comment) => !comment.emoji).length, [comments]);
 
   const threadsRef = useRef(threads);
   useEffect(() => {
@@ -134,7 +140,7 @@ export function CommentsProvider({
   // A comment permalink (#comment-<id>) opens the panel and seeks to the comment, once the comments have loaded.
   const opened = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!query.data) return;
+    if (!loaded) return;
     const follow = () => {
       const target = parsePermalink(location.search, location.hash, 0).comment;
       if (!target || opened.current === target) return;
@@ -150,7 +156,7 @@ export function CommentsProvider({
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, [query.data, reveal]);
+  }, [loaded, reveal]);
 
   const startComment = useCallback(() => {
     player.pause();
@@ -158,26 +164,14 @@ export function CommentsProvider({
     setComposerRequest({ id: ++requests.current, at: player.getTime() });
   }, [player]);
 
-  const merge = useCallback(
-    (change: (comments: PublicComment[]) => PublicComment[]) =>
-      client.setQueryData<CommentsResponse>(key, (old) => (old ? { ...old, comments: change(old.comments) } : old)),
-    [client, key],
-  );
-  const replace = useCallback(
-    (saved: PublicComment) => {
-      merge((comments) => comments.map((comment) => (comment.id === saved.id ? saved : comment)));
-      return saved;
-    },
-    [merge],
-  );
-
   const api = useMemo<CommentsApi>(
     () => ({
       replayId,
-      loaded: query.data !== undefined,
-      error: query.error ? query.error.message : undefined,
-      me: query.data?.me,
-      anonymous: Boolean(query.data?.anonymous),
+      loaded,
+      error: error ? error.message : undefined,
+      retry,
+      me,
+      anonymous,
       threads,
       pins,
       count,
@@ -188,20 +182,11 @@ export function CommentsProvider({
       consumeComposerRequest: () => setComposerRequest(undefined),
       startComment,
       sourceTime: (watched) => sourceTimeAt(watched, timeline),
-      async create(input) {
-        const saved = await createComment(replayId, input);
-        merge((comments) => [...comments, saved]);
-        return saved;
-      },
-      async edit(id, body) {
-        return replace(await editComment(replayId, id, body));
-      },
-      async resolve(id, resolved) {
-        return replace(await resolveComment(replayId, id, resolved));
-      },
+      create,
+      edit,
+      resolve,
       async remove(id) {
-        await deleteComment(replayId, id);
-        merge((comments) => comments.filter((comment) => comment.id !== id && comment.parentId !== id));
+        await remove(id);
         setSelectedId((current) => (current === id ? undefined : current));
       },
       copyLink(thread) {
@@ -221,7 +206,26 @@ export function CommentsProvider({
         return url.toString();
       },
     }),
-    [composerRequest, count, merge, pins, query.data, query.error, replace, replayId, reveal, selectedId, startComment, threads, timeline],
+    [
+      anonymous,
+      composerRequest,
+      count,
+      create,
+      edit,
+      error,
+      loaded,
+      me,
+      pins,
+      remove,
+      replayId,
+      resolve,
+      retry,
+      reveal,
+      selectedId,
+      startComment,
+      threads,
+      timeline,
+    ],
   );
 
   return <CommentsContext.Provider value={api}>{children}</CommentsContext.Provider>;
