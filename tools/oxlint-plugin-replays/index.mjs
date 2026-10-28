@@ -22,7 +22,7 @@ const noProcessEnv = rule('Read environment at the server configuration boundary
 });
 
 const noManualNavigation = rule('Use the routing layer for URL state and navigation.', (context) => {
-  if (!client(context) || /\/(?:navigation|route|router)\.tsx?$/.test(filename(context))) return {};
+  if (!client(context) || /\/router\.tsx$/.test(filename(context))) return {};
   return {
     CallExpression(node) {
       const text = context.sourceCode.getText(node.callee);

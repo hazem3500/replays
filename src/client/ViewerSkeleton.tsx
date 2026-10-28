@@ -28,7 +28,7 @@ export interface OpenHint {
   steps?: number;
   /** A source chip (a linked pull request or ticket) shows beside the title. */
   source?: boolean;
-  /** The card's poster, or its opening still when loaded: the frame shows it while loading (navigation.ts). */
+  /** The card's poster, or its opening still when loaded: the frame shows it while loading (transitions/open-hint.ts). */
   poster?: string;
   /** `poster` is the opening still (the replay's first paint), not the list poster. */
   still?: boolean;

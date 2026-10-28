@@ -6,7 +6,7 @@ import type { ClientConfig } from './config.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { readTextWithProgress } from './load-progress.ts';
 import { rememberServedPurpose } from './purposes.ts';
-import { apiUrl } from './route.ts';
+import { apiUrl } from './api/fetch.ts';
 
 /*
  * The client's data cache (TanStack Query). Pages are separate documents (cross-document view

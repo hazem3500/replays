@@ -54,7 +54,7 @@ import { Button } from '@/components/ui/button.tsx';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Tabs, TabsContent, TabsIndicator, TabsList, TabsTrigger } from '@/components/ui/tabs.tsx';
 import { readStorage, writeStorage } from '../storage.ts';
-import { useFilledAfterTransition } from '../navigation.ts';
+import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
 import { TimingBar } from './TimingBar.tsx';
 import './diagnostic-timing.css';
@@ -225,7 +225,7 @@ export const Inspector = memo(function Inspector({
   // Built-in features with a tab (comments): after the diagnostics tabs, in registration order.
   const featureTabs = activeFeatures().flatMap((feature) => (feature.tab ? [{ id: feature.id, featureTab: feature.tab }] : []));
   const featureBadges = useFeatureBadges();
-  // Rows fill once the page transition has landed (navigation.ts); the tab row is there from the start.
+  // Rows fill once the page transition has landed (hooks/use-filled-after-transition.ts); the tab row is there from the start.
   const filled = useFilledAfterTransition();
   const contextSchema = useContextSchema();
   const human = bundle.meta.source === 'human';

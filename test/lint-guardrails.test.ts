@@ -94,7 +94,7 @@ describe('project invariant lint rules', () => {
     ['max-jsx-depth', 'src/client/example.tsx', `export const Panel = () => ${'<div>'.repeat(7)}value${'</div>'.repeat(7)};`],
     ['comment-policy', 'src/shared/example.ts', 'export class Revision { /** Monotonic storage revision. */ value = 1; }'],
     ['no-process-env', 'src/server/config.ts', 'export const value = process.env.VALUE;'],
-    ['no-manual-navigation', 'src/client/navigation.ts', "history.pushState({}, '', '/');"],
+    ['no-manual-navigation', 'src/client/router.tsx', "history.pushState({}, '', '/');"],
     ['no-raw-fetch', 'src/client/queries.ts', "export const result = fetch('/api/me');"],
     ['no-direct-storage', 'src/client/storage.ts', "export const value = localStorage.getItem('value');"],
     ['no-product-name-literal', 'src/shared/brand.ts', "export const PRODUCT_NAME = 'replays';"],

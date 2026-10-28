@@ -20,6 +20,7 @@
   "sortPackageJson": false,
   "sortTailwindcss": false,
   "ignorePatterns": [
+    "/src/client/routeTree.gen.ts",
     "**/dist/**",
     "**/shots/**",
     "/sample/*.json",

@@ -26,6 +26,22 @@ export function readClientEntries(): ClientEntryInfo[] {
   }
 }
 
+let settled = false;
+const settledListeners = new Set<() => void>();
+
+/** Whether the server's plugin entries have all loaded (or failed): a plugin page that is still missing then never comes. */
+export const pluginsSettled = () => settled;
+
+export function subscribePluginsSettled(listener: () => void) {
+  settledListeners.add(listener);
+  return () => void settledListeners.delete(listener);
+}
+
+function markSettled() {
+  settled = true;
+  for (const listener of settledListeners) listener();
+}
+
 /**
  * Imports each entry and runs its default export. A failing plugin is logged and skipped: it never breaks the
  * viewer or the other plugins. Resolves when all have settled.
@@ -61,4 +77,5 @@ export async function loadClientPlugins(
       }
     }),
   );
+  if (registry === viewerRegistry) markSettled();
 }

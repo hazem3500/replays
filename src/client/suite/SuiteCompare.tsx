@@ -1,8 +1,8 @@
 import { type ComparePageProps, CompareViewer } from '../compare/CompareViewer.tsx';
 import { parseCompareSearch, writeCompareSearch } from '../compare/compare-search.ts';
 import { useLocationSearch } from '../hooks/use-location-search.ts';
-import { navigate, setSearch } from '../navigation.ts';
-import { replayHref } from '../route.ts';
+import { navigate, setSearch } from '../routing/navigate.ts';
+import { replayHref } from '../routing/links.ts';
 
 /**
  * A suite with two or more recordings opens as the viewer comparing its runs: the runs sidebar picks the focus,
