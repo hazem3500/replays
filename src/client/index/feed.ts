@@ -52,7 +52,7 @@ const DATE_TIME_YEAR = new Intl.DateTimeFormat(undefined, {
  */
 export function feedTime(iso: string, now = Date.now()) {
   const time = Date.parse(iso);
-  if (!Number.isFinite(time)) return '—';
+  if (!Number.isFinite(time)) return '';
   const label = dayLabel(iso, now);
   if (label === 'Today' || label === 'Yesterday') return TIME_OF_DAY.format(time);
   return (new Date(time).getFullYear() === new Date(now).getFullYear() ? DATE_TIME : DATE_TIME_YEAR).format(time);

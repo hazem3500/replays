@@ -1,4 +1,5 @@
 import { commentPolicy, disableNeedsWhy } from './comments.mjs';
+import { noDashInCopy } from './copy.mjs';
 import { maxComponentProps, maxJsxDepth, noEffectOutsideHooks, noForwardRef, noManualMemo, noRenderTimeStoreRead } from './react.mjs';
 
 const filename = (context) => context.filename.replaceAll('\\', '/');
@@ -104,5 +105,6 @@ export default {
     'no-product-name-literal': noProductNameLiteral,
     'no-throw-plain-error-in-routes': noThrowPlainErrorInRoutes,
     'no-render-time-store-read': noRenderTimeStoreRead,
+    'no-dash-in-copy': noDashInCopy,
   },
 };
