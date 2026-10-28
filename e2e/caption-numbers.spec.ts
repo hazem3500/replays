@@ -168,8 +168,7 @@ for (const reducedMotion of ['no-preference', 'reduce'] as const) {
     expect(await caption.locator('[data-caption-morph]').evaluate((node, before) => node === before, mounted)).toBe(true);
     await expect(caption.locator('.step-caption-number')).toHaveCount(0);
     await expect(caption.locator('[data-caption-morph]')).toHaveAttribute('data-motion', reducedMotion === 'reduce' ? 'reduced' : 'full');
-    if (reducedMotion === 'reduce') await expect(caption.locator('[data-calligraph]')).toHaveCount(0);
-    else await expect(caption.locator('[data-calligraph]')).toHaveCount(1);
+    await expect(caption.locator('[data-caption-text]')).toHaveCount(1);
     await mounted?.dispose();
   });
 }

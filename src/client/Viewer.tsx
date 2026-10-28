@@ -1,7 +1,7 @@
 import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
-import { CaptionMorph } from './CaptionMorph.tsx';
+import { LiveCaption } from './LiveCaption.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -890,7 +890,7 @@ function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
 /**
  * Step captions: the current step's label as a calm caption at the bottom of the player while it plays, and
  * while you scrub or seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without
- * a seek, or the end, clears it. The stable caption host retargets its shared characters between step labels.
+ * a seek, or the end, clears it. The stable caption host swaps the whole line between step labels.
  */
 function StepCaption() {
   const player = usePlayer();
@@ -914,29 +914,8 @@ function StepCaption() {
   const step = steps[captionIndex];
   const playing = status === 'playing';
   const active = Boolean(step && (playing || (seeked && status !== 'ended')));
-  const label = active ? (step?.label ?? '') : '';
-  return (
-    <div
-      className="step-caption step-caption-live"
-      data-active={active ? 'true' : 'false'}
-      data-testid="step-caption"
-      role="status"
-      aria-live="off"
-      aria-label={label || undefined}
-    >
-      {/* why: one stable caption host lets Calligraph retarget characters as the current step changes. */}
-      <span className="step-caption-text">
-        {active && captionNumbers ? (
-          <span className="step-caption-number" aria-hidden="true">
-            {activeIndex + 1}
-          </span>
-        ) : null}
-        <span className="step-caption-label" aria-hidden="true">
-          <CaptionMorph text={label} />
-        </span>
-      </span>
-    </div>
-  );
+  const number = active && captionNumbers ? activeIndex + 1 : undefined;
+  return <LiveCaption text={active ? (step?.label ?? '') : undefined} number={number} testId="step-caption" />;
 }
 
 /**
