@@ -240,7 +240,15 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
     label(cut.label, `${field}.label`);
   }
   if (edits.cursor !== undefined) {
-    const cursor = object(edits.cursor, `${name}.cursor`, ['visible', 'size', 'hideWhenIdle', 'clickFeedback', 'motion', 'appearance', 'color']);
+    const cursor = object(edits.cursor, `${name}.cursor`, [
+      'visible',
+      'size',
+      'hideWhenIdle',
+      'clickFeedback',
+      'motion',
+      'appearance',
+      'color',
+    ]);
     for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
       if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
     }

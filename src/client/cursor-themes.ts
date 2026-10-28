@@ -78,8 +78,7 @@ function clickEffect(doc: Document, kind: 'ripple' | 'pulse', { hotspot, color, 
   const [from, to] = radius;
   const box = to + 4;
   const node = svg(doc, 'svg', { viewBox: `${-box} ${-box} ${box * 2} ${box * 2}`, 'aria-hidden': 'true' });
-  node.style.cssText =
-    `position:absolute;left:${hotspot.x - box}px;top:${hotspot.y - box}px;width:${box * 2}px;height:${box * 2}px;overflow:visible;filter:none;pointer-events:none;display:none`;
+  node.style.cssText = `position:absolute;left:${hotspot.x - box}px;top:${hotspot.y - box}px;width:${box * 2}px;height:${box * 2}px;overflow:visible;filter:none;pointer-events:none;display:none`;
   const circle = svg(doc, 'circle', { cx: 0, cy: 0, r: from });
   circle.style.cssText = kind === 'ripple' ? `fill:none;stroke:${color};stroke-width:2` : `fill:${color};stroke:none`;
   node.append(circle);
@@ -136,7 +135,12 @@ const ARROW: CursorTheme = {
     paint(path, color ?? INK, OUTLINE, 8);
     root.append(path);
     const scale = BOX / CURSOR_CANVAS;
-    return glyph(doc, { root, hotspot: { x: CURSOR_HOTSPOT.x * scale, y: CURSOR_HOTSPOT.y * scale }, feedback: 'press', color: color ?? INK });
+    return glyph(doc, {
+      root,
+      hotspot: { x: CURSOR_HOTSPOT.x * scale, y: CURSOR_HOTSPOT.y * scale },
+      feedback: 'press',
+      color: color ?? INK,
+    });
   },
 };
 
