@@ -9,7 +9,7 @@ import { settle } from './settle.ts';
 let host: HTMLDivElement;
 let root: Root;
 
-const render = (text: string | undefined, number?: number) =>
+const render = (text?: string, number?: number) =>
   settle(() => root.render(createElement(LiveCaption, { text, number, testId: 'step-caption' })));
 
 function caption() {
@@ -36,7 +36,7 @@ describe('live caption presence', () => {
   it('keeps the last caption (text and number) while it hides, so the box never collapses before it fades', async () => {
     await render('Open the cart', 3);
     expect(caption().dataset.active).toBe('true');
-    await render(undefined);
+    await render();
     expect(caption().dataset.active).toBe('false');
     expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Open the cart');
     expect(caption().querySelector('.step-caption-number')?.textContent).toBe('3');
@@ -49,7 +49,7 @@ describe('live caption presence', () => {
     await render('Apply the coupon');
     expect(caption().querySelector('[data-caption-morph]')).toBe(morph);
     expect(caption().getAttribute('aria-label')).toBe('Apply the coupon');
-    await render(undefined);
+    await render();
     await render('Place the order');
     expect(caption().querySelector('[data-caption-morph]')).not.toBe(morph);
     expect(caption().dataset.active).toBe('true');
