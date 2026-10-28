@@ -66,13 +66,6 @@ export function Composer({ comments }: { comments: CommentsApi }) {
     if (!value) setAnchor(undefined);
     setText(value);
   };
-  const react = async (emoji: string) => {
-    try {
-      await comments.create({ emoji, at: comments.sourceTime(player.getTime()) });
-    } catch (error) {
-      reportFailure(error);
-    }
-  };
 
   return (
     <form
@@ -102,27 +95,39 @@ export function Composer({ comments }: { comments: CommentsApi }) {
         <Kbd className="comment-composer-kbd" aria-hidden="true">
           M
         </Kbd>
-        <ReactionPicker onReact={(emoji) => void react(emoji)} />
-        <div className="comment-composer-send">
-          {text.length > MAX_COMMENT_BODY - 200 ? (
-            <span className="comment-count" aria-live="polite">
-              {MAX_COMMENT_BODY - text.length}
-            </span>
-          ) : null}
-          <Hint label="Send" shortcut={isMacPlatform() ? '⌘ ↵' : 'Ctrl ↵'}>
-            <Button type="submit" size="sm" disabled={!text.trim()} data-testid="comment-submit">
-              <SendIcon aria-hidden="true" />
-              Comment
-            </Button>
-          </Hint>
-        </div>
+        <ReactionPicker comments={comments} />
+        <SendGroup text={text} />
       </div>
-      {comments.anonymous ? (
-        <p id={footId} className="comment-composer-foot" data-testid="comments-anonymous-notice" role="note">
-          {commentStrings.anonymous}
-        </p>
-      ) : null}
+      {comments.anonymous ? <AnonymousNote id={footId} /> : null}
     </form>
+  );
+}
+
+/** The send button (Cmd/Ctrl+Enter) and, near the limit, how many characters are left. */
+function SendGroup({ text }: { text: string }) {
+  return (
+    <div className="comment-composer-send">
+      {text.length > MAX_COMMENT_BODY - 200 ? (
+        <span className="comment-count" aria-live="polite">
+          {MAX_COMMENT_BODY - text.length}
+        </span>
+      ) : null}
+      <Hint label="Send" shortcut={isMacPlatform() ? '⌘ ↵' : 'Ctrl ↵'}>
+        <Button type="submit" size="sm" disabled={!text.trim()} data-testid="comment-submit">
+          <SendIcon aria-hidden="true" />
+          Comment
+        </Button>
+      </Hint>
+    </div>
+  );
+}
+
+/** Shown while composing on a server without sign-in, and read out as the box's description. */
+function AnonymousNote({ id }: { id: string }) {
+  return (
+    <p id={id} className="comment-composer-foot" data-testid="comments-anonymous-notice" role="note">
+      {commentStrings.anonymous}
+    </p>
   );
 }
 

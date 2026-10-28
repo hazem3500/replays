@@ -48,13 +48,15 @@ const THREADS: PublicComment[] = [
 ];
 
 /** A paused player at 2.0 s: enough of the controller for the panel (playhead, seek, pause). */
-const player = {
+const stub = {
   duration: 11_000,
   getTime: () => 2000,
   subscribeTime: () => () => {},
   seek: () => {},
   pause: () => {},
-} as unknown as ReplayController;
+};
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion -- why: the panel reads only the playhead, seek and pause; a real controller needs an rrweb replay in the story.
+const player = stub as unknown as ReplayController;
 
 const rejected = () => Promise.reject(new Error('Storybook fixture: nothing is saved'));
 

@@ -11,8 +11,16 @@ import { keepFocus } from './composer-focus.ts';
 import { reportFailure } from './failure.ts';
 
 /** One button that opens the reaction set; a pick reacts at the playhead and closes it. */
-export function ReactionPicker({ onReact }: { onReact: (emoji: string) => void }) {
+export function ReactionPicker({ comments }: { comments: CommentsApi }) {
+  const player = usePlayer();
   const [open, setOpen] = useState(false);
+  const react = async (emoji: string) => {
+    try {
+      await comments.create({ emoji, at: comments.sourceTime(player.getTime()) });
+    } catch (error) {
+      reportFailure(error);
+    }
+  };
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Hint label="React at the playhead" disabled={open}>
@@ -36,7 +44,7 @@ export function ReactionPicker({ onReact }: { onReact: (emoji: string) => void }
               aria-label={`React ${emoji}`}
               onClick={() => {
                 setOpen(false);
-                onReact(emoji);
+                void react(emoji);
               }}
             >
               {emoji}

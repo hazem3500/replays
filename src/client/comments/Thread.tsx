@@ -126,6 +126,40 @@ function IconAction({ label, onClick, testId, children }: { label: string; onCli
   );
 }
 
+/** Copy link and, for the author, edit and delete (shown on hover or focus), then `status` (always shown). */
+function CommentTools({
+  mine,
+  onEdit,
+  onDelete,
+  status,
+  children,
+}: {
+  mine: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+  status?: ReactNode;
+  children?: ReactNode;
+}) {
+  return (
+    <span className="comment-tools">
+      <span className="comment-actions">
+        {children}
+        {mine ? (
+          <IconAction label="Edit" onClick={onEdit} testId="comment-edit">
+            <PencilIcon aria-hidden="true" />
+          </IconAction>
+        ) : null}
+        {mine ? (
+          <IconAction label="Delete" onClick={onDelete} testId="comment-delete">
+            <Trash2Icon aria-hidden="true" />
+          </IconAction>
+        ) : null}
+      </span>
+      {status}
+    </span>
+  );
+}
+
 /**
  * One comment (a thread's first, or a reply): who, its moment and when, the text, and what its author may do. The
  * author's tools show on hover or focus (always on touch); `status` (resolve) stays visible.
@@ -167,22 +201,9 @@ function CommentRow({
           </time>
           {comment.editedAt ? <span className="comment-when">edited</span> : null}
           {editing ? null : (
-            <span className="comment-tools">
-              <span className="comment-actions">
-                {tools}
-                {comment.mine ? (
-                  <IconAction label="Edit" onClick={() => setEditing(true)} testId="comment-edit">
-                    <PencilIcon aria-hidden="true" />
-                  </IconAction>
-                ) : null}
-                {comment.mine ? (
-                  <IconAction label="Delete" onClick={() => setConfirming(true)} testId="comment-delete">
-                    <Trash2Icon aria-hidden="true" />
-                  </IconAction>
-                ) : null}
-              </span>
-              {status}
-            </span>
+            <CommentTools mine={comment.mine} onEdit={() => setEditing(true)} onDelete={() => setConfirming(true)} status={status}>
+              {tools}
+            </CommentTools>
           )}
         </div>
         {editing ? (

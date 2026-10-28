@@ -28,7 +28,7 @@ export function ReplyBox({
     setPending(true);
     try {
       if (editing) await comments.edit(editing.id, text);
-      else await comments.create({ body: text, parentId: parentId! });
+      else if (parentId) await comments.create({ body: text, parentId });
       onDone();
     } catch (error) {
       reportFailure(error);
