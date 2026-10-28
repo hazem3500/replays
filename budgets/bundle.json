@@ -734,7 +734,7 @@
         "gzip": 77111,
         "brotli": 62901
       },
-      "reason": "Mapping provider failures to safe public errors changes the server entry source set, which renames the shared schema chunk; its size is the embedded schema, as before.",
+      "reason": "The safe-error change alters the server entry source set, so the shared schema chunk gets a new source-set identity; its size is the embedded edits schema, 283034 raw bytes measured in CI.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
     },
     {
@@ -744,7 +744,7 @@
         "gzip": 9306,
         "brotli": 8251
       },
-      "reason": "The safe-error helpers join the shared define chunk, which renames its source-set identity; the chunk is 1.7 KB raw smaller than the route-table build it replaces.",
+      "reason": "The safe-error change alters the shared define chunk source set and so its identity; measured 31423 raw bytes, 656 below the 32079 the previous identity measured on main.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
