@@ -30,7 +30,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 218,
-      "brotli": 219
+      "brotli": 188
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
@@ -85,7 +85,7 @@
     "dist/client/assets/performance-HASH.js": {
       "raw": 4242,
       "gzip": 1870,
-      "brotli": 1681
+      "brotli": 1629
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -700,14 +700,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "brotli": 219
-      },
-      "reason": "Highlight and caption exports added to the shared main chunk lengthen the minified import binding of this 261-byte icon chunk and shift its Brotli size.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
         "brotli": 16623
@@ -749,8 +741,7 @@
       "file": "dist/client/assets/performance-HASH.js",
       "cap": {
         "raw": 4242,
-        "gzip": 1870,
-        "brotli": 1681
+        "gzip": 1870
       },
       "reason": "Highlight and caption exports added to the shared main chunk change the import bindings of this small chunk by 4 bytes gzip and 5 bytes Brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
