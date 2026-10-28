@@ -3,6 +3,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import type { StoredReplayEdits } from '../shared/edits.ts';
 import { notModified, REVALIDATE, send } from './app.ts';
+import { parseJsonBody } from './http/body.ts';
 import type { EditingSettings } from './editing-config.ts';
 import type { ReplayStore } from './store.ts';
 
@@ -94,7 +95,7 @@ export async function handleEditsApi(
   const ifVersion = versionFromEtag(ifMatch);
   const text = await readBody(request);
   // Same privacy pass as uploads: a URL pasted into a label loses credentials and sensitive parameters.
-  const input: unknown = sanitizeUrlFields(JSON.parse(text));
+  const input: unknown = sanitizeUrlFields(parseJsonBody(text));
   try {
     // An If-Match that is not one of ours can never match: the conflict path answers with the current list.
     const saved = await store.saveEdits(id, input, { by: options.user, ifVersion: ifVersion === undefined ? '\0' : ifVersion });

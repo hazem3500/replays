@@ -46,6 +46,7 @@
     "examples/custom-distro/e2e",
     "examples/custom-distro/playwright.config.ts",
     "examples/custom-distro/src",
-    "examples/custom-distro/replays.config.ts"
+    "examples/custom-distro/replays.config.ts",
+    "examples/app-key-ingest"
   ]
 }
