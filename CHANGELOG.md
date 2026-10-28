@@ -17,8 +17,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
-- Comparing recordings is a mode of the replay viewer: "Compare with…" in the viewer's More menu adds recordings to
-  `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`. Single, Grid and Spotlight share one clock and the viewer's
+- Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
+  `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
+  its link names). Single, Grid and Spotlight share one clock and the viewer's
   own transport, shortcuts and inspector, scoped to the focused recording; tiles glide between layouts without
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.

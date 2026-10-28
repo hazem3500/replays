@@ -3,8 +3,10 @@ import { setSearch } from '../routing/navigate.ts';
 import { replayHref } from '../routing/links.ts';
 import { CompareViewer } from './CompareViewer.tsx';
 import { type CompareSearch, parseCompareSearch, writeCompareSearch } from './compare-search.ts';
+import { compareDefaults } from './defaults.ts';
 
-const write = (next: CompareSearch, push = false) => setSearch(writeCompareSearch(location.search, next), { push });
+const { layout: fallback } = compareDefaults({ page: 'replay', recordings: 1 });
+const write = (next: CompareSearch, push = false) => setSearch(writeCompareSearch(location.search, next, fallback), { push });
 const without = (next: CompareSearch): CompareSearch => ({ with: next.with, layout: next.layout });
 
 /**
@@ -12,7 +14,7 @@ const without = (next: CompareSearch): CompareSearch => ({ with: next.with, layo
  * focus changes replace it, adding or removing a recording adds a history entry (Back undoes it).
  */
 export function ReplayComparePage({ id }: { id: string }) {
-  const state = parseCompareSearch(useLocationSearch(), id);
+  const state = parseCompareSearch(useLocationSearch(), id, fallback);
 
   return (
     <CompareViewer
