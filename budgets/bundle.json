@@ -207,20 +207,10 @@
       "gzip": 18875,
       "brotli": 16324
     },
-    "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
-      "raw": 286058,
-      "gzip": 75224,
-      "brotli": 61620
-    },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "gzip": 5324,
       "brotli": 4642
-    },
-    "dist/lib/chunks/define.ts-f3268e685655.mjs": {
-      "raw": 32079,
-      "gzip": 9254,
-      "brotli": 8218
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -256,11 +246,6 @@
       "raw": 31954,
       "gzip": 8369,
       "brotli": 7500
-    },
-    "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
-      "raw": 4485,
-      "gzip": 1658,
-      "brotli": 1466
     },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
@@ -550,16 +535,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/chunks/define.ts-f3268e685655.mjs",
-      "cap": {
-        "raw": 32079,
-        "gzip": 9254,
-        "brotli": 8218
-      },
-      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
       "cap": {
         "raw": 434,
@@ -696,16 +671,6 @@
       },
       "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs",
-      "cap": {
-        "raw": 4485,
-        "gzip": 1658,
-        "brotli": 1466
-      },
-      "reason": "The plugin entry's shared chunk gains HttpError and tooManyRequests (src/shared/http-error.ts); replaces summary-fields.ts-a8479d40f474 (+535 B raw).",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
     },
     {
       "file": "dist/lib/plugin.mjs",
@@ -853,15 +818,6 @@
         "brotli": 3429
       },
       "reason": "The page links the favicon, touch icon and manifest, plus the small inline script that swaps them for a deployment logo or name.",
-      "pr": "https://github.com/hazem3500/replays/pull/104"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
-      "cap": {
-        "raw": 286058,
-        "gzip": 75224
-      },
-      "reason": "The bundled server serves the fixed-name brand icons with a daily revalidating cache instead of an immutable one, on top of the upload-endpoint server code.",
       "pr": "https://github.com/hazem3500/replays/pull/104"
     },
     {
