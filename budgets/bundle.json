@@ -59,7 +59,7 @@
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
-      "gzip": 1253,
+      "gzip": 1252,
       "brotli": 1138
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
       "gzip": 13521,
-      "brotli": 11999
+      "brotli": 11994
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -205,7 +205,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
       "gzip": 8347,
-      "brotli": 7157
+      "brotli": 7154
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
