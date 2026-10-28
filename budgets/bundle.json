@@ -20,17 +20,17 @@
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
       "gzip": 1111,
-      "brotli": 945
+      "brotli": 943
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
-      "gzip": 17816,
+      "gzip": 17815,
       "brotli": 15415
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
       "gzip": 218,
-      "brotli": 185
+      "brotli": 218
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 17524,
@@ -65,11 +65,11 @@
     "dist/client/assets/main-HASH.css": {
       "raw": 224854,
       "gzip": 38561,
-      "brotli": 31804
+      "brotli": 32835
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 703087,
-      "gzip": 227115,
+      "gzip": 227113,
       "brotli": 184414
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -123,9 +123,9 @@
       "brotli": 394
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1373,
-      "gzip": 671,
-      "brotli": 547
+      "raw": 1432,
+      "gzip": 706,
+      "brotli": 566
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -140,7 +140,7 @@
     "dist/client/assets/tools-HASH.js": {
       "raw": 34796,
       "gzip": 12376,
-      "brotli": 11148
+      "brotli": 11139
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -350,11 +350,11 @@
     "initial/index.html/css": {
       "raw": 226775,
       "gzip": 39505,
-      "brotli": 32621
+      "brotli": 33652
     },
     "initial/index.html/js": {
       "raw": 1270898,
-      "gzip": 402499,
+      "gzip": 402497,
       "brotli": 322504
     },
     "initial/render.html/css": {
@@ -650,16 +650,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/99"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 224854,
-        "gzip": 38561,
-        "brotli": 31804
-      },
-      "reason": "The card hover motion and list motion stylesheets now load with the index styles inside the app layer.",
-      "pr": "https://github.com/hazem3500/replays/pull/99"
-    },
-    {
       "file": "initial/index.html/js",
       "cap": {
         "raw": 1270898,
@@ -670,14 +660,42 @@
       "pr": "https://github.com/hazem3500/replays/pull/99"
     },
     {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 224854,
+        "gzip": 38561,
+        "brotli": 32835
+      },
+      "reason": "The shell entrance keyframe and the cascade-layer order statements add a few bytes of reviewed CSS to the app stylesheet, 74 bytes of Brotli over its previous cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/100"
+    },
+    {
       "file": "initial/index.html/css",
       "cap": {
         "raw": 226775,
         "gzip": 39505,
-        "brotli": 32621
+        "brotli": 33652
       },
-      "reason": "The index route ships the card and list motion stylesheets in its initial style group.",
-      "pr": "https://github.com/hazem3500/replays/pull/99"
+      "reason": "The initial index style group carries the same shell entrance keyframe added to the app stylesheet, 50 bytes of Brotli over its previous cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/100"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 1432,
+        "gzip": 706,
+        "brotli": 566
+      },
+      "reason": "The cascade-layer order statement is added atop this stylesheet so its rules stay in the app layer wherever it loads.",
+      "pr": "https://github.com/hazem3500/replays/pull/100"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 218
+      },
+      "reason": "Moving tailwind.css first changes the chunk graph so this 261-byte icon chunk gets a longer minified import binding, 26 bytes of Brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/100"
     }
   ]
 }
