@@ -43,7 +43,7 @@ export function sessionRoutes(services: ApiServices) {
             ...(cliDeviceAuth ? { cliDeviceAuth } : {}),
             ...(services.signIn ? { signIn: services.signIn } : {}),
             plugins: [...registry.order],
-            purposes: deployment.store.purposes.list,
+            profiles: deployment.store.profiles.list,
             ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
             beta: { editor: Boolean(deployment.beta?.editor), malleable: Boolean(deployment.beta?.malleable) },
             comments: services.commentsOn,

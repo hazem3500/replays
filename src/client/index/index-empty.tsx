@@ -1,6 +1,6 @@
 import { EmptyState, type EmptyStateProps } from '@/components/ui/empty-state.tsx';
 
-import type { PurposeInfo } from '../../shared/purposes.ts';
+import type { ProfileInfo } from '../../shared/profiles.ts';
 import type { AutoRetry } from '../hooks/use-auto-retry.ts';
 
 /** Every string the index's empty and error states show. */
@@ -14,9 +14,9 @@ export const indexEmptyStrings = {
   staleTitle: 'Couldn’t refresh',
   staleBody: 'Showing saved results; they may be out of date.',
   tryAgain: 'Try again',
-  purposeTitle: (label: string) => `No ${label.toLowerCase()} yet`,
-  purposeBody: (label: string) => `Replays uploaded or recorded as ${label} are listed here.`,
-  purposeKept: (days: number) => (days === 0 ? ' They’re kept until deleted.' : ` Each is kept ${days} ${days === 1 ? 'day' : 'days'}.`),
+  profileTitle: (label: string) => `No ${label.toLowerCase()} yet`,
+  profileBody: (label: string) => `Replays uploaded or recorded as ${label} are listed here.`,
+  profileKept: (days: number) => (days === 0 ? ' They’re kept until deleted.' : ` Each is kept ${days} ${days === 1 ? 'day' : 'days'}.`),
   upload: 'Upload a replay',
   showAll: 'Show all replays',
   searchTitle: (query: string) => `No results for “${query}”`,
@@ -51,14 +51,14 @@ interface OfflineInput {
   retry: AutoRetry;
 }
 
-/** A purpose tab with nothing in it, and no other filter on. */
-interface PurposeInput {
-  kind: 'purpose';
-  purpose: PurposeInfo;
+/** A profile tab with nothing in it, and no other filter on. */
+interface ProfileInput {
+  kind: 'profile';
+  profile: ProfileInfo;
   onShowAll: () => void;
 }
 
-/** A search found nothing. `narrowing`: the other active filters (and purpose), by name. */
+/** A search found nothing. `narrowing`: the other active filters (and profile), by name. */
 interface SearchInput {
   kind: 'search';
   query: string;
@@ -74,7 +74,7 @@ interface FilteredInput {
   onClearFilters: () => void;
 }
 
-export type IndexEmptyInput = ErrorInput | OfflineInput | PurposeInput | SearchInput | FilteredInput;
+export type IndexEmptyInput = ErrorInput | OfflineInput | ProfileInput | SearchInput | FilteredInput;
 
 function retryStatus(retry: AutoRetry) {
   return { status: retry.secondsLeft === undefined ? S.retrying : S.retryIn(retry.secondsLeft) };
@@ -116,15 +116,15 @@ function offlineState(input: OfflineInput): EmptyStateProps {
   };
 }
 
-function purposeState({ purpose, onShowAll }: PurposeInput, onUpload?: () => void): EmptyStateProps {
-  const kept = purpose.retentionDays === undefined ? '' : S.purposeKept(purpose.retentionDays);
+function profileState({ profile, onShowAll }: ProfileInput, onUpload?: () => void): EmptyStateProps {
+  const kept = profile.retentionDays === undefined ? '' : S.profileKept(profile.retentionDays);
   const upload = onUpload ? [{ id: 'upload', label: S.upload, primary: true, onSelect: onUpload }] : [];
   return {
     icon: 'folder',
-    title: S.purposeTitle(purpose.label),
-    body: S.purposeBody(purpose.label) + kept,
+    title: S.profileTitle(profile.label),
+    body: S.profileBody(profile.label) + kept,
     actions: [...upload, { id: 'show-all', label: S.showAll, primary: !onUpload, onSelect: onShowAll }],
-    testId: 'index-empty-purpose',
+    testId: 'index-empty-profile',
   };
 }
 
@@ -163,8 +163,8 @@ export function indexEmptyState(input: IndexEmptyInput, onUpload?: () => void): 
       return errorState(input);
     case 'offline':
       return offlineState(input);
-    case 'purpose':
-      return purposeState(input, onUpload);
+    case 'profile':
+      return profileState(input, onUpload);
     case 'search':
       return searchState(input);
     case 'filtered':
@@ -172,7 +172,7 @@ export function indexEmptyState(input: IndexEmptyInput, onUpload?: () => void): 
   }
 }
 
-/** The index's empty/error state. `onUpload` opens the upload dialog (offered on an empty purpose tab). */
+/** The index's empty/error state. `onUpload` opens the upload dialog (offered on an empty profile tab). */
 export function IndexEmpty({ input, onUpload }: { input: IndexEmptyInput; onUpload?: () => void }) {
   return <EmptyState {...indexEmptyState(input, onUpload)} />;
 }

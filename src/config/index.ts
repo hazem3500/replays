@@ -4,6 +4,7 @@ import { dirname, isAbsolute, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { assertCapturePacing } from '../shared/capture-pacing.ts';
+import type { ProfileConfig, ProfileViewerDefaults } from '../shared/profiles.ts';
 import { assertPlugin } from '../plugin/define.ts';
 import { PluginError } from '../plugin/errors.ts';
 import type { PluginSpec, ReplaysPlugin } from '../plugin/types.ts';
@@ -18,7 +19,12 @@ export type { CapturePacingOptions } from '../shared/capture-pacing.ts';
 export type { PluginSpec } from '../plugin/types.ts';
 /** The `malleable` block: the host's policy for sandboxed user plugins (docs/malleability.md#the-hosts-policy). */
 export type { CapabilityRule, MalleableConfig } from '../shared/malleable-policy.ts';
-export type { PosterMoment, PurposeConfig, PurposeViewerDefaults } from '../shared/purposes.ts';
+export type { PosterMoment, ProfileConfig, ProfileViewerDefaults } from '../shared/profiles.ts';
+
+/** @deprecated Use `ProfileConfig`. */
+export type PurposeConfig = ProfileConfig;
+/** @deprecated Use `ProfileViewerDefaults`. */
+export type PurposeViewerDefaults = ProfileViewerDefaults;
 
 /** Typed identity function for `replays.config.ts`: `export default defineConfig({ name: 'Acme', plugins: [acme()] })`. */
 export function defineConfig(config: ReplaysConfig): ReplaysConfig {

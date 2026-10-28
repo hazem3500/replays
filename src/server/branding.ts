@@ -1,7 +1,7 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
 import type { HostVersions, MalleablePolicy } from '../shared/malleable-policy.ts';
 import type { PageBranding } from './base-path.ts';
-import type { PurposeInfo } from '../shared/purposes.ts';
+import type { ProfileInfo } from '../shared/profiles.ts';
 
 /**
  * Theming without a rebuild. Every colour in the viewer is a CSS custom property (src/client/styles.css); a
@@ -105,8 +105,8 @@ export function publicConfig(
     cliDeviceAuth?: import('./auth/types.ts').CliDeviceAuthCapability;
     signIn?: import('../shared/sign-in.ts').SignInConfig;
     plugins?: string[];
-    /** The deployment's purposes (src/shared/purposes.ts); an empty list in a plain core. */
-    purposes?: readonly PurposeInfo[];
+    /** The deployment's profiles (src/shared/profiles.ts); an empty list in a plain core. */
+    profiles?: readonly ProfileInfo[];
     /** Plugin index filters (`api.indexFilter`): which `x-*` params `GET /api/replays` understands. */
     indexFilters?: Array<{ plugin: string; id: string; param: string }>;
     beta?: { editor: boolean; malleable?: boolean };
@@ -125,7 +125,9 @@ export function publicConfig(
     ...(extra.cliDeviceAuth ? { cliDeviceAuth: extra.cliDeviceAuth } : {}),
     ...(extra.signIn ? { signIn: extra.signIn } : {}),
     plugins: extra.plugins ?? [],
-    purposes: extra.purposes ?? [],
+    profiles: extra.profiles ?? [],
+    // why: deprecated alias of `profiles`, kept for API clients written before the rename.
+    purposes: extra.profiles ?? [],
     ...(extra.indexFilters ? { indexFilters: extra.indexFilters } : {}),
     beta: extra.beta ?? { editor: false, malleable: false },
     ...(extra.editing ? { editing: extra.editing } : {}),

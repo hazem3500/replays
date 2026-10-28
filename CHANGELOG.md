@@ -254,6 +254,17 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 - The suite index is built from the replay list instead of three lookups per run.
 
+### Deprecated
+
+- **Purposes are now profiles.** Everything that said purpose says profile: the config key `profiles`, `api.profile`,
+  `meta.profile`, `summary.profile`/`profileInferred`, `ProfileConfig`/`ProfileInfo`/`ProfileDefinition`/`ProfileInferInput`,
+  `ProfileCatalog`/`createProfileCatalog`, `--profile`, `?profile=`, `RETENTION_PROFILE_<ID>_DAYS`, `x-replay-profile`,
+  `profiles` in `GET /api/config`, and the index and upload copy. The old names keep working as deprecated aliases for at
+  least two minor releases and 90 days and warn once at start where they are used at run time; uploads with `meta.purpose`
+  are stored as `meta.profile`, and stored bundles and overrides are read as they are. `SUMMARY_VERSION` is 9, so sidecars are
+  rebuilt lazily. See [API stability](docs/api-stability.md#deprecated-purpose-names) and
+  [the migration steps](docs/downstream-migration.md#renaming-purposes-to-profiles).
+
 ## [0.1.0] - Unreleased
 
 First public-shaped version, extracted and generalised from an internal debugging tool.

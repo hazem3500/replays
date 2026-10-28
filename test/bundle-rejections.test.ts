@@ -21,7 +21,7 @@ describe('bundle rejection contract', () => {
     ]),
     ['source', { ...replay(), meta: { ...replay().meta, source: 'unknown' } }],
     ['tags', { ...replay(), meta: { ...replay().meta, tags: ['Uppercase'] } }],
-    ['purpose', { ...replay(), meta: { ...replay().meta, purpose: 'Not a purpose' } }],
+    ['profile', { ...replay(), meta: { ...replay().meta, profile: 'Not a profile' } }],
     ['events', { ...replay(), events: [{}] }],
     ['console', { ...replay(), console: {} }],
     ['network', { ...replay(), network: null }],

@@ -166,7 +166,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     const storage = tracedStorage(await chooseStorage(env, runtime.config.file, registry, dataDir));
     const summaryFields = summaryFieldsRunner(registry.summaryFields);
     store = new ReplayStore(storage, sampleDir, settings.retention, {
-      purposes: settings.purposes,
+      profiles: settings.profiles,
       ...(summaryFields ? { summaryFields } : {}),
     });
     // The first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
@@ -174,10 +174,10 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     log(
       `storage ${storage.kind} (${storage.description}); retention ${days(store.retention.days)}${removed.length ? `; pruned ${removed.length}` : ''}`,
     );
-    if (store.purposes.size)
+    if (store.profiles.size)
       log(
-        `purposes: ${store.purposes.list
-          .map((purpose) => `${purpose.id}${purpose.retentionDays === undefined ? '' : ` (${days(purpose.retentionDays)})`}`)
+        `profiles: ${store.profiles.list
+          .map((profile) => `${profile.id}${profile.retentionDays === undefined ? '' : ` (${days(profile.retentionDays)})`}`)
           .join(', ')}`,
       );
   } catch (error) {
@@ -293,10 +293,10 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
       storage: store.storage,
       key: (id, choice) => store.posterKey(id, choice),
       runner: media.poster,
-      // The plugins' `posterAt`, then the purpose's `poster` setting (src/shared/purposes.ts), then the default.
+      // The plugins' `posterAt`, then the profile's `poster` setting (src/shared/profiles.ts), then the default.
       posterAt: renderHooks.posterChooser({
-        purpose: async (id) => (await store.summary(id, { suites: false }))?.purpose,
-        ...(store.purposes.list.some((purpose) => purpose.poster) ? { purposePoster: (purpose) => store.purposes.poster(purpose) } : {}),
+        profile: async (id) => (await store.summary(id, { suites: false }))?.profile,
+        ...(store.profiles.list.some((profile) => profile.poster) ? { profilePoster: (profile) => store.profiles.poster(profile) } : {}),
         load: (id) => store.load(id),
       }),
       ...(renderHooks.checks ? { beforeRender: renderHooks.beforeRender } : {}),

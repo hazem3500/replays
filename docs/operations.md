@@ -81,7 +81,7 @@ replays migrate --compare --from <store> --to <store>
   `STORAGE=<id>` would be. `fs` and `s3` alone are the built-in drivers configured by the environment. A plugin backend reads one
   environment, so to move between two buckets of the same plugin, go through an `fs:` copy.
 - **Translation.** `--translate` names a module whose default export is `(rawReplayJson, info) => rawReplayJson` (`info`: `id`,
-  `key`, `purposes`); a named `translateSuite` converts `_suites/<id>.json` the same way. It may be async. Without one, documents
+  `key`, `profiles`); a named `translateSuite` converts `_suites/<id>.json` the same way. It may be async. Without one, documents
   are copied as they are. [`examples/migrate/translate.mjs`](../examples/migrate/translate.mjs) converts the older downstream
   format; keep the translation idempotent so it can also back a plugin's `prepareUpload`.
 - **Checks.** Every translated bundle must pass the core validator (and `context.fields` the config's context schema), keep its

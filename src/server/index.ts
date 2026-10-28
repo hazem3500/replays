@@ -1,3 +1,5 @@
+import { createProfileCatalog, ProfileCatalog } from './profiles.ts';
+
 /**
  * `@hazem3500/replays/server`: run the viewer and API from your own entry point, or compose pieces of it.
  *
@@ -10,7 +12,7 @@ export type { AgentCredential, AgentScope } from './agent-native/credentials.ts'
 export { createRuntime, mergeContextSchemas, resolveSettings, type Runtime, type RuntimeOptions } from './runtime.ts';
 export { createApp, type AppOptions } from './app.ts';
 export { ReplayStore } from './store.ts';
-export { createPurposeCatalog, PurposeCatalog } from './purposes.ts';
+export { createProfileCatalog, ProfileCatalog } from './profiles.ts';
 export { loadSettings, readConfigFile, type AppSettings, type FileConfig } from './config.ts';
 export { authFromEnv, headerAuth, noneAuth, oidcAuth } from './auth/index.ts';
 export type { OidcOptions } from './auth/oidc.ts';
@@ -46,3 +48,10 @@ export {
   type MigrateTranslate,
   type StoreComparison,
 } from './migrate.ts';
+
+/** @deprecated Use `ProfileCatalog`. */
+export const PurposeCatalog = ProfileCatalog;
+/** @deprecated Use `ProfileCatalog`. */
+export type PurposeCatalog = ProfileCatalog;
+/** @deprecated Use `createProfileCatalog`. */
+export const createPurposeCatalog = createProfileCatalog;

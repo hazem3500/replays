@@ -18,7 +18,7 @@ import './render.css';
 
 import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdits } from '../../shared/edits.ts';
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
-import type { PosterMoment } from '../../shared/purposes.ts';
+import type { PosterMoment } from '../../shared/profiles.ts';
 import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
@@ -35,7 +35,7 @@ export interface RenderApi {
   plan(fps: number, speed: number, options?: RenderPlanOptions): { count: number; dirty: number[] };
   show(index: number): Promise<void>;
   /**
-   * Seeks to the poster moment (posterMoment): a named `moment` (the replay's purpose) or a time in ms (a plugin's
+   * Seeks to the poster moment (posterMoment): a named `moment` (the replay's profile) or a time in ms (a plugin's
    * `posterAt`), clamped to the replay; waits for its assets and returns that time.
    */
   poster(moment?: PosterMoment | number): Promise<number>;

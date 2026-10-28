@@ -1,5 +1,5 @@
 import type { SourceProviderInfo } from '../shared/source-providers.ts';
-import type { PurposeInfo } from '../shared/purposes.ts';
+import { type ProfileInfo, profilesOf } from '../shared/profiles.ts';
 import { betaTokens } from '../shared/beta-flags.ts';
 import type { ResolvedClientEntry } from '../plugin/registry.ts';
 import { withBase } from './base-path.ts';
@@ -15,8 +15,10 @@ export interface IndexPageOptions {
   signIn?: import('../shared/sign-in.ts').SignInConfig;
   branding: BrandingConfig;
   beta?: BetaFlags;
-  /** Purposes available in this deployment, including plugin declarations. */
-  purposes?: readonly PurposeInfo[];
+  /** Profiles available in this deployment, including plugin declarations. */
+  profiles?: readonly ProfileInfo[];
+  /** @deprecated Use `profiles`; read when `profiles` is absent. */
+  purposes?: readonly ProfileInfo[];
   /** Provider icons and nouns for the source chips. */
   sources?: readonly SourceProviderInfo[];
   /** Host write policy, still gated by beta.editor. */
@@ -38,7 +40,7 @@ export function renderIndexHtml(html: string, options: IndexPageOptions) {
   return withBase(html, options.base, {
     ...pageBranding(options.branding),
     ...(options.sources?.length ? { sources: JSON.stringify(options.sources) } : {}),
-    ...(options.purposes?.length ? { purposes: JSON.stringify(options.purposes) } : {}),
+    ...(profilesOf(options)?.length ? { profiles: JSON.stringify(profilesOf(options)) } : {}),
     ...(entries.length ? { plugins: JSON.stringify(publicClientEntries(entries, options.base)) } : {}),
     ...(options.signIn ? { signIn: `${options.base}${options.signIn.path}` } : {}),
     beta,

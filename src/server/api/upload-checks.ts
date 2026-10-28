@@ -1,10 +1,10 @@
 import { defaultId } from '../../capture/human-bundle.ts';
 import type { PluginRegistry } from '../../plugin/registry.ts';
-import type { ReplayBundle } from '../../shared/replay.ts';
+import { replayProfileId, type ReplayBundle, withMetaProfile } from '../../shared/replay.ts';
 import { publicPath } from '../base-path.ts';
 import { HttpError } from '../http/errors.ts';
 import { checkPeople } from '../people.ts';
-import type { PurposeCatalog } from '../purposes.ts';
+import type { ProfileCatalog } from '../profiles.ts';
 import { ReplayConflictError, type ReplayStore } from '../store.ts';
 import { assertUploadBundle } from '../upload-validation.ts';
 import type { ApiDeployment } from './services.ts';
@@ -35,14 +35,16 @@ export function replayReceipt(base: string, bundle: ReplayBundle) {
 
 /**
  * A bundle that went through `beforeUpload` hooks is checked again: a plugin cannot store an invalid one. Its
- * `meta.purpose` must be one the deployment defines (src/server/purposes.ts); with none defined it must be absent.
+ * `meta.profile` must be one the deployment defines (src/server/profiles.ts); with none defined it must be absent.
+ * The deprecated `meta.purpose` is accepted and stored as `meta.profile`.
  */
-export function acceptUpload(bundle: ReplayBundle, purposes: PurposeCatalog, registry: PluginRegistry) {
+export function acceptUpload(bundle: ReplayBundle, profiles: ProfileCatalog, registry: PluginRegistry): ReplayBundle {
   assertUploadBundle(bundle);
-  const problem = purposes.problem(bundle.meta.purpose);
+  const profile = replayProfileId(bundle.meta);
+  const problem = profiles.problem(profile);
   if (problem) throw new HttpError(400, problem);
   checkPeople(registry, bundle.meta.people, 'replay.meta.people');
-  return bundle;
+  return { ...bundle, meta: withMetaProfile(bundle.meta, profile) };
 }
 
 /** Applies the deployment's source providers and context schema to an uploaded bundle (in place). */
