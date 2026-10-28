@@ -44,27 +44,12 @@ import { consoleBadge, networkBadge, performanceBadge } from './tab-badges.ts';
 export { edgeVelocity } from './TrackList.tsx';
 import { PerformanceDiagnostics } from './Performance.tsx';
 import { buildPerformance } from './performance.ts';
+import { INSPECTOR_HEIGHT_KEY, MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
 
-export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
-export const DEFAULT_INSPECTOR_HEIGHT = 260;
-export const MIN_INSPECTOR_HEIGHT = 120;
 const NO_RESPONSE = 'No response recorded: a redirect hop, or still in flight when capture stopped';
 const stopPlayerKeyboard = (event: ReactKeyboardEvent<HTMLElement>) => {
   if ([' ', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) event.stopPropagation();
 };
-
-function maxInspectorHeight() {
-  return Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
-}
-
-export function clampInspectorHeight(height: number) {
-  return Math.round(Math.min(Math.max(height, MIN_INSPECTOR_HEIGHT), maxInspectorHeight()));
-}
-
-export function initialInspectorHeight() {
-  const saved = Number(readStorage(INSPECTOR_HEIGHT_KEY));
-  return Number.isFinite(saved) && saved > 0 ? clampInspectorHeight(saved) : DEFAULT_INSPECTOR_HEIGHT;
-}
 
 /** What a bottom-panel splitter resizes: the diagnostics panel by default, or another panel (the editor's dock). */
 export interface PanelSize {

@@ -5,16 +5,13 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
+import { initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
-/* Repeated from the viewer chunk (StepRail.tsx, Inspector.tsx, Viewer.tsx); keep in sync. */
+/* Repeated from the viewer chunk (StepRail.tsx, Viewer.tsx); keep in sync. Sizes come from viewer/inspector-size.ts. */
 const STEPS_WIDTH_KEY = 'replays-steps-width';
-const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
-const DEFAULT_INSPECTOR_HEIGHT = 260;
-const MIN_INSPECTOR_HEIGHT = 120;
-const INSPECTOR_TABS_HEIGHT = 37;
 
 /**
  * What the page opening the replay already knows (the index writes it before navigating; see OPEN_HINT_KEY):
@@ -46,17 +43,13 @@ function readHint(): OpenHint | undefined {
 }
 
 function layout(hint: OpenHint | undefined) {
-  const savedHeight = Number(readStorage(INSPECTOR_HEIGHT_KEY));
-  const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
-  const height =
-    Number.isFinite(savedHeight) && savedHeight > 0
-      ? Math.round(Math.min(Math.max(savedHeight, MIN_INSPECTOR_HEIGHT), maxHeight))
-      : DEFAULT_INSPECTOR_HEIGHT;
+  const height = initialInspectorHeight();
   const savedCollapsed = readStorage(INSPECTOR_COLLAPSED_KEY);
   const collapsed = savedCollapsed === '1';
-  const stepsWidth = Number(readStorage(STEPS_WIDTH_KEY));
+  const savedWidth = Number(readStorage(STEPS_WIDTH_KEY));
+  const stepsWidth = readStorage(RAIL_COLLAPSED_KEY) === '1' ? 0 : Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : undefined;
   const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
-  return { height, collapsed, stepsWidth: Number.isFinite(stepsWidth) && stepsWidth > 0 ? stepsWidth : undefined, ratio };
+  return { height, collapsed, stepsWidth, ratio };
 }
 
 /** A skeleton that disappeared this recently hands over to the next one at once (no second fade-in). */
@@ -85,7 +78,7 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
       aria-label={label}
       style={
         {
-          '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${shape.height}px`,
+          '--inspector-height': collapsed && !mobile ? 'var(--inspector-folded-height, 37px)' : `${shape.height}px`,
           '--sk-ratio': String(shape.ratio),
         } as CSSProperties
       }
@@ -205,7 +198,7 @@ function DesktopSkeleton({
       <div
         className="workspace"
         aria-hidden="true"
-        style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
+        style={stepsWidth === undefined ? undefined : ({ '--steps-width': `${stepsWidth}px` } as CSSProperties)}
       >
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
