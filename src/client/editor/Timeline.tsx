@@ -246,7 +246,6 @@ export function RegionBlock({
  * A lane: its glyph in the gutter (named by a tooltip) and its regions on the track. An empty lane says in place what
  * it is and how to add to it (`empty`), in the quietest text, so it explains itself without hover.
  */
-/** The short name under each lane's icon; the full instruction stays in its tooltip. */
 const LANE_LABELS: Record<string, string> = { clip: 'Clip', zoom: 'Zoom', speed: 'Speed', blur: 'Blur', caption: 'Captions' };
 
 export function Lane({
