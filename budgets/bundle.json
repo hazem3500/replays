@@ -182,11 +182,6 @@
       "gzip": 75138,
       "brotli": 61304
     },
-    "dist/lib/chunks/context.schema.json-a0771edd90c2.mjs": {
-      "raw": 278174,
-      "gzip": 73756,
-      "brotli": 60064
-    },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
       "brotli": 4642,
@@ -780,11 +775,11 @@
     {
       "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
       "cap": {
-        "raw": 285666,
-        "gzip": 75110,
-        "brotli": 61552
+        "raw": 285690,
+        "gzip": 75125,
+        "brotli": 61620
       },
-      "reason": "The shared server chunk now also holds the upload-endpoint helpers (src/server/api/upload-endpoints.ts) and HttpError, so its source identity changes; it replaces #90's context.schema.json-87737fe6e2f1 (-5126 B raw, -28 B gzip).",
+      "reason": "The shared server chunk now also holds the upload-endpoint helpers (src/server/api/upload-endpoints.ts) and HttpError, so its source identity changes; measured against main's context.schema.json-87737fe6e2f1: +3368 B raw, +449 B gzip, +724 B brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/94"
     }
   ]
