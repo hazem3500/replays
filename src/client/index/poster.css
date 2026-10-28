@@ -1,0 +1,17 @@
+/*
+ * Poster placeholder (Poster.tsx): what a replay's thumbnail shows until its picture arrives, and for good when
+ * there is none (posters off on this server, a failed render, a suite run without a recording). Imported after
+ * feed.css (tailwind.css), so within the `app` layer these rules follow the feed's poster rules.
+ *
+ *   Tile       a calm tile: a faint wash of the text colour, nothing drawn in it (no fake page).
+ *   Loading    only while a poster is genuinely on its way: the tile breathes (opacity,
+ *              slowly), starting after --skeleton-delay so a cached poster or an "off" answer never shows motion.
+ */
+.poster-placeholder { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent)); }
+
+/* Breathing replaces the feed's sweep (same layer, same selector, later rule). */
+.poster[data-phase="loading"]::before { background: color-mix(in srgb, var(--text) 5%, transparent); transform: none; opacity: 0; animation: skeleton-breathe 2.4s ease-in-out var(--skeleton-delay) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .poster[data-phase="loading"]::before { opacity: 0.5; animation: none; }
+}

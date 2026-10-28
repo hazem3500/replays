@@ -1,0 +1,11 @@
+/*
+ * Loading states share their timing here, so every wait in the app reads the same: nothing at all for waits under
+ * --skeleton-delay, then a fade in, then a slow breath (opacity only) for as long as something is genuinely on its
+ * way. Later loading layouts (the pending feed, the viewer's shell) add their primitives here.
+ */
+:root {
+  --skeleton-delay: 200ms;
+  --skeleton-fade: 200ms;
+}
+@keyframes skeleton-appear { from { opacity: 0; } }
+@keyframes skeleton-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }

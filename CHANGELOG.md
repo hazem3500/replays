@@ -204,6 +204,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- Replay posters wait quietly: the placeholder is a calm tile with no made-up letter, it breathes (opacity only) only
+  while a poster is on its way and only after 200 ms, and when the server says posters are off every waiting poster
+  settles at once while stored posters still load.
+
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
   refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters

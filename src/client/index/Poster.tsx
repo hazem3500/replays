@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { cn } from '@/lib/utils.ts';
 
@@ -7,9 +7,11 @@ import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
 
 /*
  * A replay's list thumbnail: a plain lazy <img> of GET /api/replays/<id>/poster over a neutral
- * placeholder (the host's initial). The server answers 202 while it renders the poster, and 404/503
- * when there is none; an <img> cannot read those, so after an error one HEAD request decides between
- * "retry after Retry-After" and "keep the placeholder". A 503 switches posters off for the page.
+ * placeholder: a calm tile with nothing drawn in it (no fake page). The server answers 202 while it renders the poster, and
+ * 404/503 when there is none; an <img> cannot read those, so after an error one HEAD request decides between
+ * "retry after Retry-After" and "keep the placeholder". A 503 switches posters off for the page: every poster still
+ * waiting stops breathing at once and settles on the placeholder (its <img> stays, since a poster stored before
+ * posters went off is still served).
  *
  * While `playing` (the row is hovered or reached by keyboard, preview.ts), a muted looping <video> of
  * GET /api/replays/<id>/preview (the replay at 3×, idle gaps squeezed) fades in over the poster with a
@@ -22,19 +24,69 @@ const POSTER_VERSION = 2;
 
 const MAX_RETRIES = 6;
 let postersOff = false;
+const offListeners = new Set<() => void>();
+
+function setPostersOff(next: boolean) {
+  if (postersOff === next) return;
+  postersOff = next;
+  for (const listener of offListeners) listener();
+}
+
+function subscribePostersOff(listener: () => void) {
+  offListeners.add(listener);
+  return () => void offListeners.delete(listener);
+}
 
 /** Test hook: forget a previous 503. */
 export function resetPosters() {
-  postersOff = false;
+  setPostersOff(false);
 }
 
 type State = { id: string | undefined; phase: 'loading' | 'ready' | 'none'; attempt: number };
 
-const initialState = (id: string | undefined): State => ({ id, phase: id && !postersOff ? 'loading' : 'none', attempt: 0 });
+// why: with posters off a stored poster is still served, so each poster still asks once, without the breathing.
+const initialState = (id: string | undefined): State => ({ id, phase: id ? 'loading' : 'none', attempt: 0 });
+
+export type PosterSize = 'row' | 'card' | 'mini' | 'fill';
+
+/**
+ * One replay's poster request: its URL (with the retry attempt), its phase, and what to do when the image loads or
+ * fails. A failure asks the server once (HEAD) whether to retry after Retry-After, keep the placeholder, or treat
+ * posters as off for the page.
+ */
+function usePosterLoad(id: string | undefined) {
+  const [stored, setState] = useState<State>(() => initialState(id));
+  // A different replay starts over (derived during render rather than reset in an effect).
+  const state = stored.id === id ? stored : initialState(id);
+  if (stored !== state) setState(state);
+  const src = id
+    ? `${apiUrl(`replays/${encodeURIComponent(id)}/poster`)}?v=${POSTER_VERSION}${state.attempt ? `&try=${state.attempt}` : ''}`
+    : '';
+  const loaded = () => setState((current) => ({ ...current, phase: 'ready' }));
+  const failed = () => {
+    if (!id || postersOff || state.attempt >= MAX_RETRIES) {
+      setState((current) => ({ ...current, phase: 'none' }));
+      return;
+    }
+    const attempt = state.attempt;
+    void fetch(src, { method: 'HEAD' })
+      .then((response) => {
+        if (response.status === 503 && !response.headers.get('retry-after')) setPostersOff(true);
+        if (response.status !== 202 && response.status !== 503) throw new Error(String(response.status));
+        if (postersOff) throw new Error('posters off');
+        const wait = Math.min(30, Math.max(1, Number(response.headers.get('retry-after')) || 2)) * 1000 * (1 + attempt / 2);
+        window.setTimeout(
+          () => setState((current) => (current.attempt === attempt ? { ...current, phase: 'loading', attempt: attempt + 1 } : current)),
+          wait,
+        );
+      })
+      .catch(() => setState((current) => (current.attempt === attempt ? { ...current, phase: 'none' } : current)));
+  };
+  return { state, src, loaded, failed };
+}
 
 export function Poster({
   id,
-  host,
   className,
   size = 'row',
   playing = false,
@@ -45,9 +97,10 @@ export function Poster({
 }: {
   /** Replay id; absent draws the placeholder only (a suite run without a recording). */
   id: string | undefined;
+  /** The replay's host. The tile no longer draws it (the card's meta line names it); kept for callers. */
   host: string;
   className?: string;
-  size?: 'row' | 'card' | 'mini' | 'fill';
+  size?: PosterSize;
   /** Play the hover preview (when this device allows autoplay). */
   playing?: boolean;
   /** Bottom-right overlay: a replay's duration, or a suite's run count. */
@@ -59,49 +112,19 @@ export function Poster({
   /** Called once when the preview passes halfway (to warm the next one). */
   onPreviewHalf?: () => void;
 }) {
-  const [stored, setState] = useState<State>(() => initialState(id));
-  // A different replay starts over (derived during render rather than reset in an effect).
-  const state = stored.id === id ? stored : initialState(id);
-  if (stored !== state) setState(state);
-  const src = id
-    ? `${apiUrl(`replays/${encodeURIComponent(id)}/poster`)}?v=${POSTER_VERSION}${state.attempt ? `&try=${state.attempt}` : ''}`
-    : '';
-
-  const failed = () => {
-    if (!id || postersOff || state.attempt >= MAX_RETRIES) {
-      setState((current) => ({ ...current, phase: 'none' }));
-      return;
-    }
-    const attempt = state.attempt;
-    void fetch(src, { method: 'HEAD' })
-      .then((response) => {
-        if (response.status === 503 && !response.headers.get('retry-after')) postersOff = true;
-        if (response.status !== 202 && response.status !== 503) throw new Error(String(response.status));
-        if (postersOff) throw new Error('posters off');
-        const wait = Math.min(30, Math.max(1, Number(response.headers.get('retry-after')) || 2)) * 1000 * (1 + attempt / 2);
-        window.setTimeout(
-          () => setState((current) => (current.attempt === attempt ? { ...current, phase: 'loading', attempt: attempt + 1 } : current)),
-          wait,
-        );
-      })
-      .catch(() => setState((current) => (current.attempt === attempt ? { ...current, phase: 'none' } : current)));
-  };
-
-  const initial = (host.replace(/^www\./, '')[0] ?? '·').toUpperCase();
+  const { state, src, loaded, failed } = usePosterLoad(id);
+  const off = useSyncExternalStore(
+    subscribePostersOff,
+    () => postersOff,
+    () => false,
+  );
+  // why: "on its way" breathes only while a poster can still arrive and is worth waiting for; off, it just settles.
+  const phase = state.phase === 'loading' && off ? 'none' : state.phase;
   return (
-    <span className={cn('poster', `poster-${size}`, className)} data-phase={state.phase} aria-hidden="true">
-      <span className="poster-placeholder">{initial}</span>
+    <span className={cn('poster', `poster-${size}`, className)} data-phase={phase} aria-hidden="true">
+      <span className="poster-placeholder" />
       {id && state.phase !== 'none' ? (
-        <img
-          key={state.attempt}
-          src={src}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-          onLoad={() => setState((current) => ({ ...current, phase: 'ready' }))}
-          onError={failed}
-        />
+        <img key={state.attempt} src={src} alt="" loading="lazy" decoding="async" draggable={false} onLoad={loaded} onError={failed} />
       ) : null}
       {badge ? <span className="poster-badge">{badge}</span> : null}
       {caption}

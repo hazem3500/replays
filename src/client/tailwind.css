@@ -18,6 +18,8 @@
 @import "./styles.css" layer(app);
 @import "./index/feed.css" layer(app);
 @import "./index/card-motion.css" layer(app);
+@import "./loading.css" layer(app);
+@import "./index/poster.css" layer(app);
 @import "./index/list-motion.css" layer(app);
 /* why: the filter popover, toolbar tokens and first-run cards restyle shadcn primitives whose utility classes
    (w-72, p-2.5, gap-4, ring-1, shadow-md) sit in the utilities layer; unlayered rules outrank them. */
