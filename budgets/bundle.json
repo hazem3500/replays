@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
       "gzip": 956,
-      "brotli": 824
+      "brotli": 823
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -62,10 +62,20 @@
       "gzip": 1263,
       "brotli": 1152
     },
+    "dist/client/assets/comments-ui-HASH.css": {
+      "raw": 14300,
+      "gzip": 3048,
+      "brotli": 2634
+    },
+    "dist/client/assets/comments-ui-HASH.js": {
+      "raw": 28188,
+      "gzip": 10025,
+      "brotli": 8738
+    },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
       "gzip": 2350,
-      "brotli": 2126
+      "brotli": 2122
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -93,8 +103,8 @@
       "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82360,
-      "gzip": 27292,
+      "raw": 82404,
+      "gzip": 27339,
       "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -103,9 +113,9 @@
       "brotli": 5643
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 332366,
-      "gzip": 110268,
-      "brotli": 95018
+      "raw": 359609,
+      "gzip": 119586,
+      "brotli": 102540
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -118,14 +128,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 244718,
-      "gzip": 42304,
-      "brotli": 35276
+      "raw": 235798,
+      "gzip": 40763,
+      "brotli": 34114
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 847504,
-      "gzip": 264566,
-      "brotli": 220669
+      "raw": 919405,
+      "gzip": 286375,
+      "brotli": 236693
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -137,6 +147,11 @@
       "gzip": 25654,
       "brotli": 22782
     },
+    "dist/client/assets/pencil-HASH.js": {
+      "raw": 310,
+      "gzip": 249,
+      "brotli": 223
+    },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
       "gzip": 945,
@@ -146,16 +161,6 @@
       "raw": 308578,
       "gzip": 95021,
       "brotli": 68380
-    },
-    "dist/client/assets/PluginUi-HASH.js": {
-      "raw": 133395,
-      "gzip": 44750,
-      "brotli": 38604
-    },
-    "dist/client/assets/preload-helper-HASH.js": {
-      "raw": 58534,
-      "gzip": 17502,
-      "brotli": 15604
     },
     "dist/client/assets/queryOptions-HASH.js": {
       "raw": 22083,
@@ -200,12 +205,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 706,
-      "brotli": 648
+      "brotli": 644
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 18639,
-      "gzip": 7488,
-      "brotli": 6349
+      "raw": 20379,
+      "gzip": 8355,
+      "brotli": 7171
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -217,14 +222,24 @@
       "gzip": 265,
       "brotli": 238
     },
+    "dist/client/assets/use-focus-when-HASH.js": {
+      "raw": 589,
+      "gzip": 433,
+      "brotli": 390
+    },
+    "dist/client/assets/useTriggerFocusGuards-HASH.js": {
+      "raw": 70041,
+      "gzip": 24898,
+      "brotli": 22077
+    },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 47311,
-      "gzip": 17272,
-      "brotli": 15400
+      "raw": 50992,
+      "gzip": 18530,
+      "brotli": 16268
     },
     "dist/client/index.html": {
       "raw": 12263,
-      "gzip": 4123,
+      "gzip": 4252,
       "brotli": 3468
     },
     "dist/client/render.html": {
@@ -418,14 +433,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 246639,
-      "gzip": 43248,
-      "brotli": 36093
+      "raw": 237719,
+      "gzip": 41707,
+      "brotli": 34931
     },
     "initial/index.html/js": {
-      "raw": 1688508,
-      "gzip": 529707,
-      "brotli": 434343
+      "raw": 1676895,
+      "gzip": 527069,
+      "brotli": 432180
     },
     "initial/render.html/css": {
       "raw": 5252,
@@ -808,16 +823,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 882638,
-        "gzip": 275706,
-        "brotli": 228656
-      },
-      "reason": "Measured in CI against fresh main: raw 727142 to 856930, gzip 236638 to 267675, brotli 191694 to 221996 bytes with this change.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
       "file": "initial/index.html/js",
       "cap": {
         "raw": 1688508,
@@ -935,16 +940,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/PluginUi-HASH.js",
-      "cap": {
-        "raw": 133395,
-        "gzip": 44750,
-        "brotli": 38604
-      },
-      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/ReplayComparePage-HASH.js",
       "cap": {
         "raw": 1022,
@@ -995,16 +990,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/preload-helper-HASH.js",
-      "cap": {
-        "raw": 58534,
-        "gzip": 17502,
-        "brotli": 15604
-      },
-      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/queryOptions-HASH.js",
       "cap": {
         "raw": 22083,
@@ -1021,6 +1006,66 @@
       },
       "reason": "Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 919405,
+        "gzip": 286375,
+        "brotli": 236693
+      },
+      "reason": "Chunk graph shift from loading the comments panel and markers lazily (#116): the shared Base UI menu, plugin registry and toast modules that sat in the PluginUi and preload-helper initial chunks now share the main chunk. Every page still loads them; the initial index.html JS group falls from 1647764 to 1628053 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/useTriggerFocusGuards-HASH.js",
+      "cap": {
+        "raw": 70041,
+        "gzip": 24898,
+        "brotli": 22077
+      },
+      "reason": "Chunk graph shift from loading the comments panel and markers lazily (#116): the shared Base UI menu, plugin registry and toast modules that sat in the PluginUi and preload-helper initial chunks now share a lazy chunk named after its first module. Every page still loads them; the initial index.html JS group falls from 1647764 to 1628053 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/use-focus-when-HASH.js",
+      "cap": {
+        "raw": 589,
+        "gzip": 433,
+        "brotli": 390
+      },
+      "reason": "A tiny shared chunk split out when the comments UI went lazy (#116): the focus hook is used by the reply box and other lazy views.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/pencil-HASH.js",
+      "cap": {
+        "raw": 310,
+        "gzip": 249,
+        "brotli": 223
+      },
+      "reason": "A tiny shared icon chunk split out when the comments UI went lazy (#116): the pencil icon is used by the comment row and the editor.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/comments-ui-HASH.js",
+      "cap": {
+        "raw": 28188,
+        "gzip": 10025,
+        "brotli": 8738
+      },
+      "reason": "The comments panel and seek-bar markers as a lazy chunk (#116), out of the main chunk: loaded when a replay's seek bar first draws.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/comments-ui-HASH.css",
+      "cap": {
+        "raw": 14300,
+        "gzip": 3048,
+        "brotli": 2634
+      },
+      "reason": "The comments panel and marker styles, travelling with the lazy comments UI chunk (#116); main CSS drops from 239455 to 230795 raw bytes in the initial group.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
     }
   ]
 }
