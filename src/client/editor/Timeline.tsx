@@ -15,7 +15,9 @@ import { Hint } from '@/components/icon-button.tsx';
 
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
 import { formatClock } from '../../shared/replay.ts';
-import { usePlayer } from '../player.ts';
+import { usePlayer, usePlayhead } from '../player.ts';
+import { cssVars } from '../lib/css-vars.ts';
+import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { type EditorAction, moveCut, type Selection, setTrimEdge, trimOf } from './state.ts';
 
 /** Room left and right of the track, so the trim edges at 0 and at the end stay easy to grab. */
@@ -37,6 +39,7 @@ export interface TimelineScale {
 }
 
 const ScaleContext = createContext<TimelineScale | null>(null);
+const MobileTimelineContext = createContext(false);
 export function useTimelineScale() {
   const scale = useContext(ScaleContext);
   if (!scale) throw new Error('useTimelineScale outside <Timeline>');
@@ -93,6 +96,22 @@ export function timeKeys(event: ReactKeyboardEvent, value: number, min: number, 
 /** Tick spacing: the smallest of these with at least ~72 px between labels. */
 const TICK_STEPS = [100, 200, 500, 1000, 2000, 5000, 10_000, 15_000, 30_000, 60_000, 120_000, 300_000, 600_000];
 
+/** The trim stays selected on touch so its edges are always editable; elsewhere only an existing trim is. */
+function trimSelection(mobile: boolean | undefined, trim: unknown): Selection {
+  return mobile || trim ? { kind: 'trim' } : undefined;
+}
+
+function selectedHighlightId(selection: Selection) {
+  return selection?.kind === 'highlight' ? selection.id : undefined;
+}
+
+function rulerTicks(width: number, duration: number) {
+  const tick = TICK_STEPS.find((step) => width > 0 && (step / Math.max(1, duration)) * width >= 72) ?? TICK_STEPS.at(-1)!;
+  const ticks: number[] = [];
+  if (width > 0) for (let at = 0; at <= duration; at += tick) ticks.push(at);
+  return { tick, ticks };
+}
+
 function tickLabel(ms: number, step: number) {
   const minutes = Math.floor(ms / 60_000);
   const seconds = (ms % 60_000) / 1000;
@@ -139,6 +158,7 @@ export function RegionBlock({
   children?: ReactNode;
 }) {
   const scale = useTimelineScale();
+  const mobile = useContext(MobileTimelineContext);
   const player = usePlayer();
   const left = scale.x(from);
   const naturalWidth = scale.x(to) - left;
@@ -178,12 +198,19 @@ export function RegionBlock({
             move: (time, first) => onEdit('move', time - offset, first),
             end: (moved) => {
               onSelect();
+              if (mobile) player.pause();
               if (!moved) player.seek(seekTo ?? from);
             },
           });
         }}
         onFocus={() => {
-          if (!selected) onSelect();
+          if (!mobile && !selected) onSelect();
+        }}
+        onClick={(event) => {
+          if (!mobile || event.detail !== 0) return;
+          onSelect();
+          player.seek(seekTo ?? from);
+          if (mobile) player.pause();
         }}
         onKeyDown={(event) => {
           if (event.key === 'Delete' || event.key === 'Backspace') {
@@ -271,6 +298,7 @@ export function Lane({
  */
 export function Timeline({
   duration,
+  mobile,
   edits,
   selection,
   dispatch,
@@ -279,6 +307,7 @@ export function Timeline({
   lanes,
 }: {
   duration: number;
+  mobile?: boolean;
   edits: ReplayEdits;
   selection: Selection;
   dispatch: (action: EditorAction) => void;
@@ -288,6 +317,7 @@ export function Timeline({
   lanes?: ReactNode;
 }) {
   const player = usePlayer();
+  const touch = mobile === true;
   // The track column (the ruler): held in state, so the scale is rebuilt once it exists and when it resizes.
   const [column, setColumn] = useState<HTMLDivElement | null>(null);
   const playhead = useRef<HTMLDivElement>(null);
@@ -341,10 +371,7 @@ export function Timeline({
 
   const trim = trimOf(edits, duration);
   const range = selection?.kind === 'range' ? selection : undefined;
-  const tick = TICK_STEPS.find((step) => scale.width > 0 && (step / Math.max(1, duration)) * scale.width >= 72) ?? TICK_STEPS.at(-1)!;
-  const ticks: number[] = [];
-  if (scale.width > 0) for (let at = 0; at <= duration; at += tick) ticks.push(at);
-
+  const { tick, ticks } = rulerTicks(scale.width, duration);
   const trimEdge = (edge: 'start' | 'end') => (
     <span
       role="slider"
@@ -359,12 +386,12 @@ export function Timeline({
       aria-valuenow={trim[edge]}
       aria-valuetext={formatClock(trim[edge])}
       onPointerDown={(event) => {
-        dispatch({ type: 'select', selection: edits.trim ? { kind: 'trim' } : undefined });
+        dispatch({ type: 'select', selection: trimSelection(mobile, edits.trim) });
         player.beginScrub();
         startDrag(event, scale, {
           move: (time, first) => {
             const next = setTrimEdge(latest.current, edge, time, duration);
-            change(next, first, next.trim ? { kind: 'trim' } : undefined);
+            change(next, first, trimSelection(mobile, next.trim));
             player.seek(trimOf(next, duration)[edge]);
           },
           end: () => player.endScrub(),
@@ -373,7 +400,7 @@ export function Timeline({
       onKeyDown={(event) =>
         timeKeys(event, trim[edge], edge === 'start' ? 0 : trim.start, edge === 'start' ? trim.end : duration, (time) => {
           const next = setTrimEdge(latest.current, edge, time, duration);
-          change(next, true, next.trim ? { kind: 'trim' } : undefined);
+          change(next, true, trimSelection(mobile, next.trim));
           player.seek(trimOf(next, duration)[edge]);
         })
       }
@@ -383,103 +410,165 @@ export function Timeline({
   );
 
   return (
-    <ScaleContext.Provider value={scale}>
-      <div className="timeline" data-testid="timeline" data-ready={scale.width > 0 || undefined}>
-        <div className="tl-ruler-row">
-          <span className="tl-gutter-spacer" aria-hidden="true" />
-          <div ref={setColumn} className="tl-ruler" data-testid="timeline-ruler" onPointerDown={scrub}>
-            {ticks.map((at) => (
-              <span key={at} className="tl-tick" style={{ transform: `translateX(${scale.x(at)}px)` }}>
-                <span className="tl-tick-label">{tickLabel(at, tick)}</span>
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <Lane
-          name="Clip: drag its edges to trim, drag across it to select a cut"
-          kind="clip"
-          tall
-          icon={<FilmIcon />}
-          onTrackPointerDown={(event) => {
-            if (event.button !== 0) return;
-            const start = scale.timeAt(event.clientX);
-            startDrag(event, scale, {
-              move: (time) => {
-                dispatch({ type: 'select', selection: { kind: 'range', from: Math.min(start, time), to: Math.max(start, time) } });
-                player.seek(time);
-              },
-              end: (moved, time) => {
-                if (moved) return;
-                dispatch({ type: 'select', selection: undefined });
-                player.seek(time);
-              },
-            });
-          }}
-        >
-          {trim.start > 0 ? <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }} /> : null}
-          {trim.end < duration ? <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }} /> : null}
-          <div
-            className="tl-clip"
-            data-selected={selection?.kind === 'trim' || undefined}
-            style={{ left: `${scale.x(trim.start)}px`, width: `${Math.max(0, scale.x(trim.end) - scale.x(trim.start))}px` }}
-          >
-            {trimEdge('start')}
-            {trimEdge('end')}
-          </div>
-          {suggestions.map((cut) => (
-            <span
-              key={cut.id}
-              className="tl-suggestion"
-              data-testid="wait-suggestion"
-              title={cut.label ? `Wait: ${cut.label}` : 'Wait'}
-              style={{ left: `${scale.x(cut.from)}px`, width: `${Math.max(4, scale.x(cut.to) - scale.x(cut.from))}px` }}
-            />
-          ))}
-          {edits.cuts.map((cut) => (
-            <RegionBlock
-              key={cut.id}
-              id={cut.id}
-              kind="cut"
-              from={cut.from}
-              to={cut.to}
-              title={`Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`}
-              selected={selection?.kind === 'cut' && selection.id === cut.id}
-              onSelect={() => dispatch({ type: 'select', selection: { kind: 'cut', id: cut.id } })}
-              onEdit={(edge, time, first) =>
-                change(moveCut(latest.current, cut.id, edge, time, duration), first, { kind: 'cut', id: cut.id })
-              }
-              onRemove={() => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true)}
-            />
-          ))}
-          {range ? (
-            <div
-              className="tl-range"
-              data-testid="range-selection"
-              style={{ left: `${scale.x(range.from)}px`, width: `${Math.max(2, scale.x(range.to) - scale.x(range.from))}px` }}
-            >
-              <button
-                type="button"
-                className="tl-range-cut"
-                data-testid="cut-selection"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={onCutRange}
-              >
-                <ScissorsIcon aria-hidden="true" />
-                Cut <kbd>C</kbd>
-              </button>
+    <MobileTimelineContext.Provider value={touch}>
+      <ScaleContext.Provider value={scale}>
+        <div className="timeline" data-testid="timeline" data-ready={scale.width > 0 || undefined}>
+          <div className="tl-ruler-row">
+            <span className="tl-gutter-spacer" aria-hidden="true" />
+            <div ref={setColumn} className="tl-ruler" data-testid="timeline-ruler" onPointerDown={mobile ? undefined : scrub}>
+              {mobile ? <MobileRulerSeek duration={duration} /> : null}
+              {ticks.map((at) => (
+                <span key={at} className="tl-tick" style={{ transform: `translateX(${scale.x(at)}px)` }}>
+                  <span className="tl-tick-label">{tickLabel(at, tick)}</span>
+                </span>
+              ))}
             </div>
-          ) : null}
-        </Lane>
+          </div>
 
-        {lanes}
+          <Lane
+            name="Clip: drag its edges to trim, drag across it to select a cut"
+            kind="clip"
+            tall
+            icon={<FilmIcon />}
+            onTrackPointerDown={(event) => {
+              if (event.button !== 0) return;
+              const start = scale.timeAt(event.clientX);
+              startDrag(event, scale, {
+                move: (time) => {
+                  dispatch({ type: 'select', selection: { kind: 'range', from: Math.min(start, time), to: Math.max(start, time) } });
+                  player.seek(time);
+                },
+                end: (moved, time) => {
+                  if (moved) return;
+                  dispatch({ type: 'select', selection: mobile ? { kind: 'trim' } : undefined });
+                  player.seek(time);
+                  if (mobile) player.pause();
+                },
+              });
+            }}
+          >
+            {trim.start > 0 ? <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }} /> : null}
+            {trim.end < duration ? <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }} /> : null}
+            <div
+              className="tl-clip"
+              data-selected={selection?.kind === 'trim' || undefined}
+              style={{ left: `${scale.x(trim.start)}px`, width: `${Math.max(0, scale.x(trim.end) - scale.x(trim.start))}px` }}
+            >
+              {mobile ? (
+                <button
+                  type="button"
+                  className="tl-clip-select"
+                  aria-label="Select recording clip"
+                  aria-pressed={selection?.kind === 'trim'}
+                  onClick={(event) => {
+                    if (event.detail === 0) {
+                      dispatch({ type: 'select', selection: { kind: 'trim' } });
+                      player.pause();
+                    }
+                  }}
+                >
+                  Recording
+                </button>
+              ) : null}
+              {trimEdge('start')}
+              {trimEdge('end')}
+            </div>
+            {suggestions.map((cut) => (
+              <span
+                key={cut.id}
+                className="tl-suggestion"
+                data-testid="wait-suggestion"
+                title={cut.label ? `Wait: ${cut.label}` : 'Wait'}
+                style={{ left: `${scale.x(cut.from)}px`, width: `${Math.max(4, scale.x(cut.to) - scale.x(cut.from))}px` }}
+              />
+            ))}
+            {edits.cuts.map((cut) => (
+              <RegionBlock
+                key={cut.id}
+                id={cut.id}
+                kind="cut"
+                from={cut.from}
+                to={cut.to}
+                title={`Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`}
+                selected={selection?.kind === 'cut' && selection.id === cut.id}
+                onSelect={() => dispatch({ type: 'select', selection: { kind: 'cut', id: cut.id } })}
+                onEdit={(edge, time, first) =>
+                  change(moveCut(latest.current, cut.id, edge, time, duration), first, { kind: 'cut', id: cut.id })
+                }
+                onRemove={() => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true)}
+              />
+            ))}
+            <TimelineHighlights
+              highlights={edits.highlights}
+              selectedId={selectedHighlightId(selection)}
+              x={(time) => scale.x(time)}
+              width={scale.width}
+              pad={PAD}
+              mobile={touch}
+              dispatch={dispatch}
+            />
+            {range ? (
+              <div
+                className="tl-range"
+                data-testid="range-selection"
+                style={{ left: `${scale.x(range.from)}px`, width: `${Math.max(2, scale.x(range.to) - scale.x(range.from))}px` }}
+              >
+                <button
+                  type="button"
+                  className="tl-range-cut"
+                  data-testid="cut-selection"
+                  onPointerDown={(event) => event.stopPropagation()}
+                  onClick={onCutRange}
+                >
+                  <ScissorsIcon aria-hidden="true" />
+                  Cut <kbd>C</kbd>
+                </button>
+              </div>
+            ) : null}
+          </Lane>
 
-        <div className="tl-playhead-layer" aria-hidden="true">
-          <div ref={playhead} className="tl-playhead">
-            <span className="tl-playhead-knob" onPointerDown={scrub} />
+          {lanes}
+
+          <div className="tl-playhead-layer" aria-hidden="true">
+            <div ref={playhead} className="tl-playhead">
+              <span className="tl-playhead-knob" onPointerDown={scrub} />
+            </div>
           </div>
         </div>
-      </div>
-    </ScaleContext.Provider>
+      </ScaleContext.Provider>
+    </MobileTimelineContext.Provider>
+  );
+}
+
+/** The phone ruler is the one seek surface, sharing the timeline scale and playhead. */
+function MobileRulerSeek({ duration }: { duration: number }) {
+  const player = usePlayer();
+  const time = usePlayhead();
+  useEffect(() => () => player.endScrub(), [player]);
+  return (
+    <input
+      className="editor-seek editor-ruler-seek"
+      type="range"
+      min={0}
+      max={duration}
+      step={100}
+      value={time}
+      style={cssVars({ '--editor-seek-progress': `${duration > 0 ? Math.max(0, Math.min(100, (time / duration) * 100)) : 0}%` })}
+      aria-label="Seek recording"
+      aria-valuetext={`${formatClock(time)} of ${formatClock(duration)}`}
+      onKeyDown={(event) => {
+        if (!event.ctrlKey && !event.metaKey && !event.altKey) event.stopPropagation();
+      }}
+      onPointerDown={(event) => {
+        event.stopPropagation();
+        event.currentTarget.setPointerCapture(event.pointerId);
+        player.beginScrub();
+      }}
+      onPointerUp={() => player.endScrub()}
+      onPointerCancel={() => player.endScrub()}
+      onLostPointerCapture={() => player.endScrub()}
+      onBlur={() => player.endScrub()}
+      onChange={(event) => player.seek(event.currentTarget.valueAsNumber)}
+    />
   );
 }

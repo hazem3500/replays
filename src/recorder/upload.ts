@@ -5,10 +5,11 @@ export type IssueReport = {
   bundle: ReplayBundle;
   /** What the user wrote about the problem in the review step, if anything. */
   note?: string;
-  /** The Crisp conversation to link, when the Crisp adapter is connected. */
+  /** @deprecated Use metadata. Kept for two minors / 90 days. */
   crisp?: { websiteId?: string; sessionId: string };
   /** Host app identity, from `createRecorder({ app })`. */
   app?: RecorderApp;
+  metadata?: Record<string, string | number | boolean>;
 };
 
 export type RecorderApp = {
@@ -49,7 +50,10 @@ export type IssueUploadErrorDetails = {
 /**
  * Sends a confirmed report somewhere support can see it. Hosts provide the transport and authentication appropriate to their deployment.
  */
-export type IssueReportUpload = (report: IssueReport, context: { signal: AbortSignal }) => Promise<IssueReportReceipt>;
+export type IssueReportUpload = (
+  report: IssueReport,
+  context: { signal: AbortSignal; onProgress?: (progress: { loaded: number; total?: number }) => void },
+) => Promise<IssueReportReceipt>;
 
 export type TokenUploadOptions = {
   /**
@@ -92,23 +96,57 @@ export async function gzip(text: string): Promise<ArrayBuffer | undefined> {
  * URL in the response is ignored: end users never get a replay link.
  */
 export function createTokenUpload(options: TokenUploadOptions): IssueReportUpload {
-  return async (report, { signal }) => {
+  return async (report, { signal, onProgress }) => {
     const doFetch = options.fetch ?? globalThis.fetch.bind(globalThis);
     const token = await options.getToken();
     if (!token) throw new IssueUploadError('No upload token', 401);
     const json = JSON.stringify(report);
     const compressed = options.compress === false ? undefined : await gzip(json);
-    const response = await doFetch(options.endpoint, {
-      method: 'POST',
-      signal,
-      credentials: 'omit',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
-        ...(compressed ? { 'content-encoding': 'gzip' } : {}),
-      },
-      body: compressed ?? json,
-    });
+    let response: Response;
+    if (onProgress && !options.fetch && typeof XMLHttpRequest !== 'undefined') {
+      response = await new Promise<Response>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        const abort = () => {
+          xhr.abort();
+          reject(new DOMException('Upload aborted', 'AbortError'));
+        };
+        if (signal.aborted) {
+          abort();
+          return;
+        }
+        xhr.open('POST', options.endpoint);
+        xhr.setRequestHeader('authorization', `Bearer ${token}`);
+        xhr.setRequestHeader('content-type', 'application/json');
+        if (compressed) xhr.setRequestHeader('content-encoding', 'gzip');
+        xhr.upload.addEventListener('progress', (event) =>
+          onProgress({ loaded: event.loaded, ...(event.lengthComputable ? { total: event.total } : {}) }),
+        );
+        xhr.addEventListener('load', () => {
+          try {
+            resolve(new Response(xhr.responseText, { status: xhr.status }));
+          } catch (error) {
+            reject(error);
+          }
+        });
+        xhr.addEventListener('error', () => reject(new TypeError('Upload failed')));
+        xhr.addEventListener('abort', () => reject(new DOMException('Upload aborted', 'AbortError')));
+        xhr.addEventListener('loadend', () => signal.removeEventListener('abort', abort));
+        signal.addEventListener('abort', abort, { once: true });
+        xhr.send(compressed ?? json);
+      });
+    } else {
+      response = await doFetch(options.endpoint, {
+        method: 'POST',
+        signal,
+        credentials: 'omit',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json',
+          ...(compressed ? { 'content-encoding': 'gzip' } : {}),
+        },
+        body: compressed ?? json,
+      });
+    }
     if (!response.ok) {
       throw new IssueUploadError(`Upload failed with HTTP ${response.status}`, response.status);
     }

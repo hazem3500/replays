@@ -1,11 +1,18 @@
 /*
  * Edit mode (Editor.tsx, Timeline.tsx). In the `app` layer with styles.css, whose tokens it uses: plum neutrals,
  * hairlines, one accent for where you are and what you hold (the playhead, a held trim edge, a selection).
- * Removed time is hatched and dimmed, never coloured. Motion: transform/opacity, ease-out, under 200 ms, none under
+ * Removed time is hatched and dimmed, never coloured. Motion: colour/opacity, ease-out, under 200 ms, none under
  * reduced motion and none while dragging.
  */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
 @layer app {
-  .editor-shell { grid-template-rows: auto minmax(0, 1fr) auto var(--dock-height, 216px); background: var(--canvas); }
+  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 168px)); background: var(--canvas); }
+  /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
+  .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
+  .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }
+  .editor-shell:not([data-mobile]) > .inspector-resizer { grid-row: 3; display: block; }
+  .editor-shell:not([data-mobile]) > .editor-dock { grid-row: 4; }
   .editor-shell[data-mobile] { grid-template-rows: auto minmax(0, 1fr) auto; }
 
   /* Top bar: a quiet save state by the title, undo/redo, View replay and Export. */
@@ -14,23 +21,33 @@
   .editor-save-state[data-state="saved"] svg { color: var(--accent); }
   .editor-retry { padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; cursor: pointer; }
   .editor-retry:hover { color: var(--text); }
-  .editor-done.editor-done { margin-left: 6px; padding: 0 10px; background: transparent; color: var(--text-secondary); font-weight: 500; }
+  .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; padding-right: 8px; border-right: 1px solid var(--line); }
+  .editor-done.editor-done { padding: 0 10px; color: var(--text-secondary); font-weight: 500; }
   .editor-done.editor-done:hover { background: var(--surface-hover); color: var(--text); }
   .editor-export.editor-export { gap: 6px; padding: 0 10px; }
   .editor-export svg { width: 14px; height: 14px; }
   .editor-add-effect.editor-add-effect { gap: 5px; padding: 0 8px; color: var(--text-secondary); }
   .editor-add-effect svg { width: 14px; height: 14px; }
   .editor-add-effect svg:last-child { width: 11px; }
+  .editor-highlight-controls { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 0; border: 0; }
+  .editor-highlight-label, .editor-highlight-time { display: grid; gap: 2px; color: var(--text-tertiary); font-size: 9px; line-height: 1.1; }
+  .editor-highlight-label input, .editor-highlight-time input { height: 28px; min-width: 64px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); outline: none; }
+  .editor-highlight-label input { width: 112px; }
+  .editor-highlight-label input:focus-visible, .editor-highlight-time input:focus-visible { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent); }
 
   /* The preview: as large as the window allows. */
-  .editor-stage { min-width: 0; min-height: 0; display: flex; padding: 16px 20px 12px; }
-  .editor-stage .stage-wrap { flex: 1; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 1px var(--line); }
+  .editor-stage { position: relative; min-width: 0; min-height: 0; display: flex; }
+  /* PlayerStage supplies the same frame and canvas as the viewer; no extra editor frame. */
+  .editor-stage .stage-wrap { flex: 1; min-width: 0; }
   .editor-stage .player-stage { cursor: default; }
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
   .editor-stage .player-stage:focus-visible { box-shadow: none; }
 
-  .editor-stage { gap: 16px; position: relative; }
-  .editor-stage .stage-wrap { min-width: 0; }
+  .editor-presentation { flex: 0 0 clamp(224px, 22vw, 272px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
+  .editor-presentation-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
+  .editor-presentation-header h2 { margin: 0; font-size: var(--text-sm); font-weight: 600; }
+  .editor-presentation-header p { margin: 4px 0 0; color: var(--text-tertiary); font-size: var(--text-xs); }
+  .editor-presentation .cursor-inspector { max-height: none; overflow: visible; padding: 16px; border: 0; border-radius: 0; background: transparent; }
   .cursor-inspector { flex: 0 0 240px; align-self: flex-start; max-height: 100%; overflow-y: auto; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--text); font-size: var(--text-xs); }
   .cursor-inspector-header, .cursor-option-row, .cursor-inspector-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .cursor-inspector-header { margin-bottom: 14px; }
@@ -41,7 +58,8 @@
   .cursor-inspector small { display: block; margin-top: 3px; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 400; }
   .cursor-options { min-width: 0; margin: 12px 0 0; padding: 0; border: 0; }
   .cursor-options:disabled { opacity: 0.45; }
-  .cursor-style-preview { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-raised); }
+  .cursor-style-list { display: grid; gap: 8px; margin: 0 0 12px; padding: 0; list-style: none; }
+  .cursor-style-preview { display: flex; align-items: center; gap: 10px; padding: 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-raised); }
   .cursor-style-preview svg { width: 38px; height: 38px; overflow: visible; }
   .cursor-style-preview path { fill: #111; stroke: #fff; stroke-width: 8; stroke-linejoin: round; }
   .cursor-idle-option { margin-top: 16px; }
@@ -110,8 +128,11 @@
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
   .tl-lane[data-tall] .tl-region { top: 6px; bottom: 6px; }
   .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 10px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
-  @media (hover: hover) { .tl-region-body:hover { box-shadow: inset 0 0 0 1px var(--accent), 0 2px 5px rgb(0 0 0 / 0.1); } }
-  .tl-region-body:active { cursor: grabbing; opacity: 0.82; }
+  @media (hover: hover) and (pointer: fine) {
+    .tl-track:hover { background-color: var(--surface-raised); }
+    .tl-region[data-kind] .tl-region-body:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--text-tertiary); }
+  }
+  .tl-region-body:active { cursor: grabbing; opacity: 0.9; }
   @media (prefers-reduced-motion: reduce) { .tl-region-body { transition: none; } }
   .tl-region-body:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
   .tl-region[data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--text); }
@@ -122,15 +143,18 @@
   .tl-region-edge[data-edge="from"] { left: -6px; }
   .tl-region-edge[data-edge="to"] { right: -6px; }
   .tl-region-edge::after { content: ""; position: absolute; top: 25%; bottom: 25%; left: 5px; width: 2px; border-radius: 1px; background: var(--accent); opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
-  .tl-region:hover .tl-region-edge::after, .tl-region[data-selected] .tl-region-edge::after { opacity: 1; }
+  .tl-region:focus-within .tl-region-edge::after, .tl-region[data-selected] .tl-region-edge::after { opacity: 1; }
+  @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge::after { opacity: 1; } }
   /* × inside the region's right end (not over the lane above). */
-  .tl-region-remove { position: absolute; z-index: 2; top: 50%; right: 4px; margin-top: -9px; width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--surface-raised); color: var(--text-secondary); cursor: pointer; opacity: 0; scale: 0.85; pointer-events: none; transition: opacity var(--motion-fast) var(--ease-out), scale var(--motion-fast) var(--ease-out); }
+  .tl-region-remove { position: absolute; z-index: 2; top: 50%; right: 4px; margin-top: -9px; width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); cursor: pointer; opacity: 0; pointer-events: none; }
   .tl-region-remove svg { width: 10px; height: 10px; stroke-width: 2.4; }
   .tl-region-remove:hover { color: var(--text); background: var(--surface-hover); }
-  .tl-region:hover .tl-region-remove, .tl-region[data-selected] .tl-region-remove { opacity: 1; scale: 1; pointer-events: auto; }
+  .tl-region:focus-within .tl-region-remove, .tl-region[data-selected] .tl-region-remove { opacity: 1; pointer-events: auto; }
+  @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-remove { opacity: 1; pointer-events: auto; } }
   /* Short regions keep their label and leave removing to Backspace (the × would crowd the label out). */
   .tl-region[data-compact] .tl-region-remove { display: none; }
-  .tl-region:is(:hover, [data-selected]):not([data-compact]) .tl-region-body { padding-right: 26px; }
+  /* Reserve the remove affordance's space at rest too, so labels never shift on hover or selection. */
+  .tl-region[data-kind]:not([data-compact]) .tl-region-body { padding-right: 26px; }
 
   /* Effect regions: calm fills that tell the lanes apart without colour noise; the selected one takes the accent. */
   .tl-region[data-kind="zoom"] .tl-region-body { background: color-mix(in srgb, var(--accent) 16%, var(--surface-raised)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line-strong)); }
@@ -139,8 +163,8 @@
   .tl-region[data-kind="caption"] { top: 7px; bottom: 7px; }
   .tl-region[data-kind="caption"] .tl-region-body { padding: 0 8px; border-radius: 3px; justify-content: flex-start; background: var(--surface-hover); font-weight: 500; }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
-  .tl-region[data-kind="caption"][data-selected] { top: 4px; bottom: 4px; }
-  .tl-region[data-kind]:not([data-kind="cut"])[data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--text); }
+  .tl-region[data-kind] .tl-region-body:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
   /* The selected effect's setting, in the control row. */
   .editor-effect-trigger.editor-effect-trigger { gap: 4px; margin-right: 6px; color: var(--text); font-variant-numeric: tabular-nums; }
@@ -174,19 +198,34 @@
   /* "Remove waits" suggestions: dashed, waiting to be applied. */
   .tl-suggestion { position: absolute; z-index: 2; top: 6px; bottom: 6px; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0 1.5px, transparent 1.5px 6px); box-shadow: inset 0 0 0 1px var(--accent); outline: 1px dashed transparent; opacity: 0.9; pointer-events: none; }
 
+  /* Highlight annotations mark the original edit timeline. They are navigation controls and sit above cut shading. */
+  .tl-highlight { position: absolute; inset: 0; pointer-events: none; }
+  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); pointer-events: none; }
+  .tl-highlight-marker { position: absolute; z-index: 7; top: 50%; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: pointer; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
+  .tl-highlight-glyph { width: 10px; height: 10px; border: 2px solid var(--surface-raised); background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .tl-highlight-marker[data-kind="point"] .tl-highlight-glyph { border-radius: 2px; rotate: 45deg; }
+  .tl-highlight-marker[data-kind="period"] .tl-highlight-glyph { width: 9px; height: 9px; border-radius: 50%; }
+  .tl-highlight-marker { transform: translate(calc(-50% + var(--target-offset, 0px)), -50%); }
+  .tl-highlight-marker .tl-highlight-glyph { translate: calc(var(--target-offset, 0px) * -1) 0; }
+  .tl-highlight-marker[data-selected] .tl-highlight-glyph, .tl-highlight-marker:focus-visible .tl-highlight-glyph { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent); }
+  .tl-highlight-marker:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+  .tl-highlight-label { position: absolute; bottom: calc(100% - 2px); left: 50%; max-width: 180px; overflow: hidden; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; transform: translateX(-50%); }
+  @media (hover: hover) and (pointer: fine) {
+    .tl-highlight-marker:hover .tl-highlight-glyph { background-color: var(--text); }
+    .tl-highlight:has(.tl-highlight-marker:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+  }
+
   /* The playhead: one accent line through every lane, its head on the ruler. */
   .tl-playhead-layer { position: absolute; top: 0; bottom: 0; left: var(--gutter); right: 0; pointer-events: none; }
   .tl-playhead { position: absolute; z-index: 5; top: 0; bottom: -4px; left: -1px; width: 2px; background: var(--accent); will-change: transform; }
   .tl-playhead-knob { position: absolute; top: 0; left: -6px; width: 14px; height: 14px; border-radius: 4px 4px 7px 7px; background: var(--accent); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); cursor: ew-resize; pointer-events: auto; touch-action: none; }
   .timeline:not([data-ready]) .tl-playhead { opacity: 0; }
 
-  /* Region and selection entrances. */
-  @media (prefers-reduced-motion: no-preference) {
-    .tl-region, .tl-suggestion, .tl-range-cut { animation: tl-in var(--motion) var(--ease-out); }
-    @keyframes tl-in { from { opacity: 0; transform: scale(0.94); } }
-  }
+  .editor-shell :is(.tl-track, .tl-region-body, .tl-region-remove, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer), .editor-shell .tl-region-edge::after { transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, opacity 180ms ease-out; }
+  .editor-shell > .inspector-resizer::after { scale: 1; transition: opacity 180ms ease-out, background-color 180ms ease-out; }
+  .editor-shell > .inspector-resizer:is(:hover, :active, :focus-visible)::after { scale: 1; transition-delay: 0ms; }
   [data-timeline-dragging], [data-timeline-dragging] * { cursor: grabbing !important; }
-  [data-timeline-dragging] .tl-region, [data-timeline-dragging] .tl-trim { transition: none; animation: none; }
+  [data-timeline-dragging] .tl-region, [data-timeline-dragging] .tl-region *, [data-timeline-dragging] .tl-trim { transition: none; animation: none; }
 
   /* Phones: the preview on top, the dock below, a slightly taller touch track. */
   .editor-shell[data-mobile] .editor-stage { padding: 8px; }
@@ -203,11 +242,135 @@
   .editor-shell[data-mobile] .editor-setting-divider { display: none; }
   .editor-shell[data-mobile] .timeline { --gutter: 28px; }
   @media (pointer: coarse) {
+    .tl-highlight-marker { --marker-size: 44px; width: 44px; height: 44px; }
     .tl-lane { min-height: 36px; }
     .tl-lane[data-tall] { min-height: 60px; }
     .tl-trim { width: 22px; }
     .tl-region-edge { width: 20px; }
     .tl-region-edge[data-edge="from"] { left: -10px; }
     .tl-region-edge[data-edge="to"] { right: -10px; }
+  }
+}
+
+@layer app {
+  /* Mobile editing: the timeline stays on screen; properties follow the selected object. */
+  .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+  .editor-mobile-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .editor-mobile-heading { min-width: 0; padding: 0 4px; }
+  .editor-mobile-heading h1 { margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .editor-mobile-heading .editor-save-state { max-width: 100%; color: var(--text-secondary); font-size: var(--text-xs); white-space: normal; overflow-wrap: anywhere; }
+  .editor-mobile-header .editor-export { padding: 0 10px; }
+  .editor-mobile-header .editor-export svg { display: block; }
+  .editor-mobile-more > summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; list-style: none; }
+  .editor-mobile-more > summary::-webkit-details-marker, .editor-add-more > summary::-webkit-details-marker { display: none; }
+  .editor-mobile-more > summary svg { width: 20px; height: 20px; }
+  .editor-mobile-menu { position: absolute; top: calc(100% - 2px); right: 6px; display: flex; flex-direction: column; gap: 4px; width: min(270px, calc(100vw - 20px)); max-height: 60dvh; overflow-y: auto; overscroll-behavior: contain; padding: 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-raised); box-shadow: 0 8px 24px rgb(0 0 0 / 0.15); }
+  .editor-mobile-more:not([open]) > .editor-mobile-menu, .editor-add-more:not([open]) > .editor-mobile-menu { display: none; }
+  .editor-mobile-menu > button { justify-content: flex-start; }
+  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; justify-content: center; padding: 8px 10px 2px; }
+  .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc(32dvh * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
+  .editor-shell.app-shell[data-mobile] .editor-stage .player-stage { flex: none; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: var(--editor-preview-ratio); background: var(--canvas); }
+  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'transport' 'status' 'timeline' 'tools' 'properties' 'note'; grid-template-rows: 48px auto max-content 56px auto auto; align-content: start; gap: 0; min-height: 0; max-height: none; padding: 0 10px max(8px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; border-top: 0; }
+  .editor-mobile-playback { grid-area: transport; display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .editor-mobile-playback .editor-clock { margin: 0; min-width: auto; font-size: var(--text-sm); }
+  .editor-mobile-duration { color: var(--text-secondary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+  .editor-mobile-playback .editor-durations { margin-left: auto; }
+  .editor-timeline-content { min-height: 0; display: flex; flex: 1; flex-direction: column; }
+  .editor-shell.app-shell[data-mobile] .editor-timeline-content { grid-area: timeline; flex: none; min-height: max-content; overflow: visible; }
+  .editor-shell.app-shell[data-mobile] .editor-timeline-content .timeline { --gutter: 28px; flex: none; min-height: 0; max-height: none; padding: 0 24px 14px 0; overflow-y: visible; }
+  .editor-shell[data-mobile] .tl-ruler { height: 44px; }
+  .editor-shell[data-mobile] .tl-tick { background: linear-gradient(to bottom, transparent calc(100% - 5px), var(--line) calc(100% - 5px)); }
+  .editor-shell[data-mobile] .tl-tick-label { top: 0; font-size: var(--text-xs); }
+  .editor-shell[data-mobile] .tl-lane { flex: 0 0 56px; min-height: 56px; max-height: 56px; margin-top: 8px; }
+  .editor-shell[data-mobile] .tl-lane[data-kind="clip"] { flex-basis: 56px; min-height: 56px; max-height: 56px; }
+  .editor-shell[data-mobile] .tl-track { background: var(--surface-raised); box-shadow: none; }
+  .editor-shell[data-mobile] .tl-clip { background: var(--surface-hover); border-radius: 6px; }
+  .tl-clip-select { position: absolute; inset: 0; border: 0; border-radius: inherit; background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--text-xs); cursor: pointer; pointer-events: auto; }
+  .editor-shell[data-mobile] .tl-trim { z-index: 8; width: 44px; min-width: 44px; background: transparent; border-radius: 6px; }
+  .editor-shell[data-mobile] .tl-clip .tl-trim:is(:hover, :focus-visible), .editor-shell[data-mobile] .tl-clip[data-selected] .tl-trim { background: transparent; }
+  .editor-shell[data-mobile] .tl-trim::before { content: ""; position: absolute; top: 0; bottom: 0; left: 16px; width: 12px; border-radius: 4px; background: var(--text-tertiary); }
+  .editor-shell[data-mobile] .tl-clip[data-selected] .tl-trim::before, .editor-shell[data-mobile] .tl-trim:is(:active, :focus-visible)::before { background: var(--accent); }
+  .editor-shell[data-mobile] .tl-trim-grip { position: relative; z-index: 1; height: 16px; }
+  .editor-shell[data-mobile] .tl-trim[data-edge="start"] { left: -22px; }
+  .editor-shell[data-mobile] .tl-trim[data-edge="end"] { right: -22px; }
+  .editor-shell[data-mobile] .tl-trim::after { opacity: 1; }
+  .editor-shell[data-mobile] .tl-region-body { min-width: 0; min-height: 44px; }
+  .editor-shell[data-mobile] .tl-region-remove { display: none; }
+  .editor-shell[data-mobile] .tl-region:not([data-compact]) .tl-region-body { padding-right: 8px; }
+  .editor-shell[data-mobile] .tl-playhead-knob { display: none; }
+  .editor-shell[data-mobile] .tl-playhead-layer { right: 24px; }
+  .editor-shell[data-mobile] .tl-playhead { top: 30px; bottom: 0; width: 1px; }
+  .editor-shell[data-mobile] .editor-ruler-seek { position: absolute; z-index: 6; top: 0; left: 8px; appearance: none; -webkit-appearance: none; box-sizing: border-box; width: calc(100% - 16px); height: 44px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; touch-action: pan-y; }
+  .editor-seek::-webkit-slider-runnable-track { height: 4px; border: 0; border-radius: 99px; background: linear-gradient(to right, var(--accent) 0 var(--editor-seek-progress), var(--line-strong) var(--editor-seek-progress) 100%); }
+  .editor-seek::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 50%; background: var(--accent); }
+  .editor-seek::-moz-range-track { height: 4px; border: 0; border-radius: 99px; background: var(--line-strong); }
+  .editor-seek::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--accent); }
+  .editor-seek::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--accent); }
+  .editor-seek:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--accent-soft); }
+  .editor-seek:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--accent-soft); }
+  .editor-add-toolbar { grid-area: tools; position: relative; z-index: 10; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 0; border-top: 1px solid var(--line); }
+  .editor-add-toolbar > button, .editor-add-more > summary { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; height: 48px; padding: 2px; color: var(--text-secondary); font-size: var(--text-xs); cursor: pointer; }
+  .editor-add-toolbar svg { width: 18px; height: 18px; }
+  .editor-object-picker { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+  .editor-object-picker > p { display: flex; justify-content: space-between; margin: 4px 8px; color: var(--text-tertiary); font-size: var(--text-xs); }
+  .editor-object-picker-item { display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; text-align: left; }
+  .editor-object-picker-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .editor-object-picker-item > time { flex: none; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+
+  .editor-add-more > summary { border-radius: 6px; list-style: none; }
+  .editor-add-more .editor-mobile-menu { top: auto; bottom: calc(100% - 4px); right: 0; }
+  .editor-context-panel { grid-area: properties; min-width: 0; max-height: 34dvh; overflow-y: auto; overscroll-behavior: contain; padding: 8px 4px 4px; border-top: 1px solid var(--line); }
+  .editor-context-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+  .editor-context-panel h2 { margin: 0; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
+  .editor-context-panel p, .editor-object-actions small { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
+  .editor-caption-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: var(--text-xs); }
+  .editor-shell[data-mobile] .editor-caption-field { box-sizing: border-box; width: 100%; min-width: 0; max-width: none; height: 80px; min-height: 80px; margin: 0; padding: 8px 10px; resize: vertical; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-raised); color: var(--text); font: inherit; font-size: 16px; line-height: 1.5; }
+  .editor-object-timing { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 8px 0; }
+  .editor-object-time { display: grid; gap: 3px; min-width: 0; color: var(--text-secondary); font-size: var(--text-xs); }
+  .editor-object-time-value { position: relative; display: flex; align-items: center; min-width: 0; }
+  .editor-object-time-unit { position: absolute; right: 12px; color: var(--text-secondary); font-size: var(--text-xs); pointer-events: none; }
+  .editor-object-time input { box-sizing: border-box; width: 100%; min-width: 0; height: 44px; padding: 8px 28px 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); color: var(--text); font-size: 16px; line-height: 1.25; font-variant-numeric: tabular-nums; }
+  .editor-object-time input { appearance: textfield; -moz-appearance: textfield; }
+  .editor-object-time input::-webkit-inner-spin-button, .editor-object-time input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .editor-object-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
+  .editor-shell[data-mobile] .editor-highlight-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 0; }
+  .editor-shell[data-mobile] .editor-highlight-label { grid-column: 1 / -1; }
+  .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) { min-width: 0; font-size: var(--text-xs); line-height: 1.5; }
+  .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) input { box-sizing: border-box; width: 100%; min-width: 0; font-size: 16px; }
+  .editor-shell[data-mobile] .editor-setting-divider { display: none; }
+  .editor-shell[data-mobile] .editor-context-panel .cursor-inspector { position: static; box-sizing: border-box; width: 100%; max-height: none; padding: 0 0 8px; border: 0; border-radius: 0; box-shadow: none; font-size: var(--text-sm); }
+  .editor-context-panel .cursor-inspector-header { display: none; }
+  .editor-shell[data-mobile] .cursor-inspector small { font-size: var(--text-xs); }
+  .editor-shell[data-mobile] .cursor-option-row { min-height: 44px; }
+  .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; white-space: normal; font-size: var(--text-xs); }
+  .editor-shell[data-mobile] .editor-hint { grid-area: note; padding-left: 0; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
+  .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
+  .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
+  .editor-shell[data-mobile] .timeline .tl-region-body { min-width: 0; }
+  .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .editor-mobile-effect-menu [role="menuitemradio"], body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
+  @media (max-height: 520px) and (min-width: 721px) {
+    .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr) minmax(320px, 48%); grid-template-rows: auto minmax(0, 1fr); }
+    .editor-shell[data-mobile] > .editor-mobile-header { grid-column: 1 / -1; }
+    .editor-shell.app-shell[data-mobile] .editor-stage { grid-column: 1; grid-row: 2; align-items: center; }
+    .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { max-width: min(100%, calc((100dvh - 80px) * var(--editor-preview-ratio))); }
+    .editor-shell.app-shell[data-mobile] .editor-dock { grid-column: 2; grid-row: 2; border-left: 1px solid var(--line); }
+    .editor-context-panel { max-height: 38dvh; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .editor-shell *, .editor-shell *::before, .editor-shell *::after { animation: none; transition: none; scroll-behavior: auto; }
+  }
+}
+
+/* Override the shared press-scale utilities only inside the editor. Positioned timeline markers retain their
+   transforms; buttons and links stay put while their colours answer hover and press. */
+@layer utilities {
+  .editor-shell:not([data-mobile]) .topbar :is([data-slot="button"], .topbar-back) { height: 32px; }
+  .editor-shell:not([data-mobile]) .topbar :is(.editor-history button, .topbar-back) { width: 32px; }
+  .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, opacity 180ms ease-out; }
+  .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
+  .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
+  @media (prefers-reduced-motion: reduce) {
+    .editor-shell :is([data-slot="button"], .topbar-back) { transition: none; }
   }
 }

@@ -85,7 +85,7 @@ test('the host policy: shown in the workshop, enforced by the keep dialog, the s
   });
   await openMore(page, 'plugin-action:user:csv-out:csv');
   await openWorkshop(page);
-  await expect(page.getByTestId('diagnostics')).toContainText('permission-denied: this server does not allow export:download');
+  await expect(page.getByTestId('diagnostics')).toContainText('this server does not allow export:download');
   await expect(page.getByTestId('permission-prompt')).toHaveCount(0);
   expect(downloaded).toBe(false);
 });

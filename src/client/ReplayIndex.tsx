@@ -12,11 +12,9 @@ import {
 } from '../shared/review-suite.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { SwitchIconButton } from '@/components/icon-button.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select.tsx';
 import { cn } from '@/lib/utils.ts';
 
-import { copyText } from './clipboard.ts';
 import { productName } from './config.ts';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
@@ -25,9 +23,10 @@ import { rememberListed } from './navigation.ts';
 import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, ScopeBar } from './index/IndexHeader.tsx';
 import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
-import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
+import { SortMenu } from './ReplayIndexCompact.tsx';
 import { FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
 import { MeContext } from './index/People.tsx';
+import { FirstRun } from './index/first-run/FirstRun.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, rememberIndexSearch } from './route.ts';
 import { readStorage, writeStorage } from './storage.ts';
@@ -700,7 +699,7 @@ export function ReplayIndex() {
 
   return (
     <main className="index-shell" ref={shell}>
-      {/* One sticky block: identity + search + actions, then scope (count, filter, sort, layout), then chips. */}
+      {/* One sticky block: identity + search + actions, then the toolbar (purposes, active filters, filter, sort, layout). */}
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
@@ -711,8 +710,12 @@ export function ReplayIndex() {
             </>
           }
         />
-        {purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : null}
-        <ScopeBar count={count}>
+        <ScopeBar
+          count={count}
+          lead={
+            purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : undefined
+          }
+        >
           {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
           <SortMenu sort={sort} onChange={changeSort} />
           {compact ? null : (
@@ -727,7 +730,6 @@ export function ReplayIndex() {
             </div>
           )}
         </ScopeBar>
-        <CompactFilterChips {...filterState} />
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
@@ -752,7 +754,7 @@ export function ReplayIndex() {
               </button>
             </div>
           ) : (
-            <EmptyIndex onUpload={() => upload.current?.open()} />
+            <FirstRun onUpload={() => upload.current?.open()} purposes={purposes} />
           )
         ) : entries ? (
           <MeContext value={meContext}>
@@ -826,117 +828,4 @@ function withFilter<K extends keyof ReplayFilters>(filters: ReplayFilters, key: 
   if (value === undefined || value === '') delete next[key];
   else next[key] = value;
   return next;
-}
-
-function EmptyIndex({ onUpload }: { onUpload: () => void }) {
-  const uploadUrl = `${location.origin}${apiUrl('replays')}`;
-  const askText = '@Toki record a replay of creating a project on track.toggl.space';
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="empty-index">
-      <header className="empty-index-intro">
-        <span className="empty-index-eyebrow">Replays</span>
-        <h2>See what happened in a browser session</h2>
-        <p>Page, console and network activity, recorded together on one timeline.</p>
-      </header>
-      <div className="empty-index-ways">
-        <section className="empty-index-way empty-index-toki">
-          <div className="empty-index-way-top">
-            <h3>Ask Toki</h3>
-            <span className="empty-index-badge">Fastest</span>
-          </div>
-          <p>Describe the flow in Slack. Toki records it and shares the replay link.</p>
-          <blockquote>
-            <span>@Toki</span> record a replay of creating a project on track.toggl.space
-          </blockquote>
-          <div className="empty-index-actions">
-            <a className="button" href="https://app.slack.com/client/" target="_blank" rel="noreferrer">
-              Open Slack
-            </a>
-            <button className="button secondary" type="button" onClick={() => void copyText(askText).then(setCopied)}>
-              {copied ? 'Copied' : 'Copy request'}
-            </button>
-          </div>
-        </section>
-        <section className="empty-index-way">
-          <div className="empty-index-way-top">
-            <h3>Upload a replay</h3>
-          </div>
-          <p>
-            Bring a <code>replay.json</code> or an rrweb export recorded with inputs masked.
-          </p>
-          <Button className="empty-index-drop" onClick={onUpload}>
-            Drop a file anywhere or choose one
-          </Button>
-        </section>
-        <section className="empty-index-way">
-          <div className="empty-index-way-top">
-            <h3>Capture from code</h3>
-            <span className="empty-index-badge muted">Engineers</span>
-          </div>
-          <p>
-            Use the capture CLI from a <code>hazem3500/replays</code> checkout.
-          </p>
-          <details className="empty-index-engineer">
-            <summary>Show capture and import commands</summary>
-            <CommandBlock
-              label="Capture a scripted run from a hazem3500/replays checkout"
-              command={`pnpm capture --url https://example.com --title "Example" --steps '[{"kind":"wait","ms":800}]' --upload-url ${uploadUrl}`}
-            />
-            <CommandBlock
-              label="Import an rrweb recording"
-              command={`pnpm cli import --rrweb events.json --title "Checkout bug" --upload-url ${uploadUrl}`}
-            />
-          </details>
-        </section>
-      </div>
-      <div className="empty-index-uses">
-        <div>
-          <strong>Triage</strong>
-          <span>Reproduce a bug with errors and failed requests attached.</span>
-        </div>
-        <div>
-          <strong>Design review</strong>
-          <span>Step through a flow and compare it with the design.</span>
-        </div>
-        <div>
-          <strong>Walkthrough</strong>
-          <span>Show how a flow works, step by step.</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** A shell command that scrolls sideways inside its own box; Copy sits outside the scroll area so it is always reachable. */
-function CommandBlock({ label, command }: { label: string; command: string }) {
-  const [copied, setCopied] = useState<boolean>();
-  useEffect(() => {
-    if (copied === undefined) return;
-    const timer = window.setTimeout(() => setCopied(undefined), 2000);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-  return (
-    <figure className="command-block">
-      <figcaption>
-        <span>{label}</span>
-        <button
-          type="button"
-          className="copy-command"
-          aria-label={`Copy command: ${label}`}
-          onClick={() => void copyText(command).then(setCopied)}
-        >
-          {copied === undefined ? 'Copy' : copied ? 'Copied' : 'Copy failed'}
-        </button>
-      </figcaption>
-      {/* Reachable by keyboard so a long line can be scrolled sideways. */}
-      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
-      <pre tabIndex={0} aria-label={label}>
-        <code>{command}</code>
-      </pre>
-      <span className="visually-hidden" role="status">
-        {copied === undefined ? '' : copied ? 'Command copied' : 'Could not copy the command'}
-      </span>
-    </figure>
-  );
 }

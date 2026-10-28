@@ -15,6 +15,9 @@ vi.mock('../src/client/malleable/api.ts', () => ({
   getHistory: vi.fn<Api['getHistory']>(),
   listPlugins: vi.fn<Api['listPlugins']>(),
   deletePlugin: vi.fn<Api['deletePlugin']>(),
+  acceptWorkspacePlugin: vi.fn<Api['acceptWorkspacePlugin']>(async () => ({ accepted: true })),
+  getPluginSettings: vi.fn<Api['getPluginSettings']>(async () => ({ version: 0, values: {} })),
+  setPluginSetting: vi.fn<Api['setPluginSetting']>(async () => ({ version: 1, values: {} })),
 }));
 afterEach(() => vi.resetAllMocks());
 

@@ -1,0 +1,71 @@
+/*
+ * The index list's motion system (feed-transition.ts; numbers shared with list-motion.ts): one View Transition for
+ * every feed change, each item on or near the screen as up to five layers (`data-feed-transition` is "list" for
+ * sort/filter/search/refresh, "view" for list ↔ grid).
+ * - Items that stay glide: the frame (.feed-card, only its surface) and the thumbnail (.feed-poster) move and
+ *   resize; the title, meta line, source chip and the rest of the text (.feed-title, .feed-meta, .feed-src,
+ *   .feed-aside) only move, their snapshots kept at their natural size,
+ *   anchored top left, crossfading (the old wording leaves faster), so text reflows instead of stretching.
+ * - Items that arrive (one .feed-card layer each) fade in and rise 8 px; feed-transition.ts staggers them.
+ * - Items that leave fade out, no slide. Day headings (.feed-day) glide like text.
+ * One strong ease-out, no overshoot (rows and cards change size by hundreds of pixels).
+ */
+@layer properties, theme, base, app, components, utilities;
+
+@layer app {
+  html[data-feed-transition] { --list-glide: 280ms; --list-enter: 240ms; --list-leave: 120ms; --list-rise: 8px; }
+
+  html[data-feed-transition]::view-transition-group(.feed-card),
+  html[data-feed-transition]::view-transition-group(.feed-poster),
+  html[data-feed-transition]::view-transition-group(.feed-title),
+  html[data-feed-transition]::view-transition-group(.feed-meta),
+  html[data-feed-transition]::view-transition-group(.feed-src),
+  html[data-feed-transition]::view-transition-group(.feed-aside),
+  html[data-feed-transition]::view-transition-group(.feed-day) {
+    animation-duration: var(--list-glide);
+    animation-timing-function: var(--ease-out);
+    animation-fill-mode: both;
+  }
+
+  /* The frame (a row's hairline and time column; a card's surface, shadow and suite backs) fills the moving box. */
+  html[data-feed-transition]::view-transition-old(.feed-card),
+  html[data-feed-transition]::view-transition-new(.feed-card) { width: 100%; height: 100%; object-fit: fill; }
+
+  /* Thumbnails are 16:10 in both views: they scale uniformly, pinned top left like the poster itself. */
+  html[data-feed-transition]::view-transition-old(.feed-poster),
+  html[data-feed-transition]::view-transition-new(.feed-poster) { width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+
+  /* Text moves at its natural size, never stretched. */
+  html[data-feed-transition]::view-transition-old(.feed-title),
+  html[data-feed-transition]::view-transition-new(.feed-title),
+  html[data-feed-transition]::view-transition-old(.feed-meta),
+  html[data-feed-transition]::view-transition-new(.feed-meta),
+  html[data-feed-transition]::view-transition-old(.feed-src),
+  html[data-feed-transition]::view-transition-new(.feed-src),
+  html[data-feed-transition]::view-transition-old(.feed-aside),
+  html[data-feed-transition]::view-transition-new(.feed-aside),
+  html[data-feed-transition]::view-transition-old(.feed-day),
+  html[data-feed-transition]::view-transition-new(.feed-day) { width: auto; height: auto; }
+
+  /* Crossfades: the outgoing look leaves faster than the incoming one settles (a row's small thumbnail would
+     otherwise show its badge ghosting large as it scales up into a card). */
+  html[data-feed-transition]::view-transition-old(.feed-card),
+  html[data-feed-transition]::view-transition-old(.feed-poster),
+  html[data-feed-transition]::view-transition-old(.feed-title),
+  html[data-feed-transition]::view-transition-old(.feed-meta),
+  html[data-feed-transition]::view-transition-old(.feed-src),
+  html[data-feed-transition]::view-transition-old(.feed-aside) { animation-duration: 140ms; }
+
+  /* Leaving (only in the old view): fade out, every part together. */
+  html[data-feed-transition]::view-transition-old(.feed-card):only-child,
+  html[data-feed-transition]::view-transition-old(.feed-poster):only-child,
+  html[data-feed-transition]::view-transition-old(.feed-title):only-child,
+  html[data-feed-transition]::view-transition-old(.feed-meta):only-child,
+  html[data-feed-transition]::view-transition-old(.feed-src):only-child,
+  html[data-feed-transition]::view-transition-old(.feed-aside):only-child,
+  html[data-feed-transition]::view-transition-old(.feed-day):only-child { animation: list-leave var(--list-leave) var(--ease-out) both; }
+  /* Arriving (only in the new view, one layer): fade in and rise. */
+  html[data-feed-transition]::view-transition-new(.feed-card):only-child { animation: list-enter var(--list-enter) var(--ease-out) both; }
+  @keyframes list-leave { to { opacity: 0; } }
+  @keyframes list-enter { from { opacity: 0; transform: translate3d(0, var(--list-rise), 0); } }
+}

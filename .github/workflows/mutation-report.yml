@@ -1,0 +1,44 @@
+name: Mutation report
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * 0'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mutation-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubicloud-standard-4
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.23.4
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm build && pnpm build:cli
+      - uses: actions/cache@v4
+        with:
+          path: .review-artifacts/mutation/modules/*-incremental.json
+          key: mutation-${{ runner.os }}-${{ github.sha }}
+          restore-keys: mutation-${{ runner.os }}-
+      - run: pnpm mutation
+      - run: pnpm mutation:report
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: mutation-report
+          path: .review-artifacts/mutation/
+          retention-days: 14

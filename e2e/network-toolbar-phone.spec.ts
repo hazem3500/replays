@@ -38,6 +38,7 @@ test('the rendered Network toolbar stays usable at phone widths across themes an
     const popover = page.locator('.network-filter-popover');
     await expect(popover).toBeVisible();
     if (width <= 600) {
+      await popover.evaluate((element) => Promise.all(element.getAnimations().map((animation) => animation.finished)));
       const optionHeights = await popover
         .locator('.network-filter-option')
         .evaluateAll((options) => options.map((option) => option.getBoundingClientRect().height));

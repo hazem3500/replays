@@ -7,24 +7,44 @@
   "required": ["format", "id", "name", "contributes"],
   "additionalProperties": false,
   "properties": {
-    "format": { "const": "replays-user-plugin/1" },
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
-    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
-    "description": { "type": "string", "maxLength": 300 },
+    "format": {
+      "const": "replays-user-plugin/1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 300
+    },
     "permissions": {
       "type": "array",
       "uniqueItems": true,
       "default": [],
-      "items": { "enum": ["replay:read", "playback:seek", "comments:read", "notify", "comments:write", "export:download"] }
+      "items": {
+        "enum": ["replay:read", "playback:seek", "comments:read", "notify", "comments:write", "export:download"]
+      }
     },
     "contributes": {
       "type": "object",
       "minProperties": 1,
       "additionalProperties": false,
       "properties": {
-        "tabs": { "$ref": "#/$defs/contributions" },
-        "panels": { "$ref": "#/$defs/contributions" },
-        "actions": { "$ref": "#/$defs/contributions" }
+        "tabs": {
+          "$ref": "#/$defs/contributions"
+        },
+        "panels": {
+          "$ref": "#/$defs/contributions"
+        },
+        "actions": {
+          "$ref": "#/$defs/contributions"
+        }
       }
     },
     "targets": {
@@ -33,13 +53,97 @@
       "required": ["core"],
       "additionalProperties": false,
       "properties": {
-        "core": { "type": "string", "minLength": 1, "maxLength": 40, "description": "The @hazem3500/replays package version." },
+        "core": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "The @hazem3500/replays package version."
+        },
         "distribution": {
           "type": "string",
           "minLength": 1,
           "maxLength": 130,
           "description": "The deployment's `distribution` config as `name@version`, when it sets one."
         }
+      }
+    },
+    "settings": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["id", "label", "type", "default"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,31}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "order": {
+                "type": "number"
+              },
+              "type": {
+                "const": "boolean"
+              },
+              "default": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["id", "label", "type", "default", "options"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,31}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "order": {
+                "type": "number"
+              },
+              "type": {
+                "const": "choice"
+              },
+              "default": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 32,
+                "items": {
+                  "type": "object",
+                  "required": ["value"],
+                  "additionalProperties": false,
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 80
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
@@ -53,8 +157,15 @@
         "required": ["id", "label"],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
-          "label": { "type": "string", "minLength": 1, "maxLength": 40 }
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,31}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
         }
       }
     }
