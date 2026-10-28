@@ -48,16 +48,16 @@
 
   /* Purpose tabs keep the row: they scroll sideways, fading out under the controls. */
   .index-shell .scope-bar[data-lead] { gap: 4px; }
-  .index-shell .scope-bar .purpose-bar { flex: 1 1 auto; }
-  .index-shell .scope-bar .purpose-segments {
+  .index-shell .scope-bar .profile-bar { flex: 1 1 auto; }
+  .index-shell .scope-bar .profile-segments {
     gap: 16px;
     padding-right: var(--index-phone-fade);
     scroll-snap-type: x proximity;
     overscroll-behavior-x: contain;
     mask-image: linear-gradient(to right, var(--text) calc(100% - var(--index-phone-fade)), transparent);
   }
-  .index-shell .scope-bar .purpose-segment { scroll-snap-align: start; }
-  .index-shell .scope-bar .purpose-segment-label { height: var(--index-phone-tap); font-size: var(--text-sm); }
+  .index-shell .scope-bar .profile-segment { scroll-snap-align: start; }
+  .index-shell .scope-bar .profile-segment-label { height: var(--index-phone-tap); font-size: var(--text-sm); }
   .index-shell .scope-bar[data-lead] .scope-bar-end { flex: 0 0 auto; }
   /* With tabs, Filters is its icon and count alone (the label is in its accessible name). */
   .index-shell .scope-bar[data-lead] .index-filters-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
