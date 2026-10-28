@@ -741,7 +741,8 @@
       "file": "dist/client/assets/performance-HASH.js",
       "cap": {
         "raw": 4242,
-        "gzip": 1870
+        "gzip": 1870,
+        "brotli": 1629
       },
       "reason": "Highlight and caption exports added to the shared main chunk change the import bindings of this small chunk by 4 bytes gzip and 5 bytes Brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
