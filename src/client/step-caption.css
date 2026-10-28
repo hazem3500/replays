@@ -2,6 +2,8 @@
  * exported videos (src/client/render/main.ts). One stylesheet for both; the render page has no app tokens,
  * so every token carries its value as a fallback. Typography is set here, not inherited, for the same reason.
  * Sizes scale with --caption-scale: 1 in the viewer, larger in exports (step-caption.ts exportCaptionScale). */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
 @layer app {
   /* Bottom-centre of the recorded frame (here: the containing block; the viewer narrows it to the frame with
      --frame-* in styles.css), inset ~4% of the frame's height (12–28 px, scaled), at most 70% of its width. */

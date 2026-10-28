@@ -7,6 +7,8 @@
  * Errors are red notches on the bars. Motion: transform and opacity only, ease-out,
  * ≤ 200 ms; reduced motion zeroes it all (styles.css).
  */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
 @layer app {
   .scrubber {
     --inset: 6px;

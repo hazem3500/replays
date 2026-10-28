@@ -4,6 +4,8 @@
  * Removed time is hatched and dimmed, never coloured. Motion: transform/opacity, ease-out, under 200 ms, none under
  * reduced motion and none while dragging.
  */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
 @layer app {
   .editor-shell { grid-template-rows: auto minmax(0, 1fr) auto var(--dock-height, 216px); background: var(--canvas); }
   .editor-shell[data-mobile] { grid-template-rows: auto minmax(0, 1fr) auto; }
