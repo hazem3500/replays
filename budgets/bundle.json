@@ -778,14 +778,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/109"
     },
     {
-      "file": "dist/client/index.html",
-      "cap": {
-        "brotli": 3468
-      },
-      "reason": "Brotli drift of a few bytes when the hashed asset names in the page change; raw is unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
-    },
-    {
       "file": "dist/client/assets/ComparePicker-HASH.js",
       "cap": {
         "raw": 5232,
