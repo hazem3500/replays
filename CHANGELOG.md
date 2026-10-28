@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
+  from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
+  (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
+
 - Source-provider marks: `SourceProvider.mark` names a built-in monochrome mark (`github`, `gitlab`, `slack`, `linear`,
   `jira`, `notion`, `link`); built-ins carry theirs and a config provider named like a mark gets it. Index rows show the
   mark beside the source label; on phones one icon chip opens a sheet of every source instead of linking out.

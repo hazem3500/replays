@@ -1,4 +1,5 @@
 import type { ReplayConsoleLevel } from './bundle-types.ts';
+import type { HttpUploadOptions } from './http-upload.ts';
 import type { IssueReport, IssueReportReceipt, IssueReportUpload, RecorderApp } from './upload.ts';
 
 /** Who asked for the recording. Recording still needs the user's consent. */
@@ -152,7 +153,8 @@ export type RecorderPrompts = {
 };
 
 export type RecorderOptions = {
-  upload: IssueReportUpload;
+  /** A transport function, or `{ url, headers?, body?, timeoutMs?, credentials? }` for a plain HTTP upload (`createHttpUpload`). */
+  upload: IssueReportUpload | HttpUploadOptions;
   /** Turn off the consent and review prompts. Default: both shown. */
   prompts?: RecorderPrompts;
   /** Optional UI. Use createGuidedRecorder from /recorder/ui for the built-in flow. */
