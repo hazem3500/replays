@@ -1,5 +1,5 @@
 import { LayersIcon } from 'lucide-react';
-import { type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type KeyboardEvent, type ReactNode, useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { ProductMark } from '@/components/brand-mark.tsx';
@@ -9,11 +9,13 @@ import { useSlidingPill } from '@/components/sliding-highlight.tsx';
 
 import type { ProfileInfo } from '../../shared/profiles.ts';
 
+import { useRestAnchor } from '../hooks/use-rest-anchor.ts';
 import { productLogo, productName } from '../config.ts';
 import { navigate } from '../navigation.ts';
 import { formatRelative } from '../format.ts';
 import { INDEX_SEARCH_ALT_KEY, indexSearchShortcut } from '../shortcuts.ts';
 import { replayHref, suiteHref } from '../route.ts';
+import { CommandCancel } from './CommandCancel.tsx';
 import { entryTime, type FeedEntry, suitePosterRun } from './Feed.tsx';
 import { createMarkMotion, createStreak, crossfadeTitle } from './mark-burst.ts';
 import { Poster } from './Poster.tsx';
@@ -138,6 +140,9 @@ export function CommandSearch({
   compact: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
+  const search = useRef<HTMLDivElement>(null);
+  // invariant: on phones the field is positioned against the top bar in both states, resting over this slot.
+  useRestAnchor(search, '.app-topbar', compact);
   const [open, setOpen] = useState(false);
   const [typing, setTyping] = useState(false);
   const [active, setActive] = useState(0);
@@ -250,7 +255,7 @@ export function CommandSearch({
 
   return (
     // data-icon-host: entering the field (not just hovering it) plays the search glyph.
-    <div className="command-search" role="search" data-icon-host>
+    <div ref={search} className="command-search" role="search" data-icon-host>
       <label className="search-field command-field">
         <span className="visually-hidden">Search replays</span>
         <AnimatedIcon name="search" />
@@ -266,7 +271,7 @@ export function CommandSearch({
           autoComplete="off"
           spellCheck={false}
           enterKeyHint="search"
-          placeholder="Search"
+          placeholder={compact ? 'Search replays' : 'Search'}
           value={value}
           onChange={(event) => {
             onChange(event.currentTarget.value);
@@ -283,6 +288,15 @@ export function CommandSearch({
           }}
           onKeyDown={onKeyDown}
         />
+        {compact && typing ? (
+          <CommandCancel
+            onClose={() => {
+              onChange('');
+              setOpen(false);
+              input.current?.blur();
+            }}
+          />
+        ) : null}
         {compact ? null : (
           // The tooltip lives on the key cap, so entering the field never pops it over the results.
           <Hint label="Search replays" shortcut={`${indexSearchShortcut()} · ${INDEX_SEARCH_ALT_KEY}`} side="bottom" disabled={typing}>
@@ -303,6 +317,7 @@ export function CommandSearch({
             aria-selected={index === current}
             className="command-option"
             data-kind={option.kind}
+            style={{ '--i': index } as CSSProperties}
             // Keep the caret in the input; the click runs the option.
             onMouseDown={(event) => event.preventDefault()}
             onMouseMove={() => setActive(index)}
