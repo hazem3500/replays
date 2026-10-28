@@ -188,9 +188,9 @@
       "brotli": 474
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1816,
-      "gzip": 805,
-      "brotli": 657
+      "raw": 2418,
+      "gzip": 911,
+      "brotli": 749
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
@@ -428,9 +428,9 @@
       "brotli": 434343
     },
     "initial/render.html/css": {
-      "raw": 5252,
-      "gzip": 2455,
-      "brotli": 2038
+      "raw": 5788,
+      "gzip": 2529,
+      "brotli": 2103
     },
     "initial/render.html/js": {
       "raw": 542325,
@@ -637,26 +637,6 @@
         "brotli": 474
       },
       "reason": "Caption morph modules require additional bundler module interop helpers in this shared runtime.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 1816,
-        "gzip": 805,
-        "brotli": 657
-      },
-      "reason": "Caption morphing and wrapped step captions add presentation styles shared by viewer and video export.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5252,
-        "gzip": 2455,
-        "brotli": 2038
-      },
-      "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
@@ -925,16 +905,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 359609,
-        "gzip": 119586,
-        "brotli": 102570
-      },
-      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged. Then: Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/PluginUi-HASH.js",
       "cap": {
         "raw": 133395,
@@ -1021,6 +991,26 @@
       },
       "reason": "Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2418,
+        "gzip": 911,
+        "brotli": 749
+      },
+      "reason": "Captions swap by whole line and keep a hiding caption whole: the swap keyframes, enter and exit timing and the reduced-motion rules, about 630 bytes raw; the viewer chunk drops ~137 kB raw with calligraph gone.",
+      "pr": "https://github.com/hazem3500/replays/pull/114"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5788,
+        "gzip": 2529,
+        "brotli": 2103
+      },
+      "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
+      "pr": "https://github.com/hazem3500/replays/pull/114"
     }
   ]
 }
