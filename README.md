@@ -413,6 +413,25 @@ plays. Threads take replies and can be **resolved** and reopened by anyone; **ed
 ![The Comments tab: a thread with replies, a resolved one](docs/screenshots/comments-panel.png)
 ![Comments on a phone (390×844)](docs/screenshots/comments-mobile.png)
 
+## Beta features and Labs
+
+Beta features are decided in two places, listed once in [`src/shared/beta-flags.ts`](src/shared/beta-flags.ts):
+
+1. **The server allows them.** Every flag is off until an admin sets its variable or config key (the variable wins):
+
+   | Flag | Variable | Config file | In Settings › Labs |
+   | --- | --- | --- | --- |
+   | Replay editor | `REPLAYS_BETA_EDITOR` | `beta.editor` | On by default; turning it off hides editing (saved edits still play) |
+   | Plugin workshop | `REPLAYS_BETA_MALLEABLE` | `beta.malleable` | On by default; turning it off loads no plugin code or agent bridge (applies after a reload) |
+
+   A flag the server does not allow does not exist for anyone: no UI, its routes answer `404`, its code is never loaded.
+   The page learns the allowed set from `<meta name="app-beta">` and `GET /api/config` (`beta`).
+2. **Each person opts out (or back in) under Settings › Labs.** Only allowed flags are listed; with none allowed, Labs says
+   so. Choices are saved in the browser today; the client keeps them behind one store
+   (`setLabsChoiceStore` in `src/client/settings/labs.ts`) so per-user storage can replace it once sign-in carries preferences.
+
+In short: effective = allowed by the server ∧ (the person's choice, or on by default).
+
 ## Replay editor (beta, off by default)
 
 Edit mode lets you tidy a recording without touching it: trim the start and end, cut ranges, **Remove waits** (cuts the
@@ -431,8 +450,8 @@ page, and **captions** (written from the steps). Open it with the *Edit* button 
   See [host editing policy](docs/extension-api.md#host-editing-write-policy) for precedence and validation.
 - **With the flag off** (the default): no Edit button or "Edited" label, `/r/<id>/edit` just opens the replay, the
   `GET|PUT /api/replays/<id>/edits` endpoints answer `404`, exports ignore any edit list, and the editor's code chunk is
-  never requested. There is deliberately no client-only switch: an editor without its API cannot save, so the flag
-  lives on the server. For local preview run `REPLAYS_BETA_EDITOR=true pnpm dev`.
+  never requested. A client can never switch it on by itself (an editor without its API cannot save), so the server
+  allows it; each person can then hide editing under Settings › Labs. For local preview run `REPLAYS_BETA_EDITOR=true pnpm dev`.
 - It is a beta: the edit-list format (`src/shared/edits.ts`, `src/shared/effects.ts`) may still change before 1.0.
 
 ![Edit mode: the replay above and one timeline of lanes for clip, cuts, zoom, speed, blur and captions](docs/screenshots/editor.png)
