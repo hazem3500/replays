@@ -8,8 +8,8 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 416314,
-      "gzip": 106513,
+      "raw": 416900,
+      "gzip": 106700,
       "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
@@ -19,8 +19,8 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
-      "gzip": 955,
-      "brotli": 821
+      "gzip": 954,
+      "brotli": 820
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -59,13 +59,13 @@
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
-      "gzip": 1263,
-      "brotli": 1147
+      "gzip": 1255,
+      "brotli": 1138
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
-      "gzip": 2349,
-      "brotli": 2125
+      "gzip": 2347,
+      "brotli": 2119
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -73,7 +73,7 @@
       "brotli": 1959
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38116,
+      "raw": 38110,
       "gzip": 13521,
       "brotli": 11999
     },
@@ -85,17 +85,17 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 222,
-      "brotli": 190
+      "brotli": 225
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 35060,
-      "gzip": 6742,
-      "brotli": 5984
+      "raw": 40600,
+      "gzip": 7460,
+      "brotli": 6640
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82506,
-      "gzip": 27351,
-      "brotli": 23404
+      "raw": 92000,
+      "gzip": 31200,
+      "brotli": 26700
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -104,8 +104,8 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 215881,
-      "gzip": 73565,
-      "brotli": 62241
+      "gzip": 73375,
+      "brotli": 62048
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -145,10 +145,10 @@
     "dist/client/assets/player-HASH.js": {
       "raw": 308578,
       "gzip": 95021,
-      "brotli": 68380
+      "brotli": 68600
     },
     "dist/client/assets/PluginUi-HASH.js": {
-      "raw": 133395,
+      "raw": 133380,
       "gzip": 44750,
       "brotli": 38604
     },
@@ -180,7 +180,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 631,
-      "brotli": 569
+      "brotli": 568
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -204,7 +204,7 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
-      "gzip": 8352,
+      "gzip": 8348,
       "brotli": 7157
     },
     "dist/client/assets/tools-HASH.js": {
@@ -219,12 +219,12 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50387,
-      "gzip": 18358,
-      "brotli": 16055
+      "gzip": 18345,
+      "brotli": 16019
     },
     "dist/client/index.html": {
       "raw": 12263,
-      "gzip": 4254,
+      "gzip": 4251,
       "brotli": 3468
     },
     "dist/client/render.html": {
@@ -976,11 +976,11 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 91800,
-        "gzip": 31100,
-        "brotli": 26600
+        "raw": 92000,
+        "gzip": 31200,
+        "brotli": 26700
       },
-      "reason": "Editor side panel v2: the contextual inspector (selection properties or replay settings), Base UI RadioGroup and Radio for the cursor motion picker and segmented settings, and the motion preview planner; measured against main: +11530 B raw, +4459 B gzip, +3695 B brotli. Replaces #78's allowance for this file.",
+      "reason": "Editor side panel v2: the contextual inspector (selection properties or replay settings), Base UI RadioGroup and Radio for the cursor motion picker and segmented settings, and the motion preview planner; measured against main: +11604 B raw, +4491 B gzip, +3747 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
