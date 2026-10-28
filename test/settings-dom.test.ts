@@ -4,8 +4,8 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { SettingsButton } from '../src/client/settings/Settings.tsx';
-import { ThemeContext } from '../src/client/theme.tsx';
+import { closeSettings, openSettings, SettingsButton } from '../src/client/settings/Settings.tsx';
+import { setBetaAllowedForTests } from '../src/client/settings/labs.ts';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -20,10 +20,13 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  await act(async () => closeSettings());
   await act(async () => root.unmount());
   client.clear();
   host.remove();
   document.querySelector('meta[name="app-base"]')?.remove();
+  setBetaAllowedForTests(undefined);
+  localStorage.clear();
   vi.unstubAllGlobals();
 });
 
@@ -32,64 +35,172 @@ async function click(element: Element | null) {
   await act(async () => (element as HTMLElement).click());
 }
 
-async function openSettings(auth = 'oidc') {
-  const fetchConfig = vi
-    .fn<typeof fetch>()
-    .mockImplementation(async (input) =>
-      String(input).endsWith('/agent-capabilities')
-        ? new Response(null, { status: 404 })
-        : new Response(JSON.stringify({ auth }), { status: 200 }),
-    );
-  vi.stubGlobal('fetch', fetchConfig);
-  const switchTheme = vi.fn<() => void>();
-  await act(async () =>
-    root.render(
-      createElement(
-        QueryClientProvider,
-        { client },
-        createElement(ThemeContext.Provider, { value: { theme: 'dark', switchTheme } }, createElement(SettingsButton)),
-      ),
-    ),
-  );
-  await click(host.querySelector('[aria-label="Settings"]'));
-  return { fetchConfig, switchTheme };
+async function key(element: Element | null, keyName: string) {
+  expect(element).not.toBeNull();
+  await act(async () => element!.dispatchEvent(new KeyboardEvent('keydown', { key: keyName, bubbles: true, cancelable: true })));
 }
 
-describe('workspace settings', () => {
-  it('opens a labelled settings dialog and applies appearance choices without changing the selected theme', async () => {
-    const { fetchConfig, switchTheme } = await openSettings();
-    expect(document.querySelector('[role="dialog"]')?.textContent).toContain('Settings');
-    expect(fetchConfig).not.toHaveBeenCalled();
-    await click(document.querySelector('[aria-pressed="true"]'));
-    expect(switchTheme).not.toHaveBeenCalled();
-    await click(document.querySelector('[aria-pressed="false"]'));
-    expect(switchTheme).toHaveBeenCalledOnce();
-    await click(document.querySelector('[data-slot="dialog-close"]'));
+function mockConfig(auth = 'oidc', deviceLogin = false) {
+  const fetchConfig = vi.fn<typeof fetch>().mockImplementation(async (input) =>
+    String(input).endsWith('/agent-capabilities')
+      ? new Response(null, { status: 404 })
+      : new Response(
+          JSON.stringify({ auth, core: '1.2.3', name: 'replays', ...(deviceLogin ? { cliDeviceAuth: { type: 'oidc-device' } } : {}) }),
+          {
+            status: 200,
+          },
+        ),
+  );
+  vi.stubGlobal('fetch', fetchConfig);
+  return fetchConfig;
+}
+
+async function render() {
+  await act(async () => root.render(createElement(QueryClientProvider, { client }, createElement(SettingsButton))));
+}
+
+async function openFromButton(auth = 'oidc', deviceLogin = false) {
+  const fetchConfig = mockConfig(auth, deviceLogin);
+  await render();
+  await click(host.querySelector('[aria-label="Settings"]'));
+  return { fetchConfig };
+}
+
+const dialog = () => document.querySelector<HTMLElement>('[role="dialog"]');
+const tab = (name: string) =>
+  [...document.querySelectorAll<HTMLElement>('[role="tab"]')].find((element) => element.textContent === name) ?? null;
+const panel = () => document.querySelector<HTMLElement>('[role="tabpanel"]');
+
+describe('Settings', () => {
+  it('opens on a sidebar of sections that the arrow keys, Home and End move through', async () => {
+    await openFromButton();
+    expect(dialog()?.textContent).toContain('Settings');
+    const list = document.querySelector('[role="tablist"]');
+    expect(list?.getAttribute('aria-orientation')).toBe('vertical');
+    expect(list?.getAttribute('data-slot')).toBe('settings.sections');
+    expect([...document.querySelectorAll('[role="tab"]')].map((element) => element.getAttribute('data-slot-item'))).toEqual([
+      'core:cli',
+      'core:keyboard',
+      'core:labs',
+      'core:about',
+    ]);
+    expect(tab('CLI & agents')?.getAttribute('aria-selected')).toBe('true');
+    expect([...document.querySelectorAll('[role="tab"]')].filter((element) => element.getAttribute('tabindex') === '0')).toHaveLength(1);
+    await key(tab('CLI & agents'), 'ArrowDown');
+    expect(tab('Keyboard')?.getAttribute('aria-selected')).toBe('true');
+    expect(panel()?.textContent).toContain('Play or pause');
+    await key(tab('Keyboard'), 'End');
+    expect(tab('About')?.getAttribute('aria-selected')).toBe('true');
+    await key(tab('About'), 'Home');
+    expect(tab('CLI & agents')?.getAttribute('aria-selected')).toBe('true');
+    await key(tab('CLI & agents'), 'ArrowUp');
+    expect(tab('About')?.getAttribute('aria-selected')).toBe('true');
+    await click(document.querySelector('[aria-label="Close settings"]'));
     expect(host.querySelector('[aria-label="Settings"]')?.getAttribute('aria-expanded')).toBe('false');
   });
 
-  it('shows managed credentials truthfully and uses the deployment base for CLI uploads', async () => {
+  it('leaves the colour theme to the top bar instead of repeating it in any section', async () => {
+    await openFromButton();
+    for (const section of ['CLI & agents', 'Keyboard', 'Labs', 'About']) {
+      await click(tab(section));
+      expect(panel()?.querySelector('[role="radiogroup"]')).toBeNull();
+      expect(
+        [...(dialog()?.querySelectorAll('button') ?? [])].filter((button) => /^(Light|Dark)$/.test(button.textContent ?? '')),
+      ).toEqual([]);
+    }
+  });
+
+  it('shows device sign-in and upload-only commands only when the server advertises device login', async () => {
+    await openFromButton('oidc', true);
+    await click(tab('CLI & agents'));
+    await vi.waitFor(() => expect(panel()?.textContent).toContain('Device sign-in'));
+    const commands = [...document.querySelectorAll<HTMLInputElement>('.settings-command-text')].map((input) => input.value);
+    expect(commands[0]).toContain('replays connect');
+    expect(commands).toContain('replays login');
+    expect(commands.at(-1)).toBe('replays upload replay.json');
+  });
+
+  it('copies the setup command for the deployment base and announces it', async () => {
     const base = document.createElement('meta');
     base.name = 'app-base';
     base.content = '/workspace';
     document.head.append(base);
-    const { fetchConfig } = await openSettings();
-    await click(
-      document.querySelector('[role="tab"][data-value="agents"]') ??
-        [...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === 'Agent access')!,
-    );
+    const fetchConfig = mockConfig();
+    await render();
+    await act(async () => {
+      openSettings('cli');
+    });
     expect(fetchConfig).toHaveBeenCalledWith('/workspace/api/config', expect.objectContaining({ signal: expect.any(AbortSignal) }));
-    await vi.waitFor(() => expect(document.body.textContent).toContain('Managed authentication'));
-    expect(document.body.textContent).toContain('API token creation is not available');
-    expect(document.querySelector('code')?.textContent).toContain('/workspace/api/replays');
-    expect(document.querySelector('code')?.textContent).toContain('--header-file headers.json');
-    expect([...document.querySelectorAll('button')].some((button) => /create.*token/i.test(button.textContent ?? ''))).toBe(false);
+    await vi.waitFor(() => expect(panel()?.textContent).toContain('Host-managed sign-in'));
+    expect(panel()?.textContent).toContain('Credential creation isn’t enabled for this deployment.');
+    const setup = document.querySelector<HTMLInputElement>('input[aria-label="Server setup command"]');
+    expect(setup?.readOnly).toBe(true);
+    expect(setup?.value).toBe("replays connect 'http://localhost:3000/workspace' && replays doctor");
+    expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toContain('--header-file headers.json');
+    const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+    await click(document.querySelector('[aria-label="Copy server setup command"]'));
+    expect(writeText).toHaveBeenCalledWith("replays connect 'http://localhost:3000/workspace' && replays doctor");
+    await vi.waitFor(() =>
+      expect([...document.querySelectorAll('[role="status"]')].some((element) => element.textContent === 'Copied')).toBe(true),
+    );
   });
 
-  it('does not request credentials for a deployment configured with open access', async () => {
-    await openSettings('none');
-    await click([...document.querySelectorAll('[role="tab"]')].find((tab) => tab.textContent === 'Agent access')!);
-    await vi.waitFor(() => expect(document.body.textContent).toContain('Open access'));
-    expect(document.querySelector('code')?.textContent).not.toContain('--header-file');
+  it('leaves out the header file for an open-access deployment', async () => {
+    mockConfig('none');
+    await render();
+    await act(async () => {
+      openSettings('cli');
+    });
+    await vi.waitFor(() => expect(panel()?.textContent).toContain('Open access · use only on a trusted network.'));
+    expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toBe('replays upload replay.json');
+  });
+
+  it('says plainly when the server offers no experiments', async () => {
+    mockConfig();
+    await render();
+    await act(async () => {
+      openSettings('labs');
+    });
+    expect(tab('Labs')?.getAttribute('aria-selected')).toBe('true');
+    const empty = panel()?.querySelector('[data-testid="labs-empty"]');
+    expect(empty?.textContent).toContain('No experiments are available');
+    expect(empty?.textContent).not.toContain('REPLAYS_BETA');
+    expect(empty?.querySelector('a')?.getAttribute('href')).toContain('#beta-features-and-labs');
+    expect(panel()?.querySelector('[role="switch"]')).toBeNull();
+    expect(panel()?.textContent).not.toContain('Not enabled');
+  });
+
+  it('lists only allowed experiments as switches, saves the choice in this browser and asks for a reload when needed', async () => {
+    setBetaAllowedForTests({ editor: true, malleable: true });
+    mockConfig();
+    await render();
+    await act(async () => {
+      openSettings('labs');
+    });
+    const text = panel()?.textContent ?? '';
+    expect(text).toContain('Replay editor');
+    expect(text).toContain('Plugin workshop');
+    expect(text).not.toContain('Grouped');
+    expect(text).not.toContain('Reload to apply');
+    const switches = [...(panel()?.querySelectorAll<HTMLElement>('[role="switch"]') ?? [])];
+    expect(switches.map((element) => element.getAttribute('aria-checked'))).toEqual(['true', 'true']);
+    await click(switches[0]!);
+    expect(localStorage.getItem('replays-labs-editor')).toBe('off');
+    expect(panel()?.textContent).not.toContain('Reload to apply');
+    await click(switches[1]!);
+    expect(localStorage.getItem('replays-labs-malleable')).toBe('off');
+    expect(panel()?.querySelectorAll('[role="switch"][aria-checked="false"]')).toHaveLength(2);
+    expect(panel()?.textContent).toContain('Reload to apply');
+  });
+
+  it('opens a section from the ?settings= deep link and drops it on close', async () => {
+    window.history.replaceState(null, '', '/?settings=about');
+    mockConfig();
+    await render();
+    expect(tab('About')?.getAttribute('aria-selected')).toBe('true');
+    await vi.waitFor(() => expect(panel()?.textContent).toContain('1.2.3'));
+    await click(document.querySelector('[aria-label="Close settings"]'));
+    expect(window.location.search).toBe('');
   });
 });
