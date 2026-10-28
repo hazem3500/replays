@@ -68,8 +68,8 @@
       "brotli": 31804
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 654800,
-      "gzip": 212055,
+      "raw": 654366,
+      "gzip": 211924,
       "brotli": 167223
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -138,7 +138,7 @@
       "brotli": 6349
     },
     "dist/client/assets/tools-HASH.js": {
-      "raw": 34797,
+      "raw": 34796,
       "gzip": 12376,
       "brotli": 11148
     },
@@ -155,7 +155,7 @@
     "dist/client/index.html": {
       "raw": 10783,
       "gzip": 3889,
-      "brotli": 3202
+      "brotli": 3201
     },
     "dist/client/render.html": {
       "raw": 1294,
