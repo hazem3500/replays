@@ -8,8 +8,8 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 416900,
-      "gzip": 106700,
+      "raw": 418000,
+      "gzip": 107000,
       "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
@@ -88,14 +88,14 @@
       "brotli": 225
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 40600,
-      "gzip": 7460,
-      "brotli": 6640
+      "raw": 42700,
+      "gzip": 7760,
+      "brotli": 6920
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 92000,
-      "gzip": 31200,
-      "brotli": 26700
+      "raw": 95100,
+      "gzip": 32050,
+      "brotli": 27400
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -104,8 +104,8 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 215881,
-      "gzip": 73375,
-      "brotli": 62048
+      "gzip": 73373,
+      "brotli": 62032
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -143,9 +143,9 @@
       "brotli": 817
     },
     "dist/client/assets/player-HASH.js": {
-      "raw": 308578,
-      "gzip": 95021,
-      "brotli": 68600
+      "raw": 312300,
+      "gzip": 96950,
+      "brotli": 70400
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -168,9 +168,9 @@
       "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
-      "raw": 1516,
-      "gzip": 706,
-      "brotli": 565
+      "raw": 1397,
+      "gzip": 666,
+      "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 6721,
@@ -219,8 +219,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50387,
-      "gzip": 18345,
-      "brotli": 16019
+      "gzip": 18328,
+      "brotli": 15954
     },
     "dist/client/index.html": {
       "raw": 12263,
@@ -248,9 +248,9 @@
       "brotli": 16324
     },
     "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
-      "raw": 298271,
+      "raw": 299200,
       "gzip": 78441,
-      "brotli": 64229
+      "brotli": 64300
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -428,14 +428,14 @@
       "brotli": 434343
     },
     "initial/render.html/css": {
-      "raw": 5788,
+      "raw": 5784,
       "gzip": 2529,
-      "brotli": 2103
+      "brotli": 2097
     },
     "initial/render.html/js": {
       "raw": 542325,
       "gzip": 168433,
-      "brotli": 131773
+      "brotli": 131950
     }
   },
   "allowances": [
@@ -788,16 +788,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
-      "cap": {
-        "raw": 298271,
-        "gzip": 78441,
-        "brotli": 64244
-      },
-      "reason": "The replay meta routes change the server entry source set, so the shared schema chunk gets a new source-set identity; it keeps the removed identity's caps and measures 297658 raw, 77962 gzip, 63852 brotli bytes in CI.",
-      "pr": "https://github.com/hazem3500/replays/pull/93"
-    },
-    {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
       "cap": {
         "raw": 53813,
@@ -842,7 +832,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -912,7 +902,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -974,44 +964,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 92000,
-        "gzip": 31200,
-        "brotli": 26700
-      },
-      "reason": "Editor side panel v2: the contextual inspector (selection properties or replay settings), Base UI RadioGroup and Radio for the cursor motion picker and segmented settings, and the motion preview planner; measured against main: +11604 B raw, +4491 B gzip, +3747 B brotli. Replaces #78's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "raw": 40600,
-        "gzip": 7460,
-        "brotli": 6640
-      },
-      "reason": "Editor side panel v2: the contextual inspector, segmented settings, cursor panel and motion cards, and phone overrides, in their own stylesheets; measured against main: +6492 B raw, +892 B gzip, +801 B brotli. Replaces #67's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
-      "file": "dist/client/assets/player-HASH.js",
-      "cap": {
-        "brotli": 68600
-      },
-      "reason": "Ported Cua Cursor Motion styles (spring settle, magnetic, comet swoop, adaptive, classic with its Dubins planner) used by replay playback; measured against main: +6097 B raw, +2224 B gzip, +1806 B brotli; only brotli passes the existing cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 416900,
-        "gzip": 106700,
-        "brotli": 87966
-      },
-      "reason": "The CLI bundles the shared edits validator, which now accepts cursor.motion and the six Cua style names; measured against main: +525 B raw, +160 B gzip. Replaces #112's allowance for this file; its Brotli cap is kept.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
       "file": "dist/client/assets/download-HASH.js",
       "cap": {
         "gzip": 222,
@@ -1019,6 +971,64 @@
       },
       "reason": "No source change: this tiny chunk names hashed sibling chunks, whose hashes change with the side panel; measured against main: +0 B raw, -1 B gzip, +34 B brotli. Replaces #109's allowance for this file; its gzip cap is kept.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 418000,
+        "gzip": 107000,
+        "brotli": 87966
+      },
+      "reason": "The CLI bundles the shared edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1060 B raw, +298 B gzip, +250 B brotli. Replaces #103's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/122"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 42700,
+        "gzip": 7760,
+        "brotli": 6920
+      },
+      "reason": "Cursor style cards, glyph wells and color swatches in the cursor inspector; measured against main: +2051 B raw, +294 B gzip, +273 B brotli. Replaces #103's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/122"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 95100,
+        "gzip": 32050,
+        "brotli": 27400
+      },
+      "reason": "Cursor style picker and color swatches, drawn with the player's own glyph renderer through useCursorGlyph; measured against main: +3212 B raw, +886 B gzip, +687 B brotli. Replaces #103's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/122"
+    },
+    {
+      "file": "dist/client/assets/player-HASH.js",
+      "cap": {
+        "raw": 312300,
+        "gzip": 96950,
+        "brotli": 70400
+      },
+      "reason": "Built-in cursor themes (CUA arrow, classic, hand, dot, ring, agent), tints and ripple or pulse click feedback for playback and export; measured against main: +5254 B raw, +2118 B gzip, +1809 B brotli. Replaces #103's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/122"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "cap": {
+        "raw": 299200,
+        "gzip": 78441,
+        "brotli": 64300
+      },
+      "reason": "The shared chunk holds the edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +962 B raw, +273 B gzip, +274 B brotli. Replaces #93's allowance for this file; its gzip cap is kept.",
+      "pr": "https://github.com/hazem3500/replays/pull/122"
+    },
+    {
+      "file": "initial/render.html/js",
+      "cap": {
+        "brotli": 131950
+      },
+      "reason": "The render page draws the same cursor themes as the viewer (the player chunk's themes and click feedback); measured against main: +5335 B raw, +2157 B gzip, +1841 B brotli; only Brotli passes the existing cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/122"
     }
   ]
 }
