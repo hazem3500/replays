@@ -203,6 +203,7 @@ export const Inspector = memo(function Inspector({
   expandedRequest,
   mobile,
   collapse,
+  compare,
 }: {
   bundle: ReplayBundle;
   /** Original captured data: measured spans must be mapped, including starts inside cuts. */
@@ -213,6 +214,11 @@ export const Inspector = memo(function Inspector({
   mobile?: MobilePanel;
   /** The panel folds to its tab row (desktop and phones alike); any tab click unfolds it. */
   collapse?: { collapsed: boolean; onCollapsedChange: (collapsed: boolean) => void };
+  /**
+   * Comparing recordings (compare/CompareViewer.tsx): `scope` ends the tab row with which recording the panels
+   * describe; `performance` sits above the performance events with how the recordings differ.
+   */
+  compare?: { scope?: ReactNode; performance?: ReactNode } | undefined;
 }) {
   const player = usePlayer();
   const { setTab, setExpandedRequest } = useViewer();
@@ -397,6 +403,7 @@ export const Inspector = memo(function Inspector({
           ))}
           {indicator}
         </TabsList>
+        {compare?.scope}
         {collapse && mobile ? (
           // Phones: the same fold as desktop's backslash control, as a 44 px end cap on the tab row. Folded, the player
           // and transport take the space; a tab tap (or this chevron) brings the panel back.
@@ -456,12 +463,15 @@ export const Inspector = memo(function Inspector({
       </TabsContent>
       <TabsContent value="performance" className="inspector-panel">
         {filled ? (
-          <PerformanceDiagnostics
-            model={performanceModel}
-            renderRequestDetail={(entry) => (
-              <RequestDetail entry={entry} firstAt={firstNetworkAt} unanswered={hasNoResponse(entry)} size={entrySize(entry)} />
-            )}
-          />
+          <>
+            {compare?.performance}
+            <PerformanceDiagnostics
+              model={performanceModel}
+              renderRequestDetail={(entry) => (
+                <RequestDetail entry={entry} firstAt={firstNetworkAt} unanswered={hasNoResponse(entry)} size={entrySize(entry)} />
+              )}
+            />
+          </>
         ) : null}
       </TabsContent>
       <TabsContent value="context" className="inspector-panel">

@@ -13,7 +13,7 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu.tsx';
-import type { ReplayController } from '../player.ts';
+import type { Playback } from '../player.ts';
 import { apiUrl, appBase } from '../route.ts';
 import { notify as showToast } from '../toast.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';
@@ -26,7 +26,7 @@ export function usePluginSnapshot() {
 }
 
 /** The context one plugin's code receives for one open replay (`settings` are that plugin's own). */
-export function createPluginContext(bundle: ReplayBundle, player: ReplayController, plugin: string): ViewerPluginContext {
+export function createPluginContext(bundle: ReplayBundle, player: Playback, plugin: string): ViewerPluginContext {
   return {
     replay: bundle,
     get theme() {
@@ -43,14 +43,14 @@ export function createPluginContext(bundle: ReplayBundle, player: ReplayControll
 }
 
 /** A context for code that is not one host plugin's (the malleable host); its `settings` are empty. */
-export function usePluginContext(bundle: ReplayBundle, player: ReplayController): ViewerPluginContext {
+export function usePluginContext(bundle: ReplayBundle, player: Playback): ViewerPluginContext {
   return useMemo(() => createPluginContext(bundle, player, ''), [bundle, player]);
 }
 
 /** Each plugin's context for the open replay, made once per plugin and kept while the replay is open. */
 export type PluginContextFor = (plugin: string) => ViewerPluginContext;
 
-function pluginContexts(bundle: ReplayBundle, player: ReplayController): PluginContextFor {
+function pluginContexts(bundle: ReplayBundle, player: Playback): PluginContextFor {
   const made = new Map<string, ViewerPluginContext>();
   return (plugin) => {
     let context = made.get(plugin);
@@ -62,7 +62,7 @@ function pluginContexts(bundle: ReplayBundle, player: ReplayController): PluginC
   };
 }
 
-export function usePluginContexts(bundle: ReplayBundle, player: ReplayController): PluginContextFor {
+export function usePluginContexts(bundle: ReplayBundle, player: Playback): PluginContextFor {
   return useMemo(() => pluginContexts(bundle, player), [bundle, player]);
 }
 

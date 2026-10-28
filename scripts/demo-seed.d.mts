@@ -17,3 +17,4 @@ export interface DemoRefreshResult {
 export function createDemoSeed(): { replays: ReplayBundle[]; suites: ReviewSuite[] };
 export function writeDemoSeed(outputDir?: string): Promise<DemoSeedResult>;
 export function refreshDemoSeed(sampleDir: string, dataDir: string): Promise<DemoRefreshResult>;
+export function writeStable(path: string, value: unknown): Promise<'created' | 'unchanged'>;

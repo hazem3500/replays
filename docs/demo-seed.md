@@ -38,3 +38,13 @@ node --experimental-strip-types --no-warnings scripts/demo-seed.mjs \
 Refresh preflights every required replay and suite before writing anything. Each replay must pass the replay schema and have the expected ID, `demo` and `synthetic` tags, `context.fields.demo === true`, `context.fields.fictional === true`, and `context.app.environment === "demo"`. Each suite must pass its schema, have the expected ID, and carry the same demo context markers. Optional uploaded copies must pass the replay checks too. Missing targets, symlinks, malformed files, unexpected IDs, or missing markers stop refresh. Unrelated filenames and all unrecognized uploaded records are left alone. Refresh creates no directories and deletes no files.
 
 The paths must be the actual configured `SAMPLE_DIR` and `DATA_DIR`; refresh does not guess storage locations. The known ID set in the script is deliberately fixed so the command cannot sweep customer records.
+
+## Comparison suites
+
+`scripts/demo-comparison-seed.mjs` adds four suites built from the demo checkout recording, re-timed per run, for comparing recordings in the viewer: `demo-compare-performance` and `demo-compare-design` (Before and After), `demo-compare-browsers` (four runs) and `demo-compare-nightly` (six runs). Their performance entries are synthetic examples, not measurements. It writes into the same output layout, next to the demo seed's files:
+
+```sh
+node --experimental-strip-types --no-warnings scripts/demo-comparison-seed.mjs --output /tmp/replays-demo-seed
+```
+
+Overlay them the same way, then open `/s/demo-compare-performance`, or compare any two recordings with `/r/<id>?with=<id>&layout=grid`.

@@ -335,19 +335,7 @@ function PlaybackOptions() {
             </button>
           ))}
         </div>
-        <div className="playback-skip">
-          <label id={`${rateId}-skip-label`} htmlFor={`${rateId}-skip`}>
-            Skip inactive parts
-          </label>
-          <Switch
-            id={`${rateId}-skip`}
-            nativeButton
-            render={<button type="button" />}
-            aria-labelledby={`${rateId}-skip-label`}
-            checked={skipInactive}
-            onCheckedChange={(checked) => player.setSkipInactive(checked)}
-          />
-        </div>
+        <SkipInactiveSwitch id={`${rateId}-skip`} />
         {steps.length > 0 && !editCaptions && setCaptionNumbers ? (
           <div className="playback-skip">
             <label id={`${rateId}-numbers-label`} htmlFor={`${rateId}-numbers`}>
@@ -366,6 +354,28 @@ function PlaybackOptions() {
         ) : null}
       </PopoverContent>
     </Popover>
+  );
+}
+
+/** "Skip inactive parts", left out when the playback cannot skip (compared recordings share one ruler). */
+function SkipInactiveSwitch({ id }: { id: string }) {
+  const player = usePlayer();
+  const { skipInactive } = usePlayerState();
+  if (player.canSkipInactive === false) return null;
+  return (
+    <div className="playback-skip">
+      <label id={`${id}-label`} htmlFor={id}>
+        Skip inactive parts
+      </label>
+      <Switch
+        id={id}
+        nativeButton
+        render={<button type="button" />}
+        aria-labelledby={`${id}-label`}
+        checked={skipInactive}
+        onCheckedChange={(checked) => player.setSkipInactive(checked)}
+      />
+    </div>
   );
 }
 
