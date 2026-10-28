@@ -8,8 +8,8 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 416314,
-      "gzip": 106513,
+      "raw": 416900,
+      "gzip": 106700,
       "brotli": 87966
     },
     "dist/cli/recorder.iife.js": {
@@ -175,7 +175,7 @@
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
       "gzip": 500,
-      "brotli": 456
+      "brotli": 455
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 18639,
@@ -884,16 +884,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/97"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 416314,
-        "gzip": 106513,
-        "brotli": 87966
-      },
-      "reason": "The CLI bundles the server, which gained the replay meta, delete and restore routes in #93 (raw 416314, gzip 106513 as measured there); with #108 merged on top, Brotli measures 87095 on main against #93s 87082 cap, so this replaces that entry with a Brotli cap measured on main.",
-      "pr": "https://github.com/hazem3500/replays/pull/112"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 254777,
@@ -964,6 +954,16 @@
         "gzip": 17300
       },
       "reason": "No Viewer source change: its imports name the editor and skeleton chunks, whose content hashes change with the side panel; measured against main: +3 B raw, +36 B gzip, +18 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 416900,
+        "gzip": 106700,
+        "brotli": 87966
+      },
+      "reason": "The CLI bundles the shared edits validator, which now accepts cursor.motion and the six Cua style names; measured against main: +511 B raw, +149 B gzip. Replaces #112's allowance for this file; its Brotli cap is kept.",
       "pr": "https://github.com/hazem3500/replays/pull/103"
     }
   ]
