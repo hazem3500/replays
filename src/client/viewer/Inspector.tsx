@@ -41,10 +41,10 @@ import { resolveSlot } from '../plugins/registry.ts';
 import { DockPanel, InspectorDock } from './InspectorDock.tsx';
 import { inspectorTabItems } from './inspector-tabs.ts';
 import { consoleBadge, networkBadge, performanceBadge } from './tab-badges.ts';
+import { INSPECTOR_HEIGHT_KEY, MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
 export { edgeVelocity } from './TrackList.tsx';
 import { PerformanceDiagnostics } from './Performance.tsx';
 import { buildPerformance } from './performance.ts';
-import { INSPECTOR_HEIGHT_KEY, MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
 
 const NO_RESPONSE = 'No response recorded: a redirect hop, or still in flight when capture stopped';
 const stopPlayerKeyboard = (event: ReactKeyboardEvent<HTMLElement>) => {

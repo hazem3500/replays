@@ -5,13 +5,19 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
-import { initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
-/* Repeated from the viewer chunk (StepRail.tsx, Viewer.tsx); keep in sync. Sizes come from viewer/inspector-size.ts. */
+/*
+ * Repeated from the viewer chunk (StepRail.tsx, viewer/inspector-size.ts, Viewer.tsx) to keep it out of every page's
+ * bundle; keep in sync. The default panel height is the shell's CSS default (styles.css), the viewer's
+ * defaultInspectorHeight().
+ */
 const STEPS_WIDTH_KEY = 'replays-steps-width';
+const RAIL_COLLAPSED_KEY = 'replays-steps-collapsed';
+const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
+const MIN_INSPECTOR_HEIGHT = 120;
 
 /**
  * What the page opening the replay already knows (the index writes it before navigating; see OPEN_HINT_KEY):
@@ -43,7 +49,12 @@ function readHint(): OpenHint | undefined {
 }
 
 function layout(hint: OpenHint | undefined) {
-  const height = initialInspectorHeight();
+  const savedHeight = Number(readStorage(INSPECTOR_HEIGHT_KEY));
+  const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
+  const height =
+    Number.isFinite(savedHeight) && savedHeight > 0
+      ? Math.round(Math.min(Math.max(savedHeight, MIN_INSPECTOR_HEIGHT), maxHeight))
+      : undefined;
   const savedCollapsed = readStorage(INSPECTOR_COLLAPSED_KEY);
   const collapsed = savedCollapsed === '1';
   const savedWidth = Number(readStorage(STEPS_WIDTH_KEY));
@@ -78,7 +89,11 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
       aria-label={label}
       style={
         {
-          '--inspector-height': collapsed && !mobile ? 'var(--inspector-folded-height, 37px)' : `${shape.height}px`,
+          ...(collapsed && !mobile
+            ? { '--inspector-height': 'var(--inspector-folded-height, 37px)' }
+            : shape.height === undefined
+              ? {}
+              : { '--inspector-height': `${shape.height}px` }),
           '--sk-ratio': String(shape.ratio),
         } as CSSProperties
       }

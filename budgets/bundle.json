@@ -65,7 +65,7 @@
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
       "gzip": 2350,
-      "brotli": 2126
+      "brotli": 2120
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -74,7 +74,7 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38116,
-      "gzip": 13526,
+      "gzip": 13524,
       "brotli": 12013
     },
     "dist/client/assets/composite-HASH.js": {
@@ -118,9 +118,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 244033,
-      "gzip": 42241,
-      "brotli": 35176
+      "raw": 244070,
+      "gzip": 42267,
+      "brotli": 35203
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 847449,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 706,
-      "brotli": 618
+      "brotli": 616
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
@@ -423,9 +423,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 245954,
-      "gzip": 43185,
-      "brotli": 35993
+      "raw": 245991,
+      "gzip": 43211,
+      "brotli": 36020
     },
     "initial/index.html/js": {
       "raw": 1688508,
@@ -1014,8 +1014,8 @@
         "gzip": 6620,
         "brotli": 5910
       },
-      "reason": "Pending frames for inspector panels (loaded geometry, never a blank panel) and the flat tab row's group hairlines and status dots.",
-      "pr": "https://github.com/hazem3500/replays/pull/117"
+      "reason": "Pending frames for inspector panels (loaded geometry, never a blank panel) and the flat tab row's group hairlines and status dots (#117), measured with the viewer Splitter stacked on it.",
+      "pr": "https://github.com/hazem3500/replays/pull/121"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.js",

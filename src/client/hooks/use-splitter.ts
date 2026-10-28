@@ -75,7 +75,7 @@ export function useSplitter(config: SplitterConfig) {
     if (config.storageKey) writeStorage(config.storageKey, String(next));
     config.onChange(next);
   };
-  /** Pointer travel → panel size: moving the line toward the panel shrinks it. */
+  // invariant: moving the line toward the sized panel shrinks it, whichever side of the line it is on.
   const sizeFor = (position: number) => {
     const state = drag.current!;
     const delta = (position - state.start) * (side === 'end' ? -1 : 1);
