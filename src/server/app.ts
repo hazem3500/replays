@@ -20,6 +20,7 @@ import { appPath, type HostRouting, hostBase, hostVary, normalizeHosts, publicPa
 import { renderIndexHtml } from './index-page.ts';
 import { coreRoutes } from './api/index.ts';
 import { sendWebResponse, toWebRequest } from './http/node.ts';
+import { classifyError } from './http/errors.ts';
 import { RouteTable } from './http/route.ts';
 import { BridgeHub } from './bridge-hub.ts';
 import { commentsPlugin, COMMENTS_PLUGIN } from './comments-plugin.ts';
@@ -571,25 +572,17 @@ export function createApp(options: AppOptions) {
 const errorHeaders = (error: unknown): Record<string, string> => (error instanceof HttpError ? { ...error.headers } : {});
 
 /**
- * The error response for a failed request: explicit statuses win; input validation (assert* throws plain
- * Errors), bad JSON and bad URLs are 400s with their message; anything else (fs, programming errors) is a
- * generic 500. The request's span gets the error's type only (tracing.ts), never its message.
+ * The error response for a failed request (http/errors.ts `classifyError`): 4xx answer with their message as text, 5xx with
+ * a JSON body (`StoredDataError`'s own message, else `internal error`). The span gets the error's type only, never its message.
  */
 function fail(request: IncomingMessage, response: ServerResponse, error: unknown) {
-  const { status: explicit, code, syscall } = (error ?? {}) as { status?: unknown; code?: unknown; syscall?: unknown };
-  const invalidInput =
-    error instanceof SyntaxError ||
-    code === 'ERR_INVALID_URL' ||
-    (error instanceof Error && error.constructor === Error && code === undefined && syscall === undefined);
-  const status = explicit !== undefined ? Number(explicit) : invalidInput ? 400 : 500;
+  const { status, message } = classifyError(error);
   recordError(error, status);
   const requestId = request.headers['x-request-id'] ?? request.headers['x-cloud-trace-context'] ?? '-';
   console.error(`request failed: ${request.method} ${request.url?.split('?')[0]} (request ${String(requestId)}, status ${status})`, error);
   const headers = errorHeaders(error);
   if (response.headersSent) response.end();
-  else if (error instanceof StoredDataError)
-    send(response, status, JSON.stringify({ error: error.message }), 'application/json; charset=utf-8');
-  else if (status >= 500)
-    send(response, status, JSON.stringify({ error: 'internal error' }), 'application/json; charset=utf-8', REVALIDATE, headers);
-  else send(response, status, (error as Error).message, 'text/plain; charset=utf-8', REVALIDATE, headers);
+  else if (status >= 500 || error instanceof StoredDataError)
+    send(response, status, JSON.stringify({ error: message }), 'application/json; charset=utf-8', REVALIDATE, headers);
+  else send(response, status, message, 'text/plain; charset=utf-8', REVALIDATE, headers);
 }

@@ -4,7 +4,7 @@ import { publicPath } from '../base-path.ts';
 import { readJsonUpload } from '../http/body.ts';
 import { json, REVALIDATE } from '../http/respond.ts';
 import { defineRoute, type RouteContext } from '../http/route.ts';
-import { HttpStatusError } from '../http/status-error.ts';
+import { HttpError } from '../http/errors.ts';
 import { assertUploadBundle, assertUploadEnvelope } from '../upload-validation.ts';
 import { applyContextAdapters, runAfterUpload, runBeforeUpload, runPrepareUpload } from '../plugin-runtime.ts';
 import { importRoute } from './import.ts';
@@ -38,7 +38,7 @@ const isSourceShape = (value: unknown): value is ReplaySourceInput => isRecord(v
 
 function resolveSource(services: ApiServices, source: unknown, index: number) {
   const name = `replay.context.sources[${index}]`;
-  if (!isSourceShape(source)) throw new HttpStatusError(400, `${name} must be an object`);
+  if (!isSourceShape(source)) throw new HttpError(400, `${name} must be an object`);
   return services.deployment.sources.resolve(source, name);
 }
 
@@ -89,7 +89,7 @@ function uploadHandler(services: ApiServices) {
       await store.assertSuiteRunCanAttach(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle.meta.id);
       const existing = await store.load(bundle.meta.id);
       if (existing) {
-        if (JSON.stringify(existing) !== JSON.stringify(bundle)) throw new HttpStatusError(409, 'replay already exists');
+        if (JSON.stringify(existing) !== JSON.stringify(bundle)) throw new HttpError(409, 'replay already exists');
         await store.attachReplay(bundle.suiteRun.suiteId, bundle.suiteRun.runId, bundle);
         return json(200, receipt(bundle), { cacheControl: REVALIDATE });
       }

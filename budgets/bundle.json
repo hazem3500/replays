@@ -4,23 +4,23 @@
   "files": {
     "bin/replays.mjs": {
       "raw": 1557,
-      "brotli": 624,
-      "gzip": 742
+      "gzip": 742,
+      "brotli": 624
     },
     "dist/cli/cli.mjs": {
       "raw": 410510,
-      "brotli": 86221,
-      "gzip": 105480
+      "gzip": 105480,
+      "brotli": 86221
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
-      "brotli": 39185,
-      "gzip": 60962
+      "gzip": 60962,
+      "brotli": 39185
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "brotli": 943,
-      "gzip": 1111
+      "gzip": 1111,
+      "brotli": 943
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
       "raw": 3240,
@@ -54,193 +54,193 @@
     },
     "dist/client/assets/ComparisonWorkspace-HASH.js": {
       "raw": 52846,
-      "brotli": 15415,
-      "gzip": 17815
+      "gzip": 17815,
+      "brotli": 15415
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 188,
-      "gzip": 218
+      "gzip": 218,
+      "brotli": 188
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
-      "brotli": 5984,
-      "gzip": 6742
+      "gzip": 6742,
+      "brotli": 5984
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 82495,
-      "brotli": 23404,
-      "gzip": 26552
+      "gzip": 26552,
+      "brotli": 23404
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
-      "brotli": 5643,
-      "gzip": 6332
+      "gzip": 6332,
+      "brotli": 5643
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 332366,
-      "brotli": 95018,
-      "gzip": 110268
+      "gzip": 110268,
+      "brotli": 95018
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
-      "brotli": 87626,
-      "gzip": 87670
+      "gzip": 87670,
+      "brotli": 87626
     },
     "dist/client/assets/inter-latin-wght-normal-HASH.woff2": {
       "raw": 49704,
-      "brotli": 49708,
-      "gzip": 49702
+      "gzip": 49702,
+      "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
       "raw": 252078,
-      "brotli": 36049,
-      "gzip": 43332
+      "gzip": 43332,
+      "brotli": 36049
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 727142,
-      "brotli": 191694,
-      "gzip": 236638
+      "gzip": 236638,
+      "brotli": 191694
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
-      "brotli": 1747,
-      "gzip": 2054
+      "gzip": 2054,
+      "brotli": 1747
     },
     "dist/client/assets/MalleableHost-HASH.js": {
       "raw": 77463,
-      "brotli": 22782,
-      "gzip": 25654
+      "gzip": 25654,
+      "brotli": 22782
     },
     "dist/client/assets/performance-HASH.js": {
       "raw": 21000,
-      "brotli": 7176,
-      "gzip": 7952
+      "gzip": 7952,
+      "brotli": 7176
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
-      "brotli": 817,
-      "gzip": 945
+      "gzip": 945,
+      "brotli": 817
     },
     "dist/client/assets/player-HASH.js": {
       "raw": 308578,
-      "brotli": 68380,
-      "gzip": 95021
+      "gzip": 95021,
+      "brotli": 68380
     },
     "dist/client/assets/queries-HASH.js": {
       "raw": 35581,
-      "brotli": 10326,
-      "gzip": 11427
+      "gzip": 11427,
+      "brotli": 10326
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225484,
-      "brotli": 59853,
-      "gzip": 69512
+      "gzip": 69512,
+      "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1516,
-      "brotli": 565,
-      "gzip": 706
+      "gzip": 706,
+      "brotli": 565
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 6721,
-      "brotli": 2682,
-      "gzip": 2958
+      "gzip": 2958,
+      "brotli": 2682
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 939,
-      "brotli": 474,
-      "gzip": 528
+      "gzip": 528,
+      "brotli": 474
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 1816,
-      "brotli": 657,
-      "gzip": 805
+      "gzip": 805,
+      "brotli": 657
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
-      "brotli": 456,
-      "gzip": 500
+      "gzip": 500,
+      "brotli": 456
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 18081,
-      "brotli": 6349,
-      "gzip": 7488
+      "gzip": 7488,
+      "brotli": 6349
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
-      "brotli": 11139,
-      "gzip": 12373
+      "gzip": 12373,
+      "brotli": 11139
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
-      "brotli": 238,
-      "gzip": 265
+      "gzip": 265,
+      "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 47311,
-      "brotli": 15400,
-      "gzip": 17272
+      "gzip": 17272,
+      "brotli": 15400
     },
     "dist/client/index.html": {
       "raw": 11858,
-      "brotli": 3429,
-      "gzip": 4123
+      "gzip": 4123,
+      "brotli": 3429
     },
     "dist/client/render.html": {
       "raw": 1294,
-      "brotli": 411,
-      "gzip": 553
+      "gzip": 553,
+      "brotli": 411
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
-      "brotli": 428,
-      "gzip": 511
+      "gzip": 511,
+      "brotli": 428
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
-      "brotli": 101,
-      "gzip": 106
+      "gzip": 106,
+      "brotli": 101
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
-      "brotli": 16324,
-      "gzip": 18876
+      "gzip": 18875,
+      "brotli": 16324
     },
-    "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
-      "raw": 286058,
-      "gzip": 75224,
-      "brotli": 61620
+    "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs": {
+      "raw": 294982,
+      "gzip": 77629,
+      "brotli": 63543
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
-      "brotli": 4642,
-      "gzip": 5324
+      "gzip": 5324,
+      "brotli": 4642
     },
-    "dist/lib/chunks/define.ts-f3268e685655.mjs": {
-      "raw": 32079,
-      "brotli": 8218,
-      "gzip": 9254
+    "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
+      "raw": 32734,
+      "gzip": 9422,
+      "brotli": 8354
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
-      "brotli": 9522,
-      "gzip": 10764
+      "gzip": 10764,
+      "brotli": 9522
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "brotli": 8390,
-      "gzip": 9498
+      "gzip": 9497,
+      "brotli": 8390
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
       "raw": 434,
-      "brotli": 231,
-      "gzip": 296
+      "gzip": 296,
+      "brotli": 231
     },
     "dist/lib/chunks/index.ts-21682b68ed82.mjs": {
       "raw": 0,
-      "brotli": 2,
-      "gzip": 21
+      "gzip": 21,
+      "brotli": 2
     },
     "dist/lib/chunks/index.ts-7a66decb29dc.mjs": {
       "raw": 28475,
@@ -249,153 +249,153 @@
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
-      "brotli": 4342,
-      "gzip": 4951
+      "gzip": 4951,
+      "brotli": 4342
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31954,
-      "brotli": 7360,
-      "gzip": 8369
+      "gzip": 8369,
+      "brotli": 7500
     },
-    "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
-      "raw": 4485,
-      "gzip": 1658,
-      "brotli": 1466
+    "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
+      "raw": 3950,
+      "gzip": 1449,
+      "brotli": 1306
     },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
-      "brotli": 2544,
-      "gzip": 2922
+      "gzip": 2922,
+      "brotli": 2544
     },
     "dist/lib/chunks/tracing.ts-9f037afed474.mjs": {
       "raw": 3783,
-      "brotli": 1224,
-      "gzip": 1400
+      "gzip": 1400,
+      "brotli": 1224
     },
     "dist/lib/chunks/types.ts-b4e3b7897b28.mjs": {
       "raw": 2714,
-      "brotli": 884,
-      "gzip": 1051
+      "gzip": 1051,
+      "brotli": 884
     },
     "dist/lib/config.mjs": {
       "raw": 348,
-      "brotli": 140,
-      "gzip": 168
+      "gzip": 169,
+      "brotli": 149
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
-      "brotli": 436,
-      "gzip": 513
+      "gzip": 512,
+      "brotli": 436
     },
     "dist/lib/plugin.mjs": {
       "raw": 743,
-      "brotli": 250,
-      "gzip": 299
+      "gzip": 299,
+      "brotli": 250
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
-      "brotli": 3776,
-      "gzip": 4363
+      "gzip": 4363,
+      "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4025,
-      "brotli": 1370,
-      "gzip": 1596
+      "gzip": 1596,
+      "brotli": 1370
     },
     "dist/lib/recorder-chunks/bundle-types.ts-5850f68df54d.mjs": {
       "raw": 48604,
-      "brotli": 11629,
-      "gzip": 13176
+      "gzip": 13176,
+      "brotli": 11629
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
-      "brotli": 1709,
-      "gzip": 1901
+      "gzip": 1901,
+      "brotli": 1709
     },
     "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs": {
       "raw": 752,
-      "brotli": 335,
-      "gzip": 401
+      "gzip": 401,
+      "brotli": 335
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
-      "brotli": 939,
-      "gzip": 1146
+      "gzip": 1146,
+      "brotli": 939
     },
     "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs": {
       "raw": 863,
-      "brotli": 367,
-      "gzip": 461
+      "gzip": 461,
+      "brotli": 367
     },
     "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs": {
       "raw": 1644,
-      "brotli": 630,
-      "gzip": 767
+      "gzip": 767,
+      "brotli": 630
     },
     "dist/lib/recorder-kit.mjs": {
       "raw": 525,
-      "brotli": 202,
-      "gzip": 238
+      "gzip": 238,
+      "brotli": 202
     },
     "dist/lib/recorder-react.mjs": {
       "raw": 5462,
-      "brotli": 1525,
-      "gzip": 1661
+      "gzip": 1661,
+      "brotli": 1525
     },
     "dist/lib/recorder-testing.mjs": {
       "raw": 10357,
-      "brotli": 2719,
-      "gzip": 3161
+      "gzip": 3161,
+      "brotli": 2719
     },
     "dist/lib/recorder-ui.mjs": {
       "raw": 27207,
-      "brotli": 6908,
-      "gzip": 7884
+      "gzip": 7884,
+      "brotli": 6908
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
-      "brotli": 39185,
-      "gzip": 60962
+      "gzip": 60962,
+      "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
       "raw": 6031,
-      "brotli": 1680,
-      "gzip": 1928
+      "gzip": 1928,
+      "brotli": 1680
     },
     "dist/lib/server-testing.mjs": {
       "raw": 11887,
-      "brotli": 3072,
-      "gzip": 3494
+      "gzip": 3494,
+      "brotli": 3072
     },
     "dist/lib/server.mjs": {
       "raw": 1668,
-      "brotli": 474,
-      "gzip": 569
+      "gzip": 568,
+      "brotli": 474
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
-      "brotli": 4239,
-      "gzip": 4814
+      "gzip": 4814,
+      "brotli": 4239
     },
     "initial/index.html/css": {
       "raw": 253962,
-      "brotli": 36850,
-      "gzip": 44258
+      "gzip": 44258,
+      "brotli": 36850
     },
     "initial/index.html/js": {
       "raw": 1288570,
-      "brotli": 328486,
-      "gzip": 410206
+      "gzip": 410206,
+      "brotli": 328486
     },
     "initial/render.html/css": {
       "raw": 5252,
-      "brotli": 2038,
-      "gzip": 2455
+      "gzip": 2455,
+      "brotli": 2038
     },
     "initial/render.html/js": {
       "raw": 542325,
-      "brotli": 131773,
-      "gzip": 168433
+      "gzip": 168433,
+      "brotli": 131773
     }
   },
   "allowances": [
@@ -550,16 +550,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/chunks/define.ts-f3268e685655.mjs",
-      "cap": {
-        "raw": 32079,
-        "gzip": 9254,
-        "brotli": 8218
-      },
-      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
       "cap": {
         "raw": 434,
@@ -577,16 +567,6 @@
         "brotli": 4342
       },
       "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
-      "file": "dist/lib/config.mjs",
-      "cap": {
-        "raw": 348,
-        "gzip": 169,
-        "brotli": 146
-      },
-      "reason": "The config entry now carries the workspace plugin policy normalization added with the extension platform.",
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
@@ -698,16 +678,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs",
-      "cap": {
-        "raw": 4485,
-        "gzip": 1658,
-        "brotli": 1466
-      },
-      "reason": "The plugin entry's shared chunk gains HttpError and tooManyRequests (src/shared/http-error.ts); replaces summary-fields.ts-a8479d40f474 (+535 B raw).",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
       "file": "dist/client/assets/performance-HASH.js",
       "cap": {
         "raw": 21000,
@@ -808,23 +778,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/104"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
-      "cap": {
-        "raw": 286058,
-        "gzip": 75224
-      },
-      "reason": "The bundled server serves the fixed-name brand icons with a daily revalidating cache instead of an immutable one, on top of the upload-endpoint server code.",
-      "pr": "https://github.com/hazem3500/replays/pull/104"
-    },
-    {
-      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
-      "cap": {
-        "brotli": 7360
-      },
-      "reason": "Source providers gain an optional mark, which shifts this library chunk's Brotli output by a few bytes; raw and gzip are unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/106"
-    },
-    {
       "file": "dist/lib/plugin.mjs",
       "cap": {
         "brotli": 250
@@ -879,6 +832,56 @@
       },
       "reason": "The initial index style group carries the same EmptyState chips and status styles.",
       "pr": "https://github.com/hazem3500/replays/pull/107"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
+      "cap": {
+        "raw": 31954,
+        "gzip": 8369,
+        "brotli": 7500
+      },
+      "reason": "The registry chunk compresses 1 byte over its previous Brotli cap after the error-classification import changes; measured 7281 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "raw": 348,
+        "gzip": 169,
+        "brotli": 149
+      },
+      "reason": "The config entry compresses 4 bytes of Brotli (140 to 144) and 1 byte of gzip over main after the error-classification changes; measured in CI.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-930cf0bd32b4.mjs",
+      "cap": {
+        "raw": 294982,
+        "gzip": 77629,
+        "brotli": 63591
+      },
+      "reason": "The safe-error change alters the server entry source set, so the shared schema chunk gets a new source-set identity; its size is the embedded edits and upload-endpoint schemas, 286390 raw bytes measured in CI.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs",
+      "cap": {
+        "raw": 32734,
+        "gzip": 9422,
+        "brotli": 8354
+      },
+      "reason": "The safe-error change alters the shared define chunk source set and so its identity; measured 31780 raw bytes, 299 below the 32079 the previous identity measured on main.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
+    },
+    {
+      "file": "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs",
+      "cap": {
+        "raw": 3950,
+        "gzip": 1449,
+        "brotli": 1306
+      },
+      "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
+      "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
 }
