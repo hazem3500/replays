@@ -12,7 +12,7 @@ export interface TabBadge {
 }
 
 function badge(total: number, noun: readonly [string, string], problems: readonly (readonly [number, string, 'danger' | 'warning'])[]) {
-  if (total === 0) return undefined;
+  if (total === 0) return;
   const found = problems.filter(([count]) => count > 0);
   const label = [plural(total, ...noun), ...found.map(([count, word]) => `${count} ${word}`)].join(', ');
   const tone = found[0]?.[2];
