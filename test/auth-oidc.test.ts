@@ -549,7 +549,11 @@ describe('bearer tokens for machine uploads', () => {
     const token = mint(bearerClaims(idp.issuer, { email: 'ci@example.com' }));
     const me = await get('/api/me', { authorization: `Bearer ${token}` });
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ id: 'ci@example.com', email: 'ci@example.com', session: { signedIn: true, signOutUrl: '/auth/logout' } });
+    expect(await me.json()).toEqual({
+      id: 'ci@example.com',
+      email: 'ci@example.com',
+      session: { signedIn: true, signOutUrl: '/auth/logout' },
+    });
     const uploaded = await upload(origin, token);
     expect(uploaded.status).toBe(201);
     expect((await get('/api/replays/machine-upload', { authorization: `Bearer ${token}` })).status).toBe(200);

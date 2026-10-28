@@ -420,6 +420,10 @@ describe('people through the app', () => {
     }>;
     expect(mine.map(({ reason }) => reason)).toEqual(['boss']);
     expect(mine[0]!.people).toEqual([{ role: 'boss', email: 'eve@elsewhere.test', handles: { gitlab: 'Eve' } }]);
-    expect(await (await send('GET', '/api/me')).json()).toEqual({ id: 'ada@example.com', email: 'ada@example.com', session: { signedIn: true } });
+    expect(await (await send('GET', '/api/me')).json()).toEqual({
+      id: 'ada@example.com',
+      email: 'ada@example.com',
+      session: { signedIn: true },
+    });
   });
 });
