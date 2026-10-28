@@ -59,7 +59,7 @@
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 269,
-      "brotli": 187,
+      "brotli": 219,
       "gzip": 218
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -68,7 +68,7 @@
       "gzip": 6742
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 82503,
+      "raw": 82497,
       "brotli": 23404,
       "gzip": 26552
     },
@@ -98,9 +98,9 @@
       "gzip": 42798
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 713951,
-      "brotli": 187440,
-      "gzip": 231040
+      "raw": 720540,
+      "brotli": 189394,
+      "gzip": 233107
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -170,7 +170,7 @@
     "dist/client/assets/tools-HASH.js": {
       "raw": 34796,
       "brotli": 11139,
-      "gzip": 12376
+      "gzip": 12373
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 347,
@@ -179,7 +179,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 47311,
-      "brotli": 15444,
+      "brotli": 15400,
       "gzip": 17272
     },
     "dist/client/index.html": {
@@ -195,7 +195,7 @@
     "dist/lib/capture.mjs": {
       "raw": 1703,
       "brotli": 428,
-      "gzip": 512
+      "gzip": 511
     },
     "dist/lib/chunks/brand.ts-39dfaa6b2a17.mjs": {
       "raw": 131,
@@ -229,7 +229,7 @@
     },
     "dist/lib/chunks/human-bundle.ts-65bd7863a5ee.mjs": {
       "raw": 33777,
-      "brotli": 8394,
+      "brotli": 8390,
       "gzip": 9498
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
@@ -254,7 +254,7 @@
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
       "raw": 31954,
-      "brotli": 7280,
+      "brotli": 7360,
       "gzip": 8369
     },
     "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
@@ -289,7 +289,7 @@
     },
     "dist/lib/plugin.mjs": {
       "raw": 743,
-      "brotli": 246,
+      "brotli": 250,
       "gzip": 299
     },
     "dist/lib/plugins-gcs.mjs": {
@@ -383,9 +383,9 @@
       "gzip": 43724
     },
     "initial/index.html/js": {
-      "raw": 1270898,
-      "brotli": 322504,
-      "gzip": 402497
+      "raw": 1281967,
+      "brotli": 326185,
+      "gzip": 406675
     },
     "initial/render.html/css": {
       "raw": 5252,
@@ -620,16 +620,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "initial/index.html/js",
-      "cap": {
-        "raw": 1270898,
-        "gzip": 402499,
-        "brotli": 322504
-      },
-      "reason": "The index route ships the windowed feed virtualizer and the motion system in its initial script group.",
-      "pr": "https://github.com/hazem3500/replays/pull/99"
-    },
-    {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
         "raw": 35060,
@@ -718,26 +708,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/94"
     },
     {
-      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
-      "cap": {
-        "raw": 31954,
-        "gzip": 8369,
-        "brotli": 7280
-      },
-      "reason": "Upload endpoint option validation (authenticate, maxBytes, rateLimit, normalize, receipt, prefixed paths) and api.normalizeUpload registration.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
-      "file": "dist/lib/plugin.mjs",
-      "cap": {
-        "raw": 743,
-        "gzip": 299,
-        "brotli": 246
-      },
-      "reason": "The /plugin entry re-exports HttpError and tooManyRequests on top of #96's plugin settings exports; replaces #96's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/94"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 248879,
@@ -755,16 +725,6 @@
         "brotli": 36444
       },
       "reason": "The initial index style group carries the same Settings and EmptyState stylesheets added to the app stylesheet.",
-      "pr": "https://github.com/hazem3500/replays/pull/102"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 713951,
-        "gzip": 231040,
-        "brotli": 187440
-      },
-      "reason": "The sectioned Settings dialog (sidebar, phone sheet, CLI, Keyboard, Labs, Plugins and About sections), the EmptyState primitive and the shared beta-flag registry join the eager index graph, about 5 KB raw over main.",
       "pr": "https://github.com/hazem3500/replays/pull/102"
     },
     {
@@ -795,14 +755,6 @@
         "brotli": 7278
       },
       "reason": "The shared library chunk that holds plugin contracts now also carries the beta-flag registry the server parses flags from; it replaces index.ts-67a29d5237e2.",
-      "pr": "https://github.com/hazem3500/replays/pull/102"
-    },
-    {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "brotli": 226
-      },
-      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/102"
     },
     {
@@ -883,6 +835,50 @@
       },
       "reason": "The bundled server serves the fixed-name brand icons with a daily revalidating cache instead of an immutable one, on top of the upload-endpoint server code.",
       "pr": "https://github.com/hazem3500/replays/pull/104"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 720540,
+        "gzip": 233107,
+        "brotli": 189394
+      },
+      "reason": "The six built-in source-provider marks (Simple Icons paths) and the phone source sheet join the eager index rows, about 5.5 KB raw over main, which already carries the Settings dialog.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "raw": 1281967,
+        "gzip": 406675,
+        "brotli": 326185
+      },
+      "reason": "The index route's initial script group carries the same provider marks and source sheet as the main chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
+      "cap": {
+        "brotli": 7360
+      },
+      "reason": "Source providers gain an optional mark, which shifts this library chunk's Brotli output by a few bytes; raw and gzip are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "brotli": 250
+      },
+      "reason": "Brotli drift of one byte in the plugin entry after the source-provider types gained a mark.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "brotli": 219
+      },
+      "reason": "Brotli drift in this 261-byte chunk when the main chunk hash in its import changes; raw and gzip are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/106"
     }
   ]
 }

@@ -7,18 +7,34 @@
  *     { "id": "jira", "label": "Jira", "template": "https://jira.example.com/browse/{ref}", "pattern": "^[A-Z]+-\\d+$" }
  *   ]
  *
+ * Each provider can bring a look: a built-in monochrome `mark` (github, gitlab, slack, linear, jira, notion, link),
+ * or its own `icon` image. A template whose id names a mark (`jira` above) gets that mark.
+ *
  * Providers are pure functions of their input, so the capture CLI, the server and the tests share them.
  */
 import { assertSafeUrl, type ReplaySourceInput, type ReplaySourceRef, type SourceAttrs, sourceAttrs } from './context.ts';
 import { isSafeIconUrl } from './icon-url.ts';
 
+/**
+ * The monochrome marks the viewer ships (drawn inline in currentColor, so they follow the theme). A provider names one
+ * with `mark`; an `icon` image, when it has one too, wins.
+ */
+export const PROVIDER_MARKS = ['github', 'gitlab', 'slack', 'linear', 'jira', 'notion', 'link'] as const;
+export type ProviderMark = (typeof PROVIDER_MARKS)[number];
+
+export function isProviderMark(value: unknown): value is ProviderMark {
+  return typeof value === 'string' && (PROVIDER_MARKS as readonly string[]).includes(value);
+}
+
 export interface SourceProvider {
   id: string;
   /** Shown in help text and errors. */
   label: string;
+  /** One of the viewer's built-in marks (PROVIDER_MARKS); a template provider whose id is a mark's name gets it by default. */
+  mark?: ProviderMark;
   /**
    * The provider's mark in the viewer (topbar chip, Context tab, index rows): a `data:image/svg+xml` URL or an https URL,
-   * drawn as an image (never inlined as markup). Without one the viewer shows a link glyph.
+   * drawn as an image (never inlined as markup). Without one the viewer draws its `mark`, else a link glyph.
    */
   icon?: string;
   /** What one of its sources is, in a sentence: `Chat thread`, `Jira issue`. Used in accessible names and the Context tab. */
@@ -36,6 +52,7 @@ export interface SourceProviderInfo {
   label: string;
   noun?: string;
   icon?: string;
+  mark?: ProviderMark;
 }
 
 export interface TemplateProviderConfig {
@@ -49,6 +66,8 @@ export interface TemplateProviderConfig {
   icon?: string;
   /** See SourceProvider.noun. */
   noun?: string;
+  /** See SourceProvider.mark. */
+  mark?: ProviderMark;
 }
 
 const REPO = '[A-Za-z0-9-]{1,39}/[A-Za-z0-9._-]{1,100}';
@@ -58,6 +77,7 @@ export function githubProvider(host = 'github.com'): SourceProvider {
   return {
     id: 'github',
     label: 'GitHub',
+    mark: 'github',
     resolve(ref) {
       const issue = new RegExp(`^(${REPO})#(\\d{1,9})$`).exec(ref);
       if (issue) return { url: `https://${host}/${issue[1]}/issues/${issue[2]}`, label: `${issue[1]}#${issue[2]}` };
@@ -73,6 +93,7 @@ export function gitlabProvider(host = 'gitlab.com'): SourceProvider {
   return {
     id: 'gitlab',
     label: 'GitLab',
+    mark: 'gitlab',
     resolve(ref) {
       const match = /^((?:[A-Za-z0-9._-]{1,100}\/){1,20}[A-Za-z0-9._-]{1,100})([#!])(\d{1,9})$/.exec(ref);
       if (!match) return undefined;
@@ -86,6 +107,7 @@ export function gitlabProvider(host = 'gitlab.com'): SourceProvider {
 export const urlProvider: SourceProvider = {
   id: 'url',
   label: 'Link',
+  mark: 'link',
   resolve(ref) {
     try {
       const url = assertSafeUrl(ref, 'url');
@@ -102,9 +124,12 @@ export function templateProvider(config: TemplateProviderConfig): SourceProvider
   // Fail at start, not on the first upload.
   assertSafeUrl(config.template.replaceAll('{ref}', 'x'), `source provider ${config.id} template`);
   const pattern = config.pattern ? new RegExp(config.pattern) : /^[^\s]{1,200}$/;
+  // why: `{ "id": "jira", … }` looks like Jira without saying so.
+  const mark = config.mark ?? (isProviderMark(config.id) ? config.id : undefined);
   return {
     id: config.id,
     label: config.label ?? config.id,
+    ...(mark === undefined ? {} : { mark }),
     ...(config.icon === undefined ? {} : { icon: config.icon }),
     ...(config.noun === undefined ? {} : { noun: config.noun }),
     resolve(ref) {
@@ -114,8 +139,10 @@ export function templateProvider(config: TemplateProviderConfig): SourceProvider
   };
 }
 
-/** Throws on an icon that is not a safe image URL or a noun that is not short plain text. */
-export function assertProviderLook(provider: Pick<SourceProvider, 'id' | 'icon' | 'noun'>) {
+/** Throws on an icon that is not a safe image URL, a noun that is not short plain text, or an unknown mark. */
+export function assertProviderLook(provider: Pick<SourceProvider, 'id' | 'icon' | 'noun' | 'mark'>) {
+  if (provider.mark !== undefined && !isProviderMark(provider.mark))
+    throw new Error(`source provider ${provider.id}: mark must be one of ${PROVIDER_MARKS.join(', ')}`);
   if (provider.icon !== undefined && !isSafeIconUrl(provider.icon))
     throw new Error(`source provider ${provider.id}: icon must be a data:image/svg+xml URL or an https URL`);
   if (provider.noun !== undefined && (typeof provider.noun !== 'string' || !/^[^\n\r<>]{1,40}$/.test(provider.noun)))
@@ -147,11 +174,17 @@ export class SourceProviders {
     return [...this.providers.keys()];
   }
 
-  /** The providers that bring their own look (an icon or a noun), for the viewer. */
+  /** The providers that bring their own look (an icon, a noun or a mark), for the viewer. */
   describe(): SourceProviderInfo[] {
     return [...this.providers.values()]
-      .filter((provider) => provider.icon !== undefined || provider.noun !== undefined)
-      .map(({ id, label, icon, noun }) => ({ id, label, ...(noun ? { noun } : {}), ...(icon ? { icon } : {}) }));
+      .filter((provider) => provider.icon !== undefined || provider.noun !== undefined || provider.mark !== undefined)
+      .map(({ id, label, icon, noun, mark }) => ({
+        id,
+        label,
+        ...(noun ? { noun } : {}),
+        ...(icon ? { icon } : {}),
+        ...(mark ? { mark } : {}),
+      }));
   }
 
   /**
