@@ -76,7 +76,7 @@ export function LocalTimeline({
           </>
         );
         return item.current === true || !onPick ? (
-          <div key={item.id} className="lt-row" data-current={item.current || undefined}>
+          <div key={item.id} className="lt-row" data-current={item.current === true ? '' : undefined}>
             {bar}
           </div>
         ) : (
