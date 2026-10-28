@@ -17,10 +17,80 @@
       "gzip": 60962,
       "brotli": 39185
     },
+    "dist/client/assets/CommentRowsSource-HASH.js": {
+      "raw": 2421,
+      "gzip": 1263,
+      "brotli": 1147
+    },
+    "dist/client/assets/ComparePicker-HASH.js": {
+      "raw": 5232,
+      "gzip": 2349,
+      "brotli": 2122
+    },
+    "dist/client/assets/CompareViewer-HASH.css": {
+      "raw": 8845,
+      "gzip": 2280,
+      "brotli": 1959
+    },
+    "dist/client/assets/CompareViewer-HASH.js": {
+      "raw": 38116,
+      "gzip": 13521,
+      "brotli": 11999
+    },
+    "dist/client/assets/Editor-HASH.css": {
+      "raw": 35060,
+      "gzip": 6742,
+      "brotli": 5984
+    },
+    "dist/client/assets/Editor-HASH.js": {
+      "raw": 82404,
+      "gzip": 27339,
+      "brotli": 23404
+    },
+    "dist/client/assets/Inspector-HASH.css": {
+      "raw": 33095,
+      "gzip": 6332,
+      "brotli": 5643
+    },
+    "dist/client/assets/Inspector-HASH.js": {
+      "raw": 215881,
+      "gzip": 73565,
+      "brotli": 62241
+    },
+    "dist/client/assets/MalleableHost-HASH.css": {
+      "raw": 8084,
+      "gzip": 2054,
+      "brotli": 1747
+    },
+    "dist/client/assets/MalleableHost-HASH.js": {
+      "raw": 77463,
+      "gzip": 25654,
+      "brotli": 22782
+    },
+    "dist/client/assets/ReplayComparePage-HASH.js": {
+      "raw": 1022,
+      "gzip": 631,
+      "brotli": 569
+    },
+    "dist/client/assets/SuiteCompare-HASH.js": {
+      "raw": 1164,
+      "gzip": 705,
+      "brotli": 624
+    },
+    "dist/client/assets/SuiteWorkspace-HASH.js": {
+      "raw": 20379,
+      "gzip": 8352,
+      "brotli": 7157
+    },
+    "dist/client/assets/Viewer-HASH.js": {
+      "raw": 50387,
+      "gzip": 18358,
+      "brotli": 16055
+    },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
-      "gzip": 956,
-      "brotli": 823
+      "gzip": 955,
+      "brotli": 821
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -57,11 +127,6 @@
       "gzip": 241,
       "brotli": 190
     },
-    "dist/client/assets/CommentRowsSource-HASH.js": {
-      "raw": 2421,
-      "gzip": 1263,
-      "brotli": 1152
-    },
     "dist/client/assets/comments-ui-HASH.css": {
       "raw": 14300,
       "gzip": 3048,
@@ -72,50 +137,15 @@
       "gzip": 10025,
       "brotli": 8738
     },
-    "dist/client/assets/ComparePicker-HASH.js": {
-      "raw": 5232,
-      "gzip": 2350,
-      "brotli": 2122
-    },
-    "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8845,
-      "gzip": 2280,
-      "brotli": 1959
-    },
-    "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38116,
-      "gzip": 13526,
-      "brotli": 12013
-    },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
-      "gzip": 33181,
-      "brotli": 29491
+      "gzip": 33180,
+      "brotli": 29475
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 222,
       "brotli": 190
-    },
-    "dist/client/assets/Editor-HASH.css": {
-      "raw": 35060,
-      "gzip": 6742,
-      "brotli": 5984
-    },
-    "dist/client/assets/Editor-HASH.js": {
-      "raw": 82404,
-      "gzip": 27339,
-      "brotli": 23404
-    },
-    "dist/client/assets/Inspector-HASH.css": {
-      "raw": 33095,
-      "gzip": 6332,
-      "brotli": 5643
-    },
-    "dist/client/assets/Inspector-HASH.js": {
-      "raw": 359609,
-      "gzip": 119586,
-      "brotli": 102540
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -133,19 +163,9 @@
       "brotli": 34114
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 919405,
-      "gzip": 286375,
-      "brotli": 236693
-    },
-    "dist/client/assets/MalleableHost-HASH.css": {
-      "raw": 8084,
-      "gzip": 2054,
-      "brotli": 1747
-    },
-    "dist/client/assets/MalleableHost-HASH.js": {
-      "raw": 77463,
-      "gzip": 25654,
-      "brotli": 22782
+      "raw": 847504,
+      "gzip": 264560,
+      "brotli": 220597
     },
     "dist/client/assets/pencil-HASH.js": {
       "raw": 310,
@@ -182,15 +202,10 @@
       "gzip": 2958,
       "brotli": 2682
     },
-    "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 1022,
-      "gzip": 633,
-      "brotli": 572
-    },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 939,
-      "gzip": 528,
-      "brotli": 474
+      "raw": 748,
+      "gzip": 442,
+      "brotli": 394
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 1816,
@@ -199,18 +214,8 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
-      "gzip": 500,
-      "brotli": 456
-    },
-    "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1164,
-      "gzip": 706,
-      "brotli": 644
-    },
-    "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20379,
-      "gzip": 8355,
-      "brotli": 7171
+      "gzip": 499,
+      "brotli": 455
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -232,11 +237,6 @@
       "gzip": 24898,
       "brotli": 22077
     },
-    "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50992,
-      "gzip": 18530,
-      "brotli": 16268
-    },
     "dist/client/index.html": {
       "raw": 12263,
       "gzip": 4252,
@@ -244,8 +244,8 @@
     },
     "dist/client/render.html": {
       "raw": 1294,
-      "gzip": 552,
-      "brotli": 411
+      "gzip": 548,
+      "brotli": 409
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -655,26 +655,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 1816,
-        "gzip": 805,
-        "brotli": 657
-      },
-      "reason": "Caption morphing and wrapped step captions add presentation styles shared by viewer and video export.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5252,
-        "gzip": 2455,
-        "brotli": 2038
-      },
-      "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
       "file": "dist/lib/chunks/index.ts-7a66decb29dc.mjs",
       "cap": {
         "raw": 28475,
@@ -930,16 +910,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 359609,
-        "gzip": 119586,
-        "brotli": 102570
-      },
-      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged. Then: Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/ReplayComparePage-HASH.js",
       "cap": {
         "raw": 1022,
@@ -1006,6 +976,26 @@
       },
       "reason": "Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2418,
+        "gzip": 911,
+        "brotli": 749
+      },
+      "reason": "Captions swap by whole line and keep a hiding caption whole: the swap keyframes, enter and exit timing and the reduced-motion rules, about 630 bytes raw; the viewer chunk drops ~137 kB raw with calligraph gone.",
+      "pr": "https://github.com/hazem3500/replays/pull/114"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5788,
+        "gzip": 2529,
+        "brotli": 2103
+      },
+      "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
+      "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
       "file": "dist/client/assets/main-HASH.js",

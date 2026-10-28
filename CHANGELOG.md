@@ -221,6 +221,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
+- Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
+  character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
+  first. This removes the `calligraph` and `motion` dependencies.
 
 - Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
   that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
