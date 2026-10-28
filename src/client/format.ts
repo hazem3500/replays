@@ -35,7 +35,7 @@ export function entrySize(entry: ReplayNetworkEntry) {
 }
 
 export function formatBytes(bytes?: number) {
-  if (bytes === undefined) return '—';
+  if (bytes === undefined) return 'Unknown';
   if (bytes < 1024) return `${bytes} B`;
   return `${(bytes / 1024).toFixed(bytes < 10_240 ? 1 : 0)} kB`;
 }
@@ -56,7 +56,7 @@ const UNITS: Array<[Intl.RelativeTimeFormatUnit, number]> = [
 /** "3 days ago", "yesterday", "just now"; `narrow` gives "3d ago" for tight columns. */
 export function formatRelative(iso: string, now = Date.now(), style: 'long' | 'narrow' = 'long') {
   const time = Date.parse(iso);
-  if (!Number.isFinite(time)) return '—';
+  if (!Number.isFinite(time)) return 'Unknown';
   const delta = time - now;
   for (const [unit, size] of UNITS) {
     if (Math.abs(delta) >= size) return (style === 'narrow' ? RELATIVE_NARROW : RELATIVE).format(Math.round(delta / size), unit);

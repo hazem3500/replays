@@ -21,7 +21,7 @@ const SORT_OPTIONS = [
   { value: 'capturedAt', label: 'Oldest' },
   { value: '-duration', label: 'Longest' },
   { value: '-errors', label: 'Most errors' },
-  { value: 'title', label: 'Title A–Z' },
+  { value: 'title', label: 'Title A to Z' },
 ];
 
 const sortToken = (sort: Sort) => `${sort.direction === 'descending' ? '-' : ''}${sort.key}`;

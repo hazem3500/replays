@@ -35,7 +35,7 @@ for machine uploads; `AUTH_ALLOW` allow-list).
 ### A plugin
 
 ```js
-// my-auth.mjs — AUTH_MODE=plugin AUTH_PLUGIN=./my-auth.mjs
+// my-auth.mjs: AUTH_MODE=plugin AUTH_PLUGIN=./my-auth.mjs
 export default function myAuth(env) {
   return {
     name: 'shared-secret',

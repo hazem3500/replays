@@ -19,8 +19,8 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
-      "gzip": 957,
-      "brotli": 827
+      "gzip": 956,
+      "brotli": 826
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -70,7 +70,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 279,
       "gzip": 218,
-      "brotli": 219
+      "brotli": 193
     },
     "dist/client/assets/dropdown-menu-HASH.js": {
       "raw": 224666,
@@ -223,19 +223,19 @@
       "brotli": 101
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
-      "raw": 69163,
-      "gzip": 18875,
+      "raw": 69161,
+      "gzip": 18872,
       "brotli": 16324
     },
     "dist/lib/chunks/context.schema.json-e7797a970d02.mjs": {
       "raw": 298271,
       "gzip": 78441,
-      "brotli": 64244
+      "brotli": 64229
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
-      "raw": 18417,
-      "gzip": 5324,
-      "brotli": 4642
+      "raw": 18413,
+      "gzip": 5317,
+      "brotli": 4640
     },
     "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
       "raw": 32734,
@@ -300,7 +300,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 169,
-      "brotli": 149
+      "brotli": 146
     },
     "dist/lib/index.mjs": {
       "raw": 1588,

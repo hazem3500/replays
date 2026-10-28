@@ -65,6 +65,10 @@ Keep files at most 400 lines; extract pure logic, then hooks, then views. Keep c
 
 No narrating comments. Inside functions, JSX, trailing positions and standalone prose, use only `why:` or `invariant:` tags. TSDoc directly attached to declarations explains contracts and reasons, never restates the name. License headers and tool directives are allowed; every lint disable needs `-- why:`. Tag or delete with judgment; do not mechanically tag narration.
 
+## Copy
+
+No em or en dashes in user-visible copy; write ranges and asides in words. `replays/no-dash-in-copy` enforces it in strings, templates and JSX text; comments are exempt.
+
 ## Tests
 
 Test public behavior and real failure modes. Mock only process boundaries (network, clock, filesystem, browser APIs), never our own modules. Mock client network calls with the shared MSW handlers in `test/msw/` (`setupMockApi`) instead of stubbing `fetch`; Storybook adopts them separately. Do not export private helpers just for tests. No snapshot-only tests, trivial getter/constant tests or type-shape tests. One behavior per `it`, named as a sentence. Logic goes in Vitest; UI behavior in story `play` or e2e; workflows in e2e. Ask: which mutant would this test kill? If none, remove it.

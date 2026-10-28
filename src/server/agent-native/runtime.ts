@@ -224,7 +224,7 @@ export async function createApplicationRuntime(
             const input = await body(request, signal);
             const title = input && typeof input === 'object' && 'title' in input ? input.title : undefined;
             if (typeof title !== 'string' || !title.trim() || title.length > 200)
-              refuse(400, 'Conversation title must contain 1–200 characters');
+              refuse(400, 'Conversation title must contain 1 to 200 characters');
             json(response, 201, await records.createConversation(owner, title.trim()));
           } else refuse(405, 'Method not allowed');
         } else if (path === '/_agent-native/actions/inspect-replay' && ['GET', 'HEAD'].includes(request.method ?? '')) {
