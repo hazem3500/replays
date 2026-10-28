@@ -690,7 +690,18 @@ const ViewerHeader = memo(function ViewerHeader({
     ...(titleFrom ? { titleFrom } : {}),
     titleId: 'replay-title',
   };
-  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} hasEdits={hasEdits} {...shared} />;
+  if (compact)
+    return (
+      <PhoneHeader
+        bundle={bundle}
+        suite={suite}
+        menu={menu}
+        menuItems={menuItems}
+        menuFooter={menuFooter}
+        hasEdits={hasEdits}
+        {...shared}
+      />
+    );
   return (
     <Topbar
       {...shared}
