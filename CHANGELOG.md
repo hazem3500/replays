@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
+  mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
+  `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
+
 - **Views and capture profiles** ([docs/extension-api.md](docs/extension-api.md#views)): core ships seven views (`standard`,
   `compare`, `performance`, `debug`, `walkthrough`, `review`, `support`) as data. The config key `views` and `api.view` add or
   retune them, and `GET /api/config` and `<meta name="app-views">` serve them; `ViewCatalog`/`createViewCatalog` from `/server`.

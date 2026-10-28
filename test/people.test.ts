@@ -356,6 +356,7 @@ describe('people through the app', () => {
       email: 'ada@example.com',
       name: 'Directory ada@example.com',
       people: { roles: ROLES, handles: [{ id: 'github', label: 'GitHub username', pattern: '[a-z0-9-]{1,39}' }] },
+      session: { signedIn: true },
     });
   });
 
@@ -419,6 +420,6 @@ describe('people through the app', () => {
     }>;
     expect(mine.map(({ reason }) => reason)).toEqual(['boss']);
     expect(mine[0]!.people).toEqual([{ role: 'boss', email: 'eve@elsewhere.test', handles: { gitlab: 'Eve' } }]);
-    expect(await (await send('GET', '/api/me')).json()).toEqual({ id: 'ada@example.com', email: 'ada@example.com' });
+    expect(await (await send('GET', '/api/me')).json()).toEqual({ id: 'ada@example.com', email: 'ada@example.com', session: { signedIn: true } });
   });
 });

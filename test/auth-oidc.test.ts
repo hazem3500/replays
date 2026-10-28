@@ -355,14 +355,22 @@ describe('login flow', () => {
 
     const me = await get('/api/me', { cookie: session });
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ id: 'ada@example.com', email: 'ada@example.com', name: 'Ada Example' });
+    expect(await me.json()).toEqual({
+      id: 'ada@example.com',
+      email: 'ada@example.com',
+      name: 'Ada Example',
+      session: { signedIn: true, signOutUrl: '/auth/logout' },
+    });
     expect((await get('/api/replays', { cookie: session })).status).toBe(200);
   });
 
   it('uses the subject as the identity when the token carries no email', async () => {
     const { signIn, get } = await start();
     const { session } = await signIn({ sub: 'user-42' });
-    expect(await (await get('/api/me', { cookie: session })).json()).toEqual({ id: 'user-42' });
+    expect(await (await get('/api/me', { cookie: session })).json()).toEqual({
+      id: 'user-42',
+      session: { signedIn: true, signOutUrl: '/auth/logout' },
+    });
   });
 
   it('never redirects off site: an unsafe next falls back to the app root', async () => {
@@ -383,7 +391,9 @@ describe('login flow', () => {
     expect(params.get('redirect_uri')).toBe(`${PUBLIC_ORIGIN}/replays/auth/callback`);
     expect(login.headers.getSetCookie()[0]).toContain('Path=/replays;');
     expect(callback.headers.get('location')).toBe('/replays/r/abc');
-    expect((await get('/replays/api/me', { cookie: session })).status).toBe(200);
+    const me = await get('/replays/api/me', { cookie: session });
+    expect(me.status).toBe(200);
+    expect((await me.json()).session).toEqual({ signedIn: true, signOutUrl: '/replays/auth/logout' });
     expect((await signIn(undefined, '//evil.example')).callback.headers.get('location')).toBe('/replays/');
   });
 
@@ -539,7 +549,7 @@ describe('bearer tokens for machine uploads', () => {
     const token = mint(bearerClaims(idp.issuer, { email: 'ci@example.com' }));
     const me = await get('/api/me', { authorization: `Bearer ${token}` });
     expect(me.status).toBe(200);
-    expect(await me.json()).toEqual({ id: 'ci@example.com', email: 'ci@example.com' });
+    expect(await me.json()).toEqual({ id: 'ci@example.com', email: 'ci@example.com', session: { signedIn: true, signOutUrl: '/auth/logout' } });
     const uploaded = await upload(origin, token);
     expect(uploaded.status).toBe(201);
     expect((await get('/api/replays/machine-upload', { authorization: `Bearer ${token}` })).status).toBe(200);
@@ -550,7 +560,7 @@ describe('bearer tokens for machine uploads', () => {
   it('identifies a service account by its subject when there is no email', async () => {
     const { idp, get } = await start();
     const me = await get('/api/me', { authorization: `Bearer ${mint(bearerClaims(idp.issuer))}` });
-    expect(await me.json()).toEqual({ id: 'ci-bot' });
+    expect(await me.json()).toEqual({ id: 'ci-bot', session: { signedIn: true, signOutUrl: '/auth/logout' } });
   });
 
   it('checks the audience against the configured API audience instead of the client id', async () => {
