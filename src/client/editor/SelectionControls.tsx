@@ -23,7 +23,7 @@ const isEffectSelection = (selection: Selection): selection is EffectSelection =
 function settingOf(region: object) {
   if ('scale' in region && typeof region.scale === 'number') return region.scale;
   if ('rate' in region && typeof region.rate === 'number') return region.rate;
-  return undefined;
+  return;
 }
 
 export function EffectControls({
