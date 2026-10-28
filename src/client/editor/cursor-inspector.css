@@ -45,6 +45,24 @@
   @container (max-width: 210px) { .cursor-motion-name { font-size: var(--text-2xs); } }
   .cursor-motion-description { margin: 8px 0 0; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 14px; }
 
+  .cursor-style-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+  .cursor-style-option { display: grid; justify-items: center; gap: 4px; min-width: 0; padding: 4px 4px 6px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); color: var(--text-secondary); cursor: pointer; outline: none; transition: border-color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+  .cursor-style-option:hover { border-color: var(--line-strong); color: var(--text); }
+  .cursor-style-option[data-checked] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); color: var(--text); }
+  .cursor-style-option:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .cursor-style-option[data-disabled] { cursor: default; }
+  .cursor-style-well { display: grid; place-items: center; width: 100%; height: 44px; overflow: hidden; border-radius: 5px; background: #f6f7fa; }
+  .cursor-style-glyph { position: relative; display: block; flex: none; }
+  .cursor-style-option[data-style="agent"] .cursor-style-glyph { translate: -18px 0; }
+  .cursor-style-glyph > svg:not([style*="position"]) { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35)); }
+  .cursor-style-name { max-width: 100%; overflow: hidden; padding-inline: 2px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+  .cursor-color-label { display: block; margin-top: 14px; }
+  .cursor-color-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .cursor-color-swatch { position: relative; width: 22px; height: 22px; border-radius: 50%; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 28%, transparent); cursor: pointer; outline: none; }
+  .cursor-color-swatch[data-default] { background: conic-gradient(#111 0 50%, #fff 0 100%); }
+  .cursor-color-swatch[data-checked] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+  .cursor-color-swatch:focus-visible { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ring); }
+  .cursor-color-swatch::after { content: ''; position: absolute; inset: -5px; }
   .cursor-size-slider { margin-top: 4px; }
   .cursor-size-scale { display: flex; justify-content: space-between; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 14px; font-variant-numeric: tabular-nums; }
 
@@ -62,7 +80,7 @@
   .editor-shell[data-mobile] .cursor-motion-grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
 
   @media (prefers-reduced-motion: reduce) {
-    .cursor-options, .cursor-motion-option { transition: none; }
+    .cursor-options, .cursor-motion-option, .cursor-style-option { transition: none; }
     .cursor-motion-option:is([data-checked], :hover, :focus-visible):not([data-disabled]) .cursor-motion-moving { display: none; }
     .cursor-motion-option:is([data-checked], :hover, :focus-visible):not([data-disabled]) .cursor-motion-still { display: inline; }
   }
