@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { cn } from '@/lib/utils.ts';
 
 import { productName } from './config.ts';
+import { useAutoRetry } from './hooks/use-auto-retry.ts';
+import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
@@ -24,7 +26,8 @@ import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, Scop
 import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
 import { SortMenu } from './ReplayIndexCompact.tsx';
-import { FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
+import { activeFilterTokens, FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
+import { IndexEmpty, type IndexEmptyInput } from './index/index-empty.tsx';
 import { MeContext } from './index/People.tsx';
 import { FirstRun } from './index/first-run/FirstRun.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
@@ -422,6 +425,7 @@ export function ReplayIndex() {
   const [loadError, setError] = useState('');
   const [authFailure, setAuthFailure] = useState<SignInError>();
   const [settledFilters, setSettledFilters] = useState<ReplayFilters | undefined>(restored ? filters : undefined);
+  const [retriedFilters, setRetriedFilters] = useState<ReplayFilters>();
   const [hosts, setHosts] = useState<string[]>(() =>
     [...new Set((restored?.items ?? []).map((summary) => summary.host).filter(Boolean))].sort(),
   );
@@ -620,8 +624,22 @@ export function ReplayIndex() {
     Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
   const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
   const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
-  const error = settledFilters === filters ? loadError : '';
-  const connectionError = error.startsWith('Could not reach ');
+  // why: a retry re-runs the request with a fresh filters object; the failure stays on screen while it runs.
+  const error = settledFilters === filters || retriedFilters === filters ? loadError : '';
+  // why: a proxy in front of a stopped server answers 502 to 504; for the person that is "can't reach", not a server bug.
+  const unreachable = error.startsWith('Could not reach ') || /\((?:502|503|504)\)$/.test(error);
+  // why: a list already on screen beats a blank page, so a failed refresh keeps it under a banner and keeps trying.
+  const stale = Boolean(items && error) && !authFailure;
+  const autoRetry = useAutoRetry({
+    failing: Boolean(error) && !authFailure,
+    pending: settledFilters !== filters,
+    retry: () => {
+      const next = { ...filters };
+      setRetriedFilters(next);
+      setFilters(next);
+    },
+  });
+  const pluginFilters = usePluginSnapshot().filters;
   const replays = entries ? replayCount(entries) : 0;
   const suiteRows = entries ? entries.filter((entry) => entry.kind === 'suite').length : 0;
 
@@ -697,6 +715,32 @@ export function ReplayIndex() {
     ...(peopleOn ? { forMe, setForMe: changeForMe, handles: me?.people?.handles ?? [], linked, setLinked: changeLinked } : {}),
   };
 
+  const purposeInfo = purpose ? purposes.find((item) => item.id === purpose) : undefined;
+  const tokens = activeFilterTokens(filterState, pluginFilters).map((token) => token.name);
+  const narrowing = purposeInfo ? [purposeInfo.label, ...tokens] : tokens;
+  const searchText = filters.q?.trim() ?? '';
+  const searchEverything = () =>
+    feedTransition(() => {
+      setKind(undefined);
+      setForMe(false);
+      setPurpose(undefined);
+      setFilters((current) => (current.q ? { q: current.q } : {}));
+    });
+  // why: an empty view names what narrowed it (purpose first, then each filter) so the way back is obvious.
+  const emptyView = (): IndexEmptyInput | undefined => {
+    if (!entries || entries.length > 0) return undefined;
+    if (searchText) {
+      const onClearSearch = () => {
+        setQuery('');
+        update('q', undefined);
+      };
+      return { kind: 'search', query: searchText, narrowing, onClearSearch, onSearchEverything: searchEverything };
+    }
+    if (purposeInfo && !tokens.length) return { kind: 'purpose', purpose: purposeInfo, onShowAll: () => changePurpose(undefined) };
+    return filtered ? { kind: 'filtered', active: narrowing, onClearFilters: clear } : undefined;
+  };
+  const empty = emptyView();
+
   return (
     <main className="index-shell" ref={shell}>
       {/* One sticky block: identity + search + actions, then the toolbar (purposes, active filters, filter, sort, layout). */}
@@ -736,26 +780,13 @@ export function ReplayIndex() {
         {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
         {items && !error ? <IndexSections summaries={items} /> : null}
         {authFailure ? <SignInLink error={authFailure} /> : null}
-        {error ? (
-          <div className="empty" role="alert">
-            <strong>{connectionError ? 'Can’t reach Replays' : 'Could not load replays'}</strong>
-            <span>{connectionError ? 'Check your connection or VPN, then try again.' : error}</span>
-            <button type="button" className="button secondary" onClick={() => window.location.reload()}>
-              Try again
-            </button>
-          </div>
+        {stale ? <IndexEmpty input={{ kind: 'offline', connection: unreachable, retry: autoRetry }} /> : null}
+        {error && !stale ? (
+          <IndexEmpty input={{ kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry }} />
+        ) : empty ? (
+          <IndexEmpty input={empty} onUpload={() => upload.current?.open()} />
         ) : entries && entries.length === 0 ? (
-          filtered ? (
-            <div className="empty">
-              <strong>No replays match</strong>
-              <span>Clear a filter or switch purpose to see more replays.</span>
-              <button type="button" className="button secondary" onClick={clear}>
-                Clear filters
-              </button>
-            </div>
-          ) : (
-            <FirstRun onUpload={() => upload.current?.open()} purposes={purposes} />
-          )
+          <FirstRun onUpload={() => upload.current?.open()} purposes={purposes} />
         ) : entries ? (
           <MeContext value={meContext}>
             <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
