@@ -25,8 +25,32 @@
     <meta name="app-name" content="__PRODUCT_NAME__" />
     <meta name="app-logo" content="__PRODUCT_LOGO__" />
     <title>__PRODUCT_NAME__</title>
-    <!-- The product mark (components/brand-icon.tsx BrandMark): a play triangle in a rounded square, in the accent. -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%238b9dff'/%3E%3Cpath fill='%230b0f24' d='M9.5 7.6v8.8a.6.6 0 0 0 .9.5l7.2-4.4a.6.6 0 0 0 0-1l-7.2-4.4a.6.6 0 0 0-.9.5Z'/%3E%3C/svg%3E" />
+    <!-- The built-in mark (src/client/components/brand-mark-geometry.ts), drawn into public/assets/brand by
+         scripts/build-icons.mjs. The PNG's sizes keeps browsers on the SVG, which follows the tab's colour scheme. -->
+    <link rel="icon" href="/assets/brand/favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="icon" href="/assets/brand/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/assets/brand/apple-touch-icon.png" />
+    <link rel="manifest" href="/assets/brand/manifest.json" />
+    <script data-brand-icons>
+      // why: a deployment's logo (branding logoUrl) is its tab icon too. The home-screen icon and the manifest carry the
+      // built-in mark and name: a custom logo drops both, a custom name only the manifest (iOS labels the icon with the
+      // title). 'replays' is PRODUCT_NAME (src/shared/brand.ts; test/brand-mark-dom.test.ts holds them together).
+      (function () {
+        var logo = document.querySelector('meta[name="app-logo"]').content;
+        var name = document.querySelector('meta[name="app-name"]').content;
+        var custom = /^(https:|data:image\/)/i.test(logo);
+        var renamed = name !== 'replays' && !/^__/.test(name);
+        var links = document.querySelectorAll('link[rel="icon"], link[rel="apple-touch-icon"], link[rel="manifest"]');
+        for (var i = 0; i < links.length; i++) {
+          var link = links[i];
+          if (custom && link.rel === 'icon') {
+            link.removeAttribute('type');
+            link.removeAttribute('sizes');
+            link.href = logo;
+          } else if (custom || (renamed && link.rel === 'manifest')) link.remove();
+        }
+      })();
+    </script>
     <style>
       /* Page transitions (styles.css has the animation): opt in here, unlayered, before the first render. */
       @view-transition { navigation: auto; }

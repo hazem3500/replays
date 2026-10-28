@@ -522,11 +522,9 @@ export function createApp(options: AppOptions) {
         if (response.writableEnded) return;
       } else if (path.startsWith('/assets/')) {
         const file = resolve(options.clientDir, `.${path}`);
-        if (
-          file.startsWith(`${resolve(options.clientDir)}/`) &&
-          (await serveFile(request, response, file, 'public, max-age=31536000, immutable'))
-        )
-          return;
+        // why: assets/brand/* (favicon, manifest) keep fixed names for index.html, so they must revalidate.
+        const cache = path.startsWith('/assets/brand/') ? 'public, max-age=86400' : 'public, max-age=31536000, immutable';
+        if (file.startsWith(`${resolve(options.clientDir)}/`) && (await serveFile(request, response, file, cache))) return;
       }
 
       if (request.method === 'GET' && request.headers.accept?.includes('text/html')) {
