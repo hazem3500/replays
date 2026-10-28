@@ -20,6 +20,8 @@ export type { PluginSpec } from '../plugin/types.ts';
 /** The `malleable` block: the host's policy for sandboxed user plugins (docs/malleability.md#the-hosts-policy). */
 export type { CapabilityRule, MalleableConfig } from '../shared/malleable-policy.ts';
 export type { PosterMoment, ProfileConfig, ProfileViewerDefaults } from '../shared/profiles.ts';
+export type { CaptureNetwork, CaptureProfile, CaptureSampling, NetworkBodyLimits } from '../shared/capture-profile.ts';
+export type { ViewLayout, ViewPreset } from '../shared/views.ts';
 
 /** @deprecated Use `ProfileConfig`. */
 export type PurposeConfig = ProfileConfig;

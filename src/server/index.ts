@@ -13,6 +13,7 @@ export { createRuntime, mergeContextSchemas, resolveSettings, type Runtime, type
 export { createApp, type AppOptions } from './app.ts';
 export { ReplayStore } from './store.ts';
 export { createProfileCatalog, ProfileCatalog } from './profiles.ts';
+export { createViewCatalog, ViewCatalog } from './views.ts';
 export { loadSettings, readConfigFile, type AppSettings, type FileConfig } from './config.ts';
 export { authFromEnv, headerAuth, noneAuth, oidcAuth } from './auth/index.ts';
 export type { OidcOptions } from './auth/oidc.ts';

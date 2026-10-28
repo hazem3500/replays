@@ -126,7 +126,8 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.afterUpload(hook)` | `hook({ bundle, identity, request, url })` after the bundle is stored; errors are logged and never fail the upload | – |
 | `api.redaction({ headers?, queryParams?, jsonKeys?, text?, maskSelectors? })` | [Redaction rules](extending.md#redaction-rules) added to the sanitiser's defaults, in the capture CLI (which reads the same config) and the server's privacy pass. Rules from several plugins and the config's `redaction` add up; they cannot turn a default off. Validate your own with `assertRedactionRules` (`/plugin`, `/capture`) | – (invalid rules are an `invalid-registration`) |
 | `api.client({ id, script, style? })` | A browser entry, served by the app behind the same auth (an absolute file path) or loaded from an `https:` URL | the same `id` twice in one plugin |
-| `api.profile({ id, label, order?, retentionDays?, viewer?, poster?, infer? })` | A [profile](#profiles-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.profile` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
+| `api.profile({ id, label, order?, retentionDays?, viewer?, poster?, view?, capture?, infer? })` | A [profile](#profiles-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.profile` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
+| `api.view({ id, label, order?, layout?, openAt?, leadMs?, inspector?, stage?, headline?, speed? })` | A [view](#views): a way to look at replays | id taken by another plugin, or a built-in id (retune built-ins from the config file) |
 | `api.retention({ days(summary) })` | A [retention rule](#profiles-and-retention) that is not about profile: whole days, or `0` / `undefined` for no limit | – |
 | `api.render({ posterAt?, beforeRender?, afterRender? })` | [Render pipeline hooks](#render-pipeline-hooks): the poster's moment, a veto or option change before each render, a call after each stored file | – (hooks run in plugin order) |
 | `api.summaryFields({ name, version?, fields(bundle) })` | Small values for the index, derived into `summary.ext[<plugin>]` whenever a summary is built ([below](#the-index-summary-fields-columns-filters-sections)) | the same `name` twice in one plugin |
@@ -204,7 +205,7 @@ mechanism) still works.
 ## Profiles and retention
 
 A profile answers "why was this recorded?" (a bug triage, a design review, a walkthrough) and changes how a replay is kept,
-opened, listed and drawn. **The core defines none.** A deployment declares them in the config file, or a plugin registers
+opened, listed and drawn. **Core ships one, [`performance`](#the-built-in-profile).** A deployment declares more in the config file, or a plugin registers
 them (and only a plugin can *infer* one):
 
 ```ts
@@ -229,6 +230,8 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
 | `viewer.inspector` | `'open'` or `'collapsed'`: the bottom panel when the person has no stored choice |
 | `viewer.captions` | Step captions on the player when the person has no stored choice |
 | `poster` | The list thumbnail's moment: `'middle-step'` (the default), `'first-error'` or `'last-step'`. A plugin's [`posterAt`](#render-pipeline-hooks) wins over it |
+| `view` | The [view](#views) its replays and suites open in; default `standard`. Must name a defined view, or the server refuses to start |
+| `capture` | Capture defaults for `replays capture --profile <id>` and the recorder kit (see [Capture profiles](#capture-profiles)); explicit flags and options win |
 | `infer(input)` | Plugins only. `input` is the replay's summary (counts, `sources`, `tags`, `suiteRun`, `title`, `url`, …) plus `errors`; return `true` to claim the replay. The first profile (in `order`) that says yes wins; a throwing `infer` counts as no and is logged once |
 
 - **Config and plugins.** Two plugins registering the same id is a `conflict` error. A config entry with a plugin profile's id
@@ -259,6 +262,56 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
   `purposes`, `api.purpose`, `meta.purpose`, `summary.purpose`/`purposeInferred`, `--purpose`, `?purpose=`,
   `RETENTION_PURPOSE_<ID>_DAYS`, `x-replay-purpose` and `purposes` in `/api/config`. Setting both spellings to different
   values is refused. [downstream-migration.md](downstream-migration.md#renaming-purposes-to-profiles) has the steps.
+
+### The built-in profile
+
+Core ships one profile, `performance` (`view: 'performance'`, `capture: { performance: true, network: 'headers' }`, order 100),
+so `--profile performance` and the Performance view work in a plain core. A config or plugin entry with the id `performance`
+retunes it field by field. The index only shows it as a tab once some replay has it.
+
+### Capture profiles
+
+A profile's `capture` block sets how its replays are recorded. A profile can only tighten privacy: loosening stays in
+`redaction` and the recorder's privacy options.
+
+| Field | Meaning |
+| --- | --- |
+| `console` | Levels kept (`debug`, `info`, `log`, `warn`, `error`); default all. `[]` keeps no console track |
+| `network` | `'headers'` (default: method, URL, status, headers, all redacted), `'off'`, or `'bodies'` (opt-in; see below) |
+| `bodies` | With `network: 'bodies'`: `{ maxBytes?, contentTypes? }`. Both can only narrow the defaults: 65536 bytes per body; JSON, `*+json`, `text/*` and form data. Binary bodies are never kept |
+| `performance` | Paint, LCP, long tasks and slow interactions; default true |
+| `sampling` | rrweb sampling: `'full'`, `'balanced'` (default) or `'light'` |
+| `video`, `stepPauseMs`, `viewport`, `runs` | CLI defaults for `--video`, `--step-pause`, `--viewport` and `--runs` (1 to 10) |
+| `privacy` | `{ maskAllText: true, blockMedia: true }`: stricter masking only |
+
+## Views
+
+A view is how a page looks at a replay, or at a set of recordings: which inspector tabs lead, where playback starts, how a
+set is laid out. Views are never stored with a replay. The viewer picks one from `?view=`, then the suite's profile, then
+the replay's profile (`view`), then `compare` for two or more recordings, else `standard`; a person can switch at any time.
+
+Core ships `standard`, `compare`, `performance`, `debug`, `walkthrough`, `review` and `support`. A `views` entry in the
+config file with a built-in id retunes that view (`inspector` and `stage` merge key by key); other entries and
+`api.view(...)` add views. `GET /api/config` lists them as `views`, and the page carries them in `<meta name="app-views">`.
+
+```ts
+views: [
+  { id: 'debug', label: 'Triage', inspector: { tab: 'network' } },
+  { id: 'flaky', label: 'Flaky runs', layout: 'grid', inspector: { tabs: ['issues', 'console'], scope: 'all' } },
+],
+```
+
+| Field | Meaning |
+| --- | --- |
+| `id`, `label`, `order` | Like profiles; the label is the switcher's copy (at most 24 characters) |
+| `layout` | `'single'`, `'grid'` (default) or `'spotlight'` for two or more recordings |
+| `openAt`, `leadMs` | Like a profile's `viewer.openAt` and `viewer.leadMs` |
+| `inspector` | `{ state?: 'open' \| 'collapsed' \| 'hidden', tabs?, tab?, scope?: 'single' \| 'all' }`. `tabs` orders built-in ids (`issues`, `console`, `network`, `performance`, `context`, `comments`) or plugin keys (`plugin:<plugin>:<id>`); unlisted tabs follow |
+| `stage` | `{ captions?, steps?: 'open' \| 'collapsed' \| 'hidden', tracks?, chrome?: 'full' \| 'quiet' }` |
+| `headline` | `viewer.headline` slot ids shown above the stage |
+| `speed` | Playback speed on open, 0.25 to 4 |
+
+The viewer applies views in a later release; until then they are served data only.
 
 ## Render pipeline hooks
 
