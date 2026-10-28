@@ -164,7 +164,8 @@ export function RegionBlock({
   const naturalWidth = scale.x(to) - left;
   // Captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
   const width = kind === 'caption' ? Math.max(1, naturalWidth - 2) : Math.max(6, naturalWidth);
-  const showLabel = kind !== 'caption' || width >= (label?.length ?? 0) * 6.5 + 24;
+  // why: a caption wide enough for a few letters shows them, truncated, instead of an anonymous block.
+  const showLabel = kind !== 'caption' || width >= 56;
   const length = to - from;
   const edge = (side: 'from' | 'to') => (event: ReactPointerEvent) => {
     onSelect();
@@ -246,6 +247,9 @@ export function RegionBlock({
  * A lane: its glyph in the gutter (named by a tooltip) and its regions on the track. An empty lane says in place what
  * it is and how to add to it (`empty`), in the quietest text, so it explains itself without hover.
  */
+/** The short name under each lane's icon; the full instruction stays in its tooltip. */
+const LANE_LABELS: Record<string, string> = { clip: 'Clip', zoom: 'Zoom', speed: 'Speed', blur: 'Blur', caption: 'Captions' };
+
 export function Lane({
   name,
   icon,
@@ -275,6 +279,7 @@ export function Lane({
       <Hint label={name} side="left">
         <span className="tl-gutter" aria-hidden="true">
           {icon}
+          {LANE_LABELS[kind] ? <span className="tl-gutter-label">{LANE_LABELS[kind]}</span> : null}
         </span>
       </Hint>
       <div className="tl-track" data-testid={`lane-${kind}`} onPointerDown={onTrackPointerDown}>
@@ -447,8 +452,16 @@ export function Timeline({
               });
             }}
           >
-            {trim.start > 0 ? <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }} /> : null}
-            {trim.end < duration ? <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }} /> : null}
+            {trim.start > 0 ? (
+              <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }}>
+                <span className="tl-outside-label">Trimmed</span>
+              </span>
+            ) : null}
+            {trim.end < duration ? (
+              <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }}>
+                <span className="tl-outside-label">Trimmed</span>
+              </span>
+            ) : null}
             <div
               className="tl-clip"
               data-selected={selection?.kind === 'trim' || undefined}
