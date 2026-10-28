@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Suspense } from 'react';
 
 import { parseCompareSearch } from '../compare/compare-search.ts';
+import { compareDefaults } from '../compare/defaults.ts';
 import { productName } from '../config.ts';
 import { editsQuery } from '../edits.ts';
 import { useDocumentTitle } from '../hooks/use-document-title.ts';
@@ -17,7 +18,9 @@ import { LoadingSwap, ViewerSkeleton } from '../ViewerSkeleton.tsx';
 
 /** `/r/<id>`: the replay on its own, or with `?with=` the same viewer comparing it with others. */
 export function ReplayPage({ id }: { id: string }) {
-  if (parseCompareSearch(useLocationSearch(), id).with.length === 0) return <SingleReplayPage id={id} />;
+  const search = useLocationSearch();
+  const { compare, layout } = compareDefaults({ page: 'replay', recordings: 1 });
+  if (!compare && parseCompareSearch(search, id, layout).with.length === 0) return <SingleReplayPage id={id} />;
   return (
     <Suspense fallback={<ViewerSkeleton label="Loading recordings" />}>
       <comparePage.Component id={id} />
