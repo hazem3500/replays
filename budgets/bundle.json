@@ -84,7 +84,7 @@
     },
     "dist/client/assets/performance-HASH.js": {
       "raw": 4242,
-      "gzip": 1870,
+      "gzip": 1818,
       "brotli": 1629
     },
     "dist/client/assets/player-HASH.css": {
@@ -175,12 +175,17 @@
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
       "raw": 69163,
       "gzip": 18875,
-      "brotli": 16345
+      "brotli": 16340
     },
     "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs": {
       "raw": 291526,
       "gzip": 77111,
       "brotli": 62901
+    },
+    "dist/lib/chunks/context.schema.json-e50218403858.mjs": {
+      "raw": 285690,
+      "gzip": 75125,
+      "brotli": 61620
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18417,
@@ -191,6 +196,11 @@
       "raw": 32366,
       "gzip": 9306,
       "brotli": 8251
+    },
+    "dist/lib/chunks/define.ts-f3268e685655.mjs": {
+      "raw": 32079,
+      "brotli": 8218,
+      "gzip": 9254
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -223,9 +233,14 @@
       "brotli": 4342
     },
     "dist/lib/chunks/registry.ts-3e6717703ea0.mjs": {
-      "raw": 31393,
-      "gzip": 8181,
-      "brotli": 7133
+      "raw": 31954,
+      "gzip": 8369,
+      "brotli": 7280
+    },
+    "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs": {
+      "raw": 4485,
+      "gzip": 1658,
+      "brotli": 1466
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -255,12 +270,12 @@
     "dist/lib/index.mjs": {
       "raw": 1588,
       "gzip": 514,
-      "brotli": 439
+      "brotli": 438
     },
     "dist/lib/plugin.mjs": {
-      "raw": 700,
-      "gzip": 284,
-      "brotli": 231
+      "raw": 743,
+      "gzip": 299,
+      "brotli": 246
     },
     "dist/lib/plugins-gcs.mjs": {
       "raw": 13572,
@@ -520,6 +535,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
+      "file": "dist/lib/chunks/define.ts-f3268e685655.mjs",
+      "cap": {
+        "raw": 32079,
+        "gzip": 9254,
+        "brotli": 8218
+      },
+      "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
+      "pr": "https://github.com/hazem3500/replays/pull/96"
+    },
+    {
       "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
       "cap": {
         "raw": 434,
@@ -567,16 +592,6 @@
         "brotli": 440
       },
       "reason": "The main library entry re-exports the extension platform plugin contracts.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
-      "file": "dist/lib/plugin.mjs",
-      "cap": {
-        "raw": 700,
-        "gzip": 284,
-        "brotli": 232
-      },
-      "reason": "The server plugin entry exposes the extension platform settings and policy contracts.",
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
@@ -726,6 +741,46 @@
       },
       "reason": "The initial index style group carries the same filters and first-run stylesheets added to the app stylesheet.",
       "pr": "https://github.com/hazem3500/replays/pull/101"
+    },
+    {
+      "file": "dist/lib/chunks/summary-fields.ts-14a40f5a603d.mjs",
+      "cap": {
+        "raw": 4485,
+        "gzip": 1658,
+        "brotli": 1466
+      },
+      "reason": "The plugin entry's shared chunk gains HttpError and tooManyRequests (src/shared/http-error.ts); replaces summary-fields.ts-a8479d40f474 (+535 B raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-3e6717703ea0.mjs",
+      "cap": {
+        "raw": 31954,
+        "gzip": 8369,
+        "brotli": 7280
+      },
+      "reason": "Upload endpoint option validation (authenticate, maxBytes, rateLimit, normalize, receipt, prefixed paths) and api.normalizeUpload registration.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "raw": 743,
+        "gzip": 299,
+        "brotli": 246
+      },
+      "reason": "The /plugin entry re-exports HttpError and tooManyRequests on top of #96's plugin settings exports; replaces #96's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-e50218403858.mjs",
+      "cap": {
+        "raw": 285690,
+        "gzip": 75125,
+        "brotli": 61620
+      },
+      "reason": "The shared server chunk now also holds the upload-endpoint helpers (src/server/api/upload-endpoints.ts) and HttpError, so its source identity changes; measured against main's context.schema.json-87737fe6e2f1: +3368 B raw, +449 B gzip, +724 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/94"
     },
     {
       "file": "dist/lib/chunks/context.schema.json-35b09aa3667c.mjs",

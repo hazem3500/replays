@@ -17,6 +17,18 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Custom upload endpoints** ([docs/extension-api.md](docs/extension-api.md#custom-upload-endpoints)), additive in plugin API 1:
+  - `api.uploadEndpoint` gains `authenticate` (its own credentials instead of the auth adapter, identity confined to the endpoint),
+    `maxBytes` (a number or per-identity function, checked against `Content-Length`, the stream and the gunzipped size),
+    `rateLimit` (`{ retryAfter }` answers `429` with `Retry-After`), `normalize` and `receipt`. Paths may have 2 to 8 segments
+    and any prefix (`/backoffice/api/customer-recordings`); `requestPolicy` accepts the same paths.
+  - `api.normalizeUpload(hook)` normalizes every validated upload; the result is validated again and the privacy pass always
+    runs after it.
+  - `Identity.capabilities` (`{ routes: [{ method, path }] }`) confines an identity to exact routes, checked once right after
+    authentication. `replays:upload` tokens may also post to registered upload endpoints.
+  - `/plugin` exports `HttpError` (status, message, optional headers) and `tooManyRequests(seconds, message?)`.
+  - `examples/app-key-ingest`: a public app-key ingest (keys with rotation, origins, limits, retention) built only from these hooks.
+
 - `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
   or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
 - An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of
