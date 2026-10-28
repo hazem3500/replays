@@ -686,7 +686,7 @@
         "gzip": 18865,
         "brotli": 16511
       },
-      "reason": "The viewer chunk now carries the shared feed motion helpers and virtualization hooks that the index and the viewer both import.",
+      "reason": "Measured against fresh main in CI: the viewer chunk grows by about 4.8 KB raw (45.9 to 50.7 KB) while the index feed change moves shared code into the main chunk (+28 KB raw); the chunk composition shift is not yet isolated, so reviewers should check the measured main/head delta.",
       "pr": "https://github.com/hazem3500/replays/pull/99"
     }
   ]
