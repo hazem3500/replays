@@ -1,3 +1,4 @@
+import { settingAccepts, type PluginSettingDefinition, type PluginSettingsRecord } from '../shared/plugin-settings.ts';
 import { createHash, randomBytes } from 'node:crypto';
 
 import {
@@ -116,6 +117,64 @@ export class UserPluginStore {
         await new Promise((wait) => setTimeout(wait, Math.random() * 15 * attempt));
       }
     }
+  }
+
+  private noticeKey(identity: string, id: string) {
+    return `_malleable/notices/${this.owner('user', identity)}/${id}.json`;
+  }
+  async hasAccepted(identity: string, id: string, sha256: string) {
+    return (await readJson<{ sha256: string }>(this.storage, this.noticeKey(identity, id)))?.sha256 === sha256;
+  }
+  async acceptWorkspace(identity: string, id: string, sha256: string) {
+    await this.storage.write(this.noticeKey(identity, id), JSON.stringify({ sha256 }), { contentType: JSON_TYPE });
+  }
+
+  private settingsKey(scope: PluginScope, identity: string, id: string) {
+    return `_malleable/settings/${this.owner('user', identity)}/${scope}/${id}.json`;
+  }
+
+  async readSettings(
+    scope: PluginScope,
+    identity: string,
+    id: string,
+    definitions: readonly PluginSettingDefinition[],
+  ): Promise<PluginSettingsRecord> {
+    const stored = await readJson<PluginSettingsRecord>(this.storage, this.settingsKey(scope, identity, id));
+    const values = Object.fromEntries(
+      definitions.map((definition) => {
+        const value = stored?.values[definition.id];
+        return [definition.id, settingAccepts(definition, value) ? value : definition.default];
+      }),
+    );
+    return { version: stored?.version ?? 0, values };
+  }
+
+  async setSetting(
+    scope: PluginScope,
+    identity: string,
+    id: string,
+    input: { definitions: readonly PluginSettingDefinition[]; id: unknown; value: unknown; baseVersion: unknown },
+  ): Promise<PluginSettingsRecord> {
+    const { definitions } = input;
+    const definition = definitions.find((item) => item.id === input.id);
+    if (!definition || !settingAccepts(definition, input.value)) throw new PluginStoreError(400, 'unknown setting or invalid value');
+    const key = this.settingsKey(scope, identity, id);
+    const info = await this.storage.stat(key);
+    const current = await this.readSettings(scope, identity, id, definitions);
+    if (!Number.isInteger(input.baseVersion) || input.baseVersion !== current.version)
+      throw new PluginStoreError(409, 'settings changed; reload before saving');
+    const next = { version: current.version + 1, values: { ...current.values, [definition.id]: input.value } };
+    try {
+      await this.storage.write(key, JSON.stringify(next), {
+        contentType: JSON_TYPE,
+        ...(info ? { ifVersion: info.version } : { createOnly: true }),
+      });
+    } catch (error) {
+      if (error instanceof PreconditionFailedError || error instanceof ObjectExistsError)
+        throw new PluginStoreError(409, 'settings changed; reload before saving');
+      throw error;
+    }
+    return next;
   }
 
   async remove(scope: PluginScope, identity: string, id: string) {

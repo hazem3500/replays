@@ -3,7 +3,7 @@ import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { FilterMenu, type FilterState } from '../src/client/index/FilterMenu.tsx';
+import { FilterMenu, FilterSheet, type FilterState } from '../src/client/index/FilterMenu.tsx';
 
 let host: HTMLDivElement;
 let root: Root;
@@ -33,7 +33,42 @@ async function click(element: HTMLElement) {
   await act(async () => element.click());
 }
 
+async function nextFrame() {
+  await act(async () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve())));
+}
+
 describe('index filter panels', () => {
+  it('moves focus into a phone facet and returns it to the facet row with Escape', async () => {
+    const state: FilterState = {
+      filters: {},
+      kind: undefined,
+      hosts: ['demo.example'],
+      tags: [],
+      update: vi.fn<FilterState['update']>(),
+      setParam: vi.fn<FilterState['setParam']>(),
+      setKind: vi.fn<FilterState['setKind']>(),
+      clearFilters: vi.fn<FilterState['clearFilters']>(),
+    };
+    act(() => {
+      root.render(createElement(FilterSheet, state));
+    });
+    await click(host.querySelector<HTMLElement>('.index-filters-button')!);
+    await click([...document.querySelectorAll<HTMLElement>('.filter-sheet .filter-row')].find((row) => row.textContent?.includes('Host'))!);
+    await nextFrame();
+    const selected = document.querySelector<HTMLElement>('.filter-sheet [role="radio"][aria-checked="true"]')!;
+    expect(document.activeElement).toBe(selected);
+
+    act(() => {
+      document
+        .querySelector<HTMLElement>('.filter-sheet')!
+        .dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+    });
+    await nextFrame();
+    expect(document.activeElement).toBe(
+      [...document.querySelectorAll<HTMLElement>('.filter-sheet .filter-row')].find((row) => row.textContent?.includes('Host')),
+    );
+  });
+
   it('opens host choices inside the original panel and keeps other filters reachable after selection', async () => {
     const update = vi.fn<FilterState['update']>();
     const state: FilterState = {

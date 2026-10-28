@@ -46,6 +46,7 @@ ctx (only what the manifest's permissions allow; anything else throws "permissio
                        network[i]: { id, at, duration, method, url, status, statusText, mimeType?, requestHeaders, responseHeaders }
                        console[i]: { at, level, message, url? }    steps[i]: { at, kind, label, selector?, url? }   at = ms from start
   ctx.theme           'dark' | 'light'; CSS variables --text, --surface, --line, --accent are set on the frame
+  ctx.settings.get(id) -> Promise<boolean|string>; ctx.settings.set(id,value) -> Promise<boolean|string> (declared manifest.settings only, per person)
   ctx.getTime()       current playhead ms        ctx.onTime(fn) -> unsubscribe
   ctx.seek(ms)        'playback:seek'
   ctx.notify(text)    'notify'
