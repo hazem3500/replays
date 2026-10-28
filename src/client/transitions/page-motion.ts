@@ -34,25 +34,23 @@ function directionFor(from: Page, to: Page): Direction {
   return to.kind === 'index' ? 'to-index' : 'page';
 }
 
-/** What the page's pointer, keyboard and history say before a navigation starts. */
-const input = {
-  clicked: undefined as HTMLAnchorElement | undefined,
-  /** A swipe-back gesture already animated the change: it is not animated twice. */
-  swiped: false,
-};
+/** The link the last click landed on: its card is the one a page change opens from. */
+let clicked: HTMLAnchorElement | undefined;
+/** A swipe-back gesture already animated the change: it is not animated twice. */
+let swiped = false;
 
 function listenForInput() {
   window.addEventListener(
     'click',
     (event) => {
-      input.clicked = (event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null) ?? undefined;
+      clicked = (event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null) ?? undefined;
     },
     { capture: true },
   );
   window.addEventListener(
     'popstate',
     (event) => {
-      input.swiped = Boolean((event as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition);
+      swiped = Boolean((event as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition);
     },
     { capture: true },
   );
@@ -93,9 +91,10 @@ export function installPageMotion(router: AppRouter) {
 
   router.subscribe('onBeforeNavigate', ({ fromLocation, toLocation }) => {
     stopFocusHandOff();
-    const { clicked, swiped } = input;
-    input.clicked = undefined;
-    input.swiped = false;
+    const link = clicked;
+    const uaAnimated = swiped;
+    clicked = undefined;
+    swiped = false;
     plan = undefined;
     if (!fromLocation) return;
     const from = pageOf(router, fromLocation.pathname);
@@ -108,13 +107,13 @@ export function installPageMotion(router: AppRouter) {
       // why: a hidden index keeps its DOM: stop any hover preview so it doesn't play on behind the viewer.
       for (const video of document.querySelectorAll<HTMLVideoElement>('.index-shell video, .feed-list video')) video.pause();
     if (direction === 'to-viewer') {
-      const match = cardFor(opensPage(to), clicked);
+      const match = cardFor(opensPage(to), link);
       const pageId = to.suiteId ?? to.replayId;
       if (pageId) writeHint(pageId, to.replayId ?? pageId, match);
       opened = match?.link;
     } else forgetHint();
     const ready = direction === 'to-index' ? Promise.resolve() : Promise.race([preparePage(to).catch(() => {}), delay(PREPARE_BUDGET_MS)]);
-    plan = { direction, from, animate: direction !== 'page' && !swiped && supportsTransitions(), ready, turn };
+    plan = { direction, from, animate: direction !== 'page' && !uaAnimated && supportsTransitions(), ready, turn };
   });
 
   // why: the router wraps each commit in its startViewTransition; this one paces and dresses page changes.
