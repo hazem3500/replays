@@ -19,7 +19,7 @@ const bundle = { events, meta: { duration: 5000 }, steps: [], console: [], netwo
 
 describe('saved cursor settings', () => {
   it('keeps old edit defaults and cache versions unchanged', () => {
-    const defaults = edits({ cursor: { visible: true, size: 1, hideWhenIdle: true, clickFeedback: true, motion: 'signature_arc' } });
+    const defaults = edits({ cursor: { visible: true, size: 1, hideWhenIdle: true, clickFeedback: true, motion: 'signature_arc', appearance: 'arrow' } });
     expect(normalizeEdits(defaults)).toEqual(edits());
     expect(isEmptyEdits(defaults)).toBe(true);
     expect(editsVersion(defaults)).toBe('');
@@ -29,6 +29,8 @@ describe('saved cursor settings', () => {
       { hideWhenIdle: false },
       { clickFeedback: false },
       { motion: 'classic' as const },
+      { appearance: 'ring' as const },
+      { color: 'green' as const },
     ]) {
       const next = edits({ cursor });
       expect(() => assertReplayEdits(next)).not.toThrow();
@@ -47,6 +49,8 @@ describe('saved cursor settings', () => {
       { preset: 'invented' },
       { motion: 'bouncy' },
       { motion: 1 },
+      { appearance: 'blob' },
+      { color: 'red' },
     ]) {
       expect(() => assertReplayEdits({ ...edits(), cursor })).toThrow('edits.cursor');
     }
