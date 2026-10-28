@@ -181,7 +181,8 @@ interface ObjectStorage {
 ```
 
 `createOnly` and `ifVersion` make uploads race-free (an id can only be created once; suite registration is a
-compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.json`, `_suites/<id>.json`, plus media.
+compare-and-swap). Keys are `<id>/replay.json`, `<id>/meta.json`, `<id>/keep.json`, `<id>/overrides.json` (title, tags and purpose
+changed after upload), `<id>/trash.json` (a delete that can still be restored), `_suites/<id>.json`, plus media.
 
 - `FsStorage`: a directory; atomic writes by rename. The default.
 - `S3Storage`: any S3-compatible service (AWS, MinIO, Cloudflare R2, …); SigV4 signing implemented over `fetch`, no
