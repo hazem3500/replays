@@ -13,6 +13,7 @@
 
   .inspector-field { display: grid; gap: 8px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
   .inspector-field-label { color: var(--text); font-weight: 500; }
+  .inspector-field-hint { color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 14px; }
   .ui-segmented { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface-hover); }
   .ui-segment { display: grid; place-items: center; min-height: 28px; border-radius: 6px; color: var(--text-secondary); font-weight: 500; font-variant-numeric: tabular-nums; cursor: pointer; outline: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
   .ui-segment:hover { color: var(--text); }

@@ -7,6 +7,7 @@ import type { ReplayContext } from '../shared/context.ts';
 import type { ReplayPerson } from '../shared/people.ts';
 import type { RedactionRules } from '../shared/redaction.ts';
 import type { ProfileConfig } from '../shared/profiles.ts';
+import type { ViewPreset } from '../shared/views.ts';
 import type { ReplayBundle, ReplaySourceLink, ReplaySummary, SummaryFieldValue } from '../shared/replay.ts';
 import type { SourceProvider } from '../shared/source-providers.ts';
 import type { PluginMiddleware, PluginRoute } from './web-types.ts';
@@ -405,6 +406,11 @@ export interface PluginApi {
    * fields (not `infer`).
    */
   profile(definition: ProfileDefinition): void;
+  /**
+   * A view: a way to look at replays (src/shared/views.ts). Ids are unique across plugins and cannot be a built-in's;
+   * a `views` entry in the config file with the same id overrides its fields.
+   */
+  view(preset: ViewPreset): void;
   /** @deprecated Use `profile`; registers the same thing and warns once per plugin at start. */
   purpose(definition: ProfileDefinition): void;
   /** A retention rule; the shortest window any rule, the profile or the default gives wins. */

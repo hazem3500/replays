@@ -69,6 +69,8 @@ export type { ObjectStorage } from '../server/storage/types.ts';
 export type { SourceProvider } from '../shared/source-providers.ts';
 export { assertRedactionRules, type RedactionPattern, type RedactionRules, type RedactionTextRule } from '../shared/redaction.ts';
 export type { PosterMoment, ProfileConfig, ProfileInfo, ProfileOpenAt, ProfileViewerDefaults } from '../shared/profiles.ts';
+export type { CaptureNetwork, CaptureProfile, CaptureSampling, NetworkBodyLimits } from '../shared/capture-profile.ts';
+export type { ViewInfo, ViewLayout, ViewPreset } from '../shared/views.ts';
 
 /** @deprecated Use `ProfileConfig`. */
 export type PurposeConfig = ProfileConfig;

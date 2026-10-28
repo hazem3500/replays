@@ -36,6 +36,7 @@ import { clientAsset, runRequestHooks, watchResponse } from './plugin-runtime.ts
 import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import { serveObject } from './serve-object.ts';
+import { ViewCatalog } from './views.ts';
 import { type ReplayStore } from './store.ts';
 import { recordError, setRequestAttributes, traceRequest, withSpan } from './tracing.ts';
 import type { ApplicationRuntime } from './agent-native/runtime.ts';
@@ -68,6 +69,8 @@ export interface AppOptions {
   branding: BrandingConfig;
   /** Resolves `context.sources` references into links; defaults to the built-in providers. */
   sources: SourceProviders;
+  /** The deployment's views (src/server/views.ts); default the built-ins. */
+  views?: ViewCatalog;
   /** Optional JSON Schema for `context.fields` (context-schema.ts). */
   contextSchema?: ContextSchema;
   devMiddleware?: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
@@ -304,6 +307,7 @@ export function createApp(options: AppOptions) {
   const renderHooks = createRenderHooks(registry.render);
   const beforeRender = renderHooks.checks ? renderHooks.beforeRender : undefined;
   const profiles = options.store.profiles;
+  const views = options.views ?? new ViewCatalog();
   const inferable = profiles.list.some((profile) => profile.inferable);
   const redaction = mergeRedactionRules(options.redaction, registry.redaction);
   /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
@@ -316,6 +320,7 @@ export function createApp(options: AppOptions) {
         store: options.store,
         auth: options.auth,
         sources: options.sources,
+        views,
         branding: options.branding,
         contextSchema: options.contextSchema,
         beta: options.beta,
@@ -340,6 +345,7 @@ export function createApp(options: AppOptions) {
       base,
       branding: options.branding,
       profiles: profiles.list,
+      views: views.list,
       sources: options.sources.describe(),
       ...(signIn ? { signIn } : {}),
       ...(options.beta ? { beta: options.beta } : {}),

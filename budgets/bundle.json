@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 433323,
-      "gzip": 111155,
-      "brotli": 90907
+      "raw": 459670,
+      "gzip": 118130,
+      "brotli": 96249
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
       "gzip": 954,
-      "brotli": 820
+      "brotli": 819
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -59,7 +59,7 @@
     },
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
-      "gzip": 1254,
+      "gzip": 1253,
       "brotli": 1138
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -88,14 +88,14 @@
       "brotli": 225
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 40600,
-      "gzip": 7460,
-      "brotli": 6640
+      "raw": 43357,
+      "gzip": 7866,
+      "brotli": 7008
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 92000,
-      "gzip": 31200,
-      "brotli": 26700
+      "raw": 97487,
+      "gzip": 32694,
+      "brotli": 27918
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 33095,
@@ -104,7 +104,7 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 215881,
-      "gzip": 73375,
+      "gzip": 73366,
       "brotli": 62032
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -143,9 +143,9 @@
       "brotli": 817
     },
     "dist/client/assets/player-HASH.js": {
-      "raw": 308578,
-      "gzip": 95021,
-      "brotli": 70759
+      "raw": 316832,
+      "gzip": 97953,
+      "brotli": 71173
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -168,9 +168,9 @@
       "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
-      "raw": 1516,
-      "gzip": 706,
-      "brotli": 565
+      "raw": 1397,
+      "gzip": 666,
+      "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 6721,
@@ -179,7 +179,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 631,
+      "gzip": 630,
       "brotli": 568
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
@@ -199,8 +199,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
-      "gzip": 705,
-      "brotli": 624
+      "gzip": 703,
+      "brotli": 648
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
@@ -242,10 +242,10 @@
       "gzip": 106,
       "brotli": 101
     },
-    "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
-      "raw": 69161,
-      "gzip": 18872,
-      "brotli": 16324
+    "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs": {
+      "raw": 73309,
+      "gzip": 20114,
+      "brotli": 17393
     },
     "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
       "raw": 308545,
@@ -257,20 +257,20 @@
       "gzip": 5317,
       "brotli": 4640
     },
-    "dist/lib/chunks/define.ts-2cdb34849bf4.mjs": {
-      "raw": 39108,
-      "gzip": 11192,
-      "brotli": 9890
+    "dist/lib/chunks/define.ts-c99e647c6d2f.mjs": {
+      "raw": 46985,
+      "gzip": 13251,
+      "brotli": 11662
+    },
+    "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
+      "raw": 32268,
+      "gzip": 9209,
+      "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
       "gzip": 10764,
       "brotli": 9522
-    },
-    "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs": {
-      "raw": 25393,
-      "gzip": 7238,
-      "brotli": 6392
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
       "raw": 434,
@@ -282,10 +282,10 @@
       "gzip": 21,
       "brotli": 2
     },
-    "dist/lib/chunks/index.ts-3d8b996b5201.mjs": {
-      "raw": 39913,
-      "gzip": 11514,
-      "brotli": 10056
+    "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs": {
+      "raw": 43352,
+      "gzip": 12236,
+      "brotli": 10663
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
@@ -293,9 +293,9 @@
       "brotli": 4342
     },
     "dist/lib/chunks/registry.ts-2e034be27725.mjs": {
-      "raw": 32700,
-      "gzip": 8327,
-      "brotli": 7270
+      "raw": 33699,
+      "gzip": 8512,
+      "brotli": 7425
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -320,7 +320,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 145
+      "brotli": 144
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -408,9 +408,9 @@
       "brotli": 3072
     },
     "dist/lib/server.mjs": {
-      "raw": 1755,
-      "gzip": 570,
-      "brotli": 492
+      "raw": 1829,
+      "gzip": 598,
+      "brotli": 507
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -428,14 +428,14 @@
       "brotli": 434343
     },
     "initial/render.html/css": {
-      "raw": 5788,
+      "raw": 5784,
       "gzip": 2529,
-      "brotli": 2103
+      "brotli": 2097
     },
     "initial/render.html/js": {
       "raw": 542325,
-      "gzip": 168433,
-      "brotli": 131773
+      "gzip": 169411,
+      "brotli": 132878
     }
   },
   "allowances": [
@@ -836,16 +836,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "raw": 1164,
-        "gzip": 706,
-        "brotli": 648
-      },
-      "reason": "Lazy suite glue: a suite with two or more recordings opens the viewer comparing its runs.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 20385,
@@ -924,26 +914,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 92000,
-        "gzip": 31200,
-        "brotli": 26700
-      },
-      "reason": "Editor side panel v2: the contextual inspector (selection properties or replay settings), Base UI RadioGroup and Radio for the cursor motion picker and segmented settings, and the motion preview planner; measured against main: +11604 B raw, +4491 B gzip, +3747 B brotli. Replaces #78's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "raw": 40600,
-        "gzip": 7460,
-        "brotli": 6640
-      },
-      "reason": "Editor side panel v2: the contextual inspector, segmented settings, cursor panel and motion cards, and phone overrides, in their own stylesheets; measured against main: +6492 B raw, +892 B gzip, +801 B brotli. Replaces #67's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
       "file": "dist/client/assets/download-HASH.js",
       "cap": {
         "gzip": 222,
@@ -953,82 +923,133 @@
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
-      "file": "dist/cli/cli.mjs",
+      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
       "cap": {
-        "raw": 433323,
-        "gzip": 111155,
-        "brotli": 90907
+        "raw": 33699,
+        "gzip": 8512,
+        "brotli": 7425
       },
-      "reason": "The purpose to profile rename keeps every old CLI, config and API name as a deprecated alias (main 416300/106502/87095, head 420701/107917/88259).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
-      "cap": {
-        "raw": 308545,
-        "gzip": 80878,
-        "brotli": 66289
-      },
-      "reason": "replay.schema.json documents meta.profile and the deprecated meta.purpose (main 297658/77964/63870, head 299558/78522/64358).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
       "file": "dist/lib/server.mjs",
       "cap": {
-        "raw": 1755,
-        "gzip": 570,
-        "brotli": 492
+        "raw": 1829,
+        "gzip": 600,
+        "brotli": 509
       },
-      "reason": "The /server entry declares the deprecated PurposeCatalog and createPurposeCatalog aliases on top of the workspace plugin policy and settings routes from #96 (main 1619/552/467, head 1703/566/477).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "The /server entry exports ViewCatalog and createViewCatalog (main 1703/567/477, head 1775/582/494).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
-      "file": "dist/lib/chunks/define.ts-2cdb34849bf4.mjs",
+      "file": "dist/lib/chunks/define.ts-c99e647c6d2f.mjs",
       "cap": {
-        "raw": 39108,
-        "gzip": 11192,
-        "brotli": 9890
+        "raw": 46985,
+        "gzip": 13251,
+        "brotli": 11662
       },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces define.ts-2cdb34849bf4 (main 39108/11192/9890).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
-      "file": "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs",
+      "file": "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs",
       "cap": {
-        "raw": 25393,
-        "gzip": 7239,
-        "brotli": 6393
+        "raw": 43352,
+        "gzip": 12236,
+        "brotli": 10663
       },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces index.ts-3d8b996b5201 (main 39913/11514/10056).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
-      "file": "dist/lib/chunks/index.ts-3d8b996b5201.mjs",
+      "file": "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs",
       "cap": {
-        "raw": 39913,
-        "gzip": 11514,
-        "brotli": 10056
+        "raw": 73309,
+        "gzip": 20114,
+        "brotli": 17393
       },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "Chunk membership moved when capture settings joined the capture library; replaces bundle-io.ts-9a2bdd34cb92 (main 69161 raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
     },
     {
-      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
+      "file": "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs",
       "cap": {
-        "raw": 32700,
-        "gzip": 8327,
-        "brotli": 7270
+        "raw": 32268,
+        "gzip": 9209,
+        "brotli": 8197
       },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "Network body capture and redaction shared by the capture library and the server privacy pass (src/shared/network-bodies.ts, src/capture/har-bodies.ts).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 448586,
+        "gzip": 115307,
+        "brotli": 93962
+      },
+      "reason": "The CLI bundles the shared edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1108 B raw, +302 B gzip, +264 B brotli. Replaces the allowance on main for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 43357,
+        "gzip": 7866,
+        "brotli": 7008
+      },
+      "reason": "Cursor style cards, glyph wells and color swatches in the cursor inspector; measured against main: +2051 B raw, +291 B gzip, +269 B brotli. Replaces the allowance on main for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 97487,
+        "gzip": 32694,
+        "brotli": 27918
+      },
+      "reason": "Cursor style picker and color swatches, drawn with the player's own glyph renderer through useCursorGlyph; measured against main: +3217 B raw, +882 B gzip, +721 B brotli. Replaces the allowance on main for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
       "file": "dist/client/assets/player-HASH.js",
       "cap": {
-        "brotli": 70759
+        "raw": 315334,
+        "gzip": 97953,
+        "brotli": 71173
       },
-      "reason": "The shared profile helpers (deprecated purpose aliases, meta.purpose reads) reach the player chunk; head 307323/94957/68698 against main 306920/94765/68505; it replaces the brotli-only allowance from #103 (cursor motion styles).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "Built-in cursor themes (CUA arrow, classic, hand, dot, ring, agent), tints and ripple or pulse click feedback for playback and export; measured against main: +5273 B raw, +2078 B gzip, +1643 B brotli. Replaces the allowance on main for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "cap": {
+        "raw": 303921,
+        "gzip": 79697,
+        "brotli": 65304
+      },
+      "reason": "The shared chunk holds the edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1010 B raw, +281 B gzip, +243 B brotli. Replaces #118's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
+    },
+    {
+      "file": "initial/render.html/js",
+      "cap": {
+        "gzip": 169411,
+        "brotli": 132878
+      },
+      "reason": "The render page draws the same cursor themes as the viewer (the player chunk's themes and click feedback); measured against main: +5354 B raw, +2116 B gzip, +1677 B brotli; raw passes the existing cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1164,
+        "gzip": 706,
+        "brotli": 648
+      },
+      "reason": "No source change: this small chunk names hashed sibling chunks, whose hashes change with the cursor styles; measured 628 B brotli against a 614 B cap. Replaces #105's allowance for this file with the same caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
     }
   ]
 }

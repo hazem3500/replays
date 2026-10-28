@@ -155,7 +155,8 @@ describe('replays build-static', () => {
       basePath: settings.basePath,
       comments: settings.comments,
       beta: settings.beta,
-      store: new ReplayStore(join(root, 'data'), join(root, 'sample')),
+      store: new ReplayStore(join(root, 'data'), join(root, 'sample'), 30, { profiles: settings.profiles }),
+      views: settings.views,
       clientDir,
     });
     const server = createServer((request, response) => void handle(request, response));
@@ -165,7 +166,14 @@ describe('replays build-static', () => {
     const served = await (await fetch(`http://127.0.0.1:${port}/replays/`, { headers: { accept: 'text/html' } })).text();
     expect(await readFile(join(out, 'index.html'), 'utf8')).toBe(served);
     expect(served).toBe(
-      renderIndexHtml(INDEX, { base: '/replays', branding: settings.branding, beta: settings.beta, comments: settings.comments.enabled }),
+      renderIndexHtml(INDEX, {
+        base: '/replays',
+        branding: settings.branding,
+        beta: settings.beta,
+        comments: settings.comments.enabled,
+        profiles: settings.profiles.list,
+        views: settings.views.list,
+      }),
     );
   });
 });

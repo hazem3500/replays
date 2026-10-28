@@ -22,6 +22,8 @@ import {
 import type { CapturePacingOptions } from '../shared/capture-pacing.ts';
 import type { ProfileConfig } from '../shared/profiles.ts';
 import { configProfiles, createProfileCatalog, type ProfileCatalog } from './profiles.ts';
+import type { ViewPreset } from '../shared/views.ts';
+import { createViewCatalog, type ViewCatalog } from './views.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -69,10 +71,12 @@ export interface FileConfig {
   /** Read the request host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Only matters with `hosts`. */
   trustForwardedHost?: boolean;
   retentionDays?: number;
-  /** Why replays are recorded (src/shared/profiles.ts); plugins can add more with `api.profile`. None by default. */
+  /** Why replays are recorded (src/shared/profiles.ts); plugins can add more with `api.profile`. Core ships `performance` (BUILT_IN_PROFILES). */
   profiles?: ProfileConfig[];
   /** @deprecated Use `profiles`; read when `profiles` is absent, with a warning at start. */
   purposes?: ProfileConfig[];
+  /** Views beside the built-ins (src/shared/views.ts); an entry with a built-in id retunes that view. */
+  views?: ViewPreset[];
   contextSchemaFile?: string;
   githubHost?: string;
   gitlabHost?: string;
@@ -102,6 +106,8 @@ export interface AppSettings {
   profiles: ProfileCatalog;
   /** @deprecated Use `profiles`; the same catalog. */
   purposes: ProfileCatalog;
+  /** Built-in and config views; createRuntime merges the plugins' in. */
+  views: ViewCatalog;
   sources: SourceProviders;
   contextSchema?: ContextSchema;
   beta: BetaFlags;
@@ -125,6 +131,7 @@ export const CONFIG_KEYS = new Set([
   'retentionDays',
   'profiles',
   'purposes',
+  'views',
   'contextSchemaFile',
   'githubHost',
   'gitlabHost',
@@ -197,9 +204,10 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     branding,
     basePath,
     hosts,
-    retention: profiles.size ? { ...retention, profiles: profiles.retentionDays() } : retention,
+    retention: Object.keys(profiles.retentionDays()).length ? { ...retention, profiles: profiles.retentionDays() } : retention,
     profiles,
     purposes: profiles,
+    views: createViewCatalog({ config: file.views }),
     sources,
     beta: betaFromEnv(env, enabled === undefined ? betaFile : { ...betaFile, malleable: betaFile?.malleable ?? enabled }),
     malleable,

@@ -173,6 +173,13 @@
   .blur-handle[data-corner="ne"] { top: -6px; right: -6px; cursor: nesw-resize; }
   .blur-handle[data-corner="sw"] { bottom: -6px; left: -6px; cursor: nesw-resize; }
   .blur-handle[data-corner="se"] { right: -6px; bottom: -6px; cursor: nwse-resize; }
+  .blur-handle:is([data-corner="n"], [data-corner="s"]) { left: calc(50% - 6px); cursor: ns-resize; }
+  .blur-handle[data-corner="n"] { top: -6px; }
+  .blur-handle[data-corner="s"] { bottom: -6px; }
+  .blur-handle:is([data-corner="e"], [data-corner="w"]) { top: calc(50% - 6px); cursor: ew-resize; }
+  .blur-handle[data-corner="e"] { right: -6px; }
+  .blur-handle[data-corner="w"] { left: -6px; }
+  .blur-box-label { position: absolute; bottom: calc(100% + 6px); left: -2px; padding: 1px 6px; border-radius: 4px; background: var(--accent); color: var(--accent-contrast); font-size: var(--text-2xs); font-weight: 600; line-height: 16px; white-space: nowrap; pointer-events: none; }
 
   /* A dragged-out range, and its Cut pill. */
   /* Above the playhead, so its head never covers the Cut pill. */

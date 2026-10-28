@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { Slider, SliderControl, SliderTrack, SliderIndicator, SliderThumb } from '@/components/ui/slider.tsx';
 import { useFocusWhen } from '../hooks/use-focus-when.ts';
 import { normalizeCursor, type ReplayCursorSettings } from '../../shared/cursor.ts';
+import { CursorAppearancePicker } from './CursorAppearancePicker.tsx';
 import { CursorMotionPicker } from './CursorMotionPicker.tsx';
 
 const percent = (size: number) => `${Math.round(size * 100)}%`;
@@ -79,6 +80,14 @@ export function CursorInspector({
       </div>
       <fieldset disabled={!visible} className="cursor-options">
         <legend className="sr-only">Cursor appearance and behavior</legend>
+        <section className="cursor-section">
+          <CursorAppearancePicker
+            appearance={settings?.appearance ?? 'arrow'}
+            color={settings?.color}
+            disabled={!visible}
+            onChange={(patch) => update(patch)}
+          />
+        </section>
         <section className="cursor-section">
           <CursorMotionPicker value={settings?.motion ?? 'signature_arc'} disabled={!visible} onChange={(motion) => update({ motion })} />
         </section>

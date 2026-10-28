@@ -17,6 +17,28 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
+  hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
+  inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
+  during a press; the CUA arrow keeps its press squish. Viewer, editor preview and MP4 export draw the same glyph.
+- Editor blur rethought: blurs draw a strong blur with soft edges (no grey veil), feathered outside the box so the box
+  itself stays fully hidden. `ReplayBlur.style: 'redact'` draws a solid block instead. While placing a blur, a click
+  covers the recorded element under the pointer. The selected box has edge and corner handles and a style label, the
+  inspector picks Blur or Redact, and lane items are labelled with their style. Viewer and MP4 export draw the same.
+- **Capture profiles in the CLI and network bodies** ([docs/extension-api.md](docs/extension-api.md#capture-profiles)):
+  `replays capture --profile <id>` applies the profile's `capture` block under the explicit flags; new `--network
+  off|headers|bodies` and `--no-performance`. Every capture writes `meta.captured`. Network bodies are opt-in: JSON, text
+  and form only, cut at 64 KiB with `truncated`, and redacted (secret fields, credentials, JWTs, card numbers, email
+  addresses, the deployment's rules) at capture and again in the server's privacy pass. `requestBody`, `responseBody` and
+  `meta.captured` are in docs/formats/replay.schema.json.
+
+- **Views and capture profiles** ([docs/extension-api.md](docs/extension-api.md#views)): core ships seven views (`standard`,
+  `compare`, `performance`, `debug`, `walkthrough`, `review`, `support`) as data. The config key `views` and `api.view` add or
+  retune them, and `GET /api/config` and `<meta name="app-views">` serve them; `ViewCatalog`/`createViewCatalog` from `/server`.
+  Profiles gain `view` and a `capture` block (console levels, network `off`/`headers`/`bodies`, body limits, performance,
+  sampling, CLI defaults, stricter privacy only). Core ships a built-in `performance` profile, which the index shows as a tab
+  only once a replay has it.
+
 - Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
@@ -28,6 +50,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
   (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).

@@ -38,6 +38,7 @@ test('built host loads its theme, profiles, server hooks, browser contributions 
         ['triage', 90],
         ['design-review', 90],
         ['walkthrough', 0],
+        ['performance', undefined],
       ],
     );
     assert.ok(config.plugins.includes('company-host'));
