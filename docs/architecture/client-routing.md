@@ -10,7 +10,7 @@ server rendering adds a server entry rather than another rewrite.
 | `__root.tsx` | every page | Theme, tooltips, toasts, and the kept index (`routing/KeptIndex.tsx`) beside the page's outlet. Validates `?settings=` |
 | `index.tsx` | `/` | The index. Its search schema names the filters, sort and view; `x-*` plugin filters pass through |
 | `r.index.tsx` | `/r/` | Redirects to `/` |
-| `r.$id.tsx` | `/r/<id>…` | Shared by playback and edit mode: validates `t`, `original` and the compare keys (`with`, `layout`, `focus`), sends older `?suite=` links to the run in its suite, and starts the bundle and saved edits |
+| `r.$id.tsx` | `/r/<id>…` | Shared by playback and edit mode: validates `t` and `original`, and the compare keys (`with`, `layout`, `focus`) with `compare/compare-search.ts`, sends older `?suite=` links to the run in its suite, and starts the bundle and saved edits |
 | `r.$id.index.tsx` | `/r/<id>` | Playback, or the comparison when `?with=` names other recordings (`pages/ReplayPage.tsx`) |
 | `r.$id.edit.tsx` | `/r/<id>/edit` | Edit mode; without edit capability it redirects to playback, keeping the time and anchor |
 | `s.$suiteId.tsx` | `/s/<suite>…` | The suite workspace (`pages/SuitePage.tsx`), mounted across run switches |
@@ -31,7 +31,8 @@ the browser, and a server render would pass the request's. Loaders, `beforeLoad`
   `deployment.base` instead of `basepath` (which Start fixes at build time). `/replays/r/x` is `/r/x` to the routes.
 - **Search params.** `routing/search.ts` keeps query strings as plain text (`?errors=1`, `?t=12.5`, `?with=a,b`), so
   links from the CLI, agents and older builds open unchanged. Schemas in `src/shared/schemas/search.ts` (zod/mini) name
-  and type the keys; keys a schema does not name pass through.
+  and type the keys, and `compareSearchParams` (`compare/compare-search.ts`) cleans the compare keys the way the viewer
+  reads them; keys a schema does not name pass through.
 - **Loaders** start requests and code chunks and never wait, so the first render stays synchronous (`main.tsx`).
   Transport stays in `queries.ts` and the DB collections; pages read it with Query hooks.
 

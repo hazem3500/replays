@@ -100,6 +100,11 @@ describe('routes', () => {
     expect((await open('/r/a?t=12.5&with=b,c&layout=grid#step-2')).href).toBe('/r/a?t=12.5&with=b,c&layout=grid#step-2');
   });
 
+  it('reads compare keys as compare-search.ts does, dropping what the viewer would ignore', async () => {
+    const { router } = await open('/r/a?with=b,b,c&layout=gallery&t=3');
+    expect(router.state.matches.at(-1)?.search).toMatchObject({ with: 'b,c', layout: undefined, t: '3' });
+  });
+
   it('opens a plugin page with its path and query', async () => {
     expect(await open('/p/reports/weekly/2026?team=web')).toMatchObject({
       routeId: '/p/$plugin/$',

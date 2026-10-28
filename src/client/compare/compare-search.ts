@@ -16,7 +16,9 @@ export interface CompareSearch {
   t?: number;
 }
 
-const isLayout = (value: string): value is CompareLayout => value === 'single' || value === 'grid' || value === 'spotlight';
+const LAYOUTS: readonly CompareLayout[] = ['single', 'grid', 'spotlight'];
+
+const isLayout = (value: string): value is CompareLayout => LAYOUTS.some((layout) => layout === value);
 
 function validId(value: string) {
   try {
@@ -60,4 +62,32 @@ export function writeCompareSearch(search: string, next: CompareSearch, fallback
   if (next.t !== undefined) params.set('t', formatSeconds(next.t));
   const text = params.toString().replaceAll('%2C', ',');
   return text ? `?${text}` : '';
+}
+
+/** The compare keys of a viewer URL as text: what a route's search schema keeps (`with=b,c&layout=grid&focus=c`). */
+export interface CompareSearchParams {
+  with?: string | undefined;
+  layout?: CompareLayout | undefined;
+  focus?: string | undefined;
+}
+
+/**
+ * The compare keys of a query, cleaned as parseCompareSearch reads them and kept as URL text: a router's
+ * `validateSearch` for the viewer and suite pages. Invalid, repeated and surplus ids and an unknown layout are
+ * dropped; the page's own id, which a search schema can't know, is dropped where the page parses it.
+ */
+export function compareSearchParams(raw: Readonly<Record<string, unknown>>): CompareSearchParams {
+  const text = (key: string) => {
+    const value = raw[key];
+    return typeof value === 'string' ? value : '';
+  };
+  const ids = text('with');
+  const focus = text('focus');
+  const parsed = parseCompareSearch(`?${new URLSearchParams({ with: ids, focus })}`, '');
+  const layout = text('layout');
+  return {
+    with: parsed.with.join(',') || undefined,
+    layout: LAYOUTS.find((candidate) => candidate === layout),
+    focus: parsed.focus,
+  };
 }
