@@ -10,7 +10,7 @@ export function usePageCode(loaded: () => boolean, load: () => Promise<unknown>)
     if (ready) return;
     let live = true;
     void load()
-      .catch(() => undefined)
+      .catch(() => {})
       .then(() => live && setReady(true));
     return () => {
       live = false;

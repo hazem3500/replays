@@ -48,13 +48,15 @@ export function createAppRouter({
 function baseRewrite(base: string) {
   return {
     input: ({ url }: { url: URL }) => {
-      if (url.pathname !== base && !url.pathname.startsWith(`${base}/`)) return undefined;
-      url.pathname = url.pathname.slice(base.length) || '/';
-      return url;
+      if (url.pathname !== base && !url.pathname.startsWith(`${base}/`)) return url;
+      const inside = new URL(url);
+      inside.pathname = url.pathname.slice(base.length) || '/';
+      return inside;
     },
     output: ({ url }: { url: URL }) => {
-      url.pathname = `${base}${url.pathname}`;
-      return url;
+      const outside = new URL(url);
+      outside.pathname = `${base}${url.pathname}`;
+      return outside;
     },
   };
 }

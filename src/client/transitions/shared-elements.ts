@@ -1,15 +1,15 @@
-/* The elements a transition names: an in-place run swap pairs the player frame with itself. */
+/* why: the elements a transition names: an in-place run swap pairs the player frame with itself. */
 
 const named = new Set<HTMLElement>();
 
 export function name(element: Element | null | undefined, value: string) {
   if (!(element instanceof HTMLElement)) return;
-  element.style.viewTransitionName = value;
+  element.style.setProperty('view-transition-name', value);
   named.add(element);
 }
 
 export function unnameAll() {
-  for (const element of named) element.style.viewTransitionName = '';
+  for (const element of named) element.style.removeProperty('view-transition-name');
   named.clear();
 }
 

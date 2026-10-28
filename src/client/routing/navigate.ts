@@ -4,7 +4,7 @@ import { isAppPage } from './links.ts';
 import { pageOfPublicPath } from './page-key.ts';
 
 /*
- * Navigation for code that holds an href (menus, the command palette, the editor's "Done") and for the page's own
+ * why: navigation for code that holds an href (menus, the command palette, the editor's "Done") and for the page's own
  * address (a viewer's `?t=`, a comparison's layout). Everything goes through the router, so its location, history
  * and Back/Forward stay the page's.
  */
@@ -47,11 +47,20 @@ export function dropSearchParam(name: string) {
   setPageUrl(url.href);
 }
 
-function onClick(event: MouseEvent) {
-  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+const plainClick = (event: MouseEvent) =>
+  !event.defaultPrevented && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+
+/** The link a click opens in this tab, when it is a page of this app. */
+function appLink(event: MouseEvent) {
   const link = event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null;
-  if (!link || (link.target && link.target !== '_self') || link.hasAttribute('download')) return;
-  if (link.origin !== location.origin || link.getAttribute('href')?.startsWith('#') || !isAppPage(link.pathname)) return;
+  if (!link || (link.target && link.target !== '_self') || link.hasAttribute('download')) return null;
+  if (link.origin !== location.origin || link.getAttribute('href')?.startsWith('#') || !isAppPage(link.pathname)) return null;
+  return link;
+}
+
+function onClick(event: MouseEvent) {
+  const link = plainClick(event) ? appLink(event) : null;
+  if (!link) return;
   const router = clientRouter();
   const { base } = router.options.context.deployment;
   // invariant: a link to the page on screen (its own filters, a version switch) stays a normal load, as it always was.

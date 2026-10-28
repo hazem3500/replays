@@ -15,7 +15,6 @@ import { formatClock } from '../../shared/replay.ts';
 import { SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
 import { activeStepIndex, fitViewport } from '../timeline.ts';
 
-export { activeStepIndex };
 import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
 import { shortcutLabel } from '../shortcuts.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -26,6 +25,8 @@ import { useViewer } from './context.ts';
 import { afterMorphStart, afterPageTransition, swappingInPlace } from '../transitions/state.ts';
 import { freshPoster } from '../transitions/open-hint.ts';
 import { Scrubber } from './Scrubber.tsx';
+
+export { activeStepIndex };
 
 /** Replays up to this many events mount during the page transition (a few ms); bigger ones after it. */
 const LIGHT_MOUNT_EVENTS = 3000;

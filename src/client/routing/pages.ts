@@ -1,6 +1,6 @@
 import { editsQuery } from '../edits.ts';
 import { queryClient, replayQuery, suiteQuery } from '../queries.ts';
-import { lazyPage } from './lazy-page.ts';
+import { lazyPage } from './lazy-page.tsx';
 import type { Page } from './page-key.ts';
 
 let features: Promise<void> | undefined;
@@ -34,12 +34,14 @@ export const comparePage = lazyPage(
 );
 
 /** Code for a page, warmed by its route's loader; a failure surfaces when the page renders. */
-export const warm = (page: { preload: () => Promise<unknown> }) => void page.preload().catch(() => undefined);
+export const warm = (page: { preload: () => Promise<unknown> }) => void page.preload().catch(() => {});
 
 /** A query's data when the cache has it or a request for it is already on the way (else nothing to wait for). */
 function inCache(key: readonly unknown[]) {
   const state = queryClient.getQueryState(key);
-  return state && (state.data !== undefined || state.fetchStatus === 'fetching') ? queryClient.ensureQueryData({ queryKey: key }) : undefined;
+  return state && (state.data !== undefined || state.fetchStatus === 'fetching')
+    ? queryClient.query({ queryKey: key, staleTime: 'static' })
+    : undefined;
 }
 
 /**

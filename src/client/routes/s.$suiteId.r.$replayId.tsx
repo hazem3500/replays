@@ -6,7 +6,7 @@ import { replayQuery } from '../queries.ts';
 /** A run in its suite: the workspace (the parent route) shows it; its data starts here. */
 export const Route = createFileRoute('/s/$suiteId/r/$replayId')({
   loader: ({ context: { queryClient }, params }) => {
-    void queryClient.prefetchQuery(replayQuery(params.replayId));
-    void queryClient.prefetchQuery(editsQuery(params.replayId));
+    void queryClient.query(replayQuery(params.replayId)).catch(() => {});
+    void queryClient.query(editsQuery(params.replayId)).catch(() => {});
   },
 });

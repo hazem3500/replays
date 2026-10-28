@@ -40,7 +40,7 @@ describe('suite landing', () => {
     expect(initialRunReplayId([expired, kept, passed], true)).toBe('kept');
     expect(initialRunReplayId([expired, passed], true)).toBe('ok');
     expect(initialRunReplayId([expired], true)).toBeUndefined();
-    // Without summaries (a plain suite) a replay id is all there is to go on.
+    // why: without summaries (a plain suite) a replay id is all there is to go on.
     expect(initialRunReplayId([expired, passed], false)).toBe('gone');
     expect(playableReplayId(expired, true)).toBeUndefined();
     expect(isExpired(expired, true)).toBe(true);
@@ -90,7 +90,7 @@ describe('index helpers', () => {
     expect(kindFromSearch('?kind=robots')).toBeUndefined();
     expect(indexSearch({ q: 'a' }, 'sessions')).toBe('?q=a&kind=sessions');
     expect(indexSearch({}, 'suites')).toBe('?kind=suites');
-    // Sort is part of the view too, so Back and "Replays" links return to the same order.
+    // why: sort is part of the view too, so Back and "Replays" links return to the same order.
     expect(indexSearch({ errors: true }, undefined, { key: 'errors', direction: 'ascending' })).toBe('?errors=1&sort=errors');
     expect(indexSearch({}, undefined, { key: 'capturedAt', direction: 'descending' })).toBe('');
     expect(sortFromSearch('?sort=-duration')).toEqual({ key: 'duration', direction: 'descending' });
@@ -149,7 +149,7 @@ describe('index helpers', () => {
       expect(group.values).toMatchObject({ duration: 5000, steps: 4, errors: 3, host: 'app.test' });
       expect(group.hosts).toEqual(['app.test', 'login.test']);
       expect(replayCount(entries)).toBe(4);
-      // A run whose replay was pruned (an id but no summary) is not a replay the list can open.
+      // why: a run whose replay was pruned (an id but no summary) is not a replay the list can open.
       const expired = {
         id: 'd',
         sequence: 4,

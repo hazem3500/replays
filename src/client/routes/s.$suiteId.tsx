@@ -14,7 +14,7 @@ export const Route = createFileRoute('/s/$suiteId')({
   // why: not awaited: the workspace shows its skeleton inside the page transition, and its own error states.
   loader: ({ context: { queryClient }, params }) => {
     warm(suitePage);
-    void queryClient.prefetchQuery(suiteQuery(params.suiteId));
+    void queryClient.query(suiteQuery(params.suiteId)).catch(() => {});
   },
   component: function Suite() {
     const { suiteId } = Route.useParams();

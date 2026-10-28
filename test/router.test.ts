@@ -20,7 +20,7 @@ async function open(path: string, base = '') {
   });
   await router.load();
   const leaf = router.state.matches.at(-1);
-  return { router, routeId: leaf?.routeId, params: leaf?.params as Record<string, string>, href: router.state.location.publicHref };
+  return { router, routeId: leaf?.routeId, params: leaf?.params, href: router.state.location.publicHref };
 }
 
 function setBase(base: string) {

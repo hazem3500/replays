@@ -1,5 +1,5 @@
 /*
- * The page transition in flight, for the views that pace themselves on it: the player waits for the morph to start,
+ * why: the page transition in flight, for the views that pace themselves on it: the player waits for the morph to start,
  * long lists fill once it has landed. page-motion.ts starts page changes' transitions, swap.ts a suite's run switches.
  */
 
@@ -15,7 +15,7 @@ export const currentTransition = () => active ?? (document as DocumentWithTransi
 export function follow(transition: ViewTransition) {
   active = transition;
   void transition.finished
-    .catch(() => undefined)
+    .catch(() => {})
     .then(() => {
       if (active === transition) active = undefined;
     });
@@ -34,8 +34,8 @@ export function afterMorphStart(): Promise<void> {
   const transition = currentTransition();
   return transition
     ? transition.ready.then(
-        () => undefined,
-        () => undefined,
+        () => {},
+        () => {},
       )
     : Promise.resolve();
 }
@@ -45,8 +45,8 @@ export function afterPageTransition(): Promise<void> {
   const transition = currentTransition();
   return transition
     ? transition.finished.then(
-        () => undefined,
-        () => undefined,
+        () => {},
+        () => {},
       )
     : Promise.resolve();
 }

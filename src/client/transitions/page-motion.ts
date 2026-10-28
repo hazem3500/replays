@@ -7,7 +7,7 @@ import { cardFor, unnameAll } from './shared-elements.ts';
 import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from './state.ts';
 
 /*
- * Page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
+ * why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
  * the Query cache, the loaded viewer code and the index itself (kept mounted but hidden, routing/KeptIndex.tsx)
  * survive the trip. Index ↔ viewer uses one short crossfade (styles.css, html[data-page-transition]); thumbnails never
  * expand into a recording, since they can differ from its opening frame and aspect ratio. Cached pages render at once;
@@ -30,25 +30,73 @@ interface Plan {
   turn: number;
 }
 
-const directionFor = (from: Page, to: Page): Direction => (from.kind === 'index' ? 'to-viewer' : to.kind === 'index' ? 'to-index' : 'page');
+function directionFor(from: Page, to: Page): Direction {
+  if (from.kind === 'index') return 'to-viewer';
+  return to.kind === 'index' ? 'to-index' : 'page';
+}
+
+/** What the page's pointer, keyboard and history say before a navigation starts. */
+const input = {
+  clicked: undefined as HTMLAnchorElement | undefined,
+  /** A swipe-back gesture already animated the change: it is not animated twice. */
+  swiped: false,
+};
+
+function listenForInput() {
+  window.addEventListener(
+    'click',
+    (event) => {
+      input.clicked = (event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null) ?? undefined;
+    },
+    { capture: true },
+  );
+  window.addEventListener(
+    'popstate',
+    (event) => {
+      input.swiped = Boolean((event as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition);
+    },
+    { capture: true },
+  );
+  document.addEventListener('pointerover', onCardIntent, { passive: true });
+  document.addEventListener('focusin', onCardIntent);
+}
+
+/** Commits a page change: inside one crossfade when it animates, after its short prepare budget either way. */
+function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
+  if (!plan) return commit();
+  if (!plan.animate) return plan.ready.then(commit);
+  const root = document.documentElement;
+  unnameAll();
+  root.dataset.pageTransition = 'page';
+  const transition = document.startViewTransition(async () => {
+    await plan.ready;
+    await commit();
+  });
+  follow(transition);
+  void transition.finished
+    .catch(() => {})
+    .then(() => {
+      if (currentTransition()) return;
+      delete root.dataset.pageTransition;
+      unnameAll();
+    });
+  return transition.updateCallbackDone;
+}
 
 export function installPageMotion(router: AppRouter) {
   const { base } = router.options.context.deployment;
   const opensPage = (page: Page) => (link: HTMLAnchorElement) =>
     link.origin === location.origin && pageOfPublicPath(router, link.pathname, base).key === page.key;
-  let clicked: HTMLAnchorElement | undefined;
-  /** The link the viewer was opened from: Back returns into that card (a replay can be listed twice, on its own and in a suite). */
+  // why: Back returns into the card the viewer was opened from (a replay can be listed twice, on its own and in a suite).
   let opened: HTMLAnchorElement | undefined;
-  let swiped = false;
-  /** The page change in flight: set before its loaders run, read when the router commits it. */
+  // invariant: the page change in flight, set before its loaders run and read when the router commits it.
   let plan: Plan | undefined;
 
   router.subscribe('onBeforeNavigate', ({ fromLocation, toLocation }) => {
     stopFocusHandOff();
-    const link = clicked;
-    const uaAnimated = swiped;
-    clicked = undefined;
-    swiped = false;
+    const { clicked, swiped } = input;
+    input.clicked = undefined;
+    input.swiped = false;
     plan = undefined;
     if (!fromLocation) return;
     const from = pageOf(router, fromLocation.pathname);
@@ -61,43 +109,17 @@ export function installPageMotion(router: AppRouter) {
       // why: a hidden index keeps its DOM: stop any hover preview so it doesn't play on behind the viewer.
       for (const video of document.querySelectorAll<HTMLVideoElement>('.index-shell video, .feed-list video')) video.pause();
     if (direction === 'to-viewer') {
-      const match = cardFor(opensPage(to), link);
+      const match = cardFor(opensPage(to), clicked);
       const pageId = to.suiteId ?? to.replayId;
       if (pageId) writeHint(pageId, to.replayId ?? pageId, match);
       opened = match?.link;
     } else forgetHint();
-    plan = {
-      direction,
-      from,
-      animate: direction !== 'page' && !uaAnimated && supportsTransitions(),
-      ready:
-        direction === 'to-index' ? Promise.resolve() : Promise.race([preparePage(to).catch(() => undefined), delay(PREPARE_BUDGET_MS)]),
-      turn,
-    };
+    const ready = direction === 'to-index' ? Promise.resolve() : Promise.race([preparePage(to).catch(() => {}), delay(PREPARE_BUDGET_MS)]);
+    plan = { direction, from, animate: direction !== 'page' && !swiped && supportsTransitions(), ready, turn };
   });
 
-  // why: the router wraps each commit in this; a page change renders its page within the budget, inside one crossfade.
-  router.startViewTransition = (commit: () => Promise<void>) => {
-    const current = plan;
-    if (!current) return commit();
-    if (!current.animate) return current.ready.then(commit);
-    const root = document.documentElement;
-    unnameAll();
-    root.dataset.pageTransition = 'page';
-    const transition = document.startViewTransition(async () => {
-      await current.ready;
-      await commit();
-    });
-    follow(transition);
-    void transition.finished
-      .catch(() => undefined)
-      .then(() => {
-        if (currentTransition()) return;
-        delete root.dataset.pageTransition;
-        unnameAll();
-      });
-    return transition.updateCallbackDone;
-  };
+  // why: the router wraps each commit in its startViewTransition; this one paces and dresses page changes.
+  Object.assign(router, { startViewTransition: (commit: () => Promise<void>) => dressedCommit(plan, commit) });
 
   router.subscribe('onRendered', () => {
     const current = plan;
@@ -112,27 +134,11 @@ export function installPageMotion(router: AppRouter) {
       return;
     }
     void transition.finished
-      .catch(() => undefined)
+      .catch(() => {})
       .then(() => {
         if (isTurn(current.turn)) settleFocus(toIndex, match);
       });
   });
 
-  window.addEventListener(
-    'click',
-    (event) => {
-      clicked = (event.target instanceof Element ? event.target.closest<HTMLAnchorElement>('a[href]') : null) ?? undefined;
-    },
-    { capture: true },
-  );
-  window.addEventListener(
-    'popstate',
-    (event) => {
-      // why: a swipe-back gesture already animated the change: don't animate it twice.
-      swiped = Boolean((event as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition);
-    },
-    { capture: true },
-  );
-  document.addEventListener('pointerover', onCardIntent, { passive: true });
-  document.addEventListener('focusin', onCardIntent);
+  listenForInput();
 }

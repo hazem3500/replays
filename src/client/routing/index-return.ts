@@ -4,7 +4,7 @@ import { indexHref } from './links.ts';
 import { parseSearch, stringifySearch } from './search.ts';
 
 /*
- * "All replays" from a page opened from the index steps back in history when it would land on the same list: the
+ * why: "All replays" from a page opened from the index steps back in history when it would land on the same list: the
  * index's own entry (and its scroll) is reused instead of stacking another.
  */
 

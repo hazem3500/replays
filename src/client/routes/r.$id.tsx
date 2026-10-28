@@ -20,7 +20,7 @@ export const Route = createFileRoute('/r/$id')({
   },
   // why: started here (a hover may have started it already), never awaited: the page shows its skeleton meanwhile.
   loader: ({ context: { queryClient }, params }) => {
-    void queryClient.prefetchQuery(replayQuery(params.id));
-    void queryClient.prefetchQuery(editsQuery(params.id));
+    void queryClient.query(replayQuery(params.id)).catch(() => {});
+    void queryClient.query(editsQuery(params.id)).catch(() => {});
   },
 });

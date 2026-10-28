@@ -1,6 +1,6 @@
 import type { CardMatch } from './shared-elements.ts';
 
-/* Where the keyboard goes once a page change has landed: back on the index, the card you came from; else the player. */
+/* why: where the keyboard goes once a page change has landed: back on the index, the card you came from; else the player. */
 
 const PLAYER_SELECTOR = '.app-shell:not(.skeleton-shell) #replay-player';
 /** How long a page may stay on its skeleton and still hand the keyboard to the player when it arrives. */
@@ -48,8 +48,8 @@ export function settleFocus(toIndex: boolean, match: CardMatch | undefined) {
   const heading = document.querySelector<HTMLElement>('.app-shell:not(.skeleton-shell) .app-topbar h1');
   const target = player ?? heading;
   if (!target) {
-    // why: still on the skeleton (a slow load, a skipped or slow transition): hand the keyboard to the player as soon as
-    // the viewer replaces it, unless the person has moved it somewhere themselves meanwhile.
+    /* why: still on the skeleton (a slow load, a skipped or slow transition): hand the keyboard to the player as soon as
+       the viewer replaces it, unless the person has moved it somewhere themselves meanwhile. */
     handToPlayerWhenReady();
     return;
   }

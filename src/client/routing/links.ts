@@ -3,7 +3,7 @@ import { appBase } from '../api/fetch.ts';
 import { readSessionStorage, writeSessionStorage } from '../storage.ts';
 
 /*
- * The app's public addresses, base included (`/replays/r/<id>` under `/replays`): plain hrefs for links, copy-link
+ * why: the app's public addresses, base included (`/replays/r/<id>` under `/replays`): plain hrefs for links, copy-link
  * menus and the CLI's output. In-app clicks on them go through the router (routing/navigate.ts).
  */
 
@@ -40,21 +40,23 @@ export function isAppPage(pathname: string, base = appBase()) {
   return !/^\/(api|assets|internal|_plugins)(\/|$)/.test(rest) && rest !== '/healthz' && !rest.endsWith('.html');
 }
 
-function decode(value: string) {
+/** A path segment decoded, or undefined when it is missing or malformed. */
+export function decodeSegment(value: string | undefined) {
+  if (value === undefined) return;
   try {
     return decodeURIComponent(value);
   } catch {
-    return undefined;
+    return;
   }
 }
 
 /** The suite and run a public pathname shows (`<base>/s/<suite>/r/<id>`), for code that reads a popped address. */
 export function suiteRunOf(pathname: string, base = appBase()) {
   const rest = base && under(pathname, base) ? pathname.slice(base.length) : pathname;
-  const match = /^\/s\/([^/]+)(?:\/r\/([^/]+))?\/?$/.exec(rest);
-  const suiteId = match ? decode(match[1]!) : undefined;
-  if (!suiteId) return undefined;
-  const replayId = match?.[2] ? decode(match[2]) : undefined;
+  const [, suite, run] = /^\/s\/([^/]+)(?:\/r\/([^/]+))?\/?$/.exec(rest) ?? [];
+  const suiteId = decodeSegment(suite);
+  if (!suiteId) return;
+  const replayId = decodeSegment(run);
   return { suiteId, ...(replayId ? { replayId } : {}) };
 }
 

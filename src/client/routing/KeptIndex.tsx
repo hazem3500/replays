@@ -20,7 +20,7 @@ export function KeptIndex() {
     },
   });
   const [kept, setKept] = useState(search);
-  /** The address the page itself last wrote. */
+  // why: an address the page did not write itself (Back to other filters, a link) remounts it.
   const [written, setWritten] = useState(search);
   const [generation, setGeneration] = useState(0);
   if (search !== undefined && search !== kept) {
