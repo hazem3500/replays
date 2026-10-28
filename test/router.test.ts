@@ -31,12 +31,17 @@ function setBase(base: string) {
   document.head.append(meta);
 }
 
-afterEach(() => {
-  setBetaEditorForTests(undefined);
-  vi.unstubAllGlobals();
-});
+/** Registers the enclosing describe's cleanup: the beta flag and stubbed globals go back to their defaults. */
+function useRouterHarness() {
+  afterEach(() => {
+    setBetaEditorForTests(undefined);
+    vi.unstubAllGlobals();
+  });
+}
 
 describe('addresses under either base', () => {
+  useRouterHarness();
+
   it('builds links and API URLs at the root of a domain', () => {
     setBase('');
     expect([indexHref(), replayHref('a b'), editHref('a'), suiteHref('s'), replayInSuiteHref('r', 's'), apiUrl('replays')]).toEqual([
@@ -70,6 +75,8 @@ describe('addresses under either base', () => {
 });
 
 describe('routes', () => {
+  useRouterHarness();
+
   it('opens a replay, at the root and under a base path', async () => {
     expect(await open('/r/example-dot-com')).toMatchObject({ routeId: '/r/$id/', params: { id: 'example-dot-com' } });
     expect(await open('/replays/r/a', '/replays')).toMatchObject({ routeId: '/r/$id/', params: { id: 'a' }, href: '/replays/r/a' });
@@ -120,6 +127,8 @@ describe('routes', () => {
 });
 
 describe('edit mode', () => {
+  useRouterHarness();
+
   it('opens the editor when editing is enabled', async () => {
     setBetaEditorForTests(true);
     expect(await open('/r/demo-shop/edit')).toMatchObject({ routeId: '/r/$id/edit', params: { id: 'demo-shop' } });
@@ -133,6 +142,8 @@ describe('edit mode', () => {
 });
 
 describe('pages', () => {
+  useRouterHarness();
+
   it('treats a suite’s runs as one page and a replay’s edit mode as another', async () => {
     const { router } = await open('/');
     expect(pageOf(router, '/s/x/r/a').key).toBe(pageOf(router, '/s/x').key);
