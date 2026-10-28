@@ -17,6 +17,86 @@
       "gzip": 60962,
       "brotli": 39185
     },
+    "dist/client/assets/CommentRowsSource-HASH.js": {
+      "raw": 2420,
+      "gzip": 1256,
+      "brotli": 1144
+    },
+    "dist/client/assets/ComparePicker-HASH.js": {
+      "raw": 5232,
+      "gzip": 2349,
+      "brotli": 2125
+    },
+    "dist/client/assets/CompareViewer-HASH.css": {
+      "raw": 8845,
+      "gzip": 2280,
+      "brotli": 1959
+    },
+    "dist/client/assets/CompareViewer-HASH.js": {
+      "raw": 38116,
+      "gzip": 13520,
+      "brotli": 11999
+    },
+    "dist/client/assets/Editor-HASH.css": {
+      "raw": 35060,
+      "gzip": 6742,
+      "brotli": 5984
+    },
+    "dist/client/assets/Editor-HASH.js": {
+      "raw": 82506,
+      "gzip": 27351,
+      "brotli": 23404
+    },
+    "dist/client/assets/Inspector-HASH.css": {
+      "raw": 34420,
+      "gzip": 6620,
+      "brotli": 5910
+    },
+    "dist/client/assets/Inspector-HASH.js": {
+      "raw": 215881,
+      "gzip": 73800,
+      "brotli": 62241
+    },
+    "dist/client/assets/MalleableHost-HASH.css": {
+      "raw": 8084,
+      "gzip": 2054,
+      "brotli": 1747
+    },
+    "dist/client/assets/MalleableHost-HASH.js": {
+      "raw": 77463,
+      "gzip": 25654,
+      "brotli": 22782
+    },
+    "dist/client/assets/PluginUi-HASH.js": {
+      "raw": 133395,
+      "gzip": 44750,
+      "brotli": 38604
+    },
+    "dist/client/assets/ReplayComparePage-HASH.js": {
+      "raw": 1022,
+      "gzip": 631,
+      "brotli": 569
+    },
+    "dist/client/assets/SuiteCompare-HASH.js": {
+      "raw": 1164,
+      "gzip": 704,
+      "brotli": 624
+    },
+    "dist/client/assets/SuiteWorkspace-HASH.js": {
+      "raw": 20385,
+      "gzip": 8351,
+      "brotli": 7157
+    },
+    "dist/client/assets/Viewer-HASH.css": {
+      "raw": 5150,
+      "gzip": 1400,
+      "brotli": 1200
+    },
+    "dist/client/assets/Viewer-HASH.js": {
+      "raw": 50381,
+      "gzip": 18358,
+      "brotli": 16023
+    },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
       "gzip": 954,
@@ -57,26 +137,6 @@
       "gzip": 241,
       "brotli": 190
     },
-    "dist/client/assets/CommentRowsSource-HASH.js": {
-      "raw": 2420,
-      "gzip": 1256,
-      "brotli": 1144
-    },
-    "dist/client/assets/ComparePicker-HASH.js": {
-      "raw": 5232,
-      "gzip": 2350,
-      "brotli": 2126
-    },
-    "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8845,
-      "gzip": 2280,
-      "brotli": 1959
-    },
-    "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38116,
-      "gzip": 13520,
-      "brotli": 12013
-    },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
       "gzip": 33180,
@@ -85,27 +145,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 222,
-      "brotli": 191
-    },
-    "dist/client/assets/Editor-HASH.css": {
-      "raw": 35060,
-      "gzip": 6742,
-      "brotli": 5984
-    },
-    "dist/client/assets/Editor-HASH.js": {
-      "raw": 82506,
-      "gzip": 27351,
-      "brotli": 23404
-    },
-    "dist/client/assets/Inspector-HASH.css": {
-      "raw": 34420,
-      "gzip": 6620,
-      "brotli": 5910
-    },
-    "dist/client/assets/Inspector-HASH.js": {
-      "raw": 215881,
-      "gzip": 73800,
-      "brotli": 62241
+      "brotli": 190
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -127,16 +167,6 @@
       "gzip": 264554,
       "brotli": 220439
     },
-    "dist/client/assets/MalleableHost-HASH.css": {
-      "raw": 8084,
-      "gzip": 2054,
-      "brotli": 1747
-    },
-    "dist/client/assets/MalleableHost-HASH.js": {
-      "raw": 77463,
-      "gzip": 25654,
-      "brotli": 22782
-    },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
       "gzip": 945,
@@ -146,11 +176,6 @@
       "raw": 308578,
       "gzip": 95021,
       "brotli": 68380
-    },
-    "dist/client/assets/PluginUi-HASH.js": {
-      "raw": 133395,
-      "gzip": 44750,
-      "brotli": 38604
     },
     "dist/client/assets/preload-helper-HASH.js": {
       "raw": 58534,
@@ -177,11 +202,6 @@
       "gzip": 2958,
       "brotli": 2682
     },
-    "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 1022,
-      "gzip": 633,
-      "brotli": 570
-    },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
       "gzip": 442,
@@ -197,16 +217,6 @@
       "gzip": 499,
       "brotli": 455
     },
-    "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1164,
-      "gzip": 706,
-      "brotli": 642
-    },
-    "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20385,
-      "gzip": 8355,
-      "brotli": 7171
-    },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
       "gzip": 12373,
@@ -217,19 +227,9 @@
       "gzip": 265,
       "brotli": 238
     },
-    "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5150,
-      "gzip": 1400,
-      "brotli": 1200
-    },
-    "dist/client/assets/Viewer-HASH.js": {
-      "raw": 57050,
-      "gzip": 20540,
-      "brotli": 17790
-    },
     "dist/client/index.html": {
       "raw": 12263,
-      "gzip": 4255,
+      "gzip": 4254,
       "brotli": 3468
     },
     "dist/client/render.html": {
@@ -876,7 +876,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -998,6 +998,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 34420,
+        "gzip": 6620,
+        "brotli": 5910
+      },
+      "reason": "Pending frames for inspector panels (loaded geometry, never a blank panel) and the flat tab row's group hairlines and status dots.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
+    },
+    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "gzip": 73800
@@ -1024,16 +1034,6 @@
       },
       "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
       "pr": "https://github.com/hazem3500/replays/pull/121"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 34420,
-        "gzip": 6620,
-        "brotli": 5910
-      },
-      "reason": "Pending frames for inspector panels (loaded geometry, never a blank panel) and the flat tab row's group hairlines and status dots.",
-      "pr": "https://github.com/hazem3500/replays/pull/117"
     }
   ]
 }
