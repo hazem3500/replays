@@ -108,7 +108,7 @@ export async function readCliConfig(path = configPath()): Promise<ReplaysCliConf
 }
 
 export async function saveServer(url: string, name = DEFAULT_NAME, path = configPath()) {
-  if (!NAME.test(name)) throw new Error('server name must be 1–40 letters, digits, dots, underscores, or hyphens');
+  if (!NAME.test(name)) throw new Error('server name must be 1 to 40 letters, digits, dots, underscores, or hyphens');
   const serverUrl = normalizeServerUrl(url);
   const config = await readCliConfig(path);
   config.servers[name] = { url: serverUrl };

@@ -2,7 +2,7 @@ import { createInterface } from 'node:readline';
 
 import { McpServer } from './server.ts';
 
-const USAGE = `replays mcp — MCP server (stdio) for the plugin workshop's agent bridge
+const USAGE = `replays mcp: MCP server (stdio) for the plugin workshop's agent bridge
 
   REPLAYS_URL=http://127.0.0.1:8080 REPLAYS_BRIDGE_TOKEN=rb_… replays mcp
   replays mcp --url http://127.0.0.1:8080 --token rb_…

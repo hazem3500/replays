@@ -75,7 +75,7 @@ function EvidenceList<T>({ items, children, empty }: { items: readonly T[]; chil
             Previous
           </button>
           <span>
-            {start + 1}–{Math.min(start + 30, items.length)} of {items.length}
+            {start + 1} to {Math.min(start + 30, items.length)} of {items.length}
           </span>
           <button type="button" disabled={current === last} onClick={() => setPage(current + 1)}>
             Next

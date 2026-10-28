@@ -107,7 +107,8 @@
     "replays/max-jsx-depth": "warn",
     "replays/no-product-name-literal": "warn",
     "replays/no-throw-plain-error-in-routes": "warn",
-    "replays/no-render-time-store-read": "warn"
+    "replays/no-render-time-store-read": "warn",
+    "replays/no-dash-in-copy": "warn"
   },
   "overrides": [
     {

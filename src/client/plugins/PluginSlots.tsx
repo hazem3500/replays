@@ -120,7 +120,7 @@ function TrackRow({
             <div className="plugin-track-card" aria-hidden="true">
               <span className="plugin-track-card-head">
                 {track.label} · {formatClock(marker.at)}
-                {marker.duration ? `–${formatClock(marker.at + marker.duration)}` : ''}
+                {marker.duration ? ` to ${formatClock(marker.at + marker.duration)}` : ''}
               </span>
               <span className="plugin-track-card-label">{marker.label}</span>
             </div>

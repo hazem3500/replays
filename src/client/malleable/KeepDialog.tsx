@@ -76,9 +76,9 @@ export function KeepDialog() {
             <li key={permission} data-write={isWriteCapability(permission)}>
               <code>{permission}</code> {CAPABILITIES[permission].label}
               {capabilityRule(policy, permission) === 'deny' ? (
-                <em> — not allowed on this server</em>
+                <em> (not allowed on this server)</em>
               ) : isWriteCapability(permission) || capabilityRule(policy, permission) === 'ask' ? (
-                <em> — asks you each time it runs</em>
+                <em> (asks you each time it runs)</em>
               ) : null}
             </li>
           ))}

@@ -28,7 +28,7 @@ export class AgentCredentials {
   async create(owner: ApplicationOwner, input: unknown) {
     if (!input || typeof input !== 'object' || Array.isArray(input)) fail(400, 'Expected a credential object');
     const { name, scopes, expiresInSeconds } = input as Record<string, unknown>;
-    if (typeof name !== 'string' || !name.trim() || name.trim().length > 100) fail(400, 'Credential name must contain 1–100 characters');
+    if (typeof name !== 'string' || !name.trim() || name.trim().length > 100) fail(400, 'Credential name must contain 1 to 100 characters');
     if (
       !Array.isArray(scopes) ||
       !scopes.length ||
