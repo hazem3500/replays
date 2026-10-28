@@ -94,12 +94,13 @@ test.describe('desktop settings', () => {
     const tabs = dialog.getByRole('tablist', { name: 'Settings sections' });
     await expect(tabs.getByRole('tab', { name: 'CLI & agents' })).toBeFocused();
     const sizes = new Set<string>();
-    for (const [name, id] of [
+    const sections: ReadonlyArray<readonly [name: string, id: string]> = [
       ['CLI & agents', 'cli'],
       ['Keyboard', 'keyboard'],
       ['Labs', 'labs'],
       ['About', 'about'],
-    ]) {
+    ];
+    for (const [name, id] of sections) {
       await tabs.getByRole('tab', { name }).click();
       await expect(dialog.getByRole('tabpanel')).toHaveAttribute('aria-labelledby', `settings-tab-${id}`);
       const geometry = await overflow(page);

@@ -1,4 +1,4 @@
-import { type ReactNode, type RefObject, useRef, useState, useSyncExternalStore } from 'react';
+import { type ReactNode, useRef, useState, useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 
 import { Dialog, DialogContent, DialogDescription } from '@/components/ui/dialog.tsx';
@@ -19,13 +19,10 @@ function focusQuietly(element: HTMLElement | null | undefined, viaKeyboard: bool
 }
 
 /** Desktop focuses the selected tab; on touch a focused first control reads as a stray selection, so the sheet takes it. */
-function initialFocusFor(popup: RefObject<HTMLDivElement | null>, stacked: boolean, pane: Pane) {
-  return (openType: string) => {
-    const root = popup.current;
-    if (!stacked) return root?.querySelector<HTMLElement>('.settings-tab[aria-selected="true"]');
-    if (openType !== 'keyboard') return root;
-    return root?.querySelector<HTMLElement>(pane === 'list' ? '.settings-nav-row' : '.settings-back');
-  };
+function initialFocusIn(root: HTMLDivElement | null, stacked: boolean, pane: Pane, openType: string) {
+  if (!stacked) return root?.querySelector<HTMLElement>('.settings-tab[aria-selected="true"]');
+  if (openType !== 'keyboard') return root;
+  return root?.querySelector<HTMLElement>(pane === 'list' ? '.settings-nav-row' : '.settings-back');
 }
 
 function SettingsBody({
@@ -120,7 +117,7 @@ export function SettingsDialog({ open, onOpenChange, section, onSectionChange, s
         className="settings-dialog"
         data-layout={stacked ? 'stack' : 'split'}
         data-pane={pane}
-        initialFocus={initialFocusFor(popup, stacked, pane)}
+        initialFocus={(openType) => initialFocusIn(popup.current, stacked, pane, openType)}
       >
         <DialogDescription className="sr-only">{strings.description}</DialogDescription>
         <SettingsBody
