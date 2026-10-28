@@ -1,0 +1,18 @@
+/*
+ * InspectorDock.tsx: one flat tab row. Groups (steps | console, network, performance | context | comments and
+ * plugins) part with a short hairline before the group's first tab, never a second row. Badges are one neutral
+ * total; a dot before it says part of it is a problem (red: errors and failures; amber: warnings and slow work), so a
+ * red badge never reads as a count of failures.
+ */
+.inspector-tab.inspector-tab[data-group-start] { margin-left: 9px; }
+.inspector-tab.inspector-tab[data-group-start]::before { content: ""; position: absolute; top: 50%; left: -6px; width: 1px; height: 16px; translate: 0 -50%; background: var(--line); pointer-events: none; }
+.tab-badge.tab-badge { color: var(--text-secondary); }
+[data-active] > .tab-badge.tab-badge { color: var(--text); }
+.tab-badge.tab-badge { gap: 4px; }
+.tab-badge-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--danger); }
+.tab-badge[data-tone="warning"] .tab-badge-dot { background: var(--warning); }
+.inspector-tabs[data-icon-tabs] .inspector-tab.inspector-tab[data-group-start] { margin-left: 5px; }
+.inspector-tabs[data-icon-tabs] .inspector-tab.inspector-tab[data-group-start]::before { left: -4px; }
+@media (forced-colors: active) {
+  .inspector-tab.inspector-tab[data-group-start]::before, .tab-badge-dot { background: CanvasText; }
+}

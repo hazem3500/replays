@@ -21,7 +21,8 @@ test('performance signals follow the playhead and open with the P key', async ({
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   await page.getByTestId('performance-tab').click();
   // Captured event rows share the player; future observations remain explicit.
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 1 of 3 signals reached');
+  // why: the tab names the whole recording's signals and how many are slow, not how many the playhead passed.
+  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 3 signals, 2 slow');
   const events = page.getByTestId('performance-events');
   const rows = events.getByRole('button');
   await expect(rows).toHaveCount(3);
@@ -32,7 +33,6 @@ test('performance signals follow the playhead and open with the P key', async ({
 
   await rows.nth(1).click();
   await expect(page.getByTestId('playhead')).toHaveText('0:05.0');
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 2 of 3 signals reached');
   await expect(events.locator('[data-future]')).toHaveCount(1);
   const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
   await expect(evidence.locator('.perf-facts')).toContainText('Captured duration72 ms');
@@ -59,11 +59,9 @@ test('performance signals follow the playhead and open with the P key', async ({
   await page.keyboard.press('p');
   await expect(page.getByTestId('performance-tab')).toHaveAttribute('aria-selected', 'true');
   await page.getByRole('slider', { name: 'Seek' }).press('End');
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 3 of 3 signals reached');
   await expect(events.locator('[data-future]')).toHaveCount(0);
   await expect(rows.nth(2)).toContainText('click');
   await page.getByRole('slider', { name: 'Seek' }).press('Home');
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 0 of 3 signals reached');
   await expect(events.locator('[data-future]')).toHaveCount(3);
 });
 
