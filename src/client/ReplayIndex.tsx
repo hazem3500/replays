@@ -36,6 +36,7 @@ import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
 import { Topbar } from './Topbar.tsx';
+import { IndexPhoneMenu, phoneMenuItems } from './index/IndexPhoneMenu.tsx';
 import { UploadReplay, type UploadReplayHandle } from './upload/UploadReplay.tsx';
 import { useReplayDrop } from './upload/useReplayDrop.tsx';
 
@@ -749,6 +750,7 @@ export function ReplayIndex() {
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
+          {...(compact ? { phoneMenu: <IndexPhoneMenu items={phoneMenuItems({ onUpload: () => upload.current?.open() })} /> } : {})}
           actions={
             <>
               {searchField}

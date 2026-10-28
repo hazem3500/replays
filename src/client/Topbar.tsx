@@ -46,6 +46,7 @@ export function Topbar({
   root,
   titleMenu,
   titleFrom,
+  phoneMenu,
 }: {
   /** The page's h1. Omit on the index, where the product's name is the page itself. */
   title?: string;
@@ -76,6 +77,8 @@ export function Topbar({
   titleMenu?: ReactNode;
   /** The title this bar replaces (switching suite runs remounts the page): it morphs from that one. */
   titleFrom?: string;
+  /** Phones (the index): one sheet in place of the theme switch and "More"; Settings stays mounted for its dialog. */
+  phoneMenu?: ReactNode;
 }) {
   return (
     <header className={cn('topbar app-topbar', compact && 'topbar-compact')}>
@@ -119,9 +122,9 @@ export function Topbar({
       <div className="topbar-actions">
         {actions}
         {/* Phones: the theme is a "More" item, so the bar keeps room for the title at 360 px. */}
-        {compact ? null : <ThemeSwitch />}
+        {compact || phoneMenu ? null : <ThemeSwitch />}
         {title === undefined ? <SettingsButton /> : null}
-        <MoreMenu items={menuItems} extra={menu} footer={menuFooter} theme={compact} always={alwaysMenu} />
+        {phoneMenu ?? <MoreMenu items={menuItems} extra={menu} footer={menuFooter} theme={compact} always={alwaysMenu} />}
       </div>
     </header>
   );
