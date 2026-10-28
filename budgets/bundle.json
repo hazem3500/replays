@@ -19,8 +19,8 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
-      "gzip": 956,
-      "brotli": 824
+      "gzip": 955,
+      "brotli": 820
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -60,12 +60,12 @@
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2420,
       "gzip": 1256,
-      "brotli": 1145
+      "brotli": 1144
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
       "gzip": 2350,
-      "brotli": 2124
+      "brotli": 2126
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -74,18 +74,18 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38116,
-      "gzip": 13524,
-      "brotli": 12013
+      "gzip": 13520,
+      "brotli": 12006
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
-      "gzip": 33181,
-      "brotli": 29491
+      "gzip": 33180,
+      "brotli": 29475
     },
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 222,
-      "brotli": 190
+      "brotli": 191
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
@@ -103,9 +103,9 @@
       "brotli": 5910
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 359609,
-      "gzip": 119586,
-      "brotli": 102570
+      "raw": 215881,
+      "gzip": 73800,
+      "brotli": 62241
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -124,7 +124,7 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 847449,
-      "gzip": 264558,
+      "gzip": 264554,
       "brotli": 220439
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -179,33 +179,33 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 633,
-      "brotli": 572
+      "gzip": 631,
+      "brotli": 570
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
-      "raw": 939,
-      "gzip": 528,
-      "brotli": 474
+      "raw": 748,
+      "gzip": 442,
+      "brotli": 394
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 1816,
-      "gzip": 805,
-      "brotli": 657
+      "raw": 2418,
+      "gzip": 911,
+      "brotli": 749
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 796,
-      "gzip": 500,
-      "brotli": 456
+      "gzip": 499,
+      "brotli": 455
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
-      "gzip": 706,
-      "brotli": 624
+      "gzip": 704,
+      "brotli": 639
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
-      "gzip": 8347,
-      "brotli": 7171
+      "gzip": 8351,
+      "brotli": 7163
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -218,19 +218,19 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50992,
-      "gzip": 18530,
-      "brotli": 16173
+      "raw": 50381,
+      "gzip": 18370,
+      "brotli": 16023
     },
     "dist/client/index.html": {
       "raw": 12263,
-      "gzip": 4256,
+      "gzip": 4254,
       "brotli": 3468
     },
     "dist/client/render.html": {
       "raw": 1294,
-      "gzip": 552,
-      "brotli": 411
+      "gzip": 548,
+      "brotli": 409
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -428,9 +428,9 @@
       "brotli": 434343
     },
     "initial/render.html/css": {
-      "raw": 5252,
-      "gzip": 2455,
-      "brotli": 2038
+      "raw": 5788,
+      "gzip": 2529,
+      "brotli": 2103
     },
     "initial/render.html/js": {
       "raw": 542325,
@@ -627,26 +627,6 @@
         "brotli": 474
       },
       "reason": "Caption morph modules require additional bundler module interop helpers in this shared runtime.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 1816,
-        "gzip": 805,
-        "brotli": 657
-      },
-      "reason": "Caption morphing and wrapped step captions add presentation styles shared by viewer and video export.",
-      "pr": "https://github.com/hazem3500/replays/pull/67"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5252,
-        "gzip": 2455,
-        "brotli": 2038
-      },
-      "reason": "Exported replay captions share the caption morph presentation stylesheet, increasing the render entry CSS graph.",
       "pr": "https://github.com/hazem3500/replays/pull/67"
     },
     {
@@ -915,16 +895,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 359609,
-        "gzip": 119586,
-        "brotli": 102570
-      },
-      "reason": "Animated caption morphing adds calligraph and motion to the lazy inspector graph alongside highlight scrubber controls; the initial JavaScript budget is unchanged. Then: Shared modules (tabs, popovers, request detail helpers) moved into the Inspector chunk when main stopped importing the old comparison shell.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/PluginUi-HASH.js",
       "cap": {
         "raw": 133395,
@@ -1013,6 +983,26 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2418,
+        "gzip": 911,
+        "brotli": 749
+      },
+      "reason": "Captions swap by whole line and keep a hiding caption whole: the swap keyframes, enter and exit timing and the reduced-motion rules, about 630 bytes raw; the viewer chunk drops ~137 kB raw with calligraph gone.",
+      "pr": "https://github.com/hazem3500/replays/pull/114"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5788,
+        "gzip": 2529,
+        "brotli": 2103
+      },
+      "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
+      "pr": "https://github.com/hazem3500/replays/pull/114"
+    },
+    {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
         "raw": 34420,
@@ -1020,6 +1010,14 @@
         "brotli": 5910
       },
       "reason": "Pending frames for inspector panels (loaded geometry, never a blank panel) and the flat tab row's group hairlines and status dots.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "gzip": 73800
+      },
+      "reason": "Flat inspector tab row from viewer.inspector.tabs descriptors, compact tab badges and per-panel pending frames; raw and Brotli stay under main's caps after #114.",
       "pr": "https://github.com/hazem3500/replays/pull/117"
     }
   ]
