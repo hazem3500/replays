@@ -2,7 +2,7 @@
 
 Some deployments put an identity-aware proxy or API gateway in front of the app. After it signs a user in, it
 forwards a short-lived signed token (a JWT) in a request header and publishes its public keys at a JWKS URL. This
-plugin verifies that token on every request — signature (ES256 or RS256), issuer, audience, expiry — and uses the
+plugin verifies that token on every request (signature, issuer, audience and expiry) and uses the
 email claim as the identity.
 
 It is a **plugin**, not part of the core: the core ships `none`, `header` (trusted proxy) and `oidc`. A plugin is
@@ -29,5 +29,5 @@ pnpm start
 | `SIGNED_HEADER_EMAIL_CLAIM` | Claim to read the email from (default `email`) |
 
 In Docker, mount the file and point `AUTH_PLUGIN` at the mounted path. Machine uploaders (CI) must either pass
-through the proxy too, or you run a second listener behind a different adapter — the app has one adapter per
+through the proxy too, or you run a second listener behind a different adapter, because the app has one adapter per
 process.

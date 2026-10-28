@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 410510,
-      "gzip": 105480,
-      "brotli": 86221
+      "raw": 416314,
+      "gzip": 106513,
+      "brotli": 87082
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -19,8 +19,8 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
-      "gzip": 957,
-      "brotli": 827
+      "gzip": 956,
+      "brotli": 826
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -85,7 +85,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 218,
-      "brotli": 219
+      "brotli": 193
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
@@ -243,19 +243,19 @@
       "brotli": 101
     },
     "dist/lib/chunks/bundle-io.ts-9a2bdd34cb92.mjs": {
-      "raw": 69163,
-      "gzip": 18875,
+      "raw": 69161,
+      "gzip": 18872,
       "brotli": 16324
     },
-    "dist/lib/chunks/context.schema.json-e7797a970d02.mjs": {
+    "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
       "raw": 298271,
       "gzip": 78441,
-      "brotli": 64244
+      "brotli": 64229
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
-      "raw": 18417,
-      "gzip": 5324,
-      "brotli": 4642
+      "raw": 18413,
+      "gzip": 5317,
+      "brotli": 4640
     },
     "dist/lib/chunks/define.ts-7af3ac9c8cff.mjs": {
       "raw": 32734,
@@ -320,11 +320,11 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 169,
-      "brotli": 149
+      "brotli": 146
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
-      "gzip": 512,
+      "gzip": 511,
       "brotli": 436
     },
     "dist/lib/plugin.mjs": {
@@ -538,16 +538,6 @@
       },
       "reason": "Privacy facts and block attribute chunk shared by the core and UI entries.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 410510,
-        "gzip": 105480,
-        "brotli": 86221
-      },
-      "reason": "The new replays plugin check command bundles the fixture-based plugin check harness and shared plugin validation into the CLI.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
       "file": "dist/client/assets/MalleableHost-HASH.css",
@@ -806,16 +796,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/87"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-e7797a970d02.mjs",
-      "cap": {
-        "raw": 298271,
-        "gzip": 78441,
-        "brotli": 64244
-      },
-      "reason": "The web-standard plugin route and middleware types change the server entry source set, so the shared schema chunk gets a new source-set identity; its size is the embedded schemas, 289583 raw bytes measured in CI.",
-      "pr": "https://github.com/hazem3500/replays/pull/89"
-    },
-    {
       "file": "dist/lib/chunks/registry.ts-e9358072f05f.mjs",
       "cap": {
         "raw": 37373,
@@ -883,6 +863,26 @@
       },
       "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
       "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 416314,
+        "gzip": 106513,
+        "brotli": 87082
+      },
+      "reason": "The CLI bundles the server, which gains the replay meta, delete and restore routes, their store paths and zod/mini body schemas; measured in CI against fresh main: raw 408843 to 416314, gzip 104933 to 106513, brotli 85806 to 87082 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/93"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "cap": {
+        "raw": 298271,
+        "gzip": 78441,
+        "brotli": 64244
+      },
+      "reason": "The replay meta routes change the server entry source set, so the shared schema chunk gets a new source-set identity; it keeps the removed identity's caps and measures 297658 raw, 77962 gzip, 63852 brotli bytes in CI.",
+      "pr": "https://github.com/hazem3500/replays/pull/93"
     },
     {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",

@@ -22,7 +22,7 @@ export function PermissionPrompt() {
         </pre>
       ) : null}
       <p className="mall-note">
-        Permission: <strong>{request.capability}</strong> — {request.label}.
+        Permission: <strong>{request.capability}</strong> ({request.label}).
         {requests.length > 1 ? ` ${requests.length - 1} more waiting.` : ''}
       </p>
       <div className="mall-actions">

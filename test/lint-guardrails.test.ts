@@ -66,6 +66,11 @@ describe('project invariant lint rules', () => {
     ['no-product-name-literal', 'src/shared/example.ts', "export const name = 'replays';"],
     ['no-throw-plain-error-in-routes', 'src/server/comments-routes.ts', "throw new Error('oops');"],
     ['no-render-time-store-read', 'src/client/example.tsx', 'export function Panel() { return player.getTime(); }'],
+    ['no-dash-in-copy', 'src/client/example.ts', "export const empty = '\u2014';"],
+    ['no-dash-in-copy', 'src/client/example.tsx', 'export const Panel = () => <p>Permission \u2014 allowed</p>;'],
+    ['no-dash-in-copy', 'src/client/example.ts', 'export const range = (a: number) => `${a}\u2013${a + 1}`;'],
+    ['no-dash-in-copy', 'src/server/example.ts', "export const message = 'Name must contain 1\u2013100 characters';"],
+    ['no-dash-in-copy', 'src/cli.ts', 'export const usage = `replays \u2014 record sessions`;'],
   ])('rejects %s in %s', (rule, file, source) => {
     const result = lint(rule, file, source);
     expect(result.status).toBe(1);
@@ -103,6 +108,9 @@ describe('project invariant lint rules', () => {
       'src/client/example.tsx',
       'export function Panel() { return <button onClick={() => player.getTime()} />; }',
     ],
+    ['no-dash-in-copy', 'src/client/example.ts', "export const range = 'Title A to Z, 0:00 to 0:07, well-known';"],
+    ['no-dash-in-copy', 'src/client/example.ts', '/** A value from 0\u20131. */\nexport const value = 1;'],
+    ['no-dash-in-copy', 'src/shared/example.ts', "export const range = '0\u20131';"],
   ])('allows the documented %s boundary in %s', (rule, file, source) => {
     expect(lint(rule, file, source).status).toBe(0);
   });

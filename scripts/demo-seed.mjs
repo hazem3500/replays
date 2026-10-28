@@ -224,7 +224,7 @@ export function createDemoSeed() {
         { at: 2050, selector: '#email', text: '**********************' },
         { at: 3050, selector: 'input[type=checkbox]', text: 'on', isChecked: true },
       ],
-      changes: [{ at: 4300, from: 'Signup is ready to submit.', to: 'Thanks — your demo signup is complete.' }],
+      changes: [{ at: 4300, from: 'Signup is ready to submit.', to: 'Thanks, your demo signup is complete.' }],
       network: [
         {
           id: 'signup-post',

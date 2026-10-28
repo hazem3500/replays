@@ -280,7 +280,7 @@ describe('index helpers', () => {
     expect(formatRelative('2026-10-09T11:59:40Z', now)).toBe('just now');
     expect(formatRelative('2026-10-09T09:00:00Z', now)).toBe('3 hours ago');
     expect(formatRelative('2026-10-08T12:00:00Z', now)).toBe('yesterday');
-    expect(formatRelative('not a date', now)).toBe('—');
+    expect(formatRelative('not a date', now)).toBe('Unknown');
   });
 });
 
