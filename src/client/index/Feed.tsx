@@ -26,8 +26,6 @@ import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
 import { useIntentPrefetch } from '../intent-prefetch.ts';
 import { FeedList, type FeedRowPlace } from './FeedList.tsx';
 import { ExpiryHint } from './FeedRowActions.tsx';
-import './card-motion.css';
-import './list-motion.css';
 
 /*
  * The replay index as a visual feed: sessions and review suites as rows (list) or cards (grid), each

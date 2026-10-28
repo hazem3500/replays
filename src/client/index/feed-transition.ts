@@ -136,19 +136,19 @@ function unnameItems() {
  */
 function staggerLayers(staying: readonly string[], arriving: readonly string[], morph: boolean) {
   const rules: string[] = [];
-  arriving.forEach((id, index) => {
+  for (const [index, id] of arriving.entries()) {
     const delay = staggerDelay(index);
     if (delay > 0) rules.push(`::view-transition-new(${itemLayerName('card', id)}) { animation-delay: ${delay}ms; }`);
-  });
+  }
   if (morph)
-    staying.forEach((id, index) => {
+    for (const [index, id] of staying.entries()) {
       const delay = staggerDelay(index, MORPH_STAGGER_MS, MORPH_STAGGER_MAX_MS);
-      if (delay === 0) return;
+      if (delay === 0) continue;
       const selectors = PART_NAMES.flatMap((part) =>
         ['group', 'old', 'new'].map((pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`),
       );
       rules.push(`${selectors.join(', ')} { animation-delay: ${delay}ms; }`);
-    });
+    }
   if (rules.length === 0) return undefined;
   const style = document.createElement('style');
   style.textContent = rules.join('\n');
@@ -249,7 +249,7 @@ export function staggerIn(container: ParentNode) {
     const box = item.getBoundingClientRect();
     return box.bottom > 0 && box.top < height;
   });
-  visible.forEach((item, index) => {
+  for (const [index, item] of visible.entries()) {
     item.animate(ENTER_KEYFRAMES, { duration: ENTER_MS, delay: staggerDelay(index), easing: EASE, fill: 'backwards' });
-  });
+  }
 }
