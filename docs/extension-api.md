@@ -47,7 +47,7 @@ export default defineConfig({
   hosts: { 'replays.example.com': { basePath: '/' } },   // a different base for this Host; others keep basePath
   trustForwardedHost: false,     // TRUST_FORWARDED_HOST: pick the host from X-Forwarded-Host (a gateway that rewrites Host)
   retentionDays: 30,             // RETENTION_DAYS
-  purposes: [{ id: 'triage', label: 'Triage', retentionDays: 90 }],   // see "Purposes and retention" below
+  profiles: [{ id: 'triage', label: 'Triage', retentionDays: 90 }],   // see "Profiles and retention" below
   contextSchemaFile: './context.schema.json',
   githubHost: 'github.example.com', gitlabHost: 'gitlab.example.com',
   sourceProviders: [{ id: 'jira', template: 'https://jira.example.com/browse/{ref}' }],
@@ -126,8 +126,9 @@ message that starts with the plugin's name. The server prints it and exits; noth
 | `api.afterUpload(hook)` | `hook({ bundle, identity, request, url })` after the bundle is stored; errors are logged and never fail the upload | – |
 | `api.redaction({ headers?, queryParams?, jsonKeys?, text?, maskSelectors? })` | [Redaction rules](extending.md#redaction-rules) added to the sanitiser's defaults, in the capture CLI (which reads the same config) and the server's privacy pass. Rules from several plugins and the config's `redaction` add up; they cannot turn a default off. Validate your own with `assertRedactionRules` (`/plugin`, `/capture`) | – (invalid rules are an `invalid-registration`) |
 | `api.client({ id, script, style? })` | A browser entry, served by the app behind the same auth (an absolute file path) or loaded from an `https:` URL | the same `id` twice in one plugin |
-| `api.purpose({ id, label, order?, retentionDays?, viewer?, poster?, infer? })` | A [purpose](#purposes-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.purpose` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
-| `api.retention({ days(summary) })` | A [retention rule](#purposes-and-retention) that is not about purpose: whole days, or `0` / `undefined` for no limit | – |
+| `api.profile({ id, label, order?, retentionDays?, viewer?, poster?, view?, capture?, infer? })` | A [profile](#profiles-and-retention): why a replay was recorded. `infer(input)` recognises one uploaded without `meta.profile` | id taken by another plugin (a config entry with the same id overrides its fields instead) |
+| `api.view({ id, label, order?, layout?, openAt?, leadMs?, inspector?, stage?, headline?, speed? })` | A [view](#views): a way to look at replays | id taken by another plugin, or a built-in id (retune built-ins from the config file) |
+| `api.retention({ days(summary) })` | A [retention rule](#profiles-and-retention) that is not about profile: whole days, or `0` / `undefined` for no limit | – |
 | `api.render({ posterAt?, beforeRender?, afterRender? })` | [Render pipeline hooks](#render-pipeline-hooks): the poster's moment, a veto or option change before each render, a call after each stored file | – (hooks run in plugin order) |
 | `api.summaryFields({ name, version?, fields(bundle) })` | Small values for the index, derived into `summary.ext[<plugin>]` whenever a summary is built ([below](#the-index-summary-fields-columns-filters-sections)) | the same `name` twice in one plugin |
 | `api.indexFilter({ id, param, match(summary, value) })` | A server-side filter of `GET /api/replays` selected by `?<param>=<value>`; `param` is `x-<name>` ([below](#the-index-summary-fields-columns-filters-sections)) | the same `id` twice in one plugin; a `param` taken by any plugin |
@@ -201,21 +202,21 @@ AUTH_MODE (env)  →  config.auth  →  the only plugin adapter  →  built-in d
 A name is looked up among plugin adapters first, then the built-ins. `AUTH_MODE=plugin AUTH_PLUGIN=./x.mjs` (the older
 mechanism) still works.
 
-## Purposes and retention
+## Profiles and retention
 
-A purpose answers "why was this recorded?" (a bug triage, a design review, a walkthrough) and changes how a replay is kept,
-opened, listed and drawn. **The core defines none.** A deployment declares them in the config file, or a plugin registers
+A profile answers "why was this recorded?" (a bug triage, a design review, a walkthrough) and changes how a replay is kept,
+opened, listed and drawn. **Core ships one, [`performance`](#the-built-in-profile).** A deployment declares more in the config file, or a plugin registers
 them (and only a plugin can *infer* one):
 
 ```ts
 // replays.config.ts (or the same list in replays.config.json)
-purposes: [
+profiles: [
   { id: 'triage', label: 'Triage', retentionDays: 90, viewer: { openAt: 'first-error', leadMs: 1000, inspector: 'open' }, poster: 'first-error' },
   { id: 'walkthrough', label: 'Walkthroughs', order: 2, retentionDays: 0, viewer: { inspector: 'collapsed', captions: true }, poster: 'last-step' },
 ],
 
 // a plugin
-api.purpose({ id: 'triage', label: 'Triage', infer: ({ errors, sources }) => errors > 0 && sources?.some((s) => s.provider === 'jira') === true });
+api.profile({ id: 'triage', label: 'Triage', infer: ({ errors, sources }) => errors > 0 && sources?.some((s) => s.provider === 'jira') === true });
 api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : undefined) });
 ```
 
@@ -224,36 +225,93 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
 | `id` | `[a-z][a-z0-9-]{0,39}`; unique |
 | `label` | Shown on the index tab, the upload picker and in `/api/config` (at most 40 characters) |
 | `order` | Lower first (tabs, and the order `infer` is tried in). Default 0; ties keep declaration order: config entries first, then plugins in plugin order |
-| `retentionDays` | Whole days to keep a replay of this purpose; `0` keeps it forever. `RETENTION_PURPOSE_<ID>_DAYS` overrides it (the id upper-cased, `-` as `_`: `RETENTION_PURPOSE_DESIGN_REVIEW_DAYS`). Absent: `retentionDays` / `RETENTION_DAYS` |
+| `retentionDays` | Whole days to keep a replay of this profile; `0` keeps it forever. `RETENTION_PROFILE_<ID>_DAYS` overrides it (the id upper-cased, `-` as `_`: `RETENTION_PROFILE_DESIGN_REVIEW_DAYS`). Absent: `retentionDays` / `RETENTION_DAYS` |
 | `viewer.openAt` | `'start'` (default) or `'first-error'`: open `viewer.leadMs` (default 1000) before the first console error or failed request, on the tab that holds it. A permalink (`?t=`, `#step-…`) wins |
 | `viewer.inspector` | `'open'` or `'collapsed'`: the bottom panel when the person has no stored choice |
 | `viewer.captions` | Step captions on the player when the person has no stored choice |
 | `poster` | The list thumbnail's moment: `'middle-step'` (the default), `'first-error'` or `'last-step'`. A plugin's [`posterAt`](#render-pipeline-hooks) wins over it |
-| `infer(input)` | Plugins only. `input` is the replay's summary (counts, `sources`, `tags`, `suiteRun`, `title`, `url`, …) plus `errors`; return `true` to claim the replay. The first purpose (in `order`) that says yes wins; a throwing `infer` counts as no and is logged once |
+| `view` | The [view](#views) its replays and suites open in; default `standard`. Must name a defined view, or the server refuses to start |
+| `capture` | Capture defaults for `replays capture --profile <id>` and the recorder kit (see [Capture profiles](#capture-profiles)); explicit flags and options win |
+| `infer(input)` | Plugins only. `input` is the replay's summary (counts, `sources`, `tags`, `suiteRun`, `title`, `url`, …) plus `errors`; return `true` to claim the replay. The first profile (in `order`) that says yes wins; a throwing `infer` counts as no and is logged once |
 
-- **Config and plugins.** Two plugins registering the same id is a `conflict` error. A config entry with a plugin purpose's id
-  overrides that purpose's fields (`viewer` key by key) and keeps its `infer`, so a host can retune a plugin's purpose without code.
+- **Config and plugins.** Two plugins registering the same id is a `conflict` error. A config entry with a plugin profile's id
+  overrides that profile's fields (`viewer` key by key) and keeps its `infer`, so a host can retune a plugin's profile without code.
   A malformed entry stops the server with the field named.
-- **Uploads** may carry `meta.purpose` (`POST /api/replays`), or `?purpose=` on `POST /api/replays/import`. It must be one of the
-  registered ids; anything else is a `400` naming the allowed ids. With no purposes registered, an upload that carries one is
-  refused (`400`, "this server defines no purposes") rather than stored with a purpose nothing knows: a producer finds out at once,
-  and a `prepareUpload` hook can drop or translate the field. The CLI takes `--purpose <id>` on `capture`, `upload` and `import`;
-  the upload dialog offers a picker (bundles and rrweb imports) when purposes exist.
-- **Summaries** gain `purpose` and `purposeInferred` (`SUMMARY_VERSION` 8). Only the explicit purpose is stored in the sidecar;
-  inference runs when the server lists, so a changed rule applies to stored replays at once. Removing a purpose from the
-  config leaves `meta.purpose` in the stored bundles; it is shown as a plain field and no longer affects anything.
-- **Listing.** `GET /api/replays?purpose=<id>` filters; `GET /api/config` lists `purposes` (`[]` in a plain core); the index shows
-  "All · <purpose> …" tabs with counts (only when purposes exist), kept in the URL as `purpose=`. A suite counts under the purposes
+- **Uploads** may carry `meta.profile` (`POST /api/replays`), or `?profile=` on `POST /api/replays/import`. It must be one of the
+  registered ids; anything else is a `400` naming the allowed ids. With no profiles registered, an upload that carries one is
+  refused (`400`, "this server defines no profiles") rather than stored with a profile nothing knows: a producer finds out at once,
+  and a `prepareUpload` hook can drop or translate the field. The CLI takes `--profile <id>` on `capture`, `upload` and `import`;
+  the upload dialog offers a picker (bundles and rrweb imports) when profiles exist.
+- **Summaries** gain `profile` and `profileInferred` (`SUMMARY_VERSION` 9). Only the explicit profile is stored in the sidecar;
+  inference runs when the server lists, so a changed rule applies to stored replays at once. Removing a profile from the
+  config leaves `meta.profile` in the stored bundles; it is shown as a plain field and no longer affects anything.
+- **Listing.** `GET /api/replays?profile=<id>` filters; `GET /api/config` lists `profiles` (`[]` in a plain core); the index shows
+  "All · <profile> …" tabs with counts (only when profiles exist), kept in the URL as `profile=`. A suite counts under the profiles
   of its runs' replays.
-- **Viewer.** A replay's purpose is its `meta.purpose`, else the inferred one, which the server sends as
-  `x-replay-purpose: <id>; inferred` with the bundle (cached with it for up to a day). The viewer marks it as `data-purpose` on
+- **Viewer.** A replay's profile is its `meta.profile`, else the inferred one, which the server sends as
+  `x-replay-profile: <id>; inferred` with the bundle (cached with it for up to a day). The viewer marks it as `data-profile` on
   `main.app-shell`.
-- **Retention.** The purpose's window replaces the default one. **An inferred purpose never makes a replay permanent**: if its
-  window is `0`, the default window applies; only an explicit purpose (or Keep) keeps a replay forever. `api.retention` rules can
-  only shorten: the shortest positive window among the default/purpose window and every rule wins, `0` or `undefined` means no
+- **Retention.** The profile's window replaces the default one. **An inferred profile never makes a replay permanent**: if its
+  window is `0`, the default window applies; only an explicit profile (or Keep) keeps a replay forever. `api.retention` rules can
+  only shorten: the shortest positive window among the default/profile window and every rule wins, `0` or `undefined` means no
   limit from that rule, and **Keep** (or a kept suite) still overrides everything. A rule that throws or returns something other
   than a whole number of days is logged once and ignored. Rules see the summary, so they apply to replays, not to suites (suites
   use the default window).
+- **Renamed from purposes.** Profiles were called purposes. Every old name still works and is deprecated (see
+  [API stability](api-stability.md#deprecated-purpose-names) for the list and the removal window): the config key
+  `purposes`, `api.purpose`, `meta.purpose`, `summary.purpose`/`purposeInferred`, `--purpose`, `?purpose=`,
+  `RETENTION_PURPOSE_<ID>_DAYS`, `x-replay-purpose` and `purposes` in `/api/config`. Setting both spellings to different
+  values is refused. [downstream-migration.md](downstream-migration.md#renaming-purposes-to-profiles) has the steps.
+
+### The built-in profile
+
+Core ships one profile, `performance` (`view: 'performance'`, `capture: { performance: true, network: 'headers' }`, order 100),
+so `--profile performance` and the Performance view work in a plain core. A config or plugin entry with the id `performance`
+retunes it field by field. The index only shows it as a tab once some replay has it.
+
+### Capture profiles
+
+A profile's `capture` block sets how its replays are recorded. A profile can only tighten privacy: loosening stays in
+`redaction` and the recorder's privacy options.
+
+| Field | Meaning |
+| --- | --- |
+| `console` | Levels kept (`debug`, `info`, `log`, `warn`, `error`); default all. `[]` keeps no console track |
+| `network` | `'headers'` (default: method, URL, status, headers, all redacted), `'off'`, or `'bodies'` (opt-in; see below) |
+| `bodies` | With `network: 'bodies'`: `{ maxBytes?, contentTypes? }`. Both can only narrow the defaults: 65536 bytes per body; JSON, `*+json`, `text/*` and form data. Binary bodies are never kept |
+| `performance` | Paint, LCP, long tasks and slow interactions; default true |
+| `sampling` | rrweb sampling: `'full'`, `'balanced'` (default) or `'light'` |
+| `video`, `stepPauseMs`, `viewport`, `runs` | CLI defaults for `--video`, `--step-pause`, `--viewport` and `--runs` (1 to 10) |
+| `privacy` | `{ maskAllText: true, blockMedia: true }`: stricter masking only |
+
+## Views
+
+A view is how a page looks at a replay, or at a set of recordings: which inspector tabs lead, where playback starts, how a
+set is laid out. Views are never stored with a replay. The viewer picks one from `?view=`, then the suite's profile, then
+the replay's profile (`view`), then `compare` for two or more recordings, else `standard`; a person can switch at any time.
+
+Core ships `standard`, `compare`, `performance`, `debug`, `walkthrough`, `review` and `support`. A `views` entry in the
+config file with a built-in id retunes that view (`inspector` and `stage` merge key by key); other entries and
+`api.view(...)` add views. `GET /api/config` lists them as `views`, and the page carries them in `<meta name="app-views">`.
+
+```ts
+views: [
+  { id: 'debug', label: 'Triage', inspector: { tab: 'network' } },
+  { id: 'flaky', label: 'Flaky runs', layout: 'grid', inspector: { tabs: ['issues', 'console'], scope: 'all' } },
+],
+```
+
+| Field | Meaning |
+| --- | --- |
+| `id`, `label`, `order` | Like profiles; the label is the switcher's copy (at most 24 characters) |
+| `layout` | `'single'`, `'grid'` (default) or `'spotlight'` for two or more recordings |
+| `openAt`, `leadMs` | Like a profile's `viewer.openAt` and `viewer.leadMs` |
+| `inspector` | `{ state?: 'open' \| 'collapsed' \| 'hidden', tabs?, tab?, scope?: 'single' \| 'all' }`. `tabs` orders built-in ids (`issues`, `console`, `network`, `performance`, `context`, `comments`) or plugin keys (`plugin:<plugin>:<id>`); unlisted tabs follow |
+| `stage` | `{ captions?, steps?: 'open' \| 'collapsed' \| 'hidden', tracks?, chrome?: 'full' \| 'quiet' }` |
+| `headline` | `viewer.headline` slot ids shown above the stage |
+| `speed` | Playback speed on open, 0.25 to 4 |
+
+The viewer applies views in a later release; until then they are served data only.
 
 ## Render pipeline hooks
 
@@ -263,7 +321,7 @@ Posters (the index thumbnails), opening stills, hover previews and video exports
 ```ts
 api.render({
   // The poster's moment in ms on the replay's timeline; undefined passes to the next hook.
-  posterAt: (bundle, { purpose }) => (purpose === 'checkout' ? bundle.steps.find((step) => step.kind === 'submit')?.at : undefined),
+  posterAt: (bundle, { profile }) => (profile === 'checkout' ? bundle.steps.find((step) => step.kind === 'submit')?.at : undefined),
   // false refuses; an object changes options (video exports only).
   beforeRender: (job) => (job.kind === 'video' && !job.identity?.email?.endsWith('@example.com') ? false : { speed: 2 }),
   // After each stored file; errors are logged and never fail the render.
@@ -281,14 +339,14 @@ api.render({
 | `options` | Video: `{ speed, captions, skipInactive }`. List media: `{}` |
 | `identity` | Video: who asked for the export. List media are made in the background for whoever lists the replay, so they have none |
 
-- **`posterAt(bundle, { purpose })`** picks where the poster is taken. Hooks run in plugin order and the first one that returns a
-  finite number (≥ 0) wins; `undefined` passes on. After the hooks comes the purpose's `poster` setting
-  ([purposes](#purposes-and-retention)), which is the same mechanism's built-in last step, then the default (`middle-step`). The time
+- **`posterAt(bundle, { profile })`** picks where the poster is taken. Hooks run in plugin order and the first one that returns a
+  finite number (≥ 0) wins; `undefined` passes on. After the hooks comes the profile's `poster` setting
+  ([profiles](#profiles-and-retention)), which is the same mechanism's built-in last step, then the default (`middle-step`). The time
   is clamped to the replay and never lands before its first document. A hook that throws or returns something else is skipped and
   logged. The answer is remembered per replay for the life of the process (a bundle never changes), so keep it a pure function of the
-  bundle and the purpose; the bundle is only read when a `posterAt` hook exists.
+  bundle and the profile; the bundle is only read when a `posterAt` hook exists.
 - **Poster caching.** A poster's file name says which moment it shows: `poster.v2.jpg` for the default, `poster.v2-first-error.jpg`
-  for a purpose setting, `poster.v2-t<ms>.jpg` for a hook's time. When a deploy changes the choice for a replay, its next poster
+  for a profile setting, `poster.v2-t<ms>.jpg` for a hook's time. When a deploy changes the choice for a replay, its next poster
   request looks for a new name, so the old file is never served again and a new one is made (the old one is pruned with the
   replay). Posters stored where nothing chooses keep their name, so adding hooks never invalidates the default ones. Browsers
   that cached a poster (a week) keep showing it until that expires.
@@ -833,7 +891,7 @@ api.uploadEndpoint({
 | `authenticate(request)` | This path's own credential check, used **instead of** the deployment's auth adapter for every method on the path. Return an `Identity`, or nothing for `401 credentials required`; throw an `HttpError` (such as `403` for a disabled app) or `tooManyRequests(seconds)` for anything else. The identity is always confined to `POST` on this path (see [write-only identities](#write-only-identities)) |
 | `maxBytes` | A positive byte count or `({ identity, request, path }) => number`; default 25 MiB. A larger `Content-Length` answers `413` before the body is read; the stream is cut off at the cap; a gzip body is capped again once decompressed |
 | `rateLimit({ identity, request, path })` | After authentication, before the body is read. Return `{ retryAfter, message? }` (seconds) to answer `429` with `Retry-After`; nothing to continue |
-| `normalize({ bundle, identity, request, path })` | On the validated bundle, before the global `normalizeUpload` hooks. Return a replacement or mutate it: force the id, title, purpose or source; drop client people, suite membership or context; add derived context and source links |
+| `normalize({ bundle, identity, request, path })` | On the validated bundle, before the global `normalizeUpload` hooks. Return a replacement or mutate it: force the id, title, profile or source; drop client people, suite membership or context; add derived context and source links |
 | `receipt({ bundle, identity, request, path, url, replayUrl })` | The `201` JSON body; default `{ id, url }`. `url` is the base-prefixed path, and `replayUrl` is absolute when the deployment's public origin is set. Both stay behind the viewer's normal auth |
 
 ### The pipeline
@@ -848,11 +906,11 @@ For a `POST` to an endpoint the order is:
 6. `rateLimit`, then `maxBytes` (declared length, stream, decompressed size)
 7. `prepare`, then `prepareUpload`, context adapters, source resolution and the stored and context schemas
 8. `normalize`, then `normalizeUpload`, then the same validation again
-9. **the privacy pass**, then `beforeUpload`, the purpose and people checks, storage, retention and `afterUpload`
+9. **the privacy pass**, then `beforeUpload`, the profile and people checks, storage, retention and `afterUpload`
 10. `receipt`
 
 The privacy pass (the default redaction plus the deployment's and plugins' rules) always runs after every
-normalization step and cannot be turned off from a hook. Purposes, retention rules and Keep apply to endpoint uploads
+normalization step and cannot be turned off from a hook. Profiles, retention rules and Keep apply to endpoint uploads
 as to any other.
 
 ### Errors

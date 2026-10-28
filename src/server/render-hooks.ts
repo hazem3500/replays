@@ -1,6 +1,6 @@
 import type { Owned } from '../plugin/registry.ts';
 import type { RenderedFile, RenderHooks, RenderJob, RenderJobOptions } from '../plugin/types.ts';
-import type { PosterMoment } from '../shared/purposes.ts';
+import type { PosterMoment } from '../shared/profiles.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import { RENDER_SPEED_OPTIONS } from './render-queue.ts';
 import type { PosterChoice } from './store.ts';
@@ -23,7 +23,7 @@ const ADJUSTABLE: Record<keyof RenderJobOptions, (value: unknown) => boolean> = 
 
 /** A poster chooser link: a moment, or undefined to pass to the next one. */
 type PosterLink = (input: {
-  purpose: string | undefined;
+  profile: string | undefined;
   bundle: () => Promise<ReplayBundle | undefined>;
 }) => Promise<PosterChoice | undefined>;
 
@@ -41,15 +41,15 @@ export interface RenderHookRunner {
   afterRender(job: RenderJob, file: RenderedFile): Promise<void>;
   /**
    * Where a replay's poster is taken: the `posterAt` hooks in plugin order (the first finite number wins), then the
-   * purpose's `poster` setting, then the default (`undefined`). One chain: the purpose setting is its last link.
+   * profile's `poster` setting, then the default (`undefined`). One chain: the profile setting is its last link.
    * Memoised per replay (a bundle never changes; a deploy restarts the process). Undefined when nothing can
    * choose, so a deployment without hooks or poster settings never loads a bundle or summary for it.
    */
   posterChooser(options: {
-    /** The replay's purpose (explicit or inferred), from its summary. */
-    purpose: (id: string) => Promise<string | undefined>;
-    /** A purpose's `poster` setting (PurposeCatalog.poster); absent when no purpose sets one. */
-    purposePoster?: ((purpose: string | undefined) => PosterMoment | undefined) | undefined;
+    /** The replay's profile (explicit or inferred), from its summary. */
+    profile: (id: string) => Promise<string | undefined>;
+    /** A profile's `poster` setting (ProfileCatalog.poster); absent when no profile sets one. */
+    profilePoster?: ((profile: string | undefined) => PosterMoment | undefined) | undefined;
     load: (id: string) => Promise<ReplayBundle | undefined>;
     /** Remembered answers; the oldest is dropped beyond this. */
     max?: number;
@@ -119,13 +119,13 @@ export function createRenderHooks(
       }
     },
 
-    posterChooser({ purpose, purposePoster, load, max = 2000 }) {
+    posterChooser({ profile, profilePoster, load, max = 2000 }) {
       const links: PosterLink[] = posterAt.map((hook) => async (input) => {
         const bundle = await input.bundle();
         if (!bundle) return undefined;
         let at: unknown;
         try {
-          at = await hook.value.posterAt!(bundle, input.purpose === undefined ? {} : { purpose: input.purpose });
+          at = await hook.value.posterAt!(bundle, input.profile === undefined ? {} : { profile: input.profile, purpose: input.profile });
         } catch (error) {
           failed(hook.plugin, 'posterAt', error);
           return undefined;
@@ -140,15 +140,15 @@ export function createRenderHooks(
         }
         return at;
       });
-      // The built-in fallback: the purpose's `poster` setting is sugar for a last `posterAt`.
-      if (purposePoster) links.push(async (input) => purposePoster(input.purpose));
+      // The built-in fallback: the profile's `poster` setting is sugar for a last `posterAt`.
+      if (profilePoster) links.push(async (input) => profilePoster(input.profile));
       if (!links.length) return undefined;
 
       const remembered = new Map<string, Promise<PosterChoice | undefined>>();
       const choose = async (id: string) => {
-        const replayPurpose = await purpose(id);
+        const replayProfile = await profile(id);
         let bundle: Promise<ReplayBundle | undefined> | undefined;
-        const input = { purpose: replayPurpose, bundle: () => (bundle ??= load(id)) };
+        const input = { profile: replayProfile, bundle: () => (bundle ??= load(id)) };
         for (const link of links) {
           const choice = await link(input);
           if (choice !== undefined) return choice;

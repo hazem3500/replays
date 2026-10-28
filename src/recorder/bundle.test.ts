@@ -21,6 +21,7 @@ function assertAcceptedByToggleReplays(bundle: ReplayBundle) {
   expect(Number.isFinite(bundle.meta.duration)).toBe(true);
   expect(bundle.meta.duration).toBeGreaterThanOrEqual(0);
   expect(bundle.meta.source).toBe('human');
+  expect(bundle.meta).not.toHaveProperty('profile');
   expect(bundle.meta).not.toHaveProperty('purpose');
   expect(bundle.meta).not.toHaveProperty('people');
 }

@@ -12,7 +12,7 @@ import { PLAYBACK_SPEEDS } from '../../shared/render-variant.ts';
  */
 
 import { INACTIVE_SKIP_SPEED, INACTIVE_THRESHOLD_MS } from '../../shared/skip.ts';
-import type { PosterMoment } from '../../shared/purposes.ts';
+import type { PosterMoment } from '../../shared/profiles.ts';
 
 export const RENDER_FPS = [15, 30] as const;
 export type RenderFps = (typeof RENDER_FPS)[number];
@@ -171,7 +171,7 @@ export interface PosterMomentInput {
   duration: number;
   /** Console errors and failed requests, for `moment: 'first-error'`. */
   errorTimes?: readonly number[];
-  /** The replay's purpose's choice (src/shared/purposes.ts); default `'middle-step'`. */
+  /** The replay's profile's choice (src/shared/profiles.ts); default `'middle-step'`. */
   moment?: PosterMoment;
   /** A time a plugin chose (`api.render({ posterAt })`); wins over `moment`, still clamped like the others. */
   at?: number;

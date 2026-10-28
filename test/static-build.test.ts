@@ -18,7 +18,7 @@ const INDEX = [
   '<!doctype html><html><head>',
   '<meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />',
   '<meta name="app-base" content="" /><meta name="app-beta" content="" /><meta name="app-comments" content="" />',
-  '<meta name="app-plugins" content="" /><meta name="app-purposes" content="" /><meta name="app-editing" content="" />',
+  '<meta name="app-plugins" content="" /><meta name="app-profiles" content="" /><meta name="app-editing" content="" />',
   '<meta name="app-sign-in" content="" />',
   '<meta name="app-name" content="__PRODUCT_NAME__" /><meta name="app-logo" content="__PRODUCT_LOGO__" />',
   '<title>__PRODUCT_NAME__</title><link rel="modulepreload" href="./assets/react.js" /><script type="module" src="./assets/main.js"></script>',
@@ -83,19 +83,19 @@ describe('replays build-static', () => {
     await expect(readFile(join(out, 'render.html'))).rejects.toThrow(/ENOENT/);
   });
 
-  it('stamps config and plugin purposes into the static index', async () => {
+  it('stamps config and plugin profiles into the static index', async () => {
     const clientDir = await builtViewer();
-    const out = await mkdtemp(join(tmpdir(), 'replays-static-purposes-'));
+    const out = await mkdtemp(join(tmpdir(), 'replays-static-profiles-'));
     await buildStatic({
       out,
       clientDir,
       env: {},
-      config: config({ purposes: [{ id: 'demo', label: 'Demo' }] }),
+      config: config({ profiles: [{ id: 'demo', label: 'Demo' }] }),
       plugins: [
         definePlugin({
           name: 'triage',
           setup(api) {
-            api.purpose({ id: 'triage', label: 'Triage' });
+            api.profile({ id: 'triage', label: 'Triage' });
           },
         }),
       ],
@@ -155,7 +155,8 @@ describe('replays build-static', () => {
       basePath: settings.basePath,
       comments: settings.comments,
       beta: settings.beta,
-      store: new ReplayStore(join(root, 'data'), join(root, 'sample')),
+      store: new ReplayStore(join(root, 'data'), join(root, 'sample'), 30, { profiles: settings.profiles }),
+      views: settings.views,
       clientDir,
     });
     const server = createServer((request, response) => void handle(request, response));
@@ -165,7 +166,14 @@ describe('replays build-static', () => {
     const served = await (await fetch(`http://127.0.0.1:${port}/replays/`, { headers: { accept: 'text/html' } })).text();
     expect(await readFile(join(out, 'index.html'), 'utf8')).toBe(served);
     expect(served).toBe(
-      renderIndexHtml(INDEX, { base: '/replays', branding: settings.branding, beta: settings.beta, comments: settings.comments.enabled }),
+      renderIndexHtml(INDEX, {
+        base: '/replays',
+        branding: settings.branding,
+        beta: settings.beta,
+        comments: settings.comments.enabled,
+        profiles: settings.profiles.list,
+        views: settings.views.list,
+      }),
     );
   });
 });

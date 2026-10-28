@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   parseStateFile,
@@ -40,8 +40,8 @@ function manualRunner() {
   return { runner, started, pending, release, fail: (id: string) => pending.get(id)!.reject(new Error('boom')) };
 }
 
-// Long enough for a job to reach its runner (mkdir + state file) even while the integration renders load the machine.
-const tick = () => new Promise((resolve) => setTimeout(resolve, 50));
+/** Resolves once `count` jobs have reached their runner, however long the state-file writes take on a loaded machine. */
+const reached = (started: readonly unknown[], count: number) => vi.waitFor(() => expect(started).toHaveLength(count));
 
 describe('render queue', () => {
   it('is idempotent per replay and speed, then serves the cached file', async () => {
@@ -52,7 +52,7 @@ describe('render queue', () => {
     const again = await queue.enqueue('a', 1);
     expect(first.jobId).toBe('a-1x-skip');
     expect(again.jobId).toBe('a-1x-skip');
-    await tick();
+    await reached(manual.started, 1);
     expect(manual.started).toEqual(['a']);
     manual.pending.get('a')!.task.onProgress(0.5);
     expect(await queue.status('a', 1)).toMatchObject({ status: 'rendering', progress: 0.5 });
@@ -93,12 +93,9 @@ describe('render queue', () => {
     expect((await queue.enqueue('a', 1, { captions: true })).jobId).toBe('a-1x-skip-cc');
     expect((await queue.enqueue('a', 1, { captions: true })).jobId).toBe('a-1x-skip-cc');
     expect((await queue.enqueue('a', 2, { captions: true })).jobId).toBe('a-2x-skip-cc');
-    await tick();
-    expect(tasks.map((task) => [task.speed, task.captions])).toEqual([
-      [1, false],
-      [1, true],
-      [2, true],
-    ]);
+    await reached(tasks, 3);
+    // Jobs start in parallel, so the order they reach the runner is whichever state-file write lands first.
+    expect(tasks.map((task) => `${task.speed}${task.captions ? ' captions' : ''}`).sort()).toEqual(['1', '1 captions', '2 captions']);
     await expect(stat(join(dir, 'a', 'render-1x-skip-cc.json'))).resolves.toBeTruthy();
     await Promise.all(finish.map((done) => done()));
     await Promise.all([queue.settled('a', 1), queue.settled('a', 1, { captions: true }), queue.settled('a', 2, { captions: true })]);
@@ -140,13 +137,13 @@ describe('render queue', () => {
     const queue = new RenderQueue({ dataDir: await dataDir(), runner: manual.runner });
     await queue.enqueue('a', 1);
     await queue.enqueue('b', 1);
-    await tick();
+    await reached(manual.started, 1);
     expect(manual.started).toEqual(['a']);
     expect(await queue.status('b', 1)).toMatchObject({ status: 'queued' });
     expect(queue.size).toEqual({ running: 1, queued: 1 });
     await manual.release('a');
     await queue.settled('a', 1);
-    await tick();
+    await reached(manual.started, 2);
     expect(manual.started).toEqual(['a', 'b']);
   });
 
@@ -156,8 +153,7 @@ describe('render queue', () => {
     await queue.enqueue('a', 1);
     await queue.enqueue('b', 1);
     await queue.enqueue('c', 1);
-    await tick();
-    expect(manual.started).toHaveLength(2);
+    await reached(manual.started, 2);
     expect(new Set(manual.started)).toEqual(new Set(['a', 'b']));
     expect(queue.size).toEqual({ running: 2, queued: 1 });
     expect(await queue.status('c', 1)).toMatchObject({ status: 'queued' });
@@ -176,11 +172,10 @@ describe('render queue', () => {
     const queue = new RenderQueue({ dataDir: dir, runner: manual.runner });
     await queue.enqueue('a', 1);
     await queue.enqueue('b', 1);
-    await tick();
+    await reached(manual.started, 1);
     expect(await queue.cancel('b', 1)).toBe(true);
     expect(await queue.cancel('a', 1)).toBe(true);
     expect(await queue.cancel('a', 1)).toBe(false);
-    await tick();
     expect(manual.started).toEqual(['a']);
     expect(await queue.status('a', 1)).toBeUndefined();
     expect(await queue.status('b', 1)).toBeUndefined();
@@ -202,7 +197,7 @@ describe('render queue', () => {
     const manual = manualRunner();
     const queue = new RenderQueue({ dataDir: await dataDir(), runner: manual.runner });
     await queue.enqueue('a', 1);
-    await tick();
+    await reached(manual.started, 1);
     manual.fail('a');
     await queue.settled('a', 1);
     expect(await queue.status('a', 1)).toMatchObject({ status: 'failed', error: 'boom' });
@@ -210,12 +205,13 @@ describe('render queue', () => {
 
   it('marks jobs a crashed process left behind as failed and retryable', async () => {
     const dir = await dataDir();
-    const before = new RenderQueue({ dataDir: dir, runner: manualRunner().runner });
+    const crashed = manualRunner();
+    const before = new RenderQueue({ dataDir: dir, runner: crashed.runner });
     await before.enqueue('a', 1); // rendering
     await before.enqueue('b', 2); // queued
     await before.enqueue('b', 1, { captions: true }); // queued, captioned
     await before.enqueue('b', 0.5, { skipInactive: false, captions: true }); // queued, full idle time
-    await tick();
+    await reached(crashed.started, 1);
     // "Restart": a fresh queue over the same directory.
     const manual = manualRunner();
     const after = new RenderQueue({ dataDir: dir, runner: manual.runner });
@@ -228,7 +224,7 @@ describe('render queue', () => {
     expect(await after.status('a', 1)).toMatchObject({ status: 'failed', error: expect.stringContaining('restart') });
     expect(await after.status('b', 2)).toMatchObject({ status: 'failed' });
     expect(await after.enqueue('a', 1)).toMatchObject({ status: 'rendering' });
-    await tick();
+    await reached(manual.started, 1);
     expect(manual.started).toEqual(['a']);
   });
 
@@ -237,8 +233,7 @@ describe('render queue', () => {
     const manual = manualRunner();
     const queue = new RenderQueue({ dataDir: await dataDir(), runner: manual.runner, now: () => now });
     await queue.enqueue('a', 1);
-    // Under a loaded test run the job can take longer than one tick to start.
-    while (!manual.pending.has('a')) await tick();
+    await reached(manual.started, 1);
     now += 4_000;
     manual.pending.get('a')!.task.onProgress(0.4);
     expect(await queue.status('a', 1)).toMatchObject({ progress: 0.4, etaMs: 6_000 });

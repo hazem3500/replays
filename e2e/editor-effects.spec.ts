@@ -42,11 +42,16 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.locator('body').press('z');
   await expect(page.getByTestId('region-zoom')).toHaveCount(1);
   await expect(page.getByTestId('lane-zoom').locator('.tl-lane-empty')).toHaveCount(0);
-  // Clicking a zoom shows it zoomed: the playhead lands past its ease-in, and its setting sits by the tools.
+  // Clicking a zoom shows it zoomed: the playhead lands past its ease-in, and the inspector shows its properties.
   await page.getByTestId('region-zoom').locator('.tl-region-body').click();
   await expect(page.locator('.player-host .replayer-wrapper')).toHaveAttribute('style', /scale\((?!1\))/);
-  await expect(page.locator('.editor-bar > [data-testid="zoom-setting"]')).toBeVisible();
+  const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  await expect(inspector.getByRole('heading', { name: 'Zoom' })).toBeVisible();
+  await expect(inspector.getByRole('radio', { name: '1.8× zoom' })).toHaveAttribute('aria-checked', 'true');
+  await inspector.getByRole('radio', { name: '2.2× zoom' }).click();
+  await expect(inspector.getByRole('radio', { name: '2.2× zoom' })).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
+  await expect(inspector.getByRole('group', { name: 'Cursor', exact: true })).toBeVisible();
   // Back to 0:00 from the ruler's start.
   const rulerTrack = page.getByTestId('timeline-ruler');
   await rulerTrack.scrollIntoViewIfNeeded();
@@ -74,8 +79,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.mouse.move(lane.x + lane.width * 0.75, y, { steps: 5 });
   await page.mouse.up();
   await expect(page.getByTestId('region-speed')).toHaveCount(1);
-  await page.getByTestId('speed-setting').click();
-  await page.getByRole('menuitemradio', { name: '8× faster' }).click();
+  await inspector.getByRole('radio', { name: '8× faster' }).click();
   await expect(page.getByTestId('region-speed')).toContainText('8×');
 
   // A blur box at the playhead (0:00), dragged on the preview.

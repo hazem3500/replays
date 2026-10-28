@@ -46,7 +46,7 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const id = await uploadCopy(page, 'editor-layout');
   await openEditor(page, id);
-  const panel = page.getByRole('complementary', { name: 'Replay presentation' });
+  const panel = page.getByRole('complementary', { name: 'Inspector' });
   await expect(panel).toBeVisible();
   const frame = page.locator('.editor-stage > .stage-wrap');
   await expect(frame).toHaveCSS('box-shadow', 'none');

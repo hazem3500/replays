@@ -12,7 +12,7 @@ panels) by writing a config file and a few plugins, and upgrade by bumping one v
 
 The test case is a real one. An internal distribution (the "downstream") started as the tree this repository was generalised from,
 and it still carries its own copy of the core. It runs behind Google's Identity-Aware Proxy, stores replays in Cloud Storage, sorts them
-by *purpose* (triage, design review, walkthrough) with a retention window per purpose, links each replay to the people involved, and
+by *profile* (triage, design review, walkthrough) with a retention window per profile, links each replay to the people involved, and
 receives uploads from an agent runner that authenticates with a service-account ID token. Section 8 maps each of those parts to an
 extension point; when every row says "plugin" or "config", the downstream can delete its copy.
 
@@ -93,8 +93,8 @@ method on `PluginApi`; every browser one on `ViewerPluginApi`; most have a confi
 | Storage backend | `storage({ id, create })` | – | `storage` | today; `/plugins/gcs`, exported errors and contract suite new |
 | Auth adapter | `auth({ name, create })` | – | `auth` | today; `verifyJwt` and `/plugins/iap` new |
 | Identity resolver | `identity({ resolve(identity, request) })` | – | – | new |
-| Purposes and taxonomies | `purpose({ id, label, retentionDays, infer, viewer, poster })` | – | `purposes` | new |
-| Retention | `retention({ days(summary) })` | – | `retentionDays`, per purpose | new |
+| Profiles and taxonomies | `profile({ id, label, retentionDays, infer, viewer, poster })` | – | `profiles` | new |
+| Retention | `retention({ days(summary) })` | – | `retentionDays`, per profile | new |
 | People | `people({ roles, validate, handles, avatarUrl, profileUrl })` | – | `people` | new |
 | Context metadata | `contextAdapter({ name, schema, normalize })` | `registerContextSection` | `contextSchemaFile` | today; widgets and sections new |
 | Source links | `sourceProvider({ id, label, resolve, icon, noun })` | – | `sourceProviders` | today; icon, noun, attrs new |
@@ -140,26 +140,26 @@ service accounts; nothing else is needed for it.
 `api.identity({ resolve(identity, { request }) })` runs after authentication and may enrich the identity (a display name and avatar from a directory). It may
 not change `id`.
 
-### 5.3 Purposes and taxonomies
+### 5.3 Profiles and taxonomies
 
-A purpose answers "why was this recorded?", and it changes how a replay is kept, opened and listed. Tags cannot carry that.
+A profile answers "why was this recorded?", and it changes how a replay is kept, opened and listed. Tags cannot carry that.
 
 ```ts
-api.purpose({
+api.profile({
   id: 'triage', label: 'Triage', order: 0,
-  retentionDays: 90,                                   // 0 = keep forever; RETENTION_PURPOSE_TRIAGE_DAYS overrides
+  retentionDays: 90,                                   // 0 = keep forever; RETENTION_PROFILE_TRIAGE_DAYS overrides
   infer: ({ errors, sources, suiteRun }) => errors > 0, // optional; first match in order wins
   viewer: { openAt: 'first-error', leadMs: 1000, inspector: 'open' },
   poster: 'first-error',                               // or 'middle-step' (default), 'last-step'
 });
 ```
 
-Core: optional `meta.purpose` (checked against the registered ids on upload), `summary.purpose` and `summary.purposeInferred`,
-`?purpose=` on `GET /api/replays`, segment tabs with counts on the index (only when purposes exist), a picker in the upload dialog, and
-`purposes` in `/api/config`. An inferred purpose never makes a replay permanent: only an explicit one can. The config file can declare
-purposes without code (`purposes: [{ id, label, retentionDays, viewer, poster }]`); `infer` needs a plugin.
+Core: optional `meta.profile` (checked against the registered ids on upload), `summary.profile` and `summary.profileInferred`,
+`?profile=` on `GET /api/replays`, segment tabs with counts on the index (only when profiles exist), a picker in the upload dialog, and
+`profiles` in `/api/config`. An inferred profile never makes a replay permanent: only an explicit one can. The config file can declare
+profiles without code (`profiles: [{ id, label, retentionDays, viewer, poster }]`); `infer` needs a plugin.
 
-`api.retention({ days(summary) })` is the general form, for policies that are not about purpose. The shortest window any rule returns
+`api.retention({ days(summary) })` is the general form, for policies that are not about profile. The shortest window any rule returns
 wins, `0` means keep, and *Keep* still overrides.
 
 ### 5.4 People
@@ -216,7 +216,7 @@ with the base path, name and tokens stamped in (the server-side injection does n
 
 ### 5.9 Render pipeline
 
-Posters and video exports are produced by the render queue. `api.render({ posterAt(bundle) })` picks the poster moment (the purpose's
+Posters and video exports are produced by the render queue. `api.render({ posterAt(bundle) })` picks the poster moment (the profile's
 `poster` setting is sugar for it); `beforeRender(job)` may veto or change options; `afterRender(job, file)` sees the result (copy to a
 CDN, notify).
 
@@ -231,7 +231,7 @@ A host can register an additional upload path with `api.uploadEndpoint({ path, p
 
 Staff browser recording intake can opt into `api.requestPolicy({ path: '/api/replays', methods: ['POST'], origins: ['https://app.example.com'], headers: ['content-type', 'content-encoding'], credentials: true })`. Paths are canonical and exclude the deployment base. Only the configured path/method/exact origin gets CORS and the narrow CSRF exception; actual data requests still authenticate. Preflight validates its method and headers before auth. Refusals retain the applicable CORS headers, and unrelated read/write routes retain their normal policy. Wildcard origins and a global CSRF-disable switch are outside the contract.
 
-Backend forwarder authorization belongs in the host's auth adapter. Restrict such an identity to its exact upload path and method before any built-in plugin can answer a request; a later host request hook alone is insufficient. Host normalization owns fresh ids, source/purpose and bounded product metadata, then hands the result to the core pipeline.
+Backend forwarder authorization belongs in the host's auth adapter. Restrict such an identity to its exact upload path and method before any built-in plugin can answer a request; a later host request hook alone is insufficient. Host normalization owns fresh ids, source/profile and bounded product metadata, then hands the result to the core pipeline.
 
 ### 5.12 Sign-in recovery across a CDN
 
@@ -301,7 +301,7 @@ How each downstream-only part maps (the full table, with file paths, is in
 | --- | --- |
 | Identity-Aware Proxy auth, service-account allow-list, dev mode | `iap()` from `/plugins/iap`; `auth: 'none'` locally |
 | Cloud Storage | `gcs()` from `/plugins/gcs` |
-| Purposes, retention per purpose, purpose viewer defaults and posters | `purposes` in the config (or `api.purpose` with `infer`) |
+| Profiles, retention per profile, profile viewer defaults and posters | `profiles` in the config (or `api.profile` with `infer`) |
 | People on replays and suites, "for me", person card, "For you" | `api.people` + the core people support; "For you" as an index section |
 | Typed product test context, admin links, flag lists | a context adapter with a schema using `x-replays-widget: 'signals'` |
 | Chat, support and VCS provenance links with brand marks | source providers with `icon` and `noun` |
@@ -313,7 +313,7 @@ How each downstream-only part maps (the full table, with file paths, is in
 | Deployment runtime and pending workspace restructuring | stay in the downstream; both web and gateway consume the same pinned artifact |
 | Deploy workflows, gateway, secrets, samples | stay in the downstream |
 
-`examples/host-app` is this mapping as a runnable distribution with neutral names: IAP auth, Cloud Storage, three purposes, people
+`examples/host-app` is this mapping as a runnable distribution with neutral names: IAP auth, Cloud Storage, three profiles, people
 rules, a theme, a "For you" section and a provenance provider, built only from config and plugins, with an end-to-end smoke test.
 
 The mapping is refreshed against downstream `4390e7a5` (2026-10-24), including the real gateway/renderer, sign-in recovery, staff browser intake and disabled editing. Pending customer-forwarding and workspace-restructuring branches remain separate migration inputs. The initial migration retains upstream's stricter input/URL sanitization, so staging readability differs; the migration guide records that deliberate boundary.
