@@ -320,7 +320,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 169,
-      "brotli": 140
+      "brotli": 146
     },
     "dist/lib/index.mjs": {
       "raw": 1588,

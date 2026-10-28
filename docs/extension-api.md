@@ -246,7 +246,7 @@ api.retention({ days: (summary) => (summary.tags?.includes('scratch') ? 3 : unde
   "All · <profile> …" tabs with counts (only when profiles exist), kept in the URL as `profile=`. A suite counts under the profiles
   of its runs' replays.
 - **Viewer.** A replay's profile is its `meta.profile`, else the inferred one, which the server sends as
-  `x-replay-profile: <id>; inferred` with the bundle (cached with it for up to a day). The viewer marks it as `data-purpose` on
+  `x-replay-profile: <id>; inferred` with the bundle (cached with it for up to a day). The viewer marks it as `data-profile` on
   `main.app-shell`.
 - **Retention.** The profile's window replaces the default one. **An inferred profile never makes a replay permanent**: if its
   window is `0`, the default window applies; only an explicit profile (or Keep) keeps a replay forever. `api.retention` rules can

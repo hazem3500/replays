@@ -96,7 +96,7 @@ test('a triage replay opens one second before its first error, on that tab; a pe
   const id = await upload(page.request, 'triage', 'Triage opening');
   await openReplay(page, `${server().origin}/r/${id}`);
   const viewer = await loadedViewer(page);
-  await expect(viewer).toHaveAttribute('data-purpose', 'triage');
+  await expect(viewer).toHaveAttribute('data-profile', 'triage');
   // why: demo-shop's first error is the failed coupon request at 7.174 s.
   await expect(page.getByTestId('playhead')).toHaveText('0:06.2');
   await expect(page.getByTestId('network-tab')).toHaveAttribute('aria-selected', 'true');
@@ -117,7 +117,7 @@ test('a walkthrough opens at the start with the panel folded and captions on; a 
 
   await openReplay(page, `${server().origin}/r/demo-shop`);
   const plainViewer = await loadedViewer(page);
-  await expect(plainViewer).not.toHaveAttribute('data-purpose');
+  await expect(plainViewer).not.toHaveAttribute('data-profile');
   await expect(page.getByTestId('playhead')).toHaveText('0:00.0');
   await expect(page.getByTestId('captions-switch')).toHaveAttribute('aria-pressed', 'false');
 });
@@ -138,13 +138,13 @@ test('a loading shell cannot satisfy the profile-free viewer assertions', async 
     await expect(loading).toBeVisible();
     await expect(loading).toHaveAttribute('aria-busy', 'true');
     // why: absence alone would pass on this skeleton; the profile assertions must first await a loaded viewer.
-    await expect(loading).not.toHaveAttribute('data-purpose');
+    await expect(loading).not.toHaveAttribute('data-profile');
     await expect(viewerShell(page)).toHaveCount(0);
 
     release();
     const viewer = await loadedViewer(page);
     await expect(viewer.getByRole('heading', { level: 1 })).toHaveText('Delayed profile-free replay');
-    await expect(viewer).not.toHaveAttribute('data-purpose');
+    await expect(viewer).not.toHaveAttribute('data-profile');
   } finally {
     release();
   }
@@ -165,7 +165,7 @@ test('the upload dialog offers the profiles and stores the one picked', async ({
   await page.getByRole('dialog').getByRole('button', { name: 'Upload', exact: true }).click();
   await expect(page).toHaveURL(`${base}/r/${bundle.meta.id}`, { timeout: 15_000 });
   const viewer = await loadedViewer(page);
-  await expect(viewer).toHaveAttribute('data-purpose', 'walkthrough');
+  await expect(viewer).toHaveAttribute('data-profile', 'walkthrough');
   const stored = (await (await page.request.get(`${base}/api/replays/${bundle.meta.id}`)).json()) as { meta: { profile?: string } };
   expect(stored.meta.profile).toBe('walkthrough');
 });
