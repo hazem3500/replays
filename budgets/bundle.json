@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 433323,
-      "gzip": 111155,
-      "brotli": 90907
+      "raw": 447267,
+      "gzip": 114657,
+      "brotli": 93434
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -143,9 +143,9 @@
       "brotli": 817
     },
     "dist/client/assets/player-HASH.js": {
-      "raw": 308578,
-      "gzip": 95021,
-      "brotli": 70759
+      "raw": 316832,
+      "gzip": 97939,
+      "brotli": 70913
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -257,10 +257,10 @@
       "gzip": 5317,
       "brotli": 4640
     },
-    "dist/lib/chunks/define.ts-2cdb34849bf4.mjs": {
-      "raw": 39108,
-      "gzip": 11192,
-      "brotli": 9890
+    "dist/lib/chunks/define.ts-c99e647c6d2f.mjs": {
+      "raw": 46985,
+      "gzip": 13251,
+      "brotli": 11662
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -270,7 +270,7 @@
     "dist/lib/chunks/human-bundle.ts-d68f5dc3a2c3.mjs": {
       "raw": 25393,
       "gzip": 7238,
-      "brotli": 6392
+      "brotli": 6391
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
       "raw": 434,
@@ -282,10 +282,10 @@
       "gzip": 21,
       "brotli": 2
     },
-    "dist/lib/chunks/index.ts-3d8b996b5201.mjs": {
-      "raw": 39913,
-      "gzip": 11514,
-      "brotli": 10056
+    "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs": {
+      "raw": 43352,
+      "gzip": 12236,
+      "brotli": 10663
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
@@ -293,9 +293,9 @@
       "brotli": 4342
     },
     "dist/lib/chunks/registry.ts-2e034be27725.mjs": {
-      "raw": 32700,
-      "gzip": 8327,
-      "brotli": 7270
+      "raw": 33699,
+      "gzip": 8512,
+      "brotli": 7425
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -320,7 +320,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 145
+      "brotli": 144
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -408,9 +408,9 @@
       "brotli": 3072
     },
     "dist/lib/server.mjs": {
-      "raw": 1755,
-      "gzip": 570,
-      "brotli": 492
+      "raw": 1829,
+      "gzip": 600,
+      "brotli": 509
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -953,16 +953,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 433323,
-        "gzip": 111155,
-        "brotli": 90907
-      },
-      "reason": "The purpose to profile rename keeps every old CLI, config and API name as a deprecated alias (main 416300/106502/87095, head 420701/107917/88259).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
       "cap": {
         "raw": 308545,
@@ -970,26 +960,6 @@
         "brotli": 66289
       },
       "reason": "replay.schema.json documents meta.profile and the deprecated meta.purpose (main 297658/77964/63870, head 299558/78522/64358).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/server.mjs",
-      "cap": {
-        "raw": 1755,
-        "gzip": 570,
-        "brotli": 492
-      },
-      "reason": "The /server entry declares the deprecated PurposeCatalog and createPurposeCatalog aliases on top of the workspace plugin policy and settings routes from #96 (main 1619/552/467, head 1703/566/477).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/chunks/define.ts-2cdb34849bf4.mjs",
-      "cap": {
-        "raw": 39108,
-        "gzip": 11192,
-        "brotli": 9890
-      },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
       "pr": "https://github.com/hazem3500/replays/pull/118"
     },
     {
@@ -1003,32 +973,64 @@
       "pr": "https://github.com/hazem3500/replays/pull/118"
     },
     {
-      "file": "dist/lib/chunks/index.ts-3d8b996b5201.mjs",
+      "file": "dist/cli/cli.mjs",
       "cap": {
-        "raw": 39913,
-        "gzip": 11514,
-        "brotli": 10056
+        "raw": 447267,
+        "gzip": 114657,
+        "brotli": 93434
       },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
-    },
-    {
-      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
-      "cap": {
-        "raw": 32700,
-        "gzip": 8327,
-        "brotli": 7270
-      },
-      "reason": "Chunk membership moved with the profile rename; the four renamed library chunks total main 129699 raw and head 133118 raw (deprecated aliases and alias readers).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "The CLI bundles the views catalog, the seven built-in view presets, capture-profile validation and the built-in performance profile (main 421230/108080/88368, head 434239/111317/90712).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
       "file": "dist/client/assets/player-HASH.js",
       "cap": {
-        "brotli": 70759
+        "raw": 316832,
+        "gzip": 97939,
+        "brotli": 70913
       },
-      "reason": "The shared profile helpers (deprecated purpose aliases, meta.purpose reads) reach the player chunk; head 307323/94957/68698 against main 306920/94765/68505; it replaces the brotli-only allowance from #103 (cursor motion styles).",
-      "pr": "https://github.com/hazem3500/replays/pull/118"
+      "reason": "The player chunk reads profiles, which now carry view and capture fields and the built-in performance profile (main 307323/94957/68698, head 307603/95086/68847).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
+      "cap": {
+        "raw": 33699,
+        "gzip": 8512,
+        "brotli": 7425
+      },
+      "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1829,
+        "gzip": 600,
+        "brotli": 509
+      },
+      "reason": "The /server entry exports ViewCatalog and createViewCatalog (main 1703/567/477, head 1775/582/494).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-c99e647c6d2f.mjs",
+      "cap": {
+        "raw": 46985,
+        "gzip": 13251,
+        "brotli": 11662
+      },
+      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces define.ts-2cdb34849bf4 (main 39108/11192/9890).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs",
+      "cap": {
+        "raw": 43352,
+        "gzip": 12236,
+        "brotli": 10663
+      },
+      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces index.ts-3d8b996b5201 (main 39913/11514/10056).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
     }
   ]
 }
