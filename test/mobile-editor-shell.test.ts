@@ -9,7 +9,7 @@ import { saveEdits, type LoadedEdits } from '../src/client/edits.ts';
 import type * as editsModule from '../src/client/edits.ts';
 import { navigate } from '../src/client/navigation.ts';
 import type * as navigationModule from '../src/client/navigation.ts';
-import { type ReplayController, usePlayer } from '../src/client/player.ts';
+import { type Playback, usePlayer } from '../src/client/player.ts';
 import { must } from './must.ts';
 import { settle } from './settle.ts';
 import { stubRulerLayout } from './ruler-layout.ts';
@@ -18,7 +18,7 @@ import { waterfallFixture } from './waterfall-fixture.ts';
 // why: motion rendering is covered in browser checks; happy-dom rejects canceled WAAPI promises.
 vi.mock('../src/client/components/animated-icon.tsx', () => ({ AnimatedIcon: () => createElement('svg', { 'aria-hidden': true }) }));
 
-let player: ReplayController | undefined;
+let player: Playback | undefined;
 function TestStage() {
   const current = usePlayer();
   useEffect(() => {

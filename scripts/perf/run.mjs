@@ -64,7 +64,7 @@ async function scenarioList() {
   for (const count of settings.compareTiles) {
     scenarios[`comparison-${count}`] = {
       ...config.pages.comparison,
-      path: `/compare?ids=${ids.slice(0, count).join(',')}&before=${ids[0]}&after=${ids[1]}`,
+      path: `/r/${ids[0]}?with=${ids.slice(1, count).join(',')}&layout=grid`,
       tiles: count,
     };
   }
@@ -78,7 +78,7 @@ async function featureAvailable(ctx, scenario) {
   const probe = await ctx.browser.newPage();
   await probe.goto(`${ctx.server.origin}${prefix}${scenario.path}`);
   const available = await probe
-    .locator('.mt-workspace, .cmp-workspace')
+    .locator('[data-testid="compare-stage"]')
     .waitFor({ timeout: 5000 })
     .then(
       () => true,

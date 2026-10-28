@@ -17,6 +17,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
+  `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
+  its link names). Single, Grid and Spotlight share one clock and the viewer's
+  own transport, shortcuts and inspector, scoped to the focused recording; tiles glide between layouts without
+  remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
+  its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
+  `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
   (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
@@ -24,7 +31,6 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Source-provider marks: `SourceProvider.mark` names a built-in monochrome mark (`github`, `gitlab`, `slack`, `linear`,
   `jira`, `notion`, `link`); built-ins carry theirs and a config provider named like a mark gets it. Index rows show the
   mark beside the source label; on phones one icon chip opens a sheet of every source instead of linking out.
-
 - **Custom upload endpoints** ([docs/extension-api.md](docs/extension-api.md#custom-upload-endpoints)), additive in plugin API 1:
   - `api.uploadEndpoint` gains `authenticate` (its own credentials instead of the auth adapter, identity confined to the endpoint),
     `maxBytes` (a number or per-identity function, checked against `Content-Length`, the stream and the gunzipped size),
@@ -206,7 +212,18 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - `examples/custom-distro` (workspace package) with an end-to-end smoke in CI, and `pnpm test:pack`.
   - [docs/downstream-migration.md](docs/downstream-migration.md).
 
+### Removed
+
+- The separate `/compare?before=&after=` page and its workspace, evidence panels and route.
+
 ### Changed
+
+- Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
+  line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
+  touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
+- Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
+  character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
+  first. This removes the `calligraph` and `motion` dependencies.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
