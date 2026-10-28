@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor blur rethought: blurs draw a strong blur with soft edges (no grey veil), feathered outside the box so the box
+  itself stays fully hidden. `ReplayBlur.style: 'redact'` draws a solid block instead. While placing a blur, a click
+  covers the recorded element under the pointer. The selected box has edge and corner handles and a style label, the
+  inspector picks Blur or Redact, and lane items are labelled with their style. Viewer and MP4 export draw the same.
 - Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
