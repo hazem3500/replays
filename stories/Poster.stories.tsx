@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect } from 'storybook/test';
 
 import { Poster } from '../src/client/index/Poster.tsx';
-import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash.ts';
+import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash-encode.ts';
 
 const HEADER = [32, 36, 48];
 const BUTTON = [34, 160, 90];

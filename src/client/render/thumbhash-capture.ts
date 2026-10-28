@@ -1,4 +1,4 @@
-import { rgbaToThumbHash, THUMBHASH_MAX_SIDE, thumbHashToBase64 } from '../../shared/thumbhash.ts';
+import { rgbaToThumbHash, THUMBHASH_MAX_SIDE, thumbHashToBase64 } from '../../shared/thumbhash-encode.ts';
 
 /**
  * The ThumbHash (base64) of a poster JPEG given as base64. The browser decodes and downscales it to at most

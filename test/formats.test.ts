@@ -12,7 +12,7 @@ import { parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
 import { UserPluginStore } from '../src/server/malleable-store.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
 import { ReplayStore } from '../src/server/store.ts';
-import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash.ts';
+import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash-encode.ts';
 import { replay } from './fixtures.ts';
 
 // docs/formats/*.schema.json are the documented, stable formats shared by tools and plugins. These tests keep them true:

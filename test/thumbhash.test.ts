@@ -2,7 +2,8 @@ import { crc32, inflateSync } from 'node:zlib';
 
 import { describe, expect, it } from 'vitest';
 
-import { isThumbHash, rgbaToThumbHash, thumbHashDataUrl, thumbHashToBase64 } from '../src/shared/thumbhash.ts';
+import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash-encode.ts';
+import { isThumbHash, thumbHashDataUrl } from '../src/shared/thumbhash.ts';
 
 type Pixel = [number, number, number, number];
 

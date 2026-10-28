@@ -4,7 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { Poster, resetPosters } from '../src/client/index/Poster.tsx';
-import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash.ts';
+import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash-encode.ts';
 
 Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 
