@@ -251,15 +251,13 @@ export function playheadHorizon(time: number, duration: number) {
   return time <= 0 ? -1 : time;
 }
 
-/** The Network tab's badge: the request total, in danger ink when any failed. */
+/** The Network tab's badge: the request total, in danger ink when any failed; none when nothing was recorded. */
 export function networkBadge(rows: readonly NetworkRow[]) {
+  if (!rows.length) return;
   const failed = rows.filter((row) => row.failed).length;
   const total = `${rows.length} ${rows.length === 1 ? 'request' : 'requests'}`;
-  return {
-    value: rows.length,
-    ...(failed ? { tone: 'danger' as const } : {}),
-    label: failed ? `${total}, ${failed} failed` : total,
-  };
+  if (!failed) return { value: rows.length, label: total };
+  return { value: rows.length, tone: 'danger' as const, label: `${total}, ${failed} failed` };
 }
 
 /** "82 ms", "1.24 s". */

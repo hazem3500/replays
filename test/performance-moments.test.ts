@@ -83,6 +83,7 @@ describe('performance moments', () => {
 
   it('badges the tab with the moments over budget, in danger ink when one is poor', () => {
     expect(performanceBadge(momentsOf())).toEqual({ value: 3, tone: 'danger', label: '3 slow moments' });
+    expect(performanceBadge([])).toBeUndefined();
   });
 });
 

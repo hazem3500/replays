@@ -213,9 +213,11 @@ export function vitalDeltas(mine: readonly Vital[], theirs: readonly Vital[]) {
   ) as Partial<Record<VitalId, number>>;
 }
 
-/** The Performance tab's badge: how many moments were over budget, in danger ink when any was poor. */
+/** The Performance tab's badge: how many moments were over budget, danger when one was poor; none when all were good. */
 export function performanceBadge(moments: readonly Moment[]) {
   const over = moments.filter((item) => item.verdict !== 'good');
+  if (!over.length) return;
   const label = `${over.length} slow ${over.length === 1 ? 'moment' : 'moments'}`;
-  return { value: over.length, tone: over.some((item) => item.verdict === 'poor') ? ('danger' as const) : ('warning' as const), label };
+  const tone = over.some((item) => item.verdict === 'poor') ? ('danger' as const) : ('warning' as const);
+  return { value: over.length, tone, label };
 }

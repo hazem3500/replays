@@ -152,8 +152,8 @@ describe('request context', () => {
     expect(line).toBe("curl 'https://x.test/a?q=it'\\''s' \\\n  -X POST \\\n  -H 'x-id: 1'");
   });
 
-  it('badges the tab with the total, in danger ink when anything failed', () => {
+  it('badges the tab with the total, in danger ink when anything failed, and not at all when empty', () => {
     expect(networkBadge(buildNetworkRows(busy()))).toEqual({ value: 6, tone: 'danger', label: '6 requests, 2 failed' });
-    expect(networkBadge([])).toEqual({ value: 0, label: '0 requests' });
+    expect(networkBadge([])).toBeUndefined();
   });
 });
