@@ -1,11 +1,10 @@
-import { queryOptions, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
-import { formatClock, isReplaySummary, type ReplaySummary } from '../../shared/replay.ts';
+import { formatClock, type ReplaySummary } from '../../shared/replay.ts';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { plural } from '../plural.ts';
-import { apiUrl } from '../route.ts';
-import { fetchPage } from '../sign-in.tsx';
+import { indexReplaysQuery } from '../index/index-queries.ts';
 import { type Comparable, rankCandidates } from './candidates.ts';
 import { MAX_RECORDINGS } from './search.ts';
 
@@ -20,17 +19,6 @@ const PICKER_STRINGS = {
   failed: 'Could not load recordings',
   full: `Up to ${MAX_RECORDINGS} recordings fit on one stage. Remove one to add another.`,
 } as const;
-
-const summariesQuery = queryOptions({
-  queryKey: ['replay-summaries'] as const,
-  queryFn: async ({ signal }) => {
-    const response = await fetchPage(apiUrl(`replays`), { signal });
-    if (!response.ok) throw new Error(`Recordings failed to load (${response.status})`);
-    const body: unknown = await response.json();
-    return Array.isArray(body) ? body.filter(isReplaySummary) : [];
-  },
-  staleTime: 30_000,
-});
 
 /**
  * "Compare with…": recordings of the same scenario, title or page first, then everything else. Picking one adds
@@ -50,7 +38,7 @@ export function ComparePicker({
   onOpenChange: (open: boolean) => void;
   onPick: (id: string) => void;
 }) {
-  const list = useQuery({ ...summariesQuery, enabled: open });
+  const list = useQuery({ ...indexReplaysQuery(''), enabled: open });
   const [filter, setFilter] = useState('');
   const full = exclude.length >= MAX_RECORDINGS;
 

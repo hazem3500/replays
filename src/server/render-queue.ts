@@ -87,6 +87,7 @@ export interface RenderQueueOptions {
 
 export class RenderQueueFullError extends Error {
   readonly status = 429;
+  readonly expose = true;
   constructor() {
     super('the render queue is full; try again in a few minutes');
   }

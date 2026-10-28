@@ -6,6 +6,16 @@ export { mergeRegistries, orderPlugins, resolvePlugins, resolvePluginsSync, type
 export { PLUGIN_API_VERSION } from './types.ts';
 export { SUMMARY_FIELD_LIMITS } from '../server/summary-fields.ts';
 export type {
+  PluginMiddleware,
+  PluginMiddlewareContext,
+  PluginRoute,
+  PluginRouteContext,
+  PluginRouteMethod,
+  StandardSchemaIssue,
+  StandardSchemaResult,
+  StandardSchemaV1,
+} from './web-types.ts';
+export type {
   AfterUploadContext,
   AfterUploadHook,
   AuthRegistration,

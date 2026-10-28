@@ -30,6 +30,7 @@ const writing = new WeakMap<ObjectStorage, Map<string, Promise<unknown>>>();
 /** An error the routes answer with `status`. */
 export class CommentError extends Error {
   readonly status: number;
+  readonly expose = true;
   constructor(status: number, message: string) {
     super(message);
     this.name = 'CommentError';

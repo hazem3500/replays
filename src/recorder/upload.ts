@@ -74,12 +74,19 @@ export type TokenUploadOptions = {
 const REPLAY_ID = /^[a-z0-9][a-z0-9-]{0,79}$/;
 
 export class IssueUploadError extends Error {
+  /** The HTTP status, or 0 when no response arrived (network error, timeout). */
   readonly status: number;
+  /** Trying again later may succeed: network errors, timeouts, 408, 429 and 5xx. */
+  readonly retryable: boolean;
+  /** How long the server asked to wait (`Retry-After`), when it said. */
+  readonly retryAfterMs: number | undefined;
 
-  constructor(message: string, status: number) {
-    super(message);
+  constructor(message: string, status: number, details: { retryable?: boolean; retryAfterMs?: number; cause?: unknown } = {}) {
+    super(message, details.cause === undefined ? {} : { cause: details.cause });
     this.name = 'IssueUploadError';
     this.status = status;
+    this.retryable = details.retryable ?? false;
+    this.retryAfterMs = details.retryAfterMs;
   }
 }
 

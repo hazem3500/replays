@@ -5,6 +5,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+### Security
+
+- Error responses no longer pass on what the server didn't decide itself. A storage provider's status
+  (`GcsError`/`S3Error` 403/404/429) and a corrupt stored file are now a generic `500 internal error`, not a 4xx
+  carrying the provider's or the parser's message. Storage `NotFoundError`/`ObjectExistsError`/`PreconditionFailedError`
+  keep their status (404/409) but no longer name the object key. Malformed JSON request bodies are `400 body is not
+  valid JSON` everywhere. `rejectUpload()` and the documented 4xx answers are unchanged.
+
 - Add adapter-owned/configurable sign-in recovery for public CDN viewers: safe authenticated return endpoints, page-load recovery and a bounded automatic attempt with manual fallback.
 
 ### Added
@@ -15,6 +23,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+- Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
+  from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
+  (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
+
 - Source-provider marks: `SourceProvider.mark` names a built-in monochrome mark (`github`, `gitlab`, `slack`, `linear`,
   `jira`, `notion`, `link`); built-ins carry theirs and a config provider named like a mark gets it. Index rows show the
   mark beside the source label; on phones one icon chip opens a sheet of every source instead of linking out.
@@ -29,6 +41,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
     authentication. `replays:upload` tokens may also post to registered upload endpoints.
   - `/plugin` exports `HttpError` (status, message, optional headers) and `tooManyRequests(seconds, message?)`.
   - `examples/app-key-ingest`: a public app-key ingest (keys with rotation, origins, limits, retention) built only from these hooks.
+
+- Plugin Web APIs, additive in plugin API generation 1 ([docs/extension-api.md](docs/extension-api.md#web-apis-routes-and-middleware)):
+  - `api.route(...)`: web-standard handlers under `/api/plugins/<plugin>`, with `auth`, `write` and a Standard Schema `body`
+  - `api.middleware(...)`: `pre-auth`/`post-auth` interceptors that return a `Response` or nothing
+  - `webRequest` next to `request` in upload hooks, context adapters and `identity.resolve`
 - `createTestClient(handler)` in `@hazem3500/replays/server/testing`: a fetch-style client over a loopback port, for `createApp()`
   or any `{ fetch }` handler ([docs/extension-api.md](docs/extension-api.md#testing-a-plugin)).
 - An HTTP contract suite (`test/contract/`) pins the public API's statuses, headers and bodies as explicit golden responses. Each mount of
@@ -195,6 +212,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - The separate `/compare?before=&after=` page and its workspace, evidence panels and route.
 
 ### Changed
+
+- The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
+  backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
+  refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters
+  that leave nothing list the active filters with Clear search, Search all replays or Clear filters.
 
 - Settings is a fixed-size dialog with a section sidebar (a full-screen section list with Back on phones): CLI & agents,
   Keyboard, Labs, Plugins (when a plugin registers a setting) and About. The colour theme lives only in the top bar.

@@ -1,8 +1,7 @@
-import type { IncomingMessage } from 'node:http';
-
 import { addRoute, createRouter, findRoute, type RouterContext } from 'rou3';
 
 import type { Identity } from '../auth/types.ts';
+import type { HookRequests } from '../plugin-runtime.ts';
 
 export type Method = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'OPTIONS';
 
@@ -19,11 +18,10 @@ export interface RouteContext<Params extends string = string> {
   identity: Identity;
   /** Adds attributes to the request's span (sizes, ids, never contents). */
   trace: (attributes: Record<string, string | number | boolean | undefined>) => void;
-  /**
-   * The Node request, only for plugin and adapter hooks of the Node-typed API (`request: IncomingMessage`). Handlers never
-   * read it; it goes away when those hooks are removed (docs/api-stability.md deprecations).
-   */
-  legacy: { request: IncomingMessage };
+  /** A request policy allowed this cross-origin request (src/server/request-policy.ts). */
+  crossSiteAllowed: boolean;
+  /** The request as plugin hooks receive it: their deprecated Node `request` and their `webRequest`. */
+  hooks: HookRequests;
 }
 
 export interface RouteDefinition<Params extends string = string> {
@@ -37,30 +35,37 @@ export interface RouteDefinition<Params extends string = string> {
 
 export const defineRoute = <Params extends string = string>(route: RouteDefinition<Params>) => route;
 
-export interface RouteMatch {
-  route: RouteDefinition;
+/** What the table matches on: any route shape with methods, a path and optional parameter patterns. */
+export interface MatchableRoute {
+  method: string | readonly string[];
+  path: string;
+  params?: Readonly<Record<string, RegExp>> | undefined;
+}
+
+export interface RouteMatch<Route extends MatchableRoute = RouteDefinition> {
+  route: Route;
   params: Record<string, string>;
 }
 
-/** The API's routes, matched by method and base-stripped path. Routes can be added at runtime (plugin endpoints). */
-export class RouteTable {
-  private readonly router: RouterContext<RouteDefinition> = createRouter();
+/** Routes matched by method and base-stripped path. Routes can be added at runtime (plugin endpoints). */
+export class RouteTable<Route extends MatchableRoute = RouteDefinition> {
+  private readonly router: RouterContext<Route> = createRouter();
 
-  constructor(routes: readonly RouteDefinition[] = []) {
+  constructor(routes: readonly Route[] = []) {
     for (const route of routes) this.add(route);
   }
 
-  add(route: RouteDefinition) {
+  add(route: Route) {
     for (const method of typeof route.method === 'string' ? [route.method] : route.method) addRoute(this.router, method, route.path, route);
   }
 
-  match(method: string, path: string): RouteMatch | undefined {
+  match(method: string, path: string): RouteMatch<Route> | undefined {
     if (path.length > 1 && path.endsWith('/')) return undefined;
     const found = findRoute(this.router, method.toUpperCase(), path);
     if (!found) return undefined;
     const params = found.params ?? {};
-    const patterns = found.data.params;
-    if (patterns && Object.entries(patterns).some(([name, pattern]) => !new RegExp(`^(?:${pattern.source})$`).test(params[name] ?? '')))
+    const patterns: Readonly<Record<string, RegExp>> = found.data.params ?? {};
+    if (Object.entries(patterns).some(([name, pattern]) => !new RegExp(`^(?:${pattern.source})$`).test(params[name] ?? '')))
       return undefined;
     return { route: found.data, params };
   }
