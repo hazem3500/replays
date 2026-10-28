@@ -10,7 +10,7 @@ let host: HTMLDivElement;
 let changes: number[];
 let folds: boolean[];
 
-beforeEach(() => {
+function setUp() {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   localStorage.clear();
   host = document.createElement('div');
@@ -18,15 +18,16 @@ beforeEach(() => {
   root = createRoot(host);
   changes = [];
   folds = [];
-});
+}
 
-afterEach(() => {
+function tearDown() {
   act(() => {
     root.unmount();
   });
   host.remove();
+  vi.restoreAllMocks();
   vi.unstubAllGlobals();
-});
+}
 
 function Harness({ initial = 300, collapsible = true }: { initial?: number; collapsible?: boolean }) {
   const [value, setValue] = useState(initial);
@@ -55,7 +56,22 @@ function Harness({ initial = 300, collapsible = true }: { initial?: number; coll
   });
 }
 
-const seam = () => host.querySelector<HTMLElement>('[data-testid="seam"]')!;
+function seam() {
+  const element = host.querySelector<HTMLElement>('[data-testid="seam"]');
+  if (!element) throw new Error('the splitter is not rendered');
+  return element;
+}
+
+function render(props: { initial?: number; collapsible?: boolean } = {}) {
+  act(() => {
+    root.render(createElement(Harness, props));
+  });
+}
+
+/** happy-dom has no pointer capture; the splitter only needs the call to succeed. */
+function capturePointers() {
+  vi.spyOn(HTMLElement.prototype, 'setPointerCapture').mockImplementation(() => {});
+}
 
 function key(name: string, shiftKey = false) {
   act(() => {
@@ -69,11 +85,12 @@ function pointer(type: string, clientY: number) {
   });
 }
 
-describe('Splitter', () => {
+describe('Splitter from the keyboard', () => {
+  beforeEach(setUp);
+  afterEach(tearDown);
+
   it('is a labelled, focusable horizontal separator reporting its size', () => {
-    act(() => {
-      root.render(createElement(Harness));
-    });
+    render();
     const element = seam();
     expect(element.getAttribute('role')).toBe('separator');
     expect(element.getAttribute('aria-orientation')).toBe('horizontal');
@@ -84,9 +101,7 @@ describe('Splitter', () => {
   });
 
   it('moves the line with the arrows (Shift for bigger steps), so ArrowUp grows a panel below it, and persists the size', () => {
-    act(() => {
-      root.render(createElement(Harness));
-    });
+    render();
     key('ArrowUp');
     key('ArrowDown', true);
     expect(changes).toEqual([316, 252]);
@@ -94,9 +109,7 @@ describe('Splitter', () => {
   });
 
   it('keeps arrow keys from reaching the player shortcuts on the document', () => {
-    act(() => {
-      root.render(createElement(Harness));
-    });
+    render();
     const heard = vi.fn<(event: Event) => void>();
     document.addEventListener('keydown', heard);
     key('ArrowUp');
@@ -105,18 +118,14 @@ describe('Splitter', () => {
   });
 
   it('jumps to its limits with Home and End', () => {
-    act(() => {
-      root.render(createElement(Harness));
-    });
+    render();
     key('Home');
     key('End');
     expect(changes).toEqual([120, 480]);
   });
 
   it('folds with Enter and reopens at the size it had', () => {
-    act(() => {
-      root.render(createElement(Harness, { initial: 340 }));
-    });
+    render({ initial: 340 });
     key('Enter');
     expect(folds).toEqual([true]);
     expect(seam().getAttribute('aria-valuenow')).toBe('0');
@@ -126,20 +135,21 @@ describe('Splitter', () => {
   });
 
   it('resets to its default on double-click', () => {
-    act(() => {
-      root.render(createElement(Harness, { initial: 400 }));
-    });
+    render({ initial: 400 });
     act(() => {
       seam().dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
     });
     expect(changes).toEqual([260]);
   });
+});
+
+describe('Splitter under the pointer', () => {
+  beforeEach(setUp);
+  afterEach(tearDown);
 
   it('follows a drag, snaps near a snap point, and shows the resize cursor everywhere while held', () => {
-    vi.spyOn(HTMLElement.prototype, 'setPointerCapture').mockImplementation(() => undefined);
-    act(() => {
-      root.render(createElement(Harness));
-    });
+    capturePointers();
+    render();
     pointer('pointerdown', 500);
     expect(document.documentElement.dataset.splitterDrag).toBe('horizontal');
     pointer('pointermove', 535);
@@ -149,10 +159,8 @@ describe('Splitter', () => {
   });
 
   it('folds a collapsible panel dragged well past its minimum', () => {
-    vi.spyOn(HTMLElement.prototype, 'setPointerCapture').mockImplementation(() => undefined);
-    act(() => {
-      root.render(createElement(Harness));
-    });
+    capturePointers();
+    render();
     pointer('pointerdown', 500);
     pointer('pointermove', 900);
     pointer('pointerup', 900);
@@ -161,10 +169,8 @@ describe('Splitter', () => {
   });
 
   it('stops at its minimum when it cannot fold', () => {
-    vi.spyOn(HTMLElement.prototype, 'setPointerCapture').mockImplementation(() => undefined);
-    act(() => {
-      root.render(createElement(Harness, { collapsible: false }));
-    });
+    capturePointers();
+    render({ collapsible: false });
     pointer('pointerdown', 500);
     pointer('pointermove', 900);
     pointer('pointerup', 900);

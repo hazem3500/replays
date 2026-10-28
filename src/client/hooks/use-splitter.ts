@@ -51,23 +51,52 @@ function snapped(size: number, points: readonly number[] = []) {
   return size;
 }
 
-/**
- * Headless resizable split: pointer drag (rAF-throttled previews, document-wide resize cursor), snap points,
- * collapse past `min`, double-click to reset, and the separator keyboard pattern (arrows, Shift for bigger steps,
- * Home/End, Enter folds). Spread `separatorProps` on the handle.
- */
-export function useSplitter(config: SplitterConfig) {
-  const { orientation, side, value, min, max, defaultValue, collapsible = false, collapsed = false, step = 16 } = config;
-  const [dragging, setDragging] = useState(false);
-  const drag = useRef<{ start: number; from: number; size: number; folded: boolean; frame: number } | undefined>(undefined);
+interface Drag {
+  start: number;
+  from: number;
+  size: number;
+  folded: boolean;
+  frame: number;
+}
 
+/** A commit the keyboard asks for: a new size, or a fold toggle; `animate` settles it with the spring. */
+interface KeyCommit {
+  size: number;
+  fold?: boolean;
+  animate?: boolean;
+}
+
+// invariant: moving the line toward the sized panel shrinks it, whichever side of the line it is on.
+function dragged(drag: Drag, position: number, config: SplitterConfig) {
+  const { side, min, max, collapsible = false, snapPoints } = config;
+  const raw = drag.from + (position - drag.start) * (side === 'end' ? -1 : 1);
+  const folded = collapsible && raw < min - COLLAPSE_PX;
+  return { size: folded ? drag.from : clamp(snapped(raw, snapPoints), min, max), folded };
+}
+
+/** The separator keyboard pattern: arrows (Shift for four steps), Home/End, Enter folds and unfolds. */
+function keyCommit(event: KeyboardEvent<HTMLElement>, config: SplitterConfig): KeyCommit | undefined {
+  const { orientation, side, value, min, max, collapsible = false, collapsed = false, step = 16 } = config;
+  const toward: Record<string, number> = orientation === 'horizontal' ? { ArrowUp: -1, ArrowDown: 1 } : { ArrowLeft: -1, ArrowRight: 1 };
+  const move = toward[event.key];
+  const base = collapsed ? min : value;
+  if (move !== undefined) return { size: base + move * (event.shiftKey ? step * 4 : step) * (side === 'end' ? -1 : 1) };
+  if (event.key === 'Home') return { size: min };
+  if (event.key === 'End') return { size: max };
+  if (event.key === 'Enter' && collapsible) return { size: value, fold: !collapsed, animate: true };
+  return;
+}
+
+/** Commits a size (clamped, persisted) or a fold; snaps, resets and folds settle with the target's spring. */
+function useCommit(config: SplitterConfig) {
+  const { min, max, collapsed = false } = config;
   const settle = () => {
     const target = config.settleTarget?.current;
     if (!target || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     target.setAttribute('data-splitter-settling', '');
     window.setTimeout(() => target.removeAttribute('data-splitter-settling'), SETTLE_MS);
   };
-  const commit = (size: number, fold = false, animate = false) => {
+  return (size: number, fold = false, animate = false) => {
     if (animate) settle();
     if (fold !== collapsed) config.onCollapsedChange?.(fold);
     if (fold) return;
@@ -75,14 +104,13 @@ export function useSplitter(config: SplitterConfig) {
     if (config.storageKey) writeStorage(config.storageKey, String(next));
     config.onChange(next);
   };
-  // invariant: moving the line toward the sized panel shrinks it, whichever side of the line it is on.
-  const sizeFor = (position: number) => {
-    const state = drag.current!;
-    const delta = (position - state.start) * (side === 'end' ? -1 : 1);
-    const raw = state.from + delta;
-    const folded = collapsible && raw < min - COLLAPSE_PX;
-    return { size: folded ? state.from : clamp(snapped(raw, config.snapPoints), min, max), folded };
-  };
+}
+
+/** Pointer drags: a document-wide resize cursor while held, one preview per frame, the commit on release. */
+function useDrag(config: SplitterConfig, commit: ReturnType<typeof useCommit>) {
+  const { orientation, value, min, collapsed = false } = config;
+  const [dragging, setDragging] = useState(false);
+  const drag = useRef<Drag | undefined>(undefined);
   const coordinate = (event: PointerEvent) => (orientation === 'horizontal' ? event.clientY : event.clientX);
   const finish = (keep: boolean) => {
     const state = drag.current;
@@ -94,31 +122,19 @@ export function useSplitter(config: SplitterConfig) {
     if (keep) commit(state.size, state.folded, state.folded !== collapsed);
     else config.onPreview?.(value, collapsed);
   };
-
-  const separatorProps = {
-    role: 'separator',
-    'aria-orientation': orientation,
-    'aria-label': config.label,
-    'aria-valuemin': collapsible ? 0 : min,
-    'aria-valuemax': Math.max(min, max),
-    'aria-valuenow': collapsed ? 0 : value,
-    tabIndex: 0,
-    'data-orientation': orientation,
-    'data-dragging': dragging || undefined,
-    'data-collapsed': collapsed || undefined,
+  const handlers = {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       if (event.button !== 0) return;
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);
-      const from = collapsed ? min - COLLAPSE_PX : value;
-      drag.current = { start: coordinate(event), from, size: value, folded: collapsed, frame: 0 };
+      drag.current = { start: coordinate(event), from: collapsed ? min - COLLAPSE_PX : value, size: value, folded: collapsed, frame: 0 };
       document.documentElement.dataset.splitterDrag = orientation;
       setDragging(true);
     },
     onPointerMove: (event: PointerEvent<HTMLElement>) => {
       const state = drag.current;
       if (!state) return;
-      const next = sizeFor(coordinate(event));
+      const next = dragged(state, coordinate(event), config);
       state.size = next.folded ? value : next.size;
       state.folded = next.folded;
       if (state.frame) return;
@@ -131,22 +147,40 @@ export function useSplitter(config: SplitterConfig) {
     onPointerUp: () => finish(true),
     onPointerCancel: () => finish(false),
     onLostPointerCapture: () => finish(true),
+  };
+  return { dragging, handlers };
+}
+
+/**
+ * Headless resizable split: pointer drag (rAF-throttled previews, document-wide resize cursor), snap points,
+ * collapse past `min`, double-click to reset, and the separator keyboard pattern (arrows, Shift for bigger steps,
+ * Home/End, Enter folds). Spread `separatorProps` on the handle.
+ */
+export function useSplitter(config: SplitterConfig) {
+  const { orientation, value, min, max, defaultValue, collapsible = false, collapsed = false } = config;
+  const commit = useCommit(config);
+  const { dragging, handlers } = useDrag(config, commit);
+  const separatorProps = {
+    role: 'separator',
+    'aria-orientation': orientation,
+    'aria-label': config.label,
+    'aria-valuemin': collapsible ? 0 : min,
+    'aria-valuemax': Math.max(min, max),
+    'aria-valuenow': collapsed ? 0 : value,
+    tabIndex: 0,
+    'data-orientation': orientation,
+    'data-dragging': dragging || undefined,
+    'data-collapsed': collapsed || undefined,
+    ...handlers,
     onDoubleClick: () => commit(defaultValue, false, true),
     onKeyDown: (event: KeyboardEvent<HTMLElement>) => {
-      const toward: Record<string, number> =
-        orientation === 'horizontal' ? { ArrowUp: -1, ArrowDown: 1 } : { ArrowLeft: -1, ArrowRight: 1 };
-      const move = toward[event.key];
-      const base = collapsed ? min : value;
-      if (move !== undefined) commit(base + move * (event.shiftKey ? step * 4 : step) * (side === 'end' ? -1 : 1));
-      else if (event.key === 'Home') commit(min);
-      else if (event.key === 'End') commit(max);
-      else if (event.key === 'Enter' && collapsible) commit(value, !collapsed, true);
-      else return;
+      const next = keyCommit(event, config);
+      if (!next) return;
+      commit(next.size, next.fold ?? false, next.animate ?? false);
       event.preventDefault();
       // why: the player listens for arrows on the document (seek); on a splitter they resize.
       event.stopPropagation();
     },
   };
-
   return { separatorProps, dragging };
 }
