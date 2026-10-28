@@ -64,8 +64,8 @@
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
-      "gzip": 2350,
-      "brotli": 2126
+      "gzip": 2349,
+      "brotli": 2125
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8845,
@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38116,
       "gzip": 13520,
-      "brotli": 12006
+      "brotli": 11999
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -85,7 +85,7 @@
     "dist/client/assets/download-HASH.js": {
       "raw": 274,
       "gzip": 222,
-      "brotli": 191
+      "brotli": 190
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 35060,
@@ -180,7 +180,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 631,
-      "brotli": 570
+      "brotli": 569
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -200,12 +200,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 704,
-      "brotli": 639
+      "brotli": 624
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20385,
       "gzip": 8351,
-      "brotli": 7163
+      "brotli": 7157
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -219,7 +219,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 50381,
-      "gzip": 18370,
+      "gzip": 18358,
       "brotli": 16023
     },
     "dist/client/index.html": {
@@ -871,7 +871,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -941,7 +941,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
