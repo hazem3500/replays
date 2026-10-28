@@ -130,12 +130,7 @@ describe('index header identity', () => {
     vi.useFakeTimers();
     vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
     vi.stubGlobal('scrollTo', () => {});
-    const animated: Element[] = [];
-    const animate = vi.spyOn(Element.prototype, 'animate').mockImplementation(function (this: Element) {
-      animated.push(this);
-      // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- why: the mark reads only `finished`; happy-dom returns no Animation.
-      return { finished: Promise.resolve() } as unknown as Animation;
-    });
+    const animate = vi.spyOn(Element.prototype, 'animate');
     try {
       await settle(() => root.render(createElement(IndexIdentity)));
       const button = present(host.querySelector<HTMLButtonElement>('.mark-button'));
@@ -145,7 +140,7 @@ describe('index header identity', () => {
       expect(mark.querySelectorAll('.mark-seg[data-on]')).toHaveLength(3);
       for (let click = 2; click <= 5; click++) await settle(() => button.click());
       expect(mark.dataset.filled).toBe('5');
-      expect(animated).toEqual([host.querySelector('.index-title')]);
+      expect(animate.mock.contexts).toEqual([host.querySelector('.index-title')]);
       await settle(() => vi.advanceTimersByTime(1600));
       expect(mark.dataset.filled).toBe('2');
       expect(mark.querySelectorAll('.mark-seg[data-on]')).toHaveLength(2);
