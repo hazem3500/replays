@@ -764,7 +764,7 @@
         "gzip": 1449,
         "brotli": 1306
       },
-      "reason": "Moving the error classes out of the server entry changes this chunk's source set and so its identity; the chunk itself is unchanged at 3834 raw bytes.",
+      "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
     }
   ]
