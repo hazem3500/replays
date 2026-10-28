@@ -26,7 +26,7 @@ describe('cursor themes', () => {
   });
 
   it('keeps the default arrow to the press squish, with no click ring', () => {
-    expect(cursorTheme(undefined).id).toBe('arrow');
+    expect(cursorTheme().id).toBe('arrow');
     expect(effectOf(cursorTheme('arrow').create(document).nodes)).toBeUndefined();
   });
 

@@ -220,6 +220,6 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
 ];
 
 /** The theme for a saved appearance; the CUA arrow when it is absent. */
-export function cursorTheme(appearance: CursorAppearance | undefined): CursorTheme {
+export function cursorTheme(appearance?: CursorAppearance): CursorTheme {
   return CURSOR_THEMES.find((theme) => theme.id === appearance) ?? ARROW;
 }
