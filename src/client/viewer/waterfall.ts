@@ -8,8 +8,6 @@ import {
   type ReplayStep,
 } from '../../shared/replay.ts';
 
-export type WaterfallKind = 'network' | 'action' | 'performance';
-export type WaterfallState = 'all' | 'failed' | 'slow' | 'incomplete' | 'invalid';
 export interface WaterfallSegment {
   from: number;
   to: number;
@@ -147,36 +145,4 @@ export function buildWaterfall(bundle: ReplayBundle, timeline = editTimeline(und
   });
   rows.sort((a, b) => a.at - b.at || a.sourceAt - b.sourceAt || a.id.localeCompare(b.id));
   return { rows, invalidTimes };
-}
-
-export function filterWaterfall(rows: readonly WaterfallRow[], query: string, kind: WaterfallKind | 'all', state: WaterfallState) {
-  const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  return rows.filter((row) => {
-    if (kind !== 'all' && row.kind !== kind) return false;
-    if (state === 'failed' && !row.failed) return false;
-    if (state === 'slow' && !row.slow) return false;
-    if (state === 'incomplete' && row.timing !== 'incomplete') return false;
-    if (state === 'invalid' && row.timing !== 'invalid') return false;
-    const detail =
-      row.kind === 'network'
-        ? `${row.entry.status} ${row.entry.statusText}`
-        : row.kind === 'action'
-          ? (row.entry.selector ?? '')
-          : (row.entry.eventType ?? '');
-    const text = `${row.label} ${detail}`.toLocaleLowerCase();
-    return words.every((word) => text.includes(word));
-  });
-}
-
-export function durationLabel(ms: number) {
-  return ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(2)} s`;
-}
-
-export function rowDuration(row: WaterfallRow) {
-  if (row.timing === 'incomplete') return 'Incomplete · duration unknown';
-  if (row.timing === 'invalid') return 'Invalid / unknown duration';
-  if (row.measured !== undefined) return `${durationLabel(row.measured)} measured`;
-  if (row.kind === 'performance')
-    return validDuration(row.entry.value) ? `${durationLabel(row.entry.value)} from navigation` : 'Invalid metric timestamp';
-  return 'Point event';
 }
