@@ -3,7 +3,7 @@ import { isCursorMotionStyle, type CursorMotionStyle } from '../../shared/cursor
 import { CURSOR_CANVAS, CURSOR_HOTSPOT, CURSOR_PATH } from '../cursor-motion.ts';
 import { CURSOR_MOTION_PREVIEWS, PREVIEW_BOX, type CursorMotionPreview } from './cursor-motion-previews.ts';
 
-const ARROW_UNITS = 22;
+const ARROW_UNITS = 26;
 const ARROW_SCALE = ARROW_UNITS / CURSOR_CANVAS;
 
 /** The CUA arrow drawn with its hotspot at the group origin. */
