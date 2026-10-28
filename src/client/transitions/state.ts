@@ -1,5 +1,4 @@
-/*
- * why: the page transition in flight, for the views that pace themselves on it: the player waits for the morph to start,
+/* why: the page transition in flight, for the views that pace themselves on it: the player waits for the morph to start,
  * long lists fill once it has landed. page-motion.ts starts page changes' transitions, swap.ts a suite's run switches.
  */
 

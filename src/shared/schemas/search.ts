@@ -1,7 +1,6 @@
 import * as z from 'zod/mini';
 
-/*
- * why: the app's search params as the router validates them. Values arrive as text (src/client/routing/search.ts keeps the
+/* why: the app's search params as the router validates them. Values arrive as text (src/client/routing/search.ts keeps the
  * URLs' plain form) and stay text: each page reads its own (permalink.ts, compare-search.ts, ReplayIndex.tsx), so these
  * only name and type them. A value that does not fit is dropped, never an error page; keys a schema does not name pass
  * through untouched (plugin index filters, plugin pages). Server-safe.

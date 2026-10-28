@@ -89,11 +89,11 @@ export default defineConfig(({ command }) => ({
   },
   base: command === 'build' ? './' : `${devBase}/`,
   plugins: [
-    // why: file routes (src/client/routes) generate src/client/routeTree.gen.ts, committed so typecheck and tests need no build.
+    // why: file routes (src/client/routes) generate src/client/route-tree.gen.ts, committed so typecheck and tests need no build.
     tanstackRouter({
       target: 'react',
       routesDirectory: './src/client/routes',
-      generatedRouteTree: './src/client/routeTree.gen.ts',
+      generatedRouteTree: './src/client/route-tree.gen.ts',
       addExtensions: true,
       quoteStyle: 'single',
       semicolons: true,

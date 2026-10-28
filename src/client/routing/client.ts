@@ -1,7 +1,6 @@
 import type { AppRouter } from '../router.tsx';
 
-/*
- * why: the browser's one router (main.tsx), for code outside React that navigates or reads the address (link clicks,
+/* why: the browser's one router (main.tsx), for code outside React that navigates or reads the address (link clicks,
  * the compare picker, Settings' deep link). Never set on a server, which makes a router per request.
  */
 let current: AppRouter | undefined;

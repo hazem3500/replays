@@ -2,8 +2,7 @@ import { PRODUCT_SLUG } from '../../shared/brand.ts';
 import { appBase } from '../api/fetch.ts';
 import { readSessionStorage, writeSessionStorage } from '../storage.ts';
 
-/*
- * why: the app's public addresses, base included (`/replays/r/<id>` under `/replays`): plain hrefs for links, copy-link
+/* why: the app's public addresses, base included (`/replays/r/<id>` under `/replays`): plain hrefs for links, copy-link
  * menus and the CLI's output. In-app clicks on them go through the router (routing/navigate.ts).
  */
 

@@ -2,8 +2,7 @@ import { writeSessionStorage } from '../storage.ts';
 import { OPEN_HINT_KEY, type OpenHint } from '../ViewerSkeleton.tsx';
 import type { CardMatch } from './shared-elements.ts';
 
-/*
- * why: what the clicked card knows about the page it opens: its poster (and so the recording's aspect), title and step
+/* why: what the clicked card knows about the page it opens: its poster (and so the recording's aspect), title and step
  * count, so the viewer's skeleton has the real shape and the player's first frame is the card's picture.
  */
 
@@ -33,8 +32,7 @@ export function rememberListed(items: readonly ListedReplay[]) {
   for (const item of items) listed.set(item.id, item);
 }
 
-/*
- * why: opening stills (src/server/posters.ts): the replay as the viewer first paints it, next to each poster. A card the
+/* why: opening stills (src/server/posters.ts): the replay as the viewer first paints it, next to each poster. A card the
  * pointer rests on (or the keyboard reaches) loads its still, so opening it can land on exactly what rrweb will draw:
  * the morph crossfades poster → still mid-flight (styles.css, html[data-page-still]) and rrweb's hand-over is then a
  * crossfade between two identical pictures.

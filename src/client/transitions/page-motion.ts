@@ -6,8 +6,7 @@ import { forgetHint, onCardIntent, writeHint } from './open-hint.ts';
 import { cardFor, unnameAll } from './shared-elements.ts';
 import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from './state.ts';
 
-/*
- * why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
+/* why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
  * the Query cache, the loaded viewer code and the index itself (kept mounted but hidden, routing/KeptIndex.tsx)
  * survive the trip. Index ↔ viewer uses one short crossfade (styles.css, html[data-page-transition]); thumbnails never
  * expand into a recording, since they can differ from its opening frame and aspect ratio. Cached pages render at once;

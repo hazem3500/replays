@@ -1,7 +1,6 @@
 import { readDeployment } from '../deployment.ts';
 
-/*
- * why: the one way the client names its API: paths are relative to the app's base (`apiUrl('replays')` is
+/* why: the one way the client names its API: paths are relative to the app's base (`apiUrl('replays')` is
  * `/replays/api/replays` under `/replays`). A server render can swap this module for one that reads the request's
  * deployment, so every caller stays the same.
  */

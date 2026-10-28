@@ -18,7 +18,7 @@ server rendering adds a server entry rather than another rewrite.
 | `p.$plugin.$.tsx` | `/p/<plugin>/<path>` | A plugin's page (`api.registerPluginPage`), see [extension-api.md](../extension-api.md#plugin-pages) |
 
 Any other address renders the not-found page. The router plugin in `vite.config.ts` generates
-`src/client/routeTree.gen.ts`; it is committed so typechecking and tests need no build.
+`src/client/route-tree.gen.ts`; it is committed so typechecking and tests need no build.
 
 ## Router and context
 

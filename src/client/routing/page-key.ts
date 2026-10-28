@@ -2,8 +2,7 @@ import type { AnyRouter } from '@tanstack/react-router';
 
 import { decodeSegment } from './links.ts';
 
-/*
- * why: which page an address shows. A change of page is what page motion animates and what an in-app link click routes;
+/* why: which page an address shows. A change of page is what page motion animates and what an in-app link click routes;
  * a change within one page (filters, `?t=`, a suite's run) is not.
  */
 

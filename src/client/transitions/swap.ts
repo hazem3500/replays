@@ -4,8 +4,7 @@ import { forgetHint } from './open-hint.ts';
 import { name, unnameAll } from './shared-elements.ts';
 import { currentTransition, follow, isTurn, nextTurn, setSwappingInPlace, supportsTransitions } from './state.ts';
 
-/*
- * why: in-place swaps (a suite's runs). The runs sidebar stays perfectly still (its live layer, so only its selection
+/* why: in-place swaps (a suite's runs). The runs sidebar stays perfectly still (its live layer, so only its selection
  * glides), the frame crossfades between the two runs at its rect (resizing smoothly if the aspect differs), the top
  * bar and transport crossfade in place, and the step rail and panel crossfade with a 4 px rise (styles.css, "run").
  * The new run renders complete inside the update (rrweb included: a crossfade has nothing to stall), and the old one

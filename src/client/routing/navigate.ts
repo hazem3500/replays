@@ -3,8 +3,7 @@ import { returnsToKeptIndex } from './index-return.ts';
 import { isAppPage } from './links.ts';
 import { pageOfPublicPath } from './page-key.ts';
 
-/*
- * why: navigation for code that holds an href (menus, the command palette, the editor's "Done") and for the page's own
+/* why: navigation for code that holds an href (menus, the command palette, the editor's "Done") and for the page's own
  * address (a viewer's `?t=`, a comparison's layout). Everything goes through the router, so its location, history
  * and Back/Forward stay the page's.
  */

@@ -4,7 +4,7 @@ import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query
 
 import { type Deployment, readDeployment } from './deployment.ts';
 import { queryClient as browserQueryClient } from './queries.ts';
-import { routeTree } from './routeTree.gen.ts';
+import { routeTree } from './route-tree.gen.ts';
 import { NotFoundPage, RouteErrorPage } from './routing/states.tsx';
 import { parseSearch, stringifySearch } from './routing/search.ts';
 
