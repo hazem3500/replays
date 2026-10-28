@@ -212,6 +212,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
 
+- Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
+  that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
+  to the whole replay, and offers to move to the playhead once it has drifted. Reactions sit behind one button and
+  show in the list as quiet chips their author can remove. An All / Open / Resolved filter appears once a thread is
+  resolved. Anonymous mode is a short note under the composer while you write, not a banner. Seek-bar comment markers
+  keep a 24 px target and merge when closer than that. `scripts/demo-comments.mjs` seeds demo comments.
+
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
   refresh keeps the list on screen under an Offline banner; an empty purpose tab offers upload; a search or filters

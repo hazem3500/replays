@@ -16,6 +16,7 @@ const base = () => server().origin;
 
 const ADA = { 'x-e2e-user': 'ada@example.com', 'x-e2e-name': 'Ada Lovelace' };
 const BOB = { 'x-e2e-user': 'bob@example.com', 'x-e2e-name': 'Bob Stone' };
+const CY = { 'x-e2e-user': 'cy@example.com', 'x-e2e-name': 'Cy Young' };
 
 /** A copy of the sample under its own id, so each test owns its comments. */
 async function newReplay(request: APIRequestContext, origin = base()) {
@@ -200,15 +201,52 @@ test('threads: replies, resolve and reopen, edit and delete by the author only',
   await bob.context.close();
 });
 
-test('reactions at a moment show as emoji markers', async ({ browser, request }) => {
+test('reactions at a moment show as emoji markers and quiet chips their author can remove', async ({ browser, request }) => {
   const id = await newReplay(request);
   const { context, page } = await as(browser, ADA);
   await openReplay(page, `${base()}/r/${id}?t=2`);
   await page.getByTestId('comments-tab').click();
+  await page.getByTestId('comment-react').click();
   await page.getByRole('button', { name: 'React 🎉' }).click();
+  await expect(page.getByRole('button', { name: 'React 🎉' })).toHaveCount(0);
   await expect(markers(page)).toHaveCount(1);
   await expect(markers(page)).toHaveAccessibleName(/reacted 🎉, at 0:02\.0/);
   await expect(page.getByTestId('comment-reaction')).toHaveText('🎉');
+  await expect(threads(page)).toHaveCount(0);
+  await page.getByRole('button', { name: 'Remove your 🎉 reaction' }).click();
+  await expect(markers(page)).toHaveCount(0);
+  await expect(page.getByTestId('comments-empty')).toBeVisible();
+  await context.close();
+});
+
+test('the composer pins the playhead or the whole replay, and Open and Resolved filter the threads', async ({ browser, request }) => {
+  const id = await newReplay(request);
+  const done = await comment(request, id, { body: 'Already fixed', at: 1000 }, CY);
+  await comment(request, id, { body: 'Still open', at: 4000 }, CY);
+  await request.patch(`${base()}/api/replays/${id}/comments/${done.id}`, { data: { resolved: true }, headers: BOB });
+  const { context, page } = await as(browser, CY);
+  await openReplay(page, `${base()}/r/${id}?t=2`);
+  await page.getByTestId('comments-tab').click();
+
+  await page.getByTestId('comments-filter-open').click();
+  await expect(page.getByTestId('comment-body')).toHaveText(['Still open']);
+  await page.getByTestId('comments-filter-resolved').click();
+  await expect(page.getByTestId('comment-body')).toHaveText(['Already fixed']);
+  await page.getByTestId('comment-resolve').click();
+  await expect(page.getByTestId('comments-filter')).toHaveCount(0);
+  await expect(page.getByTestId('comment-body')).toHaveText(['Already fixed', 'Still open']);
+
+  await expect(page.getByTestId('comment-pin')).toHaveText('0:02.0');
+  await page.getByTestId('comment-pin').click();
+  await expect(page.getByTestId('comment-pin')).toHaveText('Whole replay');
+  await page.getByTestId('comment-input').fill('About the whole flow');
+  await page.keyboard.press('Control+Enter');
+  await expect(page.getByTestId('comment-body').first()).toHaveText('About the whole flow');
+  const stored = (await (await request.get(`${base()}/api/replays/${id}/comments`, { headers: CY })).json()).comments as Array<{
+    body: string;
+    at?: number;
+  }>;
+  expect(stored.find((entry) => entry.body === 'About the whole flow')?.at).toBeUndefined();
   await context.close();
 });
 
@@ -326,7 +364,7 @@ test.describe('without sign-in (auth=none)', () => {
   // Its own server: the shared one keeps just the two samples.
   const anonymous = serveApp();
 
-  test('comments are labelled Anonymous, with a notice', async ({ page }) => {
+  test('comments are labelled Anonymous, with a quiet note while composing', async ({ page }) => {
     const origin = anonymous().origin;
     const id = uniqueId('anon');
     const bundle = await (await page.request.get(`${origin}/api/replays/demo-shop`)).json();
@@ -334,8 +372,10 @@ test.describe('without sign-in (auth=none)', () => {
     expect((await page.request.post(`${origin}/api/replays`, { data: bundle })).status()).toBe(201);
     await openReplay(page, `${origin}/r/${id}`);
     await page.getByTestId('comments-tab').click();
-    await expect(page.getByTestId('comments-anonymous-notice')).toContainText('Anonymous');
+    await expect(page.getByTestId('comments-anonymous-notice')).toBeHidden();
     await page.getByTestId('comment-input').fill('Posted without signing in');
+    await expect(page.getByTestId('comments-anonymous-notice')).toBeVisible();
+    await expect(page.getByTestId('comments-anonymous-notice')).toContainText('Anonymous');
     await page.getByTestId('comment-submit').click();
     await expect(page.getByTestId('comment-author')).toHaveText('Anonymous');
     await expect(page.getByTestId('comment-body')).toHaveText('Posted without signing in');
