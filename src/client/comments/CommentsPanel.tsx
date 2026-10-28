@@ -13,9 +13,6 @@ import { commentStrings } from './strings.ts';
 import { ThreadItem } from './Thread.tsx';
 import { effectiveFilter, listItems, threadCounts, type ThreadFilter } from './thread-list.ts';
 import './comments.css';
-import './comments-panel.css';
-import './comment-thread.css';
-import './comment-composer.css';
 
 /**
  * The Comments tab of the open replay (in compare mode, of the focused recording: a new recording starts a fresh

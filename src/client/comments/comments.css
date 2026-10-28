@@ -1,7 +1,10 @@
 /*
- * Comments (src/client/comments/): avatars and the seek-bar markers with their hover card. The tab is comments-panel.css.
- * Tokens come from styles.css; nothing here moves per frame (markers are placed once per layout).
+ * Comments (src/client/comments/): avatars and the seek-bar markers with their hover card; the tab's own sheets are
+ * imported below. Tokens come from styles.css; nothing here moves per frame (markers are placed once per layout).
  */
+@import "./comments-panel.css";
+@import "./comment-thread.css";
+@import "./comment-composer.css";
 
 /* ---------- Avatars ---------- */
 .comment-avatar {
