@@ -1,8 +1,14 @@
-import { SearchIcon, XIcon } from 'lucide-react';
+import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu.tsx';
 import type { NetworkFilter, RequestType, StatusFilter } from './model.ts';
 
 const STATUS_CHIPS: ReadonlyArray<{ id: StatusFilter; label: string }> = [
@@ -179,21 +185,25 @@ function TypeMenu({
   onChange: (type: RequestType | 'all') => void;
 }) {
   if (types.length < 2 && value === 'all') return null;
-  const items = [{ value: 'all', label: TYPE_LABELS.all }, ...types.map(({ type }) => ({ value: type, label: TYPE_LABELS[type] }))];
   return (
-    <Select items={items} value={value} onValueChange={(next) => onChange((next ?? 'all') as RequestType | 'all')}>
-      <SelectTrigger size="sm" className="np-type" aria-label={STRINGS.type} data-testid="network-type" onKeyDown={keepKeys}>
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="all">{TYPE_LABELS.all}</SelectItem>
-        {types.map(({ type, count }) => (
-          <SelectItem key={type} value={type}>
-            {TYPE_LABELS[type]}
-            <span className="np-type-count">{count}</span>
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <DropdownMenu>
+      <DropdownMenuTrigger className="np-type" aria-label={`${STRINGS.type}: ${TYPE_LABELS[value]}`} data-testid="network-type" onKeyDown={keepKeys}>
+        {TYPE_LABELS[value]}
+        <ChevronDownIcon aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-auto min-w-44">
+        <DropdownMenuRadioGroup value={value} onValueChange={(next: string) => onChange(next as RequestType | 'all')}>
+          <DropdownMenuRadioItem value="all" closeOnClick className="pointer-coarse:min-h-10">
+            {TYPE_LABELS.all}
+          </DropdownMenuRadioItem>
+          {types.map(({ type, count }) => (
+            <DropdownMenuRadioItem key={type} value={type} closeOnClick className="pointer-coarse:min-h-10">
+              {TYPE_LABELS[type]}
+              <span className="np-type-count">{count}</span>
+            </DropdownMenuRadioItem>
+          ))}
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

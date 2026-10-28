@@ -57,12 +57,15 @@
   .pp-row:not(.pp-head) .pp-moment button { height: 100%; align-items: flex-start; padding: 7px 12px 0; border-radius: 0; }
   .pp-row:not(.pp-head) > :not(.pp-moment) { z-index: 1; pointer-events: none; }
   .pp-row:not(.pp-head) .seek-time { pointer-events: auto; }
-  .pp-took { grid-area: took; align-self: start; }
-  .pp-when { grid-area: when; justify-self: end; }
+  .pp-row:not(.pp-head) .pp-took { grid-area: took; align-self: start; }
+  .pp-row:not(.pp-head) .pp-when { grid-area: when; justify-self: end; }
   .pp-row:not(.pp-head) .pp-why { grid-area: why; }
   .pp-head { grid-template-columns: minmax(0, 1fr) auto; padding-inline: 12px; }
   .pp-head > :is(:nth-child(2), .pp-budget, .pp-why) { display: none; }
   .pp-vital { min-width: 0; padding-inline: 12px; }
+  /* why: on a phone the switch shows only the current order; pressing it flips to the other. */
+  .pp-order { margin-right: 6px; padding-left: 4px; }
+  .pp-order button:not([aria-pressed="true"]) { display: none; }
 }
 @media (pointer: coarse) {
   .pp-row:not(.pp-head) { min-height: 44px; }

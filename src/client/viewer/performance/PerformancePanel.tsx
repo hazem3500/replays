@@ -64,11 +64,19 @@ function ribbonMarks(moments: readonly Moment[], vitals: readonly Vital[]): Ribb
   return [...spans, ...paints];
 }
 
+const otherOrder = (order: MomentOrder): MomentOrder => (order === 'worst' ? 'time' : 'worst');
+
 function OrderSwitch({ order, onOrder }: { order: MomentOrder; onOrder: (order: MomentOrder) => void }) {
   return (
     <div className="pp-order" role="group" aria-label={STRINGS.order}>
       {(['worst', 'time'] as const).map((value) => (
-        <button key={value} type="button" aria-pressed={order === value} onClick={() => onOrder(value)}>
+        <button
+          key={value}
+          type="button"
+          aria-pressed={order === value}
+          // why: on a phone only the current order shows, so pressing it switches to the other one.
+          onClick={() => onOrder(order === value ? otherOrder(value) : value)}
+        >
           {value === 'worst' ? STRINGS.worst : STRINGS.time}
         </button>
       ))}
