@@ -36,7 +36,8 @@ export function EffectControls({
   }
   if (kind !== 'zoom' && kind !== 'speed') return null;
   const field = kind === 'zoom' ? 'scale' : 'rate';
-  const current = (region as unknown as Record<string, number>)[field]!;
+  const current = 'scale' in region ? region.scale : 'rate' in region ? region.rate : undefined;
+  if (current === undefined) return null;
   const onPick = (value: number) => change(updateEffect(edits, kind, id, { [field]: value }), selection);
   return mobile ? (
     <EffectSettingMenu kind={kind} current={current} onPick={onPick} />
