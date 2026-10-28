@@ -4,6 +4,7 @@ import { cn } from '@/lib/utils.ts';
 
 import { apiUrl } from '../route.ts';
 import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
+import { posterPlaceholderUrl } from './thumbhash-url.ts';
 
 /*
  * A replay's list thumbnail: a plain lazy <img> of GET /api/replays/<id>/poster over a neutral
@@ -32,6 +33,13 @@ type State = { id: string | undefined; phase: 'loading' | 'ready' | 'none'; atte
 
 const initialState = (id: string | undefined): State => ({ id, phase: id && !postersOff ? 'loading' : 'none', attempt: 0 });
 
+/** The tile under the image: the poster's colours from its ThumbHash once the server has one, else the host's initial. */
+function PosterPlaceholder({ host, thumbhash }: { host: string; thumbhash: string | undefined }) {
+  const blur = posterPlaceholderUrl(thumbhash);
+  if (blur) return <span className="poster-placeholder" data-thumbhash="" style={{ backgroundImage: `url("${blur}")` }} />;
+  return <span className="poster-placeholder">{(host.replace(/^www\./, '')[0] ?? '·').toUpperCase()}</span>;
+}
+
 export function Poster({
   id,
   host,
@@ -42,10 +50,13 @@ export function Poster({
   caption,
   onPreviewEnd,
   onPreviewHalf,
+  thumbhash,
 }: {
   /** Replay id; absent draws the placeholder only (a suite run without a recording). */
   id: string | undefined;
   host: string;
+  /** The summary's ThumbHash: the placeholder paints the poster's colours until it loads, then crossfades to it. */
+  thumbhash?: string | undefined;
   className?: string;
   size?: 'row' | 'card' | 'mini' | 'fill';
   /** Play the hover preview (when this device allows autoplay). */
@@ -87,10 +98,9 @@ export function Poster({
       .catch(() => setState((current) => (current.attempt === attempt ? { ...current, phase: 'none' } : current)));
   };
 
-  const initial = (host.replace(/^www\./, '')[0] ?? '·').toUpperCase();
   return (
     <span className={cn('poster', `poster-${size}`, className)} data-phase={state.phase} aria-hidden="true">
-      <span className="poster-placeholder">{initial}</span>
+      <PosterPlaceholder host={host} thumbhash={thumbhash} />
       {id && state.phase !== 'none' ? (
         <img
           key={state.attempt}

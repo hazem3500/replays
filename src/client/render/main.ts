@@ -24,6 +24,7 @@ import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
 import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
+import { jpegThumbHash } from './thumbhash-capture.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
 
 export interface RenderApi {
@@ -43,6 +44,8 @@ export interface RenderApi {
   previewPlan(fps: number, maxOutputMs: number): PreviewPlan;
   /** Seeks to `time` (ms); waits for assets when a new document was rebuilt on the way. */
   showAt(time: number): Promise<void>;
+  /** The ThumbHash (base64) of a finished poster, given as base64 JPEG (thumbhash-capture.ts). */
+  thumbhash(jpeg: string): Promise<string>;
 }
 
 export interface RenderPlanOptions {
@@ -228,6 +231,7 @@ async function start() {
       await nextFrame();
       return time;
     },
+    thumbhash: jpegThumbHash,
   };
   window.__render = api;
   await api.show(0);
@@ -245,5 +249,6 @@ start().catch((error: unknown) => {
     showAt: async () => undefined,
     previewPlan: () => ({ times: [], dirty: [], capped: false, coveredMs: 0 }),
     poster: async () => 0,
+    thumbhash: async () => '',
   };
 });

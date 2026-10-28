@@ -25,7 +25,7 @@ so every change to the surface shows up in a diff).
 | Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed |
 | Host edit write policy (`editing.enabled`, `EDITING_ENABLED`, `/api/config` effective capability) | – | Public: changes are additive; editor format remains beta |
 | The editor (`beta.editor`) and its API | – | Beta: may change in any release |
-| User plugins and the agent bridge (`beta.malleable`): the `.replays-plugin.json` format, `replays.*` sandbox API, `/api/malleable/*`, bridge tool names, `replays mcp` | – | Beta: may change in any release. The JSON Schemas in `docs/formats/` for replays, comments and edits follow the replay-format promise above |
+| User plugins and the agent bridge (`beta.malleable`): the `.replays-plugin.json` format, `replays.*` sandbox API, `/api/malleable/*`, bridge tool names, `replays mcp` | – | Beta: may change in any release. The JSON Schemas in `docs/formats/` for replays, replay summaries, comments and edits follow the replay-format promise above |
 | Everything else: files under `src/` (including the viewer's built-in feature registry, `src/client/plugins/features.tsx`), `dist/lib/chunks/`, any import path not in `exports`, CSS class names and DOM structure of the viewer, `data-testid` values other than those named in extension-api.md, log output, internal HTTP routes (`/internal/…`) | – | Not public |
 
 Deep imports are blocked by `exports`; if you need something that is not exported, open an issue instead of copying the path:

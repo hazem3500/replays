@@ -1,4 +1,5 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -10,6 +11,9 @@ import { assertReplayPeople } from '../src/shared/people.ts';
 import { parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
 import { UserPluginStore } from '../src/server/malleable-store.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
+import { ReplayStore } from '../src/server/store.ts';
+import { rgbaToThumbHash, thumbHashToBase64 } from '../src/shared/thumbhash.ts';
+import { replay } from './fixtures.ts';
 
 // docs/formats/*.schema.json are the documented, stable formats shared by tools and plugins. These tests keep them true:
 // real files the app writes must validate, and the schemas must reject what the app rejects.
@@ -40,6 +44,7 @@ describe('docs/formats', () => {
       'context.schema.json',
       'edits.schema.json',
       'plugin-manifest.schema.json',
+      'replay-summary.schema.json',
       'replay.schema.json',
       'user-plugin-history.schema.json',
       'user-plugin.schema.json',
@@ -56,6 +61,24 @@ describe('docs/formats', () => {
       expect(result.ok).toBe(true);
     }
     expect(check({ meta: {}, events: [], console: [], network: [], steps: [] }).ok).toBe(false);
+  });
+
+  it('the summaries the store lists validate, with and without a poster ThumbHash', async () => {
+    const check = await validator('replay-summary');
+    const root = await mkdtemp(join(tmpdir(), 'replays-formats-'));
+    try {
+      const store = new ReplayStore(join(root, 'data'), join(import.meta.dirname, '../sample'));
+      const plain = await store.summary('demo-shop');
+      expect(check(plain).errors).toBe('No errors');
+      await store.save(replay('summary-format'));
+      await store.setThumbHash('summary-format', thumbHashToBase64(rgbaToThumbHash(4, 3, new Uint8Array(48).fill(200))));
+      const hashed = await store.summary('summary-format');
+      expect(hashed?.thumbhash).toBeDefined();
+      expect(check(hashed).errors).toBe('No errors');
+      expect(check({ ...hashed, thumbhash: 'url(x)' }).ok).toBe(false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it('meta.people: what the server accepts validates, what it refuses does not', async () => {

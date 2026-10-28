@@ -276,6 +276,11 @@ export interface ReplaySummary {
   kept?: KeepRecord;
   /** When retention removes it; null when it never expires. Added by the server per request. */
   expiresAt?: string | null;
+  /**
+   * The poster's ThumbHash (src/shared/thumbhash.ts, base64): its colours and shape in ~25 bytes, painted while the
+   * poster loads. Set once the server has rendered a poster; absent before that, without posters, and on older replays.
+   */
+  thumbhash?: string;
 }
 
 export interface ReplayFilters {

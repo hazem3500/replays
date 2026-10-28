@@ -195,6 +195,7 @@ function SessionItem({
       <Poster
         id={summary.id}
         host={summary.host}
+        thumbhash={summary.thumbhash}
         size={view === 'grid' ? 'card' : 'row'}
         playing={playing}
         badge={formatBadgeDuration(summary.duration)}
@@ -397,6 +398,7 @@ function SuiteItem({
           <Poster
             id={shownId}
             host={host}
+            thumbhash={poster?.replay?.thumbhash}
             size="card"
             playing={playing}
             badge={<RunsBadge count={count} />}
@@ -408,6 +410,7 @@ function SuiteItem({
           <Poster
             id={shownId}
             host={host}
+            thumbhash={poster?.replay?.thumbhash}
             size="row"
             playing={playing}
             badge={<RunsBadge count={count} />}

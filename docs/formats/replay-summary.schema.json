@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/replay-summary.schema.json",
+  "title": "Replay summary",
+  "description": "What the index lists for one replay without loading its bundle: the `<id>/meta.json` sidecar and each item of `GET /api/replays`. The server derives it from `replay.json` (rebuilt when `summaryVersion` is older), then adds per request what is not stored: `kept`, `expiresAt`, an inferred `purpose`, people's avatars. `thumbhash` is the one stored field not derived from the bundle: the server sets it once it has rendered the poster. Readers must ignore fields they do not know. Source of truth: src/shared/replay.ts (ReplaySummary).",
+  "type": "object",
+  "required": ["id", "title", "url", "host", "capturedAt", "duration", "steps", "consoleErrors", "failedRequests", "source"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$" },
+    "title": { "type": "string" },
+    "url": { "type": "string" },
+    "host": { "type": "string" },
+    "capturedAt": { "type": "string", "format": "date-time" },
+    "duration": { "type": "number", "minimum": 0 },
+    "steps": { "type": "integer", "minimum": 0 },
+    "consoleErrors": { "type": "integer", "minimum": 0 },
+    "failedRequests": { "type": "integer", "minimum": 0 },
+    "source": { "enum": ["agent", "human"] },
+    "summaryVersion": { "type": "integer", "minimum": 1 },
+    "viewport": {
+      "type": "object",
+      "required": ["width", "height"],
+      "properties": { "width": { "type": "number" }, "height": { "type": "number" } }
+    },
+    "timeline": {
+      "type": "object",
+      "required": ["steps", "errors"],
+      "properties": {
+        "steps": { "type": "array", "maxItems": 200, "items": { "type": "number" } },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "count"],
+            "properties": { "at": { "type": "number" }, "count": { "type": "integer", "minimum": 1 } }
+          }
+        }
+      }
+    },
+    "tags": { "type": "array", "items": { "type": "string" } },
+    "sources": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["provider", "label", "url"],
+        "properties": {
+          "provider": { "type": "string" },
+          "label": { "type": "string" },
+          "url": { "type": "string" },
+          "attrs": { "type": "object" }
+        }
+      }
+    },
+    "suiteRun": {
+      "type": "object",
+      "required": ["suiteId", "runId"],
+      "properties": { "suiteId": { "type": "string" }, "runId": { "type": "string" } }
+    },
+    "purpose": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" },
+    "purposeInferred": { "type": "boolean" },
+    "ext": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": { "type": ["string", "number", "boolean", "null"] }
+      }
+    },
+    "extVersion": { "type": "string" },
+    "people": { "type": "array", "items": { "type": "object" } },
+    "kept": {
+      "type": "object",
+      "required": ["by", "at"],
+      "properties": { "by": { "type": "string" }, "at": { "type": "string", "format": "date-time" } }
+    },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "thumbhash": {
+      "description": "The poster's ThumbHash (https://evanw.github.io/thumbhash/) as standard base64: 5 to 25 bytes that decode to a blurry image with the poster's colours and proportions. Absent until a poster has been rendered, without posters, and on replays whose poster predates it; show a plain placeholder then.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{7,36}={0,2}$"
+    }
+  }
+}
