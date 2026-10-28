@@ -51,7 +51,6 @@ export function contrast(a: string, b: string) {
 
 /** Text token on background token pairs that the UI actually renders. */
 export const TEXT_PAIRS: Array<[string, string]> = [
-  // Destructive buttons (solid fill): the label at rest, hovered and pressed.
   ['--danger-solid-foreground', '--danger-solid'],
   ['--danger-solid-foreground', '--danger-solid-hover'],
   ['--danger-solid-foreground', '--danger-solid-pressed'],
