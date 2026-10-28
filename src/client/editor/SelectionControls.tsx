@@ -12,7 +12,19 @@ import {
 import { RadioCard, RadioGroup } from '@/components/ui/radio-group.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { SPEED_RATES, ZOOM_SCALES } from '../../shared/effects.ts';
-import { effectList, removeHighlight, type Selection, updateEffect, updateHighlight } from './state.ts';
+import { effectList, type EffectKind, removeHighlight, type Selection, updateEffect, updateHighlight } from './state.ts';
+
+type EffectSelection = { kind: EffectKind; id: string };
+
+const EFFECT_KINDS: readonly string[] = ['zoom', 'speed', 'blur', 'caption'];
+const isEffectSelection = (selection: Selection): selection is EffectSelection => !!selection && EFFECT_KINDS.includes(selection.kind);
+
+/** A zoom's scale or a speed-up's rate: the one number its inspector edits. */
+function settingOf(region: object) {
+  if ('scale' in region && typeof region.scale === 'number') return region.scale;
+  if ('rate' in region && typeof region.rate === 'number') return region.rate;
+  return undefined;
+}
 
 export function EffectControls({
   edits,
@@ -25,19 +37,18 @@ export function EffectControls({
   selection: Selection;
   change: (edits: ReplayEdits, select?: Selection) => void;
 }) {
-  if (!selection || selection.kind === 'range' || selection.kind === 'trim' || selection.kind === 'cut' || selection.kind === 'highlight')
-    return null;
-  const region = effectList(edits, selection.kind).find((item) => item.id === selection.id);
-  if (!region) return null;
+  if (!isEffectSelection(selection)) return null;
   const { kind, id } = selection;
-  if (kind === 'caption' && 'text' in region) {
+  const region = effectList(edits, kind).find((item) => item.id === id);
+  if (!region) return null;
+  if (kind === 'caption') {
+    if (!('text' in region)) return null;
     const onText = (text: string) => change(updateEffect(edits, kind, id, { text }), selection);
     return <CaptionField key={id} id="selection-caption-text" text={region.text} onChange={onText} />;
   }
-  if (kind !== 'zoom' && kind !== 'speed') return null;
+  const current = settingOf(region);
+  if (kind === 'blur' || current === undefined) return null;
   const field = kind === 'zoom' ? 'scale' : 'rate';
-  const current = 'scale' in region ? region.scale : 'rate' in region ? region.rate : undefined;
-  if (current === undefined) return null;
   const onPick = (value: number) => change(updateEffect(edits, kind, id, { [field]: value }), selection);
   return mobile ? (
     <EffectSettingMenu kind={kind} current={current} onPick={onPick} />
