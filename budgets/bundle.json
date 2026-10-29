@@ -203,9 +203,9 @@
       "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 6721,
-      "gzip": 2958,
-      "brotli": 2681
+      "raw": 8926,
+      "gzip": 3923,
+      "brotli": 3572
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
