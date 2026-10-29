@@ -325,7 +325,7 @@ export class ReplayController {
   /** The edge of the frame a caption up from `from` to `to` (replay ms) sits on, as the video export places it. */
   readonly captionEdge = (from: number, to: number): CaptionEdge => {
     this.pointer ??= cursorInput(this.events);
-    return captionEdge(this.pointer, this.events[0]?.timestamp ?? 0, this.pageHeight, from, to);
+    return captionEdge({ input: this.pointer, first: this.events[0]?.timestamp ?? 0, height: this.pageHeight }, { from, to });
   };
 
   readonly subscribeTime = (listener: Listener) => subscribe(this.timeListeners, listener);
