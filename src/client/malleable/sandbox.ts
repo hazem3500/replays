@@ -19,7 +19,7 @@ export function themeVars() {
   return vars;
 }
 
-export type SandboxMode = 'tab' | 'panel' | 'action';
+export type SandboxMode = 'tab' | 'panel' | 'action' | 'section' | 'track';
 
 export interface SandboxHandle {
   dispose(): void;
@@ -45,6 +45,7 @@ export function mountSandbox(options: {
   contribution: string;
   container: HTMLElement;
   context: ViewerPluginContext;
+  onMarkers?(value: unknown): void;
 }): SandboxHandle {
   const { plugin, mode, contribution, container, context } = options;
   if (activeFrames.size >= MAX_ACTIVE_FRAMES) {
@@ -59,7 +60,7 @@ export function mountSandbox(options: {
   iframe.title = `${plugin.manifest.name} (sandboxed plugin)`;
   iframe.dataset.testid = `sandbox-frame:${plugin.id}`;
   iframe.dataset.pluginId = plugin.id;
-  iframe.className = mode === 'action' ? 'malleable-frame malleable-frame-hidden' : 'malleable-frame';
+  iframe.className = mode === 'action' || mode === 'track' ? 'malleable-frame malleable-frame-hidden' : 'malleable-frame';
   iframe.src = `${appBase()}${SANDBOX_PATH}`;
 
   let port: MessagePort | undefined;
@@ -80,7 +81,7 @@ export function mountSandbox(options: {
     }
   }, START_TIMEOUT_MS);
   const actionTimer =
-    mode === 'action'
+    mode === 'action' || mode === 'track'
       ? setTimeout(() => {
           plugin.log('error', `the action did not finish in ${ACTION_TIMEOUT_MS / 1000} s and was stopped`);
           dispose();
@@ -108,8 +109,17 @@ export function mountSandbox(options: {
         return;
       }
       if (method === 'rendered') return;
+      if (method === 'markers' && mode === 'track') {
+        try {
+          options.onMarkers?.(params?.markers);
+        } catch (error) {
+          plugin.log('error', String(error));
+        }
+        dispose();
+        return;
+      }
       if (method === 'done') {
-        if (mode === 'action') dispose();
+        if (mode === 'action' || mode === 'track') dispose();
         return;
       }
       try {

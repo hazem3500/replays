@@ -34,10 +34,12 @@ Manifest:
     "permissions": [${Object.keys(CAPABILITIES)
       .map((name) => `"${name}"`)
       .join(', ')}],
-    "contributes": { "tabs": [{ "id": "main", "label": "Tab label" }], "panels": [...], "actions": [...] } }
+    "contributes": { "tabs": [{ "id": "main", "label": "Tab label" }], "panels": [...], "actions": [...], "contextSections": [...], "tracks": [...] } }
 
 Source:
   replays.tab(id, (el, ctx) => { ... })      // draws into el, the inspector tab with that id; may return a cleanup function
+  replays.section(id, (el, ctx) => { ... }) // same, inside the Context tab
+  replays.track(id, (ctx) => [ ... ])        // at most 500 { atMs, label, durationMs?, tone? }; marker clicks need playback:seek
   replays.panel(id, (el, ctx) => { ... })    // same, in the side drawer
   replays.action(id, async (ctx) => { ... }) // runs once when the person picks the More-menu entry
 

@@ -1,0 +1,24 @@
+{
+  "format": "replays-user-plugin/1",
+  "manifest": {
+    "format": "replays-user-plugin/1",
+    "id": "acme-sandbox",
+    "name": "Acme sandbox surfaces",
+    "permissions": ["replay:read", "playback:seek"],
+    "contributes": {
+      "contextSections": [
+        {
+          "id": "summary",
+          "label": "Acme sandbox summary"
+        }
+      ],
+      "tracks": [
+        {
+          "id": "errors",
+          "label": "Acme sandbox errors"
+        }
+      ]
+    }
+  },
+  "source": "replays.section('summary', (el, ctx) => { el.textContent = 'Sandboxed summary for ' + ctx.replay.meta.title; });\nreplays.track('errors', (ctx) => ctx.replay.console.filter((entry) => entry.level === 'error').map((entry) => ({ atMs: entry.at, label: entry.message.slice(0, 160), tone: 'error' })));"
+}

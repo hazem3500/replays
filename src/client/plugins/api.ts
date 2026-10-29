@@ -202,6 +202,8 @@ export interface TimelineTrackDefinition {
   order?: number;
   /** The track's markers for the open replay; called once per replay. A click on one seeks to its `atMs`. */
   markers(context: ViewerPluginContext): readonly TimelineMarker[] | Promise<readonly TimelineMarker[]>;
+  /** Overrides default seeking; sandbox adapters use this to enforce the broker on every marker activation. */
+  onSelect?(timeMs: number, context: ViewerPluginContext): void | Promise<void>;
 }
 
 export interface ContextSectionDefinition {

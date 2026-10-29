@@ -126,3 +126,5 @@ watchdog configuration are additive. The beta malleable scope default changes to
 workspace publishing now requires an administrator role and per-person acceptance before code
 runs. The malleable feature flag remains off by default. API generations remain 1; a future
 flag-default change requires an announced minor release as described in malleability.md.
+
+The additive sandbox viewer surface contract includes manifest `contextSections` and `tracks`, runtime `replays.section` and `replays.track`, and the host adapter's optional `TimelineTrackDefinition.onSelect`. The existing user-plugin format version remains 1; older hosts reject unknown contribution fields rather than running them with weaker permissions.
