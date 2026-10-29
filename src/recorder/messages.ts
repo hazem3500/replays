@@ -1,57 +1,134 @@
-/** Recorder UI copy. Every string can be replaced (e.g. for translations). */
+import type { PrivacyFacts, RecordingSummary } from './types.ts';
+import type { IssueReportReceipt, IssueUploadErrorDetails } from './upload.ts';
+
+/** A failed start or upload, as handed to the `failed` and `startFailed` messages. */
+export type RecorderMessageError = Error & IssueUploadErrorDetails;
+
+/**
+ * Every string the built-in recorder UI and the headless store show, including
+ * accessible names, tooltips and live announcements. Data-bearing messages are
+ * functions so hosts can pluralise and reorder with their own i18n.
+ */
 export type RecorderMessages = {
   consentTitle: string;
-  /** `{minutes}` is replaced with the time limit. */
-  consentBody: string;
-  consentPrivacy: string;
+  consentBody: (params: {
+    /** The time limit in whole minutes, at least 1. */
+    minutes: number;
+    maxDurationMs: number;
+    /** `maxDurationMs` through `format.duration`. */
+    limit: string;
+  }) => string;
+  /** `privacy` is absent when a host calls the UI without capture facts. */
+  consentPrivacy: (params: { mode: 'masked' | 'visible'; privacy?: PrivacyFacts }) => string;
   consentAccept: string;
   consentDecline: string;
+  /** Indicator label, the indicator's accessible name and the start announcement. */
   recording: string;
+  /** Accessible name and tooltip of the Stop control. */
   stop: string;
+  /** Announced once when 30 seconds remain. */
+  warningSoon: (params: { seconds: number }) => string;
+  /** Announced once when 10 seconds remain. */
+  warningFinal: (params: { seconds: number }) => string;
   reviewTitle: string;
-  /** `{duration}` is replaced with the recording length. */
-  reviewBody: string;
+  reviewBody: (params: {
+    summary: RecordingSummary;
+    /** `summary.durationMs` through `format.duration`. */
+    duration: string;
+    /** `summary.approxBytes` through `format.bytes`. */
+    size: string;
+  }) => string;
   noteLabel: string;
   send: string;
   discard: string;
-  /** `{reference}` is replaced with the replay id. */
-  sent: string;
-  failed: string;
-  close: string;
-  /** Shown while the recording uploads. */
   uploading: string;
-  /** Link to the replay, when the transport returns one. */
-  openReplay: string;
+  sent: (params: {
+    /** The receipt's reference, or its replay id. */
+    reference: string;
+    receipt: IssueReportReceipt;
+  }) => string;
+  /** Upload failure. An error's own `userMessage` takes precedence. */
+  failed: (params: { error: RecorderMessageError; canRetry: boolean }) => string;
+  /** Start failure, as reported by `selectError`. An error's own `userMessage` takes precedence. */
+  startFailed: (params: { error: RecorderMessageError }) => string;
   retry: string;
-  copied?: string;
-  copyFailed?: string;
-  copyLink?: string;
-  warningSoon?: string;
-  warningFinal?: string;
+  copyLink: string;
+  copied: string;
+  copyFailed: string;
+  /** Accessible name and tooltip of the dismiss control. */
+  close: string;
 };
 
-export const DEFAULT_MESSAGES: RecorderMessages = {
+/**
+ * Input for the `messages` option. A data-bearing key also accepts a template
+ * string whose `{param}` placeholders are filled from its number and string
+ * params, so overrides written before functions, such as
+ * `consentBody: 'Up to {minutes} min'`, keep working.
+ */
+export type RecorderMessageOverrides = {
+  [K in keyof RecorderMessages]?: RecorderMessages[K] | string;
+} & {
+  /** @deprecated Never rendered; ignored. */
+  openReplay?: string;
+};
+
+const privacySentence = ({ captures, reviewRequired }: PrivacyFacts) =>
+  [
+    captures.pageText ? 'Visible page text is recorded.' : 'Page text is masked.',
+    captures.inputs ? 'Ordinary inputs are recorded; passwords stay masked.' : 'Inputs are masked.',
+    captures.media ? 'Media may be recorded.' : 'Media is blocked.',
+    reviewRequired ? 'Review before sending.' : 'Sent when you stop.',
+  ].join(' ');
+
+/** English copy, without em or en dashes. */
+export const defaultRecorderMessages: RecorderMessages = {
   consentTitle: 'Record this tab?',
-  consentBody: 'Up to {minutes} minutes. Stop whenever you like.',
-  consentPrivacy: 'Page text and inputs are masked. Review before sending.',
+  consentBody: ({ limit }) => `Up to ${limit}. Stop whenever you like.`,
+  consentPrivacy: ({ mode, privacy }) => {
+    if (privacy) return privacySentence(privacy);
+    return mode === 'visible'
+      ? 'Visible page content and ordinary typed values will be recorded. Passwords and hidden fields stay masked. Nothing is sent until you review it.'
+      : 'Page text and inputs are masked. Review before sending.';
+  },
   consentAccept: 'Start recording',
   consentDecline: 'Not now',
   recording: 'Recording',
   stop: 'Stop',
+  warningSoon: ({ seconds }) => `${seconds} seconds left`,
+  warningFinal: ({ seconds }) => `${seconds} seconds left`,
   reviewTitle: 'Send recording?',
-  reviewBody: 'Duration: {duration}.',
+  reviewBody: ({ duration }) => `Duration: ${duration}.`,
   noteLabel: 'Add a note (optional)',
   send: 'Send recording',
   discard: 'Discard',
-  sent: 'Recording sent',
-  failed: "Couldn't send recording",
-  close: 'Close',
   uploading: 'Sending…',
-  openReplay: 'Open replay',
+  sent: () => 'Recording sent',
+  failed: () => "Couldn't send recording",
+  startFailed: () => "Couldn't start recording",
   retry: 'Retry',
+  copyLink: 'Copy link',
   copied: 'Copied',
   copyFailed: 'Could not copy',
-  copyLink: 'Copy link',
-  warningSoon: '30 seconds left',
-  warningFinal: '10 seconds left',
+  close: 'Close',
 };
+
+/** @deprecated Use `defaultRecorderMessages`. */
+export const DEFAULT_MESSAGES: RecorderMessages = defaultRecorderMessages;
+
+const fill = (template: string, params: object) =>
+  template.replace(/\{(\w+)\}/g, (match, key: string) => {
+    const value: unknown = Reflect.get(params, key);
+    return typeof value === 'string' || typeof value === 'number' ? String(value) : match;
+  });
+
+/** The defaults with `overrides` applied; template strings become functions. */
+export function resolveRecorderMessages(overrides: RecorderMessageOverrides = {}): RecorderMessages {
+  const messages: Record<string, unknown> = { ...defaultRecorderMessages };
+  for (const [key, fallback] of Object.entries(defaultRecorderMessages)) {
+    const value: unknown = Reflect.get(overrides, key);
+    if (typeof value === 'string' && typeof fallback === 'function') messages[key] = (params: object) => fill(value, params);
+    else if (typeof value === typeof fallback) messages[key] = value;
+  }
+  // invariant: only keys of defaultRecorderMessages are written, each with its default's kind.
+  return messages as RecorderMessages;
+}

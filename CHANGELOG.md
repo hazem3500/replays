@@ -17,6 +17,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Recorder messages and formatting** ([docs/recorder.md](docs/recorder.md#messages-and-formatting)): the recorder's
+  `messages` option covers every string the default UI, the step kit and `selectError` show, including accessible names,
+  tooltips, live announcements, copy-link feedback and the privacy notice. `RecorderMessages` requires every key;
+  data-bearing keys (`consentBody`, `consentPrivacy`, `warningSoon`, `warningFinal`, `reviewBody`, `sent`, `failed`,
+  `startFailed`) are functions of typed params for host i18n. New `defaultRecorderMessages`, `resolveRecorderMessages`,
+  `RecorderMessageOverrides`, `RecorderMessageError`, a `locale` option and `format: { elapsed, duration, bytes }` hooks
+  with Intl defaults (`createRecorderFormat`, `RecorderFormat`); timers take `format.elapsed` too. Existing string
+  overrides keep working: a `{param}` template string is still accepted for every data-bearing key.
 - Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
   hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
   inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
@@ -245,6 +253,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- Recorder: `RecorderMessages` keys are all required and data-bearing keys are typed as functions, so code that builds a
+  full `RecorderMessages` object or reads `DEFAULT_MESSAGES.consentBody` as a string needs updating; `messages` overrides
+  are unaffected. The review dialog writes the duration in words (`Duration: 1 minute 13 seconds.`), and the consent
+  limit says `Up to 1 minute` rather than `Up to 1 minutes`. A start failure in `selectError` uses the new `startFailed`.
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
@@ -287,6 +299,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Deprecated
 
+- Recorder `DEFAULT_MESSAGES` is an alias of `defaultRecorderMessages`, and the never-rendered `openReplay` message is
+  accepted and ignored, for at least two minor releases and 90 days.
 - **Purposes are now profiles.** Everything that said purpose says profile: the config key `profiles`, `api.profile`,
   `meta.profile`, `summary.profile`/`profileInferred`, `ProfileConfig`/`ProfileInfo`/`ProfileDefinition`/`ProfileInferInput`,
   `ProfileCatalog`/`createProfileCatalog`, `--profile`, `?profile=`, `RETENTION_PROFILE_<ID>_DAYS`, `x-replay-profile`,

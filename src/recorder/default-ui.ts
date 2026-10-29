@@ -2,10 +2,11 @@ import { updateText, cleanupText } from './text-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
 import type { IssueReportReceipt, IssueUploadErrorDetails } from './upload.ts';
 
-import { DEFAULT_MESSAGES, type RecorderMessages } from './messages.ts';
-import { formatDuration } from './format.ts';
+import { resolveRecorderMessages, type RecorderMessageOverrides } from './messages.ts';
+import { createRecorderFormat, type RecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
-export { DEFAULT_MESSAGES, type RecorderMessages, formatDuration };
+export * from './messages.ts';
+export { createRecorderFormat, formatDuration, type RecorderFormat } from './format.ts';
 
 /** CSS colors/fonts/radii. Omitted values inherit Replays host tokens. */
 export type RecorderTheme = Partial<
@@ -47,7 +48,12 @@ export type CompletionOptions = {
   render?: (container: HTMLElement, context: CompletionContext) => void | (() => void);
 };
 export type DefaultUiOptions = {
-  messages?: Partial<RecorderMessages>;
+  /** Replace any of `defaultRecorderMessages`; see `RecorderMessages`. */
+  messages?: RecorderMessageOverrides;
+  /** BCP 47 locale for the default `format` hooks. Default `en`. */
+  locale?: string;
+  /** Replace how elapsed time, durations and sizes are written. */
+  format?: Partial<RecorderFormat>;
   theme?: 'dark' | 'light' | RecorderTheme;
   /** Must reflect capture policy when the host supplies its own UI. */
   privacyMode?: 'masked' | 'visible';
@@ -88,6 +94,7 @@ button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px sol
 .pill button { min-height: 28px; padding: 2px 5px; border: 0; border-radius: 12px; background: transparent; color: var(--r-secondary); }
 .pill button:hover { background: var(--r-hover); color: var(--r-fg); }
 .pill .icon-button { width: 28px; padding: 0; }
+.close-icon::before { content: "\\00d7"; }
 .pill button.primary { color: var(--r-primary); }
 .stop-icon { width: 8px; height: 8px; flex-shrink: 0; border-radius: 2px; background: currentColor; }
 .pill a { color: var(--r-primary); text-decoration: none; white-space: nowrap; }
@@ -97,10 +104,6 @@ button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px sol
 @keyframes reveal { from { opacity: .4; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes pulse { 50% { opacity: .35; } }
 `;
-
-function format(template: string, values: Record<string, string>) {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
-}
 
 /**
  * The built-in, framework-free UI: a consent dialog, a recording pill with a
@@ -135,16 +138,9 @@ const link = (label: string, href: string) => {
 export function createDefaultUi(
   options: DefaultUiOptions = {},
 ): RecorderUi & Required<Pick<RecorderUi, 'showUploading' | 'showResult' | 'dismiss'>> {
-  const messages = {
-    ...DEFAULT_MESSAGES,
-    ...(options.privacyMode === 'visible'
-      ? {
-          consentPrivacy:
-            'Visible page content and ordinary typed values will be recorded. Passwords and hidden fields stay masked. Nothing is sent until you review it.',
-        }
-      : {}),
-    ...options.messages,
-  };
+  const messages = resolveRecorderMessages(options.messages);
+  const format = createRecorderFormat(options.locale, options.format);
+  const mode = options.privacyMode ?? 'masked';
   const zIndex = String(options.zIndex ?? 2_147_483_000);
 
   const mount = () => {
@@ -337,16 +333,13 @@ export function createDefaultUi(
             title: messages.consentTitle,
             body: [
               element('p', {}, [
-                format(messages.consentBody, {
-                  minutes: String(Math.max(1, Math.round(maxDurationMs / 60_000))),
+                messages.consentBody({
+                  minutes: Math.max(1, Math.round(maxDurationMs / 60_000)),
+                  maxDurationMs,
+                  limit: format.duration(maxDurationMs),
                 }),
               ]),
-              element('p', {}, [
-                options.messages?.consentPrivacy ??
-                  (privacy
-                    ? `${privacy.captures.pageText ? 'Visible page text is recorded.' : 'Page text is masked.'} ${privacy.captures.inputs ? 'Ordinary inputs are recorded; passwords stay masked.' : 'Inputs are masked.'} ${privacy.captures.media ? 'Media may be recorded.' : 'Media is blocked.'} ${privacy.reviewRequired ? 'Review before sending.' : 'Sent when you stop.'}`
-                    : messages.consentPrivacy),
-              ]),
+              element('p', {}, [messages.consentPrivacy(privacy ? { mode, privacy } : { mode })]),
               element('div', { className: 'actions' }, [decline, accept]),
             ],
             // Declining is the safe default for an accidental Enter.
@@ -363,7 +356,7 @@ export function createDefaultUi(
       label.className = 'message recording-label';
       updateText(label, messages.recording);
       const time = element('span', { className: 'time' });
-      updateText(time, formatDuration(Date.now() - startedAt));
+      updateText(time, format.elapsed(Date.now() - startedAt));
       const dot = element('span', { className: 'dot' });
       dot.setAttribute('aria-hidden', 'true');
       const icon = element('span', { className: 'stop-icon' });
@@ -378,12 +371,11 @@ export function createDefaultUi(
       settleSurface();
       let warning = 'none';
       timer = setInterval(() => {
-        updateText(time, formatDuration(Date.now() - startedAt));
+        updateText(time, format.elapsed(Date.now() - startedAt));
         const remaining = maxDurationMs - (Date.now() - startedAt);
         const next = remaining <= 10000 ? 'final' : remaining <= 30000 ? 'soon' : 'none';
         if (next !== warning && next !== 'none' && floating)
-          floating.live.textContent =
-            next === 'final' ? (messages.warningFinal ?? '10 seconds left') : (messages.warningSoon ?? '30 seconds left');
+          floating.live.textContent = next === 'final' ? messages.warningFinal({ seconds: 10 }) : messages.warningSoon({ seconds: 30 });
         warning = next;
       }, 1000);
       return () => {
@@ -416,8 +408,10 @@ export function createDefaultUi(
             title: messages.reviewTitle,
             body: [
               element('p', {}, [
-                format(messages.reviewBody, {
-                  duration: formatDuration(summary.durationMs),
+                messages.reviewBody({
+                  summary,
+                  duration: format.duration(summary.durationMs),
+                  size: format.bytes(summary.approxBytes),
                 }),
               ]),
               element('label', { htmlFor: 'recorder-note' }, [messages.noteLabel]),
@@ -446,11 +440,13 @@ export function createDefaultUi(
       const error = result.status === 'error' ? (result.error as Error & IssueUploadErrorDetails) : undefined;
       const resolveValue = (value: ReceiptValue) =>
         typeof value === 'function' && receipt ? value(receipt) : typeof value === 'string' ? value : '';
+      const failedText = () =>
+        result.status === 'error' && error ? (error.userMessage ?? messages.failed({ error, canRetry: Boolean(result.retry) })) : '';
       const text = receipt
         ? completion?.message !== undefined
           ? resolveValue(completion.message)
-          : format(messages.sent, { reference: receipt.reference ?? receipt.replayId })
-        : (error?.userMessage ?? messages.failed);
+          : messages.sent({ reference: receipt.reference ?? receipt.replayId, receipt })
+        : failedText();
       const current = surface(receipt ? 'complete' : 'error', text);
       const ownGeneration = generation;
       const feedback = element('span', { className: 'sr-only' });
@@ -464,9 +460,9 @@ export function createDefaultUi(
       const copy = async (value?: string, control?: HTMLElement) => {
         try {
           await navigator.clipboard.writeText(value ?? receipt?.url ?? receipt?.reference ?? receipt?.replayId ?? '');
-          announce(messages.copied ?? 'Copied', control);
+          announce(messages.copied, control);
         } catch {
-          announce(messages.copyFailed ?? 'Could not copy', control);
+          announce(messages.copyFailed, control);
         }
       };
       const context: CompletionContext = {
@@ -488,7 +484,7 @@ export function createDefaultUi(
           const actions: readonly CompletionAction[] =
             completion?.actions ??
             (receipt.url && safeHref(receipt.url)
-              ? [{ id: 'copy-link', label: messages.copyLink ?? 'Copy link', kind: 'copy', value: safeHref(receipt.url)! }]
+              ? [{ id: 'copy-link', label: messages.copyLink, kind: 'copy', value: safeHref(receipt.url)! }]
               : []);
           for (const action of actions) {
             let control: HTMLElement | undefined;
@@ -524,7 +520,9 @@ export function createDefaultUi(
         }
         current.content.append(feedback);
       }
-      const close = element('button', { type: 'button', className: 'icon-button', title: messages.close, onclick: dismiss }, ['×']);
+      const close = element('button', { type: 'button', className: 'icon-button', title: messages.close, onclick: dismiss }, [
+        element('span', { className: 'close-icon' }),
+      ]);
       close.dataset.recorderAction = 'dismiss';
       close.setAttribute('aria-label', messages.close);
       controls.append(close);
