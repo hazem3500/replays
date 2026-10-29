@@ -12,7 +12,6 @@ import { useWindowKeydown } from '../hooks/use-window-keydown.ts';
 import { CompareStage } from './CompareStage.tsx';
 import type { TileCommands } from './CompareTile.tsx';
 import { LayoutSwitch } from './LayoutSwitch.tsx';
-import { PerformanceComparison } from './PerformanceComparison.tsx';
 import { ScopeSwitch } from './ScopeSwitch.tsx';
 import type { CompareLayout } from './compare-search.ts';
 import { type CompareTile, compareTiles, isLoaded, type LoadedTile } from './tiles.ts';
@@ -30,7 +29,7 @@ type ViewerProps = ComponentProps<typeof Viewer>;
 /** Viewer props the page itself decides (a suite's run title, status, menus); the comparison owns the rest. */
 export type ComparePageProps = Omit<
   ViewerProps,
-  'bundle' | 'player' | 'stage' | 'headerActions' | 'inspectorScope' | 'performanceExtra' | 'comparing' | 'onCompareWith'
+  'bundle' | 'player' | 'stage' | 'headerActions' | 'inspectorScope' | 'inspectorPeers' | 'comparing' | 'onCompareWith'
 >;
 
 export interface CompareViewerProps {
@@ -116,6 +115,8 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
     if (next) onFocus(next.id);
   });
 
+  const peers = ready.filter((tile) => tile.id !== focused.id).map(({ id, name, colour, label, bundle }) => ({ id, name, colour, label, bundle }));
+
   const commands: TileCommands = {
     onFocus,
     onSpotlight: (id) => {
@@ -137,7 +138,7 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
         stage={<CompareStage session={session} tiles={tiles} layout={layout} focus={focused.id} mobile={mobile} commands={commands} />}
         headerActions={<LayoutSwitch value={layout} onChange={onLayout} phone={mobile} />}
         inspectorScope={mobile ? undefined : <ScopeSwitch tiles={tiles} focus={focused.id} onFocus={onFocus} />}
-        performanceExtra={<PerformanceComparison tiles={tiles} focus={focused.id} onFocus={onFocus} />}
+        inspectorPeers={peers}
         comparing={tiles.map((tile) => tile.id)}
         onCompareWith={compare.onAdd}
       />

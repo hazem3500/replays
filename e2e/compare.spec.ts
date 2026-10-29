@@ -25,8 +25,8 @@ test('a replay compares with another in its own viewer, each tile under its own 
   await openReplay(page, compareUrl());
   const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
   await expect(tiles).toHaveCount(2);
-  await expect(tiles.nth(0).locator('.ct-label')).toHaveText(await titleOf(page, 'demo-shop'));
-  await expect(tiles.nth(1).locator('.ct-label')).toHaveText(await titleOf(page, 'human-demo'));
+  await expect(tiles.nth(0).locator('.ct-name')).toHaveText(await titleOf(page, 'demo-shop'));
+  await expect(tiles.nth(1).locator('.ct-name')).toHaveText(await titleOf(page, 'human-demo'));
   await expect(page.getByRole('group', { name: 'Playback controls' })).toHaveCount(1);
   await expect(page.getByRole('tablist', { name: 'Replay diagnostics' })).toBeVisible();
 });
@@ -34,12 +34,16 @@ test('a replay compares with another in its own viewer, each tile under its own 
 test('inspecting a tile scopes the title, inspector and URL to it', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, compareUrl());
+  const own = await titleOf(page, 'demo-shop');
   const other = await titleOf(page, 'human-demo');
-  await page.getByRole('button', { name: `Inspect B: ${other}` }).click();
+  await page.getByRole('button', { name: `Show ${other} in the panels` }).click();
   await expect(page).toHaveURL(/focus=human-demo/);
   await expect(page.getByRole('heading', { level: 1, name: other })).toBeVisible();
-  await expect(page.getByTestId('compare-scope').getByRole('radio', { checked: true })).toHaveAttribute('data-scope', 'human-demo');
-  await page.getByTestId('compare-scope').getByRole('radio', { name: /^A: / }).click();
+  // why: two long titles do not fit as segments, so the scope is one menu naming the recording on show.
+  const scope = page.getByTestId('compare-scope');
+  await expect(scope).toContainText(other);
+  await scope.getByRole('button', { name: `Showing ${other}. Choose another recording` }).click();
+  await page.getByRole('menuitemradio', { name: own }).click();
   await expect(page).not.toHaveURL(/focus=/);
 });
 
@@ -102,4 +106,28 @@ test('phones swipe through the compared recordings, the one in view in focus', a
   await stage.evaluate((element) => element.scrollTo({ left: element.clientWidth, behavior: 'instant' }));
   await expect(page).toHaveURL(/focus=human-demo/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+});
+
+/** Every tile on show lies inside the stage, and the stage ends where the steps rail begins. */
+async function tilesClearOfTheRail(page: Page) {
+  return page.evaluate(() => {
+    const stage = document.querySelector('[data-testid="compare-stage"]')?.getBoundingClientRect();
+    const rail = document.querySelector('.timeline-panel')?.getBoundingClientRect();
+    if (!stage || !rail) return false;
+    const tiles = [...document.querySelectorAll('.ct-tile:not([data-role="hidden"])')].map((tile) => tile.getBoundingClientRect());
+    return stage.right <= rail.left + 1 && tiles.every((tile) => tile.left >= stage.left - 1 && tile.right <= stage.right + 1);
+  });
+}
+
+test('tiles stay inside the stage, clear of the steps rail, at every width and layout', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, compareUrl());
+  const layouts = page.getByTestId('layout-switch');
+  for (const width of [1280, 1040, 880]) {
+    await page.setViewportSize({ width, height: 800 });
+    for (const layout of ['Spotlight', 'Grid']) {
+      await layouts.getByRole('radio', { name: layout }).click();
+      await expect.poll(() => tilesClearOfTheRail(page)).toBe(true);
+    }
+  }
 });

@@ -176,10 +176,11 @@ const TAB_SHORTCUTS: Partial<Record<BuiltinInspectorTab, ShortcutAction>> = {
 
 const TABS: BuiltinInspectorTab[] = ['console', 'network', 'performance', 'context'];
 
-/** Another recording being compared (compare mode): its letter, title and bundle as it plays. */
+/** Another recording being compared (compare mode): its short name, colour (1 to 9), title and bundle as it plays. */
 export interface InspectorPeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   label: string;
   bundle: ReplayBundle;
 }
@@ -232,11 +233,17 @@ export const Inspector = memo(function Inspector({
   const peers = compare?.peers ?? [];
   const networkPeers: NetworkPeer[] = peers.map((peer) => ({
     id: peer.id,
-    letter: peer.letter,
+    name: peer.name,
+    colour: peer.colour,
     label: peer.label,
     rows: buildNetworkRows(peer.bundle),
   }));
-  const performancePeers: PerformancePeer[] = peers.map((peer) => ({ id: peer.id, letter: peer.letter, vitals: vitalsOf(peer.bundle) }));
+  const performancePeers: PerformancePeer[] = peers.map((peer) => ({
+    id: peer.id,
+    name: peer.name,
+    colour: peer.colour,
+    vitals: vitalsOf(peer.bundle),
+  }));
   const networkTrack = useMemo(() => sortByAt(networkRows.map((row) => ({ ...row.entry, at: row.at }))), [networkRows]);
   const performanceTrack = useMemo(() => sortByAt(performanceModel.signals), [performanceModel]);
   // Once playback reaches the end every entry is in view (some trail the last DOM event). At the very start nothing

@@ -10,6 +10,7 @@ import { plural } from '../plural.ts';
 import type { Fidelity } from './clock.ts';
 import type { Placement } from './layout.ts';
 import type { CompareSession } from './session.ts';
+import { Identity } from './Identity.tsx';
 import type { CompareTile } from './tiles.ts';
 
 const TILE_STRINGS = {
@@ -20,7 +21,7 @@ const TILE_STRINGS = {
   grid: 'Back to grid',
   open: 'Open on its own',
   remove: 'Remove from comparison',
-  inspect: (letter: string, label: string) => `Inspect ${letter}: ${label}`,
+  inspect: (name: string) => `Show ${name} in the panels`,
   playPause: 'Play or pause',
 } as const;
 
@@ -42,10 +43,10 @@ function placementStyle(placement: Placement | undefined): CSSProperties | undef
 
 function tileName(tile: CompareTile, ended: boolean) {
   const errors = tile.errors ? `, ${plural(tile.errors, 'error')}` : '';
-  return `${tile.letter}: ${tile.label}${errors}${ended ? ', ended' : ''}`;
+  return `${tile.label}${errors}${ended ? ', ended' : ''}`;
 }
 
-/** One compared recording: its picture on the shared clock, its letter and label, and a few hover actions. */
+/** One compared recording: its picture on the shared clock, its name and colour, and a few hover actions. */
 export function CompareTileView({
   session,
   tile,
@@ -96,7 +97,7 @@ export function CompareTileView({
       <button
         type="button"
         className="ct-hit"
-        aria-label={single ? TILE_STRINGS.playPause : TILE_STRINGS.inspect(tile.letter, tile.label)}
+        aria-label={single ? TILE_STRINGS.playPause : TILE_STRINGS.inspect(tile.name)}
         aria-pressed={single ? undefined : focused}
         onClick={onHit}
         onDoubleClick={onSpotlight}
@@ -121,8 +122,7 @@ function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
         </span>
       ) : null}
       <footer className="ct-nametag" aria-hidden="true">
-        <span className="ct-letter">{tile.letter}</span>
-        <span className="ct-label">{tile.label}</span>
+        <Identity tile={tile} />
         {tile.errors ? <span className="ct-errors">{tile.errors}</span> : null}
       </footer>
     </>
@@ -146,7 +146,7 @@ function TileActions({
   // why: the link carries the moment it is opened at, not the moment it was rendered at.
   const here = () => formatSeconds(Math.min(session.clock.getTime(), tile.bundle?.meta.duration ?? 0));
   return (
-    <div className="ct-actions" role="toolbar" aria-label={`${tile.letter}: ${tile.label}`}>
+    <div className="ct-actions" role="toolbar" aria-label={tile.label}>
       {alone ? null : (
         <Hint label={spotlightLabel} side="bottom">
           <button
