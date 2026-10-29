@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import { apiUrl } from './api/fetch.ts';
+import { pageMeta } from './page-meta.ts';
 
 export class SignInError extends Error {
   readonly status = 401;
@@ -12,8 +13,7 @@ export class SignInError extends Error {
 
 /** Available before any authenticated API fetch, including a viewer served by a public CDN. */
 export function signInPath() {
-  if (typeof document === 'undefined') return undefined;
-  const path = document.querySelector<HTMLMetaElement>('meta[name="app-sign-in"]')?.content;
+  const path = pageMeta('app-sign-in');
   return path?.startsWith('/') && !path.startsWith('//') && !/[\\?#]/.test(path) ? path : undefined;
 }
 
