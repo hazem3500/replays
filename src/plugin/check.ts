@@ -8,6 +8,7 @@ import { assertReplayBundle } from '../shared/replay.ts';
 import { parsePluginFile } from '../shared/malleable.ts';
 import { isRecord } from '../shared/plugin-validation.ts';
 import { checkBrowser } from './check-browser-host.ts';
+import { toNodeAuthAdapter } from '../server/auth/web.ts';
 import type { FakeRequestInit } from '../server/testing/auth.ts';
 import type { PluginRegistry } from './registry.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
@@ -206,7 +207,7 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
     const authRequest = options.request ? parseAuthFixture(JSON.parse(await readFile(options.request, 'utf8'))) : {};
     for (const [name, registration] of registry.auth) {
       const adapter = await registration.value(env);
-      const identity = await adapter.authenticate(fakeRequest(authRequest));
+      const identity = await toNodeAuthAdapter(adapter).authenticate(fakeRequest(authRequest));
       describeAuthAdapter(
         name,
         {
