@@ -119,7 +119,7 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6582,
-      "gzip": 3180,
+      "gzip": 3179,
       "brotli": 2796
     },
     "dist/client/assets/features-HASH.js": {
