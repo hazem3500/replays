@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 462508,
-      "gzip": 119070,
-      "brotli": 96945
+      "raw": 462847,
+      "gzip": 119370,
+      "brotli": 97169
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
       "gzip": 981,
-      "brotli": 848
+      "brotli": 847
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -115,7 +115,7 @@
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
       "gzip": 9503,
-      "brotli": 8552
+      "brotli": 8562
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6582,
@@ -125,7 +125,7 @@
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
       "gzip": 453,
-      "brotli": 407
+      "brotli": 406
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 721,
@@ -160,7 +160,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 994149,
       "gzip": 310973,
-      "brotli": 257069
+      "brotli": 257225
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -195,7 +195,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
       "gzip": 69476,
-      "brotli": 59853
+      "brotli": 59789
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1349,
@@ -205,12 +205,12 @@
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
       "gzip": 3989,
-      "brotli": 3622
+      "brotli": 3625
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 1022,
+      "raw": 982,
       "gzip": 608,
-      "brotli": 585
+      "brotli": 557
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 617
+      "brotli": 619
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -279,7 +279,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60104,
-      "gzip": 21487,
+      "gzip": 21536,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
-      "raw": 312907,
-      "gzip": 83012,
-      "brotli": 67822
+    "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs": {
+      "raw": 312691,
+      "gzip": 83253,
+      "brotli": 68044
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -858,16 +858,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
-      "file": "dist/client/assets/edits-HASH.js",
-      "cap": {
-        "raw": 27331,
-        "gzip": 9503,
-        "brotli": 8552
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
       "file": "dist/client/assets/feature-HASH.js",
       "cap": {
         "raw": 25287,
@@ -1136,39 +1126,11 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 617
-      },
-      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size; its Brotli size moves with the compare chunk's new hash (617 against 606 on Boat). Replaces #144's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/167"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 240032,
         "gzip": 81560,
         "brotli": 68365
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
-      "file": "dist/client/assets/render-HASH.js",
-      "cap": {
-        "raw": 9060,
-        "gzip": 3989,
-        "brotli": 3622
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/155"
@@ -1242,16 +1204,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60104,
-        "gzip": 21487,
-        "brotli": 18749
-      },
-      "reason": "No source change in the viewer: the main chunk's new hash in its imports compresses 11 B larger in gzip (raw -5 B, brotli -1 B). Replaces #167's allowance, keeping its raw and brotli caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 266630,
@@ -1284,22 +1236,72 @@
     {
       "file": "dist/cli/cli.mjs",
       "cap": {
-        "raw": 462508,
-        "gzip": 119070,
-        "brotli": 96945
+        "raw": 462847,
+        "gzip": 119370,
+        "brotli": 97169
       },
-      "pr": "https://github.com/hazem3500/replays/pull/164",
-      "reason": "Splitting ReplayStore into src/server/store/* modules adds module and class structure to the unminified CLI bundle (migrate-cli bundles the store); measured on Boat against main 0e7a3fd: main 458431/117681/95827, head 462508/119070/96945 (+4077 B raw, +1389 B gzip, +1118 B brotli). Replaces #130's allowance for this file."
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The CLI bundles the shared edit validator, now its own module with named check helpers instead of casts; measured on Boat against main 888a8b3 caps: raw 462508→462847 (+339 B), gzip 119070→119370 (+300 B), brotli 96945→97169 (+224 B). Replaces #164's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
+      "file": "dist/client/assets/edits-HASH.js",
       "cap": {
-        "raw": 312907,
-        "gzip": 83012,
-        "brotli": 67822
+        "raw": 27331,
+        "gzip": 9503,
+        "brotli": 8562
       },
-      "pr": "https://github.com/hazem3500/replays/pull/170",
-      "reason": "Splitting app.ts adds src/server/app/* and src/server/http/{send,serve-file,fail}.ts to the shared server chunk, so its source identity changes; measured on Boat against main: main 310977/81843/67134 (context.schema.json-06e184308ebe.mjs), head 312907/83012/67822 (+1930 B raw, +1169 B gzip, +688 B brotli). Replaces the previous entry for this chunk."
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 994149,
+        "gzip": 310973,
+        "brotli": 257225
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The shared edits predicates the main bundle imports moved into edit-list.ts; measured on Boat against main 888a8b3 caps: brotli 257069→257225 (+156 B). Replaces #174's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 9060,
+        "gzip": 3989,
+        "brotli": 3625
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Hash drift: the render page imports the shared edits chunk, whose module layout changed; measured on Boat against main 888a8b3 caps: brotli 3622→3625 (+3 B). Replaces #155's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1124,
+        "gzip": 682,
+        "brotli": 619
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Hash drift: its imported chunk names change with the shared edits module split; measured on Boat against main 888a8b3 caps: brotli 617→619 (+2 B). Replaces #167's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 60104,
+        "gzip": 21536,
+        "brotli": 18749
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The viewer imports editTimeline and applyEdits from their split shared modules; measured on Boat against main 888a8b3 caps: gzip 21487→21536 (+49 B). Replaces #174's allowance for this file."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs",
+      "cap": {
+        "raw": 312691,
+        "gzip": 83253,
+        "brotli": 68044
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The CLI and server share the edit validator; with edits split into list, timeline and validation modules the shared server chunk gets a new source identity; measured on Boat against main: main 312907/83012/67822 (context.schema.json-09ab4a0ff1bb.mjs), head 312691/83253/68044 (-216 B raw, +241 B gzip, +222 B brotli). Replaces the previous entry for this chunk."
     }
   ]
 }
