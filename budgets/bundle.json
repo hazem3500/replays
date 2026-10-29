@@ -60,7 +60,7 @@
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
       "gzip": 1253,
-      "brotli": 1138
+      "brotli": 1139
     },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
@@ -155,12 +155,12 @@
     "dist/client/assets/main-HASH.css": {
       "raw": 266630,
       "gzip": 45795,
-      "brotli": 37918
+      "brotli": 37919
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 994149,
       "gzip": 310973,
-      "brotli": 257069
+      "brotli": 257199
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -500,7 +500,7 @@
     "initial/index.html/css": {
       "raw": 266630,
       "gzip": 45795,
-      "brotli": 37918
+      "brotli": 37919
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -730,12 +730,10 @@
     {
       "file": "dist/client/assets/CommentRowsSource-HASH.js",
       "cap": {
-        "raw": 2453,
-        "gzip": 1282,
-        "brotli": 1169
+        "brotli": 1139
       },
-      "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
+      "reason": "Baseline correction, no source change: #168's focus-ring fix was measured against a main without #174, so together they exceed the brotli cap from #78. Measured on Boat and in CI at main 1bc31f4f: brotli 1139 B (cap 1138 B). Replaces #78's entry; raw and gzip caps are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/179"
     },
     {
       "file": "dist/client/assets/ComparePicker-HASH.js",
@@ -744,7 +742,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1138,12 +1136,10 @@
     {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
+        "brotli": 257199
       },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
+      "reason": "Baseline correction, no source change: #168's focus-ring fix was measured against a main without #174, so together they exceed the brotli cap from #174. Measured on Boat and in CI at main 1bc31f4f: brotli 257199 B (cap 257069 B). Replaces #174's entry; raw and gzip caps are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/179"
     },
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
@@ -1236,22 +1232,18 @@
     {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37918
+        "brotli": 37919
       },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: its phone geometry in skeleton.css, eager because editor.css loads with the editor. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
+      "reason": "Baseline correction, no source change: #168's focus-ring fix was measured against a main without #174, so together they exceed the brotli cap from #174. Measured on Boat and in CI at main 1bc31f4f: brotli 37919 B (cap 37918 B). Replaces #174's entry; raw and gzip caps are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/179"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37918
+        "brotli": 37919
       },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: the first page's stylesheet is main-HASH.css. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
+      "reason": "Baseline correction, no source change: #168's focus-ring fix was measured against a main without #174, so together they exceed the brotli cap from #174. Measured on Boat and in CI at main 1bc31f4f: brotli 37919 B (cap 37918 B). Replaces #174's entry; raw and gzip caps are unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/179"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
