@@ -60,6 +60,7 @@ export function Poster({
   onPreviewHalf,
   thumbhash,
   fallback,
+  priority = false,
 }: {
   /** Replay id; absent draws the placeholder only (a suite run without a recording). */
   id: string | undefined;
@@ -80,6 +81,8 @@ export function Poster({
   onPreviewEnd?: () => void;
   /** Called once when the preview passes halfway (to warm the next one). */
   onPreviewHalf?: () => void;
+  /** One of the first rows on screen: fetched at once with high priority (the page's largest paint), not lazily. */
+  priority?: boolean;
 }) {
   const [stored, setState] = useState<State>(() => initialState(id));
   // A different replay starts over (derived during render rather than reset in an effect).
@@ -124,9 +127,15 @@ export function Poster({
           key={state.attempt}
           src={src}
           alt=""
-          loading="lazy"
+          loading={priority ? 'eager' : 'lazy'}
+          {...(priority ? { fetchPriority: 'high' as const } : {})}
           decoding="async"
           draggable={false}
+          // why: a server-rendered image can finish loading before hydration attaches onLoad.
+          ref={(image) => {
+            if (image?.complete && image.naturalWidth > 0 && state.phase === 'loading')
+              setState((current) => ({ ...current, phase: 'ready' }));
+          }}
           onLoad={() => setState((current) => ({ ...current, phase: 'ready' }))}
           onError={failed}
         />

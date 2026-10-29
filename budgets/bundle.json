@@ -75,7 +75,7 @@
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
       "gzip": 10364,
-      "brotli": 9006
+      "brotli": 8992
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -128,9 +128,9 @@
       "brotli": 407
     },
     "dist/client/assets/fetch-HASH.js": {
-      "raw": 402,
-      "gzip": 280,
-      "brotli": 229
+      "raw": 721,
+      "gzip": 439,
+      "brotli": 380
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -188,9 +188,9 @@
       "brotli": 65881
     },
     "dist/client/assets/queries-HASH.js": {
-      "raw": 14679,
-      "gzip": 4771,
-      "brotli": 4362
+      "raw": 14604,
+      "gzip": 4752,
+      "brotli": 4335
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
@@ -203,9 +203,9 @@
       "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 8926,
-      "gzip": 3923,
-      "brotli": 3572
+      "raw": 6721,
+      "gzip": 2958,
+      "brotli": 2681
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -218,9 +218,9 @@
       "brotli": 6796
     },
     "dist/client/assets/sign-in-HASH.js": {
-      "raw": 16749,
-      "gzip": 5938,
-      "brotli": 5417
+      "raw": 16683,
+      "gzip": 5908,
+      "brotli": 5388
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 2418,
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 682,
-      "brotli": 604
+      "gzip": 684,
+      "brotli": 640
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -307,10 +307,15 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-986116a35059.mjs": {
-      "raw": 305397,
-      "gzip": 80225,
-      "brotli": 65677
+    "dist/lib/chunks/compression.ts-47af8e92faec.mjs": {
+      "raw": 4312,
+      "gzip": 1720,
+      "brotli": 1488
+    },
+    "dist/lib/chunks/context.schema.json-c805001dee98.mjs": {
+      "raw": 310751,
+      "gzip": 81506,
+      "brotli": 66856
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -356,6 +361,11 @@
       "raw": 33699,
       "gzip": 8512,
       "brotli": 7425
+    },
+    "dist/lib/chunks/start.ts-530ffefc64b4.mjs": {
+      "raw": 4541,
+      "gzip": 1771,
+      "brotli": 1551
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
@@ -403,9 +413,9 @@
       "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
-      "raw": 4025,
-      "gzip": 1596,
-      "brotli": 1370
+      "raw": 4181,
+      "gzip": 1640,
+      "brotli": 1419
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
@@ -473,9 +483,9 @@
       "brotli": 3167
     },
     "dist/lib/server.mjs": {
-      "raw": 1829,
-      "gzip": 598,
-      "brotli": 507
+      "raw": 1907,
+      "gzip": 616,
+      "brotli": 527
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -484,8 +494,8 @@
     },
     "initial/index.html/css": {
       "raw": 254839,
-      "gzip": 44450,
-      "brotli": 37038
+      "gzip": 44498,
+      "brotli": 37043
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -769,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -820,16 +830,6 @@
         "brotli": 7425
       },
       "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
-    },
-    {
-      "file": "dist/lib/server.mjs",
-      "cap": {
-        "raw": 1829,
-        "gzip": 600,
-        "brotli": 509
-      },
-      "reason": "The /server entry exports ViewCatalog and createViewCatalog (main 1703/567/477, head 1775/582/494).",
       "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
@@ -948,16 +948,6 @@
         "raw": 25287,
         "gzip": 9677,
         "brotli": 8444
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/fetch-HASH.js",
-      "cap": {
-        "raw": 402,
-        "gzip": 280,
-        "brotli": 229
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -1213,14 +1203,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 633
-      },
-      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 252918,
@@ -1241,24 +1223,74 @@
       "pr": "https://github.com/hazem3500/replays/pull/111"
     },
     {
-      "file": "dist/client/assets/render-HASH.js",
+      "file": "dist/client/assets/fetch-HASH.js",
       "cap": {
-        "raw": 8926,
-        "gzip": 3923,
-        "brotli": 3572
+        "raw": 721,
+        "gzip": 439,
+        "brotli": 380
       },
-      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts, render/thumbhash-capture.ts); head measures 8926 raw, 3923 gzip, 3572 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
+      "reason": "api/fetch.ts reads the deployment through page-meta.ts, which a server render answers from the request (gzip 271 to 426). Replaces #113's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-986116a35059.mjs",
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "raw": 305397,
-        "gzip": 80225,
-        "brotli": 65677
+        "raw": 1124,
+        "gzip": 685,
+        "brotli": 640
       },
-      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-385e24c93576 (caps 311351, 81713, 66956) and measures 305397 raw, 80225 gzip, 65677 brotli bytes, under those caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
+      "reason": "Brotli drift of a few bytes in this 1 kB chunk when the hashed chunk names it imports change. Replaces #152's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/plugins-iap.mjs",
+      "cap": {
+        "raw": 4181,
+        "gzip": 1640,
+        "brotli": 1419
+      },
+      "reason": "The IAP plugin entry re-exports the server barrel, which now names the Start page renderer types (+34 B raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1907,
+        "gzip": 616,
+        "brotli": 527
+      },
+      "reason": "The server entry reaches the lazily loaded Start page renderer (src/server/pages/start.ts) (+22 B raw). Replaces #131's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/chunks/compression.ts-47af8e92faec.mjs",
+      "cap": {
+        "raw": 4312,
+        "gzip": 1720,
+        "brotli": 1488
+      },
+      "reason": "compression.ts is shared by the server and the Start page renderer, so it becomes its own chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-c805001dee98.mjs",
+      "cap": {
+        "raw": 310751,
+        "gzip": 81506,
+        "brotli": 66856
+      },
+      "reason": "The context-schema chunk is renamed by its content hash when the server chunk graph gains the page renderer; same module.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/chunks/start.ts-530ffefc64b4.mjs",
+      "cap": {
+        "raw": 4541,
+        "gzip": 1771,
+        "brotli": 1551
+      },
+      "reason": "The Start page renderer (src/server/pages/start.ts, head.ts), loaded only with REPLAYS_SSR=1.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
     }
   ]
 }

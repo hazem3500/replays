@@ -150,6 +150,9 @@ function RowColumns({ at, host }: { at: string; host: string }) {
 
 /* ---------- Rows ---------- */
 
+/** Rows whose posters load at once with high priority: what a phone or a desktop shows above the fold. */
+const FIRST_ROWS = 6;
+
 function SessionItem({
   summary,
   view,
@@ -200,6 +203,7 @@ function SessionItem({
         size={view === 'grid' ? 'card' : 'row'}
         playing={playing}
         badge={formatBadgeDuration(summary.duration)}
+        priority={place.index < FIRST_ROWS}
       />
       <div className="feed-body">
         <div className="feed-head">
@@ -403,6 +407,7 @@ function SuiteItem({
             size="card"
             playing={playing}
             badge={<RunsBadge count={count} />}
+            priority={place.index < FIRST_ROWS}
             {...cyclePosterProps(cycle, capture)}
           />
         </>
@@ -415,6 +420,7 @@ function SuiteItem({
             size="row"
             playing={playing}
             badge={<RunsBadge count={count} />}
+            priority={place.index < FIRST_ROWS}
             {...cyclePosterProps(cycle, capture)}
           />
         </PosterStack>

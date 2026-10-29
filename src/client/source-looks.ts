@@ -1,5 +1,6 @@
 import { isSafeIconUrl } from '../shared/icon-url.ts';
 import { isProviderMark, type ProviderMark, type SourceProviderInfo } from '../shared/source-providers.ts';
+import { pageMeta } from './page-meta.ts';
 
 /*
  * How the deployment's source providers look: the icon, mark and noun each declared (`<meta name="app-sources">`, written
@@ -18,8 +19,7 @@ let cached: Map<string, SourceLook> | undefined;
 
 function read(): Map<string, SourceLook> {
   const looks = new Map<string, SourceLook>();
-  if (typeof document === 'undefined') return looks;
-  const content = document.querySelector<HTMLMetaElement>('meta[name="app-sources"]')?.content;
+  const content = pageMeta('app-sources');
   if (!content) return looks;
   try {
     const parsed: unknown = JSON.parse(content);
@@ -41,6 +41,8 @@ function read(): Map<string, SourceLook> {
 
 /** The provider's declared look, when it has one. Constant for the page's life. */
 export function sourceLook(provider: string): SourceLook | undefined {
+  // invariant: only the browser's page caches them; a server renders requests for different hosts in one process.
+  if (typeof document === 'undefined' && !cached) return read().get(provider);
   cached ??= read();
   return cached.get(provider);
 }

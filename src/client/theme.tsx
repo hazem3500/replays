@@ -30,6 +30,7 @@ function savedPreference(): ThemePreference {
 }
 
 function systemTheme(): Theme {
+  if (typeof matchMedia === 'undefined') return 'dark';
   return matchMedia(LIGHT_QUERY).matches ? 'light' : 'dark';
 }
 
@@ -37,7 +38,7 @@ export function useTheme() {
   const [preference, setPreferenceState] = useState<ThemePreference>(savedPreference);
   const [system, setSystem] = useState<Theme>(() => {
     // index.html's inline script has already resolved it before first paint.
-    const applied = document.documentElement.dataset.theme;
+    const applied = typeof document === 'undefined' ? undefined : document.documentElement.dataset.theme;
     return savedPreference() === 'system' && (applied === 'light' || applied === 'dark') ? applied : systemTheme();
   });
   const theme: Theme = preference === 'system' ? system : preference;
