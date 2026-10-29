@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils.ts';
 
 import { productName } from './config.ts';
 import { useAutoRetry } from './hooks/use-auto-retry.ts';
+import { useStickyStack } from './hooks/use-sticky-stack.ts';
 import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
@@ -562,16 +563,7 @@ export function ReplayIndex({
   }, []);
 
   // The header block sticks; day headings stick right under it, and summary jumps stop there too.
-  useLayoutEffect(() => {
-    const host = shell.current;
-    const block = toolbar.current;
-    if (!host || !block) return;
-    const measure = () => host.style.setProperty('--feed-sticky-top', `${Math.round(block.offsetHeight)}px`);
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(block);
-    return () => observer.disconnect();
-  }, []);
+  useStickyStack(shell, toolbar, '--feed-sticky-top');
 
   useEffect(() => {
     if (skipFirstFetch.current.sessions) {
