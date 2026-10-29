@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 639
+      "brotli": 622
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -1245,10 +1245,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 639
+        "brotli": 633
       },
-      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change with the phone index work; measured against main: 0 B raw, 1 B gzip, +32 B brotli (620 against main's 588 and a 605-byte cap). Replaces #116's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/111"
+      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
     }
   ]
 }
