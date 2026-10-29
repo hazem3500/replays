@@ -586,8 +586,7 @@ export function createApp(options: AppOptions) {
           if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
           if (options.pages) {
             const deployment = { base, name: options.branding.name };
-            await options.pages.renderer.render(request, response, { deployment, head: shellHead(indexPage(html, base)) });
-            return;
+            if (await options.pages.renderer.render(request, response, { deployment, head: shellHead(indexPage(html, base)) })) return;
           }
           await sendCompressed(request, response, 200, indexPage(html, base), 'text/html; charset=utf-8');
           return;

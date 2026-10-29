@@ -7,6 +7,7 @@ import type { ProfileInfo } from '../../../shared/profiles.ts';
 import { copyText } from '../../clipboard.ts';
 import { resolveSlot } from '../../plugins/registry.ts';
 import { apiUrl } from '../../api/fetch.ts';
+import { useHydrated } from '../../hooks/use-hydrated.ts';
 import { coreWays, FIRST_RUN_SLOT, type FirstRunCommand, type FirstRunContext, type FirstRunWay, firstRunStrings } from './model.ts';
 
 const ICONS = { record: CircleDotIcon, upload: UploadIcon, cli: TerminalIcon, agent: BotIcon, link: LinkIcon } as const;
@@ -104,9 +105,11 @@ function Profiles({ profiles }: { profiles: readonly ProfileInfo[] }) {
 
 /** The index before any replay exists: the ways to make a first one (`index.empty.ways`), and the deployment's profiles. */
 export function FirstRun({ onUpload, profiles = NO_PROFILES }: { onUpload: () => void; profiles?: readonly ProfileInfo[] }) {
+  // why: a server render has no location; the commands take the page's origin once hydrated, so both renders agree.
+  const origin = useHydrated() ? location.origin : '';
   const context: FirstRunContext = {
-    origin: location.origin,
-    uploadUrl: `${location.origin}${apiUrl(`replays`)}`,
+    origin,
+    uploadUrl: `${origin}${apiUrl(`replays`)}`,
     chooseFile: onUpload,
     profiles,
   };
