@@ -240,11 +240,11 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 599
+      "brotli": 627
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
-      "gzip": 8752,
+      "gzip": 8753,
       "brotli": 7530
     },
     "dist/client/assets/tools-HASH.js": {
@@ -779,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
