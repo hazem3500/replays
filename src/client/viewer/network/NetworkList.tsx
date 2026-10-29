@@ -8,7 +8,7 @@ import { countAtOrBefore } from '../../timeline.ts';
 import { useWindowedRows } from '../../windowing.ts';
 import { HEADER_HEIGHT, SeekTime, TrackList } from '../TrackList.tsx';
 import { durationShare, formatDuration, type NetworkRow, playheadHorizon, stepAt } from './model.ts';
-import { KEY_MOVES, moveIndex, type StepMove } from '../list-keys.ts';
+import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 
 export const REQUEST_DETAIL_ID = 'request-detail';
 
@@ -39,6 +39,7 @@ export function NetworkList({
   ceiling,
   selected,
   onSelect,
+  onHover,
   empty,
 }: {
   rows: readonly NetworkRow[];
@@ -47,6 +48,8 @@ export function NetworkList({
   ceiling: number;
   selected: string | undefined;
   onSelect: (id?: string) => void;
+  /** The request under the pointer or focus, so the time ribbon can light its mark; undefined when it leaves. */
+  onHover?: ((id?: string) => void) | undefined;
   empty: ReactNode;
 }) {
   const player = usePlayer();
@@ -83,7 +86,15 @@ export function NetworkList({
       ) : (
         <div className="np-table" role="table" aria-rowcount={rows.length + 1}>
           <ListHead />
-          <div ref={body} role="rowgroup">
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
+          <div
+            ref={body}
+            role="rowgroup"
+            onPointerOver={(event) => onHover?.(rowIdOf(event.target))}
+            onPointerLeave={() => onHover?.()}
+            onFocus={(event) => onHover?.(rowIdOf(event.target))}
+            onBlur={() => onHover?.()}
+          >
             <div aria-hidden="true" style={{ height: padTop }} />
             {rows.slice(start, end).map((row, offset) => (
               <RequestRow
@@ -156,6 +167,7 @@ function RequestRow({
   return (
     <div
       className="np-row"
+      data-row-id={row.id}
       role="row"
       aria-rowindex={rowIndex}
       data-selected={selected || undefined}
