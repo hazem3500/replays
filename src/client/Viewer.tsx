@@ -44,7 +44,14 @@ import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { captionAt } from './step-caption.ts';
-import { clampInspectorHeight, initialInspectorHeight, Inspector, type InspectorPeer, InspectorResizer, type MobilePanel } from './viewer/Inspector.tsx';
+import {
+  clampInspectorHeight,
+  initialInspectorHeight,
+  Inspector,
+  type InspectorPeer,
+  InspectorResizer,
+  type MobilePanel,
+} from './viewer/Inspector.tsx';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';

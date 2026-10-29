@@ -115,7 +115,9 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
     if (next) onFocus(next.id);
   });
 
-  const peers = ready.filter((tile) => tile.id !== focused.id).map(({ id, name, colour, label, bundle }) => ({ id, name, colour, label, bundle }));
+  const peers = ready
+    .filter((tile) => tile.id !== focused.id)
+    .map(({ id, name, colour, label, bundle }) => ({ id, name, colour, label, bundle }));
 
   const commands: TileCommands = {
     onFocus,

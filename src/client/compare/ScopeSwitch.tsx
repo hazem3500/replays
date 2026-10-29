@@ -36,7 +36,11 @@ export function ScopeSwitch({ tiles, focus, onFocus }: { tiles: readonly Compare
       <span className="ct-scope-label" aria-hidden="true">
         {SCOPE_STRINGS.showing}
       </span>
-      {segmented ? <ScopeSegments tiles={tiles} focus={focus} onFocus={onFocus} /> : <ScopeMenu tiles={tiles} focus={focus} onFocus={onFocus} />}
+      {segmented ? (
+        <ScopeSegments tiles={tiles} focus={focus} onFocus={onFocus} />
+      ) : (
+        <ScopeMenu tiles={tiles} focus={focus} onFocus={onFocus} />
+      )}
     </div>
   );
 }
