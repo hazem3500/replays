@@ -16,6 +16,7 @@
     "typescript/no-unsafe-return": "error"
   },
   "ignorePatterns": [
+    "src/client/route-tree.gen.ts",
     "dist/**",
     "node_modules/**",
     "shots/**",

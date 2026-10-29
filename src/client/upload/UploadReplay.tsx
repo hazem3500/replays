@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 import { formatClock, MAX_TAGS } from '../../shared/replay.ts';
 import { pageProfiles } from '../profiles.ts';
-import { replayHref, replayInSuiteHref } from '../route.ts';
+import { replayHref, replayInSuiteHref } from '../routing/links.ts';
 import { ACCEPTED_FILES, formatSize, type PreparedUpload, parseTags, prepareUpload, UploadError } from './prepare.ts';
 import { sendUpload } from './send.ts';
 

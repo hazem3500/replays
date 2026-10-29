@@ -1,6 +1,6 @@
 # Client
 
-Read the root guide. `main.tsx` mounts `App.tsx`; `navigation.ts`/`route.ts` currently own URL transitions; `queries.ts` owns shared Query transport. The Router/DB/Start workstreams own their replacements.
+Read the root guide. `main.tsx` mounts the TanStack Router (`router.tsx`, file routes in `routes/`, pages in `pages/`); `routing/` owns links and navigation, `transitions/` page motion; `queries.ts` owns shared Query transport. See [client routing](../../docs/architecture/client-routing.md). The Start workstream owns server rendering.
 
 - Effects belong in `src/client/hooks/` only. New components derive state or use named subscription/setup hooks. No manual memo; React Compiler handles app memoization.
 - Read external state with a subscribed snapshot, not imperative getters during render.

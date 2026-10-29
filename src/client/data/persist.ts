@@ -3,7 +3,7 @@ import * as z from 'zod/mini';
 
 import { PRODUCT_SLUG } from '../../shared/brand.ts';
 import { SUMMARY_VERSION } from '../../shared/replay.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { forgetSessionKeys } from '../storage.ts';
 import { indexedDbStorage, type PersistedRecord, type PersistStorage } from './persist-storage.ts';
 
