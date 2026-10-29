@@ -3,27 +3,19 @@ import { useEffect } from 'react';
 import type { ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { previewHover } from './index/preview.ts';
 import { prefetchReplay, queryClient, suiteQuery } from './queries.ts';
-import { apiUrl, parseRoute } from './route.ts';
+import { clientRouter } from './routing/client.ts';
+import { isAppPage } from './routing/links.ts';
+import { pageOfPublicPath } from './routing/page-key.ts';
+import { suitePage, viewerPage, warm } from './routing/pages.ts';
 import { initialRunReplayId } from './suite/runs.ts';
 
 /*
  * Intent prefetch on the index: when a row shows intent (the hover previews' 250 ms pointer intent, a keyboard visit,
- * or a press), warm what its page will need: the replay bundle (or the suite and the run it lands
- * on) and the viewer's code. Pages are separate documents, so data goes through `<link rel=prefetch>`:
- * unlike fetch(), it outlives the navigation it anticipates, at the lowest network priority, and the next
- * page's preload and fetch() read it from the HTTP cache (uploaded bundles are cacheable for a day).
+ * or a press), warm what its page will need: the replay bundle (or the suite and the run it lands on) into the Query
+ * cache, parsed, so the page renders at once, and the page's code.
  */
 
 export type IntentTarget = { kind: 'replay'; id: string } | { kind: 'suite'; id: string; landing?: string | undefined };
-
-/** The URLs a target's page loads (index.html's preload list, mirrored). */
-export function intentUrls(target: IntentTarget) {
-  if (target.kind === 'replay') return [apiUrl(`replays/${encodeURIComponent(target.id)}`)];
-  return [
-    apiUrl(`suites/${encodeURIComponent(target.id)}?expand=runs`),
-    ...(target.landing ? [apiUrl(`replays/${encodeURIComponent(target.landing)}`)] : []),
-  ];
-}
 
 /** `session:<id>` and `suite:<id>` (Feed.tsx row keys) to a target; `landing` finds a suite's first run. */
 export function targetForKey(key: string, landing: (suiteId: string) => string | undefined = () => undefined): IntentTarget | undefined {
@@ -42,10 +34,11 @@ export function targetForHref(href: string, landing: (suiteId: string) => string
   } catch {
     return undefined;
   }
-  if (url.origin !== location.origin) return undefined;
-  const route = parseRoute(url.pathname, url.search);
-  if (route.kind === 'replay') return { kind: 'replay', id: route.id };
-  if (route.kind === 'suite') return { kind: 'suite', id: route.id, landing: route.replayId ?? landing(route.id) };
+  if (url.origin !== location.origin || !isAppPage(url.pathname)) return undefined;
+  const router = clientRouter();
+  const page = pageOfPublicPath(router, url.pathname, router.options.context.deployment.base);
+  if (page.kind === 'replay' && page.replayId) return { kind: 'replay', id: page.replayId };
+  if (page.kind === 'suite' && page.suiteId) return { kind: 'suite', id: page.suiteId, landing: page.replayId ?? landing(page.suiteId) };
   return undefined;
 }
 
@@ -55,47 +48,13 @@ export function prefetchAllowed() {
   return !connection?.saveData && !['slow-2g', '2g'].includes(connection?.effectiveType ?? '');
 }
 
-const requested = new Set<string>();
-
-/** One low-priority `<link rel=prefetch>` per URL per page. */
-export function prefetchUrl(url: string, doc: Document = document) {
-  if (requested.has(url)) return false;
-  requested.add(url);
-  const link = doc.createElement('link');
-  link.rel = 'prefetch';
-  // The same request shape as index.html's preload and the app's fetch(), so the cache entry matches.
-  link.as = 'fetch';
-  link.crossOrigin = 'anonymous';
-  link.fetchPriority = 'low';
-  link.href = url;
-  doc.head.append(link);
-  return true;
-}
-
-// The pages' code: same chunks as App.tsx's lazy imports (fetched and cached once; evaluated off the click path).
-const loadViewerCode = () => import('./Viewer.tsx').catch(() => undefined);
-const loadSuiteCode = () => import('./suite/SuiteWorkspace.tsx').catch(() => undefined);
-
-let clientNavigation = false;
-
-/**
- * Called by the router when index ↔ viewer navigation stays in this document: prefetches then go into the
- * Query cache (parsed, so the next page renders at once) instead of only the HTTP cache. While pages are
- * full loads, parsing a bundle here would be wasted main-thread time, so only the bytes are fetched.
- */
-export function setClientNavigation(enabled: boolean) {
-  clientNavigation = enabled;
-}
-
 export function prefetchTarget(target: IntentTarget | undefined) {
   if (!target || !prefetchAllowed()) return;
-  if (clientNavigation) {
-    if (target.kind === 'suite') void queryClient.prefetchQuery(suiteQuery(target.id));
-    const replayId = target.kind === 'replay' ? target.id : target.landing;
-    if (replayId) void prefetchReplay(queryClient, replayId);
-  } else for (const url of intentUrls(target)) prefetchUrl(url);
-  void loadViewerCode();
-  if (target.kind === 'suite') void loadSuiteCode();
+  if (target.kind === 'suite') void queryClient.prefetchQuery(suiteQuery(target.id));
+  const replayId = target.kind === 'replay' ? target.id : target.landing;
+  if (replayId) void prefetchReplay(queryClient, replayId);
+  warm(viewerPage);
+  if (target.kind === 'suite') warm(suitePage);
 }
 
 type Landing = (suiteId: string) => string | undefined;
@@ -166,7 +125,7 @@ export function useIntentPrefetch(entries: readonly Entry[]) {
     if (!prefetchAllowed()) return;
     const idle = window.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 1500));
     const cancelIdle = window.cancelIdleCallback ?? clearTimeout;
-    const handle = idle(() => void loadViewerCode(), { timeout: 4000 });
+    const handle = idle(() => warm(viewerPage), { timeout: 4000 });
     return () => cancelIdle(handle as number);
   }, []);
 }

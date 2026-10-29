@@ -6,7 +6,7 @@ import type { ClientConfig } from './config.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
 import { readTextWithProgress } from './load-progress.ts';
 import { rememberServedProfile } from './profiles.ts';
-import { apiUrl } from './route.ts';
+import { apiUrl } from './api/fetch.ts';
 
 /*
  * The client's data cache (TanStack Query). Pages are separate documents (cross-document view
@@ -94,6 +94,27 @@ export const configQuery = queryOptions({
     const response = await fetch(apiUrl('config'), { signal });
     if (!response.ok) throw new Error(`Config failed to load (${response.status})`);
     return (await response.json()) as ClientConfig;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+  retry: false,
+});
+
+/** `GET /api/me`'s session: whether a person is signed in, and where they sign out (when the auth mode has a way). */
+export interface Account {
+  id: string;
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+  session?: { signedIn: boolean; signOutUrl?: string };
+}
+
+/** `GET /api/me`: who is signed in; `null` when the server answers without one (401/403). */
+export const meQuery = queryOptions({
+  queryKey: ['me'] as const,
+  queryFn: async ({ signal }) => {
+    const response = await fetch(apiUrl('me'), { signal });
+    if (!response.ok) return null;
+    return (await response.json()) as Account;
   },
   staleTime: Number.POSITIVE_INFINITY,
   retry: false,

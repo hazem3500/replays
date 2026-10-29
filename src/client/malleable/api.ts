@@ -1,6 +1,6 @@
 import type { PluginSettingsRecord, PluginSettingValue } from '../../shared/plugin-settings.ts';
 import type { PluginHistory, PluginScope, PluginSummary, UserPluginManifest } from '../../shared/malleable.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 
 export class MalleableRequestError extends Error {
   readonly status: number;

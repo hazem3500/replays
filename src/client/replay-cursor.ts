@@ -1,4 +1,4 @@
-import type { ReplayCursorSettings } from '../shared/cursor.ts';
+import { clickEffectOf, type ReplayCursorSettings } from '../shared/cursor.ts';
 
 import { buildCursorTrack, type CursorTrack, cursorInput, cursorPose, type Pose } from './cursor-motion.ts';
 import { type CursorGlyph, cursorColorValue, cursorTheme } from './cursor-themes.ts';
@@ -104,10 +104,11 @@ export class ReplayCursor {
   private mountGlyph() {
     const theme = cursorTheme(this.settings?.appearance);
     const color = cursorColorValue(this.settings?.color);
-    const key = `${theme.id}|${color ?? ''}`;
+    const effect = clickEffectOf(this.settings);
+    const key = `${theme.id}|${color ?? ''}|${effect}`;
     if (key === this.glyphKey) return;
     this.glyphKey = key;
-    const glyph = theme.create(this.element.ownerDocument, color);
+    const glyph = theme.create(this.element.ownerDocument, { color, effect });
     this.glyph = glyph;
     this.element.replaceChildren(...glyph.nodes);
     const style = this.element.style;

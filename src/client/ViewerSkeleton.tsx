@@ -1,4 +1,5 @@
 import './editor/skeleton.css';
+import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
@@ -6,6 +7,8 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
+import { replayHref } from './routing/links.ts';
+import { Topbar } from './Topbar.tsx';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
@@ -32,7 +35,7 @@ export interface OpenHint {
   steps?: number;
   /** A source chip (a linked pull request or ticket) shows beside the title. */
   source?: boolean;
-  /** The card's poster, or its opening still when loaded: the frame shows it while loading (navigation.ts). */
+  /** The card's poster, or its opening still when loaded: the frame shows it while loading (transitions/open-hint.ts). */
   poster?: string;
   /** `poster` is the opening still (the replay's first paint), not the list poster. */
   still?: boolean;
@@ -114,39 +117,80 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
   );
 }
 
-/** Edit loads retain the editor's single stage and compact timeline; no viewer inspector or step rail flashes. */
-export function EditorSkeleton() {
+/**
+ * Edit loads draw the loaded editor's own shell (editor-layout.css): the real top bar, the stage frame at its final
+ * rect beside the inspector column, the 1 px resizer row and the dock at its saved height, so nothing moves when the
+ * editor arrives. Phones keep the compact stage and dock.
+ */
+export function EditorSkeleton({
+  id,
+  meta,
+}: {
+  id: string;
+  meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
+}) {
   const mobile = useMediaQuery(MOBILE_QUERY);
-  const [hint] = useState(readHint);
+  const [stored] = useState(readHint);
+  // why: from the viewer the bundle is already cached, so its real title and frame shape replace the guess.
+  const hint = meta
+    ? { ...stored, id, ...(meta.title ? { title: meta.title } : {}), ...(meta.viewport ? { viewport: meta.viewport } : {}) }
+    : stored;
   const [height] = useState(() => {
     const saved = Number(readStorage('replays-editor-dock-height'));
     return Math.round(Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : 168, 148), Math.max(148, window.innerHeight * 0.65)));
   });
+  const style = { '--dock-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties;
+  if (mobile) {
+    return (
+      <main
+        className="app-shell skeleton-shell editor-loading"
+        data-mobile=""
+        aria-busy="true"
+        aria-label="Loading editor"
+        data-testid="editor-skeleton"
+        style={style}
+      >
+        <span className="visually-hidden" role="status">
+          Loading editor…
+        </span>
+        <LoadingHeader hint={hint} />
+        <section className="editor-loading-stage" aria-hidden="true">
+          <PlayerSkeleton poster={hint?.poster} />
+        </section>
+        <section className="editor-loading-dock" aria-hidden="true">
+          <LoadingNotice label="Opening editor" />
+        </section>
+      </main>
+    );
+  }
   return (
     <main
-      className="app-shell skeleton-shell editor-loading"
-      data-mobile={mobile || undefined}
+      className="app-shell editor-shell skeleton-shell editor-loading"
       aria-busy="true"
       aria-label="Loading editor"
       data-testid="editor-skeleton"
-      style={{ '--editor-loading-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties}
+      style={style}
     >
       <span className="visually-hidden" role="status">
         Loading editor…
       </span>
-      <LoadingHeader hint={hint} />
-      <section className="editor-loading-stage" aria-hidden="true">
+      <Topbar
+        title={hint?.title ?? 'Replay'}
+        prefix="Edit"
+        backHref={replayHref(id)}
+        backLabel="Back to the replay"
+        status={<ProgressHint />}
+        actions={<TopbarActionsSkeleton />}
+        alwaysMenu
+      />
+      <section className="editor-stage" aria-hidden="true">
         <PlayerSkeleton poster={hint?.poster} />
-        {mobile ? null : (
-          <aside className="editor-presentation">
-            <InspectorSkeleton />
-          </aside>
-        )}
+        <aside className="editor-presentation">
+          <InspectorSkeleton />
+        </aside>
       </section>
-      {mobile ? null : <div className="editor-loading-divider" aria-hidden="true" />}
-      <section className="editor-loading-dock" aria-hidden="true">
-        <LoadingNotice label="Opening editor" />
-      </section>
+      <div className="inspector-resizer" aria-hidden="true" />
+      <DockSkeleton duration={meta?.duration} />
     </main>
   );
 }

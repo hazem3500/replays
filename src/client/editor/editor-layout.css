@@ -1,0 +1,41 @@
+/*
+ * The editor's page geometry, shared by the loaded editor (editor.css, in the lazy Editor chunk) and its loading
+ * state (skeleton.css, eager), so the stage frame, the inspector column and the dock sit at the same rects in both
+ * and nothing moves when the editor arrives.
+ */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
+@layer app {
+  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 168px)); background: var(--canvas); }
+  /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
+  .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
+  .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }
+  .editor-shell:not([data-mobile]) > .inspector-resizer { grid-row: 3; display: block; }
+  .editor-shell:not([data-mobile]) > .editor-dock { grid-row: 4; }
+  .editor-shell[data-mobile] { grid-template-rows: auto minmax(0, 1fr) auto; }
+  /* The preview: as large as the window allows. */
+  .editor-stage { position: relative; min-width: 0; min-height: 0; display: flex; }
+  /* PlayerStage supplies the same frame and canvas as the viewer; no extra editor frame. */
+  .editor-stage .stage-wrap { flex: 1; min-width: 0; }
+  .editor-presentation { flex: 0 0 clamp(264px, 24vw, 320px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
+  /* The dock: one control row, the timeline, one line of hint. */
+  .editor-dock { min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
+  .editor-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 44px; }
+  .editor-hint { flex: none; margin: 8px 0 0; padding-left: 40px; min-height: 16px; font-size: var(--text-2xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; padding-right: 8px; border-right: 1px solid var(--line); }
+  .editor-done.editor-done { padding: 0 10px; color: var(--text-secondary); font-weight: 500; }
+  .editor-done.editor-done:hover { background: var(--surface-hover); color: var(--text); }
+  .editor-export.editor-export { gap: 6px; padding: 0 10px; }
+  .editor-export svg { width: 14px; height: 14px; }
+  /* The real content settles in over its placeholders: a short fade, nothing moves. */
+  @keyframes editor-arrive { from { opacity: 0.55; } }
+  .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline) { animation: editor-arrive 200ms var(--ease-out) both; }
+  @media (prefers-reduced-motion: reduce) {
+    .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline) { animation: none; }
+  }
+}
+
+@layer utilities {
+  .editor-shell:not([data-mobile]) .topbar :is([data-slot="button"], .topbar-back) { height: 32px; }
+  .editor-shell:not([data-mobile]) .topbar :is(.editor-history button, .topbar-back) { width: 32px; }
+}
