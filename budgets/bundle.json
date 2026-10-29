@@ -490,7 +490,7 @@
     "initial/index.html/js": {
       "raw": 1484557,
       "gzip": 472609,
-      "brotli": 399787
+      "brotli": 399732
     },
     "initial/render.html/css": {
       "raw": 5784,
