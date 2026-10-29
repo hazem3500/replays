@@ -1280,6 +1280,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21285,
+        "gzip": 8753,
+        "brotli": 7566
+      },
+      "reason": "Hash drift, not growth: raw matches main; the hashed editor chunk names it imports change (gzip +4 B, brotli -25 B measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
       "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
       "cap": {
         "raw": 308641,
@@ -1287,14 +1297,6 @@
         "brotli": 66336
       },
       "reason": "Server-rendered pages by default: startPages (src/server/start.ts) checks for the Start build and logs when it is missing, and a failed render falls back to the single-page app; Rolldown bundles both into this shared server chunk (main 308481/80873/66283, head 308641/80890/66336). Replaces #123's entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
-    },
-    {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "gzip": 8753
-      },
-      "reason": "Hash-name drift of the chunks it imports (main 8749 gzip, head 8753; brotli 7566 to 7541, raw unchanged). Replaces #155's entry.",
       "pr": "https://github.com/hazem3500/replays/pull/157"
     }
   ]
