@@ -19,12 +19,12 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
-      "gzip": 982,
-      "brotli": 849
+      "gzip": 981,
+      "brotli": 848
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "gzip": 1111,
+      "gzip": 1110,
       "brotli": 942
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
@@ -79,8 +79,8 @@
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
-      "gzip": 2344,
-      "brotli": 2118
+      "gzip": 2343,
+      "brotli": 2119
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 7830,
@@ -88,7 +88,7 @@
       "brotli": 1777
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 37957,
+      "raw": 37956,
       "gzip": 13469,
       "brotli": 11989
     },
@@ -108,7 +108,7 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101093,
+      "raw": 101099,
       "gzip": 33868,
       "brotli": 28919
     },
@@ -118,9 +118,9 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6580,
-      "gzip": 3179,
-      "brotli": 2811
+      "raw": 25113,
+      "gzip": 9605,
+      "brotli": 8395
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
@@ -133,14 +133,14 @@
       "brotli": 229
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 39103,
-      "gzip": 7498,
-      "brotli": 6705
+      "raw": 40400,
+      "gzip": 7760,
+      "brotli": 6940
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 232510,
-      "gzip": 78731,
-      "brotli": 66316
+      "gzip": 78880,
+      "brotli": 66380
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 608,
+      "gzip": 609,
       "brotli": 560
     },
     "dist/client/assets/settings-HASH.js": {
@@ -239,11 +239,11 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 685,
+      "gzip": 686,
       "brotli": 640
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21175,
+      "raw": 21170,
       "gzip": 8711,
       "brotli": 7500
     },
@@ -483,9 +483,9 @@
       "brotli": 35120
     },
     "initial/index.html/js": {
-      "raw": 1484430,
-      "gzip": 472534,
-      "brotli": 399638
+      "raw": 1484557,
+      "gzip": 473494,
+      "brotli": 400470
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -908,26 +908,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/136"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 39229,
-        "gzip": 7519,
-        "brotli": 6716
-      },
-      "reason": "Network and Performance v2: the time ribbon, local timelines, the one-row network toolbar, two-line phone rows, the side detail and the vitals bar share the lazy inspector stylesheet (about 2.6 kB of old table CSS left the main stylesheet).",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 232510,
-        "gzip": 78731,
-        "brotli": 66316
-      },
-      "reason": "Network and Performance v2: request and moment models, the ribbon, request and moment details with neighbourhood charts, verdicts and compare deltas replace the old network table and performance view in the lazy inspector graph; the initial JavaScript budget is unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 246064,
@@ -1156,6 +1136,26 @@
       },
       "reason": "The context-schema chunk is renamed by its content hash when the shared chunk graph gains the auth wrapper; same module.",
       "pr": "https://github.com/hazem3500/replays/pull/139"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 40400,
+        "gzip": 7760,
+        "brotli": 6940
+      },
+      "reason": "Pending frames for the inspector's built-in panels and the flat tab row's group hairlines and status dots, on top of #119's Network and Performance styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 232510,
+        "gzip": 78880,
+        "brotli": 66380
+      },
+      "reason": "Flat inspector tab row from viewer.inspector.tabs descriptors, compact tab badges and per-panel pending frames, on top of #119's panels; raw stays under main's cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
     },
     {
       "file": "dist/client/assets/composite-HASH.js",
