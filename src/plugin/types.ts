@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import type { AuthAdapter, AuthPluginFactory, Identity } from '../server/auth/types.ts';
+import type { AuthAdapter, AuthPluginFactory, Identity, WebAuthAdapter } from '../server/auth/types.ts';
 import type { ThemeTokens } from '../server/branding.ts';
 import type { ObjectStorage } from '../server/storage/types.ts';
 import type { ReplayContext } from '../shared/context.ts';
@@ -367,7 +367,7 @@ export interface PluginApi {
    * Register an auth adapter, or `{ name, create(env) }` to build it from the environment. Names are unique across
    * plugins and select the adapter (`AUTH_MODE=<name>` or `auth` in the config); see docs/extension-api.md.
    */
-  auth(adapter: AuthAdapter | AuthRegistration): void;
+  auth(adapter: AuthAdapter | WebAuthAdapter | AuthRegistration): void;
   contextAdapter(adapter: ContextAdapter): void;
   sourceProvider(provider: SourceProvider): void;
   storage(backend: StorageBackend): void;

@@ -1,6 +1,7 @@
 import { fileURLToPath } from 'node:url';
 
 import tailwindcss from '@tailwindcss/vite';
+import { tanstackRouter } from '@tanstack/router-plugin/vite';
 import babel from '@rolldown/plugin-babel';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite-plus';
@@ -87,7 +88,22 @@ export default defineConfig(({ command }) => ({
     },
   },
   base: command === 'build' ? './' : `${devBase}/`,
-  plugins: [react(), babel({ presets: [reactCompilerPreset()] }), tailwindcss(), renderBlockingEntry(), appBaseMeta()],
+  plugins: [
+    // why: file routes (src/client/routes) generate src/client/route-tree.gen.ts, committed so typecheck and tests need no build.
+    tanstackRouter({
+      target: 'react',
+      routesDirectory: './src/client/routes',
+      generatedRouteTree: './src/client/route-tree.gen.ts',
+      addExtensions: true,
+      quoteStyle: 'single',
+      semicolons: true,
+    }),
+    react(),
+    babel({ presets: [reactCompilerPreset()] }),
+    tailwindcss(),
+    renderBlockingEntry(),
+    appBaseMeta(),
+  ],
   // shadcn/ui convention: "@/components/ui/…" resolves inside the client.
   resolve: { alias: { '@': fileURLToPath(new URL('./src/client', import.meta.url)) } },
   build: {
