@@ -1,19 +1,7 @@
 import type { ReplayCursorSettings } from '../shared/cursor.ts';
 
-import {
-  buildCursorTrack,
-  CURSOR_CANVAS,
-  CURSOR_HOTSPOT,
-  CURSOR_PATH,
-  type CursorTrack,
-  cursorInput,
-  cursorPose,
-  type Pose,
-} from './cursor-motion.ts';
-
-/** On-screen size of the 128-unit cursor canvas, px; the arrow itself is about 19 px tall. */
-const SCREEN_SIZE = 32;
-const SVG_NS = 'http://www.w3.org/2000/svg';
+import { buildCursorTrack, type CursorTrack, cursorInput, cursorPose, type Pose } from './cursor-motion.ts';
+import { type CursorGlyph, cursorColorValue, cursorTheme } from './cursor-themes.ts';
 
 /**
  * Our cursor inside the rrweb wrapper, in the replay's page coordinates. Only
@@ -25,7 +13,9 @@ export class ReplayCursor {
   private readonly media: MediaQueryList | undefined;
   private track: CursorTrack;
   private settings: ReplayCursorSettings | undefined;
-  private readonly pose: Pose = { visible: false, x: 0, y: 0, heading: 0, scale: 1, opacity: 1 };
+  private readonly pose: Pose = { visible: false, x: 0, y: 0, heading: 0, scale: 1, opacity: 1, press: -1 };
+  private glyph: CursorGlyph | undefined;
+  private glyphKey = '';
   private fitScale = 1;
   /** The fit scale only changes when the stage or the recorded viewport resizes; measure it then, not every frame. */
   private fitDirty = true;
@@ -57,20 +47,9 @@ export class ReplayCursor {
     element.className = 'replay-cursor';
     element.setAttribute('aria-hidden', 'true');
     element.hidden = true;
-    const svg = document.createElementNS(SVG_NS, 'svg');
-    svg.setAttribute('viewBox', `0 0 ${CURSOR_CANVAS} ${CURSOR_CANVAS}`);
-    const path = document.createElementNS(SVG_NS, 'path');
-    path.setAttribute('d', CURSOR_PATH);
-    svg.append(path);
-    element.append(svg);
-    const offset = (v: number) => `${(v / CURSOR_CANVAS) * SCREEN_SIZE}px`;
-    element.style.width = `${SCREEN_SIZE}px`;
-    element.style.height = `${SCREEN_SIZE}px`;
-    element.style.marginLeft = `-${offset(CURSOR_HOTSPOT.x)}`;
-    element.style.marginTop = `-${offset(CURSOR_HOTSPOT.y)}`;
-    element.style.transformOrigin = `${offset(CURSOR_HOTSPOT.x)} ${offset(CURSOR_HOTSPOT.y)}`;
     wrapper.append(element);
     this.element = element;
+    this.mountGlyph();
 
     // The fit scale changes when the stage resizes; a transform on an ancestor fires no observer, so watch the stage boxes.
     if (typeof ResizeObserver === 'function') {
@@ -95,6 +74,7 @@ export class ReplayCursor {
       this.lastVisible = pose.visible;
     }
     if (!pose.visible) return;
+    this.glyph?.feedback(pose.press ?? -1);
     // Idle fade (cursorPose): written only when it changes, so a resting cursor costs no style writes.
     const opacity = pose.opacity >= 1 ? '' : pose.opacity.toFixed(3);
     if (opacity !== this.lastOpacity) {
@@ -110,6 +90,7 @@ export class ReplayCursor {
   setSettings(settings: ReplayCursorSettings | undefined) {
     if (JSON.stringify(settings) === JSON.stringify(this.settings)) return;
     this.settings = settings;
+    this.mountGlyph();
     this.onMotionPreference();
   }
 
@@ -117,6 +98,25 @@ export class ReplayCursor {
     this.resizeObserver?.disconnect();
     this.media?.removeEventListener('change', this.onMotionPreference);
     this.element.remove();
+  }
+
+  /** Draws the saved theme and tint; keeps the mounted glyph when neither changed. */
+  private mountGlyph() {
+    const theme = cursorTheme(this.settings?.appearance);
+    const color = cursorColorValue(this.settings?.color);
+    const key = `${theme.id}|${color ?? ''}`;
+    if (key === this.glyphKey) return;
+    this.glyphKey = key;
+    const glyph = theme.create(this.element.ownerDocument, color);
+    this.glyph = glyph;
+    this.element.replaceChildren(...glyph.nodes);
+    const style = this.element.style;
+    style.width = `${glyph.width}px`;
+    style.height = `${glyph.height}px`;
+    style.marginLeft = `-${glyph.hotspot.x}px`;
+    style.marginTop = `-${glyph.hotspot.y}px`;
+    style.transformOrigin = `${glyph.hotspot.x}px ${glyph.hotspot.y}px`;
+    this.lastTransform = '';
   }
 
   /** The replay's fit scale (the host is CSS-transformed). A layout read, so only after a resize. */

@@ -87,6 +87,14 @@ describe('effect lists in the edit schema', () => {
     ).toThrow('after the end');
   });
 
+  it('saves a redaction style, keeps a plain blur as before and refuses unknown styles', () => {
+    const blur = { id: 'b', from: 0, to: 1000, x: 0.1, y: 0.1, width: 0.3, height: 0.2 };
+    expect(normalizeEdits(edits({ blurs: [{ ...blur, style: 'redact' }] })).blurs?.[0]?.style).toBe('redact');
+    expect(normalizeEdits(edits({ blurs: [{ ...blur, style: 'blur' }] })).blurs?.[0]).not.toHaveProperty('style');
+    expect(editsVersion(edits({ blurs: [{ ...blur, style: 'blur' }] }))).toBe(editsVersion(edits({ blurs: [blur] })));
+    expect(() => assertReplayEdits(edits({ blurs: [{ ...blur, style: 'pixelate' as 'blur' }] }))).toThrow('edits.blurs[0].style');
+  });
+
   it('versions effects with the rest, so a changed blur never reuses a cached video', () => {
     const blur = { id: 'blur-1', from: 0, to: 2000, x: 0.1, y: 0.1, width: 0.5, height: 0.2 };
     const base = editsVersion(edits({ blurs: [blur] }));
