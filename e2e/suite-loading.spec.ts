@@ -2,8 +2,6 @@ import { expect, type Locator, test } from '@playwright/test';
 
 import { createSuite, serveApp, uniqueId } from './support.ts';
 
-// A suite opened from its index card loads as the suite it will be (ViewerSkeleton's `suite`, SuiteLoadingParts.tsx).
-
 const server = serveApp();
 
 function rects(locator: Locator) {
