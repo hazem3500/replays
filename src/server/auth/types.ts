@@ -65,6 +65,11 @@ export interface AuthAdapter {
   authenticate(request: IncomingMessage): Promise<Identity | undefined> | Identity | undefined;
   handle?(request: IncomingMessage, response: ServerResponse, context: AuthRouteContext): Promise<boolean> | boolean;
   loginUrl?(request: IncomingMessage, context: AuthRouteContext): string | undefined;
+  /**
+   * Where a signed-in browser goes to sign out (a top-level navigation that ends the session), for the viewer's account
+   * menu. Absent when the mode has no session of its own to end (a proxy header, a bearer token, no auth).
+   */
+  signOutUrl?(context: AuthRouteContext): string | undefined;
   /** Present only when this adapter can issue and validate a dedicated replay-upload-only token. */
   cliDeviceAuth?(context: AuthRouteContext): Promise<CliDeviceAuthCapability | undefined> | CliDeviceAuthCapability | undefined;
   /** Paths (public, canonical, without the base path) that `handle` serves without an identity. */

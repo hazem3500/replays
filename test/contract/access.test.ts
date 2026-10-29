@@ -176,6 +176,9 @@ const getApiConfigAnswer = {
 const getApiMeAnswer = {
   body: {
     id: 'anonymous',
+    session: {
+      signedIn: false,
+    },
   },
   headers: {
     'cache-control': 'private, no-cache',
