@@ -69,7 +69,8 @@ with its lists in the page, fetched in process with the visitor's own credential
 waiting for the app's JavaScript; the viewer, editor, suite and plugin pages render in the browser.
 
 `REPLAYS_SSR=0` serves the stamped `index.html` instead (the single-page app, as before). So does a server whose
-`dist/start` is missing or fails to load (logged at startup), and the dev server. `replays build-static` is unaffected.
+`dist/start` is missing or fails to load (logged at startup), and the dev server. A page whose server render fails
+before sending anything (the error is logged) is served the same way. `replays build-static` is unaffected.
 
 ## Storage and scaling
 
