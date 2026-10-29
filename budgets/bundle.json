@@ -153,12 +153,12 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 255616,
-      "gzip": 43899,
-      "brotli": 36570
+      "raw": 257251,
+      "gzip": 44233,
+      "brotli": 36764
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 984911,
+      "raw": 986487,
       "gzip": 308973,
       "brotli": 256601
     },
@@ -245,7 +245,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
       "gzip": 8752,
-      "brotli": 7540
+      "brotli": 7554
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -493,9 +493,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 255616,
-      "gzip": 44031,
-      "brotli": 36644
+      "raw": 257251,
+      "gzip": 44233,
+      "brotli": 36764
     },
     "initial/index.html/js": {
       "raw": 1484557,
