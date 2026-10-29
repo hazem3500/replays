@@ -56,17 +56,29 @@ function maskElementTree(node: unknown, ids: MaskedIds): void {
     for (const child of children) maskElementTree(child, ids);
     return;
   }
-  const attributes = attributesOf(node);
-  const mask = masksInput(typeof node.tagName === 'string' ? node.tagName.toLowerCase() : '', attributes);
-  if (mask && typeof node.id === 'number') ids.inputs.add(node.id);
-  if (mask && attributes && typeof attributes.value === 'string') attributes.value = maskedInput(attributes.value);
+  const mask = maskInputElement(node, ids);
   for (const child of children) {
-    if (mask && isRecord(child) && child.type === TEXT && typeof child.id === 'number') {
-      ids.texts.add(child.id);
-      if (typeof child.textContent === 'string') child.textContent = maskedInput(child.textContent);
-    }
+    if (mask) maskInputText(child, ids);
     maskElementTree(child, ids);
   }
+}
+
+/** Masks an input, textarea or select element's value; true when the element is one. */
+function maskInputElement(node: Record<string, unknown>, ids: MaskedIds): boolean {
+  const attributes = attributesOf(node);
+  if (!masksInput(typeof node.tagName === 'string' ? node.tagName.toLowerCase() : '', attributes)) return false;
+  if (typeof node.id === 'number') ids.inputs.add(node.id);
+  if (attributes && typeof attributes.value === 'string') attributes.value = maskedInput(attributes.value);
+  return true;
+}
+
+/** A text child of a masked input (a textarea's content) is masked and remembered for later text mutations. */
+function maskInputText(child: unknown, ids: MaskedIds): void {
+  if (!isRecord(child) || child.type !== TEXT || typeof child.id !== 'number') return;
+  ids.texts.add(child.id);
+  if (typeof child.textContent !== 'string') return;
+  // oxlint-disable-next-line eslint/no-param-reassign -- why: masking is in place; the serialized node is the recording.
+  child.textContent = maskedInput(child.textContent);
 }
 
 function maskMutation(data: Record<string, unknown>, ids: MaskedIds): void {
@@ -82,7 +94,8 @@ function maskMutation(data: Record<string, unknown>, ids: MaskedIds): void {
       attributes.value = maskedInput(attributes.value);
   }
   for (const change of records(data.texts)) {
-    if (typeof change.id === 'number' && ids.texts.has(change.id) && typeof change.value === 'string') change.value = maskedInput(change.value);
+    if (typeof change.id === 'number' && ids.texts.has(change.id) && typeof change.value === 'string')
+      change.value = maskedInput(change.value);
   }
 }
 

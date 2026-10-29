@@ -7,8 +7,8 @@ import { harEntryBodies } from './har-bodies.ts';
 import { maskCapturedInputs } from './mask-inputs.ts';
 import { compileMaskSelectors, compoundMatches } from './mask-selectors.ts';
 
-// Exact auth headers plus any `*-token` / `*-secret` / `*-jwt` / `*-assertion` (X-CSRF-Token, X-Amz-Security-Token,
-// signed-identity headers set by proxies, ...).
+/* why: exact auth headers plus any `*-token` / `*-secret` / `*-jwt` / `*-assertion` (X-CSRF-Token, X-Amz-Security-Token,
+   signed-identity headers set by proxies, ...). */
 const SENSITIVE_HEADER =
   /^(authorization|cookie|proxy-authorization|set-cookie|x-api-key|x-auth-token|x-forwarded-access-token|x-amz-security-token)$|[-_](token|secret|jwt|assertion)$/i;
 const URL_HEADER = /^(content-location|location|origin|referer|referrer)$/i;
@@ -33,10 +33,10 @@ const NETWORK_FIELDS = new Set([
   'requestBody',
   'responseBody',
 ]);
-// Exact names plus any `*_token` / `*-secret` / `*_password` / `*-signature` suffix (`api_token`; login pages
-// that mirror the typed address into `?email=` links; presigned object-storage URLs carry `X-Amz-Signature`). Deliberately broad: `code` also hides invite
-// and promo codes, and the suffix hides opaque pagination cursors such as `page_token`; losing
-// those in a replay is cheaper than storing an OAuth code or a session-bound token.
+/* why: exact names plus any `*_token` / `*-secret` / `*_password` / `*-signature` suffix (`api_token`; login pages that
+   mirror the typed address into `?email=` links; presigned object-storage URLs carry `X-Amz-Signature`). Deliberately
+   broad: `code` also hides invite and promo codes, and the suffix hides opaque pagination cursors such as `page_token`;
+   losing those in a replay is cheaper than storing an OAuth code or a session-bound token. */
 const SENSITIVE_QUERY =
   /^(access[-_]?token|api[-_]?key|api[-_]?token|auth|authorization|client[-_]?secret|code|e[-_]?mail|id[-_]?token|jwt|password|refresh[-_]?token|secret|session|signature|token)$|[-_](token|secret|password|signature)$/i;
 
@@ -61,8 +61,8 @@ interface Har {
   log?: { entries?: HarEntry[] };
 }
 
-// The helpers below take the host's redaction rules (src/shared/redaction.ts), compiled; rules only ever add to the
-// built-in patterns. The exported functions take `RedactionRules` and compile them (cached per rules object).
+/* invariant: the host's redaction rules (src/shared/redaction.ts) only ever add to the built-in patterns. The exported
+   functions take `RedactionRules` and compile them (cached per rules object); the helpers take them compiled. */
 
 function redactSensitiveParameters(value: string, rules: CompiledRedaction) {
   const parameters = new URLSearchParams(value);
@@ -246,7 +246,7 @@ function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
   const masked = new Set<number>();
   const nodes = new Map<number, { node: SerializedNode; attributes: Record<string, unknown> }>();
   const parents = new Map<number, number>();
-  // Keep edges even if an add lists the child before its parent.
+  // why: edges are kept even if an add lists the child before its parent.
   const children = new Map<number, Set<number>>();
   const detach = (id: number) => {
     const parent = parents.get(id);
@@ -262,7 +262,7 @@ function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
       seen.add(current);
       masked.add(current);
       const node = nodes.get(current)?.node;
-      // Conservatively scrub the earlier serialized text too when its element becomes private.
+      // why: the earlier serialized text is scrubbed too when its element becomes private, conservatively.
       if (node?.type === TEXT && typeof node.textContent === 'string') node.textContent = maskedText(node.textContent);
       for (const child of children.get(current) ?? []) pending.push(child);
     }
@@ -299,7 +299,7 @@ function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
       continue;
     }
     if (record.type !== INCREMENTAL || data.source !== MUTATION) continue;
-    // Detach removed subtrees, but retain their state and masking for a subsequent move/re-add.
+    // invariant: removed subtrees are detached but keep their state and masking for a later move or re-add.
     for (const removal of (data.removes as Array<{ id?: number }> | undefined) ?? [])
       if (typeof removal?.id === 'number') detach(removal.id);
     for (const add of (data.adds as Array<{ parentId?: number; node?: SerializedNode }> | undefined) ?? [])
@@ -308,7 +308,7 @@ function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
       if (typeof change?.id !== 'number') continue;
       const known = nodes.get(change.id);
       if (!known) continue;
-      // Mutate the current mirror, not the historical snapshot's attributes.
+      // invariant: the current mirror changes, never the historical snapshot's attributes.
       known.attributes = { ...known.attributes, ...change.attributes };
       if (masked.has(change.id) || matches({ ...known.node, attributes: known.attributes })) protect(change.id);
     }
@@ -367,8 +367,8 @@ function textRulesWith(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBu
  */
 export function sanitizeReplayBundle(bundle: ReplayBundle, redaction?: RedactionRules): ReplayBundle {
   const rules = compileRedaction(redaction);
-  // The default pass runs again after the text rules, so nothing a rule writes can bring back what it removes: the
-  // result is always a bundle the default pass leaves unchanged.
+  /* invariant: the default pass runs again after the text rules, so nothing a rule writes can bring back what it removes;
+     the result is always a bundle the default pass leaves unchanged. */
   const apply = (value: ReplayBundle) => {
     const clean = defaultPass(value, rules);
     return rules.empty ? clean : defaultPass(textRulesWith(clean, rules), rules);
@@ -379,7 +379,7 @@ export function sanitizeReplayBundle(bundle: ReplayBundle, redaction?: Redaction
 function defaultPass(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBundle {
   const sanitized = urlFieldsWith(bundle, rules);
   sanitized.events = maskCapturedInputs(sanitized.events);
-  // Only the viewer's fields survive: raw HAR leftovers (request.postData, cookies, content) are dropped.
+  // invariant: only the viewer's fields survive; raw HAR leftovers (request.postData, cookies, content) are dropped.
   sanitized.network = sanitized.network.map((entry) => ({
     ...(Object.fromEntries(Object.entries(entry).filter(([key]) => NETWORK_FIELDS.has(key) && !BODY_FIELDS.has(key))) as typeof entry),
     ...(Array.isArray(entry.requestHeaders) ? { requestHeaders: headersWith(entry.requestHeaders, rules) } : {}),

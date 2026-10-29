@@ -106,6 +106,6 @@ export function compoundMatches(node: SelectorNode, compound: CompoundSelector):
   return compound.attributes.every((rule) => {
     const value = attributes[rule.name];
     if (value === undefined || value === null || value === false) return false;
-    return attributeMatches(String(value), rule);
+    return attributeMatches(typeof value === 'string' ? value : JSON.stringify(value), rule);
   });
 }

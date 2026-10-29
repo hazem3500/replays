@@ -2,9 +2,8 @@ import { readFile } from 'node:fs/promises';
 
 import { describe, expect, it } from 'vitest';
 
+import { MASK_INPUT_OPTIONS, maskCapturedInputs } from '../src/capture/mask-inputs.ts';
 import {
-  MASK_INPUT_OPTIONS,
-  maskCapturedInputs,
   networkEntries,
   sanitizeHar,
   sanitizeHeaders,
