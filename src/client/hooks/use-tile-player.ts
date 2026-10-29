@@ -3,11 +3,13 @@ import { useEffect, useRef, useSyncExternalStore } from 'react';
 import type { Fidelity } from '../compare/clock.ts';
 import type { CompareSession } from '../compare/session.ts';
 import type { ReplayController } from '../player.ts';
+import { exportCaptionScale } from '../step-caption.ts';
 import { fitViewport } from '../timeline.ts';
 
 /**
  * Mounts a tile's player into `stage` (its first child is rrweb's host) and keeps the recorded page fitted while
- * the tile glides and resizes. The player mounts once per controller: a layout change only moves the box.
+ * the tile glides and resizes. The player mounts once per controller: a layout change only moves the box. The
+ * fitted frame's box is published on `stage` the way PlayerStage publishes it, so a caption anchors to the frame.
  * The tile reports its fidelity to the clock, and `off` when it goes; a mount failure is kept by the session.
  */
 export function useTilePlayer({
@@ -37,6 +39,15 @@ export function useTilePlayer({
       root.style.height = `${viewport.height}px`;
       root.style.transform = `translate(${rect.x}px, ${rect.y}px) scale(${rect.scale})`;
       root.style.setProperty('--player-scale', String(rect.scale));
+      const width = viewport.width * rect.scale;
+      const height = viewport.height * rect.scale;
+      box.style.setProperty('--frame-x', `${rect.x}px`);
+      box.style.setProperty('--frame-y', `${rect.y}px`);
+      box.style.setProperty('--frame-w', `${width}px`);
+      box.style.setProperty('--frame-h', `${height}px`);
+      box.style.setProperty('--frame-right', `${box.clientWidth - rect.x - width}px`);
+      box.style.setProperty('--frame-bottom', `${box.clientHeight - rect.y - height}px`);
+      box.style.setProperty('--caption-scale', String(exportCaptionScale(viewport.width) * rect.scale));
     };
     try {
       cleanups.push(controller.mount(root));

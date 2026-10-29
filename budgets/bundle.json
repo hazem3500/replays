@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 606
+      "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -278,8 +278,8 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60092,
-      "gzip": 21469,
+      "raw": 60104,
+      "gzip": 21476,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -1156,10 +1156,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 613
+        "brotli": 617
       },
-      "reason": "Hash drift, not growth: raw matches main and gzip is 3 B smaller; this 1 KB chunk of hashed import paths moves its Brotli size by up to 30 bytes when another chunk's hash changes (613 against 600 here). Replaces #115's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/144"
+      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size; its Brotli size moves with the compare chunk's new hash (617 against 606 on Boat). Replaces #144's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/164"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
@@ -1252,12 +1252,12 @@
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 60092,
-        "gzip": 21469,
+        "raw": 60104,
+        "gzip": 21476,
         "brotli": 18749
       },
-      "reason": "Hash drift, not growth: raw matches main and gzip is 2 B smaller; the hashed chunk names it imports change with the server-rendered default, so Brotli moves +56 B (measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
+      "reason": "Compare draws the step caption on its focused tile, so the viewer's own stage caption steps aside when a comparison supplies the stage: +12 B raw, +7 B gzip measured on Boat against fresh main 0e7a3fdd. Replaces #157's allowance for this file (hash drift), keeping its Brotli cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/164"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
