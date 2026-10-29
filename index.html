@@ -111,6 +111,8 @@
           if (replayId) preload('replays/' + replayId);
           return;
         }
+        // why: a server-rendered index (TanStack Start) already carries its lists.
+        if (document.documentElement.hasAttribute('data-rendered')) return;
         var filters = new URLSearchParams();
         var q = (params.get('q') || '').trim();
         if (q) filters.set('q', q);

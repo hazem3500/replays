@@ -7,6 +7,7 @@ import { TooltipProvider } from '@/components/ui/tooltip.tsx';
 
 import { rootSearchSchema } from '../../shared/schemas/search.ts';
 import type { Deployment } from '../deployment.ts';
+import { useHydrated } from '../hooks/use-hydrated.ts';
 import { KeptIndex } from '../routing/KeptIndex.tsx';
 import { ThemeContext, useTheme } from '../theme.tsx';
 
@@ -24,9 +25,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 });
 
 function Document({ children }: { children: ReactNode }) {
+  const hydrated = useHydrated();
   return (
-    // why: index.html's inline script sets data-theme before hydration.
-    <html lang="en" suppressHydrationWarning>
+    // why: index.html's inline script sets data-theme before hydration; data-hydrated marks when controls respond.
+    <html lang="en" data-rendered="" data-hydrated={hydrated ? '' : undefined} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

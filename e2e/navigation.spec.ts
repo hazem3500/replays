@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { origin } from './support.ts';
+import { origin, gotoHydrated } from './support.ts';
 
 test('opening a replay uses one page crossfade and one loading layout', async ({ page }) => {
   let release!: () => void;
@@ -11,7 +11,7 @@ test('opening a replay uses one page crossfade and one loading layout', async ({
     await gate;
     await route.continue();
   });
-  await page.goto(origin());
+  await gotoHydrated(page, origin());
   await page.evaluate(() => {
     const start = document.startViewTransition.bind(document);
     const snapshots: Array<{ direction: string | undefined; layers: string[] }> = [];
@@ -42,7 +42,7 @@ test('opening a replay uses one page crossfade and one loading layout', async ({
 
 test('reduced motion opens replay without starting a page transition', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto(origin());
+  await gotoHydrated(page, origin());
   await page.evaluate(() => {
     document.startViewTransition = () => {
       throw new Error('Reduced motion must not start a view transition');
@@ -58,7 +58,7 @@ test('reduced motion opens replay without starting a page transition', async ({ 
 test('settings opens a dialog of sections without its own theme buttons', async ({ page }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
-  await page.goto(origin());
+  await gotoHydrated(page, origin());
   const trigger = page.getByRole('button', { name: 'Settings', exact: true });
   await trigger.click();
   const dialog = page.getByRole('dialog', { name: 'Settings' });

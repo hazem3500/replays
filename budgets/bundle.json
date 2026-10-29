@@ -240,12 +240,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 613
+      "brotli": 606
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
-      "gzip": 8753,
-      "brotli": 7566
+      "gzip": 8755,
+      "brotli": 7568
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -280,7 +280,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60092,
       "gzip": 21469,
-      "brotli": 18726
+      "brotli": 18749
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -313,9 +313,9 @@
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
-      "raw": 308481,
-      "gzip": 80873,
-      "brotli": 66283
+      "raw": 308641,
+      "gzip": 80890,
+      "brotli": 66336
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -414,7 +414,7 @@
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
-      "gzip": 1640,
+      "gzip": 1639,
       "brotli": 1418
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
@@ -1146,16 +1146,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
-      "cap": {
-        "raw": 308481,
-        "gzip": 80873,
-        "brotli": 66283
-      },
-      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-8e7122d98ca4 (caps 306214, 80205, 65778) and measures 308481 raw, 80873 gzip, 66283 brotli bytes, under those caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
-    },
-    {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 986487
@@ -1264,10 +1254,10 @@
       "cap": {
         "raw": 60092,
         "gzip": 21469,
-        "brotli": 18726
+        "brotli": 18749
       },
-      "reason": "Hash drift, not growth: the hashed editor chunk names it imports change (+1 B raw, 0 B gzip, -33 B brotli measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/149"
+      "reason": "Hash drift, not growth: raw matches main and gzip is 2 B smaller; the hashed chunk names it imports change with the server-rendered default, so Brotli moves +56 B (measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/157"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
@@ -1280,16 +1270,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21285,
-        "gzip": 8753,
-        "brotli": 7566
-      },
-      "reason": "Hash drift, not growth: raw matches main; the hashed editor chunk names it imports change (gzip +4 B, brotli -25 B measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/149"
-    },
-    {
       "file": "initial/index.html/css",
       "cap": {
         "raw": 261085,
@@ -1298,6 +1278,26 @@
       },
       "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21285,
+        "gzip": 8755,
+        "brotli": 7568
+      },
+      "reason": "Hash drift, not growth: raw matches main; the hashed chunk names it imports change with the server-rendered default (gzip +2 B, brotli +27 B measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/157"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
+      "cap": {
+        "raw": 308641,
+        "gzip": 80890,
+        "brotli": 66336
+      },
+      "reason": "Server-rendered pages by default: startPages (src/server/start.ts) checks for the Start build and logs when it is missing, and a failed render falls back to the single-page app; Rolldown bundles both into this shared server chunk (main 308481/80873/66283, head 308641/80890/66336). Replaces #123's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/157"
     }
   ]
 }

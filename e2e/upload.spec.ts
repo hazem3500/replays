@@ -4,7 +4,7 @@ import { gzipSync } from 'node:zlib';
 
 import { expect, type Page, test } from '@playwright/test';
 
-import { uniqueId, serveApp } from './support.ts';
+import { uniqueId, serveApp, gotoHydrated } from './support.ts';
 
 const server = serveApp();
 const sample = JSON.parse(readFileSync(resolve(import.meta.dirname, '../sample/human-demo.json'), 'utf8')) as {
@@ -13,7 +13,7 @@ const sample = JSON.parse(readFileSync(resolve(import.meta.dirname, '../sample/h
 };
 
 async function openDialog(page: Page) {
-  await page.goto(`${server().origin}/`);
+  await gotoHydrated(page, `${server().origin}/`);
   if ((page.viewportSize()?.width ?? 1280) <= 640) {
     // why: phones fold Upload into the header's menu sheet (IndexPhoneMenu.tsx).
     await page.getByRole('button', { name: 'Menu' }).click();
@@ -50,7 +50,7 @@ for (const width of [1280, 390]) {
     await expect(page.getByRole('heading', { level: 1, name: label })).toBeVisible();
 
     // The tags made it to the index filter.
-    await page.goto(`${server().origin}/?tag=width-${width}`);
+    await gotoHydrated(page, `${server().origin}/?tag=width-${width}`);
     await expect(page.getByRole('link', { name: new RegExp(`^${label}`) })).toBeVisible();
   });
 }

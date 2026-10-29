@@ -62,13 +62,15 @@ nothing is read at request time. Server-only features keep working through the A
 
 ## Server-rendered pages (TanStack Start)
 
-`REPLAYS_SSR=1` serves pages through the TanStack Start build (`dist/start`, from `pnpm build`) inside the same server:
-the HTML document, its head (branding, theme colour, the deployment's `app-*` metas) and the hydration scripts come from
-the server, while the API, plugins, auth and request policy stay exactly as they are. The index is rendered on the
-server with its lists in the page (fetched in process, with the visitor's credentials); the viewer, editor, suite and
-plugin pages still render in the browser. Without the flag, or when
-`dist/start` is missing or fails to load (logged at startup), the server sends the stamped `index.html` as before.
-`replays build-static` is unaffected.
+Pages are served through the TanStack Start build (`dist/start`, from `pnpm build`) inside the same server: the HTML
+document, its head (branding, theme colour, the deployment's `app-*` metas) and the hydration scripts come from the
+server, while the API, plugins, auth and request policy stay exactly as they are. The index is rendered on the server
+with its lists in the page, fetched in process with the visitor's own credentials, so it shows on a slow phone without
+waiting for the app's JavaScript; the viewer, editor, suite and plugin pages render in the browser.
+
+`REPLAYS_SSR=0` serves the stamped `index.html` instead (the single-page app, as before). So does a server whose
+`dist/start` is missing or fails to load (logged at startup), and the dev server. A page whose server render fails
+before sending anything (the error is logged) is served the same way. `replays build-static` is unaffected.
 
 ## Storage and scaling
 

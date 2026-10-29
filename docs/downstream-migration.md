@@ -97,6 +97,13 @@ releases and 90 days ([the list](api-stability.md#deprecated-purpose-names)). Mo
    server and viewer read it as the profile.
 4. **Links.** Saved index links with `?purpose=<id>` keep opening the same tab; new links use `?profile=`.
 
+### Server-rendered pages
+
+Pages now come from the TanStack Start build in `dist/start` (shipped in the package), rendered inside the same
+`startServer()` process: nothing to change in a host or distro. The index's lists are fetched in process through the
+host's own auth adapter and plugin hooks, with the visitor's credentials. Set `REPLAYS_SSR=0` to keep serving the
+stamped `index.html`, for example while checking a custom browser plugin that expected an empty page at startup.
+
 ## Target host layout
 
 ```text

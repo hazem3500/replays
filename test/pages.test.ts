@@ -90,7 +90,7 @@ describe('pages rendered by Start', () => {
       render: (_request, response, page) => {
         calls.push({ base: page.deployment.base, head: page.head });
         response.writeHead(200, { 'content-type': 'text/html' }).end('<html>start</html>');
-        return Promise.resolve();
+        return Promise.resolve(true);
       },
     });
     const page = await fetch(`${origin}/r/demo`, { headers: { accept: 'text/html' } });
@@ -124,5 +124,15 @@ describe('pages rendered by Start', () => {
     const html = await page.text();
     expect(html).toMatch(/^<!DOCTYPE html><html><head><meta charset="UTF-8" \/>/);
     expect(html).toContain('<body>200 [');
+  });
+
+  it('serves the single-page app when the Start entry fails to render the page', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'replays-start-entry-'));
+    const entry = join(dir, 'server.js');
+    await writeFile(entry, `export default { fetch: () => new Response('{"status":500}', { status: 500 }) };`);
+    const origin = await start((api) => loadStartRenderer(entry, api));
+    const page = await fetch(`${origin}/`, { headers: { accept: 'text/html' } });
+    expect(page.status).toBe(200);
+    expect(await page.text()).toContain('<div id="root"></div>');
   });
 });

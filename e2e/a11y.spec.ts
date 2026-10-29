@@ -1,7 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
-import { createSuite, openReplay, uniqueId, serveApp, useTheme } from './support.ts';
+import { createSuite, openReplay, uniqueId, serveApp, useTheme, gotoHydrated } from './support.ts';
 
 // axe-core over the main surfaces and overlays, in both colour schemes. Serious and critical violations fail
 // the test; moderate and minor ones are printed.
@@ -57,7 +57,7 @@ for (const theme of THEMES) {
     });
 
     test('index: list, grid, filtered and the filter menu', async ({ page }) => {
-      await page.goto(`${server().origin}/`);
+      await gotoHydrated(page, `${server().origin}/`);
       await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
       await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
       await audit(page, 'index');
@@ -65,7 +65,7 @@ for (const theme of THEMES) {
       await expect(page.getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
       await audit(page, 'index, grid');
       await page.getByRole('button', { name: 'List' }).click();
-      await page.goto(`${server().origin}/?errors=1&tag=demo`);
+      await gotoHydrated(page, `${server().origin}/?errors=1&tag=demo`);
       await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
       await audit(page, 'index, filtered');
       await page.getByRole('button', { name: /^Filter/ }).click();
@@ -161,7 +161,7 @@ for (const theme of THEMES) {
     });
 
     test('upload dialog: preview and error', async ({ page }) => {
-      await page.goto(`${server().origin}/`);
+      await gotoHydrated(page, `${server().origin}/`);
       await page.getByRole('button', { name: 'Upload', exact: true }).click();
       const dialog = page.getByRole('dialog', { name: 'Upload a replay' });
       await expect(dialog).toBeVisible();
@@ -188,7 +188,7 @@ for (const theme of THEMES) {
       const context = await browser.newContext({ viewport: { width: 412, height: 915 }, isMobile: true, hasTouch: true });
       const page = await context.newPage();
       await useTheme(page, theme);
-      await page.goto(`${server().origin}/`);
+      await gotoHydrated(page, `${server().origin}/`);
       await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
       // The "+1" chip of the source line is 23x16 px on phones (src/client/index/SourceLine.tsx), under WCAG 2.2's
       // 24 px target: reported to the client owners, skipped here until it grows.
@@ -300,7 +300,7 @@ test('reflow: no sideways scrolling at 320 px', async ({ browser }) => {
   const context = await browser.newContext({ viewport: { width: 320, height: 640 }, isMobile: true, hasTouch: true });
   const page = await context.newPage();
   for (const path of ['/', '/r/demo-shop']) {
-    await page.goto(`${server().origin}${path}`);
+    await gotoHydrated(page, `${server().origin}${path}`);
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   }

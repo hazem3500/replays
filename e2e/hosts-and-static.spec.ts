@@ -8,7 +8,7 @@ import { expect, type Page, test } from '@playwright/test';
 
 import { buildStatic } from '../src/server/static.ts';
 import { freePort } from '../scripts/test-server.mjs';
-import { serveApp, useTheme } from './support.ts';
+import { serveApp, useTheme, gotoHydrated } from './support.ts';
 
 /*
  * One process, two addresses (`hosts` in the config, src/server/base-path.ts): 127.0.0.1 gets the global base
@@ -52,7 +52,7 @@ function apiPaths(page: Page) {
 test.describe('a base per host', () => {
   test('the default host keeps the global base', async ({ page }) => {
     const paths = apiPaths(page);
-    await page.goto(`${server().origin}/replays/`);
+    await gotoHydrated(page, `${server().origin}/replays/`);
     await expect(page.locator('meta[name="app-base"]')).toHaveAttribute('content', '/replays');
     await expect(page.getByRole('link', { name: /^Demo shop/ })).toHaveAttribute('href', '/replays/r/demo-shop');
     expect(paths.length).toBeGreaterThan(0);
@@ -62,7 +62,7 @@ test.describe('a base per host', () => {
   test('the listed host is served at the root, from the same process', async ({ page }) => {
     const paths = apiPaths(page);
     const origin = `http://${ROOT_HOST}:${port()}`;
-    await page.goto(`${origin}/`);
+    await gotoHydrated(page, `${origin}/`);
     await expect(page).toHaveTitle('Acme Replays');
     await expect(page.locator('meta[name="app-base"]')).toHaveAttribute('content', '/');
     const link = page.getByRole('link', { name: /^Demo shop/ });
@@ -88,7 +88,7 @@ test.describe('a base per host', () => {
 
   test('theme-color follows the branding page colour per scheme', async ({ page }) => {
     await useTheme(page, 'dark');
-    await page.goto(`${server().origin}/replays/`);
+    await gotoHydrated(page, `${server().origin}/replays/`);
     const color = page.locator('meta[name="theme-color"]');
     await expect(color).toHaveAttribute('content', PAGE.dark);
     await page.getByRole('button', { name: 'Switch to light theme' }).click();
@@ -153,7 +153,7 @@ test.describe('the static viewer on a CDN, the API on the server', () => {
   test('opens the index and a replay with the stamped branding, talking to the API at the base', async ({ page }) => {
     const paths = apiPaths(page);
     await useTheme(page, 'light');
-    await page.goto(`${cdnOrigin}/replays/`);
+    await gotoHydrated(page, `${cdnOrigin}/replays/`);
     await expect(page).toHaveTitle('Acme Replays');
     await expect(page.locator('meta[name="theme-color"]')).toHaveAttribute('content', PAGE.light);
     await page.getByRole('link', { name: /^Demo shop/ }).click();

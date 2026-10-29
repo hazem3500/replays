@@ -15,9 +15,12 @@ interface StartEntry {
   fetch(request: Request): Response | Promise<Response>;
 }
 
-/** One page request rendered by the TanStack Start server entry. */
+/**
+ * One page request rendered by the TanStack Start server entry. Resolves false, with nothing sent, when the render
+ * failed before its first byte: the caller then serves the single-page app instead.
+ */
 export interface PageRenderer {
-  render(request: IncomingMessage, response: ServerResponse, page: { deployment: PageDeployment; head: string }): Promise<void>;
+  render(request: IncomingMessage, response: ServerResponse, page: { deployment: PageDeployment; head: string }): Promise<boolean>;
 }
 
 /** Credentials and routing headers an in-process API call carries from the page request. */
@@ -56,7 +59,12 @@ export async function loadStartRenderer(entryFile: string, api: NodeHandler): Pr
       request.headers[PAGE_HEADER] = id;
       try {
         const page = await entry.fetch(new NodeRequest({ req: request, res: response }));
+        if (page.status >= 500) {
+          await page.body?.cancel();
+          return false;
+        }
         await sendPage(request, response, page, head);
+        return true;
       } finally {
         pageContexts.delete(id);
       }
