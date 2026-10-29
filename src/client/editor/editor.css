@@ -11,7 +11,7 @@
   /* Top bar: a quiet save state by the title, undo/redo, View replay and Export. */
   .editor-save-state { display: inline-flex; align-items: center; gap: 4px; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; outline: none; }
   .editor-save-state svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; }
-  .editor-save-state[data-state="saved"] svg { color: var(--accent); }
+  .editor-save-state[data-state="saved"] svg { color: var(--text-tertiary); }
   .editor-retry { padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; cursor: pointer; }
   .editor-retry:hover { color: var(--text); }
   .editor-add-effect.editor-add-effect { gap: 5px; padding: 0 8px; color: var(--text-secondary); }
@@ -38,6 +38,9 @@
   .editor-bar svg.filled-icon { fill: currentColor; }
   .editor-bar [aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
   .editor-bar-divider { width: 8px; height: 1px; margin: 0; }
+  .editor-tool.editor-tool { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
+  .editor-tool.editor-tool:hover { color: var(--text); }
+  .editor-tool svg { width: 15px; height: 15px; }
   .editor-clock { min-width: 52px; margin-left: 4px; color: var(--text); font-size: var(--text-xs); font-weight: 600; font-variant-numeric: tabular-nums; }
   .editor-durations { display: inline-flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--text-tertiary); white-space: nowrap; }
   .editor-durations-note { color: var(--text-tertiary); font-size: var(--text-2xs); }

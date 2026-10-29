@@ -4,20 +4,13 @@ import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeftIcon,
   EllipsisIcon,
-  CaptionsIcon,
   MousePointer2Icon,
   CheckIcon,
-  ChevronDownIcon,
-  EyeOffIcon,
-  FastForwardIcon,
   HourglassIcon,
   Redo2Icon,
-  ScissorsIcon,
   Undo2Icon,
-  ZoomInIcon,
-  PlusIcon,
-  MapPinIcon,
   FileVideoCameraIcon,
+  KeyboardIcon,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
@@ -27,15 +20,6 @@ import { Button } from '@/components/ui/button.tsx';
 
 import { EMPTY_EDITS, editListOf, editTimeline, isEmptyEdits, type ReplayEdits, type StoredReplayEdits } from '../../shared/edits.ts';
 import { clicksOf, IDENTITY_TIME, playbackEffects, proposeStepCaptions, proposeZoomRegions } from '../../shared/effects.ts';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuCheckboxItem,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuShortcut,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
 import { EditCaption } from '../edit-caption.tsx';
 import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
@@ -86,13 +70,14 @@ import { applyHighlight, periodHighlight, pointHighlight } from './highlight-act
 import { Timeline } from './Timeline.tsx';
 import { CursorInspector } from './CursorInspector.tsx';
 import { EditorInspector } from './EditorInspector.tsx';
+import { AddMenu, BarTools } from './EditorTools.tsx';
+import { EDITOR_SHORTCUT_GROUPS, IS_MAC, MOD } from './editor-tools.ts';
+import { ShortcutSheet } from '../viewer/ShortcutSheet.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
 import { EditorExport } from './EditorExport.tsx';
 import { MobileInspector, MobileAddToolbar, mobileTimelineObjects } from './MobileInspector.tsx';
 import { ThemeSwitch } from '../theme.tsx';
 
-const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
-const MOD = IS_MAC ? '⌘' : 'Ctrl+';
 /** Quiet time after the last change before it is saved. */
 const AUTOSAVE_MS = 700;
 
@@ -134,6 +119,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [conflict, setConflict] = useState<LoadedEdits>();
   const [suggesting, setSuggesting] = useState(false);
   const [showEmptyTracks, setShowEmptyTracks] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [cursorOpen, setCursorOpen] = useState(false);
   const mobileMore = useRef<HTMLDetailsElement>(null);
   const focusCaption = useRef(false);
@@ -477,6 +463,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
           return;
         case 'delete':
           return actions.deleteSelection();
+        case 'shortcuts':
+          return setShortcutsOpen(true);
         case 'deselect':
           setMobileTrimOpen(false);
           setBlurPlacement(undefined);
@@ -540,6 +528,13 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
             },
           ]
         : []),
+      {
+        label: 'Keyboard shortcuts',
+        icon: <KeyboardIcon aria-hidden="true" />,
+        onSelect: () => setShortcutsOpen(true),
+        shortcut: '?',
+        testId: 'editor-shortcuts',
+      },
       {
         label: 'View original',
         icon: <FileVideoCameraIcon aria-hidden="true" />,
@@ -875,59 +870,19 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 <EditorPlayButton onSwitch={playPause} />
                 <EditorClock />
                 <span className="editor-bar-divider" aria-hidden="true" />
-                <IconButton
-                  label={selection?.kind === 'range' ? 'Cut the selection' : 'Cut a second at the playhead'}
-                  shortcut="C"
-                  onClick={actions.cut}
-                  data-testid="add-cut"
-                >
-                  <ScissorsIcon aria-hidden="true" />
-                </IconButton>
-                <IconButton
-                  label={suggesting ? 'Remove the waits found' : 'Find waits to remove'}
-                  shortcut="W"
-                  onClick={actions.removeWaits}
-                  data-testid="remove-waits"
-                  aria-pressed={suggesting}
-                >
-                  <HourglassIcon aria-hidden="true" />
-                </IconButton>
-                <IconButton label="Highlight this moment" shortcut="M" onClick={actions.pointHighlight} data-testid="add-point-highlight">
-                  <MapPinIcon aria-hidden="true" />
-                </IconButton>
+                <BarTools
+                  rangeSelected={selection?.kind === 'range'}
+                  suggesting={suggesting}
+                  onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
+                />
                 <span className="editor-bar-divider" aria-hidden="true" />
-                <DropdownMenu>
-                  <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-add-effect" data-testid="add-effect" />}>
-                    <PlusIcon aria-hidden="true" /> Add <ChevronDownIcon aria-hidden="true" />
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent side="top" className="w-auto min-w-52" aria-label="Add to timeline">
-                    <DropdownMenuItem onClick={() => actions.effect('zoom')} data-testid="add-zoom">
-                      <ZoomInIcon aria-hidden="true" /> Zoom on clicks <DropdownMenuShortcut>Z</DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => actions.effect('speed')} data-testid="add-speed">
-                      <FastForwardIcon aria-hidden="true" /> Speed up <DropdownMenuShortcut>F</DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => actions.effect('blur')} data-testid="add-blur">
-                      <EyeOffIcon aria-hidden="true" /> Blur an area <DropdownMenuShortcut>B</DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => actions.effect('caption')} data-testid="add-caption">
-                      <CaptionsIcon aria-hidden="true" /> Captions <DropdownMenuShortcut>T</DropdownMenuShortcut>
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={actions.periodHighlight} data-testid="add-period-highlight">
-                      <ScissorsIcon aria-hidden="true" /> Highlight selection
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuCheckboxItem
-                      checked={showEmptyTracks}
-                      onCheckedChange={setShowEmptyTracks}
-                      closeOnClick
-                      data-testid="show-empty-tracks"
-                    >
-                      Show empty tracks
-                    </DropdownMenuCheckboxItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                <AddMenu
+                  onAdd={actions.effect}
+                  onPointHighlight={actions.pointHighlight}
+                  onPeriodHighlight={actions.periodHighlight}
+                  showEmptyTracks={showEmptyTracks}
+                  onShowEmptyTracks={setShowEmptyTracks}
+                />
                 <div className="editor-bar-end">
                   {suggesting && suggestions.length ? (
                     <span className="editor-suggest" role="status" data-testid="wait-suggestions">
@@ -1124,6 +1079,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
             </span>
           </section>
         </main>
+        <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} groups={EDITOR_SHORTCUT_GROUPS} />
       </ViewerContext.Provider>
     </PlayerContext.Provider>
   );
