@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   composeUi,
   consentDialog,
@@ -150,29 +150,31 @@ async function walk(ui: RecorderUi) {
 
 const rendered = [...Object.keys(defaultRecorderMessages).filter((key) => key !== 'startFailed'), 'format.elapsed'].sort();
 
-afterEach(() => {
-  document.body.innerHTML = '';
-  vi.useRealTimers();
-});
+describe('recorder messages coverage', () => {
+  afterEach(() => {
+    document.body.innerHTML = '';
+    vi.useRealTimers();
+  });
 
-it('renders nothing but overridden messages in every state of the default UI', async () => {
-  expect(await walk(createDefaultUi(options))).toEqual(rendered);
-});
+  it('renders nothing but overridden messages in every state of the default UI', async () => {
+    expect(await walk(createDefaultUi(options))).toEqual(rendered);
+  });
 
-it('renders nothing but overridden messages in every state of the composed kit steps', async () => {
-  const ui = composeUi(consentDialog(options), recordingIndicator(options), reviewDialog(options), resultToast(options));
-  expect(await walk(ui)).toEqual(rendered);
-});
+  it('renders nothing but overridden messages in every state of the composed kit steps', async () => {
+    const ui = composeUi(consentDialog(options), recordingIndicator(options), reviewDialog(options), resultToast(options));
+    expect(await walk(ui)).toEqual(rendered);
+  });
 
-it('accepts an override for exactly the keys that have defaults', () => {
-  expect(Object.keys(sentinels).sort()).toEqual(Object.keys(defaultRecorderMessages).sort());
-});
+  it('accepts an override for exactly the keys that have defaults', () => {
+    expect(Object.keys(sentinels).sort()).toEqual(Object.keys(defaultRecorderMessages).sort());
+  });
 
-it('writes the consent time limit in words by default', async () => {
-  const seen = new Set<string>();
-  const abort = new AbortController();
-  const answer = createDefaultUi().requestConsent({ trigger: { source: 'user' }, maxDurationMs: 180000, signal: abort.signal });
-  expect(leftovers(seen).join(' ')).toContain('Up to 3 minutes. Stop whenever you like.');
-  abort.abort();
-  await answer;
+  it('writes the consent time limit in words by default', async () => {
+    const seen = new Set<string>();
+    const abort = new AbortController();
+    const answer = createDefaultUi().requestConsent({ trigger: { source: 'user' }, maxDurationMs: 180000, signal: abort.signal });
+    expect(leftovers(seen).join(' ')).toContain('Up to 3 minutes. Stop whenever you like.');
+    abort.abort();
+    await answer;
+  });
 });
