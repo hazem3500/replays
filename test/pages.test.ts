@@ -22,7 +22,8 @@ const INDEX = `<!doctype html><html><head><meta charset="UTF-8" />
 async function collect(stream: ReadableStream<Uint8Array>) {
   const decoder = new TextDecoder();
   let text = '';
-  for await (const chunk of stream) text += decoder.decode(chunk, { stream: true });
+  const reader = stream.getReader();
+  for (let next = await reader.read(); !next.done; next = await reader.read()) text += decoder.decode(next.value, { stream: true });
   return text + decoder.decode();
 }
 
