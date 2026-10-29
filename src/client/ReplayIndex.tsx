@@ -747,6 +747,11 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
     return filtered ? { kind: 'filtered', active: narrowing, onClearFilters: clear } : undefined;
   };
   const empty = emptyView();
+  // why: an empty library has nothing to filter, sort or lay out; its one action is the first upload (FirstRun).
+  const firstRun = !error && !empty && entries?.length === 0;
+  // why: the toolbar that appears with the first replay enters like a list item; on a normal load it is just there.
+  const [leftFirstRun, setLeftFirstRun] = useState(false);
+  if (firstRun && !leftFirstRun) setLeftFirstRun(true);
 
   return (
     <main className="index-shell" ref={shell}>
@@ -768,24 +773,27 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
             </>
           }
         />
-        <ScopeBar
-          count={count}
-          lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
-        >
-          {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
-          <SortMenu sort={sort} onChange={changeSort} />
-          {compact ? null : (
-            // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
-            <div className="view-switch" role="group" aria-label="Layout">
-              <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
-                <AnimatedIcon name="list" />
-              </SwitchIconButton>
-              <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
-                <AnimatedIcon name="layout-grid" />
-              </SwitchIconButton>
-            </div>
-          )}
-        </ScopeBar>
+        {firstRun ? null : (
+          <ScopeBar
+            entering={leftFirstRun}
+            count={count}
+            lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
+          >
+            {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
+            <SortMenu sort={sort} onChange={changeSort} />
+            {compact ? null : (
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
+              <div className="view-switch" role="group" aria-label="Layout">
+                <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
+                  <AnimatedIcon name="list" />
+                </SwitchIconButton>
+                <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
+                  <AnimatedIcon name="layout-grid" />
+                </SwitchIconButton>
+              </div>
+            )}
+          </ScopeBar>
+        )}
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>

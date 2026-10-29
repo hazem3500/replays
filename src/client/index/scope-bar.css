@@ -112,3 +112,9 @@
   .filter-token-field { display: none; }
   .filter-token-open { padding-left: 8px; }
 }
+
+/* The toolbar arriving with a library's first replay (ReplayIndex.tsx): it was absent in the first-run state, and it
+   enters like a list item (list-motion.css), once. */
+@keyframes scope-bar-enter { from { opacity: 0; transform: translate3d(0, 8px, 0); } }
+.scope-bar[data-entering] { animation: scope-bar-enter 240ms var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) { .scope-bar[data-entering] { animation: none; } }

@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 622
+      "brotli": 605
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -1223,6 +1223,14 @@
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 633
+      },
+      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
+    },
+    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 252918,
@@ -1241,14 +1249,6 @@
       },
       "reason": "The initial index style group carries the same phone index stylesheets.",
       "pr": "https://github.com/hazem3500/replays/pull/111"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 633
-      },
-      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
     }
   ]
 }
