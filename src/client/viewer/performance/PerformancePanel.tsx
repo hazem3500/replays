@@ -3,6 +3,7 @@ import { type ReactNode, useRef, useState } from 'react';
 import type { ReplayStep } from '../../../shared/replay.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { usePlayer } from '../../player.ts';
+import { CopyButton } from '@/components/copy-button.tsx';
 import { Empty } from '../Empty.tsx';
 import type { NetworkRow } from '../network/model.ts';
 import type { PerformanceModel } from '../performance.ts';
@@ -27,23 +28,24 @@ import '../network/network.css';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
 import './performance.css';
 
-/** Another recording being compared: its letter and vitals. */
+/** Another recording being compared: its short name, colour (1 to 9) and vitals. */
 export interface PerformancePeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   vitals: readonly Vital[];
 }
 
-/** Below this many moments the list says it all; the ribbon would be a mostly empty strip. */
-const RIBBON_MIN_MOMENTS = 4;
 const SIDE_DETAIL_MIN_WIDTH = 760;
 
 const STRINGS = {
   order: 'Order',
   worst: 'Worst first',
   time: 'In order',
-  noneTitle: 'Performance wasn’t captured',
-  none: 'This recording has no paint, long task or interaction timings.',
+  noneTitle: 'Performance wasn’t recorded',
+  none: 'This capture didn’t include timing data.',
+  recordWith: 'replays capture --profile performance',
+  copyCommand: 'Copy the capture command',
   calmTitle: 'Nothing was slow',
   calm: 'No long tasks or slow interactions were captured.',
   outsideTitle: 'Nothing slow in this stretch',
@@ -64,6 +66,20 @@ function ribbonMarks(moments: readonly Moment[], vitals: readonly Vital[]): Ribb
     vital.at === undefined ? [] : [{ id: vital.id, at: vital.at, end: vital.at, tone: 'success', lane: 'cap' }],
   );
   return [...spans, ...paints];
+}
+
+/** Something was measured: a vital has a value or was watched (`None`), or there is a moment. */
+function recorded(vitals: readonly Vital[], moments: number) {
+  return moments > 0 || vitals.some((vital) => vital.missing !== 'not-captured');
+}
+
+function RecordCommand() {
+  return (
+    <span className="pp-record">
+      <code>{STRINGS.recordWith}</code>
+      <CopyButton value={STRINGS.recordWith} label={STRINGS.copyCommand} />
+    </span>
+  );
 }
 
 const otherOrder = (order: MomentOrder): MomentOrder => (order === 'worst' ? 'time' : 'worst');
@@ -115,16 +131,25 @@ export function PerformancePanel({
   const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
   const [range, setRange] = useState<RibbonRange>();
+  const [hovered, setHovered] = useState<string>();
   const moments = buildMoments(model.signals);
   const vitals = buildVitals(model.signals, moments, model.track);
+  const marks = ribbonMarks(moments, vitals);
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
     id: peer.id,
-    letter: peer.letter,
+    name: peer.name,
+    colour: peer.colour,
     deltas: vitalDeltas(vitals, peer.vitals),
   }));
-  if (!model.track) return <Empty title={STRINGS.noneTitle}>{STRINGS.none}</Empty>;
+  // why: when no observer reported anything, five "Not captured" cells and "Nothing was slow" would claim a result.
+  if (!recorded(vitals, moments.length))
+    return (
+      <Empty title={STRINGS.noneTitle} action={<RecordCommand />}>
+        {STRINGS.none}
+      </Empty>
+    );
   const empty = range ? (
     <Empty title={STRINGS.outsideTitle}>{STRINGS.outside}</Empty>
   ) : (
@@ -140,8 +165,15 @@ export function PerformancePanel({
         {moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
       </VitalsBar>
       {extra}
-      {moments.length >= RIBBON_MIN_MOMENTS ? (
-        <TimeRibbon testId="performance-ribbon" duration={duration} marks={ribbonMarks(moments, vitals)} range={range} onRange={setRange} />
+      {marks.length ? (
+        <TimeRibbon
+          testId="performance-ribbon"
+          duration={duration}
+          marks={marks}
+          range={range}
+          onRange={setRange}
+          highlight={hovered ?? selected}
+        />
       ) : null}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
@@ -151,6 +183,7 @@ export function PerformancePanel({
             explain={(item) => causeText(causeOf(item, moments, requests))}
             selected={selected}
             onSelect={setSelected}
+            onHover={setHovered}
             empty={empty}
           />
         </div>

@@ -7,7 +7,7 @@
          replays build-static from the branding (src/server/base-path.ts withBase). The inline script below picks one. -->
     <meta name="theme-color" content="#0c0e12" data-dark="#0c0e12" data-light="#eff1f5" />
     <!-- Where the app lives ("/" at a domain's root, else a path prefix such as /replays): filled in by the server
-         per request (src/server/base-path.ts), so one build serves every base. Read by src/client/route.ts. -->
+         per request (src/server/base-path.ts), so one build serves every base. Read by src/client/deployment.ts. -->
     <meta name="app-base" content="" />
     <meta name="app-sign-in" content="" />
     <!-- Beta features the server enabled (REPLAYS_BETA_EDITOR): read by src/client/config.ts betaEditor(). Empty = none. -->
@@ -77,10 +77,10 @@
     </script>
     <script>
       // Start the page's API requests alongside the app's JS instead of after it: the app's fetch() of the
-      // same URL picks up each preload. Mirrors parseRoute, apiUrl and searchFromFilters (src/client).
+      // same URL picks up each preload. Mirrors the routes (src/client/routes), apiUrl and searchFromFilters (src/client).
       (function () {
         var path = location.pathname;
-        // appBase (route.ts): the declared base when the page is under it, else the root.
+        // appBase (src/client/api/fetch.ts): the declared base when the page is under it, else the root.
         var meta = document.querySelector('meta[name="app-base"]');
         var declared = meta && meta.content && meta.content !== '/' ? meta.content.replace(/\/+$/, '') : '';
         var base = declared !== '' && (path === declared || path.indexOf(declared + '/') === 0) ? declared : '';
@@ -106,7 +106,7 @@
         var replay = /^\/r\/([^/]+)\/?$/.exec(rest);
         if (suite || replay) {
           var replayId = id(suite ? suite[2] || '' : replay[1]);
-          var suiteId = suite ? id(suite[1]) : params.get('suite') ? encodeURIComponent(params.get('suite')) : '';
+          var suiteId = suite ? id(suite[1]) : '';
           if (suiteId) preload('suites/' + suiteId + '?expand=runs');
           if (replayId) preload('replays/' + replayId);
           return;
@@ -136,7 +136,7 @@
     <script>
       // Tag cross-document transitions so styles.css can animate them: "page", and "page-back" on Back (a history
       // traversal to an earlier entry). Reloads skip the transition. Index ↔ viewer changes stay in the document
-      // and animate there (src/client/navigation.ts). Clicks during any transition go through (below).
+      // and animate there (src/client/transitions/page-motion.ts). Clicks during any transition go through (below).
       (function () {
         function tag(transition, activation) {
           if (!transition || !activation) return;

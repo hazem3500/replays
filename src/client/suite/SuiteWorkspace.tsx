@@ -4,7 +4,7 @@ import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
 import { type KeyboardEvent, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
+import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { StatusLabel, type StatusTone } from '@/components/ui/status-label.tsx';
@@ -21,8 +21,9 @@ import { formatClock } from '../../shared/replay.ts';
 import { type ReviewSuite, type ReviewSuiteIndexRun, suiteOverallStatus } from '../../shared/review-suite.ts';
 import { productName } from '../config.ts';
 import { prefetchReplay, replayQuery, type SuiteWithRuns, suiteQuery } from '../queries.ts';
-import { setPageUrl, swapInPlace } from '../navigation.ts';
-import { indexHref, indexReturnHref, parseRoute, replayInSuiteHref, suiteHref } from '../route.ts';
+import { setPageUrl } from '../routing/navigate.ts';
+import { swapInPlace } from '../transitions/swap.ts';
+import { indexHref, indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 import { Topbar } from '../Topbar.tsx';
@@ -33,6 +34,7 @@ import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
+import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults } from '../compare/defaults.ts';
 
 // why: the comparison (tiles, shared clock) is only fetched for suites with two or more recordings.
@@ -121,7 +123,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // refresh of the suite (a run that failed meanwhile) cannot move the viewer to another run.
   useEffect(() => {
     if (chosen || !landing) return;
-    history.replaceState(history.state, '', `${replayInSuiteHref(landing, id)}${location.search}${location.hash}`);
+    setPageUrl(`${replayInSuiteHref(landing, id)}${location.search}${location.hash}`);
     // oxlint-disable-next-line react/set-state-in-effect -- pins a value already on screen; no visible re-render
     setSelected(landing);
   }, [chosen, id, landing]);
@@ -138,7 +140,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const comparing = defaults.compare;
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
-  // short wait), as one calm in-place transition (navigation.ts swapInPlace).
+  // short wait), as one calm in-place transition (transitions/swap.ts).
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<string>();
   const target = pending ?? selected;
@@ -164,8 +166,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
 
   useEffect(() => {
     const onPop = () => {
-      const route = parseRoute(location.pathname, location.search);
-      if (route.kind !== 'suite' || route.id !== id) return;
+      const route = suiteRunOf(location.pathname);
+      if (route?.suiteId !== id) return;
       if (comparing) setSelected(route.replayId);
       else switchTo(route.replayId);
     };
@@ -181,7 +183,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         setSelected(replayId);
         return;
       }
-      history.pushState(null, '', replayInSuiteHref(replayId, id));
+      setPageUrl(replayInSuiteHref(replayId, id), { push: true });
       switchTo(replayId, instant);
     },
     [comparing, id, switchTo, target],
@@ -232,18 +234,18 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     const subject = subjectLink(suite);
     return { title: suite.title, href: suiteHref(id), ...(subject ? { subject } : {}) };
   }, [id, suite]);
-  // Keep (no expiry) for the whole suite: a pin in the sidebar head, or a "More" item on phones (no sidebar).
+  // why: keeping a suite is rare and the only way to stop its expiry, so it waits in More at every width; the
+  // sidebar only says when the suite is kept.
   const keep = useKeepSuite(id);
   const keepMenu = useMemo(
-    () =>
-      narrow ? (
-        <DropdownMenuItem onClick={keep.flip} disabled={keep.pending} data-testid="keep-suite">
-          {keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />}
-          {keep.kept ? 'Suite kept' : 'Keep suite'}
-          {keep.kept ? <DropdownMenuShortcut className="tracking-normal">Release</DropdownMenuShortcut> : null}
-        </DropdownMenuItem>
-      ) : undefined,
-    [keep.kept, keep.pending, keep.flip, narrow],
+    () => (
+      <DropdownMenuItem onClick={keep.flip} disabled={keep.pending} data-testid="keep-suite">
+        {keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />}
+        {keep.kept ? 'Suite kept' : 'Keep suite and its runs'}
+        {keep.kept ? <DropdownMenuShortcut className="tracking-normal">Release</DropdownMenuShortcut> : null}
+      </DropdownMenuItem>
+    ),
+    [keep.kept, keep.pending, keep.flip],
   );
   // Phones: no sidebar; the title is the run switcher (tap "Run 1 of 2 · label ⌄").
   const runMenu = useMemo(
@@ -372,10 +374,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           <main className="app-shell">
             <Topbar title={suite.title} backHref={backHref} compact={narrow} />
             {runs.some((item) => isExpired(item, detailed)) ? (
-              <div className="empty">
-                <strong>Recordings expired</strong>
-                <span>This suite's recordings are past retention.</span>
-              </div>
+              <SuiteExpired replayIds={runs.flatMap((item) => (item.replayId ? [item.replayId] : []))} />
             ) : (
               <div className="empty">
                 <strong>No recordings yet</strong>
@@ -448,6 +447,12 @@ function SuiteSidebar({
               <span className={`status-dot tone-${overall.toLowerCase()}`} aria-hidden="true" />
               <span>{overall}</span>
               <span>{formatClock(duration)}</span>
+              {keep.kept ? (
+                <span className="suite-kept" data-testid="suite-kept">
+                  <PinIcon aria-hidden="true" />
+                  Kept by {keep.retention?.kept?.by ?? 'someone'}
+                </span>
+              ) : null}
             </p>
             {subject ? (
               <p className="suite-sidebar-meta">
@@ -461,18 +466,6 @@ function SuiteSidebar({
               </p>
             ) : null}
           </div>
-        )}
-        {collapsed ? null : (
-          <SwitchIconButton
-            label={keep.kept ? `Kept by ${keep.retention?.kept?.by ?? 'someone'} · release` : 'Keep suite and its runs'}
-            tooltipSide="bottom"
-            pressed={keep.kept}
-            onPressedChange={keep.flip}
-            disabled={keep.pending}
-            data-testid="keep-suite"
-          >
-            <PinIcon aria-hidden="true" />
-          </SwitchIconButton>
         )}
         <IconButton
           label={collapsed ? 'Expand runs sidebar' : 'Collapse runs sidebar'}

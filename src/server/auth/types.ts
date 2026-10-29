@@ -65,6 +65,11 @@ export interface AuthAdapter {
   authenticate(request: IncomingMessage): Promise<Identity | undefined> | Identity | undefined;
   handle?(request: IncomingMessage, response: ServerResponse, context: AuthRouteContext): Promise<boolean> | boolean;
   loginUrl?(request: IncomingMessage, context: AuthRouteContext): string | undefined;
+  /**
+   * Where a signed-in browser goes to sign out (a top-level navigation that ends the session), for the viewer's account
+   * menu. Absent when the mode has no session of its own to end (a proxy header, a bearer token, no auth).
+   */
+  signOutUrl?(context: AuthRouteContext): string | undefined;
   /** Present only when this adapter can issue and validate a dedicated replay-upload-only token. */
   cliDeviceAuth?(context: AuthRouteContext): Promise<CliDeviceAuthCapability | undefined> | CliDeviceAuthCapability | undefined;
   /** Paths (public, canonical, without the base path) that `handle` serves without an identity. */
@@ -79,4 +84,22 @@ export interface AuthRouteContext {
 }
 
 /** A module loaded by `AUTH_MODE=plugin` (`AUTH_PLUGIN=./my-auth.mjs`): its default export is this factory. */
-export type AuthPluginFactory = (env: NodeJS.ProcessEnv) => AuthAdapter | Promise<AuthAdapter>;
+export type AuthPluginFactory = (env: NodeJS.ProcessEnv) => AnyAuthAdapter | Promise<AnyAuthAdapter>;
+
+/**
+ * An auth adapter over web-standard `Request`/`Response`, which runs on any fetch host. Same contract as `AuthAdapter`:
+ * `authenticateRequest` returns the identity (including `authScopes`) or undefined, `handleRequest` answers the adapter's
+ * own `routes` (return a `Response` when it answered), and `loginUrlFor` is where a browser page load without one goes.
+ */
+export interface WebAuthAdapter {
+  readonly name: string;
+  readonly signIn?: SignInConfig;
+  authenticateRequest(request: Request): Promise<Identity | undefined> | Identity | undefined;
+  handleRequest?(request: Request, context: AuthRouteContext): Promise<Response | undefined> | Response | undefined;
+  loginUrlFor?(request: Request, context: AuthRouteContext): string | undefined;
+  cliDeviceAuth?(context: AuthRouteContext): Promise<CliDeviceAuthCapability | undefined> | CliDeviceAuthCapability | undefined;
+  readonly routes?: readonly string[];
+}
+
+/** Either adapter shape: the server normalizes a `WebAuthAdapter` (auth/web.ts) where it takes one. */
+export type AnyAuthAdapter = AuthAdapter | WebAuthAdapter;

@@ -25,6 +25,20 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   `RecorderMessageOverrides`, `RecorderMessageError`, a `locale` option and `format: { elapsed, duration, bytes }` hooks
   with Intl defaults (`createRecorderFormat`, `RecorderFormat`); timers take `format.elapsed` too. Existing string
   overrides keep working: a `{param}` template string is still accepted for every data-bearing key.
+- The viewer's top bar actions (`core:compare`, `core:edit`, `core:info`, `core:link`, `core:download`), its Context
+  tab sections (`core:summary`, `core:sources`, `core:fields`) and its seek bar tracks (`core:steps`, `core:errors`,
+  `core:highlights`) are slot items: `configureSlot` can reorder or hide them like the inspector's tabs. Plugin
+  context sections are placed where a host's order puts them.
+- Compared recordings go by name: each tile, the inspector's "Showing" switch and the Network and Performance panels
+  name a recording by what tells it apart ("Before", "Firefox", "Run 3": the parts every label shares are dropped)
+  beside one colour swatch, instead of A, B, C. Vitals and request details now say how each other recording did.
+- `REPLAYS_SSR=1` serves pages through a TanStack Start build embedded in the server
+  ([docs/operations.md](docs/operations.md#server-rendered-pages-tanstack-start)): the index arrives rendered, with its
+  lists in the page, so a phone shows replays without waiting for the app's JavaScript. The API, plugins and auth are
+  unchanged. Off by default; the viewer, editor, suite and plugin pages still render in the browser.
+- A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
+  mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
+  `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
 - Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
   hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
   inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
@@ -47,6 +61,12 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   sampling, CLI defaults, stricter privacy only). Core ships a built-in `performance` profile, which the index shows as a tab
   only once a replay has it.
 
+- Expired replays: when retention removes a replay the server keeps a small record of it (title, host, dates, the
+  window and profile that applied; nothing of the recording) for `RETENTION_EXPIRED_DAYS` (default 30, `0` keeps none),
+  served at `GET /api/expired-replays` and documented as `docs/formats/expired-replay.schema.json`. The index shows
+  "N replays expired in the last 30 days" under the feed with "Show expired" for dimmed, details-only rows, and a suite
+  whose recordings are gone says when and under which window they were removed instead of "Recordings expired".
+
 - Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
@@ -58,6 +78,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+
+
+
+- Poster ThumbHash: once the server renders a replay's poster it keeps the poster's ThumbHash in the summary
+  (`ReplaySummary.thumbhash`, base64, ~25 bytes; `meta.json` and `GET /api/replays`). The index paints it under each
+  poster while the image loads and crossfades to the real poster, with no layout shift. Replays without one keep the
+  plain placeholder. The summary is now documented as `docs/formats/replay-summary.schema.json`.
 
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
@@ -78,6 +105,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - `/plugin` exports `HttpError` (status, message, optional headers) and `tooManyRequests(seconds, message?)`.
   - `examples/app-key-ingest`: a public app-key ingest (keys with rotation, origins, limits, retention) built only from these hooks.
 
+- `WebAuthAdapter` (`authenticateRequest`, `handleRequest`, `loginUrlFor`): auth adapters over web `Request`/`Response`, accepted
+  wherever an `AuthAdapter` is (`api.auth`, `AUTH_PLUGIN`, `createApp({ auth })`, `describeAuthAdapter`); `AnyAuthAdapter` names
+  either shape ([docs/extension-api.md](docs/extension-api.md#web-standard-adapters)).
 - Plugin Web APIs, additive in plugin API generation 1 ([docs/extension-api.md](docs/extension-api.md#web-apis-routes-and-middleware)):
   - `api.route(...)`: web-standard handlers under `/api/plugins/<plugin>`, with `auth`, `write` and a Standard Schema `body`
   - `api.middleware(...)`: `pre-auth`/`post-auth` interceptors that return a `Response` or nothing
@@ -257,12 +287,36 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   full `RecorderMessages` object or reads `DEFAULT_MESSAGES.consentBody` as a string needs updating; `messages` overrides
   are unaffected. The review dialog writes the duration in words (`Duration: 1 minute 13 seconds.`), and the consent
   limit says `Up to 1 minute` rather than `Up to 1 minutes`. A start failure in `selectError` uses the new `startFailed`.
+- "Keep suite and its runs" moved from the suite sidebar's pin button into the viewer's More menu at every width; the
+  sidebar shows "Kept by …" while a suite is kept.
+
+- Network's timing needs no mode: the ribbon on the seek bar's axis is always there, with one tick per request when a
+  recording is sparse and request density when it is busy. The row under the pointer, or the selected one, lights its
+  mark. The ribbon's playhead and the veil over what hasn't happened yet move by transform and glide when you seek,
+  rows fade between upcoming and reached instead of snapping, and the list follows the playhead with a smooth scroll
+  (instant for far jumps and under reduced motion). Performance's ribbon works the same way.
+- The request detail shows captured network bodies (#129): JSON indented, form fields decoded, folded past 14 lines,
+  with copy, a "Truncated at" note and redaction markers drawn as such. Copy as cURL sends a body that was kept whole.
+  Recordings without bodies say "Not captured".
+- Performance says "Performance wasn’t recorded" with the `replays capture --profile performance` command when no
+  timing was observed, instead of five "Not captured" cells over "Nothing was slow".
+
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
 - Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
+- The replay list on phones (640 px and narrower): thumb-sized rows with a two-line title and one quiet meta line,
+  Filters as quiet text with its count inside, sort as quiet text opening a bottom sheet of 48 px radio rows, and one
+  header menu sheet (Upload, Settings, and a theme row) beside search instead of four icons.
+
+- Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
+  that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
+  to the whole replay, and offers to move to the playhead once it has drifted. Reactions sit behind one button and
+  show in the list as quiet chips their author can remove. An All / Open / Resolved filter appears once a thread is
+  resolved. Anonymous mode is a short note under the composer while you write, not a banner. Seek-bar comment markers
+  keep a 24 px target and merge when closer than that. `scripts/demo-comments.mjs` seeds demo comments.
 
 - Network and Performance are rethought around "what went wrong or slow, and when". Network has one toolbar row,
   where the status chips (All, Failed, Slow, No response) are both filters and summary. A ribbon on the seek bar's
@@ -271,6 +325,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   headers. Performance leads with a vitals bar, then slow moments worst first, each explained by what it waited on.
   In compare mode both panels show deltas against the other recordings (`compare.peers`). The standalone Waterfall
   and its toggle are gone.
+- The viewer's client router is TanStack Router: file routes in `src/client/routes/`, a router context of
+  `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params. Plugin pages
+  (`api.registerPluginPage`) are routed at `/p/<plugin>/<path>`. Older addresses are not kept: `/r/<id>?suite=<suite>`
+  no longer redirects (use `/s/<suite>/r/<id>`), `/r/<id>/edit` without edit capability and any other unknown address
+  show a not-found page, and `/r/` no longer opens the index.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed

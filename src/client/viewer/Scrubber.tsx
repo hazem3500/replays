@@ -7,6 +7,9 @@ import { usePlayer } from '../player.ts';
 import { positionText } from '../timeline.ts';
 import { FeatureScrubberOverlays } from '../plugins/features.tsx';
 import { PluginTimelineTracks } from '../plugins/PluginSlots.tsx';
+import { usePluginSnapshot } from '../plugins/PluginUi.tsx';
+import { resolveSlot } from '../plugins/registry.ts';
+import type { SlotDescriptor } from '../plugins/slots.ts';
 import { useViewer } from './context.ts';
 import { setPreviewTime } from './preview-time.ts';
 import { highlightEdge, highlightTargetOffsets } from '../highlights-layout.ts';
@@ -72,8 +75,30 @@ function useTrackWidth(element: RefObject<HTMLElement | null>) {
  * gives the 28 px (40 px on touch) hit area. Everything that moves with the playhead or the pointer is
  * written straight to the DOM, so neither playback nor hovering re-renders React.
  */
-export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: ReplayError[] }) {
-  const { highlights = [] } = useViewer();
+const TRACKS_SLOT = 'viewer.scrubber.tracks';
+const NO_STEPS: ReplayStep[] = [];
+const NO_ERRORS: ReplayError[] = [];
+const NO_HIGHLIGHTS: ProjectedHighlight[] = [];
+
+/**
+ * The seek bar's built-in tracks as `viewer.scrubber.tracks` items, so a host's hide applies to them as to plugin tracks
+ * (which rank after these). Their geometry is fixed (steps shape the bars, errors notch them, highlights sit above), so
+ * order only places plugin rows; a hidden steps track leaves one unbroken bar.
+ */
+const BUILTIN_TRACKS: readonly SlotDescriptor<undefined, null>[] = [
+  { id: 'core:steps', order: 100, render: () => null },
+  { id: 'core:errors', order: 200, render: () => null },
+  { id: 'core:highlights', order: 300, render: () => null },
+];
+
+export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: ReplayStep[]; errors: ReplayError[] }) {
+  const { highlights: allHighlights = NO_HIGHLIGHTS } = useViewer();
+  // why: a host's slot configuration changes the registry snapshot; reading it re-renders the bar with it.
+  usePluginSnapshot();
+  const tracks = new Set(resolveSlot(TRACKS_SLOT, BUILTIN_TRACKS, undefined).map((track) => track.id));
+  const steps = tracks.has('core:steps') ? allSteps : NO_STEPS;
+  const errors = tracks.has('core:errors') ? allErrors : NO_ERRORS;
+  const highlights = tracks.has('core:highlights') ? allHighlights : NO_HIGHLIGHTS;
   const player = usePlayer();
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -554,7 +579,7 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
   }, [errorMarks, player, segments, steps, width]);
 
   return (
-    <div ref={root} className="scrubber">
+    <div ref={root} className="scrubber" data-slot={TRACKS_SLOT}>
       <div className="scrubber-rail" aria-hidden="true">
         <div className="scrubber-key-ring" />
         <div ref={bars} className="scrubber-bars">

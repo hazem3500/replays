@@ -2,6 +2,7 @@ import { LayoutGridIcon, LayoutPanelLeftIcon, RectangleHorizontalIcon } from 'lu
 import { type KeyboardEvent, useRef } from 'react';
 
 import { Hint } from '@/components/icon-button.tsx';
+import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu.tsx';
 import type { CompareLayout } from './compare-search.ts';
 
 const LAYOUT_STRINGS = {
@@ -22,19 +23,10 @@ const LAYOUTS: readonly CompareLayout[] = ['single', 'grid', 'spotlight'];
 const ICONS = { single: RectangleHorizontalIcon, grid: LayoutGridIcon, spotlight: LayoutPanelLeftIcon } as const;
 
 /** Single · Grid · Spotlight in the viewer's top bar: one radio group, icons with their names as hints, a gliding thumb. */
-export function LayoutSwitch({
-  value,
-  onChange,
-  phone,
-}: {
-  value: CompareLayout;
-  onChange: (layout: CompareLayout) => void;
-  phone: boolean;
-}) {
+export function LayoutSwitch({ value, onChange }: { value: CompareLayout; onChange: (layout: CompareLayout) => void }) {
   const group = useRef<HTMLDivElement>(null);
-  // why: a phone shows one tile at a time either way; its choice is one recording or swiping through them all.
-  const options = phone ? LAYOUTS.filter((layout) => layout !== 'spotlight') : LAYOUTS;
-  const shown = phone && value === 'spotlight' ? 'grid' : value;
+  const options = LAYOUTS;
+  const shown = value;
   const index = options.indexOf(shown);
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
@@ -78,5 +70,29 @@ export function LayoutSwitch({
         );
       })}
     </div>
+  );
+}
+
+/**
+ * Phones: the layout choice waits in the top bar's More menu, so the bar keeps its room for the run's title. A phone
+ * shows one tile at a time either way: one recording, or swiping through them all.
+ */
+export function LayoutMenuItems({ value, onChange }: { value: CompareLayout; onChange: (layout: CompareLayout) => void }) {
+  const shown = value === 'single' ? 'single' : 'grid';
+  return (
+    <DropdownMenuGroup>
+      <DropdownMenuLabel>{LAYOUT_STRINGS.group}</DropdownMenuLabel>
+      <DropdownMenuRadioGroup value={shown} onValueChange={(next) => onChange(next === 'single' ? 'single' : 'grid')}>
+        {(['single', 'grid'] as const).map((option) => {
+          const Icon = ICONS[option];
+          return (
+            <DropdownMenuRadioItem key={option} value={option} data-testid={`layout-${option}`}>
+              <Icon aria-hidden="true" />
+              {LAYOUT_STRINGS[option]}
+            </DropdownMenuRadioItem>
+          );
+        })}
+      </DropdownMenuRadioGroup>
+    </DropdownMenuGroup>
   );
 }

@@ -1,4 +1,5 @@
 import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
 
@@ -21,7 +22,9 @@ import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
-import { rememberListed } from './navigation.ts';
+import { useHydrated } from './hooks/use-hydrated.ts';
+import { indexReplaysQuery, indexSuitesQuery } from './index/index-queries.ts';
+import { rememberListed } from './transitions/open-hint.ts';
 import { CommandSearch, IndexIdentity, type ProfileCounts, ProfileSegments, ScopeBar } from './index/IndexHeader.tsx';
 import { indexProfiles, pageProfiles } from './profiles.ts';
 import { useMediaQuery } from './media.ts';
@@ -29,13 +32,18 @@ import { SortMenu } from './ReplayIndexCompact.tsx';
 import { activeFilterTokens, FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
 import { IndexEmpty, type IndexEmptyInput } from './index/index-empty.tsx';
 import { MeContext } from './index/People.tsx';
+import { ExpiredReplays } from './index/ExpiredReplays.tsx';
 import { FirstRun } from './index/first-run/FirstRun.tsx';
+import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
-import { apiUrl, rememberIndexSearch } from './route.ts';
+import { apiUrl, appBase } from './api/fetch.ts';
+import { pageCookie, writePageCookie } from './page-meta.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
 import { Topbar } from './Topbar.tsx';
+import { IndexPhoneMenu, phoneMenuItems } from './index/IndexPhoneMenu.tsx';
+import { useSignedIn } from './account/AccountMenu.tsx';
 import { UploadReplay, type UploadReplayHandle } from './upload/UploadReplay.tsx';
 import { useReplayDrop } from './upload/useReplayDrop.tsx';
 
@@ -207,6 +215,17 @@ export function storedView(): FeedView {
   return readStorage(VIEW_KEY) === 'grid' ? 'grid' : 'list';
 }
 
+/** The view a server render shows: the choice mirrored into a cookie (this browser's storage stays the source). */
+export function renderedView(): FeedView {
+  return pageCookie(VIEW_KEY) === 'grid' ? 'grid' : 'list';
+}
+
+/** Keeps the cookie a server render reads in step with the saved view (choices made before it existed included). */
+export function syncViewCookie() {
+  const view = storedView();
+  if (renderedView() !== view) writePageCookie(VIEW_KEY, view, appBase());
+}
+
 function indexHistoryState(): IndexHistoryState {
   return (history.state ?? {}) as IndexHistoryState;
 }
@@ -369,6 +388,13 @@ interface IndexCache {
   newest?: string;
 }
 
+/** The lists already in the Query cache for this request (a server render's, or an earlier visit in this tab). */
+function cachedIndex(client: QueryClient, search: string, suitesRequest: string): IndexCache | undefined {
+  const items = client.getQueryData(indexReplaysQuery(search).queryKey);
+  const suites = client.getQueryData(indexSuitesQuery(suitesRequest).queryKey);
+  return items && suites ? { search, items, suites } : undefined;
+}
+
 /** On Back/Forward only: the cached list for this request (a fresh visit always starts from the server). */
 function restoredIndex(search: string): IndexCache | undefined {
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -410,17 +436,34 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
   return a.length === b.length && a.every((item, index) => item.id === b[index]!.id);
 }
 
-export function ReplayIndex() {
-  const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
-  const [forMe, setForMe] = useState(() => forMeFromSearch(location.search));
+/**
+ * `search` is the address it opens on (Back to other filters, a link: the page remounts on it); `onSearch` gets the
+ * filters, sort and view it shows now, for the address and "back to Replays" links.
+ */
+export function ReplayIndex({
+  search: opened,
+  onSearch,
+  rendered = 'list',
+}: {
+  search: string;
+  onSearch: (search: string) => void;
+  /** The view the page was rendered in (the index route's loader says, also for a server render). */
+  rendered?: FeedView;
+}) {
+  const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(opened));
+  const [forMe, setForMe] = useState(() => forMeFromSearch(opened));
   const [linked, setLinked] = useState(storedLinkedHandles);
   const [me, setMe] = useState<Me>();
   /** The sessions request (and the Back cache's key): the filters, plus For me. */
   const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
-  const [restored] = useState(() => restoredIndex(listSearch));
-  const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
+  const queryClient = useQueryClient();
+  // why: lists a server render put in the page (or this tab already loaded) show at once, without the first-load stagger.
+  const [restored] = useState(
+    () => cachedIndex(queryClient, listSearch, withForMe(INDEX_SUITES_URL, forMe, linked)) ?? restoredIndex(listSearch),
+  );
+  const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(opened));
   const profiles = pageProfiles();
-  const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(location.search, profiles));
+  const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(opened, profiles));
   const [query, setQuery] = useState(filters.q ?? '');
   const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
   const [loadError, setError] = useState('');
@@ -432,7 +475,7 @@ export function ReplayIndex() {
   );
   // Every tag seen so far, like hosts: choosing one narrows the list, but the other tags stay on offer.
   const [tags, setTags] = useState<string[]>(() => tagOptions(restored?.items ?? []).sort());
-  const [sort, setSort] = useState<Sort>(() => sortFromSearch(location.search));
+  const [sort, setSort] = useState<Sort>(() => sortFromSearch(opened));
   /** Undefined until the first suites request settles, so suite replays never flash as sessions. */
   const [suites, setSuites] = useState<ReviewSuiteIndexEntry[] | undefined>(restored?.suites);
   // What the feed shows right now (for refreshes) and the newest item this tab has listed (for arrivals).
@@ -441,13 +484,17 @@ export function ReplayIndex() {
     shown.current = { items, suites };
   }, [items, suites]);
   const newest = useRef(restored?.newest);
-  const [preferredView, setPreferredView] = useState<FeedView>(storedView);
+  const hydrated = useHydrated();
+  // why: the saved view is this browser's; a server render (and its hydration) shows the view it rendered first.
+  const [chosenView, setPreferredView] = useState<FeedView>();
+  const preferredView: FeedView = chosenView ?? (hydrated ? storedView() : rendered);
   // Phones get a sort menu and a filter sheet instead of the row of selects (same URL state), and always the list.
   const compact = useMediaQuery(INDEX_COMPACT_QUERY);
   const view: FeedView = compact ? 'list' : preferredView;
   const toolbar = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLElement>(null);
   const upload = useRef<UploadReplayHandle>(null);
+  const account = useSignedIn();
   // Drop a replay.json or rrweb export anywhere on the index to upload it.
   const dropOverlay = useReplayDrop((file) => upload.current?.open(file));
 
@@ -465,10 +512,8 @@ export function ReplayIndex() {
   }, [query]);
 
   useEffect(() => {
-    const search = indexSearch(filters, kind, sort, profile, forMe);
-    history.replaceState(history.state, '', `${location.pathname}${search}`);
-    rememberIndexSearch(search);
-  }, [filters, kind, sort, profile, forMe]);
+    onSearch(indexSearch(filters, kind, sort, profile, forMe));
+  }, [filters, kind, sort, profile, forMe, onSearch]);
 
   // Who "me" is, and which handles the deployment lets a person link (used only where people exist).
   useEffect(() => {
@@ -595,7 +640,7 @@ export function ReplayIndex() {
     [unsegmented, profile],
   );
   const listed = Boolean(entries);
-  // Effects re-run when the index is shown again behind a viewer page (App.tsx keeps it in an Activity).
+  // Effects re-run when the index is shown again behind a viewer page (routing/KeptIndex.tsx keeps it in an Activity).
   const entered = useRef(false);
   useLayoutEffect(() => {
     if (!listed) return;
@@ -605,7 +650,7 @@ export function ReplayIndex() {
     if (!restored && !entered.current && shell.current) staggerIn(shell.current);
     entered.current = true;
   }, [listed, restored]);
-  // What a card opens is known before its bundle loads: the viewer's skeleton takes its shape (navigation.ts).
+  // What a card opens is known before its bundle loads: the viewer's skeleton takes its shape (transitions/open-hint.ts).
   useEffect(() => {
     if (items) rememberListed(items);
     for (const suite of suites ?? []) rememberListed((suite.runDetails ?? []).flatMap((run) => (run.replay ? [run.replay] : [])));
@@ -692,18 +737,18 @@ export function ReplayIndex() {
   const chooseView = (next: FeedView) => {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
+    writePageCookie(VIEW_KEY, next, appBase());
   };
   const searchField = <CommandSearch value={query} onChange={setQuery} entries={entries} total={entries?.length} compact={compact} />;
+  // why: a refresh keeps the count it had on screen (ScopeCount); the header's hairline says a refresh is running.
+  const refreshing = Boolean(entries) && !error && pending;
   const count = (
-    <span className={cn('scope-count', !filtered && !pending && 'sr-only')} role="status" aria-atomic="true">
-      {pending
-        ? items
-          ? 'Updating replays…'
-          : 'Loading replays…'
-        : !error && entries
-          ? `${replays} ${replays === 1 ? 'replay' : 'replays'}${suiteRows ? ` · ${suiteRows} ${suiteRows === 1 ? 'suite' : 'suites'}` : ''}`
-          : ''}
-    </span>
+    <ScopeCount
+      replays={entries ? replays : undefined}
+      suites={suiteRows}
+      shown={filtered}
+      state={error ? 'error' : !entries ? 'loading' : refreshing ? 'updating' : 'ready'}
+    />
   );
   const filterState = {
     filters,
@@ -742,6 +787,11 @@ export function ReplayIndex() {
     return filtered ? { kind: 'filtered', active: narrowing, onClearFilters: clear } : undefined;
   };
   const empty = emptyView();
+  // why: an empty library has nothing to filter, sort or lay out; its one action is the first upload (FirstRun).
+  const firstRun = !error && !empty && entries?.length === 0;
+  // why: the toolbar that appears with the first replay enters like a list item; on a normal load it is just there.
+  const [leftFirstRun, setLeftFirstRun] = useState(false);
+  if (firstRun && !leftFirstRun) setLeftFirstRun(true);
 
   return (
     <main className="index-shell" ref={shell}>
@@ -749,6 +799,13 @@ export function ReplayIndex() {
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
+          {...(compact
+            ? {
+                phoneMenu: (
+                  <IndexPhoneMenu items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })} />
+                ),
+              }
+            : {})}
           actions={
             <>
               {searchField}
@@ -756,24 +813,28 @@ export function ReplayIndex() {
             </>
           }
         />
-        <ScopeBar
-          count={count}
-          lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
-        >
-          {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
-          <SortMenu sort={sort} onChange={changeSort} />
-          {compact ? null : (
-            // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
-            <div className="view-switch" role="group" aria-label="Layout">
-              <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
-                <AnimatedIcon name="list" />
-              </SwitchIconButton>
-              <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
-                <AnimatedIcon name="layout-grid" />
-              </SwitchIconButton>
-            </div>
-          )}
-        </ScopeBar>
+        {firstRun ? null : (
+          <ScopeBar
+            entering={leftFirstRun}
+            count={count}
+            lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
+          >
+            {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
+            <SortMenu sort={sort} onChange={changeSort} />
+            {compact ? null : (
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
+              <div className="view-switch" role="group" aria-label="Layout">
+                <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
+                  <AnimatedIcon name="list" />
+                </SwitchIconButton>
+                <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
+                  <AnimatedIcon name="layout-grid" />
+                </SwitchIconButton>
+              </div>
+            )}
+          </ScopeBar>
+        )}
+        <RefreshLine active={refreshing} />
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
@@ -794,6 +855,7 @@ export function ReplayIndex() {
         ) : (
           <FeedSkeleton view={view} />
         )}
+        {entries && !error ? <ExpiredReplays query={searchText} profile={profile} profiles={profiles} /> : null}
       </section>
       {dropOverlay}
     </main>

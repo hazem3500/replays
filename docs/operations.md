@@ -60,6 +60,16 @@ Serve `index.html` for unknown paths under the base (the viewer routes `/r/<id>`
 a "not found page" of `index.html` with status 200. Rebuild the static files when the branding, base or plugins change:
 nothing is read at request time. Server-only features keep working through the API (video export, posters, comments).
 
+## Server-rendered pages (TanStack Start)
+
+`REPLAYS_SSR=1` serves pages through the TanStack Start build (`dist/start`, from `pnpm build`) inside the same server:
+the HTML document, its head (branding, theme colour, the deployment's `app-*` metas) and the hydration scripts come from
+the server, while the API, plugins, auth and request policy stay exactly as they are. The index is rendered on the
+server with its lists in the page (fetched in process, with the visitor's credentials); the viewer, editor, suite and
+plugin pages still render in the browser. Without the flag, or when
+`dist/start` is missing or fails to load (logged at startup), the server sends the stamped `index.html` as before.
+`replays build-static` is unaffected.
+
 ## Storage and scaling
 
 - `STORAGE=fs`: one instance per `DATA_DIR`. Back the directory up like any data volume.
@@ -116,6 +126,13 @@ time. A sweep runs at start, every six hours and (throttled) after uploads, and 
 `retention sweep: removed N of M replays and K of L suites in T ms` — alert on that line going missing. **Kept**
 replays and suites, replays attached to a kept suite, and the committed samples never expire. The app is the only
 deleter; do not add a bucket lifecycle rule.
+
+When the sweep removes a replay it keeps a small record of it as `_expired/<id>.json`
+([formats/expired-replay.schema.json](formats/expired-replay.schema.json)): the title, host, recorded and removed dates,
+the retention window and the profile. It keeps nothing of the recording itself (no events, URL, comments or media). The
+index lists these under "Show expired" and a suite whose recordings are gone says when and why. Records last
+`RETENTION_EXPIRED_DAYS` after the removal (default 30); `0` keeps none and drops existing records on the next sweep.
+They are served at `GET /api/expired-replays`, behind the same authentication as the replay list.
 
 ## Tracing (optional)
 

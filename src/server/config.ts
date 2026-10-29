@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
 import { SourceProviders, type TemplateProviderConfig } from '../shared/source-providers.ts';
-import { retentionFromEnv, type RetentionPolicy } from '../shared/retention.ts';
+import { daysFromEnv, retentionFromEnv, type RetentionPolicy } from '../shared/retention.ts';
 import { type BrandingConfig, validateBranding } from './branding.ts';
 import { type ContextSchema, loadContextSchema } from './context-schema.ts';
 import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } from './base-path.ts';
@@ -37,7 +37,7 @@ import { createViewCatalog, type ViewCatalog } from './views.ts';
  *     "basePath": "/replays",                      BASE_PATH
  *     "hosts": { "replays.example.com": { "basePath": "/" } },  per-host bases (src/server/base-path.ts), else basePath
  *     "trustForwardedHost": false,                 TRUST_FORWARDED_HOST (pick the host from X-Forwarded-Host)
- *     "retentionDays": 30,                         RETENTION_DAYS (0 = never)
+ *     "retentionDays": 30,                         RETENTION_DAYS (0 = never); RETENTION_EXPIRED_DAYS: removed replays' records (default 30)
  *     "profiles": [{ "id": "triage", "label": "Triage", "retentionDays": 90 }],   RETENTION_PROFILE_<ID>_DAYS (src/server/profiles.ts)
  *     "contextSchemaFile": "./context.schema.json" CONTEXT_SCHEMA_FILE
  *     "githubHost": "github.example.com",          GITHUB_HOST
@@ -175,10 +175,13 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   if (file.trustForwardedHost !== undefined && typeof file.trustForwardedHost !== 'boolean')
     throw new Error("the config file's trustForwardedHost must be true or false");
   const hosts = normalizeHosts(file.hosts, parseFlag('TRUST_FORWARDED_HOST', env.TRUST_FORWARDED_HOST) ?? file.trustForwardedHost ?? false);
-  const retention =
-    pick('RETENTION_DAYS') !== undefined || file.retentionDays === undefined
+  const expiredDays = daysFromEnv(env, 'RETENTION_EXPIRED_DAYS');
+  const retention = {
+    ...(pick('RETENTION_DAYS') !== undefined || file.retentionDays === undefined
       ? retentionFromEnv(env)
-      : retentionFromEnv({ RETENTION_DAYS: String(file.retentionDays) });
+      : retentionFromEnv({ RETENTION_DAYS: String(file.retentionDays) })),
+    ...(expiredDays === undefined ? {} : { expiredDays }),
+  };
   const githubHost = pick('GITHUB_HOST') ?? file.githubHost;
   const gitlabHost = pick('GITLAB_HOST') ?? file.gitlabHost;
   for (const host of [githubHost, gitlabHost]) if (host && !HOST.test(host)) throw new Error(`invalid host name ${JSON.stringify(host)}`);

@@ -14,10 +14,13 @@ import { mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts
 import { type ReplayBundle } from '../shared/replay.ts';
 import { defaultPolicy, type MalleablePolicy, type HostVersions } from '../shared/malleable-policy.ts';
 import { EMPTY_REGISTRY, mergeRegistries, resolvePluginsSync, type PluginRegistry } from '../plugin/registry.ts';
-import type { Identity, AuthAdapter } from './auth/types.ts';
+import type { AnyAuthAdapter, Identity } from './auth/types.ts';
+import { toNodeAuthAdapter } from './auth/web.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
 import { appPath, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath, type HostConfig } from './base-path.ts';
 import { renderIndexHtml } from './index-page.ts';
+import { shellHead } from './pages/head.ts';
+import type { PageRenderer } from './pages/start.ts';
 import { coreRoutes } from './api/index.ts';
 import { authenticatedPluginRoutes, publicPluginRoutes, runWebMiddleware } from './api/plugin-routes.ts';
 import { sendWebResponse, toWebRequest } from './http/node.ts';
@@ -63,7 +66,8 @@ export interface AppOptions {
   /** Main application dispatcher, behind host auth and request policy. */
   application?: ApplicationRuntime;
   signIn?: SignInConfig | false;
-  auth: AuthAdapter;
+  /** Either adapter shape (auth/types.ts); a `WebAuthAdapter` is normalized for the Node server. */
+  auth: AnyAuthAdapter;
   store: ReplayStore;
   clientDir: string;
   branding: BrandingConfig;
@@ -76,6 +80,8 @@ export interface AppOptions {
   devMiddleware?: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
   /** Vite-transformed dev HTML, rendered through the shared server metadata contract. */
   devIndexHtml?: (url: string) => Promise<string>;
+  /** Pages rendered by the TanStack Start server entry (src/server/pages/start.ts), with the client build its HTML references. */
+  pages?: { renderer: PageRenderer; clientDir: string };
   /** Server-side video renders; absent means every render route answers 503. */
   render?: RenderService;
   /** Where the app lives publicly (base-path.ts): `''` at the root of its own domain, else e.g. `/replays`. */
@@ -283,15 +289,16 @@ function signInDestination(next: string | null, base: string, path: string) {
 }
 
 export function createApp(options: AppOptions) {
+  const auth = toNodeAuthAdapter(options.auth);
   const defaultBase = options.basePath ?? '';
-  const signIn = normalizeSignIn(options.signIn ?? options.auth.signIn);
+  const signIn = normalizeSignIn(options.signIn ?? auth.signIn);
   const routing = hostRouting(options);
   // With per-host bases the same path is a different route from one host to the next, so every response varies by it.
   const vary = hostVary(routing);
   const editing = { enabled: editingFromEnv({}, options.editing).enabled && Boolean(options.beta?.editor) };
   // Comments are a built-in plugin, loaded first when enabled (comments-plugin.ts); `commentsOn` is "that plugin is loaded".
   const userPlugins = options.plugins ?? EMPTY_REGISTRY;
-  const anonymous = options.auth.name === 'none';
+  const anonymous = auth.name === 'none';
   const policy = options.malleable ?? defaultPolicy();
   const versions = options.versions ?? { core: coreVersion() };
   const builtIns = [
@@ -318,7 +325,7 @@ export function createApp(options: AppOptions) {
     ...coreRoutes({
       deployment: {
         store: options.store,
-        auth: options.auth,
+        auth,
         sources: options.sources,
         views,
         branding: options.branding,
@@ -386,8 +393,7 @@ export function createApp(options: AppOptions) {
         return;
 
       // The adapter's own routes (sign-in, callback) come first: they run without an identity.
-      if (options.auth.handle && options.auth.routes?.includes(path) && (await options.auth.handle(request, response, routeContext)))
-        return;
+      if (auth.handle && auth.routes?.includes(path) && (await auth.handle(request, response, routeContext))) return;
 
       if (
         registry.routes.length &&
@@ -401,17 +407,17 @@ export function createApp(options: AppOptions) {
       if (path === '/api/cli/auth/capabilities' && request.method === 'GET') {
         let capability;
         try {
-          capability = await options.auth.cliDeviceAuth?.(routeContext);
+          capability = await auth.cliDeviceAuth?.(routeContext);
         } catch {
           capability = undefined;
         }
-        send(response, 200, JSON.stringify({ auth: options.auth.name, deviceFlow: capability ?? null }), json, 'no-store');
+        send(response, 200, JSON.stringify({ auth: auth.name, deviceFlow: capability ?? null }), json, 'no-store');
         return;
       }
 
       // invariant: an endpoint's own credentials replace the deployment adapter on its path only, and confine the identity to it.
       const endpointAuth = uploadEndpointAt(registry, path)?.authenticate;
-      const authenticated: Identity | undefined = endpointAuth ? await endpointAuth(request) : await options.auth.authenticate(request);
+      const authenticated: Identity | undefined = endpointAuth ? await endpointAuth(request) : await auth.authenticate(request);
       if (!authenticated && endpointAuth) {
         send(response, 401, 'credentials required', 'text/plain; charset=utf-8', 'no-store');
         return;
@@ -425,7 +431,7 @@ export function createApp(options: AppOptions) {
               url: `${publicPath(signIn.path, base)}?${new URLSearchParams({ next: signInDestination(raw.searchParams.get('next'), base, signIn.path) })}`,
             })
           : request;
-        const login = options.auth.loginUrl?.(loginRequest, routeContext);
+        const login = auth.loginUrl?.(loginRequest, routeContext);
         if (login && request.method === 'GET' && isBrowserNavigation(request) && (recovery || !path.startsWith('/api/'))) {
           response.writeHead(302, { location: login, 'cache-control': 'no-store' });
           response.end();
@@ -564,10 +570,12 @@ export function createApp(options: AppOptions) {
         });
         if (response.writableEnded) return;
       } else if (path.startsWith('/assets/')) {
-        const file = resolve(options.clientDir, `.${path}`);
         // why: assets/brand/* (favicon, manifest) keep fixed names for index.html, so they must revalidate.
         const cache = path.startsWith('/assets/brand/') ? 'public, max-age=86400' : 'public, max-age=31536000, immutable';
-        if (file.startsWith(`${resolve(options.clientDir)}/`) && (await serveFile(request, response, file, cache))) return;
+        for (const dir of options.pages ? [options.pages.clientDir, options.clientDir] : [options.clientDir]) {
+          const file = resolve(dir, `.${path}`);
+          if (file.startsWith(`${resolve(dir)}/`) && (await serveFile(request, response, file, cache))) return;
+        }
       }
 
       if (request.method === 'GET' && request.headers.accept?.includes('text/html')) {
@@ -576,6 +584,11 @@ export function createApp(options: AppOptions) {
           // With user plugins on, the page may only frame itself, blob: and data: URLs: a sandboxed plugin frame that
           // navigates itself somewhere else (to smuggle data out in a URL) is refused by the browser.
           if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
+          if (options.pages) {
+            const deployment = { base, name: options.branding.name };
+            await options.pages.renderer.render(request, response, { deployment, head: shellHead(indexPage(html, base)) });
+            return;
+          }
           await sendCompressed(request, response, 200, indexPage(html, base), 'text/html; charset=utf-8');
           return;
         }

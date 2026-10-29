@@ -1,4 +1,5 @@
 import './editor/skeleton.css';
+import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
@@ -6,18 +7,22 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
-import { replayHref } from './route.ts';
+import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
+import { replayHref } from './routing/links.ts';
 import { Topbar } from './Topbar.tsx';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
-/* Repeated from the viewer chunk (StepRail.tsx, Inspector.tsx, Viewer.tsx); keep in sync. */
+/*
+ * Repeated from the viewer chunk (StepRail.tsx, viewer/inspector-size.ts, Viewer.tsx) to keep it out of every page's
+ * bundle; keep in sync. The default panel height is the shell's CSS default (styles.css), the viewer's
+ * defaultInspectorHeight().
+ */
 const STEPS_WIDTH_KEY = 'replays-steps-width';
+const RAIL_COLLAPSED_KEY = 'replays-steps-collapsed';
 const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
-const DEFAULT_INSPECTOR_HEIGHT = 260;
 const MIN_INSPECTOR_HEIGHT = 120;
-const INSPECTOR_TABS_HEIGHT = 37;
 
 /**
  * What the page opening the replay already knows (the index writes it before navigating; see OPEN_HINT_KEY):
@@ -31,7 +36,7 @@ export interface OpenHint {
   steps?: number;
   /** A source chip (a linked pull request or ticket) shows beside the title. */
   source?: boolean;
-  /** The card's poster, or its opening still when loaded: the frame shows it while loading (navigation.ts). */
+  /** The card's poster, or its opening still when loaded: the frame shows it while loading (transitions/open-hint.ts). */
   poster?: string;
   /** `poster` is the opening still (the replay's first paint), not the list poster. */
   still?: boolean;
@@ -54,12 +59,13 @@ function layout(hint: OpenHint | undefined) {
   const height =
     Number.isFinite(savedHeight) && savedHeight > 0
       ? Math.round(Math.min(Math.max(savedHeight, MIN_INSPECTOR_HEIGHT), maxHeight))
-      : DEFAULT_INSPECTOR_HEIGHT;
+      : undefined;
   const savedCollapsed = readStorage(INSPECTOR_COLLAPSED_KEY);
   const collapsed = savedCollapsed === '1';
-  const stepsWidth = Number(readStorage(STEPS_WIDTH_KEY));
+  const savedWidth = Number(readStorage(STEPS_WIDTH_KEY));
+  const stepsWidth = readStorage(RAIL_COLLAPSED_KEY) === '1' ? 0 : Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : undefined;
   const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
-  return { height, collapsed, stepsWidth: Number.isFinite(stepsWidth) && stepsWidth > 0 ? stepsWidth : undefined, ratio };
+  return { height, collapsed, stepsWidth, ratio };
 }
 
 /** A skeleton that disappeared this recently hands over to the next one at once (no second fade-in). */
@@ -88,7 +94,11 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
       aria-label={label}
       style={
         {
-          '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${shape.height}px`,
+          ...(collapsed && !mobile
+            ? { '--inspector-height': 'var(--inspector-folded-height, 37px)' }
+            : shape.height === undefined
+              ? {}
+              : { '--inspector-height': `${shape.height}px` }),
           '--sk-ratio': String(shape.ratio),
         } as CSSProperties
       }
@@ -118,7 +128,7 @@ export function EditorSkeleton({
   meta,
 }: {
   id: string;
-  meta?: { title?: string; viewport?: { width: number; height: number } } | undefined;
+  meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
 }) {
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [stored] = useState(readHint);
@@ -171,6 +181,8 @@ export function EditorSkeleton({
         backHref={replayHref(id)}
         backLabel="Back to the replay"
         status={<ProgressHint />}
+        actions={<TopbarActionsSkeleton />}
+        alwaysMenu
       />
       <section className="editor-stage" aria-hidden="true">
         <PlayerSkeleton poster={hint?.poster} />
@@ -179,16 +191,7 @@ export function EditorSkeleton({
         </aside>
       </section>
       <div className="inspector-resizer" aria-hidden="true" />
-      <section className="editor-dock" aria-hidden="true">
-        <div className="editor-bar">
-          <LoadingNotice label="Opening editor" />
-        </div>
-        <div className="editor-loading-timeline">
-          <span className="skeleton editor-loading-ruler" />
-          <span className="skeleton editor-loading-lane" />
-        </div>
-        <p className="editor-hint" />
-      </section>
+      <DockSkeleton duration={meta?.duration} />
     </main>
   );
 }
@@ -257,24 +260,27 @@ function DesktopSkeleton({
 }) {
   return (
     <>
-      <LoadingHeader hint={hint} />
+      <LoadingTopbar title={hint?.title} mobile={false} progress={<ProgressHint />} />
       <div
-        className="workspace"
+        className={hint?.steps === 0 ? 'workspace no-steps' : 'workspace'}
         aria-hidden="true"
-        style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
+        style={stepsWidth === undefined ? undefined : ({ '--steps-width': `${stepsWidth}px` } as CSSProperties)}
       >
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
-          <div className="transport loading-transport">
-            <LoadingNotice />
-          </div>
+          <LoadingTransport steps={hint?.steps} />
         </section>
-        <span />
-        <aside className="timeline-panel" />
+        {hint?.steps === 0 ? null : (
+          <>
+            <span />
+            <LoadingRail steps={hint?.steps} />
+          </>
+        )}
       </div>
       {collapsed ? null : <div className="skeleton-divider" aria-hidden="true" />}
       <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs" />
+        <LoadingTabs mobile={false} steps={hint?.steps} />
+        {collapsed ? null : <LoadingPanel />}
       </div>
     </>
   );
@@ -283,17 +289,16 @@ function DesktopSkeleton({
 function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
   return (
     <>
-      <LoadingHeader hint={hint} />
+      <LoadingTopbar title={hint?.title} mobile progress={<ProgressHint />} />
       <div className="workspace" aria-hidden="true">
         <section className="player-region">
           <PlayerSkeleton poster={hint?.poster} />
-          <div className="transport loading-transport">
-            <LoadingNotice />
-          </div>
+          <LoadingTransport steps={hint?.steps} />
         </section>
       </div>
       <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs sk-tabs-phone" />
+        <LoadingTabs mobile steps={hint?.steps} />
+        <LoadingPanel />
       </div>
     </>
   );

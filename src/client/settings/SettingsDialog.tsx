@@ -20,9 +20,12 @@ function focusQuietly(element: HTMLElement | null | undefined, viaKeyboard: bool
   element?.focus(options);
 }
 
-/** Desktop focuses the selected tab; on touch a focused first control reads as a stray selection, so the sheet takes it. */
+/**
+ * Desktop focuses the selected tab; on touch a focused first control reads as a stray selection, so the sheet takes it.
+ * An open without an interaction (a `?settings=` link) has no type, and a tab focused then would wear the keyboard ring.
+ */
 function initialFocusIn(root: HTMLDivElement | null, stacked: boolean, pane: Pane, openType: string) {
-  if (!stacked) return root?.querySelector<HTMLElement>('.settings-tab[aria-selected="true"]');
+  if (!stacked) return openType ? root?.querySelector<HTMLElement>('.settings-tab[aria-selected="true"]') : root;
   if (openType !== 'keyboard') return root;
   return root?.querySelector<HTMLElement>(pane === 'list' ? '.settings-nav-row' : '.settings-back');
 }
@@ -77,7 +80,7 @@ export function SettingsDialog({ open, onOpenChange, section, onSectionChange, s
   const [instant, setInstant] = useState(false);
   const popup = useRef<HTMLDivElement>(null);
   // why: `when` on the Plugins descriptor reads the registry, which changes as plugins load.
-  useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot);
+  useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot, viewerRegistry.getSnapshot);
   const sections = settingsSections({ stacked });
   const current = sections.find((candidate) => candidate.section === section) ?? sections[0];
   if (!current) return null;

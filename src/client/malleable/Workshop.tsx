@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { diffLines } from '../../shared/line-diff.ts';
 import { CAPABILITIES, type Capability, isWriteCapability, PluginFormatError, starterPlugin } from '../../shared/malleable.ts';
 import { targetsFor } from '../../shared/malleable-policy.ts';
-import { appBase } from '../route.ts';
+import { appBase } from '../api/fetch.ts';
 import { notify } from '../toast.ts';
 import { connectAgent, disconnectAgent, useBridge } from './bridge.ts';
 import { DiffView } from './DiffView.tsx';
@@ -175,7 +175,7 @@ function PolicyNote() {
  */
 function ReviewNotice({ entries, onSelect }: { entries: readonly PluginEntry[]; onSelect: (id: string) => void }) {
   const { versions } = useHost();
-  const health = useSyncExternalStore(subscribeHealth, getHealthSnapshot);
+  const health = useSyncExternalStore(subscribeHealth, getHealthSnapshot, getHealthSnapshot);
   const failing = entries.filter((entry) => needsReview(versions, entry.id, latestSaved(entry), health));
   if (!failing.length) return null;
   return (

@@ -1,5 +1,6 @@
 import { VIEWER_API_VERSION, type ViewerPlugin } from './api.ts';
 import { viewerRegistry, type ViewerRegistry } from './registry.ts';
+import { pageMeta } from '../page-meta.ts';
 
 export interface ClientEntryInfo {
   plugin: string;
@@ -10,8 +11,7 @@ export interface ClientEntryInfo {
 
 /** The entries the server wrote into `<meta name="app-plugins">`; malformed content means none. */
 export function readClientEntries(): ClientEntryInfo[] {
-  if (typeof document === 'undefined') return [];
-  const content = document.querySelector<HTMLMetaElement>('meta[name="app-plugins"]')?.content;
+  const content = pageMeta('app-plugins');
   if (!content) return [];
   try {
     const parsed: unknown = JSON.parse(content);
@@ -24,6 +24,22 @@ export function readClientEntries(): ClientEntryInfo[] {
   } catch {
     return [];
   }
+}
+
+let settled = false;
+const settledListeners = new Set<() => void>();
+
+/** Whether the server's plugin entries have all loaded (or failed): a plugin page that is still missing then never comes. */
+export const pluginsSettled = () => settled;
+
+export function subscribePluginsSettled(listener: () => void) {
+  settledListeners.add(listener);
+  return () => void settledListeners.delete(listener);
+}
+
+function markSettled() {
+  settled = true;
+  for (const listener of settledListeners) listener();
 }
 
 /**
@@ -61,4 +77,5 @@ export async function loadClientPlugins(
       }
     }),
   );
+  if (registry === viewerRegistry) markSettled();
 }

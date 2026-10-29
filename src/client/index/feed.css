@@ -97,6 +97,13 @@
 .profile-bar { min-height: 40px; display: flex; align-items: center; padding: 0 var(--gutter); }
 .profile-segments { position: relative; min-width: 0; align-self: stretch; display: flex; gap: 20px; overflow-x: auto; scrollbar-width: none; }
 .profile-segments::-webkit-scrollbar { display: none; }
+/* A strip wider than its room (phones) fades out at the trailing edge while more tabs remain, so a cut-off tab reads
+   as "scroll for more". A scroll timeline drives it: no overflow, no timeline, no fade; at the end it is gone. */
+@property --profile-fade { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes profile-fade { from { --profile-fade: 16px; } to { --profile-fade: 0px; } }
+@supports (animation-timeline: scroll()) {
+  .profile-segments { mask-image: linear-gradient(to right, #000 calc(100% - var(--profile-fade)), transparent); animation: profile-fade linear both; animation-timeline: scroll(self inline); }
+}
 .profile-indicator { position: absolute; bottom: 0; left: 0; height: 2px; border-radius: 1px; background: var(--accent); transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1), width 200ms cubic-bezier(0.22, 1, 0.36, 1); }
 .profile-segment { position: relative; display: flex; flex: 0 0 auto; }
 .profile-segment-label { height: 40px; display: inline-flex; align-items: center; gap: 5px; color: var(--text-tertiary); font-size: var(--text-sm); font-weight: 550; white-space: nowrap; cursor: pointer; transition: color var(--motion-fast) ease; }
@@ -185,8 +192,7 @@
 .poster-card { width: 100%; height: auto; aspect-ratio: 16 / 10; }
 .poster img { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] img { opacity: 1; }
-.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-md); font-weight: 600; opacity: 1; transition: opacity 200ms var(--ease-out); }
-.poster-card .poster-placeholder { font-size: var(--text-lg); }
+.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; opacity: 1; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] .poster-placeholder { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .poster[data-phase="loading"]::before { transform: none; animation: none; background: color-mix(in srgb, var(--text-tertiary) 5%, transparent); }
@@ -286,7 +292,8 @@
 .feed-cols { display: none; }
 @media (min-width: 900px) {
   .feed-list[data-view="list"] .feed-item { grid-template-columns: 96px minmax(0, 1fr) auto; }
-  .feed-list[data-view="list"] .feed-cols { display: grid; grid-template-columns: 112px; align-items: center; gap: 16px; align-self: center; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+  /* why: the column sizes to its date and host (truncating only past 28ch), so hosts are cut only when space runs out. */
+  .feed-list[data-view="list"] .feed-cols { max-width: 28ch; display: grid; grid-template-columns: minmax(112px, max-content); justify-content: end; align-items: center; gap: 16px; align-self: center; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
   .feed-when { min-width: 0; display: grid; justify-items: end; gap: 2px; text-align: right; }
   .feed-when time { color: var(--text-secondary); font-family: inherit; white-space: nowrap; }
   .feed-when-host { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -417,16 +424,6 @@
 @media (max-width: 640px) {
   .index-shell { --gutter: 16px; }
   .index-head > .app-topbar { min-height: 52px; }
-  /* Row 1: the search is an icon until entered, then spans the row above the identity. */
-  .index-head .command-search { position: static; width: 40px; }
-  .index-head .search-field.command-field:has(input:not(:placeholder-shown)):not(:focus-within) { width: 40px; }
-  /* Expanded over the row: sized by its insets, never by the desktop widening rules. */
-  .index-head .search-field.command-field:focus-within:has(input:not(:placeholder-shown)) { width: auto; }
-  .index-head .search-field.command-field { width: 40px; min-width: 0; height: 40px; justify-content: center; padding: 0; border-radius: 20px; background: transparent; }
-  .index-head .search-field.command-field input { width: 0; min-width: 0; flex: 0 0 0; padding: 0; font-size: 16px; }
-  .index-head .search-field.command-field:focus-within { position: absolute; z-index: 2; top: 6px; right: var(--gutter); left: var(--gutter); width: auto; justify-content: flex-start; padding: 0 12px; background: var(--surface); }
-  .index-head .search-field.command-field:focus-within input { width: auto; flex: 1 1 auto; }
-  .index-head .command-results { top: calc(100% - 2px); right: var(--gutter); left: var(--gutter); width: auto; min-width: 0; }
   /* Row 2: the count on the left; Filter and sort on the right. */
   .scope-bar { gap: 8px; }
   .scope-bar-end { gap: 0; }
@@ -454,7 +451,7 @@ html[data-feed-transition]::view-transition-old(root),
 html[data-feed-transition]::view-transition-new(root) { animation-duration: 160ms; animation-timing-function: linear; }
 /* The items themselves (glide, leave, arrive, list ↔ grid): list-motion.css. */
 
-/* Back on the feed from a replay: the card you came from shows a quiet neutral hairline that fades once (navigation.ts
+/* Back on the feed from a replay: the card you came from shows a quiet neutral hairline that fades once (transitions/page-motion.ts
    sets [data-returned]); a hint of where you were, never an accent. */
 .feed-item[data-returned] .row-target::after { border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line-strong); animation: returned-ring 900ms var(--ease-out) 300ms both; }
 .feed-list[data-view="grid"] .feed-item[data-returned] .row-target::after { border-radius: var(--card-radius); }

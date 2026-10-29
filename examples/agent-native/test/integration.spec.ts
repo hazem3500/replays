@@ -147,22 +147,25 @@ test('Storybook renders fixture states, themes and real permission decisions wit
   page.on('request', (request) => {
     if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
   });
-  const story = async (id: string, theme = 'dark') =>
-    page.goto(`${storyOrigin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`);
-  await story('viewer-states--loading');
+  const story = async (id: string, theme = 'dark') => {
+    await page.goto(`${storyOrigin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`);
+    // why: MSW reloads a preview that loaded before its service worker took control; later checks need that settled document.
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  };
+  await story('app-viewer-states--loading');
   await expect(page.getByRole('status')).toHaveText('Loading replay…');
-  await story('viewer-states--host-context', 'light');
+  await story('app-viewer-states--host-context', 'light');
   await expect(page.getByTestId('context-panel')).toContainText('Example host');
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await story('viewer-states--empty-context');
+  await story('app-viewer-states--empty-context');
   await expect(page.getByTestId('context-empty')).toContainText('No context was captured');
-  await story('viewer-states--plugin-error');
+  await story('extensions-plugin-mount--render-throws');
   await expect(page.locator('[data-plugin-error]')).toHaveText('Company handoff could not be shown.');
-  await story('plugins-permission--comment-approval');
+  await story('extensions-permission-prompt--pending');
   await expect(page.getByRole('alertdialog')).toBeVisible();
   await page.getByRole('button', { name: 'Deny', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Denied; no comment was written.');
-  await story('plugins-permission--untrusted-preview');
+  await story('extensions-permission-prompt--untrusted-preview');
   await expect(page.getByTestId('permission-preview')).toContainText('<script>recorded page text</script>');
   await page.getByRole('button', { name: 'Allow this once' }).click();
   await expect(page.getByRole('status')).toContainText('Allowed for this fixture; no comment was written.');
@@ -175,15 +178,15 @@ test('Storybook renders fixture states, themes and real permission decisions wit
       if (!channel) throw new Error('Storybook preview channel is unavailable');
       channel.emit('setCurrentStory', { storyId: id, viewMode: 'story' });
     }, storyId);
-  await selectStory('plugins-permission--comment-approval');
+  await selectStory('extensions-permission-prompt--pending');
   await expect(page.getByTestId('permission-preview')).toContainText('Expected: checkout succeeds');
   await page.getByRole('button', { name: 'Allow until I reload', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('Allowed for this fixture');
-  await selectStory('plugins-permission--untrusted-preview');
+  await selectStory('extensions-permission-prompt--untrusted-preview');
   await expect(page.getByRole('alertdialog')).toBeVisible();
   await expect(page.getByTestId('permission-preview')).toContainText('<script>recorded page text</script>');
   await page.getByRole('button', { name: 'Deny', exact: true }).click();
-  await selectStory('plugins-permission--comment-approval');
+  await selectStory('extensions-permission-prompt--pending');
   await expect(page.getByRole('alertdialog')).toBeVisible();
   expect(await page.evaluate(() => performance.timeOrigin)).toBe(timeOrigin);
   expect(apiRequests).toEqual([]);

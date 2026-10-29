@@ -1,11 +1,11 @@
-import { UserRoundIcon } from 'lucide-react';
+import { SettingsIcon } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
 
 import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { DialogTrigger } from '@/components/ui/dialog.tsx';
 
-import { currentSearchParam, dropSearchParam } from '../route.ts';
+import { currentSearchParam, dropSearchParam } from '../routing/navigate.ts';
 import { isSettingsSection, type SettingsSectionId } from './sections.tsx';
 import { SettingsDialog } from './SettingsDialog.tsx';
 import { strings } from './strings.ts';
@@ -73,9 +73,16 @@ export function SettingsButton() {
       trigger={
         <Hint label={strings.open} side="bottom" align="end">
           <DialogTrigger
-            render={<Button variant="ghost" size="icon" aria-label={strings.open} className="text-muted-foreground [&_svg]:size-4" />}
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={strings.open}
+                className="text-[var(--text-secondary)] hover:text-foreground"
+              />
+            }
           >
-            <UserRoundIcon aria-hidden="true" />
+            <SettingsIcon className="size-4" aria-hidden="true" />
           </DialogTrigger>
         </Hint>
       }
