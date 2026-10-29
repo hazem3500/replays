@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, type Page, test } from '@playwright/test';
 
 import { boxOf, openReplay, origin } from './support.ts';
 
@@ -23,4 +23,32 @@ test('on a phone the inspector tabs are even 44 px cells, counts sit on the icon
   const tab = await boxOf(badged);
   const underline = await boxOf(page.locator('.inspector-tabs [data-slot="tabs-indicator"]'));
   expect(Math.abs(underline.x + underline.width / 2 - (tab.x + tab.width / 2))).toBeLessThanOrEqual(1);
+});
+
+/** The space between the composer's last row (its field, or the note under it while typing) and the screen's bottom. */
+function composerGap(page: Page) {
+  return page.evaluate(() => {
+    const rows = [...(document.querySelector('.comment-composer')?.children ?? [])].map((row) => row.getBoundingClientRect());
+    const bottom = Math.max(...rows.filter((row) => row.height > 0).map((row) => row.bottom));
+    return Math.round(innerHeight - bottom);
+  });
+}
+
+test('on a phone the comment composer sits on the bottom safe area, 8 px over it, and drops it while typing', async ({ page }) => {
+  await openReplay(page, `${origin()}/r/demo-shop`);
+  // why: edge-to-edge Chrome on Android reports the gesture bar as the bottom inset.
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Emulation.setSafeAreaInsetsOverride', { insets: { bottom: 34 } });
+  await page.getByRole('tab', { name: /^Comments/ }).tap();
+  await expect(page.locator('.comment-composer-box')).toBeVisible();
+  await expect.poll(() => composerGap(page)).toBe(34 + 8);
+
+  await page.locator('.comment-composer-input').focus();
+  await expect.poll(() => composerGap(page)).toBe(8);
+
+  await page.locator('.comment-composer-input').blur();
+  await page.getByTestId('inspector-collapse').tap();
+  await expect(page.locator('.comment-composer-box')).toBeHidden();
+  const shell = await page.locator('.app-shell[data-mobile]').evaluate((element) => getComputedStyle(element).paddingBottom);
+  expect(shell).toBe('34px');
 });
