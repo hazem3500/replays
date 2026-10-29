@@ -8,14 +8,7 @@ import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { StatusLabel, type StatusTone } from '@/components/ui/status-label.tsx';
-import {
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuShortcut,
-} from '@/components/ui/dropdown-menu.tsx';
+import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu.tsx';
 
 import { formatClock } from '../../shared/replay.ts';
 import { type ReviewSuite, type ReviewSuiteIndexRun, suiteOverallStatus } from '../../shared/review-suite.ts';
@@ -26,7 +19,7 @@ import { swapInPlace } from '../transitions/swap.ts';
 import { indexHref, indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
-import { Topbar } from '../Topbar.tsx';
+import { Topbar, type TopbarMenuItem } from '../Topbar.tsx';
 import { EditedViewer } from '../Viewer.tsx';
 import { editsQuery } from '../edits.ts';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
@@ -245,16 +238,14 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // why: keeping a suite is rare and the only way to stop its expiry, so it waits in More at every width; the
   // sidebar only says when the suite is kept.
   const keep = useKeepSuite(id);
-  const keepMenu = useMemo(
-    () => (
-      <DropdownMenuItem onClick={keep.flip} disabled={keep.pending} data-testid="keep-suite">
-        {keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />}
-        {keep.kept ? 'Suite kept' : 'Keep suite and its runs'}
-        {keep.kept ? <DropdownMenuShortcut className="tracking-normal">Release</DropdownMenuShortcut> : null}
-      </DropdownMenuItem>
-    ),
-    [keep.kept, keep.pending, keep.flip],
-  );
+  const keepItem: TopbarMenuItem = {
+    label: keep.kept ? 'Suite kept' : 'Keep suite and its runs',
+    icon: keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />,
+    onSelect: keep.flip,
+    ...(keep.kept ? { detail: 'Release' } : {}),
+    disabled: keep.pending,
+    testId: 'keep-suite',
+  };
   // Phones: no sidebar; the title is the run switcher (tap "Run 1 of 2 · label ⌄").
   const runMenu = useMemo(
     () => (suite && narrow ? <RunMenuItems runs={runs} detailed={detailed} selected={target} onSelect={select} /> : undefined),
@@ -338,7 +329,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
                 ...(runStatus ? { status: runStatus } : {}),
                 ...(suiteDetails ? { suite: suiteDetails } : {}),
                 ...(runMenu ? { titleMenu: runMenu } : {}),
-                ...(keepMenu ? { menu: keepMenu } : {}),
+                keep: keepItem,
                 backHref,
                 skipLink: false,
                 initialTab: tab,
@@ -357,7 +348,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             {...(runStatus ? { status: runStatus } : {})}
             {...(suiteDetails ? { suite: suiteDetails } : {})}
             {...(runMenu ? { titleMenu: runMenu } : {})}
-            {...(keepMenu ? { menu: keepMenu } : {})}
+            keep={keepItem}
             {...(titles.previous && titles.previous !== runTitle ? { titleFrom: titles.previous } : {})}
             backHref={backHref}
             skipLink={false}

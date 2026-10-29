@@ -85,6 +85,8 @@ test('More keeps a suite and its runs at every width; the sidebar only says it i
   await page.reload();
   await openMore(page);
   await expect(page.getByTestId('keep-suite')).toContainText('Keep suite and its runs');
+  // why: a rare, lasting choice follows the everyday items instead of leading the menu.
+  await expect(page.getByRole('menuitem').last()).toHaveAttribute('data-testid', 'keep-suite');
   await page.keyboard.press('Escape');
 
   // Phones have no sidebar: the same More item.
@@ -92,6 +94,7 @@ test('More keeps a suite and its runs at every width; the sidebar only says it i
   await page.reload();
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
   await openMore(page);
+  await expect(page.getByRole('menuitem').first()).toHaveAttribute('data-testid', 'replay-details');
   await page.getByTestId('keep-suite').click();
   await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Suite kept' })).toBeVisible();
   await expect.poll(async () => (await (await page.request.get(keepApi)).json()).expiresAt).toBeNull();
