@@ -27,25 +27,9 @@ import { resolveSlot } from '../plugins/registry.ts';
 import { DockPanel, InspectorDock } from './InspectorDock.tsx';
 import { inspectorTabItems } from './inspector-tabs.ts';
 import { consoleBadge } from './tab-badges.ts';
+import { INSPECTOR_HEIGHT_KEY, MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
 export { edgeVelocity } from './TrackList.tsx';
 import { buildPerformance } from './performance.ts';
-
-export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
-export const DEFAULT_INSPECTOR_HEIGHT = 260;
-export const MIN_INSPECTOR_HEIGHT = 120;
-
-function maxInspectorHeight() {
-  return Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
-}
-
-export function clampInspectorHeight(height: number) {
-  return Math.round(Math.min(Math.max(height, MIN_INSPECTOR_HEIGHT), maxInspectorHeight()));
-}
-
-export function initialInspectorHeight() {
-  const saved = Number(readStorage(INSPECTOR_HEIGHT_KEY));
-  return Number.isFinite(saved) && saved > 0 ? clampInspectorHeight(saved) : DEFAULT_INSPECTOR_HEIGHT;
-}
 
 /** What a bottom-panel splitter resizes: the diagnostics panel by default, or another panel (the editor's dock). */
 export interface PanelSize {
@@ -268,6 +252,7 @@ export const Inspector = memo(function Inspector({
           selected={expandedRequest}
           onSelect={setExpandedRequest}
           peers={networkPeers}
+          captured={sourceBundle.meta.captured}
         />
       </DockPanel>
       <DockPanel value="performance" pending={PerformancePending}>

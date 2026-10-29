@@ -75,16 +75,20 @@ test('after 1.2 s still loading, a thin progress line shows under the top bar', 
   release();
 });
 
-test('under reduced motion loading is static and contains no pretend controls', async ({ browser }) => {
+test('under reduced motion loading is static: the viewer’s parts wait without pulsing', async ({ browser }) => {
   const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const release = await holdBundle(page);
   await page.goto(viewer());
   const block = page.locator('main.skeleton-shell');
   await expect(block).toBeAttached();
-  await expect(block.locator('.sk, .sk-step, .sk-table-row')).toHaveCount(0);
-  await expect(block.locator('.loading-notice')).toHaveText('Opening replay…');
-  expect(await block.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
+  await expect(block.getByRole('status')).toHaveText('Loading replay…');
+  // why: the bar's controls are the viewer's own, disabled until it is there, never live fakes.
+  await expect(block.locator('header button:not(:disabled)')).toHaveCount(2);
+  const animations = await block.evaluate((element) =>
+    [element, ...element.querySelectorAll('.skeleton')].map((node) => getComputedStyle(node).animationName),
+  );
+  expect(new Set(animations)).toEqual(new Set(['none']));
   release();
   await context.close();
 });
