@@ -20,7 +20,7 @@ test('the Network toolbar is one row that fits, filters by status and searches, 
     await openReplay(page, `${server().origin}/r/${id}`);
     await page.getByTestId('network-tab').click();
 
-    const toolbar = page.locator('.np-toolbar');
+    const toolbar = page.getByTestId('network-toolbar');
     await expect(toolbar).toBeVisible();
     expect(await toolbar.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
