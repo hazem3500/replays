@@ -13,6 +13,14 @@ function rects(locator: Locator) {
   );
 }
 
+/** Every box within 2 px of its counterpart. */
+function near(boxes: number[][], expected: number[][]) {
+  return (
+    boxes.length === expected.length &&
+    boxes.every((box, index) => box.every((value, axis) => Math.abs(value - (expected[index]?.[axis] ?? Infinity)) <= 2))
+  );
+}
+
 test('a suite opened from its card loads with its runs listed and a tile where each recording lands', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const suite = uniqueId('loading-suite');
@@ -43,10 +51,5 @@ test('a suite opened from its card loads with its runs listed and a tile where e
   await expect(skeleton).toHaveCount(0);
   const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
   await expect(tiles).toHaveCount(3);
-  await expect
-    .poll(async () => {
-      const after = await rects(tiles);
-      return after.every((box, index) => box.every((value, axis) => Math.abs(value - (before[index]?.[axis] ?? Infinity)) <= 2));
-    })
-    .toBe(true);
+  await expect.poll(async () => near(await rects(tiles), before)).toBe(true);
 });

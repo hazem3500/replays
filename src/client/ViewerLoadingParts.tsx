@@ -24,7 +24,6 @@ const STRINGS = {
   comments: 'Comments',
 };
 
-
 /** Desktop's bar icons, in the viewer's order (Edit only where editing is on); phones keep Edit and More. */
 const DESKTOP_ICONS: readonly AnimatedIconName[] = ['info', 'link', 'download'];
 const ICON_BUTTON = cn(
