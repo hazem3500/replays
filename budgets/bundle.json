@@ -17,6 +17,81 @@
       "gzip": 60962,
       "brotli": 39185
     },
+    "dist/client/assets/CommentRowsSource-HASH.js": {
+      "raw": 2421,
+      "gzip": 1253,
+      "brotli": 1138
+    },
+    "dist/client/assets/ComparePicker-HASH.js": {
+      "raw": 5222,
+      "gzip": 2343,
+      "brotli": 2118
+    },
+    "dist/client/assets/CompareViewer-HASH.css": {
+      "raw": 7830,
+      "gzip": 2082,
+      "brotli": 1777
+    },
+    "dist/client/assets/CompareViewer-HASH.js": {
+      "raw": 37956,
+      "gzip": 13469,
+      "brotli": 11968
+    },
+    "dist/client/assets/Editor-HASH.css": {
+      "raw": 31925,
+      "gzip": 6193,
+      "brotli": 5501
+    },
+    "dist/client/assets/Editor-HASH.js": {
+      "raw": 101077,
+      "gzip": 33857,
+      "brotli": 28913
+    },
+    "dist/client/assets/Inspector-HASH.css": {
+      "raw": 44015,
+      "gzip": 8406,
+      "brotli": 7521
+    },
+    "dist/client/assets/Inspector-HASH.js": {
+      "raw": 240032,
+      "gzip": 81328,
+      "brotli": 68340
+    },
+    "dist/client/assets/MalleableHost-HASH.css": {
+      "raw": 8084,
+      "gzip": 2054,
+      "brotli": 1747
+    },
+    "dist/client/assets/MalleableHost-HASH.js": {
+      "raw": 77463,
+      "gzip": 25654,
+      "brotli": 22782
+    },
+    "dist/client/assets/ReplayComparePage-HASH.js": {
+      "raw": 982,
+      "gzip": 607,
+      "brotli": 555
+    },
+    "dist/client/assets/SuiteCompare-HASH.js": {
+      "raw": 1124,
+      "gzip": 682,
+      "brotli": 604
+    },
+    "dist/client/assets/SuiteWorkspace-HASH.js": {
+      "raw": 21285,
+      "gzip": 8751,
+      "brotli": 7544
+    },
+    "dist/client/assets/Viewer-HASH.css": {
+      "raw": 5200,
+      "gzip": 1420,
+      "brotli": 1220
+    },
+    "dist/client/assets/Viewer-HASH.js": {
+      "raw": 60058,
+      "gzip": 21441,
+      "brotli": 18678
+    },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
       "gzip": 981,
@@ -57,11 +132,6 @@
       "gzip": 241,
       "brotli": 190
     },
-    "dist/client/assets/CommentRowsSource-HASH.js": {
-      "raw": 2421,
-      "gzip": 1253,
-      "brotli": 1138
-    },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
       "gzip": 445,
@@ -74,23 +144,8 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10364,
+      "gzip": 10347,
       "brotli": 9006
-    },
-    "dist/client/assets/ComparePicker-HASH.js": {
-      "raw": 5222,
-      "gzip": 2343,
-      "brotli": 2118
-    },
-    "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 7830,
-      "gzip": 2082,
-      "brotli": 1777
-    },
-    "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 37956,
-      "gzip": 13469,
-      "brotli": 11968
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 94002,
@@ -101,16 +156,6 @@
       "raw": 3209,
       "gzip": 1535,
       "brotli": 1392
-    },
-    "dist/client/assets/Editor-HASH.css": {
-      "raw": 31925,
-      "gzip": 6193,
-      "brotli": 5501
-    },
-    "dist/client/assets/Editor-HASH.js": {
-      "raw": 101077,
-      "gzip": 33857,
-      "brotli": 28913
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -132,16 +177,6 @@
       "gzip": 280,
       "brotli": 229
     },
-    "dist/client/assets/Inspector-HASH.css": {
-      "raw": 44015,
-      "gzip": 8406,
-      "brotli": 7521
-    },
-    "dist/client/assets/Inspector-HASH.js": {
-      "raw": 240032,
-      "gzip": 81328,
-      "brotli": 68340
-    },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
       "gzip": 87670,
@@ -162,16 +197,6 @@
       "gzip": 308973,
       "brotli": 256601
     },
-    "dist/client/assets/MalleableHost-HASH.css": {
-      "raw": 8084,
-      "gzip": 2054,
-      "brotli": 1747
-    },
-    "dist/client/assets/MalleableHost-HASH.js": {
-      "raw": 77463,
-      "gzip": 25654,
-      "brotli": 22782
-    },
     "dist/client/assets/pencil-HASH.js": {
       "raw": 321,
       "gzip": 256,
@@ -190,7 +215,7 @@
     "dist/client/assets/queries-HASH.js": {
       "raw": 14679,
       "gzip": 4771,
-      "brotli": 4362
+      "brotli": 4356
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
@@ -206,11 +231,6 @@
       "raw": 6721,
       "gzip": 2958,
       "brotli": 2681
-    },
-    "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 982,
-      "gzip": 607,
-      "brotli": 555
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -237,16 +257,6 @@
       "gzip": 187,
       "brotli": 158
     },
-    "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1124,
-      "gzip": 682,
-      "brotli": 604
-    },
-    "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21170,
-      "gzip": 8711,
-      "brotli": 7500
-    },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
       "gzip": 12373,
@@ -260,7 +270,7 @@
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 312,
       "gzip": 253,
-      "brotli": 215
+      "brotli": 219
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -270,17 +280,7 @@
     "dist/client/assets/useTriggerFocusGuards-HASH.js": {
       "raw": 72164,
       "gzip": 25666,
-      "brotli": 22715
-    },
-    "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5200,
-      "gzip": 1420,
-      "brotli": 1220
-    },
-    "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60058,
-      "gzip": 21441,
-      "brotli": 18678
+      "brotli": 22682
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -290,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 544,
-      "brotli": 407
+      "brotli": 406
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -307,10 +307,10 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-385e24c93576.mjs": {
-      "raw": 311351,
-      "gzip": 81713,
-      "brotli": 66956
+    "dist/lib/chunks/context.schema.json-2baadbe84d5e.mjs": {
+      "brotli": 66039,
+      "gzip": 80607,
+      "raw": 307644
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -324,7 +324,7 @@
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
-      "gzip": 9209,
+      "gzip": 9208,
       "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
@@ -385,7 +385,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 144
+      "brotli": 136
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
