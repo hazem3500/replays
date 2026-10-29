@@ -27,6 +27,27 @@ export type CursorColor = keyof typeof CURSOR_COLORS;
 
 export const isCursorColor = (value: unknown): value is CursorColor => typeof value === 'string' && Object.hasOwn(CURSOR_COLORS, value);
 
+/** What a click looks like: `press` squishes the cursor; `ripple` and `pulse` add a ring or a halo at the point. */
+export const CURSOR_CLICK_EFFECTS = ['press', 'ripple', 'pulse'] as const;
+export type CursorClickEffect = (typeof CURSOR_CLICK_EFFECTS)[number];
+
+export const isCursorClickEffect = (value: unknown): value is CursorClickEffect =>
+  CURSOR_CLICK_EFFECTS.includes(value as CursorClickEffect);
+
+/** Each style's own click effect, used while `clickEffect` is omitted. */
+export const STYLE_CLICK_EFFECT: Record<CursorAppearance, CursorClickEffect> = {
+  arrow: 'press',
+  'classic-arrow': 'ripple',
+  hand: 'ripple',
+  dot: 'pulse',
+  ring: 'pulse',
+  agent: 'press',
+};
+
+/** The click effect a replay shows: the saved one, else its style's own. */
+export const clickEffectOf = (settings: ReplayCursorSettings | undefined): CursorClickEffect =>
+  settings?.clickEffect ?? STYLE_CLICK_EFFECT[settings?.appearance ?? 'arrow'];
+
 /** Replay-wide cursor presentation. Omitted fields preserve the original CUA arrow behavior. */
 export interface ReplayCursorSettings {
   visible?: boolean;
@@ -40,6 +61,8 @@ export interface ReplayCursorSettings {
   appearance?: CursorAppearance;
   /** A tint for the cursor; its own colors when omitted. */
   color?: CursorColor | undefined;
+  /** What a click looks like, chosen apart from the style; the style's own when omitted. */
+  clickEffect?: CursorClickEffect | undefined;
 }
 
 export function normalizeCursor(settings: ReplayCursorSettings | undefined): ReplayCursorSettings | undefined {
@@ -52,6 +75,9 @@ export function normalizeCursor(settings: ReplayCursorSettings | undefined): Rep
     ...(settings.motion !== undefined && settings.motion !== 'signature_arc' ? { motion: settings.motion } : {}),
     ...(settings.appearance !== undefined && settings.appearance !== 'arrow' ? { appearance: settings.appearance } : {}),
     ...(settings.color !== undefined ? { color: settings.color } : {}),
+    ...(settings.clickEffect !== undefined && settings.clickEffect !== STYLE_CLICK_EFFECT[settings.appearance ?? 'arrow']
+      ? { clickEffect: settings.clickEffect }
+      : {}),
   };
   return Object.keys(cursor).length ? cursor : undefined;
 }

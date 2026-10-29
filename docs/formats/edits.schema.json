@@ -230,6 +230,10 @@
         },
         "color": {
           "enum": ["accent", "periwinkle", "green", "amber", "coral", "graphite"]
+        },
+        "clickEffect": {
+          "enum": ["press", "ripple", "pulse"],
+          "description": "The style's own click effect when omitted."
         }
       }
     },
