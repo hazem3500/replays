@@ -26,6 +26,9 @@
 @import "./index/scope-bar.css";
 @import "./index/first-run/first-run.css";
 @import "./index/source-chip.css";
+/* why: phone rules carry `.index-shell` and come after scope-bar.css so they win over the desktop toolbar. */
+@import "./index/index-mobile.css";
+@import "./index/index-phone-menu.css";
 /* why: Settings and EmptyState restyle DialogContent and Button, whose utility classes sit in the utilities layer. */
 @import "./components/ui/empty-state.css";
 @import "./settings/settings.css";

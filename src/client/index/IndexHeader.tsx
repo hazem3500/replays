@@ -338,9 +338,20 @@ export function CommandSearch({
  * Row 2, one toolbar: the profile tabs (`lead`) or, without profiles, the result count on the left; the active
  * filters, Filter, sort and layout (desktop) on the right. With tabs the count stays for screen readers only.
  */
-export function ScopeBar({ count, lead, children }: { count: ReactNode; lead?: ReactNode; children?: ReactNode }) {
+export function ScopeBar({
+  count,
+  lead,
+  entering = false,
+  children,
+}: {
+  count: ReactNode;
+  lead?: ReactNode;
+  /** Arriving after the first-run state (the library just got its first replay): it fades in and rises once. */
+  entering?: boolean;
+  children?: ReactNode;
+}) {
   return (
-    <div className="scope-bar" data-lead={lead ? '' : undefined}>
+    <div className="scope-bar" data-lead={lead ? '' : undefined} data-entering={entering || undefined}>
       {lead}
       {count}
       {children ? <div className="scope-bar-end">{children}</div> : null}
