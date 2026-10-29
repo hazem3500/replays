@@ -40,6 +40,8 @@ import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
 import { Topbar } from './Topbar.tsx';
+import { IndexPhoneMenu, phoneMenuItems } from './index/IndexPhoneMenu.tsx';
+import { useSignedIn } from './account/AccountMenu.tsx';
 import { UploadReplay, type UploadReplayHandle } from './upload/UploadReplay.tsx';
 import { useReplayDrop } from './upload/useReplayDrop.tsx';
 
@@ -490,6 +492,7 @@ export function ReplayIndex({
   const toolbar = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLElement>(null);
   const upload = useRef<UploadReplayHandle>(null);
+  const account = useSignedIn();
   // Drop a replay.json or rrweb export anywhere on the index to upload it.
   const dropOverlay = useReplayDrop((file) => upload.current?.open(file));
 
@@ -795,6 +798,13 @@ export function ReplayIndex({
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
+          {...(compact
+            ? {
+                phoneMenu: (
+                  <IndexPhoneMenu items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })} />
+                ),
+              }
+            : {})}
           actions={
             <>
               {searchField}

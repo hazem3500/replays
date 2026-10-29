@@ -58,9 +58,18 @@ async function playbackInteraction(page, cdp, playbackMs) {
   };
 }
 
+/** Phones open Settings from the index header's menu sheet; wider screens have the Settings button. */
+async function openSettings(page) {
+  const menu = page.getByRole('button', { name: 'Menu' });
+  if (await menu.isVisible()) {
+    await menu.click();
+    await page.getByRole('button', { name: /^Settings/ }).click();
+  } else await page.getByRole('button', { name: 'Settings', exact: true }).click();
+}
+
 async function settingsInteraction(page) {
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
-  const dialog = page.getByRole('dialog');
+  await openSettings(page);
+  const dialog = page.getByRole('dialog', { name: 'Settings' });
   await dialog.waitFor();
   // why: desktop shows the sections as tabs, phones as a list that pushes one section; both carry the slot markup.
   await dialog.locator('[data-slot="settings.sections"] [data-slot-item]').last().click();
@@ -74,7 +83,7 @@ async function indexInteraction(page) {
     await search.fill('');
     return;
   }
-  await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await openSettings(page);
   await page.keyboard.press('Escape');
 }
 
