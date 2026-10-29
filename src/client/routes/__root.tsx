@@ -17,8 +17,8 @@ export interface RouterContext {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   validateSearch: rootSearchSchema,
-  // why: under Start the root renders the whole document (the server adds index.html's head, src/server/pages/start.ts);
-  // the SPA build mounts into index.html's #root instead.
+  /* why: under Start the root renders the whole document (the server adds index.html's head, src/server/pages/start.ts);
+     the SPA build mounts into index.html's #root instead. */
   ...(import.meta.env.REPLAYS_START ? { shellComponent: Document } : {}),
   component: Root,
 });

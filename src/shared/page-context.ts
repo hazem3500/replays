@@ -1,5 +1,4 @@
-/*
- * why: our node:http server renders a page through the TanStack Start server entry (src/server/pages/start.ts), which
+/* why: our node:http server renders a page through the TanStack Start server entry (src/server/pages/start.ts), which
  * is a separately built bundle. What one page render needs from the server (the request's deployment and an
  * in-process API call carrying its credentials) travels through this registry, keyed by an id in a request header
  * the server overwrites, so a client can never pick another request's context. Server-safe and dependency-free.
@@ -24,8 +23,8 @@ export interface PageContext {
 
 export const PAGE_HEADER = 'x-replays-page';
 
+// why: one registry per process, shared by our server and the separately built Start bundle that reads it.
 declare global {
-  /** One registry per process, shared by our server and the separately built Start bundle that reads it. */
   var __replaysPages: Map<string, PageContext> | undefined;
 }
 

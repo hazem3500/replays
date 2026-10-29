@@ -6,8 +6,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import react, { reactCompilerPreset } from '@vitejs/plugin-react';
 import { defineConfig } from 'vite-plus';
 
-/*
- * why: the TanStack Start build: the same routes (src/client/routes) as the SPA build in vite.config.ts, rendered on
+/* why: the TanStack Start build: the same routes (src/client/routes) as the SPA build in vite.config.ts, rendered on
  * the server by our node:http server through dist/start/server/server.js (src/server/pages/start.ts), hydrated by
  * dist/start/client. One build serves every base: asset URLs are relative here, and the server entry prefixes them
  * with the request's base (src/client/start/server.ts).

@@ -15,8 +15,8 @@ export const Route = createFileRoute('/')({
   loader: async ({ context: { queryClient }, deps }) => {
     // invariant: the view travels as loader data, so hydration renders what the server did.
     const loaded = { view: renderedView() };
-    // why: a server render puts the lists in the page (For me needs this browser's linked handles); the browser's index
-    // fetches and revalidates its own, so a navigation here never waits.
+    /* why: a server render puts the lists in the page (For me needs this browser's linked handles); the browser's index
+       fetches and revalidates its own, so a navigation here never waits. */
     if (typeof document !== 'undefined' || deps.forMe) return loaded;
     await Promise.all([queryClient.query(indexReplaysQuery(deps.list)), queryClient.query(indexSuitesQuery(INDEX_SUITES_URL))]).catch(
       () => {},

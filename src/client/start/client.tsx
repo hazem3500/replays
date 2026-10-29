@@ -17,8 +17,8 @@ startTransition(() => {
   );
 });
 
-// Browser entries of the server's plugins (src/client/plugins/): loaded after hydration, failures isolated.
+// why: the server's plugin browser entries load after hydration, so a failing one never holds the page.
 void loadClientPlugins();
 
-// Beta (REPLAYS_BETA_MALLEABLE): saved user plugins and the agent tools. Off: the code is never requested.
+// why: beta (REPLAYS_BETA_MALLEABLE): saved user plugins and the agent tools; off, their code is never requested.
 if (betaMalleable()) void import('../malleable/boot.ts').then((module) => module.boot());
