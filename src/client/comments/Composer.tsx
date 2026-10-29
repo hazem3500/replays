@@ -1,16 +1,13 @@
-import { MapPinIcon, RefreshCwIcon, SendIcon } from 'lucide-react';
+import { ArrowUpIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent, useId, useRef, useState } from 'react';
 
 import { MAX_COMMENT_BODY } from '../../shared/comments.ts';
 import { formatClock } from '../../shared/replay.ts';
-import { Button } from '@/components/ui/button.tsx';
-import { Kbd } from '@/components/ui/kbd.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { useComposerRequest } from '../hooks/use-composer-request.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
 import { isMacPlatform } from '../shortcuts.ts';
 import type { CommentsApi } from './CommentsProvider.tsx';
-import { keepFocus } from './composer-focus.ts';
 import { reportFailure } from './failure.ts';
 import { ReactionPicker } from './Reactions.tsx';
 import { commentStrings } from './strings.ts';
@@ -19,14 +16,14 @@ import { commentStrings } from './strings.ts';
 const DRIFT_MS = 100;
 
 /**
- * The composer docked under the comments: one quiet line that grows while it has focus or text. Its time chip follows
- * the playhead until typing starts (or `M` pins a moment), toggles between that moment and the whole replay, and
- * offers to move to the playhead when it has drifted. Cmd/Ctrl+Enter sends; Escape leaves the box.
+ * The composer docked under the comments: a plain box that grows with its text, a send arrow once there is something
+ * to send, and one quiet line under it saying where the comment goes. The moment follows the playhead until typing
+ * starts (or `M` pins one); × turns it into a whole-replay comment. Cmd/Ctrl+Enter sends; Escape leaves the box.
  */
 export function Composer({ comments }: { comments: CommentsApi }) {
   const player = usePlayer();
   const field = useRef<HTMLTextAreaElement>(null);
-  const footId = useId();
+  const noteId = useId();
   const [text, setText] = useState('');
   const [whole, setWhole] = useState(false);
   const [anchor, setAnchor] = useState<number>();
@@ -71,20 +68,18 @@ export function Composer({ comments }: { comments: CommentsApi }) {
     <form
       className="comment-composer"
       data-testid="comment-composer"
-      data-filled={text ? '' : undefined}
       onSubmit={(event) => {
         event.preventDefault();
         void submit();
       }}
     >
       <div className="comment-composer-box">
-        <PinChip anchor={anchor} whole={whole} onWhole={setWhole} onAnchor={setAnchor} />
         <textarea
           ref={field}
-          className="comment-input comment-composer-input"
+          className="comment-composer-input"
           data-testid="comment-input"
-          aria-label={whole ? commentStrings.placeholderWhole : 'New comment'}
-          aria-describedby={comments.anonymous ? footId : undefined}
+          aria-label={whole ? commentStrings.placeholderWhole : commentStrings.placeholder}
+          aria-describedby={noteId}
           rows={1}
           maxLength={MAX_COMMENT_BODY}
           placeholder={whole ? commentStrings.placeholderWhole : commentStrings.placeholder}
@@ -92,50 +87,69 @@ export function Composer({ comments }: { comments: CommentsApi }) {
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={onKeyDown}
         />
-        <Kbd className="comment-composer-kbd" aria-hidden="true">
-          M
-        </Kbd>
         <ReactionPicker comments={comments} />
-        <SendGroup text={text} />
+        {text.trim() ? <SendButton /> : null}
       </div>
-      {comments.anonymous ? <AnonymousNote id={footId} /> : null}
+      <ComposerNote
+        id={noteId}
+        anchor={anchor}
+        whole={whole}
+        length={text.length}
+        anonymous={comments.anonymous}
+        onWhole={setWhole}
+        onAnchor={setAnchor}
+      />
     </form>
   );
 }
 
-/** The send button (Cmd/Ctrl+Enter) and, near the limit, how many characters are left. */
-function SendGroup({ text }: { text: string }) {
+/** The quiet line under the box: where the comment goes, the characters left near the limit, and anonymity. */
+function ComposerNote({
+  id,
+  length,
+  anonymous,
+  ...placement
+}: {
+  id: string;
+  anchor: number | undefined;
+  whole: boolean;
+  length: number;
+  anonymous: boolean;
+  onWhole: (whole: boolean) => void;
+  onAnchor: (at: number) => void;
+}) {
   return (
-    <div className="comment-composer-send">
-      {text.length > MAX_COMMENT_BODY - 200 ? (
+    <div className="comment-composer-note" id={id}>
+      <Placement {...placement} />
+      {length > MAX_COMMENT_BODY - 200 ? (
         <span className="comment-count" aria-live="polite">
-          {MAX_COMMENT_BODY - text.length}
+          {MAX_COMMENT_BODY - length}
         </span>
       ) : null}
-      <Hint label="Send" shortcut={isMacPlatform() ? '⌘ ↵' : 'Ctrl ↵'}>
-        <Button type="submit" size="sm" disabled={!text.trim()} data-testid="comment-submit">
-          <SendIcon aria-hidden="true" />
-          Comment
-        </Button>
-      </Hint>
+      {anonymous ? (
+        <span className="comment-anonymous" data-testid="comments-anonymous-notice" title={commentStrings.anonymousDetail}>
+          {commentStrings.anonymous}
+        </span>
+      ) : null}
     </div>
   );
 }
 
-/** Shown while composing on a server without sign-in, and read out as the box's description. */
-function AnonymousNote({ id }: { id: string }) {
+function SendButton() {
   return (
-    <p id={id} className="comment-composer-foot" data-testid="comments-anonymous-notice" role="note">
-      {commentStrings.anonymous}
-    </p>
+    <Hint label={commentStrings.send} shortcut={isMacPlatform() ? '⌘ ↵' : 'Ctrl ↵'}>
+      <button type="submit" className="comment-send" aria-label={commentStrings.send} data-testid="comment-submit">
+        <ArrowUpIcon aria-hidden="true" />
+      </button>
+    </Hint>
   );
 }
 
 /**
- * Where the comment goes: the pinned moment (or the live playhead while nothing is pinned), or the whole replay.
- * Subscribes to the playhead on its own, so the composer around it does not render per frame.
+ * Where the comment goes, as plain text: "At 0:06.7" with × for the whole replay, or "Whole replay" with a way back
+ * to the playhead. Subscribes to the playhead on its own, so the composer around it does not render per frame.
  */
-function PinChip({
+function Placement({
   anchor,
   whole,
   onWhole,
@@ -148,39 +162,50 @@ function PinChip({
 }) {
   const player = usePlayer();
   const live = usePlayhead((time) => Math.round(time / DRIFT_MS) * DRIFT_MS);
-  const at = anchor ?? live;
-  const drifted = !whole && anchor !== undefined && Math.abs(anchor - live) >= DRIFT_MS;
-  return (
-    <span className="comment-pin-wrap">
-      <Hint label={whole ? 'On the whole replay. Click to pin it to a moment' : `Pinned to ${formatClock(at)}. Click for the whole replay`}>
+  if (whole)
+    return (
+      <span className="comment-placement">
+        <span data-testid="comment-pin">{commentStrings.wholeReplay}</span>
+        <span aria-hidden="true">·</span>
         <button
           type="button"
-          className="comment-pin"
-          data-testid="comment-pin"
-          aria-pressed={!whole}
-          onMouseDown={keepFocus}
+          className="comment-note-action"
+          data-testid="comment-pin-set"
           onClick={() => {
-            if (whole) onAnchor(player.getTime());
-            onWhole(!whole);
+            onAnchor(player.getTime());
+            onWhole(false);
           }}
         >
-          <MapPinIcon aria-hidden="true" />
-          {whole ? commentStrings.wholeReplay : formatClock(at)}
+          {commentStrings.pinTo(formatClock(live))}
+        </button>
+      </span>
+    );
+  const at = anchor ?? live;
+  const drifted = anchor !== undefined && Math.abs(anchor - live) >= DRIFT_MS;
+  return (
+    <span className="comment-placement">
+      {commentStrings.pinnedAt}{' '}
+      <span className="comment-placement-time" data-testid="comment-pin">
+        {formatClock(at)}
+      </span>
+      <Hint label={commentStrings.unpin}>
+        <button
+          type="button"
+          className="comment-unpin"
+          aria-label={commentStrings.unpin}
+          data-testid="comment-pin-clear"
+          onClick={() => onWhole(true)}
+        >
+          <XIcon aria-hidden="true" />
         </button>
       </Hint>
       {drifted ? (
-        <Hint label={`Move to the playhead, ${formatClock(live)}`}>
-          <button
-            type="button"
-            className="comment-pin-sync"
-            data-testid="comment-pin-sync"
-            aria-label={`Move to the playhead, ${formatClock(live)}`}
-            onMouseDown={keepFocus}
-            onClick={() => onAnchor(player.getTime())}
-          >
-            <RefreshCwIcon aria-hidden="true" />
+        <>
+          <span aria-hidden="true">·</span>
+          <button type="button" className="comment-note-action" data-testid="comment-pin-sync" onClick={() => onAnchor(player.getTime())}>
+            {commentStrings.moveTo(formatClock(live))}
           </button>
-        </Hint>
+        </>
       ) : null}
     </span>
   );
