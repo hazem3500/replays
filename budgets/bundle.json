@@ -165,7 +165,7 @@
     "dist/client/assets/main-HASH.css": {
       "raw": 266630,
       "gzip": 45795,
-      "brotli": 37918
+      "brotli": 37927
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 996774,
@@ -220,7 +220,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
       "gzip": 608,
-      "brotli": 559
+      "brotli": 553
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -250,7 +250,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 609
+      "brotli": 607
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21521,
@@ -515,7 +515,7 @@
     "initial/index.html/css": {
       "raw": 266630,
       "gzip": 45795,
-      "brotli": 37918
+      "brotli": 37927
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -1159,26 +1159,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37918
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: its phone geometry in skeleton.css, eager because editor.css loads with the editor. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37918
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: the first page's stylesheet is main-HASH.css. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
       "cap": {
         "raw": 4058,
@@ -1376,6 +1356,26 @@
         "brotli": 67963
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 266630,
+        "gzip": 45795,
+        "brotli": 37927
+      },
+      "reason": "Viewer views: hash drift in the first stylesheet from the chunks it names. Measured in CI against main 1bc31f4f.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 266630,
+        "gzip": 45795,
+        "brotli": 37927
+      },
+      "reason": "Viewer views: hash drift in the first stylesheet from the chunks it names. Measured in CI against main 1bc31f4f.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     }
   ]
