@@ -8,7 +8,7 @@ import { useWindowedRows } from '../../windowing.ts';
 import { formatDuration, stepAt } from '../network/model.ts';
 import { HEADER_HEIGHT, SeekTime } from '../TrackList.tsx';
 import { BUDGETS, type Moment, VERDICT_WORDS } from './model.ts';
-import { KEY_MOVES, moveIndex, type StepMove } from '../list-keys.ts';
+import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
 
 export const MOMENT_DETAIL_ID = 'performance-detail';
 
@@ -35,6 +35,7 @@ export function MomentList({
   explain,
   selected,
   onSelect,
+  onHover,
   empty,
 }: {
   moments: readonly Moment[];
@@ -42,6 +43,8 @@ export function MomentList({
   explain: (moment: Moment) => string;
   selected: string | undefined;
   onSelect: (id?: string) => void;
+  /** The moment under the pointer or focus, so the time ribbon can light its range; undefined when it leaves. */
+  onHover?: ((id?: string) => void) | undefined;
   empty: ReactNode;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -78,7 +81,15 @@ export function MomentList({
               {STRINGS.why}
             </span>
           </div>
-          <div ref={body} role="rowgroup">
+          {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
+          <div
+            ref={body}
+            role="rowgroup"
+            onPointerOver={(event) => onHover?.(rowIdOf(event.target))}
+            onPointerLeave={() => onHover?.()}
+            onFocus={(event) => onHover?.(rowIdOf(event.target))}
+            onBlur={() => onHover?.()}
+          >
             <div aria-hidden="true" style={{ height: padTop }} />
             {moments.slice(start, end).map((item, offset) => (
               <MomentRow
@@ -133,6 +144,7 @@ function MomentRow({
       role="row"
       aria-rowindex={rowIndex}
       data-performance-id={moment.id}
+      data-row-id={moment.id}
       data-verdict={moment.verdict}
       data-selected={selected || undefined}
       data-future={future || undefined}

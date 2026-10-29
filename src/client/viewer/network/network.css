@@ -39,6 +39,10 @@
 .np-row { display: grid; grid-template-columns: var(--np-cols); align-items: center; column-gap: 10px; min-height: var(--np-row); padding: 0 14px 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); }
 .np-head { position: sticky; z-index: 2; top: 0; height: 28px; min-height: 28px; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0.01em; }
 .np-row > * { min-width: 0; }
+/* Rows change state (reached, selected) with a short fade, never a snap; colour and opacity only, so nothing reflows. */
+.np-row { transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
+.np-row :is(.np-path, .np-code, .method, .np-ms, .np-step, time) { transition: color var(--motion) var(--ease-out); }
+.np-bar { transition: opacity var(--motion) var(--ease-out); }
 .np-row:not(.np-head):hover { background: var(--surface-hover); }
 .np-row[data-failed] { background: var(--danger-tint); box-shadow: inset 2px 0 var(--danger); }
 .np-row[data-selected], .np-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
@@ -136,3 +140,11 @@
 }
 .np-pending .np-toolbar .np-pending-chips { width: 220px; }
 .np-pending .np-row:not(.np-head) .skeleton:nth-child(2) { width: 70%; }
+
+/* Bodies: mono, wrapped, folded to 14 lines with a fade until "Show all"; redaction markers read as a quiet chip. */
+.np-body-text { max-height: none; margin: 0; padding: 8px 10px; overflow: auto; border-radius: var(--radius-sm); background: var(--surface); color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); line-height: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.np-body-text[data-folded] { max-height: calc(14 * 18px + 16px); overflow: hidden; mask-image: linear-gradient(to bottom, #000 calc(100% - 36px), transparent); }
+.np-body-toggle { margin-top: 4px; padding: 2px 0; border: 0; background: transparent; color: var(--accent); font-size: var(--text-xs); cursor: pointer; }
+.np-body-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: var(--radius-sm); }
+.np-body-note { margin: 6px 0 0; color: var(--warning); font-size: var(--text-2xs); }
+.np-redacted { padding: 0 4px; border-radius: 3px; background: var(--surface-pressed); color: var(--text-tertiary); font-style: italic; }
