@@ -96,6 +96,9 @@
   --success: #7ccfa2;
   --ring: #a9b6ff;
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  /* Behind dialogs and sheets: dims the page enough to separate the popup but keeps it legible, so the context
+     the popup acts on stays readable. No blur: a backdrop filter under a fade costs every frame. */
+  --scrim: rgb(0 0 0 / 0.6);
   /* Switches: a white thumb in both themes (on --text it turned black on the accent track in light). */
   --switch-thumb: #ffffff;
   --switch-thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
@@ -136,6 +139,7 @@
   --success: #1f7445;
   --ring: #3d4fd1;
   --shadow-pop: 0 12px 32px rgba(20, 26, 46, 0.14), 0 2px 6px rgba(20, 26, 46, 0.08);
+  --scrim: rgb(20 26 46 / 0.36);
 }
 
 * { box-sizing: border-box; }
@@ -207,7 +211,7 @@ html[data-page-transition="run"] .app-shell .transport { view-transition-name: v
 html[data-page-transition="run"] .app-shell .timeline-panel { view-transition-name: vt-rail; }
 html[data-page-transition="run"] .app-shell .inspector { view-transition-name: vt-panel; }
 html[data-page-transition="run"] .suite-sidebar { view-transition-name: vt-runs; }
-/* A suite's run → run (navigation.ts swapInPlace): everything stays where it is. The sidebar is its live self
+/* A suite's run → run (transitions/swap.ts): everything stays where it is. The sidebar is its live self
    (only its selection glides), the frame crossfades at its rect (resizing if the aspect differs), the top bar
    and transport crossfade in place, the rail and panel crossfade with a 4 px rise. 200 ms. The page itself stays
    opaque under the new one fading in, so nothing that is the same in both runs dims mid-way; the regions,
@@ -234,7 +238,7 @@ html[data-page-transition="run"]::view-transition-new(vt-panel) { animation: run
 html[data-page-transition="run"]::view-transition-old(vt-hero),
 html[data-page-transition="run"]::view-transition-new(vt-hero) { animation-duration: 200ms; }
 @keyframes run-region-in { from { opacity: 0; transform: translateY(4px); } }
-/* The step rows and panel rows fill once the frame has landed (navigation.ts useFilledAfterTransition): they fade in. */
+/* The step rows and panel rows fill once the frame has landed (hooks/use-filled-after-transition.ts): they fade in. */
 /* Rows that stagger in (viewer/stagger.ts) take the place of this fade. */
 html[data-landed] :is(.timeline-panel .timeline-wrap:not([data-staggered]), .inspector-panel:not([data-staggered]) > :not([data-staggered])) { animation: content-in 160ms var(--ease-out); }
 /* After an in-document page change the new page is the transition's own new state: no second entrance. */
@@ -280,6 +284,7 @@ a.brand { color: var(--text); text-decoration: none; border-radius: var(--radius
 .topbar-status { flex: 0 0 auto; display: flex; align-items: center; margin-right: auto; }
 .topbar-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 2px; margin-left: auto; }
 .topbar-back.topbar-back { color: var(--text-secondary); }
+.topbar-avatar { width: 20px; height: 20px; border-radius: 50%; object-fit: cover; }
 /* Phones: the chip shrinks to its status dot; the word stays for screen readers. */
 .topbar-compact .chip-word { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .topbar-compact .topbar-prefix { font-size: var(--text-xs); }
@@ -801,6 +806,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .suite-sidebar-title h2 { display: -webkit-box; margin: 0; overflow: hidden; color: var(--text); font-size: var(--text-sm); font-weight: 600; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: pretty; }
 .suite-sidebar-meta { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 .suite-sidebar-meta a { color: var(--text-secondary); text-decoration: none; }
+.suite-kept { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
+.suite-kept svg { width: 12px; height: 12px; }
 .sha-button { padding: 0 3px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); cursor: copy; }
 .suite-run-list { min-height: 0; flex: 1; display: grid; align-content: start; gap: 1px; padding: 6px; overflow: auto; }
 .suite-run-item { width: 100%; min-height: 44px; display: grid; grid-template-columns: 2.2ch minmax(0, 1fr); align-items: baseline; gap: 8px; padding: 6px 8px; border: 0; border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: var(--text-sm); text-align: left; cursor: pointer; transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease; }

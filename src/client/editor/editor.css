@@ -6,16 +6,7 @@
  */
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
-@import './cursor-inspector.css';
-@import './inspector.css';
 @layer app {
-  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 168px)); background: var(--canvas); }
-  /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
-  .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
-  .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }
-  .editor-shell:not([data-mobile]) > .inspector-resizer { grid-row: 3; display: block; }
-  .editor-shell:not([data-mobile]) > .editor-dock { grid-row: 4; }
-  .editor-shell[data-mobile] { grid-template-rows: auto minmax(0, 1fr) auto; }
 
   /* Top bar: a quiet save state by the title, undo/redo, View replay and Export. */
   .editor-save-state { display: inline-flex; align-items: center; gap: 4px; color: var(--text-tertiary); font-size: var(--text-xs); white-space: nowrap; outline: none; }
@@ -23,11 +14,6 @@
   .editor-save-state[data-state="saved"] svg { color: var(--accent); }
   .editor-retry { padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; cursor: pointer; }
   .editor-retry:hover { color: var(--text); }
-  .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; padding-right: 8px; border-right: 1px solid var(--line); }
-  .editor-done.editor-done { padding: 0 10px; color: var(--text-secondary); font-weight: 500; }
-  .editor-done.editor-done:hover { background: var(--surface-hover); color: var(--text); }
-  .editor-export.editor-export { gap: 6px; padding: 0 10px; }
-  .editor-export svg { width: 14px; height: 14px; }
   .editor-add-effect.editor-add-effect { gap: 5px; padding: 0 8px; color: var(--text-secondary); }
   .editor-add-effect svg { width: 14px; height: 14px; }
   .editor-add-effect svg:last-child { width: 11px; }
@@ -37,24 +23,16 @@
   .editor-highlight-label input { width: 112px; }
   .editor-highlight-label input:focus-visible, .editor-highlight-time input:focus-visible { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent); }
 
-  /* The preview: as large as the window allows. */
-  .editor-stage { position: relative; min-width: 0; min-height: 0; display: flex; }
-  /* PlayerStage supplies the same frame and canvas as the viewer; no extra editor frame. */
-  .editor-stage .stage-wrap { flex: 1; min-width: 0; }
   .editor-stage .player-stage { cursor: default; }
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
   .editor-stage .player-stage:focus-visible { box-shadow: none; }
 
-  .editor-presentation { flex: 0 0 clamp(264px, 24vw, 320px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
   .editor-presentation-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
   .editor-presentation-header h2 { margin: 0; font-size: var(--text-sm); font-weight: 600; }
   .editor-presentation-header p { margin: 4px 0 0; color: var(--text-tertiary); font-size: var(--text-xs); }
 
-  /* The dock: one control row, the timeline, one line of hint. */
-  .editor-dock { min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
   .editor-shell[data-mobile] .editor-dock { border-top: 1px solid var(--line); }
   /* One row of tools; when the window is narrow the context group (lengths, waits found, a setting) wraps below. */
-  .editor-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 44px; }
   .editor-bar-end { min-width: 0; min-height: 36px; margin-left: auto; display: flex; align-items: center; gap: 2px; }
   .editor-bar svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
   .editor-bar svg.filled-icon { fill: currentColor; }
@@ -67,7 +45,6 @@
   .editor-suggest { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
   .editor-suggest kbd { min-width: 0; margin-left: 2px; padding: 0 4px; border: 0; background: none; color: inherit; font-family: var(--sans); opacity: 0.7; }
   .editor-conflict { display: flex; align-items: center; gap: 6px; padding: 4px 0 8px; font-size: var(--text-xs); color: var(--text-secondary); }
-  .editor-hint { flex: none; margin: 8px 0 0; padding-left: 40px; min-height: 16px; font-size: var(--text-2xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   /* A note (an action that did nothing) reads a step stronger than the standing hint. */
   .editor-hint[data-note] { color: var(--text-secondary); }
 
@@ -355,8 +332,6 @@
 /* Override the shared press-scale utilities only inside the editor. Positioned timeline markers retain their
    transforms; buttons and links stay put while their colours answer hover and press. */
 @layer utilities {
-  .editor-shell:not([data-mobile]) .topbar :is([data-slot="button"], .topbar-back) { height: 32px; }
-  .editor-shell:not([data-mobile]) .topbar :is(.editor-history button, .topbar-back) { width: 32px; }
   .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, opacity 180ms ease-out; }
   .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
   .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
