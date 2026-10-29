@@ -1,3 +1,4 @@
+import { UserRoundIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { cn } from '@/lib/utils.ts';
@@ -22,7 +23,7 @@ export function hueOf(name: string) {
 
 /**
  * A person's avatar image, or their initials on a tinted disc (also when the image does not load). Anonymous authors
- * get a neutral disc. Decorative: the name is always written next to it.
+ * get a neutral disc with a person glyph, never a "?". Decorative: the name is always written next to it.
  */
 export function Avatar({
   name,
@@ -44,11 +45,23 @@ export function Avatar({
       aria-hidden="true"
       style={image || anonymous ? undefined : ({ '--avatar-hue': hueOf(name) } as React.CSSProperties)}
     >
-      {image ? (
-        <img src={avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" draggable={false} onError={() => setFailed(true)} />
-      ) : (
-        initialsOf(anonymous ? '' : name)
-      )}
+      <AvatarFace name={name} avatarUrl={image ? avatarUrl : undefined} anonymous={anonymous} onError={() => setFailed(true)} />
     </span>
   );
+}
+
+function AvatarFace({
+  name,
+  avatarUrl,
+  anonymous,
+  onError,
+}: {
+  name: string;
+  avatarUrl: string | undefined;
+  anonymous: boolean;
+  onError: () => void;
+}) {
+  if (avatarUrl) return <img src={avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" draggable={false} onError={onError} />;
+  if (anonymous) return <UserRoundIcon />;
+  return initialsOf(name);
 }
