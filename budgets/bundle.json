@@ -93,9 +93,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101099,
-      "gzip": 33869,
-      "brotli": 28948
+      "raw": 102421,
+      "gzip": 34243,
+      "brotli": 29326
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -1198,12 +1198,12 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 101099,
-        "gzip": 33869,
-        "brotli": 28948
+        "raw": 102421,
+        "gzip": 34243,
+        "brotli": 29326
       },
-      "reason": "The editor leaves edit mode through the router (routing/navigate.ts) instead of navigation.ts; measured in CI against fresh main e6d1c47 (gzip 32632 to 32882). Replaces #142's entry (The cursor Click layer (off, press, ripple or pulse) and the one-line cursor summary; measured against main: +460 B raw, -14 B gzip, -22 B brotli. Replaces #136's allowance for this file.)",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
+      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured against main 5cf1fb6c: +4267 B raw, +1361 B gzip, +1162 B brotli. The brotli cap is 60 B over the Boat measurement because CI's brotli output has come in 20 to 44 B larger for the same commit. Replaces #113's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     }
   ]
 }
