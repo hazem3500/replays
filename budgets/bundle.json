@@ -68,14 +68,14 @@
       "brotli": 2119
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 7732,
-      "gzip": 2056,
-      "brotli": 1755
+      "raw": 7830,
+      "gzip": 2082,
+      "brotli": 1777
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 36819,
-      "gzip": 13164,
-      "brotli": 11735
+      "raw": 37855,
+      "gzip": 13415,
+      "brotli": 11943
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -175,7 +175,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 630,
-      "brotli": 567
+      "brotli": 565
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -195,7 +195,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 654
+      "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20372,
@@ -980,6 +980,14 @@
       "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 644
+      },
+      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/119"
+    },
+    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3520
@@ -1044,14 +1052,6 @@
       },
       "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 654
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap. Then: Chunk wiring moved by naming compared recordings (shared names and identity module); about 20 bytes brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/138"
     }
   ]
 }
