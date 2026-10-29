@@ -4,7 +4,7 @@ import { join, resolve } from 'node:path';
 
 import { type APIRequestContext, type Browser, expect, test } from '@playwright/test';
 
-import { serveApp, uniqueId } from './support.ts';
+import { serveApp, uniqueId, gotoHydrated } from './support.ts';
 
 // People on recordings (meta.people) with a host plugin's api.people: the avatar stack on index rows and its card, and
 // the "For me" filter with a linked GitHub handle.
@@ -53,7 +53,7 @@ test('index rows show their people as an avatar stack; the card names them, thei
     { role: 'requester', email: 'bob@example.com' },
   ]);
   const { context, page } = await asAda(browser);
-  await page.goto(`${base()}/`);
+  await gotoHydrated(page, `${base()}/`);
   const row = page.locator(`[data-entry-id="session:${id}"]`);
   const stack = row.getByTestId('people-stack');
   await expect(stack).toHaveAccessibleName('People: Ada Lovelace (you), reviewer; bob, requester');
@@ -82,7 +82,7 @@ test('For me keeps the rows I am on (by email, then by a linked GitHub handle) a
   const byHandle = await upload(request, 'For me: by handle', [{ role: 'reviewer', handles: { github: 'ada-l' } }]);
   const other = await upload(request, 'For me: someone else', [{ role: 'reviewer', email: 'bob@example.com' }]);
   const { context, page } = await asAda(browser);
-  await page.goto(`${base()}/`);
+  await gotoHydrated(page, `${base()}/`);
   const row = (id: string) => page.locator(`[data-entry-id="session:${id}"]`);
   await expect(row(other)).toBeVisible();
 

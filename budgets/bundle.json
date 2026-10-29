@@ -1213,7 +1213,7 @@
         "gzip": 2182,
         "brotli": 1873
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1223,7 +1223,7 @@
         "gzip": 13526,
         "brotli": 12013
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1233,7 +1233,7 @@
         "gzip": 450,
         "brotli": 358
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1243,7 +1243,7 @@
         "gzip": 2518,
         "brotli": 2302
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1253,7 +1253,7 @@
         "gzip": 82012,
         "brotli": 68760
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1263,7 +1263,7 @@
         "gzip": 8791,
         "brotli": 7568
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1273,7 +1273,7 @@
         "gzip": 1562,
         "brotli": 1344
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1283,7 +1283,7 @@
         "gzip": 23949,
         "brotli": 20833
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1293,7 +1293,7 @@
         "gzip": 460,
         "brotli": 417
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1301,7 +1301,7 @@
       "cap": {
         "raw": 986723
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1311,7 +1311,7 @@
         "gzip": 256,
         "brotli": 246
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1321,7 +1321,7 @@
         "gzip": 3991,
         "brotli": 3622
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1331,7 +1331,7 @@
         "gzip": 539,
         "brotli": 505
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1341,7 +1341,7 @@
         "gzip": 80898,
         "brotli": 66336
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main ac1b98b2 (rebased on 0e7a3fdd). Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     }
   ]

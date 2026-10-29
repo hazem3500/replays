@@ -930,6 +930,10 @@ The owner is always `api.pluginName`; sandboxed user plugins cannot register rou
 renderer receives `PluginPageContext`: those fields, the loader's `data`, theme/base-path/API URL
 helpers and `navigate(path, search?)`. Return a cleanup function as with tabs.
 
+Pages are rendered on the server (TanStack Start), so the DOM a page starts with comes from the server; browser
+entries still load after hydration and must draw only into the containers they are given. A plugin page itself
+renders in the browser, after the entries have registered.
+
 Navigation stays under the plugin's root: schemes, other plugins, backslashes and dot traversal
 are rejected. The route waits for browser plugin loading before deciding a page is missing and
 subscribes to later registrations. Page registrations participate in plugin removal, reset and

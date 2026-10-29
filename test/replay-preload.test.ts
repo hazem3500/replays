@@ -12,13 +12,14 @@ const preload =
  * Runs index.html's preload script for a URL and returns the hrefs it preloads. `base` is what the server
  * declares in `<meta name="app-base">` (src/server/base-path.ts); absent, the app is at the root.
  */
-function boot(url: string, base?: string) {
+function boot(url: string, base?: string, rendered = false) {
   const { pathname, search } = new URL(url, 'https://replays.example');
   const links: Array<Record<string, string>> = [];
   const document = {
     createElement: () => ({}) as Record<string, string>,
     head: { appendChild: (link: Record<string, string>) => links.push(link) },
     querySelector: (selector: string) => (selector === 'meta[name="app-base"]' && base !== undefined ? { content: base } : null),
+    documentElement: { hasAttribute: (name: string) => rendered && name === 'data-rendered' },
   };
   new Function('location', 'document', preload)({ pathname, search }, document);
   for (const link of links) expect(link).toMatchObject({ rel: 'preload', as: 'fetch', crossOrigin: 'anonymous' });
@@ -65,5 +66,10 @@ describe('API preloads in index.html', () => {
 
   it('a malformed id preloads nothing', () => {
     expect(boot('/r/%E0%A4%A', '/')).toEqual([]);
+  });
+
+  it('a server-rendered page skips the list preloads but still preloads a viewer replay', () => {
+    expect(boot('/?errors=1', '/', true)).toEqual([]);
+    expect(boot('/r/abc', '/', true)).toEqual(['/api/replays/abc']);
   });
 });

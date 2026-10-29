@@ -54,7 +54,7 @@ the browser, and a server render would pass the request's. Loaders, `beforeLoad`
 `vite.start.config.ts` builds the same routes with TanStack Start into `dist/start`. `src/client/start/` holds its
 entries: `router.tsx` (`getRouter()`, per request on the server with the request's deployment and a fresh Query cache,
 once in the browser), `client.tsx` (hydration) and `server.ts` (the server entry; asset URLs get the request's base).
-Our server calls that entry for page requests (`src/server/pages/start.ts`, `REPLAYS_SSR=1`): it passes the request's
+Our server calls that entry for page requests (`src/server/pages/start.ts`; `REPLAYS_SSR=0` serves the stamped index.html): it passes the request's
 deployment and an in-process API call through `src/shared/page-context.ts`, and adds index.html's head to the streamed
 document. The root route renders the document under Start (`import.meta.env.REPLAYS_START`). The index is rendered
 on the server: its loader fills the Query cache through `api/request.ts` (in process on the server), `ReplayIndex`

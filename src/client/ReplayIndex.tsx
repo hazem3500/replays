@@ -395,6 +395,19 @@ function cachedIndex(client: QueryClient, search: string, suitesRequest: string)
   return items && suites ? { search, items, suites } : undefined;
 }
 
+/** How long lists a server render put in the page count as current: the index skips refetching them right away. */
+const RENDERED_FRESH_MS = 10_000;
+
+const fresh = (updatedAt: number | undefined) => updatedAt !== undefined && Date.now() - updatedAt < RENDERED_FRESH_MS;
+
+/** Both lists were fetched moments ago (a server render's, dehydrated into this page). */
+function freshIndex(client: QueryClient, search: string, suitesRequest: string) {
+  return (
+    fresh(client.getQueryState(indexReplaysQuery(search).queryKey)?.dataUpdatedAt) &&
+    fresh(client.getQueryState(indexSuitesQuery(suitesRequest).queryKey)?.dataUpdatedAt)
+  );
+}
+
 /** On Back/Forward only: the cached list for this request (a fresh visit always starts from the server). */
 function restoredIndex(search: string): IndexCache | undefined {
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -461,6 +474,9 @@ export function ReplayIndex({
   const [restored] = useState(
     () => cachedIndex(queryClient, listSearch, withForMe(INDEX_SUITES_URL, forMe, linked)) ?? restoredIndex(listSearch),
   );
+  // why: lists a server render fetched moments ago are what the server has; the first fetch would only repeat them.
+  const [renderedFresh] = useState(() => freshIndex(queryClient, listSearch, withForMe(INDEX_SUITES_URL, forMe, linked)));
+  const skipFirstFetch = useRef({ sessions: renderedFresh, suites: renderedFresh });
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(opened));
   const profiles = pageProfiles();
   const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(opened, profiles));
@@ -558,6 +574,10 @@ export function ReplayIndex({
   }, []);
 
   useEffect(() => {
+    if (skipFirstFetch.current.sessions) {
+      skipFirstFetch.current.sessions = false;
+      return;
+    }
     const controller = new AbortController();
     fetchPage(apiUrl(`replays${listSearch}`), { signal: controller.signal })
       .then(async (response) => {
@@ -602,6 +622,10 @@ export function ReplayIndex({
   }, [filters]);
 
   useEffect(() => {
+    if (skipFirstFetch.current.suites) {
+      skipFirstFetch.current.suites = false;
+      return;
+    }
     const controller = new AbortController();
     // Default cache mode so index.html's preload of this exact URL is reused; the server answers
     // `Cache-Control: no-store`, so the list is never stale.

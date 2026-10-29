@@ -374,7 +374,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
 }
 
 /**
- * Pages rendered by TanStack Start (src/server/pages/start.ts) when `REPLAYS_SSR=1` and the Start build is there; else
+ * Pages rendered by TanStack Start (src/server/pages/start.ts) when the Start build is there (`REPLAYS_SSR=0` opts out); else
  * the stamped index.html, as before. A Start bundle that fails to load is logged and the server stays up on the SPA page.
  */
 async function startPages(
@@ -383,10 +383,18 @@ async function startPages(
   api: (request: IncomingMessage, response: ServerResponse) => Promise<void>,
   log: (message: string) => void,
 ) {
-  if (!/^(1|true|on)$/i.test(env.REPLAYS_SSR ?? '')) return undefined;
+  if (/^(0|false|off)$/i.test(env.REPLAYS_SSR ?? '')) return undefined;
   const entry = resolve(root, 'dist/start/server/server.js');
+  if (
+    !(await access(entry).then(
+      () => true,
+      () => false,
+    ))
+  ) {
+    log('server-rendered pages off: no Start build (dist/start); serving the single-page app');
+    return undefined;
+  }
   try {
-    await access(entry);
     const { loadStartRenderer } = await import('./pages/start.ts');
     const renderer = await loadStartRenderer(entry, api);
     log('pages rendered on the server (TanStack Start)');
