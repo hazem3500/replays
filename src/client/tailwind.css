@@ -21,6 +21,7 @@
 @import "./loading.css" layer(app);
 @import "./index/list-motion.css" layer(app);
 @import "./index/scope-count.css" layer(app);
+@import "./index/expired.css" layer(app);
 /* why: the filter popover, toolbar tokens and first-run cards restyle shadcn primitives whose utility classes
    (w-72, p-2.5, gap-4, ring-1, shadow-md) sit in the utilities layer; unlayered rules outrank them. */
 @import "./index/filter-menu.css";

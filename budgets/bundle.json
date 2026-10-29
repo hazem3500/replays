@@ -74,8 +74,8 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10364,
-      "brotli": 8992
+      "gzip": 10347,
+      "brotli": 8982
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -210,7 +210,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
       "gzip": 607,
-      "brotli": 555
+      "brotli": 553
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -239,13 +239,13 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 684,
-      "brotli": 608
+      "gzip": 683,
+      "brotli": 599
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21170,
-      "gzip": 8711,
-      "brotli": 7500
+      "raw": 21285,
+      "gzip": 8752,
+      "brotli": 7530
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -260,7 +260,7 @@
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 312,
       "gzip": 253,
-      "brotli": 215
+      "brotli": 219
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -270,7 +270,7 @@
     "dist/client/assets/useTriggerFocusGuards-HASH.js": {
       "raw": 72164,
       "gzip": 25666,
-      "brotli": 22715
+      "brotli": 22682
     },
     "dist/client/assets/Viewer-HASH.css": {
       "raw": 5200,
@@ -290,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 544,
-      "brotli": 407
+      "brotli": 406
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-c805001dee98.mjs": {
-      "raw": 310751,
-      "gzip": 81506,
-      "brotli": 66856
+    "dist/lib/chunks/context.schema.json-8e7122d98ca4.mjs": {
+      "raw": 306214,
+      "gzip": 80205,
+      "brotli": 65778
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -329,7 +329,7 @@
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
-      "gzip": 9209,
+      "gzip": 9208,
       "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
@@ -395,7 +395,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 144
+      "brotli": 136
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -485,7 +485,7 @@
     "dist/lib/server.mjs": {
       "raw": 1907,
       "gzip": 616,
-      "brotli": 527
+      "brotli": 518
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -494,8 +494,8 @@
     },
     "initial/index.html/css": {
       "raw": 254839,
-      "gzip": 44056,
-      "brotli": 36631
+      "gzip": 44031,
+      "brotli": 36644
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -913,16 +913,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21201,
-        "gzip": 8711,
-        "brotli": 7524
-      },
-      "reason": "Run switches and the landing run write the address through the router (routing/navigate.ts) instead of history.pushState, and popped addresses are read with routing/links.ts. Replaces #105's entry (Measured in CI against fresh main: raw 18081 to 18096 bytes with this change. Then: Suite workspace routes runs into the compare mode (sidebar moves focus, lazy SuiteCompare entry).)",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
       "file": "dist/client/assets/comments-HASH.js",
       "cap": {
         "raw": 764,
@@ -1123,16 +1113,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
-      "file": "dist/client/assets/use-focus-when-HASH.js",
-      "cap": {
-        "raw": 312,
-        "gzip": 253,
-        "brotli": 215
-      },
-      "reason": "A tiny shared chunk split out when the comments UI went lazy: the focus hook is used by the reply box and other lazy views.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
       "file": "dist/client/assets/comments-ui-HASH.js",
       "cap": {
         "raw": 29145,
@@ -1273,16 +1253,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-c805001dee98.mjs",
-      "cap": {
-        "raw": 310751,
-        "gzip": 81506,
-        "brotli": 66856
-      },
-      "reason": "The context-schema chunk is renamed by its content hash when the server chunk graph gains the page renderer; same module.",
-      "pr": "https://github.com/hazem3500/replays/pull/156"
-    },
-    {
       "file": "dist/lib/chunks/start.ts-530ffefc64b4.mjs",
       "cap": {
         "raw": 4541,
@@ -1291,6 +1261,34 @@
       },
       "reason": "The Start page renderer (src/server/pages/start.ts, head.ts), loaded only with REPLAYS_SSR=1.",
       "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21285,
+        "gzip": 8752,
+        "brotli": 7530
+      },
+      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 21285 raw, 8752 gzip, 7530 brotli bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/134"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-8e7122d98ca4.mjs",
+      "cap": {
+        "raw": 306214,
+        "gzip": 80205,
+        "brotli": 65778
+      },
+      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-c805001dee98 (caps 310751, 81506, 66856) and measures 306214 raw, 80205 gzip, 65778 brotli bytes, under those caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/134"
+    },
+    {
+      "file": "dist/client/assets/use-focus-when-HASH.js",
+      "cap": {
+        "brotli": 219
+      },
+      "reason": "A tiny shared hook chunk whose bytes are the hashed chunk names it imports; they change with this PR's chunks. Measures 219 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/134"
     }
   ]
 }

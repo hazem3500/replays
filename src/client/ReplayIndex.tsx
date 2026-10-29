@@ -32,6 +32,7 @@ import { SortMenu } from './ReplayIndexCompact.tsx';
 import { activeFilterTokens, FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
 import { IndexEmpty, type IndexEmptyInput } from './index/index-empty.tsx';
 import { MeContext } from './index/People.tsx';
+import { ExpiredReplays } from './index/ExpiredReplays.tsx';
 import { FirstRun } from './index/first-run/FirstRun.tsx';
 import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
@@ -854,6 +855,7 @@ export function ReplayIndex({
         ) : (
           <FeedSkeleton view={view} />
         )}
+        {entries && !error ? <ExpiredReplays query={searchText} profile={profile} profiles={profiles} /> : null}
       </section>
       {dropOverlay}
     </main>
