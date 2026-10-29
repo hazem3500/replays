@@ -69,7 +69,7 @@
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
-      "gzip": 2344,
+      "gzip": 2345,
       "brotli": 2117
     },
     "dist/client/assets/CompareViewer-HASH.css": {
@@ -119,8 +119,8 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 25112,
-      "gzip": 9611,
-      "brotli": 8387
+      "gzip": 9612,
+      "brotli": 8417
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 402,
@@ -214,8 +214,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 611,
-      "brotli": 564
+      "gzip": 613,
+      "brotli": 560
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 480,
@@ -249,8 +249,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 688,
-      "brotli": 644
+      "gzip": 689,
+      "brotli": 608
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21201,
@@ -478,9 +478,9 @@
       "brotli": 33411
     },
     "initial/index.html/js": {
-      "raw": 1473027,
-      "gzip": 470515,
-      "brotli": 398614
+      "raw": 1473161,
+      "gzip": 470545,
+      "brotli": 398603
     },
     "initial/render.html/css": {
       "raw": 5784,
