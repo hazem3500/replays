@@ -358,17 +358,19 @@ a.brand { color: var(--text); text-decoration: none; border-radius: var(--radius
 .success-check path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: check-draw 240ms var(--ease-out) 60ms forwards; }
 @keyframes check-draw { to { stroke-dashoffset: 0; } }
 
-/* ---------- Shortcut sheet ---------- */
-.shortcut-sheet { max-height: calc(100vh - 64px); overflow: auto; }
-.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 10px 16px; border-bottom: 1px solid var(--line); }
-.sheet-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 24px; padding: 12px 16px; }
+/* ---------- Shortcut sheet ----------
+   On the dialog geometry (--dialog-pad from DialogContent, 13 px body rows) and with the same key chips as
+   Settings › Keyboard (settings.css .settings-kbd), so the two lists of the same shortcuts read alike. */
+.shortcut-sheet { max-height: calc(100vh - 64px); max-height: calc(100dvh - 64px); overflow: auto; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 12px var(--dialog-pad); border-bottom: 1px solid var(--line); }
+.sheet-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 32px; padding: 12px var(--dialog-pad) 4px; }
 .sheet-body h3 { margin: 8px 0 4px; color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 600; }
 .sheet-body dl { margin: 0; }
-.sheet-body dl div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; border-bottom: 1px solid var(--line); }
-.sheet-body dt { color: var(--text-secondary); font-size: var(--text-sm); }
+.sheet-body dl div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; border-bottom: 1px solid var(--line); }
+.sheet-body dt { color: var(--text-secondary); font-size: var(--dialog-body-size); line-height: var(--dialog-body-line); }
 .sheet-body dd { display: flex; gap: 4px; margin: 0; }
 kbd:not([data-slot]) { min-width: 22px; padding: 1px 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--text); font-family: var(--mono); font-size: var(--text-xs); text-align: center; }
-.sheet-note { margin: 0; padding: 10px 16px 14px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.sheet-note { margin: 0; padding: 12px var(--dialog-pad) var(--dialog-pad); color: var(--text-tertiary); font-size: var(--text-xs); }
 
 /* ---------- Workspace ---------- */
 .workspace { --steps-default: 300px; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 0 var(--steps-width, var(--steps-default)); }
