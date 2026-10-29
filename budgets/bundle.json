@@ -114,8 +114,8 @@
     },
     "dist/client/assets/main-HASH.css": {
       "raw": 246064,
-      "gzip": 42460,
-      "brotli": 35304
+      "gzip": 42526,
+      "brotli": 35381
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 847504,
@@ -414,8 +414,8 @@
     },
     "initial/index.html/css": {
       "raw": 247932,
-      "gzip": 43379,
-      "brotli": 36099
+      "gzip": 43443,
+      "brotli": 36174
     },
     "initial/index.html/js": {
       "raw": 1688508,
