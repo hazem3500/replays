@@ -74,7 +74,7 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10364,
+      "gzip": 10349,
       "brotli": 9008
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -118,8 +118,8 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6582,
-      "gzip": 3181,
+      "raw": 6580,
+      "gzip": 3179,
       "brotli": 2796
     },
     "dist/client/assets/features-HASH.js": {
@@ -208,7 +208,7 @@
       "brotli": 2681
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 1022,
+      "raw": 982,
       "gzip": 608,
       "brotli": 557
     },
