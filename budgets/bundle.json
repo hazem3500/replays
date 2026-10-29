@@ -238,8 +238,8 @@
       "brotli": 158
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1164,
-      "gzip": 703,
+      "raw": 1124,
+      "gzip": 683,
       "brotli": 650
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
@@ -1245,11 +1245,9 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "raw": 1164,
-        "gzip": 703,
         "brotli": 650
       },
-      "reason": "Hash noise, not growth: raw (1130) and gzip (685) are byte-identical to main. This 1 KB chunk is mostly hashed import paths, so its Brotli size moves between 599 and 629 whenever another chunk's hash changes, which is more than the 3% headroom. Replaces #116's allowance for this file.",
+      "reason": "Hash noise, not growth: raw and gzip match main byte for byte. This 1 KB chunk is mostly hashed import paths, so its Brotli size moves by up to 30 bytes whenever another chunk's hash changes, which is more than the 3% headroom. Replaces #116's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/147"
     }
   ]
