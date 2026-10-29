@@ -328,6 +328,18 @@ longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×
 preceding label through legacy unlabelled waits and repeated actions, while their number follows the
 active rail step. Exports use the same caption selection and time mapping.
 
+A trusted browser entry can add an editor tool, export format or viewer shortcut with
+`registerEditorTool`, `registerExportFormat` and `registerShortcut`. For example:
+
+```ts
+api.registerExportFormat({ id: 'console', label: 'Console JSON', run: ({ replay }) => ({
+  name: 'console.json', mime: 'application/json', data: JSON.stringify(replay.console),
+}) });
+```
+
+The [contribution contracts](extension-api.md#editor-tools-exports-and-shortcuts) preserve core edit validation, undo,
+server authorization and capture privacy. `examples/custom-distro` demonstrates each API.
+
 Trusted browser entries can observe playback without scraping the DOM:
 
 ```ts

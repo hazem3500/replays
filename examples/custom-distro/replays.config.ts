@@ -5,4 +5,5 @@ import acme from './src/plugin.ts';
 export default defineConfig({
   plugins: [acme({ audience: 'acme-replays', domain: 'acme.test' })],
   retentionDays: 30,
+  beta: { editor: true },
 });

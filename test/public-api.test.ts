@@ -1,5 +1,8 @@
 import { SLOT_NAMES, ViewerRegistry } from '../src/client/plugins/api.ts';
 import type {
+  EditorToolDefinition,
+  ExportFormatDefinition,
+  ShortcutDefinition,
   ViewerEventMap,
   ViewerPluginApi,
   SlotDescriptor,
@@ -243,6 +246,12 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('exposes typed editor, export and shortcut contributions', () => {
+    expectTypeOf<ViewerPluginApi['registerEditorTool']>().parameter(0).toEqualTypeOf<EditorToolDefinition>();
+    expectTypeOf<ViewerPluginApi['registerExportFormat']>().parameter(0).toEqualTypeOf<ExportFormatDefinition>();
+    expectTypeOf<ViewerPluginApi['registerShortcut']>().parameter(0).toEqualTypeOf<ShortcutDefinition>();
+  });
+
   it('publishes typed content-free event subscriptions', () => {
     const observeSeek = new ViewerRegistry().apiFor('host').on<'seek'>;
     expectTypeOf(observeSeek).toBeCallableWith('seek', (_event: ViewerEventMap['seek']) => {});
@@ -260,6 +269,7 @@ describe('public API', () => {
       'viewer.inspector.tabs',
       'viewer.panels.side',
       'viewer.actions',
+      'viewer.shortcuts',
       'viewer.scrubber.tracks',
       'viewer.context.sections',
       'index.row.columns',
