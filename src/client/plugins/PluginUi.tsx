@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu.tsx';
 import type { Playback } from '../player.ts';
-import { apiUrl, appBase } from '../route.ts';
+import { apiUrl, appBase } from '../api/fetch.ts';
 import { notify as showToast } from '../toast.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';
 import type { Cleanup, SettingDefinition, ViewerActionDefinition, ViewerPluginContext } from './api.ts';

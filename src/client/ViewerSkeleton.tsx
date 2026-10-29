@@ -7,7 +7,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
-import { replayHref } from './route.ts';
+import { replayHref } from './routing/links.ts';
 import { Topbar } from './Topbar.tsx';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
@@ -32,7 +32,7 @@ export interface OpenHint {
   steps?: number;
   /** A source chip (a linked pull request or ticket) shows beside the title. */
   source?: boolean;
-  /** The card's poster, or its opening still when loaded: the frame shows it while loading (navigation.ts). */
+  /** The card's poster, or its opening still when loaded: the frame shows it while loading (transitions/open-hint.ts). */
   poster?: string;
   /** `poster` is the opening still (the replay's first paint), not the list poster. */
   still?: boolean;

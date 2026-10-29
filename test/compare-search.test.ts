@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { MAX_RECORDINGS, parseCompareSearch, writeCompareSearch } from '../src/client/compare/compare-search.ts';
+import { compareSearchParams, MAX_RECORDINGS, parseCompareSearch, writeCompareSearch } from '../src/client/compare/compare-search.ts';
 
 describe('compare search', () => {
   it('reads the recordings, layout and focus from a viewer URL', () => {
@@ -44,5 +44,14 @@ describe('compare search', () => {
   it('round-trips what it writes', () => {
     const state = { with: ['b', 'c'], layout: 'spotlight' as const, focus: 'c' };
     expect(parseCompareSearch(writeCompareSearch('', state), 'a')).toEqual(state);
+  });
+
+  it('keeps a route’s compare keys as text, dropping what the page would ignore', () => {
+    expect(compareSearchParams({ with: 'b,c,b,not an id', layout: 'gallery', focus: 'c' })).toEqual({
+      with: 'b,c',
+      layout: undefined,
+      focus: 'c',
+    });
+    expect(compareSearchParams({ layout: 'grid', focus: 'z' })).toEqual({ with: undefined, layout: 'grid', focus: undefined });
   });
 });

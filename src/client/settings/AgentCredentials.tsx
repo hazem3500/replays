@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 
 interface Credential {
   id: string;
