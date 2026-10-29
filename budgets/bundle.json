@@ -297,10 +297,10 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
-      "raw": 313271,
-      "gzip": 82107,
-      "brotli": 67317
+    "dist/lib/chunks/context.schema.json-385e24c93576.mjs": {
+      "raw": 311351,
+      "gzip": 81713,
+      "brotli": 66956
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -366,6 +366,11 @@
       "raw": 2714,
       "gzip": 1051,
       "brotli": 884
+    },
+    "dist/lib/chunks/web.ts-ee44bee371bd.mjs": {
+      "raw": 3103,
+      "gzip": 1120,
+      "brotli": 986
     },
     "dist/lib/config.mjs": {
       "raw": 348,
@@ -1196,14 +1201,24 @@
       "pr": "https://github.com/hazem3500/replays/pull/139"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
+      "file": "dist/lib/chunks/web.ts-ee44bee371bd.mjs",
       "cap": {
-        "raw": 313271,
-        "gzip": 82107,
-        "brotli": 67317
+        "raw": 3103,
+        "gzip": 1120,
+        "brotli": 986
       },
-      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
-      "pr": "https://github.com/hazem3500/replays/pull/138"
+      "reason": "The web-standard auth adapter wrapper (src/server/auth/web.ts), shared by the server and server-testing entries.",
+      "pr": "https://github.com/hazem3500/replays/pull/139"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-385e24c93576.mjs",
+      "cap": {
+        "raw": 311351,
+        "gzip": 81713,
+        "brotli": 66956
+      },
+      "reason": "The context-schema chunk is renamed by its content hash when the shared chunk graph gains the auth wrapper; same module.",
+      "pr": "https://github.com/hazem3500/replays/pull/139"
     }
   ]
 }
