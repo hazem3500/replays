@@ -10,10 +10,11 @@ import { REQUEST_DETAIL_ID, StatusText } from './NetworkList.tsx';
 import { DetailHead } from './DetailHead.tsx';
 import { HeaderList } from './HeaderList.tsx';
 
-/** Another recording being compared (compare mode): its letter, title and requests. */
+/** Another recording being compared (compare mode): its short name, colour (1 to 9), title and requests. */
 export interface NetworkPeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   label: string;
   rows: readonly NetworkRow[];
 }
@@ -173,10 +174,10 @@ function PeerResults({ row, peers }: { row: NetworkRow; peers: readonly NetworkP
           const match = matchRequest(row, peer.rows);
           return (
             <li key={peer.id} data-changed={match && match.failed !== row.failed ? '' : undefined}>
-              <span className="np-peer-letter" aria-hidden="true">
-                {peer.letter}
+              <span className="np-peer-label" data-tile={peer.colour} title={peer.label}>
+                <span className="ct-swatch" aria-hidden="true" />
+                {peer.name}
               </span>
-              <span className="np-peer-label">{peer.label}</span>
               <span className="np-peer-result">
                 {match ? (
                   <>
