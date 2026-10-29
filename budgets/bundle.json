@@ -1253,16 +1253,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-c805001dee98.mjs",
-      "cap": {
-        "raw": 310751,
-        "gzip": 81506,
-        "brotli": 66856
-      },
-      "reason": "The context-schema chunk is renamed by its content hash when the server chunk graph gains the page renderer; same module.",
-      "pr": "https://github.com/hazem3500/replays/pull/156"
-    },
-    {
       "file": "dist/lib/chunks/start.ts-530ffefc64b4.mjs",
       "cap": {
         "raw": 4541,
@@ -1276,20 +1266,20 @@
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 21285,
-        "gzip": 8751,
-        "brotli": 7544
+        "gzip": 8752,
+        "brotli": 7530
       },
-      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 21285 raw, 8751 gzip, 7544 brotli bytes (+115, +40, +44).",
+      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 21285 raw, 8752 gzip, 7530 brotli bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-2baadbe84d5e.mjs",
+      "file": "dist/lib/chunks/context.schema.json-8e7122d98ca4.mjs",
       "cap": {
-        "raw": 307644,
-        "gzip": 80607,
-        "brotli": 66039
+        "raw": 306214,
+        "gzip": 80205,
+        "brotli": 65778
       },
-      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-385e24c93576 (caps 311351, 81713, 66956) and measures 307644 raw, 80607 gzip, 66039 brotli bytes, under those caps.",
+      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-c805001dee98 (caps 310751, 81506, 66856) and measures 306214 raw, 80205 gzip, 65778 brotli bytes, under those caps.",
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
@@ -1297,7 +1287,7 @@
       "cap": {
         "brotli": 219
       },
-      "reason": "A tiny shared hook chunk whose bytes are the hashed chunk names it imports; they change with this PR's chunks. Measures 219 brotli (+4).",
+      "reason": "A tiny shared hook chunk whose bytes are the hashed chunk names it imports; they change with this PR's chunks. Measures 219 brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/134"
     }
   ]
