@@ -24,12 +24,18 @@ import { EditCaption } from '../edit-caption.tsx';
 import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
-import { formatClock, type ReplayBundle } from '../../shared/replay.ts';
+import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
+import { duplicateEffect, splitEffect } from './phone-edits.ts';
+import { type PhoneObjectActions, PhoneObjectToolbar, selectionKey } from './PhoneObjectToolbar.tsx';
+import { PhoneSheet } from './PhoneSheet.tsx';
+import { PhoneTimeline } from './PhoneTimeline.tsx';
+import { objectTitle } from './SelectionInspector.tsx';
+import type { ReplayBundle } from '../../shared/replay.ts';
 import { EditsConflictError, EditsUnavailableError, editsQuery, type LoadedEdits, saveEdits } from '../edits.ts';
 import { collectErrors } from '../issues.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 import { navigate } from '../routing/navigate.ts';
-import { PlayerContext, ReplayController, usePlayerState, usePlayhead, useViewport } from '../player.ts';
+import { PlayerContext, ReplayController, useViewport } from '../player.ts';
 import { replayHref } from '../routing/links.ts';
 import { nextStepIndex, previousStepIndex } from '../timeline.ts';
 import { notify } from '../toast.ts';
@@ -123,6 +129,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [cursorOpen, setCursorOpen] = useState(false);
   const focusCaption = useRef(false);
   const [mobileTrimOpen, setMobileTrimOpen] = useState(false);
+  /** The object (selectionKey) whose settings the phone sheet shows; it closes when another is selected. */
+  const [sheetFor, setSheetFor] = useState<string>();
   const mobileReturnFocus = useRef<HTMLElement | null>(null);
   const [blurPlacement, setBlurPlacement] = useState<{ from: number; to: number }>();
   const [note, say] = useNote();
@@ -337,7 +345,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       pointHighlight: () => {
         const { state: current, timeline: kept } = live.current;
         applyHighlight(
-          change,
+          // why: a new highlight opens its sheet on a phone, for its label (sheetFor only shows there).
+          (next, select) => {
+            change(next, select);
+            if (select?.kind === 'highlight') setSheetFor(`highlight:${select.id}`);
+          },
           say,
           pointHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
         );
@@ -345,7 +357,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       periodHighlight: () => {
         const { state: current, timeline: kept } = live.current;
         applyHighlight(
-          change,
+          // why: a new highlight opens its sheet on a phone, for its label (sheetFor only shows there).
+          (next, select) => {
+            change(next, select);
+            if (select?.kind === 'highlight') setSheetFor(`highlight:${select.id}`);
+          },
           say,
           periodHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
         );
@@ -600,7 +616,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     setCursorOpen(false);
     setMobileTrimOpen(false);
     setBlurPlacement(undefined);
-    (target ?? shell.current?.querySelector<HTMLElement>('.editor-ruler-seek'))?.focus({ preventScroll: true });
+    (target ?? shell.current?.querySelector<HTMLElement>('.phone-playhead'))?.focus({ preventScroll: true });
     mobileReturnFocus.current = null;
   };
   const addMobileObject = (kind: EffectKind) => {
@@ -619,6 +635,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     if (kind === 'caption') focusCaption.current = true;
     if (existing) {
       dispatch({ type: 'select', selection: { kind, id: existing.id } });
+      if (kind === 'caption') setSheetFor(`caption:${existing.id}`);
       return;
     }
     if (kind === 'blur') {
@@ -626,11 +643,26 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       return;
     }
     const added = addEffect(present, kind, at, Math.min(trimOf(present, duration).end, at + NEW_EFFECT_MS), duration);
-    if (added) change(added.edits, { kind, id: added.id });
-    else {
+    if (added) {
+      change(added.edits, { kind, id: added.id });
+      if (kind === 'caption') setSheetFor(`caption:${added.id}`);
+    } else {
       focusCaption.current = false;
       say('No room here · move the playhead earlier');
     }
+  };
+  const sheetKey = selectionKey(mobileSelection);
+  const sheetShown = mobile && (cursorOpen || Boolean(blurPlacement) || (sheetKey !== undefined && sheetFor === sheetKey));
+  const closeSheet = () => {
+    setSheetFor(undefined);
+    setCursorOpen(false);
+    setBlurPlacement(undefined);
+    let target = mobileReturnFocus.current;
+    mobileReturnFocus.current = null;
+    // why: the toolbar swaps with the selection, so the button that opened the sheet may be gone; the object stays.
+    // Without either, the sheet hands focus back to what opened it.
+    if (!target?.isConnected && mobileSelection && 'id' in mobileSelection) target = objectFocusTarget(shell.current, mobileSelection.id);
+    if (target?.isConnected) target.focus({ preventScroll: true });
   };
   const selectMobileRange = () => {
     rememberMobileFocus();
@@ -660,11 +692,32 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     onDelete: () => {
       actions.deleteSelection();
       if (!mobile) return;
-      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
+      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.phone-playhead') ?? null;
       finishMobileObject();
     },
     onCut: actions.cut,
     onPeriodHighlight: actions.periodHighlight,
+  };
+  const phoneActions: PhoneObjectActions = {
+    adjust: () => {
+      rememberMobileFocus();
+      player.pause();
+      setSheetFor(sheetKey);
+    },
+    split: (kind, regionId) => {
+      const split = splitEffect(live.current.state.present, kind, regionId, player.getTime(), duration);
+      if (split) change(split.edits, { kind, id: split.id });
+      else say('Move the playhead inside it, away from its ends, to split it');
+    },
+    duplicate: (kind, regionId) => {
+      const copy = duplicateEffect(live.current.state.present, kind, regionId, duration);
+      if (copy) change(copy.edits, { kind, id: copy.id });
+      else say('No room after it for a copy');
+    },
+    remove: () => selectionCommands.onDelete(),
+    cut: actions.cut,
+    speedUp: () => addMobileObject('speed'),
+    done: finishMobileObject,
   };
   const empty = isEmptyEdits(edits);
   const hint = editorHint(selection, suggesting, empty);
@@ -818,7 +871,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
           <section className="editor-dock" aria-label={mobile ? 'Editing tools' : 'Timeline'}>
             {mobile ? (
               <>
-                <MobilePlayback onSwitch={playPause} original={timeline.originalDuration} edited={timeline.duration} />
                 <div className="flex gap-1 overflow-x-auto px-3">
                   <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
                     {null}
@@ -903,145 +955,162 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
               </div>
             ) : null}
             <div id="editor-timeline" className="editor-timeline-content" role="group" aria-label="Editable timeline">
-              <Timeline
-                mobile={mobile}
-                duration={duration}
-                edits={edits}
-                selection={mobile ? mobileSelection : selection}
-                dispatch={mobile ? timelineDispatch : dispatch}
-                suggestions={suggestions}
-                onCutRange={actions.cut}
-                lanes={
-                  <EffectLanes
-                    edits={edits}
-                    selection={selection}
-                    dispatch={mobile ? timelineDispatch : dispatch}
-                    showEmpty={!mobile && showEmptyTracks}
-                  />
-                }
-              />
+              {mobile ? (
+                <PhoneTimeline
+                  duration={duration}
+                  edited={timeline.duration}
+                  edits={edits}
+                  steps={bundle.steps}
+                  selection={mobileSelection}
+                  dispatch={timelineDispatch}
+                  onPlayPause={playPause}
+                />
+              ) : (
+                <Timeline
+                  duration={duration}
+                  edits={edits}
+                  selection={selection}
+                  dispatch={dispatch}
+                  suggestions={suggestions}
+                  onCutRange={actions.cut}
+                  lanes={<EffectLanes edits={edits} selection={selection} dispatch={dispatch} showEmpty={showEmptyTracks} />}
+                />
+              )}
             </div>
             {mobile ? (
               <>
-                <MobileAddToolbar
-                  objects={mobileTimelineObjects(edits)}
-                  onSelectObject={(object) => {
-                    timelineDispatch({ type: 'select', selection: object.selection });
-                    mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-add-more') ?? null;
-                    player.pause();
-                    player.seek(object.at);
-                    if (object.selection?.kind === 'caption') focusCaption.current = true;
-                  }}
-                  onTrim={() => {
-                    rememberMobileFocus();
-                    player.pause();
-                    setCursorOpen(false);
-                    setMobileTrimOpen(true);
-                    setBlurPlacement(undefined);
-                    dispatch({ type: 'select', selection: { kind: 'trim' } });
-                  }}
-                  onCaption={() => addMobileObject('caption')}
-                  onBlur={() => addMobileObject('blur')}
-                  onZoom={() => addMobileObject('zoom')}
-                  more={[
-                    { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
-                    {
-                      label: selection?.kind === 'range' ? 'Cut selection' : 'Cut at playhead',
-                      action: () => {
-                        rememberMobileFocus();
-                        setCursorOpen(false);
-                        setMobileTrimOpen(false);
-                        setBlurPlacement(undefined);
-                        actions.cut();
-                      },
-                      testId: 'add-cut',
-                    },
-                    { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
-                    {
-                      label: 'Highlight moment',
-                      action: () => {
-                        rememberMobileFocus();
-                        setCursorOpen(false);
-                        setMobileTrimOpen(false);
-                        setBlurPlacement(undefined);
-                        actions.pointHighlight();
-                      },
-                      testId: 'add-point-highlight',
-                    },
-                    {
-                      label: 'Cursor options',
-                      action: () => {
-                        rememberMobileFocus();
-                        setMobileTrimOpen(false);
-                        setBlurPlacement(undefined);
-                        dispatch({ type: 'select', selection: undefined });
-                        setCursorOpen(true);
-                      },
-                    },
-                    {
-                      label: 'Generate captions from steps',
-                      disabled: Boolean(edits.captions?.length),
-                      action: () => {
-                        const present = live.current.state.present;
-                        if (present.captions?.length) return;
-                        const captions = proposeStepCaptions(bundle.steps, duration);
-                        const first = captions.at(0);
-                        if (first) {
+                {mobileSelection ? (
+                  <PhoneObjectToolbar selection={mobileSelection} actions={phoneActions} />
+                ) : (
+                  <MobileAddToolbar
+                    objects={mobileTimelineObjects(edits)}
+                    onSelectObject={(object) => {
+                      timelineDispatch({ type: 'select', selection: object.selection });
+                      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-add-more') ?? null;
+                      player.pause();
+                      player.seek(object.at);
+                      setSheetFor(selectionKey(object.selection));
+                      if (object.selection?.kind === 'caption') focusCaption.current = true;
+                    }}
+                    onTrim={() => {
+                      rememberMobileFocus();
+                      player.pause();
+                      setSheetFor('trim');
+                      setCursorOpen(false);
+                      setMobileTrimOpen(true);
+                      setBlurPlacement(undefined);
+                      dispatch({ type: 'select', selection: { kind: 'trim' } });
+                    }}
+                    onCaption={() => addMobileObject('caption')}
+                    onBlur={() => addMobileObject('blur')}
+                    onZoom={() => addMobileObject('zoom')}
+                    more={[
+                      { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
+                      {
+                        label: selection?.kind === 'range' ? 'Cut selection' : 'Cut at playhead',
+                        action: () => {
+                          rememberMobileFocus();
                           setCursorOpen(false);
                           setMobileTrimOpen(false);
                           setBlurPlacement(undefined);
-                          change(withEffectList(present, 'caption', captions), { kind: 'caption', id: first.id });
-                        } else say('No recorded steps to caption');
+                          actions.cut();
+                        },
+                        testId: 'add-cut',
                       },
-                      testId: 'generate-step-captions',
-                    },
-                    {
-                      label: 'Zoom on all clicks',
-                      action: () => {
-                        rememberMobileFocus();
-                        setCursorOpen(false);
-                        setMobileTrimOpen(false);
-                        setBlurPlacement(undefined);
-                        const present = live.current.state.present;
-                        const regions = proposeZoomRegions(clicksOf(bundle.events), duration, present.zooms ?? [], undefined, (index) =>
-                          nextEffectId(present, 'zoom', index),
-                        );
-                        const firstRegion = regions.at(0);
-                        if (firstRegion)
-                          change(withEffectList(present, 'zoom', [...(present.zooms ?? []), ...regions]), {
-                            kind: 'zoom',
-                            id: firstRegion.id,
-                          });
-                        else say('No clicks need a zoom');
+                      { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
+                      {
+                        label: 'Highlight moment',
+                        action: () => {
+                          rememberMobileFocus();
+                          setCursorOpen(false);
+                          setMobileTrimOpen(false);
+                          setBlurPlacement(undefined);
+                          actions.pointHighlight();
+                        },
+                        testId: 'add-point-highlight',
                       },
-                    },
-                  ]}
-                />
-                <MobileInspector
-                  edits={edits}
-                  selection={mobileSelection}
-                  duration={duration}
-                  change={change}
-                  commands={selectionCommands}
-                  cursorOpen={cursorOpen}
-                  placingBlur={Boolean(blurPlacement)}
-                  panels={{
-                    cursorInspector,
-                    effectControls: <EffectControls mobile edits={edits} selection={selection} change={change} />,
-                    highlightControls: (
-                      <HighlightControls
-                        edits={edits}
-                        selection={selection}
-                        duration={duration}
-                        change={change}
-                        afterRemove={() => {
-                          mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-ruler-seek') ?? null;
-                          finishMobileObject();
-                        }}
-                      />
-                    ),
-                  }}
-                />
+                      {
+                        label: 'Cursor options',
+                        action: () => {
+                          rememberMobileFocus();
+                          setMobileTrimOpen(false);
+                          setBlurPlacement(undefined);
+                          dispatch({ type: 'select', selection: undefined });
+                          setCursorOpen(true);
+                        },
+                      },
+                      {
+                        label: 'Generate captions from steps',
+                        disabled: Boolean(edits.captions?.length),
+                        action: () => {
+                          const present = live.current.state.present;
+                          if (present.captions?.length) return;
+                          const captions = proposeStepCaptions(bundle.steps, duration);
+                          const first = captions.at(0);
+                          if (first) {
+                            setCursorOpen(false);
+                            setMobileTrimOpen(false);
+                            setBlurPlacement(undefined);
+                            change(withEffectList(present, 'caption', captions), { kind: 'caption', id: first.id });
+                          } else say('No recorded steps to caption');
+                        },
+                        testId: 'generate-step-captions',
+                      },
+                      {
+                        label: 'Zoom on all clicks',
+                        action: () => {
+                          rememberMobileFocus();
+                          setCursorOpen(false);
+                          setMobileTrimOpen(false);
+                          setBlurPlacement(undefined);
+                          const present = live.current.state.present;
+                          const regions = proposeZoomRegions(clicksOf(bundle.events), duration, present.zooms ?? [], undefined, (index) =>
+                            nextEffectId(present, 'zoom', index),
+                          );
+                          const firstRegion = regions.at(0);
+                          if (firstRegion)
+                            change(withEffectList(present, 'zoom', [...(present.zooms ?? []), ...regions]), {
+                              kind: 'zoom',
+                              id: firstRegion.id,
+                            });
+                          else say('No clicks need a zoom');
+                        },
+                      },
+                    ]}
+                  />
+                )}
+                <PhoneSheet
+                  open={sheetShown}
+                  label={objectTitle(mobileSelection?.kind, cursorOpen, Boolean(blurPlacement))}
+                  container={shell}
+                  onClose={closeSheet}
+                >
+                  <MobileInspector
+                    edits={edits}
+                    selection={mobileSelection}
+                    duration={duration}
+                    change={change}
+                    commands={{ ...selectionCommands, onDone: closeSheet }}
+                    cursorOpen={cursorOpen}
+                    placingBlur={Boolean(blurPlacement)}
+                    panels={{
+                      cursorInspector,
+                      effectControls: <EffectControls mobile edits={edits} selection={selection} change={change} />,
+                      highlightControls: (
+                        <HighlightControls
+                          edits={edits}
+                          selection={selection}
+                          duration={duration}
+                          change={change}
+                          afterRemove={() => {
+                            mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.phone-playhead') ?? null;
+                            finishMobileObject();
+                          }}
+                        />
+                      ),
+                    }}
+                  />
+                </PhoneSheet>
               </>
             ) : null}
             <p className="editor-hint" data-testid="editor-hint" data-note={note ? '' : undefined}>
@@ -1075,17 +1144,6 @@ function EditorPreviewFrame({ children }: { children: ReactNode }) {
   );
 }
 
-function MobilePlayback({ onSwitch, original, edited }: { onSwitch: () => void; original: number; edited: number }) {
-  return (
-    <div className="editor-mobile-playback" role="group" aria-label="Playback">
-      <EditorPlayButton onSwitch={onSwitch} />
-      <EditorClock />
-      <span className="editor-mobile-duration">/ {formatClock(original)}</span>
-      {Math.round(original) !== Math.round(edited) ? <Durations original={original} edited={edited} /> : null}
-    </div>
-  );
-}
-
 /** A fresh id for the `index`-th of several new regions of `kind` added at once. */
 function nextEffectId(edits: ReplayEdits, kind: EffectKind, index: number) {
   const taken = new Set(effectList(edits, kind).map((item) => item.id));
@@ -1103,36 +1161,6 @@ function nextEffectId(edits: ReplayEdits, kind: EffectKind, index: number) {
  * The selected effect's one setting, right after the tools (next to what you just used, not by the lengths): a zoom's depth and a speed-up's rate as a trigger and
  * menu, a caption's text as an inline field. Nothing for other selections.
  */
-function EditorPlayButton({ onSwitch }: { onSwitch: () => void }) {
-  const { status } = usePlayerState();
-  const label = status === 'playing' ? 'Pause' : 'Play the result';
-  return (
-    <IconButton
-      label={label}
-      shortcut="Space"
-      tooltipAlign="start"
-      className="play-button text-foreground"
-      onClick={onSwitch}
-      data-testid="editor-play"
-    >
-      <span className="icon-swap" data-state={status === 'playing' ? 'b' : 'a'} aria-hidden="true">
-        <AnimatedIcon name="play" className="icon-a filled-icon" />
-        <AnimatedIcon name="pause" className="icon-b filled-icon" />
-      </span>
-    </IconButton>
-  );
-}
-
-/** The playhead on the original timeline. */
-function EditorClock() {
-  const clock = usePlayhead((time) => formatClock(time));
-  return (
-    <span className="editor-clock" data-testid="editor-clock">
-      {clock}
-    </span>
-  );
-}
-
 /** How long a note stays in the hint line. */
 const NOTE_MS = 3200;
 
@@ -1150,32 +1178,6 @@ function useNote() {
     timer.current = window.setTimeout(() => setNote(undefined), NOTE_MS);
   }, []);
   return [note, say] as const;
-}
-
-/** "0:03.2 → 0:01.9": the recording's length and what the edits leave (just the length when nothing is removed). */
-function Durations({ original, edited }: { original: number; edited: number }) {
-  const changed = Math.round(edited) !== Math.round(original);
-  return (
-    <span
-      className="editor-durations"
-      role="group"
-      data-testid="durations"
-      aria-label={changed ? `${formatClock(original)} recorded, ${formatClock(edited)} edited` : `${formatClock(original)} recorded`}
-    >
-      <span className="editor-durations-original" data-changed={changed || undefined}>
-        {formatClock(original)}
-      </span>
-      {changed ? (
-        <>
-          <span aria-hidden="true">→</span>
-          <strong data-testid="edited-length">{formatClock(edited)}</strong>
-          <span className="editor-durations-note" aria-hidden="true">
-            after edits
-          </span>
-        </>
-      ) : null}
-    </span>
-  );
 }
 
 /**

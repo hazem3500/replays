@@ -206,7 +206,6 @@
   /* The viewer's phone rules size the player by its aspect ratio in a column; here the stage is a row that fills. */
   .editor-shell.app-shell[data-mobile] .stage-wrap { min-width: 0; flex: 1; }
   .editor-shell.app-shell[data-mobile] .player-stage { min-height: 0; flex: 1; aspect-ratio: auto; max-height: none; }
-  .editor-shell[data-mobile] .editor-dock { padding: 0 10px 10px; min-height: 150px; max-height: 48dvh; }
   .editor-shell[data-mobile] .editor-done { max-width: 82px; overflow: hidden; white-space: nowrap; }
   .editor-shell[data-mobile] .editor-export svg { display: none; }
   /* No standing hint on phones (it speaks of keys); a note still shows. */
@@ -214,7 +213,6 @@
   .editor-shell[data-mobile] .editor-hint { padding-left: 28px; }
   /* The setting wraps to its own line on a phone: no divider left dangling at the end of the tools. */
   .editor-shell[data-mobile] .editor-setting-divider { display: none; }
-  .editor-shell[data-mobile] .timeline { --gutter: 28px; }
   @media (pointer: coarse) {
     .tl-highlight-marker { --marker-size: 44px; width: 44px; height: 44px; }
     .tl-lane { min-height: 36px; }
@@ -227,8 +225,8 @@
 }
 
 @layer app {
-  /* Mobile editing: the timeline stays on screen; properties follow the selected object. */
-  .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto; }
+  /* Phones: the header, the picture at the screen's width, then the timeline and its toolbar (phone-editor.css). */
+  .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
   .editor-mobile-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .editor-mobile-heading { min-width: 0; padding: 0 4px; }
   .editor-mobile-heading h1 { margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
@@ -236,48 +234,13 @@
   .editor-mobile-header .editor-export { padding: 0 10px; }
   .editor-mobile-header .editor-export svg { display: block; }
   .editor-mobile-header .topbar-more { width: 44px; height: 44px; }
-  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; align-items: center; justify-content: center; padding: 8px 10px; container-type: size; }
-  .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc(100cqh * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
+  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; justify-content: center; padding: 6px 8px; }
+  .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc((46dvh - 12px) * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .editor-shell.app-shell[data-mobile] .editor-stage .player-stage { flex: none; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: var(--editor-preview-ratio); background: var(--canvas); }
-  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'transport' 'status' 'timeline' 'tools' 'properties' 'note'; grid-template-rows: 48px auto max-content 56px auto auto; align-content: start; gap: 0; min-height: 0; max-height: 60dvh; padding: 0 10px max(8px, env(safe-area-inset-bottom)); overflow-y: auto; overscroll-behavior: contain; border-top: 0; }
-  .editor-mobile-playback { grid-area: transport; display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .editor-mobile-playback .editor-clock { margin: 0; min-width: auto; font-size: var(--text-sm); }
-  .editor-mobile-duration { color: var(--text-secondary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
-  .editor-mobile-playback .editor-durations { margin-left: auto; }
+  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; min-height: 0; max-height: none; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); }
   .editor-timeline-content { min-height: 0; display: flex; flex: 1; flex-direction: column; }
-  .editor-shell.app-shell[data-mobile] .editor-timeline-content { grid-area: timeline; flex: none; min-height: max-content; overflow: visible; }
-  .editor-shell.app-shell[data-mobile] .editor-timeline-content .timeline { --gutter: 28px; flex: none; min-height: 0; max-height: none; padding: 0 24px 14px 0; overflow-y: visible; }
-  .editor-shell[data-mobile] .tl-ruler { height: 44px; }
-  .editor-shell[data-mobile] .tl-tick { background: linear-gradient(to bottom, transparent calc(100% - 5px), var(--line) calc(100% - 5px)); }
-  .editor-shell[data-mobile] .tl-tick-label { top: 0; font-size: var(--text-xs); }
-  .editor-shell[data-mobile] .tl-lane { flex: 0 0 56px; min-height: 56px; max-height: 56px; margin-top: 8px; }
-  .editor-shell[data-mobile] .tl-lane[data-kind="clip"] { flex-basis: 56px; min-height: 56px; max-height: 56px; }
-  .editor-shell[data-mobile] .tl-track { background: var(--surface-raised); box-shadow: none; }
-  .editor-shell[data-mobile] .tl-clip { background: var(--surface-hover); border-radius: 6px; }
-  .tl-clip-select { position: absolute; inset: 0; border: 0; border-radius: inherit; background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--text-xs); cursor: pointer; pointer-events: auto; }
-  .editor-shell[data-mobile] .tl-trim { z-index: 8; width: 44px; min-width: 44px; background: transparent; border-radius: 6px; }
-  .editor-shell[data-mobile] .tl-clip .tl-trim:is(:hover, :focus-visible), .editor-shell[data-mobile] .tl-clip[data-selected] .tl-trim { background: transparent; }
-  .editor-shell[data-mobile] .tl-trim::before { content: ""; position: absolute; top: 0; bottom: 0; left: 16px; width: 12px; border-radius: 4px; background: var(--text-tertiary); }
-  .editor-shell[data-mobile] .tl-clip[data-selected] .tl-trim::before, .editor-shell[data-mobile] .tl-trim:is(:active, :focus-visible)::before { background: var(--accent); }
-  .editor-shell[data-mobile] .tl-trim-grip { position: relative; z-index: 1; height: 16px; }
-  .editor-shell[data-mobile] .tl-trim[data-edge="start"] { left: -22px; }
-  .editor-shell[data-mobile] .tl-trim[data-edge="end"] { right: -22px; }
-  .editor-shell[data-mobile] .tl-trim::after { opacity: 1; }
-  .editor-shell[data-mobile] .tl-region-body { min-width: 0; min-height: 44px; }
-  .editor-shell[data-mobile] .tl-region-remove { display: none; }
-  .editor-shell[data-mobile] .tl-region:not([data-compact]) .tl-region-body { padding-right: 8px; }
-  .editor-shell[data-mobile] .tl-playhead-knob { display: none; }
-  .editor-shell[data-mobile] .tl-playhead-layer { right: 24px; }
-  .editor-shell[data-mobile] .tl-playhead { top: 30px; bottom: 0; width: 1px; }
-  .editor-shell[data-mobile] .editor-ruler-seek { position: absolute; z-index: 6; top: 0; left: 8px; appearance: none; -webkit-appearance: none; box-sizing: border-box; width: calc(100% - 16px); height: 44px; min-width: 0; margin: 0; padding: 0; border: 0; border-radius: 4px; background: transparent; cursor: pointer; touch-action: pan-y; }
-  .editor-seek::-webkit-slider-runnable-track { height: 4px; border: 0; border-radius: 99px; background: linear-gradient(to right, var(--accent) 0 var(--editor-seek-progress), var(--line-strong) var(--editor-seek-progress) 100%); }
-  .editor-seek::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border: 0; border-radius: 50%; background: var(--accent); }
-  .editor-seek::-moz-range-track { height: 4px; border: 0; border-radius: 99px; background: var(--line-strong); }
-  .editor-seek::-moz-range-progress { height: 4px; border-radius: 99px; background: var(--accent); }
-  .editor-seek::-moz-range-thumb { width: 12px; height: 12px; border: 0; border-radius: 50%; background: var(--accent); }
-  .editor-seek:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px var(--accent-soft); }
-  .editor-seek:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px var(--accent-soft); }
-  .editor-add-toolbar { grid-area: tools; position: relative; z-index: 10; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 0; border-top: 1px solid var(--line); }
+  .editor-shell.app-shell[data-mobile] .editor-timeline-content { grid-area: timeline; min-height: 0; overflow: hidden; }
+  .editor-add-toolbar { grid-area: tools; position: relative; z-index: 10; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 6px 0; border-top: 1px solid var(--line); }
   .editor-add-toolbar > button, .editor-add-more > summary { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; width: 100%; height: 48px; padding: 2px; color: var(--text-secondary); font-size: var(--text-xs); cursor: pointer; }
   .editor-add-toolbar svg { width: 18px; height: 18px; }
   .editor-object-picker { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
@@ -308,11 +271,10 @@
   .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) { min-width: 0; font-size: var(--text-xs); line-height: 1.5; }
   .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) input { box-sizing: border-box; width: 100%; min-width: 0; font-size: 16px; }
   .editor-shell[data-mobile] .editor-setting-divider { display: none; }
-  .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; white-space: normal; font-size: var(--text-xs); }
-  .editor-shell[data-mobile] .editor-hint { grid-area: note; padding-left: 0; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
+  .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; margin: 4px 10px 0; white-space: normal; font-size: var(--text-xs); }
+  .editor-shell[data-mobile] .editor-hint { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
   .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
   .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
-  .editor-shell[data-mobile] .timeline .tl-region-body { min-width: 0; }
   .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .editor-mobile-effect-menu [role="menuitemradio"], body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
   @media (max-height: 520px) and (min-width: 721px) {

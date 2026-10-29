@@ -19,14 +19,29 @@ function DrawerClose({ ...props }: DrawerPrimitive.Close.Props) {
   return <DrawerPrimitive.Close data-slot="drawer-close" {...props} />;
 }
 
-function DrawerContent({ className, children, ...props }: DrawerPrimitive.Popup.Props) {
+/**
+ * `scrim={false}` is for a non-modal sheet (`modal={false}` on the root): no backdrop, and the page under it keeps
+ * taking taps everywhere outside the sheet. `container` mounts it inside a page element, so that page's styles reach it.
+ */
+function DrawerContent({
+  className,
+  children,
+  scrim = true,
+  container,
+  ...props
+}: DrawerPrimitive.Popup.Props & { scrim?: boolean; container?: DrawerPrimitive.Portal.Props['container'] }) {
   return (
-    <DrawerPrimitive.Portal>
-      <DrawerPrimitive.Backdrop
-        data-slot="drawer-overlay"
-        className="fixed inset-0 z-50 min-h-dvh bg-(--scrim) opacity-[calc(1-var(--drawer-swipe-progress,0))] transition-opacity duration-200 ease-(--ease-out) data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0"
-      />
-      <DrawerPrimitive.Viewport data-slot="drawer-viewport" className="fixed inset-0 z-50 flex items-end justify-center">
+    <DrawerPrimitive.Portal container={container}>
+      {scrim ? (
+        <DrawerPrimitive.Backdrop
+          data-slot="drawer-overlay"
+          className="fixed inset-0 z-50 min-h-dvh bg-(--scrim) opacity-[calc(1-var(--drawer-swipe-progress,0))] transition-opacity duration-200 ease-(--ease-out) data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0"
+        />
+      ) : null}
+      <DrawerPrimitive.Viewport
+        data-slot="drawer-viewport"
+        className={cn('fixed inset-0 z-50 flex items-end justify-center', !scrim && 'pointer-events-none [&>*]:pointer-events-auto')}
+      >
         <DrawerPrimitive.Popup
           data-slot="drawer-content"
           className={cn(

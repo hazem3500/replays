@@ -29,11 +29,11 @@
   .editor-export svg { width: 14px; height: 14px; }
   /* The real content settles in over its placeholders: a short fade, nothing moves. */
   @keyframes editor-arrive { from { opacity: 0.55; } }
-  .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline, .editor-mobile-playback, .editor-add-toolbar) { animation: editor-arrive 200ms var(--ease-out) both; }
+  .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline, .phone-timeline, .editor-add-toolbar) { animation: editor-arrive 200ms var(--ease-out) both; }
   /* why: the parts above arrive on their own; the page-wide fade would dim the whole editor once its loading frame goes. */
   .app-shell.editor-shell:not(.skeleton-shell) { animation: none; }
   @media (prefers-reduced-motion: reduce) {
-    .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline, .editor-mobile-playback, .editor-add-toolbar) { animation: none; }
+    .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline, .phone-timeline, .editor-add-toolbar) { animation: none; }
   }
 }
 
