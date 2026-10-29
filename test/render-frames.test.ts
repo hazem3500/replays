@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { dirtyFrames, exportMap, exportTimes, frameCount, frameTime, poseKey } from '../src/client/render/frames.ts';
 import { PLAYBACK_SPEEDS } from '../src/shared/render-variant.ts';
 import { INACTIVE_SKIP_SPEED } from '../src/shared/skip.ts';
-import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale } from '../src/client/step-caption.ts';
+import { CAPTION_IN_MS, captionAt, captionKey, captionSpan, exportCaptionScale } from '../src/client/step-caption.ts';
 
 const still = () => 'still';
 const movingCursor = (t: number) => (t >= 300 && t <= 500 ? `x${t}` : 'rest');
@@ -65,6 +65,16 @@ describe('step captions in exported frames', () => {
     expect(captionAt(steps, 750, 1000, (time) => time / 2)).toMatchObject({ enteredMs: 25 });
     // At the end every step counts as reached, already settled.
     expect(captionAt([...steps, { at: 1005, label: 'Late' }], 1000, 1000)).toMatchObject({ index: 2, enteredMs: Infinity });
+  });
+
+  it('keeps a caption up through a run of the same label, until a step with another caption', () => {
+    const run = [
+      { at: 100, label: 'Next month' },
+      { at: 300, label: 'Next month' },
+      { at: 500, label: 'Pick the 12th' },
+    ];
+    expect(captionSpan(run, 0, 1000)).toEqual({ from: 0, to: 500 });
+    expect(captionSpan(run, 2, 1000)).toEqual({ from: 500, to: 1000 });
   });
 
   it('keys a caption by step while it enters, then by step alone', () => {

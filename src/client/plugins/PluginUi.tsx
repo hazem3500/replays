@@ -22,7 +22,7 @@ import { viewerRegistry } from './registry.ts';
 import { pluginSettings, readSetting, subscribeSettings, writeSetting } from './settings.ts';
 
 export function usePluginSnapshot() {
-  return useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot);
+  return useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot, viewerRegistry.getSnapshot);
 }
 
 /** The context one plugin's code receives for one open replay (`settings` are that plugin's own). */
@@ -268,7 +268,11 @@ function PluginSettingsMenu({ settings }: { settings: ReturnType<typeof usePlugi
 
 /** Storage is external state: subscribing its primitive value also makes changes visible to memoized renders. */
 function useSettingValue(plugin: string, definition: SettingDefinition) {
-  return useSyncExternalStore(subscribeSettings, () => readSetting(plugin, definition));
+  return useSyncExternalStore(
+    subscribeSettings,
+    () => readSetting(plugin, definition),
+    () => readSetting(plugin, definition),
+  );
 }
 
 function PluginSettingCheckbox({ plugin, definition }: { plugin: string; definition: SettingDefinition }) {

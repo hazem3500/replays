@@ -77,6 +77,14 @@ export default defineConfig(({ command }) => ({
           output: ['dist/client/**', 'dist/client/.vite/**'],
         },
       },
+      'cached:start': {
+        command: 'vp build --config vite.start.config.ts',
+        cache: {
+          env: ['NODE_ENV'],
+          input: [{ auto: true }, '!dist/**'],
+          output: ['dist/start/**'],
+        },
+      },
       'cached:package': {
         command: 'node scripts/build-package.mjs',
         cache: {

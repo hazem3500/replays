@@ -2,18 +2,17 @@ import { PRODUCT_NAME } from '../shared/brand.ts';
 import type { BetaFlags } from '../shared/beta-flags.ts';
 import type { MalleablePolicy } from '../shared/malleable-policy.ts';
 import { betaAllowed, betaEnabled } from './settings/labs.ts';
+import { pageMeta } from './page-meta.ts';
 
 /** The deployment's branding, written into index.html by the server (src/server/base-path.ts `withBase`). */
 export function productName() {
-  if (typeof document === 'undefined') return PRODUCT_NAME;
-  const content = document.querySelector<HTMLMetaElement>('meta[name="app-name"]')?.content;
+  const content = pageMeta('app-name');
   return content && content !== '__PRODUCT_NAME__' ? content : PRODUCT_NAME;
 }
 
 /** The configured logo (https or data: image URL), or undefined for the built-in mark. */
 export function productLogo() {
-  if (typeof document === 'undefined') return undefined;
-  const content = document.querySelector<HTMLMetaElement>('meta[name="app-logo"]')?.content;
+  const content = pageMeta('app-logo');
   return content && content !== '__PRODUCT_LOGO__' ? content : undefined;
 }
 
@@ -81,6 +80,5 @@ export function editingEnabled() {
   if (!betaEditor()) return false;
   // why: a person who opted out under Settings › Labs sees no editing UI; saved edits still play.
   if (betaEditorOverride === undefined && !betaEnabled('editor')) return false;
-  if (typeof document === 'undefined') return true;
-  return document.querySelector<HTMLMetaElement>('meta[name="app-editing"]')?.content !== 'off';
+  return pageMeta('app-editing') !== 'off';
 }

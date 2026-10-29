@@ -3,6 +3,7 @@
 .time-ribbon {
   --ribbon-height: 28px;
   --ribbon-mark-min: 2px;
+  --ribbon-glide: 180ms;
   position: relative;
   flex: none;
   height: var(--ribbon-height);
@@ -24,10 +25,23 @@
 .ribbon-mark[data-tone="success"] { background: var(--success); }
 .ribbon-range { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; }
 .ribbon-range[data-live] { background: color-mix(in srgb, var(--accent) 24%, transparent); }
-.ribbon-future { position: absolute; top: 0; right: 0; bottom: 0; background: color-mix(in srgb, var(--surface) 45%, transparent); pointer-events: none; }
-.ribbon-playhead { position: absolute; top: 0; bottom: 0; width: 1.5px; translate: -50% 0; background: var(--accent); pointer-events: none; }
+/* The playhead and the veil over what hasn't happened yet move by transform from --progress (0 to 1, written outside
+   React by usePlayheadProgress), gliding between positions; a new seek retargets the running transition. */
+.ribbon-future, .ribbon-now { position: absolute; inset: 0; pointer-events: none; will-change: transform; transition: transform var(--ribbon-glide) var(--ease-out); }
+.ribbon-future { transform-origin: right center; transform: scaleX(calc(1 - var(--progress, 0))); background: color-mix(in srgb, var(--surface) 45%, transparent); }
+.ribbon-now { transform: translateX(calc(var(--progress, 0) * 100%)); }
+.ribbon-now::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 1.5px; translate: -50% 0; background: var(--accent); }
+/* why: while the seek bar is dragged, positions arrive every frame; a short glide keeps up with the pointer. */
+:root:has(.scrubber[data-scrubbing]) .time-ribbon { --ribbon-glide: 60ms; }
+.ribbon-mark[data-lane="tick"] { top: 35%; bottom: 35%; opacity: 0.8; }
+.ribbon-mark { transition: opacity var(--motion-fast) var(--ease-out); }
+.ribbon-mark[data-lit] { z-index: 1; opacity: 1; box-shadow: 0 0 0 1.5px var(--accent); }
+.ribbon-lit { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; transition: left var(--motion) var(--ease-out), width var(--motion) var(--ease-out); }
 @media (pointer: coarse) {
   .time-ribbon { --ribbon-height: 32px; --ribbon-mark-min: 3px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .time-ribbon { --ribbon-glide: 0ms; }
 }
 
 /* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */

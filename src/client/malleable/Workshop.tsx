@@ -175,7 +175,7 @@ function PolicyNote() {
  */
 function ReviewNotice({ entries, onSelect }: { entries: readonly PluginEntry[]; onSelect: (id: string) => void }) {
   const { versions } = useHost();
-  const health = useSyncExternalStore(subscribeHealth, getHealthSnapshot);
+  const health = useSyncExternalStore(subscribeHealth, getHealthSnapshot, getHealthSnapshot);
   const failing = entries.filter((entry) => needsReview(versions, entry.id, latestSaved(entry), health));
   if (!failing.length) return null;
   return (

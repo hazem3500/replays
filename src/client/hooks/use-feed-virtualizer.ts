@@ -15,6 +15,8 @@ export interface ListSpacing {
 }
 
 const NO_SPACING: ListSpacing = { gap: 0, padEnd: 0 };
+/** The window before it is measured: tall enough for a desktop's first screen of rows. */
+const FIRST_SCREEN = { width: 1280, height: 1000 };
 const px = (value: string) => Number.parseFloat(value) || 0;
 
 /**
@@ -106,6 +108,8 @@ export function useFeedVirtualizer(
     estimateSize: (index) => rows[index]?.estimate ?? 0,
     getItemKey: (index) => rows[index]?.key ?? index,
     overscan: options.overscan,
+    // why: a server render (and the hydration that follows it) has no window to measure: it lays out the first screen.
+    initialRect: FIRST_SCREEN,
     scrollMargin: margin,
     measureElement: measureRow,
     rangeExtractor: (range) => {

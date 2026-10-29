@@ -5,12 +5,12 @@ import { INDEX_SEARCH_ALT_KEY, indexSearchShortcut, SHORTCUT_GROUPS } from '../s
 import { SettingsGroup, SettingsRow } from './rows.tsx';
 import { strings } from './strings.ts';
 
-function Keys({ keys }: { keys: readonly string[] }) {
+function Keys({ keys, pair = false }: { keys: readonly string[]; pair?: boolean }) {
   return (
-    <span className="settings-keys">
+    <span className="settings-keys" data-pair={pair || undefined}>
       {keys.map((key, index) => (
         <span key={key} className="settings-keys-item">
-          {index > 0 ? <span className="settings-keys-or">{strings.keyboard.or}</span> : null}
+          {index > 0 && !pair ? <span className="settings-keys-or">{strings.keyboard.or}</span> : null}
           <Kbd className="settings-kbd">{key}</Kbd>
         </span>
       ))}
@@ -28,7 +28,7 @@ export function KeyboardSection() {
           {group.items
             .filter((item) => item.feature !== 'comments' || comments)
             .map((item) => (
-              <SettingsRow key={item.label} label={item.label} control={<Keys keys={item.keys} />} />
+              <SettingsRow key={item.label} label={item.label} control={<Keys keys={item.keys} pair={item.pair === true} />} />
             ))}
         </SettingsGroup>
       ))}

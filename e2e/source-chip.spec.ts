@@ -25,10 +25,10 @@ test('mobile GitHub source keeps a clean filled mark, a 40 px target and its acc
   await expect(chip).toHaveAccessibleName(/Shop PR #9.*opens in a new tab/);
   await expect(chip).toHaveCSS('width', '40px');
   await expect(chip).toHaveCSS('height', '40px');
-  const mark = chip.locator('.brand-icon-github');
+  const mark = chip.locator('[data-provider-mark="github"]');
   await expect(mark).toHaveCSS('width', '16px');
   await expect(mark).toHaveCSS('height', '16px');
-  await expect(mark).toHaveAttribute('viewBox', '0 0 16 16');
+  await expect(mark).toHaveAttribute('viewBox', '0 0 24 24');
   await expect(mark.locator('path')).toHaveCSS('stroke', 'none');
   expect(await mark.locator('path').evaluate((path) => getComputedStyle(path).fill === getComputedStyle(path).color)).toBe(true);
   await expect(chip.locator('span')).toBeHidden();

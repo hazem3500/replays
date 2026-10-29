@@ -24,6 +24,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Compared recordings go by name: each tile, the inspector's "Showing" switch and the Network and Performance panels
   name a recording by what tells it apart ("Before", "Firefox", "Run 3": the parts every label shares are dropped)
   beside one colour swatch, instead of A, B, C. Vitals and request details now say how each other recording did.
+- `REPLAYS_SSR=1` serves pages through a TanStack Start build embedded in the server
+  ([docs/operations.md](docs/operations.md#server-rendered-pages-tanstack-start)): the index arrives rendered, with its
+  lists in the page, so a phone shows replays without waiting for the app's JavaScript. The API, plugins and auth are
+  unchanged. Off by default; the viewer, editor, suite and plugin pages still render in the browser.
 - A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
   mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
   `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
@@ -49,6 +53,12 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   sampling, CLI defaults, stricter privacy only). Core ships a built-in `performance` profile, which the index shows as a tab
   only once a replay has it.
 
+- Expired replays: when retention removes a replay the server keeps a small record of it (title, host, dates, the
+  window and profile that applied; nothing of the recording) for `RETENTION_EXPIRED_DAYS` (default 30, `0` keeps none),
+  served at `GET /api/expired-replays` and documented as `docs/formats/expired-replay.schema.json`. The index shows
+  "N replays expired in the last 30 days" under the feed with "Show expired" for dimmed, details-only rows, and a suite
+  whose recordings are gone says when and under which window they were removed instead of "Recordings expired".
+
 - Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
@@ -60,6 +70,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+
+
+
+- Poster ThumbHash: once the server renders a replay's poster it keeps the poster's ThumbHash in the summary
+  (`ReplaySummary.thumbhash`, base64, ~25 bytes; `meta.json` and `GET /api/replays`). The index paints it under each
+  poster while the image loads and crossfades to the real poster, with no layout shift. Replays without one keep the
+  plain placeholder. The summary is now documented as `docs/formats/replay-summary.schema.json`.
 
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
@@ -261,12 +278,26 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - "Keep suite and its runs" moved from the suite sidebar's pin button into the viewer's More menu at every width; the
   sidebar shows "Kept by …" while a suite is kept.
 
+- Network's timing needs no mode: the ribbon on the seek bar's axis is always there, with one tick per request when a
+  recording is sparse and request density when it is busy. The row under the pointer, or the selected one, lights its
+  mark. The ribbon's playhead and the veil over what hasn't happened yet move by transform and glide when you seek,
+  rows fade between upcoming and reached instead of snapping, and the list follows the playhead with a smooth scroll
+  (instant for far jumps and under reduced motion). Performance's ribbon works the same way.
+- The request detail shows captured network bodies (#129): JSON indented, form fields decoded, folded past 14 lines,
+  with copy, a "Truncated at" note and redaction markers drawn as such. Copy as cURL sends a body that was kept whole.
+  Recordings without bodies say "Not captured".
+- Performance says "Performance wasn’t recorded" with the `replays capture --profile performance` command when no
+  timing was observed, instead of five "Not captured" cells over "Nothing was slow".
+
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
 - Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
+- The replay list on phones (640 px and narrower): thumb-sized rows with a two-line title and one quiet meta line,
+  Filters as quiet text with its count inside, sort as quiet text opening a bottom sheet of 48 px radio rows, and one
+  header menu sheet (Upload, Settings, and a theme row) beside search instead of four icons.
 
 - Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
   that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
