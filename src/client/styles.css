@@ -542,16 +542,18 @@ svg.lucide.lucide { stroke-width: 2; }
 .skip-indicator[data-visible] { opacity: 1; }
 .skip-indicator svg { width: 12px; height: 12px; fill: currentColor; }
 /* .step-caption lives in step-caption.css: exported videos draw the same caption (src/client/render). */
-/* In the viewer the caption is anchored to the recorded frame, not the stage (PlayerStage writes --frame-* on
-   .stage-wrap): bottom-centre, 4% of the frame's height up (12–28 px), 14–20 px type scaled with the frame. It keeps
-   clear of the fullscreen button's corner (the stage's right 56 px) when the frame runs close to that edge. */
+/* In the viewer and the editor the caption is anchored to the recorded frame, not the stage (PlayerStage writes
+   --frame-* and --caption-scale, the export's caption scale times the player's, on .stage-wrap): it is the exported
+   caption at the size the page is shown, never under 12 px. At the bottom it keeps clear of the fullscreen
+   button's corner (the stage's right 56 px) when the frame runs close to that edge. */
 .stage-wrap .step-caption {
   --clear: max(0px, calc(56px - var(--frame-right, 0px)));
-  --caption-size: clamp(14px, calc(var(--frame-w, 800px) * 0.016), 20px);
+  --caption-min: 12px;
   left: var(--frame-x, 0px); right: auto; width: var(--frame-w, 100%);
-  bottom: calc(var(--frame-bottom, 0px) + clamp(12px, calc(var(--frame-h, 400px) * 0.04), 28px));
+  bottom: calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset)));
   padding-inline: var(--clear);
 }
+.stage-wrap .step-caption[data-edge="top"] { top: calc(var(--frame-y, 0px) + max(8px, var(--caption-inset))); bottom: auto; padding-inline: 0; }
 
 /* The replay's source (a pull request, a ticket) as a quiet link chip beside the title. */
 /* The replay's source beside the title: a quiet ghost link at the topbar controls' size (28 px, 6 px radius), no
@@ -714,7 +716,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .console-row code { display: block; overflow: hidden; color: var(--text); font-size: var(--text-xs); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 /* While the scrubber is dragged its time bubble rises over the player's bottom edge: the caption steps up clear of it. */
 .step-caption { transition: transform 120ms var(--ease-out); }
-.player-region:has(.scrubber[data-scrubbing]) .step-caption { transform: translateY(-28px); }
+.player-region:has(.scrubber[data-scrubbing]) .step-caption:not([data-edge="top"]) { transform: translateY(-28px); }
 .console-row.error td { background: var(--danger-tint); }
 .source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

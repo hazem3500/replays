@@ -1,17 +1,30 @@
+import type { CaptionEdge } from './caption-placement.ts';
 import { CaptionMorph } from './CaptionMorph.tsx';
 import { useCaptionPresence } from './hooks/use-caption-presence.ts';
 
 /**
- * The caption host at the bottom of the recorded frame, shared by step captions (viewer) and edit captions.
- * One stable element: a new caption swaps the whole line in place; a hide fades and drops the last caption whole
- * (step-caption.css, imported by its callers); a caption that shows again after a hide starts fresh.
+ * The caption host on the recorded frame, shared by step captions (viewer) and edit captions. One stable element at
+ * the bottom edge, or the top one when the action it describes happens low on the page (caption-placement.ts): a new
+ * caption swaps the whole line in place; a hide fades the last caption out whole (step-caption.css, imported by its
+ * callers); a caption that shows again after a hide, or at the other edge, starts fresh.
  */
-export function LiveCaption({ text, number, testId }: { text: string | undefined; number?: number | undefined; testId: string }) {
-  const caption = useCaptionPresence(text, number);
+export function LiveCaption({
+  text,
+  number,
+  edge = 'bottom',
+  testId,
+}: {
+  text: string | undefined;
+  number?: number | undefined;
+  edge?: CaptionEdge;
+  testId: string;
+}) {
+  const caption = useCaptionPresence(text, number, edge);
   return (
     <div
       className="step-caption step-caption-live"
       data-active={caption.active ? 'true' : 'false'}
+      data-edge={caption.edge}
       data-testid={testId}
       role="status"
       aria-live="off"

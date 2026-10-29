@@ -139,8 +139,8 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 240032,
-      "gzip": 81328,
-      "brotli": 68340
+      "gzip": 81560,
+      "brotli": 68365
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -153,9 +153,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 260880,
-      "gzip": 44867,
-      "brotli": 37155
+      "raw": 260963,
+      "gzip": 44874,
+      "brotli": 37191
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 986487,
@@ -198,14 +198,14 @@
       "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
-      "raw": 1397,
-      "gzip": 666,
-      "brotli": 517
+      "raw": 1349,
+      "gzip": 640,
+      "brotli": 500
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 8926,
-      "gzip": 3921,
-      "brotli": 3570
+      "raw": 9060,
+      "gzip": 3989,
+      "brotli": 3622
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -223,14 +223,14 @@
       "brotli": 5388
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 2418,
-      "gzip": 911,
-      "brotli": 749
+      "raw": 2825,
+      "gzip": 1087,
+      "brotli": 892
     },
     "dist/client/assets/step-caption-HASH.js": {
-      "raw": 796,
-      "gzip": 499,
-      "brotli": 455
+      "raw": 887,
+      "gzip": 539,
+      "brotli": 504
     },
     "dist/client/assets/storage-HASH.js": {
       "raw": 461,
@@ -245,7 +245,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
       "gzip": 8752,
-      "brotli": 7554
+      "brotli": 7566
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -278,9 +278,9 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60058,
-      "gzip": 21441,
-      "brotli": 18678
+      "raw": 60091,
+      "gzip": 21469,
+      "brotli": 18726
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -289,8 +289,8 @@
     },
     "dist/client/render.html": {
       "raw": 1283,
-      "gzip": 544,
-      "brotli": 405
+      "gzip": 542,
+      "brotli": 404
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -493,9 +493,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 260880,
-      "gzip": 44867,
-      "brotli": 37155
+      "raw": 260963,
+      "gzip": 44874,
+      "brotli": 37191
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -503,9 +503,9 @@
       "brotli": 399732
     },
     "initial/render.html/css": {
-      "raw": 5784,
-      "gzip": 2529,
-      "brotli": 2097
+      "raw": 5999,
+      "gzip": 2625,
+      "brotli": 2170
     },
     "initial/render.html/js": {
       "raw": 557837,
@@ -801,26 +801,6 @@
       },
       "reason": "Lazy compare mode of the viewer: shared clock, tile stage with Single/Grid/Spotlight glide, scope switch and performance comparison.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 2418,
-        "gzip": 911,
-        "brotli": 749
-      },
-      "reason": "Captions swap by whole line and keep a hiding caption whole: the swap keyframes, enter and exit timing and the reduced-motion rules, about 630 bytes raw; the viewer chunk drops ~137 kB raw with calligraph gone.",
-      "pr": "https://github.com/hazem3500/replays/pull/114"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5788,
-        "gzip": 2529,
-        "brotli": 2103
-      },
-      "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
-      "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
@@ -1133,16 +1113,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/127"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60058,
-        "gzip": 21441,
-        "brotli": 18678
-      },
-      "reason": "Top bar actions, Context sections and seek bar tracks resolve through their viewer slots. Measured in CI against main (#121 and #125 already merged): +987 B raw, +354 B gzip, +333 B brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/133"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.css",
       "cap": {
         "raw": 5200,
@@ -1160,16 +1130,6 @@
         "brotli": 7521
       },
       "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 240032,
-        "gzip": 81328,
-        "brotli": 68340
-      },
-      "reason": "Network body formatting (indented JSON, decoded forms, redaction parts), body sections, ribbon hover linking and the playhead progress hook in the lazy inspector graph; the initial JavaScript budget is unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
@@ -1231,16 +1191,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/client/assets/render-HASH.js",
-      "cap": {
-        "raw": 8926,
-        "gzip": 3921,
-        "brotli": 3570
-      },
-      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts, render/thumbhash-capture.ts); head measures 8926 raw, 3921 gzip, 3570 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
       "cap": {
         "raw": 308481,
@@ -1259,16 +1209,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/145"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21285,
-        "gzip": 8752,
-        "brotli": 7554
-      },
-      "reason": "The suite workspace chunk's bytes include the hashed names of the chunks it imports, which change with this PR's chunks; measures 7554 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/145"
-    },
-    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 613
@@ -1277,24 +1217,94 @@
       "pr": "https://github.com/hazem3500/replays/pull/144"
     },
     {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 240032,
+        "gzip": 81560,
+        "brotli": 68365
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 9060,
+        "gzip": 3989,
+        "brotli": 3622
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2825,
+        "gzip": 1087,
+        "brotli": 892
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.js",
+      "cap": {
+        "raw": 887,
+        "gzip": 539,
+        "brotli": 504
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 60091,
+        "gzip": 21469,
+        "brotli": 18726
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5999,
+        "gzip": 2625,
+        "brotli": 2170
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 260880,
-        "gzip": 44867,
-        "brotli": 37155
+        "raw": 260963,
+        "gzip": 44874,
+        "brotli": 37191
       },
-      "reason": "Long command blocks fade the edge that has more of the command out of view (a scroll-driven mask on .command-block pre with two registered length properties). Measured in CI against fresh main d145ad97: +997 B raw, +128 B gzip, +83 B Brotli. Replaces #144's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/150"
+      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21285,
+        "gzip": 8752,
+        "brotli": 7566
+      },
+      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #145's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 260880,
-        "gzip": 44867,
-        "brotli": 37155
+        "raw": 260963,
+        "gzip": 44874,
+        "brotli": 37191
       },
-      "reason": "The first stylesheet carries the command-block fade (see main-HASH.css). Measured in CI against fresh main d145ad97: +997 B raw, +128 B gzip, +83 B Brotli. Replaces #144's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/150"
+      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
     }
   ]
 }
