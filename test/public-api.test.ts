@@ -1,8 +1,9 @@
-import { SLOT_NAMES } from '../src/client/plugins/api.ts';
+import { SLOT_NAMES, ViewerRegistry } from '../src/client/plugins/api.ts';
 import type {
   EditorToolDefinition,
   ExportFormatDefinition,
   ShortcutDefinition,
+  ViewerEventMap,
   ViewerPluginApi,
   SlotDescriptor,
   SlotConfiguration,
@@ -249,6 +250,12 @@ describe('public API', () => {
     expectTypeOf<ViewerPluginApi['registerEditorTool']>().parameter(0).toEqualTypeOf<EditorToolDefinition>();
     expectTypeOf<ViewerPluginApi['registerExportFormat']>().parameter(0).toEqualTypeOf<ExportFormatDefinition>();
     expectTypeOf<ViewerPluginApi['registerShortcut']>().parameter(0).toEqualTypeOf<ShortcutDefinition>();
+  });
+
+  it('publishes typed content-free event subscriptions', () => {
+    const observeSeek = new ViewerRegistry().apiFor('host').on<'seek'>;
+    expectTypeOf(observeSeek).toBeCallableWith('seek', (_event: ViewerEventMap['seek']) => {});
+    expectTypeOf<ViewerEventMap['index:filter']>().toEqualTypeOf<{ readonly activeCount: number }>();
   });
   it('pins the additive theme token contract', async () => {
     const { THEME_TOKENS } = await import('../src/server/index.ts');

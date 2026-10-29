@@ -13,7 +13,7 @@ so every change to the surface shows up in a diff).
 | --- | --- | --- |
 | Config file keys and `defineConfig` | `@hazem3500/replays/config` | Public |
 | Plugin API: `definePlugin`, `PluginApi` methods (including the web-standard `route` and `middleware`, with `PluginRoute`, `PluginMiddleware` and `StandardSchemaV1`) and their hook contexts, upload endpoint options, `PluginError` codes, `rejectUpload`, `HttpError`, `tooManyRequests`, `PLUGIN_API_VERSION` | `/plugin` | Public |
-| Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions, editor tools, export formats and viewer shortcuts | `/viewer` | Public |
+| Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions, editor tools, export formats and viewer shortcuts and typed activity subscriptions | `/viewer` | Public |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` / `WebAuthAdapter` / `AnyAuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
 | Browser-safe in-page recorder, default UI, messages and formatting (`RecorderMessages`, `defaultRecorderMessages`, `RecorderFormat`; keys are added, not renamed), the `capture` option (`RecorderCapture`, `RecorderBodyLimits`; a profile's `capture` block is accepted as is, and keys only tighten), completion/theme contracts and upload helpers (`createTokenUpload`, `createHttpUpload`, `IssueUploadError`) | `/recorder` | Public |

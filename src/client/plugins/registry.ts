@@ -1,4 +1,6 @@
 import { assertHostContribution, checkedShortcutKeys } from './contributions.ts';
+
+import { ViewerEvents, type ViewerEvent } from './events.ts';
 import { PluginPageRegistry } from './pages.ts';
 import { defaultPolicy, type MalleablePolicy } from '../../shared/malleable-policy.ts';
 import { SlotRegistry, type SlotConfiguration, type SlotDescriptor } from './slots.ts';
@@ -144,6 +146,13 @@ function check(kind: keyof Snapshot, plugin: string, definition: Record<string, 
 /** What loaded client entries registered. A store: the UI subscribes and re-renders when plugins arrive. */
 export class ViewerRegistry {
   readonly pages = new PluginPageRegistry();
+  private readonly events = new ViewerEvents();
+  emitEvent(event: ViewerEvent): void {
+    this.events.emit(event);
+  }
+  openReplay(replayId: string): () => void {
+    return this.events.open(replayId);
+  }
   private snapshotValue: Snapshot = EMPTY;
   private readonly listeners = new Set<() => void>();
   private seq = 0;
@@ -283,6 +292,10 @@ export class ViewerRegistry {
         this.hostContribution('viewer.shortcuts', plugin, { ...definition, keys }, notify);
         this.shortcutKeys.set(`plugin:${plugin}:${definition.id}`, keys);
       },
+      on: (type, listener) => {
+        if (!OWNER.test(plugin) || plugin.startsWith('user:')) throw new ViewerPluginError('only host plugins may observe activity');
+        return this.events.on(plugin, type, listener);
+      },
       registerPluginPage: (definition) => {
         if (!OWNER.test(plugin) || plugin.startsWith('user:')) throw new ViewerPluginError('only host plugins may register pages');
         this.pages.register(plugin, definition);
@@ -316,6 +329,9 @@ export class ViewerRegistry {
     const pageState = this.pages.checkpoint();
     const shortcutState = new Map(this.shortcutKeys);
     for (const key of this.shortcutKeys.keys()) if (key.startsWith(`plugin:${plugin}:`)) this.shortcutKeys.delete(key);
+
+    const eventState = this.events.checkpoint();
+    this.events.removeOwner(plugin);
     this.pages.removeOwner(plugin);
     const slotState = new Map([...this.slots].map(([name, slot]) => [name, slot.checkpoint()]));
     for (const slot of this.slots.values()) slot.removeOwner(plugin);
@@ -329,6 +345,8 @@ export class ViewerRegistry {
       this.snapshotValue = before;
       this.pages.restore(pageState);
       this.shortcutKeys = shortcutState;
+
+      this.events.restore(eventState);
       for (const [name, slot] of this.slots) {
         const state = slotState.get(name);
         if (state) slot.restore(state);
@@ -349,6 +367,8 @@ export class ViewerRegistry {
     this.snapshotValue = EMPTY;
     this.slots.clear();
     this.shortcutKeys.clear();
+
+    this.events.reset();
     this.pages.restore({ pages: new Map() });
     this.seq = 0;
     for (const listener of this.listeners) listener();

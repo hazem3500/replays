@@ -78,14 +78,14 @@
       "brotli": 2680
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 33543,
+      "raw": 32532,
       "gzip": 11374,
-      "brotli": 10181
+      "brotli": 10155
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2343,
-      "brotli": 2115
+      "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 7830,
@@ -168,9 +168,9 @@
       "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 962358,
-      "gzip": 303109,
-      "brotli": 251584
+      "raw": 1024353,
+      "gzip": 320466,
+      "brotli": 264886
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -223,14 +223,9 @@
       "brotli": 553
     },
     "dist/client/assets/settings-HASH.js": {
-      "raw": 24418,
-      "gzip": 8155,
-      "brotli": 7287
-    },
-    "dist/client/assets/shortcuts-HASH.js": {
-      "raw": 3183,
-      "gzip": 1278,
-      "brotli": 1086
+      "raw": 24766,
+      "gzip": 8215,
+      "brotli": 7402
     },
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 16683,
@@ -255,12 +250,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 632
+      "brotli": 630
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21999,
-      "gzip": 9037,
-      "brotli": 7810
+      "raw": 21291,
+      "gzip": 9017,
+      "brotli": 7568
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -288,9 +283,9 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 64157,
-      "gzip": 23111,
-      "brotli": 20125
+      "raw": 62374,
+      "gzip": 22308,
+      "brotli": 19444
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -503,9 +498,9 @@
       "brotli": 517
     },
     "dist/lib/viewer.mjs": {
-      "raw": 22551,
-      "gzip": 6279,
-      "brotli": 5505
+      "raw": 20835,
+      "gzip": 5659,
+      "brotli": 4992
     },
     "initial/index.html/css": {
       "raw": 275556,
@@ -1208,15 +1203,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "brotli": 264792,
-        "gzip": 320306
-      },
-      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
       "file": "dist/client/assets/render-HASH.js",
       "cap": {
         "brotli": 3732
@@ -1268,6 +1254,16 @@
       },
       "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
       "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 1024353,
+        "gzip": 320466,
+        "brotli": 264886
+      },
+      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
+      "pr": "https://github.com/hazem3500/replays/pull/181"
     },
     {
       "file": "dist/client/assets/comments-ui-HASH.js",

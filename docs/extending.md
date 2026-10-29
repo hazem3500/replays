@@ -340,6 +340,15 @@ api.registerExportFormat({ id: 'console', label: 'Console JSON', run: ({ replay 
 The [contribution contracts](extension-api.md#editor-tools-exports-and-shortcuts) preserve core edit validation, undo,
 server authorization and capture privacy. `examples/custom-distro` demonstrates each API.
 
+Trusted browser entries can observe playback without scraping the DOM:
+
+```ts
+api.on('seek', ({ replayId, timeMs }) => console.info('Playback seek', replayId, timeMs));
+```
+
+The [activity event catalogue](extension-api.md#browser-activity-events) contains metadata only and
+has no default network transport. `examples/custom-distro` demonstrates a live activity panel.
+
 The [v2 token catalogue](tokens.md) also exposes motion, easing, type sizes, spacing, elevation,
 focus width, radii, and caption, poster, card and scrubber tokens. For example:
 
