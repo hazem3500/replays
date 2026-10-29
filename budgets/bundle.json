@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 621
+      "brotli": 630
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
@@ -1044,20 +1044,20 @@
       "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3520
       },
       "reason": "Same raw and gzip size as main; the new Network and Performance chunk hashes it names compress 24 Brotli bytes worse (3486 against a 3468-byte cap).",
       "pr": "https://github.com/hazem3500/replays/pull/119"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 630
+      },
+      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change when the index entry gains ScopeCount and the loading primitives. Measures 630 brotli (+9 over its ratcheted cap).",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
     }
   ]
 }
