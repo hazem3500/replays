@@ -80,7 +80,7 @@
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2344,
-      "brotli": 2119
+      "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 7830,
@@ -108,7 +108,7 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101099,
+      "raw": 101093,
       "gzip": 33868,
       "brotli": 28919
     },
@@ -118,9 +118,9 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 25123,
-      "gzip": 9605,
-      "brotli": 8395
+      "raw": 6580,
+      "gzip": 3179,
+      "brotli": 2811
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 611,
+      "gzip": 608,
       "brotli": 560
     },
     "dist/client/assets/settings-HASH.js": {
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 686,
-      "brotli": 608
+      "gzip": 685,
+      "brotli": 640
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21175,
@@ -483,9 +483,9 @@
       "brotli": 35120
     },
     "initial/index.html/js": {
-      "raw": 1484599,
-      "gzip": 473500,
-      "brotli": 400470
+      "raw": 1484430,
+      "gzip": 472534,
+      "brotli": 399638
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -928,14 +928,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 246064,
@@ -1233,6 +1225,14 @@
         "brotli": 2714
       },
       "reason": "The comments panel and marker styles travel with the lazy comments UI chunk and replace main's feature stylesheet (8661 raw bytes).",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 640
+      },
+      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change when the comments UI moves into its own chunk; measured against main: 0 B raw, -2 B gzip, +31 B brotli (621 against main's 590 and a 608-byte cap). Replaces #119's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/116"
     }
   ]
