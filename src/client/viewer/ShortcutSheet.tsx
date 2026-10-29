@@ -16,7 +16,7 @@ export function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenCha
       <DialogContent
         showCloseButton={false}
         initialFocus={close}
-        className="shortcut-sheet gap-0 p-0 sm:max-w-xl"
+        className="shortcut-sheet gap-0 p-0 sm:max-w-3xl"
         data-testid="shortcut-sheet"
       >
         <div className="sheet-header">
@@ -48,7 +48,10 @@ export function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenCha
                       <dd>
                         <KbdGroup>
                           {item.keys.map((key) => (
-                            <Kbd key={key} className="font-mono">
+                            <Kbd
+                              key={key}
+                              className="h-[22px] min-w-[22px] px-1.5 font-mono text-(length:--text-2xs) text-[var(--text-secondary)]"
+                            >
                               {key}
                             </Kbd>
                           ))}
