@@ -154,7 +154,7 @@ p { text-wrap: pretty; }
 button, input { font: inherit; color: inherit; touch-action: manipulation; }
 button, a, input, [tabindex] { outline: none; }
 button, a { -webkit-tap-highlight-color: transparent; }
-:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
+:focus-visible { box-shadow: 0 0 0 var(--focus-ring-width) var(--page), 0 0 0 calc(var(--focus-ring-width) * 2) var(--ring); }
 a { color: var(--accent); text-underline-offset: 3px; }
 code, .mono { font-family: var(--mono); font-size: 0.95em; font-variant-numeric: tabular-nums; }
 time { font-variant-numeric: tabular-nums; }
@@ -1122,7 +1122,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .upload-progress-label { min-width: 6ch; color: var(--text-secondary); font-size: var(--text-xs); text-align: right; }
 .upload-error { margin: 0; padding: 8px 10px; border: 1px solid var(--danger); border-radius: var(--radius); background: var(--danger-soft); color: var(--text); font-size: var(--text-sm); line-height: 1.45; }
 .upload-error a { color: var(--text); font-weight: 600; }
-.upload-drop-overlay { position: fixed; z-index: 40; inset: 0; display: grid; place-items: center; padding: 16px; background: rgba(12, 8, 14, 0.6); opacity: 0; pointer-events: none; visibility: hidden; transition: opacity var(--motion-fast) var(--ease-out), visibility 0s linear var(--motion-fast); }
+.upload-drop-overlay { position: fixed; z-index: var(--z-overlay); inset: 0; display: grid; place-items: center; padding: var(--space-4); background: rgba(12, 8, 14, 0.6); opacity: 0; pointer-events: none; visibility: hidden; transition: opacity var(--motion-fast) var(--ease-out), visibility 0s linear var(--motion-fast); }
 .upload-drop-overlay[data-active] { opacity: 1; visibility: visible; transition: opacity var(--motion-fast) var(--ease-out); }
 .upload-drop-message { width: min(420px, 100%); display: grid; justify-items: center; gap: 6px; padding: 32px 20px; border: 1px dashed var(--accent); border-radius: 8px; background: var(--surface); color: var(--text); text-align: center; transform: scale(0.98); transition: transform var(--motion-fast) var(--ease-out); }
 .upload-drop-overlay[data-active] .upload-drop-message { transform: none; }

@@ -237,6 +237,13 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('pins the additive theme token contract', async () => {
+    const { THEME_TOKENS } = await import('../src/server/index.ts');
+    const contract: unknown = JSON.parse(readFileSync(new URL('../docs/formats/theme-tokens.json', import.meta.url), 'utf8'));
+    expect(contract).toEqual({ version: 2, tokens: THEME_TOKENS });
+    expect(THEME_TOKENS).toContain('caption-bg');
+    expect(THEME_TOKENS).toContain('motion-fast');
+  });
   it('pins the published slot names', () => {
     expect(SLOT_NAMES).toEqual([
       'viewer.inspector.tabs',

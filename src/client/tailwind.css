@@ -16,6 +16,7 @@
 @import "tailwindcss/utilities.css" layer(utilities);
 @import "tw-animate-css";
 @import "./styles.css" layer(app);
+@import "./theme-tokens.css" layer(app);
 @import "./index/feed.css" layer(app);
 @import "./index/card-motion.css" layer(app);
 @import "./loading.css" layer(app);
@@ -65,8 +66,8 @@
 
   --radius-sm: var(--radius-sm);
   --radius-md: var(--radius);
-  --radius-lg: 8px;
-  --radius-xl: 10px;
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
 
   --ease-out: var(--ease-out);
   --ease-in-out: var(--ease-in-out);

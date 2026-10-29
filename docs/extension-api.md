@@ -1020,3 +1020,16 @@ staff identity, and the endpoint's identity cannot reach them anyway.
 hooks. It has per-app keys with rotation, origin lists, per-key and per-IP limits, a per-app body cap and retention,
 server-chosen ids and an audit line per request. Its counters are per process, so with several replicas use a
 shared store.
+
+### Theme tokens v2
+
+`api.branding({ theme })` accepts the [generated token catalogue](tokens.md), including
+`shadow-pop`, `motion-fast`, `text-sm`, `space-4`, `card-radius`, `poster-overlay-bg`,
+`poster-overlay-fg`, `caption-bg`, `caption-fg` and `caption-font`. For a compact host theme:
+
+```ts
+api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms' } } });
+```
+
+The server validates these as plain CSS values and emits them into the initial page head.
+Plugin precedence and config overrides are unchanged. No DOM access or client setup is needed.
