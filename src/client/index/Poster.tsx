@@ -8,7 +8,7 @@ import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
 
 /*
  * A replay's list thumbnail: a plain lazy <img> of GET /api/replays/<id>/poster over a placeholder that is never a
- * made-up letter (PosterPlaceholder.tsx: the poster's ThumbHash, else the recorded site, or a suite's run mosaic). The
+ * made-up letter (PosterPlaceholder.tsx: the poster's ThumbHash, else the recorded host, or a suite's run mosaic). The
  * server answers 202 while it renders the poster, and 404/503 when there is none; an <img> cannot read those, so after
  * an error one HEAD request decides between "retry after Retry-After" and "keep the placeholder". A 503 switches
  * posters off for the page: every poster still waiting stops breathing at once and settles on its placeholder (its
@@ -59,7 +59,6 @@ export function Poster({
   onPreviewEnd,
   onPreviewHalf,
   thumbhash,
-  url,
   fallback,
 }: {
   /** Replay id; absent draws the placeholder only (a suite run without a recording). */
@@ -67,8 +66,6 @@ export function Poster({
   host: string;
   /** The summary's ThumbHash: the placeholder paints the poster's colours until it loads, then crossfades to it. */
   thumbhash?: string | undefined;
-  /** The recorded page's URL, for the site icon a placeholder without a ThumbHash shows. */
-  url?: string | undefined;
   /** Shown instead of the replay's own placeholder: a suite's run mosaic. */
   fallback?: ReactNode;
   className?: string;
@@ -121,7 +118,7 @@ export function Poster({
   const phase = state.phase === 'loading' && off ? 'none' : state.phase;
   return (
     <span className={cn('poster', `poster-${size}`, className)} data-phase={phase} aria-hidden="true">
-      <PosterPlaceholder host={host} url={url} thumbhash={thumbhash} fallback={fallback} />
+      <PosterPlaceholder host={host} thumbhash={thumbhash} fallback={fallback} />
       {id && state.phase !== 'none' ? (
         <img
           key={state.attempt}

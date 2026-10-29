@@ -5,7 +5,7 @@
  *
  *   ThumbHash  the poster's own colours and shape, framed like the image (cover, top left), so the 200 ms crossfade
  *              to the real poster changes detail, never layout.
- *   Site       a calm page: a faint browser bar, the recorded site's icon in a chip and its host. Container queries
+ *   Site       a calm page: a faint browser bar, a site glyph in a chip and the host. Container queries
  *              drop the host on rows and the bar on the smallest thumbnails.
  *   Mosaic     a suite: up to four runs side by side, each its ThumbHash or its site, edged red when it failed and
  *              hatched when it has no recording; run labels show where a cell has room.
@@ -23,7 +23,7 @@
 .poster-site-bar::after { content: ""; position: absolute; top: 0; right: 0; bottom: 0; left: 26px; background: color-mix(in srgb, var(--surface-raised) 92%, transparent); }
 .poster-site-mark { max-width: 84%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding-top: clamp(6px, 9cqh, 14px); }
 .poster-site-chip { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: var(--surface); box-shadow: 0 0 0 1px var(--line), 0 1px 2px rgb(0 0 0 / 0.06); color: var(--text-tertiary); }
-.poster-site-icon { width: 16px; height: 16px; object-fit: contain; }
+.poster-site-icon { width: 16px; height: 16px; }
 .poster-site-host { max-width: 100%; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
 @container (max-width: 160px) {
   .poster-site-host { display: none; }

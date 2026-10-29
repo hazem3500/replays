@@ -64,26 +64,17 @@ describe('poster placeholder', () => {
     });
   }
 
-  it('shows the recorded site’s icon and host, never a letter', () => {
-    render(createElement(Poster, { id: 'demo', host: 'www.shop.example', url: 'https://www.shop.example/checkout', size: 'card' }));
+  it('shows the recorded host on a calm page, never a letter, and fetches nothing from it', () => {
+    render(createElement(Poster, { id: 'demo', host: 'www.shop.example', size: 'card' }));
     expect(host.querySelector('.poster-site-host')?.textContent).toBe('shop.example');
-    expect(host.querySelector('img.poster-site-icon')?.getAttribute('src')).toBe('https://www.shop.example/favicon.ico');
-    expect(host.querySelector('.poster-placeholder')?.textContent).not.toMatch(/^[A-Z]$/);
-  });
-
-  it('falls back to a globe when the site’s icon cannot load', () => {
-    render(createElement(Poster, { id: 'demo', host: 'intranet.test', url: 'https://intranet.test/', size: 'card' }));
-    act(() => {
-      host.querySelector('img.poster-site-icon')?.dispatchEvent(new Event('error'));
-    });
-    expect(host.querySelector('img.poster-site-icon')).toBeNull();
+    expect(host.querySelector('.poster-placeholder img')).toBeNull();
     expect(host.querySelector('svg.poster-site-icon')).not.toBeNull();
   });
 
-  it('draws a globe for a page that was not on the web', () => {
-    render(createElement(Poster, { id: 'demo', host: '', url: 'file:///tmp/demo.html', size: 'card' }));
-    expect(host.querySelector('svg.poster-site-icon')).not.toBeNull();
+  it('leaves the host out when there is none', () => {
+    render(createElement(Poster, { id: 'demo', host: '', size: 'card' }));
     expect(host.querySelector('.poster-site-host')).toBeNull();
+    expect(host.querySelector('svg.poster-site-icon')).not.toBeNull();
   });
 
   it('shows a suite as a mosaic of its runs, each its ThumbHash or its site', () => {

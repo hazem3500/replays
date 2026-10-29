@@ -169,7 +169,6 @@ export function CommandSearch({
       const posterRun = entry.kind === 'session' ? undefined : suitePosterRun(entry.suite.runDetails);
       const posterId = entry.kind === 'session' ? entry.summary.id : posterRun?.replayId;
       const thumbhash = entry.kind === 'session' ? entry.summary.thumbhash : posterRun?.replay?.thumbhash;
-      const pageUrl = entry.kind === 'session' ? entry.summary.url : posterRun?.replay?.url;
       const host = entry.kind === 'session' ? entry.summary.host : (entry.hosts[0] ?? '');
       const title = entry.kind === 'session' ? entry.summary.title : entry.suite.title;
       const detail =
@@ -199,7 +198,7 @@ export function CommandSearch({
         render: (
           <>
             <span className={entry.kind === 'suite' ? 'command-thumb command-thumb-stack' : 'command-thumb'}>
-              <Poster id={posterId} host={host} thumbhash={thumbhash} url={pageUrl} size="mini" />
+              <Poster id={posterId} host={host} thumbhash={thumbhash} size="mini" />
             </span>
             <span className="command-text">
               <span className="command-title">{title}</span>

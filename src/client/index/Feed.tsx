@@ -197,7 +197,6 @@ function SessionItem({
         id={summary.id}
         host={summary.host}
         thumbhash={summary.thumbhash}
-        url={summary.url}
         size={view === 'grid' ? 'card' : 'row'}
         playing={playing}
         badge={formatBadgeDuration(summary.duration)}
