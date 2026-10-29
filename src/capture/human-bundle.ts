@@ -3,7 +3,8 @@
 // POST /api/replays/import route, and the browser upload preview.
 import { profileOf } from '../shared/profiles.ts';
 import { assertReplayBundle, assertReplayId, type ReplayBundle, type ReplayPerson } from '../shared/replay.ts';
-import { maskCapturedInputs, sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
+import { maskCapturedInputs } from './mask-inputs.ts';
+import { sanitizeUrl, sanitizeUrlFields } from './sanitize.ts';
 
 export type RrwebEvent = ReplayBundle['events'][number];
 

@@ -4,6 +4,8 @@ import { sanitizeBody } from '../shared/network-bodies.ts';
 import type { ReplayBundle, ReplayNetworkEntry } from '../shared/replay.ts';
 import { isRecord } from '../shared/validate.ts';
 import { harEntryBodies } from './har-bodies.ts';
+import { maskCapturedInputs } from './mask-inputs.ts';
+import { compileMaskSelectors, compoundMatches } from './mask-selectors.ts';
 
 // Exact auth headers plus any `*-token` / `*-secret` / `*-jwt` / `*-assertion` (X-CSRF-Token, X-Amz-Security-Token,
 // signed-identity headers set by proxies, ...).
@@ -219,39 +221,8 @@ function consoleWith(message: string, rules: CompiledRedaction) {
 const FULL_SNAPSHOT = 2;
 const INCREMENTAL = 3;
 const MUTATION = 0;
-const INPUT = 5;
 const ELEMENT = 2;
 const TEXT = 3;
-/**
- * rrweb `maskInputOptions` for the capture recorder: the `maskAllInputs` set (password is always
- * in it) plus hidden inputs, which often carry CSRF tokens and are never visible in a replay.
- * The import/upload pass below masks the same set.
- */
-export const MASK_INPUT_OPTIONS: Record<string, true> = {
-  color: true,
-  date: true,
-  'datetime-local': true,
-  email: true,
-  hidden: true,
-  month: true,
-  number: true,
-  password: true,
-  range: true,
-  search: true,
-  tel: true,
-  text: true,
-  time: true,
-  url: true,
-  week: true,
-  textarea: true,
-  select: true,
-};
-const MASKED_INPUT_TYPES = new Set(Object.keys(MASK_INPUT_OPTIONS));
-
-function maskedInput(value: string) {
-  return '*'.repeat(value.length);
-}
-
 interface SerializedNode {
   type?: number;
   tagName?: string;
@@ -261,185 +232,16 @@ interface SerializedNode {
   childNodes?: SerializedNode[];
 }
 
-function inputType(attributes: Record<string, unknown> | undefined) {
-  return typeof attributes?.type === 'string' && attributes.type ? attributes.type.toLowerCase() : 'text';
-}
-
-function masksInput(tag: string, attributes: Record<string, unknown> | undefined) {
-  if (tag === 'textarea' || tag === 'select') return true;
-  return tag === 'input' && MASKED_INPUT_TYPES.has(inputType(attributes));
-}
-
-function maskElementTree(node: SerializedNode | undefined, inputIds: Set<number>, textIds: Set<number>) {
-  if (!node || typeof node !== 'object') return;
-  const children = Array.isArray(node.childNodes) ? node.childNodes : [];
-  if (node.type === ELEMENT) {
-    const tag = String(node.tagName ?? '').toLowerCase();
-    const mask = masksInput(tag, node.attributes);
-    if (mask && typeof node.id === 'number') inputIds.add(node.id);
-    if (mask && node.attributes && typeof node.attributes.value === 'string') {
-      node.attributes.value = maskedInput(node.attributes.value);
-    }
-    for (const child of children) {
-      if (mask && child?.type === TEXT && typeof child.id === 'number') {
-        textIds.add(child.id);
-        if (typeof child.textContent === 'string') child.textContent = maskedInput(child.textContent);
-      }
-      maskElementTree(child, inputIds, textIds);
-    }
-    return;
-  }
-  for (const child of children) maskElementTree(child, inputIds, textIds);
-}
-
-/**
- * Replaces input, textarea and select values the way rrweb's `maskAllInputs` does,
- * so an imported recording cannot store typed secrets the capture path would have masked.
- * Button labels and other non-input text stay as recorded.
- */
-export function maskCapturedInputs<T>(events: T): T {
-  if (!Array.isArray(events)) return events;
-  const inputIds = new Set<number>();
-  const textIds = new Set<number>();
-  for (const event of events) {
-    if (!event || typeof event !== 'object') continue;
-    const record = event as { type?: unknown; data?: Record<string, unknown> };
-    const data = record.data;
-    if (!data || typeof data !== 'object') continue;
-    if (record.type === FULL_SNAPSHOT) {
-      maskElementTree(data.node as SerializedNode, inputIds, textIds);
-      continue;
-    }
-    if (record.type !== INCREMENTAL) continue;
-    if (data.source === INPUT && typeof data.text === 'string') {
-      data.text = maskedInput(data.text);
-      continue;
-    }
-    if (data.source !== MUTATION) continue;
-    for (const add of (data.adds as Array<{ node?: SerializedNode }> | undefined) ?? []) maskElementTree(add?.node, inputIds, textIds);
-    for (const removal of (data.removes as Array<{ id?: number }> | undefined) ?? []) {
-      if (typeof removal?.id !== 'number') continue;
-      inputIds.delete(removal.id);
-      textIds.delete(removal.id);
-    }
-    for (const change of (data.attributes as Array<{ id?: number; attributes?: Record<string, unknown> }> | undefined) ?? []) {
-      if (typeof change?.id === 'number' && inputIds.has(change.id) && typeof change.attributes?.value === 'string') {
-        change.attributes.value = maskedInput(change.attributes.value);
-      }
-    }
-    for (const change of (data.texts as Array<{ id?: number; value?: unknown }> | undefined) ?? []) {
-      if (typeof change?.id === 'number' && textIds.has(change.id) && typeof change.value === 'string') {
-        change.value = maskedInput(change.value);
-      }
-    }
-  }
-  return events;
-}
-
-// Mask selectors on a recording that is already serialised (an upload from an old producer, an import). The capture
-// recorder gets them as rrweb `maskTextSelector`, which sees the live DOM; here only each selector's last compound part
-// is checked (`.card [data-private]` checks `[data-private]`) and pseudo-classes are ignored, so this masks the same
-// text or more, never less.
-
-interface CompoundSelector {
-  tag?: string;
-  ids: string[];
-  classes: string[];
-  attributes: Array<{ name: string; operator?: string; value?: string; insensitive: boolean }>;
-}
-
-/** Splits on `separator` outside brackets, parentheses and quotes. */
-function splitTopLevel(text: string, separator: RegExp) {
-  const parts: string[] = [];
-  let depth = 0;
-  let quote = '';
-  let current = '';
-  for (let index = 0; index < text.length; index++) {
-    const char = text[index]!;
-    if (quote) {
-      if (char === '\\') current += char + (text[++index] ?? '');
-      else {
-        if (char === quote) quote = '';
-        current += char;
-      }
-      continue;
-    }
-    if (char === '"' || char === "'") quote = char;
-    else if (char === '[' || char === '(') depth++;
-    else if (char === ']' || char === ')') depth--;
-    else if (depth === 0 && separator.test(char)) {
-      parts.push(current);
-      current = '';
-      continue;
-    }
-    current += char;
-  }
-  parts.push(current);
-  return parts.map((part) => part.trim()).filter(Boolean);
-}
-
-const SELECTOR_TOKEN =
-  /\[\s*([^\s~|^$*=\]]+)\s*(?:([~|^$*]?=)\s*(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)'|([^\s\]]+))\s*(i)?\s*)?\]|#([\w-]+)|\.([\w-]+)|::?[\w-]+(?:\((?:[^()]|\([^()]*\))*\))?|^([a-zA-Z][\w-]*|\*)/g;
-
-function parseCompound(selector: string): CompoundSelector | undefined {
-  const last = splitTopLevel(selector, /[\s>+~]/).at(-1);
-  if (!last) return undefined;
-  const compound: CompoundSelector = { ids: [], classes: [], attributes: [] };
-  for (const match of last.matchAll(SELECTOR_TOKEN)) {
-    if (match[1]) {
-      const value = match[3] ?? match[4] ?? match[5];
-      compound.attributes.push({
-        name: match[1].toLowerCase(),
-        ...(match[2] ? { operator: match[2] } : {}),
-        ...(value !== undefined ? { value } : {}),
-        insensitive: Boolean(match[6]),
-      });
-    } else if (match[7]) compound.ids.push(match[7]);
-    else if (match[8]) compound.classes.push(match[8]);
-    else if (match[9] && match[9] !== '*') compound.tag = match[9].toLowerCase();
-  }
-  return compound;
-}
-
-function attributeMatches(actual: string, operator: string | undefined, expected: string | undefined, insensitive: boolean) {
-  if (!operator || expected === undefined) return true;
-  const [a, e] = insensitive ? [actual.toLowerCase(), expected.toLowerCase()] : [actual, expected];
-  switch (operator) {
-    case '=':
-      return a === e;
-    case '~=':
-      return a.split(/\s+/).includes(e);
-    case '|=':
-      return a === e || a.startsWith(`${e}-`);
-    case '^=':
-      return Boolean(e) && a.startsWith(e);
-    case '$=':
-      return Boolean(e) && a.endsWith(e);
-    default:
-      return Boolean(e) && a.includes(e);
-  }
-}
-
-function compoundMatches(node: SerializedNode, compound: CompoundSelector) {
-  const attributes = node.attributes ?? {};
-  const text = (name: string) => (typeof attributes[name] === 'string' ? (attributes[name] as string) : undefined);
-  if (compound.tag && String(node.tagName ?? '').toLowerCase() !== compound.tag) return false;
-  if (compound.ids.some((id) => text('id') !== id)) return false;
-  const classes = (text('class') ?? '').split(/\s+/);
-  if (compound.classes.some((name) => !classes.includes(name))) return false;
-  return compound.attributes.every((rule) => {
-    const value = attributes[rule.name];
-    if (value === undefined || value === null || value === false) return false;
-    return attributeMatches(String(value), rule.operator, rule.value, rule.insensitive);
-  });
-}
-
 /** rrweb's default `maskTextFn`: every non-space character becomes `*`. */
 const maskedText = (value: string) => value.replace(/\S/g, '*');
 
-/** Masks selector matches through snapshots, moves, attribute mutations, added nodes and later text changes. */
+/**
+ * Masks selector matches through snapshots, moves, attribute mutations, added nodes and later text changes, on a recording
+ * that is already serialized (an upload from an old producer, an import). The capture recorder gets the same selectors as
+ * rrweb `maskTextSelector`, which sees the live DOM (src/capture/mask-selectors.ts).
+ */
 function maskSelectorText<T>(events: T, selectors: readonly string[]): T {
-  const compounds = selectors.flatMap((list) => splitTopLevel(list, /,/)).flatMap((selector) => parseCompound(selector) ?? []);
+  const compounds = compileMaskSelectors(selectors);
   if (!Array.isArray(events) || !compounds.length) return events;
   const masked = new Set<number>();
   const nodes = new Map<number, { node: SerializedNode; attributes: Record<string, unknown> }>();
