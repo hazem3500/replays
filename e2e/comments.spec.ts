@@ -263,15 +263,17 @@ test('comparing recordings, the panel follows the focused one: its threads, a fr
   await page.getByTestId('comments-tab').click();
   await expect(page.getByTestId('comment-body')).toHaveText(['On the first recording']);
   await page.getByTestId('comment-input').fill('A draft about the first one');
+  // why: both recordings share a title, so the scope segments are told apart by position (first, then the compared one).
+  const scope = page.getByTestId('compare-scope').getByRole('radio');
 
-  await page.getByTestId('compare-scope').getByRole('radio', { name: /^B: / }).click();
+  await scope.nth(1).click();
   await expect(page.getByTestId('comments-empty')).toBeVisible();
   await expect(page.getByTestId('comment-input')).toHaveValue('');
   await page.getByTestId('comment-input').fill('About the second one');
   await page.keyboard.press('Control+Enter');
   await expect(page.getByTestId('comment-body')).toHaveText(['About the second one']);
 
-  await page.getByTestId('compare-scope').getByRole('radio', { name: /^A: / }).click();
+  await scope.nth(0).click();
   await expect(page.getByTestId('comment-body')).toHaveText(['On the first recording']);
   const bodies = async (id: string) =>
     ((await (await request.get(`${base()}/api/replays/${id}/comments`, { headers: DEE })).json()).comments as Array<{ body: string }>).map(
