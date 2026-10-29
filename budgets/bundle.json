@@ -74,8 +74,8 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
-      "gzip": 13521,
-      "brotli": 11994
+      "gzip": 13517,
+      "brotli": 11993
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -103,9 +103,9 @@
       "brotli": 6716
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 232510,
-      "gzip": 78731,
-      "brotli": 66316
+      "raw": 231271,
+      "gzip": 78316,
+      "brotli": 66041
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 644
+      "brotli": 626
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
