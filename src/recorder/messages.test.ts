@@ -33,7 +33,8 @@ it('fills legacy template overrides from the message params', () => {
 });
 
 it('keeps defaults for keys an override leaves out and drops the retired openReplay', () => {
-  const messages = resolveRecorderMessages({ consentTitle: 'Record?', openReplay: 'Open' });
+  const legacy: Record<string, string> = { consentTitle: 'Record?', openReplay: 'Open' };
+  const messages = resolveRecorderMessages(legacy);
   expect(messages.consentTitle).toBe('Record?');
   expect(messages.stop).toBe(defaultRecorderMessages.stop);
   expect(Object.keys(messages)).not.toContain('openReplay');
