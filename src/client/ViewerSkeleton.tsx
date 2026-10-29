@@ -56,6 +56,14 @@ function openStillUrl(id: string) {
   return apiUrl(`replays/${encodeURIComponent(id)}/open?v=${OPEN_STILL_VERSION}`);
 }
 
+/** The opening still's format version (src/server/posters.ts); bumping it refetches every cached still. */
+export const OPEN_STILL_VERSION = 1;
+
+/** A replay's opening still by id: what the player paints first, for loads that no card's poster describes. */
+function openStillUrl(id: string) {
+  return apiUrl(`replays/${encodeURIComponent(id)}/open?v=${OPEN_STILL_VERSION}`);
+}
+
 function readHint(): OpenHint | undefined {
   try {
     const raw = sessionStorage.getItem(OPEN_HINT_KEY);
