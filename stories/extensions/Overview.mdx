@@ -1,0 +1,32 @@
+import { Canvas, Meta } from '@storybook/addon-docs/blocks';
+import * as Mount from './PluginMount.stories.tsx';
+
+<Meta title="Extensions/Overview" />
+
+# Extension UI
+
+A custom distribution extends the viewer without forking it. `defineViewerPlugin` from `@hazem3500/replays/viewer`
+contributes inspector tabs, actions, panels and index slots. The full contract is in
+[docs/extension-api.md](https://github.com/hazem3500/replays/blob/main/docs/extension-api.md); this page shows the UI
+those contributions land in.
+
+## Plugin views
+
+A view is `render(container, context)`: plain DOM, no React required. The viewer mounts it into a host element, calls its
+cleanup on unmount and renders again when the context changes. A view that throws is contained to one line, and the rest
+of the viewer keeps working.
+
+<Canvas of={Mount.Rendered} />
+
+<Canvas of={Mount.RenderThrows} />
+
+## Permissions for user plugins
+
+Sandboxed user plugins (beta `malleable`) read freely but ask before they change anything. The prompt names the
+capability, shows a preview of what will be written as plain text, and offers once or until reload. Recorded page text in
+a preview is never rendered as markup. See Extensions/Permission prompt for the live prompt.
+
+## Where else to look
+
+- Theme tokens a deployment can override: Foundations/Tokens.
+- Recorder UI a host can replace: Recorder/Custom UI (kit).
