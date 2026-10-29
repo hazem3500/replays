@@ -40,6 +40,28 @@ test('the index is a list of whole-row links without sideways scroll', async ({ 
   await expect(page.getByRole('heading', { level: 1, name: /^Demo shop/ })).toBeVisible();
 });
 
+test('the search grows from its icon across the row, finds a replay and closes by touch', async ({ page }) => {
+  await page.goto(`${origin()}/`);
+  const search = page.getByRole('combobox', { name: 'Search replays' });
+  const slot = page.locator('.command-search');
+  const rest = (await slot.boundingBox())!;
+  expect(rest.width).toBe(40);
+  await slot.tap();
+  await expect(search).toBeFocused();
+  await expect(page.getByRole('heading', { level: 1 })).toBeHidden();
+  await search.fill('signup');
+  const results = page.getByRole('listbox', { name: 'Quick results' });
+  await expect(results.getByRole('option', { name: /^Demo signup form/ })).toBeVisible();
+  const row = page.viewportSize()!.width;
+  const field = (await results.boundingBox())!;
+  expect(field.width).toBeGreaterThan(row * 0.85);
+  await page.getByRole('button', { name: 'Close search' }).tap();
+  await expect(search).not.toBeFocused();
+  await expect(search).toHaveValue('');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  expect((await slot.boundingBox())!.x).toBe(rest.x);
+});
+
 test('open, play, scrub by touch, switch tabs, fold and unfold the panel', async ({ page, context }) => {
   await openReplay(page, viewer());
   await noPageScroll(page);
