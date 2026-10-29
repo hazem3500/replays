@@ -16,7 +16,7 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger, useCanHover } from '@/components/ui/tooltip.tsx';
 import { cn } from '@/lib/utils.ts';
 
-import { indexReturnHref } from './route.ts';
+import { indexReturnHref } from './routing/links.ts';
 import { productName } from './config.ts';
 import { ThemeSwitch, useThemeControls } from './theme.tsx';
 import { SettingsButton } from './settings/Settings.tsx';

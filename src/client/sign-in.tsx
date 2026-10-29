@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 
-import { apiUrl } from './route.ts';
+import { apiUrl } from './api/fetch.ts';
 
 export class SignInError extends Error {
   readonly status = 401;

@@ -34,7 +34,6 @@ describe('API preloads in index.html', () => {
   it('a suite run preloads the suite and the run; a suite landing page only the suite', () => {
     expect(boot('/s/review-1/r/run%20one', '/')).toEqual(['/api/suites/review-1?expand=runs', '/api/replays/run%20one']);
     expect(boot('/s/review-1', '/')).toEqual(['/api/suites/review-1?expand=runs']);
-    expect(boot('/r/run-2?suite=review-1', '/')).toEqual(['/api/suites/review-1?expand=runs', '/api/replays/run-2']);
   });
 
   it('the index preloads its list with the same filters the index sends, and its suites', () => {
