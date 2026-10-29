@@ -74,7 +74,7 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
-      "gzip": 13521,
+      "gzip": 13509,
       "brotli": 11994
     },
     "dist/client/assets/composite-HASH.js": {
@@ -203,9 +203,9 @@
       "brotli": 621
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20382,
-      "gzip": 8342,
-      "brotli": 7151
+      "raw": 20430,
+      "gzip": 8376,
+      "brotli": 7185
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -244,13 +244,13 @@
     },
     "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs": {
       "raw": 73309,
-      "gzip": 20114,
-      "brotli": 17393
+      "gzip": 20111,
+      "brotli": 17392
     },
-    "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
-      "raw": 308545,
-      "gzip": 80878,
-      "brotli": 66289
+    "dist/lib/chunks/context.schema.json-4e76cfd0bfaf.mjs": {
+      "raw": 308012,
+      "gzip": 80638,
+      "brotli": 66108
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -264,7 +264,7 @@
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
-      "gzip": 9209,
+      "gzip": 9208,
       "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
@@ -320,7 +320,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 144
+      "brotli": 136
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -425,7 +425,7 @@
     "initial/index.html/js": {
       "raw": 1688508,
       "gzip": 529707,
-      "brotli": 434343
+      "brotli": 434459
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -732,10 +732,10 @@
       "cap": {
         "raw": 1688508,
         "gzip": 529707,
-        "brotli": 434343
+        "brotli": 434459
       },
-      "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
+      "reason": "The index entry gains the expired replays section (ExpiredReplays, its query and copy); head measures 434459 brotli bytes (+116 over its cap; raw and gzip keep theirs).",
+      "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
@@ -774,7 +774,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -834,7 +834,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -987,11 +987,11 @@
     {
       "file": "dist/lib/chunks/context.schema.json-4e76cfd0bfaf.mjs",
       "cap": {
-        "raw": 307812,
-        "gzip": 80590,
-        "brotli": 66076
+        "raw": 308012,
+        "gzip": 80638,
+        "brotli": 66108
       },
-      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (caps 308545, 80878, 66289) and measures 307812 raw, 80590 gzip, 66076 brotli bytes, under those caps.",
+      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (caps 308545, 80878, 66289) and measures 308012 raw, 80638 gzip, 66108 brotli bytes, under those caps.",
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
