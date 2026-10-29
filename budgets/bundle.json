@@ -210,7 +210,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 608,
-      "brotli": 557
+      "brotli": 556
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
