@@ -5,7 +5,7 @@ import { captureBody, REDACTED } from '../src/shared/network-bodies.ts';
 import { compileRedaction } from '../src/shared/redaction.ts';
 
 const JSON_TYPE = 'application/json; charset=utf-8';
-const NO_RULES = compileRedaction(undefined);
+const NO_RULES = compileRedaction({});
 const FAKE_JWT = 'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJkZW1vLXVzZXIiLCJkZW1vIjp0cnVlfQ.ZGVtby1zaWduYXR1cmUtbm90LXJlYWw';
 const encoder = new TextEncoder();
 
