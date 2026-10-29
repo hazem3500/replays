@@ -14,7 +14,7 @@ import { useFlash } from '../hooks/use-flash.ts';
 import { useLongPress } from '../hooks/use-long-press.ts';
 import { stepPermalink, timePermalink } from '../permalink.ts';
 import { type Playback, usePlayer } from '../player.ts';
-import { editHref } from '../route.ts';
+import { editHref } from '../routing/links.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { notify as showToast } from '../toast.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';
