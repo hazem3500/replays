@@ -1,10 +1,20 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { http, HttpResponse } from 'msw';
 import { expect, userEvent, waitFor } from 'storybook/test';
-import { DEFAULT_MESSAGES } from '../../src/recorder/index.ts';
+import { defaultRecorderMessages } from '../../src/recorder/index.ts';
 import { CHECKOUT_PATH } from './DemoShop.tsx';
 import { RecorderWorkbench } from './RecorderWorkbench.tsx';
-import { expectDelivered, expectStatus, fillCheckout, inRecorderUi, recorderUi, send, startRecording, stopAndReview } from './flow.ts';
+import {
+  expectDelivered,
+  expectStatus,
+  fillCheckout,
+  inRecorderUi,
+  recorderUi,
+  resultCopy,
+  send,
+  startRecording,
+  stopAndReview,
+} from './flow.ts';
 import { createUploadEndpoint } from './upload-endpoint.ts';
 
 const endpoint = createUploadEndpoint('accept');
@@ -47,7 +57,7 @@ const recordAndUpload: NonNullable<Story['play']> = async ({ canvasElement, step
   await step('Send', send);
   await step('The endpoint received a masked, gzipped replay', () => expectDelivered(endpoint));
   await expectStatus(canvasElement, 'uploaded');
-  await inRecorderUi(() => recorderUi.text(DEFAULT_MESSAGES.sent));
+  await inRecorderUi(() => recorderUi.text(resultCopy.sent));
 };
 
 export const RecordAndUpload: Story = { play: recordAndUpload };
@@ -57,7 +67,7 @@ export const Review: Story = {
     await startRecording(canvasElement);
     await fillCheckout(canvasElement);
     await stopAndReview(canvasElement);
-    await inRecorderUi(() => recorderUi.button(DEFAULT_MESSAGES.discard));
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.discard));
   },
 };
 
@@ -69,7 +79,7 @@ export const Uploading: Story = {
     await send();
     await expectStatus(canvasElement, 'uploading');
     await waitFor(() => expect(endpoint.uploads()).toHaveLength(1));
-    await inRecorderUi(() => recorderUi.text(DEFAULT_MESSAGES.uploading));
+    await inRecorderUi(() => recorderUi.text(defaultRecorderMessages.uploading));
   },
 };
 
@@ -99,11 +109,11 @@ export const UploadFailsThenRetries: Story = {
     await send();
     await step('The endpoint answers 503', async () => {
       await expectStatus(canvasElement, 'error');
-      await inRecorderUi(() => recorderUi.text(DEFAULT_MESSAGES.failed));
+      await inRecorderUi(() => recorderUi.text(resultCopy.failed));
     });
     await step('Retry succeeds once the endpoint recovers', async () => {
       endpoint.setMode('accept');
-      await userEvent.click(await inRecorderUi(() => recorderUi.button(DEFAULT_MESSAGES.retry)));
+      await userEvent.click(await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.retry)));
       await expectStatus(canvasElement, 'uploaded');
       await waitFor(() => expect(endpoint.uploads()).toHaveLength(2));
     });

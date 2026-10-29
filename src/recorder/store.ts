@@ -1,5 +1,5 @@
 import type { Recorder, RecorderState, RecorderTrigger } from './types.ts';
-import type { IssueUploadErrorDetails } from './upload.ts';
+import { resolveRecorderMessages, type RecorderMessageError, type RecorderMessageOverrides } from './messages.ts';
 
 export type RecorderView =
   | 'idle'
@@ -34,13 +34,17 @@ export const selectCanRequest = (state: RecorderState) =>
 export const selectSummary = (state: RecorderState) => ('summary' in state ? state.summary : undefined);
 export const selectReceipt = (state: RecorderState) => (state.status === 'uploaded' ? state.receipt : undefined);
 export const selectUploadProgress = (state: RecorderState) => (state.status === 'uploading' ? state.progress : undefined);
-export const selectError = (state: RecorderState) => {
+/** `messages` supplies `failed` and `startFailed`; pass it via `store.select((state) => selectError(state, messages))`. */
+export const selectError = (state: RecorderState, messages?: Pick<RecorderMessageOverrides, 'failed' | 'startFailed'>) => {
   if (state.status !== 'error') return;
-  const details = state.error as Error & IssueUploadErrorDetails;
+  const error = state.error as RecorderMessageError;
+  const copy = resolveRecorderMessages(messages);
   return {
     phase: state.phase,
-    message: details.userMessage ?? (state.phase === 'upload' ? "Couldn't send recording" : "Couldn't start recording"),
-    ...(details.link ? { link: details.link } : {}),
+    message:
+      error.userMessage ??
+      (state.phase === 'upload' ? copy.failed({ error, canRetry: Boolean(state.summary) }) : copy.startFailed({ error })),
+    ...(error.link ? { link: error.link } : {}),
   };
 };
 export function createRecorderStore(recorder: Recorder) {

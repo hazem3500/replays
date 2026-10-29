@@ -4,9 +4,9 @@ The host app owns prompts such as “Record the problem?”. `@hazem3500/replays
 
 | Entry | API |
 | --- | --- |
-| `/recorder` | `createRecorder`, `createDeferredUi`, `createRecorderStore`, selectors, timer/format helpers, privacy props and selector builder, upload utilities |
+| `/recorder` | `createRecorder`, `createDeferredUi`, `createRecorderStore`, selectors, timer/format helpers, `defaultRecorderMessages`, `resolveRecorderMessages`, `createRecorderFormat`, privacy props and selector builder, upload utilities |
 | `/recorder/kit` | `createAnnouncer`, `focusReturn`, `trapFocus`, `markRecorderUi`, `mountRecorderRoot`, privacy helpers and chat-widget presets |
-| `/recorder/ui` | `createGuidedRecorder`, `createDefaultUi`, step kit, `composeUi`, copy, themes and completion options |
+| `/recorder/ui` | `createGuidedRecorder`, `createDefaultUi`, step kit, `composeUi`, messages, formatting, themes and completion options |
 | `/recorder/react` | Optional React 18+ provider and hooks; core never imports React |
 | `/recorder/testing` | DOM contract suite, fake rrweb/transport, shadow-DOM query helper; Node test runner only |
 
@@ -52,7 +52,7 @@ const off = deferred.pending.subscribe(() => {
 
 The imperative `RecorderUi` contract also works in any framework: consent returns a boolean, indicator returns cleanup, review returns `{confirmed,note?}`. Honor each prompt's `AbortSignal`. Render the chrome inside `[data-recorder-ui]` / `recorderUiProps`; it must never appear in the captured page. Register the visible Stop element using `ctx.attestStop(element)` or `recorder.attestStop(element)`, and dispose the returned registration on unmount. The core attaches its own Stop click listener. Hidden, disconnected, inert or transparent controls do not provide evidence of a usable Stop action.
 
-`createRecorderStore` exposes stable actions and selector subscriptions with an optional equality function. Selectors: `selectView`, `selectCanRequest`, `selectSummary`, `selectReceipt`, `selectError`, `selectUploadProgress`. `createRecordingTimer` ticks on elapsed whole seconds while recording, exposes elapsed/remaining milliseconds and labels, fraction, warnings at 30 seconds (`soon`) and 10 seconds (`final`), plus a size warning at 80%. Dispose timer stores you create. `recordingTimer` is the pure equivalent; `formatDuration` and localized `formatDurationLong` are independent helpers.
+`createRecorderStore` exposes stable actions and selector subscriptions with an optional equality function. Selectors: `selectView`, `selectCanRequest`, `selectSummary`, `selectReceipt`, `selectError`, `selectUploadProgress`. `createRecordingTimer` ticks on elapsed whole seconds while recording, exposes elapsed/remaining milliseconds and labels, fraction, warnings at 30 seconds (`soon`) and 10 seconds (`final`), plus a size warning at 80%. Dispose timer stores you create. `recordingTimer` is the pure equivalent; both take `format: { elapsed }` for their labels. `formatDuration` and localized `formatDurationLong` are independent helpers. `selectError(state, messages)` words failures with the `failed` and `startFailed` messages: `store.select((state) => selectError(state, messages))`.
 
 `upload` is a transport function or plain HTTP options. `upload: { url, headers?, body?, timeoutMs?, credentials? }` (or `createHttpUpload(options)`) posts the report to any endpoint:
 
@@ -96,9 +96,64 @@ const recorder = createRecorder({upload, ui: composeUi(
 )});
 ```
 
-Later renderers win; `composeUi` validates all three required methods and calls every part’s dismiss cleanup. Each step mounts independently; the full default UI shares a floating surface across recording, sending and completion. Dialogs trap focus, inert siblings, return focus and cancel on Escape/abort. Copy and theme overrides remain available through `DefaultUiOptions`. Success says “Recording sent”; failure says “Couldn't send recording” with one Retry, an optional host link and dismiss. Technical error messages are hidden; an explicit `userMessage` is a host override. Copy feedback (`copied`, `copyFailed`, `copyLink`) and time warnings are configurable messages.
+Later renderers win; `composeUi` validates all three required methods and calls every part’s dismiss cleanup. Each step mounts independently; the full default UI shares a floating surface across recording, sending and completion. Dialogs trap focus, inert siblings, return focus and cancel on Escape/abort. Copy, formatting and theme overrides are available through `DefaultUiOptions` (see [Messages and formatting](#messages-and-formatting)). Success says “Recording sent”; failure says “Couldn't send recording” with one Retry, an optional host link and dismiss. Technical error messages are hidden; an explicit `userMessage` is a host override.
 
 Theme tokens: background, foreground, secondary, border, borderStrong, hover, pressed, primary, primaryForeground, danger, font, radius. Use `theme:'light'|'dark'`, a typed object or `--recorder-*` CSS variables. Completion supports message, copy/link/custom actions and `render(container,{result,copy,retry,dismiss})` returning cleanup. URLs are restricted to HTTP(S); internal IDs are not shown by default.
+
+## Messages and formatting
+
+`messages` replaces any user-visible string of the default UI and the step kit, including accessible names, tooltips and live announcements; `selectError` uses the same `failed` and `startFailed` keys. `RecorderMessages` has every key required, so typing a full translation as `RecorderMessages` fails to compile when a key is missing. `defaultRecorderMessages` is the English copy, and `resolveRecorderMessages(overrides)` returns it with overrides applied, for hosts that render their own UI.
+
+Static keys are strings. Data-bearing keys are functions of typed params, so your i18n library can pluralise and reorder. They also accept a template string with `{param}` placeholders for number and string params: overrides written before functions existed, such as `consentBody: 'Up to {minutes} minutes.'` or `sent: 'Saved {reference}'`, keep working. `DEFAULT_MESSAGES` is a deprecated alias of `defaultRecorderMessages`; `openReplay` was never rendered and is ignored.
+
+| Key | Params | Where | Default |
+| --- | --- | --- | --- |
+| `consentTitle` | | Consent heading | Record this tab? |
+| `consentBody` | `minutes: number`, `maxDurationMs: number`, `limit: string` | Consent time limit; `limit` is `format.duration(maxDurationMs)` | Up to 3 minutes. Stop whenever you like. |
+| `consentPrivacy` | `mode: 'masked' \| 'visible'`, `privacy?: PrivacyFacts` | Consent privacy notice, from the capture facts | Page text is masked. Inputs are masked. Media is blocked. Review before sending. |
+| `consentAccept` | | Consent accept button | Start recording |
+| `consentDecline` | | Consent decline button | Not now |
+| `recording` | | Indicator label, its accessible name and the start announcement | Recording |
+| `stop` | | Stop button name and tooltip | Stop |
+| `warningSoon` | `seconds: number` (30) | Announced once near the limit | 30 seconds left |
+| `warningFinal` | `seconds: number` (10) | Announced once near the limit | 10 seconds left |
+| `reviewTitle` | | Review heading | Send recording? |
+| `reviewBody` | `summary: RecordingSummary`, `duration: string`, `size: string` | Review summary; `duration` and `size` come from `format` | Duration: 1 minute 13 seconds. |
+| `noteLabel` | | Review note label | Add a note (optional) |
+| `send` | | Review send button | Send recording |
+| `discard` | | Review discard button | Discard |
+| `uploading` | | Sending status and announcement | Sending… |
+| `sent` | `reference: string`, `receipt: IssueReportReceipt` | Success message; `reference` falls back to the replay id | Recording sent |
+| `failed` | `error: RecorderMessageError`, `canRetry: boolean` | Upload failure message, unless the error has a `userMessage` | Couldn't send recording |
+| `startFailed` | `error: RecorderMessageError` | `selectError` start failure, unless the error has a `userMessage` | Couldn't start recording |
+| `retry` | | Retry button | Retry |
+| `copyLink` | | Default copy action for a receipt URL | Copy link |
+| `copied` | | Copy action after a successful copy, announced | Copied |
+| `copyFailed` | | Copy action after a failed copy, announced | Could not copy |
+| `close` | | Dismiss button name and tooltip | Close |
+
+Labels you pass yourself (completion `message` and `actions`, an error's `userMessage` and `link.label`) are already yours and are shown as given.
+
+`locale` (BCP 47, default `en`) drives the Intl-based `format` defaults; `format` replaces any of them. The same hooks are available as `createRecorderFormat(locale, overrides)`.
+
+| Hook | Used for | Default |
+| --- | --- | --- |
+| `elapsed(ms)` | Running indicator clock | `m:ss` with `locale` digits |
+| `duration(ms)` | `limit` and `duration` params | `formatDurationLong(ms, locale)`, e.g. 1 minute 13 seconds |
+| `bytes(bytes)` | `size` param | Intl byte, kilobyte, megabyte or gigabyte units (base 1000), e.g. 1.5 MB |
+
+```ts
+import { createGuidedRecorder, type RecorderMessages } from '@hazem3500/replays/recorder/ui';
+const messages: Partial<RecorderMessages> = {
+  consentTitle: t('recorder.consentTitle'),
+  consentBody: ({ minutes }) => t('recorder.consentBody', { count: minutes }),
+  reviewBody: ({ duration, size }) => t('recorder.reviewBody', { duration, size }),
+  sent: ({ reference }) => t('recorder.sent', { reference }),
+};
+const recorder = createGuidedRecorder({ upload, ui: { messages, locale: i18n.language } });
+```
+
+Type the object as `RecorderMessages` instead of `Partial<RecorderMessages>` to require a translation for every key.
 
 ## Verify your UI
 
