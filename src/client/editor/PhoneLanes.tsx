@@ -2,7 +2,6 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
 
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
-import { useLatest } from '../hooks/use-latest.ts';
 import { laneRegions } from './lanes.tsx';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './Timeline.tsx';
@@ -35,9 +34,11 @@ function Handle({ edge, at, onDrag }: { edge: 'from' | 'to'; at: number; onDrag:
  * highlights) and one slim strip per effect kind that has regions, each region labelled. Tapping selects; a selected
  * object's edges drag.
  */
-/** Drags an edge on the phone track: pointer x to original ms, one undo step per drag. */
-function useEdgeDrag(duration: number, scale: number, edits: ReplayEdits, dispatch: (action: EditorAction) => void) {
-  const latest = useLatest(edits);
+/**
+ * Drags an edge on the phone track: pointer x to original ms, one undo step per drag. Each move applies to the edits
+ * as the drag found them; the step's earlier moves are replaced (merge), so nothing else changes them meanwhile.
+ */
+function edgeDrag(duration: number, scale: number, edits: ReplayEdits, dispatch: (action: EditorAction) => void) {
   return (event: ReactPointerEvent, apply: (current: ReplayEdits, time: number) => ReplayEdits) => {
     const track = event.currentTarget.closest('.phone-track');
     if (!(track instanceof HTMLElement)) return;
@@ -48,15 +49,15 @@ function useEdgeDrag(duration: number, scale: number, edits: ReplayEdits, dispat
       timeAt: (clientX) => Math.min(Math.max((clientX - track.getBoundingClientRect().left) / scale, 0), duration),
     };
     startDrag(event, timeline, {
-      move: (time, first) => dispatch({ type: 'change', edits: apply(latest.current, time), merge: !first }),
+      move: (time, first) => dispatch({ type: 'change', edits: apply(edits, time), merge: !first }),
     });
   };
 }
 
-type EdgeDrag = ReturnType<typeof useEdgeDrag>;
+type EdgeDrag = ReturnType<typeof edgeDrag>;
 
 export function PhoneLanes({ duration, scale, edits, steps, selection, dispatch }: PhoneLanesProps) {
-  const drag = useEdgeDrag(duration, scale, edits, dispatch);
+  const drag = edgeDrag(duration, scale, edits, dispatch);
   const px = (time: number) => time * scale;
   const select = (next: Selection) => dispatch({ type: 'select', selection: next });
   return (

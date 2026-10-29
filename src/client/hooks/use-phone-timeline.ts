@@ -1,9 +1,8 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { formatClock } from '../../shared/replay.ts';
 import { clampScale, timeAtScroll } from '../editor/phone-timeline.ts';
 import type { Playback } from '../player.ts';
-import { useLatest } from './use-latest.ts';
 
 /** Quiet time after the last scroll event before a scrub (with its momentum) counts as finished. */
 const SETTLE_MS = 140;
@@ -29,9 +28,13 @@ interface PhoneTimelineOptions {
  * lands near. Two fingers or Ctrl + wheel zoom around the playhead.
  */
 export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTimelineOptions) {
-  const latest = useLatest(options);
+  const latest = useRef(options);
   const expected = useRef(-1);
   const { player, scale } = options;
+
+  useEffect(() => {
+    latest.current = options;
+  });
 
   useEffect(() => {
     if (!scroller) return;
@@ -132,5 +135,19 @@ export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTim
       scroller.removeEventListener('touchcancel', onTouchEnd);
       scroller.removeEventListener('wheel', onWheel);
     };
-  }, [scroller, player, latest]);
+  }, [scroller, player]);
+}
+
+/** The lanes' width as they resize (0 until measured): what the whole recording is fitted to. */
+export function useLanesWidth(scroller: HTMLElement | null) {
+  const [width, setWidth] = useState(0);
+  useEffect(() => {
+    if (!scroller) return;
+    const measure = () => setWidth(scroller.clientWidth);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(scroller);
+    return () => observer.disconnect();
+  }, [scroller]);
+  return width;
 }
