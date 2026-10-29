@@ -1,11 +1,17 @@
+import { useRef } from 'react';
+
+import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
-import { usePlayer, usePlayhead } from '../player.ts';
+import { usePlayer } from '../player.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the ribbon's styles load with the lazy inspector chunk, not with every page.
 import './time-ribbon.css';
 
 export type RibbonTone = 'danger' | 'warning' | 'neutral' | 'success';
-/** `full` spans the ribbon (a failure), `top`/`bottom` are half lanes (tasks, interactions), `cap` a thin strip on top. */
-export type RibbonLane = 'full' | 'top' | 'bottom' | 'cap';
+/**
+ * `full` spans the ribbon (a failure), `top`/`bottom` are half lanes (tasks, interactions), `cap` a thin strip on top,
+ * `tick` a short mark in the middle (one ordinary request when the recording is sparse).
+ */
+export type RibbonLane = 'full' | 'top' | 'bottom' | 'cap' | 'tick';
 
 export interface RibbonMark {
   id: string;
@@ -33,6 +39,7 @@ export function TimeRibbon({
   marks,
   range,
   onRange,
+  highlight,
   testId,
 }: {
   duration: number;
@@ -40,14 +47,19 @@ export function TimeRibbon({
   marks: readonly RibbonMark[];
   range: RibbonRange | undefined;
   onRange: (range: RibbonRange | undefined) => void;
+  /** The mark of the row under the pointer or selected: raised and outlined, and its span bracketed. */
+  highlight?: string | undefined;
   testId: string;
 }) {
   const player = usePlayer();
   const span = Math.max(1, duration);
   const { brush, handlers } = useRibbonBrush(span, (time) => player.seek(time), onRange);
+  const strip = useRef<HTMLDivElement>(null);
+  usePlayheadProgress(strip, span);
+  const lit = highlight ? marks.find((mark) => mark.id === highlight) : undefined;
   const shown = brush ?? range;
   return (
-    <div className="time-ribbon" data-testid={testId} title={STRINGS.hint} aria-hidden="true" {...handlers}>
+    <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} aria-hidden="true" {...handlers}>
       {density ? <Density counts={density} /> : null}
       {marks.map((mark) => (
         <span
@@ -55,6 +67,7 @@ export function TimeRibbon({
           className="ribbon-mark"
           data-tone={mark.tone}
           data-lane={mark.lane}
+          data-lit={mark.id === highlight || undefined}
           style={{
             left: `${(mark.at / span) * 100}%`,
             width: `max(var(--ribbon-mark-min), ${(Math.max(0, mark.end - mark.at) / span) * 100}%)`,
@@ -68,7 +81,17 @@ export function TimeRibbon({
           style={{ left: `${(shown.from / span) * 100}%`, width: `${((shown.to - shown.from) / span) * 100}%` }}
         />
       ) : null}
-      <Playhead span={span} />
+      {lit ? (
+        <span
+          className="ribbon-lit"
+          style={{
+            left: `${(lit.at / span) * 100}%`,
+            width: `max(var(--ribbon-mark-min), ${(Math.max(0, lit.end - lit.at) / span) * 100}%)`,
+          }}
+        />
+      ) : null}
+      <span className="ribbon-future" />
+      <span className="ribbon-now" />
     </div>
   );
 }
@@ -83,16 +106,5 @@ function Density({ counts }: { counts: readonly number[] }) {
         <rect key={bin} x={bin + 0.12} width={0.76} y={100 - height} height={height} />
       ))}
     </svg>
-  );
-}
-
-/** Only this re-renders with the clock, in 0.1 % steps; the veil fades everything that has not happened yet. */
-function Playhead({ span }: { span: number }) {
-  const percent = usePlayhead((time) => Math.round((Math.min(span, Math.max(0, time)) / span) * 1000) / 10);
-  return (
-    <>
-      <span className="ribbon-future" style={{ left: `${percent}%` }} />
-      <span className="ribbon-playhead" style={{ left: `${percent}%` }} />
-    </>
   );
 }

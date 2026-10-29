@@ -181,8 +181,8 @@ export function TrackList({
     if (top >= element.scrollTop + HEADER_HEIGHT + 8 && top <= element.scrollTop + element.clientHeight - 8) return;
     const target = Math.max(0, Math.round(top - element.clientHeight * 0.75));
     if (target === element.scrollTop) return;
-    scrollListTo(element, target);
-    ours.current = element.scrollTop;
+    glideListTo(element, target);
+    ours.current = Math.min(target, element.scrollHeight - element.clientHeight);
     // `recall` re-runs this after a seek or "Back to now" even when the divider did not move.
     // oxlint-disable-next-line react/exhaustive-effect-dependencies
   }, [dividerTop, following, reading, recall, scroller]);
@@ -279,6 +279,18 @@ function seekPastStart(at: number) {
 
 export function scrollListTo(element: HTMLElement, top: number) {
   element.scrollTop = top;
+}
+
+/** Beyond this many viewport heights the list jumps: a long glide past rows nobody can read only delays the answer. */
+const GLIDE_MAX_VIEWPORTS = 3;
+
+/**
+ * Follows the playhead with the browser's own smooth scroll, which a wheel, touch or the next follow retargets; a far
+ * jump, or reduced motion, lands at once.
+ */
+function glideListTo(element: HTMLElement, top: number) {
+  if (prefersReducedMotion() || Math.abs(top - element.scrollTop) > element.clientHeight * GLIDE_MAX_VIEWPORTS) scrollListTo(element, top);
+  else element.scrollTo({ top, behavior: 'smooth' });
 }
 
 /** The current frame time (ms), for drag maths outside rAF callbacks. */
