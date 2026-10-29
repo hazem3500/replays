@@ -1,4 +1,4 @@
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 
 const REPO = 'https://github.com/hazem3500/replays';
 export const SETTINGS_LINKS = {

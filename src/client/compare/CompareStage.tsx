@@ -1,7 +1,7 @@
 import { type CSSProperties, useRef } from 'react';
 
 import { useCarouselFocus } from '../hooks/use-carousel-focus.ts';
-import { useElementSize } from '../hooks/use-element-size.ts';
+import { useStageBox } from '../hooks/use-stage-box.ts';
 import type { Fidelity } from './clock.ts';
 import { type Placement, placementsFor } from './layout.ts';
 import type { CompareLayout } from './compare-search.ts';
@@ -46,7 +46,7 @@ export function CompareStage({
   commands: TileCommands;
 }) {
   const area = useRef<HTMLDivElement>(null);
-  const box = useElementSize(area);
+  const box = useStageBox(area);
   const carousel = mobile && layout !== 'single' && tiles.length > 1;
   const focusIndex = Math.max(
     0,
@@ -64,6 +64,7 @@ export function CompareStage({
       data-testid="compare-stage"
       data-layout={carousel ? 'carousel' : layout}
       data-count={tiles.length}
+      data-resizing={box.resizing || undefined}
       style={style}
       tabIndex={-1}
       role="group"

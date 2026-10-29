@@ -44,8 +44,13 @@ describe('cursor themes', () => {
     }
   });
 
+  it('draws the chosen click effect instead of the default of its style', () => {
+    expect(effectOf(cursorTheme('arrow').create(document, { effect: 'ripple' }).nodes)).toBeDefined();
+    expect(effectOf(cursorTheme('ring').create(document, { effect: 'press' }).nodes)).toBeUndefined();
+  });
+
   it('tints the glyph with the saved color', () => {
-    const path = cursorTheme('arrow').create(document, '#1f7445').nodes[0]?.querySelector('path');
+    const path = cursorTheme('arrow').create(document, { color: '#1f7445' }).nodes[0]?.querySelector('path');
     expect(path?.style.fill).toBe('#1f7445');
   });
 

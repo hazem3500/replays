@@ -2,7 +2,7 @@ import { viewerRegistry } from '../plugins/registry.ts';
 import { useSyncExternalStore } from 'react';
 
 import { closedPolicy, type HostVersions, type MalleablePolicy } from '../../shared/malleable-policy.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 
 /**
  * What the host deployment says about user plugins, read once from `GET /api/config`: its policy (`malleable`) and its

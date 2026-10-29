@@ -1,6 +1,5 @@
-import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
+import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { AnimatedText } from '@/components/animated-text.tsx';
 import { LiveCaption } from './LiveCaption.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -21,7 +20,7 @@ import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
-import { editHref } from './route.ts';
+import { editHref } from './routing/links.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
@@ -40,14 +39,20 @@ import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
 import { DownloadVideoButton, usePhoneDownload } from './viewer/DownloadVideo.tsx';
+import { copyLinkItems, CopyLinkButton, EditButton, ActionsBar } from './viewer/TopbarActions.tsx';
 import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { captionAt } from './step-caption.ts';
-import { clampInspectorHeight, initialInspectorHeight, Inspector, InspectorResizer, type MobilePanel } from './viewer/Inspector.tsx';
+import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
+import { clampInspectorHeight, initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
-import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';
+import { savedStepsWidth, StepRail } from './viewer/StepRail.tsx';
+import { InspectorSplit, RailEdgeTab, RailSplit } from './viewer/ViewerSplits.tsx';
+import { usePersistentFlag } from './hooks/use-persistent-flag.ts';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the viewer's layout tokens and seams load with the lazy viewer chunk.
+import './viewer/viewer-layout.css';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
 
 import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
@@ -60,12 +65,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 import { SourceChip, topbarSource } from './viewer/SourceChip.tsx';
-import { Hint, IconButton } from '@/components/icon-button.tsx';
-import { buttonVariants } from '@/components/ui/button.tsx';
-import { cn } from '@/lib/utils.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
+import { setPageUrl } from './routing/navigate.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
@@ -75,7 +78,6 @@ const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
 const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
 /** A folded panel keeps just its tab row (36 px) and the hairline above it. */
-const INSPECTOR_TABS_HEIGHT = 37;
 /** An expanded request grows a shorter desktop panel to this share of the window… */
 const REQUEST_PANEL_SHARE = 0.45;
 /** …but never so far that the player gets less than this share of the viewer's height. */
@@ -103,7 +105,7 @@ export function Viewer({
   stage,
   headerActions,
   inspectorScope,
-  performanceExtra,
+  inspectorPeers,
   comparing,
   onCompareWith,
 }: {
@@ -146,8 +148,8 @@ export function Viewer({
   headerActions?: ReactNode;
   /** In the inspector's tab row: which compared recording the panels describe. */
   inspectorScope?: ReactNode;
-  /** Above the performance events: how the compared recordings differ. */
-  performanceExtra?: ReactNode;
+  /** The other compared recordings: Network and Performance say how each one went beside this one. */
+  inspectorPeers?: readonly InspectorPeer[];
   /** Recordings already on the stage, left out of "Compare with…". */
   comparing?: readonly string[];
   /** "Compare with…" picked a recording; by default this replay's URL gains it and shows both in a grid. */
@@ -202,6 +204,7 @@ export function Viewer({
   const [inspectorHeight, setInspectorHeight] = useState(initialInspectorHeight);
   const [speedHud, setSpeedHud] = useState<{ speed: number; id: number }>();
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
+  const [railCollapsed, setRailCollapsed] = usePersistentFlag(RAIL_COLLAPSED_KEY);
   const workspace = useRef<HTMLDivElement>(null);
   const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
   // Step captions on the player: the person's stored choice, else the profile's default (off without one).
@@ -340,7 +343,7 @@ export function Viewer({
       if (!step) return;
       player.seek(step.at);
       stepCursor.current = { index, time: player.getTime() };
-      history.replaceState(history.state, '', stepPermalink(location.href, index));
+      setPageUrl(stepPermalink(location.href, index));
     };
     const currentStep = () => (stepCursor.current?.time === player.getTime() ? stepCursor.current.index : undefined);
     return {
@@ -370,7 +373,7 @@ export function Viewer({
       },
       copyLink: () => {
         const url = timePermalink(location.href, player.getTime());
-        history.replaceState(history.state, '', url);
+        setPageUrl(url);
         void copyText(url).then((copied) => notify(copied ? `Link to ${formatClock(player.getTime())} copied` : 'Could not copy the link'));
       },
       switchFullscreen: () => {
@@ -427,13 +430,26 @@ export function Viewer({
   const pluginContexts = usePluginContexts(bundle, player);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
-  // why: a phone's top bar already carries the layout switch while comparing; adding one more recording waits in More.
-  const addInMenu = mobile && Boolean(sharedPlayer);
+  // why: a phone's top bar keeps only Edit and More (and the layout switch while comparing), so Compare waits in More.
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
-      ...(addInMenu
-        ? [{ label: 'Add a recording', icon: <PlusIcon aria-hidden="true" />, onSelect: () => setPickerOpen(true), testId: 'compare-with' }]
+      ...(mobile
+        ? [
+            sharedPlayer
+              ? {
+                  label: 'Add a recording',
+                  icon: <PlusIcon aria-hidden="true" />,
+                  onSelect: () => setPickerOpen(true),
+                  testId: 'compare-with',
+                }
+              : {
+                  label: 'Compare with…',
+                  icon: <Columns2Icon aria-hidden="true" />,
+                  onSelect: () => setPickerOpen(true),
+                  testId: 'compare-with',
+                },
+          ]
         : []),
       ...pluginMenu.items,
       ...(betaMalleable()
@@ -452,7 +468,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, addInMenu, keepItem, mobile, pluginMenu.items],
+    [actions.openShortcuts, keepItem, mobile, pluginMenu.items, sharedPlayer],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -571,7 +587,7 @@ export function Viewer({
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
         data-profile={profile?.id}
-        style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
+        style={{ '--inspector-height': collapsed && !mobile ? 'var(--inspector-folded-height)' : `${inspectorHeight}px` } as CSSProperties}
       >
         {skipLink ? (
           <a className="skip-link" href="#replay-player">
@@ -595,7 +611,7 @@ export function Viewer({
           leadingActions={
             <>
               {headerActions}
-              {addInMenu ? null : <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />}
+              {mobile ? null : <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />}
             </>
           }
           hasEdits={Boolean(edited)}
@@ -603,6 +619,7 @@ export function Viewer({
         <div
           ref={workspace}
           className={`workspace ${bundle.steps.length === 0 ? 'no-steps' : ''}`}
+          data-rail-collapsed={(railCollapsed && bundle.steps.length > 0) || undefined}
           style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
         >
           <section ref={playerRegion} className="player-region" aria-label="Replay">
@@ -619,10 +636,29 @@ export function Viewer({
             </div>
             <Transport />
           </section>
-          {bundle.steps.length > 0 && !mobile ? <StepsResizer workspace={workspace} width={stepsWidth} onCommit={setStepsWidth} /> : null}
-          {bundle.steps.length > 0 && !mobile ? <StepRail /> : null}
+          {bundle.steps.length > 0 && !mobile ? (
+            <>
+              <RailSplit
+                workspace={workspace}
+                width={stepsWidth}
+                onWidthChange={setStepsWidth}
+                collapsed={railCollapsed}
+                onCollapsedChange={setRailCollapsed}
+              />
+              <StepRail />
+              {railCollapsed ? <RailEdgeTab onOpen={() => setRailCollapsed(false)} /> : null}
+            </>
+          ) : null}
         </div>
-        {mobile || collapsed ? null : <InspectorResizer shell={shell} height={inspectorHeight} onCommit={setInspectorHeight} />}
+        {mobile ? null : (
+          <InspectorSplit
+            shell={shell}
+            height={inspectorHeight}
+            onHeightChange={setInspectorHeight}
+            collapsed={collapsed}
+            onCollapsedChange={setCollapsed}
+          />
+        )}
         <Inspector
           bundle={bundle}
           sourceBundle={sourceBundle}
@@ -631,7 +667,7 @@ export function Viewer({
           expandedRequest={expandedRequest}
           collapse={inspectorCollapse}
           {...(mobilePanel ? { mobile: mobilePanel } : {})}
-          compare={inspectorScope || performanceExtra ? { scope: inspectorScope, performance: performanceExtra } : undefined}
+          compare={inspectorScope || inspectorPeers ? { scope: inspectorScope, peers: inspectorPeers } : undefined}
         />
         <StepAnnouncer />
         {pluginMenu.drawer}
@@ -777,30 +813,29 @@ const ViewerHeader = memo(function ViewerHeader({
       menuFooter={menuFooter}
       alwaysMenu
       actions={
-        // One quiet icon set: edit, details, copy link and download.
-        <>
-          {leadingActions}
-          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
-          <ReplayInfoButton bundle={bundle} suite={suite} />
-          <CopyLinkButton suiteHref={suite?.href} />
-          <DownloadVideoButton meta={bundle.meta} />
-          {pluginActions}
-        </>
+        <ActionsBar
+          actions={{
+            'core:compare': leadingActions,
+            'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
+            'core:info': <ReplayInfoButton bundle={bundle} suite={suite} />,
+            'core:link': <CopyLinkButton suiteHref={suite?.href} />,
+            'core:download': <DownloadVideoButton meta={bundle.meta} />,
+          }}
+          plugins={pluginActions}
+        />
       }
     />
   );
 });
 
 /**
- * Phones: details and copy link stay in the bar; download (and the theme) move into "More", so the title keeps
- * its room at 360 px. The render's progress popover anchors at the end of the bar, under "More".
+ * Phones: the bar keeps the title, Edit and More, so the title keeps its room at 320 px. Details, the copy-link choices,
+ * Compare and the downloads live in More; details open as a bottom sheet headed by the full title, which the bar cuts.
  */
 function PhoneHeader({
   bundle,
   suite,
-  menu,
   menuItems,
-  menuFooter,
   hasEdits = false,
   leadingActions,
   ...props
@@ -809,10 +844,10 @@ function PhoneHeader({
   hasEdits?: boolean;
   leadingActions: ReactNode;
   suite: SuiteDetails | undefined;
+  /** The viewer's own items (Keep, Compare), after details and links and before the downloads. */
+  menuItems: TopbarMenuItem[];
   menu: ReactNode;
   menuFooter: ReactNode;
-  /** The viewer's own items (Keep), before the downloads. */
-  menuItems: TopbarMenuItem[];
   title: string;
   titleId: string;
   prefix?: string;
@@ -822,23 +857,35 @@ function PhoneHeader({
   titleFrom?: string;
 }) {
   const download = usePhoneDownload(bundle.meta);
+  const player = usePlayer();
+  const { steps } = useViewer();
+  const [details, setDetails] = useState(false);
+  const detailsItem: TopbarMenuItem = {
+    label: 'Replay details',
+    icon: <AnimatedIcon name="info" />,
+    onSelect: () => setDetails(true),
+    testId: 'replay-details',
+  };
   return (
-    <Topbar
-      {...props}
-      compact
-      menu={menu}
-      menuItems={[...menuItems, ...download.items]}
-      menuFooter={menuFooter}
-      actions={
-        <>
-          {leadingActions}
-          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
-          <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
-          <CopyLinkButton suiteHref={suite?.href} />
-          {download.progress}
-        </>
-      }
-    />
+    <>
+      <Topbar
+        {...props}
+        compact
+        menuItems={[detailsItem, ...copyLinkItems(player, steps, suite?.href), ...menuItems, ...download.items]}
+        actions={
+          <>
+            <ActionsBar
+              actions={{
+                'core:compare': leadingActions,
+                'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
+              }}
+            />
+            {download.progress}
+          </>
+        }
+      />
+      <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} open={details} onOpenChange={setDetails} />
+    </>
   );
 }
 
@@ -918,156 +965,6 @@ function StepCaption() {
 }
 
 /**
- * Copy link: a click copies the plain link (no time, no step; a suite run keeps its /s/…/r/… path). Right-click,
- * a long press, or the context-menu key (Shift+F10) open a small menu anchored to the button: the plain link, the
- * link at the playhead, the link to the current step and, in a suite, the suite. Each copies and says what.
- */
-/** The page's link without a moment: no ?t=, no #step-n (a suite run keeps its /s/…/r/… path). */
-/** How long a finger rests on "Copy link" before its menu opens. */
-const LONG_PRESS_MS = 450;
-/** Set once the copy-link menu has been opened by any route; then the touch hint stops. */
-const LONG_PRESS_HINT_KEY = 'replays-copy-menu-found';
-
-function plainLink() {
-  const url = new URL(location.href);
-  url.search = '';
-  url.hash = '';
-  return url.toString();
-}
-
-function CopyLinkButton({ suiteHref }: { suiteHref?: string | undefined }) {
-  const player = usePlayer();
-  const { steps } = useViewer();
-  const [copied, setCopied] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const button = useRef<HTMLButtonElement>(null);
-  const press = useRef({ timer: 0, x: 0, y: 0, fired: false, holding: false });
-  useEffect(() => {
-    if (!copied) return;
-    const timer = window.setTimeout(() => setCopied(false), 1400);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-  const copy = (href: string, what: string, hint?: string) => {
-    void copyText(href).then((ok) => {
-      showToast(ok ? `${what} copied` : 'Could not copy the link', undefined, ok ? hint : undefined);
-      if (ok) setCopied(true);
-    });
-  };
-  const openMenu = () => {
-    setMenuOpen(true);
-    writeStorage(LONG_PRESS_HINT_KEY, '1');
-  };
-  const cancelPress = () => window.clearTimeout(press.current.timer);
-  const releasePress = () => {
-    cancelPress();
-    // The menu's outside-press check runs on this same release (a document listener, before this one).
-    window.setTimeout(() => {
-      press.current.holding = false;
-    });
-  };
-  const time = player.getTime();
-  const stepIndex = activeStepIndex(steps, time, player.duration);
-  const step = steps[stepIndex];
-  return (
-    <>
-      <IconButton
-        ref={button}
-        label="Copy link"
-        hint={
-          <>
-            {/* The tooltip says what just happened ("Copied") and morphs back. */}
-            <AnimatedText text={copied ? 'Copied' : 'Copy link'} />
-            <span className="hint-secondary">Right-click for more</span>
-          </>
-        }
-        tooltipSide="bottom"
-        tooltipAlign="end"
-        className="copy-link"
-        data-testid="copy-link"
-        aria-haspopup="menu"
-        onClick={(event) => {
-          // The click that ends a long press is not a copy: the menu it opened stays up.
-          if (press.current.fired) {
-            press.current.fired = false;
-            event.preventDefault();
-            return;
-          }
-          // Touch has no right-click or tooltip: until the menu has been found once, the toast says how to get it.
-          const touch = (event.nativeEvent as PointerEvent).pointerType === 'touch';
-          copy(
-            plainLink(),
-            'Link',
-            touch && !readStorage(LONG_PRESS_HINT_KEY) ? 'Press and hold for a link to this moment or step' : undefined,
-          );
-        }}
-        onContextMenu={(event) => {
-          event.preventDefault();
-          // Android also fires contextmenu on a long press; the press timer has usually opened the menu already.
-          if (!menuOpen) openMenu();
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
-            event.preventDefault();
-            openMenu();
-          }
-        }}
-        onPointerDown={(event) => {
-          press.current.fired = false;
-          if (event.pointerType !== 'touch') return;
-          cancelPress();
-          press.current.x = event.clientX;
-          press.current.y = event.clientY;
-          press.current.timer = window.setTimeout(() => {
-            press.current.fired = true;
-            press.current.holding = true;
-            openMenu();
-          }, LONG_PRESS_MS);
-        }}
-        onPointerMove={(event) => {
-          // A finger that drifts off (a scroll, a swipe) is not a long press.
-          if (Math.hypot(event.clientX - press.current.x, event.clientY - press.current.y) > 10) cancelPress();
-        }}
-        onPointerUp={releasePress}
-        onPointerCancel={releasePress}
-        onPointerLeave={cancelPress}
-      >
-        <span className="icon-swap" data-state={copied ? 'b' : 'a'} aria-hidden="true">
-          <AnimatedIcon name="link" className="icon-a" />
-          <AnimatedIcon name="check" className="icon-b" trigger="state" play={copied ? 'copied' : false} />
-        </span>
-      </IconButton>
-      <DropdownMenu
-        open={menuOpen}
-        onOpenChange={(next, details) => {
-          // Lifting the finger that long-pressed lands outside the new menu: that is not a dismissal.
-          if (!next && press.current.holding && details.reason === 'outside-press') return;
-          setMenuOpen(next);
-        }}
-      >
-        <DropdownMenuContent anchor={button} align="end" className="w-auto min-w-56" aria-label="Copy link">
-          <DropdownMenuItem onClick={() => copy(plainLink(), 'Link')}>Copy link</DropdownMenuItem>
-          <DropdownMenuItem onClick={() => copy(timePermalink(location.href, time), `Link at ${formatClock(time)}`)}>
-            Copy link at {formatClock(time)}
-          </DropdownMenuItem>
-          {step ? (
-            <DropdownMenuItem onClick={() => copy(stepPermalink(location.href, stepIndex), `Link to step ${stepIndex + 1}`)}>
-              <span className="min-w-0 truncate">
-                Copy link to step {stepIndex + 1} · {step.label}
-              </span>
-            </DropdownMenuItem>
-          ) : null}
-          {suiteHref ? (
-            <DropdownMenuItem onClick={() => copy(new URL(suiteHref, location.href).toString(), 'Suite link')}>
-              Copy suite link
-            </DropdownMenuItem>
-          ) : null}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </>
-  );
-}
-
-/**
  * While "skip inactive" fast-forwards an idle gap: a small pill on the player, bottom-left ("Skipping 4.2 s of
  * inactivity"), fading in and out; announced once per skip through a polite region.
  */
@@ -1097,25 +994,6 @@ function SpeedHud({ speed }: { speed: number }) {
 }
 
 /** Edit uses the same quiet icon button as the viewer's other toolbar actions; a dot on it says the replay has edits. */
-function EditButton({ id, hasEdits = false }: { id: string; hasEdits?: boolean }) {
-  return (
-    <Hint label={hasEdits ? 'Edit replay · This replay has edits' : 'Edit replay · Trim, cut and add effects'} side="bottom" align="end">
-      <a
-        href={editHref(id)}
-        className={cn(
-          buttonVariants({ variant: 'ghost', size: 'icon' }),
-          'edit-entry text-[var(--text-secondary)] hover:text-foreground [&_svg:not([class*=size-])]:size-4',
-        )}
-        aria-label={hasEdits ? 'Edit replay (has edits)' : 'Edit replay'}
-        data-testid="edit-replay"
-        data-has-edits={hasEdits || undefined}
-      >
-        <AnimatedIcon name="pencil" />
-      </a>
-    </Hint>
-  );
-}
-
 /** What the viewer knows about a replay's saved edits. */
 export interface EditedState {
   stored: StoredReplayEdits;
@@ -1195,7 +1073,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
     url.hash = '';
     if (next) url.searchParams.set('original', '1');
     else url.searchParams.delete('original');
-    history.replaceState(history.state, '', url);
+    setPageUrl(url);
     setOriginalState(next);
   }, []);
   const edited = useMemo(

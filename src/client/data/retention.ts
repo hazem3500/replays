@@ -5,7 +5,7 @@ import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import type { ReplaySummary } from '../../shared/replay.ts';
 import { type ServedRetention, servedRetentionSchema } from '../../shared/schemas/retention.ts';
 import { INDEX_SESSIONS_KEY } from '../index/index-queries.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { collectionFamily } from './registry.ts';
 import { optimistic, wholeRows } from './write.ts';
 
