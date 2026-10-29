@@ -210,7 +210,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
       "gzip": 608,
-      "brotli": 554
+      "brotli": 585
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 243,
@@ -245,7 +245,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 684,
-      "brotli": 606
+      "brotli": 605
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -788,16 +788,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/ReplayComparePage-HASH.js",
-      "cap": {
-        "raw": 1022,
-        "gzip": 633,
-        "brotli": 572
-      },
-      "reason": "Lazy /r/<id>?with= page glue: reads and writes the compare state in the viewer URL.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/composite-HASH.js",
       "cap": {
         "raw": 99414,
@@ -1234,6 +1224,14 @@
       },
       "reason": "Phone top bar: details, the copy-link choices and Compare become More items (with their icons), plus the long-press and copied-flash hooks; includes #121's Splitter, which CI measures in this stack.",
       "pr": "https://github.com/hazem3500/replays/pull/125"
+    },
+    {
+      "file": "dist/client/assets/ReplayComparePage-HASH.js",
+      "cap": {
+        "brotli": 585
+      },
+      "reason": "No source change: the compare page glue names lazy viewer chunks by their hashes, which change with the loading parts; measured against main: 0 B raw, 2 B gzip, +30 B brotli (567 against main's 537 and a 554-byte cap). Replaces #105's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/127"
     }
   ]
 }
