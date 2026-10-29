@@ -203,4 +203,14 @@ describe('Settings', () => {
     expect(tab('Labs')?.getAttribute('aria-selected')).toBe('true');
     await vi.waitFor(() => expect(document.activeElement).toBe(dialog()));
   });
+
+  it('separates alternative keys with "or" but shows a back-and-forward pair side by side', async () => {
+    window.history.replaceState(null, '', '/?settings=keyboard');
+    mockConfig();
+    await render();
+    const keys = [...document.querySelectorAll('.settings-keys')].map((element) => element.textContent);
+    expect(keys).toContain('SpaceorK');
+    expect(keys).toContain('←→');
+    expect(keys).not.toContain('←or→');
+  });
 });

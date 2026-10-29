@@ -207,6 +207,7 @@
 .settings-keys { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 .settings-keys-item { display: inline-flex; align-items: center; gap: 6px; }
 .settings-keys-or { font-size: 11px; color: var(--text-tertiary); }
+.settings-keys[data-pair] { gap: 4px; }
 .settings-kbd { min-width: 22px; height: 22px; padding: 0 6px; font-family: var(--mono); font-size: 11px; color: var(--text-secondary); }
 
 /* ---------- Command field ---------- */
