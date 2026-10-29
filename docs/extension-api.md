@@ -202,6 +202,25 @@ AUTH_MODE (env)  →  config.auth  →  the only plugin adapter  →  built-in d
 A name is looked up among plugin adapters first, then the built-ins. `AUTH_MODE=plugin AUTH_PLUGIN=./x.mjs` (the older
 mechanism) still works.
 
+#### Web-standard adapters
+
+An adapter can be written over web `Request`/`Response` instead of Node's request objects. A `WebAuthAdapter` has the
+same contract with web-standard methods, and `api.auth`, `AUTH_PLUGIN`, `createApp({ auth })` and `describeAuthAdapter`
+take either shape. The `AuthAdapter` interface is unchanged.
+
+```ts
+api.auth({
+  name: 'acme-sso',
+  routes: ['/auth/callback'],
+  authenticateRequest: async (request) => verify(request.headers.get('authorization')), // Identity | undefined, authScopes kept
+  handleRequest: async (request, { base }) => (new URL(request.url).pathname === '/auth/callback' ? finishSignIn(request, base) : undefined),
+  loginUrlFor: (request, { base }) => `${base}/auth/login`,
+});
+```
+
+`handleRequest` returns a `Response` when it answered one of its `routes`, or nothing. `signIn`, `routes` and
+`cliDeviceAuth` mean what they mean on `AuthAdapter`.
+
 ## Profiles and retention
 
 A profile answers "why was this recorded?" (a bug triage, a design review, a walkthrough) and changes how a replay is kept,
@@ -816,6 +835,17 @@ Host browser entries can call `api.configureSlot('viewer.inspector.tabs', {
 are retained so configuration can precede lazy registration. Locked surfaces reject configuration
 before it changes anything. Hosts can lock legacy ids such as `inspector:context`, or any slot/item
 pair such as `index.filters/core:owner`. Sandboxed user plugins cannot configure host slots.
+
+Built-in viewer items and their default order:
+
+| Slot | Built-in items |
+| --- | --- |
+| `viewer.inspector.tabs` | `core:steps` (only without the steps rail, so on phones), `core:console`, `core:network`, `core:performance`, `core:context`, then built-in feature tabs such as `core:comments` |
+| `viewer.actions` | `core:compare`, `core:edit` (when editing is on), `core:info`, `core:link`, `core:download`; phones show `core:compare` and `core:edit` in the bar and the rest in More |
+| `viewer.context.sections` | `core:summary`, `core:sources` (when the replay has sources), `core:fields` |
+| `viewer.scrubber.tracks` | `core:steps`, `core:errors`, `core:highlights`; their geometry is fixed, so order only places plugin rows, and hiding `core:steps` leaves one unbroken bar |
+
+Plugin items rank after the built-ins unless a host orders them.
 
 Initial slots: `viewer.inspector.tabs`, `viewer.panels.side`, `viewer.actions`,
 `viewer.scrubber.tracks`, `viewer.context.sections`, `index.row.columns`, `index.filters`,
