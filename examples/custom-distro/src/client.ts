@@ -21,9 +21,11 @@ export default defineViewerPlugin((api) => {
     id: 'activity',
     title: 'Acme activity',
     render(container, context) {
-      container.textContent = 'Seek in the replay to see activity.';
+      const output = document.createElement('p');
+      container.append(output);
+      output.textContent = 'Seek in the replay to see activity.';
       return api.on('seek', ({ replayId, timeMs }) => {
-        if (replayId === context.replay.meta.id) container.textContent = `Seeked to ${Math.round(timeMs)} ms`;
+        if (replayId === context.replay.meta.id) output.textContent = `Seeked to ${Math.round(timeMs)} ms`;
       });
     },
   });

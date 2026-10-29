@@ -210,7 +210,7 @@ export interface ViewerPluginApi {
   /** The server plugin's name (the one that served this script). */
   readonly pluginName: string;
   /** Observe activity metadata; unsubscribe explicitly or when the plugin unloads. Host entries only. */
-  on<K extends ViewerEventName>(type: K, listener: ViewerEventListener<K>): () => void;
+  on<K extends ViewerEventName>(this: void, type: K, listener: ViewerEventListener<K>): () => void;
   registerPluginPage(definition: PluginPageDefinition): void;
   configureSlot(slot: string, configuration: SlotConfiguration): void;
   registerSlotItem<C, R>(slot: string, descriptor: SlotDescriptor<C, R>): void;

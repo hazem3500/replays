@@ -1,6 +1,11 @@
-import type { ViewerEventMap } from '../src/client/plugins/api.ts';
 import { SLOT_NAMES, ViewerRegistry } from '../src/client/plugins/api.ts';
-import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
+import type {
+  ViewerEventMap,
+  ViewerPluginApi,
+  SlotDescriptor,
+  SlotConfiguration,
+  PluginPageDefinition,
+} from '../src/client/plugins/api.ts';
 import type {
   Identity,
   IdentityCapabilities,

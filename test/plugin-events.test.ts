@@ -39,12 +39,12 @@ describe('plugin activity subscriptions', () => {
     const registry = new ViewerRegistry();
     const received: string[] = [];
     registry.apiFor('host').on('seek', () => received.push('old'));
-    expect(() =>
-      registry.replacePlugin('host', (api) => {
-        api.on('seek', () => received.push('new'));
-        throw new Error('bad reload');
-      }),
-    ).toThrow('bad reload');
+    const replacementObserver = () => received.push('new');
+    const replacement = (api: ReturnType<ViewerRegistry['apiFor']>) => {
+      api.on('seek', replacementObserver);
+      throw new Error('bad reload');
+    };
+    expect(() => registry.replacePlugin('host', replacement)).toThrow('bad reload');
     registry.emitEvent({ type: 'seek', replayId: 'recording', timeMs: 100 });
     expect(received).toEqual(['old']);
   });
@@ -62,6 +62,7 @@ describe('plugin activity subscriptions', () => {
 
   it('refuses sandboxed plugins the host activity surface', () => {
     const registry = new ViewerRegistry();
-    expect(() => registry.apiFor('user:draft').on('seek', () => {})).toThrow('only host plugins');
+    const observer = () => {};
+    expect(() => registry.apiFor('user:draft').on('seek', observer)).toThrow('only host plugins');
   });
 });

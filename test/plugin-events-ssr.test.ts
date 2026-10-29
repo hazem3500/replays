@@ -12,9 +12,8 @@ function ViewerLifecycle() {
   return createElement('span', null, 'Replay');
 }
 
-afterEach(() => viewerRegistry.reset());
-
 describe('plugin activity during server rendering', () => {
+  afterEach(() => viewerRegistry.reset());
   it('renders without browser globals or publishing activity from another request', () => {
     const received: unknown[] = [];
     viewerRegistry.apiFor('host').on('replay:open', (event) => received.push(event));
