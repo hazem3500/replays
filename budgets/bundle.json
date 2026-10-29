@@ -153,12 +153,12 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 252918,
-      "gzip": 43554,
-      "brotli": 36226
+      "raw": 255616,
+      "gzip": 43899,
+      "brotli": 36570
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 983615,
+      "raw": 984911,
       "gzip": 308973,
       "brotli": 256601
     },
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 683,
-      "brotli": 609
+      "gzip": 682,
+      "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -493,7 +493,7 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 254839,
+      "raw": 255616,
       "gzip": 44031,
       "brotli": 36644
     },
@@ -1173,26 +1173,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 252918,
-        "gzip": 43554,
-        "brotli": 36226
-      },
-      "reason": "The phone index stylesheets (thumb-sized rows, quiet Filters and sort, the sort sheet and the header menu sheet) join the app stylesheet, about 8 KB raw over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/111"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 254839,
-        "gzip": 44498,
-        "brotli": 37043
-      },
-      "reason": "The initial index style group carries the same phone index stylesheets.",
-      "pr": "https://github.com/hazem3500/replays/pull/111"
-    },
-    {
       "file": "dist/client/assets/fetch-HASH.js",
       "cap": {
         "raw": 721,
@@ -1271,14 +1251,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 609
-      },
-      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 609 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
-    },
-    {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 21285,
@@ -1289,14 +1261,38 @@
       "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 255616,
+        "gzip": 43899,
+        "brotli": 36570
+      },
+      "reason": "The phone search morph (index/command-search.css: clip-path rest and open states, glyph travel, close button, resting-query dot) and the quick-results stagger; head measures 255616 raw, 43899 gzip, 36570 brotli bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/115"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 255616
+      },
+      "reason": "The index entry's CSS closure carries the same phone search morph; head measures 255616 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/115"
+    },
+    {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 983615,
-        "gzip": 308973,
-        "brotli": 256601
+        "raw": 984911
       },
-      "reason": "The index's poster placeholders (ThumbHash decoder and PNG builder, host tile, a suite's run mosaic) replace the letter; head measures 983615 raw bytes (+339).",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
+      "reason": "CommandSearch's phone morph: the rest anchor hook, the close button and the results stagger index; head measures 984911 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/115"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 617
+      },
+      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 617 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/115"
     }
   ]
 }
