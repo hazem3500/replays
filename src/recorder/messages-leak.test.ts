@@ -119,7 +119,7 @@ function indicator(ui: RecorderUi, check: () => void) {
 }
 
 async function results(ui: RecorderUi, check: () => void) {
-  const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error('denied'));
+  const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValueOnce().mockRejectedValueOnce(new Error('denied'));
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   ui.showUploading?.();
   check();

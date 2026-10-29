@@ -74,7 +74,7 @@ describe('recorder messages', () => {
     const error = new Error('Backend 502');
     expect(selectError({ status: 'error', phase: 'upload', error, summary }, messages)?.message).toBe('Upload broke');
     expect(selectError({ status: 'error', phase: 'start', error }, messages)?.message).toBe('Start broke');
-    expect(selectError({ status: 'error', phase: 'start', error }, undefined)?.message).toBe("Couldn't start recording");
+    expect(selectError({ status: 'error', phase: 'start', error })?.message).toBe("Couldn't start recording");
     const hosted = Object.assign(new Error('x'), { userMessage: 'Sign in again' });
     expect(selectError({ status: 'error', phase: 'upload', error: hosted }, messages)?.message).toBe('Sign in again');
   });
