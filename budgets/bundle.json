@@ -22,6 +22,11 @@
       "gzip": 981,
       "brotli": 848
     },
+    "dist/client/assets/arrow-up-HASH.js": {
+      "raw": 202,
+      "gzip": 186,
+      "brotli": 165
+    },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
       "gzip": 1110,
@@ -68,14 +73,14 @@
       "brotli": 401
     },
     "dist/client/assets/comments-ui-HASH.css": {
-      "raw": 14729,
-      "gzip": 3140,
-      "brotli": 2714
+      "raw": 14566,
+      "gzip": 3101,
+      "brotli": 2680
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 29145,
-      "gzip": 10346,
-      "brotli": 8982
+      "raw": 31708,
+      "gzip": 11119,
+      "brotli": 9660
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -101,6 +106,11 @@
       "raw": 3209,
       "gzip": 1535,
       "brotli": 1392
+    },
+    "dist/client/assets/dropdown-menu-HASH.js": {
+      "raw": 122577,
+      "gzip": 41141,
+      "brotli": 35555
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 31925,
@@ -158,9 +168,9 @@
       "brotli": 37191
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 986487,
-      "gzip": 308973,
-      "brotli": 256601
+      "raw": 962358,
+      "gzip": 301788,
+      "brotli": 250661
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -243,7 +253,7 @@
       "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21285,
+      "raw": 21287,
       "gzip": 8755,
       "brotli": 7568
     },
@@ -258,19 +268,14 @@
       "brotli": 234
     },
     "dist/client/assets/use-focus-when-HASH.js": {
-      "raw": 312,
-      "gzip": 253,
-      "brotli": 219
+      "raw": 761,
+      "gzip": 483,
+      "brotli": 435
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
       "gzip": 3167,
       "brotli": 2904
-    },
-    "dist/client/assets/useTriggerFocusGuards-HASH.js": {
-      "raw": 72164,
-      "gzip": 25666,
-      "brotli": 22682
     },
     "dist/client/assets/Viewer-HASH.css": {
       "raw": 5200,
@@ -744,7 +749,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -998,16 +1003,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
-      "file": "dist/client/assets/useTriggerFocusGuards-HASH.js",
-      "cap": {
-        "raw": 72164,
-        "gzip": 25666,
-        "brotli": 22715
-      },
-      "reason": "Chunk reshuffle when the comments UI loads lazily: Base UI focus and menu modules from main's removed icon-button and inertValue chunks form a lazy chunk named after its first module (70062 raw bytes); the initial index.html JS 1441358 to 1441194 raw bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
       "file": "dist/client/assets/createLucideIcon-HASH.js",
       "cap": {
         "raw": 3209,
@@ -1025,16 +1020,6 @@
         "brotli": 407
       },
       "reason": "The built-in features registry splits into a tiny chunk shared by the viewer and the lazy comments UI.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
-      "file": "dist/client/assets/comments-ui-HASH.js",
-      "cap": {
-        "raw": 29145,
-        "gzip": 10376,
-        "brotli": 9042
-      },
-      "reason": "The comments panel and seek-bar markers as a lazy chunk, loaded when a replay's seek bar first draws; main's feature chunk drops from 24391 to 6388 raw bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
@@ -1126,14 +1111,6 @@
       },
       "reason": "The Start page renderer (src/server/pages/start.ts, head.ts), loaded only with REPLAYS_SSR=1.",
       "pr": "https://github.com/hazem3500/replays/pull/156"
-    },
-    {
-      "file": "dist/client/assets/use-focus-when-HASH.js",
-      "cap": {
-        "brotli": 219
-      },
-      "reason": "A tiny shared hook chunk whose bytes are the hashed chunk names it imports; they change with this PR's chunks. Measures 219 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
@@ -1270,16 +1247,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21285,
-        "gzip": 8755,
-        "brotli": 7568
-      },
-      "reason": "Hash drift, not growth: raw matches main; the hashed chunk names it imports change with the server-rendered default (gzip +2 B, brotli +27 B measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
-    },
-    {
       "file": "dist/cli/cli.mjs",
       "cap": {
         "raw": 462508,
@@ -1298,6 +1265,54 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/164",
       "reason": "The shared server chunk gains the src/server/store/* modules, so its source identity changes; measured on Boat against main 0e7a3fd: main 308641/80890/66336 (context.schema.json-7e5a8e2906dd), head 310977/81843/67134 (+2336 B raw, +953 B gzip, +798 B brotli). Replaces #157's entry."
+    },
+    {
+      "file": "dist/client/assets/comments-ui-HASH.js",
+      "cap": {
+        "raw": 31708,
+        "gzip": 11119,
+        "brotli": 9660
+      },
+      "reason": "Comments round 2 (#171): the phone action sheet, the desktop overflow menu, the delete dialog and the quieter composer, in the lazy comments chunk (+3412 raw over main).",
+      "pr": "https://github.com/hazem3500/replays/pull/171"
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 122577,
+        "gzip": 41141,
+        "brotli": 35555
+      },
+      "reason": "Chunk graph shift (#171): the comments chunk now uses the Base UI menu for its overflow, so the bundler splits the menu modules it shares with the top bar into their own chunk. main-HASH.js drops 52129 raw bytes, useTriggerFocusGuards (72164) goes away, and the initial index.html JS group grows by 386 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/171"
+    },
+    {
+      "file": "dist/client/assets/use-focus-when-HASH.js",
+      "cap": {
+        "raw": 761,
+        "gzip": 483,
+        "brotli": 435
+      },
+      "reason": "A small shared chunk that takes on focus helpers when the menu modules split out (#171).",
+      "pr": "https://github.com/hazem3500/replays/pull/171"
+    },
+    {
+      "file": "dist/client/assets/arrow-up-HASH.js",
+      "cap": {
+        "raw": 202,
+        "gzip": 186,
+        "brotli": 165
+      },
+      "reason": "The send arrow icon, shared by the comments composer and another lazy view (#171).",
+      "pr": "https://github.com/hazem3500/replays/pull/171"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21287
+      },
+      "reason": "Two raw bytes from the hashed chunk names it imports changing (#171).",
+      "pr": "https://github.com/hazem3500/replays/pull/171"
     }
   ]
 }
