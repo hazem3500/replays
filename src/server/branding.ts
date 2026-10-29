@@ -4,37 +4,9 @@ import type { PageBranding } from './base-path.ts';
 import type { ProfileInfo } from '../shared/profiles.ts';
 import type { ViewInfo } from '../shared/views.ts';
 
-/**
- * Theming without a rebuild. Every colour in the viewer is a CSS custom property (src/client/styles.css); a
- * deployment may override the ones listed here, per colour scheme, plus the UI font stack.
- */
-export const THEME_TOKENS = [
-  'accent',
-  'accent-soft',
-  'accent-contrast',
-  'page',
-  'surface',
-  'surface-raised',
-  'surface-hover',
-  'surface-pressed',
-  'canvas',
-  'text',
-  'text-secondary',
-  'text-tertiary',
-  'line',
-  'line-strong',
-  'danger',
-  'danger-soft',
-  'warning',
-  'success',
-  'ring',
-  'sans',
-  'mono',
-  'radius',
-] as const;
+import { THEME_TOKENS, type ThemeTokens } from '../shared/theme-tokens.ts';
 
-export type ThemeToken = (typeof THEME_TOKENS)[number];
-export type ThemeTokens = Partial<Record<ThemeToken, string>>;
+export { THEME_TOKENS, type ThemeToken, type ThemeTokens } from '../shared/theme-tokens.ts';
 
 export interface BrandingConfig {
   /** Shown in the header, the page title and the shortcut sheet. */

@@ -107,6 +107,8 @@ test.describe('branding and base path', () => {
     await expect
       .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toLowerCase()))
       .toBe('#ff6600');
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--card-radius').trim())).toBe('16px');
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--motion-fast').trim())).toBe('100ms');
     expect(new URL(page.url()).pathname).toBe(`${BASE}/`);
   });
 });

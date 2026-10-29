@@ -20,7 +20,7 @@
     left: 0;
     display: flex;
     justify-content: center;
-    font-family: var(--sans, "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    font-family: var(--caption-font, var(--sans, "Inter Variable", ui-sans-serif, system-ui, sans-serif));
     font-feature-settings: "cv05", "cv08";
     font-synthesis: none;
     line-height: 1.35;
@@ -39,9 +39,9 @@
     overflow: hidden;
     padding: 0.47em 0.93em;
     border-radius: 999px;
-    background: rgb(14 16 21 / 0.86);
+    background: var(--caption-bg, rgb(14 16 21 / 0.86));
     box-shadow: inset 0 0 0 max(1px, 0.067em) rgb(255 255 255 / 0.14), 0 0.13em 0.8em rgb(0 0 0 / 0.18);
-    color: #fff;
+    color: var(--caption-fg, #fff);
     /* why: below 12 px a caption stops being readable; a tiny frame keeps the pill legible rather than exact. */
     font-size: max(var(--caption-min, 0px), calc(15px * var(--s)));
     font-weight: 550;

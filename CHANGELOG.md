@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Added the v2 public theme token catalogue for motion, spacing, type, elevation and component styling through config and trusted plugin branding. Existing tokens and default appearance are retained.
+
 ### Security
 
 - Error responses no longer pass on what the server didn't decide itself. A storage provider's status

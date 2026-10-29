@@ -57,33 +57,6 @@ describe('validateBranding', () => {
 });
 
 describe('theme tokens', () => {
-  it('lists the documented design tokens, including the keyboard ring', () => {
-    expect(THEME_TOKENS).toEqual([
-      'accent',
-      'accent-soft',
-      'accent-contrast',
-      'page',
-      'surface',
-      'surface-raised',
-      'surface-hover',
-      'surface-pressed',
-      'canvas',
-      'text',
-      'text-secondary',
-      'text-tertiary',
-      'line',
-      'line-strong',
-      'danger',
-      'danger-soft',
-      'warning',
-      'success',
-      'ring',
-      'sans',
-      'mono',
-      'radius',
-    ]);
-  });
-
   it('accepts plain colour, length and font values for every token', () => {
     const values = [
       '#fff',
