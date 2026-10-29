@@ -133,9 +133,9 @@
       "brotli": 229
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 41558,
-      "gzip": 7936,
-      "brotli": 7090
+      "raw": 44015,
+      "gzip": 8406,
+      "brotli": 7521
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 240032,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 605
+      "brotli": 633
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -1193,14 +1193,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 640
-      },
-      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change when the comments UI moves into its own chunk; measured against main: 0 B raw, -2 B gzip, +31 B brotli (621 against main's 590 and a 608-byte cap). Replaces #119's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
       "file": "dist/client/assets/ReplayComparePage-HASH.js",
       "cap": {
         "brotli": 585,
@@ -1233,9 +1225,9 @@
     {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
-        "raw": 41558,
-        "gzip": 7936,
-        "brotli": 7090
+        "raw": 44015,
+        "gzip": 8406,
+        "brotli": 7521
       },
       "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
       "pr": "https://github.com/hazem3500/replays/pull/152"
@@ -1248,6 +1240,14 @@
         "brotli": 68340
       },
       "reason": "Network body formatting (indented JSON, decoded forms, redaction parts), body sections, ribbon hover linking and the playhead progress hook in the lazy inspector graph; the initial JavaScript budget is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 633
+      },
+      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
       "pr": "https://github.com/hazem3500/replays/pull/152"
     }
   ]
