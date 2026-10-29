@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 684,
-      "brotli": 640
+      "brotli": 626
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -315,7 +315,7 @@
     "dist/lib/chunks/context.schema.json-c805001dee98.mjs": {
       "raw": 310751,
       "gzip": 81506,
-      "brotli": 66856
+      "brotli": 66832
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -415,7 +415,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
       "gzip": 1640,
-      "brotli": 1419
+      "brotli": 1417
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
