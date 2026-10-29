@@ -309,6 +309,16 @@ test('tools carry their names and keys, and ? opens the editor shortcuts', async
   await expect(sheet).toHaveCount(0);
 });
 
+test('a ruler with half-second ticks labels every tick with one decimal', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  const id = await uploadCopy(page, 'editor-ruler');
+  await page.goto(`${base()}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  const labels = page.getByTestId('timeline-ruler').locator('.tl-tick-label');
+  await expect(labels.nth(1)).toHaveText('0:00.5');
+  expect((await labels.allTextContents()).filter((text) => !/^\d+:\d{2}\.\d$/.test(text))).toEqual([]);
+});
+
 test('export uses the saved edit revision; viewing original preserves edits', async ({ page }) => {
   const id = await uploadCopy(page, 'editor-export');
   let exported: Record<string, unknown> | undefined;

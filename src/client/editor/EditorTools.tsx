@@ -95,7 +95,12 @@ export function AddMenu({
           <HighlighterIcon aria-hidden="true" /> Highlight the selection
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem checked={showEmptyTracks} onCheckedChange={onShowEmptyTracks} closeOnClick data-testid="show-empty-tracks">
+        <DropdownMenuCheckboxItem
+          checked={showEmptyTracks}
+          onCheckedChange={onShowEmptyTracks}
+          closeOnClick
+          data-testid="show-empty-tracks"
+        >
           Show empty tracks
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
