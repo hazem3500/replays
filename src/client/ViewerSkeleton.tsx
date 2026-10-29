@@ -100,6 +100,17 @@ function layout(hint: OpenHint | undefined) {
 let lastVisibleAt = Number.NEGATIVE_INFINITY;
 const SHOW_DELAY_MS = 150;
 
+function loadingStyle(shape: ReturnType<typeof layout>, mobile: boolean): CSSProperties {
+  return {
+    ...(shape.collapsed && !mobile
+      ? { '--inspector-height': 'var(--inspector-folded-height, 37px)' }
+      : shape.height === undefined
+        ? {}
+        : { '--inspector-height': `${shape.height}px` }),
+    '--sk-ratio': String(shape.ratio),
+  } as CSSProperties;
+}
+
 export function ViewerSkeleton({
   label = 'Loading replay',
   suite = false,
@@ -130,16 +141,7 @@ export function ViewerSkeleton({
       data-instant={instant || undefined}
       aria-busy="true"
       aria-label={label}
-      style={
-        {
-          ...(collapsed && !mobile
-            ? { '--inspector-height': 'var(--inspector-folded-height, 37px)' }
-            : shape.height === undefined
-              ? {}
-              : { '--inspector-height': `${shape.height}px` }),
-          '--sk-ratio': String(shape.ratio),
-        } as CSSProperties
-      }
+      style={loadingStyle(shape, mobile)}
     >
       <span className="visually-hidden" role="status">
         {label}…
