@@ -19,12 +19,12 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
-      "gzip": 982,
-      "brotli": 849
+      "gzip": 981,
+      "brotli": 848
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "gzip": 1111,
+      "gzip": 1110,
       "brotli": 942
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
@@ -69,7 +69,7 @@
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
-      "gzip": 2344,
+      "gzip": 2343,
       "brotli": 2119
     },
     "dist/client/assets/CompareViewer-HASH.css": {
@@ -78,7 +78,7 @@
       "brotli": 1777
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 37957,
+      "raw": 37956,
       "gzip": 13469,
       "brotli": 11989
     },
@@ -113,7 +113,7 @@
       "brotli": 1872
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 25123,
+      "raw": 25113,
       "gzip": 9605,
       "brotli": 8395
     },
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 611,
+      "gzip": 609,
       "brotli": 560
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
@@ -245,10 +245,10 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 686,
-      "brotli": 608
+      "brotli": 600
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21175,
+      "raw": 21170,
       "gzip": 8711,
       "brotli": 7500
     },
@@ -478,8 +478,8 @@
       "brotli": 35120
     },
     "initial/index.html/js": {
-      "raw": 1484599,
-      "gzip": 473500,
+      "raw": 1484557,
+      "gzip": 473494,
       "brotli": 400470
     },
     "initial/render.html/css": {
