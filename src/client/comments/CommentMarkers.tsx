@@ -76,15 +76,7 @@ export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { w
               )}
               onClick={() => comments.reveal(root.id, { open: false })}
             >
-              {cluster.members.length > 1 ? (
-                <span className="comment-marker-count">{cluster.members.length}</span>
-              ) : root.emoji ? (
-                <span className="comment-marker-emoji">{root.emoji}</span>
-              ) : root.author.anonymous ? (
-                <span className="comment-marker-dot" />
-              ) : (
-                <Avatar name={root.author.name} avatarUrl={root.author.avatarUrl} />
-              )}
+              <MarkerFace count={cluster.members.length} root={root} />
             </button>
             <div className="comment-card" role="presentation" aria-hidden="true" data-testid="comment-card">
               {cluster.members.slice(0, 3).map(({ thread, at }) => (
@@ -98,6 +90,14 @@ export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { w
     </div>
   );
 });
+
+/** A cluster's count, a reaction's emoji, a small dot for an anonymous comment, or the author's tiny avatar. */
+function MarkerFace({ count, root }: { count: number; root: PublicComment }) {
+  if (count > 1) return <span className="comment-marker-count">{count}</span>;
+  if (root.emoji) return <span className="comment-marker-emoji">{root.emoji}</span>;
+  if (root.author.anonymous) return <span className="comment-marker-dot" />;
+  return <Avatar name={root.author.name} avatarUrl={root.author.avatarUrl} />;
+}
 
 function markerLabel(threads: PlacedThread[], at: number) {
   const first = threads[0]!.root;

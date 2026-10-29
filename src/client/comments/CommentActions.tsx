@@ -82,7 +82,7 @@ function SheetRow({
       {/* why: the sheet closes first, so a box or dialog that opens next takes focus from a settled page. */}
       <DrawerClose
         className="comment-sheet-row"
-        data-danger={danger || undefined}
+        data-danger={danger ? '' : undefined}
         data-testid={testId}
         onClick={() => requestAnimationFrame(onSelect)}
       >

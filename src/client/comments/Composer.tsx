@@ -90,20 +90,48 @@ export function Composer({ comments }: { comments: CommentsApi }) {
         <ReactionPicker comments={comments} />
         {text.trim() ? <SendButton /> : null}
       </div>
-      <div className="comment-composer-note" id={noteId}>
-        <Placement anchor={anchor} whole={whole} onWhole={setWhole} onAnchor={setAnchor} />
-        {text.length > MAX_COMMENT_BODY - 200 ? (
-          <span className="comment-count" aria-live="polite">
-            {MAX_COMMENT_BODY - text.length}
-          </span>
-        ) : null}
-        {comments.anonymous ? (
-          <span className="comment-anonymous" data-testid="comments-anonymous-notice" title={commentStrings.anonymousDetail}>
-            {commentStrings.anonymous}
-          </span>
-        ) : null}
-      </div>
+      <ComposerNote
+        id={noteId}
+        anchor={anchor}
+        whole={whole}
+        length={text.length}
+        anonymous={comments.anonymous}
+        onWhole={setWhole}
+        onAnchor={setAnchor}
+      />
     </form>
+  );
+}
+
+/** The quiet line under the box: where the comment goes, the characters left near the limit, and anonymity. */
+function ComposerNote({
+  id,
+  length,
+  anonymous,
+  ...placement
+}: {
+  id: string;
+  anchor: number | undefined;
+  whole: boolean;
+  length: number;
+  anonymous: boolean;
+  onWhole: (whole: boolean) => void;
+  onAnchor: (at: number) => void;
+}) {
+  return (
+    <div className="comment-composer-note" id={id}>
+      <Placement {...placement} />
+      {length > MAX_COMMENT_BODY - 200 ? (
+        <span className="comment-count" aria-live="polite">
+          {MAX_COMMENT_BODY - length}
+        </span>
+      ) : null}
+      {anonymous ? (
+        <span className="comment-anonymous" data-testid="comments-anonymous-notice" title={commentStrings.anonymousDetail}>
+          {commentStrings.anonymous}
+        </span>
+      ) : null}
+    </div>
   );
 }
 

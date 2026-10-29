@@ -45,13 +45,23 @@ export function Avatar({
       aria-hidden="true"
       style={image || anonymous ? undefined : ({ '--avatar-hue': hueOf(name) } as React.CSSProperties)}
     >
-      {image ? (
-        <img src={avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" draggable={false} onError={() => setFailed(true)} />
-      ) : anonymous ? (
-        <UserRoundIcon />
-      ) : (
-        initialsOf(name)
-      )}
+      <AvatarFace name={name} avatarUrl={image ? avatarUrl : undefined} anonymous={anonymous} onError={() => setFailed(true)} />
     </span>
   );
+}
+
+function AvatarFace({
+  name,
+  avatarUrl,
+  anonymous,
+  onError,
+}: {
+  name: string;
+  avatarUrl: string | undefined;
+  anonymous: boolean;
+  onError: () => void;
+}) {
+  if (avatarUrl) return <img src={avatarUrl} alt="" referrerPolicy="no-referrer" loading="lazy" draggable={false} onError={onError} />;
+  if (anonymous) return <UserRoundIcon />;
+  return initialsOf(name);
 }

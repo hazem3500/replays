@@ -1269,11 +1269,11 @@
     {
       "file": "dist/client/assets/comments-ui-HASH.js",
       "cap": {
-        "raw": 31708,
-        "gzip": 11119,
-        "brotli": 9660
+        "raw": 32533,
+        "gzip": 11373,
+        "brotli": 9861
       },
-      "reason": "Comments round 2 (#171): the phone action sheet, the desktop overflow menu, the delete dialog and the quieter composer, in the lazy comments chunk (+3412 raw over main).",
+      "reason": "Comments round 2 (#171): the phone action sheet, the desktop overflow menu, the delete dialog and the quieter composer, in the lazy comments chunk (+4237 raw over main).",
       "pr": "https://github.com/hazem3500/replays/pull/171"
     },
     {
@@ -1312,6 +1312,14 @@
         "raw": 21287
       },
       "reason": "Two raw bytes from the hashed chunk names it imports changing (#171).",
+      "pr": "https://github.com/hazem3500/replays/pull/171"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 618
+      },
+      "reason": "Brotli drift of a few bytes from the hashed chunk names it imports changing (#171); raw and gzip are unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/171"
     }
   ]
