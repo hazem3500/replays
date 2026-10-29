@@ -9,3 +9,9 @@ export function moveIndex(move: StepMove, index: number, count: number) {
   if (move === 'last') return count - 1;
   return Math.min(count - 1, Math.max(0, index + move));
 }
+
+/** The row a pointer or focus event landed in, from its `data-row-id`. */
+export function rowIdOf(target: EventTarget) {
+  const row = target instanceof Element ? target.closest<HTMLElement>('[data-row-id]') : null;
+  return row?.dataset.rowId;
+}
