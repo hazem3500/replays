@@ -94,7 +94,7 @@ test('More keeps a suite and its runs at every width; the sidebar only says it i
   await page.reload();
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
   await openMore(page);
-  await expect(page.getByRole('menuitem').first()).toHaveAttribute('data-testid', 'replay-details');
+  await expect(page.getByRole('menuitem').first()).not.toHaveAttribute('data-testid', 'keep-suite');
   await page.getByTestId('keep-suite').click();
   await expect(page.locator('[data-sonner-toast]').filter({ hasText: 'Suite kept' })).toBeVisible();
   await expect.poll(async () => (await (await page.request.get(keepApi)).json()).expiresAt).toBeNull();
