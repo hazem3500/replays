@@ -29,6 +29,11 @@ export interface RetentionPolicy {
   profiles?: Readonly<Record<string, number>>;
   /** `api.retention` rules, already wrapped so they never throw (src/server/profiles.ts). */
   rules?: readonly RetentionRule[];
+  /**
+   * `RETENTION_EXPIRED_DAYS`: how long a removed replay's record (src/shared/expired.ts) stays listed so the index can
+   * say why it is gone; DEFAULT_EXPIRED_DAYS when absent, 0 keeps none.
+   */
+  expiredDays?: number;
 }
 
 export const DEFAULT_RETENTION: RetentionPolicy = { days: 30 };

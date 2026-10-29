@@ -1,4 +1,5 @@
 import type { RouteDefinition } from '../http/route.ts';
+import { expiredRoutes } from './expired.ts';
 import { replayMetaRoutes } from './replay-meta.ts';
 import { replayRoutes } from './replays.ts';
 import type { ApiServices } from './services.ts';
@@ -13,6 +14,7 @@ export function coreRoutes(services: ApiServices): RouteDefinition[] {
   return [
     ...sessionRoutes(services),
     ...replayRoutes(services),
+    ...expiredRoutes(services),
     ...replayMetaRoutes(services),
     ...uploadRoutes(services),
     ...suiteRoutes(services),
