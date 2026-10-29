@@ -15,7 +15,7 @@ import { Popover, PopoverContent } from '@/components/ui/popover.tsx';
 import { Progress } from '@/components/ui/progress.tsx';
 
 import type { ReplayMeta } from '../../shared/replay.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { usePlayerState } from '../player.ts';
 import { exportLabel, formatBytes, isActive, progressAnnouncement, progressLabel, useVideoRender, videoFilename } from '../video-export.ts';
 import { useViewer } from './context.ts';

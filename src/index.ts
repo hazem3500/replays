@@ -48,7 +48,7 @@ export {
 } from './shared/source-providers.ts';
 
 // Extension points for server plugins
-export type { AuthAdapter, AuthPluginFactory, AuthRouteContext, Identity } from './server/auth/types.ts';
+export type { AnyAuthAdapter, AuthAdapter, AuthPluginFactory, AuthRouteContext, Identity, WebAuthAdapter } from './server/auth/types.ts';
 export { headerAuth } from './server/auth/header.ts';
 export { noneAuth } from './server/auth/none.ts';
 export { oidcAuth, type OidcOptions } from './server/auth/oidc.ts';

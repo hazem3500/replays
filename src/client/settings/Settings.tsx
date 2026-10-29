@@ -5,7 +5,7 @@ import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { DialogTrigger } from '@/components/ui/dialog.tsx';
 
-import { currentSearchParam, dropSearchParam } from '../route.ts';
+import { currentSearchParam, dropSearchParam } from '../routing/navigate.ts';
 import { isSettingsSection, type SettingsSectionId } from './sections.tsx';
 import { SettingsDialog } from './SettingsDialog.tsx';
 import { strings } from './strings.ts';

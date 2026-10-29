@@ -4,7 +4,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { EMPTY_EDITS, editListOf, type ReplayEdits, type StoredReplayEdits } from '../shared/edits.ts';
 import { betaEditor } from './config.ts';
 import { LoadError } from './queries.ts';
-import { apiUrl } from './route.ts';
+import { apiUrl } from './api/fetch.ts';
 
 /** A replay's edit list as loaded: the stored list and the ETag a save must send back (`If-Match`). */
 export interface LoadedEdits {
