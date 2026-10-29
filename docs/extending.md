@@ -328,6 +328,15 @@ longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×
 preceding label through legacy unlabelled waits and repeated actions, while their number follows the
 active rail step. Exports use the same caption selection and time mapping.
 
+Trusted browser entries can observe playback without scraping the DOM:
+
+```ts
+api.on('seek', ({ replayId, timeMs }) => console.info('Playback seek', replayId, timeMs));
+```
+
+The [activity event catalogue](extension-api.md#browser-activity-events) contains metadata only and
+has no default network transport. `examples/custom-distro` demonstrates a live activity panel.
+
 The [v2 token catalogue](tokens.md) also exposes motion, easing, type sizes, spacing, elevation,
 focus width, radii, and caption, poster, card and scrubber tokens. For example:
 

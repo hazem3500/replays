@@ -1,5 +1,11 @@
-import { SLOT_NAMES } from '../src/client/plugins/api.ts';
-import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
+import { SLOT_NAMES, ViewerRegistry } from '../src/client/plugins/api.ts';
+import type {
+  ViewerEventMap,
+  ViewerPluginApi,
+  SlotDescriptor,
+  SlotConfiguration,
+  PluginPageDefinition,
+} from '../src/client/plugins/api.ts';
 import type {
   Identity,
   IdentityCapabilities,
@@ -237,6 +243,11 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('publishes typed content-free event subscriptions', () => {
+    const observeSeek = new ViewerRegistry().apiFor('host').on<'seek'>;
+    expectTypeOf(observeSeek).toBeCallableWith('seek', (_event: ViewerEventMap['seek']) => {});
+    expectTypeOf<ViewerEventMap['index:filter']>().toEqualTypeOf<{ readonly activeCount: number }>();
+  });
   it('pins the additive theme token contract', async () => {
     const { THEME_TOKENS } = await import('../src/server/index.ts');
     const contract: unknown = JSON.parse(readFileSync(new URL('../docs/formats/theme-tokens.json', import.meta.url), 'utf8'));
