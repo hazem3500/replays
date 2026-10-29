@@ -19,6 +19,8 @@ import { toNodeAuthAdapter } from './auth/web.ts';
 import { COMPRESSIBLE, CompressionCache, compress, pickEncoding } from './compression.ts';
 import { appPath, type HostRouting, hostBase, hostVary, normalizeHosts, publicPath, type HostConfig } from './base-path.ts';
 import { renderIndexHtml } from './index-page.ts';
+import { shellHead } from './pages/head.ts';
+import type { PageRenderer } from './pages/start.ts';
 import { coreRoutes } from './api/index.ts';
 import { authenticatedPluginRoutes, publicPluginRoutes, runWebMiddleware } from './api/plugin-routes.ts';
 import { sendWebResponse, toWebRequest } from './http/node.ts';
@@ -78,6 +80,8 @@ export interface AppOptions {
   devMiddleware?: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
   /** Vite-transformed dev HTML, rendered through the shared server metadata contract. */
   devIndexHtml?: (url: string) => Promise<string>;
+  /** Pages rendered by the TanStack Start server entry (src/server/pages/start.ts), with the client build its HTML references. */
+  pages?: { renderer: PageRenderer; clientDir: string };
   /** Server-side video renders; absent means every render route answers 503. */
   render?: RenderService;
   /** Where the app lives publicly (base-path.ts): `''` at the root of its own domain, else e.g. `/replays`. */
@@ -566,10 +570,12 @@ export function createApp(options: AppOptions) {
         });
         if (response.writableEnded) return;
       } else if (path.startsWith('/assets/')) {
-        const file = resolve(options.clientDir, `.${path}`);
         // why: assets/brand/* (favicon, manifest) keep fixed names for index.html, so they must revalidate.
         const cache = path.startsWith('/assets/brand/') ? 'public, max-age=86400' : 'public, max-age=31536000, immutable';
-        if (file.startsWith(`${resolve(options.clientDir)}/`) && (await serveFile(request, response, file, cache))) return;
+        for (const dir of options.pages ? [options.pages.clientDir, options.clientDir] : [options.clientDir]) {
+          const file = resolve(dir, `.${path}`);
+          if (file.startsWith(`${resolve(dir)}/`) && (await serveFile(request, response, file, cache))) return;
+        }
       }
 
       if (request.method === 'GET' && request.headers.accept?.includes('text/html')) {
@@ -578,6 +584,11 @@ export function createApp(options: AppOptions) {
           // With user plugins on, the page may only frame itself, blob: and data: URLs: a sandboxed plugin frame that
           // navigates itself somewhere else (to smuggle data out in a URL) is refused by the browser.
           if (options.beta?.malleable) response.setHeader('content-security-policy', "frame-src 'self' blob: data:");
+          if (options.pages) {
+            const deployment = { base, name: options.branding.name };
+            await options.pages.renderer.render(request, response, { deployment, head: shellHead(indexPage(html, base)) });
+            return;
+          }
           await sendCompressed(request, response, 200, indexPage(html, base), 'text/html; charset=utf-8');
           return;
         }

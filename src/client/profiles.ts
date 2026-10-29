@@ -1,5 +1,6 @@
 import type { ProfileInfo } from '../shared/profiles.ts';
 import { replayProfileId, type ReplayBundle } from '../shared/replay.ts';
+import { pageMeta } from './page-meta.ts';
 
 let cached: readonly ProfileInfo[] | undefined;
 let override: readonly ProfileInfo[] | undefined;
@@ -16,18 +17,17 @@ function isProfileInfo(item: unknown): item is ProfileInfo {
 export function pageProfiles(): readonly ProfileInfo[] {
   if (override) return override;
   if (cached) return cached;
-  if (typeof document === 'undefined') return [];
-  const meta =
-    document.querySelector<HTMLMetaElement>('meta[name="app-profiles"]') ??
-    document.querySelector<HTMLMetaElement>('meta[name="app-purposes"]');
-  const content = meta?.content ?? '';
+  const content = pageMeta('app-profiles') ?? pageMeta('app-purposes') ?? '';
+  let profiles: readonly ProfileInfo[];
   try {
     const parsed: unknown = content ? JSON.parse(content) : [];
-    cached = Array.isArray(parsed) ? parsed.filter(isProfileInfo) : [];
+    profiles = Array.isArray(parsed) ? parsed.filter(isProfileInfo) : [];
   } catch {
-    cached = [];
+    profiles = [];
   }
-  return cached;
+  // invariant: only the browser's page caches them; a server renders requests for different hosts in one process.
+  if (typeof document !== 'undefined') cached = profiles;
+  return profiles;
 }
 
 /** Tests only. */
