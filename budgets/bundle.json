@@ -153,9 +153,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 257251,
-      "gzip": 44233,
-      "brotli": 36764
+      "raw": 259883,
+      "gzip": 44739,
+      "brotli": 37072
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 986487,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 600
+      "brotli": 613
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -493,9 +493,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 257251,
-      "gzip": 44233,
-      "brotli": 36764
+      "raw": 259883,
+      "gzip": 44739,
+      "brotli": 37072
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -779,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1251,34 +1251,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 617
-      },
-      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 617 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/115"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 257251,
-        "gzip": 44233,
-        "brotli": 36764
-      },
-      "reason": "The shared loading primitives (loading.css: skeleton tokens, skel-line, skel-appear, load-line) and the result count's refresh styles (scope-count.css); head measures 257251 raw, 44233 gzip, 36764 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/145"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 257251,
-        "gzip": 44233,
-        "brotli": 36764
-      },
-      "reason": "The index entry's CSS closure carries the same loading primitives and count styles; head measures 257251 raw, 44233 gzip, 36764 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/145"
-    },
-    {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 986487
@@ -1295,6 +1267,34 @@
       },
       "reason": "The suite workspace chunk's bytes include the hashed names of the chunks it imports, which change with this PR's chunks; measures 7554 brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/145"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 259883,
+        "gzip": 44739,
+        "brotli": 37072
+      },
+      "reason": "Error pages (viewer, editor, suite, compare) take EmptyState's error tone: the alert tile and its circle-alert mask, the status line and centred 32/44 px actions. Measured in CI against fresh main fc64117a: +2,632 B raw, +506 B gzip, +308 B Brotli. Replaces #145's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/144"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 613
+      },
+      "reason": "Hash drift, not growth: raw matches main and gzip is 3 B smaller; this 1 KB chunk of hashed import paths moves its Brotli size by up to 30 bytes when another chunk's hash changes (613 against 600 here). Replaces #115's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/144"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 259883,
+        "gzip": 44739,
+        "brotli": 37072
+      },
+      "reason": "The first stylesheet carries the error pages' EmptyState styles (see main-HASH.css). Measured in CI against fresh main fc64117a: +2,632 B raw, +506 B gzip, +308 B Brotli. Replaces #145's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/144"
     }
   ]
 }
