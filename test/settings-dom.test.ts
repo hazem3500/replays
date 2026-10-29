@@ -195,4 +195,12 @@ describe('Settings', () => {
     await click(document.querySelector('[aria-label="Close settings"]'));
     expect(window.location.search).toBe('');
   });
+
+  it('gives a deep-linked dialog the focus instead of its selected tab, which would wear the keyboard ring', async () => {
+    window.history.replaceState(null, '', '/?settings=labs');
+    mockConfig();
+    await render();
+    expect(tab('Labs')?.getAttribute('aria-selected')).toBe('true');
+    await vi.waitFor(() => expect(document.activeElement).toBe(dialog()));
+  });
 });
