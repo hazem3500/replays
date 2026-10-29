@@ -180,7 +180,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 630,
-      "brotli": 566
+      "brotli": 568
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -200,12 +200,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 627
+      "brotli": 621
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
       "gzip": 8342,
-      "brotli": 7152
+      "brotli": 7151
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
