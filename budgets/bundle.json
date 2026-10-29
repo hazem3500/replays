@@ -17,81 +17,6 @@
       "gzip": 60962,
       "brotli": 39185
     },
-    "dist/client/assets/CommentRowsSource-HASH.js": {
-      "raw": 2421,
-      "gzip": 1253,
-      "brotli": 1138
-    },
-    "dist/client/assets/ComparePicker-HASH.js": {
-      "raw": 5222,
-      "gzip": 2343,
-      "brotli": 2118
-    },
-    "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 7830,
-      "gzip": 2082,
-      "brotli": 1777
-    },
-    "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 37956,
-      "gzip": 13469,
-      "brotli": 11968
-    },
-    "dist/client/assets/Editor-HASH.css": {
-      "raw": 31925,
-      "gzip": 6193,
-      "brotli": 5501
-    },
-    "dist/client/assets/Editor-HASH.js": {
-      "raw": 101077,
-      "gzip": 33857,
-      "brotli": 28913
-    },
-    "dist/client/assets/Inspector-HASH.css": {
-      "raw": 44015,
-      "gzip": 8406,
-      "brotli": 7521
-    },
-    "dist/client/assets/Inspector-HASH.js": {
-      "raw": 240032,
-      "gzip": 81328,
-      "brotli": 68340
-    },
-    "dist/client/assets/MalleableHost-HASH.css": {
-      "raw": 8084,
-      "gzip": 2054,
-      "brotli": 1747
-    },
-    "dist/client/assets/MalleableHost-HASH.js": {
-      "raw": 77463,
-      "gzip": 25654,
-      "brotli": 22782
-    },
-    "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 982,
-      "gzip": 607,
-      "brotli": 555
-    },
-    "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1124,
-      "gzip": 682,
-      "brotli": 604
-    },
-    "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21285,
-      "gzip": 8751,
-      "brotli": 7544
-    },
-    "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5200,
-      "gzip": 1420,
-      "brotli": 1220
-    },
-    "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60058,
-      "gzip": 21441,
-      "brotli": 18678
-    },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
       "gzip": 981,
@@ -132,6 +57,11 @@
       "gzip": 241,
       "brotli": 190
     },
+    "dist/client/assets/CommentRowsSource-HASH.js": {
+      "raw": 2421,
+      "gzip": 1253,
+      "brotli": 1138
+    },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
       "gzip": 445,
@@ -144,8 +74,23 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10347,
-      "brotli": 9006
+      "gzip": 10364,
+      "brotli": 8992
+    },
+    "dist/client/assets/ComparePicker-HASH.js": {
+      "raw": 5222,
+      "gzip": 2343,
+      "brotli": 2118
+    },
+    "dist/client/assets/CompareViewer-HASH.css": {
+      "raw": 7830,
+      "gzip": 2082,
+      "brotli": 1777
+    },
+    "dist/client/assets/CompareViewer-HASH.js": {
+      "raw": 37956,
+      "gzip": 13469,
+      "brotli": 11968
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 94002,
@@ -156,6 +101,16 @@
       "raw": 3209,
       "gzip": 1535,
       "brotli": 1392
+    },
+    "dist/client/assets/Editor-HASH.css": {
+      "raw": 31925,
+      "gzip": 6193,
+      "brotli": 5501
+    },
+    "dist/client/assets/Editor-HASH.js": {
+      "raw": 101077,
+      "gzip": 33857,
+      "brotli": 28913
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -173,9 +128,19 @@
       "brotli": 407
     },
     "dist/client/assets/fetch-HASH.js": {
-      "raw": 402,
-      "gzip": 280,
-      "brotli": 229
+      "raw": 721,
+      "gzip": 439,
+      "brotli": 380
+    },
+    "dist/client/assets/Inspector-HASH.css": {
+      "raw": 44015,
+      "gzip": 8406,
+      "brotli": 7521
+    },
+    "dist/client/assets/Inspector-HASH.js": {
+      "raw": 240032,
+      "gzip": 81328,
+      "brotli": 68340
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -197,6 +162,16 @@
       "gzip": 308973,
       "brotli": 256601
     },
+    "dist/client/assets/MalleableHost-HASH.css": {
+      "raw": 8084,
+      "gzip": 2054,
+      "brotli": 1747
+    },
+    "dist/client/assets/MalleableHost-HASH.js": {
+      "raw": 77463,
+      "gzip": 25654,
+      "brotli": 22782
+    },
     "dist/client/assets/pencil-HASH.js": {
       "raw": 321,
       "gzip": 256,
@@ -213,9 +188,9 @@
       "brotli": 65881
     },
     "dist/client/assets/queries-HASH.js": {
-      "raw": 14679,
-      "gzip": 4771,
-      "brotli": 4356
+      "raw": 14604,
+      "gzip": 4752,
+      "brotli": 4335
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
@@ -232,15 +207,20 @@
       "gzip": 2958,
       "brotli": 2681
     },
+    "dist/client/assets/ReplayComparePage-HASH.js": {
+      "raw": 982,
+      "gzip": 607,
+      "brotli": 555
+    },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
       "gzip": 7571,
       "brotli": 6796
     },
     "dist/client/assets/sign-in-HASH.js": {
-      "raw": 16749,
-      "gzip": 5938,
-      "brotli": 5417
+      "raw": 16683,
+      "gzip": 5908,
+      "brotli": 5388
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 2418,
@@ -257,6 +237,16 @@
       "gzip": 187,
       "brotli": 158
     },
+    "dist/client/assets/SuiteCompare-HASH.js": {
+      "raw": 1124,
+      "gzip": 684,
+      "brotli": 640
+    },
+    "dist/client/assets/SuiteWorkspace-HASH.js": {
+      "raw": 21170,
+      "gzip": 8711,
+      "brotli": 7500
+    },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
       "gzip": 12373,
@@ -270,7 +260,7 @@
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 312,
       "gzip": 253,
-      "brotli": 219
+      "brotli": 215
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -280,7 +270,17 @@
     "dist/client/assets/useTriggerFocusGuards-HASH.js": {
       "raw": 72164,
       "gzip": 25666,
-      "brotli": 22682
+      "brotli": 22715
+    },
+    "dist/client/assets/Viewer-HASH.css": {
+      "raw": 5200,
+      "gzip": 1420,
+      "brotli": 1220
+    },
+    "dist/client/assets/Viewer-HASH.js": {
+      "raw": 60058,
+      "gzip": 21441,
+      "brotli": 18678
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -290,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 544,
-      "brotli": 406
+      "brotli": 407
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -307,10 +307,15 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-2baadbe84d5e.mjs": {
-      "brotli": 66039,
-      "gzip": 80607,
-      "raw": 307644
+    "dist/lib/chunks/compression.ts-47af8e92faec.mjs": {
+      "raw": 4312,
+      "gzip": 1720,
+      "brotli": 1488
+    },
+    "dist/lib/chunks/context.schema.json-c805001dee98.mjs": {
+      "raw": 310751,
+      "gzip": 81506,
+      "brotli": 66856
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -324,7 +329,7 @@
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
-      "gzip": 9208,
+      "gzip": 9209,
       "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
@@ -357,6 +362,11 @@
       "gzip": 8512,
       "brotli": 7425
     },
+    "dist/lib/chunks/start.ts-530ffefc64b4.mjs": {
+      "raw": 4541,
+      "gzip": 1771,
+      "brotli": 1551
+    },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
       "gzip": 1449,
@@ -385,7 +395,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 136
+      "brotli": 144
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -403,9 +413,9 @@
       "brotli": 3776
     },
     "dist/lib/plugins-iap.mjs": {
-      "raw": 4025,
-      "gzip": 1596,
-      "brotli": 1370
+      "raw": 4181,
+      "gzip": 1640,
+      "brotli": 1419
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
@@ -473,9 +483,9 @@
       "brotli": 3167
     },
     "dist/lib/server.mjs": {
-      "raw": 1829,
-      "gzip": 598,
-      "brotli": 507
+      "raw": 1907,
+      "gzip": 616,
+      "brotli": 527
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -823,16 +833,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
-      "file": "dist/lib/server.mjs",
-      "cap": {
-        "raw": 1829,
-        "gzip": 600,
-        "brotli": 509
-      },
-      "reason": "The /server entry exports ViewCatalog and createViewCatalog (main 1703/567/477, head 1775/582/494).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
-    },
-    {
       "file": "dist/lib/chunks/define.ts-c99e647c6d2f.mjs",
       "cap": {
         "raw": 46985,
@@ -938,16 +938,6 @@
         "raw": 25287,
         "gzip": 9677,
         "brotli": 8444
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/fetch-HASH.js",
-      "cap": {
-        "raw": 402,
-        "gzip": 280,
-        "brotli": 229
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -1193,14 +1183,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 633
-      },
-      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 252918,
@@ -1219,6 +1201,76 @@
       },
       "reason": "The initial index style group carries the same phone index stylesheets.",
       "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "dist/client/assets/fetch-HASH.js",
+      "cap": {
+        "raw": 721,
+        "gzip": 439,
+        "brotli": 380
+      },
+      "reason": "api/fetch.ts reads the deployment through page-meta.ts, which a server render answers from the request (gzip 271 to 426). Replaces #113's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1124,
+        "gzip": 685,
+        "brotli": 640
+      },
+      "reason": "Brotli drift of a few bytes in this 1 kB chunk when the hashed chunk names it imports change. Replaces #152's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/plugins-iap.mjs",
+      "cap": {
+        "raw": 4181,
+        "gzip": 1640,
+        "brotli": 1419
+      },
+      "reason": "The IAP plugin entry re-exports the server barrel, which now names the Start page renderer types (+34 B raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 1907,
+        "gzip": 616,
+        "brotli": 527
+      },
+      "reason": "The server entry reaches the lazily loaded Start page renderer (src/server/pages/start.ts) (+22 B raw). Replaces #131's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/chunks/compression.ts-47af8e92faec.mjs",
+      "cap": {
+        "raw": 4312,
+        "gzip": 1720,
+        "brotli": 1488
+      },
+      "reason": "compression.ts is shared by the server and the Start page renderer, so it becomes its own chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-c805001dee98.mjs",
+      "cap": {
+        "raw": 310751,
+        "gzip": 81506,
+        "brotli": 66856
+      },
+      "reason": "The context-schema chunk is renamed by its content hash when the server chunk graph gains the page renderer; same module.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
+    },
+    {
+      "file": "dist/lib/chunks/start.ts-530ffefc64b4.mjs",
+      "cap": {
+        "raw": 4541,
+        "gzip": 1771,
+        "brotli": 1551
+      },
+      "reason": "The Start page renderer (src/server/pages/start.ts, head.ts), loaded only with REPLAYS_SSR=1.",
+      "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",

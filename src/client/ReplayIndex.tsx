@@ -1,4 +1,5 @@
 import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
+import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedText } from '@/components/animated-text.tsx';
 
@@ -21,6 +22,8 @@ import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
+import { useHydrated } from './hooks/use-hydrated.ts';
+import { indexReplaysQuery, indexSuitesQuery } from './index/index-queries.ts';
 import { rememberListed } from './transitions/open-hint.ts';
 import { CommandSearch, IndexIdentity, type ProfileCounts, ProfileSegments, ScopeBar } from './index/IndexHeader.tsx';
 import { indexProfiles, pageProfiles } from './profiles.ts';
@@ -32,7 +35,8 @@ import { MeContext } from './index/People.tsx';
 import { ExpiredReplays } from './index/ExpiredReplays.tsx';
 import { FirstRun } from './index/first-run/FirstRun.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
-import { apiUrl } from './api/fetch.ts';
+import { apiUrl, appBase } from './api/fetch.ts';
+import { pageCookie, writePageCookie } from './page-meta.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
@@ -210,6 +214,17 @@ export function storedView(): FeedView {
   return readStorage(VIEW_KEY) === 'grid' ? 'grid' : 'list';
 }
 
+/** The view a server render shows: the choice mirrored into a cookie (this browser's storage stays the source). */
+export function renderedView(): FeedView {
+  return pageCookie(VIEW_KEY) === 'grid' ? 'grid' : 'list';
+}
+
+/** Keeps the cookie a server render reads in step with the saved view (choices made before it existed included). */
+export function syncViewCookie() {
+  const view = storedView();
+  if (renderedView() !== view) writePageCookie(VIEW_KEY, view, appBase());
+}
+
 function indexHistoryState(): IndexHistoryState {
   return (history.state ?? {}) as IndexHistoryState;
 }
@@ -372,6 +387,13 @@ interface IndexCache {
   newest?: string;
 }
 
+/** The lists already in the Query cache for this request (a server render's, or an earlier visit in this tab). */
+function cachedIndex(client: QueryClient, search: string, suitesRequest: string): IndexCache | undefined {
+  const items = client.getQueryData(indexReplaysQuery(search).queryKey);
+  const suites = client.getQueryData(indexSuitesQuery(suitesRequest).queryKey);
+  return items && suites ? { search, items, suites } : undefined;
+}
+
 /** On Back/Forward only: the cached list for this request (a fresh visit always starts from the server). */
 function restoredIndex(search: string): IndexCache | undefined {
   const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
@@ -417,14 +439,27 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
  * `search` is the address it opens on (Back to other filters, a link: the page remounts on it); `onSearch` gets the
  * filters, sort and view it shows now, for the address and "back to Replays" links.
  */
-export function ReplayIndex({ search: opened, onSearch }: { search: string; onSearch: (search: string) => void }) {
+export function ReplayIndex({
+  search: opened,
+  onSearch,
+  rendered = 'list',
+}: {
+  search: string;
+  onSearch: (search: string) => void;
+  /** The view the page was rendered in (the index route's loader says, also for a server render). */
+  rendered?: FeedView;
+}) {
   const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(opened));
   const [forMe, setForMe] = useState(() => forMeFromSearch(opened));
   const [linked, setLinked] = useState(storedLinkedHandles);
   const [me, setMe] = useState<Me>();
   /** The sessions request (and the Back cache's key): the filters, plus For me. */
   const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
-  const [restored] = useState(() => restoredIndex(listSearch));
+  const queryClient = useQueryClient();
+  // why: lists a server render put in the page (or this tab already loaded) show at once, without the first-load stagger.
+  const [restored] = useState(
+    () => cachedIndex(queryClient, listSearch, withForMe(INDEX_SUITES_URL, forMe, linked)) ?? restoredIndex(listSearch),
+  );
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(opened));
   const profiles = pageProfiles();
   const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(opened, profiles));
@@ -448,7 +483,10 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
     shown.current = { items, suites };
   }, [items, suites]);
   const newest = useRef(restored?.newest);
-  const [preferredView, setPreferredView] = useState<FeedView>(storedView);
+  const hydrated = useHydrated();
+  // why: the saved view is this browser's; a server render (and its hydration) shows the view it rendered first.
+  const [chosenView, setPreferredView] = useState<FeedView>();
+  const preferredView: FeedView = chosenView ?? (hydrated ? storedView() : rendered);
   // Phones get a sort menu and a filter sheet instead of the row of selects (same URL state), and always the list.
   const compact = useMediaQuery(INDEX_COMPACT_QUERY);
   const view: FeedView = compact ? 'list' : preferredView;
@@ -698,6 +736,7 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
   const chooseView = (next: FeedView) => {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
+    writePageCookie(VIEW_KEY, next, appBase());
   };
   const searchField = <CommandSearch value={query} onChange={setQuery} entries={entries} total={entries?.length} compact={compact} />;
   const count = (

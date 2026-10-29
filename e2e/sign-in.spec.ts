@@ -49,6 +49,9 @@ test('a sign-in that does not stick stops automatically and offers a manual link
   await page.goto(`${server().origin}/replays/r/demo-shop`);
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   await expect.poll(() => attempts).toBe(1);
+  // why: the automatic attempt navigates away and back; reload once the page it returns to has loaded.
+  await page.waitForURL(`${server().origin}/replays/r/demo-shop`, { waitUntil: 'load' });
+  await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByRole('link', { name: 'Sign in', exact: true })).toBeVisible();
   expect(attempts).toBe(1);
