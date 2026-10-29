@@ -43,7 +43,7 @@ async function expectInertSpacers(list: Locator) {
   const traits = await spacers.evaluateAll((all) =>
     all.map((spacer) => ({
       hidden: spacer.getAttribute('aria-hidden'),
-      inert: (spacer as HTMLElement).inert,
+      inert: spacer instanceof HTMLElement && spacer.inert,
       pointer: getComputedStyle(spacer).pointerEvents,
       role: spacer.getAttribute('role'),
       focusable: spacer.querySelector('button, a, [tabindex]') !== null,
