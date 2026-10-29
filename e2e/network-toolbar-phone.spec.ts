@@ -102,7 +102,7 @@ test('arrow keys move through requests and carry the open detail along', async (
   await expect(first).toBeFocused();
 });
 
-test('a busy recording gets the ribbon, and a drag across it narrows the list to that stretch', async ({ page }) => {
+test('a busy recording draws request density on the ribbon, and a drag across it narrows the list to that stretch', async ({ page }) => {
   const id = uniqueId('network-ribbon');
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Busy network fixture');
   bundle.network = Array.from({ length: 40 }, (_, index) => ({
@@ -135,6 +135,75 @@ test('a busy recording gets the ribbon, and a drag across it narrows the list to
   expect(shown).toBeLessThan(40);
   await range.click();
   await expect(range).toBeHidden();
+});
+
+test('a sparse recording gets one tick per request on the ribbon, and the row under the pointer lights its mark', async ({ page }) => {
+  const id = uniqueId('network-ticks');
+  await seedNetworkFixture(page, id);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/r/${id}`);
+  await page.getByTestId('network-tab').click();
+  const ribbon = page.getByTestId('network-ribbon');
+  await expect(ribbon.locator('.ribbon-density')).toHaveCount(0);
+  await expect(ribbon.locator('.ribbon-mark')).toHaveCount(2);
+  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveCount(0);
+  await page.getByRole('button', { name: /POST \/api\/checkout/ }).hover();
+  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveAttribute('data-tone', 'danger');
+  await expect(ribbon.locator('.ribbon-lit')).toHaveCount(1);
+});
+
+test('the ribbon playhead follows the clock by transform and glides, except under reduced motion', async ({ page }) => {
+  const id = uniqueId('network-motion');
+  await seedNetworkFixture(page, id);
+  await openReplay(page, `${server().origin}/r/${id}`);
+  await page.getByTestId('network-tab').click();
+  const ribbon = page.getByTestId('network-ribbon');
+  await page.getByRole('slider', { name: 'Seek' }).press('End');
+  await expect.poll(() => ribbon.evaluate((element) => Number((element as HTMLElement).style.getPropertyValue('--progress')))).toBe(1);
+  const glide = () => ribbon.locator('.ribbon-now').evaluate((element) => getComputedStyle(element).transitionDuration);
+  expect(await glide()).not.toBe('0s');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await glide()).toBe('0s');
+});
+
+test('the request detail shows captured bodies, indented and redacted, and says when bodies were not captured', async ({ page }) => {
+  const id = uniqueId('network-bodies');
+  const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Network bodies fixture');
+  bundle.meta.captured = { console: true, network: 'bodies', performance: true, video: false };
+  bundle.network = [
+    {
+      id: 'coupon',
+      at: 1000,
+      duration: 140,
+      method: 'POST',
+      url: 'https://shop.test/api/coupons',
+      status: 422,
+      statusText: 'Unprocessable Entity',
+      mimeType: 'application/json',
+      requestHeaders: [{ name: 'content-type', value: 'application/json' }],
+      responseHeaders: [],
+      requestBody: { text: '{"code":"SPRING10","password":"hunter2"}' },
+      responseBody: { text: `{"error":"coupon_expired","items":[${'1,'.repeat(40)}`, size: 90_000, truncated: true },
+    },
+  ];
+  await postBundle(page.request, server().origin, bundle);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/r/${id}`);
+  await page.getByTestId('network-tab').click();
+  await page.getByRole('button', { name: /POST \/api\/coupons/ }).click();
+  const detail = page.getByTestId('request-detail');
+  await expect(detail).toContainText('"code": "SPRING10"');
+  await expect(detail.locator('.np-redacted')).toHaveText('[redacted]');
+  await expect(detail).not.toContainText('hunter2');
+  await expect(detail).toContainText('coupon_expired');
+  await expect(detail).toContainText(/Truncated at .* of 88 kB/);
+
+  const plain = uniqueId('network-no-bodies');
+  await seedNetworkFixture(page, plain);
+  await openReplay(page, `${server().origin}/r/${plain}`);
+  await page.getByTestId('network-tab').click();
+  await page.getByRole('button', { name: /POST \/api\/checkout/ }).click();
+  await expect(page.getByTestId('request-detail').getByText('Not captured: this recording kept headers only')).toHaveCount(2);
 });
 
 async function seedNetworkFixture(page: Page, id: string) {

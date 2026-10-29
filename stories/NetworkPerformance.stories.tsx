@@ -25,6 +25,22 @@ const before = storyBundle(
   ],
 );
 
+const withBodies: ReplayBundle = {
+  ...sparse,
+  meta: { ...sparse.meta, captured: { console: true, network: 'bodies', performance: false, video: false } },
+  network: sparse.network.map((entry) => {
+    if (entry.id === 'coupon')
+      return {
+        ...entry,
+        requestBody: { text: 'code=SPRING10&email=%5Bredacted%5D', size: 34 },
+        responseBody: { text: '{"error":"coupon_expired","message":"SPRING10 ended on 1 October","session":"[redacted]"}', size: 88 },
+      };
+    if (entry.id === 'cart')
+      return { ...entry, responseBody: { text: `{"items":[${'{"sku":"tea-01","qty":1},'.repeat(3000)}`, size: 90_000, truncated: true } };
+    return { ...entry, responseBody: { omitted: 'content-type' } };
+  }),
+};
+
 function Network({ bundle, width, open, peers }: { bundle: ReplayBundle; width?: number; open?: string; peers?: NetworkPeer[] }) {
   const [selected, setSelected] = useState(open);
   return (
@@ -37,6 +53,7 @@ function Network({ bundle, width, open, peers }: { bundle: ReplayBundle; width?:
         selected={selected}
         onSelect={setSelected}
         peers={peers}
+        captured={bundle.meta.captured}
       />
     </PanelFrame>
   );
@@ -71,7 +88,7 @@ export const NetworkSparse: Story = {
   render: () => <Network bundle={sparse} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryByTestId('network-ribbon')).toBeNull();
+    await expect(canvas.getByTestId('network-ribbon').querySelectorAll('.ribbon-mark')).toHaveLength(3);
     await expect(canvas.getAllByRole('row')).toHaveLength(4);
   },
 };
@@ -96,6 +113,22 @@ export const NetworkCompared: Story = {
   ),
   play: async ({ canvasElement }) => {
     await expect(within(canvasElement).getByRole('region', { name: 'In the other recordings' })).toHaveTextContent('200');
+  },
+};
+
+export const NetworkBodies: Story = {
+  render: () => <Network bundle={withBodies} open="coupon" />,
+  play: async ({ canvasElement }) => {
+    const detail = within(canvasElement).getByTestId('request-detail');
+    await expect(detail).toHaveTextContent('coupon_expired');
+    await expect(detail.querySelectorAll('.np-redacted')).toHaveLength(2);
+  },
+};
+
+export const NetworkBodiesNotCaptured: Story = {
+  render: () => <Network bundle={sparse} open="coupon" />,
+  play: async ({ canvasElement }) => {
+    await expect(within(canvasElement).getByTestId('request-detail')).toHaveTextContent('Not captured');
   },
 };
 
