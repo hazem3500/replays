@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 459670,
-      "gzip": 118130,
-      "brotli": 96249
+      "raw": 462508,
+      "gzip": 119070,
+      "brotli": 96945
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 606
+      "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -278,8 +278,8 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60092,
-      "gzip": 21469,
+      "raw": 60104,
+      "gzip": 21476,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
-      "raw": 308641,
-      "gzip": 80890,
-      "brotli": 66336
+    "dist/lib/chunks/context.schema.json-06e184308ebe.mjs": {
+      "raw": 310977,
+      "gzip": 81843,
+      "brotli": 67134
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -818,16 +818,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/129"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 448586,
-        "gzip": 115307,
-        "brotli": 93962
-      },
-      "reason": "The CLI bundles the shared edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1108 B raw, +302 B gzip, +264 B brotli. Replaces the allowance on main for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/130"
-    },
-    {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
         "raw": 43666,
@@ -1156,10 +1146,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 613
+        "brotli": 617
       },
-      "reason": "Hash drift, not growth: raw matches main and gzip is 3 B smaller; this 1 KB chunk of hashed import paths moves its Brotli size by up to 30 bytes when another chunk's hash changes (613 against 600 here). Replaces #115's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/144"
+      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size; its Brotli size moves with the compare chunk's new hash (617 against 606 on Boat). Replaces #144's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/167"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
@@ -1252,12 +1242,12 @@
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 60092,
-        "gzip": 21469,
+        "raw": 60104,
+        "gzip": 21476,
         "brotli": 18749
       },
-      "reason": "Hash drift, not growth: raw matches main and gzip is 2 B smaller; the hashed chunk names it imports change with the server-rendered default, so Brotli moves +56 B (measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
+      "reason": "Compare draws the step caption on its focused tile, so the viewer's own stage caption steps aside when a comparison supplies the stage: +12 B raw, +7 B gzip measured on Boat against fresh main 0e7a3fdd. Replaces #157's allowance for this file (hash drift), keeping its Brotli cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/167"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
@@ -1290,14 +1280,24 @@
       "pr": "https://github.com/hazem3500/replays/pull/157"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
+      "file": "dist/cli/cli.mjs",
       "cap": {
-        "raw": 308641,
-        "gzip": 80890,
-        "brotli": 66336
+        "raw": 462508,
+        "gzip": 119070,
+        "brotli": 96945
       },
-      "reason": "Server-rendered pages by default: startPages (src/server/start.ts) checks for the Start build and logs when it is missing, and a failed render falls back to the single-page app; Rolldown bundles both into this shared server chunk (main 308481/80873/66283, head 308641/80890/66336). Replaces #123's entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
+      "pr": "https://github.com/hazem3500/replays/pull/164",
+      "reason": "Splitting ReplayStore into src/server/store/* modules adds module and class structure to the unminified CLI bundle (migrate-cli bundles the store); measured on Boat against main 0e7a3fd: main 458431/117681/95827, head 462508/119070/96945 (+4077 B raw, +1389 B gzip, +1118 B brotli). Replaces #130's allowance for this file."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-06e184308ebe.mjs",
+      "cap": {
+        "raw": 310977,
+        "gzip": 81843,
+        "brotli": 67134
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/164",
+      "reason": "The shared server chunk gains the src/server/store/* modules, so its source identity changes; measured on Boat against main 0e7a3fd: main 308641/80890/66336 (context.schema.json-7e5a8e2906dd), head 310977/81843/67134 (+2336 B raw, +953 B gzip, +798 B brotli). Replaces #157's entry."
     }
   ]
 }
