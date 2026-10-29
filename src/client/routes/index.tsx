@@ -1,6 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router';
 
 import { indexSearchSchema } from '../../shared/schemas/search.ts';
+import { indexReplaysQuery, indexSuitesQuery } from '../index/index-queries.ts';
+import { filtersFromSearch, INDEX_SUITES_URL, searchFromFilters } from '../ReplayIndex.tsx';
+import { stringifySearch } from '../routing/search.ts';
 
 /**
  * The index. The root layout draws its page (routing/KeptIndex.tsx), which keeps it mounted behind viewer pages so Back
@@ -8,5 +11,14 @@ import { indexSearchSchema } from '../../shared/schemas/search.ts';
  */
 export const Route = createFileRoute('/')({
   validateSearch: indexSearchSchema,
+  loaderDeps: ({ search }) => ({ list: searchFromFilters(filtersFromSearch(stringifySearch(search))), forMe: search.for === 'me' }),
+  loader: async ({ context: { queryClient }, deps }) => {
+    // why: a server render puts the lists in the page (For me needs this browser's linked handles); the browser's index
+    // fetches and revalidates its own, so a navigation here never waits.
+    if (typeof document !== 'undefined' || deps.forMe) return;
+    await Promise.all([queryClient.query(indexReplaysQuery(deps.list)), queryClient.query(indexSuitesQuery(INDEX_SUITES_URL))]).catch(
+      () => {},
+    );
+  },
   component: () => null,
 });

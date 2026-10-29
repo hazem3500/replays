@@ -1,18 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
 
 /** Phones and short landscape screens: the viewer stacks into one scrolling column (styles.css uses the same query). */
 export const STACKED_QUERY = '(max-width: 840px), (max-height: 560px)';
 
+/** Whether a media query matches, following changes. A server render (and the hydration that follows it) sees `false`. */
 export function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(() => matchMedia(query).matches);
-  useEffect(() => {
-    const list = matchMedia(query);
-    const update = () => setMatches(list.matches);
-    update();
-    list.addEventListener('change', update);
-    return () => list.removeEventListener('change', update);
-  }, [query]);
-  return matches;
+  return useSyncExternalStore(
+    (onChange) => {
+      const list = matchMedia(query);
+      list.addEventListener('change', onChange);
+      return () => list.removeEventListener('change', onChange);
+    },
+    () => matchMedia(query).matches,
+    () => false,
+  );
 }
 
 /**
