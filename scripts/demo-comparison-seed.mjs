@@ -92,6 +92,9 @@ function variant(source, suite, { side, label, scale, leadIn = 0 }) {
   for (const entry of replay.network) {
     entry.at = at(entry.at);
     entry.duration = Math.round(entry.duration * scale);
+    // why: every run is its own recording, so its requests carry their own ids.
+    for (const header of [...entry.requestHeaders, ...entry.responseHeaders])
+      if (header.name === 'x-request-id') header.value = `${header.value}_${suite.name}_${side}`;
   }
   replay.performance = suite.name === 'design' ? { supported: [], entries: [] } : syntheticPerformance(scale > 1.2, leadIn);
   replay.context.fields = {

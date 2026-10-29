@@ -47,3 +47,5 @@ entry, the actions and the panel work from the More menu and the header bar, the
 the settings follow each other, the upload hooks refuse and count, and plugin files are only served behind auth.
 The index shows the plugin's column, section and filter, with summary fields derived at upload and filters matched by the server.
 CI runs it in the `Custom distribution example` job.
+
+The example enables the beta editor to demonstrate a trusted caption tool. Its browser entry also adds Console JSON to Download and a `g` shortcut. These use the host editor/save policy and existing sanitized replay data.

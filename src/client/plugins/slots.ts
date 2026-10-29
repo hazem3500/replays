@@ -5,6 +5,7 @@ export const SLOT_NAMES = [
   'viewer.inspector.tabs',
   'viewer.panels.side',
   'viewer.actions',
+  'viewer.shortcuts',
   'viewer.scrubber.tracks',
   'viewer.context.sections',
   'viewer.headline',

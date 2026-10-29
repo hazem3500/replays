@@ -1052,3 +1052,85 @@ staff identity, and the endpoint's identity cannot reach them anyway.
 hooks. It has per-app keys with rotation, origin lists, per-key and per-IP limits, a per-app body cap and retention,
 server-chosen ids and an audit line per request. Its counters are per process, so with several replicas use a
 shared store.
+
+### Editor tools, exports and shortcuts
+
+Trusted browser entries can register three additional contributions. All use stable plugin ids, optional numeric `order`
+and the shared slot hide/order policy; unloading or replacing a plugin removes its contributions. They do not grant
+sandboxed plugins host privileges.
+
+```ts
+api.registerEditorTool({ id: 'caption', label: 'Mark this moment', run({ edits, duration, getTime }) {
+  const from = Math.max(0, Math.min(getTime(), duration - 1000));
+  return { ...edits, captions: [...(edits.captions ?? []), {
+    id: crypto.randomUUID(), from, to: Math.min(duration, from + 1000), text: 'Review this moment',
+  }] };
+} });
+api.registerExportFormat({ id: 'console-json', label: 'Console JSON', run({ replay }) {
+  return { name: `${replay.meta.id}.json`, mime: 'application/json', data: JSON.stringify(replay.console) };
+} });
+api.registerShortcut({ id: 'start', label: 'Back to start', keys: ['g'], run: (context) => context.seek(0) });
+```
+
+Editor tools receive the replay, a copy of its current edits, the original duration and `getTime()`. A synchronous
+`run` returns an existing `ReplayEdits` document or nothing. The core validates the returned edits before applying them
+as one undo step through the editor's normal save/conflict path. Tools cannot write when the host disables editing.
+The toolbar is the `editor.tools` slot; `core:tools` is the built-in tool group. A host may hide or reorder that group.
+Tools transform the existing portable format, so the viewer and MP4 renderer agree; this API does not introduce executable
+edit payloads or custom burned-in renderers. Existing capture redaction remains applied independently.
+
+Export formats appear in the Download menu on desktop and More on phones, even when server MP4 rendering is disabled.
+They receive `ViewerPluginContext` and run only after invocation. Return `{ name, data, mime? }` with text or a Blob;
+the core limits these downloads to 25 MiB and removes path/control characters from filenames. Returning nothing supports
+an existing download or a protected server job. Use normal authenticated plugin routes for server work; no second server
+export mechanism is needed. The `export.formats` slot includes the `core:video` group and plugin formats. `when(context)`
+can hide a format or tool. Failures leave the core UI available.
+
+Shortcuts are scoped to an open viewer. `keys` contains one to eight letter keys, optionally prefixed with `Shift+`.
+Core bindings, duplicate plugin keys and browser modifier chords are refused. Typing, IME composition and modal dialogs
+keep their keyboard input. `viewer.shortcuts` supports the same hide/order policy. Core remapping is deliberately outside
+this API; host shortcuts cannot take away existing playback or browser controls. Plugin shortcuts do not yet appear in the
+built-in shortcut sheet. See `examples/custom-distro` for an editor caption tool, JSON export and `g` binding.
+
+### Browser activity events
+
+Trusted browser entries can subscribe with `api.on(type, listener)` and receive a typed, frozen payload.
+The return value unsubscribes; replacing or unloading that plugin removes its observers automatically.
+A throwing observer does not interrupt the operation or another plugin.
+
+```ts
+export default defineViewerPlugin((api) => {
+  api.on('replay:open', ({ replayId }) => console.info('Opened', replayId));
+  api.on('seek', ({ replayId, timeMs }) => console.info('Seek', replayId, timeMs));
+});
+```
+
+Events are local observations. Nothing is sent to a server automatically. The initial catalogue is:
+
+| Event | Payload | When |
+| --- | --- | --- |
+| `replay:open` | `replayId` | A replay mounts; late subscribers also receive the currently open replay ids |
+| `tab:change` | `replayId`, `tab` | The inspector selection changes, including its initial selection |
+| `seek` | `replayId`, `timeMs` | Playback seeks, including scrubbing; normal clock ticks do not emit |
+| `export:start` | `replayId`, `format` | An MP4 export starts (`format: 'core:mp4'`) |
+| `index:filter` | `activeCount` | Applied index filters change, including their initial state |
+
+No event contains recorded content, titles, page URLs, identities, search text or filter values.
+These observers run after hydration, never during server rendering. Initial selection/filter events can
+precede an asynchronously loaded entry; only `replay:open` replays the active state to late subscribers.
+Sandboxed user plugins do not get this host activity surface or extra read permissions.
+See the Acme activity panel in `examples/custom-distro/src/client.ts` for cleanup when a view unmounts.
+Comment events are intentionally outside this catalogue while the comments API is being revised.
+
+### Theme tokens v2
+
+`api.branding({ theme })` accepts the [generated token catalogue](tokens.md), including
+`shadow-pop`, `motion-fast`, `text-sm`, `space-4`, `card-radius`, `poster-overlay-bg`,
+`poster-overlay-fg`, `caption-bg`, `caption-fg` and `caption-font`. For a compact host theme:
+
+```ts
+api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms' } } });
+```
+
+The server validates these as plain CSS values and emits them into the initial page head.
+Plugin precedence and config overrides are unchanged. No DOM access or client setup is needed.

@@ -1,5 +1,14 @@
-import { SLOT_NAMES } from '../src/client/plugins/api.ts';
-import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
+import { SLOT_NAMES, ViewerRegistry } from '../src/client/plugins/api.ts';
+import type {
+  EditorToolDefinition,
+  ExportFormatDefinition,
+  ShortcutDefinition,
+  ViewerEventMap,
+  ViewerPluginApi,
+  SlotDescriptor,
+  SlotConfiguration,
+  PluginPageDefinition,
+} from '../src/client/plugins/api.ts';
 import type {
   Identity,
   IdentityCapabilities,
@@ -237,11 +246,30 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('exposes typed editor, export and shortcut contributions', () => {
+    expectTypeOf<ViewerPluginApi['registerEditorTool']>().parameter(0).toEqualTypeOf<EditorToolDefinition>();
+    expectTypeOf<ViewerPluginApi['registerExportFormat']>().parameter(0).toEqualTypeOf<ExportFormatDefinition>();
+    expectTypeOf<ViewerPluginApi['registerShortcut']>().parameter(0).toEqualTypeOf<ShortcutDefinition>();
+  });
+
+  it('publishes typed content-free event subscriptions', () => {
+    const observeSeek = new ViewerRegistry().apiFor('host').on<'seek'>;
+    expectTypeOf(observeSeek).toBeCallableWith('seek', (_event: ViewerEventMap['seek']) => {});
+    expectTypeOf<ViewerEventMap['index:filter']>().toEqualTypeOf<{ readonly activeCount: number }>();
+  });
+  it('pins the additive theme token contract', async () => {
+    const { THEME_TOKENS } = await import('../src/server/index.ts');
+    const contract: unknown = JSON.parse(readFileSync(new URL('../docs/formats/theme-tokens.json', import.meta.url), 'utf8'));
+    expect(contract).toEqual({ version: 2, tokens: THEME_TOKENS });
+    expect(THEME_TOKENS).toContain('caption-bg');
+    expect(THEME_TOKENS).toContain('motion-fast');
+  });
   it('pins the published slot names', () => {
     expect(SLOT_NAMES).toEqual([
       'viewer.inspector.tabs',
       'viewer.panels.side',
       'viewer.actions',
+      'viewer.shortcuts',
       'viewer.scrubber.tracks',
       'viewer.context.sections',
       'viewer.headline',

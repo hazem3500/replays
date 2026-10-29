@@ -1,7 +1,18 @@
+import type { ViewerEventListener, ViewerEventName } from './events.ts';
 import type { PluginSettingDefinition } from '../../shared/plugin-settings.ts';
 import type { PluginPageDefinition } from './pages.ts';
 import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
 import type { ReplayBundle, ReplaySummary } from '../../shared/replay.ts';
+import type { EditorToolDefinition, ExportFormatDefinition, ShortcutDefinition } from './contributions.ts';
+export type {
+  EditorToolContext,
+  EditorToolDefinition,
+  ExportFormatDefinition,
+  ReplayExportFile,
+  ShortcutDefinition,
+} from './contributions.ts';
+
+export type { ViewerEventMap, ViewerEventName, ViewerEventListener, ViewerEvent } from './events.ts';
 export type { PluginPageLoadContext, PluginPageContext, PluginPageDefinition } from './pages.ts';
 export { ViewerRegistry } from './registry.ts';
 export { SLOT_NAMES, SlotRegistry } from './slots.ts';
@@ -207,7 +218,12 @@ export type SettingDefinition = PluginSettingDefinition;
 export interface ViewerPluginApi {
   /** The server plugin's name (the one that served this script). */
   readonly pluginName: string;
+  /** Observe activity metadata; unsubscribe explicitly or when the plugin unloads. Host entries only. */
+  on<K extends ViewerEventName>(this: void, type: K, listener: ViewerEventListener<K>): () => void;
   registerPluginPage(definition: PluginPageDefinition): void;
+  registerEditorTool(definition: EditorToolDefinition): void;
+  registerExportFormat(definition: ExportFormatDefinition): void;
+  registerShortcut(definition: ShortcutDefinition): void;
   configureSlot(slot: string, configuration: SlotConfiguration): void;
   registerSlotItem<C, R>(slot: string, descriptor: SlotDescriptor<C, R>): void;
   registerInspectorTab(definition: InspectorTabDefinition): void;

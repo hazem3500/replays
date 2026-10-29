@@ -1,3 +1,6 @@
+import { usePluginShortcuts } from './hooks/use-plugin-shortcuts.ts';
+
+import { usePluginEvents } from './hooks/use-plugin-events.ts';
 import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -223,6 +226,7 @@ export function Viewer({
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
   const { railCollapsed, setRailCollapsed, tab, captions, switchCaptions } = layout;
   const workspace = useRef<HTMLDivElement>(null);
+  usePluginEvents(bundle.meta.id, tab, player);
   // Viewer-only presentation, independent of caption visibility and saved editor captions.
   const [captionNumbers, setCaptionNumbersState] = useState(() => readStorage(CAPTION_NUMBERS_KEY) === '1');
   const setCaptionNumbers = useCallback((next: boolean) => {
@@ -436,6 +440,7 @@ export function Viewer({
   // Client plugins (src/client/plugins/): one context per plugin for this replay; their actions and panel entries are
   // More-menu items (bar actions are header buttons on desktop), their settings close the menu, open panels draw in a drawer.
   const pluginContexts = usePluginContexts(bundle, player);
+  usePluginShortcuts(pluginContexts);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   // why: a phone's top bar keeps only Edit and More (and the layout switch while comparing), so Compare waits in More.
