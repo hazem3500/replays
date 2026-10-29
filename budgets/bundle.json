@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 650
+      "brotli": 633
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -1245,10 +1245,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 650
+        "brotli": 633
       },
-      "reason": "Hash noise, not growth: raw and gzip match main byte for byte. This 1 KB chunk is mostly hashed import paths, so its Brotli size moves by up to 30 bytes whenever another chunk's hash changes, which is more than the 3% headroom. Replaces #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/147"
+      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
     }
   ]
 }
