@@ -14,7 +14,11 @@ const sample = JSON.parse(readFileSync(resolve(import.meta.dirname, '../sample/h
 
 async function openDialog(page: Page) {
   await page.goto(`${server().origin}/`);
-  await page.getByRole('button', { name: 'Upload', exact: true }).click();
+  if ((page.viewportSize()?.width ?? 1280) <= 640) {
+    // why: phones fold Upload into the header's menu sheet (IndexPhoneMenu.tsx).
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('button', { name: /^Upload a replay/ }).click();
+  } else await page.getByRole('button', { name: 'Upload', exact: true }).click();
   const dialog = page.getByRole('dialog', { name: 'Upload a replay' });
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole('button', { name: 'Choose file…' })).toBeFocused();
