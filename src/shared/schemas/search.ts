@@ -24,12 +24,8 @@ export const indexSearchSchema = z.object({
   sort: text,
 });
 
-/** A replay: `?t=12.5` the playhead in seconds, `?original=1` as captured, and older `?suite=` links (compare keys: compare-search.ts). */
-export const viewerSearchSchema = z.object({
-  t: text,
-  original: text,
-  suite: text,
-});
+/** A replay: `?t=12.5` the playhead in seconds, `?original=1` as captured (compare keys: compare-search.ts). */
+export const viewerSearchSchema = z.object({ t: text, original: text });
 export type ViewerSearch = z.output<typeof viewerSearchSchema>;
 
 /** A suite run: the playhead and the original-version switch (compare keys: compare-search.ts). */

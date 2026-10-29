@@ -29,8 +29,8 @@ import { notify as showToast } from './toast.ts';
 import { CompareButton } from './compare/CompareButton.tsx';
 import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
-import { replayPurpose } from './purposes.ts';
-import { DEFAULT_LEAD_MS } from '../shared/purposes.ts';
+import { replayProfile } from './profiles.ts';
+import { DEFAULT_LEAD_MS } from '../shared/profiles.ts';
 import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
@@ -155,8 +155,8 @@ export function Viewer({
   onCompareWith?: (id: string) => void;
 }) {
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
-  // The deployment's purpose for this replay (src/client/purposes.ts) sets how it first opens.
-  const purpose = useMemo(() => replayPurpose(bundle), [bundle]);
+  // The deployment's profile for this replay (src/client/profiles.ts) sets how it first opens.
+  const profile = useMemo(() => replayProfile(bundle), [bundle]);
   const opened = useMemo(() => {
     if (sharedPlayer) return { controller: sharedPlayer, step: undefined, resume: false, tab: undefined };
     const controller = new ReplayController(bundle, effects ? { effects } : {});
@@ -167,8 +167,8 @@ export function Viewer({
     const at = handoff ? handoff.time : target.step === undefined ? target.time : bundle.steps[target.step]?.at;
     if (at !== undefined) controller.seek(at);
     // `openAt: 'first-error'` (a bug reproduction): just before the first error, on the tab that holds it. Permalinks win.
-    const firstError = purpose?.viewer?.openAt === 'first-error' && at === undefined ? errors[0] : undefined;
-    if (firstError) controller.seek(Math.max(0, firstError.at - (purpose?.viewer?.leadMs ?? DEFAULT_LEAD_MS)));
+    const firstError = profile?.viewer?.openAt === 'first-error' && at === undefined ? errors[0] : undefined;
+    if (firstError) controller.seek(Math.max(0, firstError.at - (profile?.viewer?.leadMs ?? DEFAULT_LEAD_MS)));
     const step = target.step === undefined ? undefined : { index: target.step, time: controller.getTime() };
     return { controller, step, resume: Boolean(handoff), tab: firstError?.kind };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
@@ -205,10 +205,10 @@ export function Viewer({
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
   const workspace = useRef<HTMLDivElement>(null);
   const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
-  // Step captions on the player: the person's stored choice, else the purpose's default (off without one).
+  // Step captions on the player: the person's stored choice, else the profile's default (off without one).
   const [captions, setCaptionsState] = useState(() => {
     const saved = readStorage(CAPTIONS_KEY);
-    return saved === '1' ? true : saved === '0' ? false : purpose?.viewer?.captions === true;
+    return saved === '1' ? true : saved === '0' ? false : profile?.viewer?.captions === true;
   });
   const switchCaptions = useCallback(() => {
     setCaptionsState((current) => {
@@ -222,12 +222,12 @@ export function Viewer({
     writeStorage(CAPTION_NUMBERS_KEY, next ? '1' : '0');
     setCaptionNumbersState(next);
   }, []);
-  // The bottom panel folds to its tab row (desktop). Remembered; when nothing is stored, the purpose's default (open without one).
+  // The bottom panel folds to its tab row (desktop). Remembered; when nothing is stored, the profile's default (open without one).
   const [collapsed, setCollapsedState] = useState(() => {
     // Opening on an error shows the panel that holds it (for this visit; the stored choice stands).
     if (opened.tab) return false;
     const saved = readStorage(INSPECTOR_COLLAPSED_KEY);
-    return saved === '1' ? true : saved === '0' ? false : purpose?.viewer?.inspector === 'collapsed';
+    return saved === '1' ? true : saved === '0' ? false : profile?.viewer?.inspector === 'collapsed';
   });
   /** `persist: false` is a transient change for one action (a shortcut that needs the panel), not a preference. */
   const setCollapsed = useCallback((next: boolean, persist = true) => {
@@ -571,7 +571,7 @@ export function Viewer({
         data-mobile={mobile || undefined}
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
-        data-purpose={purpose?.id}
+        data-profile={profile?.id}
         style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
       >
         {skipLink ? (

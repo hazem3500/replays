@@ -82,9 +82,9 @@ describe('routes', () => {
     expect(await open('/replays/r/a', '/replays')).toMatchObject({ routeId: '/r/$id/', params: { id: 'a' }, href: '/replays/r/a' });
   });
 
-  it('opens the index for / and a replay link without its id', async () => {
+  it('opens the index at the root and under a base path', async () => {
     expect((await open('/')).routeId).toBe('/');
-    expect(await open('/replays/r/', '/replays')).toMatchObject({ routeId: '/', href: '/replays/' });
+    expect(await open('/replays/', '/replays')).toMatchObject({ routeId: '/', href: '/replays/' });
   });
 
   it('opens a suite on its own and on one of its runs', async () => {
@@ -95,14 +95,7 @@ describe('routes', () => {
     });
   });
 
-  it('sends older ?suite= links to the run in its suite, keeping the time', async () => {
-    expect(await open('/r/capture-1?suite=review-123&t=4.5')).toMatchObject({
-      routeId: '/s/$suiteId/r/$replayId',
-      href: '/s/review-123/r/capture-1?t=4.5',
-    });
-  });
-
-  it('keeps old query strings exactly as written', async () => {
+  it('keeps query strings exactly as written', async () => {
     expect((await open('/?q=login&errors=1&sort=-duration&x-team=web')).href).toBe('/?q=login&errors=1&sort=-duration&x-team=web');
     expect((await open('/r/a?t=12.5&with=b,c&layout=grid#step-2')).href).toBe('/r/a?t=12.5&with=b,c&layout=grid#step-2');
   });
@@ -134,10 +127,10 @@ describe('edit mode', () => {
     expect(await open('/r/demo-shop/edit')).toMatchObject({ routeId: '/r/$id/edit', params: { id: 'demo-shop' } });
   });
 
-  it('opens playback at the same time and anchor without edit capability, also under a base path', async () => {
+  it('has no edit page without edit capability', async () => {
     setBetaEditorForTests(false);
-    expect(await open('/r/demo-shop/edit?t=3#step-2')).toMatchObject({ routeId: '/r/$id/', href: '/r/demo-shop?t=3#step-2' });
-    expect(await open('/replays/r/demo-shop/edit', '/replays')).toMatchObject({ routeId: '/r/$id/', href: '/replays/r/demo-shop' });
+    const { router } = await open('/r/demo-shop/edit');
+    expect(router.state.matches.at(-1)?.status).toBe('notFound');
   });
 });
 

@@ -1,13 +1,13 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute, notFound } from '@tanstack/react-router';
 
 import { editingEnabled } from '../config.ts';
 import { EditPage } from '../pages/EditPage.tsx';
 import { editorPage, warm } from '../routing/pages.ts';
 
-/** Edit mode. Without edit capability (the host's, or this person's Labs choice), edit links open playback at the same time and anchor. */
+/** Edit mode; without edit capability (the host's, or this person's Labs choice) there is no such page. */
 export const Route = createFileRoute('/r/$id/edit')({
-  beforeLoad: ({ params }) => {
-    if (!editingEnabled()) throw redirect({ to: '/r/$id', params, search: true, hash: true, replace: true });
+  beforeLoad: () => {
+    if (!editingEnabled()) throw notFound();
   },
   loader: () => warm(editorPage),
   component: function Edit() {

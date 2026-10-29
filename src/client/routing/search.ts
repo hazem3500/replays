@@ -1,5 +1,5 @@
-/* why: the app's URLs keep their plain query strings (`?errors=1&sort=-duration`, `?t=12.5`, `?with=a,b`), so links printed
- * by the CLI, agents and older builds open unchanged. The router's default would JSON-encode values (`q=%22a%22`);
+/* why: the app's URLs keep their plain query strings (`?errors=1&sort=-duration`, `?t=12.5`, `?with=a,b`), the form the CLI
+ * and agents print. The router's default would JSON-encode values (`q=%22a%22`);
  * these keep every value as text and leave out empty ones. Each route's schema (src/shared/schemas/search.ts) types
  * the text. Server-safe: no DOM.
  */

@@ -17,8 +17,10 @@
     <meta name="app-comments" content="" />
     <!-- Browser entries of the server's plugins (JSON), filled in by the server: read by src/client/plugins/load.ts. -->
     <meta name="app-plugins" content="" />
-    <!-- The deployment's purposes (JSON), filled in by the server: read by src/client/purposes.ts. Empty = none. -->
-    <meta name="app-purposes" content="" />
+    <!-- The deployment's profiles (JSON), filled in by the server: read by src/client/profiles.ts. Empty = none. -->
+    <meta name="app-profiles" content="" />
+    <!-- The deployment's views (JSON, src/shared/views.ts), filled in by the server. -->
+    <meta name="app-views" content="" />
     <!-- Source providers' icons and nouns (JSON), filled in by the server: read by src/client/source-looks.ts. -->
     <meta name="app-sources" content="" />
     <!-- The deployment's display name and logo, filled in by the server (src/client/config.ts reads them). -->
@@ -104,7 +106,7 @@
         var replay = /^\/r\/([^/]+)\/?$/.exec(rest);
         if (suite || replay) {
           var replayId = id(suite ? suite[2] || '' : replay[1]);
-          var suiteId = suite ? id(suite[1]) : params.get('suite') ? encodeURIComponent(params.get('suite')) : '';
+          var suiteId = suite ? id(suite[1]) : '';
           if (suiteId) preload('suites/' + suiteId + '?expand=runs');
           if (replayId) preload('replays/' + replayId);
           return;

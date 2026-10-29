@@ -10,7 +10,6 @@
 
 import { Route as rootRouteImport } from './routes/__root.tsx';
 import { Route as IndexRouteImport } from './routes/index.tsx';
-import { Route as RIndexRouteImport } from './routes/r.index.tsx';
 import { Route as RIdRouteImport } from './routes/r.$id.tsx';
 import { Route as SSuiteIdRouteImport } from './routes/s.$suiteId.tsx';
 import { Route as PPluginSplatRouteImport } from './routes/p.$plugin.$.tsx';
@@ -22,11 +21,6 @@ import { Route as SSuiteIdRReplayIdRouteImport } from './routes/s.$suiteId.r.$re
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any);
-const RIndexRoute = RIndexRouteImport.update({
-  id: '/r/',
-  path: '/r/',
   getParentRoute: () => rootRouteImport,
 } as any);
 const RIdRoute = RIdRouteImport.update({
@@ -69,7 +63,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/r/$id': typeof RIdRouteWithChildren;
   '/s/$suiteId': typeof SSuiteIdRouteWithChildren;
-  '/r/': typeof RIndexRoute;
   '/p/$plugin/$': typeof PPluginSplatRoute;
   '/r/$id/edit': typeof RIdEditRoute;
   '/r/$id/': typeof RIdIndexRoute;
@@ -78,7 +71,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
-  '/r': typeof RIndexRoute;
   '/p/$plugin/$': typeof PPluginSplatRoute;
   '/r/$id/edit': typeof RIdEditRoute;
   '/r/$id': typeof RIdIndexRoute;
@@ -90,7 +82,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute;
   '/r/$id': typeof RIdRouteWithChildren;
   '/s/$suiteId': typeof SSuiteIdRouteWithChildren;
-  '/r/': typeof RIndexRoute;
   '/p/$plugin/$': typeof PPluginSplatRoute;
   '/r/$id/edit': typeof RIdEditRoute;
   '/r/$id/': typeof RIdIndexRoute;
@@ -103,7 +94,6 @@ export interface FileRouteTypes {
     | '/'
     | '/r/$id'
     | '/s/$suiteId'
-    | '/r/'
     | '/p/$plugin/$'
     | '/r/$id/edit'
     | '/r/$id/'
@@ -112,7 +102,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
-    | '/r'
     | '/p/$plugin/$'
     | '/r/$id/edit'
     | '/r/$id'
@@ -123,7 +112,6 @@ export interface FileRouteTypes {
     | '/'
     | '/r/$id'
     | '/s/$suiteId'
-    | '/r/'
     | '/p/$plugin/$'
     | '/r/$id/edit'
     | '/r/$id/'
@@ -135,7 +123,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   RIdRoute: typeof RIdRouteWithChildren;
   SSuiteIdRoute: typeof SSuiteIdRouteWithChildren;
-  RIndexRoute: typeof RIndexRoute;
   PPluginSplatRoute: typeof PPluginSplatRoute;
 }
 
@@ -146,13 +133,6 @@ declare module '@tanstack/react-router' {
       path: '/';
       fullPath: '/';
       preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    '/r/': {
-      id: '/r/';
-      path: '/r';
-      fullPath: '/r/';
-      preLoaderRoute: typeof RIndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/r/$id': {
@@ -237,7 +217,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   RIdRoute: RIdRouteWithChildren,
   SSuiteIdRoute: SSuiteIdRouteWithChildren,
-  RIndexRoute: RIndexRoute,
   PPluginSplatRoute: PPluginSplatRoute,
 };
 export const routeTree = rootRouteImport

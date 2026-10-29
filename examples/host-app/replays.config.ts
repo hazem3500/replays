@@ -26,7 +26,7 @@ export function hostConfig(env: NodeJS.ProcessEnv = process.env): ReplaysConfig 
     signIn: local ? false : { path: '/api/sign-in' },
     capture: { stepPauseMs: 1200 },
     retentionDays: 90,
-    purposes: [
+    profiles: [
       {
         id: 'triage',
         label: 'Triage',

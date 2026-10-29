@@ -13,8 +13,8 @@ can host yourself.
 - **One timeline.** rrweb events, agent steps, console, network and performance share the same millisecond clock. Click a
   step, a request or a console line and the page jumps there.
 - **Built for debugging.** Error markers on the scrubber (console errors, failed requests), previous/next error,
-  permalinks (`?t=6.9` or `#step-3`), keyboard shortcuts, a Context tab for test metadata, and a Waterfall tab for
-  overlapping requests, actions and performance signals.
+  permalinks (`?t=6.9` or `#step-3`), keyboard shortcuts, a Context tab for test metadata, and Network
+  and Performance tabs that lead with what failed or was slow, and when.
 - **Capture that survives navigations.** The recorder is registered over the Chrome DevTools Protocol before the first
   page loads, pulls chunks every second and flushes on `pagehide`.
 - **Private by default.** Inputs are masked at capture time; cookies, credential headers, URL credentials and sensitive
@@ -68,12 +68,14 @@ intentionally not a step. `--steps` takes inline JSON or `@steps.json`; `sample/
 Use `--step-pause 1200` to hold each non-wait action for a readable beat (default: 0ms, or
 `capture.stepPauseMs` in your config). Built-in drivers type at 80ms per character; `fill` is immediate.
 Unlabelled waits execute without adding a step. Labels use selector names without typed values.
-See [capture pacing](docs/extending.md#capture-pacing) for host configuration.
+See [capture pacing](docs/extending.md#capture-pacing) for host configuration. `--profile <id>` applies that profile's
+[capture defaults](docs/extension-api.md#capture-profiles) under the explicit flags; `--network bodies` also keeps redacted
+request and response bodies (off by default).
 
 ```text
 replays capture --url <url> --output <dir> [--steps <json|@file>] [--title] [--id] [--driver playwright|agent-browser]
                    [--viewport 1440x900] [--step-pause 0..10000] [--video] [--tag t]… [--person role:email[:handle=value]]…
-                   [--source github:owner/repo#12]…
+                   [--source github:owner/repo#12]… [--profile id] [--network headers|off|bodies] [--no-performance]
                    [--context-file f.json] [--context-schema schema.json] [--suite-id s --run-id r]
                    [--upload | --upload-url <server>/api/replays] [--login] [--header-file headers.json] [--headed]
 ```
@@ -143,17 +145,25 @@ const tracks = await session.stop(); // { events, console, performance, origin, 
 `stop()` gives the page-side tracks; combine them with a HAR (`networkEntries`) and your steps into a
 `ReplayBundle` (see `src/capture/capture.ts` for the reference assembly) and upload it.
 
-### Inspect the waterfall
+### Inspect network and performance
 
-Open **Waterfall** in the replay's diagnostics panel. Requests share a horizontal clock with action/paint points
-and measured task spans. Select a row to seek the existing player and open details; ↑/↓, Home/End and Escape work
-from the keyboard. Search and track/state filters help isolate failures, slow requests (at least 500 ms measured),
-incomplete requests, or invalid durations. On narrow screens, scroll the timeline horizontally; event labels stay pinned.
+**Network** opens on one toolbar row: status chips that are also the summary (All, Failed, Slow at 500 ms or more,
+No response), a type menu and search. A busy recording also gets a ribbon on the seek bar's own time axis: request
+density, failures as red ticks, slow spans in amber and the playhead. Click the ribbon to seek, or drag across it to
+list only that stretch. Each row shows when the request started (click to seek), its status, its duration on a log scale
+and the action it belongs to. Select a row for its detail beside the list (in its place on a phone): how long it took
+against the recording's median, the step it belongs to, what else was in flight on the request's own scale, the
+retained headers, Copy URL and Copy as cURL. ↑/↓, Home/End and Escape work from the keyboard.
 
-With saved edits, bars follow the edited replay clock through trims, cuts and speed-ups. Labels and request details
-retain source measurements; the selected event also shows its visible elapsed time. Requests crossing removed time
-keep their surviving portions, even when their start was cut. Actions and paints remain points, never inferred spans.
-Missing responses have unknown duration. Older bundles work with the tracks they contain; no additional capture data is needed.
+**Performance** leads with verdicts: first and largest paint, the slowest interaction, the longest task and total
+blocking time, each marked Good, Needs work or Poor, or "Not captured" when the browser couldn't observe it. Below
+them are the slow moments, worst first or in time order. A click's pointer, key and input events count as one moment,
+and each moment says what it was during and what it most likely waited on: a long task, requests in flight, or the
+page's own code. Script attribution is not captured, so the detail says so instead of guessing.
+
+With saved edits, rows follow the edited replay clock through trims, cuts and speed-ups, and details keep the source
+measurements. Missing responses have unknown duration. Older bundles work with the tracks they contain; no additional
+capture data is needed.
 
 ## Architecture
 
@@ -217,7 +227,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `DATA_DIR` | `./.data/replays` (`/data` in Docker) | Where the filesystem driver stores replays |
 | `STORAGE` | `fs` | `fs`, `s3`, or a backend a plugin registered |
 | `RETENTION_DAYS` | `30` | Days an upload lives, counted from its upload time; `0` keeps everything. "Kept" replays never expire |
-| `RETENTION_PURPOSE_<ID>_DAYS` | – | Days for replays of one [purpose](docs/extension-api.md#purposes-and-retention) (`RETENTION_PURPOSE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
+| `RETENTION_PROFILE_<ID>_DAYS` | – | Days for replays of one [profile](docs/extension-api.md#profiles-and-retention) (`RETENTION_PROFILE_DESIGN_REVIEW_DAYS`); `0` keeps explicit ones forever |
 | `REPLAYS_CONFIG` | `replays.config.{ts,mjs,js,json}` in the working directory | The config file (below); a script can also list [plugins](#extending-replays) |
 | `SAMPLE_DIR` | the bundled `sample/` | Directory of read-only demo replays; point it at an empty directory for none |
 | `PRODUCT_NAME`, `LOGO_URL` | `replays`, – | Branding (name in the header and title; logo must be an `https:` URL or a `data:image/…;base64` URL) |
@@ -503,7 +513,7 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 | `GET /api/replays`, `GET /api/replays/<id>` | List summaries (`?q=&host=&errors=1&source=&tag=`) / the bundle |
 | `GET /api/suites`, `GET /api/suites/<id>`, `PUT /api/suites/<id>[/runs/<run>]` | Suites |
 | `PUT\|DELETE /api/replays/<id>/keep` | Keep / release |
-| `PATCH /api/replays/<id>/meta` | Rename, retag or set the purpose (`{ title?, tags?, purpose? }`, `purpose: null` drops the override) → the summary; the bundle stays as uploaded |
+| `PATCH /api/replays/<id>/meta` | Rename, retag or set the profile (`{ title?, tags?, profile? }`, `profile: null` drops the override) → the summary; the bundle stays as uploaded |
 | `DELETE /api/replays/<id>`, `POST /api/replays/<id>/restore` | Delete (restorable for 7 days, then retention removes it; `409` while kept) / restore → the summary |
 | `GET\|POST /api/replays/<id>/comments`, `PATCH\|DELETE …/comments/<comment>` | Comments (`{ body, at?, parentId? }`, `{ emoji, at }`, `{ body }` / `{ resolved }`); `at` is source ms |
 | `GET /api/me`, `GET /api/config` | Identity; branding and context schema |

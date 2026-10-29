@@ -1,10 +1,23 @@
 import { mkdir, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 
+import { isProfileId, readAliased } from '../shared/profiles.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import { normalizeUploadUrl } from './server-config.ts';
 
 // Shared by the capture CLI and the rrweb import CLI.
+
+/** `--profile <id>`, else the deprecated `--purpose <id>` (with a warning); checked as a profile id. */
+export function profileFlag(
+  values: Readonly<Record<string, string | undefined>>,
+  warn: (line: string) => void = (line) => process.stderr.write(`${line}\n`),
+): string | undefined {
+  if (values.purpose !== undefined) warn('warning: --purpose is deprecated; use --profile');
+  const profile = readAliased(values.profile, values.purpose, '--profile and --purpose');
+  if (profile !== undefined && !isProfileId(profile))
+    throw new Error('--profile must be a profile id (lower-case letters, digits and "-")');
+  return profile;
+}
 
 /**
  * `--name value` flags; names in `booleans` take no value. A bare `--` is ignored (pnpm passes it through).

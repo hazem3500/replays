@@ -31,6 +31,7 @@ export async function boot(
   const server = await startServer({
     env: { DATA_DIR: await mkdtemp(join(tmpdir(), 'replays-mall-')), POSTERS_DISABLED: '1', RENDER_DISABLED: '1', ...env },
     port: 0,
+    application: false,
     config: { dir: process.cwd(), file, plugins: [] },
     plugins,
     log: () => {},

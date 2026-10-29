@@ -17,6 +17,32 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
+  hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
+  inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
+  during a press; the CUA arrow keeps its press squish. Viewer, editor preview and MP4 export draw the same glyph.
+- Editor blur rethought: blurs draw a strong blur with soft edges (no grey veil), feathered outside the box so the box
+  itself stays fully hidden. `ReplayBlur.style: 'redact'` draws a solid block instead. While placing a blur, a click
+  covers the recorded element under the pointer. The selected box has edge and corner handles and a style label, the
+  inspector picks Blur or Redact, and lane items are labelled with their style. Viewer and MP4 export draw the same.
+- **Capture profiles in the CLI and network bodies** ([docs/extension-api.md](docs/extension-api.md#capture-profiles)):
+  `replays capture --profile <id>` applies the profile's `capture` block under the explicit flags; new `--network
+  off|headers|bodies` and `--no-performance`. Every capture writes `meta.captured`. Network bodies are opt-in: JSON, text
+  and form only, cut at 64 KiB with `truncated`, and redacted (secret fields, credentials, JWTs, card numbers, email
+  addresses, the deployment's rules) at capture and again in the server's privacy pass. `requestBody`, `responseBody` and
+  `meta.captured` are in docs/formats/replay.schema.json.
+
+- **Views and capture profiles** ([docs/extension-api.md](docs/extension-api.md#views)): core ships seven views (`standard`,
+  `compare`, `performance`, `debug`, `walkthrough`, `review`, `support`) as data. The config key `views` and `api.view` add or
+  retune them, and `GET /api/config` and `<meta name="app-views">` serve them; `ViewCatalog`/`createViewCatalog` from `/server`.
+  Profiles gain `view` and a `capture` block (console levels, network `off`/`headers`/`bodies`, body limits, performance,
+  sampling, CLI defaults, stricter privacy only). Core ships a built-in `performance` profile, which the index shows as a tab
+  only once a replay has it.
+
+- Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
+  the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
+  and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
+  slider primitive that positions its thumb when it sits beside the track.
 - Comparing recordings is a mode of the replay viewer: the "Compare" button in the viewer's top bar adds recordings to
   `/r/<id>?with=<id>,<id>&layout=grid|spotlight&focus=<id>`, and a suite opens compared (Grid, or Spotlight on the run
   its link names). Single, Grid and Spotlight share one clock and the viewer's
@@ -24,6 +50,7 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
   (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
@@ -225,11 +252,18 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
 
+- Network and Performance are rethought around "what went wrong or slow, and when". Network has one toolbar row,
+  where the status chips (All, Failed, Slow, No response) are both filters and summary. A ribbon on the seek bar's
+  axis shows when requests happened (drag to filter a stretch), duration bars use a log scale so 6 ms and 2.4 s both
+  read, and the request detail sits beside the list with the request's step, its neighbours on its own scale and its
+  headers. Performance leads with a vitals bar, then slow moments worst first, each explained by what it waited on.
+  In compare mode both panels show deltas against the other recordings (`compare.peers`). The standalone Waterfall
+  and its toggle are gone.
 - The viewer's client router is TanStack Router: file routes in `src/client/routes/`, a router context of
-  `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params, so every existing
-  address (`/r/<id>?t=12.5`, `/?errors=1&sort=-duration`, `/r/<id>?suite=<suite>`, `/r/<id>/edit`) opens as before.
-  Plugin pages (`api.registerPluginPage`) are routed at `/p/<plugin>/<path>`. An address that is no page now shows a
-  not-found page instead of the index.
+  `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params. Plugin pages
+  (`api.registerPluginPage`) are routed at `/p/<plugin>/<path>`. Older addresses are not kept: `/r/<id>?suite=<suite>`
+  no longer redirects (use `/s/<suite>/r/<id>`), `/r/<id>/edit` without edit capability and any other unknown address
+  show a not-found page, and `/r/` no longer opens the index.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
@@ -255,6 +289,17 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   URLs, and suite and run registrations go through the same privacy pass as replay uploads.
 
 - The suite index is built from the replay list instead of three lookups per run.
+
+### Deprecated
+
+- **Purposes are now profiles.** Everything that said purpose says profile: the config key `profiles`, `api.profile`,
+  `meta.profile`, `summary.profile`/`profileInferred`, `ProfileConfig`/`ProfileInfo`/`ProfileDefinition`/`ProfileInferInput`,
+  `ProfileCatalog`/`createProfileCatalog`, `--profile`, `?profile=`, `RETENTION_PROFILE_<ID>_DAYS`, `x-replay-profile`,
+  `profiles` in `GET /api/config`, and the index and upload copy. The old names keep working as deprecated aliases for at
+  least two minor releases and 90 days and warn once at start where they are used at run time; uploads with `meta.purpose`
+  are stored as `meta.profile`, and stored bundles and overrides are read as they are. `SUMMARY_VERSION` is 9, so sidecars are
+  rebuilt lazily. See [API stability](docs/api-stability.md#deprecated-purpose-names) and
+  [the migration steps](docs/downstream-migration.md#renaming-purposes-to-profiles).
 
 ## [0.1.0] - Unreleased
 

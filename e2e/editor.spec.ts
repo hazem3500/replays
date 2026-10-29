@@ -46,7 +46,7 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   const id = await uploadCopy(page, 'editor-layout');
   await openEditor(page, id);
-  const panel = page.getByRole('complementary', { name: 'Replay presentation' });
+  const panel = page.getByRole('complementary', { name: 'Inspector' });
   await expect(panel).toBeVisible();
   const frame = page.locator('.editor-stage > .stage-wrap');
   await expect(frame).toHaveCSS('box-shadow', 'none');
@@ -251,16 +251,43 @@ test('editor entry has a stable stage and timeline skeleton, without a viewer in
     await gate;
     await route.continue();
   });
+  const meta = (await (await page.request.get(`${base()}/api/replays/${id}`)).json()).meta;
+  // why: opening from the viewer leaves the recording's size as a hint (navigation.ts); the skeleton fits the frame to it.
+  await page.addInitScript((hint) => sessionStorage.setItem('replays-open-hint', JSON.stringify(hint)), {
+    id,
+    title: meta.title,
+    viewport: meta.viewport,
+  });
   await page.goto(`${base()}/r/${id}/edit`);
   const skeleton = page.getByTestId('editor-skeleton');
   await expect(skeleton).toBeVisible();
   await expect(skeleton.locator('.loading-notice')).toHaveText('Opening editor…');
   await expect(skeleton.locator('.editor-loading-track')).toHaveCount(0);
   await expect(skeleton.locator('.sk-steps, .sk-table-head, .sk-tabs')).toHaveCount(0);
+  const loading = await editorRects(page, '.sk-frame');
   release();
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
   await expect(skeleton).toHaveCount(0);
+  const loaded = await editorRects(page, '.player-host .replayer-wrapper');
+  for (const part of Object.keys(loaded) as Array<keyof typeof loaded>) {
+    for (const edge of ['x', 'y', 'width', 'height'] as const)
+      expect(Math.abs(loading[part][edge] - loaded[part][edge])).toBeLessThanOrEqual(2);
+  }
 });
+
+/** Where the editor's regions and the recording's frame sit, so loading can be compared with loaded. */
+async function editorRects(page: Page, frame: string) {
+  const rect = async (selector: string) => {
+    const box = (await page.locator(selector).first().boundingBox())!;
+    return { x: box.x, y: box.y, width: box.width, height: box.height };
+  };
+  return {
+    stage: await rect('.editor-stage'),
+    inspector: await rect('.editor-presentation'),
+    dock: await rect('.editor-dock'),
+    frame: await rect(frame),
+  };
+}
 
 test('export uses the saved edit revision; viewing original preserves edits', async ({ page }) => {
   const id = await uploadCopy(page, 'editor-export');

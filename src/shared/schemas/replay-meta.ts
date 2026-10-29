@@ -11,22 +11,31 @@ const tags = z
   .check(z.maxLength(MAX_TAGS, `at most ${MAX_TAGS} tags`));
 
 /**
- * `PATCH /api/replays/<id>/meta`: what to change about a replay without touching its bundle. `purpose: null` drops the
- * override (the producer's or an inferred purpose applies again).
+ * `PATCH /api/replays/<id>/meta`: what to change about a replay without touching its bundle. `profile: null` drops the
+ * override (the producer's or an inferred profile applies again). `purpose` is its deprecated name.
  */
 export const replayMetaPatchSchema = z
   .strictObject({
     title: z.optional(title),
     tags: z.optional(tags),
+    profile: z.optional(z.nullable(z.string())),
     purpose: z.optional(z.nullable(z.string())),
   })
-  .check(z.refine((patch) => Object.keys(patch).length > 0, 'nothing to change'));
+  .check(
+    z.refine((patch) => Object.keys(patch).length > 0, 'nothing to change'),
+    z.refine(
+      (patch) => patch.profile === undefined || patch.purpose === undefined || patch.profile === patch.purpose,
+      'profile and purpose disagree; send only profile (purpose is its deprecated name)',
+    ),
+  );
 export type ReplayMetaPatch = z.infer<typeof replayMetaPatchSchema>;
 
 /** `<id>/overrides.json`: the replay's meta changes, applied wherever its summary is built. */
 export const metaOverridesSchema = z.object({
   title: z.optional(z.string()),
   tags: z.optional(z.array(z.string())),
+  profile: z.optional(z.nullable(z.string())),
+  // why: overrides saved before the rename say `purpose`; read when `profile` is absent.
   purpose: z.optional(z.nullable(z.string())),
   by: z.string(),
   at: z.string(),
