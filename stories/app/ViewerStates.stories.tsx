@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, within } from 'storybook/test';
+import { meQuery, queryClient } from '../../src/client/queries.ts';
 import { ViewerSkeleton } from '../../src/client/ViewerSkeleton.tsx';
 import { ContextPanel } from '../../src/client/viewer/ContextPanel.tsx';
 import { SourceLead } from '../../src/client/index/SourceLine.tsx';
@@ -7,6 +8,10 @@ import type { ReplayBundle } from '../../src/shared/replay.ts';
 
 const meta = {
   title: 'App/Viewer/States',
+  // why: the loading top bar is the real Topbar, whose account menu would ask /api/me; these states are signed out.
+  beforeEach: () => {
+    queryClient.setQueryData(meQuery.queryKey, null);
+  },
   parameters: {
     docs: {
       description: {
