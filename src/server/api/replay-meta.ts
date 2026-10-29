@@ -11,7 +11,7 @@ const MAX_BODY = 16 * 1024;
 /**
  * Additive replay writes, behind the same authentication, same-origin check and request policy as every core route:
  *
- *   PATCH  /api/replays/<id>/meta     { title?, tags?, purpose? | null } → 200, the summary as the list shows it
+ *   PATCH  /api/replays/<id>/meta     { title?, tags?, profile? | null } → 200, the summary as the list shows it
  *   DELETE /api/replays/<id>          soft delete → 200 { trashed: { by, at }, restorableUntil }; 409 while kept
  *   POST   /api/replays/<id>/restore  → 200, the summary; 404 when it is not deleted
  *

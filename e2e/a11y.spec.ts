@@ -209,7 +209,7 @@ for (const theme of THEMES) {
       await context.close();
     });
 
-    test('phone Performance event rows keep useful targets and keyboard evidence inspection', async ({ browser }) => {
+    test('phone Performance moments keep useful targets and keyboard evidence inspection', async ({ browser }) => {
       test.slow();
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
       const page = await context.newPage();
@@ -217,18 +217,18 @@ for (const theme of THEMES) {
       await openReplay(page, `${server().origin}/r/demo-shop`);
       await page.getByTestId('performance-tab').click();
       const list = page.getByTestId('performance-events');
-      const first = list.getByRole('button').first();
+      const first = list.locator('[data-performance-id] button[aria-expanded]').first();
       await expect(first).toBeVisible();
       const bounds = await first.boundingBox();
       expect(bounds!.height).toBeGreaterThanOrEqual(44);
       await first.focus();
       await first.press('End');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      await list.locator('[aria-expanded="true"]').press('Escape');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
-      await first.click();
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      await audit(page, 'phone Performance events and selected evidence');
+      const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
+      await expect(evidence).toBeVisible();
+      await audit(page, 'phone Performance selected evidence');
+      await evidence.getByRole('button', { name: 'Back to the list' }).click();
+      await expect(evidence).toBeHidden();
+      await audit(page, 'phone Performance moments');
       await context.close();
     });
   });

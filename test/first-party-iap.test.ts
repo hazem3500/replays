@@ -189,6 +189,7 @@ describe('iap plugin in a server', () => {
     const dir = await mkdtemp(join(tmpdir(), 'replays-iap-'));
     server = await startServer({
       port: 0,
+      application: false,
       log: () => {},
       config: { dir, file: {}, plugins: [iap({ ...options(fetcher), now: () => Date.now() / 1000 })] },
       sampleDir: dir,

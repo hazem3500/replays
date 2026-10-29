@@ -11,8 +11,19 @@
  * The format is deliberately plain (versioned, no derived data) so it can be handed to another tool later.
  */
 
-import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
 import {
+  CURSOR_APPEARANCES,
+  CURSOR_COLORS,
+  CURSOR_MOTION_STYLES,
+  isCursorAppearance,
+  isCursorColor,
+  isCursorMotionStyle,
+  normalizeCursor,
+  type ReplayCursorSettings,
+} from './cursor.ts';
+import {
+  BLUR_STYLES,
+  type BlurStyle,
   MAX_CAPTION,
   MAX_EFFECTS,
   MAX_ZOOM_SCALE,
@@ -164,8 +175,10 @@ function assertEffects(edits: Record<string, unknown>, name: string, duration: n
       if (index > 0 && range.from < sorted[index - 1]!.to) throw new Error(`${name}.speeds must not overlap`);
     }
   }
-  stretches(edits.blurs, `${name}.blurs`, ['x', 'y', 'width', 'height'], duration, (item, field) => {
+  stretches(edits.blurs, `${name}.blurs`, ['x', 'y', 'width', 'height', 'style'], duration, (item, field) => {
     for (const key of ['x', 'y', 'width', 'height']) fraction(item[key], `${field}.${key}`);
+    if (item.style !== undefined && !BLUR_STYLES.includes(item.style as BlurStyle))
+      throw new Error(`${field}.style must be one of ${BLUR_STYLES.join(', ')}`);
     if ((item.width as number) < MIN_BLUR_SIZE || (item.height as number) < MIN_BLUR_SIZE) throw new Error(`${field} is too small`);
     if ((item.x as number) + (item.width as number) > 1.0001 || (item.y as number) + (item.height as number) > 1.0001)
       throw new Error(`${field} must stay inside the frame`);
@@ -231,7 +244,15 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
     label(cut.label, `${field}.label`);
   }
   if (edits.cursor !== undefined) {
-    const cursor = object(edits.cursor, `${name}.cursor`, ['visible', 'size', 'hideWhenIdle', 'clickFeedback']);
+    const cursor = object(edits.cursor, `${name}.cursor`, [
+      'visible',
+      'size',
+      'hideWhenIdle',
+      'clickFeedback',
+      'motion',
+      'appearance',
+      'color',
+    ]);
     for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
       if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
     }
@@ -240,6 +261,12 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
       (typeof cursor.size !== 'number' || !Number.isFinite(cursor.size) || cursor.size < 0.5 || cursor.size > 2)
     )
       throw new Error(`${name}.cursor.size must be from 0.5 to 2`);
+    if (cursor.motion !== undefined && !isCursorMotionStyle(cursor.motion))
+      throw new Error(`${name}.cursor.motion must be one of ${CURSOR_MOTION_STYLES.join(', ')}`);
+    if (cursor.appearance !== undefined && !isCursorAppearance(cursor.appearance))
+      throw new Error(`${name}.cursor.appearance must be one of ${CURSOR_APPEARANCES.join(', ')}`);
+    if (cursor.color !== undefined && !isCursorColor(cursor.color))
+      throw new Error(`${name}.cursor.color must be one of ${Object.keys(CURSOR_COLORS).join(', ')}`);
   }
   assertEffects(edits, name, duration);
   assertHighlights(edits.highlights, duration, `${name}.highlights`);
@@ -335,6 +362,7 @@ function effectLists(edits: ReplayEdits): Pick<ReplayEdits, 'zooms' | 'speeds' |
         y: frac(blur.y),
         width: frac(blur.width),
         height: frac(blur.height),
+        ...(blur.style && blur.style !== 'blur' ? { style: blur.style } : {}),
       }))
       .sort(byTime);
   if (edits.captions?.length)
