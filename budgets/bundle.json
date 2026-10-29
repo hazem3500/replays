@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 459670,
-      "gzip": 118130,
-      "brotli": 96249
+      "raw": 462508,
+      "gzip": 119070,
+      "brotli": 96945
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -326,6 +326,11 @@
       "raw": 4312,
       "gzip": 1720,
       "brotli": 1488
+    },
+    "dist/lib/chunks/context.schema.json-06e184308ebe.mjs": {
+      "raw": 310977,
+      "gzip": 81843,
+      "brotli": 67134
     },
     "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
       "raw": 308771,
@@ -813,16 +818,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/129"
     },
     {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 448586,
-        "gzip": 115307,
-        "brotli": 93962
-      },
-      "reason": "The CLI bundles the shared edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1108 B raw, +302 B gzip, +264 B brotli. Replaces the allowance on main for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/130"
-    },
-    {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
         "raw": 43666,
@@ -1205,6 +1200,26 @@
       },
       "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 462508,
+        "gzip": 119070,
+        "brotli": 96945
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/164",
+      "reason": "Splitting ReplayStore into src/server/store/* modules adds module and class structure to the unminified CLI bundle (migrate-cli bundles the store); measured on Boat against main 0e7a3fd: main 458431/117681/95827, head 462508/119070/96945 (+4077 B raw, +1389 B gzip, +1118 B brotli). Replaces #130's allowance for this file."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-06e184308ebe.mjs",
+      "cap": {
+        "raw": 310977,
+        "gzip": 81843,
+        "brotli": 67134
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/164",
+      "reason": "The shared server chunk gains the src/server/store/* modules, so its source identity changes; measured on Boat against main 0e7a3fd: main 308641/80890/66336 (context.schema.json-7e5a8e2906dd), head 310977/81843/67134 (+2336 B raw, +953 B gzip, +798 B brotli). Replaces #157's entry."
     },
     {
       "file": "dist/client/assets/CompareViewer-HASH.css",
