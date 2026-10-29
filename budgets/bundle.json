@@ -1251,48 +1251,50 @@
       "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21285,
-        "gzip": 8752,
-        "brotli": 7540
-      },
-      "reason": "The suite workspace's sidebar thumbnails draw the new poster placeholder (ThumbHash or host tile) instead of a letter; head measures 7540 brotli bytes (+10).",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 255616,
-        "gzip": 43899,
-        "brotli": 36570
-      },
-      "reason": "The phone search morph (index/command-search.css: clip-path rest and open states, glyph travel, close button, resting-query dot) and the quick-results stagger; head measures 255616 raw, 43899 gzip, 36570 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/115"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 255616
-      },
-      "reason": "The index entry's CSS closure carries the same phone search morph; head measures 255616 raw bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/115"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 984911
-      },
-      "reason": "CommandSearch's phone morph: the rest anchor hook, the close button and the results stagger index; head measures 984911 raw bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/115"
-    },
-    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 617
       },
       "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 617 brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/115"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 257251,
+        "gzip": 44233,
+        "brotli": 36764
+      },
+      "reason": "The shared loading primitives (loading.css: skeleton tokens, skel-line, skel-appear, load-line) and the result count's refresh styles (scope-count.css); head measures 257251 raw, 44233 gzip, 36764 brotli bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 257251,
+        "gzip": 44233,
+        "brotli": 36764
+      },
+      "reason": "The index entry's CSS closure carries the same loading primitives and count styles; head measures 257251 raw, 44233 gzip, 36764 brotli bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 986487
+      },
+      "reason": "ScopeCount and RefreshLine replace the count's sentence states; head measures 986487 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21285,
+        "gzip": 8752,
+        "brotli": 7554
+      },
+      "reason": "The suite workspace chunk's bytes include the hashed names of the chunks it imports, which change with this PR's chunks; measures 7554 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
     }
   ]
 }
