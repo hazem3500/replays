@@ -74,7 +74,7 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10376,
+      "gzip": 10365,
       "brotli": 9042
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -118,9 +118,9 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 25113,
-      "gzip": 9605,
-      "brotli": 8395
+      "raw": 6582,
+      "gzip": 3180,
+      "brotli": 2825
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 685,
-      "brotli": 640
+      "gzip": 684,
+      "brotli": 623
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -489,8 +489,8 @@
     },
     "initial/index.html/js": {
       "raw": 1484557,
-      "gzip": 473494,
-      "brotli": 400470
+      "gzip": 472614,
+      "brotli": 399888
     },
     "initial/render.html/css": {
       "raw": 5784,
