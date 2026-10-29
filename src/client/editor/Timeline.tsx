@@ -19,6 +19,7 @@ import { usePlayer, usePlayhead } from '../player.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { type EditorAction, moveCut, type Selection, setTrimEdge, trimOf } from './state.ts';
+import { rulerTicks, tickLabel } from './ruler.ts';
 
 /** Room left and right of the track, so the trim edges at 0 and at the end stay easy to grab. */
 const PAD = 14;
@@ -93,9 +94,6 @@ export function timeKeys(event: ReactKeyboardEvent, value: number, min: number, 
   set(Math.min(max, Math.max(min, next)));
 }
 
-/** Tick spacing: the smallest of these with at least ~72 px between labels. */
-const TICK_STEPS = [100, 200, 500, 1000, 2000, 5000, 10_000, 15_000, 30_000, 60_000, 120_000, 300_000, 600_000];
-
 /** The trim stays selected on touch so its edges are always editable; elsewhere only an existing trim is. */
 function trimSelection(mobile: boolean | undefined, trim: unknown): Selection {
   return mobile || trim ? { kind: 'trim' } : undefined;
@@ -103,21 +101,6 @@ function trimSelection(mobile: boolean | undefined, trim: unknown): Selection {
 
 function selectedHighlightId(selection: Selection) {
   return selection?.kind === 'highlight' ? selection.id : undefined;
-}
-
-function rulerTicks(width: number, duration: number) {
-  const tick = TICK_STEPS.find((step) => width > 0 && (step / Math.max(1, duration)) * width >= 72) ?? TICK_STEPS.at(-1)!;
-  const ticks: number[] = [];
-  if (width > 0) for (let at = 0; at <= duration; at += tick) ticks.push(at);
-  return { tick, ticks };
-}
-
-function tickLabel(ms: number, step: number) {
-  const minutes = Math.floor(ms / 60_000);
-  const seconds = (ms % 60_000) / 1000;
-  // why: one precision per ruler, so sub-second steps label every tick with a decimal ("0:01.0", "0:01.5").
-  const text = step >= 1000 ? String(Math.round(seconds)).padStart(2, '0') : seconds.toFixed(1).padStart(4, '0');
-  return `${minutes}:${text}`;
 }
 
 /**

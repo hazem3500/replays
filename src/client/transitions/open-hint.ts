@@ -1,5 +1,5 @@
 import { writeSessionStorage } from '../storage.ts';
-import { OPEN_HINT_KEY, type OpenHint } from '../ViewerSkeleton.tsx';
+import { OPEN_HINT_KEY, OPEN_STILL_VERSION, type OpenHint } from '../ViewerSkeleton.tsx';
 import type { CardMatch } from './shared-elements.ts';
 
 /* why: what the clicked card knows about the page it opens: its poster (and so the recording's aspect), title and step
@@ -37,7 +37,6 @@ export function rememberListed(items: readonly ListedReplay[]) {
  * the morph crossfades poster → still mid-flight (styles.css, html[data-page-still]) and rrweb's hand-over is then a
  * crossfade between two identical pictures.
  */
-const OPEN_STILL_VERSION = 1;
 const decodedStills = new Set<string>();
 const STILL_INTENT_MS = 120;
 

@@ -3,7 +3,8 @@ import { readFile } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { join } from 'node:path';
 
-import { send, serveFile } from './app.ts';
+import { send, sendJson } from './http/send.ts';
+import { serveFile } from './http/serve-file.ts';
 import { parseJsonBody } from './http/body.ts';
 import type { RenderJob } from '../plugin/types.ts';
 import type { Identity } from './auth/types.ts';
@@ -51,7 +52,7 @@ const LOOPBACK = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
 const PROXY_HEADERS = ['x-forwarded-for', 'forwarded', 'x-forwarded-host', 'x-forwarded-proto', 'x-real-ip', 'via'];
 
 function json(response: ServerResponse, status: number, body: unknown) {
-  send(response, status, JSON.stringify(body), JSON_TYPE);
+  sendJson(response, status, body);
 }
 
 /**
@@ -85,14 +86,15 @@ export async function handleInternalRender(
   if (asset) {
     // Built asset URLs are relative (vite.config.ts), so the page, its scripts, stylesheets and their fonts all
     // load from this loopback route, outside the authenticated app.
-    if (!(await serveFile(request, response, join(render.clientDir, 'assets', asset[1]!), 'no-store'))) send(response, 404, 'not found');
+    if (!(await serveFile(request, response, join(render.clientDir, 'assets', asset[1]!), { cacheControl: 'no-store' })))
+      send(response, 404, 'not found');
     return;
   }
   // The edit list an edited export applies (the page checks its version against the one it was asked for).
   const edits = options.beta?.editor ? /^\/internal\/render\/([a-z0-9][a-z0-9-]{0,79})\/edits\.json$/.exec(path) : null;
   if (edits) {
     if (!(await options.store.locate(edits[1]!))) send(response, 404, 'not found');
-    else send(response, 200, JSON.stringify((await options.store.readEdits(edits[1]!)).edits), JSON_TYPE, 'no-store');
+    else sendJson(response, 200, (await options.store.readEdits(edits[1]!)).edits, { cacheControl: 'no-store' });
     return;
   }
   const bundle = /^\/internal\/render\/([a-z0-9][a-z0-9-]{0,79})\/bundle\.json$/.exec(path);
@@ -112,7 +114,7 @@ export async function handleInternalRender(
       return;
     }
     // Its asset URLs are relative (`./assets/…`): they resolve under /internal/render/ (above).
-    send(response, 200, html, 'text/html; charset=utf-8');
+    send(response, 200, html, { contentType: 'text/html; charset=utf-8' });
     return;
   }
   send(response, 404, 'not found');
