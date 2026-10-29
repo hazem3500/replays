@@ -73,9 +73,9 @@
       "brotli": 2714
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 29145,
-      "gzip": 10346,
-      "brotli": 8982
+      "raw": 28825,
+      "gzip": 10247,
+      "brotli": 8921
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -103,14 +103,14 @@
       "brotli": 1392
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 31925,
-      "gzip": 6193,
-      "brotli": 5501
+      "raw": 32631,
+      "gzip": 6335,
+      "brotli": 5637
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 102425,
-      "gzip": 34267,
-      "brotli": 29308
+      "raw": 116276,
+      "gzip": 38555,
+      "brotli": 32698
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -118,7 +118,7 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6582,
+      "raw": 6580,
       "gzip": 3180,
       "brotli": 2796
     },
@@ -158,9 +158,9 @@
       "brotli": 37918
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 994149,
-      "gzip": 310973,
-      "brotli": 257069
+      "raw": 994705,
+      "gzip": 311385,
+      "brotli": 257290
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -243,7 +243,7 @@
       "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21285,
+      "raw": 21290,
       "gzip": 8755,
       "brotli": 7568
     },
@@ -258,9 +258,9 @@
       "brotli": 234
     },
     "dist/client/assets/use-focus-when-HASH.js": {
-      "raw": 312,
-      "gzip": 253,
-      "brotli": 219
+      "raw": 676,
+      "gzip": 437,
+      "brotli": 393
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -279,7 +279,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60104,
-      "gzip": 21487,
+      "gzip": 21489,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -820,12 +820,12 @@
     {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
-        "raw": 43666,
-        "gzip": 7904,
-        "brotli": 7046
+        "raw": 32631,
+        "gzip": 6335,
+        "brotli": 5637
       },
-      "reason": "Timeline clarity: lane names in the gutter, the hatched and labelled trimmed area, and the duration note; measured against main: +308 B raw, +38 B gzip, +37 B brotli. Replaces #130's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/136"
+      "reason": "phone-editor.css: the phone timeline's bar, lanes, regions, handles, centre playhead and sheet; the old phone ruler, seek and tall-lane rules leave editor.css. Measured against main 1bc31f4f: +1403 B raw, +297 B gzip, +265 B brotli. Replaces #136's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/178"
     },
     {
       "file": "dist/client/assets/player-HASH.js",
@@ -1130,20 +1130,22 @@
     {
       "file": "dist/client/assets/use-focus-when-HASH.js",
       "cap": {
-        "brotli": 219
+        "raw": 676,
+        "gzip": 437,
+        "brotli": 393
       },
-      "reason": "A tiny shared hook chunk whose bytes are the hashed chunk names it imports; they change with this PR's chunks. Measures 219 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/134"
+      "reason": "No new code here: the phone toolbar's Delete uses the trash icon the comments already load, so Rolldown moves that icon into the chunk comments and the editor share (comments-ui -311 B raw, -105 B brotli). Replaces #134's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/178"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
+        "raw": 994705,
+        "gzip": 311385,
+        "brotli": 257290
       },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
+      "reason": "The phone loading frame follows the new phone editor: the fit-width frame, the timeline bar, the lanes at the centre-playhead offset with step segments (fitScale and the Fit glyph). Measured against main 1bc31f4f: +556 B raw, +412 B gzip, +91 B brotli. Replaces #174's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/178"
     },
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
@@ -1216,22 +1218,22 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 102425,
-        "gzip": 34267,
-        "brotli": 29308
+        "raw": 116276,
+        "gzip": 38555,
+        "brotli": 32698
       },
-      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured in CI against fresh main dbc865e9: +4281 B raw, +1364 B gzip, +1208 B brotli. Replaces #113's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/149"
+      "reason": "Phone editor around a centre playhead: PhoneTimeline and PhoneLanes (scrolling lanes, scrub, snap, pinch zoom, edge drags), the contextual PhoneObjectToolbar, the PhoneSheet settings sheet, split and duplicate; the desktop timeline drops its phone branches. Measured against main 1bc31f4f: +15442 B raw, +4947 B gzip, +3949 B brotli. Replaces #149's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/178"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
         "raw": 60104,
-        "gzip": 21487,
+        "gzip": 21489,
         "brotli": 18749
       },
-      "reason": "No source change in the viewer: the main chunk's new hash in its imports compresses 11 B larger in gzip (raw -5 B, brotli -1 B). Replaces #167's allowance, keeping its raw and brotli caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
+      "reason": "No source change in the viewer: renamed chunk hashes in its imports compress 2 B larger in gzip (raw +2 B, brotli +12 B, under the caps). Replaces #174's allowance, keeping its raw and brotli caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/178"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
@@ -1256,12 +1258,12 @@
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
-        "raw": 21285,
+        "raw": 21290,
         "gzip": 8755,
         "brotli": 7568
       },
-      "reason": "Hash drift, not growth: raw matches main; the hashed chunk names it imports change with the server-rendered default (gzip +2 B, brotli +27 B measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
+      "reason": "No source change in the suite workspace: renamed chunk hashes in its imports add 5 B raw (gzip and brotli stay under their caps). Replaces #157's allowance, keeping its gzip and brotli caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/178"
     },
     {
       "file": "dist/cli/cli.mjs",

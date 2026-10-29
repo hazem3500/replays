@@ -1,13 +1,12 @@
 import './phone-editor.css';
 
 import { ScanIcon } from 'lucide-react';
-import { type PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
+import { type PointerEvent as ReactPointerEvent, useState } from 'react';
 
 import { IconButton } from '@/components/icon-button.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
-import { usePhoneTimeline } from '../hooks/use-phone-timeline.ts';
-import { useStageBox } from '../hooks/use-stage-box.ts';
+import { useLanesWidth, usePhoneTimeline } from '../hooks/use-phone-timeline.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { usePlayer } from '../player.ts';
 import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
@@ -66,17 +65,16 @@ export function PhoneTimeline({
   onPlayPause: () => void;
 }) {
   const player = usePlayer();
-  const frame = useRef<HTMLDivElement>(null);
-  const box = useStageBox(frame);
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const [seek, setSeek] = useState<HTMLInputElement | null>(null);
   const [zoom, setZoom] = useState<number>();
-  const fit = fitScale(box.width || 390, duration);
+  const width = useLanesWidth(scroller);
+  const fit = fitScale(width || 390, duration);
   const scale = zoom === undefined ? fit : clampScale(zoom, fit);
   usePhoneTimeline(scroller, { player, seek, scale, fit, snaps: stepBoundaries(steps, duration), onScale: setZoom });
   const { tick, ticks } = rulerTicks(duration * scale, duration);
   return (
-    <div className="phone-timeline" data-testid="timeline" data-ready={box.width > 0 || undefined}>
+    <div className="phone-timeline" data-testid="timeline" data-ready={width > 0 || undefined}>
       <div className="phone-timeline-bar">
         <EditorPlayButton onSwitch={onPlayPause} />
         <span className="phone-time">
@@ -94,7 +92,7 @@ export function PhoneTimeline({
           <ScanIcon aria-hidden="true" />
         </IconButton>
       </div>
-      <div ref={frame} className="phone-lanes-frame">
+      <div className="phone-lanes-frame">
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
           <div className="phone-lanes-content">
             <div className="phone-track" style={cssVars({ '--span': `${duration * scale}px` })}>
