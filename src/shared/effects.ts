@@ -25,6 +25,10 @@ export interface ReplaySpeedRange {
   rate: SpeedRate;
 }
 
+/** How a hidden box is drawn: `blur`, a strong blur with soft edges, or `redact`, a solid block that hides even shapes. */
+export const BLUR_STYLES = ['blur', 'redact'] as const;
+export type BlurStyle = (typeof BLUR_STYLES)[number];
+
 /** A box blurred over the recorded page for a stretch: position and size as fractions (0–1) of the recorded frame. */
 export interface ReplayBlur {
   id: string;
@@ -34,6 +38,8 @@ export interface ReplayBlur {
   y: number;
   width: number;
   height: number;
+  /** `blur` when omitted. */
+  style?: BlurStyle;
 }
 
 /** A caption shown at the bottom of the replay for a stretch. */
