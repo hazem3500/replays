@@ -75,7 +75,12 @@ export async function loadStartRenderer(entryFile: string, api: NodeHandler): Pr
 }
 
 /** Streams the page with the deployment's head added and each chunk flushed, so the shell reaches the browser first. */
-async function sendPage(request: IncomingMessage, response: ServerResponse, page: Response, { head, preloads }: { head: string; preloads: string[] }) {
+async function sendPage(
+  request: IncomingMessage,
+  response: ServerResponse,
+  page: Response,
+  { head, preloads }: { head: string; preloads: string[] },
+) {
   const html = Boolean(page.headers.get('content-type')?.startsWith('text/html'));
   const encoding = html && page.body ? pickEncoding(request.headers['accept-encoding']) : undefined;
   response.writeHead(page.status, pageHeaders(page, response.getHeader('vary'), html, encoding));
