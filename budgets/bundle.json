@@ -74,7 +74,7 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10347,
+      "gzip": 10346,
       "brotli": 8982
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -158,7 +158,7 @@
       "brotli": 36226
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 983276,
+      "raw": 983615,
       "gzip": 308973,
       "brotli": 256601
     },
@@ -203,9 +203,9 @@
       "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 6721,
-      "gzip": 2958,
-      "brotli": 2681
+      "raw": 8926,
+      "gzip": 3921,
+      "brotli": 3570
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -240,12 +240,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 615
+      "brotli": 609
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
       "gzip": 8752,
-      "brotli": 7541
+      "brotli": 7540
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -290,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 544,
-      "brotli": 406
+      "brotli": 405
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-8e7122d98ca4.mjs": {
-      "raw": 306214,
-      "gzip": 80205,
-      "brotli": 65778
+    "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
+      "raw": 308481,
+      "gzip": 80873,
+      "brotli": 66283
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -415,7 +415,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
       "gzip": 1640,
-      "brotli": 1419
+      "brotli": 1418
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
@@ -943,16 +943,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 983276,
-        "gzip": 308973,
-        "brotli": 256601
-      },
-      "reason": "TanStack Router (react-router, router-core, the Query SSR integration) replaces the hand-written router, and the entry absorbs what main preloaded as PluginUi, preload-helper, queryOptions and rolldown-runtime chunks, while rrweb (the player chunk) and the comments feature leave the index. Index initial JS (entry plus modulepreloads, gzip) measured on fresh main 68865b8: 516746 to 454088 bytes. Replaces #78's entry (Measured in CI against fresh main: raw 727142 to 856930, gzip 236638 to 267675, brotli 191694 to 221996 bytes with this change.)",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
       "file": "dist/client/assets/pencil-HASH.js",
       "cap": {
         "raw": 321,
@@ -1253,16 +1243,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-8e7122d98ca4.mjs",
-      "cap": {
-        "raw": 306214,
-        "gzip": 80205,
-        "brotli": 65778
-      },
-      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-c805001dee98 (caps 310751, 81506, 66856) and measures 306214 raw, 80205 gzip, 65778 brotli bytes, under those caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/134"
-    },
-    {
       "file": "dist/client/assets/use-focus-when-HASH.js",
       "cap": {
         "brotli": 219
@@ -1271,22 +1251,52 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 8926,
+        "gzip": 3921,
+        "brotli": 3570
+      },
+      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts, render/thumbhash-capture.ts); head measures 8926 raw, 3921 gzip, 3570 brotli bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
+      "cap": {
+        "raw": 308481,
+        "gzip": 80873,
+        "brotli": 66283
+      },
+      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-8e7122d98ca4 (caps 306214, 80205, 65778) and measures 308481 raw, 80873 gzip, 66283 brotli bytes, under those caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 615
+        "brotli": 609
       },
-      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 615 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/126"
+      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 609 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 21285,
         "gzip": 8752,
-        "brotli": 7541
+        "brotli": 7540
       },
-      "reason": "The suite workspace chunk's bytes include the hashed names of the chunks it imports, which change with this PR's chunks; measures 7541 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/126"
+      "reason": "The suite workspace's sidebar thumbnails draw the new poster placeholder (ThumbHash or host tile) instead of a letter; head measures 7540 brotli bytes (+10).",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 983615,
+        "gzip": 308973,
+        "brotli": 256601
+      },
+      "reason": "The index's poster placeholders (ThumbHash decoder and PNG builder, host tile, a suite's run mosaic) replace the letter; head measures 983615 raw bytes (+339).",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
     }
   ]
 }

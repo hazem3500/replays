@@ -71,6 +71,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
 
+
+
+- Poster ThumbHash: once the server renders a replay's poster it keeps the poster's ThumbHash in the summary
+  (`ReplaySummary.thumbhash`, base64, ~25 bytes; `meta.json` and `GET /api/replays`). The index paints it under each
+  poster while the image loads and crossfades to the real poster, with no layout shift. Replays without one keep the
+  plain placeholder. The summary is now documented as `docs/formats/replay-summary.schema.json`.
+
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
   (network errors, timeouts, 408, 429, 5xx) and `retryAfterMs` (from `Retry-After`).
