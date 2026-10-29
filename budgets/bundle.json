@@ -110,7 +110,7 @@
     "dist/client/assets/Editor-HASH.js": {
       "raw": 102425,
       "gzip": 34267,
-      "brotli": 29308
+      "brotli": 29610
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -133,14 +133,14 @@
       "brotli": 380
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 44015,
-      "gzip": 8406,
-      "brotli": 7521
+      "raw": 48932,
+      "gzip": 9030,
+      "brotli": 8088
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 240032,
-      "gzip": 81560,
-      "brotli": 68365
+      "raw": 260801,
+      "gzip": 87462,
+      "brotli": 72780
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 606
+      "brotli": 639
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -279,7 +279,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60092,
-      "gzip": 21469,
+      "gzip": 21685,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -1078,16 +1078,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/133"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 44015,
-        "gzip": 8406,
-        "brotli": 7521
-      },
-      "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
       "file": "dist/client/assets/fetch-HASH.js",
       "cap": {
         "raw": 721,
@@ -1152,24 +1142,6 @@
       },
       "reason": "ScopeCount and RefreshLine replace the count's sentence states; head measures 986487 raw bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/145"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 613
-      },
-      "reason": "Hash drift, not growth: raw matches main and gzip is 3 B smaller; this 1 KB chunk of hashed import paths moves its Brotli size by up to 30 bytes when another chunk's hash changes (613 against 600 here). Replaces #115's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/144"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 240032,
-        "gzip": 81560,
-        "brotli": 68365
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
       "file": "dist/client/assets/render-HASH.js",
@@ -1240,26 +1212,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/141"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 102425,
-        "gzip": 34267,
-        "brotli": 29308
-      },
-      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured in CI against fresh main dbc865e9: +4281 B raw, +1364 B gzip, +1208 B brotli. Replaces #113's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/149"
-    },
-    {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60092,
-        "gzip": 21469,
-        "brotli": 18749
-      },
-      "reason": "Hash drift, not growth: raw matches main and gzip is 2 B smaller; the hashed chunk names it imports change with the server-rendered default, so Brotli moves +56 B (measured in CI against fresh main ac1b98b2). Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/157"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 261085,
@@ -1298,6 +1250,50 @@
       },
       "reason": "Server-rendered pages by default: startPages (src/server/start.ts) checks for the Start build and logs when it is missing, and a failed render falls back to the single-page app; Rolldown bundles both into this shared server chunk (main 308481/80873/66283, head 308641/80890/66336). Replaces #123's entry.",
       "pr": "https://github.com/hazem3500/replays/pull/157"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 48932,
+        "gzip": 9030,
+        "brotli": 8088
+      },
+      "reason": "The Console panel (#165): two-line message rows, level chips, the phone layout and the message detail with indented JSON and stack frames share the lazy inspector stylesheet.",
+      "pr": "https://github.com/hazem3500/replays/pull/165"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 260801,
+        "gzip": 87462,
+        "brotli": 72780
+      },
+      "reason": "The Console panel (#165): repeat folding, level filters, JSON and stack-frame parsing, the message list and detail replace the single-line console table in the lazy inspector graph; the initial JavaScript budget is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/165"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 639
+      },
+      "reason": "Names the lazy inspector chunk by its hash, which changes with #165; Brotli measures 620 bytes with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/165"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "brotli": 29610
+      },
+      "reason": "Hash drift: the editor names the lazy inspector chunk, whose hash changes with #165; Brotli measures 29316 bytes with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/165"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "gzip": 21685
+      },
+      "reason": "Hash drift: the viewer names the lazy inspector chunk, whose hash changes with #165; gzip measures 21470 bytes with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/165"
     }
   ]
 }
