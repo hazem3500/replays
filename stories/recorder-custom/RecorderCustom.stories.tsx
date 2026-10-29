@@ -15,9 +15,13 @@ function RecorderCustom({ mode = 'consent', phone = false }: { mode?: Mode; phon
     </div>
   );
 }
-const meta = { title: 'App/Recorder/RecorderCustom', component: RecorderCustom, parameters: { layout: 'fullscreen' } } satisfies Meta<
-  typeof RecorderCustom
->;
+const meta = {
+  title: 'Recorder/Custom UI (kit)',
+  component: RecorderCustom,
+  parameters: { layout: 'fullscreen' },
+  // why: examples/recorder-shadcn ships light-only shadcn tokens; the app's dark tokens would leave its red warning unreadable.
+  globals: { theme: 'light' },
+} satisfies Meta<typeof RecorderCustom>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 export const Consent: Story = { args: { mode: 'consent' } };
