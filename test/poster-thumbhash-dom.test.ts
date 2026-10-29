@@ -53,15 +53,15 @@ describe('poster ThumbHash placeholder', () => {
     expect(tile.textContent).toBe('');
   });
 
-  it('keeps the host’s initial for a replay without a ThumbHash', () => {
+  it('shows the recorded site for a replay without a ThumbHash', () => {
     const tile = placeholder();
     expect(tile.hasAttribute('data-thumbhash')).toBe(false);
-    expect(tile.textContent).toBe('S');
+    expect(tile.querySelector('.poster-site-host')?.textContent).toBe('sample.test');
   });
 
-  it('keeps the host’s initial when the stored hash is malformed', () => {
+  it('shows the recorded site when the stored hash is malformed', () => {
     const tile = placeholder('not a hash!');
     expect(tile.hasAttribute('data-thumbhash')).toBe(false);
-    expect(tile.textContent).toBe('S');
+    expect(tile.querySelector('.poster-site')).not.toBeNull();
   });
 });
