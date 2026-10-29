@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 462508,
-      "gzip": 119070,
-      "brotli": 96945
+      "raw": 477416,
+      "gzip": 122888,
+      "brotli": 100073
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -163,14 +163,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 266630,
-      "gzip": 45795,
-      "brotli": 37919
+      "raw": 275556,
+      "gzip": 47455,
+      "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 962358,
-      "gzip": 301788,
-      "brotli": 250630
+      "gzip": 320306,
+      "brotli": 252567
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -215,7 +215,7 @@
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
       "gzip": 3989,
-      "brotli": 3622
+      "brotli": 3732
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -233,9 +233,9 @@
       "brotli": 5388
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 2825,
+      "raw": 2923,
       "gzip": 1087,
-      "brotli": 892
+      "brotli": 932
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 887,
@@ -250,11 +250,11 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 608
+      "brotli": 632
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21291,
-      "gzip": 8758,
+      "gzip": 9022,
       "brotli": 7568
     },
     "dist/client/assets/tools-HASH.js": {
@@ -284,8 +284,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60104,
-      "gzip": 21487,
-      "brotli": 18749
+      "gzip": 22120,
+      "brotli": 19320
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -295,7 +295,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 542,
-      "brotli": 404
+      "brotli": 403
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -319,23 +319,23 @@
     },
     "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
       "raw": 312907,
-      "gzip": 83012,
-      "brotli": 67822
+      "gzip": 85506,
+      "brotli": 69858
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
       "gzip": 5317,
       "brotli": 4640
     },
-    "dist/lib/chunks/define.ts-c99e647c6d2f.mjs": {
-      "raw": 46985,
-      "gzip": 13251,
-      "brotli": 11662
+    "dist/lib/chunks/define.ts-d7bc1a10bcb5.mjs": {
+      "raw": 48350,
+      "gzip": 13571,
+      "brotli": 11946
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
       "gzip": 9208,
-      "brotli": 8197
+      "brotli": 8195
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -400,7 +400,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 136
+      "brotli": 145
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -420,7 +420,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
       "gzip": 1639,
-      "brotli": 1418
+      "brotli": 1407
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -495,7 +495,7 @@
     "dist/lib/server.mjs": {
       "raw": 1907,
       "gzip": 616,
-      "brotli": 518
+      "brotli": 517
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -503,9 +503,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 266630,
-      "gzip": 45795,
-      "brotli": 37919
+      "raw": 275556,
+      "gzip": 47455,
+      "brotli": 39256
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -513,9 +513,9 @@
       "brotli": 399732
     },
     "initial/render.html/css": {
-      "raw": 5999,
+      "raw": 6192,
       "gzip": 2625,
-      "brotli": 2170
+      "brotli": 2248
     },
     "initial/render.html/js": {
       "raw": 557837,
@@ -703,16 +703,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/106"
     },
     {
-      "file": "dist/lib/config.mjs",
-      "cap": {
-        "raw": 348,
-        "gzip": 169,
-        "brotli": 149
-      },
-      "reason": "The config entry compresses 4 bytes of Brotli (140 to 144) and 1 byte of gzip over main after the error-classification changes; measured in CI.",
-      "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
       "file": "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs",
       "cap": {
         "raw": 3950,
@@ -770,16 +760,6 @@
         "brotli": 7425
       },
       "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
-    },
-    {
-      "file": "dist/lib/chunks/define.ts-c99e647c6d2f.mjs",
-      "cap": {
-        "raw": 46985,
-        "gzip": 13251,
-        "brotli": 11662
-      },
-      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces define.ts-2cdb34849bf4 (main 39108/11192/9890).",
       "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
@@ -1093,16 +1073,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 240032,
@@ -1113,41 +1083,11 @@
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
-      "file": "dist/client/assets/render-HASH.js",
-      "cap": {
-        "raw": 9060,
-        "gzip": 3989,
-        "brotli": 3622
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 2825,
-        "gzip": 1087,
-        "brotli": 892
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.js",
       "cap": {
         "raw": 887,
         "gzip": 539,
         "brotli": 504
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5999,
-        "gzip": 2625,
-        "brotli": 2170
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/155"
@@ -1171,26 +1111,6 @@
       },
       "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured in CI against fresh main dbc865e9: +4281 B raw, +1364 B gzip, +1208 B brotli. Replaces #113's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/149"
-    },
-    {
-      "file": "dist/cli/cli.mjs",
-      "cap": {
-        "raw": 462508,
-        "gzip": 119070,
-        "brotli": 96945
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/164",
-      "reason": "Splitting ReplayStore into src/server/store/* modules adds module and class structure to the unminified CLI bundle (migrate-cli bundles the store); measured on Boat against main 0e7a3fd: main 458431/117681/95827, head 462508/119070/96945 (+4077 B raw, +1389 B gzip, +1118 B brotli). Replaces #130's allowance for this file."
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
-      "cap": {
-        "raw": 312907,
-        "gzip": 83012,
-        "brotli": 67822
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/170",
-      "reason": "Splitting app.ts adds src/server/app/* and src/server/http/{send,serve-file,fail}.ts to the shared server chunk, so its source identity changes; measured on Boat against main: main 310977/81843/67134 (context.schema.json-06e184308ebe.mjs), head 312907/83012/67822 (+1930 B raw, +1169 B gzip, +688 B brotli). Replaces the previous entry for this chunk."
     },
     {
       "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
@@ -1271,6 +1191,78 @@
       },
       "reason": "The send arrow icon, shared by the comments composer and another lazy view (#171).",
       "pr": "https://github.com/hazem3500/replays/pull/171"
+    },
+    {
+      "file": "dist/cli/cli.mjs",
+      "cap": {
+        "raw": 477416,
+        "gzip": 122888,
+        "brotli": 100073
+      },
+      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "brotli": 264792,
+        "gzip": 320306
+      },
+      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "brotli": 3732
+      },
+      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2923,
+        "brotli": 932
+      },
+      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
+      "cap": {
+        "gzip": 85506,
+        "brotli": 69858
+      },
+      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-d7bc1a10bcb5.mjs",
+      "cap": {
+        "raw": 48350,
+        "gzip": 13571,
+        "brotli": 11946
+      },
+      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "brotli": 145
+      },
+      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 6192,
+        "brotli": 2248
+      },
+      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
       "file": "dist/client/assets/comments-ui-HASH.js",

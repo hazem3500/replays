@@ -1059,3 +1059,16 @@ Core bindings, duplicate plugin keys and browser modifier chords are refused. Ty
 keep their keyboard input. `viewer.shortcuts` supports the same hide/order policy. Core remapping is deliberately outside
 this API; host shortcuts cannot take away existing playback or browser controls. Plugin shortcuts do not yet appear in the
 built-in shortcut sheet. See `examples/custom-distro` for an editor caption tool, JSON export and `g` binding.
+
+### Theme tokens v2
+
+`api.branding({ theme })` accepts the [generated token catalogue](tokens.md), including
+`shadow-pop`, `motion-fast`, `text-sm`, `space-4`, `card-radius`, `poster-overlay-bg`,
+`poster-overlay-fg`, `caption-bg`, `caption-fg` and `caption-font`. For a compact host theme:
+
+```ts
+api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms' } } });
+```
+
+The server validates these as plain CSS values and emits them into the initial page head.
+Plugin precedence and config overrides are unchanged. No DOM access or client setup is needed.
