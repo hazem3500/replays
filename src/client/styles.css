@@ -542,16 +542,18 @@ svg.lucide.lucide { stroke-width: 2; }
 .skip-indicator[data-visible] { opacity: 1; }
 .skip-indicator svg { width: 12px; height: 12px; fill: currentColor; }
 /* .step-caption lives in step-caption.css: exported videos draw the same caption (src/client/render). */
-/* In the viewer the caption is anchored to the recorded frame, not the stage (PlayerStage writes --frame-* on
-   .stage-wrap): bottom-centre, 4% of the frame's height up (12–28 px), 14–20 px type scaled with the frame. It keeps
-   clear of the fullscreen button's corner (the stage's right 56 px) when the frame runs close to that edge. */
+/* In the viewer and the editor the caption is anchored to the recorded frame, not the stage (PlayerStage writes
+   --frame-* and --caption-scale, the export's caption scale times the player's, on .stage-wrap): it is the exported
+   caption at the size the page is shown, never under 12 px. At the bottom it keeps clear of the fullscreen
+   button's corner (the stage's right 56 px) when the frame runs close to that edge. */
 .stage-wrap .step-caption {
   --clear: max(0px, calc(56px - var(--frame-right, 0px)));
-  --caption-size: clamp(14px, calc(var(--frame-w, 800px) * 0.016), 20px);
+  --caption-min: 12px;
   left: var(--frame-x, 0px); right: auto; width: var(--frame-w, 100%);
-  bottom: calc(var(--frame-bottom, 0px) + clamp(12px, calc(var(--frame-h, 400px) * 0.04), 28px));
+  bottom: calc(var(--frame-bottom, 0px) + max(8px, var(--caption-inset)));
   padding-inline: var(--clear);
 }
+.stage-wrap .step-caption[data-edge="top"] { top: calc(var(--frame-y, 0px) + max(8px, var(--caption-inset))); bottom: auto; padding-inline: 0; }
 
 /* The replay's source (a pull request, a ticket) as a quiet link chip beside the title. */
 /* The replay's source beside the title: a quiet ghost link at the topbar controls' size (28 px, 6 px radius), no
@@ -714,7 +716,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .console-row code { display: block; overflow: hidden; color: var(--text); font-size: var(--text-xs); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
 /* While the scrubber is dragged its time bubble rises over the player's bottom edge: the caption steps up clear of it. */
 .step-caption { transition: transform 120ms var(--ease-out); }
-.player-region:has(.scrubber[data-scrubbing]) .step-caption { transform: translateY(-28px); }
+.player-region:has(.scrubber[data-scrubbing]) .step-caption:not([data-edge="top"]) { transform: translateY(-28px); }
 .console-row.error td { background: var(--danger-tint); }
 .source { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
@@ -733,19 +735,33 @@ svg.lucide.lucide { stroke-width: 2; }
 @media (hover: hover) and (pointer: fine) { .empty-link:hover { text-decoration: underline; } }
 
 /* ---------- Loading and error states ---------- */
-.state-shell { width: min(620px, calc(100vw - 40px)); min-height: 100vh; display: grid; align-content: center; gap: 22px; margin: 0 auto; color: var(--text); }
+/* A page that could not open reads like EmptyState's error tone (components/ui/empty-state.css), on its tokens:
+   the alert tile, the status line, a title, the reason and the way back, centred, with the brand above. */
+.state-shell { width: min(480px, calc(100vw - 40px)); min-height: 100vh; min-height: 100dvh; display: grid; align-content: center; justify-items: center; gap: 32px; margin: 0 auto; padding-block: 24px; color: var(--text); text-align: center; }
 .state-brand { justify-content: center; }
-.state-content { padding: 28px 0; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
-.state-kicker { color: var(--danger); font-size: var(--text-xs); font-weight: 600; }
-.state-content h1 { margin: 6px 0; font-size: var(--text-lg); font-weight: 600; letter-spacing: -0.015em; }
-.state-content p { max-width: 58ch; margin: 0; color: var(--text-secondary); font-size: var(--text-sm); line-height: 1.6; }
+.state-content { display: grid; justify-items: center; gap: var(--empty-state-text-gap); }
+/* why: the tile and its glyph are pseudo-elements stacked in the first grid cell, so every page that renders
+   .state-content (viewer, editor, suite, compare, router states) gets them without new markup. The glyph is lucide's
+   circle-alert as a mask, so it takes the tone's colour in both themes. */
+.state-content::before, .state-content::after { content: ""; grid-area: 1 / 1; width: var(--empty-state-icon-tile); height: var(--empty-state-icon-tile); margin-bottom: calc(var(--empty-state-gap) - var(--empty-state-text-gap)); }
+.state-content::before { border: 1px solid var(--empty-state-error-border); border-radius: var(--empty-state-icon-radius); background: var(--empty-state-error-bg); }
+.state-content::after {
+  background: var(--empty-state-error-color);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E") center / var(--empty-state-icon-size) no-repeat;
+}
+.state-kicker { color: var(--empty-state-error-color); font-size: var(--empty-state-status-size); font-weight: 600; }
+.state-content h1 { margin: 0; color: var(--empty-state-title-color); font-size: var(--text-md); font-weight: var(--empty-state-title-weight); line-height: var(--empty-state-title-line); }
+.state-content p { max-width: var(--empty-state-body-measure); margin: 0; color: var(--empty-state-body-color); font-size: var(--empty-state-body-size); line-height: var(--empty-state-body-line); }
 .button { min-height: 32px; display: inline-flex; align-items: center; margin-top: 18px; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-sm); font-weight: 600; text-decoration: none; cursor: pointer; }
 .button.secondary { border-color: var(--line-strong); background: transparent; color: var(--text); }
 
 
-.state-brand { color: var(--text); text-decoration: none; }
-.state-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-.state-actions .button { margin-top: 0; }
+.state-brand { color: var(--text-secondary); text-decoration: none; }
+@media (hover: hover) and (pointer: fine) { .state-brand:hover { color: var(--text); } }
+.state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--empty-state-action-gap); margin-top: calc(var(--empty-state-gap) + var(--empty-state-text-gap)); }
+/* why: pages build these actions from either the legacy .button or the shadcn Button, whose anchor kept the UA underline. */
+.state-actions > :is(.button, [data-slot="button"]) { min-height: var(--empty-state-action-height); margin-top: 0; padding-inline: var(--empty-state-action-pad); font-size: var(--empty-state-action-size); text-decoration: none; }
+@media (pointer: coarse) { .state-actions > :is(.button, [data-slot="button"]) { min-height: var(--empty-state-action-height-touch); } }
 
 /* ---------- Skeletons (layout-shaped, not spinners) ---------- */
 .skeleton { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-hover); animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
@@ -913,6 +929,19 @@ svg.lucide.lucide { stroke-width: 2; }
 .copy-command:active { transform: scale(0.97); }
 .command-block pre { min-width: 0; max-width: 100%; margin: 0; padding: 12px; overflow-x: auto; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.6; }
 .command-block pre:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
+/* A long command fades at whichever edge has more of it out of view: the trailing edge at rest, the leading edge
+   once scrolled to the end. A command that fits never fades: its scroll timeline is inactive, so both properties
+   keep their 0 px initial values. Browsers without scroll-driven animations draw no fade. */
+@property --command-fade-start { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --command-fade-end { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@supports (animation-timeline: scroll()) {
+  .command-block pre {
+    mask-image: linear-gradient(to right, transparent, #000 var(--command-fade-start), #000 calc(100% - var(--command-fade-end)), transparent);
+    animation: command-fade linear both;
+    animation-timeline: scroll(self inline);
+  }
+}
+@keyframes command-fade { from { --command-fade-start: 0px; --command-fade-end: 32px; } to { --command-fade-start: 32px; --command-fade-end: 0px; } }
 
 /* ---------- Pointer-only hover ---------- */
 @media (hover: hover) and (pointer: fine) {

@@ -35,6 +35,19 @@ export function captionIndex(steps: ReadonlyArray<CaptionStep>, time: number, du
   return index;
 }
 
+/**
+ * The replay span the caption of step `index` (a captionIndex) stays up: from its step (the start, for the first)
+ * until the playhead reaches a step with another caption, or the end. Caption placement reads the pointer over it.
+ */
+export function captionSpan(steps: ReadonlyArray<CaptionStep>, index: number, duration: number) {
+  const from = index <= 0 ? 0 : (steps[index]?.at ?? 0);
+  for (let next = index + 1; next < steps.length; next++) {
+    const at = steps[next]!.at;
+    if (captionIndex(steps, at, duration) !== index) return { from, to: at };
+  }
+  return { from, to: duration };
+}
+
 export interface CaptionFrame {
   /** The captioned step (captionIndex): a new index is a new caption, with its own entrance. */
   index: number;

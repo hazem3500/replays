@@ -129,6 +129,13 @@ time. A sweep runs at start, every six hours and (throttled) after uploads, and 
 replays and suites, replays attached to a kept suite, and the committed samples never expire. The app is the only
 deleter; do not add a bucket lifecycle rule.
 
+When the sweep removes a replay it keeps a small record of it as `_expired/<id>.json`
+([formats/expired-replay.schema.json](formats/expired-replay.schema.json)): the title, host, recorded and removed dates,
+the retention window and the profile. It keeps nothing of the recording itself (no events, URL, comments or media). The
+index lists these under "Show expired" and a suite whose recordings are gone says when and why. Records last
+`RETENTION_EXPIRED_DAYS` after the removal (default 30); `0` keeps none and drops existing records on the next sweep.
+They are served at `GET /api/expired-replays`, behind the same authentication as the replay list.
+
 ## Tracing (optional)
 
 Set `OTEL_EXPORTER_OTLP_ENDPOINT` (any OTLP collector or backend) to export traces; unset, the OpenTelemetry SDK is

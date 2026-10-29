@@ -49,6 +49,12 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   sampling, CLI defaults, stricter privacy only). Core ships a built-in `performance` profile, which the index shows as a tab
   only once a replay has it.
 
+- Expired replays: when retention removes a replay the server keeps a small record of it (title, host, dates, the
+  window and profile that applied; nothing of the recording) for `RETENTION_EXPIRED_DAYS` (default 30, `0` keeps none),
+  served at `GET /api/expired-replays` and documented as `docs/formats/expired-replay.schema.json`. The index shows
+  "N replays expired in the last 30 days" under the feed with "Show expired" for dimmed, details-only rows, and a suite
+  whose recordings are gone says when and under which window they were removed instead of "Recordings expired".
+
 - Editor cursor motion styles: `ReplayEdits.cursor.motion` picks one of Cua Cursor Motion's six built-in styles (`signature_arc`,
   the default and previous behavior, `spring_settle`, `magnetic`, `comet_swoop`, `adaptive` or `classic`) for the viewer, editor preview
   and MP4 export. The cursor inspector shows them as a picker whose cards play each style's planned path, with a reworked layout and a
@@ -60,6 +66,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   remounting their players. A suite with two or more recordings opens this way with its runs as the recordings, and
   its sidebar moves the focus. The Performance tab compares the recordings' worst paints, tasks and interactions.
   `scripts/demo-comparison-seed.mjs` adds demo suites to compare.
+
+
+
+- Poster ThumbHash: once the server renders a replay's poster it keeps the poster's ThumbHash in the summary
+  (`ReplaySummary.thumbhash`, base64, ~25 bytes; `meta.json` and `GET /api/replays`). The index paints it under each
+  poster while the image loads and crossfades to the real poster, with no layout shift. Replays without one keep the
+  plain placeholder. The summary is now documented as `docs/formats/replay-summary.schema.json`.
 
 - Recorder HTTP upload: `createRecorder({ upload: { url, headers?, body?, timeoutMs?, credentials? } })` and `createHttpUpload(options)`
   from `/recorder` post gzip JSON to any endpoint and return `{ replayId, reference, url }`. `IssueUploadError` gains `retryable`
