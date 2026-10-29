@@ -69,8 +69,8 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29035,
-      "gzip": 10324,
-      "brotli": 8967
+      "gzip": 10181,
+      "brotli": 8875
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
@@ -123,14 +123,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 246064,
-      "gzip": 42460,
-      "brotli": 35304
+      "raw": 244079,
+      "gzip": 42111,
+      "brotli": 35189
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 927498,
-      "gzip": 289075,
-      "brotli": 238566
+      "raw": 938245,
+      "gzip": 291996,
+      "brotli": 240510
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -180,7 +180,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 630,
-      "brotli": 568
+      "brotli": 567
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -200,11 +200,11 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 617
+      "brotli": 646
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20382,
-      "gzip": 8342,
+      "raw": 20380,
+      "gzip": 8337,
       "brotli": 7145
     },
     "dist/client/assets/tools-HASH.js": {
@@ -218,9 +218,9 @@
       "brotli": 238
     },
     "dist/client/assets/use-focus-when-HASH.js": {
-      "raw": 607,
-      "gzip": 446,
-      "brotli": 397
+      "raw": 318,
+      "gzip": 258,
+      "brotli": 220
     },
     "dist/client/assets/useTriggerFocusGuards-HASH.js": {
       "raw": 72142,
@@ -228,7 +228,7 @@
       "brotli": 22698
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50369,
+      "raw": 50359,
       "gzip": 18336,
       "brotli": 15958
     },
@@ -428,9 +428,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 247932,
-      "gzip": 43379,
-      "brotli": 36099
+      "raw": 246000,
+      "gzip": 43056,
+      "brotli": 36006
     },
     "initial/index.html/js": {
       "raw": 1688508,
@@ -965,14 +965,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3520
@@ -1041,11 +1033,11 @@
     {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 927498,
-        "gzip": 289075,
-        "brotli": 238566
+        "raw": 938245,
+        "gzip": 291996,
+        "brotli": 240510
       },
-      "reason": "Chunk graph shift from loading the comments panel and markers lazily: the shared Base UI menu, plugin registry and toast modules from the removed PluginUi and preload-helper chunks join the main chunk; measured in CI against main: raw 826293 to 922883, gzip 258208 to 287636, brotli 215011 to 237379, while the initial index.html JS group falls from 1664919 to 1645225 raw bytes. Replaces #78's allowance for this file.",
+      "reason": "Chunk graph shift from loading the comments panel and markers lazily: the shared Base UI menu, plugin registry and toast modules from the removed PluginUi and preload-helper chunks join the main chunk; measured in CI against main: raw 836523 to 933577, gzip 260756 to 290543, brotli 216498 to 239313, while the initial index.html JS group falls from 1676034 to 1656589 raw bytes. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
@@ -1096,6 +1088,14 @@
         "brotli": 2714
       },
       "reason": "The comments panel and marker styles, travelling with the lazy comments UI chunk (#116); main CSS drops from 239455 to 230795 raw bytes in the initial group.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 646
+      },
+      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change when the comments UI moves out of the main chunk; measured against main: +0 B raw, +5 B gzip, +31 B brotli (623 against main's 592 and a 617-byte cap). Replaces #119's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/116"
     }
   ]
