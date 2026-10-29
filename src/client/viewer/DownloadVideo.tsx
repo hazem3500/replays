@@ -177,7 +177,8 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
   if (((!stored && !canRender) || !showCore) && !hasPlugins) return null;
 
   const exportText = exportLabel('Export video', variant);
-  const label = active ? 'Rendering video…' : !stored && !canRender ? 'Download replay' : exportLabel('Download video', variant);
+  const idleLabel = !stored && !canRender ? 'Download replay' : exportLabel('Download video', variant);
+  const label = active ? 'Rendering video…' : idleLabel;
   const trigger =
     stored || hasPlugins ? (
       <DropdownMenu>
