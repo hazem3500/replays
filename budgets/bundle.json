@@ -80,7 +80,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 37956,
       "gzip": 13469,
-      "brotli": 11976
+      "brotli": 11968
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 17891,
@@ -93,7 +93,7 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101090,
+      "raw": 101086,
       "gzip": 33857,
       "brotli": 28913
     },
@@ -115,7 +115,7 @@
     "dist/client/assets/feature-HASH.js": {
       "raw": 25113,
       "gzip": 9605,
-      "brotli": 8395
+      "brotli": 8377
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 402,
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 609,
+      "gzip": 608,
       "brotli": 554
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
@@ -244,8 +244,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 685,
-      "brotli": 631
+      "gzip": 684,
+      "brotli": 606
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -273,9 +273,9 @@
       "brotli": 1200
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 57050,
-      "gzip": 20540,
-      "brotli": 17790
+      "raw": 59480,
+      "gzip": 21120,
+      "brotli": 18380
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -485,7 +485,7 @@
     "initial/index.html/js": {
       "raw": 1484557,
       "gzip": 473494,
-      "brotli": 400470
+      "brotli": 400425
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -1208,16 +1208,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/117"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 57050,
-        "gzip": 20540,
-        "brotli": 17790
-      },
-      "reason": "Shared Splitter primitive and its headless hook replace the viewer's two hand-rolled resizers, adding snap, fold, reset, settle and the separator keyboard pattern plus the folded rail's edge tab.",
-      "pr": "https://github.com/hazem3500/replays/pull/121"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.css",
       "cap": {
         "raw": 5150,
@@ -1234,6 +1224,16 @@
       },
       "reason": "No source change: the suite comparison entry names lazy viewer chunks by their hashes, which change with the Splitter work; measured against main: 0 B raw, -1 B gzip, +30 B brotli (612 against main's 582 and a 600-byte cap). Replaces #119's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/121"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 59480,
+        "gzip": 21120,
+        "brotli": 18380
+      },
+      "reason": "Phone top bar: details, the copy-link choices and Compare become More items (with their icons), plus the long-press and copied-flash hooks; includes #121's Splitter, which CI measures in this stack.",
+      "pr": "https://github.com/hazem3500/replays/pull/125"
     }
   ]
 }
