@@ -6,7 +6,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import type { ProfileInfo } from '../../../shared/profiles.ts';
 import { copyText } from '../../clipboard.ts';
 import { resolveSlot } from '../../plugins/registry.ts';
-import { apiUrl } from '../../route.ts';
+import { apiUrl } from '../../api/fetch.ts';
 import { coreWays, FIRST_RUN_SLOT, type FirstRunCommand, type FirstRunContext, type FirstRunWay, firstRunStrings } from './model.ts';
 
 const ICONS = { record: CircleDotIcon, upload: UploadIcon, cli: TerminalIcon, agent: BotIcon, link: LinkIcon } as const;

@@ -20,7 +20,7 @@ import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
-import { editHref } from './route.ts';
+import { editHref } from './routing/links.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
@@ -44,7 +44,7 @@ import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { captionAt } from './step-caption.ts';
-import { Inspector, type MobilePanel } from './viewer/Inspector.tsx';
+import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
 import { clampInspectorHeight, initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
@@ -68,6 +68,7 @@ import { SourceChip, topbarSource } from './viewer/SourceChip.tsx';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
+import { setPageUrl } from './routing/navigate.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
@@ -104,7 +105,7 @@ export function Viewer({
   stage,
   headerActions,
   inspectorScope,
-  performanceExtra,
+  inspectorPeers,
   comparing,
   onCompareWith,
 }: {
@@ -147,8 +148,8 @@ export function Viewer({
   headerActions?: ReactNode;
   /** In the inspector's tab row: which compared recording the panels describe. */
   inspectorScope?: ReactNode;
-  /** Above the performance events: how the compared recordings differ. */
-  performanceExtra?: ReactNode;
+  /** The other compared recordings: Network and Performance say how each one went beside this one. */
+  inspectorPeers?: readonly InspectorPeer[];
   /** Recordings already on the stage, left out of "Compare with…". */
   comparing?: readonly string[];
   /** "Compare with…" picked a recording; by default this replay's URL gains it and shows both in a grid. */
@@ -342,7 +343,7 @@ export function Viewer({
       if (!step) return;
       player.seek(step.at);
       stepCursor.current = { index, time: player.getTime() };
-      history.replaceState(history.state, '', stepPermalink(location.href, index));
+      setPageUrl(stepPermalink(location.href, index));
     };
     const currentStep = () => (stepCursor.current?.time === player.getTime() ? stepCursor.current.index : undefined);
     return {
@@ -372,7 +373,7 @@ export function Viewer({
       },
       copyLink: () => {
         const url = timePermalink(location.href, player.getTime());
-        history.replaceState(history.state, '', url);
+        setPageUrl(url);
         void copyText(url).then((copied) => notify(copied ? `Link to ${formatClock(player.getTime())} copied` : 'Could not copy the link'));
       },
       switchFullscreen: () => {
@@ -666,7 +667,7 @@ export function Viewer({
           expandedRequest={expandedRequest}
           collapse={inspectorCollapse}
           {...(mobilePanel ? { mobile: mobilePanel } : {})}
-          compare={inspectorScope || performanceExtra ? { scope: inspectorScope, performance: performanceExtra } : undefined}
+          compare={inspectorScope || inspectorPeers ? { scope: inspectorScope, peers: inspectorPeers } : undefined}
         />
         <StepAnnouncer />
         {pluginMenu.drawer}
@@ -1067,7 +1068,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
     url.hash = '';
     if (next) url.searchParams.set('original', '1');
     else url.searchParams.delete('original');
-    history.replaceState(history.state, '', url);
+    setPageUrl(url);
     setOriginalState(next);
   }, []);
   const edited = useMemo(

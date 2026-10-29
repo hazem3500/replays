@@ -24,9 +24,10 @@ test('read-only host plays saved trims and effects and offers no route into edit
   );
   const requests: string[] = [];
   page.on('request', (request) => requests.push(new URL(request.url()).pathname));
-  await page.goto(`${origin}/r/${id}/edit?captions=1#step-0`);
+  await page.goto(`${origin}/r/${id}/edit`);
+  await expect(page.getByRole('heading', { name: 'There is no page at this address' })).toBeVisible();
+  await page.goto(`${origin}/r/${id}?captions=1#step-0`);
   await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
-  await expect(page).toHaveURL(`${origin}/r/${id}?captions=1#step-0`);
   await expect(page.getByTestId('editor')).toHaveCount(0);
   await expect(page.getByTestId('edit-replay')).toHaveCount(0);
   await expect(page.getByTestId('edited-chip')).toContainText('Edited');

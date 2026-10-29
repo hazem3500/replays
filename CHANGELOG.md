@@ -17,6 +17,12 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Compared recordings go by name: each tile, the inspector's "Showing" switch and the Network and Performance panels
+  name a recording by what tells it apart ("Before", "Firefox", "Run 3": the parts every label shares are dropped)
+  beside one colour swatch, instead of A, B, C. Vitals and request details now say how each other recording did.
+- A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
+  mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
+  `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
 - Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
   hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
   inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse
@@ -70,6 +76,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - `/plugin` exports `HttpError` (status, message, optional headers) and `tooManyRequests(seconds, message?)`.
   - `examples/app-key-ingest`: a public app-key ingest (keys with rotation, origins, limits, retention) built only from these hooks.
 
+- `WebAuthAdapter` (`authenticateRequest`, `handleRequest`, `loginUrlFor`): auth adapters over web `Request`/`Response`, accepted
+  wherever an `AuthAdapter` is (`api.auth`, `AUTH_PLUGIN`, `createApp({ auth })`, `describeAuthAdapter`); `AnyAuthAdapter` names
+  either shape ([docs/extension-api.md](docs/extension-api.md#web-standard-adapters)).
 - Plugin Web APIs, additive in plugin API generation 1 ([docs/extension-api.md](docs/extension-api.md#web-apis-routes-and-middleware)):
   - `api.route(...)`: web-standard handlers under `/api/plugins/<plugin>`, with `auth`, `write` and a Standard Schema `body`
   - `api.middleware(...)`: `pre-auth`/`post-auth` interceptors that return a `Response` or nothing
@@ -245,6 +254,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- "Keep suite and its runs" moved from the suite sidebar's pin button into the viewer's More menu at every width; the
+  sidebar shows "Kept by …" while a suite is kept.
+
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
@@ -259,6 +271,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   headers. Performance leads with a vitals bar, then slow moments worst first, each explained by what it waited on.
   In compare mode both panels show deltas against the other recordings (`compare.peers`). The standalone Waterfall
   and its toggle are gone.
+- The viewer's client router is TanStack Router: file routes in `src/client/routes/`, a router context of
+  `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params. Plugin pages
+  (`api.registerPluginPage`) are routed at `/p/<plugin>/<path>`. Older addresses are not kept: `/r/<id>?suite=<suite>`
+  no longer redirects (use `/s/<suite>/r/<id>`), `/r/<id>/edit` without edit capability and any other unknown address
+  show a not-found page, and `/r/` no longer opens the index.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed
