@@ -80,7 +80,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 37956,
       "gzip": 13469,
-      "brotli": 11989
+      "brotli": 11976
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 17891,
@@ -93,9 +93,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101099,
-      "gzip": 33868,
-      "brotli": 28919
+      "raw": 101090,
+      "gzip": 33857,
+      "brotli": 28913
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -153,8 +153,8 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 243165,
-      "gzip": 42020,
+      "raw": 242694,
+      "gzip": 41991,
       "brotli": 35120
     },
     "dist/client/assets/main-HASH.js": {
@@ -210,7 +210,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
       "gzip": 609,
-      "brotli": 560
+      "brotli": 554
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 243,
@@ -244,8 +244,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 686,
-      "brotli": 600
+      "gzip": 685,
+      "brotli": 631
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -478,8 +478,8 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 243165,
-      "gzip": 42020,
+      "raw": 242694,
+      "gzip": 41991,
       "brotli": 35120
     },
     "initial/index.html/js": {
@@ -908,14 +908,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/136"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 246064,
@@ -1233,6 +1225,14 @@
         "brotli": 1200
       },
       "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
+      "pr": "https://github.com/hazem3500/replays/pull/121"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 631
+      },
+      "reason": "No source change: the suite comparison entry names lazy viewer chunks by their hashes, which change with the Splitter work; measured against main: 0 B raw, -1 B gzip, +30 B brotli (612 against main's 582 and a 600-byte cap). Replaces #119's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/121"
     }
   ]
