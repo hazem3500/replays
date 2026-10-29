@@ -362,17 +362,19 @@ a.brand { color: var(--text); text-decoration: none; border-radius: var(--radius
 .success-check path { stroke-dasharray: 24; stroke-dashoffset: 24; animation: check-draw 240ms var(--ease-out) 60ms forwards; }
 @keyframes check-draw { to { stroke-dashoffset: 0; } }
 
-/* ---------- Shortcut sheet ---------- */
-.shortcut-sheet { max-height: calc(100vh - 64px); overflow: auto; }
-.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 10px 10px 16px; border-bottom: 1px solid var(--line); }
-.sheet-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px 24px; padding: 12px 16px; }
+/* ---------- Shortcut sheet ----------
+   On the dialog geometry (--dialog-pad from DialogContent, 13 px body rows) and with the same key chips as
+   Settings › Keyboard (settings.css .settings-kbd), so the two lists of the same shortcuts read alike. */
+.shortcut-sheet { max-height: calc(100vh - 64px); max-height: calc(100dvh - 64px); overflow: auto; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 12px 12px var(--dialog-pad); border-bottom: 1px solid var(--line); }
+.sheet-body { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 4px 32px; padding: 12px var(--dialog-pad) 4px; }
 .sheet-body h3 { margin: 8px 0 4px; color: var(--text-tertiary); font-size: var(--text-xs); font-weight: 600; }
 .sheet-body dl { margin: 0; }
-.sheet-body dl div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 30px; border-bottom: 1px solid var(--line); }
-.sheet-body dt { color: var(--text-secondary); font-size: var(--text-sm); }
+.sheet-body dl div { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px; border-bottom: 1px solid var(--line); }
+.sheet-body dt { color: var(--text-secondary); font-size: var(--dialog-body-size); line-height: var(--dialog-body-line); }
 .sheet-body dd { display: flex; gap: 4px; margin: 0; }
 kbd:not([data-slot]) { min-width: 22px; padding: 1px 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: var(--radius-sm); background: var(--surface-raised); color: var(--text); font-family: var(--mono); font-size: var(--text-xs); text-align: center; }
-.sheet-note { margin: 0; padding: 10px 16px 14px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.sheet-note { margin: 0; padding: 12px var(--dialog-pad) var(--dialog-pad); color: var(--text-tertiary); font-size: var(--text-xs); }
 
 /* ---------- Workspace ---------- */
 .workspace { --steps-default: 300px; min-width: 0; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 0 var(--steps-width, var(--steps-default)); }
@@ -759,8 +761,24 @@ svg.lucide.lucide { stroke-width: 2; }
 .loading-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); padding-inline: 6px; }
 .loading-notice { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
 .loading-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
-.transport.loading-transport { display: flex; padding-inline: 16px; }
-@media (pointer: coarse) { .transport.loading-transport { min-height: 79px; } }
+/* The viewer's own parts while loading (ViewerLoadingParts.tsx): real geometry, inert controls, quiet stand-ins. */
+.sk-topbar[data-untitled] .topbar-title-text { width: min(240px, 40vw); border-radius: var(--radius-sm); background: var(--surface-hover); color: transparent; animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
+.sk-actions { display: contents; }
+[data-loading-action]:disabled { opacity: 1; background: transparent; pointer-events: none; }
+/* invariant: while loading only the back link answers; More and the theme wait for the viewer's own bar, so nothing opens a stand-in menu. */
+.sk-topbar .topbar-actions { pointer-events: none; }
+.sk-panel { display: grid; align-content: start; padding-top: 4px; overflow: hidden; }
+.sk-panel-row { display: grid; grid-template-columns: 56px minmax(0, 1fr); align-items: center; gap: 16px; height: 32px; padding: 0 10px; }
+.sk-scrub { display: flex; align-items: center; gap: 3px; height: 28px; padding-inline: 6px; }
+.sk-segment { flex: 1; height: 4px; border-radius: 2px; background: var(--line-strong); }
+.sk-steps { display: grid; align-content: start; gap: 2px; padding: 6px; }
+.sk-step { cursor: default; }
+.sk-step-icon { width: 14px; height: 14px; }
+.sk-step-time { width: 36px; }
+.sk-tabs .inspector-tablist, .sk-tabs-phone .inspector-tablist { display: flex; align-items: stretch; }
+.sk-tab.sk-tab { display: inline-flex; align-items: center; cursor: default; }
+.sk-tab-icon { width: 16px; height: 16px; }
+@media (pointer: coarse) { .sk-scrub { height: 44px; } }
 .sk-stage { container-type: size; display: grid; place-items: center; }
 .sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }
 .sk-frame:has(.sk-poster) { overflow: hidden; }
@@ -776,7 +794,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-progress[data-determinate] > span { transition: transform 200ms var(--ease-out); }
 @keyframes sk-indeterminate { from { transform: translateX(-100%); } to { transform: translateX(360%); } }
 @media (prefers-reduced-motion: reduce) {
-  .skeleton-shell, .skeleton-suite, .sk-progress:not([data-determinate]) > span { animation: none; }
+  .skeleton-shell, .skeleton-shell .skeleton, .skeleton-suite, .sk-progress:not([data-determinate]) > span { animation: none; }
   .sk-progress:not([data-determinate]) > span { width: 100%; opacity: 0.5; }
 }
 /* ---------- Replay index ---------- */
