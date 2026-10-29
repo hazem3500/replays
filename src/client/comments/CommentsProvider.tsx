@@ -18,6 +18,7 @@ import { formatClock } from '../../shared/replay.ts';
 import type { NewCommentInput } from './api.ts';
 import type { CommentRows } from '../data/comments.ts';
 import { loadCommentRowsSource } from './rows.ts';
+import { setPageUrl } from '../routing/navigate.ts';
 
 export interface PlacedThread extends CommentThread {
   placement: Placement;
@@ -192,7 +193,7 @@ function CommentsBody({ replayId, timeline, openPanel, children, rows }: Comment
       copyLink(thread) {
         const at = thread.placement.state === 'visible' ? thread.placement.at : undefined;
         const url = commentPermalink(location.href, thread.root.id, at);
-        history.replaceState(history.state, '', url);
+        setPageUrl(url);
         void copyText(url).then((copied) =>
           notify(copied ? `Link to the comment${at === undefined ? '' : ` at ${formatClock(at)}`} copied` : 'Could not copy the link'),
         );

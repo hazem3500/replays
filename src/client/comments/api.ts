@@ -4,7 +4,7 @@ import * as z from 'zod/mini';
 import type { CommentsResponse } from '../../shared/comments.ts';
 import { commentsResponseSchema, publicCommentSchema, removedCommentsSchema } from '../../shared/schemas/comments.ts';
 import { LoadError } from '../queries.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 
 const url = (replayId: string, commentId?: string) =>
   apiUrl(`replays/${encodeURIComponent(replayId)}/comments${commentId ? `/${encodeURIComponent(commentId)}` : ''}`);

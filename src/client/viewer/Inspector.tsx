@@ -15,7 +15,7 @@ import { ContextPanel } from './ContextPanel.tsx';
 import { activeFeatures, useFeatureBadges } from '../plugins/features.tsx';
 import { useContextSchema } from './context-schema.ts';
 import { readStorage, writeStorage } from '../storage.ts';
-import { useFilledAfterTransition } from '../navigation.ts';
+import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
 import { TrackList, SeekTime, HEADER_HEIGHT, TRACK_GAP, TRAILING_GAP } from './TrackList.tsx';
 import { useRowHeight } from '../hooks/use-row-height.ts';
@@ -183,7 +183,7 @@ export const Inspector = memo(function Inspector({
   const { setTab, setExpandedRequest } = useViewer();
   const features = activeFeatures().flatMap((feature) => (feature.tab ? [{ id: feature.id, featureTab: feature.tab }] : []));
   const featureBadges = useFeatureBadges();
-  // Rows fill once the page transition has landed (navigation.ts); until then each panel shows its pending frame.
+  // Rows fill once the page transition has landed (hooks/use-filled-after-transition.ts); until then each panel shows its pending frame.
   const filled = useFilledAfterTransition();
   const contextSchema = useContextSchema();
   const human = bundle.meta.source === 'human';

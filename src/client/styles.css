@@ -96,6 +96,9 @@
   --success: #7ccfa2;
   --ring: #a9b6ff;
   --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+  /* Behind dialogs and sheets: dims the page enough to separate the popup but keeps it legible, so the context
+     the popup acts on stays readable. No blur: a backdrop filter under a fade costs every frame. */
+  --scrim: rgb(0 0 0 / 0.6);
   /* Switches: a white thumb in both themes (on --text it turned black on the accent track in light). */
   --switch-thumb: #ffffff;
   --switch-thumb-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
@@ -136,6 +139,7 @@
   --success: #1f7445;
   --ring: #3d4fd1;
   --shadow-pop: 0 12px 32px rgba(20, 26, 46, 0.14), 0 2px 6px rgba(20, 26, 46, 0.08);
+  --scrim: rgb(20 26 46 / 0.36);
 }
 
 * { box-sizing: border-box; }
@@ -207,7 +211,7 @@ html[data-page-transition="run"] .app-shell .transport { view-transition-name: v
 html[data-page-transition="run"] .app-shell .timeline-panel { view-transition-name: vt-rail; }
 html[data-page-transition="run"] .app-shell .inspector { view-transition-name: vt-panel; }
 html[data-page-transition="run"] .suite-sidebar { view-transition-name: vt-runs; }
-/* A suite's run → run (navigation.ts swapInPlace): everything stays where it is. The sidebar is its live self
+/* A suite's run → run (transitions/swap.ts): everything stays where it is. The sidebar is its live self
    (only its selection glides), the frame crossfades at its rect (resizing if the aspect differs), the top bar
    and transport crossfade in place, the rail and panel crossfade with a 4 px rise. 200 ms. The page itself stays
    opaque under the new one fading in, so nothing that is the same in both runs dims mid-way; the regions,
@@ -234,7 +238,7 @@ html[data-page-transition="run"]::view-transition-new(vt-panel) { animation: run
 html[data-page-transition="run"]::view-transition-old(vt-hero),
 html[data-page-transition="run"]::view-transition-new(vt-hero) { animation-duration: 200ms; }
 @keyframes run-region-in { from { opacity: 0; transform: translateY(4px); } }
-/* The step rows and panel rows fill once the frame has landed (navigation.ts useFilledAfterTransition): they fade in. */
+/* The step rows and panel rows fill once the frame has landed (hooks/use-filled-after-transition.ts): they fade in. */
 /* Rows that stagger in (viewer/stagger.ts) take the place of this fade. */
 html[data-landed] :is(.timeline-panel .timeline-wrap:not([data-staggered]), .inspector-panel:not([data-staggered]) > :not([data-staggered])) { animation: content-in 160ms var(--ease-out); }
 /* After an in-document page change the new page is the transition's own new state: no second entrance. */

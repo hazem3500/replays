@@ -4,6 +4,8 @@ import { createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createAppRouter } from '../src/client/router.tsx';
+import { setClientRouter } from '../src/client/routing/client.ts';
 import { closeSettings, openSettings, SettingsButton } from '../src/client/settings/Settings.tsx';
 import { setBetaAllowedForTests } from '../src/client/settings/labs.ts';
 import { settle } from './settle.ts';
@@ -188,6 +190,7 @@ describe('Settings', () => {
 
   it('opens a section from the ?settings= deep link and drops it on close', async () => {
     window.history.replaceState(null, '', '/?settings=about');
+    setClientRouter(createAppRouter({ queryClient: client, deployment: { base: '', name: 'replays' } }));
     mockConfig();
     await render();
     expect(tab('About')?.getAttribute('aria-selected')).toBe('true');
