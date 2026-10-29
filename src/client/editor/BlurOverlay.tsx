@@ -5,11 +5,12 @@ import { MIN_BLUR_SIZE, type ReplayBlur } from '../../shared/effects.ts';
 import type { EditorAction, Selection } from './state.ts';
 import { updateEffect } from './state.ts';
 import { Button } from '@/components/ui/button.tsx';
+import { elementBoxAt } from './blur-snap.ts';
 
 type BlurBox = Pick<ReplayBlur, 'x' | 'y' | 'width' | 'height'>;
 
-type Handle = 'move' | 'nw' | 'ne' | 'sw' | 'se';
-const CORNERS: Handle[] = ['nw', 'ne', 'sw', 'se'];
+type Handle = 'move' | 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w';
+const HANDLES: Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const round = (value: number) => Math.round(value * 10_000) / 10_000;
@@ -29,9 +30,9 @@ export function dragBox(box: Pick<ReplayBlur, 'x' | 'y' | 'width' | 'height'>, h
   let right = box.x + box.width;
   let bottom = box.y + box.height;
   if (handle.includes('w')) left = Math.min(right - MIN_BLUR_SIZE, clamp01(left + dx));
-  else right = Math.max(left + MIN_BLUR_SIZE, clamp01(right + dx));
+  else if (handle.includes('e')) right = Math.max(left + MIN_BLUR_SIZE, clamp01(right + dx));
   if (handle.includes('n')) top = Math.min(bottom - MIN_BLUR_SIZE, clamp01(top + dy));
-  else bottom = Math.max(top + MIN_BLUR_SIZE, clamp01(bottom + dy));
+  else if (handle.includes('s')) bottom = Math.max(top + MIN_BLUR_SIZE, clamp01(bottom + dy));
   return { x: round(left), y: round(top), width: round(right - left), height: round(bottom - top) };
 }
 
@@ -106,6 +107,11 @@ export function BlurOverlay({
       const box = boxAt(next);
       setDraft(undefined);
       if (box.width >= MIN_BLUR_SIZE && box.height >= MIN_BLUR_SIZE) onPlace?.(box);
+      else {
+        // why: a click, not a drag, covers the recorded element under it instead of an arbitrary rectangle.
+        const snapped = elementBoxAt(frame.current?.closest('.editor-stage'), next.clientX, next.clientY);
+        if (snapped) onPlace?.(snapped);
+      }
     };
     stopDrawing.current?.();
     stopDrawing.current = cleanup;
@@ -150,7 +156,7 @@ export function BlurOverlay({
       {placing ? (
         <>
           <div className="blur-placement-help" role="status">
-            <span>Draw the area to blur</span>
+            <span>Drag over the area to blur, or click an element to cover it</span>
             <Button size="xs" variant="secondary" onClick={() => onPlace?.({ x: 0.35, y: 0.38, width: 0.3, height: 0.14 })}>
               Use centered area
             </Button>
@@ -180,11 +186,16 @@ export function BlurOverlay({
           style={{ left: `${blur.x * 100}%`, top: `${blur.y * 100}%`, width: `${blur.width * 100}%`, height: `${blur.height * 100}%` }}
           onPointerDown={(event) => begin(event, blur, 'move')}
         >
-          {blur.id === selectedId
-            ? CORNERS.map((corner) => (
-                <span key={corner} className="blur-handle" data-corner={corner} onPointerDown={(event) => begin(event, blur, corner)} />
-              ))
-            : null}
+          {blur.id === selectedId ? (
+            <>
+              <span className="blur-box-label" aria-hidden="true">
+                {blur.style === 'redact' ? 'Redact' : 'Blur'}
+              </span>
+              {HANDLES.map((handle) => (
+                <span key={handle} className="blur-handle" data-corner={handle} onPointerDown={(event) => begin(event, blur, handle)} />
+              ))}
+            </>
+          ) : null}
         </div>
       ))}
     </div>

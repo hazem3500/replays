@@ -1,9 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
-import { isPurposeId } from '../shared/purposes.ts';
-import { assertReplayBundle } from '../shared/replay.ts';
-import { flagMap, UploadHttpError, upload } from './bundle-io.ts';
+import { assertReplayBundle, withMetaProfile } from '../shared/replay.ts';
+import { flagMap, profileFlag, UploadHttpError, upload } from './bundle-io.ts';
 import {
   CliAuthError,
   beginDeviceLogin,
@@ -167,13 +166,13 @@ export async function uploadConfigured(
   await uploadWithCliAuth(bundle, output, endpoint, options);
 }
 
-/** `replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--purpose id]` */
+/** `replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--profile id]` */
 export async function runUploadCli(argv: string[]) {
   try {
     const [file, ...flags] = argv;
     if (!file || file.startsWith('--'))
       throw new Error(
-        'usage: replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--purpose id]',
+        'usage: replays upload <replay.json> [--upload-url <endpoint> | --server <name>] [--login] [--header-file file] [--profile id]',
       );
     const { values, booleans } = flagMap(flags, new Set(['login']));
     if ([...booleans].some((key) => key !== 'login')) throw new Error('unknown upload option');
@@ -183,11 +182,9 @@ export async function runUploadCli(argv: string[]) {
     });
     const bundle: unknown = JSON.parse(await readFile(resolve(file), 'utf8'));
     assertReplayBundle(bundle);
-    // --purpose sets (or replaces) meta.purpose; the server checks it against its purposes.
-    if (values.purpose !== undefined) {
-      if (!isPurposeId(values.purpose)) throw new Error('--purpose must be a purpose id (lower-case letters, digits and "-")');
-      bundle.meta.purpose = values.purpose;
-    }
+    // why: --profile sets (or replaces) the profile; the server checks it against its profiles.
+    const profile = profileFlag(values);
+    if (profile !== undefined) bundle.meta = withMetaProfile(bundle.meta, profile);
     await uploadWithCliAuth(bundle, dirname(resolve(file)), target, {
       ...(values['header-file'] ? { headerFile: values['header-file'] } : {}),
       ...(booleans.has('login') ? { forceLogin: true } : {}),

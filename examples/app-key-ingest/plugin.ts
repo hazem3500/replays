@@ -104,8 +104,8 @@ export function appKeyIngest(options: AppKeyIngestOptions) {
         },
         maxBytes: ({ identity }) => appOf(identity)?.maxBytes ?? 25 * 1024 * 1024,
         normalize({ bundle, identity }) {
-          // why: people, purpose, suite membership and context are the host's to set, never the client's.
-          const { people: _people, purpose: _purpose, ...meta } = bundle.meta;
+          // why: people, profile, suite membership and context are the host's to set, never the client's.
+          const { people: _people, profile: _profile, ...meta } = bundle.meta;
           const { suiteRun: _suiteRun, context: _context, ...rest } = bundle;
           return {
             ...rest,

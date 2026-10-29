@@ -36,6 +36,7 @@ import { clientAsset, runRequestHooks, watchResponse } from './plugin-runtime.ts
 import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import { serveObject } from './serve-object.ts';
+import { ViewCatalog } from './views.ts';
 import { type ReplayStore } from './store.ts';
 import { recordError, setRequestAttributes, traceRequest, withSpan } from './tracing.ts';
 import type { ApplicationRuntime } from './agent-native/runtime.ts';
@@ -68,6 +69,8 @@ export interface AppOptions {
   branding: BrandingConfig;
   /** Resolves `context.sources` references into links; defaults to the built-in providers. */
   sources: SourceProviders;
+  /** The deployment's views (src/server/views.ts); default the built-ins. */
+  views?: ViewCatalog;
   /** Optional JSON Schema for `context.fields` (context-schema.ts). */
   contextSchema?: ContextSchema;
   devMiddleware?: (request: IncomingMessage, response: ServerResponse, next: () => void) => void;
@@ -251,10 +254,15 @@ export function isBrowserNavigation(request: IncomingMessage) {
   return accept.includes('text/html');
 }
 
-/** `x-replay-purpose: <id>; inferred` for a replay whose purpose was inferred (explicit ones are in the bundle). */
-async function servedPurpose(store: ReplayStore, id: string): Promise<Record<string, string> | undefined> {
+/**
+ * `x-replay-profile: <id>; inferred` for a replay whose profile was inferred (explicit ones are in the bundle), and
+ * the same value under its deprecated name `x-replay-purpose`.
+ */
+async function servedProfile(store: ReplayStore, id: string): Promise<Record<string, string> | undefined> {
   const summary = await store.summary(id, { suites: false }).catch(() => undefined);
-  return summary?.purpose && summary.purposeInferred ? { 'x-replay-purpose': `${summary.purpose}; inferred` } : undefined;
+  if (!summary?.profile || !summary.profileInferred) return undefined;
+  const value = `${summary.profile}; inferred`;
+  return { 'x-replay-profile': value, 'x-replay-purpose': value };
 }
 
 /** `AppOptions.hosts` as routing: already checked (`loadSettings`), or a plain record checked here. */
@@ -298,8 +306,9 @@ export function createApp(options: AppOptions) {
   // `api.render`'s `beforeRender` for video exports (the queues in start.ts run the rest of the render hooks).
   const renderHooks = createRenderHooks(registry.render);
   const beforeRender = renderHooks.checks ? renderHooks.beforeRender : undefined;
-  const purposes = options.store.purposes;
-  const inferable = purposes.list.some((purpose) => purpose.inferable);
+  const profiles = options.store.profiles;
+  const views = options.views ?? new ViewCatalog();
+  const inferable = profiles.list.some((profile) => profile.inferable);
   const redaction = mergeRedactionRules(options.redaction, registry.redaction);
   /** The server's privacy pass over an upload, in its own span (it walks every event): the defaults plus the host's rules. */
   const sanitize = (bundle: ReplayBundle) =>
@@ -311,6 +320,7 @@ export function createApp(options: AppOptions) {
         store: options.store,
         auth: options.auth,
         sources: options.sources,
+        views,
         branding: options.branding,
         contextSchema: options.contextSchema,
         beta: options.beta,
@@ -334,7 +344,8 @@ export function createApp(options: AppOptions) {
     renderIndexHtml(html, {
       base,
       branding: options.branding,
-      purposes: purposes.list,
+      profiles: profiles.list,
+      views: views.list,
       sources: options.sources.describe(),
       ...(signIn ? { signIn } : {}),
       ...(options.beta ? { beta: options.beta } : {}),
@@ -496,15 +507,15 @@ export function createApp(options: AppOptions) {
         // browser keeps them for a day without asking again (reopening a replay reads its disk cache);
         // committed samples can change with a deploy, so they revalidate (ETag).
         const located = await options.store.locate(replayPath.id);
-        // An inferred purpose is not in the bundle: the viewer reads it from this header to open the replay its way.
-        const purposeHeaders = located && inferable ? await servedPurpose(options.store, replayPath.id) : undefined;
+        // An inferred profile is not in the bundle: the viewer reads it from this header to open the replay its way.
+        const profileHeaders = located && inferable ? await servedProfile(options.store, replayPath.id) : undefined;
         if (
           !located ||
           !(await serveObject(request, response, located.storage, located.key, located.uploaded ? IMMUTABLE_PRIVATE : REVALIDATE, {
             contentType: 'application/json; charset=utf-8',
             etag: true,
             info: located.info,
-            ...(purposeHeaders ? { headers: purposeHeaders } : {}),
+            ...(profileHeaders ? { headers: profileHeaders } : {}),
           }))
         ) {
           send(response, 404, 'replay not found');

@@ -1,4 +1,4 @@
-import type { PurposeInfo } from '../../../shared/purposes.ts';
+import type { ProfileInfo } from '../../../shared/profiles.ts';
 import type { SlotDescriptor } from '../../plugins/slots.ts';
 
 /* why: the index's first-run state is data. Each way to get a first replay is an `index.empty.ways` slot item: the
@@ -17,7 +17,7 @@ export const firstRunStrings = {
   copied: 'Copied',
   copyFailed: 'Copy failed',
   copyLabel: (label: string) => `Copy: ${label}`,
-  purposesTitle: 'Replays here are sorted by purpose',
+  profilesTitle: 'Replays here are sorted by profile',
   keptFor: (days: number) => (days === 0 ? 'kept until deleted' : `kept ${days} ${days === 1 ? 'day' : 'days'}`),
   record: {
     title: 'Record in your app',
@@ -69,7 +69,7 @@ export interface FirstRunContext {
   origin: string;
   uploadUrl: string;
   chooseFile: () => void;
-  purposes: readonly PurposeInfo[];
+  profiles: readonly ProfileInfo[];
 }
 
 const RECORDER_SNIPPET = `import { createGuidedRecorder } from '@hazem3500/replays/recorder/ui';

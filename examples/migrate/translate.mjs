@@ -3,7 +3,7 @@
 // an already-converted document as it is, so the same function can also back a plugin's prepareUpload.
 //
 //   meta.source 'toki' (the old name of the automated producer), or absent  ->  'agent'
-//   meta.purpose                          kept when the target declares that purpose, else the tag `purpose:<id>`
+//   meta.profile                          kept when the target declares that profile, else the tag `profile:<id>`
 //   a typed context (account, organization, ...)  ->  context.fields; app.product -> app.name
 //   context.sources[].kind + url          ->  { provider, ref, url, label }
 //   a suite's review (a PR reference)     ->  subject; suite people are preserved, and legacy provider handles become named handles
@@ -67,12 +67,12 @@ export function translateContext(context) {
 
 /** `replay.json`. */
 export default function translate(raw, info) {
-  const { purpose, ...meta } = raw.meta;
+  const { profile, ...meta } = raw.meta;
   meta.source = meta.source === 'human' ? 'human' : 'agent';
   if (meta.people) meta.people = translatePeople(meta.people);
-  if (purpose !== undefined) {
-    if (info.purposes.includes(purpose)) meta.purpose = purpose;
-    else meta.tags = [...new Set([...(meta.tags ?? []), `purpose:${purpose}`])];
+  if (profile !== undefined) {
+    if (info.profiles.includes(profile)) meta.profile = profile;
+    else meta.tags = [...new Set([...(meta.tags ?? []), `profile:${profile}`])];
   }
   return {
     ...raw,

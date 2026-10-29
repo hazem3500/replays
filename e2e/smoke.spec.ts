@@ -132,7 +132,8 @@ test.describe('viewer', () => {
     await expect(page.getByTestId('request-detail')).toContainText('404');
 
     await page.getByTestId('performance-tab').click();
-    await expect(page.getByTestId('performance-events')).toContainText(/contentful paint/i);
+    await expect(page.getByTestId('performance-vitals')).toContainText('First paint');
+    await expect(page.getByTestId('performance-events')).toContainText('Long task');
 
     await page.getByTestId('context-tab').click();
     const panel = page.getByTestId('context-panel');

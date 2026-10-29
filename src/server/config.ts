@@ -20,8 +20,10 @@ import {
   parseMalleablePolicy,
 } from '../shared/malleable-policy.ts';
 import type { CapturePacingOptions } from '../shared/capture-pacing.ts';
-import type { PurposeConfig } from '../shared/purposes.ts';
-import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
+import type { ProfileConfig } from '../shared/profiles.ts';
+import { configProfiles, createProfileCatalog, type ProfileCatalog } from './profiles.ts';
+import type { ViewPreset } from '../shared/views.ts';
+import { createViewCatalog, type ViewCatalog } from './views.ts';
 
 /**
  * The config file (`REPLAYS_CONFIG=/etc/replays/config.json`) holds the non-secret settings; every key
@@ -36,7 +38,7 @@ import { createPurposeCatalog, type PurposeCatalog } from './purposes.ts';
  *     "hosts": { "replays.example.com": { "basePath": "/" } },  per-host bases (src/server/base-path.ts), else basePath
  *     "trustForwardedHost": false,                 TRUST_FORWARDED_HOST (pick the host from X-Forwarded-Host)
  *     "retentionDays": 30,                         RETENTION_DAYS (0 = never)
- *     "purposes": [{ "id": "triage", "label": "Triage", "retentionDays": 90 }],   RETENTION_PURPOSE_<ID>_DAYS (src/server/purposes.ts)
+ *     "profiles": [{ "id": "triage", "label": "Triage", "retentionDays": 90 }],   RETENTION_PROFILE_<ID>_DAYS (src/server/profiles.ts)
  *     "contextSchemaFile": "./context.schema.json" CONTEXT_SCHEMA_FILE
  *     "githubHost": "github.example.com",          GITHUB_HOST
  *     "gitlabHost": "gitlab.example.com",          GITLAB_HOST
@@ -69,8 +71,12 @@ export interface FileConfig {
   /** Read the request host from `X-Forwarded-Host` (a gateway that rewrites `Host`). Only matters with `hosts`. */
   trustForwardedHost?: boolean;
   retentionDays?: number;
-  /** Why replays are recorded (src/shared/purposes.ts); plugins can add more with `api.purpose`. None by default. */
-  purposes?: PurposeConfig[];
+  /** Why replays are recorded (src/shared/profiles.ts); plugins can add more with `api.profile`. Core ships `performance` (BUILT_IN_PROFILES). */
+  profiles?: ProfileConfig[];
+  /** @deprecated Use `profiles`; read when `profiles` is absent, with a warning at start. */
+  purposes?: ProfileConfig[];
+  /** Views beside the built-ins (src/shared/views.ts); an entry with a built-in id retunes that view. */
+  views?: ViewPreset[];
   contextSchemaFile?: string;
   githubHost?: string;
   gitlabHost?: string;
@@ -96,8 +102,12 @@ export interface AppSettings {
   /** Per-host bases (`hosts`, `trustForwardedHost`); no entries means one base for every host. */
   hosts: HostRouting;
   retention: RetentionPolicy;
-  /** The config's purposes; createRuntime merges the plugins' in. */
-  purposes: PurposeCatalog;
+  /** The config's profiles; createRuntime merges the plugins' in. */
+  profiles: ProfileCatalog;
+  /** @deprecated Use `profiles`; the same catalog. */
+  purposes: ProfileCatalog;
+  /** Built-in and config views; createRuntime merges the plugins' in. */
+  views: ViewCatalog;
   sources: SourceProviders;
   contextSchema?: ContextSchema;
   beta: BetaFlags;
@@ -119,7 +129,9 @@ export const CONFIG_KEYS = new Set([
   'hosts',
   'trustForwardedHost',
   'retentionDays',
+  'profiles',
   'purposes',
+  'views',
   'contextSchemaFile',
   'githubHost',
   'gitlabHost',
@@ -175,7 +187,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     ...(gitlabHost ? { gitlabHost } : {}),
     templates: file.sourceProviders ?? [],
   });
-  const purposes = createPurposeCatalog({ config: file.purposes, env });
+  const profiles = createProfileCatalog({ config: configProfiles(file), env });
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
   if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
@@ -192,8 +204,10 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     branding,
     basePath,
     hosts,
-    retention: purposes.size ? { ...retention, purposes: purposes.retentionDays() } : retention,
-    purposes,
+    retention: Object.keys(profiles.retentionDays()).length ? { ...retention, profiles: profiles.retentionDays() } : retention,
+    profiles,
+    purposes: profiles,
+    views: createViewCatalog({ config: file.views }),
     sources,
     beta: betaFromEnv(env, enabled === undefined ? betaFile : { ...betaFile, malleable: betaFile?.malleable ?? enabled }),
     malleable,
