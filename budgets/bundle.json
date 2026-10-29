@@ -80,7 +80,7 @@
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2343,
-      "brotli": 2118
+      "brotli": 2114
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8642,
