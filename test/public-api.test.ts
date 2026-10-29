@@ -1,4 +1,5 @@
-import { SLOT_NAMES } from '../src/client/plugins/api.ts';
+import type { ViewerEventMap } from '../src/client/plugins/api.ts';
+import { SLOT_NAMES, ViewerRegistry } from '../src/client/plugins/api.ts';
 import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
 import type {
   Identity,
@@ -237,6 +238,11 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('publishes typed content-free event subscriptions', () => {
+    const observeSeek = new ViewerRegistry().apiFor('host').on<'seek'>;
+    expectTypeOf(observeSeek).toBeCallableWith('seek', (_event: ViewerEventMap['seek']) => {});
+    expectTypeOf<ViewerEventMap['index:filter']>().toEqualTypeOf<{ readonly activeCount: number }>();
+  });
   it('pins the published slot names', () => {
     expect(SLOT_NAMES).toEqual([
       'viewer.inspector.tabs',

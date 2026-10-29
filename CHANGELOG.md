@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Added typed browser activity subscriptions for trusted plugins (`api.on`), with automatic reload cleanup and metadata-only payloads. No telemetry is sent by default.
+
 ### Security
 
 - Error responses no longer pass on what the server didn't decide itself. A storage provider's status

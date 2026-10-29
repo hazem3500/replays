@@ -17,6 +17,17 @@ const JUMP_ICON = `data:image/svg+xml,${encodeURIComponent(
 )}`;
 
 export default defineViewerPlugin((api) => {
+  api.registerViewerPanel({
+    id: 'activity',
+    title: 'Acme activity',
+    render(container, context) {
+      container.textContent = 'Seek in the replay to see activity.';
+      return api.on('seek', ({ replayId, timeMs }) => {
+        if (replayId === context.replay.meta.id) container.textContent = `Seeked to ${Math.round(timeMs)} ms`;
+      });
+    },
+  });
+
   api.registerInspectorTab({
     id: 'build',
     label: 'Acme build',

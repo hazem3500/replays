@@ -1,3 +1,4 @@
+import { viewerRegistry } from './plugins/registry.ts';
 /**
  * "Download video" for the replay viewer:
  *
@@ -251,6 +252,7 @@ export function useVideoRender(
     const run = ++generation.current;
     jobVariant.current = { speed, skipInactive, captions, edits };
     dispatch({ type: 'start' });
+    viewerRegistry.emitEvent({ type: 'export:start', replayId, format: 'core:mp4' });
     try {
       const response = await fetch(renderUrl, {
         method: 'POST',
@@ -264,7 +266,7 @@ export function useVideoRender(
     } catch (error) {
       if (run === generation.current) dispatch({ type: 'failed', message: error instanceof Error ? error.message : String(error) });
     }
-  }, [active, apply, captions, edits, renderUrl, skipInactive, speed]);
+  }, [active, apply, captions, edits, renderUrl, replayId, skipInactive, speed]);
 
   const cancel = useCallback(() => {
     generation.current += 1;

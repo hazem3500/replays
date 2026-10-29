@@ -1,3 +1,5 @@
+import type { ViewerEventListener, ViewerEventName } from './events.ts';
+export type { ViewerEventMap, ViewerEventName, ViewerEventListener, ViewerEvent } from './events.ts';
 import type { PluginSettingDefinition } from '../../shared/plugin-settings.ts';
 import type { PluginPageDefinition } from './pages.ts';
 import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
@@ -207,6 +209,8 @@ export type SettingDefinition = PluginSettingDefinition;
 export interface ViewerPluginApi {
   /** The server plugin's name (the one that served this script). */
   readonly pluginName: string;
+  /** Observe activity metadata; unsubscribe explicitly or when the plugin unloads. Host entries only. */
+  on<K extends ViewerEventName>(type: K, listener: ViewerEventListener<K>): () => void;
   registerPluginPage(definition: PluginPageDefinition): void;
   configureSlot(slot: string, configuration: SlotConfiguration): void;
   registerSlotItem<C, R>(slot: string, descriptor: SlotDescriptor<C, R>): void;

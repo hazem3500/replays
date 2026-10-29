@@ -236,6 +236,14 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     await expect(page.getByRole('slider', { name: 'Seek' })).toHaveAttribute('aria-valuetext', /^0:07\.\d of /);
   });
 
+  test('the activity panel observes a seek without polling the DOM', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByTestId('plugin-panel-open:acme-distro:activity').click();
+    await page.getByTestId('plugin-track:acme-distro:console-problems').getByTestId('plugin-track-marker').last().click();
+    await expect(page.locator('.plugin-drawer')).toContainText(/Seeked to \d+ ms/);
+  });
+
   test('the Context section draws inside the Context tab and follows a boolean setting from the More menu', async ({ page }) => {
     await page.goto(`${origin}${BASE}/r/${id}`);
     await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
