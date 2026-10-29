@@ -1,5 +1,13 @@
 import { SLOT_NAMES } from '../src/client/plugins/api.ts';
-import type { EditorToolDefinition, ExportFormatDefinition, ShortcutDefinition, ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
+import type {
+  EditorToolDefinition,
+  ExportFormatDefinition,
+  ShortcutDefinition,
+  ViewerPluginApi,
+  SlotDescriptor,
+  SlotConfiguration,
+  PluginPageDefinition,
+} from '../src/client/plugins/api.ts';
 import type {
   Identity,
   IdentityCapabilities,

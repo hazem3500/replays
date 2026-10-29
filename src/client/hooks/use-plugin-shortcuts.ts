@@ -7,7 +7,16 @@ import { useWindowKeydown } from './use-window-keydown.ts';
 
 function ignoresShortcut(event: KeyboardEvent): boolean {
   const target = event.target instanceof HTMLElement ? event.target : null;
-  return event.defaultPrevented || event.isComposing || event.ctrlKey || event.metaKey || event.altKey || isTypingTarget(target) || Boolean(target?.closest('[role="dialog"], [role="alertdialog"]')) || !/^[a-z]$/i.test(event.key);
+  return (
+    event.defaultPrevented ||
+    event.isComposing ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    isTypingTarget(target) ||
+    Boolean(target?.closest('[role="dialog"], [role="alertdialog"]')) ||
+    !/^[a-z]$/i.test(event.key)
+  );
 }
 
 export function usePluginShortcuts(contextFor: PluginContextFor): void {

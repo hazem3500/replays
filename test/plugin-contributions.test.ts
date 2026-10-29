@@ -51,9 +51,9 @@ describe('host contributions', () => {
     api.registerExportFormat({ id: 'json', label: 'JSON', run: () => ({ name: 'replay.json', data: '{}' }) });
     api.registerExportFormat({ id: 'text', label: 'Text', run: () => ({ name: 'replay.txt', data: 'recording' }) });
     api.configureSlot('export.formats', { hide: ['plugin:host:json'] });
-    expect(
-      registry.resolveSlot<null, ExportFormatDefinition>('export.formats', [], null).map((item) => item.render(null).label),
-    ).toEqual(['Text']);
+    expect(registry.resolveSlot<null, ExportFormatDefinition>('export.formats', [], null).map((item) => item.render(null).label)).toEqual([
+      'Text',
+    ]);
     registry.removePlugin('host');
     expect(registry.resolveSlot('export.formats', [], null)).toEqual([]);
   });

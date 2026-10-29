@@ -33,42 +33,41 @@ function Contributions() {
 }
 
 describe('contribution server rendering', () => {
-afterEach(() => viewerRegistry.reset());
+  afterEach(() => viewerRegistry.reset());
 
-it('server renders host contributions without invoking browser actions', () => {
-  const api = viewerRegistry.apiFor('host');
-  const invoked: string[] = [];
-  api.registerEditorTool({
-    id: 'caption',
-    label: 'Add caption',
-    run: () => {
-      invoked.push('editor');
-    },
+  it('server renders host contributions without invoking browser actions', () => {
+    const api = viewerRegistry.apiFor('host');
+    const invoked: string[] = [];
+    api.registerEditorTool({
+      id: 'caption',
+      label: 'Add caption',
+      run: () => {
+        invoked.push('editor');
+      },
+    });
+    api.registerExportFormat({
+      id: 'json',
+      label: 'Console JSON',
+      run: () => {
+        invoked.push('export');
+      },
+    });
+    api.registerShortcut({
+      id: 'greet',
+      label: 'Greet',
+      keys: ['g'],
+      run: () => {
+        invoked.push('shortcut');
+      },
+    });
+    const bundle = replay();
+    const player = new ReplayController(bundle);
+    const html = renderToString(
+      createElement(PluginContexts, { value: (owner) => createPluginContext(bundle, player, owner) }, createElement(Contributions)),
+    );
+    expect(html).toContain('Add caption');
+    expect(html).toContain('Core tools');
+    expect(html).toContain('Console JSON');
+    expect(invoked).toEqual([]);
   });
-  api.registerExportFormat({
-    id: 'json',
-    label: 'Console JSON',
-    run: () => {
-      invoked.push('export');
-    },
-  });
-  api.registerShortcut({
-    id: 'greet',
-    label: 'Greet',
-    keys: ['g'],
-    run: () => {
-      invoked.push('shortcut');
-    },
-  });
-  const bundle = replay();
-  const player = new ReplayController(bundle);
-  const html = renderToString(
-    createElement(PluginContexts, { value: (owner) => createPluginContext(bundle, player, owner) }, createElement(Contributions)),
-  );
-  expect(html).toContain('Add caption');
-  expect(html).toContain('Core tools');
-  expect(html).toContain('Console JSON');
-  expect(invoked).toEqual([]);
-});
-
 });

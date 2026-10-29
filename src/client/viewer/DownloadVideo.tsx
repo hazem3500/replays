@@ -210,29 +210,43 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
   return <DownloadProgress download={download}>{trigger}</DownloadProgress>;
 }
 
-function FormatItems({ formats, download, exportText, meta }: { formats: readonly (PluginExportOption | 'core')[]; download: VideoDownload; exportText: string; meta: ReplayMeta }) {
+function FormatItems({
+  formats,
+  download,
+  exportText,
+  meta,
+}: {
+  formats: readonly (PluginExportOption | 'core')[];
+  download: VideoDownload;
+  exportText: string;
+  meta: ReplayMeta;
+}) {
   const { canRender, stored, start } = download;
-  return <>{formats.map((format) =>
-            format === 'core' ? (
-              <Fragment key="core">
-                {canRender ? (
-                  <DropdownMenuItem onClick={() => void start()} data-testid="export-video">
-                    {exportText}
-                  </DropdownMenuItem>
-                ) : null}
-                {stored ? (
-                  <DropdownMenuItem render={<a href={stored.href} download={videoFilename(meta.id)} data-testid="download-mp4" />}>
-                    Download original MP4
-                    {stored.size ? (
-                      <DropdownMenuShortcut className="tracking-normal tabular-nums">{formatBytes(stored.size)}</DropdownMenuShortcut>
-                    ) : null}
-                  </DropdownMenuItem>
-                ) : null}
-              </Fragment>
-            ) : (
-              <DropdownMenuItem key={format.key} onClick={format.run} data-testid={format.key}>
-                {format.label}
+  return (
+    <>
+      {formats.map((format) =>
+        format === 'core' ? (
+          <Fragment key="core">
+            {canRender ? (
+              <DropdownMenuItem onClick={() => void start()} data-testid="export-video">
+                {exportText}
               </DropdownMenuItem>
-            ),
-          )}</>;
+            ) : null}
+            {stored ? (
+              <DropdownMenuItem render={<a href={stored.href} download={videoFilename(meta.id)} data-testid="download-mp4" />}>
+                Download original MP4
+                {stored.size ? (
+                  <DropdownMenuShortcut className="tracking-normal tabular-nums">{formatBytes(stored.size)}</DropdownMenuShortcut>
+                ) : null}
+              </DropdownMenuItem>
+            ) : null}
+          </Fragment>
+        ) : (
+          <DropdownMenuItem key={format.key} onClick={format.run} data-testid={format.key}>
+            {format.label}
+          </DropdownMenuItem>
+        ),
+      )}
+    </>
+  );
 }
