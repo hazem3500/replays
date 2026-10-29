@@ -14,9 +14,11 @@ type Manifest = Record<string, Chunk>;
 export async function loadPagePreloads(entryFile: string) {
   let manifest: Manifest;
   try {
-    manifest = JSON.parse(await readFile(resolve(dirname(entryFile), '../client/.vite/manifest.json'), 'utf8')) as Manifest;
+    const parsed: unknown = JSON.parse(await readFile(resolve(dirname(entryFile), '../client/.vite/manifest.json'), 'utf8'));
+    if (!isManifest(parsed)) throw new Error('Invalid Start client manifest');
+    manifest = parsed;
   } catch (error) {
-    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return () => [] as string[];
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') return (): string[] => [];
     throw error;
   }
   return (url: string, base: string, metas: Readonly<Record<string, string>>) => {
@@ -38,6 +40,23 @@ export async function loadPagePreloads(entryFile: string) {
     for (const [key, chunk] of Object.entries(manifest)) if (names.includes(chunk.name ?? '')) visit(key);
     return [...files];
   };
+}
+
+function stringList(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((entry: unknown) => typeof entry === 'string');
+}
+
+function isManifest(value: unknown): value is Manifest {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  return Object.values(value).every((chunk: unknown) => {
+    if (typeof chunk !== 'object' || chunk === null || !('file' in chunk)) return false;
+    return (
+      typeof chunk.file === 'string' &&
+      (!('name' in chunk) || typeof chunk.name === 'string') &&
+      (!('imports' in chunk) || stringList(chunk.imports)) &&
+      (!('css' in chunk) || stringList(chunk.css))
+    );
+  });
 }
 
 function pageChunks(path: string, metas: Readonly<Record<string, string>>) {

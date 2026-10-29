@@ -11,20 +11,22 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { recursive: true, force: true })));
 });
 
-async function preloads() {
+async function preloads(contents?: unknown) {
   const root = await mkdtemp(join(tmpdir(), 'replays-preloads-'));
   roots.push(root);
   await mkdir(join(root, 'client/.vite'), { recursive: true });
   await writeFile(
     join(root, 'client/.vite/manifest.json'),
-    JSON.stringify({
-      index: { name: 'ReplayIndex', file: 'assets/index.js', imports: ['shared'], dynamicImports: ['viewer'] },
-      viewer: { name: 'Viewer', file: 'assets/viewer.js', imports: ['shared', 'player'], css: ['assets/viewer.css'] },
-      editor: { name: 'Editor', file: 'assets/editor.js', imports: ['player'] },
-      suite: { name: 'SuiteWorkspace', file: 'assets/suite.js', imports: ['viewer'] },
-      shared: { file: 'assets/shared.js', imports: ['shared'] },
-      player: { file: 'assets/rrweb.js' },
-    }),
+    JSON.stringify(
+      contents ?? {
+        index: { name: 'ReplayIndex', file: 'assets/index.js', imports: ['shared'], dynamicImports: ['viewer'] },
+        viewer: { name: 'Viewer', file: 'assets/viewer.js', imports: ['shared', 'player'], css: ['assets/viewer.css'] },
+        editor: { name: 'Editor', file: 'assets/editor.js', imports: ['player'] },
+        suite: { name: 'SuiteWorkspace', file: 'assets/suite.js', imports: ['viewer'] },
+        shared: { file: 'assets/shared.js', imports: ['shared'] },
+        player: { file: 'assets/rrweb.js' },
+      },
+    ),
   );
   return loadPagePreloads(join(root, 'server/server.js'));
 }
@@ -49,6 +51,10 @@ it('withholds editor chunks when the host disables editing or its beta', async (
   expect(select('/r/demo/edit', '', {})).toEqual([]);
   expect(select('/r/demo/edit', '', { 'app-beta': 'editor', 'app-editing': 'off' })).toEqual([]);
   expect(select('/r/demo/edit', '', { 'app-beta': 'editor' })).toEqual(['/assets/editor.js', '/assets/rrweb.js']);
+});
+
+it('rejects a malformed manifest instead of silently losing route hints', async () => {
+  await expect(preloads({ viewer: { imports: ['missing'] } })).rejects.toThrow('Invalid Start client manifest');
 });
 
 it('deduplicates Start preloads across head chunks and preserves streamed UTF-8 body bytes', async () => {
