@@ -74,7 +74,7 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10347,
+      "gzip": 10346,
       "brotli": 8982
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -158,7 +158,7 @@
       "brotli": 36226
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 983276,
+      "raw": 983615,
       "gzip": 308973,
       "brotli": 256601
     },
@@ -203,9 +203,9 @@
       "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 6721,
-      "gzip": 2958,
-      "brotli": 2681
+      "raw": 8926,
+      "gzip": 3921,
+      "brotli": 3570
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -240,12 +240,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 599
+      "brotli": 609
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
       "gzip": 8752,
-      "brotli": 7530
+      "brotli": 7540
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -290,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 544,
-      "brotli": 406
+      "brotli": 405
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-8e7122d98ca4.mjs": {
-      "raw": 306214,
-      "gzip": 80205,
-      "brotli": 65778
+    "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
+      "raw": 308481,
+      "gzip": 80873,
+      "brotli": 66283
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -415,7 +415,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
       "gzip": 1640,
-      "brotli": 1419
+      "brotli": 1418
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
@@ -779,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
