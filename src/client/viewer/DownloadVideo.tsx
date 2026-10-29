@@ -1,4 +1,5 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { usePluginExports } from '../hooks/use-plugin-exports.ts';
+import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { FileVideoCameraIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
@@ -125,6 +126,7 @@ function DownloadProgress({ download, children }: { download: VideoDownload; chi
  * the menu items and the progress anchor, which sits at the end of the bar's actions, under "More".
  */
 export function usePhoneDownload(meta: ReplayMeta): { items: TopbarMenuItem[]; progress: ReactNode } {
+  const formats = usePluginExports();
   const download = useVideoDownload(meta);
   const { stored, canRender, active, variant, start } = download;
   const items: TopbarMenuItem[] = [];
@@ -148,7 +150,10 @@ export function usePhoneDownload(meta: ReplayMeta): { items: TopbarMenuItem[]; p
       testId: 'download-mp4',
     });
   }
-  return { items, progress: stored || canRender ? <DownloadProgress download={download} /> : null };
+  const allItems = formats.flatMap<TopbarMenuItem>((format) =>
+    format === 'core' ? items : [{ label: format.label, icon: <AnimatedIcon name="download" />, onSelect: format.run, testId: format.key }],
+  );
+  return { items: allItems, progress: stored || canRender ? <DownloadProgress download={download} /> : null };
 }
 
 /**
@@ -163,50 +168,66 @@ export function usePhoneDownload(meta: ReplayMeta): { items: TopbarMenuItem[]; p
  * the availability probe resolving never changes the hook order.
  */
 export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
+  const formats = usePluginExports();
   const download = useVideoDownload(meta);
   const { stored, canRender, active, variant, start } = download;
 
-  if (!stored && !canRender) return null;
+  const hasPlugins = formats.some((format) => format !== 'core');
+  const showCore = formats.includes('core');
+  if (((!stored && !canRender) || !showCore) && !hasPlugins) return null;
 
   const exportText = exportLabel('Export video', variant);
-  const label = active ? 'Rendering video…' : exportLabel('Download video', variant);
-  const trigger = stored ? (
-    <DropdownMenu>
-      <Hint label={label} side="bottom" align="end">
-        <DropdownMenuTrigger
-          disabled={active}
-          render={
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label={label}
-              className="text-[var(--text-secondary)] hover:text-foreground"
-              data-testid="download-video"
-            />
-          }
-        >
-          <AnimatedIcon name="download" />
-        </DropdownMenuTrigger>
-      </Hint>
-      <DropdownMenuContent align="end" className="w-auto min-w-56" aria-label="Download video">
-        {canRender ? (
-          <DropdownMenuItem onClick={() => void start()} data-testid="export-video">
-            {exportText}
-          </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuItem render={<a href={stored.href} download={videoFilename(meta.id)} data-testid="download-mp4" />}>
-          Download original MP4
-          {stored.size ? (
-            <DropdownMenuShortcut className="tracking-normal tabular-nums">{formatBytes(stored.size)}</DropdownMenuShortcut>
-          ) : null}
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  ) : (
-    <IconButton label={label} tooltipAlign="end" aria-disabled={active} onClick={() => void start()} data-testid="download-video">
-      <AnimatedIcon name="download" />
-    </IconButton>
-  );
+  const label = active ? 'Rendering video…' : !stored && !canRender ? 'Download replay' : exportLabel('Download video', variant);
+  const trigger =
+    stored || hasPlugins ? (
+      <DropdownMenu>
+        <Hint label={label} side="bottom" align="end">
+          <DropdownMenuTrigger
+            disabled={active}
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={label}
+                className="text-[var(--text-secondary)] hover:text-foreground"
+                data-testid="download-video"
+              />
+            }
+          >
+            <AnimatedIcon name="download" />
+          </DropdownMenuTrigger>
+        </Hint>
+        <DropdownMenuContent align="end" className="w-auto min-w-56" aria-label="Download video">
+          {formats.map((format) =>
+            format === 'core' ? (
+              <Fragment key="core">
+                {canRender ? (
+                  <DropdownMenuItem onClick={() => void start()} data-testid="export-video">
+                    {exportText}
+                  </DropdownMenuItem>
+                ) : null}
+                {stored ? (
+                  <DropdownMenuItem render={<a href={stored.href} download={videoFilename(meta.id)} data-testid="download-mp4" />}>
+                    Download original MP4
+                    {stored.size ? (
+                      <DropdownMenuShortcut className="tracking-normal tabular-nums">{formatBytes(stored.size)}</DropdownMenuShortcut>
+                    ) : null}
+                  </DropdownMenuItem>
+                ) : null}
+              </Fragment>
+            ) : (
+              <DropdownMenuItem key={format.key} onClick={format.run} data-testid={format.key}>
+                {format.label}
+              </DropdownMenuItem>
+            ),
+          )}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : (
+      <IconButton label={label} tooltipAlign="end" aria-disabled={active} onClick={() => void start()} data-testid="download-video">
+        <AnimatedIcon name="download" />
+      </IconButton>
+    );
 
   return <DownloadProgress download={download}>{trigger}</DownloadProgress>;
 }

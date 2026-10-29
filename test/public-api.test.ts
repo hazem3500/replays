@@ -1,3 +1,4 @@
+import type { EditorToolDefinition, ExportFormatDefinition, ShortcutDefinition } from '../src/client/plugins/api.ts';
 import { SLOT_NAMES } from '../src/client/plugins/api.ts';
 import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
 import type {
@@ -237,11 +238,17 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('exposes typed editor, export and shortcut contributions', () => {
+    expectTypeOf<ViewerPluginApi['registerEditorTool']>().parameter(0).toEqualTypeOf<EditorToolDefinition>();
+    expectTypeOf<ViewerPluginApi['registerExportFormat']>().parameter(0).toEqualTypeOf<ExportFormatDefinition>();
+    expectTypeOf<ViewerPluginApi['registerShortcut']>().parameter(0).toEqualTypeOf<ShortcutDefinition>();
+  });
   it('pins the published slot names', () => {
     expect(SLOT_NAMES).toEqual([
       'viewer.inspector.tabs',
       'viewer.panels.side',
       'viewer.actions',
+      'viewer.shortcuts',
       'viewer.scrubber.tracks',
       'viewer.context.sections',
       'index.row.columns',

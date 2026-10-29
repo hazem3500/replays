@@ -1,3 +1,4 @@
+import { EditorPluginTools } from '../plugins/EditorTools.tsx';
 import './editor.css';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -853,6 +854,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
             {mobile ? (
               <>
                 <MobilePlayback onSwitch={playPause} original={timeline.originalDuration} edited={timeline.duration} />
+                <div className="flex gap-1 overflow-x-auto px-3">
+                  <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
+                    {null}
+                  </EditorPluginTools>
+                </div>
                 {suggesting && suggestions.length ? (
                   <div className="editor-suggest" role="status" data-testid="wait-suggestions">
                     {suggestions.length} waits found
@@ -870,11 +876,13 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 <EditorPlayButton onSwitch={playPause} />
                 <EditorClock />
                 <span className="editor-bar-divider" aria-hidden="true" />
-                <BarTools
-                  rangeSelected={selection?.kind === 'range'}
-                  suggesting={suggesting}
-                  onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
-                />
+                <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
+                  <BarTools
+                    rangeSelected={selection?.kind === 'range'}
+                    suggesting={suggesting}
+                    onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
+                  />
+                </EditorPluginTools>
                 <span className="editor-bar-divider" aria-hidden="true" />
                 <AddMenu
                   onAdd={actions.effect}

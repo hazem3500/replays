@@ -1,5 +1,5 @@
 import { type ChildProcess, spawn } from 'node:child_process';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
@@ -234,6 +234,38 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     // The two share a moment, so the later-drawn one is on top.
     await markers.last().click();
     await expect(page.getByRole('slider', { name: 'Seek' })).toHaveAttribute('aria-valuetext', /^0:07\.\d of /);
+  });
+
+  test('a plugin exports JSON through the Download menu without MP4 rendering', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await page.getByRole('button', { name: 'Download replay', exact: true }).click();
+    const pending = page.waitForEvent('download');
+    await page.getByRole('menuitem', { name: 'Console JSON', exact: true }).click();
+    const download = await pending;
+    expect(download.suggestedFilename()).toBe(`${id}-console.json`);
+    const path = await download.path();
+    if (!path) throw new Error('download missing');
+    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual(expect.any(Array));
+  });
+
+  test('a host shortcut runs while the viewer owns the keyboard', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+    await page.keyboard.press('g');
+    await expect(page.getByText('Acme shortcut ran')).toBeVisible();
+  });
+
+  test('a host editor tool saves through the normal edits API', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}/edit`);
+    await page.getByRole('button', { name: 'Mark for Acme', exact: true }).click();
+    await expect(page.getByTestId('region-caption')).toHaveCount(1);
+    await expect
+      .poll(async () => {
+        const response = await page.request.get(`${origin}${BASE}/api/replays/${id}/edits`);
+        const stored: { captions?: { text: string }[] } = await response.json();
+        return stored.captions?.map((caption) => caption.text);
+      })
+      .toContain('Review this moment');
   });
 
   test('the Context section draws inside the Context tab and follows a boolean setting from the More menu', async ({ page }) => {

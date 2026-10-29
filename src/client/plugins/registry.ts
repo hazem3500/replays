@@ -1,3 +1,4 @@
+import { assertHostContribution, checkedShortcutKeys } from './contributions.ts';
 import { PluginPageRegistry } from './pages.ts';
 import { defaultPolicy, type MalleablePolicy } from '../../shared/malleable-policy.ts';
 import { SlotRegistry, type SlotConfiguration, type SlotDescriptor } from './slots.ts';
@@ -146,6 +147,7 @@ export class ViewerRegistry {
   private snapshotValue: Snapshot = EMPTY;
   private readonly listeners = new Set<() => void>();
   private seq = 0;
+  private shortcutKeys = new Map<string, readonly string[]>();
   private readonly slots = new Map<string, SlotRegistry<unknown>>();
   private readonly policy: () => MalleablePolicy;
   private policyValue: MalleablePolicy | undefined;
@@ -256,10 +258,31 @@ export class ViewerRegistry {
     if (notify) for (const listener of this.listeners) listener();
   }
 
+  private hostContribution<D extends { id: string; label: string; order?: number; run: unknown; when?: unknown }>(
+    name: string,
+    plugin: string,
+    definition: D,
+    notify: boolean,
+  ): void {
+    assertHostContribution(plugin, definition);
+    this.registerSlotItem(
+      name,
+      { id: `plugin:${plugin}:${definition.id}`, order: 1000 + (definition.order ?? 0), render: () => definition },
+      notify,
+    );
+  }
+
   /** The API one plugin's entry receives. Registration errors throw to the entry (and are logged by the loader). */
   apiFor(plugin: string, notify = true): ViewerPluginApi {
     return {
       pluginName: plugin,
+      registerEditorTool: (definition) => this.hostContribution('editor.tools', plugin, definition, notify),
+      registerExportFormat: (definition) => this.hostContribution('export.formats', plugin, definition, notify),
+      registerShortcut: (definition) => {
+        const keys = checkedShortcutKeys(definition.keys, this.shortcutKeys);
+        this.hostContribution('viewer.shortcuts', plugin, { ...definition, keys }, notify);
+        this.shortcutKeys.set(`plugin:${plugin}:${definition.id}`, keys);
+      },
       registerPluginPage: (definition) => {
         if (!OWNER.test(plugin) || plugin.startsWith('user:')) throw new ViewerPluginError('only host plugins may register pages');
         this.pages.register(plugin, definition);
@@ -291,6 +314,8 @@ export class ViewerRegistry {
   replacePlugin(plugin: string, register: (api: ViewerPluginApi) => void) {
     const before = this.snapshotValue;
     const pageState = this.pages.checkpoint();
+    const shortcutState = new Map(this.shortcutKeys);
+    for (const key of this.shortcutKeys.keys()) if (key.startsWith(`plugin:${plugin}:`)) this.shortcutKeys.delete(key);
     this.pages.removeOwner(plugin);
     const slotState = new Map([...this.slots].map(([name, slot]) => [name, slot.checkpoint()]));
     for (const slot of this.slots.values()) slot.removeOwner(plugin);
@@ -303,6 +328,7 @@ export class ViewerRegistry {
     } catch (error) {
       this.snapshotValue = before;
       this.pages.restore(pageState);
+      this.shortcutKeys = shortcutState;
       for (const [name, slot] of this.slots) {
         const state = slotState.get(name);
         if (state) slot.restore(state);
@@ -322,6 +348,7 @@ export class ViewerRegistry {
   reset() {
     this.snapshotValue = EMPTY;
     this.slots.clear();
+    this.shortcutKeys.clear();
     this.pages.restore({ pages: new Map() });
     this.seq = 0;
     for (const listener of this.listeners) listener();

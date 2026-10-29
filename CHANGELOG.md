@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Added trusted browser contributions for synchronous editor tools, user-invoked export formats and conflict-checked viewer shortcuts through the shared slot policy.
+
 ### Security
 
 - Error responses no longer pass on what the server didn't decide itself. A storage provider's status

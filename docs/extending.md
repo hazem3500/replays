@@ -327,3 +327,15 @@ Playback and MP4 export share speeds 0.25×, 0.5×, 1×, 1.5×, 2×, 4× and 8×
 longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×. Captions hold the
 preceding label through legacy unlabelled waits and repeated actions, while their number follows the
 active rail step. Exports use the same caption selection and time mapping.
+
+A trusted browser entry can add an editor tool, export format or viewer shortcut with
+`registerEditorTool`, `registerExportFormat` and `registerShortcut`. For example:
+
+```ts
+api.registerExportFormat({ id: 'console', label: 'Console JSON', run: ({ replay }) => ({
+  name: 'console.json', mime: 'application/json', data: JSON.stringify(replay.console),
+}) });
+```
+
+The [contribution contracts](extension-api.md#editor-tools-exports-and-shortcuts) preserve core edit validation, undo,
+server authorization and capture privacy. `examples/custom-distro` demonstrates each API.
