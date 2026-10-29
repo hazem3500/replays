@@ -44,7 +44,12 @@ async function comment(
 }
 
 async function as(browser: Browser, who: Record<string, string>, viewport?: { width: number; height: number }) {
-  const context = await browser.newContext({ extraHTTPHeaders: who, ...(viewport ? { viewport } : {}) });
+  const phone = viewport !== undefined && viewport.width < 500;
+  const context = await browser.newContext({
+    extraHTTPHeaders: who,
+    ...(viewport ? { viewport } : {}),
+    ...(phone ? { isMobile: true, hasTouch: true } : {}),
+  });
   return { context, page: await context.newPage() };
 }
 
@@ -169,10 +174,15 @@ test('threads: replies, resolve and reopen, edit and delete by the author only',
 
   // Only the author sees edit and delete: Bob has them on his reply, not on Ada's comment.
   const adaRoot = bob.page.getByTestId('comment').filter({ hasText: 'Is this slow?' });
-  await expect(adaRoot.getByTestId('comment-edit')).toHaveCount(0);
-  await expect(adaRoot.getByTestId('comment-delete')).toHaveCount(0);
+  await adaRoot.getByTestId('comment-more').click();
+  await expect(bob.page.getByTestId('comment-copy-link')).toBeVisible();
+  await expect(bob.page.getByTestId('comment-edit')).toHaveCount(0);
+  await expect(bob.page.getByTestId('comment-delete')).toHaveCount(0);
+  await bob.page.keyboard.press('Escape');
   const bobReply = bob.page.getByTestId('comment-reply-item').getByTestId('comment');
-  await expect(bobReply.getByTestId('comment-edit')).toBeVisible();
+  await bobReply.getByTestId('comment-more').click();
+  await expect(bob.page.getByTestId('comment-edit')).toBeVisible();
+  await bob.page.keyboard.press('Escape');
   // The server agrees, whatever the UI shows.
   const forbidden = await request.patch(`${base()}/api/replays/${id}/comments/${root.id}`, { data: { body: 'hijack' }, headers: BOB });
   expect(forbidden.status()).toBe(403);
@@ -186,7 +196,8 @@ test('threads: replies, resolve and reopen, edit and delete by the author only',
   await expect(bob.page.getByTestId('comment-resolved-note')).toHaveCount(0);
 
   // Ada edits her comment: it says edited.
-  await ada.page.getByTestId('comment-edit').first().click();
+  await ada.page.getByTestId('comment-more').first().click();
+  await ada.page.getByTestId('comment-edit').click();
   await ada.page.getByTestId('comment-edit-input').fill('Is this slow? (edited)');
   await ada.page.getByTestId('comment-edit-save').click();
   await expect(ada.page.getByTestId('comment-body').first()).toHaveText('Is this slow? (edited)');
@@ -194,7 +205,9 @@ test('threads: replies, resolve and reopen, edit and delete by the author only',
 
   // Ada deletes the thread (after confirming): the reply goes with it, the marker too.
   await expect(markers(ada.page)).toHaveCount(1);
-  await ada.page.getByTestId('comment-delete').first().click();
+  await ada.page.getByTestId('comment-more').first().click();
+  await ada.page.getByTestId('comment-delete').click();
+  await expect(ada.page.getByRole('alertdialog')).toContainText('Delete this comment?');
   await ada.page.getByTestId('comment-delete-confirm').click();
   await expect(threads(ada.page)).toHaveCount(0);
   await expect(markers(ada.page)).toHaveCount(0);
@@ -238,7 +251,7 @@ test('the composer pins the playhead or the whole replay, and Open and Resolved 
   await expect(page.getByTestId('comment-body')).toHaveText(['Already fixed', 'Still open']);
 
   await expect(page.getByTestId('comment-pin')).toHaveText('0:02.0');
-  await page.getByTestId('comment-pin').click();
+  await page.getByTestId('comment-pin-clear').click();
   await expect(page.getByTestId('comment-pin')).toHaveText('Whole replay');
   await page.getByTestId('comment-input').fill('About the whole flow');
   await page.keyboard.press('Control+Enter');
@@ -298,7 +311,8 @@ test('a comment permalink opens the panel on that comment and seeks to it', asyn
 
   // "Copy link" builds the same kind of link, and keeps the address bar on it.
   await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base() }).catch(() => undefined);
-  await page.locator('[data-testid="comment-thread"][data-selected]').getByTestId('comment-copy-link').click();
+  await page.locator('[data-testid="comment-thread"][data-selected]').getByTestId('comment-more').click();
+  await page.getByTestId('comment-copy-link').click();
   await expect(page).toHaveURL(new RegExp(`\\?t=5\\.0#comment-${target.id}$`));
 
   // A link to a comment that is gone says so instead of failing quietly.
@@ -371,7 +385,7 @@ test('the shortcut sheet lists M, and the Comments tab is last with its count', 
   await context.close();
 });
 
-test('on a phone: the Comments tab, a pinned comment and a thread fit the 390 px screen', async ({ browser, request }) => {
+test('on a phone: the thread fits 390 px, and tapping a comment opens its actions in a sheet', async ({ browser, request }) => {
   const id = await newReplay(request);
   const root = await comment(request, id, { body: 'Does this need a retry?', at: 3000 });
   await comment(request, id, { body: 'Yes, flaky on slow networks', parentId: root.id } as never, BOB);
@@ -386,9 +400,20 @@ test('on a phone: the Comments tab, a pinned comment and a thread fit the 390 px
   const box = (await markers(page).boundingBox())!;
   expect(box.x).toBeGreaterThanOrEqual(0);
   expect(box.x + box.width).toBeLessThanOrEqual(390);
+  await expect(page.getByTestId('comment-more')).toHaveCount(0);
+  await page.getByTestId('comment-thread').getByTestId('comment-tap').first().tap();
+  const sheet = page.getByTestId('comment-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByTestId('comment-sheet-edit')).toBeVisible();
+  await sheet.getByTestId('comment-sheet-resolve').tap();
+  await expect(page.getByTestId('comment-resolved-note')).toContainText('Resolved by Ada Lovelace');
+  await page.getByTestId('comment-thread').getByTestId('comment-tap').first().tap();
+  await page.getByTestId('comment-sheet').getByTestId('comment-sheet-delete').tap();
+  await page.getByTestId('comment-delete-confirm').tap();
+  await expect(threads(page)).toHaveCount(0);
   await page.getByTestId('comment-input').fill('From my phone');
-  await page.getByTestId('comment-submit').click();
-  await expect(threads(page)).toHaveCount(2);
+  await page.getByTestId('comment-submit').tap();
+  await expect(threads(page)).toHaveCount(1);
   await context.close();
 });
 
@@ -398,7 +423,7 @@ test.describe('without sign-in (auth=none)', () => {
   // Its own server: the shared one keeps just the two samples.
   const anonymous = serveApp();
 
-  test('comments are labelled Anonymous, with a quiet note while composing', async ({ page }) => {
+  test('comments are labelled Anonymous, with one quiet line under the composer', async ({ page }) => {
     const origin = anonymous().origin;
     const id = uniqueId('anon');
     const bundle = await (await page.request.get(`${origin}/api/replays/demo-shop`)).json();
@@ -406,10 +431,9 @@ test.describe('without sign-in (auth=none)', () => {
     expect((await page.request.post(`${origin}/api/replays`, { data: bundle })).status()).toBe(201);
     await openReplay(page, `${origin}/r/${id}`);
     await page.getByTestId('comments-tab').click();
-    await expect(page.getByTestId('comments-anonymous-notice')).toBeHidden();
+    await expect(page.getByTestId('comments-anonymous-notice')).toHaveText('Posting as Anonymous');
+    await expect(page.getByTestId('comment-submit')).toHaveCount(0);
     await page.getByTestId('comment-input').fill('Posted without signing in');
-    await expect(page.getByTestId('comments-anonymous-notice')).toBeVisible();
-    await expect(page.getByTestId('comments-anonymous-notice')).toContainText('Anonymous');
     await page.getByTestId('comment-submit').click();
     await expect(page.getByTestId('comment-author')).toHaveText('Anonymous');
     await expect(page.getByTestId('comment-body')).toHaveText('Posted without signing in');
