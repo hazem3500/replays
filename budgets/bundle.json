@@ -297,10 +297,10 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
-      "raw": 308545,
-      "gzip": 80878,
-      "brotli": 66289
+    "dist/lib/chunks/context.schema.json-385e24c93576.mjs": {
+      "raw": 311351,
+      "gzip": 81713,
+      "brotli": 66956
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -366,6 +366,11 @@
       "raw": 2714,
       "gzip": 1051,
       "brotli": 884
+    },
+    "dist/lib/chunks/web.ts-ee44bee371bd.mjs": {
+      "raw": 3103,
+      "gzip": 1120,
+      "brotli": 986
     },
     "dist/lib/config.mjs": {
       "raw": 348,
@@ -453,9 +458,9 @@
       "brotli": 740
     },
     "dist/lib/server-testing.mjs": {
-      "raw": 11887,
-      "gzip": 3494,
-      "brotli": 3072
+      "raw": 12273,
+      "gzip": 3600,
+      "brotli": 3167
     },
     "dist/lib/server.mjs": {
       "raw": 1829,
@@ -489,16 +494,6 @@
     }
   },
   "allowances": [
-    {
-      "file": "dist/lib/server-testing.mjs",
-      "cap": {
-        "raw": 11887,
-        "gzip": 3494,
-        "brotli": 3072
-      },
-      "reason": "createTestClient: a fetch-style client for Node and fetch handlers, used by the HTTP contract suite; srvx stays external.",
-      "pr": "https://github.com/hazem3500/replays/pull/63"
-    },
     {
       "file": "dist/lib/recorder-kit.mjs",
       "cap": {
@@ -908,16 +903,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
-      "cap": {
-        "raw": 303921,
-        "gzip": 79697,
-        "brotli": 65304
-      },
-      "reason": "The shared chunk holds the edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1010 B raw, +281 B gzip, +243 B brotli. Replaces #118's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/130"
-    },
-    {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
         "raw": 43666,
@@ -1176,6 +1161,36 @@
       },
       "reason": "The editor leaves edit mode through the router (routing/navigate.ts) instead of navigation.ts; measured in CI against fresh main e6d1c47 (gzip 32632 to 32882). Replaces #142's entry (The cursor Click layer (off, press, ripple or pulse) and the one-line cursor summary; measured against main: +460 B raw, -14 B gzip, -22 B brotli. Replaces #136's allowance for this file.)",
       "pr": "https://github.com/hazem3500/replays/pull/113"
+    },
+    {
+      "file": "dist/lib/server-testing.mjs",
+      "cap": {
+        "raw": 12273,
+        "gzip": 3600,
+        "brotli": 3167
+      },
+      "reason": "describeAuthAdapter and the auth fixtures accept a WebAuthAdapter (toNodeAuthAdapter), +28 B raw.",
+      "pr": "https://github.com/hazem3500/replays/pull/139"
+    },
+    {
+      "file": "dist/lib/chunks/web.ts-ee44bee371bd.mjs",
+      "cap": {
+        "raw": 3103,
+        "gzip": 1120,
+        "brotli": 986
+      },
+      "reason": "The web-standard auth adapter wrapper (src/server/auth/web.ts), shared by the server and server-testing entries.",
+      "pr": "https://github.com/hazem3500/replays/pull/139"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-385e24c93576.mjs",
+      "cap": {
+        "raw": 311351,
+        "gzip": 81713,
+        "brotli": 66956
+      },
+      "reason": "The context-schema chunk is renamed by its content hash when the shared chunk graph gains the auth wrapper; same module.",
+      "pr": "https://github.com/hazem3500/replays/pull/139"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.css",
