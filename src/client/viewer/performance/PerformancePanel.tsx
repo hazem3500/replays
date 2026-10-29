@@ -3,6 +3,7 @@ import { type ReactNode, useRef, useState } from 'react';
 import type { ReplayStep } from '../../../shared/replay.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { usePlayer } from '../../player.ts';
+import { CopyButton } from '@/components/copy-button.tsx';
 import { Empty } from '../Empty.tsx';
 import type { NetworkRow } from '../network/model.ts';
 import type { PerformanceModel } from '../performance.ts';
@@ -41,8 +42,10 @@ const STRINGS = {
   order: 'Order',
   worst: 'Worst first',
   time: 'In order',
-  noneTitle: 'Performance wasn’t captured',
-  none: 'This recording has no paint, long task or interaction timings.',
+  noneTitle: 'Performance wasn’t recorded',
+  none: 'This capture didn’t include timing data.',
+  recordWith: 'replays capture --profile performance',
+  copyCommand: 'Copy the capture command',
   calmTitle: 'Nothing was slow',
   calm: 'No long tasks or slow interactions were captured.',
   outsideTitle: 'Nothing slow in this stretch',
@@ -63,6 +66,20 @@ function ribbonMarks(moments: readonly Moment[], vitals: readonly Vital[]): Ribb
     vital.at === undefined ? [] : [{ id: vital.id, at: vital.at, end: vital.at, tone: 'success', lane: 'cap' }],
   );
   return [...spans, ...paints];
+}
+
+/** Something was measured: a vital has a value or was watched (`None`), or there is a moment. */
+function recorded(vitals: readonly Vital[], moments: number) {
+  return moments > 0 || vitals.some((vital) => vital.missing !== 'not-captured');
+}
+
+function RecordCommand() {
+  return (
+    <span className="pp-record">
+      <code>{STRINGS.recordWith}</code>
+      <CopyButton value={STRINGS.recordWith} label={STRINGS.copyCommand} />
+    </span>
+  );
 }
 
 const otherOrder = (order: MomentOrder): MomentOrder => (order === 'worst' ? 'time' : 'worst');
@@ -126,7 +143,13 @@ export function PerformancePanel({
     colour: peer.colour,
     deltas: vitalDeltas(vitals, peer.vitals),
   }));
-  if (!model.track) return <Empty title={STRINGS.noneTitle}>{STRINGS.none}</Empty>;
+  // why: when no observer reported anything, five "Not captured" cells and "Nothing was slow" would claim a result.
+  if (!recorded(vitals, moments.length))
+    return (
+      <Empty title={STRINGS.noneTitle} action={<RecordCommand />}>
+        {STRINGS.none}
+      </Empty>
+    );
   const empty = range ? (
     <Empty title={STRINGS.outsideTitle}>{STRINGS.outside}</Empty>
   ) : (

@@ -269,6 +269,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - The request detail shows captured network bodies (#129): JSON indented, form fields decoded, folded past 14 lines,
   with copy, a "Truncated at" note and redaction markers drawn as such. Copy as cURL sends a body that was kept whole.
   Recordings without bodies say "Not captured".
+- Performance says "Performance wasn’t recorded" with the `replays capture --profile performance` command when no
+  timing was observed, instead of five "Not captured" cells over "Nothing was slow".
 
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
