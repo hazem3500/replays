@@ -41,6 +41,18 @@
           "maxItems": 10,
           "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,39}$" }
         },
+        "captured": {
+          "description": "What the capture recorded, so a view can say \"Not captured\" instead of showing an empty table. Absent on older bundles: assume everything but bodies. Source of truth: src/shared/network-bodies.ts.",
+          "type": "object",
+          "required": ["console", "network", "performance", "video"],
+          "additionalProperties": false,
+          "properties": {
+            "console": { "type": "boolean" },
+            "network": { "enum": ["off", "headers", "bodies"] },
+            "performance": { "type": "boolean" },
+            "video": { "type": "boolean" }
+          }
+        },
         "people": {
           "description": "People related to the recording (who asked for it, wrote the change, reviews it), sent explicitly by the producer. Each needs an email or a handle. The server also caps the whole list at 4096 bytes of JSON, and a deployment may restrict roles and handles (`api.people`). Source of truth: src/shared/people.ts.",
           "type": "array",
@@ -101,7 +113,9 @@
           "statusText": { "type": "string" },
           "mimeType": { "type": "string" },
           "requestHeaders": { "$ref": "#/$defs/headers" },
-          "responseHeaders": { "$ref": "#/$defs/headers" }
+          "responseHeaders": { "$ref": "#/$defs/headers" },
+          "requestBody": { "$ref": "#/$defs/body" },
+          "responseBody": { "$ref": "#/$defs/body" }
         }
       }
     },
@@ -152,6 +166,20 @@
     }
   },
   "$defs": {
+    "body": {
+      "description": "A request or response body, kept only when the capture asked for bodies. The text is redacted (secret fields, credentials, JWTs, card numbers, email addresses, the deployment's rules) and at most 65536 bytes before redaction. Source of truth: src/shared/network-bodies.ts.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "text": { "type": "string" },
+        "size": { "type": "integer", "minimum": 0, "description": "Bytes of the original body, when known." },
+        "truncated": { "const": true, "description": "The text stops at the capture's limit." },
+        "omitted": {
+          "enum": ["content-type", "unavailable"],
+          "description": "Why there is no text: a content type outside the allowlist (binary included), or nothing the browser exposed."
+        }
+      }
+    },
     "headers": {
       "type": "array",
       "items": {

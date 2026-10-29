@@ -29,7 +29,7 @@ export const LANES: Array<{ kind: EffectKind; name: string; empty: string; icon:
     name: 'Blur: drag on the lane to hide part of the page (B)',
     empty: 'Blur · drag to hide part of the page while it shows',
     icon: <EyeOffIcon />,
-    label: () => 'Blur',
+    label: (blur: ReplayBlur) => (blur.style === 'redact' ? 'Redact' : 'Blur'),
   },
   {
     kind: 'caption',

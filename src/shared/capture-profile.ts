@@ -1,3 +1,4 @@
+import type { ReplayCaptured } from './network-bodies.ts';
 import type { ConsoleLevel } from './replay.ts';
 import { assertShape, type Check, type Checks, isBoolean, isRecord, listOf, numberIn, oneOf, wholeNumber } from './validate.ts';
 
@@ -103,4 +104,18 @@ export function contentTypeAllowed(mimeType: string | undefined, allowed: readon
     if (allowedSubtype === '*') return true;
     return allowedSubtype.startsWith('*+') && subtype.endsWith(allowedSubtype.slice(1));
   });
+}
+
+const CAPTURED_CHECKS: Checks = {
+  console: [isBoolean, 'must be a boolean'],
+  network: [oneOf(CAPTURE_NETWORK), `must be one of ${CAPTURE_NETWORK.join(', ')}`],
+  performance: [isBoolean, 'must be a boolean'],
+  video: [isBoolean, 'must be a boolean'],
+};
+
+/** Throws unless `value` is a complete `meta.captured` record. */
+export function assertCaptured(value: unknown, where = 'captured'): asserts value is ReplayCaptured {
+  assertShape(value, CAPTURED_CHECKS, where);
+  const missing = Object.keys(CAPTURED_CHECKS).filter((key) => value[key] === undefined);
+  if (missing.length) throw new Error(`${where} is missing ${missing.join(', ')}`);
 }
