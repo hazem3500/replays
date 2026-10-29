@@ -97,7 +97,10 @@ test.describe('branding and base path', () => {
   test.use({ extraHTTPHeaders: asAda });
 
   test('name, logo and theme tokens are applied under the base path', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('replays-theme', 'dark'));
+    await page.addInitScript(() => {
+      localStorage.setItem('replays-theme', 'dark');
+      localStorage.setItem('replays-index-view', 'grid');
+    });
     await page.goto(`${origin}${BASE}/`);
     await expect(page).toHaveTitle('Acme Replays');
     await expect(page.getByRole('heading', { level: 1, name: 'Acme Replays' })).toBeVisible();
@@ -109,6 +112,7 @@ test.describe('branding and base path', () => {
       .toBe('#ff6600');
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--card-radius').trim())).toBe('16px');
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--motion-fast').trim())).toBe('100ms');
+    await expect(page.locator('.feed-list[data-view="grid"] .feed-item').first()).toHaveCSS('border-radius', '16px');
     expect(new URL(page.url()).pathname).toBe(`${BASE}/`);
   });
 });
