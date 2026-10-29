@@ -80,7 +80,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 37956,
       "gzip": 13469,
-      "brotli": 11976
+      "brotli": 11968
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 17891,
@@ -93,7 +93,7 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101090,
+      "raw": 101086,
       "gzip": 33857,
       "brotli": 28913
     },
@@ -115,7 +115,7 @@
     "dist/client/assets/feature-HASH.js": {
       "raw": 25113,
       "gzip": 9605,
-      "brotli": 8395
+      "brotli": 8377
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 402,
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 609,
+      "gzip": 608,
       "brotli": 554
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
@@ -244,8 +244,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 685,
-      "brotli": 631
+      "gzip": 684,
+      "brotli": 606
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -485,7 +485,7 @@
     "initial/index.html/js": {
       "raw": 1484557,
       "gzip": 473494,
-      "brotli": 400470
+      "brotli": 400425
     },
     "initial/render.html/css": {
       "raw": 5784,
