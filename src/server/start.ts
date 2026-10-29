@@ -301,6 +301,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
       }),
       ...(renderHooks.checks ? { beforeRender: renderHooks.beforeRender } : {}),
       ...(afterRender ? { afterRender } : {}),
+      thumbhash: (id, hash) => store.setThumbHash(id, hash),
       open: { key: (id: string) => store.openStillKey(id), runner: media.open },
       // Hover previews are MP4s: they need ffmpeg too.
       ...(tools.available ? { preview: { key: (id: string) => store.previewKey(id), runner: media.preview } } : {}),
