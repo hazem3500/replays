@@ -24,7 +24,7 @@
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "gzip": 1111,
+      "gzip": 1109,
       "brotli": 942
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
       "gzip": 13521,
-      "brotli": 11994
+      "brotli": 11992
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
