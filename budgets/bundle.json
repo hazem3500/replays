@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 684,
-      "brotli": 640
+      "brotli": 601
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
