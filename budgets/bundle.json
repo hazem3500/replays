@@ -8,9 +8,9 @@
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
-      "raw": 462508,
-      "gzip": 119070,
-      "brotli": 96945
+      "raw": 477416,
+      "gzip": 122888,
+      "brotli": 100073
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -163,14 +163,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 266630,
-      "gzip": 45795,
-      "brotli": 37919
+      "raw": 275556,
+      "gzip": 47455,
+      "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 962358,
-      "gzip": 301788,
-      "brotli": 250630
+      "gzip": 320306,
+      "brotli": 252567
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -215,7 +215,7 @@
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
       "gzip": 3989,
-      "brotli": 3622
+      "brotli": 3732
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -233,9 +233,9 @@
       "brotli": 5388
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 2825,
+      "raw": 2923,
       "gzip": 1087,
-      "brotli": 892
+      "brotli": 932
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 887,
@@ -250,11 +250,11 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 608
+      "brotli": 632
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21291,
-      "gzip": 8758,
+      "gzip": 9022,
       "brotli": 7568
     },
     "dist/client/assets/tools-HASH.js": {
@@ -284,8 +284,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60104,
-      "gzip": 21487,
-      "brotli": 18749
+      "gzip": 22120,
+      "brotli": 19320
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -295,7 +295,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 542,
-      "brotli": 404
+      "brotli": 403
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -319,23 +319,23 @@
     },
     "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
       "raw": 312907,
-      "gzip": 83012,
-      "brotli": 67822
+      "gzip": 85506,
+      "brotli": 69858
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
       "gzip": 5317,
       "brotli": 4640
     },
-    "dist/lib/chunks/define.ts-c99e647c6d2f.mjs": {
-      "raw": 46985,
-      "gzip": 13251,
-      "brotli": 11662
+    "dist/lib/chunks/define.ts-d7bc1a10bcb5.mjs": {
+      "raw": 48350,
+      "gzip": 13571,
+      "brotli": 11946
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
       "gzip": 9208,
-      "brotli": 8197
+      "brotli": 8195
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -400,7 +400,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 136
+      "brotli": 145
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -420,7 +420,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
       "gzip": 1639,
-      "brotli": 1418
+      "brotli": 1407
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -495,7 +495,7 @@
     "dist/lib/server.mjs": {
       "raw": 1907,
       "gzip": 616,
-      "brotli": 518
+      "brotli": 517
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -503,9 +503,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 266630,
-      "gzip": 45795,
-      "brotli": 37919
+      "raw": 275556,
+      "gzip": 47455,
+      "brotli": 39256
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -513,9 +513,9 @@
       "brotli": 399732
     },
     "initial/render.html/css": {
-      "raw": 5999,
+      "raw": 6192,
       "gzip": 2625,
-      "brotli": 2170
+      "brotli": 2248
     },
     "initial/render.html/js": {
       "raw": 557837,
@@ -739,7 +739,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -770,16 +770,6 @@
         "brotli": 7425
       },
       "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
-    },
-    {
-      "file": "dist/lib/chunks/define.ts-c99e647c6d2f.mjs",
-      "cap": {
-        "raw": 46985,
-        "gzip": 13251,
-        "brotli": 11662
-      },
-      "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces define.ts-2cdb34849bf4 (main 39108/11192/9890).",
       "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
@@ -1233,23 +1223,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/171"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21291,
-        "gzip": 8758
-      },
-      "reason": "A few bytes from the hashed chunk names it imports changing (#171).",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 618
-      },
-      "reason": "Brotli drift of a few bytes from the hashed chunk names it imports changing (#171); raw and gzip are unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
       "file": "dist/cli/cli.mjs",
       "cap": {
         "raw": 477416,
@@ -1348,6 +1321,22 @@
         "brotli": 2248
       },
       "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 632
+      },
+      "reason": "Theme token CSS consumers change the dependency fingerprints of existing viewer chunks.",
+      "pr": "https://github.com/hazem3500/replays/pull/175"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "gzip": 9022
+      },
+      "reason": "Theme token CSS consumers change the dependency fingerprints of existing viewer chunks.",
       "pr": "https://github.com/hazem3500/replays/pull/175"
     }
   ]
