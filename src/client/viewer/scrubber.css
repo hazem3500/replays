@@ -18,7 +18,7 @@
     --bar-hover: rgb(255 255 255 / 0.1);
     position: relative;
     min-width: 0;
-    height: 28px;
+    height: var(--scrubber-height, 28px);
     touch-action: none;
     -webkit-user-select: none;
     user-select: none;
