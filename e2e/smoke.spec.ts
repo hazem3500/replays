@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { openReplay, origin } from './support.ts';
+import { openReplay, origin, gotoHydrated } from './support.ts';
 
 const viewer = (id = 'demo-shop', query = '') => `${origin()}/r/${id}${query}`;
 const playhead = (page: Page) => page.getByTestId('playhead');
@@ -8,7 +8,7 @@ const step = (page: Page, number: number) => page.getByTestId('step-timeline').l
 
 test.describe('index', () => {
   test('lists the sample replays and opens one', async ({ page }) => {
-    await page.goto(`${origin()}/`);
+    await gotoHydrated(page, `${origin()}/`);
     await expect(page).toHaveTitle('replays');
     await expect(page.getByRole('heading', { level: 1, name: 'replays' })).toBeVisible();
     await expect(page.getByRole('status').first()).toHaveText('2 replays');
@@ -21,7 +21,7 @@ test.describe('index', () => {
   });
 
   test('search narrows the list', async ({ page }) => {
-    await page.goto(`${origin()}/`);
+    await gotoHydrated(page, `${origin()}/`);
     const search = page.getByRole('combobox', { name: 'Search replays' });
     await search.fill('signup');
     await expect(page.getByRole('status').first()).toHaveText('1 replay');
@@ -33,12 +33,12 @@ test.describe('index', () => {
   });
 
   test('the tag filter comes from the URL and from the Filter menu', async ({ page }) => {
-    await page.goto(`${origin()}/?tag=checkout`);
+    await gotoHydrated(page, `${origin()}/?tag=checkout`);
     await expect(page.getByRole('status').first()).toHaveText('1 replay');
     await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
     await expect(page.getByRole('link', { name: /^Demo signup form/ })).toHaveCount(0);
 
-    await page.goto(`${origin()}/`);
+    await gotoHydrated(page, `${origin()}/`);
     await page.getByRole('button', { name: /^Filter/ }).click();
     await page.getByRole('button', { name: /^Tag/ }).click();
     await page.getByRole('option', { name: 'demo', exact: true }).click();
@@ -47,19 +47,19 @@ test.describe('index', () => {
   });
 
   test('the errors filter keeps only replays with errors', async ({ page }) => {
-    await page.goto(`${origin()}/?errors=1`);
+    await gotoHydrated(page, `${origin()}/?errors=1`);
     await expect(page.getByRole('status').first()).toHaveText('1 replay');
     await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
   });
 
   test('the human import is filtered by source', async ({ page }) => {
-    await page.goto(`${origin()}/?source=human`);
+    await gotoHydrated(page, `${origin()}/?source=human`);
     await expect(page.getByRole('status').first()).toHaveText('1 replay');
     await expect(page.getByRole('link', { name: /^Demo signup form/ })).toBeVisible();
   });
 
   test('layout and sort are controls, and the layout is remembered', async ({ page }) => {
-    await page.goto(`${origin()}/`);
+    await gotoHydrated(page, `${origin()}/`);
     await page.getByRole('button', { name: 'Grid' }).click();
     await expect(page.getByRole('button', { name: 'Grid' })).toHaveAttribute('aria-pressed', 'true');
     await page.reload();

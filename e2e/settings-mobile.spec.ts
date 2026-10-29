@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { origin } from './support.ts';
+import { origin, gotoHydrated } from './support.ts';
 
 async function openSettings(page: Page, tap: boolean) {
   if (tap) {
@@ -30,7 +30,7 @@ test.describe('touch phone settings', () => {
   test.use({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 
   test('opens a full-screen section list that pushes one section and goes back', async ({ page }) => {
-    await page.goto(origin());
+    await gotoHydrated(page, origin());
     const dialog = await openSettings(page, true);
     const nav = dialog.getByRole('navigation', { name: 'Settings sections' });
     await expect(nav.getByRole('button')).toHaveText(['CLI & agents', 'Keyboard', 'Labs', 'About']);
@@ -68,7 +68,7 @@ test.describe('agent access capability states', () => {
       route.fulfill({ json: { credentials: { enabled: true, scopes: ['replays:read'], maxExpirySeconds: 86400 } } }),
     );
     await page.route('**/api/agent-credentials', (route) => route.fulfill({ json: { credentials: [] } }));
-    await page.goto(origin());
+    await gotoHydrated(page, origin());
     const dialog = await openSettings(page, true);
     await dialog.getByRole('button', { name: 'CLI & agents' }).tap();
     await expect(dialog.getByText('Host-managed sign-in · no CLI device login.')).toBeVisible();
@@ -79,7 +79,7 @@ test.describe('agent access capability states', () => {
   test('keeps the open-access commands free of credential instructions', async ({ page }) => {
     await page.route('**/api/config', (route) => route.fulfill({ json: { auth: 'none', name: 'Replays', sourceProviders: [] } }));
     await page.route('**/api/agent-capabilities', (route) => route.fulfill({ status: 404 }));
-    await page.goto(origin());
+    await gotoHydrated(page, origin());
     const dialog = await openSettings(page, true);
     await dialog.getByRole('button', { name: 'CLI & agents' }).tap();
     await expect(dialog.getByText('Open access · use only on a trusted network.')).toBeVisible();
@@ -92,7 +92,7 @@ test.describe('desktop settings', () => {
   test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
 
   test('keeps one dialog size across sections and returns focus on Escape', async ({ page }) => {
-    await page.goto(origin());
+    await gotoHydrated(page, origin());
     const dialog = await openSettings(page, false);
     const tabs = dialog.getByRole('tablist', { name: 'Settings sections' });
     await expect(tabs.getByRole('tab', { name: 'CLI & agents' })).toBeFocused();

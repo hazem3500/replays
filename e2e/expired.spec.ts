@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { origin } from './support.ts';
+import { gotoHydrated, origin } from './support.ts';
 
 const records = {
   days: 30,
@@ -18,7 +18,7 @@ const records = {
 
 test('the index says what expired and shows it, details only, on request', async ({ page }) => {
   await page.route('**/api/expired-replays', (route) => route.fulfill({ json: records }));
-  await page.goto(`${origin()}/`);
+  await gotoHydrated(page, `${origin()}/`);
   const section = page.getByRole('region', { name: 'Expired replays' });
   await expect(section).toContainText('1 replay expired in the last 30 days');
   await expect(section.getByText('Checkout with a declined card')).toBeHidden();
@@ -32,7 +32,7 @@ test('the index says what expired and shows it, details only, on request', async
 
 test('a deployment without records shows no expired section', async ({ page }) => {
   await page.route('**/api/expired-replays', (route) => route.fulfill({ json: { days: 0, records: [] } }));
-  await page.goto(`${origin()}/`);
+  await gotoHydrated(page, `${origin()}/`);
   await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Expired replays' })).toHaveCount(0);
 });

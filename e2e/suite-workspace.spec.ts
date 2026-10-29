@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { createSuite, openReplay, uniqueId, serveApp } from './support.ts';
+import { createSuite, openReplay, uniqueId, serveApp, gotoHydrated } from './support.ts';
 
 const server = serveApp();
 
@@ -95,7 +95,7 @@ test('the index nests a suite’s runs, and a run whose replay expired is skippe
   await expect(sidebar.locator('[aria-current="page"]')).toHaveAttribute('data-replay-id', one);
   await expect(sidebar.locator('[aria-disabled="true"]').first()).toContainText('Expired');
 
-  await page.goto(`${server().origin}/`);
+  await gotoHydrated(page, `${server().origin}/`);
   await page.getByRole('button', { name: new RegExp(`^Runs of Review ${suite}`) }).click();
   const menu = page.getByRole('menu', { name: `Runs of Review ${suite}` });
   await expect(menu.getByRole('menuitem', { name: /Desktop: run 1/ })).toHaveAttribute('href', new RegExp(`/r/${one}$`));

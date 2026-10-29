@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { cloneBundle, openReplay, postBundle, uniqueId, serveApp, useTheme } from './support.ts';
+import { cloneBundle, openReplay, postBundle, uniqueId, serveApp, useTheme, gotoHydrated } from './support.ts';
 
 // Deployment settings the server applies at runtime: product name, a base path, theme tokens and a JSON Schema
 // for the context fields. Each describe block runs its own server.
@@ -40,7 +40,7 @@ test.describe('branding under /replays', () => {
   const origin = () => server().origin;
 
   test('the index shows the configured name and works under the base path', async ({ page }) => {
-    await page.goto(`${origin()}/replays/`);
+    await gotoHydrated(page, `${origin()}/replays/`);
     await expect(page).toHaveTitle('Acme Replays');
     await expect(page.getByRole('heading', { level: 1, name: 'Acme Replays' })).toBeVisible();
     await expect(page.locator('meta[name="app-name"]')).toHaveAttribute('content', 'Acme Replays');
@@ -77,7 +77,7 @@ test.describe('branding under /replays', () => {
 
   test('theme tokens are served as brand-tokens and apply per colour scheme', async ({ page }) => {
     await useTheme(page, 'dark');
-    await page.goto(`${origin()}/replays/`);
+    await gotoHydrated(page, `${origin()}/replays/`);
     await expect(page.locator('style#brand-tokens')).toBeAttached();
     const accent = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toLowerCase());
     await expect.poll(accent).toBe('#ff6600');

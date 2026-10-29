@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { expect, type Page, test } from '@playwright/test';
 
-import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
+import { cloneBundle, openReplay, postBundle, serveApp, uniqueId, gotoHydrated } from './support.ts';
 
 /* why: profiles declared in a config file (no plugin) drive index segments with counts, the `profile=` filter, the upload
    picker, and the viewer opening a triage replay just before its first error. The samples have no profile. */
@@ -58,7 +58,7 @@ test('the index shows profile segments with counts and narrows the list; the API
   const triage = await upload(page.request, 'triage', 'Profile triage check');
   await upload(page.request, 'walkthrough', 'Profile walkthrough check');
 
-  await page.goto(`${base}/`);
+  await gotoHydrated(page, `${base}/`);
   const segments = page.getByRole('radiogroup', { name: 'Profile' });
   await expect(segments.getByRole('radio')).toHaveCount(3);
   const segment = (name: string) => segments.locator('label', { hasText: name });
@@ -72,7 +72,7 @@ test('the index shows profile segments with counts and narrows the list; the API
   await expect(page.getByRole('link', { name: /^Demo shop/ })).toHaveCount(0);
 
   // why: the segment must come back from the URL.
-  await page.goto(`${base}/?profile=walkthrough`);
+  await gotoHydrated(page, `${base}/?profile=walkthrough`);
   await expect(segments.getByRole('radio', { name: /^Walkthroughs/ })).toBeChecked();
   await expect(page.getByRole('link', { name: /^Profile walkthrough check/ }).first()).toBeVisible();
   await expect(page.getByRole('link', { name: /^Profile triage check/ })).toHaveCount(0);
@@ -153,7 +153,7 @@ test('a loading shell cannot satisfy the profile-free viewer assertions', async 
 test('the upload dialog offers the profiles and stores the one picked', async ({ page }) => {
   const base = server().origin;
   const bundle = await cloneBundle(page.request, base, 'demo-shop', uniqueId('picked'), 'Picked profile');
-  await page.goto(`${base}/`);
+  await gotoHydrated(page, `${base}/`);
   await page.getByRole('button', { name: 'Upload', exact: true }).click();
   await page.getByTestId('upload-input').setInputFiles({
     name: 'picked.json',

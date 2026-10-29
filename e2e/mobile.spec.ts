@@ -1,6 +1,6 @@
 import { type CDPSession, expect, type Page, test } from '@playwright/test';
 
-import { openReplay, origin } from './support.ts';
+import { openReplay, origin, gotoHydrated } from './support.ts';
 
 /**
  * Phones, end to end, with real touch input (isMobile + hasTouch; taps and CDP touch drags, never a mouse):
@@ -32,7 +32,7 @@ async function touchDrag(cdp: CDPSession, from: { x: number; y: number }, to: { 
 }
 
 test('the index is a list of whole-row links without sideways scroll', async ({ page }) => {
-  await page.goto(`${origin()}/`);
+  await gotoHydrated(page, `${origin()}/`);
   await expect(page.getByRole('link', { name: /^Demo shop/ })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   await page.getByRole('link', { name: /^Demo shop/ }).tap();
@@ -41,7 +41,7 @@ test('the index is a list of whole-row links without sideways scroll', async ({ 
 });
 
 test('the search grows from its icon across the row, finds a replay and closes by touch', async ({ page }) => {
-  await page.goto(`${origin()}/`);
+  await gotoHydrated(page, `${origin()}/`);
   const search = page.getByRole('combobox', { name: 'Search replays' });
   const slot = page.locator('.command-search');
   const rest = (await slot.boundingBox())!;
