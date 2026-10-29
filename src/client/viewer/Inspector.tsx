@@ -252,6 +252,7 @@ export const Inspector = memo(function Inspector({
           selected={expandedRequest}
           onSelect={setExpandedRequest}
           peers={networkPeers}
+          captured={sourceBundle.meta.captured}
         />
       </DockPanel>
       <DockPanel value="performance" pending={PerformancePending}>
