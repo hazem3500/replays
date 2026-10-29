@@ -55,7 +55,7 @@ export function FilterSheet(state: FilterState) {
   const plugins = usePluginSnapshot().filters;
   const rows = filterRows(state, plugins);
   const open = choicesOf(rows).find((choice) => choice.key === panel);
-  const changePanel = (next?: Choice['key']) => {
+  const changePanel = (next: Choice['key'] | undefined) => {
     // why: the trigger row unmounts when the options mount; parking focus on the popup keeps Base UI's focus scope alive.
     document.querySelector<HTMLElement>(SHEET)?.focus();
     const previous = panel;
@@ -67,8 +67,12 @@ export function FilterSheet(state: FilterState) {
     <Drawer onOpenChange={(next) => (next ? undefined : setPanel(undefined))}>
       <DrawerTrigger className="index-filters-button" aria-label={filterStrings.sheetTrigger(active)}>
         <AnimatedIcon name="sliders-horizontal" />
+        <span className="index-filters-label" aria-hidden="true">
+          {filterStrings.filters}
+        </span>
+        {/* why: the count sits inside the button, beside its label; a badge on the icon's corner read as a notification. */}
         {active ? (
-          <span className="index-filters-badge" aria-hidden="true">
+          <span className="index-filters-count" aria-hidden="true">
             {active}
           </span>
         ) : null}
@@ -79,12 +83,12 @@ export function FilterSheet(state: FilterState) {
           if (panel && (event.key === 'Escape' || event.key === 'ArrowLeft')) {
             event.preventDefault();
             event.stopPropagation();
-            changePanel();
+            changePanel(undefined);
           }
         }}
       >
         {open ? (
-          <ChoicePanel choice={open} onBack={() => changePanel()} />
+          <ChoicePanel choice={open} onBack={() => changePanel(undefined)} />
         ) : (
           <>
             <div className="filter-menu-head">
