@@ -1278,7 +1278,7 @@
         "gzip": 1532,
         "brotli": 1303
       },
-      "reason": "Recorder messages and format hooks now share one chunk: every UI string, typed message functions, the template resolver and Intl duration/size/clock defaults.",
+      "reason": "Recorder messages and format hooks now share one chunk: every UI string, typed message functions, the template resolver and Intl duration/size/clock defaults. It replaces format.ts-ae4027eae00a and messages.ts-2df211e12161 (730 + 837 raw bytes on main); measured in CI against fresh main dbc865e9 at 3955 raw, 1532 gzip, 1303 brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/141"
     },
     {
@@ -1286,7 +1286,7 @@
       "cap": {
         "raw": 2920
       },
-      "reason": "The recorder entry re-exports defaultRecorderMessages, resolveRecorderMessages and createRecorderFormat.",
+      "reason": "The recorder entry re-exports defaultRecorderMessages, resolveRecorderMessages and createRecorderFormat; measured in CI against fresh main dbc865e9: +101 B raw, +16 B gzip, +13 B brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/141"
     },
     {
@@ -1296,7 +1296,7 @@
         "gzip": 1902,
         "brotli": 1711
       },
-      "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks.",
+      "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks. Measured in CI against fresh main dbc865e9: +158 B raw, +57 B gzip, +52 B brotli. Replaces #69's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/141"
     }
   ]
