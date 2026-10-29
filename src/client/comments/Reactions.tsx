@@ -7,7 +7,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Hint } from '@/components/icon-button.tsx';
 import { usePlayer } from '../player.ts';
 import type { CommentsApi, PlacedThread } from './CommentsProvider.tsx';
-import { keepFocus } from './composer-focus.ts';
 import { reportFailure } from './failure.ts';
 
 /** One button that opens the reaction set; a pick reacts at the playhead and closes it. */
@@ -24,12 +23,7 @@ export function ReactionPicker({ comments }: { comments: CommentsApi }) {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <Hint label="React at the playhead" disabled={open}>
-        <PopoverTrigger
-          className="comment-react-trigger"
-          data-testid="comment-react"
-          aria-label="React at the playhead"
-          onMouseDown={keepFocus}
-        >
+        <PopoverTrigger className="comment-react-trigger" data-testid="comment-react" aria-label="React at the playhead">
           <SmilePlusIcon aria-hidden="true" />
         </PopoverTrigger>
       </Hint>

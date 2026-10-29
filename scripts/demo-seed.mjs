@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 
 import { assertReplayBundle } from '../src/shared/replay.ts';
 import { assertReviewSuite } from '../src/shared/review-suite.ts';
+import { demoNetwork } from './demo-network-bodies.mjs';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const DEFAULT_OUTPUT = join(ROOT, 'demo-seed-output');
@@ -137,6 +138,11 @@ function bundle(spec) {
     );
   }
   events.sort((left, right) => left.timestamp - right.timestamp || left.type - right.type);
+  const performance = spec.performance ?? { supported: [], entries: [] };
+  const { network, captured } = demoNetwork(spec.network ?? [], {
+    bodies: spec.bodies !== false,
+    performance: performance.supported.length > 0,
+  });
   const replay = {
     meta: {
       id: spec.id,
@@ -149,12 +155,13 @@ function bundle(spec) {
       version: 1,
       source: spec.source ?? 'agent',
       tags: ['demo', 'synthetic', ...spec.tags],
+      captured,
     },
     events,
     steps: spec.steps.map(([at, kind, label, selector]) => ({ at, kind, label, ...(selector ? { selector } : {}) })),
     console: spec.console ?? [],
-    network: spec.network ?? [],
-    performance: spec.performance ?? { supported: [], entries: [] },
+    network,
+    performance,
     context: {
       version: 1,
       capturedAt: spec.capturedAt,
@@ -286,7 +293,7 @@ export function createDemoSeed() {
         {
           at: 5840,
           level: 'warn',
-          message: 'Coupon validation returned 422; cart remains available.',
+          message: 'Coupon validation returned 422 (coupon_expired); cart retained.',
           url: 'https://shop.pinecone.demo.test/checkout',
         },
       ],
@@ -608,6 +615,8 @@ export function createDemoSeed() {
       capturedAt: '2026-10-26T08:35:00.000Z',
       duration: 63200,
       tags: ['activity', 'long-session', 'team'],
+      // why: a headers-only capture keeps the viewer's "Not captured" body state demoable.
+      bodies: false,
       viewport: { width: 1440, height: 900 },
       view: {
         eyebrow: 'Northstar workspace · demo',

@@ -77,6 +77,7 @@ const privacySentence = ({ captures, reviewRequired }: PrivacyFacts) =>
     captures.pageText ? 'Visible page text is recorded.' : 'Page text is masked.',
     captures.inputs ? 'Ordinary inputs are recorded; passwords stay masked.' : 'Inputs are masked.',
     captures.media ? 'Media may be recorded.' : 'Media is blocked.',
+    ...(captures.networkBodies ? ['Request and response content is recorded with secrets removed.'] : []),
     reviewRequired ? 'Review before sending.' : 'Sent when you stop.',
   ].join(' ');
 

@@ -17,6 +17,29 @@ export type ReplayConsoleEntry = {
   url?: string;
 };
 
+/**
+ * A request or response body, already redacted in the browser (secret fields,
+ * credentials, JWTs, card numbers, e-mail addresses while text is masked). The
+ * ingest endpoint redacts it again with the deployment's own rules. `text` is
+ * absent when the body was left out; `omitted` says why.
+ */
+export type ReplayNetworkBody = {
+  text?: string;
+  /** Bytes of the original body, when known. */
+  size?: number;
+  /** `text` stops at the byte cap; the original was longer. */
+  truncated?: true;
+  omitted?: 'content-type' | 'unavailable';
+};
+
+/** What the recording kept, so the viewer can say "Not captured". */
+export type ReplayCaptured = {
+  console: boolean;
+  network: 'off' | 'headers' | 'bodies';
+  performance: boolean;
+  video: boolean;
+};
+
 export type ReplayNetworkEntry = {
   id: string;
   /** Milliseconds from the first rrweb event. */
@@ -29,6 +52,10 @@ export type ReplayNetworkEntry = {
   mimeType?: string;
   requestHeaders: { name: string; value: string }[];
   responseHeaders: { name: string; value: string }[];
+  /** Only with `capture.network: 'bodies'`, and only for requests that sent one. */
+  requestBody?: ReplayNetworkBody;
+  /** Only with `capture.network: 'bodies'`. */
+  responseBody?: ReplayNetworkBody;
 };
 
 export type ReplayStep = {
@@ -57,6 +84,7 @@ export type ReplayMeta = {
   version: 1;
   /** End-user recordings are always `human`. */
   source: 'human';
+  captured?: ReplayCaptured;
   // No `profile` or `people`: the ingest endpoint sets the profile itself
   // (see the README), and `people` is staff only, never customers.
 };

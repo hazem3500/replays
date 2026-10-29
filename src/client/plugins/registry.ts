@@ -1,3 +1,4 @@
+import { ViewerEvents, type ViewerEvent } from './events.ts';
 import { PluginPageRegistry } from './pages.ts';
 import { defaultPolicy, type MalleablePolicy } from '../../shared/malleable-policy.ts';
 import { SlotRegistry, type SlotConfiguration, type SlotDescriptor } from './slots.ts';
@@ -143,6 +144,13 @@ function check(kind: keyof Snapshot, plugin: string, definition: Record<string, 
 /** What loaded client entries registered. A store: the UI subscribes and re-renders when plugins arrive. */
 export class ViewerRegistry {
   readonly pages = new PluginPageRegistry();
+  private readonly events = new ViewerEvents();
+  emitEvent(event: ViewerEvent): void {
+    this.events.emit(event);
+  }
+  openReplay(replayId: string): () => void {
+    return this.events.open(replayId);
+  }
   private snapshotValue: Snapshot = EMPTY;
   private readonly listeners = new Set<() => void>();
   private seq = 0;
@@ -260,6 +268,10 @@ export class ViewerRegistry {
   apiFor(plugin: string, notify = true): ViewerPluginApi {
     return {
       pluginName: plugin,
+      on: (type, listener) => {
+        if (!OWNER.test(plugin) || plugin.startsWith('user:')) throw new ViewerPluginError('only host plugins may observe activity');
+        return this.events.on(plugin, type, listener);
+      },
       registerPluginPage: (definition) => {
         if (!OWNER.test(plugin) || plugin.startsWith('user:')) throw new ViewerPluginError('only host plugins may register pages');
         this.pages.register(plugin, definition);
@@ -291,6 +303,8 @@ export class ViewerRegistry {
   replacePlugin(plugin: string, register: (api: ViewerPluginApi) => void) {
     const before = this.snapshotValue;
     const pageState = this.pages.checkpoint();
+    const eventState = this.events.checkpoint();
+    this.events.removeOwner(plugin);
     this.pages.removeOwner(plugin);
     const slotState = new Map([...this.slots].map(([name, slot]) => [name, slot.checkpoint()]));
     for (const slot of this.slots.values()) slot.removeOwner(plugin);
@@ -303,6 +317,7 @@ export class ViewerRegistry {
     } catch (error) {
       this.snapshotValue = before;
       this.pages.restore(pageState);
+      this.events.restore(eventState);
       for (const [name, slot] of this.slots) {
         const state = slotState.get(name);
         if (state) slot.restore(state);
@@ -322,6 +337,7 @@ export class ViewerRegistry {
   reset() {
     this.snapshotValue = EMPTY;
     this.slots.clear();
+    this.events.reset();
     this.pages.restore({ pages: new Map() });
     this.seq = 0;
     for (const listener of this.listeners) listener();

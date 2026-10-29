@@ -97,7 +97,10 @@ test.describe('branding and base path', () => {
   test.use({ extraHTTPHeaders: asAda });
 
   test('name, logo and theme tokens are applied under the base path', async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem('replays-theme', 'dark'));
+    await page.addInitScript(() => {
+      localStorage.setItem('replays-theme', 'dark');
+      localStorage.setItem('replays-index-view', 'grid');
+    });
     await page.goto(`${origin}${BASE}/`);
     await expect(page).toHaveTitle('Acme Replays');
     await expect(page.getByRole('heading', { level: 1, name: 'Acme Replays' })).toBeVisible();
@@ -107,6 +110,9 @@ test.describe('branding and base path', () => {
     await expect
       .poll(() => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--accent').trim().toLowerCase()))
       .toBe('#ff6600');
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--card-radius').trim())).toBe('16px');
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--motion-fast').trim())).toBe('100ms');
+    await expect(page.locator('.feed-list[data-view="grid"] .feed-item').first()).toHaveCSS('border-radius', '16px');
     expect(new URL(page.url()).pathname).toBe(`${BASE}/`);
   });
 });
@@ -234,6 +240,14 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     // The two share a moment, so the later-drawn one is on top.
     await markers.last().click();
     await expect(page.getByRole('slider', { name: 'Seek' })).toHaveAttribute('aria-valuetext', /^0:07\.\d of /);
+  });
+
+  test('the activity panel observes a seek without polling the DOM', async ({ page }) => {
+    await page.goto(`${origin}${BASE}/r/${id}`);
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByTestId('plugin-panel-open:acme-distro:activity').click();
+    await page.getByTestId('plugin-track:acme-distro:console-problems').getByTestId('plugin-track-marker').last().click();
+    await expect(page.locator('.plugin-drawer')).toContainText(/Seeked to \d+ ms/);
   });
 
   test('the Context section draws inside the Context tab and follows a boolean setting from the More menu', async ({ page }) => {
