@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-06e184308ebe.mjs": {
-      "raw": 310977,
-      "gzip": 81843,
-      "brotli": 67134
+    "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
+      "raw": 312907,
+      "gzip": 83012,
+      "brotli": 67822
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -744,7 +744,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1290,14 +1290,14 @@
       "reason": "Splitting ReplayStore into src/server/store/* modules adds module and class structure to the unminified CLI bundle (migrate-cli bundles the store); measured on Boat against main 0e7a3fd: main 458431/117681/95827, head 462508/119070/96945 (+4077 B raw, +1389 B gzip, +1118 B brotli). Replaces #130's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-06e184308ebe.mjs",
+      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
       "cap": {
-        "raw": 310977,
-        "gzip": 81843,
-        "brotli": 67134
+        "raw": 312907,
+        "gzip": 83012,
+        "brotli": 67822
       },
-      "pr": "https://github.com/hazem3500/replays/pull/164",
-      "reason": "The shared server chunk gains the src/server/store/* modules, so its source identity changes; measured on Boat against main 0e7a3fd: main 308641/80890/66336 (context.schema.json-7e5a8e2906dd), head 310977/81843/67134 (+2336 B raw, +953 B gzip, +798 B brotli). Replaces #157's entry."
+      "pr": "https://github.com/hazem3500/replays/pull/170",
+      "reason": "Splitting app.ts adds src/server/app/* and src/server/http/{send,serve-file,fail}.ts to the shared server chunk, so its source identity changes; measured on Boat against main: main 310977/81843/67134 (context.schema.json-06e184308ebe.mjs), head 312907/83012/67822 (+1930 B raw, +1169 B gzip, +688 B brotli). Replaces the previous entry for this chunk."
     }
   ]
 }
