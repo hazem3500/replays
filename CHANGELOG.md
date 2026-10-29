@@ -269,6 +269,11 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   headers. Performance leads with a vitals bar, then slow moments worst first, each explained by what it waited on.
   In compare mode both panels show deltas against the other recordings (`compare.peers`). The standalone Waterfall
   and its toggle are gone.
+- The viewer's client router is TanStack Router: file routes in `src/client/routes/`, a router context of
+  `{ queryClient, deployment }`, the base path as a runtime rewrite and plain-text search params. Plugin pages
+  (`api.registerPluginPage`) are routed at `/p/<plugin>/<path>`. Older addresses are not kept: `/r/<id>?suite=<suite>`
+  no longer redirects (use `/s/<suite>/r/<id>`), `/r/<id>/edit` without edit capability and any other unknown address
+  show a not-found page, and `/r/` no longer opens the index.
 
 - The replay list's empty and error states name what happened and the way back: an unreachable server retries on a
   backoff (2 s, 5 s, 10 s, then every 30 s, at once when the browser comes back online) with a countdown; a failed

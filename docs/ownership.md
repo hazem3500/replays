@@ -9,7 +9,7 @@ One maintainer: @hazem3500. These workstream reservations prevent concurrent age
 | Other server modules | [Server](../src/server/AGENTS.md) | write-a-test | Security/storage fixes; coordinate touched modules |
 | `src/client/editor/`, `viewer/`, `index/`, `settings/`, top-level screens | [Client](../src/client/AGENTS.md) | split-a-god-file | Design lead |
 | Skeletons/loading surfaces | [Client](../src/client/AGENTS.md) | write-a-test | Loading states |
-| `src/client/navigation.ts`, `route.ts` | [Client](../src/client/AGENTS.md) | run-checks-on-boat | Router migration |
+| `src/client/router.tsx`, `routes/`, `routing/`, `transitions/` | [Client](../src/client/AGENTS.md) | run-checks-on-boat | Client routing; Start integration next |
 | Client data layer | [Client](../src/client/AGENTS.md) | write-a-test | TanStack DB migration |
 | `src/recorder/` | [Recorder](../src/recorder/AGENTS.md) | run-checks-on-boat | Recorder kit |
 | `src/plugin/`, `src/client/plugins/`, extension docs | [Host](../src/plugin/AGENTS.md), [browser](../src/client/plugins/AGENTS.md) | write-a-test | Extension platform |
