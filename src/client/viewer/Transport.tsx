@@ -15,7 +15,6 @@ import { formatClock } from '../../shared/replay.ts';
 import { SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
 import { activeStepIndex, fitViewport } from '../timeline.ts';
 
-export { activeStepIndex };
 import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
 import { shortcutLabel } from '../shortcuts.ts';
 import { Button } from '@/components/ui/button.tsx';
@@ -23,8 +22,11 @@ import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/compone
 import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from '@/components/ui/slider.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { useViewer } from './context.ts';
-import { afterMorphStart, afterPageTransition, freshPoster, swappingInPlace } from '../navigation.ts';
+import { afterMorphStart, afterPageTransition, swappingInPlace } from '../transitions/state.ts';
+import { freshPoster } from '../transitions/open-hint.ts';
 import { Scrubber } from './Scrubber.tsx';
+
+export { activeStepIndex };
 
 /** Replays up to this many events mount during the page transition (a few ms); bigger ones after it. */
 const LIGHT_MOUNT_EVENTS = 3000;
@@ -39,7 +41,7 @@ export function PlayerStage() {
   const host = useRef<HTMLDivElement>(null);
 
   // The recorded frame (`.player-frame`, at the fitted rect) holds rrweb's host and, when opened from a card,
-  // that card's poster on top: the page transition morphs the card into this element (navigation.ts). A light
+  // that card's poster on top: the page transition morphs the card into this element (transitions/page-motion.ts). A light
   // replay mounts as soon as the morph moves, so the poster hands over to the replay mid-flight; a heavy one
   // waits until it has landed (its mount would stall the animation), then the poster fades over it.
   // Click the picture to play or pause (as in a video player); a double click flips fullscreen instead, so the
@@ -85,7 +87,7 @@ export function PlayerStage() {
       unmount = player.mount(host.current);
       requestAnimationFrame(() => requestAnimationFrame(() => live && setCovering(false)));
     };
-    // A run switch crossfades in place: the new run's frame is painted inside it (navigation.ts swapInPlace).
+    // A run switch crossfades in place: the new run's frame is painted inside it (transitions/swap.ts).
     if (swappingInPlace()) mount();
     else void (player.eventCount <= LIGHT_MOUNT_EVENTS ? afterMorphStart() : afterPageTransition()).then(mount);
     return () => {

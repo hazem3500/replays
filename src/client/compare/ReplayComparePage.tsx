@@ -1,6 +1,6 @@
 import { useLocationSearch } from '../hooks/use-location-search.ts';
-import { setSearch } from '../navigation.ts';
-import { replayHref } from '../route.ts';
+import { setSearch } from '../routing/navigate.ts';
+import { replayHref } from '../routing/links.ts';
 import { CompareViewer } from './CompareViewer.tsx';
 import { type CompareSearch, parseCompareSearch, writeCompareSearch } from './compare-search.ts';
 import { compareDefaults } from './defaults.ts';

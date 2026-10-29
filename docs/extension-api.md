@@ -872,8 +872,9 @@ Navigation stays under the plugin's root: schemes, other plugins, backslashes an
 are rejected. The route waits for browser plugin loading before deciding a page is missing and
 subscribes to later registrations. Page registrations participate in plugin removal, reset and
 failed-hot-reload rollback. Page title, loader and DOM render are the public surface; head metadata
-and automatic navigation entries are not provided yet. The TanStack route integration is owned
-by the router increment.
+and automatic navigation entries are not provided yet. The page is the `/p/$plugin/$` file route
+([client routing](architecture/client-routing.md)); the loader runs when the page shows, with a signal
+that aborts when it leaves.
 
 Host policy additionally accepts `workspaceRoles`, exact `allow`/`deny` selectors by id or policy
 hash, and validated `watchdog` limits. `Identity.roles` is an optional trusted claim from the auth
