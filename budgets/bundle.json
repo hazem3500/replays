@@ -1223,14 +1223,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 633
-      },
-      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 252918,
@@ -1249,6 +1241,14 @@
       },
       "reason": "The initial index style group carries the same phone index stylesheets.",
       "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 614
+      },
+      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 614 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/126"
     }
   ]
 }
