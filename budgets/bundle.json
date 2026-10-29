@@ -159,7 +159,7 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 994489,
-      "gzip": 311102,
+      "gzip": 311105,
       "brotli": 257241
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 617
+      "brotli": 607
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -279,7 +279,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60104,
-      "gzip": 21487,
+      "gzip": 21489,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -1139,11 +1139,11 @@
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 994489,
-        "gzip": 311102,
+        "gzip": 311105,
         "brotli": 257241
       },
-      "reason": "useStickyStack: the header block's unrounded border-box height, observed on the border box: +340 B raw, +129 B gzip, +172 B brotli measured on Boat against main 1bc31f4f. Replaces #174's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/163"
+      "reason": "Hash drift, not growth: the first chunk's source is unchanged here; the comments and inspector stylesheets' new hashes move its gzip size by 3 B (on Boat against main 1bc31f4f with #163). Replaces #163's allowance for this file, keeping its raw and Brotli caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
@@ -1227,11 +1227,11 @@
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
         "raw": 60104,
-        "gzip": 21487,
+        "gzip": 21489,
         "brotli": 18749
       },
-      "reason": "No source change in the viewer: the main chunk's new hash in its imports compresses 11 B larger in gzip (raw -5 B, brotli -1 B). Replaces #167's allowance, keeping its raw and brotli caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
+      "reason": "The tab badge's 99+ formatting (InspectorDock) and hash drift: +2 B gzip on Boat against main 1bc31f4f with #163. Replaces the existing allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
