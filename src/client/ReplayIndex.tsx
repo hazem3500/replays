@@ -34,6 +34,7 @@ import { IndexEmpty, type IndexEmptyInput } from './index/index-empty.tsx';
 import { MeContext } from './index/People.tsx';
 import { ExpiredReplays } from './index/ExpiredReplays.tsx';
 import { FirstRun } from './index/first-run/FirstRun.tsx';
+import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, appBase } from './api/fetch.ts';
 import { pageCookie, writePageCookie } from './page-meta.ts';
@@ -739,16 +740,15 @@ export function ReplayIndex({
     writePageCookie(VIEW_KEY, next, appBase());
   };
   const searchField = <CommandSearch value={query} onChange={setQuery} entries={entries} total={entries?.length} compact={compact} />;
+  // why: a refresh keeps the count it had on screen (ScopeCount); the header's hairline says a refresh is running.
+  const refreshing = Boolean(entries) && !error && pending;
   const count = (
-    <span className={cn('scope-count', !filtered && !pending && 'sr-only')} role="status" aria-atomic="true">
-      {pending
-        ? items
-          ? 'Updating replays…'
-          : 'Loading replays…'
-        : !error && entries
-          ? `${replays} ${replays === 1 ? 'replay' : 'replays'}${suiteRows ? ` · ${suiteRows} ${suiteRows === 1 ? 'suite' : 'suites'}` : ''}`
-          : ''}
-    </span>
+    <ScopeCount
+      replays={entries ? replays : undefined}
+      suites={suiteRows}
+      shown={filtered}
+      state={error ? 'error' : !entries ? 'loading' : refreshing ? 'updating' : 'ready'}
+    />
   );
   const filterState = {
     filters,
@@ -834,6 +834,7 @@ export function ReplayIndex({
             )}
           </ScopeBar>
         )}
+        <RefreshLine active={refreshing} />
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>

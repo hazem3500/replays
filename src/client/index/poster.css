@@ -10,9 +10,8 @@
  *   Mosaic     a suite: up to four runs side by side, each its ThumbHash or its site, edged red when it failed and
  *              hatched when it has no recording; run labels show where a cell has room.
  *   Loading    only while a poster is genuinely on its way: the tile breathes (opacity, slowly) after
- *              --skeleton-delay, so a cached poster or an "off" answer never shows motion.
+ *              --skeleton-delay (loading.css), so a cached poster or an "off" answer never shows motion.
  */
-:root { --skeleton-delay: 200ms; }
 @keyframes skeleton-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
 .poster-placeholder, .poster-run { container-type: size; background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent)), var(--surface-raised); }

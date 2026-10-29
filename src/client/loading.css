@@ -1,0 +1,34 @@
+/*
+ * Loading states, shared: the tokens and primitives skeletons and progress draw with, so every wait reads the same.
+ *
+ *   Fill    placeholder shapes are the text colour at a low alpha, so one token reads on every surface in both themes,
+ *           never a fixed grey that is too heavy on one and invisible on another.
+ *   Lines   `.skel-line` is one line box of the text it stands for (the parent's font size and line height), with a
+ *           bar the height of that text's capitals in its middle, rounded like a word: content lands with no shift.
+ *   Appear  a skeleton fades in only after --skeleton-delay, so fast loads never flash one.
+ *   Hairline `.load-line`: 2 px of accent along a header's bottom edge (the header is its containing block), shown
+ *           only after --load-line-delay so a quick refresh never shows it; a short segment glides across.
+ *   Reduced motion: the hairline stays still at half strength; the fade-in is instant (styles.css zeroes animations).
+ */
+:root {
+  --skeleton-fill: color-mix(in srgb, var(--text) 8%, transparent);
+  --skeleton-delay: 200ms;
+  --skeleton-fade: 200ms;
+}
+:root[data-theme="light"] { --skeleton-fill: color-mix(in srgb, var(--text) 7%, transparent); }
+
+.skel-appear { animation: skeleton-appear var(--skeleton-fade) var(--ease-out) var(--skeleton-delay) both; }
+@keyframes skeleton-appear { from { opacity: 0; } }
+
+.skel-line { position: relative; display: block; width: var(--w, 100%); max-width: 100%; height: 1lh; }
+.skel-line::before { content: ""; position: absolute; top: 50%; right: 0; left: 0; height: 0.66em; border-radius: 0.28em; background: var(--skeleton-fill); translate: 0 -50%; }
+
+.load-line { position: absolute; z-index: 1; right: 0; bottom: -1px; left: 0; height: 2px; overflow: hidden; opacity: 0; pointer-events: none; transition: opacity 150ms var(--ease-out); }
+.load-line[data-active] { opacity: 1; transition: opacity 200ms var(--ease-out) var(--load-line-delay, 300ms); }
+.load-line > span { position: absolute; inset: 0; width: 28%; background: var(--accent); animation: load-line-glide 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite paused; }
+.load-line[data-active] > span { animation-play-state: running; }
+@keyframes load-line-glide { from { transform: translateX(-100%); } to { transform: translateX(360%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .load-line > span { width: 100%; opacity: 0.5; animation: none; }
+}
