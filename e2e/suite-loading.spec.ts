@@ -1,6 +1,6 @@
 import { expect, type Locator, test } from '@playwright/test';
 
-import { createSuite, serveApp, uniqueId } from './support.ts';
+import { createSuite, gotoHydrated, serveApp, uniqueId } from './support.ts';
 
 const server = serveApp();
 
@@ -30,7 +30,7 @@ test('a suite opened from its card loads with its runs listed and a tile where e
     { id: 'attempt-3', label: 'Tablet', status: 'passed', replayId: `${suite}-three` },
     { id: 'attempt-4', label: 'Waiting', status: 'passed' },
   ]);
-  await page.goto(`${server().origin}/`);
+  await gotoHydrated(page, `${server().origin}/`);
   let release!: () => void;
   const gate = new Promise<void>((resolve) => (release = resolve));
   await page.route(new RegExp(`/api/suites/${suite}`), async (route) => {
