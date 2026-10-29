@@ -74,8 +74,8 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 36814,
-      "gzip": 13164,
-      "brotli": 11716
+      "gzip": 13162,
+      "brotli": 11721
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -179,8 +179,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 629,
-      "brotli": 567
+      "gzip": 630,
+      "brotli": 568
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 613
+      "brotli": 621
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20371,
