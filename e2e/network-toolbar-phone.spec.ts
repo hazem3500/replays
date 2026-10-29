@@ -118,7 +118,7 @@ test('a busy recording draws request density on the ribbon, and a drag across it
   }));
   await postBundle(page.request, server().origin, bundle);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/r/${id}`);
+  await openReplay(page, `${server().origin}/r/${id}?view=performance`);
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
   await expect(ribbon).toBeVisible();
@@ -153,30 +153,80 @@ async function seedBusy(page: Page, id: string) {
   await postBundle(page.request, server().origin, bundle);
 }
 
-test('a sparse recording has no ribbon, and on a busy one the row under the pointer lights its mark', async ({ page }) => {
+test('the timeline is off in Standard and on in Performance, and its switch is remembered per view', async ({ page }) => {
   const sparse = uniqueId('network-sparse');
   await seedNetworkFixture(page, sparse);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/r/${sparse}`);
+  await openReplay(page, `${server().origin}/r/${sparse}?view=performance`);
   await page.getByTestId('network-tab').click();
   await expect(page.locator('[data-request-id]')).toHaveCount(2);
   await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+  await expect(page.getByTestId('network-timeline-toggle')).toHaveCount(0);
 
   const busy = uniqueId('network-busy');
   await seedBusy(page, busy);
-  await openReplay(page, `${server().origin}/r/${busy}`);
+  const open = async (query: string) => {
+    await openReplay(page, `${server().origin}/r/${busy}${query}`);
+    await page.getByTestId('network-tab').click();
+  };
+  const toggle = page.getByTestId('network-timeline-toggle');
+  await open('');
+  await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+  await toggle.click();
+  await expect(page.getByTestId('network-ribbon')).toBeVisible();
+  await open('?view=performance');
+  await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+  await toggle.click();
+  await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+  await open('');
+  await expect(page.getByTestId('network-ribbon')).toBeVisible();
+  await open('?view=performance');
+  await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+});
+
+test('stepping through requests moves only the selection marker, and the detail opens without resizing the ribbon or the list', async ({ page }) => {
+  const id = uniqueId('network-steady');
+  await seedBusy(page, id);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/r/${id}?view=debug`);
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
-  await expect(ribbon).toBeVisible();
-  await page.locator('[data-request-id]').first().hover();
-  await expect(ribbon.locator('.ribbon-lit')).toHaveCount(1);
+  const list = page.getByTestId('network-list');
+  const failure = ribbon.locator('.ribbon-mark[data-tone="danger"]');
+  const boxes = async () => JSON.stringify([await ribbon.boundingBox(), await list.boundingBox(), await failure.boundingBox()]);
+  const steady = await boxes();
+  const marker = page.getByTestId('ribbon-selection');
+  const litAt = () => marker.evaluate((element) => Number((element as HTMLElement).style.getPropertyValue('--lit-at')));
+
+  const first = page.locator('[data-request-id="poll-2"]');
+  await first.click();
+  await expect(page.getByTestId('request-detail')).toBeVisible();
+  const from = await litAt();
+  await first.press('ArrowDown');
+  await expect(page.locator('[data-request-id="poll-3"]')).toBeFocused();
+  await expect.poll(litAt).toBeGreaterThan(from);
+  expect(await boxes()).toBe(steady);
+
+  const at = await litAt();
+  await page.locator('[data-request-id="poll-6"]').hover();
+  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveCount(2);
+  expect(await litAt()).toBe(at);
+
+  const edge = () => marker.locator('.ribbon-lit-edge').first().evaluate((element) => getComputedStyle(element).transitionDuration);
+  expect(await edge()).not.toBe('0s');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  expect(await edge()).toBe('0s');
+
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('request-detail')).toHaveCount(0);
+  expect(await boxes()).toBe(steady);
 });
 
 test('the ribbon playhead follows the clock by transform and glides, except under reduced motion', async ({ page }) => {
   const id = uniqueId('network-motion');
   await seedBusy(page, id);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/r/${id}`);
+  await openReplay(page, `${server().origin}/r/${id}?view=performance`);
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
   await page.getByRole('slider', { name: 'Seek' }).press('End');

@@ -41,7 +41,16 @@ const withBodies: ReplayBundle = {
   }),
 };
 
-function Network({ bundle, width, open, peers }: { bundle: ReplayBundle; width?: number; open?: string; peers?: NetworkPeer[] }) {
+interface NetworkProps {
+  bundle: ReplayBundle;
+  width?: number;
+  open?: string;
+  peers?: NetworkPeer[];
+  /** The page's view, which decides whether the timeline starts shown. */
+  view?: string;
+}
+
+function Network({ bundle, width, open, peers, view }: NetworkProps) {
   const [selected, setSelected] = useState(open);
   return (
     <PanelFrame bundle={bundle} {...(width ? { width } : {})}>
@@ -54,6 +63,7 @@ function Network({ bundle, width, open, peers }: { bundle: ReplayBundle; width?:
         onSelect={setSelected}
         peers={peers}
         captured={bundle.meta.captured}
+        view={view}
       />
     </PanelFrame>
   );
@@ -74,13 +84,28 @@ function Performance({ bundle, width, compare }: { bundle: ReplayBundle; width?:
   );
 }
 
+const forgetTimeline = (view: string) => () => localStorage.removeItem(`replays-view:${view}:timeline`);
+
 export const NetworkBusy: Story = {
-  render: () => <Network bundle={busy} />,
+  beforeEach: forgetTimeline('performance'),
+  render: () => <Network bundle={busy} view="performance" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByTestId('network-ribbon')).toBeVisible();
+    await expect(canvas.getByTestId('network-timeline-toggle')).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(canvas.getByTestId('network-status-failed'));
     await expect(canvas.getByText(/^\d+ requests$/)).toBeVisible();
+  },
+};
+
+export const NetworkBusyStandard: Story = {
+  beforeEach: forgetTimeline('standard'),
+  render: () => <Network bundle={busy} view="standard" />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByTestId('network-ribbon')).toBeNull();
+    await userEvent.click(canvas.getByTestId('network-timeline-toggle'));
+    await expect(canvas.getByTestId('network-ribbon')).toBeVisible();
   },
 };
 

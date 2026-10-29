@@ -1,4 +1,4 @@
-import { ChartNoAxesGanttIcon, ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
+import { ChartNoAxesGanttIcon, ChevronDownIcon, ListFilterIcon, SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
@@ -221,10 +221,12 @@ function TypeMenu({
       <DropdownMenuTrigger
         className="np-type"
         aria-label={`${STRINGS.type}: ${TYPE_LABELS[value]}`}
+        data-value={value}
         data-testid="network-type"
         onKeyDown={keepKeys}
       >
-        {TYPE_LABELS[value]}
+        <ListFilterIcon className="np-type-glyph" aria-hidden="true" />
+        <span className="np-type-label">{TYPE_LABELS[value]}</span>
         <ChevronDownIcon aria-hidden="true" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto min-w-44">

@@ -24,6 +24,7 @@
 .np-type:hover, .np-type[data-popup-open] { background: var(--surface-hover); color: var(--text); }
 .np-type:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .np-type svg { width: 14px; height: 14px; color: var(--text-tertiary); }
+.np-type-glyph { display: none; }
 .np-toggle[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
 .np-toggle[aria-pressed="true"] svg { color: var(--accent); }
 .np-type-count { margin-left: auto; padding-left: 16px; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
@@ -78,8 +79,10 @@
    took. No time column (the detail's Watch from seeks), no column header, no host or query, a bar only when slow. */
 @container network (max-width: 559px) {
   .np-table { --np-cols: minmax(0, 1fr) auto; }
-  .np-toggle-label { display: none; }
-  .np-toggle { width: 28px; justify-content: center; padding: 0; }
+  /* why: a phone's toolbar holds the status chips first; type and timeline shrink to glyphs until a type is picked. */
+  .np-toggle-label, .np-type[data-value="all"] :is(.np-type-label, .np-type-glyph + .np-type-label + svg) { display: none; }
+  .np-toggle, .np-type[data-value="all"] { width: 40px; justify-content: center; padding: 0; }
+  .np-type[data-value="all"] .np-type-glyph { display: block; }
   /* why: set here, not through --np-row, so the touch rule's 44 px cannot squeeze the two lines together. */
   .np-row:not(.np-head) { grid-template-areas: "request status" "step duration"; row-gap: 0; min-height: 56px; padding: 7px 12px; }
   /* invariant: the request button covers both lines, so the whole row is one 56 px target. */
@@ -111,6 +114,7 @@
 /* why: Network's detail lies over the list's end instead of narrowing it, so opening, closing or stepping between
    requests never reflows a row, moves the scroll position or re-measures the list. */
 .np[data-detail="over"]:not([data-stacked]) .np-detail { position: absolute; z-index: 3; inset-block: 0; right: 0; box-shadow: -12px 0 24px -16px color-mix(in srgb, #000 35%, transparent); }
+.np[data-detail="over"][data-open]:not([data-stacked]) .np-list { mask-image: linear-gradient(to left, transparent var(--np-detail-width), #000 calc(var(--np-detail-width) + 40px)); }
 .np-detail:focus { outline: none; }
 .np-detail-head { position: sticky; z-index: 1; top: 0; display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 4px 6px 4px 14px; border-bottom: 1px solid var(--line); background: var(--surface-raised); }
 .np[data-stacked] .np-detail-head { padding-left: 6px; }
