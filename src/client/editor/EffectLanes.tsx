@@ -1,44 +1,28 @@
-import { CaptionsIcon, EyeOffIcon, FastForwardIcon, ZoomInIcon } from 'lucide-react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 import type { ReplayEdits } from '../../shared/edits.ts';
-import { type ReplayBlur, type ReplayCaption, type ReplaySpeedRange, type ReplayZoomRegion, ZOOM_IN_MS } from '../../shared/effects.ts';
+import { type ReplayBlur, ZOOM_IN_MS } from '../../shared/effects.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { addEffect, type EditorAction, type EffectKind, effectList, moveEffect, removeEffect, type Selection } from './state.ts';
+import { LANE_GLYPHS } from './lanes.tsx';
 import { Lane, RegionBlock, startDrag, useTimelineScale } from './Timeline.tsx';
 
-/** Each effect lane: its name (the gutter's tooltip), glyph, and how one of its regions is labelled. */
-export const LANES: Array<{ kind: EffectKind; name: string; empty: string; icon: ReactNode; label: (region: never) => string }> = [
-  {
-    kind: 'zoom',
+/** Each lane's name (the gutter's tooltip) and the hint an empty lane shows. */
+const LANE_TEXT: Record<EffectKind, { name: string; empty: string }> = {
+  zoom: {
     name: 'Zoom: drag on the lane to add a zoom, Z zooms in on every click',
     empty: 'Zoom · drag to add · Z zooms in on every click',
-    icon: <ZoomInIcon />,
-    label: (zoom: ReplayZoomRegion) => `${zoom.scale}×`,
   },
-  {
-    kind: 'speed',
-    name: 'Speed: drag on the lane to speed a stretch up (F)',
-    empty: 'Speed · drag over a stretch to play it faster',
-    icon: <FastForwardIcon />,
-    label: (speed: ReplaySpeedRange) => `${speed.rate}×`,
-  },
-  {
-    kind: 'blur',
-    name: 'Blur: drag on the lane to hide part of the page (B)',
-    empty: 'Blur · drag to hide part of the page while it shows',
-    icon: <EyeOffIcon />,
-    label: (blur: ReplayBlur) => (blur.style === 'redact' ? 'Redact' : 'Blur'),
-  },
-  {
-    kind: 'caption',
+  speed: { name: 'Speed: drag on the lane to speed a stretch up (F)', empty: 'Speed · drag over a stretch to play it faster' },
+  blur: { name: 'Blur: drag on the lane to hide part of the page (B)', empty: 'Blur · drag to hide part of the page while it shows' },
+  caption: {
     name: 'Captions: drag on the lane to add one, T adds captions from the steps',
     empty: 'Captions · drag to add one · T writes them from the steps',
-    icon: <CaptionsIcon />,
-    label: (caption: ReplayCaption) => caption.text,
   },
-];
+};
+
+const LANES = LANE_GLYPHS.map((glyph) => ({ ...glyph, ...LANE_TEXT[glyph.kind] }));
 
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
 

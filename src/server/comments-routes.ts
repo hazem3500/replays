@@ -1,13 +1,12 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { cleanAvatarUrl, type CommentsResponse, displayName, publicComment, type StoredAuthor } from '../shared/comments.ts';
-import { send } from './app.ts';
+import { sendJson } from './http/send.ts';
 import { CommentError, type CommentsStore } from './comments-store.ts';
 import type { Identity } from './auth/types.ts';
 import type { RateLimiter } from './rate-limit.ts';
 import type { ReplayStore } from './store.ts';
 
-const JSON_TYPE = 'application/json; charset=utf-8';
 /** A comment is at most 2000 characters; this leaves room for JSON escaping and nothing more. */
 const MAX_BODY_BYTES = 32 * 1024;
 
@@ -50,7 +49,7 @@ export function authorOf(user: Identity, anonymousMode: boolean): StoredAuthor {
 }
 
 const json = (response: ServerResponse, status: number, body: unknown, headers: Record<string, string> = {}) =>
-  send(response, status, JSON.stringify(body), JSON_TYPE, 'private, no-cache', headers);
+  sendJson(response, status, body, { cacheControl: 'private, no-cache', headers });
 
 /**
  * Comments on a replay, behind the auth adapter like the rest of the app (and the same-origin check for writes). Only

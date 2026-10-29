@@ -15,14 +15,13 @@ import {
   targetsFor,
 } from '../shared/malleable-policy.ts';
 import { SANDBOX_CSP, SANDBOX_HTML, SANDBOX_PATH } from '../shared/sandbox-runtime.ts';
-import { send } from './app.ts';
+import { sendJson } from './http/send.ts';
 import type { Identity } from './auth/types.ts';
 import { BridgeError, BridgeHub } from './bridge-hub.ts';
 import { ApprovalBook, PluginStoreError, UserPluginStore } from './malleable-store.ts';
 import { coreVersion } from './package-info.ts';
 import type { ObjectStorage } from './storage/types.ts';
 
-const JSON_TYPE = 'application/json; charset=utf-8';
 const MAX_BODY = 192 * 1024;
 export const MALLEABLE_PLUGIN = 'malleable';
 
@@ -46,7 +45,7 @@ async function readBody(request: IncomingMessage): Promise<Record<string, unknow
 }
 
 const reply = (response: ServerResponse, status: number, body: unknown) =>
-  send(response, status, JSON.stringify(body), JSON_TYPE, 'private, no-store');
+  sendJson(response, status, body, { cacheControl: 'private, no-store' });
 
 function bearer(request: IncomingMessage) {
   const header = request.headers.authorization;

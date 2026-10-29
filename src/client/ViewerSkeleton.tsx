@@ -1,9 +1,12 @@
 import './editor/skeleton.css';
 import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
+import { PhoneEditorSkeleton } from './editor/PhoneEditorSkeleton.tsx';
 
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
+import type { ReplayEdits } from '../shared/edits.ts';
+import { apiUrl } from './api/fetch.ts';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
@@ -41,6 +44,14 @@ export interface OpenHint {
   still?: boolean;
 }
 
+/** The opening still's format version (src/server/posters.ts); bumping it refetches every cached still. */
+export const OPEN_STILL_VERSION = 1;
+
+/** A replay's opening still by id: what the player paints first, for loads that no card's poster describes. */
+function openStillUrl(id: string) {
+  return apiUrl(`replays/${encodeURIComponent(id)}/open?v=${OPEN_STILL_VERSION}`);
+}
+
 function readHint(): OpenHint | undefined {
   try {
     const raw = sessionStorage.getItem(OPEN_HINT_KEY);
@@ -52,11 +63,16 @@ function readHint(): OpenHint | undefined {
   }
 }
 
+/** why: skeletons only render in the browser today, but a server render must not throw on `window`. */
+function viewportHeight() {
+  return typeof window === 'undefined' ? 800 : window.innerHeight;
+}
+
 function layout(hint: OpenHint | undefined) {
   // why: the replay's own profile is unknown until it loads, so the skeleton takes the view the URL names, else Standard.
   const view = currentSearchParam('view') ?? STANDARD_VIEW;
   const savedHeight = Number(readStorage(viewSettingKey(view, 'dock-height')));
-  const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
+  const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(viewportHeight() * 0.6));
   const height =
     Number.isFinite(savedHeight) && savedHeight > 0
       ? Math.round(Math.min(Math.max(savedHeight, MIN_INSPECTOR_HEIGHT), maxHeight))
@@ -127,14 +143,17 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
 /**
  * Edit loads draw the loaded editor's own shell (editor-layout.css): the real top bar, the stage frame at its final
  * rect beside the inspector column, the 1 px resizer row and the dock at its saved height, so nothing moves when the
- * editor arrives. Phones keep the compact stage and dock.
+ * editor arrives. Phones draw the phone editor the same way (PhoneEditorSkeleton), with the cached edits' lanes.
  */
 export function EditorSkeleton({
   id,
   meta,
+  edits,
 }: {
   id: string;
   meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
+  /** The last edits seen for this replay, while the fresh copy loads: their lanes are drawn where they will be. */
+  edits?: ReplayEdits | undefined;
 }) {
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [stored] = useState(readHint);
@@ -144,9 +163,10 @@ export function EditorSkeleton({
     : stored;
   const [height] = useState(() => {
     const saved = Number(readStorage('replays-editor-dock-height'));
-    return Math.round(Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : 168, 148), Math.max(148, window.innerHeight * 0.65)));
+    return Math.round(Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : 168, 148), Math.max(148, viewportHeight() * 0.65)));
   });
   const style = { '--dock-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties;
+  const poster = hint?.poster ?? openStillUrl(id);
   if (mobile) {
     return (
       <main
@@ -160,13 +180,13 @@ export function EditorSkeleton({
         <span className="visually-hidden" role="status">
           Loading editor…
         </span>
-        <LoadingHeader hint={hint} />
-        <section className="editor-loading-stage" aria-hidden="true">
-          <PlayerSkeleton poster={hint?.poster} />
-        </section>
-        <section className="editor-loading-dock" aria-hidden="true">
-          <LoadingNotice label="Opening editor" />
-        </section>
+        <PhoneEditorSkeleton
+          title={hint?.title ?? 'Replay'}
+          frame={<PlayerSkeleton poster={poster} />}
+          duration={meta?.duration}
+          edits={edits}
+          progress={<ProgressHint />}
+        />
       </main>
     );
   }
@@ -191,7 +211,7 @@ export function EditorSkeleton({
         alwaysMenu
       />
       <section className="editor-stage" aria-hidden="true">
-        <PlayerSkeleton poster={hint?.poster} />
+        <PlayerSkeleton poster={poster} />
         <aside className="editor-presentation">
           <InspectorSkeleton />
         </aside>
@@ -224,31 +244,17 @@ function ProgressHint() {
   );
 }
 
-function LoadingHeader({ hint }: { hint: OpenHint | undefined }) {
-  return (
-    <div className="topbar app-topbar sk-topbar" aria-hidden="true">
-      <span className="loading-title">{hint?.title ?? 'Replay'}</span>
-      <ProgressHint />
-    </div>
-  );
-}
-
-function LoadingNotice({ label = 'Opening replay' }: { label?: string }) {
-  return (
-    <span className="loading-notice">
-      <span className="loading-dot" />
-      {label}…
-    </span>
-  );
-}
-
 /** The player: the stage's canvas, the recording's frame at its aspect ratio (as the viewer fits it), a faint play glyph. */
 function PlayerSkeleton({ poster }: { poster?: string | undefined }) {
+  // why: a still that is not rendered yet (or posters are off) leaves the plain frame, not a broken image.
+  const [failed, setFailed] = useState<string>();
   return (
     <div className="stage-wrap">
       <div className="player-stage sk-stage">
         <div className="sk-frame">
-          {poster ? <img className="sk-poster" src={poster} alt="" decoding="sync" draggable={false} /> : null}
+          {poster && failed !== poster ? (
+            <img className="sk-poster" src={poster} alt="" decoding="sync" draggable={false} onError={() => setFailed(poster)} />
+          ) : null}
         </div>
       </div>
     </div>
