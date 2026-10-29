@@ -3,7 +3,7 @@ import { queryOptions } from '@tanstack/react-query';
 import { type ExpiredReplay, type ExpiredReplays, parseExpiredReplays } from '../../shared/expired.ts';
 import type { ProfileInfo } from '../../shared/profiles.ts';
 import { plural } from '../plural.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { fetchPage } from '../sign-in.tsx';
 
 /** `GET /api/expired-replays`; a server without it (older, or keeping no records) reads as none. */
