@@ -244,7 +244,7 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
-      "gzip": 8752,
+      "gzip": 8753,
       "brotli": 7566
     },
     "dist/client/assets/tools-HASH.js": {
@@ -313,9 +313,9 @@
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
-      "raw": 308481,
-      "gzip": 80873,
-      "brotli": 66283
+      "raw": 308641,
+      "gzip": 80890,
+      "brotli": 66336
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -414,7 +414,7 @@
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
-      "gzip": 1640,
+      "gzip": 1639,
       "brotli": 1418
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
@@ -1191,16 +1191,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
-      "cap": {
-        "raw": 308481,
-        "gzip": 80873,
-        "brotli": 66283
-      },
-      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-8e7122d98ca4 (caps 306214, 80205, 65778) and measures 308481 raw, 80873 gzip, 66283 brotli bytes, under those caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
-    },
-    {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 986487
@@ -1287,16 +1277,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21285,
-        "gzip": 8752,
-        "brotli": 7566
-      },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
       "file": "initial/index.html/css",
       "cap": {
         "raw": 260963,
@@ -1305,6 +1285,24 @@
       },
       "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
+      "cap": {
+        "raw": 308641,
+        "gzip": 80890,
+        "brotli": 66336
+      },
+      "reason": "Server-rendered pages by default: startPages (src/server/start.ts) checks for the Start build and logs when it is missing, and a failed render falls back to the single-page app; Rolldown bundles both into this shared server chunk (main 308481/80873/66283, head 308641/80890/66336). Replaces #123's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/157"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "gzip": 8753
+      },
+      "reason": "Hash-name drift of the chunks it imports (main 8749 gzip, head 8753; brotli 7566 to 7541, raw unchanged). Replaces #155's entry.",
+      "pr": "https://github.com/hazem3500/replays/pull/157"
     }
   ]
 }
