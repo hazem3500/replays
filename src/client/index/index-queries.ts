@@ -4,7 +4,7 @@ import type * as z from 'zod/mini';
 import type { ReplaySummary } from '../../shared/replay.ts';
 import type { ReviewSuiteIndexEntry } from '../../shared/review-suite.ts';
 import { replaySummaryListSchema, suiteIndexListSchema } from '../../shared/schemas/replay.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { fetchPage } from '../sign-in.tsx';
 
 /** Long enough to outlive a visit to a replay and back; the lists are revalidated on every use anyway. */

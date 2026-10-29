@@ -31,3 +31,22 @@ export function forgetSessionKeys(keys: readonly string[]) {
     // why: blocked storage (privacy modes, embedded frames) never kept them either.
   }
 }
+
+/** sessionStorage that never throws: this tab's state, gone when the tab closes. */
+export function readSessionStorage(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/** Writes `value`, or removes the key when `value` is empty; blocked storage keeps nothing. */
+export function writeSessionStorage(key: string, value: string) {
+  try {
+    if (value) sessionStorage.setItem(key, value);
+    else sessionStorage.removeItem(key);
+  } catch {
+    // why: blocked storage (privacy modes, embedded frames): the feature falls back to its default.
+  }
+}

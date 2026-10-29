@@ -61,7 +61,7 @@ test('committed samples never expire and offer no Keep', async ({ page }) => {
   await expect(page.getByTestId('keep-replay')).toHaveCount(0);
 });
 
-test('a kept suite shows as pinned in the sidebar and keeps its runs; More keeps and releases on phones', async ({ page }) => {
+test('More keeps a suite and its runs at every width; the sidebar only says it is kept', async ({ page }) => {
   const base = server().origin;
   const suite = uniqueId('keep-suite');
   const replayId = `${suite}-run`;
@@ -69,21 +69,25 @@ test('a kept suite shows as pinned in the sidebar and keeps its runs; More keeps
   const keepApi = `${base}/api/suites/${suite}/keep`;
 
   await openReplay(page, `${base}/s/${suite}`);
-  const pin = page.getByRole('complementary', { name: 'Review suite' }).getByTestId('keep-suite');
-  await expect(pin).toHaveAttribute('aria-pressed', 'false');
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  await expect(sidebar.getByTestId('keep-suite')).toHaveCount(0);
+  await expect(sidebar.getByTestId('suite-kept')).toHaveCount(0);
   await expect(await retention(page)).toHaveText(/Expires in (29|30) days/);
   await closeDetails(page);
 
-  // Kept elsewhere (the API), the pin shows it and the run is kept with the suite.
+  // Kept elsewhere (the API), the sidebar says so and the run is kept with the suite.
   expect((await page.request.put(keepApi)).ok()).toBe(true);
   await page.reload();
-  await expect(page.getByRole('complementary', { name: 'Review suite' }).getByTestId('keep-suite')).toHaveAttribute('aria-pressed', 'true');
-  await expect(page.getByRole('complementary', { name: 'Review suite' }).getByTestId('keep-suite')).toHaveAccessibleName(/^Kept by /);
+  await expect(sidebar.getByTestId('suite-kept')).toHaveText(/^Kept by /);
   await expect(await retention(page)).toHaveText('Doesn’t expire');
   await closeDetails(page);
   expect((await page.request.delete(keepApi)).ok()).toBe(true);
+  await page.reload();
+  await openMore(page);
+  await expect(page.getByTestId('keep-suite')).toContainText('Keep suite and its runs');
+  await page.keyboard.press('Escape');
 
-  // Phones have no sidebar: "Keep suite" is in More.
+  // Phones have no sidebar: the same More item.
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);

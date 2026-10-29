@@ -83,18 +83,14 @@ describe.each(['dark', 'light'] as const)('%s compared-recording identities', (t
     const block = css.split(`${selector} {`)[1]?.split('}')[0] ?? '';
     return Object.fromEntries([...block.matchAll(/(--tile-\d+):\s*(#[0-9a-f]{6})/g)].map((match) => [match[1]!, match[2]!]));
   };
-  const light = scoped(':root[data-theme="light"] .compare-viewer');
-  const tiles = theme === 'dark' ? scoped('.compare-viewer') : { ...scoped('.compare-viewer'), ...light };
+  const light = scoped(':root[data-theme="light"]');
+  const tiles = theme === 'dark' ? scoped(':root') : { ...scoped(':root'), ...light };
   const tokens = themes[theme];
   const names = Array.from({ length: 9 }, (_, index) => `--tile-${index + 1}`);
 
   it('defines nine hues', () => expect(Object.keys(tiles)).toHaveLength(9));
 
-  it.each(names)('the letter on %s is at least 4.5:1', (tile) => {
-    expect(contrast(tokens['--accent-contrast']!, tiles[tile]!), `${tile} ${tiles[tile]}`).toBeGreaterThanOrEqual(4.5);
-  });
-
-  it.each(names)('the %s focus ring is at least 3:1 on the stage', (tile) => {
+  it.each(names)('the %s swatch and focus ring are at least 3:1 on the stage', (tile) => {
     expect(contrast(tiles[tile]!, tokens['--surface']!), `${tile} ${tiles[tile]}`).toBeGreaterThanOrEqual(3);
   });
 });

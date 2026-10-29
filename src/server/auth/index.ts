@@ -5,6 +5,7 @@ import { headerAuth } from './header.ts';
 import { noneAuth } from './none.ts';
 import { oidcAuth } from './oidc.ts';
 import type { AuthAdapter, AuthPluginFactory } from './types.ts';
+import { toNodeAuthAdapter } from './web.ts';
 
 export * from './types.ts';
 export { headerAuth } from './header.ts';
@@ -62,8 +63,12 @@ export async function authFromEnv(env: NodeJS.ProcessEnv): Promise<AuthAdapter> 
       if (typeof loaded.default !== 'function')
         throw new Error(`AUTH_PLUGIN ${specifier} must default-export a function (env) => AuthAdapter`);
       const adapter = await loaded.default(env);
-      if (!adapter || typeof adapter.authenticate !== 'function') throw new Error(`AUTH_PLUGIN ${specifier} did not return an AuthAdapter`);
-      return adapter;
+      if (
+        !adapter ||
+        (typeof Reflect.get(adapter, 'authenticate') !== 'function' && typeof Reflect.get(adapter, 'authenticateRequest') !== 'function')
+      )
+        throw new Error(`AUTH_PLUGIN ${specifier} did not return an AuthAdapter or WebAuthAdapter`);
+      return toNodeAuthAdapter(adapter);
     }
     default:
       throw new Error(`AUTH_MODE must be none, header, oidc or plugin (got ${JSON.stringify(env.AUTH_MODE)})`);

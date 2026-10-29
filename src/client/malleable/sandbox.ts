@@ -3,7 +3,7 @@ import { hostInfo, hostPolicy } from './host.ts';
 import { PluginWatchdog } from './watchdog.ts';
 import { SANDBOX_PATH } from '../../shared/sandbox-runtime.ts';
 import type { ViewerPluginContext } from '../plugins/api.ts';
-import { appBase } from '../route.ts';
+import { appBase } from '../api/fetch.ts';
 import { BrokerError, handleCall, mayReadReplay, type PluginRef } from './broker.ts';
 
 /** The viewer's design tokens a plugin can use as `var(--…)`, copied into the frame (it has none of the page's CSS). */

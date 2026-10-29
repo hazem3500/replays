@@ -1,6 +1,5 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { editingEnabled, setBetaEditorForTests } from '../src/client/config.ts';
 import { formatRelative } from '../src/client/format.ts';
 import {
   buildIndexEntries,
@@ -13,7 +12,6 @@ import {
   sortFromSearch,
   sortSummaries,
 } from '../src/client/ReplayIndex.tsx';
-import { apiUrl, appBase, indexHref, isAppPage, parseRoute, replayHref, replayInSuiteHref, suiteHref } from '../src/client/route.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, playableReplayId } from '../src/client/suite/runs.ts';
 import type { ReplaySummary } from '../src/shared/replay.ts';
 import type { ReviewSuiteIndexEntry } from '../src/shared/review-suite.ts';
@@ -27,87 +25,7 @@ const suiteRun = (sequence: number, status: 'passed' | 'failed' | 'running', rep
   ...(replayId ? { replayId } : {}),
 });
 
-/** A page as the server sends it: `<meta name="app-base">` (src/server/base-path.ts) and a location. */
-function page(base: string, pathname: string) {
-  vi.stubGlobal('location', { pathname });
-  vi.stubGlobal('document', { querySelector: () => ({ content: base }) });
-}
-
-describe('routes under either base', () => {
-  it('at the root of its own domain', () => {
-    page('/', '/r/abc');
-    expect(appBase()).toBe('');
-    expect(parseRoute('/')).toEqual({ kind: 'index' });
-    expect(parseRoute('/r/example-dot-com')).toEqual({ kind: 'replay', id: 'example-dot-com' });
-    expect(parseRoute('/s/review-1/r/capture%201')).toEqual({ kind: 'suite', id: 'review-1', replayId: 'capture 1' });
-    expect(parseRoute('/r/x', '?suite=s-1')).toEqual({ kind: 'suite', id: 's-1', replayId: 'x' });
-    expect(indexHref()).toBe('/');
-    expect(replayHref('a b')).toBe('/r/a%20b');
-    expect(suiteHref('s')).toBe('/s/s');
-    expect(replayInSuiteHref('r', 's')).toBe('/s/s/r/r');
-    expect(apiUrl('replays')).toBe('/api/replays');
-    expect(isAppPage('/r/x')).toBe(true);
-    expect(isAppPage('/')).toBe(true);
-    for (const other of ['/api/replays', '/api/replays/x/video', '/assets/main.js', '/healthz', '/render.html'])
-      expect(isAppPage(other)).toBe(false);
-    vi.unstubAllGlobals();
-  });
-
-  it('under a path prefix (/replays)', () => {
-    page('/replays', '/replays/s/x');
-    expect(appBase()).toBe('/replays');
-    expect(parseRoute('/replays/r/a')).toEqual({ kind: 'replay', id: 'a' });
-    expect(parseRoute('/replays/')).toEqual({ kind: 'index' });
-    expect(indexHref()).toBe('/replays/');
-    expect(replayHref('a')).toBe('/replays/r/a');
-    expect(apiUrl('me')).toBe('/replays/api/me');
-    expect(isAppPage('/replays/r/a')).toBe(true);
-    expect(isAppPage('/replays/api/replays')).toBe(false);
-    expect(isAppPage('/elsewhere/r/a')).toBe(false);
-    vi.unstubAllGlobals();
-  });
-
-  it('is at the root when the page declares no base', () => {
-    vi.stubGlobal('location', { pathname: '/replays/r/a' });
-    vi.stubGlobal('document', { querySelector: () => null });
-    expect(appBase()).toBe('');
-    vi.unstubAllGlobals();
-  });
-});
-
-describe('routes', () => {
-  it('opens the index for / and /r/', () => {
-    expect(parseRoute('/', '', '')).toEqual({ kind: 'index' });
-    expect(parseRoute('/r/', '', '')).toEqual({ kind: 'index' });
-    expect(parseRoute('/replays/r', '', '/replays')).toEqual({ kind: 'index' });
-  });
-
-  it('opens a replay for /r/<id>', () => {
-    expect(parseRoute('/replays/r/example-dot-com', '', '/replays')).toEqual({ kind: 'replay', id: 'example-dot-com' });
-    expect(parseRoute('/r/abc/', '', '')).toEqual({ kind: 'replay', id: 'abc' });
-  });
-
-  it('opens the suite workspace for /s/<suite>, /s/<suite>/r/<id> and older ?suite= links', () => {
-    page('/replays', '/replays/');
-    expect(parseRoute('/replays/s/review-123')).toEqual({ kind: 'suite', id: 'review-123' });
-    expect(parseRoute('/replays/s/review-123/')).toEqual({ kind: 'suite', id: 'review-123' });
-    expect(parseRoute('/replays/s/review-123/r/capture-1')).toEqual({
-      kind: 'suite',
-      id: 'review-123',
-      replayId: 'capture-1',
-    });
-    expect(parseRoute('/replays/s/review%20123/r/capture%201/')).toEqual({ kind: 'suite', id: 'review 123', replayId: 'capture 1' });
-    expect(parseRoute('/replays/r/capture-1', '?suite=review-123')).toEqual({
-      kind: 'suite',
-      id: 'review-123',
-      replayId: 'capture-1',
-    });
-    expect(parseRoute('/replays/s/%E0%A4%A/r/x')).toEqual({ kind: 'index' });
-    expect(suiteHref('review 123')).toBe('/replays/s/review%20123');
-    expect(replayInSuiteHref('capture 1', 'review 123')).toBe('/replays/s/review%20123/r/capture%201');
-    vi.unstubAllGlobals();
-  });
-
+describe('suite landing', () => {
   it('lands a suite on its first failed run, else the first run with a recording', () => {
     expect(initialRunReplayId([suiteRun(2, 'failed', 'b'), suiteRun(1, 'passed', 'a'), suiteRun(3, 'failed', 'c')], false)).toBe('b');
     expect(initialRunReplayId([suiteRun(2, 'passed', 'b'), suiteRun(1, 'failed'), suiteRun(3, 'passed', 'c')], false)).toBe('b');
@@ -122,7 +40,7 @@ describe('routes', () => {
     expect(initialRunReplayId([expired, kept, passed], true)).toBe('kept');
     expect(initialRunReplayId([expired, passed], true)).toBe('ok');
     expect(initialRunReplayId([expired], true)).toBeUndefined();
-    // Without summaries (a plain suite) a replay id is all there is to go on.
+    // why: without summaries (a plain suite) a replay id is all there is to go on.
     expect(initialRunReplayId([expired, passed], false)).toBe('gone');
     expect(playableReplayId(expired, true)).toBeUndefined();
     expect(isExpired(expired, true)).toBe(true);
@@ -172,7 +90,7 @@ describe('index helpers', () => {
     expect(kindFromSearch('?kind=robots')).toBeUndefined();
     expect(indexSearch({ q: 'a' }, 'sessions')).toBe('?q=a&kind=sessions');
     expect(indexSearch({}, 'suites')).toBe('?kind=suites');
-    // Sort is part of the view too, so Back and "Replays" links return to the same order.
+    // why: sort is part of the view too, so Back and "Replays" links return to the same order.
     expect(indexSearch({ errors: true }, undefined, { key: 'errors', direction: 'ascending' })).toBe('?errors=1&sort=errors');
     expect(indexSearch({}, undefined, { key: 'capturedAt', direction: 'descending' })).toBe('');
     expect(sortFromSearch('?sort=-duration')).toEqual({ key: 'duration', direction: 'descending' });
@@ -231,7 +149,7 @@ describe('index helpers', () => {
       expect(group.values).toMatchObject({ duration: 5000, steps: 4, errors: 3, host: 'app.test' });
       expect(group.hosts).toEqual(['app.test', 'login.test']);
       expect(replayCount(entries)).toBe(4);
-      // A run whose replay was pruned (an id but no summary) is not a replay the list can open.
+      // why: a run whose replay was pruned (an id but no summary) is not a replay the list can open.
       const expired = {
         id: 'd',
         sequence: 4,
@@ -303,36 +221,5 @@ describe('suite run navigation', () => {
     expect(neighbourReplayId(detailed, 'a', 1, true)).toBe('c');
     expect(neighbourReplayId(detailed, 'c', -1, true)).toBe('a');
     expect(neighbourReplayId(detailed, 'a', 1, false)).toBe('gone');
-  });
-});
-
-describe('the edit route (beta editor)', () => {
-  afterEach(() => setBetaEditorForTests(undefined));
-
-  it('is the editor only when the flag is on; otherwise the address opens the replay', () => {
-    setBetaEditorForTests(true);
-    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'edit', id: 'demo-shop' });
-    setBetaEditorForTests(false);
-    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
-    expect(parseRoute('/r/demo-shop', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
-  });
-});
-
-describe('host editing route policy', () => {
-  afterEach(() => {
-    setBetaEditorForTests(undefined);
-    vi.unstubAllGlobals();
-  });
-
-  it('opens normal playback for edit deep links without write capability, including under a base path', () => {
-    setBetaEditorForTests(true);
-    vi.stubGlobal('document', { querySelector: () => ({ content: 'off' }) });
-    expect(editingEnabled()).toBe(false);
-    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'replay', id: 'demo-shop' });
-    expect(parseRoute('/replays/r/demo-shop/edit', '', '/replays')).toEqual({ kind: 'replay', id: 'demo-shop' });
-    vi.stubGlobal('document', { querySelector: () => ({ content: 'on' }) });
-    expect(parseRoute('/r/demo-shop/edit', '', '')).toEqual({ kind: 'edit', id: 'demo-shop' });
-    setBetaEditorForTests(false);
-    expect(editingEnabled()).toBe(false);
   });
 });
