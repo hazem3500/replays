@@ -1,7 +1,13 @@
-import { formatDuration } from './format.ts';
+import { formatDuration, type RecorderFormat } from './format.ts';
 import type { Recorder, RecorderState } from './types.ts';
 
-export type TimerOptions = { warnAtMs?: number; finalAtMs?: number; now?: () => number };
+export type TimerOptions = {
+  warnAtMs?: number;
+  finalAtMs?: number;
+  now?: () => number;
+  /** Writes `label` and `remainingLabel`; the same hook as the default UI's `format.elapsed`. */
+  format?: Pick<Partial<RecorderFormat>, 'elapsed'>;
+};
 export type TimerSnapshot = {
   elapsedMs: number;
   remainingMs: number;
@@ -21,6 +27,7 @@ export function recordingTimer(state: RecorderState, now = Date.now(), options: 
   if (state.status !== 'recording') return undefined;
   const elapsedMs = Math.max(0, now - state.startedAt);
   const remainingMs = Math.max(0, state.maxDurationMs - elapsedMs);
+  const elapsed = options.format?.elapsed ?? formatDuration;
   return {
     elapsedMs,
     remainingMs,
@@ -28,8 +35,8 @@ export function recordingTimer(state: RecorderState, now = Date.now(), options: 
     fraction: Math.min(1, elapsedMs / state.maxDurationMs),
     warning: timerWarning(remainingMs, options),
     sizeWarning: 'none',
-    label: formatDuration(elapsedMs),
-    remainingLabel: formatDuration(remainingMs),
+    label: elapsed(elapsedMs),
+    remainingLabel: elapsed(remainingMs),
   };
 }
 export function createRecordingTimer(recorder: Recorder, options: TimerOptions = {}) {
