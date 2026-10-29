@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 607,
+      "gzip": 606,
       "brotli": 555
     },
     "dist/client/assets/settings-HASH.js": {
@@ -484,8 +484,8 @@
     },
     "initial/index.html/css": {
       "raw": 254839,
-      "gzip": 44498,
-      "brotli": 37043
+      "gzip": 44163,
+      "brotli": 36788
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -769,7 +769,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
