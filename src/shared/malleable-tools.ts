@@ -64,7 +64,7 @@ This deployment: get_plugin_api also returns \`theme\` (the colour scheme and th
 use them so the plugin looks like the rest of the viewer), \`policy\` (the host's rules: \`scopes\` where a plugin may be kept,
 \`capabilities\` allow | ask | deny per capability, \`lockedSurfaces\`), \`versions\` (core and distribution) and \`surfaces\`
 (every tab, panel and action now, by surface id). A denied capability fails with "permission-denied" and a plugin that
-declares one cannot be kept, so leave it out of the manifest. Plugins only add their own tabs, panels and actions; they cannot
+declares one cannot be kept, so leave it out of the manifest. Plugins only add their own viewer contributions; they cannot
 replace or hide another's.`;
 
 export const BRIDGE_TOOLS: readonly BridgeTool[] = [

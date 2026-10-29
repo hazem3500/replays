@@ -216,6 +216,10 @@ function sandboxMessage(state: UserCheck, value: unknown, port: MessagePort, fin
     case 'log':
       state.output.push(display(params.message));
       return;
+    case 'markers':
+      state.output.push(`markers: ${JSON.stringify(params.markers)?.slice(0, 2000) ?? ''}`);
+      finish();
+      return;
     case 'done':
     case 'rendered':
       state.output.push('completed');
@@ -240,7 +244,7 @@ function runSandbox(state: UserCheck, mode: string, contribution: string): Promi
       clearTimeout(timer);
       window.removeEventListener('message', ready);
       port?.close();
-      if (mode === 'action') iframe.remove();
+      if (mode === 'action' || mode === 'track') iframe.remove();
       resolve();
     };
     const timer = setTimeout(() => {
@@ -277,8 +281,8 @@ function runSandbox(state: UserCheck, mode: string, contribution: string): Promi
 export async function checkUserPlugin(file: UserPluginFile, replay: ReplayBundle): Promise<void> {
   const report: CheckReport = { output: [], errors: [] };
   const settings = Object.fromEntries((file.manifest.settings ?? []).map((setting) => [setting.id, setting.default]));
-  const modes = { tabs: 'tab', panels: 'panel', actions: 'action' };
-  for (const kind of ['tabs', 'panels', 'actions'] as const) {
+  const modes = { tabs: 'tab', panels: 'panel', actions: 'action', contextSections: 'section', tracks: 'track' };
+  for (const kind of ['tabs', 'panels', 'actions', 'contextSections', 'tracks'] as const) {
     for (const contribution of file.manifest.contributes[kind] ?? []) {
       const state: UserCheck = { file, replay, settings, output: [], errors: [] };
       await runSandbox(state, modes[kind], contribution.id);

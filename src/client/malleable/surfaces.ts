@@ -1,39 +1,38 @@
+import { isRecord } from '../../shared/validate.ts';
 import type { UserPluginManifest } from '../../shared/malleable.ts';
-import type { TimelineMarker, ViewerPluginApi } from '../plugins/api.ts';
+import type { TimelineMarker, TimelineTone, ViewerPluginApi } from '../plugins/api.ts';
 import { MAX_TRACK_MARKERS } from '../plugins/api.ts';
 import { handleCall, type PluginRef } from './broker.ts';
 import { mountSandbox } from './sandbox.ts';
 
+function markerTone(value: unknown): value is TimelineTone {
+  return value === 'neutral' || value === 'info' || value === 'warn' || value === 'error' || value === 'accent';
+}
+
+function markerTime(value: unknown): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new TypeError('invalid marker time');
+  return value;
+}
+
+function markerLabel(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim() || value.length > 160) throw new TypeError('invalid marker label');
+  return value;
+}
+
+function markerFrom(value: unknown): TimelineMarker {
+  if (!isRecord(value)) throw new TypeError('invalid marker');
+  const atMs = markerTime(value.atMs);
+  const label = markerLabel(value.label);
+  const durationMs = value.durationMs === undefined ? undefined : markerTime(value.durationMs);
+  const { tone } = value;
+  if (tone !== undefined && !markerTone(tone)) throw new TypeError('invalid marker tone');
+  return { atMs, label, ...(typeof durationMs === 'number' ? { durationMs } : {}), ...(tone ? { tone } : {}) };
+}
+
 /** Project only bounded display data across the frame boundary. */
 export function sandboxMarkers(value: unknown): readonly TimelineMarker[] {
   if (!Array.isArray(value) || value.length > MAX_TRACK_MARKERS) throw new TypeError('a track needs at most 500 markers');
-  return value.map((item: unknown) => {
-    if (!item || typeof item !== 'object') throw new TypeError('invalid marker');
-    const marker = item as Record<string, unknown>;
-    if (
-      typeof marker.atMs !== 'number' ||
-      !Number.isFinite(marker.atMs) ||
-      marker.atMs < 0 ||
-      typeof marker.label !== 'string' ||
-      !marker.label.trim() ||
-      marker.label.length > 160
-    )
-      throw new TypeError('invalid marker position or label');
-    if (
-      marker.durationMs !== undefined &&
-      (typeof marker.durationMs !== 'number' || !Number.isFinite(marker.durationMs) || marker.durationMs < 0)
-    )
-      throw new TypeError('invalid marker duration');
-    const tone = marker.tone;
-    if (tone !== undefined && tone !== 'neutral' && tone !== 'info' && tone !== 'warn' && tone !== 'error' && tone !== 'accent')
-      throw new TypeError('invalid marker tone');
-    return {
-      atMs: marker.atMs,
-      label: marker.label,
-      ...(typeof marker.durationMs === 'number' ? { durationMs: marker.durationMs } : {}),
-      ...(tone ? { tone } : {}),
-    };
-  });
+  return value.map(markerFrom);
 }
 
 /** Both surfaces keep the existing sandbox, policy, frame budget and reload cleanup. */

@@ -1134,3 +1134,21 @@ api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms' } 
 
 The server validates these as plain CSS values and emits them into the initial page head.
 Plugin precedence and config overrides are unchanged. No DOM access or client setup is needed.
+The plugin checker also runs both new contribution kinds. Its existing `--headless` mode honors `PLAYWRIGHT_CHROMIUM_EXECUTABLE` and `CHROMIUM_NO_SANDBOX`, like the browser test runners, so an installed Chrome can be reused without downloading a browser.
+
+### Sandboxed viewer sections and tracks
+
+User manifests may declare `contributes.contextSections` and `contributes.tracks`, each with the same bounded `{ id, label }` descriptors as tabs. Register their implementations with `replays.section(id, (element, context) => cleanup)` and `replays.track(id, (context) => markers)` inside the sandbox. Tracks return at most 500 `{ atMs, label, durationMs?, tone? }` objects; labels are at most 160 characters. They run once per replay in a hidden, timed frame and return data only.
+
+```js
+replays.section('release', (element, context) => {
+  element.textContent = context.replay.meta.title;
+});
+replays.track('errors', (context) => context.replay.console
+  .filter((entry) => entry.level === 'error')
+  .map((entry) => ({ atMs: entry.at, label: entry.message.slice(0, 160), tone: 'error' })));
+```
+
+The manifest needs `replay:read` to receive recording data. Clicking a sandbox marker always goes through `playback:seek` declaration, current host policy and any required consent. `TimelineTrackDefinition.onSelect(timeMs, context)` lets host adapters supply that activation boundary; without it, trusted host tracks keep the default seek behavior. No plugin can use these surfaces to weaken redaction, authentication or approval. Frames keep the same CSP, watchdog, frame count and unload lifecycle as tabs. Server rendering does not start frames.
+
+See `examples/custom-distro/sandbox-surfaces.replays-plugin.json` for an importable example. Index surfaces remain host-only until a summary-only sandbox data contract is defined. Component overrides, editor transforms, shortcuts and host downloads remain outside sandbox authority.

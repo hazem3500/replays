@@ -53,7 +53,16 @@ export async function checkBrowser(
   let browser: Browser | undefined;
   try {
     browser = options.headless
-      ? await chromium.launch({ headless: true, args: ['--disable-dev-shm-usage', '--disable-gpu', '--disable-webgl'] })
+      ? await chromium.launch({
+          headless: true,
+          ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}),
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-webgl',
+            ...(process.env.CHROMIUM_NO_SANDBOX === '1' ? ['--no-sandbox'] : []),
+          ],
+        })
       : await chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
     const context = await browser.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 1 });
     try {
