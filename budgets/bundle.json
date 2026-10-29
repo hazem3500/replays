@@ -1052,6 +1052,16 @@
       },
       "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1164,
+        "gzip": 703,
+        "brotli": 650
+      },
+      "reason": "Hash noise, not growth: raw (1130) and gzip (685) are byte-identical to main. This 1 KB chunk is mostly hashed import paths, so its Brotli size moves between 599 and 629 whenever another chunk's hash changes, which is more than the 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/147"
     }
   ]
 }
