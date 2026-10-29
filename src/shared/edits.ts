@@ -13,9 +13,11 @@
 
 import {
   CURSOR_APPEARANCES,
+  CURSOR_CLICK_EFFECTS,
   CURSOR_COLORS,
   CURSOR_MOTION_STYLES,
   isCursorAppearance,
+  isCursorClickEffect,
   isCursorColor,
   isCursorMotionStyle,
   normalizeCursor,
@@ -252,6 +254,7 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
       'motion',
       'appearance',
       'color',
+      'clickEffect',
     ]);
     for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
       if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
@@ -267,6 +270,8 @@ export function assertReplayEdits(value: unknown, duration?: number, name = 'edi
       throw new Error(`${name}.cursor.appearance must be one of ${CURSOR_APPEARANCES.join(', ')}`);
     if (cursor.color !== undefined && !isCursorColor(cursor.color))
       throw new Error(`${name}.cursor.color must be one of ${Object.keys(CURSOR_COLORS).join(', ')}`);
+    if (cursor.clickEffect !== undefined && !isCursorClickEffect(cursor.clickEffect))
+      throw new Error(`${name}.cursor.clickEffect must be one of ${CURSOR_CLICK_EFFECTS.join(', ')}`);
   }
   assertEffects(edits, name, duration);
   assertHighlights(edits.highlights, duration, `${name}.highlights`);

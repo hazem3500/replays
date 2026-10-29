@@ -6,8 +6,6 @@
  */
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
-@import './cursor-inspector.css';
-@import './inspector.css';
 @layer app {
 
   /* Top bar: a quiet save state by the title, undo/redo, View replay and Export. */
@@ -16,11 +14,6 @@
   .editor-save-state[data-state="saved"] svg { color: var(--accent); }
   .editor-retry { padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; cursor: pointer; }
   .editor-retry:hover { color: var(--text); }
-  .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; padding-right: 8px; border-right: 1px solid var(--line); }
-  .editor-done.editor-done { padding: 0 10px; color: var(--text-secondary); font-weight: 500; }
-  .editor-done.editor-done:hover { background: var(--surface-hover); color: var(--text); }
-  .editor-export.editor-export { gap: 6px; padding: 0 10px; }
-  .editor-export svg { width: 14px; height: 14px; }
   .editor-add-effect.editor-add-effect { gap: 5px; padding: 0 8px; color: var(--text-secondary); }
   .editor-add-effect svg { width: 14px; height: 14px; }
   .editor-add-effect svg:last-child { width: 11px; }
@@ -339,8 +332,6 @@
 /* Override the shared press-scale utilities only inside the editor. Positioned timeline markers retain their
    transforms; buttons and links stay put while their colours answer hover and press. */
 @layer utilities {
-  .editor-shell:not([data-mobile]) .topbar :is([data-slot="button"], .topbar-back) { height: 32px; }
-  .editor-shell:not([data-mobile]) .topbar :is(.editor-history button, .topbar-back) { width: 32px; }
   .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, opacity 180ms ease-out; }
   .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
   .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
