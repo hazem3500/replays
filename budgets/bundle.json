@@ -75,7 +75,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
       "gzip": 13521,
-      "brotli": 11994
+      "brotli": 11991
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 617
+      "brotli": 616
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
