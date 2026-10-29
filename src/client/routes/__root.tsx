@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { createRootRouteWithContext, Outlet } from '@tanstack/react-router';
+import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { TooltipProvider } from '@/components/ui/tooltip.tsx';
@@ -16,8 +17,28 @@ export interface RouterContext {
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   validateSearch: rootSearchSchema,
+  // why: under Start the root renders the whole document (the server adds index.html's head, src/server/pages/start.ts);
+  // the SPA build mounts into index.html's #root instead.
+  ...(import.meta.env.REPLAYS_START ? { shellComponent: Document } : {}),
+  // why: pages render in the browser for now; the server sends the document (head, theme, deployment metas) at once.
+  ssr: false,
   component: Root,
 });
+
+function Document({ children }: { children: ReactNode }) {
+  return (
+    // why: index.html's inline script sets data-theme before hydration.
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        <div id="root">{children}</div>
+        <Scripts />
+      </body>
+    </html>
+  );
+}
 
 function Root() {
   const themeControls = useTheme();

@@ -17,6 +17,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- `REPLAYS_SSR=1` serves pages through a TanStack Start build embedded in the server
+  ([docs/operations.md](docs/operations.md#server-rendered-pages-tanstack-start)): the document and its head come from
+  the server, and the API, plugins and auth are unchanged. Off by default; pages still render in the browser.
 - A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
   mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
   `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.

@@ -48,3 +48,14 @@ the browser, and a server render would pass the request's. Loaders, `beforeLoad`
   `startViewTransition`: index ↔ viewer changes crossfade (`html[data-page-transition]`), a page change waits up to
   80 ms for cached data and loaded code, reduced motion and a back swipe the browser animated get none, and focus moves
   to the player (or back to the card you came from). `transitions/swap.ts` crossfades a suite's run switch in place.
+
+## TanStack Start
+
+`vite.start.config.ts` builds the same routes with TanStack Start into `dist/start`. `src/client/start/` holds its
+entries: `router.tsx` (`getRouter()`, per request on the server with the request's deployment and a fresh Query cache,
+once in the browser), `client.tsx` (hydration) and `server.ts` (the server entry; asset URLs get the request's base).
+Our server calls that entry for page requests (`src/server/pages/start.ts`, `REPLAYS_SSR=1`): it passes the request's
+deployment and an in-process API call through `src/shared/page-context.ts`, and adds index.html's head to the streamed
+document. The root route renders the document under Start (`import.meta.env.REPLAYS_START`) and is client-only
+(`ssr: false`) until pages are made server-safe.
+

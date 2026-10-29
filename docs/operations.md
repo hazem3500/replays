@@ -60,6 +60,15 @@ Serve `index.html` for unknown paths under the base (the viewer routes `/r/<id>`
 a "not found page" of `index.html` with status 200. Rebuild the static files when the branding, base or plugins change:
 nothing is read at request time. Server-only features keep working through the API (video export, posters, comments).
 
+## Server-rendered pages (TanStack Start)
+
+`REPLAYS_SSR=1` serves pages through the TanStack Start build (`dist/start`, from `pnpm build`) inside the same server:
+the HTML document, its head (branding, theme colour, the deployment's `app-*` metas) and the hydration scripts come from
+the server, while the API, plugins, auth and request policy stay exactly as they are. Pages still render in the browser
+for now; the index and the viewer move to server rendering in the next releases. Without the flag, or when
+`dist/start` is missing or fails to load (logged at startup), the server sends the stamped `index.html` as before.
+`replays build-static` is unaffected.
+
 ## Storage and scaling
 
 - `STORAGE=fs`: one instance per `DATA_DIR`. Back the directory up like any data volume.
