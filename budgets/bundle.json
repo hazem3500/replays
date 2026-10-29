@@ -980,14 +980,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3520
@@ -1060,7 +1052,7 @@
         "gzip": 703,
         "brotli": 650
       },
-      "reason": "Hash noise, not growth: raw (1130) and gzip (685) are byte-identical to main. This 1 KB chunk is mostly hashed import paths, so its Brotli size moves between 599 and 629 whenever another chunk's hash changes, which is more than the 3% headroom.",
+      "reason": "Hash noise, not growth: raw (1130) and gzip (685) are byte-identical to main. This 1 KB chunk is mostly hashed import paths, so its Brotli size moves between 599 and 629 whenever another chunk's hash changes, which is more than the 3% headroom. Replaces #119's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/147"
     }
   ]
