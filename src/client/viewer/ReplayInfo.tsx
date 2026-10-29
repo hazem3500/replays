@@ -112,12 +112,17 @@ export function ReplayInfoButton({
   suite,
   sheet = false,
   title,
+  open,
+  onOpenChange,
 }: {
   bundle: ReplayBundle;
   suite?: SuiteDetails | undefined;
   /** Phones: a bottom sheet (swipe down to close) headed by the full title, which the bar has to cut. */
   sheet?: boolean;
   title?: string;
+  /** Phones: the sheet opens from the More menu, so it has no trigger of its own. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { notify } = useViewer();
   const { meta } = bundle;
@@ -226,19 +231,21 @@ export function ReplayInfoButton({
   );
   if (sheet) {
     return (
-      <Drawer>
-        <DrawerTrigger
-          render={
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Replay details"
-              className="topbar-info text-[var(--text-secondary)] hover:text-foreground data-[popup-open]:text-foreground [&_svg:not([class*=size-])]:size-4"
-            />
-          }
-        >
-          <AnimatedIcon name="info" />
-        </DrawerTrigger>
+      <Drawer {...(open === undefined ? {} : { open, onOpenChange: (next: boolean) => onOpenChange?.(next) })}>
+        {open === undefined ? (
+          <DrawerTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="Replay details"
+                className="topbar-info text-[var(--text-secondary)] hover:text-foreground data-[popup-open]:text-foreground [&_svg:not([class*=size-])]:size-4"
+              />
+            }
+          >
+            <AnimatedIcon name="info" />
+          </DrawerTrigger>
+        ) : null}
         <DrawerContent className="replay-info replay-info-sheet px-0" data-testid="replay-info">
           <DrawerTitle className="info-sheet-title">{title ?? meta.title}</DrawerTitle>
           {details}
@@ -248,10 +255,10 @@ export function ReplayInfoButton({
   }
   return (
     <Popover
-      onOpenChange={(open) => {
+      onOpenChange={(opened) => {
         // Closing hands the keyboard back to ⓘ (keyboard users continue from there). Opened with a pointer, that is not
         // shown as a ring (focusVisible: false); opened from the keyboard, it is.
-        if (open || !openedByPointer.current) return;
+        if (opened || !openedByPointer.current) return;
         requestAnimationFrame(() => trigger.current?.focus({ focusVisible: false } as FocusOptions));
       }}
     >

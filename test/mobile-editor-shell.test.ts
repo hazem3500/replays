@@ -7,8 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Editor } from '../src/client/editor/Editor.tsx';
 import { saveEdits, type LoadedEdits } from '../src/client/edits.ts';
 import type * as editsModule from '../src/client/edits.ts';
-import { navigate } from '../src/client/navigation.ts';
-import type * as navigationModule from '../src/client/navigation.ts';
+import { navigate } from '../src/client/routing/navigate.ts';
+import type * as navigationModule from '../src/client/routing/navigate.ts';
 import { type Playback, usePlayer } from '../src/client/player.ts';
 import { must } from './must.ts';
 import { settle } from './settle.ts';
@@ -39,7 +39,7 @@ vi.mock('../src/client/editor/EditorExport.tsx', () => ({
       'Export',
     ),
 }));
-vi.mock('../src/client/navigation.ts', async (importOriginal) => ({
+vi.mock('../src/client/routing/navigate.ts', async (importOriginal) => ({
   ...(await importOriginal<typeof navigationModule>()),
   navigate: vi.fn<typeof navigate>(),
 }));

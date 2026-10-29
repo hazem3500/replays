@@ -20,7 +20,7 @@
 .pp-dot[data-verdict="needs-work"] { background: var(--warning); }
 .pp-dot[data-verdict="poor"] { background: var(--danger); }
 .pp-verdict .pp-dot { background: currentColor; }
-.pp-delta { color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pp-delta { display: inline-flex; align-items: center; gap: 4px; color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .pp-delta[data-tone="worse"] { color: var(--danger); }
 .pp-delta[data-tone="better"] { color: var(--success); }
 .pp-order { flex: none; display: flex; align-items: center; gap: 2px; margin: 0 8px 0 auto; padding-left: 8px; }
