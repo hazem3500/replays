@@ -48,7 +48,10 @@ export function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenCha
                       <dd>
                         <KbdGroup>
                           {item.keys.map((key) => (
-                            <Kbd key={key} className="h-[22px] min-w-[22px] px-1.5 font-mono text-(length:--text-2xs) text-[var(--text-secondary)]">
+                            <Kbd
+                              key={key}
+                              className="h-[22px] min-w-[22px] px-1.5 font-mono text-(length:--text-2xs) text-[var(--text-secondary)]"
+                            >
                               {key}
                             </Kbd>
                           ))}
