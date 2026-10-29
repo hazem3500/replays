@@ -11,6 +11,7 @@ import {
   NO_BETA,
 } from '../../shared/beta-flags.ts';
 import { readStorage, removeStorage, writeStorage } from '../storage.ts';
+import { pageMeta } from '../page-meta.ts';
 
 /**
  * The page's side of the beta flags (src/shared/beta-flags.ts): what the server allows (`<meta name="app-beta">`, written
@@ -102,8 +103,7 @@ let allowedOverride: Partial<BetaFlags> | undefined;
 /** The flags this server allows: the ceiling (src/server/beta.ts). */
 export function betaAllowedFlags(): BetaFlags {
   if (allowedOverride) return { ...NO_BETA, ...allowedOverride };
-  if (typeof document === 'undefined') return { ...NO_BETA };
-  return betaFromTokens(document.querySelector<HTMLMetaElement>('meta[name="app-beta"]')?.content);
+  return betaFromTokens(pageMeta('app-beta'));
 }
 
 export function betaAllowed(id: BetaFlagId) {

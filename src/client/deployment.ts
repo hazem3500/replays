@@ -1,4 +1,5 @@
 import { PRODUCT_NAME } from '../shared/brand.ts';
+import { pageMeta } from './page-meta.ts';
 
 /**
  * What the server says about this deployment, for the router's context. In the browser it comes from index.html's
@@ -12,12 +13,11 @@ export interface Deployment {
 }
 
 function meta(name: string) {
-  return document.querySelector<HTMLMetaElement>(`meta[name="${name}"]`)?.content ?? '';
+  return pageMeta(name) ?? '';
 }
 
 /** The deployment as index.html declares it (the defaults without a document: unit tests, a server). */
 export function readDeployment(): Deployment {
-  if (typeof document === 'undefined') return { base: '', name: PRODUCT_NAME };
   const base = meta('app-base');
   const name = meta('app-name');
   return {

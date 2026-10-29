@@ -1,3 +1,4 @@
+import { pageMeta } from '../page-meta.ts';
 let override: boolean | undefined;
 
 /**
@@ -7,8 +8,7 @@ let override: boolean | undefined;
  */
 export function commentsEnabled() {
   if (override !== undefined) return override;
-  if (typeof document === 'undefined') return false;
-  return document.querySelector<HTMLMetaElement>('meta[name="app-comments"]')?.content === 'on';
+  return pageMeta('app-comments') === 'on';
 }
 
 /** Tests only: force the flag without a document. */

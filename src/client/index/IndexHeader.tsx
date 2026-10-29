@@ -13,6 +13,7 @@ import { useRestAnchor } from '../hooks/use-rest-anchor.ts';
 import { productLogo, productName } from '../config.ts';
 import { navigate } from '../routing/navigate.ts';
 import { formatRelative } from '../format.ts';
+import { useHydrated } from '../hooks/use-hydrated.ts';
 import { INDEX_SEARCH_ALT_KEY, indexSearchShortcut } from '../shortcuts.ts';
 import { replayHref, suiteHref } from '../routing/links.ts';
 import { CommandCancel } from './CommandCancel.tsx';
@@ -139,6 +140,8 @@ export function CommandSearch({
   total: number | undefined;
   compact: boolean;
 }) {
+  // why: the platform is the browser's; a server render (and its hydration) shows the Ctrl key cap first.
+  const searchKey = useHydrated() ? indexSearchShortcut() : 'Ctrl K';
   const input = useRef<HTMLInputElement>(null);
   const search = useRef<HTMLDivElement>(null);
   // invariant: on phones the field is positioned against the top bar in both states, resting over this slot.
@@ -299,9 +302,9 @@ export function CommandSearch({
         ) : null}
         {compact ? null : (
           // The tooltip lives on the key cap, so entering the field never pops it over the results.
-          <Hint label="Search replays" shortcut={`${indexSearchShortcut()} · ${INDEX_SEARCH_ALT_KEY}`} side="bottom" disabled={typing}>
+          <Hint label="Search replays" shortcut={`${searchKey} · ${INDEX_SEARCH_ALT_KEY}`} side="bottom" disabled={typing}>
             <span className="command-kbd" aria-hidden="true">
-              <Kbd>{indexSearchShortcut()}</Kbd>
+              <Kbd>{searchKey}</Kbd>
             </span>
           </Hint>
         )}
