@@ -172,11 +172,9 @@ async function openScenario(context, scenario) {
   const page = await context.newPage();
   page.setDefaultTimeout(30_000);
   await page.addInitScript(observe, { player: Boolean(scenario.player), title: !scenario.player });
-  // why: a returning visitor's saved view, in storage and in the cookie a server render reads (ReplayIndex.tsx).
-  await page.addInitScript((view) => {
-    localStorage.setItem('replays-index-view', view);
-    document.cookie = `replays-index-view=${view}; path=/`;
-  }, scenario.view ?? 'list');
+  await page.addInitScript((view) => localStorage.setItem('replays-index-view', view), scenario.view ?? 'list');
+  // why: a returning visitor's saved view is also in the cookie a server render reads (ReplayIndex.tsx).
+  await context.addCookies([{ name: 'replays-index-view', value: scenario.view ?? 'list', domain: '127.0.0.1', path: '/' }]);
   const cdp = await context.newCDPSession(page);
   return { page, cdp };
 }

@@ -212,7 +212,7 @@ export function storedView(): FeedView {
 }
 
 /** The view a server render shows: the choice mirrored into a cookie (this browser's storage stays the source). */
-function renderedView(): FeedView {
+export function renderedView(): FeedView {
   return pageCookie(VIEW_KEY) === 'grid' ? 'grid' : 'list';
 }
 
@@ -436,7 +436,16 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
  * `search` is the address it opens on (Back to other filters, a link: the page remounts on it); `onSearch` gets the
  * filters, sort and view it shows now, for the address and "back to Replays" links.
  */
-export function ReplayIndex({ search: opened, onSearch }: { search: string; onSearch: (search: string) => void }) {
+export function ReplayIndex({
+  search: opened,
+  onSearch,
+  rendered = 'list',
+}: {
+  search: string;
+  onSearch: (search: string) => void;
+  /** The view the page was rendered in (the index route's loader says, also for a server render). */
+  rendered?: FeedView;
+}) {
   const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(opened));
   const [forMe, setForMe] = useState(() => forMeFromSearch(opened));
   const [linked, setLinked] = useState(storedLinkedHandles);
@@ -472,9 +481,9 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
   }, [items, suites]);
   const newest = useRef(restored?.newest);
   const hydrated = useHydrated();
-  // why: the saved view is this browser's; a server render (and its hydration) shows the cookie's copy first.
+  // why: the saved view is this browser's; a server render (and its hydration) shows the view it rendered first.
   const [chosenView, setPreferredView] = useState<FeedView>();
-  const preferredView: FeedView = chosenView ?? (hydrated ? storedView() : renderedView());
+  const preferredView: FeedView = chosenView ?? (hydrated ? storedView() : rendered);
   // Phones get a sort menu and a filter sheet instead of the row of selects (same URL state), and always the list.
   const compact = useMediaQuery(INDEX_COMPACT_QUERY);
   const view: FeedView = compact ? 'list' : preferredView;

@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { indexSearchSchema } from '../../shared/schemas/search.ts';
 import { indexReplaysQuery, indexSuitesQuery } from '../index/index-queries.ts';
-import { filtersFromSearch, INDEX_SUITES_URL, searchFromFilters } from '../ReplayIndex.tsx';
+import { filtersFromSearch, INDEX_SUITES_URL, renderedView, searchFromFilters } from '../ReplayIndex.tsx';
 import { stringifySearch } from '../routing/search.ts';
 
 /**
@@ -13,12 +13,15 @@ export const Route = createFileRoute('/')({
   validateSearch: indexSearchSchema,
   loaderDeps: ({ search }) => ({ list: searchFromFilters(filtersFromSearch(stringifySearch(search))), forMe: search.for === 'me' }),
   loader: async ({ context: { queryClient }, deps }) => {
+    // invariant: the view travels as loader data, so hydration renders what the server did.
+    const loaded = { view: renderedView() };
     // why: a server render puts the lists in the page (For me needs this browser's linked handles); the browser's index
     // fetches and revalidates its own, so a navigation here never waits.
-    if (typeof document !== 'undefined' || deps.forMe) return;
+    if (typeof document !== 'undefined' || deps.forMe) return loaded;
     await Promise.all([queryClient.query(indexReplaysQuery(deps.list)), queryClient.query(indexSuitesQuery(INDEX_SUITES_URL))]).catch(
       () => {},
     );
+    return loaded;
   },
   component: () => null,
 });
