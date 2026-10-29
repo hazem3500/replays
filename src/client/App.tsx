@@ -298,9 +298,9 @@ function EditPage({ id }: { id: string }) {
   // Fresh edits only: a cached copy could be older than someone else's save.
   const loaded = edits.data && !edits.isFetching ? edits.data : undefined;
   return (
-    <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={<EditorSkeleton />}>
+    <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={<EditorSkeleton id={id} meta={bundle?.meta} />}>
       {bundle && loaded ? (
-        <Suspense fallback={<EditorSkeleton />}>
+        <Suspense fallback={<EditorSkeleton id={id} meta={bundle?.meta} />}>
           <Editor bundle={bundle} loaded={loaded} />
         </Suspense>
       ) : null}

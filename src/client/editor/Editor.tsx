@@ -1240,6 +1240,9 @@ function Durations({ original, edited }: { original: number; edited: number }) {
         <>
           <span aria-hidden="true">→</span>
           <strong data-testid="edited-length">{formatClock(edited)}</strong>
+          <span className="editor-durations-note" aria-hidden="true">
+            after edits
+          </span>
         </>
       ) : null}
     </span>

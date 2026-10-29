@@ -86,7 +86,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.keyboard.press('Escape');
   await page.keyboard.press('b');
   await expect(page.getByTestId('blur-box')).toHaveCount(0);
-  await expect(page.getByText('Draw the area to blur', { exact: true })).toBeVisible();
+  await expect(page.getByText('Drag over the area to blur, or click an element to cover it', { exact: true })).toBeVisible();
   const frame = (await page.getByTestId('blur-overlay').boundingBox())!;
   await page.mouse.move(frame.x + frame.width * 0.35, frame.y + frame.height * 0.38);
   await page.mouse.down();
@@ -154,4 +154,26 @@ test('dense captions keep every edit without overlapping labels or truncating th
   await expect(page.getByTestId('save-state')).toHaveText('Saved');
   const stored = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
   expect(stored.captions).toHaveLength(30);
+});
+
+test('blur: a click covers the recorded element under it, and Redact saves a solid block for the viewer', async ({ page }) => {
+  const id = await uploadHuman(page);
+  await page.goto(`${base()}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await page.locator('body').press('b');
+  const frame = (await page.getByTestId('blur-overlay').boundingBox())!;
+  await page.mouse.click(frame.x + frame.width * 0.5, frame.y + frame.height * 0.12);
+  const box = page.getByTestId('blur-box');
+  await expect(box).toBeVisible();
+  const covered = (await box.boundingBox())!;
+  expect(covered.width).toBeLessThan(frame.width * 0.95);
+  const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  await inspector.getByRole('radio', { name: 'Redact' }).click();
+  await expect(page.getByTestId('region-blur')).toContainText('Redact');
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+  const stored = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
+  expect(stored.blurs).toHaveLength(1);
+  expect(stored.blurs[0].style).toBe('redact');
+  await page.goto(`${base()}/r/${id}?t=0.5`);
+  await expect(page.locator('.player-host .replay-blur[data-style="redact"]')).toBeVisible();
 });
