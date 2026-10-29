@@ -19,8 +19,8 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
-      "gzip": 990,
-      "brotli": 853
+      "gzip": 982,
+      "brotli": 849
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -73,14 +73,14 @@
       "brotli": 2119
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8845,
-      "gzip": 2280,
-      "brotli": 1959
+      "raw": 7830,
+      "gzip": 2082,
+      "brotli": 1777
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38110,
-      "gzip": 13521,
-      "brotli": 11994
+      "raw": 37957,
+      "gzip": 13469,
+      "brotli": 11989
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 17891,
@@ -94,8 +94,8 @@
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 101099,
-      "gzip": 33869,
-      "brotli": 28948
+      "gzip": 33868,
+      "brotli": 28919
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -114,8 +114,8 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 25123,
-      "gzip": 9606,
-      "brotli": 8424
+      "gzip": 9605,
+      "brotli": 8395
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 402,
@@ -133,9 +133,9 @@
       "brotli": 24612
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 39229,
-      "gzip": 7519,
-      "brotli": 6716
+      "raw": 39103,
+      "gzip": 7498,
+      "brotli": 6705
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 232510,
@@ -209,8 +209,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 612,
-      "brotli": 563
+      "gzip": 611,
+      "brotli": 560
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 243,
@@ -245,12 +245,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 686,
-      "brotli": 617
+      "brotli": 608
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21201,
+      "raw": 21175,
       "gzip": 8711,
-      "brotli": 7524
+      "brotli": 7500
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -479,7 +479,7 @@
     },
     "initial/index.html/js": {
       "raw": 1484599,
-      "gzip": 473501,
+      "gzip": 473500,
       "brotli": 400470
     },
     "initial/render.html/css": {

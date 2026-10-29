@@ -27,10 +27,11 @@ import '../network/network.css';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
 import './performance.css';
 
-/** Another recording being compared: its letter and vitals. */
+/** Another recording being compared: its short name, colour (1 to 9) and vitals. */
 export interface PerformancePeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   vitals: readonly Vital[];
 }
 
@@ -121,7 +122,8 @@ export function PerformancePanel({
   const open = moments.find((item) => item.id === selected);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
     id: peer.id,
-    letter: peer.letter,
+    name: peer.name,
+    colour: peer.colour,
     deltas: vitalDeltas(vitals, peer.vitals),
   }));
   if (!model.track) return <Empty title={STRINGS.noneTitle}>{STRINGS.none}</Empty>;

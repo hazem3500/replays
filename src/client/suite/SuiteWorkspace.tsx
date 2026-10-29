@@ -4,7 +4,7 @@ import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
 import { type KeyboardEvent, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
+import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { StatusLabel, type StatusTone } from '@/components/ui/status-label.tsx';
@@ -233,18 +233,18 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     const subject = subjectLink(suite);
     return { title: suite.title, href: suiteHref(id), ...(subject ? { subject } : {}) };
   }, [id, suite]);
-  // Keep (no expiry) for the whole suite: a pin in the sidebar head, or a "More" item on phones (no sidebar).
+  // why: keeping a suite is rare and the only way to stop its expiry, so it waits in More at every width; the
+  // sidebar only says when the suite is kept.
   const keep = useKeepSuite(id);
   const keepMenu = useMemo(
-    () =>
-      narrow ? (
-        <DropdownMenuItem onClick={keep.flip} disabled={keep.pending} data-testid="keep-suite">
-          {keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />}
-          {keep.kept ? 'Suite kept' : 'Keep suite'}
-          {keep.kept ? <DropdownMenuShortcut className="tracking-normal">Release</DropdownMenuShortcut> : null}
-        </DropdownMenuItem>
-      ) : undefined,
-    [keep.kept, keep.pending, keep.flip, narrow],
+    () => (
+      <DropdownMenuItem onClick={keep.flip} disabled={keep.pending} data-testid="keep-suite">
+        {keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />}
+        {keep.kept ? 'Suite kept' : 'Keep suite and its runs'}
+        {keep.kept ? <DropdownMenuShortcut className="tracking-normal">Release</DropdownMenuShortcut> : null}
+      </DropdownMenuItem>
+    ),
+    [keep.kept, keep.pending, keep.flip],
   );
   // Phones: no sidebar; the title is the run switcher (tap "Run 1 of 2 · label ⌄").
   const runMenu = useMemo(
@@ -449,6 +449,12 @@ function SuiteSidebar({
               <span className={`status-dot tone-${overall.toLowerCase()}`} aria-hidden="true" />
               <span>{overall}</span>
               <span>{formatClock(duration)}</span>
+              {keep.kept ? (
+                <span className="suite-kept" data-testid="suite-kept">
+                  <PinIcon aria-hidden="true" />
+                  Kept by {keep.retention?.kept?.by ?? 'someone'}
+                </span>
+              ) : null}
             </p>
             {subject ? (
               <p className="suite-sidebar-meta">
@@ -462,18 +468,6 @@ function SuiteSidebar({
               </p>
             ) : null}
           </div>
-        )}
-        {collapsed ? null : (
-          <SwitchIconButton
-            label={keep.kept ? `Kept by ${keep.retention?.kept?.by ?? 'someone'} · release` : 'Keep suite and its runs'}
-            tooltipSide="bottom"
-            pressed={keep.kept}
-            onPressedChange={keep.flip}
-            disabled={keep.pending}
-            data-testid="keep-suite"
-          >
-            <PinIcon aria-hidden="true" />
-          </SwitchIconButton>
         )}
         <IconButton
           label={collapsed ? 'Expand runs sidebar' : 'Collapse runs sidebar'}
