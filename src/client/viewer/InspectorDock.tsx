@@ -9,6 +9,7 @@ import { useNarrowerThan } from '../hooks/use-narrower-than.ts';
 import { usePanelReveal } from '../hooks/use-panel-reveal.ts';
 import { shortcutLabel } from '../shortcuts.ts';
 import type { InspectorTabItem } from './inspector-tabs.ts';
+import { badgeText } from './tab-badges.ts';
 import { PanelPending } from './PanelPending.tsx';
 import { noteTabSwitch } from './stagger.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the dock's styles load with the lazy inspector chunk, not with every page.
@@ -52,11 +53,11 @@ export function DockPanel({ value, pending = value, children }: { value: string;
 }
 
 function TabBadge({ item }: { item: InspectorTabItem }) {
-  if (!item.badge) return null;
+  const text = item.badge ? badgeText(item.badge.value) : undefined;
+  if (!text) return null;
   return (
-    <span className="count count-pill tab-badge" data-tone={item.badge.tone} aria-hidden="true">
-      {item.badge.tone ? <span className="tab-badge-dot" /> : null}
-      {item.badge.value}
+    <span className="count count-pill tab-badge" data-tone={item.badge?.tone} aria-hidden="true">
+      {text}
     </span>
   );
 }
