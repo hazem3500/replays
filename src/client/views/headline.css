@@ -1,0 +1,49 @@
+/* The view's headline strip (Headline.tsx): tiles in one row over the stage, wrapping on narrow screens. */
+.view-headline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.headline-tile {
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+}
+
+.headline-tile.headline-vitals { flex: 1 1 100%; }
+.headline-tile.headline-vitals .pp-vitals { padding: 0; border: 0; background: transparent; }
+
+.headline-text { color: var(--text); font-variant-numeric: tabular-nums; }
+.headline-actions { display: inline-flex; gap: 4px; }
+
+.headline-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.headline-button:hover { color: var(--text); }
+.headline-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+.headline-button svg { width: 14px; height: 14px; }
+.headline-button kbd { font: inherit; font-size: 0.625rem; color: var(--text-tertiary); }
+
+@media (max-width: 840px) {
+  .view-headline { padding: 6px 8px; }
+  .headline-button kbd { display: none; }
+}
