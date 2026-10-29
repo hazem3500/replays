@@ -191,7 +191,6 @@
     "src/recorder/upload.test.ts": 2,
     "src/server/agent-native/credentials.ts": 1,
     "src/server/agent-native/runtime.ts": 3,
-    "src/server/app.ts": 34,
     "src/server/auth/oidc.ts": 4,
     "src/server/base-path.ts": 2,
     "src/server/comments-plugin.ts": 1,

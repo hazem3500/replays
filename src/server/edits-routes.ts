@@ -2,12 +2,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { sanitizeUrlFields } from '../capture/sanitize.ts';
 import type { StoredReplayEdits } from '../shared/edits.ts';
-import { notModified, REVALIDATE, send } from './app.ts';
+import { REVALIDATE } from './http/respond.ts';
+import { notModified, sendJson } from './http/send.ts';
 import { parseJsonBody } from './http/body.ts';
 import type { EditingSettings } from './editing-config.ts';
 import type { ReplayStore } from './store.ts';
 
-const JSON_TYPE = 'application/json; charset=utf-8';
 /** An edit list is a few KB; this leaves room for a full one (200 cuts with labels) and nothing more. */
 const MAX_EDITS_BYTES = 256 * 1024;
 
@@ -36,7 +36,7 @@ async function readBody(request: IncomingMessage) {
 }
 
 function sendEdits(response: ServerResponse, status: number, body: unknown, version: string | undefined) {
-  send(response, status, JSON.stringify(body), JSON_TYPE, REVALIDATE, { etag: editsEtag(version) });
+  sendJson(response, status, body, { cacheControl: REVALIDATE, headers: { etag: editsEtag(version) } });
 }
 
 /**
@@ -63,11 +63,11 @@ export async function handleEditsApi(
   const { store } = options;
   const method = request.method ?? 'GET';
   if (method !== 'GET' && method !== 'HEAD' && method !== 'PUT') {
-    send(response, 405, JSON.stringify({ error: 'method not allowed' }), JSON_TYPE);
+    sendJson(response, 405, { error: 'method not allowed' });
     return true;
   }
   if (!(await store.locate(id))) {
-    send(response, 404, JSON.stringify({ error: 'replay not found' }), JSON_TYPE);
+    sendJson(response, 404, { error: 'replay not found' });
     return true;
   }
   if (method !== 'PUT') {
@@ -83,13 +83,13 @@ export async function handleEditsApi(
   }
 
   if (options.editing?.enabled === false) {
-    send(response, 403, JSON.stringify({ error: 'editing is turned off' }), JSON_TYPE);
+    sendJson(response, 403, { error: 'editing is turned off' });
     return true;
   }
 
   const ifMatch = request.headers['if-match'];
   if (typeof ifMatch !== 'string' || !ifMatch.trim()) {
-    send(response, 428, JSON.stringify({ error: 'If-Match is required: send the ETag of the edits you changed' }), JSON_TYPE);
+    sendJson(response, 428, { error: 'If-Match is required: send the ETag of the edits you changed' });
     return true;
   }
   const ifVersion = versionFromEtag(ifMatch);
