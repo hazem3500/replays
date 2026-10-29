@@ -1,4 +1,5 @@
 import { mkdtemp, readdir, readFile, rm } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, utimes } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -43,6 +44,7 @@ describe('docs/formats', () => {
       'comments.schema.json',
       'context.schema.json',
       'edits.schema.json',
+      'expired-replay.schema.json',
       'plugin-manifest.schema.json',
       'replay-summary.schema.json',
       'replay.schema.json',
@@ -76,6 +78,18 @@ describe('docs/formats', () => {
       expect(hashed?.thumbhash).toBeDefined();
       expect(check(hashed).errors).toBe('No errors');
       expect(check({ ...hashed, thumbhash: 'url(x)' }).ok).toBe(false);
+  it('the records retention leaves of removed replays validate', async () => {
+    const check = await validator('expired-replay');
+    const root = await mkdtemp(join(tmpdir(), 'replays-formats-'));
+    try {
+      const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), { days: 1 });
+      await store.save(replay('removed-replay'));
+      const old = new Date(Date.now() - 3 * 86_400_000);
+      await utimes(join(root, 'data', 'removed-replay', 'replay.json'), old, old);
+      await store.prune();
+      const [record] = (await store.expiredReplays()).records;
+      expect(check(record).errors).toBe('No errors');
+      expect(check({ ...record, retentionDays: 'forever' }).ok).toBe(false);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

@@ -23,6 +23,17 @@ import { type PosterMoment, profilesOf } from '../shared/profiles.ts';
 import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
 import { isThumbHash } from '../shared/thumbhash.ts';
 import {
+  DEFAULT_RETENTION,
+  expiryMs,
+  type KeepRecord,
+  type Retention,
+  type RetentionPolicy,
+  retentionDays,
+  retentionOf,
+} from '../shared/retention.ts';
+import { DEFAULT_EXPIRED_DAYS, type ExpiredReplays } from '../shared/expired.ts';
+import { ExpiredLedger } from './expired.ts';
+import {
   assertReviewRunRegistration,
   assertReviewSuite,
   type ReviewRunRegistration,
@@ -130,6 +141,7 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
+ *   _expired/<id>.json             what is left of a replay retention removed, for RETENTION_EXPIRED_DAYS (expired.ts)
  *
  * Committed samples (`sample/<id>.json`) are part of the code, read-only, and never expire.
  */
@@ -158,6 +170,7 @@ export class ReplayStore {
   readonly listTtlMs: number;
   /** Plugins' `summaryFields` (src/server/summary-fields.ts): run whenever a summary is built, into `summary.ext`. */
   private readonly summaryFields: SummaryFieldsRunner | undefined;
+  private readonly expired: ExpiredLedger;
 
   constructor(
     data: string | ObjectStorage,
@@ -178,6 +191,18 @@ export class ReplayStore {
     this.profiles = profilesOf(options) ?? new ProfileCatalog();
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
     this.summaryFields = options.summaryFields;
+    this.expired = new ExpiredLedger(this.storage, this.retention.expiredDays ?? DEFAULT_EXPIRED_DAYS);
+  }
+
+  /** why: a record that cannot be written must not keep the replay from being removed on time. */
+  private async recordExpired(summary: ReplaySummary, now: number) {
+    const days = retentionDays(this.retention, { profile: summary.profile, profileInferred: summary.profileInferred, summary });
+    await this.expired.record(summary, days, now).catch((error: unknown) => console.error('expired record write failed:', error));
+  }
+
+  /** Replays retention removed, still on record (`GET /api/expired-replays`). */
+  async expiredReplays(): Promise<ExpiredReplays> {
+    return { days: this.expired.days, records: await this.expired.list() };
   }
 
   /** A bundle's list summary, with the plugins' summary fields. */
@@ -573,6 +598,7 @@ export class ReplayStore {
       throw error;
     }
     await this.writeSummary(id, await this.summarize(bundle)).catch((error: unknown) => console.error('meta.json write failed:', error));
+    await this.expired.forget(id).catch(() => undefined);
     this.changed();
     return this.replayKey(id);
   }
@@ -1072,10 +1098,11 @@ export class ReplayStore {
           // A committed sample's sidecars (its edit list) live as long as the sample: forever.
           if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
           let expires: number | undefined;
+          let summary: ReplaySummary | undefined;
           if (replay) {
             // Per profile and rule: the summary (sidecar, cached) says which applies.
             const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
-            const summary = stored && this.profiles.apply(stored);
+            summary = stored && this.profiles.apply(stored);
             expires = expiryMs(this.retention, {
               uploadedMs: await serverUploadMs(this.storage, replay),
               profile: summary?.profile,
@@ -1087,6 +1114,7 @@ export class ReplayStore {
             expires = expiryMs(this.retention, { uploadedMs: newest });
           }
           if (expires === undefined || expires >= now) continue;
+          if (summary) await this.recordExpired(summary, now);
           await this.storage.deletePrefix(`${id}/`);
           this.summaryCache.delete(id);
           this.keepCache.delete(this.keepKey(id));
@@ -1106,6 +1134,7 @@ export class ReplayStore {
             removed.push(`suite:${match[1]}`);
           }
         }
+        await this.expired.prune(now).catch((error: unknown) => console.error('expired records prune failed:', error));
         this.lastPrune = now;
         if (removed.length) this.changed();
         const removedSuites = removed.filter((id) => id.startsWith('suite:')).length;
