@@ -112,7 +112,7 @@ for (const theme of THEMES) {
       test.slow();
       const origin = server().origin;
       const id = uniqueId('a11y-comments');
-      const bundle = await (await page.request.get(`${origin}/api/replays/demo-shop`)).json();
+      const bundle = (await (await page.request.get(`${origin}/api/replays/demo-shop`)).json()) as { meta: { id: string; title: string } };
       bundle.meta.id = id;
       bundle.meta.title = 'Comments review';
       expect((await page.request.post(`${origin}/api/replays`, { data: bundle })).status()).toBe(201);
