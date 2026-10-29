@@ -26,6 +26,7 @@ export async function checkBrowser(
   replay: ReplayBundle,
   result: PluginCheckResult,
   file?: UserPluginFile,
+  launch: { executablePath?: string; noSandbox?: boolean } = {},
 ): Promise<void> {
   const viewerEntry = [resolve(import.meta.dirname, '../client/plugins/api.ts'), resolve(import.meta.dirname, '../lib/viewer.mjs')].find(
     existsSync,
@@ -52,18 +53,7 @@ export async function checkBrowser(
   });
   let browser: Browser | undefined;
   try {
-    browser = options.headless
-      ? await chromium.launch({
-          headless: true,
-          ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}),
-          args: [
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-webgl',
-            ...(process.env.CHROMIUM_NO_SANDBOX === '1' ? ['--no-sandbox'] : []),
-          ],
-        })
-      : await chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
+    browser = await connectBrowser(options, launch);
     const context = await browser.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 1 });
     try {
       const address = server.address();
@@ -76,6 +66,21 @@ export async function checkBrowser(
     await browser?.close();
     await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
   }
+}
+
+function connectBrowser(options: PluginCheckOptions, launch: { executablePath?: string; noSandbox?: boolean }) {
+  return options.headless
+      ? await chromium.launch({
+          headless: true,
+          ...(launch.executablePath ? { executablePath: launch.executablePath } : {}),
+          args: [
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-webgl',
+            ...(launch.noSandbox ? ['--no-sandbox'] : []),
+          ],
+        })
+      : await chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
 }
 
 function checkServer(replay: ReplayBundle, script: string): ReturnType<typeof createServer> {

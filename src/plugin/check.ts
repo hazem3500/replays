@@ -241,6 +241,7 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
 
 export async function checkPlugin(options: PluginCheckOptions, env: NodeJS.ProcessEnv = {}): Promise<PluginCheckResult> {
   const browserOptions = { ...options, ...(env.REPLAYS_PLUGIN_CDP && !options.cdp ? { cdp: env.REPLAYS_PLUGIN_CDP } : {}) };
+  const browserLaunch = { executablePath: env.PLAYWRIGHT_CHROMIUM_EXECUTABLE, noSandbox: env.CHROMIUM_NO_SANDBOX === '1' };
   const result: PluginCheckResult = {
     kind: options.kind ?? (options.file.endsWith('.replays-plugin.json') ? 'user' : 'server'),
     output: [],
@@ -252,13 +253,13 @@ export async function checkPlugin(options: PluginCheckOptions, env: NodeJS.Proce
     if (result.kind === 'user') {
       const file = parsePluginFile(JSON.parse(await readFile(options.file, 'utf8')));
       result.output.push(`policy-sha256: ${await pluginPolicyHash(file.manifest, file.source)}`);
-      await checkBrowser(browserOptions, replay, result, file);
-    } else if (result.kind === 'browser') await checkBrowser(browserOptions, replay, result);
+      await checkBrowser(browserOptions, replay, result, file, browserLaunch);
+    } else if (result.kind === 'browser') await checkBrowser(browserOptions, replay, result, undefined, browserLaunch);
     else {
       const loaded: unknown = await import(pathToFileURL(options.file).href);
       if (!options.kind && isRecord(loaded) && typeof loaded.default === 'function' && 'apiVersion' in loaded.default) {
         result.kind = 'browser';
-        await checkBrowser(browserOptions, replay, result);
+        await checkBrowser(browserOptions, replay, result, undefined, browserLaunch);
       } else await checkServer(options, replay, result, env);
     }
   } catch (error) {
