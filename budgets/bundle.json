@@ -125,7 +125,7 @@
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
       "gzip": 9503,
-      "brotli": 8552
+      "brotli": 8562
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6582,
@@ -170,7 +170,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 967978,
       "gzip": 303313,
-      "brotli": 251663
+      "brotli": 251655
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -205,7 +205,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
       "gzip": 69476,
-      "brotli": 59853
+      "brotli": 59848
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1349,
@@ -214,7 +214,7 @@
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
-      "gzip": 3989,
+      "gzip": 3992,
       "brotli": 3732
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
@@ -235,7 +235,7 @@
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 16683,
       "gzip": 5908,
-      "brotli": 5388
+      "brotli": 5387
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 2923,
@@ -244,7 +244,7 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 887,
-      "gzip": 539,
+      "gzip": 541,
       "brotli": 504
     },
     "dist/client/assets/storage-HASH.js": {
@@ -255,12 +255,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 615
+      "brotli": 607
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
       "gzip": 9037,
-      "brotli": 7810
+      "brotli": 7777
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -270,12 +270,12 @@
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
       "gzip": 256,
-      "brotli": 234
+      "brotli": 232
     },
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 761,
       "gzip": 483,
-      "brotli": 435
+      "brotli": 361
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -322,10 +322,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
-      "raw": 312907,
-      "gzip": 85506,
-      "brotli": 69858
+    "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs": {
+      "raw": 312691,
+      "gzip": 83253,
+      "brotli": 68065
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -1194,15 +1194,6 @@
         "brotli": 932
       },
       "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
-      "cap": {
-        "gzip": 85506,
-        "brotli": 69858
-      },
-      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
