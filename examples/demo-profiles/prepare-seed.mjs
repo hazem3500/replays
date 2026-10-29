@@ -17,6 +17,12 @@ walkthrough.meta.title = 'Signup walkthrough · masked demo form';
 walkthrough.meta.url = 'https://walkthrough.northstar.demo.test/join';
 walkthrough.meta.tags = [...new Set([...walkthrough.meta.tags, 'walkthrough'])];
 delete walkthrough.suiteRun;
+// why: the walkthrough profile captures headers only, so this replay shows the viewer's "Not captured" body state.
+walkthrough.meta.captured = { ...walkthrough.meta.captured, network: 'headers' };
+for (const entry of walkthrough.network) {
+  delete entry.requestBody;
+  delete entry.responseBody;
+}
 const initialPage = walkthrough.events.find((event) => event.type === 4);
 if (initialPage?.data && typeof initialPage.data === 'object') initialPage.data.href = walkthrough.meta.url;
 
