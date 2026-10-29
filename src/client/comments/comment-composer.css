@@ -1,18 +1,21 @@
 /*
  * The composer docked under the comments (Composer.tsx) and its reaction picker (Reactions.tsx): a plain box, a send
- * arrow once there is text (the view's one accent), and one quiet line about where the comment goes.
+ * arrow once there is text (the view's one accent), and one quiet line about where the comment goes. It spans the
+ * panel's content width with the same 16 px inset as the list, so both share one column at any dock width.
  */
 .comment-composer {
   flex: none;
   padding: 8px 16px 12px;
   border-top: 1px solid var(--line);
   background: var(--surface);
+  /* why: the list above reserves a stable scrollbar gutter; reserving the same one keeps both right edges in line. */
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 .comment-composer-box {
   display: flex;
   align-items: flex-end;
   gap: 4px;
-  max-width: 720px;
   padding: 4px 4px 4px 12px;
   border: 1px solid var(--line-strong);
   border-radius: 8px;
@@ -92,7 +95,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 0 12px;
-  max-width: 720px;
   min-height: 24px;
   margin-top: 4px;
   padding-inline: 2px;

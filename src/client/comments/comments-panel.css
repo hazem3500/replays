@@ -56,7 +56,7 @@
   font-size: var(--text-xs);
 }
 .comments-scroll > .empty-state {
-  margin-inline: -16px;
+  margin-inline: -14px;
 }
 
 @media (pointer: coarse) {
@@ -70,8 +70,5 @@
   }
   .comments-filter {
     padding-inline: 12px;
-  }
-  .comments-scroll > .empty-state {
-    margin-inline: -12px;
   }
 }

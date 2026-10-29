@@ -1,7 +1,7 @@
 /** User-visible copy for the Comments tab, in one place so the voice stays consistent. */
 export const commentStrings = {
   emptyTitle: 'No comments yet',
-  emptyBody: 'Leave a note on any moment. Press M while watching, or write below.',
+  emptyBody: 'Leave a note on any moment of the replay, or on the whole thing.',
   emptyAction: 'Comment at the playhead',
   filteredEmpty: { open: 'Everything here is resolved.', resolved: 'Nothing resolved yet.', all: '' },
   failedTitle: 'Comments did not load',

@@ -8,9 +8,6 @@
   padding: 0;
   list-style: none;
 }
-.comment-list {
-  max-width: 720px;
-}
 .comment-list > li {
   border-top: 1px solid var(--line);
 }
@@ -85,6 +82,7 @@
   }
 }
 .comment-body {
+  max-width: 80ch;
   margin: 0;
   color: var(--text);
   font-size: var(--text-sm);
