@@ -1,9 +1,9 @@
 import type { ViewerEventListener, ViewerEventName } from './events.ts';
-export type { ViewerEventMap, ViewerEventName, ViewerEventListener, ViewerEvent } from './events.ts';
 import type { PluginSettingDefinition } from '../../shared/plugin-settings.ts';
 import type { PluginPageDefinition } from './pages.ts';
 import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
 import type { ReplayBundle, ReplaySummary } from '../../shared/replay.ts';
+export type { ViewerEventMap, ViewerEventName, ViewerEventListener, ViewerEvent } from './events.ts';
 export type { PluginPageLoadContext, PluginPageContext, PluginPageDefinition } from './pages.ts';
 export { ViewerRegistry } from './registry.ts';
 export { SLOT_NAMES, SlotRegistry } from './slots.ts';

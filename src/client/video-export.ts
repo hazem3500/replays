@@ -1,4 +1,3 @@
-import { viewerRegistry } from './plugins/registry.ts';
 /**
  * "Download video" for the replay viewer:
  *
@@ -14,6 +13,7 @@ import { viewerRegistry } from './plugins/registry.ts';
  * Everything above `useVideoRender` is pure and unit-tested in
  * test/video-export.test.ts.
  */
+import { viewerRegistry } from './plugins/registry.ts';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { renderFilename, renderQuery, type RenderVariant, renderVariantParts } from '../shared/render-variant.ts';

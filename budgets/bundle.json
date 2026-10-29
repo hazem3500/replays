@@ -630,16 +630,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/viewer.mjs",
-      "cap": {
-        "raw": 17093,
-        "gzip": 4814,
-        "brotli": 4239
-      },
-      "reason": "The published viewer plugin API now exports the slot registry, slot names and descriptor contracts.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/client/assets/brand/apple-touch-icon.png",
       "cap": {
         "raw": 3240,
@@ -744,7 +734,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -893,16 +883,6 @@
         "raw": 14679,
         "gzip": 4777,
         "brotli": 4367
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/settings-HASH.js",
-      "cap": {
-        "raw": 22466,
-        "gzip": 7571,
-        "brotli": 6796
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -1136,16 +1116,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 617
@@ -1222,16 +1192,6 @@
       },
       "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured in CI against fresh main dbc865e9: +4281 B raw, +1364 B gzip, +1208 B brotli. Replaces #113's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/149"
-    },
-    {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60104,
-        "gzip": 21487,
-        "brotli": 18749
-      },
-      "reason": "No source change in the viewer: the main chunk's new hash in its imports compresses 11 B larger in gzip (raw -5 B, brotli -1 B). Replaces #167's allowance, keeping its raw and brotli caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
@@ -1332,6 +1292,46 @@
       },
       "reason": "The recorder core chunk gains the capture option resolver, meta.captured and the body hooks in the fetch/XHR wrappers; its new source membership renames the former bundle-types.ts-ee6bb78d70a4 chunk.",
       "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 1024353,
+        "gzip": 320466,
+        "brotli": 264886
+      },
+      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
+      "pr": "https://github.com/hazem3500/replays/pull/181"
+    },
+    {
+      "file": "dist/client/assets/settings-HASH.js",
+      "cap": {
+        "raw": 24766,
+        "gzip": 8215,
+        "brotli": 7402
+      },
+      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
+      "pr": "https://github.com/hazem3500/replays/pull/181"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 62374,
+        "gzip": 22308,
+        "brotli": 19444
+      },
+      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
+      "pr": "https://github.com/hazem3500/replays/pull/181"
+    },
+    {
+      "file": "dist/lib/viewer.mjs",
+      "cap": {
+        "raw": 20835,
+        "gzip": 5659,
+        "brotli": 4992
+      },
+      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
+      "pr": "https://github.com/hazem3500/replays/pull/181"
     }
   ]
 }
