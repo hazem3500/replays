@@ -779,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1271,14 +1271,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/123"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 609
-      },
-      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 609 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
-    },
-    {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 21285,
@@ -1297,6 +1289,14 @@
       },
       "reason": "The index's poster placeholders (ThumbHash decoder and PNG builder, host tile, a suite's run mosaic) replace the letter; head measures 983615 raw bytes (+339).",
       "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 614
+      },
+      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 614 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/126"
     }
   ]
 }
