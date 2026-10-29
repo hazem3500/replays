@@ -226,7 +226,6 @@
     "src/server/tracing-sdk.ts": 4,
     "src/shared/comments.ts": 6,
     "src/shared/context.ts": 2,
-    "src/shared/edits.ts": 8,
     "src/shared/effects.ts": 6,
     "src/shared/icon-url.ts": 2,
     "src/shared/line-diff.ts": 1,

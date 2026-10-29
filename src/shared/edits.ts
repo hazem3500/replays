@@ -1,9 +1,17 @@
 import { normalizeCursor } from './cursor.ts';
-import { changesTime, hasEffectEdits } from './edit-list.ts';
 import { type EditTimeline, editTimeline } from './edit-timeline.ts';
 import { NO_EFFECTS, type PlaybackEffects, playbackEffects } from './effects.ts';
 import type { ReplayBundle, ReplayConsoleEntry, ReplayNetworkEntry, ReplayPerformanceEntry, ReplayStep } from './replay.ts';
-import { EDITS_VERSION, isEmptyEdits, MAX_LABEL, type ReplayCut, type ReplayEdits, type StoredReplayEdits } from './edit-list.ts';
+import {
+  changesTime,
+  EDITS_VERSION,
+  hasEffectEdits,
+  isEmptyEdits,
+  MAX_LABEL,
+  type ReplayCut,
+  type ReplayEdits,
+  type StoredReplayEdits,
+} from './edit-list.ts';
 
 export {
   changesTime,
