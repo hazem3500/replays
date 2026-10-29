@@ -7,6 +7,8 @@ export interface CompareEntry {
   recordings: number;
   /** The URL names one recording (`/s/<id>/r/<run>`): it takes the spotlight. */
   namedRecording?: boolean;
+  /** The page's view arranges sets this way (views/resolve.ts); default Grid. */
+  viewLayout?: CompareLayout;
 }
 
 export interface CompareDefaults {
@@ -17,11 +19,11 @@ export interface CompareDefaults {
 }
 
 /**
- * The one place that decides how a page opens: a suite with two or more recordings compares them (Grid, or
- * Spotlight on the run its URL names); a replay on its own shows Single until "Compare" adds another. Capture
- * profiles (the deployment's profiles) can plug in here to pick other defaults.
+ * The one place that decides how a page opens: a suite with two or more recordings compares them in its view's layout
+ * (Grid unless the view says otherwise, Spotlight on the run its URL names); a replay on its own shows Single until
+ * "Compare" adds another.
  */
-export function compareDefaults({ page, recordings, namedRecording = false }: CompareEntry): CompareDefaults {
+export function compareDefaults({ page, recordings, namedRecording = false, viewLayout = 'grid' }: CompareEntry): CompareDefaults {
   if (page === 'replay' || recordings < 2) return { compare: false, layout: 'single' };
-  return { compare: true, layout: namedRecording ? 'spotlight' : 'grid' };
+  return { compare: true, layout: namedRecording ? 'spotlight' : viewLayout };
 }

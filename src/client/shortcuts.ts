@@ -20,6 +20,8 @@ export type ShortcutAction =
   | 'add-comment'
   | 'next-run'
   | 'previous-run'
+  | 'next-view'
+  | 'previous-view'
   | 'shortcuts';
 
 export interface KeyLike {
@@ -105,6 +107,10 @@ export function shortcutFor(event: KeyLike, target?: TargetLike | null): Shortcu
       return 'next-run';
     case 'J':
       return event.shiftKey ? 'previous-run' : 'next-run';
+    case 'v':
+      return 'next-view';
+    case 'V':
+      return event.shiftKey ? 'previous-view' : 'next-view';
     case '\\':
       return 'switch-inspector';
     case '?':
@@ -156,6 +162,7 @@ export const SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutItem[] }> = 
       { keys: ['↑', '↓'], label: 'Previous / next request (on a Network row)', pair: true },
       { keys: ['Esc'], label: 'Close the open request' },
       { keys: ['\\'], label: 'Collapse or expand the panel' },
+      { keys: ['V', 'Shift V'], label: 'Next / previous view', pair: true },
       { keys: ['Shift C'], label: 'Step captions on the player' },
       { keys: ['?'], label: 'Show shortcuts' },
     ],
@@ -185,6 +192,8 @@ const SHORTCUT_LABELS: Record<ShortcutAction, string> = {
   'add-comment': 'M',
   'next-run': 'J',
   'previous-run': 'Shift J',
+  'next-view': 'V',
+  'previous-view': 'Shift V',
   shortcuts: '?',
 };
 

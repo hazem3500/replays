@@ -7,6 +7,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
+import { STANDARD_VIEW, viewSettingKey } from './views/settings.ts';
 import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
 import { replayHref } from './routing/links.ts';
 import { Topbar } from './Topbar.tsx';
@@ -19,9 +20,6 @@ import { Topbar } from './Topbar.tsx';
  * defaultInspectorHeight().
  */
 const STEPS_WIDTH_KEY = 'replays-steps-width';
-const RAIL_COLLAPSED_KEY = 'replays-steps-collapsed';
-const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
-const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const MIN_INSPECTOR_HEIGHT = 120;
 
 /**
@@ -54,16 +52,23 @@ function readHint(): OpenHint | undefined {
 }
 
 function layout(hint: OpenHint | undefined) {
-  const savedHeight = Number(readStorage(INSPECTOR_HEIGHT_KEY));
+  // why: the replay's own profile is unknown until it loads, so the skeleton takes the view the URL names, else Standard.
+  const view = new URLSearchParams(location.search).get('view') || STANDARD_VIEW;
+  const savedHeight = Number(readStorage(viewSettingKey(view, 'dock-height')));
   const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
   const height =
     Number.isFinite(savedHeight) && savedHeight > 0
       ? Math.round(Math.min(Math.max(savedHeight, MIN_INSPECTOR_HEIGHT), maxHeight))
       : undefined;
-  const savedCollapsed = readStorage(INSPECTOR_COLLAPSED_KEY);
+  const savedCollapsed = readStorage(viewSettingKey(view, 'dock-collapsed'));
   const collapsed = savedCollapsed === '1';
   const savedWidth = Number(readStorage(STEPS_WIDTH_KEY));
-  const stepsWidth = readStorage(RAIL_COLLAPSED_KEY) === '1' ? 0 : Number.isFinite(savedWidth) && savedWidth > 0 ? savedWidth : undefined;
+  const stepsWidth =
+    readStorage(viewSettingKey(view, 'rail-collapsed')) === '1'
+      ? 0
+      : Number.isFinite(savedWidth) && savedWidth > 0
+        ? savedWidth
+        : undefined;
   const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
   return { height, collapsed, stepsWidth, ratio };
 }

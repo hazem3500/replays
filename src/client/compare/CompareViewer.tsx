@@ -13,6 +13,7 @@ import { CompareStage } from './CompareStage.tsx';
 import type { TileCommands } from './CompareTile.tsx';
 import { LayoutMenuItems, LayoutSwitch } from './LayoutSwitch.tsx';
 import { ScopeSwitch } from './ScopeSwitch.tsx';
+import { CompareSummary } from './CompareSummary.tsx';
 import type { CompareLayout } from './compare-search.ts';
 import { type CompareTile, compareTiles, isLoaded, type LoadedTile } from './tiles.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the comparison's styles load with its lazy chunk, not with every page.
@@ -29,7 +30,7 @@ type ViewerProps = ComponentProps<typeof Viewer>;
 /** Viewer props the page itself decides (a suite's run title, status, menus); the comparison owns the rest. */
 export type ComparePageProps = Omit<
   ViewerProps,
-  'bundle' | 'player' | 'stage' | 'headerActions' | 'inspectorScope' | 'inspectorPeers' | 'comparing' | 'onCompareWith'
+  'bundle' | 'player' | 'stage' | 'headerActions' | 'inspectorScope' | 'inspectorPeers' | 'comparing' | 'onCompareWith' | 'compareSummary'
 >;
 
 export interface CompareViewerProps {
@@ -153,6 +154,7 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
         inspectorPeers={peers}
         comparing={tiles.map((tile) => tile.id)}
         onCompareWith={compare.onAdd}
+        compareSummary={<CompareSummary tiles={ready} focus={focused.id} onFocus={onFocus} />}
       />
     </div>
   );
