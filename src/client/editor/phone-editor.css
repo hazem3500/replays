@@ -1,0 +1,73 @@
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
+@layer app {
+  /* The phone timeline (PhoneTimeline.tsx): a slim bar over full-width lanes that scroll under a fixed centre playhead. */
+  .phone-timeline { display: grid; grid-template-rows: 44px minmax(0, 1fr); min-height: 0; height: 100%; }
+  .phone-timeline-bar { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 0 6px 0 2px; }
+  .phone-timeline-bar .editor-clock { margin: 0; min-width: auto; font-size: var(--text-sm); }
+  .phone-time { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; }
+  .phone-duration { color: var(--text-secondary); font-size: var(--text-xs); }
+  .phone-timeline-bar .editor-durations { margin-left: auto; font-size: var(--text-xs); }
+  .phone-timeline-bar .editor-durations-note { display: none; }
+  .phone-fit { margin-left: auto; color: var(--text-secondary); }
+  .editor-durations + .phone-fit { margin-left: 0; }
+
+  .phone-lanes-frame { position: relative; min-height: 0; overflow: hidden; }
+  .phone-lanes { position: absolute; inset: 0; display: grid; align-content: center; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain; scrollbar-width: none; touch-action: pan-x; cursor: grab; }
+  .phone-lanes::-webkit-scrollbar { display: none; }
+  .phone-lanes:active { cursor: grabbing; }
+  .phone-lanes-content { justify-self: start; width: max-content; padding-inline: 50%; }
+  .phone-track { position: relative; display: grid; gap: 8px; width: var(--span); }
+  .phone-scale { position: relative; height: 14px; }
+  .phone-scale > span { position: absolute; top: 0; translate: -50% 0; color: var(--text-tertiary); font-size: 10px; line-height: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .phone-lane-stack { display: grid; gap: 8px; }
+  .phone-lane { position: relative; height: 30px; }
+  .phone-lane[data-kind="clip"] { height: 52px; }
+
+  .editor-shell[data-mobile] .phone-lanes button { min-width: 0; min-height: 0; }
+  .phone-clip, .phone-cut, .phone-highlight, .phone-region { margin: 0; padding: 0; border: 0; font: inherit; cursor: pointer; }
+  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 6px; background: color-mix(in srgb, var(--text-tertiary) 24%, var(--surface-raised)); color: var(--text-secondary); text-align: left; }
+  .phone-clip[data-selected] { box-shadow: inset 0 0 0 2px var(--accent); }
+  .phone-step { position: absolute; top: 0; bottom: 0; display: block; overflow: hidden; padding: 0 6px; line-height: 52px; border-left: 1px solid color-mix(in srgb, var(--surface) 70%, transparent); font-size: 11px; white-space: nowrap; text-overflow: ellipsis; }
+  .phone-step:first-child { border-left: 0; }
+  .phone-trimmed { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 30%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.7; }
+  .phone-cut { position: absolute; z-index: 2; top: 0; bottom: 0; border-radius: 4px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 55%, transparent) 0 1.5px, transparent 1.5px 6px), color-mix(in srgb, var(--canvas) 80%, transparent); }
+  .phone-cut[data-selected] { box-shadow: inset 0 0 0 2px var(--accent); }
+  .phone-highlight { position: absolute; z-index: 3; top: -5px; width: 10px; height: 10px; translate: -50% 0; rotate: 45deg; border-radius: 2px; background: var(--danger); }
+  .phone-highlight[data-kind="period"] { top: -5px; height: 5px; translate: 0 0; rotate: 0deg; border-radius: 3px; }
+  .phone-highlight[data-selected] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+
+  .phone-region-slot { position: absolute; top: 0; bottom: 0; }
+  .phone-region { display: flex; align-items: center; width: 100%; height: 100%; overflow: hidden; padding: 0 6px; border-radius: 6px; background: color-mix(in srgb, var(--lane, var(--text-tertiary)) 30%, var(--surface-raised)); color: var(--text); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .phone-region > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .phone-region[data-kind="zoom"] { --lane: var(--accent); }
+  .phone-region[data-kind="blur"] { --lane: var(--text-tertiary); }
+  .phone-region[data-kind="caption"] { --lane: var(--warning); font-weight: 500; }
+  .phone-region[data-kind="speed"] { --lane: var(--success); }
+  .phone-region-slot[data-selected] .phone-region { background: color-mix(in srgb, var(--lane, var(--text-tertiary)) 48%, var(--surface-raised)); box-shadow: inset 0 0 0 2px var(--accent); }
+  .phone-handle { position: absolute; z-index: 4; top: -3px; bottom: -3px; width: 10px; margin-left: -5px; border-radius: 3px; background: var(--accent); touch-action: none; cursor: ew-resize; }
+  .phone-handle::before { content: ""; position: absolute; inset: -4px -12px; }
+  .phone-handle::after { content: ""; position: absolute; top: 50%; left: 4px; width: 2px; height: 10px; margin-top: -5px; border-radius: 1px; background: var(--accent-contrast); }
+
+  /* The centre playhead: one line over the lanes; its range input takes the keyboard (Arrow keys seek). */
+  .phone-lanes-frame::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
+  .phone-lanes-frame:has(> .phone-lanes[data-snapped])::after { animation: phone-snap 240ms var(--ease-out); }
+  @keyframes phone-snap { 50% { scale: 2.5 1; } }
+  .phone-playhead { position: absolute; z-index: 6; top: 0; bottom: 0; left: 50%; width: 24px; margin: 0 0 0 -12px; padding: 0; appearance: none; -webkit-appearance: none; background: transparent; opacity: 0; pointer-events: none; }
+  .phone-playhead:focus-visible { opacity: 1; outline: 2px solid var(--focus); outline-offset: 0; border-radius: 4px; }
+  .phone-playhead::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 0; height: 0; }
+  .phone-playhead::-moz-range-thumb { width: 0; height: 0; border: 0; }
+
+  .phone-object-toolbar { grid-template-columns: repeat(var(--count, 5), minmax(0, 1fr)); }
+
+  /* The settings sheet (PhoneSheet.tsx): the phone panel's content without its inline frame. */
+  .phone-sheet .editor-context-panel { max-height: none; overflow: visible; padding: 0 0 8px; border-top: 0; }
+  @media (prefers-reduced-motion: reduce) {
+    .phone-lanes-frame:has(> .phone-lanes[data-snapped])::after { animation: none; }
+  }
+}
+
+@layer utilities {
+  /* why: the sheet stops under the picture (header 53 px and a 16:10 stage), so the preview stays in view while adjusting. */
+  .phone-sheet[data-slot="drawer-content"] { max-height: calc(62dvh + var(--bleed)); }
+}
