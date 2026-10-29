@@ -80,7 +80,7 @@
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2343,
-      "brotli": 2119
+      "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 7830,
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 683,
-      "brotli": 605
+      "gzip": 682,
+      "brotli": 604
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
