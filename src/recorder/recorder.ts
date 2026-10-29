@@ -1,5 +1,6 @@
 import { buildReplayBundle, type RawStep } from './bundle.ts';
-import type { ReplayBundle, ReplayRrwebEvent } from './bundle-types.ts';
+import type { ReplayBundle, ReplayCaptured, ReplayRrwebEvent } from './bundle-types.ts';
+import { capturedRecord, resolveCapture } from './capture-options.ts';
 import { captureConsole, captureNetwork, type RawConsoleEntry, type RawNetworkEntry } from './capture.ts';
 import { DEFAULT_ALLOWED_HEADERS, maskText } from './redact.ts';
 import { createAttributeMasker } from './sanitize-events.ts';
@@ -74,6 +75,7 @@ type Session = {
   steps: RawStep[];
   bytes: number;
   startedAt: number;
+  captured: ReplayCaptured;
   cleanups: (() => void)[];
 };
 
@@ -105,6 +107,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const maxDurationMs = clamp(options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS, MIN_DURATION_MS, MAX_DURATION_CEILING_MS);
   const maxBytes = clamp(options.maxBytes ?? DEFAULT_MAX_BYTES, 1024, MAX_BYTES_CEILING);
   const privacy = options.privacy ?? {};
+  const capture = resolveCapture(options);
   const loadRrweb = options.loadRrweb ?? (() => import('rrweb'));
   const title = options.title ?? (options.app ? `Issue report from ${options.app.name}` : 'Issue report from Replays');
 
@@ -171,11 +174,11 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const blockSelector = [
     `[${UI_ATTRIBUTE}]`,
     `[${BLOCK_ATTRIBUTE}]`,
-    ...(privacy.blockMedia === false ? [] : [MEDIA_SELECTOR]),
+    ...(capture.blockMedia ? [MEDIA_SELECTOR] : []),
     ...(privacy.blockSelector ? [privacy.blockSelector] : []),
   ].join(', ');
   const sanitize = privacy.sanitize !== false;
-  const maskAllText = sanitize && privacy.maskAllText !== false;
+  const maskAllText = capture.maskAllText;
   const unmask = privacy.unmaskTextSelector;
   const maskSelector = privacy.maskTextSelector;
   // Same rule as rrweb's text masking; an unknown element is masked.
@@ -240,6 +243,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
       reviewedReport = undefined;
       setState({ status: 'starting', trigger });
 
+      // why: a failed body module only narrows the capture to headers; meta.captured says so.
+      const bodyModule = capture.network === 'bodies' ? import('./body-capture.ts').catch(() => null) : undefined;
       let rrweb: RrwebModule;
       try {
         rrweb = await loadRrweb();
@@ -252,6 +257,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         });
         throw error;
       }
+      const bodies = await bodyModule;
       // discard() or destroy() while rrweb was loading.
       if (generation !== lifecycleGeneration || currentState().status !== 'starting') return;
 
@@ -264,22 +270,30 @@ export function createRecorder(options: RecorderOptions): Recorder {
         steps: [{ at: startedAt, kind: 'start', label: 'Recording started' }],
         bytes: 0,
         startedAt,
+        captured: capturedRecord(capture, Boolean(bodies)),
         cleanups: [],
       };
       session = current;
+      const grow = (bytes: number) => {
+        current.bytes += bytes;
+        if (current.bytes > maxBytes) {
+          queueMicrotask(() => {
+            if (session === current) recorder.stop('max-size');
+          });
+        }
+      };
 
       try {
-        const levels = privacy.consoleLevels ?? ['warn', 'error'];
-        if (levels.length) {
+        if (capture.consoleLevels.length) {
           current.cleanups.push(
             captureConsole({
-              levels,
+              levels: capture.consoleLevels,
               maxEntries: MAX_CONSOLE_ENTRIES,
               onEntry: (entry) => current.console.push(entry),
             }),
           );
         }
-        if (privacy.captureNetwork !== false) {
+        if (capture.network !== 'off') {
           const ignore = options.ignoreUrls ?? [];
           current.cleanups.push(
             captureNetwork({
@@ -287,6 +301,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
               maxEntries: MAX_NETWORK_ENTRIES,
               ignore: (url) => matchesAny(url, ignore),
               onEntry: (entry) => current.network.push(entry),
+              ...(bodies ? { bodies: bodies.createBodyCapture({ limits: capture.bodies, maskEmails: maskAllText, onBytes: grow }) } : {}),
             }),
           );
         }
@@ -308,12 +323,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
             if (session !== current) return;
             const event = maskAttributes(raw);
             current.events.push(event);
-            current.bytes += JSON.stringify(event).length;
-            if (current.bytes > maxBytes) {
-              queueMicrotask(() => {
-                if (session === current) recorder.stop('max-size');
-              });
-            }
+            grow(JSON.stringify(event).length);
           },
           maskAllInputs: sanitize,
           maskInputOptions: sanitize ? MASK_INPUT_OPTIONS : { password: true, hidden: true },
@@ -411,6 +421,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
           console: current.console,
           network: current.network,
           steps: current.steps,
+          captured: current.captured,
         });
         const summary: RecordingSummary = {
           durationMs: bundle.meta.duration,
@@ -552,9 +563,10 @@ export function createRecorder(options: RecorderOptions): Recorder {
               captures: {
                 pageText: !maskAllText || !!unmask,
                 inputs: !sanitize,
-                media: privacy.blockMedia === false,
-                console: (privacy.consoleLevels?.length ?? 2) > 0,
-                network: privacy.captureNetwork !== false,
+                media: !capture.blockMedia,
+                console: capture.consoleLevels.length > 0,
+                network: capture.network !== 'off',
+                networkBodies: capture.network === 'bodies',
               },
             },
             signal: openPrompt(),
