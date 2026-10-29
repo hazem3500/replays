@@ -1,8 +1,8 @@
-import { useSyncExternalStore } from 'react';
+import { useSearch } from '@tanstack/react-router';
 
-import { currentSearch, subscribeSearch } from '../navigation.ts';
+import { stringifySearch } from '../routing/search.ts';
 
-/** The page's query string, re-rendering on Back, Forward and `setSearch`. */
+/** The page's query string as the router shows it (re-renders on Back, Forward and `setSearch`). */
 export function useLocationSearch() {
-  return useSyncExternalStore(subscribeSearch, currentSearch, () => '');
+  return useSearch({ strict: false, select: (search) => stringifySearch(search) });
 }

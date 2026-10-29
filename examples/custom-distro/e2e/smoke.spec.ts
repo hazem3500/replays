@@ -315,6 +315,7 @@ test.describe('comments work through the plugin surface with the distribution’
     await expect(page.getByTestId('comments-tab')).toContainText('1');
     await page.keyboard.press('m');
     await expect(page.getByTestId('comments-tab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('comment-input')).toBeFocused();
     await page.keyboard.type('Written in the browser');
     await page.keyboard.press('Control+Enter');
     await expect(page.getByTestId('comment-thread')).toHaveCount(2);

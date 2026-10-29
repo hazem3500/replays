@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from 'node:util';
 
-import type { AuthAdapter, AuthPluginFactory } from '../server/auth/types.ts';
+import type { AnyAuthAdapter, AuthAdapter, AuthPluginFactory, WebAuthAdapter } from '../server/auth/types.ts';
 import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { assertProfileConfig } from '../shared/profiles.ts';
@@ -284,16 +284,19 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
       env: options.env ?? process.env,
       cwd: options.cwd ?? process.cwd(),
       auth(registration) {
-        const adapter = registration as Partial<AuthAdapter> & { create?: AuthPluginFactory };
+        const adapter = registration as Partial<AuthAdapter & WebAuthAdapter> & { create?: AuthPluginFactory };
         const factory = adapter?.create;
         const name = adapter?.name;
-        if (typeof name !== 'string' || (typeof factory !== 'function' && typeof adapter.authenticate !== 'function'))
-          fail('auth needs an adapter { name, authenticate() } or { name, create(env) }');
+        if (
+          typeof name !== 'string' ||
+          (typeof factory !== 'function' && typeof adapter.authenticate !== 'function' && typeof adapter.authenticateRequest !== 'function')
+        )
+          fail('auth needs an adapter { name, authenticate() }, a web adapter { name, authenticateRequest() } or { name, create(env) }');
         if (!ID.test(name)) fail(`auth adapter names look like "iap-header" (got ${JSON.stringify(name)})`);
         if ((BUILTIN_AUTH as readonly string[]).includes(name)) fail(`auth adapter name ${JSON.stringify(name)} is built in`, 'conflict');
         const taken = auth.get(name);
         if (taken) fail(`auth adapter ${JSON.stringify(name)} is already registered by ${taken.plugin}`, 'conflict');
-        auth.set(name, { plugin: plugin.name, value: factory ?? (() => registration as AuthAdapter) });
+        auth.set(name, { plugin: plugin.name, value: factory ?? (() => registration as AnyAuthAdapter) });
       },
       contextAdapter(adapter) {
         if (!adapter || typeof adapter.name !== 'string' || !ID.test(adapter.name)) fail('contextAdapter needs a name like "build-info"');

@@ -2,7 +2,7 @@ import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } fro
 
 import { cn } from '@/lib/utils.ts';
 
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { PosterPlaceholder } from './PosterPlaceholder.tsx';
 import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
 

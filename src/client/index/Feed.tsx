@@ -14,7 +14,7 @@ import {
 import { cn } from '@/lib/utils.ts';
 
 import { formatRelative } from '../format.ts';
-import { replayHref, replayInSuiteHref, suiteHref } from '../route.ts';
+import { replayHref, replayInSuiteHref, suiteHref } from '../routing/links.ts';
 import { playableReplayId } from '../suite/runs.ts';
 import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
 import { PeopleStack } from './People.tsx';

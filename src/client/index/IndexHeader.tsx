@@ -10,10 +10,10 @@ import { useSlidingPill } from '@/components/sliding-highlight.tsx';
 import type { ProfileInfo } from '../../shared/profiles.ts';
 
 import { productLogo, productName } from '../config.ts';
-import { navigate } from '../navigation.ts';
+import { navigate } from '../routing/navigate.ts';
 import { formatRelative } from '../format.ts';
 import { INDEX_SEARCH_ALT_KEY, indexSearchShortcut } from '../shortcuts.ts';
-import { replayHref, suiteHref } from '../route.ts';
+import { replayHref, suiteHref } from '../routing/links.ts';
 import { entryTime, type FeedEntry, suitePosterRun } from './Feed.tsx';
 import { createMarkMotion, createStreak, crossfadeTitle } from './mark-burst.ts';
 import { Poster } from './Poster.tsx';
@@ -189,7 +189,7 @@ export function CommandSearch({
       return {
         id: `${entry.kind}:${entry.id}`,
         kind: 'entry',
-        // In-document, like a click on the row: same transition, same cache (navigation.ts).
+        // In-document, like a click on the row: same transition, same cache (routing/navigate.ts).
         run: () => {
           // Closed first: the index stays mounted behind the viewer and comes back as it was left.
           setOpen(false);

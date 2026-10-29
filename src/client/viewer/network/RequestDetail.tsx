@@ -1,4 +1,4 @@
-import { formatClock, type ReplayStep } from '../../../shared/replay.ts';
+import { formatClock, type ReplayCaptured, type ReplayStep } from '../../../shared/replay.ts';
 import { copyText } from '../../clipboard.ts';
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
@@ -8,12 +8,14 @@ import { LocalTimeline } from '../LocalTimeline.tsx';
 import { curlCommand, formatDuration, matchRequest, medianMeasured, neighbours, type NetworkRow, stepAt } from './model.ts';
 import { REQUEST_DETAIL_ID, StatusText } from './NetworkList.tsx';
 import { DetailHead } from './DetailHead.tsx';
+import { BodySection } from './BodySection.tsx';
 import { HeaderList } from './HeaderList.tsx';
 
-/** Another recording being compared (compare mode): its letter, title and requests. */
+/** Another recording being compared (compare mode): its short name, colour (1 to 9), title and requests. */
 export interface NetworkPeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   label: string;
   rows: readonly NetworkRow[];
 }
@@ -41,7 +43,6 @@ const STRINGS = {
   peers: 'In the other recordings',
   peerMissing: 'Not requested',
   peerTook: (ms: number) => `in ${formatDuration(ms)}`,
-  bodies: 'Request and response bodies are not retained.',
 };
 
 function ratioLabel(ratio: number) {
@@ -61,6 +62,7 @@ export function RequestDetail({
   steps,
   peers,
   stacked,
+  captured,
   onSelect,
 }: {
   row: NetworkRow;
@@ -69,6 +71,8 @@ export function RequestDetail({
   steps: readonly ReplayStep[];
   peers: readonly NetworkPeer[];
   stacked: boolean;
+  /** What the recording kept (`meta.captured`): a body section says "Not captured" rather than drawing nothing. */
+  captured: ReplayCaptured | undefined;
   onSelect: (id?: string) => void;
 }) {
   const close = () => {
@@ -95,14 +99,20 @@ export function RequestDetail({
       <RequestUrl row={row} />
       <Facts row={row} rows={rows} steps={steps} />
       {peers.length ? <PeerResults row={row} peers={peers} /> : null}
+      <BodySection title="Request body" body={row.entry.requestBody} mimeType={headerType(row.entry.requestHeaders)} captured={captured} />
+      <BodySection title="Response body" body={row.entry.responseBody} mimeType={row.entry.mimeType} captured={captured} />
       <Around row={row} rows={rows} onSelect={onSelect} />
       <div className="np-headers">
         <HeaderList title="Request headers" rows={row.entry.requestHeaders} />
         <HeaderList title="Response headers" rows={row.entry.responseHeaders} />
       </div>
-      <p className="np-note">{STRINGS.bodies}</p>
     </section>
   );
+}
+
+/** The request's own content type, from its retained headers. */
+function headerType(headers: ReadonlyArray<{ name: string; value: string }>) {
+  return headers.find((header) => header.name.toLowerCase() === 'content-type')?.value;
 }
 
 function RequestUrl({ row }: { row: NetworkRow }) {
@@ -173,10 +183,10 @@ function PeerResults({ row, peers }: { row: NetworkRow; peers: readonly NetworkP
           const match = matchRequest(row, peer.rows);
           return (
             <li key={peer.id} data-changed={match && match.failed !== row.failed ? '' : undefined}>
-              <span className="np-peer-letter" aria-hidden="true">
-                {peer.letter}
+              <span className="np-peer-label" data-tile={peer.colour} title={peer.label}>
+                <span className="ct-swatch" aria-hidden="true" />
+                {peer.name}
               </span>
-              <span className="np-peer-label">{peer.label}</span>
               <span className="np-peer-result">
                 {match ? (
                   <>

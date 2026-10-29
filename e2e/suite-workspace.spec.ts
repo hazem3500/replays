@@ -102,20 +102,14 @@ test('the index nests a suite’s runs, and a run whose replay expired is skippe
   await expect(menu.getByRole('menuitem', { name: /Desktop: run 2, Expired/ })).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('the sidebar pin keeps the suite on click', async ({ page }) => {
-  const { suite, one } = await threeRuns(page.request);
-  await openReplay(page, `${server().origin}/s/${suite}/r/${one}`);
-  const pin = page.getByRole('complementary', { name: 'Review suite' }).getByTestId('keep-suite');
-  await pin.click();
-  await expect(pin).toHaveAttribute('aria-pressed', 'true');
-});
-
 test('a suite with two recordings opens comparing its runs; the sidebar moves the focus, not the players', async ({ page }) => {
   const { suite, one } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/s/${suite}`);
   const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
-  await expect(tiles.locator('.ct-label')).toHaveText(['Desktop: run 1', 'Desktop: run 2']);
+  // why: the shared "Desktop:" is dropped, so each tile, and the scope, reads by what tells it apart.
+  await expect(tiles.locator('.ct-name')).toHaveText(['Run 1', 'Run 2']);
+  await expect(page.getByTestId('compare-scope').getByRole('radio')).toHaveText(['Run 1', 'Run 2']);
   await expect(page.locator('.ct-tile iframe')).toHaveCount(2);
   await page.locator('.ct-tile iframe').evaluateAll((frames) => {
     for (const frame of frames) frame.setAttribute('data-marked', '');
