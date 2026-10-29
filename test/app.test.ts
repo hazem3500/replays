@@ -100,7 +100,8 @@ describe('replay server', () => {
   it('answers /api/me with the identity and /api/config with the public settings', async () => {
     const { origin } = await start();
     const me = await fetch(`${origin}/api/me`, { headers: { 'x-dev-user': 'ada@example.com' } });
-    await expect(me.json()).resolves.toEqual({ id: 'ada@example.com', email: 'ada@example.com' });
+    // why: AUTH_MODE=none names a stand-in user, so the account menu has nobody signed in to show.
+    await expect(me.json()).resolves.toEqual({ id: 'ada@example.com', email: 'ada@example.com', session: { signedIn: false } });
     const config = await (await fetch(`${origin}/api/config`)).json();
     expect(config).toEqual({
       name: 'replays',
