@@ -116,30 +116,20 @@ test('the steps tab lists the steps and a tap seeks', async ({ page }) => {
   await expect(page.getByTestId('playhead')).toHaveText(/^0:0[23]\.\d$/);
 });
 
-test('copy link: a tap copies, a long press opens the menu and it stays open', async ({ page, context }) => {
+test('copy link lives in More on phones: the plain link, and the link at this moment', async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await openReplay(page, viewer());
-  const copy = page.getByTestId('copy-link');
-  await copy.tap();
-  const toast = page.locator('[data-sonner-toast]').first();
-  await expect(toast).toContainText('Link copied');
-
-  const box = (await copy.boundingBox())!;
-  const cdp = await context.newCDPSession(page);
-  await cdp.send('Input.dispatchTouchEvent', {
-    type: 'touchStart',
-    touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }],
-  });
-  await expect(page.getByRole('menu', { name: 'Copy link' })).toBeVisible();
-  await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
-  // Lifting the finger is not a dismissal (and not a copy).
-  await expect(page.getByRole('menuitem', { name: /^Copy link at / })).toBeVisible();
-  await page.getByRole('menuitem', { name: /^Copy link at / }).tap();
+  const header = page.locator('header.app-topbar');
+  await header.getByRole('button', { name: 'More actions' }).tap();
+  await page.getByTestId('copy-link').tap();
+  await expect(page.locator('[data-sonner-toast]').first()).toContainText('Link copied');
+  await header.getByRole('button', { name: 'More actions' }).tap();
+  await page.getByRole('menuitem', { name: 'Copy link at this moment' }).tap();
   await expect(page.locator('[data-sonner-toast]').filter({ hasText: /^Link at / })).toBeVisible();
 });
 
-test('the topbar fits at 360 px: title, source mark, details, copy link and More; no tooltips on touch', async ({ page }) => {
-  await page.setViewportSize({ width: 360, height: 740 });
+test('the topbar fits at 320 px: the title keeps its room beside Edit and More; no tooltips on touch', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 640 });
   await openReplay(page, viewer());
   await noPageScroll(page);
   const header = page.locator('header.app-topbar');
@@ -150,19 +140,19 @@ test('the topbar fits at 360 px: title, source mark, details, copy link and More
     expect(box.x + box.width).toBeLessThanOrEqual(headerBox.x + headerBox.width + 0.5);
     expect(box.height).toBeGreaterThanOrEqual(40);
   }
-  // Theme moves into "More" on phones.
+  // why: details, copy link and Compare moved into More, so the title is never squeezed to a letter.
+  expect((await page.locator('#replay-title').boundingBox())!.width).toBeGreaterThanOrEqual(120);
+  await expect(header.getByRole('button', { name: 'Replay details' })).toHaveCount(0);
   await expect(header.getByRole('button', { name: /^Switch to (light|dark) theme$/ })).toHaveCount(0);
-  await header.getByRole('button', { name: 'More actions' }).tap();
-  await expect(page.getByTestId('theme-menu-item')).toBeVisible();
-  await page.keyboard.press('Escape');
 
   // A tap on an icon button never leaves a tooltip behind.
-  await header.getByRole('button', { name: 'Copy link' }).tap();
+  await header.getByRole('button', { name: 'More actions' }).tap();
   await expect(page.locator('[data-slot="tooltip-content"]')).toHaveCount(0);
+  await expect(page.getByTestId('theme-menu-item')).toBeVisible();
 
   // Replay details is a bottom sheet headed by the full title (the bar cuts it).
   const title = await page.locator('#replay-title').textContent();
-  await header.getByRole('button', { name: 'Replay details' }).tap();
+  await page.getByTestId('replay-details').tap();
   const sheet = page.getByTestId('replay-info');
   await expect(sheet).toBeVisible();
   await expect(sheet.getByRole('heading', { name: title!.trim() })).toBeVisible();

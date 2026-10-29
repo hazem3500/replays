@@ -444,7 +444,7 @@ html[data-feed-transition]::view-transition-old(root),
 html[data-feed-transition]::view-transition-new(root) { animation-duration: 160ms; animation-timing-function: linear; }
 /* The items themselves (glide, leave, arrive, list ↔ grid): list-motion.css. */
 
-/* Back on the feed from a replay: the card you came from shows a quiet neutral hairline that fades once (navigation.ts
+/* Back on the feed from a replay: the card you came from shows a quiet neutral hairline that fades once (transitions/page-motion.ts
    sets [data-returned]); a hint of where you were, never an accent. */
 .feed-item[data-returned] .row-target::after { border-radius: inherit; box-shadow: inset 0 0 0 1px var(--line-strong); animation: returned-ring 900ms var(--ease-out) 300ms both; }
 .feed-list[data-view="grid"] .feed-item[data-returned] .row-target::after { border-radius: var(--card-radius); }

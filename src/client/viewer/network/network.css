@@ -126,10 +126,9 @@
 .np-section > p.np-aside { margin: 0; }
 .np-note { margin: 0; padding: 8px 14px 12px; border-top: 1px solid var(--line); color: var(--text-tertiary); font-size: var(--text-2xs); }
 .np-peers { display: grid; gap: 4px; margin: 0; padding: 0; list-style: none; }
-.np-peers li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.np-peers li { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 .np-peers li[data-changed] .np-peer-result { font-weight: 600; }
-.np-peer-letter { width: 20px; height: 20px; display: grid; place-items: center; border-radius: var(--radius-sm); background: var(--surface-hover); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; }
-.np-peer-label { overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
+.np-peer-label { display: flex; align-items: center; gap: 6px; overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
 .np-peer-result { color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (hover: hover) and (pointer: fine) {
   .np-section .np-copy { opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }

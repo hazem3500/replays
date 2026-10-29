@@ -8,7 +8,7 @@ import { useRef } from 'react';
 
 import { editListOf, editsVersion, type StoredReplayEdits } from '../../shared/edits.ts';
 import type { ReplayMeta } from '../../shared/replay.ts';
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { notify } from '../toast.ts';
 import { isActive, progressAnnouncement, progressLabel, useVideoRender } from '../video-export.ts';
 
