@@ -12,7 +12,8 @@ const request = (replayId: string, entryId: string): ReplayNetworkEntry => {
   if (!entry) throw new Error(`missing ${replayId}/${entryId}`);
   return entry;
 };
-const parsed = (text: string | undefined) => JSON.parse(text ?? 'null') as Record<string, unknown>;
+const parsed = (text: string | undefined): unknown => JSON.parse(text ?? 'null');
+const requestId = (replay: ReplayBundle) => replay.network[0]?.requestHeaders.find((header) => header.name === 'x-request-id')?.value;
 
 describe('demo network bodies', () => {
   it('never ships the fake secrets the synthetic bodies are written with', () => {
@@ -61,9 +62,7 @@ describe('demo network bodies', () => {
   });
 
   it('gives each comparison run its own request ids', () => {
-    const ids = createComparisonSeed().replays.map(
-      (replay) => replay.network[0]?.requestHeaders.find((header) => header.name === 'x-request-id')?.value,
-    );
+    const ids = createComparisonSeed().replays.map(requestId);
     expect(new Set(ids).size).toBe(ids.length);
   });
 });

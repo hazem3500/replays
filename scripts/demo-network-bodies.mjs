@@ -1,5 +1,5 @@
-// Synthetic request and response bodies for the demo seed. Every value is fictional; the secrets below are fake and
-// exist so the demo shows where the real body redaction (src/shared/network-bodies.ts) replaces them.
+/* why: synthetic, fictional bodies for the demo seed. The secrets below are fake and exist so the demo shows where
+   the real body redaction (src/shared/network-bodies.ts) replaces them. */
 
 import { captureBody, REDACTED } from '../src/shared/network-bodies.ts';
 import { compileRedaction } from '../src/shared/redaction.ts';
