@@ -83,7 +83,7 @@ for (const width of [1280, 390]) {
     await page.keyboard.press('ControlOrMeta+Shift+z');
     await expect(inspector.locator('output')).toHaveText('105%');
     await inspector.getByRole('switch', { name: 'Hide when idle' }).click();
-    await inspector.getByRole('switch', { name: 'Click feedback' }).click();
+    await inspector.getByRole('radiogroup', { name: 'Click' }).getByRole('radio', { name: 'Off' }).click();
     await pickSpringSettle(page, inspector);
     await page.keyboard.press('Escape');
     if (mobile) {
@@ -131,9 +131,11 @@ test('cursor styles: the chosen style is saved and is the only cursor drawn in t
   await inspector.getByRole('radio', { name: 'Ring', exact: true }).click();
   await expect(inspector.getByText('A halo around the point, for touch-style demos')).toBeVisible();
   await inspector.getByRole('radio', { name: 'Green', exact: true }).click();
+  await inspector.getByRole('radiogroup', { name: 'Click' }).getByRole('radio', { name: 'Ripple' }).click();
+  await expect(inspector.getByTestId('cursor-recipe')).toHaveText('Ring · Green · Signature arc · Ripple on click');
   await expect(page.getByTestId('save-state')).toHaveText('Saved');
   const stored = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
-  expect(stored.cursor).toEqual({ appearance: 'ring', color: 'green' });
+  expect(stored.cursor).toEqual({ appearance: 'ring', color: 'green', clickEffect: 'ripple' });
   await page.getByTestId('editor-done').click();
   await page.goto(`${base}/r/${id}?t=2`);
   const cursor = page.locator('.player-host .replay-cursor');

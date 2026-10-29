@@ -1,4 +1,5 @@
 import './editor/skeleton.css';
+import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
@@ -118,7 +119,7 @@ export function EditorSkeleton({
   meta,
 }: {
   id: string;
-  meta?: { title?: string; viewport?: { width: number; height: number } } | undefined;
+  meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
 }) {
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [stored] = useState(readHint);
@@ -171,6 +172,8 @@ export function EditorSkeleton({
         backHref={replayHref(id)}
         backLabel="Back to the replay"
         status={<ProgressHint />}
+        actions={<TopbarActionsSkeleton />}
+        alwaysMenu
       />
       <section className="editor-stage" aria-hidden="true">
         <PlayerSkeleton poster={hint?.poster} />
@@ -179,16 +182,7 @@ export function EditorSkeleton({
         </aside>
       </section>
       <div className="inspector-resizer" aria-hidden="true" />
-      <section className="editor-dock" aria-hidden="true">
-        <div className="editor-bar">
-          <LoadingNotice label="Opening editor" />
-        </div>
-        <div className="editor-loading-timeline">
-          <span className="skeleton editor-loading-ruler" />
-          <span className="skeleton editor-loading-lane" />
-        </div>
-        <p className="editor-hint" />
-      </section>
+      <DockSkeleton duration={meta?.duration} />
     </main>
   );
 }

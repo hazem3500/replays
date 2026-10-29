@@ -1,4 +1,4 @@
-import { UserRoundIcon } from 'lucide-react';
+import { SettingsIcon } from 'lucide-react';
 import { useState, useSyncExternalStore } from 'react';
 
 import { Hint } from '@/components/icon-button.tsx';
@@ -75,7 +75,7 @@ export function SettingsButton() {
           <DialogTrigger
             render={<Button variant="ghost" size="icon" aria-label={strings.open} className="text-muted-foreground [&_svg]:size-4" />}
           >
-            <UserRoundIcon aria-hidden="true" />
+            <SettingsIcon aria-hidden="true" />
           </DialogTrigger>
         </Hint>
       }
