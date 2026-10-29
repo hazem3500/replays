@@ -1,15 +1,11 @@
-import { CircleXIcon, TriangleAlertIcon } from 'lucide-react';
 import { memo, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useContext, useMemo, useRef } from 'react';
 
-import type { ReplayBundle, ReplayConsoleEntry } from '../../shared/replay.ts';
-import { domain } from '../format.ts';
-import { usePlayer, usePlayhead } from '../player.ts';
-import { countAtOrBefore, sortByAt } from '../timeline.ts';
-import { useWindowedRows } from '../windowing.ts';
+import type { ReplayBundle } from '../../shared/replay.ts';
+import { usePlayer } from '../player.ts';
+import { sortByAt } from '../timeline.ts';
 import { type InspectorTab, useViewer } from './context.ts';
 import { PluginContexts, PluginMount, usePluginContexts, usePluginSnapshot } from '../plugins/PluginUi.tsx';
 import { usePluginContextSections } from '../plugins/PluginSlots.tsx';
-import { Empty } from './Empty.tsx';
 import { StepList } from './StepRail.tsx';
 import { ContextPanel } from './ContextPanel.tsx';
 import { activeFeatures, useFeatureBadges } from '../plugins/features.tsx';
@@ -17,8 +13,7 @@ import { useContextSchema } from './context-schema.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
-import { TrackList, SeekTime, HEADER_HEIGHT, TRACK_GAP, TRAILING_GAP } from './TrackList.tsx';
-import { useRowHeight } from '../hooks/use-row-height.ts';
+import { ConsolePanel, ConsolePending } from './console/ConsolePanel.tsx';
 import { buildNetworkRows, networkBadge } from './network/model.ts';
 import { type NetworkPeer, NetworkPanel, NetworkPending } from './network/NetworkPanel.tsx';
 import { buildMoments, performanceBadge, vitalsOf } from './performance/model.ts';
@@ -190,10 +185,6 @@ export const Inspector = memo(function Inspector({
     colour: peer.colour,
     vitals: vitalsOf(peer.bundle),
   }));
-  // Once playback reaches the end every entry is in view (some trail the last DOM event). At the very start nothing
-  // has happened yet, not even entries stamped 0:00.0, so the now line can rest above every row.
-  const horizon = (time: number) => (time >= player.duration ? Number.POSITIVE_INFINITY : time <= 0 ? -1 : time);
-  const consoleCount = usePlayhead((time) => countAtOrBefore(consoleTrack.ats, horizon(time)));
   const pluginTabs = usePluginSnapshot().tabs;
   // Each plugin gets its own context (its settings); the viewer's when there is one, else made here.
   const ownContexts = usePluginContexts(bundle, player);
@@ -240,8 +231,8 @@ export const Inspector = memo(function Inspector({
           <StepList />
         </DockPanel>
       ) : null}
-      <DockPanel value="console">
-        <ConsolePanel entries={consoleTrack.entries} reached={consoleCount} human={human} />
+      <DockPanel value="console" pending={ConsolePending}>
+        <ConsolePanel entries={consoleTrack.entries} human={human} />
       </DockPanel>
       <DockPanel value="network" pending={NetworkPending}>
         <NetworkPanel
@@ -290,116 +281,3 @@ export const Inspector = memo(function Inspector({
     </InspectorDock>
   );
 });
-
-/**
- * The fixed gap before the first row (TRACK_GAP: none, so rows meet the header) and after the last one
- * (TRAILING_GAP: room for the now divider's grip to rest below the last row, fully visible).
- */
-function GapRow({ columns, trailing = false }: { columns: number; trailing?: boolean }) {
-  const height = trailing ? TRAILING_GAP : TRACK_GAP;
-  if (height <= 0) return null;
-  return (
-    <tr className="gap-row" aria-hidden="true" style={{ height }}>
-      <td colSpan={columns} />
-    </tr>
-  );
-}
-
-function SpacerRow({ height, columns }: { height: number; columns: number }) {
-  if (height <= 0) return null;
-  return (
-    <tr className="spacer-row" aria-hidden="true" style={{ height }}>
-      <td colSpan={columns} />
-    </tr>
-  );
-}
-
-/** Shown only when a track has nothing in it at all; entries the playhead has not reached are listed, faded. */
-function TrackEmpty({ track, human }: { track: 'console' | 'network'; human: boolean }) {
-  const noun = track === 'console' ? 'Console' : 'Network';
-  if (human)
-    return (
-      <Empty title={`${noun} wasn’t recorded`}>This recording was imported from rrweb, so console and network weren’t captured.</Empty>
-    );
-  return track === 'console' ? (
-    <Empty title="No console output was recorded">Nothing was logged during this session.</Empty>
-  ) : (
-    <Empty title="No requests were recorded">No network requests were captured during this session.</Empty>
-  );
-}
-
-const ConsolePanel = memo(function ConsolePanel({
-  entries,
-  reached,
-  human,
-}: {
-  entries: ReplayConsoleEntry[];
-  reached: number;
-  human: boolean;
-}) {
-  const scroller = useRef<HTMLDivElement>(null);
-  const body = useRef<HTMLTableSectionElement>(null);
-  const total = entries.length;
-  const ats = useMemo(() => entries.map((entry) => entry.at), [entries]);
-  const rowHeight = useRowHeight(body, 'tr.console-row', total > 0);
-  const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: total, rowHeight, headerHeight: HEADER_HEIGHT + TRACK_GAP });
-  return (
-    <TrackList testId="console-list" reached={reached} total={total} rowHeight={rowHeight} ats={ats} scroller={scroller}>
-      {total === 0 ? (
-        <TrackEmpty track="console" human={human} />
-      ) : (
-        <table className="diagnostic-table console-table" aria-rowcount={total + 1}>
-          <thead>
-            <tr aria-rowindex={1}>
-              <th>Time</th>
-              <th>Message</th>
-              <th>Source</th>
-            </tr>
-          </thead>
-          <tbody ref={body}>
-            <GapRow columns={3} />
-            <SpacerRow height={padTop} columns={3} />
-            {entries.slice(start, end).map((entry, offset) => {
-              const index = start + offset;
-              const future = index >= reached;
-              return (
-                <tr className={`console-row ${entry.level}`} key={index} aria-rowindex={index + 2} data-future={future || undefined}>
-                  <td>
-                    <SeekTime at={entry.at} future={future} />
-                  </td>
-                  <td>
-                    <span className="console-message">
-                      <LevelIcon level={entry.level} />
-                      <code title={entry.message}>{entry.message}</code>
-                    </span>
-                  </td>
-                  <td className="source" title={entry.url}>
-                    {entry.url ? domain(entry.url) : 'Page'}
-                  </td>
-                </tr>
-              );
-            })}
-            <SpacerRow height={padBottom} columns={3} />
-            <GapRow columns={3} trailing />
-          </tbody>
-        </table>
-      )}
-    </TrackList>
-  );
-});
-
-/**
- * Only warnings and errors get a small glyph before the message (amber, red: inside the row); log, info and debug
- * get none, so plain rows have no icon gutter. The level is always in the accessible text and the glyph's title.
- */
-function LevelIcon({ level }: { level: ReplayConsoleEntry['level'] }) {
-  const Icon = level === 'error' ? CircleXIcon : level === 'warn' ? TriangleAlertIcon : undefined;
-  const name = level === 'warn' ? 'Warning' : level[0]!.toUpperCase() + level.slice(1);
-  return Icon ? (
-    <span className={`level-icon ${level}`} role="img" aria-label={name} title={name}>
-      <Icon aria-hidden="true" />
-    </span>
-  ) : (
-    <span className="visually-hidden">{name}: </span>
-  );
-}
