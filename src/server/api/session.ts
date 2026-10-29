@@ -59,9 +59,12 @@ export function sessionRoutes(services: ApiServices) {
       method: 'GET',
       path: '/api/me',
       // why: revalidated, not `no-store`: `no-store` would keep the index out of the back/forward cache.
-      handler({ identity: user }) {
+      handler({ identity: user, base }) {
         const people = peopleConfig(registry);
-        return json(200, { ...user, ...(people ? { people } : {}) });
+        const signOutUrl = deployment.auth.signOutUrl?.(routeContext(base));
+        // invariant: AUTH_MODE=none gives every request the same stand-in identity; nobody is signed in.
+        const session = { signedIn: deployment.auth.name !== 'none', ...(signOutUrl ? { signOutUrl } : {}) };
+        return json(200, { ...user, ...(people ? { people } : {}), session });
       },
     }),
   ];
