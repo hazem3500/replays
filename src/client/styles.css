@@ -796,6 +796,17 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-tabs .inspector-tablist, .sk-tabs-phone .inspector-tablist { display: flex; align-items: stretch; }
 .sk-tab.sk-tab { display: inline-flex; align-items: center; cursor: default; }
 .sk-tab-icon { width: 16px; height: 16px; }
+/* A suite while loading (SuiteLoadingParts.tsx): its runs, its bar's layout switch and its Grid's tiles, at compare.css's geometry. */
+.sk-suite-title { width: 72%; height: 14px; margin-block: 2px; }
+.sk-suite-meta { width: 44%; }
+.sk-rail-switch { width: 24px; height: 24px; flex: none; }
+.sk-run { align-items: center; cursor: default; }
+.sk-run .run-copy { gap: 7px; padding-block: 3px; }
+.sk-run-meta { width: 46%; }
+.sk-layout-switch { width: 88px; height: 32px; flex: none; align-self: center; margin-right: 6px; border-radius: var(--radius); background: var(--surface-hover); }
+.sk-stage.sk-tiles { display: flex; flex-wrap: wrap; place-content: center; gap: 8px; padding: 12px; }
+.sk-tile { position: relative; width: min(calc((100cqw - (var(--sk-cols) - 1) * 8px) / var(--sk-cols)), calc((100cqh - (var(--sk-rows) - 1) * 8px) / var(--sk-rows) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); border-radius: 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.sk-tile-name { position: absolute; bottom: 8px; left: 8px; width: 88px; height: 24px; border-radius: 999px; }
 @media (pointer: coarse) { .sk-scrub { height: 44px; } }
 .sk-stage { container-type: size; display: grid; place-items: center; }
 .sk-frame { width: min(calc(100cqw - 24px), calc((100cqh - 24px) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); display: grid; place-items: center; }

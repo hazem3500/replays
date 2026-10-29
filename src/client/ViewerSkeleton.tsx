@@ -14,6 +14,7 @@ import { STANDARD_VIEW, viewSettingKey } from './views/settings.ts';
 import { currentSearchParam } from './routing/navigate.ts';
 import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
 import { replayHref } from './routing/links.ts';
+import { SuiteSidebarSkeleton, TilesSkeleton } from './SuiteLoadingParts.tsx';
 import { Topbar } from './Topbar.tsx';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
@@ -42,6 +43,9 @@ export interface OpenHint {
   poster?: string;
   /** `poster` is the opening still (the replay's first paint), not the list poster. */
   still?: boolean;
+  /** A suite card's run count, and how many of those runs have a recording (the tiles its Grid compares). */
+  runs?: number;
+  recordings?: number;
 }
 
 /** The opening still's format version (src/server/posters.ts); bumping it refetches every cached still. */
@@ -87,14 +91,26 @@ function layout(hint: OpenHint | undefined) {
         ? savedWidth
         : undefined;
   const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
-  return { height, collapsed, stepsWidth, ratio };
+  // why: a suite with two or more recordings opens comparing them in its Grid, unless its address names one run.
+  const tiles = /\/s\/[^/]+\/r\//.test(location.pathname) ? 0 : (hint?.recordings ?? 0);
+  return { height, collapsed, stepsWidth, ratio, tiles };
 }
 
 /** A skeleton that disappeared this recently hands over to the next one at once (no second fade-in). */
 let lastVisibleAt = Number.NEGATIVE_INFINITY;
 const SHOW_DELAY_MS = 150;
 
-export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { label?: string; suite?: boolean }) {
+export function ViewerSkeleton({
+  label = 'Loading replay',
+  suite = false,
+  comparing,
+}: {
+  label?: string;
+  /** The whole suite workspace: its runs sidebar too, and its Grid's tiles when the opened card counted them. */
+  suite?: boolean;
+  /** A comparison: its bar, and this many tiles when it opens in its Grid (0 for one frame). */
+  comparing?: number | undefined;
+}) {
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [hint] = useState(readHint);
   const [shape] = useState(() => layout(hint));
@@ -128,13 +144,23 @@ export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { la
       <span className="visually-hidden" role="status">
         {label}…
       </span>
-      {mobile ? <PhoneSkeleton hint={hint} /> : <DesktopSkeleton hint={hint} stepsWidth={shape.stepsWidth} collapsed={collapsed} />}
+      {mobile ? (
+        <PhoneSkeleton hint={hint} />
+      ) : (
+        <DesktopSkeleton
+          hint={hint}
+          stepsWidth={shape.stepsWidth}
+          collapsed={collapsed}
+          compare={suite || comparing !== undefined}
+          tiles={comparing ?? (suite ? shape.tiles : 0)}
+        />
+      )}
     </main>
   );
   if (!suite || mobile) return viewer;
   return (
     <div className="suite-workspace skeleton-suite" data-instant={instant || undefined}>
-      <SuiteSidebarSkeleton />
+      <SuiteSidebarSkeleton title={hint?.title} runs={hint?.runs} />
       <div className="suite-viewer">{viewer}</div>
     </div>
   );
@@ -265,21 +291,27 @@ function DesktopSkeleton({
   hint,
   stepsWidth,
   collapsed,
+  compare,
+  tiles,
 }: {
   hint: OpenHint | undefined;
   stepsWidth: number | undefined;
   collapsed: boolean;
+  /** A suite or comparison: the bar has the layout switch, and the title is the focused recording's, not yet known. */
+  compare: boolean;
+  /** Recordings a suite's Grid compares (0 when it opens on one run). */
+  tiles: number;
 }) {
   return (
     <>
-      <LoadingTopbar title={hint?.title} mobile={false} progress={<ProgressHint />} />
+      <LoadingTopbar title={compare ? undefined : hint?.title} mobile={false} compare={compare} progress={<ProgressHint />} />
       <div
         className={hint?.steps === 0 ? 'workspace no-steps' : 'workspace'}
         aria-hidden="true"
         style={stepsWidth === undefined ? undefined : ({ '--steps-width': `${stepsWidth}px` } as CSSProperties)}
       >
         <section className="player-region">
-          <PlayerSkeleton poster={hint?.poster} />
+          {tiles > 1 ? <TilesSkeleton count={tiles} /> : <PlayerSkeleton poster={hint?.poster} />}
           <LoadingTransport steps={hint?.steps} />
         </section>
         {hint?.steps === 0 ? null : (
@@ -314,10 +346,6 @@ function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
       </div>
     </>
   );
-}
-
-function SuiteSidebarSkeleton() {
-  return <aside className="suite-sidebar" aria-hidden="true" />;
 }
 
 /** Loading is a single layout, replaced as soon as content is ready. CSS delays its entrance for fast loads. */

@@ -92,11 +92,13 @@ export function writeHint(pageId: string, replayId: string, match: CardMatch | u
   // why: a suite's card shows its landing run's poster: that run's summary shapes the skeleton.
   const posterId = image ? /\/replays\/([^/]+)\/poster/.exec(image.src)?.[1] : undefined;
   const summary = listed.get(posterId ? decodeURIComponent(posterId) : replayId);
+  const strip = match?.card.querySelector<HTMLElement>('.run-strip')?.dataset;
   hintAt = performance.now();
   hint = {
     id: replayId,
     ...(match ? { title: match.link.textContent?.trim() ?? '' } : {}),
     ...(summary ? { steps: summary.steps, source: Boolean(summary.sources?.length) } : {}),
+    ...(strip?.runs ? { runs: Number(strip.runs), recordings: Number(strip.recordings) } : {}),
     ...viewportOf(summary, image),
     // why: the opening still (what rrweb paints first) when it is loaded, else the card's poster.
     ...(image ? openingImage(image.currentSrc || image.src) : {}),
