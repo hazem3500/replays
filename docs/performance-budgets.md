@@ -37,7 +37,7 @@ The same harness accepts string-valued server overrides in `PERF_SERVER_ENV`, in
 Run SPA and SSR on the same source, hardware and dataset (inside your own Boat command):
 
 ```sh
-PERF_SSR_GATE=1 PERF_REVISION=<source-sha> PERF_OUTPUT=.review-artifacts/perf/spa PERF_SERVER_ENV='{"BASE_PATH":"/replays"}' node scripts/perf/run.mjs
+PERF_SSR_GATE=1 PERF_REVISION=<source-sha> PERF_OUTPUT=.review-artifacts/perf/spa PERF_SERVER_ENV='{"BASE_PATH":"/replays","REPLAYS_SSR":"0"}' node scripts/perf/run.mjs
 PERF_SSR_GATE=1 PERF_REVISION=<same-source-sha> PERF_OUTPUT=.review-artifacts/perf/ssr PERF_SERVER_ENV='{"BASE_PATH":"/replays","REPLAYS_SSR":"1"}' node scripts/perf/run.mjs
 node scripts/perf/report.mjs .review-artifacts/perf/ssr/results.json .review-artifacts/perf/spa/results.json .review-artifacts/perf/ssr-gate.md
 ```

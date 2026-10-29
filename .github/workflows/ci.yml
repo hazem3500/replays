@@ -158,7 +158,7 @@ jobs:
           if-no-files-found: ignore
           compression-level: 0
   e2e-ssr:
-    name: End-to-end (server-rendered pages)
+    name: End-to-end (single-page app)
     needs: scope
     if: needs.scope.outputs.runtime == 'true'
     runs-on: ubicloud-standard-4
@@ -175,14 +175,14 @@ jobs:
       - run: pnpm install --frozen-lockfile --prefer-offline
       - uses: ./.github/actions/task-cache
         with:
-          namespace: ci-e2e-ssr
+          namespace: ci-e2e-spa
       - uses: ./.github/actions/browser
-      # why: pages through the embedded TanStack Start build (REPLAYS_SSR=1): navigation, base paths, hosts, sign-in.
+      # why: the stamped index.html the server falls back to (REPLAYS_SSR=0, and replays build-static): navigation, base paths, hosts, sign-in.
       - run: >-
           pnpm test:e2e e2e/smoke.spec.ts e2e/navigation.spec.ts e2e/skeleton.spec.ts e2e/branding-and-base-path.spec.ts
           e2e/hosts-and-static.spec.ts e2e/sign-in.spec.ts e2e/settings-mobile.spec.ts e2e/suite-workspace.spec.ts
         env:
-          REPLAYS_SSR: '1'
+          REPLAYS_SSR: '0'
           CHROMIUM_NO_SANDBOX: '1'
   integration:
     name: Recorder, render and plugin browser tests

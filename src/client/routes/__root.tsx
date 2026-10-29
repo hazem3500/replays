@@ -26,7 +26,7 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 function Document({ children }: { children: ReactNode }) {
   return (
     // why: index.html's inline script sets data-theme before hydration.
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" data-rendered="" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
