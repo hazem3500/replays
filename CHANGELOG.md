@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- The viewer's top bar actions (`core:compare`, `core:edit`, `core:info`, `core:link`, `core:download`), its Context
+  tab sections (`core:summary`, `core:sources`, `core:fields`) and its seek bar tracks (`core:steps`, `core:errors`,
+  `core:highlights`) are slot items: `configureSlot` can reorder or hide them like the inspector's tabs. Plugin
+  context sections are placed where a host's order puts them.
 - Compared recordings go by name: each tile, the inspector's "Showing" switch and the Network and Performance panels
   name a recording by what tells it apart ("Before", "Firefox", "Run 3": the parts every label shares are dropped)
   beside one colour swatch, instead of A, B, C. Vitals and request details now say how each other recording did.

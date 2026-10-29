@@ -39,7 +39,7 @@ import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
 import { DownloadVideoButton, usePhoneDownload } from './viewer/DownloadVideo.tsx';
-import { copyLinkItems, CopyLinkButton, EditButton } from './viewer/TopbarActions.tsx';
+import { copyLinkItems, CopyLinkButton, EditButton, ActionsBar } from './viewer/TopbarActions.tsx';
 import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
@@ -813,15 +813,16 @@ const ViewerHeader = memo(function ViewerHeader({
       menuFooter={menuFooter}
       alwaysMenu
       actions={
-        // One quiet icon set: edit, details, copy link and download.
-        <>
-          {leadingActions}
-          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
-          <ReplayInfoButton bundle={bundle} suite={suite} />
-          <CopyLinkButton suiteHref={suite?.href} />
-          <DownloadVideoButton meta={bundle.meta} />
-          {pluginActions}
-        </>
+        <ActionsBar
+          actions={{
+            'core:compare': leadingActions,
+            'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
+            'core:info': <ReplayInfoButton bundle={bundle} suite={suite} />,
+            'core:link': <CopyLinkButton suiteHref={suite?.href} />,
+            'core:download': <DownloadVideoButton meta={bundle.meta} />,
+          }}
+          plugins={pluginActions}
+        />
       }
     />
   );
@@ -873,8 +874,12 @@ function PhoneHeader({
         menuItems={[detailsItem, ...copyLinkItems(player, steps, suite?.href), ...menuItems, ...download.items]}
         actions={
           <>
-            {leadingActions}
-            {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
+            <ActionsBar
+              actions={{
+                'core:compare': leadingActions,
+                'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
+              }}
+            />
             {download.progress}
           </>
         }

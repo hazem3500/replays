@@ -11,6 +11,9 @@
 
 .workspace { --steps-default: var(--rail-width); position: relative; }
 
+/* The top bar's `viewer.actions` items (TopbarActions.tsx) keep the bar's own flex row: their wrappers have no box. */
+.viewer-actions, .viewer-action { display: contents; }
+
 /* Snaps, resets and folds settle with the splitter's spring; drags follow the pointer directly. */
 .workspace[data-splitter-settling] { transition: grid-template-columns var(--splitter-settle) var(--splitter-spring); }
 .app-shell[data-splitter-settling] { transition: grid-template-rows var(--splitter-settle) var(--splitter-spring); }

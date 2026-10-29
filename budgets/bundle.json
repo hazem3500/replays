@@ -209,8 +209,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 633,
-      "brotli": 585
+      "gzip": 608,
+      "brotli": 557
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 640
+      "brotli": 605
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -273,14 +273,14 @@
       "brotli": 22715
     },
     "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5150,
-      "gzip": 1400,
-      "brotli": 1200
+      "raw": 5200,
+      "gzip": 1420,
+      "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 59480,
-      "gzip": 21120,
-      "brotli": 18380
+      "raw": 60058,
+      "gzip": 21441,
+      "brotli": 18678
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -1133,26 +1133,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/117"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.css",
-      "cap": {
-        "raw": 5150,
-        "gzip": 1400,
-        "brotli": 1200
-      },
-      "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
-      "pr": "https://github.com/hazem3500/replays/pull/121"
-    },
-    {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 59480,
-        "gzip": 21120,
-        "brotli": 18380
-      },
-      "reason": "Phone top bar: details, the copy-link choices and Compare become More items (with their icons), plus the long-press and copied-flash hooks; includes #121's Splitter, which CI measures in this stack.",
-      "pr": "https://github.com/hazem3500/replays/pull/125"
-    },
-    {
       "file": "dist/client/assets/composite-HASH.js",
       "cap": {
         "raw": 94002,
@@ -1249,6 +1229,26 @@
       },
       "reason": "No source change: the compare page glue names lazy viewer chunks by their hashes, which change with the loading parts; measured against main: 0 B raw, 2 B gzip, +30 B brotli (567 against main's 537 and a 554-byte cap). Replaces #105's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/127"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 60058,
+        "gzip": 21441,
+        "brotli": 18678
+      },
+      "reason": "Top bar actions, Context sections and seek bar tracks resolve through their viewer slots. Measured in CI against main (#121 and #125 already merged): +987 B raw, +354 B gzip, +333 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/133"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.css",
+      "cap": {
+        "raw": 5200,
+        "gzip": 1420,
+        "brotli": 1220
+      },
+      "reason": "The slot wrappers' display: contents rule beside the viewer's layout tokens and seam styles (#121).",
+      "pr": "https://github.com/hazem3500/replays/pull/133"
     }
   ]
 }

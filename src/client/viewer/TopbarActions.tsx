@@ -1,5 +1,5 @@
 import { Clock3Icon, LayersIcon, LinkIcon, ListOrderedIcon } from 'lucide-react';
-import { type RefObject, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
@@ -14,6 +14,8 @@ import { useFlash } from '../hooks/use-flash.ts';
 import { useLongPress } from '../hooks/use-long-press.ts';
 import { stepPermalink, timePermalink } from '../permalink.ts';
 import { type Playback, usePlayer } from '../player.ts';
+import { resolveSlot } from '../plugins/registry.ts';
+import type { SlotDescriptor } from '../plugins/slots.ts';
 import { editHref } from '../routing/links.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { notify as showToast } from '../toast.ts';
@@ -239,5 +241,39 @@ export function CopyLinkButton({ suiteHref }: { suiteHref?: string | undefined }
         }}
       />
     </>
+  );
+}
+
+export const ACTIONS_SLOT = 'viewer.actions';
+
+/** The top bar's built-in actions, in their default order: compare first, then edit, details, copy link, download. */
+export type CoreAction = 'core:compare' | 'core:edit' | 'core:info' | 'core:link' | 'core:download';
+const CORE_ACTIONS: readonly (readonly [CoreAction, number])[] = [
+  ['core:compare', 50],
+  ['core:edit', 100],
+  ['core:info', 200],
+  ['core:link', 300],
+  ['core:download', 400],
+];
+
+/**
+ * The top bar's actions as `viewer.actions` items: hosts may reorder or hide the built-ins (`configureSlot`). Plugin bar
+ * actions keep their own renderer and follow the built-ins.
+ */
+export function ActionsBar({ actions, plugins }: { actions: Partial<Record<CoreAction, ReactNode>>; plugins?: ReactNode }) {
+  const builtins: SlotDescriptor<undefined, ReactNode>[] = CORE_ACTIONS.flatMap(([id, order]) =>
+    actions[id] ? [{ id, order, render: () => actions[id] }] : [],
+  );
+  return (
+    <span className="viewer-actions" data-slot={ACTIONS_SLOT}>
+      {resolveSlot(ACTIONS_SLOT, builtins, undefined)
+        .filter((descriptor) => descriptor.id.startsWith('core:'))
+        .map((descriptor) => (
+          <span key={descriptor.id} className="viewer-action" data-slot-item={descriptor.id}>
+            {descriptor.render(undefined)}
+          </span>
+        ))}
+      {plugins}
+    </span>
   );
 }
