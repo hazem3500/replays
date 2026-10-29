@@ -1006,16 +1006,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 246064,
-        "gzip": 42460,
-        "brotli": 35304
-      },
-      "reason": "The editor loading state draws the cursor panel's real headings and controls, so cursor-inspector.css and inspector.css move from the lazy Editor CSS into the eager stylesheet (the Editor CSS shrinks by the same rules), with the skeleton's transport, ruler and clip lane; measured against main: +13123 B raw, +2176 B gzip, +1648 B brotli. Replaces #109's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/142"
-    },
-    {
       "file": "dist/client/assets/player-HASH.js",
       "cap": {
         "gzip": 98168,
@@ -1023,16 +1013,6 @@
         "raw": 315990
       },
       "reason": "Cursor themes take a click effect chosen apart from the style; measured against main: +670 B raw, +215 B gzip, +222 B brotli. Replaces #130's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/142"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 247932,
-        "gzip": 43379,
-        "brotli": 36099
-      },
-      "reason": "The editor loading state's real cursor panel and timeline styles load with the first page (see main-HASH.css); measured against main: +13123 B raw, +2176 B gzip, +1648 B brotli. Replaces #109's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
@@ -1052,6 +1032,26 @@
       },
       "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 247374,
+        "gzip": 42817,
+        "brotli": 35544
+      },
+      "reason": "Error pages (viewer, editor, suite, compare) take EmptyState's error tone: the alert tile and its circle-alert mask, the status line and centred 32/44 px actions. Measured in CI against fresh main: main.css +1,310 B raw / +240 B Brotli. Replaces #142's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/144"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 249239,
+        "gzip": 43734,
+        "brotli": 36337
+      },
+      "reason": "Error pages (viewer, editor, suite, compare) take EmptyState's error tone: the alert tile and its circle-alert mask, the status line and centred 32/44 px actions. Measured in CI against fresh main: main.css +1,310 B raw / +240 B Brotli. Replaces #142's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/144"
     }
   ]
 }
