@@ -16,7 +16,7 @@ so every change to the surface shows up in a diff).
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions | `/viewer` | Public |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` / `WebAuthAdapter` / `AnyAuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
-| Browser-safe in-page recorder, default UI, completion/theme contracts and upload helpers (`createTokenUpload`, `createHttpUpload`, `IssueUploadError`) | `/recorder` | Public |
+| Browser-safe in-page recorder, default UI, messages and formatting (`RecorderMessages`, `defaultRecorderMessages`, `RecorderFormat`; keys are added, not renamed), completion/theme contracts and upload helpers (`createTokenUpload`, `createHttpUpload`, `IssueUploadError`) | `/recorder` | Public |
 | Capture and data model: recording, bundle building, sanitising, source providers, `ReplayBundle` and friends | `/capture`, `.` | Public |
 | The replay format (`replay.json`, `meta.version`, the context block) | – | Public: changes are additive, or bump `version` and keep reading the old one |
 | HTTP API (`/api/replays`, `/api/suites`, `/api/config`, `/api/me`, upload receipts) and environment variables | – | Public: changes are additive |

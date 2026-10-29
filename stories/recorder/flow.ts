@@ -1,5 +1,5 @@
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import { DEFAULT_MESSAGES } from '../../src/recorder/index.ts';
+import { defaultRecorderMessages } from '../../src/recorder/index.ts';
 import type { UploadEndpoint } from './upload-endpoint.ts';
 
 const PRIVATE_NAME = 'Ada Private 7362';
@@ -43,6 +43,12 @@ export async function inRecorderUi<T extends Element>(find: () => T | undefined)
   return found;
 }
 
+/** The default result copy; it reads the same for every receipt and error. */
+export const resultCopy = {
+  sent: defaultRecorderMessages.sent({ reference: 'demo-42', receipt: { replayId: 'demo-42' } }),
+  failed: defaultRecorderMessages.failed({ error: new Error('Upload failed'), canRetry: true }),
+};
+
 const uiButton = (name: string) => inRecorderUi(() => recorderUi.button(name));
 
 export async function expectStatus(canvasElement: HTMLElement, status: string) {
@@ -52,7 +58,7 @@ export async function expectStatus(canvasElement: HTMLElement, status: string) {
 
 export async function startRecording(canvasElement: HTMLElement) {
   await userEvent.click(within(canvasElement).getByRole('button', { name: 'Report a problem' }));
-  await userEvent.click(await uiButton(DEFAULT_MESSAGES.consentAccept));
+  await userEvent.click(await uiButton(defaultRecorderMessages.consentAccept));
   await expectStatus(canvasElement, 'recording');
 }
 
@@ -65,14 +71,14 @@ export async function fillCheckout(canvasElement: HTMLElement) {
 }
 
 export async function stopAndReview(canvasElement: HTMLElement) {
-  await userEvent.click(await uiButton(DEFAULT_MESSAGES.stop));
+  await userEvent.click(await uiButton(defaultRecorderMessages.stop));
   await expectStatus(canvasElement, 'review');
-  await inRecorderUi(() => recorderUi.heading(DEFAULT_MESSAGES.reviewTitle));
+  await inRecorderUi(() => recorderUi.heading(defaultRecorderMessages.reviewTitle));
 }
 
 export async function send() {
   await userEvent.type(await inRecorderUi(recorderUi.note), NOTE);
-  await userEvent.click(await uiButton(DEFAULT_MESSAGES.send));
+  await userEvent.click(await uiButton(defaultRecorderMessages.send));
 }
 
 /** Everything the endpoint received is what a real server would store; check it, not the recorder's memory. */
