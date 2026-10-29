@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 
 import { indexSearchSchema } from '../../shared/schemas/search.ts';
 import { indexReplaysQuery, indexSuitesQuery } from '../index/index-queries.ts';
-import { filtersFromSearch, INDEX_SUITES_URL, renderedView, searchFromFilters } from '../ReplayIndex.tsx';
+import { filtersFromSearch, INDEX_SUITES_URL, renderedView, searchFromFilters } from '../index/route-state.ts';
 import { stringifySearch } from '../routing/search.ts';
 
 /**

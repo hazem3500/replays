@@ -2,6 +2,19 @@ import { expect, test } from '@playwright/test';
 
 import { origin, gotoHydrated } from './support.ts';
 
+test('a direct replay visit loads the index interface only when returning home', async ({ page }) => {
+  const indexRequests: string[] = [];
+  page.on('request', (request) => {
+    if (/\/ReplayIndex-[^/]+\.js/.test(request.url())) indexRequests.push(request.url());
+  });
+  await gotoHydrated(page, `${origin()}/r/demo-shop`);
+  await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+  expect(indexRequests).toEqual([]);
+  await page.getByRole('link', { name: 'All replays', exact: true }).click();
+  await expect(page.locator('a.row-target[href="/r/demo-shop"]').first()).toBeVisible();
+  expect(indexRequests).toHaveLength(1);
+});
+
 test('opening a replay uses one page crossfade and one loading layout', async ({ page }) => {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
