@@ -21,6 +21,8 @@ import { sourceLook } from '../source-looks.ts';
 import { type FieldRow, type FieldValue, fieldGroups, httpsHref, type Signal, type SignalState } from './context-fields.ts';
 import { ViewerContext } from './context.ts';
 import { Empty } from './Empty.tsx';
+import type { SlotDescriptor } from '../plugins/slots.ts';
+import { CONTEXT_SECTIONS_SLOT, contextSections } from './context-sections.tsx';
 import { SourceIcon } from '@/components/brand-icon.tsx';
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Hint } from '@/components/icon-button.tsx';
@@ -70,15 +72,29 @@ export function ContextPanel({
   }
   return (
     <div data-testid="context-panel" className="table-scroll ctx">
-      <div className="ctx-inner">
-        <Summary context={context} />
-        {context.sources?.length ? <Sources sources={context.sources} /> : null}
-        <Groups context={context} schema={schema} />
-        {sections}
+      <div className="ctx-inner" data-slot={CONTEXT_SECTIONS_SLOT}>
+        {contextSections(CORE_SECTIONS, { context, schema }, sections)}
       </div>
     </div>
   );
 }
+
+interface SectionContext {
+  context: ReplayContext;
+  schema?: FieldSchema | undefined;
+}
+
+/** The tab's built-in blocks in `viewer.context.sections` order; plugin sections rank after them unless a host reorders. */
+const CORE_SECTIONS: readonly SlotDescriptor<SectionContext, ReactNode>[] = [
+  { id: 'core:summary', order: 100, render: ({ context }) => <Summary context={context} /> },
+  {
+    id: 'core:sources',
+    order: 200,
+    when: ({ context }) => Boolean(context.sources?.length),
+    render: ({ context }) => <Sources sources={context.sources ?? []} />,
+  },
+  { id: 'core:fields', order: 300, render: ({ context, schema }) => <Groups context={context} schema={schema} /> },
+];
 
 /** One plugin block in the Context tab: the same heading as a built-in group, the plugin's DOM below it. */
 export function ContextSection({ title, testId, children }: { title: string; testId: string; children: ReactNode }) {
@@ -321,7 +337,7 @@ function FieldList({ rows, nested = false }: { rows: FieldRow[]; nested?: boolea
 function FieldValueView({ value }: { value: FieldValue }): ReactElement {
   switch (value.kind) {
     case 'empty':
-      return <span className="ctx-value ctx-muted">—</span>;
+      return <span className="ctx-value ctx-muted">Empty</span>;
     case 'text':
       return <Text value={value.text} />;
     case 'boolean':

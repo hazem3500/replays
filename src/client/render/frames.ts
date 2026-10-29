@@ -145,10 +145,20 @@ export function dirtyFrames(options: {
 }
 
 /** Cursor pose rounded to what a frame can show: sub-pixel moves and tiny rotations do not redraw. */
-export function poseKey(pose: { visible: boolean; x: number; y: number; heading: number; scale: number; opacity?: number }) {
+export function poseKey(pose: {
+  visible: boolean;
+  x: number;
+  y: number;
+  heading: number;
+  scale: number;
+  opacity?: number;
+  press?: number;
+}) {
   const opacity = pose.opacity ?? 1;
   if (!pose.visible || opacity <= 0) return 'hidden';
-  return `${pose.x.toFixed(1)},${pose.y.toFixed(1)},${pose.heading.toFixed(2)},${pose.scale.toFixed(3)},${opacity.toFixed(2)}`;
+  // why: a theme's click ripple or pulse keeps changing after the squish ends, so a press is part of the frame.
+  const press = pose.press !== undefined && pose.press >= 0 ? `,p${Math.round(pose.press / 10)}` : '';
+  return `${pose.x.toFixed(1)},${pose.y.toFixed(1)},${pose.heading.toFixed(2)},${pose.scale.toFixed(3)},${opacity.toFixed(2)}${press}`;
 }
 
 /** How long after the first full snapshot the poster is taken: the page has painted and settled, usually before the first step. */

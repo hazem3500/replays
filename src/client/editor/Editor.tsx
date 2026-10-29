@@ -44,9 +44,9 @@ import { formatClock, type ReplayBundle } from '../../shared/replay.ts';
 import { EditsConflictError, EditsUnavailableError, editsQuery, type LoadedEdits, saveEdits } from '../edits.ts';
 import { collectErrors } from '../issues.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
-import { navigate } from '../navigation.ts';
+import { navigate } from '../routing/navigate.ts';
 import { PlayerContext, ReplayController, usePlayerState, usePlayhead, useViewport } from '../player.ts';
-import { replayHref } from '../route.ts';
+import { replayHref } from '../routing/links.ts';
 import { nextStepIndex, previousStepIndex } from '../timeline.ts';
 import { notify } from '../toast.ts';
 import { Topbar, type TopbarMenuItem } from '../Topbar.tsx';
@@ -1240,6 +1240,9 @@ function Durations({ original, edited }: { original: number; edited: number }) {
         <>
           <span aria-hidden="true">→</span>
           <strong data-testid="edited-length">{formatClock(edited)}</strong>
+          <span className="editor-durations-note" aria-hidden="true">
+            after edits
+          </span>
         </>
       ) : null}
     </span>

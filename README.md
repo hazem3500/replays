@@ -13,8 +13,8 @@ can host yourself.
 - **One timeline.** rrweb events, agent steps, console, network and performance share the same millisecond clock. Click a
   step, a request or a console line and the page jumps there.
 - **Built for debugging.** Error markers on the scrubber (console errors, failed requests), previous/next error,
-  permalinks (`?t=6.9` or `#step-3`), keyboard shortcuts, a Context tab for test metadata, and a Waterfall tab for
-  overlapping requests, actions and performance signals.
+  permalinks (`?t=6.9` or `#step-3`), keyboard shortcuts, a Context tab for test metadata, and Network
+  and Performance tabs that lead with what failed or was slow, and when.
 - **Capture that survives navigations.** The recorder is registered over the Chrome DevTools Protocol before the first
   page loads, pulls chunks every second and flushes on `pagehide`.
 - **Private by default.** Inputs are masked at capture time; cookies, credential headers, URL credentials and sensitive
@@ -145,17 +145,25 @@ const tracks = await session.stop(); // { events, console, performance, origin, 
 `stop()` gives the page-side tracks; combine them with a HAR (`networkEntries`) and your steps into a
 `ReplayBundle` (see `src/capture/capture.ts` for the reference assembly) and upload it.
 
-### Inspect the waterfall
+### Inspect network and performance
 
-Open **Waterfall** in the replay's diagnostics panel. Requests share a horizontal clock with action/paint points
-and measured task spans. Select a row to seek the existing player and open details; ↑/↓, Home/End and Escape work
-from the keyboard. Search and track/state filters help isolate failures, slow requests (at least 500 ms measured),
-incomplete requests, or invalid durations. On narrow screens, scroll the timeline horizontally; event labels stay pinned.
+**Network** opens on one toolbar row: status chips that are also the summary (All, Failed, Slow at 500 ms or more,
+No response), a type menu and search. A busy recording also gets a ribbon on the seek bar's own time axis: request
+density, failures as red ticks, slow spans in amber and the playhead. Click the ribbon to seek, or drag across it to
+list only that stretch. Each row shows when the request started (click to seek), its status, its duration on a log scale
+and the action it belongs to. Select a row for its detail beside the list (in its place on a phone): how long it took
+against the recording's median, the step it belongs to, what else was in flight on the request's own scale, the
+retained headers, Copy URL and Copy as cURL. ↑/↓, Home/End and Escape work from the keyboard.
 
-With saved edits, bars follow the edited replay clock through trims, cuts and speed-ups. Labels and request details
-retain source measurements; the selected event also shows its visible elapsed time. Requests crossing removed time
-keep their surviving portions, even when their start was cut. Actions and paints remain points, never inferred spans.
-Missing responses have unknown duration. Older bundles work with the tracks they contain; no additional capture data is needed.
+**Performance** leads with verdicts: first and largest paint, the slowest interaction, the longest task and total
+blocking time, each marked Good, Needs work or Poor, or "Not captured" when the browser couldn't observe it. Below
+them are the slow moments, worst first or in time order. A click's pointer, key and input events count as one moment,
+and each moment says what it was during and what it most likely waited on: a long task, requests in flight, or the
+page's own code. Script attribution is not captured, so the detail says so instead of guessing.
+
+With saved edits, rows follow the edited replay clock through trims, cuts and speed-ups, and details keep the source
+measurements. Missing responses have unknown duration. Older bundles work with the tracks they contain; no additional
+capture data is needed.
 
 ## Architecture
 

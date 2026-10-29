@@ -14,7 +14,7 @@ import type { ReplayStore } from '../store.ts';
 /** The parts of the deployment the API routes read: only these, so the routes stay mountable without the Node app. */
 export interface ApiDeployment {
   store: ReplayStore;
-  auth: Pick<AuthAdapter, 'name' | 'cliDeviceAuth'>;
+  auth: Pick<AuthAdapter, 'name' | 'cliDeviceAuth' | 'signOutUrl'>;
   sources: SourceProviders;
   views: ViewCatalog;
   branding: BrandingConfig;

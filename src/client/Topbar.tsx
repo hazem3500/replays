@@ -16,10 +16,11 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger, useCanHover } from '@/components/ui/tooltip.tsx';
 import { cn } from '@/lib/utils.ts';
 
-import { indexReturnHref } from './route.ts';
+import { indexReturnHref } from './routing/links.ts';
 import { productName } from './config.ts';
 import { ThemeSwitch, useThemeControls } from './theme.tsx';
 import { SettingsButton } from './settings/Settings.tsx';
+import { AccountMenu, accountMenuItems, useSignedIn } from './account/AccountMenu.tsx';
 
 /**
  * The quiet header shared by every page. Left: a back arrow to all replays and
@@ -80,6 +81,7 @@ export function Topbar({
   /** Phones (the index): one sheet in place of the theme switch and "More"; Settings stays mounted for its dialog. */
   phoneMenu?: ReactNode;
 }) {
+  const account = useSignedIn();
   return (
     <header className={cn('topbar app-topbar', compact && 'topbar-compact')}>
       {title === undefined && root ? (
@@ -124,7 +126,16 @@ export function Topbar({
         {/* Phones: the theme is a "More" item, so the bar keeps room for the title at 360 px. */}
         {compact || phoneMenu ? null : <ThemeSwitch />}
         {title === undefined ? <SettingsButton /> : null}
-        {phoneMenu ?? <MoreMenu items={menuItems} extra={menu} footer={menuFooter} theme={compact} always={alwaysMenu} />}
+        {account && !compact ? <AccountMenu account={account} /> : null}
+        {phoneMenu ?? (
+          <MoreMenu
+            items={compact ? [...menuItems, ...accountMenuItems(account)] : menuItems}
+            extra={menu}
+            footer={menuFooter}
+            theme={compact}
+            always={alwaysMenu}
+          />
+        )}
       </div>
     </header>
   );

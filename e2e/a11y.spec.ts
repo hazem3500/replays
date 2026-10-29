@@ -108,6 +108,35 @@ for (const theme of THEMES) {
       await audit(page, 'viewer, shortcut sheet');
     });
 
+    test('viewer: Comments tab, empty, with threads and reactions, and while composing', async ({ page }) => {
+      test.slow();
+      const origin = server().origin;
+      const id = uniqueId('a11y-comments');
+      const bundle = (await (await page.request.get(`${origin}/api/replays/demo-shop`)).json()) as { meta: { id: string; title: string } };
+      bundle.meta.id = id;
+      bundle.meta.title = 'Comments review';
+      expect((await page.request.post(`${origin}/api/replays`, { data: bundle })).status()).toBe(201);
+      await openReplay(page, `${origin}/r/${id}`);
+      await page.getByTestId('comments-tab').click();
+      await expect(page.getByTestId('comments-empty')).toBeVisible();
+      await audit(page, 'viewer, comments empty');
+
+      const post = async (data: Record<string, unknown>) =>
+        (await (await page.request.post(`${origin}/api/replays/${id}/comments`, { data })).json()) as { id: string };
+      const root = await post({ body: 'The coupon error is unclear', at: 2000 });
+      await post({ body: 'Agreed, it needs the reason', parentId: root.id });
+      await post({ emoji: '🎉', at: 3000 });
+      const done = await post({ body: 'Total wraps on small screens', at: 5000 });
+      await page.request.patch(`${origin}/api/replays/${id}/comments/${done.id}`, { data: { resolved: true } });
+      await post({ body: 'Overall this flow reads well' });
+      await page.reload();
+      await page.getByTestId('comments-tab').click();
+      await expect(page.getByTestId('comment-thread')).toHaveCount(3);
+      await audit(page, 'viewer, comments with threads');
+      await page.getByTestId('comment-input').fill('A new note');
+      await audit(page, 'viewer, comments composing');
+    });
+
     test('imported rrweb recording', async ({ page }) => {
       await openReplay(page, `${server().origin}/r/human-demo`);
       await audit(page, 'imported recording');
@@ -172,7 +201,7 @@ for (const theme of THEMES) {
       await page.keyboard.press('Escape');
 
       await openReplay(page, `${server().origin}/r/demo-shop`);
-      for (const tab of ['steps', 'console', 'network', 'performance', 'context']) {
+      for (const tab of ['steps', 'console', 'network', 'performance', 'context', 'comments']) {
         await page.getByTestId(`${tab}-tab`).click();
         await expect(page.getByTestId(`${tab}-tab`)).toHaveAttribute('aria-selected', 'true');
         await audit(page, `phone viewer, ${tab} tab`);
@@ -180,7 +209,7 @@ for (const theme of THEMES) {
       await context.close();
     });
 
-    test('phone Performance event rows keep useful targets and keyboard evidence inspection', async ({ browser }) => {
+    test('phone Performance moments keep useful targets and keyboard evidence inspection', async ({ browser }) => {
       test.slow();
       const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
       const page = await context.newPage();
@@ -188,18 +217,18 @@ for (const theme of THEMES) {
       await openReplay(page, `${server().origin}/r/demo-shop`);
       await page.getByTestId('performance-tab').click();
       const list = page.getByTestId('performance-events');
-      const first = list.getByRole('button').first();
+      const first = list.locator('[data-performance-id] button[aria-expanded]').first();
       await expect(first).toBeVisible();
       const bounds = await first.boundingBox();
       expect(bounds!.height).toBeGreaterThanOrEqual(44);
       await first.focus();
       await first.press('End');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      await list.locator('[aria-expanded="true"]').press('Escape');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
-      await first.click();
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      await audit(page, 'phone Performance events and selected evidence');
+      const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
+      await expect(evidence).toBeVisible();
+      await audit(page, 'phone Performance selected evidence');
+      await evidence.getByRole('button', { name: 'Back to the list' }).click();
+      await expect(evidence).toBeHidden();
+      await audit(page, 'phone Performance moments');
       await context.close();
     });
   });

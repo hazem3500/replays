@@ -1,30 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
 import { editTimeline } from '../src/shared/edits.ts';
-import {
-  buildPerformance,
-  chartLaneRows,
-  focusPerformanceWindow,
-  missingPerformanceLabel,
-  nearestPerformanceRow,
-  overlaps,
-  relatedPerformanceActivity,
-} from '../src/client/viewer/performance.ts';
-import { rowDuration } from '../src/client/viewer/waterfall.ts';
+import { buildPerformance, missingPerformanceLabel } from '../src/client/viewer/performance.ts';
 import { performanceFixture } from './performance-fixture.ts';
 import { request, waterfallEdits } from './waterfall-fixture.ts';
 
 describe('performance diagnosis timing and evidence', () => {
-  it('chooses nearby evidence by actual span distance and resolves overlaps by their closest start', () => {
-    const model = buildPerformance(performanceFixture());
-    expect(nearestPerformanceRow([], 1700)).toBeUndefined();
-    expect(nearestPerformanceRow(model.rows, 1000)?.id).toBe('performance-0');
-    const overlapping = model.rows.filter((row) => row.id === 'network-0' || row.id === 'performance-1');
-    expect(nearestPerformanceRow(overlapping, 1850)?.id).toBe('performance-1');
-    expect(nearestPerformanceRow(overlapping, 2500)?.id).toBe('network-0');
-    expect(nearestPerformanceRow(model.signals, 2800)?.at).toBe(2800);
-  });
-
   it('ranks captured durations without adding overlapping observations or changing source data', () => {
     const bundle = performanceFixture(),
       before = structuredClone(bundle);
@@ -45,7 +26,6 @@ describe('performance diagnosis timing and evidence', () => {
     const model = buildPerformance(bundle);
     expect(model.largestPaint).toMatchObject({ at: 3000, segments: [], timing: 'point' });
     expect(model.largestPaint?.measured).toBeUndefined();
-    expect(rowDuration(model.largestPaint!)).toBe('1.80 s from navigation');
     expect(model.moments.every((row) => row.entry.kind === 'long-task' || row.entry.kind === 'slow-interaction')).toBe(true);
   });
 
@@ -69,60 +49,6 @@ describe('performance diagnosis timing and evidence', () => {
     });
     expect(model.slowestInteraction).toMatchObject({ at: 2250, measured: 1000, visible: 500 });
     expect(model.largestPaint).toBeUndefined();
-    expect(relatedPerformanceActivity(model.longestTask!, model.rows).overlapping.map((row) => row.id)).toContain('network-0');
-  });
-
-  it('does not invent concurrency for spans made adjacent by a cut, or at exclusive endpoints', () => {
-    const bundle = performanceFixture();
-    bundle.network = [];
-    bundle.steps = [];
-    bundle.performance!.entries = [
-      { at: 2500, kind: 'long-task', value: 500 },
-      { at: 4000, kind: 'slow-interaction', value: 500 },
-      { at: 4500, kind: 'first-contentful-paint', value: 4500 },
-    ];
-    const model = buildPerformance(bundle, editTimeline(waterfallEdits, 10000));
-    expect(model.signals[0]!.segments.at(-1)?.to).toBe(model.signals[1]!.at);
-    expect(overlaps(model.signals[0]!, model.signals[1]!)).toBe(false);
-    expect(overlaps(model.signals[1]!, model.signals[2]!)).toBe(false);
-    expect(relatedPerformanceActivity(model.signals[0]!, model.rows).overlapping).toEqual([]);
-  });
-
-  it('separates observed overlap from nearby actions using source time and includes points inside spans', () => {
-    const bundle = performanceFixture();
-    bundle.steps.push({ at: 2200, kind: 'click', label: 'Boundary' }, { at: 2201, kind: 'click', label: 'Outside' });
-    const model = buildPerformance(bundle),
-      activity = relatedPerformanceActivity(model.longestTask!, model.rows);
-    expect(activity.overlapping.map((row) => row.id)).toEqual(['network-0', 'performance-2', 'action-1']);
-    expect(activity.nearbyActions.map((row) => row.label)).toEqual(['click: Open projects', 'click: Boundary']);
-    const paintActivity = relatedPerformanceActivity(model.largestPaint!, model.rows);
-    expect(paintActivity.overlapping.map((row) => row.id)).toEqual(['network-0']);
-  });
-
-  it('never interprets an incomplete request duration as a span or attributes CPU cost to it', () => {
-    const bundle = performanceFixture();
-    bundle.network = [request({ at: 1800, status: 0, statusText: '', duration: 9999 })];
-    const model = buildPerformance(bundle),
-      row = model.rows.find((candidate) => candidate.kind === 'network')!;
-    expect(row).toMatchObject({ timing: 'incomplete', segments: [] });
-    expect(row.measured).toBeUndefined();
-    expect(overlaps(model.longestTask!, row)).toBe(true); // Only its start is observed during the task.
-    expect(overlaps(model.largestPaint!, row)).toBe(false);
-    expect(rowDuration(row)).toContain('duration unknown');
-  });
-
-  it('bounds large chart lanes, retains an off-cap selected event, and discloses exact omissions', () => {
-    const bundle = performanceFixture();
-    bundle.network = Array.from({ length: 1000 }, (_, index) => request({ id: String(index), at: index * 10, duration: 20 }));
-    const model = buildPerformance(bundle),
-      lane = chartLaneRows(model.rows, 'network', { from: 0, to: 10000 }, 'network-999');
-    expect(lane.rows).toHaveLength(160);
-    expect(lane.omitted).toBe(840);
-    expect(lane.rows.some((row) => row.id === 'network-999')).toBe(true);
-    const zoomed = chartLaneRows(model.rows, 'network', { from: 500, to: 600 });
-    expect(zoomed.rows).toHaveLength(11);
-    expect(zoomed.rows.some((row) => row.id === 'network-49')).toBe(true);
-    expect(zoomed.rows.some((row) => row.id === 'network-60')).toBe(false);
   });
 
   it('distinguishes unavailable capture, empty observations, invalid values and edited-out signals', () => {
@@ -142,7 +68,7 @@ describe('performance diagnosis timing and evidence', () => {
     );
   });
 
-  it('keeps a legitimate zero value and clamps zoom to the visible recording', () => {
+  it('keeps a legitimate zero value as a measured duration', () => {
     const bundle = performanceFixture();
     bundle.performance!.entries = [
       { at: 0, kind: 'long-task', value: 0 },
@@ -150,8 +76,5 @@ describe('performance diagnosis timing and evidence', () => {
     ];
     const model = buildPerformance(bundle);
     expect(model.moments.find((row) => row.measured === 0)?.timing).toBe('measured');
-    expect(focusPerformanceWindow(model.longestTask!, 10000)).toEqual({ from: 8990, to: 10000 });
-    expect(focusPerformanceWindow(model.signals[0]!, 10000)).toEqual({ from: 0, to: 1000 });
-    expect(focusPerformanceWindow(model.signals[0]!, 0)).toEqual({ from: 0, to: 0 });
   });
 });

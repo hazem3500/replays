@@ -1,4 +1,4 @@
-import { apiUrl } from '../route.ts';
+import { apiUrl } from '../api/fetch.ts';
 import { compressBody, type PreparedUpload, type UploadEdits, UploadError, uploadErrorMessage, uploadRequest } from './prepare.ts';
 
 export interface UploadProgress {

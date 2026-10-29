@@ -4,7 +4,9 @@ import type { ReactNode } from 'react';
 import { Button } from '@/components/ui/button.tsx';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer.tsx';
 
+import { accountMenuItems } from '../account/AccountMenu.tsx';
 import { productName } from '../config.ts';
+import type { Account } from '../queries.ts';
 import { openSettings } from '../settings/Settings.tsx';
 import { useThemeControls } from '../theme.tsx';
 
@@ -25,13 +27,23 @@ export interface IndexPhoneMenuItem {
   hint?: string;
   icon: ReactNode;
   onSelect: () => void;
+  /** A link row instead of an action: Sign out leaves for the server, so the sheet needs no closing first. */
+  href?: string;
 }
 
-/** The sheet's rows: the built-ins, then any the page adds (`items`). */
-export function phoneMenuItems({ onUpload }: { onUpload?: () => void }): IndexPhoneMenuItem[] {
+/** The sheet's rows: the built-ins, then the signed-in account's (who, and Sign out where the auth mode has one). */
+export function phoneMenuItems({ onUpload, account }: { onUpload?: () => void; account?: Account }): IndexPhoneMenuItem[] {
   return [
     ...(onUpload ? [{ id: 'upload', label: strings.upload, hint: strings.uploadHint, icon: <UploadIcon />, onSelect: onUpload }] : []),
     { id: 'settings', label: strings.settings, hint: strings.settingsHint, icon: <SettingsIcon />, onSelect: () => openSettings() },
+    ...accountMenuItems(account).map((item) => ({
+      id: item.testId ?? item.label,
+      label: item.label,
+      ...(item.detail ? { hint: item.detail } : {}),
+      icon: item.icon,
+      onSelect: item.onSelect,
+      ...(item.href ? { href: item.href } : {}),
+    })),
   ];
 }
 
@@ -53,6 +65,20 @@ function ThemeRow() {
   );
 }
 
+function PhoneMenuRowContent({ item }: { item: IndexPhoneMenuItem }) {
+  return (
+    <>
+      <span className="phone-menu-icon" aria-hidden="true">
+        {item.icon}
+      </span>
+      <span className="phone-menu-text">
+        <span className="phone-menu-label">{item.label}</span>
+        {item.hint ? <span className="phone-menu-hint">{item.hint}</span> : null}
+      </span>
+    </>
+  );
+}
+
 /**
  * Phones: the index header keeps two actions, search and this one. Upload, the theme and Settings fold into one
  * bottom sheet (thumb-reachable, 52 px rows) instead of four 40 px icons crowding the product name. Upload and
@@ -69,16 +95,16 @@ export function IndexPhoneMenu({ items }: { items: IndexPhoneMenuItem[] }) {
         <ul className="phone-menu-list" data-slot="phone-menu-list">
           {items.map((item) => (
             <li key={item.id} data-slot-item={item.id}>
-              {/* why: closing first, the next dialog then takes focus from a settled page, not a sheet mid-exit. */}
-              <DrawerClose className="phone-menu-row" onClick={() => requestAnimationFrame(item.onSelect)}>
-                <span className="phone-menu-icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span className="phone-menu-text">
-                  <span className="phone-menu-label">{item.label}</span>
-                  {item.hint ? <span className="phone-menu-hint">{item.hint}</span> : null}
-                </span>
-              </DrawerClose>
+              {item.href ? (
+                <a className="phone-menu-row" href={item.href} data-testid={item.id}>
+                  <PhoneMenuRowContent item={item} />
+                </a>
+              ) : (
+                // why: closing first, the next dialog then takes focus from a settled page, not a sheet mid-exit.
+                <DrawerClose className="phone-menu-row" onClick={() => requestAnimationFrame(item.onSelect)}>
+                  <PhoneMenuRowContent item={item} />
+                </DrawerClose>
+              )}
             </li>
           ))}
           <ThemeRow />

@@ -1,0 +1,67 @@
+/* The shared resizable seam (splitter.tsx). Public tokens: --splitter-hit, --splitter-line, --splitter-active. */
+:root {
+  --splitter-hit: 10px;
+  --splitter-line: var(--line);
+  --splitter-active: var(--accent);
+  --splitter-active-width: 2px;
+  --splitter-grip-length: 28px;
+  --splitter-grip-width: 4px;
+  --splitter-hover-delay: 150ms;
+  --splitter-fade: 150ms;
+  /* A spring that settles without visible bounce (peak overshoot under 1 %). */
+  --splitter-spring: linear(0, 0.24, 0.56, 0.78, 0.9, 0.967, 0.996, 1.006, 1.007, 1.004, 1.002, 1);
+  --splitter-settle: 360ms;
+}
+@media (pointer: coarse) {
+  :root { --splitter-hit: 16px; }
+}
+
+.splitter { position: relative; z-index: 3; flex: none; touch-action: none; outline: none; -webkit-tap-highlight-color: transparent; }
+/* The grip carries the focus ring; the app-wide focus shadow would draw a double line around a 1 px seam. */
+.splitter:focus-visible { outline: none; box-shadow: none; }
+.splitter[data-orientation="horizontal"] { height: 1px; cursor: row-resize; }
+.splitter[data-orientation="vertical"] { width: 1px; cursor: col-resize; }
+/* The hit area: invisible, centred on the hairline. */
+.splitter::before { position: absolute; content: ''; }
+.splitter[data-orientation="horizontal"]::before { inset: calc(var(--splitter-hit) / -2) 0; }
+.splitter[data-orientation="vertical"]::before { inset: 0 calc(var(--splitter-hit) / -2); }
+
+.splitter-line { position: absolute; background: var(--splitter-line); pointer-events: none; transition: background-color var(--splitter-fade) var(--ease-out), scale var(--splitter-fade) var(--ease-out); }
+.splitter[data-orientation="horizontal"] .splitter-line { inset: 0 0 auto; height: 1px; }
+.splitter[data-orientation="vertical"] .splitter-line { inset: 0 auto 0 0; width: 1px; }
+
+.splitter-grip { position: absolute; top: 50%; left: 50%; border-radius: 999px; background: var(--splitter-active); opacity: 0; pointer-events: none; translate: -50% -50%; scale: 0.6; transition: opacity var(--splitter-fade) var(--ease-out), scale var(--splitter-fade) var(--ease-out); }
+.splitter[data-orientation="horizontal"] .splitter-grip { width: var(--splitter-grip-length); height: var(--splitter-grip-width); }
+.splitter[data-orientation="vertical"] .splitter-grip { width: var(--splitter-grip-width); height: var(--splitter-grip-length); }
+
+/* Active: hovered a moment (fine pointers), focused from the keyboard, or held. */
+@media (hover: hover) and (pointer: fine) {
+  .splitter:hover .splitter-line, .splitter:hover .splitter-grip { transition-delay: var(--splitter-hover-delay); }
+  .splitter:hover .splitter-line { background: var(--splitter-active); }
+  .splitter[data-orientation="horizontal"]:hover .splitter-line { scale: 1 var(--splitter-active-width); }
+  .splitter[data-orientation="vertical"]:hover .splitter-line { scale: var(--splitter-active-width) 1; }
+  .splitter:hover .splitter-grip { opacity: 1; scale: 1; }
+}
+.splitter:is(:focus-visible, [data-dragging]) .splitter-line { background: var(--splitter-active); transition-delay: 0ms; }
+.splitter[data-orientation="horizontal"]:is(:focus-visible, [data-dragging]) .splitter-line { scale: 1 var(--splitter-active-width); }
+.splitter[data-orientation="vertical"]:is(:focus-visible, [data-dragging]) .splitter-line { scale: var(--splitter-active-width) 1; }
+.splitter:is(:focus-visible, [data-dragging]) .splitter-grip { opacity: 1; scale: 1; transition-delay: 0ms; }
+.splitter:focus-visible .splitter-grip { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ring); }
+
+/* While a seam is held, the whole document shows its cursor and nothing gets selected. */
+html[data-splitter-drag="horizontal"], html[data-splitter-drag="horizontal"] * { cursor: row-resize !important; user-select: none; }
+html[data-splitter-drag="vertical"], html[data-splitter-drag="vertical"] * { cursor: col-resize !important; user-select: none; }
+html[data-splitter-drag] iframe { pointer-events: none; }
+
+.splitter-edge-tab {
+  display: inline-flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; border: 0; border-radius: var(--radius) 0 0 var(--radius);
+  background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); color: var(--text-secondary); font: inherit; font-size: var(--text-xs); font-weight: 500; cursor: pointer;
+}
+.splitter-edge-tab svg { width: 14px; height: 14px; }
+.splitter-edge-label { writing-mode: vertical-rl; }
+@media (hover: hover) { .splitter-edge-tab:hover { color: var(--text); } }
+.splitter-edge-tab:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .splitter-line, .splitter-grip { transition: none; }
+}
