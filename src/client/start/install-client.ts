@@ -14,10 +14,13 @@ import { installPageMotion } from '../transitions/page-motion.ts';
 export async function installClient(router: AppRouter) {
   setClientRouter(router);
   // why: direct visits should fetch their player code while Start prepares hydration, before route components load.
-  const page = pageOfPublicPath(router, location.pathname, router.options.context.deployment.base);
+  const { base } = router.options.context.deployment;
   // why: the visible SSR list must have its handlers when the document is marked hydrated.
-  if (page.kind === 'index') await indexPage.preload();
-  else if (page.kind !== 'edit' || editingEnabled()) void preparePage(page).catch(() => {});
+  if (location.pathname === base || location.pathname === `${base}/`) await indexPage.preload();
+  else {
+    const page = pageOfPublicPath(router, location.pathname, base);
+    if (page.kind !== 'edit' || editingEnabled()) void preparePage(page).catch(() => {});
+  }
   installPageMotion(router);
   installIndexReturn(router);
   installLinkRouting();

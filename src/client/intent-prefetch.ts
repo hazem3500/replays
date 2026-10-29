@@ -101,8 +101,7 @@ function onPress(landing: Landing) {
 type Entry = { kind: string; suite?: { id: string; runDetails?: readonly ReviewSuiteIndexRun[] } };
 
 /**
- * Wires intent prefetch for the feed: the hover previews' intent (preview.ts), presses, and the viewer's
- * code once the index is idle. Suite entries give each suite row the run its page opens on.
+ * Warms replay data and code on the feed's hover or press intent. Suite entries identify the first run.
  */
 export function useIntentPrefetch(entries: readonly Entry[]) {
   useEffect(() => {
@@ -119,13 +118,4 @@ export function useIntentPrefetch(entries: readonly Entry[]) {
       stopPress();
     };
   }, [entries]);
-
-  // Most index visits end in a replay: fetch the viewer's code when the page has nothing else to do.
-  useEffect(() => {
-    if (!prefetchAllowed()) return;
-    const idle = window.requestIdleCallback ?? ((run: () => void) => setTimeout(run, 1500));
-    const cancelIdle = window.cancelIdleCallback ?? clearTimeout;
-    const handle = idle(() => warm(viewerPage), { timeout: 4000 });
-    return () => cancelIdle(handle as number);
-  }, []);
 }

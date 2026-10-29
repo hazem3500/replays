@@ -29,6 +29,18 @@ test('a direct replay visit loads the index interface only when returning home',
   expect(indexRequests).toHaveLength(1);
 });
 
+test('the index downloads the player only after row intent', async ({ page }) => {
+  const playerRequests: string[] = [];
+  page.on('request', (request) => {
+    if (/\/(?:Viewer|player)-[^/]+\.js/.test(request.url())) playerRequests.push(request.url());
+  });
+  await gotoHydrated(page, origin());
+  await page.waitForTimeout(4500);
+  expect(playerRequests).toEqual([]);
+  await page.locator('a.row-target[href="/r/demo-shop"]').first().hover();
+  await expect.poll(() => playerRequests.length).toBeGreaterThan(0);
+});
+
 test('opening a replay uses one page crossfade and one loading layout', async ({ page }) => {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {

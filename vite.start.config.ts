@@ -34,7 +34,7 @@ export default defineConfig({
   ],
   resolve: { alias: { '@': fileURLToPath(new URL('./src/client', import.meta.url)) } },
   environments: {
-    client: { build: { outDir: 'dist/start/client', emptyOutDir: true } },
+    client: { build: { outDir: 'dist/start/client', emptyOutDir: true, manifest: true } },
     ssr: { build: { outDir: 'dist/start/server', emptyOutDir: true } },
   },
 });
