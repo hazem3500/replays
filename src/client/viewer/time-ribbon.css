@@ -36,12 +36,21 @@
 .ribbon-mark[data-lane="tick"] { top: 35%; bottom: 35%; opacity: 0.8; }
 .ribbon-mark { transition: opacity var(--motion-fast) var(--ease-out); }
 .ribbon-mark[data-lit] { z-index: 1; opacity: 1; box-shadow: 0 0 0 1.5px var(--accent); }
-.ribbon-lit { position: absolute; top: 0; bottom: 0; border-inline: 1px solid var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); pointer-events: none; transition: left var(--motion) var(--ease-out), width var(--motion) var(--ease-out); }
+/* The selection marker: a band and two edges spanning the ribbon, placed only by transform from --lit-at and --lit-end
+   (0 to 1), so stepping through rows glides it on a short spring that a new selection retargets mid-flight. */
+.ribbon-lit, .ribbon-lit > span { position: absolute; inset: 0; pointer-events: none; }
+.ribbon-lit > span { will-change: transform; transition: transform var(--ribbon-lit-glide) var(--vt-spring); }
+.ribbon-lit-band { transform-origin: left center; transform: translateX(calc(var(--lit-at) * 100%)) scaleX(max(var(--lit-span), 0.003)); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ribbon-lit { --lit-span: calc(var(--lit-end) - var(--lit-at)); --ribbon-lit-glide: 320ms; }
+.ribbon-lit-edge { transform: translateX(calc(var(--lit-at) * 100%)); }
+.ribbon-lit-edge[data-end] { transform: translateX(calc(var(--lit-end) * 100%)); }
+.ribbon-lit-edge::before { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 1px; translate: -50% 0; background: var(--accent); }
 @media (pointer: coarse) {
   .time-ribbon { --ribbon-height: 32px; --ribbon-mark-min: 3px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .time-ribbon { --ribbon-glide: 0ms; }
+  .ribbon-lit > span { transition: none; }
 }
 
 /* The local timeline: a moment's own scale. Label | track | value on one grid; a light ruler of round offsets. */

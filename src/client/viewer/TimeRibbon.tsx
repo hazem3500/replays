@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { type CSSProperties, useRef } from 'react';
 
 import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
@@ -40,6 +40,7 @@ export function TimeRibbon({
   range,
   onRange,
   highlight,
+  selected,
   testId,
 }: {
   duration: number;
@@ -47,8 +48,10 @@ export function TimeRibbon({
   marks: readonly RibbonMark[];
   range: RibbonRange | undefined;
   onRange: (range: RibbonRange | undefined) => void;
-  /** The mark of the row under the pointer or selected: raised and outlined, and its span bracketed. */
+  /** The mark of the row under the pointer or focus: raised and outlined, nothing moves. */
   highlight?: string | undefined;
+  /** The selected row's mark: bracketed by the one marker that moves, gliding from the last selection. */
+  selected?: string | undefined;
   testId: string;
 }) {
   const player = usePlayer();
@@ -56,7 +59,7 @@ export function TimeRibbon({
   const { brush, handlers } = useRibbonBrush(span, (time) => player.seek(time), onRange);
   const strip = useRef<HTMLDivElement>(null);
   usePlayheadProgress(strip, span);
-  const lit = highlight ? marks.find((mark) => mark.id === highlight) : undefined;
+  const picked = selected ? marks.find((mark) => mark.id === selected) : undefined;
   const shown = brush ?? range;
   return (
     <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} aria-hidden="true" {...handlers}>
@@ -67,7 +70,7 @@ export function TimeRibbon({
           className="ribbon-mark"
           data-tone={mark.tone}
           data-lane={mark.lane}
-          data-lit={mark.id === highlight || undefined}
+          data-lit={mark.id === highlight || mark.id === selected || undefined}
           style={{
             left: `${(mark.at / span) * 100}%`,
             width: `max(var(--ribbon-mark-min), ${(Math.max(0, mark.end - mark.at) / span) * 100}%)`,
@@ -81,18 +84,25 @@ export function TimeRibbon({
           style={{ left: `${(shown.from / span) * 100}%`, width: `${((shown.to - shown.from) / span) * 100}%` }}
         />
       ) : null}
-      {lit ? (
-        <span
-          className="ribbon-lit"
-          style={{
-            left: `${(lit.at / span) * 100}%`,
-            width: `max(var(--ribbon-mark-min), ${(Math.max(0, lit.end - lit.at) / span) * 100}%)`,
-          }}
-        />
-      ) : null}
+      {picked ? <SelectionMarker mark={picked} span={span} /> : null}
       <span className="ribbon-future" />
       <span className="ribbon-now" />
     </div>
+  );
+}
+
+/**
+ * invariant: only transforms change as the selection moves (the band scales, the edges translate, all from custom
+ * properties), so the axis and every mark stay put and a new selection retargets the running glide mid-flight.
+ */
+function SelectionMarker({ mark, span }: { mark: RibbonMark; span: number }) {
+  const style = { '--lit-at': mark.at / span, '--lit-end': Math.max(mark.at, mark.end) / span } as CSSProperties;
+  return (
+    <span className="ribbon-lit" data-testid="ribbon-selection" style={style}>
+      <span className="ribbon-lit-band" />
+      <span className="ribbon-lit-edge" />
+      <span className="ribbon-lit-edge" data-end="" />
+    </span>
   );
 }
 

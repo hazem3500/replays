@@ -16,6 +16,7 @@ import type { EditTimeline } from '../../shared/edits.ts';
 import { ConsolePanel, ConsolePending } from './console/ConsolePanel.tsx';
 import { buildNetworkRows, networkBadge } from './network/model.ts';
 import { type NetworkPeer, NetworkPanel, NetworkPending } from './network/NetworkPanel.tsx';
+import { timelineView } from './network/timeline-setting.ts';
 import { buildMoments, performanceBadge, vitalsOf } from './performance/model.ts';
 import { type PerformancePeer, PerformancePanel, PerformancePending } from './performance/PerformancePanel.tsx';
 import { resolveSlot } from '../plugins/registry.ts';
@@ -244,6 +245,7 @@ export const Inspector = memo(function Inspector({
           onSelect={setExpandedRequest}
           peers={networkPeers}
           captured={sourceBundle.meta.captured}
+          view={timelineView(sourceBundle)}
         />
       </DockPanel>
       <DockPanel value="performance" pending={PerformancePending}>

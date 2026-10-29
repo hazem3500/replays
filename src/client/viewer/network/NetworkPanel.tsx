@@ -18,6 +18,7 @@ import {
 import { NetworkList } from './NetworkList.tsx';
 import { NetworkToolbar } from './NetworkToolbar.tsx';
 import { type NetworkPeer, RequestDetail } from './RequestDetail.tsx';
+import { readTimeline, writeTimeline } from './timeline-setting.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the panel's styles load with the lazy inspector chunk, not with every page.
 import './network.css';
 
@@ -55,7 +56,7 @@ function ribbonMarks(rows: readonly NetworkRow[]): RibbonMark[] {
   });
 }
 
-/** The hovered or selected request gets a mark of its own when it has none, so the ribbon can bracket it. */
+/** A hovered or selected request gets a mark of its own when it has none, so the ribbon can light or bracket it. */
 function withLit(marks: RibbonMark[], rows: readonly NetworkRow[], lit: string | undefined): RibbonMark[] {
   if (!lit || marks.some((mark) => mark.id === lit)) return marks;
   const row = rows.find((candidate) => candidate.id === lit);
@@ -63,9 +64,9 @@ function withLit(marks: RibbonMark[], rows: readonly NetworkRow[], lit: string |
 }
 
 /**
- * The Network tab: what failed or was slow, and when. Status chips (the filters and the summary), a ribbon on the
- * seek bar's domain for "when" (hidden when the list already fits), the list for "how long", and the selected
- * request's detail beside it or, on a narrow panel, in its place.
+ * The Network tab: what failed or was slow, and when. Status chips (the filters and the summary), a timeline ribbon on
+ * the seek bar's domain for "when" (behind the toolbar's Timeline switch, remembered per view, and only once the list
+ * overflows), the list for "how long", and the selected request's detail over the list's end or, narrow, in its place.
  */
 export function NetworkPanel({
   rows,
@@ -76,6 +77,7 @@ export function NetworkPanel({
   onSelect,
   peers,
   captured,
+  view = 'standard',
 }: {
   rows: readonly NetworkRow[];
   steps: readonly ReplayStep[];
@@ -86,14 +88,21 @@ export function NetworkPanel({
   peers?: readonly NetworkPeer[] | undefined;
   /** What the recording kept (`meta.captured`), for the detail's body sections. */
   captured?: ReplayCaptured | undefined;
+  /** The page's view (timeline-setting.ts): whether the timeline shows is remembered per view. */
+  view?: string | undefined;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const [filter, setFilter] = useState<NetworkFilter>(NO_FILTER);
   const [hovered, setHovered] = useState<string>();
-  const [timeline, setTimeline] = useState(false);
-  // why: the ribbon earns its height only when the list overflows; a phone keeps it behind the Timeline switch.
-  const ribbon = rows.length > DENSE_ROWS && (!stacked || timeline);
+  const [choice, setChoice] = useState<{ view: string; shown: boolean }>();
+  const timeline = choice?.view === view ? choice.shown : readTimeline(view);
+  const toggleTimeline = () => {
+    writeTimeline(view, !timeline);
+    setChoice({ view, shown: !timeline });
+  };
+  // why: the ribbon earns its height only when the list overflows; at a glance-sized list it would be an empty strip.
+  const busy = rows.length > DENSE_ROWS;
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
   const open = selected ? rows.find((row) => row.id === selected) : undefined;
@@ -113,24 +122,25 @@ export function NetworkPanel({
     </Empty>
   );
   return (
-    <div ref={panel} className="np" data-stacked={stacked || undefined} data-open={open ? '' : undefined}>
+    <div ref={panel} className="np" data-stacked={stacked || undefined} data-detail="over" data-open={open ? '' : undefined}>
       <NetworkToolbar
         counts={statusCounts(rows)}
         types={typeCounts(rows)}
         filter={filter}
         shown={shown.length}
         onFilter={setFilter}
-        timeline={stacked && rows.length > DENSE_ROWS ? { open: timeline, onToggle: () => setTimeline(!timeline) } : undefined}
+        timeline={busy ? { open: timeline, onToggle: toggleTimeline } : undefined}
       />
-      {ribbon ? (
+      {busy && timeline ? (
         <TimeRibbon
           testId="network-ribbon"
           duration={duration}
           density={startDensity(unranged, duration, DENSITY_BINS)}
-          marks={withLit(ribbonMarks(unranged), rows, hovered ?? selected)}
+          marks={withLit(withLit(ribbonMarks(unranged), rows, selected), rows, hovered)}
           range={filter.range}
           onRange={(range) => setFilter({ ...filter, range })}
-          highlight={hovered ?? selected}
+          highlight={hovered}
+          selected={selected}
         />
       ) : null}
       <div className="np-body">

@@ -63,8 +63,11 @@ export function ConsoleList({
       ];
     if (!next || next.id === id) return;
     // why: an end may be far outside the rendered window; selecting it scrolls it in (useRevealRow) before focus lands.
-    if (selected || move === 'first' || move === 'last') onSelect(next.id);
-    requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(`console-switch-${next.id}`)?.focus()));
+    const selecting = Boolean(selected) || move === 'first' || move === 'last';
+    if (selecting) onSelect(next.id);
+    // why: a selection glides into view (useRevealRow); focus's own instant scroll would cut that glide short.
+    const focus = () => document.getElementById(`console-switch-${next.id}`)?.focus({ preventScroll: selecting });
+    requestAnimationFrame(() => requestAnimationFrame(focus));
   };
   return (
     <TrackList

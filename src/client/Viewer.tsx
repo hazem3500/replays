@@ -43,7 +43,7 @@ import { copyLinkItems, CopyLinkButton, EditButton, ActionsBar } from './viewer/
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
-import { clampInspectorHeight, initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
+import { initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail } from './viewer/StepRail.tsx';
@@ -76,10 +76,6 @@ const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
 const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
 /** A folded panel keeps just its tab row (36 px) and the hairline above it. */
-/** An expanded request grows a shorter desktop panel to this share of the window… */
-const REQUEST_PANEL_SHARE = 0.45;
-/** …but never so far that the player gets less than this share of the viewer's height. */
-const MIN_PLAYER_SHARE = 0.4;
 
 export function Viewer({
   bundle,
@@ -269,42 +265,6 @@ export function Viewer({
     [mobile, stepsSelected],
   );
   const [expandedRequest, setExpandedRequest] = useState<string>();
-  // An expanded request needs room: a short desktop panel grows to 45% of the window while it is open (not
-  // persisted) and goes back to the person's height when it closes or the tab changes, unless they resized it
-  // meanwhile. Never shrinks a taller panel. Phones skip it (their panel already takes the rest of the screen).
-  const grown = useRef<{ from: number; to: number } | undefined>(undefined);
-  const inspectorHeightRef = useRef(inspectorHeight);
-  useEffect(() => {
-    inspectorHeightRef.current = inspectorHeight;
-  }, [inspectorHeight]);
-  const roomForRequest = Boolean(expandedRequest) && tab === 'network' && !mobile && !collapsed;
-  useEffect(() => {
-    const element = shell.current;
-    const animate = () => {
-      if (!element || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      element.dataset.inspectorAnimating = '';
-      window.setTimeout(() => delete element.dataset.inspectorAnimating, 260);
-    };
-    if (roomForRequest) {
-      // The player keeps at least MIN_PLAYER_SHARE of the viewer: the panel takes what is left above that.
-      const shellHeight = element?.clientHeight ?? window.innerHeight;
-      const chrome =
-        (element?.querySelector<HTMLElement>('.app-topbar')?.offsetHeight ?? 0) +
-        (element?.querySelector<HTMLElement>('.transport')?.offsetHeight ?? 0);
-      const room = Math.round(shellHeight - chrome - shellHeight * MIN_PLAYER_SHARE);
-      const target = clampInspectorHeight(Math.min(Math.round(window.innerHeight * REQUEST_PANEL_SHARE), room));
-      if (grown.current || inspectorHeightRef.current >= target) return;
-      grown.current = { from: inspectorHeightRef.current, to: target };
-      animate();
-      setInspectorHeight(target);
-    } else if (grown.current) {
-      const { from, to } = grown.current;
-      grown.current = undefined;
-      if (inspectorHeightRef.current !== to) return;
-      animate();
-      setInspectorHeight(from);
-    }
-  }, [roomForRequest]);
 
   const notify = useCallback((message: string) => showToast(message), []);
   // Built-in features (plugins/features.tsx, e.g. comments): opening their tab unfolds the panel when it is folded, and a

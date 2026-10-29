@@ -33,7 +33,8 @@ const STRINGS = {
   status: 'Show requests',
   type: 'Request type',
   search: 'Search requests',
-  timeline: 'Show when requests happened',
+  timeline: 'Timeline',
+  timelineHint: 'Show when requests happened, on the seek bar’s scale',
   closeSearch: 'Close search',
   placeholder: 'URL, method or status',
   clearRange: (from: number, to: number) => `Show all times, not only ${formatClock(from)} to ${formatClock(to)}`,
@@ -107,15 +108,16 @@ export function NetworkToolbar({
       {timeline && !searching ? (
         <button
           type="button"
-          className="np-icon"
+          className="np-type np-toggle"
           aria-label={STRINGS.timeline}
           aria-pressed={timeline.open}
-          data-active={timeline.open ? '' : undefined}
+          title={STRINGS.timelineHint}
           data-testid="network-timeline-toggle"
           onClick={timeline.onToggle}
           onKeyDown={keepKeys}
         >
           <ChartNoAxesGanttIcon aria-hidden="true" />
+          <span className="np-toggle-label">{STRINGS.timeline}</span>
         </button>
       ) : null}
       {searching ? null : (

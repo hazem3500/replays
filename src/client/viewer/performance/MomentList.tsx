@@ -61,8 +61,10 @@ export function MomentList({
     if (!next || next.id === id) return;
     // why: an end may be far outside the rendered window; selecting it scrolls it in (useRevealRow) before focus lands.
     const far = move === 'first' || move === 'last';
-    if (selected || far) onSelect(next.id);
-    const focus = () => document.getElementById(`moment-switch-${next.id}`)?.focus();
+    const selecting = Boolean(selected) || far;
+    if (selecting) onSelect(next.id);
+    // why: a selection glides into view (useRevealRow); focus's own instant scroll would cut that glide short.
+    const focus = () => document.getElementById(`moment-switch-${next.id}`)?.focus({ preventScroll: selecting });
     requestAnimationFrame(() => requestAnimationFrame(focus));
   };
   return (
