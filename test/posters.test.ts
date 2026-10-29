@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
 import { createApp } from '../src/server/app.ts';
-import { PosterQueue, type PosterRunner, previewFfmpegArgs } from '../src/server/posters.ts';
+import { PosterQueue, type PosterRunner } from '../src/server/media/poster-queue.ts';
+import { previewFfmpegArgs } from '../src/server/posters.ts';
 import type { RenderService } from '../src/server/render-routes.ts';
 import { FsStorage } from '../src/server/storage/index.ts';
 import { ReplayStore } from '../src/server/store.ts';

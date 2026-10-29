@@ -10,12 +10,10 @@ import type { ReplaysPlugin } from '../plugin/types.ts';
 import { createApp } from './app.ts';
 import { coreVersion, findPackageRoot } from './package-info.ts';
 import { BridgeHub } from './bridge-hub.ts';
-import type { RenderAssetPolicy } from './media/browser-network.ts';
-import { createMediaRenderer, PosterQueue } from './posters.ts';
+import { createPosterQueue, createVideoQueue, positiveSetting, renderAssetPolicy } from './media/services.ts';
 import { createRenderHooks } from './render-hooks.ts';
-import { RenderQueue } from './render-queue.ts';
 import type { RenderService } from './render-routes.ts';
-import { createRenderer, detectRenderTools, type RenderTools, renderToken } from './renderer.ts';
+import { detectRenderTools, type RenderTools, renderToken } from './renderer.ts';
 import { chooseStorage, createRuntime, type Runtime } from './runtime.ts';
 import { tracedStorage } from './storage/traced.ts';
 import { initTracing, shutdownTracing, tracingEnabled } from './tracing.ts';
@@ -105,16 +103,16 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
         const server = resources.server;
         if (!server) return;
         await new Promise<void>((done) => {
-          // A server that failed to listen reports ERR_SERVER_NOT_RUNNING here; no listener needs releasing.
+          // why: a server that failed to listen reports ERR_SERVER_NOT_RUNNING here; no listener needs releasing.
           server.close(() => done());
           server.closeIdleConnections();
-          // A late startup failure may already have accepted connections, including HMR upgrades.
+          // why: a late startup failure may already have accepted connections, including HMR upgrades.
           if (failed) for (const socket of resources.sockets) socket.destroy();
         });
       });
       await release(() => resources.application?.close());
       await connectionsClosed;
-      // Run every finalizer, including when another finalizer throws synchronously.
+      // invariant: every finalizer runs, including when another one throws synchronously.
       await Promise.all([release(() => resources.closeDev?.()), release(() => (resources.ownsTracing ? shutdownTracing() : undefined))]);
       if (errors.length) throw new AggregateError(errors, 'server shutdown cleanup failed');
     })();
@@ -124,7 +122,7 @@ export async function startServer(options: StartOptions = {}): Promise<RunningSe
     return await startOwnedServer(options, resources, close);
   } catch (error) {
     failed = true;
-    // The caller has no handle on failure. Await all releases and preserve the original startup error.
+    // why: the caller has no handle on failure, so all releases are awaited and the original startup error preserved.
     await close().catch(() => undefined);
     throw error;
   }
@@ -148,7 +146,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   if (runtime.config.path) log(`config ${runtime.config.path}`);
   if (registry.order.length) log(`plugins: ${registry.order.join(', ')}`);
 
-  // Tracing (tracing.ts): on only with an OTLP endpoint or OTEL_TRACES_EXPORTER; otherwise the SDK is never loaded.
+  // why: tracing is on only with an OTLP endpoint or OTEL_TRACES_EXPORTER; otherwise the SDK is never loaded.
   try {
     const alreadyTracing = tracingEnabled();
     const tracing = await initTracing(env);
@@ -160,7 +158,6 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
 
   const dataDir = resolve(env.DATA_DIR ?? resolve(root, '.data/replays'));
   const sampleDir = resolve(options.sampleDir ?? (env.SAMPLE_DIR?.trim() || resolve(root, 'sample')));
-  // Retention (src/shared/retention.ts) and where data lives (STORAGE=fs|s3|<plugin backend>, src/server/storage/).
   let store: ReplayStore;
   try {
     const storage = tracedStorage(await chooseStorage(env, runtime.config.file, registry, dataDir));
@@ -169,7 +166,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
       profiles: settings.profiles,
       ...(summaryFields ? { summaryFields } : {}),
     });
-    // The first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
+    // why: the first prune also proves the store is reachable (bucket name, IAM): fail fast instead of serving errors.
     const removed = await store.prune();
     log(
       `storage ${storage.kind} (${storage.description}); retention ${days(store.retention.days)}${removed.length ? `; pruned ${removed.length}` : ''}`,
@@ -214,22 +211,18 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   let devIndexHtml: Parameters<typeof createApp>[0]['devIndexHtml'];
   if (dev) {
     const { createServer: createViteServer } = await import('vite');
-    // Share the public listener so reverse proxies need only forward the app port, including WebSockets.
+    // why: sharing the public listener means reverse proxies forward only the app port, including WebSockets.
     const vite = await createViteServer({ root, appType: 'spa', server: { middlewareMode: true, hmr: { server } } });
     devMiddleware = (request, response, next) => vite.middlewares(request, response, next);
-    // Queries must not make Vite parse inline styles as script modules.
+    // why: queries must not make Vite parse inline styles as script modules.
     devIndexHtml = async (url) =>
       vite.transformIndexHtml(new URL(url, 'http://dev.invalid').pathname, await readFile(resolve(root, 'index.html'), 'utf8'));
     resources.closeDev = () => vite.close();
   }
 
-  // Server-side video renders (src/server/renderer.ts). Missing Chromium/ffmpeg only switches the feature off.
+  // invariant: missing Chromium/ffmpeg only switches video renders off; the server still starts.
   const port = options.port === undefined ? Number(env.PORT ?? (dev ? 3000 : 8080)) : options.port === 0 ? await freePort() : options.port;
   const clientDir = resolve(root, 'dist/client');
-  const positive = (name: string, fallback: number) => {
-    const value = Number(env[name] ?? fallback);
-    return Number.isFinite(value) && value > 0 ? value : fallback;
-  };
   const tools: RenderTools = await detectRenderTools().catch((error: unknown) => ({
     available: false,
     reason: String(error),
@@ -239,45 +232,18 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     tools,
     token: renderToken(),
     clientDir,
-    maxDurationMs: positive('RENDER_MAX_DURATION_MS', 10 * 60_000),
+    maxDurationMs: positiveSetting(env, 'RENDER_MAX_DURATION_MS', 10 * 60_000),
   });
   const origin = `${tlsCert && tlsKey ? 'https' : 'http'}://127.0.0.1:${port}`;
-  // Dev serves the render page through Vite; production serves the built page on the loopback-only route.
-  const assets = env.RENDER_ASSETS ?? 'public';
-  if (assets !== 'public' && assets !== 'origin-only') throw new Error('RENDER_ASSETS must be public or origin-only');
-  const assetPolicy: RenderAssetPolicy = {
-    assets,
-    allowHosts: (env.RENDER_ASSET_ALLOWLIST ?? '')
-      .split(',')
-      .map((host) => host.trim())
-      .filter(Boolean),
-  };
+  const assetPolicy = renderAssetPolicy(env);
+  // why: dev serves the render page through Vite; production serves the built page on the loopback-only route.
   const renderPageUrl = (id: string) => (dev ? `${origin}${basePath}/render.html?id=${id}` : `${origin}/internal/render/${id}`);
-  // `api.render`: the poster's moment, the check before each list-media job, and the call after each stored file.
-  // (createApp runs `beforeRender` for video exports, on the request.)
+  // why: list media run all of `api.render` here; createApp runs `beforeRender` for video exports, on the request.
   const renderHooks = createRenderHooks(registry.render, (line) => console.error(line));
   const afterRender = renderHooks.notifies ? renderHooks.afterRender : undefined;
+  const page = { assetPolicy, origin, token: render.token, tools, pageUrl: renderPageUrl };
   if (tools.available) {
-    render.queue = new RenderQueue({
-      storage: store.storage,
-      concurrency: positive('RENDER_CONCURRENCY', 1),
-      maxQueued: positive('RENDER_QUEUE_MAX', 8),
-      timeoutMs: positive('RENDER_TIMEOUT_MS', 30 * 60_000),
-      log,
-      ...(afterRender ? { afterRender } : {}),
-      runner: createRenderer({
-        assetPolicy,
-        origin,
-        token: render.token,
-        tools,
-        fps: env.RENDER_FPS === '15' ? 15 : 30,
-        pageUrl: renderPageUrl,
-        onFinish: (stats) =>
-          log(
-            `render ${stats.id}: ${stats.frames} frames (${stats.captured} captured) for ${(stats.replayMs / 1000).toFixed(1)} s of replay`,
-          ),
-      }),
-    });
+    render.queue = createVideoQueue(page, { env, store, afterRender, log });
     const recovered = await render.queue.recover();
     log(
       `video render on (Chromium ${tools.chromiumPath}, ${tools.ffmpegPath})${recovered ? `; ${recovered} interrupted job(s) marked failed` : ''}`,
@@ -286,29 +252,11 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     log(`video render off: ${tools.reason}`);
   }
 
-  // List posters need only Chromium (no ffmpeg); POSTERS_DISABLED=1 or RENDER_DISABLED=1 turns them off (the index shows placeholders).
+  // why: list posters need only Chromium (no ffmpeg); POSTERS_DISABLED=1 or RENDER_DISABLED=1 turns them off (placeholders).
   if (tools.chromiumPath && env.POSTERS_DISABLED !== '1') {
-    const media = createMediaRenderer({ assetPolicy, origin, token: render.token, tools, pageUrl: renderPageUrl });
-    render.posters = new PosterQueue({
-      storage: store.storage,
-      key: (id, choice) => store.posterKey(id, choice),
-      runner: media.poster,
-      // The plugins' `posterAt`, then the profile's `poster` setting (src/shared/profiles.ts), then the default.
-      posterAt: renderHooks.posterChooser({
-        profile: async (id) => (await store.summary(id, { suites: false }))?.profile,
-        ...(store.profiles.list.some((profile) => profile.poster) ? { profilePoster: (profile) => store.profiles.poster(profile) } : {}),
-        load: (id) => store.load(id),
-      }),
-      ...(renderHooks.checks ? { beforeRender: renderHooks.beforeRender } : {}),
-      ...(afterRender ? { afterRender } : {}),
-      thumbhash: (id, hash) => store.setThumbHash(id, hash),
-      open: { key: (id: string) => store.openStillKey(id), runner: media.open },
-      // Hover previews are MP4s: they need ffmpeg too.
-      ...(tools.available ? { preview: { key: (id: string) => store.previewKey(id), runner: media.preview } } : {}),
-      // List media are low priority: they wait while a video export is rendering.
-      busy: () => (render.queue?.size.running ?? 0) > 0,
-      log,
-    });
+    // why: list media are low priority, so they wait while a video export is rendering.
+    const busy = () => (render.queue?.size.running ?? 0) > 0;
+    render.posters = createPosterQueue(page, { store, hooks: renderHooks, afterRender, busy, log });
     log(`list posters on${tools.available ? ', hover previews on' : ' (hover previews off: no ffmpeg)'}`);
   } else {
     log(`list posters and previews off: ${env.POSTERS_DISABLED === '1' ? 'POSTERS_DISABLED=1' : tools.reason}`);
@@ -344,7 +292,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   });
 
   server.on('request', (request, response) => void handle(request, response));
-  // Loopback by default: a deployment that wants the network says so with HOST=0.0.0.0 (the Docker image does).
+  // why: loopback by default; a deployment that wants the network says so with HOST=0.0.0.0 (the Docker image does).
   const host = options.host ?? (env.HOST?.trim() || '127.0.0.1');
   if (auth.name === 'none' && !['127.0.0.1', '::1', 'localhost'].includes(host))
     console.warn('WARNING: AUTH_MODE=none on a non-loopback address: anyone who can reach this port can read and upload replays.');

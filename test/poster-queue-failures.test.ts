@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { expect, it } from 'vitest';
 
-import { PosterQueue } from '../src/server/posters.ts';
+import { PosterQueue } from '../src/server/media/poster-queue.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
 
 it('settles a failed temp-directory creation and keeps processing later jobs', async () => {
