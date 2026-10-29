@@ -115,7 +115,7 @@
     "dist/client/assets/Editor-HASH.js": {
       "raw": 102425,
       "gzip": 34267,
-      "brotli": 29308
+      "brotli": 29318
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
