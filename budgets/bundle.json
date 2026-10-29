@@ -19,12 +19,12 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
-      "gzip": 982,
-      "brotli": 849
+      "gzip": 981,
+      "brotli": 848
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "gzip": 1111,
+      "gzip": 1110,
       "brotli": 942
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
@@ -69,7 +69,7 @@
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
-      "gzip": 2344,
+      "gzip": 2343,
       "brotli": 2119
     },
     "dist/client/assets/CompareViewer-HASH.css": {
@@ -78,9 +78,9 @@
       "brotli": 1777
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 37957,
+      "raw": 37956,
       "gzip": 13469,
-      "brotli": 11989
+      "brotli": 11976
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 17891,
@@ -93,9 +93,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101099,
-      "gzip": 33868,
-      "brotli": 28919
+      "raw": 101090,
+      "gzip": 33857,
+      "brotli": 28913
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -113,7 +113,7 @@
       "brotli": 1872
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 25123,
+      "raw": 25113,
       "gzip": 9605,
       "brotli": 8395
     },
@@ -133,14 +133,14 @@
       "brotli": 24612
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 39103,
-      "gzip": 7498,
-      "brotli": 6705
+      "raw": 40400,
+      "gzip": 7760,
+      "brotli": 6940
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 232510,
-      "gzip": 78731,
-      "brotli": 66316
+      "raw": 233340,
+      "gzip": 79230,
+      "brotli": 66588
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -153,8 +153,8 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 243165,
-      "gzip": 42020,
+      "raw": 242694,
+      "gzip": 41991,
       "brotli": 35120
     },
     "dist/client/assets/main-HASH.js": {
@@ -203,14 +203,14 @@
       "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 6721,
-      "gzip": 2958,
-      "brotli": 2681
+      "raw": 6767,
+      "gzip": 2981,
+      "brotli": 2695
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 611,
-      "brotli": 560
+      "gzip": 609,
+      "brotli": 554
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 243,
@@ -228,14 +228,14 @@
       "brotli": 5417
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 2418,
-      "gzip": 911,
-      "brotli": 749
+      "raw": 2825,
+      "gzip": 1087,
+      "brotli": 892
     },
     "dist/client/assets/step-caption-HASH.js": {
-      "raw": 796,
-      "gzip": 499,
-      "brotli": 455
+      "raw": 887,
+      "gzip": 538,
+      "brotli": 501
     },
     "dist/client/assets/storage-HASH.js": {
       "raw": 461,
@@ -244,11 +244,11 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 686,
-      "brotli": 608
+      "gzip": 685,
+      "brotli": 631
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21175,
+      "raw": 21170,
       "gzip": 8711,
       "brotli": 7500
     },
@@ -267,10 +267,15 @@
       "gzip": 3167,
       "brotli": 2904
     },
+    "dist/client/assets/Viewer-HASH.css": {
+      "raw": 5150,
+      "gzip": 1400,
+      "brotli": 1200
+    },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50369,
-      "gzip": 18336,
-      "brotli": 15958
+      "raw": 57050,
+      "gzip": 20540,
+      "brotli": 17790
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -473,19 +478,19 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 243165,
-      "gzip": 42020,
+      "raw": 242694,
+      "gzip": 41991,
       "brotli": 35120
     },
     "initial/index.html/js": {
-      "raw": 1484599,
-      "gzip": 473500,
+      "raw": 1484557,
+      "gzip": 473494,
       "brotli": 400470
     },
     "initial/render.html/css": {
-      "raw": 5784,
-      "gzip": 2529,
-      "brotli": 2097
+      "raw": 5999,
+      "gzip": 2625,
+      "brotli": 2170
     },
     "initial/render.html/js": {
       "raw": 557837,
@@ -793,16 +798,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 50998,
-        "gzip": 18530,
-        "brotli": 16623
-      },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
       "file": "dist/client/assets/composite-HASH.js",
       "cap": {
         "raw": 99414,
@@ -811,26 +806,6 @@
       },
       "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 2418,
-        "gzip": 911,
-        "brotli": 749
-      },
-      "reason": "Captions swap by whole line and keep a hiding caption whole: the swap keyframes, enter and exit timing and the reduced-motion rules, about 630 bytes raw; the viewer chunk drops ~137 kB raw with calligraph gone.",
-      "pr": "https://github.com/hazem3500/replays/pull/114"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5788,
-        "gzip": 2529,
-        "brotli": 2103
-      },
-      "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
-      "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
@@ -911,34 +886,6 @@
       },
       "reason": "Timeline clarity: lane names in the gutter, the hatched and labelled trimmed area, and the duration note; measured against main: +308 B raw, +38 B gzip, +37 B brotli. Replaces #130's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/136"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 39229,
-        "gzip": 7519,
-        "brotli": 6716
-      },
-      "reason": "Network and Performance v2: the time ribbon, local timelines, the one-row network toolbar, two-line phone rows, the side detail and the vitals bar share the lazy inspector stylesheet (about 2.6 kB of old table CSS left the main stylesheet).",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 232510,
-        "gzip": 78731,
-        "brotli": 66316
-      },
-      "reason": "Network and Performance v2: request and moment models, the ribbon, request and moment details with neighbourhood charts, verdicts and compare deltas replace the old network table and performance view in the lazy inspector graph; the initial JavaScript budget is unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
@@ -1219,6 +1166,96 @@
       },
       "reason": "The context-schema chunk is renamed by its content hash when the shared chunk graph gains the auth wrapper; same module.",
       "pr": "https://github.com/hazem3500/replays/pull/139"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 40400,
+        "gzip": 7760,
+        "brotli": 6940
+      },
+      "reason": "Pending frames for the inspector's built-in panels and the flat tab row's group hairlines and status dots, on top of #119's Network and Performance styles.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 57050,
+        "gzip": 20540,
+        "brotli": 17790
+      },
+      "reason": "Shared Splitter primitive and its headless hook replace the viewer's two hand-rolled resizers, adding snap, fold, reset, settle and the separator keyboard pattern plus the folded rail's edge tab.",
+      "pr": "https://github.com/hazem3500/replays/pull/121"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.css",
+      "cap": {
+        "raw": 5150,
+        "gzip": 1400,
+        "brotli": 1200
+      },
+      "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
+      "pr": "https://github.com/hazem3500/replays/pull/121"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 233340,
+        "gzip": 79230,
+        "brotli": 66588
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #117's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 6767,
+        "gzip": 2981,
+        "brotli": 2695
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2825,
+        "gzip": 1087,
+        "brotli": 892
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.js",
+      "cap": {
+        "raw": 887,
+        "gzip": 538,
+        "brotli": 501
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1124,
+        "gzip": 685,
+        "brotli": 631
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #121's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5999,
+        "gzip": 2625,
+        "brotli": 2170
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
     }
   ]
 }

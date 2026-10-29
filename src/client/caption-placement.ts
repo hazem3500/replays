@@ -1,8 +1,3 @@
-/**
- * Which edge of the recorded frame a caption sits on, shared by the viewer, the editor's preview and the video
- * export (src/client/render/main.ts), so all three place the same caption at the same edge. Pure: it reads the
- * recorded pointer positions (cursor-motion.ts cursorInput), never the DOM.
- */
 import type { CursorInput } from './cursor-motion.ts';
 
 /** The edge a caption sits on: bottom by default, top when the action it describes happens low on the page. */
@@ -16,6 +11,8 @@ const HIGH = 0.3;
 const LEAD_MS = 600;
 
 /**
+ * Which edge of the recorded frame a caption sits on. The viewer, the editor's preview and the video export
+ * (render/main.ts) all call this on the same recorded pointer, so they place a caption at the same edge.
  * `from`..`to` are replay ms (from the first event, `first` its timestamp), the span the caption is up. The caption
  * moves to the top only when the pointer works in the page's lower part during that span (and its approach) and
  * never in the upper part: a pointer that crosses the whole page leaves it at the bottom, so it never jumps over to

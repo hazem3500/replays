@@ -15,7 +15,7 @@ export function StepCaption() {
   const player = usePlayer();
   const { steps, captionNumbers } = useViewer();
   const { status } = usePlayerState();
-  // The same step index the step rail shows (one source), so caption and rail never disagree at a boundary.
+  // why: the rail's own step index, so caption and rail never disagree at a boundary.
   const activeIndex = useActiveStep(steps);
   const seeked = useSeekedPause(player);
   const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
