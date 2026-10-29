@@ -139,8 +139,8 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 240032,
-      "gzip": 81328,
-      "brotli": 68340
+      "gzip": 81560,
+      "brotli": 68365
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -198,14 +198,14 @@
       "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
-      "raw": 1397,
-      "gzip": 666,
-      "brotli": 517
+      "raw": 1349,
+      "gzip": 640,
+      "brotli": 500
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 6721,
-      "gzip": 2958,
-      "brotli": 2681
+      "raw": 6767,
+      "gzip": 2981,
+      "brotli": 2695
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -223,14 +223,14 @@
       "brotli": 5417
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 2418,
-      "gzip": 911,
-      "brotli": 749
+      "raw": 2825,
+      "gzip": 1087,
+      "brotli": 892
     },
     "dist/client/assets/step-caption-HASH.js": {
-      "raw": 796,
-      "gzip": 499,
-      "brotli": 455
+      "raw": 887,
+      "gzip": 538,
+      "brotli": 501
     },
     "dist/client/assets/storage-HASH.js": {
       "raw": 461,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 604
+      "brotli": 603
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -278,8 +278,8 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60058,
-      "gzip": 21441,
+      "raw": 60089,
+      "gzip": 21459,
       "brotli": 18678
     },
     "dist/client/index.html": {
@@ -289,8 +289,8 @@
     },
     "dist/client/render.html": {
       "raw": 1283,
-      "gzip": 544,
-      "brotli": 407
+      "gzip": 540,
+      "brotli": 405
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -485,7 +485,7 @@
     "initial/index.html/css": {
       "raw": 254839,
       "gzip": 44498,
-      "brotli": 37043
+      "brotli": 36404
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -493,9 +493,9 @@
       "brotli": 399732
     },
     "initial/render.html/css": {
-      "raw": 5784,
-      "gzip": 2529,
-      "brotli": 2097
+      "raw": 5999,
+      "gzip": 2625,
+      "brotli": 2170
     },
     "initial/render.html/js": {
       "raw": 557837,
@@ -769,7 +769,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -791,26 +791,6 @@
       },
       "reason": "Lazy compare mode of the viewer: shared clock, tile stage with Single/Grid/Spotlight glide, scope switch and performance comparison.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.css",
-      "cap": {
-        "raw": 2418,
-        "gzip": 911,
-        "brotli": 749
-      },
-      "reason": "Captions swap by whole line and keep a hiding caption whole: the swap keyframes, enter and exit timing and the reduced-motion rules, about 630 bytes raw; the viewer chunk drops ~137 kB raw with calligraph gone.",
-      "pr": "https://github.com/hazem3500/replays/pull/114"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 5788,
-        "gzip": 2529,
-        "brotli": 2103
-      },
-      "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
-      "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
@@ -1183,16 +1163,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/127"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60058,
-        "gzip": 21441,
-        "brotli": 18678
-      },
-      "reason": "Top bar actions, Context sections and seek bar tracks resolve through their viewer slots. Measured in CI against main (#121 and #125 already merged): +987 B raw, +354 B gzip, +333 B brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/133"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.css",
       "cap": {
         "raw": 5200,
@@ -1210,16 +1180,6 @@
         "brotli": 7521
       },
       "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 240032,
-        "gzip": 81328,
-        "brotli": 68340
-      },
-      "reason": "Network body formatting (indented JSON, decoded forms, redaction parts), body sections, ribbon hover linking and the playhead progress hook in the lazy inspector graph; the initial JavaScript budget is unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
@@ -1249,6 +1209,66 @@
       },
       "reason": "The initial index style group carries the same phone index stylesheets.",
       "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 240032,
+        "gzip": 81560,
+        "brotli": 68365
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 6767,
+        "gzip": 2981,
+        "brotli": 2695
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.css",
+      "cap": {
+        "raw": 2825,
+        "gzip": 1087,
+        "brotli": 892
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.js",
+      "cap": {
+        "raw": 887,
+        "gzip": 538,
+        "brotli": 501
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 60089,
+        "gzip": 21459,
+        "brotli": 18678
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #133's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "raw": 5999,
+        "gzip": 2625,
+        "brotli": 2170
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
     }
   ]
 }
