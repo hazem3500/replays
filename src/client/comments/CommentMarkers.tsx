@@ -19,10 +19,10 @@ function snippet(comment: PublicComment) {
 }
 
 /**
- * Comments on the seek bar: a small avatar (or initials) dot at each pinned comment's moment on the timeline being
- * watched, just above the bar. Hover or focus shows a preview card (who, when, the start of the text, reply count);
+ * Comments on the seek bar: at each pinned comment's moment on the timeline being watched, just above the bar, a tiny
+ * avatar for a signed-in author or a small dot for an anonymous one. Hover or focus shows a preview card (who, when, the start of the text, reply count);
  * a click seeks there and selects the comment in the panel. Moments edited out are not drawn (they stay in the
- * panel, marked "in removed section"); reactions are drawn as their emoji. Dots close together merge into one with a
+ * panel, marked "in removed section"); reactions are drawn as their emoji. Markers close together merge into one
  * count, whose card lists the first few and whose click goes to the first.
  */
 export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { width: number; inset: number }) {
@@ -76,12 +76,7 @@ export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { w
               )}
               onClick={() => comments.reveal(root.id, { open: false })}
             >
-              {root.emoji ? (
-                <span className="comment-marker-emoji">{root.emoji}</span>
-              ) : (
-                <Avatar name={root.author.name} avatarUrl={root.author.avatarUrl} anonymous={Boolean(root.author.anonymous)} />
-              )}
-              {cluster.members.length > 1 ? <span className="comment-marker-count">{cluster.members.length}</span> : null}
+              <MarkerFace count={cluster.members.length} root={root} />
             </button>
             <div className="comment-card" role="presentation" aria-hidden="true" data-testid="comment-card">
               {cluster.members.slice(0, 3).map(({ thread, at }) => (
@@ -95,6 +90,14 @@ export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { w
     </div>
   );
 });
+
+/** A cluster's count, a reaction's emoji, a small dot for an anonymous comment, or the author's tiny avatar. */
+function MarkerFace({ count, root }: { count: number; root: PublicComment }) {
+  if (count > 1) return <span className="comment-marker-count">{count}</span>;
+  if (root.emoji) return <span className="comment-marker-emoji">{root.emoji}</span>;
+  if (root.author.anonymous) return <span className="comment-marker-dot" />;
+  return <Avatar name={root.author.name} avatarUrl={root.author.avatarUrl} />;
+}
 
 function markerLabel(threads: PlacedThread[], at: number) {
   const first = threads[0]!.root;

@@ -1,183 +1,204 @@
-/* Threads, replies and the reaction line of the Comments tab (Thread.tsx, Reactions.tsx). Touch shows hover tools. */
-/* ---------- Threads ---------- */
+/*
+ * Threads, replies and the reaction line of the Comments tab (Thread.tsx, CommentActions.tsx, Reactions.tsx): a flowing
+ * list with hairlines between threads, no cards. Spacing is on a 4/8 rhythm.
+ */
 .comment-list,
 .comment-replies {
-  display: grid;
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.comment-list {
-  gap: 2px;
-  max-width: 760px;
+.comment-list > li {
+  border-top: 1px solid var(--line);
+}
+.comment-list > li:first-child {
+  border-top: 0;
 }
 .comment-thread {
-  padding: 10px 8px 6px;
-  border-radius: 8px;
+  padding: 12px 0;
   scroll-margin-top: 8px;
+}
+
+/* ---------- One comment ---------- */
+.comment {
+  position: relative;
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+  margin-inline: -8px;
+  padding: 4px 8px;
+  border-radius: var(--radius);
   transition: background-color var(--motion-fast) var(--ease-out);
 }
-.comment-thread[data-active] {
-  background: color-mix(in oklab, var(--accent) 7%, transparent);
-  box-shadow: inset 2px 0 0 var(--accent);
+.comment-thread[data-selected] > .comment {
+  background: var(--surface-hover);
 }
-.comment-thread[data-selected] {
-  background: var(--accent-soft);
-}
-.comment-thread:is([data-resolved], [data-removed]) .comment-body {
-  color: var(--text-secondary);
-}
-.comment {
-  display: flex;
-  gap: 8px;
-  min-width: 0;
+.comment .comment-avatar {
+  margin-top: 2px;
 }
 .comment-main {
   flex: 1;
   min-width: 0;
 }
-.comment-head {
+.comment-meta {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 8px;
+  align-items: baseline;
+  gap: 0 8px;
   min-height: 24px;
   font-size: var(--text-xs);
+  line-height: 24px;
 }
 .comment-author {
-  font-weight: 600;
+  color: var(--text);
+  font-weight: 550;
 }
 .comment-when,
-.comment-whole {
-  color: var(--text-tertiary);
-  font-size: var(--text-xs);
-}
+.comment-whole,
 .comment-removed {
-  color: var(--warning);
-  font-size: var(--text-xs);
-}
-.comment-removed .comment-link {
-  color: inherit;
+  color: var(--text-tertiary);
 }
 .comment-time {
-  height: 18px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: 9px;
-  background: color-mix(in oklab, var(--accent) 18%, transparent);
-  color: var(--text);
-  font: inherit;
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-  cursor: pointer;
-}
-.comment-time:hover {
-  background: color-mix(in oklab, var(--accent) 30%, transparent);
-}
-.comment-body {
-  margin: 2px 0 0;
-  font-size: var(--text-sm);
-  line-height: 1.45;
-  overflow-wrap: anywhere;
-  white-space: pre-wrap;
-}
-.comment-tools {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: auto;
-}
-.comment-actions {
-  display: inline-flex;
-  gap: 2px;
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--ease-out);
-}
-.comment:hover .comment-actions,
-.comment:focus-within .comment-actions {
-  opacity: 1;
-}
-.comment-action,
-.comment-resolve {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
+  position: relative;
+  z-index: 1;
   padding: 0;
   border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-tertiary);
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+  text-underline-offset: 3px;
   cursor: pointer;
 }
-.comment-action svg,
-.comment-resolve svg {
-  width: 14px;
-  height: 14px;
-}
-.comment-action:hover,
-.comment-resolve:hover {
-  background: var(--surface-hover);
+.comment-thread[data-active] .comment-time {
   color: var(--text);
 }
-.comment-resolve[aria-pressed="true"] {
-  color: var(--success);
+@media (hover: hover) {
+  .comment-time:hover {
+    color: var(--text);
+    text-decoration-color: currentColor;
+  }
+}
+.comment-body {
+  max-width: 80ch;
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-wrap: pretty;
+  white-space: pre-wrap;
+}
+.comment-thread:is([data-resolved], [data-removed]) .comment-body {
+  color: var(--text-secondary);
 }
 .comment-resolved {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 4px 0 0 32px;
-  color: var(--success);
+  margin: 4px 0 0 36px;
+  color: var(--text-tertiary);
   font-size: var(--text-xs);
 }
-.comment-resolved svg {
-  width: 12px;
-  height: 12px;
-}
 .comment-replies {
-  gap: 10px;
-  margin: 10px 0 0 32px;
-  padding-left: 12px;
-  border-left: 1px solid var(--line);
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0 36px;
 }
 .comment-replies .comment-avatar {
   width: 20px;
   height: 20px;
-  font-size: 9px;
 }
-.comment-reply-open {
+.comment-link {
+  position: relative;
+  z-index: 1;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ---------- Actions: hover-revealed on desktop, a tap target on phones ---------- */
+.comment-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+.comment:is(:hover, :focus-within) .comment-actions,
+.comment-actions:has([data-popup-open]) {
+  opacity: 1;
+}
+.comment-text-action,
+.comment-more {
+  display: inline-grid;
+  place-items: center;
   height: 24px;
-  margin: 2px 0 0 28px;
-  padding: 0 4px;
+  padding: 0 6px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   font: inherit;
   font-size: var(--text-xs);
   cursor: pointer;
 }
-.comment-reply-open:hover {
+.comment-more {
+  width: 24px;
+  padding: 0;
+}
+.comment-more svg {
+  width: 16px;
+  height: 16px;
+}
+.comment-more[data-popup-open] {
+  background: var(--surface-hover);
   color: var(--text);
 }
+@media (hover: hover) {
+  .comment-text-action:hover,
+  .comment-more:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+}
+.comment-tap {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.comment-tap:active {
+  background: var(--surface-hover);
+}
+.comment-tap:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+/* ---------- Reply and edit boxes ---------- */
 .comment-reply-box {
   display: grid;
-  gap: 6px;
-  margin: 8px 0 0 32px;
+  gap: 8px;
+  margin: 8px 0 0 36px;
 }
 .comment-main > .comment-reply-box {
+  position: relative;
+  z-index: 1;
   margin: 4px 0 0;
 }
 .comment-reply-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 6px;
+  gap: 8px;
 }
 .comment-input {
   width: 100%;
-  min-height: 56px;
-  padding: 8px 10px;
+  min-height: 64px;
+  padding: 8px 12px;
   resize: vertical;
   border: 1px solid var(--line-strong);
   border-radius: var(--radius);
@@ -185,70 +206,35 @@
   color: var(--text);
   font: inherit;
   font-size: var(--text-sm);
-  line-height: 1.4;
+  line-height: 1.5;
 }
 .comment-input::placeholder {
   color: var(--text-tertiary);
 }
 .comment-input:focus-visible {
-  border-color: color-mix(in oklab, var(--accent) 55%, var(--line-strong));
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);
+  border-color: var(--ring);
+  box-shadow: none;
   outline: none;
 }
-.comment-confirm {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 12px;
-  margin-top: 6px;
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-.comment-link {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: var(--text-secondary);
-  font: inherit;
-  font-size: var(--text-xs);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-  cursor: pointer;
-}
-.comment-link:hover {
-  color: var(--text);
-}
-.comment-danger {
-  color: var(--danger);
-}
 
-/* ---------- Reactions in the list ---------- */
+/* ---------- Reactions in the list: one plain line ---------- */
 .comment-reactions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 8px 6px 40px;
+  gap: 0 16px;
+  padding: 8px 0 8px 36px;
 }
 .comment-reaction-chip {
   display: inline-flex;
   align-items: center;
-  height: 26px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: var(--surface);
-  transition: border-color var(--motion-fast) var(--ease-out);
-}
-.comment-reaction-chip:is([data-active], [data-selected]) {
-  border-color: color-mix(in oklab, var(--accent) 60%, transparent);
 }
 .comment-reaction-go {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 100%;
-  padding: 0 10px 0 8px;
+  min-height: 24px;
+  padding: 0;
   border: 0;
-  border-radius: 13px;
   background: transparent;
   color: var(--text-secondary);
   font: inherit;
@@ -259,68 +245,122 @@
   cursor: default;
 }
 .comment-reaction {
-  font-size: 14px;
+  font-size: var(--text-sm);
   line-height: 1;
 }
 .comment-reaction-at {
   color: var(--text-tertiary);
   font-variant-numeric: tabular-nums;
 }
+.comment-reaction-chip:is([data-active], [data-selected]) .comment-reaction-at {
+  color: var(--text);
+}
 .comment-reaction-remove {
   display: grid;
   place-items: center;
   width: 24px;
   height: 24px;
-  margin: 0 1px 0 -6px;
   padding: 0;
   border: 0;
-  border-radius: 50%;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-out);
 }
 .comment-reaction-remove svg {
   width: 12px;
   height: 12px;
 }
-.comment-reaction-remove:hover {
-  background: var(--surface-hover);
+.comment-reaction-chip:is(:hover, :focus-within) .comment-reaction-remove {
+  opacity: 1;
+}
+
+/* ---------- The overflow menu and the delete dialog ---------- */
+.comment-menu.comment-menu {
+  width: auto;
+  min-width: 160px;
+}
+@media (min-width: 640px) {
+  .comment-delete-dialog.comment-delete-dialog {
+    max-width: 400px;
+  }
+}
+
+/* ---------- Phone action sheet ---------- */
+.comment-sheet-title {
+  margin: 0 0 8px;
+  padding: 0 8px;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.comment-sheet-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.comment-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
   color: var(--text);
+  font: inherit;
+  font-size: var(--text-md);
+  text-align: left;
+}
+.comment-sheet-row[data-danger] {
+  color: var(--danger);
+}
+.comment-sheet-row:active {
+  background: var(--surface-hover);
+}
+.comment-sheet-row:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+.comment-sheet-icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  color: var(--text-secondary);
+}
+.comment-sheet-row[data-danger] .comment-sheet-icon {
+  color: inherit;
+}
+.comment-sheet-icon svg {
+  width: 18px;
+  height: 18px;
 }
 
 @media (hover: none), (pointer: coarse) {
-  .comment-actions {
+  .comment-reaction-remove {
+    width: 40px;
+    height: 40px;
+    margin-block: -8px;
     opacity: 1;
   }
-  .comment-action,
-  .comment-resolve {
-    width: 32px;
-    height: 32px;
-  }
-  .comment-reply-open {
-    height: 32px;
-  }
-  .comment-reaction-chip {
-    height: 32px;
-    border-radius: 16px;
+  .comment-reaction-go {
+    min-height: 40px;
   }
   .comment-input {
     font-size: 16px;
   }
 }
-@media (max-width: 480px) {
-  .comment-replies,
-  .comment-reply-box,
-  .comment-resolved {
-    margin-left: 16px;
-  }
-  .comment-reactions {
-    padding-left: 8px;
-  }
-}
 @media (prefers-reduced-motion: reduce) {
-  .comment-thread,
-  .comment-actions {
+  .comment,
+  .comment-actions,
+  .comment-reaction-remove {
     transition: none;
   }
 }

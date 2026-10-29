@@ -1,20 +1,20 @@
-import { CheckIcon, CircleCheckIcon, CircleIcon, LinkIcon, PencilIcon, Trash2Icon } from 'lucide-react';
 import { type ReactNode, useState } from 'react';
 
 import type { PublicComment } from '../../shared/comments.ts';
 import { formatClock } from '../../shared/replay.ts';
-import { Hint } from '@/components/icon-button.tsx';
+import { useCanHover } from '@/components/ui/tooltip.tsx';
 import { formatRelative } from '../format.ts';
 import { usePlayer } from '../player.ts';
 import { Avatar } from './Avatar.tsx';
+import { ActionSheet, type CommentActionSet, DeleteDialog, HoverActions } from './CommentActions.tsx';
 import type { CommentsApi, PlacedThread } from './CommentsProvider.tsx';
 import { reportFailure } from './failure.ts';
 import { ReplyBox } from './ReplyBox.tsx';
 import { commentStrings } from './strings.ts';
 
 /**
- * One written thread: the first comment with its moment (a click seeks there), resolve, the replies, and a quiet
- * Reply line that opens a box in place. Resolved threads stay listed, dimmed, with who resolved them.
+ * One written thread in the flowing list: the first comment, its replies indented under it, and a reply box in place
+ * when asked. Resolved threads stay listed, dimmed, with who resolved them.
  */
 export function ThreadItem({ thread, comments, active }: { thread: PlacedThread; comments: CommentsApi; active: boolean }) {
   const { root, replies } = thread;
@@ -26,7 +26,6 @@ export function ThreadItem({ thread, comments, active }: { thread: PlacedThread;
       reportFailure(error);
     }
   };
-  const resolveLabel = root.resolved ? 'Reopen thread' : 'Resolve thread';
   return (
     <li
       className="comment-thread"
@@ -40,53 +39,32 @@ export function ThreadItem({ thread, comments, active }: { thread: PlacedThread;
       <CommentRow
         comment={root}
         comments={comments}
-        lead={<ThreadLead thread={thread} comments={comments} />}
-        tools={
-          <IconAction label="Copy link to comment" onClick={() => comments.copyLink(thread)} testId="comment-copy-link">
-            <LinkIcon aria-hidden="true" />
-          </IconAction>
-        }
-        status={
-          <Hint label={resolveLabel}>
-            <button
-              type="button"
-              className="comment-resolve"
-              aria-label={resolveLabel}
-              aria-pressed={Boolean(root.resolved)}
-              data-testid="comment-resolve"
-              onClick={() => void resolve()}
-            >
-              {root.resolved ? <CircleCheckIcon aria-hidden="true" /> : <CircleIcon aria-hidden="true" />}
-            </button>
-          </Hint>
-        }
+        lead={<ThreadTime thread={thread} comments={comments} />}
+        thread={{ onReply: () => setReplying(true), onResolve: () => void resolve(), resolved: Boolean(root.resolved) }}
+        replies={replies.length}
+        onCopyLink={() => comments.copyLink(thread)}
       />
       {root.resolved ? (
         <p className="comment-resolved" data-testid="comment-resolved-note">
-          <CheckIcon aria-hidden="true" /> Resolved by {root.resolved.by}
+          {commentStrings.resolvedBy(root.resolved.by)}
         </p>
       ) : null}
       {replies.length > 0 ? (
         <ol className="comment-replies">
           {replies.map((reply) => (
             <li key={reply.id} data-testid="comment-reply-item">
-              <CommentRow comment={reply} comments={comments} />
+              <CommentRow comment={reply} comments={comments} onCopyLink={() => comments.copyLink(thread)} />
             </li>
           ))}
         </ol>
       ) : null}
-      {replying ? (
-        <ReplyBox comments={comments} parentId={root.id} onDone={() => setReplying(false)} />
-      ) : (
-        <button type="button" className="comment-reply-open" data-testid="comment-reply" onClick={() => setReplying(true)}>
-          Reply
-        </button>
-      )}
+      {replying ? <ReplyBox comments={comments} parentId={root.id} onDone={() => setReplying(false)} /> : null}
     </li>
   );
 }
 
-function ThreadLead({ thread, comments }: { thread: PlacedThread; comments: CommentsApi }) {
+/** The thread's moment as an understated link that seeks there; "Whole replay", or a pointer to the original when cut. */
+function ThreadTime({ thread, comments }: { thread: PlacedThread; comments: CommentsApi }) {
   const player = usePlayer();
   const { root, placement } = thread;
   if (placement.state === 'visible')
@@ -99,7 +77,7 @@ function ThreadLead({ thread, comments }: { thread: PlacedThread; comments: Comm
           comments.reveal(root.id, { open: false });
           player.seek(placement.at);
         }}
-        aria-label={`Go to ${formatClock(placement.at)}`}
+        aria-label={commentStrings.goTo(formatClock(placement.at))}
       >
         {formatClock(placement.at)}
       </button>
@@ -116,70 +94,31 @@ function ThreadLead({ thread, comments }: { thread: PlacedThread; comments: Comm
   return <span className="comment-whole">{commentStrings.wholeReplay}</span>;
 }
 
-function IconAction({ label, onClick, testId, children }: { label: string; onClick: () => void; testId: string; children: ReactNode }) {
-  return (
-    <Hint label={label}>
-      <button type="button" className="comment-action" aria-label={label} data-testid={testId} onClick={onClick}>
-        {children}
-      </button>
-    </Hint>
-  );
-}
-
-/** Copy link and, for the author, edit and delete (shown on hover or focus), then `status` (always shown). */
-function CommentTools({
-  mine,
-  onEdit,
-  onDelete,
-  status,
-  children,
-}: {
-  mine: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
-  status?: ReactNode;
-  children?: ReactNode;
-}) {
-  return (
-    <span className="comment-tools">
-      <span className="comment-actions">
-        {children}
-        {mine ? (
-          <IconAction label="Edit" onClick={onEdit} testId="comment-edit">
-            <PencilIcon aria-hidden="true" />
-          </IconAction>
-        ) : null}
-        {mine ? (
-          <IconAction label="Delete" onClick={onDelete} testId="comment-delete">
-            <Trash2Icon aria-hidden="true" />
-          </IconAction>
-        ) : null}
-      </span>
-      {status}
-    </span>
-  );
-}
-
 /**
- * One comment (a thread's first, or a reply): who, its moment and when, the text, and what its author may do. The
- * author's tools show on hover or focus (always on touch); `status` (resolve) stays visible.
+ * One comment, a thread's first or a reply: avatar, one quiet line (who, when in the replay, how long ago) and the
+ * text. Its actions follow the device: hover-revealed on a desktop, a tap on the comment opens a sheet on a phone.
  */
 function CommentRow({
   comment,
   comments,
   lead,
-  tools,
-  status,
+  thread,
+  replies = 0,
+  onCopyLink,
 }: {
   comment: PublicComment;
   comments: CommentsApi;
   lead?: ReactNode;
-  tools?: ReactNode;
-  status?: ReactNode;
+  thread?: Pick<CommentActionSet, 'onReply' | 'onResolve' | 'resolved'>;
+  replies?: number;
+  onCopyLink: () => void;
 }) {
+  const canHover = useCanHover();
   const [editing, setEditing] = useState(false);
+  const [sheet, setSheet] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const remove = async () => {
+    setConfirming(false);
     try {
       await comments.remove(comment.id);
     } catch (error) {
@@ -187,24 +126,36 @@ function CommentRow({
     }
   };
   const author = comment.author;
+  const actions: CommentActionSet = {
+    ...thread,
+    onCopyLink,
+    onEdit: comment.mine ? () => setEditing(true) : undefined,
+    onDelete: comment.mine ? () => setConfirming(true) : undefined,
+  };
   return (
     <div className="comment" data-testid="comment" data-comment-id={comment.id} data-mine={comment.mine || undefined}>
+      {canHover || editing ? null : (
+        <button
+          type="button"
+          className="comment-tap"
+          aria-label={commentStrings.tapForActions(author.name)}
+          aria-haspopup="dialog"
+          data-testid="comment-tap"
+          onClick={() => setSheet(true)}
+        />
+      )}
       <Avatar name={author.name} avatarUrl={author.avatarUrl} anonymous={Boolean(author.anonymous)} />
       <div className="comment-main">
-        <div className="comment-head">
-          <strong className="comment-author" data-testid="comment-author">
+        <div className="comment-meta">
+          <span className="comment-author" data-testid="comment-author">
             {author.name}
-          </strong>
+          </span>
           {lead}
           <time dateTime={comment.createdAt} title={new Date(comment.createdAt).toLocaleString()} className="comment-when">
             {formatRelative(comment.createdAt, undefined, 'narrow')}
           </time>
-          {comment.editedAt ? <span className="comment-when">edited</span> : null}
-          {editing ? null : (
-            <CommentTools mine={comment.mine} onEdit={() => setEditing(true)} onDelete={() => setConfirming(true)} status={status}>
-              {tools}
-            </CommentTools>
-          )}
+          {comment.editedAt ? <span className="comment-when">{commentStrings.edited}</span> : null}
+          {canHover && !editing ? <HoverActions actions={actions} /> : null}
         </div>
         {editing ? (
           <ReplyBox comments={comments} editing={comment} onDone={() => setEditing(false)} />
@@ -213,23 +164,15 @@ function CommentRow({
             {comment.body}
           </p>
         )}
-        {confirming ? (
-          <div className="comment-confirm" role="group" aria-label="Delete this comment?">
-            <span>{comment.parentId ? 'Delete this reply?' : 'Delete this comment and its replies?'}</span>
-            <button
-              type="button"
-              className="comment-link comment-danger"
-              data-testid="comment-delete-confirm"
-              onClick={() => void remove()}
-            >
-              Delete
-            </button>
-            <button type="button" className="comment-link" onClick={() => setConfirming(false)}>
-              Keep
-            </button>
-          </div>
-        ) : null}
       </div>
+      {canHover ? null : <ActionSheet open={sheet} onOpenChange={setSheet} title={comment.body} actions={actions} />}
+      <DeleteDialog
+        open={confirming}
+        onOpenChange={setConfirming}
+        reply={Boolean(comment.parentId)}
+        replies={replies}
+        onConfirm={() => void remove()}
+      />
     </div>
   );
 }
