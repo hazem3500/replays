@@ -3,14 +3,17 @@ import { expect, type Page, test } from '@playwright/test';
 import { origin } from './support.ts';
 
 async function openSettings(page: Page, tap: boolean) {
-  const trigger = page.getByRole('button', { name: 'Settings', exact: true });
-  await (tap ? trigger.tap() : trigger.click());
+  if (tap) {
+    // why: phones fold Settings into the header's menu sheet (IndexPhoneMenu.tsx).
+    await page.getByRole('button', { name: 'Menu' }).tap();
+    await page.getByRole('button', { name: /^Settings/ }).tap();
+  } else await page.getByRole('button', { name: 'Settings', exact: true }).click();
   return page.getByRole('dialog', { name: 'Settings' });
 }
 
 function overflow(page: Page) {
   return page.evaluate(async () => {
-    const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+    const dialog = document.querySelector<HTMLElement>('[role="dialog"].settings-dialog');
     if (!dialog) throw new Error('the Settings dialog is not open');
     await Promise.all(dialog.getAnimations({ subtree: true }).map((animation) => animation.finished));
     const rect = dialog.getBoundingClientRect();

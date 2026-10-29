@@ -37,6 +37,8 @@ import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
 import { Topbar } from './Topbar.tsx';
+import { IndexPhoneMenu, phoneMenuItems } from './index/IndexPhoneMenu.tsx';
+import { useSignedIn } from './account/AccountMenu.tsx';
 import { UploadReplay, type UploadReplayHandle } from './upload/UploadReplay.tsx';
 import { useReplayDrop } from './upload/useReplayDrop.tsx';
 
@@ -453,6 +455,7 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
   const toolbar = useRef<HTMLDivElement>(null);
   const shell = useRef<HTMLElement>(null);
   const upload = useRef<UploadReplayHandle>(null);
+  const account = useSignedIn();
   // Drop a replay.json or rrweb export anywhere on the index to upload it.
   const dropOverlay = useReplayDrop((file) => upload.current?.open(file));
 
@@ -745,6 +748,11 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
     return filtered ? { kind: 'filtered', active: narrowing, onClearFilters: clear } : undefined;
   };
   const empty = emptyView();
+  // why: an empty library has nothing to filter, sort or lay out; its one action is the first upload (FirstRun).
+  const firstRun = !error && !empty && entries?.length === 0;
+  // why: the toolbar that appears with the first replay enters like a list item; on a normal load it is just there.
+  const [leftFirstRun, setLeftFirstRun] = useState(false);
+  if (firstRun && !leftFirstRun) setLeftFirstRun(true);
 
   return (
     <main className="index-shell" ref={shell}>
@@ -752,6 +760,13 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
+          {...(compact
+            ? {
+                phoneMenu: (
+                  <IndexPhoneMenu items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })} />
+                ),
+              }
+            : {})}
           actions={
             <>
               {searchField}
@@ -759,24 +774,27 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
             </>
           }
         />
-        <ScopeBar
-          count={count}
-          lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
-        >
-          {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
-          <SortMenu sort={sort} onChange={changeSort} />
-          {compact ? null : (
-            // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
-            <div className="view-switch" role="group" aria-label="Layout">
-              <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
-                <AnimatedIcon name="list" />
-              </SwitchIconButton>
-              <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
-                <AnimatedIcon name="layout-grid" />
-              </SwitchIconButton>
-            </div>
-          )}
-        </ScopeBar>
+        {firstRun ? null : (
+          <ScopeBar
+            entering={leftFirstRun}
+            count={count}
+            lead={tabs.length ? <ProfileSegments profiles={tabs} value={profile} counts={counts} onChange={changeProfile} /> : undefined}
+          >
+            {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
+            <SortMenu sort={sort} onChange={changeSort} />
+            {compact ? null : (
+              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
+              <div className="view-switch" role="group" aria-label="Layout">
+                <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
+                  <AnimatedIcon name="list" />
+                </SwitchIconButton>
+                <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
+                  <AnimatedIcon name="layout-grid" />
+                </SwitchIconButton>
+              </div>
+            )}
+          </ScopeBar>
+        )}
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>

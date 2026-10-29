@@ -194,10 +194,10 @@ for (const theme of THEMES) {
       // 24 px target: reported to the client owners, skipped here until it grows.
       await audit(page, 'phone index', { disable: ['target-size'] });
       await page.getByRole('button', { name: /^Sort: / }).click();
-      await expect(page.getByRole('menu')).toBeVisible();
-      // Base UI's keyboard guards (aria-hidden, tabindex 0) only bounce the keyboard back into the open menu; on a mobile
+      await expect(page.getByRole('dialog', { name: 'Sort' })).toBeVisible();
+      // Base UI's keyboard guards (aria-hidden, tabindex 0) only bounce the keyboard back into the open sheet; on a mobile
       // viewport they trip an axe rule.
-      await audit(page, 'phone index, sort menu', { disable: ['aria-hidden-focus', 'target-size'] });
+      await audit(page, 'phone index, sort sheet', { disable: ['aria-hidden-focus', 'target-size'] });
       await page.keyboard.press('Escape');
 
       await openReplay(page, `${server().origin}/r/demo-shop`);

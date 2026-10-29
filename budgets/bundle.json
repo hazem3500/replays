@@ -75,7 +75,7 @@
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
       "gzip": 10364,
-      "brotli": 9008
+      "brotli": 9006
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -133,14 +133,14 @@
       "brotli": 229
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 40400,
-      "gzip": 7760,
-      "brotli": 6940
+      "raw": 44015,
+      "gzip": 8406,
+      "brotli": 7521
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 234002,
-      "gzip": 79371,
-      "brotli": 66630
+      "raw": 240032,
+      "gzip": 81328,
+      "brotli": 68340
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -153,9 +153,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 242694,
-      "gzip": 41991,
-      "brotli": 35120
+      "raw": 252918,
+      "gzip": 43554,
+      "brotli": 36226
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 983276,
@@ -209,8 +209,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 608,
-      "brotli": 556
+      "gzip": 607,
+      "brotli": 555
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -483,14 +483,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 242694,
-      "gzip": 41991,
-      "brotli": 35120
+      "raw": 254839,
+      "gzip": 44498,
+      "brotli": 37043
     },
     "initial/index.html/js": {
       "raw": 1484557,
       "gzip": 472609,
-      "brotli": 399787
+      "brotli": 399732
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -769,7 +769,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -893,16 +893,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/136"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 246064,
-        "gzip": 42460,
-        "brotli": 35304
-      },
-      "reason": "The editor loading state draws the cursor panel's real headings and controls, so cursor-inspector.css and inspector.css move from the lazy Editor CSS into the eager stylesheet (the Editor CSS shrinks by the same rules), with the skeleton's transport, ruler and clip lane; measured against main: +13123 B raw, +2176 B gzip, +1648 B brotli. Replaces #109's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/142"
-    },
-    {
       "file": "dist/client/assets/player-HASH.js",
       "cap": {
         "gzip": 98168,
@@ -910,16 +900,6 @@
         "raw": 315990
       },
       "reason": "Cursor themes take a click effect chosen apart from the style; measured against main: +670 B raw, +215 B gzip, +222 B brotli. Replaces #130's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/142"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 247932,
-        "gzip": 43379,
-        "brotli": 36099
-      },
-      "reason": "The editor loading state's real cursor panel and timeline styles load with the first page (see main-HASH.css); measured against main: +13123 B raw, +2176 B gzip, +1648 B brotli. Replaces #109's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
@@ -931,6 +911,16 @@
       },
       "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21201,
+        "gzip": 8711,
+        "brotli": 7524
+      },
+      "reason": "Run switches and the landing run write the address through the router (routing/navigate.ts) instead of history.pushState, and popped addresses are read with routing/links.ts. Replaces #105's entry (Measured in CI against fresh main: raw 18081 to 18096 bytes with this change. Then: Suite workspace routes runs into the compare mode (sidebar moves focus, lazy SuiteCompare entry).)",
+      "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
       "file": "dist/client/assets/comments-HASH.js",
@@ -1103,14 +1093,14 @@
       "pr": "https://github.com/hazem3500/replays/pull/139"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.css",
+      "file": "dist/lib/chunks/context.schema.json-385e24c93576.mjs",
       "cap": {
-        "raw": 40400,
-        "gzip": 7760,
-        "brotli": 6940
+        "raw": 311351,
+        "gzip": 81713,
+        "brotli": 66956
       },
-      "reason": "Pending frames for the inspector's built-in panels and the flat tab row's group hairlines and status dots, on top of #119's Network and Performance styles.",
-      "pr": "https://github.com/hazem3500/replays/pull/117"
+      "reason": "The context-schema chunk is renamed by its content hash when the shared chunk graph gains the auth wrapper; same module.",
+      "pr": "https://github.com/hazem3500/replays/pull/139"
     },
     {
       "file": "dist/client/assets/composite-HASH.js",
@@ -1153,6 +1143,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
+      "file": "dist/client/assets/use-focus-when-HASH.js",
+      "cap": {
+        "raw": 312,
+        "gzip": 253,
+        "brotli": 215
+      },
+      "reason": "A tiny shared chunk split out when the comments UI went lazy: the focus hook is used by the reply box and other lazy views.",
+      "pr": "https://github.com/hazem3500/replays/pull/116"
+    },
+    {
       "file": "dist/client/assets/comments-ui-HASH.js",
       "cap": {
         "raw": 29145,
@@ -1170,24 +1170,6 @@
         "brotli": 2714
       },
       "reason": "The comments panel and marker styles travel with the lazy comments UI chunk and replace main's feature stylesheet (8661 raw bytes).",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 640
-      },
-      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change when the comments UI moves into its own chunk; measured against main: 0 B raw, -2 B gzip, +31 B brotli (621 against main's 590 and a 608-byte cap). Replaces #119's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 234002,
-        "gzip": 79371,
-        "brotli": 66630
-      },
-      "reason": "The Comments tab in the lazy inspector graph gains the redesigned feature wiring (composer focus requests, the open/resolved filter state and the review strings); measured against main: +481 B raw, +97 B gzip, -9 B brotli. Replaces #117's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
@@ -1221,34 +1203,52 @@
       "pr": "https://github.com/hazem3500/replays/pull/133"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
-        "raw": 21285,
-        "gzip": 8752,
-        "brotli": 7550
+        "raw": 44015,
+        "gzip": 8406,
+        "brotli": 7521
       },
-      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 21285 raw, 8752 gzip, 7550 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/134"
+      "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-2baadbe84d5e.mjs",
+      "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
-        "raw": 307644,
-        "gzip": 80607,
-        "brotli": 66039
+        "raw": 240032,
+        "gzip": 81328,
+        "brotli": 68340
       },
-      "reason": "The server entry now imports src/shared/expired.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-385e24c93576 (caps 311351, 81713, 66956) and measures 307644 raw, 80607 gzip, 66039 brotli bytes, under those caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/134"
+      "reason": "Network body formatting (indented JSON, decoded forms, redaction parts), body sections, ribbon hover linking and the playhead progress hook in the lazy inspector graph; the initial JavaScript budget is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
     },
     {
-      "file": "dist/client/assets/use-focus-when-HASH.js",
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "raw": 312,
-        "gzip": 253,
-        "brotli": 219
+        "brotli": 633
       },
-      "reason": "A tiny shared hook chunk whose bytes are the hashed chunk names it imports; they change with this PR's chunks. Measures 219 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/134"
+      "reason": "Names the lazy inspector chunk by its hash, which changes with #152; Brotli measures 614 bytes against a 605-byte cap with the same raw size.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 252918,
+        "gzip": 43554,
+        "brotli": 36226
+      },
+      "reason": "The phone index stylesheets (thumb-sized rows, quiet Filters and sort, the sort sheet and the header menu sheet) join the app stylesheet, about 8 KB raw over main.",
+      "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 254839,
+        "gzip": 44498,
+        "brotli": 37043
+      },
+      "reason": "The initial index style group carries the same phone index stylesheets.",
+      "pr": "https://github.com/hazem3500/replays/pull/111"
     }
   ]
 }

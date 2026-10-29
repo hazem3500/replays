@@ -267,12 +267,26 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - "Keep suite and its runs" moved from the suite sidebar's pin button into the viewer's More menu at every width; the
   sidebar shows "Kept by …" while a suite is kept.
 
+- Network's timing needs no mode: the ribbon on the seek bar's axis is always there, with one tick per request when a
+  recording is sparse and request density when it is busy. The row under the pointer, or the selected one, lights its
+  mark. The ribbon's playhead and the veil over what hasn't happened yet move by transform and glide when you seek,
+  rows fade between upcoming and reached instead of snapping, and the list follows the playhead with a smooth scroll
+  (instant for far jumps and under reduced motion). Performance's ribbon works the same way.
+- The request detail shows captured network bodies (#129): JSON indented, form fields decoded, folded past 14 lines,
+  with copy, a "Truncated at" note and redaction markers drawn as such. Copy as cURL sends a body that was kept whole.
+  Recordings without bodies say "Not captured".
+- Performance says "Performance wasn’t recorded" with the `replays capture --profile performance` command when no
+  timing was observed, instead of five "Not captured" cells over "Nothing was slow".
+
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
   touch. Modals keep a plain fade under reduced motion. The destructive button is a solid fill whose label clears 4.5:1.
 - Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
+- The replay list on phones (640 px and narrower): thumb-sized rows with a two-line title and one quiet meta line,
+  Filters as quiet text with its count inside, sort as quiet text opening a bottom sheet of 48 px radio rows, and one
+  header menu sheet (Upload, Settings, and a theme row) beside search instead of four icons.
 
 - Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
   that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
