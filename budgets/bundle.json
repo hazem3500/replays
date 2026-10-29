@@ -270,7 +270,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
       "gzip": 9037,
-      "brotli": 7810
+      "brotli": 7804
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
