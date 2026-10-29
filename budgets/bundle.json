@@ -74,13 +74,13 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10346,
-      "brotli": 9005
+      "gzip": 10364,
+      "brotli": 9006
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2343,
-      "brotli": 2119
+      "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 7830,
@@ -119,7 +119,7 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6582,
-      "gzip": 3177,
+      "gzip": 3180,
       "brotli": 2796
     },
     "dist/client/assets/features-HASH.js": {
@@ -190,7 +190,7 @@
     "dist/client/assets/queries-HASH.js": {
       "raw": 14679,
       "gzip": 4771,
-      "brotli": 4356
+      "brotli": 4362
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 683,
-      "brotli": 605
+      "gzip": 682,
+      "brotli": 604
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -270,7 +270,7 @@
     "dist/client/assets/useTriggerFocusGuards-HASH.js": {
       "raw": 72164,
       "gzip": 25666,
-      "brotli": 22682
+      "brotli": 22715
     },
     "dist/client/assets/Viewer-HASH.css": {
       "raw": 5200,
@@ -290,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 544,
-      "brotli": 406
+      "brotli": 407
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -307,10 +307,10 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-2baadbe84d5e.mjs": {
-      "raw": 307644,
-      "gzip": 80607,
-      "brotli": 66039
+    "dist/lib/chunks/context.schema.json-385e24c93576.mjs": {
+      "raw": 311351,
+      "gzip": 81713,
+      "brotli": 66956
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -324,7 +324,7 @@
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
-      "gzip": 9208,
+      "gzip": 9209,
       "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
@@ -385,7 +385,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 136
+      "brotli": 144
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -484,8 +484,8 @@
     },
     "initial/index.html/css": {
       "raw": 254839,
-      "gzip": 44023,
-      "brotli": 36652
+      "gzip": 44498,
+      "brotli": 37043
     },
     "initial/index.html/js": {
       "raw": 1484557,
