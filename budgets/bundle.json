@@ -83,12 +83,12 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8344,
-      "gzip": 2182,
-      "brotli": 1873
+      "raw": 8845,
+      "gzip": 2280,
+      "brotli": 1959
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38057,
+      "raw": 38116,
       "gzip": 13526,
       "brotli": 12013
     },
@@ -1199,9 +1199,9 @@
     {
       "file": "dist/client/assets/CompareViewer-HASH.css",
       "cap": {
-        "raw": 8344,
-        "gzip": 2182,
-        "brotli": 1873
+        "raw": 8845,
+        "gzip": 2280,
+        "brotli": 1959
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured in CI against main 007eefca. Replaces earlier allowances for these files.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
@@ -1209,7 +1209,7 @@
     {
       "file": "dist/client/assets/CompareViewer-HASH.js",
       "cap": {
-        "raw": 38057,
+        "raw": 38116,
         "gzip": 13526,
         "brotli": 12013
       },

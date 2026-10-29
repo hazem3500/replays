@@ -672,9 +672,10 @@ export function Viewer({
             ) : null}
             <div className="stage-wrap">
               {stage ?? <PlayerStage />}
+              {/* why: a comparison's stage draws the step caption on its focused tile's frame (CompareTile.tsx). */}
               {effects?.captions.length ? (
                 <EditCaption captions={effects.captions} />
-              ) : captions && bundle.steps.length > 0 ? (
+              ) : captions && bundle.steps.length > 0 && !stage ? (
                 <StepCaption />
               ) : null}
               <SkipIndicator />
