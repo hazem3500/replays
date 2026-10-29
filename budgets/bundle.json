@@ -118,7 +118,7 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6582,
+      "raw": 6581,
       "gzip": 3177,
       "brotli": 2796
     },
@@ -139,7 +139,7 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5736,
-      "gzip": 2518,
+      "gzip": 2527,
       "brotli": 2312
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -168,9 +168,9 @@
       "brotli": 37918
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 994149,
-      "gzip": 310973,
-      "brotli": 257069
+      "raw": 996774,
+      "gzip": 311814,
+      "brotli": 257642
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -250,12 +250,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 611
+      "brotli": 609
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21476,
-      "gzip": 8791,
-      "brotli": 7571
+      "raw": 21521,
+      "gzip": 8814,
+      "brotli": 7618
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -327,15 +327,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-06e184308ebe.mjs": {
-      "raw": 311107,
-      "gzip": 81868,
-      "brotli": 67175
-    },
     "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
-      "raw": 312907,
-      "gzip": 83012,
-      "brotli": 67822
+      "raw": 313664,
+      "gzip": 83201,
+      "brotli": 67963
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -434,8 +429,8 @@
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
-      "gzip": 1639,
-      "brotli": 1418
+      "gzip": 1638,
+      "brotli": 1414
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
@@ -1202,23 +1197,13 @@
       "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
-      "cap": {
-        "raw": 312907,
-        "gzip": 83012,
-        "brotli": 67822
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/170",
-      "reason": "Splitting app.ts adds src/server/app/* and src/server/http/{send,serve-file,fail}.ts to the shared server chunk, so its source identity changes; measured on Boat against main: main 310977/81843/67134 (context.schema.json-06e184308ebe.mjs), head 312907/83012/67822 (+1930 B raw, +1169 B gzip, +688 B brotli). Replaces the previous entry for this chunk."
-    },
-    {
       "file": "dist/client/assets/CompareViewer-HASH.css",
       "cap": {
         "raw": 8845,
         "gzip": 2280,
         "brotli": 1959
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1228,7 +1213,7 @@
         "gzip": 13716,
         "brotli": 12186
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1238,17 +1223,17 @@
         "gzip": 450,
         "brotli": 358
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
       "file": "dist/client/assets/Headline-HASH.js",
       "cap": {
         "raw": 5736,
-        "gzip": 2518,
+        "gzip": 2527,
         "brotli": 2312
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1258,17 +1243,17 @@
         "gzip": 82012,
         "brotli": 68918
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
-        "raw": 21476,
-        "gzip": 8791,
-        "brotli": 7571
+        "raw": 21521,
+        "gzip": 8814,
+        "brotli": 7618
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1278,7 +1263,7 @@
         "gzip": 1562,
         "brotli": 1344
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1288,7 +1273,7 @@
         "gzip": 24031,
         "brotli": 20883
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1298,17 +1283,17 @@
         "gzip": 462,
         "brotli": 429
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
+        "raw": 996774,
+        "gzip": 311814,
+        "brotli": 257642
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1318,7 +1303,7 @@
         "gzip": 256,
         "brotli": 246
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1328,7 +1313,7 @@
         "gzip": 3991,
         "brotli": 3622
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1338,17 +1323,7 @@
         "gzip": 539,
         "brotli": 505
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured against main a8320745, with a few bytes of room for runner variance. Replaces earlier allowances for these files.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-06e184308ebe.mjs",
-      "cap": {
-        "raw": 311107,
-        "gzip": 81868,
-        "brotli": 67175
-      },
-      "reason": "Viewer views: the optional suite profile check in the shared suite contract. Measured against main a8320745, with a few bytes of room for runner variance.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1358,7 +1333,17 @@
         "gzip": 119092,
         "brotli": 96966
       },
-      "reason": "Viewer views: the optional suite profile check in the shared suite contract the CLI bundles. Measured against main a8320745, with a few bytes of room for runner variance.",
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
+      "cap": {
+        "raw": 313664,
+        "gzip": 83201,
+        "brotli": 67963
+      },
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     }
   ]
