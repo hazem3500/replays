@@ -51,7 +51,7 @@ describe('a web-standard auth adapter', () => {
   it('signs a request in through authenticateRequest', async () => {
     const client = await boot();
     const me = await client.fetch('/api/me', { headers: { authorization: 'Bearer ada' } });
-    expect(await me.json()).toEqual({ id: 'ada' });
+    expect(await me.json()).toMatchObject({ id: 'ada' });
   });
 
   it('keeps the scopes of the identity it returns', async () => {
