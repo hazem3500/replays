@@ -12,12 +12,12 @@ const press = (cap: string) => ({
   altKey: false,
 });
 
+const listedKeys = EDITOR_SHORTCUT_GROUPS.flatMap((group) => group.items.flatMap((item) => item.keys));
+const isUnhandled = (key: string) => key.length === 1 && key !== '←' && key !== '→' && !editorShortcutFor(press(key));
+
 describe('the editor shortcut sheet', () => {
   it('lists only keys the editor acts on', () => {
-    const single = EDITOR_SHORTCUT_GROUPS.flatMap((group) => group.items.flatMap((item) => item.keys)).filter(
-      (key) => key.length === 1 && key !== '←' && key !== '→',
-    );
-    expect(single.filter((key) => !editorShortcutFor(press(key)))).toEqual([]);
+    expect(listedKeys.filter(isUnhandled)).toEqual([]);
   });
 
   it('opens from the question mark', () => {
