@@ -192,8 +192,7 @@
 .poster-card { width: 100%; height: auto; aspect-ratio: 16 / 10; }
 .poster img { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] img { opacity: 1; }
-.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-md); font-weight: 600; opacity: 1; transition: opacity 200ms var(--ease-out); }
-.poster-card .poster-placeholder { font-size: var(--text-lg); }
+.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; opacity: 1; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] .poster-placeholder { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .poster[data-phase="loading"]::before { transform: none; animation: none; background: color-mix(in srgb, var(--text-tertiary) 5%, transparent); }

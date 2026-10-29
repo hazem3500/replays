@@ -2,12 +2,13 @@ import { spawn } from 'node:child_process';
 
 import { guardRenderRequests, type RenderAssetPolicy } from './media/browser-network.ts';
 import { once } from 'node:events';
-import { mkdtemp, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 
 import { send } from './app.ts';
+import { isThumbHash } from '../shared/thumbhash.ts';
 import { PREVIEW_SPEED } from '../client/render/frames.ts';
 import { chromiumArgs, ffmpegArgs, RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
 import type { RenderedFile, RenderJob } from '../plugin/types.ts';
@@ -71,6 +72,8 @@ export interface PosterQueueOptions {
   beforeRender?: ((job: RenderJob) => Promise<RenderVerdict>) | undefined;
   /** The plugins' `afterRender`, after each stored file (the poster job's opening still too). Errors are logged. */
   afterRender?: ((job: RenderJob, file: RenderedFile) => void | Promise<void>) | undefined;
+  /** Keeps a finished poster's ThumbHash (its runner's `<output>.json` sidecar) with the replay's summary. Errors are logged. */
+  thumbhash?: ((id: string, hash: string) => Promise<void>) | undefined;
   /** Hover previews; absent (no ffmpeg) means previews are off. */
   preview?: { key: (id: string) => string; runner: PosterRunner };
   /** Opening stills (ReplayStore.openStillKey); the poster runner also leaves one at `<output>.open.jpg`. */
@@ -99,9 +102,11 @@ const key = (kind: MediaKind, id: string) => `${kind}:${id}`;
 
 export class PosterQueue {
   private readonly options: Required<
-    Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender'>
+    Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender' | 'thumbhash'>
   > &
-    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender'> & { busy: () => boolean };
+    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender' | 'thumbhash'> & {
+      busy: () => boolean;
+    };
   /** Posters first: they are what the list shows; then opening stills (opening a replay); previews only play on hover. */
   private readonly waiting: Record<MediaKind, Job[]> = { poster: [], open: [], preview: [] };
   private readonly pending = new Set<string>();
@@ -247,6 +252,7 @@ export class PosterQueue {
       if (await stat(`${temporary}.json`).catch(() => undefined))
         await storage.upload(`${output}.json`, `${temporary}.json`, { contentType: 'application/json; charset=utf-8' });
       const stored = await storage.upload(output, temporary, { contentType: MEDIA[kind].type });
+      if (kind === 'poster') await this.keepThumbHash(id, `${temporary}.json`);
       const files: Array<[RenderJob, RenderedFile]> = [
         [job(kind), { file: temporary, key: output, contentType: MEDIA[kind].type, bytes: stored.size }],
       ];
@@ -299,6 +305,17 @@ export class PosterQueue {
       if (directory) await rm(directory, { recursive: true, force: true });
     }
   }
+
+  private async keepThumbHash(id: string, sidecar: string) {
+    if (!this.options.thumbhash) return;
+    const hash = await readFile(sidecar, 'utf8')
+      .then((text) => (JSON.parse(text) as { thumbhash?: unknown }).thumbhash)
+      .catch(() => undefined);
+    if (!isThumbHash(hash)) return;
+    await this.options
+      .thumbhash(id, hash)
+      .catch((error: unknown) => this.options.log(`poster ${id}: thumbhash not kept: ${String(error)}`));
+  }
 }
 
 interface RenderWindow {
@@ -309,6 +326,7 @@ interface RenderWindow {
     poster(moment?: PosterChoice): Promise<number>;
     previewPlan(fps: number, maxOutputMs: number): { times: number[]; dirty: number[]; capped: boolean; coveredMs: number };
     showAt(time: number): Promise<void>;
+    thumbhash?(jpeg: string): Promise<string>;
   };
 }
 
@@ -423,7 +441,13 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       task.signal.throwIfAborted();
       await page.evaluate((moment) => (window as RenderWindow).__render!.poster(moment), task.moment);
       task.signal.throwIfAborted();
-      await writeFile(task.output, await shoot(), { mode: 0o640 });
+      const shot = await shoot();
+      await writeFile(task.output, shot, { mode: 0o640 });
+      // why: a poster without its ThumbHash is still a poster; the index then keeps the plain placeholder.
+      const thumbhash = await page
+        .evaluate((jpeg) => (window as RenderWindow).__render?.thumbhash?.(jpeg), shot.toString('base64'))
+        .catch(() => undefined);
+      if (isThumbHash(thumbhash)) await writeFile(`${task.output}.json`, `${JSON.stringify({ thumbhash })}\n`, { mode: 0o640 });
     });
 
   const preview: PosterRunner = (task) =>
