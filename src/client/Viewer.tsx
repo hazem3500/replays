@@ -1,7 +1,6 @@
 import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
-import { LiveCaption } from './LiveCaption.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -20,6 +19,7 @@ import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
+import { StepCaption } from './viewer/StepCaption.tsx';
 import type { LoadedEdits } from './edits.ts';
 import { editHref } from './routing/links.ts';
 import { savedAgo } from './editor/state.ts';
@@ -35,15 +35,13 @@ import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
-import { type Playback, PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState, usePlayhead } from './player.ts';
+import { type Playback, PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
 import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
 import { DownloadVideoButton, usePhoneDownload } from './viewer/DownloadVideo.tsx';
-import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
-import { captionAt } from './step-caption.ts';
 import { clampInspectorHeight, initialInspectorHeight, Inspector, InspectorResizer, type MobilePanel } from './viewer/Inspector.tsx';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
@@ -885,37 +883,6 @@ function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
       delete shell.dataset.foldTimer;
     }, PHONE_FOLD_MS + 40),
   );
-}
-
-/**
- * Step captions: the current step's label as a calm caption at the bottom of the player while it plays, and
- * while you scrub or seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without
- * a seek, or the end, clears it. The stable caption host swaps the whole line between step labels.
- */
-function StepCaption() {
-  const player = usePlayer();
-  const { steps, captionNumbers } = useViewer();
-  const { status } = usePlayerState();
-  // The same step index the step rail shows (one source), so caption and rail never disagree at a boundary.
-  const activeIndex = useActiveStep(steps);
-  const [seeked, setSeeked] = useState(false);
-  useEffect(() => {
-    const offSeek = player.subscribeSeek(() => setSeeked(true));
-    const offState = player.subscribeState(() => {
-      const next = player.getState().status;
-      if (next === 'playing' || next === 'ended') setSeeked(false);
-    });
-    return () => {
-      offSeek();
-      offState();
-    };
-  }, [player]);
-  const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
-  const step = steps[captionIndex];
-  const playing = status === 'playing';
-  const active = Boolean(step && (playing || (seeked && status !== 'ended')));
-  const number = active && captionNumbers ? activeIndex + 1 : undefined;
-  return <LiveCaption text={active ? (step?.label ?? '') : undefined} number={number} testId="step-caption" />;
 }
 
 /**

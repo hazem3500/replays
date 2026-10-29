@@ -20,10 +20,11 @@ import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdi
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
 import type { PosterMoment } from '../../shared/profiles.ts';
 import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
+import { captionEdge } from '../caption-placement.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
 import { idleGaps } from '../../shared/skip.ts';
-import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
+import { CAPTION_IN_MS, captionAt, captionKey, captionSpan, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
 
 export interface RenderApi {
@@ -116,7 +117,8 @@ async function start() {
   const eventTimes = Float64Array.from(bundle.events, (event) => event.timestamp - first);
   const snapshotTimes = eventTimes.filter((_, index) => bundle.events[index]?.type === FULL_SNAPSHOT);
   // The same pure track ReplayCursor draws from, so "cursor changed" matches what lands on screen.
-  const track = buildCursorTrack(cursorInput(bundle.events), { settings: effects.cursor });
+  const pointer = cursorInput(bundle.events);
+  const track = buildCursorTrack(pointer, { settings: effects.cursor });
   const cursorKey = (time: number) => poseKey(cursorPose(track, first + time));
   let captions = false;
   // The edit list's own captions, when it has any, are always drawn (they are part of the edit).
@@ -151,6 +153,9 @@ async function start() {
       const root = document.createElement('div');
       root.className = 'step-caption';
       root.setAttribute('aria-hidden', 'true');
+      // The same edge the viewer and the editor give this caption (caption-placement.ts).
+      const span = editCaptions ? effects.captions[frame.index] : captionSpan(bundle.steps, frame.index, controller.duration);
+      root.dataset['edge'] = span ? captionEdge(pointer, first, height, span.from, span.to) : 'bottom';
       const text = document.createElement('span');
       text.className = 'step-caption-text';
       const label = document.createElement('span');

@@ -1,37 +1,83 @@
-/* Step captions: the current step's label at the bottom of the player (Viewer.tsx StepCaption) and burned into
- * exported videos (src/client/render/main.ts). One stylesheet for both; the render page has no app tokens,
- * so every token carries its value as a fallback. Typography is set here, not inherited, for the same reason.
- * Sizes scale with --caption-scale: 1 in the viewer, larger in exports (step-caption.ts exportCaptionScale). */
+/* Step captions: the current step's label on the player (viewer/StepCaption.tsx), edit captions (edit-caption.tsx,
+ * in the viewer and the editor's preview) and the burned-in caption of exported videos (src/client/render/main.ts).
+ * One stylesheet for all three; the render page has no app tokens, so every token carries its value as a fallback.
+ * Typography is set here, not inherited, for the same reason. Sizes scale with --caption-scale: 1 in the viewer,
+ * larger in exports (step-caption.ts exportCaptionScale). */
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @layer app {
-  /* Bottom-centre of the recorded frame (here: the containing block; the viewer narrows it to the frame with
-     --frame-* in styles.css), inset ~4% of the frame's height (12–28 px, scaled), at most 70% of its width. */
-  .step-caption { --s: var(--caption-scale, 1); position: absolute; z-index: 3; right: 0; bottom: clamp(calc(12px * var(--s)), 4%, calc(28px * var(--s))); left: 0; display: flex; justify-content: center; font-family: var(--sans, "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif); font-feature-settings: "cv05", "cv08"; font-synthesis: none; line-height: 1.4; pointer-events: none; }
-  /* A dark slate surface (78%), a faint hairline, white text in both themes (it sits on the video); no blur. */
-  .step-caption-text { display: inline-flex; max-width: 70%; align-items: center; gap: calc(6px * var(--s)); overflow: hidden; padding: calc(6px * var(--s)) calc(12px * var(--s)); border: calc(1px * var(--s)) solid rgb(255 255 255 / 0.08); border-radius: calc(10px * var(--s)); background: rgb(12 14 18 / 0.78); color: #fff; font-size: calc(var(--caption-size, 14px) * var(--s)); font-weight: 500; text-overflow: ellipsis; white-space: nowrap; animation: caption-in 200ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)); }
+  /* Centred on the recorded frame, at its bottom edge, or its top edge (data-edge, caption-placement.ts) when the
+     action it describes happens low on the page, 18 px in (scaled). Every size below is in --s or em of the caption's
+     own text, so the viewer and the editor (which set --s to the export's scale times the player's) draw the
+     exported caption, only smaller. Wide frames cap it at 76% of the width; narrow ones let it run to the sides. */
+  .step-caption {
+    --s: var(--caption-scale, 1);
+    --caption-inset: calc(18px * var(--s));
+    position: absolute;
+    z-index: 3;
+    right: 0;
+    bottom: var(--caption-inset);
+    left: 0;
+    display: flex;
+    justify-content: center;
+    font-family: var(--sans, "Inter Variable", ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
+    font-feature-settings: "cv05", "cv08";
+    font-synthesis: none;
+    line-height: 1.35;
+    pointer-events: none;
+  }
+  .step-caption[data-edge="top"] { top: var(--caption-inset); bottom: auto; }
+  /* A near-black pill (86%) in both themes: it sits on the recorded page, whatever that page's colours. An inset
+     white ring keeps its edge on dark pages and a soft shadow lifts it off light ones; white 550 text clears 12:1
+     over white and black alike. No blur. Enters with a 4 px move away from its edge and a 0.98 → 1 settle. */
+  .step-caption-text {
+    --caption-from: 0.27em;
+    display: inline-flex;
+    max-width: clamp(0px, calc(100% - 1.6em), max(76%, 21em));
+    align-items: center;
+    gap: 0.53em;
+    overflow: hidden;
+    padding: 0.47em 0.93em;
+    border-radius: 999px;
+    background: rgb(14 16 21 / 0.86);
+    box-shadow: inset 0 0 0 max(1px, 0.067em) rgb(255 255 255 / 0.14), 0 0.13em 0.8em rgb(0 0 0 / 0.18);
+    color: #fff;
+    /* why: below 12 px a caption stops being readable; a tiny frame keeps the pill legible rather than exact. */
+    font-size: max(var(--caption-min, 0px), calc(15px * var(--s)));
+    font-weight: 550;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    animation: caption-in 200ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
+  }
+  .step-caption[data-edge="top"] .step-caption-text { --caption-from: -0.27em; }
+  /* The number's circle sits as far in from the pill's curve as it is from its top and bottom (nested radius). */
+  .step-caption-text:has(.step-caption-number) { padding-left: 0.47em; }
+  @media (forced-colors: active) { .step-caption-text { border: 1px solid CanvasText; } }
   .step-caption-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  /* Live browser captions have a stable host for character retargeting. Exported video captions keep their
-     deterministic frame-render animation and markup unchanged. */
-  /* Show: fade + rise over 200 ms. Hide: the same caption fades and drops 4 px, a little faster (140 ms), whole:
-     useCaptionPresence keeps its text and number so the box never collapses before it is gone. */
+  /* Live browser captions have a stable host for line swaps. Exported video captions keep their deterministic
+     frame-render animation and markup unchanged. */
+  /* Show: fade and move in over 200 ms. Hide (or leave for the other edge): the same caption fades and moves 4 px
+     back toward its edge, a little faster (140 ms), whole: useCaptionPresence keeps its text and number so the box
+     never collapses before it is gone. */
   .step-caption-live {
     --caption-enter: 200ms;
     --caption-exit: 140ms;
     --caption-drop: calc(4px * var(--s));
     transition: opacity var(--caption-enter) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), translate var(--caption-enter) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
   }
+  .step-caption-live[data-edge="top"] { --caption-drop: calc(-4px * var(--s)); }
   .step-caption-live[data-active="false"] { opacity: 0; translate: 0 var(--caption-drop); transition-duration: var(--caption-exit); }
   .step-caption-live .caption-morph { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* A caption change swaps the whole line: the new text fades and rises 2 px (160 ms). Keyed by its text. */
   .step-caption-live .caption-swap { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; animation: caption-swap-in 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) both; }
   .step-caption-live[data-active="false"] .caption-swap { animation: none; }
   @media (prefers-reduced-motion: reduce) {
-    .step-caption-live { transition: none; }
+    .step-caption-live { transition: opacity var(--caption-exit) linear; translate: none; }
+    .step-caption-live[data-active="false"] { translate: none; }
     .step-caption-live .step-caption-text, .step-caption-live .caption-swap { animation: none; }
   }
-  /* The step index: a small 18 px pill before the label, tabular figures, harmonised with the dark surface. */
-  .step-caption-number { flex: 0 0 auto; min-width: calc(18px * var(--s)); height: calc(18px * var(--s)); display: inline-grid; place-items: center; padding: 0 calc(5px * var(--s)); border-radius: 999px; background: rgb(255 255 255 / 0.14); color: rgb(255 255 255 / 0.75); font-size: calc(11px * var(--s)); font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
-  @keyframes caption-in { from { opacity: 0; transform: translateY(calc(4px * var(--s))); } }
+  /* The step index: a circle 4/3 of the text tall before the label, tabular figures, quieter than the label. */
+  .step-caption-number { flex: 0 0 auto; min-width: 1.82em; height: 1.82em; display: inline-grid; place-items: center; padding: 0 0.45em; border-radius: 999px; background: rgb(255 255 255 / 0.16); color: rgb(255 255 255 / 0.82); font-size: 0.733em; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
+  @keyframes caption-in { from { opacity: 0; transform: translateY(var(--caption-from)) scale(0.98); } }
   @keyframes caption-swap-in { from { opacity: 0; transform: translateY(calc(2px * var(--s))); } }
 }

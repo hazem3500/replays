@@ -13,6 +13,7 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import { formatClock } from '../../shared/replay.ts';
 import { SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
+import { exportCaptionScale } from '../step-caption.ts';
 import { activeStepIndex, fitViewport } from '../timeline.ts';
 
 import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
@@ -119,6 +120,8 @@ export function PlayerStage() {
         const width = viewport.width * fit.scale;
         const height = viewport.height * fit.scale;
         wrap.style.setProperty('--frame-x', `${fit.x}px`);
+        wrap.style.setProperty('--frame-y', `${fit.y}px`);
+        wrap.style.setProperty('--caption-scale', String(exportCaptionScale(viewport.width) * fit.scale));
         wrap.style.setProperty('--frame-w', `${width}px`);
         wrap.style.setProperty('--frame-h', `${height}px`);
         wrap.style.setProperty('--frame-right', `${element.clientWidth - fit.x - width}px`);

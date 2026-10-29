@@ -20,7 +20,7 @@ html, body { margin: 0; overflow: hidden; background: #fff; }
 #render-host { position: relative; overflow: hidden; }
 #render-host iframe { display: block; border: 0; background: #fff; }
 /* The burned-in step caption sits above the replayed page and its wrapper, whatever stacking the player sets up. */
-#render-host > .step-caption { position: absolute; z-index: 10; bottom: calc(18px * var(--s)); }
+#render-host > .step-caption { z-index: 10; }
 /* Mirrors the "replay cursor" block in src/client/styles.css (keep in sync); the app stylesheet is not loaded here. */
 .player-host .replayer-mouse,
 .player-host .replayer-mouse-tail { display: none !important; }
