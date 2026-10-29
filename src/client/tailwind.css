@@ -18,6 +18,7 @@
 @import "./styles.css" layer(app);
 @import "./index/feed.css" layer(app);
 @import "./index/card-motion.css" layer(app);
+@import "./index/poster.css" layer(app);
 @import "./index/list-motion.css" layer(app);
 @import "./index/expired.css" layer(app);
 /* why: the filter popover, toolbar tokens and first-run cards restyle shadcn primitives whose utility classes
