@@ -270,7 +270,7 @@
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 312,
       "gzip": 253,
-      "brotli": 219
+      "brotli": 216
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
