@@ -132,6 +132,16 @@
       "gzip": 439,
       "brotli": 380
     },
+    "dist/client/assets/Headline-HASH.css": {
+      "raw": 1089,
+      "gzip": 450,
+      "brotli": 358
+    },
+    "dist/client/assets/Headline-HASH.js": {
+      "raw": 5736,
+      "gzip": 2518,
+      "brotli": 2312
+    },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
       "gzip": 8406,
@@ -281,6 +291,11 @@
       "raw": 67379,
       "gzip": 23949,
       "brotli": 20833
+    },
+    "dist/client/assets/VitalsTile-HASH.js": {
+      "raw": 665,
+      "gzip": 462,
+      "brotli": 419
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -506,21 +521,6 @@
       "raw": 557837,
       "gzip": 174500,
       "brotli": 137465
-    },
-    "dist/client/assets/Headline-HASH.css": {
-      "raw": 1089,
-      "gzip": 450,
-      "brotli": 358
-    },
-    "dist/client/assets/Headline-HASH.js": {
-      "raw": 5736,
-      "gzip": 2518,
-      "brotli": 2312
-    },
-    "dist/client/assets/VitalsTile-HASH.js": {
-      "raw": 665,
-      "gzip": 462,
-      "brotli": 419
     }
   },
   "allowances": [
@@ -759,7 +759,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
