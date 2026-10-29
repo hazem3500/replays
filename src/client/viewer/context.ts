@@ -55,6 +55,8 @@ export interface ViewerActions {
   highlights?: ProjectedHighlight[];
   /** The open view's built-in seek bar tracks (`core:steps`, `core:errors`, `core:highlights`); undefined shows all. */
   tracks?: readonly string[] | undefined;
+  /** The open view's inspector tab order (views/resolve.ts `orderTabs`): listed tabs lead. */
+  tabOrder?: readonly string[] | undefined;
 }
 
 export const ViewerContext = createContext<ViewerActions | null>(null);

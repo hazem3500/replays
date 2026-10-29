@@ -8,6 +8,7 @@ import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
 import { STANDARD_VIEW, viewSettingKey } from './views/settings.ts';
+import { currentSearchParam } from './routing/navigate.ts';
 import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
 import { replayHref } from './routing/links.ts';
 import { Topbar } from './Topbar.tsx';
@@ -53,7 +54,7 @@ function readHint(): OpenHint | undefined {
 
 function layout(hint: OpenHint | undefined) {
   // why: the replay's own profile is unknown until it loads, so the skeleton takes the view the URL names, else Standard.
-  const view = new URLSearchParams(location.search).get('view') || STANDARD_VIEW;
+  const view = currentSearchParam('view') ?? STANDARD_VIEW;
   const savedHeight = Number(readStorage(viewSettingKey(view, 'dock-height')));
   const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
   const height =

@@ -151,7 +151,6 @@ export const Inspector = memo(function Inspector({
   mobile,
   collapse,
   compare,
-  order = NO_ORDER,
 }: {
   bundle: ReplayBundle;
   /** Original captured data: measured spans must be mapped, including starts inside cuts. */
@@ -168,11 +167,9 @@ export const Inspector = memo(function Inspector({
    * Performance gives each vital's difference; `performance` sits under the vitals.
    */
   compare?: { scope?: ReactNode; performance?: ReactNode; peers?: readonly InspectorPeer[] | undefined } | undefined;
-  /** The view's tab order (views/resolve.ts `orderTabs`): listed tabs lead. */
-  order?: readonly string[];
 }) {
   const player = usePlayer();
-  const { setTab, setExpandedRequest } = useViewer();
+  const { setTab, setExpandedRequest, tabOrder: order = NO_ORDER } = useViewer();
   const features = activeFeatures().flatMap((feature) => (feature.tab ? [{ id: feature.id, featureTab: feature.tab }] : []));
   const featureBadges = useFeatureBadges();
   // Rows fill once the page transition has landed (hooks/use-filled-after-transition.ts); until then each panel shows its pending frame.

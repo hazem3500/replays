@@ -396,8 +396,10 @@ export function Viewer({
       editCaptions: Boolean(effects?.captions.length),
       highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
       tracks: defaults.tracks,
+      tabOrder: defaults.tabs,
     };
   }, [
+    defaults.tabs,
     defaults.tracks,
     bundle.steps,
     captionNumbers,
@@ -709,7 +711,6 @@ export function Viewer({
           <ShowDetails onShow={() => setCollapsed(false, false)} />
         ) : (
           <Inspector
-            order={defaults.tabs}
             bundle={bundle}
             sourceBundle={sourceBundle}
             timeline={timeline}
@@ -834,11 +835,10 @@ const ViewerHeader = memo(function ViewerHeader({
   menuItems: TopbarMenuItem[];
   backHref?: string;
 }) {
-  const { meta } = bundle;
   // The chip is for explicit outcomes only (the suite's run status). Raw error counts are details: they live
   // in the Console and Network rows, not in the header.
   const shared = {
-    title: title ?? meta.title,
+    title: title ?? bundle.meta.title,
     ...(prefix ? { prefix } : {}),
     ...(status ? { status } : {}),
     ...(backHref ? { backHref } : {}),

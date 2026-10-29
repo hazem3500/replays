@@ -100,7 +100,7 @@ export function useViewState(view: string, defaults: ViewDefaults, opening: Open
     ...setters,
     // why: hidden only until the person opens the panel on this visit.
     hidden: defaults.inspector === 'hidden' && !state.revealed,
-    reset() {
+    reset: () => {
       resetViewSettings(view);
       setState(stateFor(view, defaults, { fallbackTab: opening.fallbackTab }));
     },
