@@ -209,7 +209,11 @@ describe('adapters behind createApp', () => {
 
   it('answers /api/me with the none adapter identity', async () => {
     const origin = await start(noneAuth({ DEV_USER: 'dev@example.com' }));
-    expect(await (await fetch(`${origin}/api/me`)).json()).toEqual({ id: 'dev@example.com', email: 'dev@example.com' });
+    expect(await (await fetch(`${origin}/api/me`)).json()).toEqual({
+      id: 'dev@example.com',
+      email: 'dev@example.com',
+      session: { signedIn: false },
+    });
     expect(await (await fetch(`${origin}/api/me`, { headers: { 'x-dev-user': 'ada@example.com' } })).json()).toMatchObject({
       id: 'ada@example.com',
     });
@@ -224,6 +228,7 @@ describe('adapters behind createApp', () => {
       id: 'ada@example.com',
       email: 'ada@example.com',
       name: 'Ada Example',
+      session: { signedIn: true },
     });
     // No header: signed out, and this adapter has no sign-in page, so the answer is a plain refusal.
     expect((await fetch(`${trusted}/api/me`)).status).toBe(403);

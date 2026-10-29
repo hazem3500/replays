@@ -14,6 +14,7 @@ interface AuthAdapter {
   authenticate(request: IncomingMessage): Promise<Identity | undefined> | Identity | undefined;
   handle?(request, response, context: { base: string; publicOrigin?: string }): Promise<boolean> | boolean; // own routes (sign-in, callback)
   loginUrl?(request, context): string | undefined;   // where a browser without an identity is sent
+  signOutUrl?(context): string | undefined;          // where a signed-in browser signs out (the account menu)
   readonly routes?: readonly string[];                // paths `handle` serves without an identity
 }
 interface Identity { id: string; email?: string; name?: string }
