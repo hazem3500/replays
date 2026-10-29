@@ -736,7 +736,7 @@
       "file": "dist/client/assets/ComparePicker-HASH.js",
       "cap": {
         "raw": 5232,
-        "gzip": 2350,
+        "gzip": 2342,
         "brotli": 2126
       },
       "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
@@ -1129,7 +1129,7 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 628
+        "brotli": 607
       },
       "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/184"
