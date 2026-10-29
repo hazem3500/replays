@@ -22,11 +22,6 @@
       "gzip": 981,
       "brotli": 848
     },
-    "dist/client/assets/arrow-up-HASH.js": {
-      "raw": 202,
-      "gzip": 186,
-      "brotli": 165
-    },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
       "gzip": 1110,
@@ -80,7 +75,7 @@
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 32532,
       "gzip": 11374,
-      "brotli": 9857
+      "brotli": 9884
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -108,7 +103,7 @@
       "brotli": 1392
     },
     "dist/client/assets/dropdown-menu-HASH.js": {
-      "raw": 122577,
+      "raw": 122824,
       "gzip": 41141,
       "brotli": 35555
     },
@@ -148,9 +143,9 @@
       "brotli": 358
     },
     "dist/client/assets/Headline-HASH.js": {
-      "raw": 5736,
-      "gzip": 2527,
-      "brotli": 2312
+      "raw": 5770,
+      "gzip": 2537,
+      "brotli": 2326
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -260,7 +255,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 607
+      "brotli": 608
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21521,
@@ -278,8 +273,8 @@
       "brotli": 234
     },
     "dist/client/assets/use-focus-when-HASH.js": {
-      "raw": 761,
-      "gzip": 483,
+      "raw": 313,
+      "gzip": 254,
       "brotli": 216
     },
     "dist/client/assets/useQuery-HASH.js": {
@@ -1178,26 +1173,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/166"
     },
     {
-      "file": "dist/client/assets/comments-ui-HASH.js",
-      "cap": {
-        "raw": 32532,
-        "gzip": 11374,
-        "brotli": 9857
-      },
-      "reason": "Comments round 2 (#171): the phone action sheet, the desktop overflow menu, the delete dialog and the quieter composer, in the lazy comments chunk (+4236 raw over main).",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "raw": 122577,
-        "gzip": 41141,
-        "brotli": 35555
-      },
-      "reason": "Chunk graph shift (#171): the comments chunk now uses the Base UI menu for its overflow, so the bundler splits the menu modules it shares with the top bar into their own chunk. main-HASH.js drops 52129 raw bytes, useTriggerFocusGuards (72164) goes away, and the initial index.html JS group grows by 386 raw bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
       "file": "dist/client/assets/use-focus-when-HASH.js",
       "cap": {
         "raw": 761,
@@ -1205,16 +1180,6 @@
         "brotli": 435
       },
       "reason": "A small shared chunk that takes on focus helpers when the menu modules split out (#171).",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
-      "file": "dist/client/assets/arrow-up-HASH.js",
-      "cap": {
-        "raw": 202,
-        "gzip": 186,
-        "brotli": 165
-      },
-      "reason": "The send arrow icon, shared by the comments composer and another lazy view (#171).",
       "pr": "https://github.com/hazem3500/replays/pull/171"
     },
     {
@@ -1251,16 +1216,6 @@
         "raw": 1089,
         "gzip": 450,
         "brotli": 358
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.js",
-      "cap": {
-        "raw": 5736,
-        "gzip": 2527,
-        "brotli": 2312
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
@@ -1393,6 +1348,36 @@
         "brotli": 37927
       },
       "reason": "Viewer views: hash drift in the first stylesheet from the chunks it names. Measured in CI against main 1bc31f4f.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/comments-ui-HASH.js",
+      "cap": {
+        "raw": 32532,
+        "gzip": 11374,
+        "brotli": 9884
+      },
+      "reason": "Viewer views: hash drift in shared chunks that name the viewer's new chunks. Measured in CI against main 8d1b7534.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 122824,
+        "gzip": 41141,
+        "brotli": 35555
+      },
+      "reason": "Viewer views: hash drift in shared chunks that name the viewer's new chunks. Measured in CI against main 8d1b7534.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/Headline-HASH.js",
+      "cap": {
+        "raw": 5770,
+        "gzip": 2537,
+        "brotli": 2326
+      },
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     }
   ]
