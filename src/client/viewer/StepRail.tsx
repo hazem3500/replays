@@ -1,5 +1,5 @@
 import { ArrowDownIcon, ArrowUpIcon, DotIcon } from 'lucide-react';
-import { memo, type RefObject, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { AnimatedNumber } from '@/components/animated-number.tsx';
@@ -8,7 +8,7 @@ import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayer, usePlayerState, usePlayhead } from '../player.ts';
 import { useActiveStep } from './active-step.ts';
-import { readStorage, writeStorage } from '../storage.ts';
+import { readStorage } from '../storage.ts';
 import { usePreviewStepIndex } from './preview-time.ts';
 import { useViewer } from './context.ts';
 import { Empty } from './Empty.tsx';
@@ -236,91 +236,8 @@ export const StepList = memo(function StepList() {
 
 export const STEPS_WIDTH_KEY = 'replays-steps-width';
 export const MIN_STEPS_WIDTH = 220;
-const MAX_STEPS_WIDTH = 480;
-
-/** Clamped so the player keeps at least half of the row. */
-export function clampStepsWidth(width: number, rowWidth: number) {
-  const max = Math.max(MIN_STEPS_WIDTH, Math.min(MAX_STEPS_WIDTH, Math.floor(rowWidth / 2)));
-  return Math.round(Math.min(Math.max(width, MIN_STEPS_WIDTH), max));
-}
 
 export function savedStepsWidth() {
   const saved = Number(readStorage(STEPS_WIDTH_KEY));
   return Number.isFinite(saved) && saved > 0 ? saved : undefined;
-}
-
-/**
- * The vertical splitter between the player and the step rail (desktop and tablet; phones have a Steps tab).
- * Same hairline handle as the inspector's: drag with pointer capture, ←/→ (Shift for bigger steps), Home/End,
- * double-click to reset. The width is written to --steps-width on the workspace while dragging and persisted
- * on release; `undefined` means the layout's default.
- */
-export function StepsResizer({
-  workspace,
-  width,
-  onCommit,
-}: {
-  workspace: RefObject<HTMLElement | null>;
-  width: number | undefined;
-  onCommit: (width: number | undefined) => void;
-}) {
-  const drag = useRef<{ startX: number; startWidth: number; current: number } | undefined>(undefined);
-  const rowWidth = () => workspace.current?.clientWidth ?? 1200;
-  const currentWidth = () => workspace.current?.querySelector<HTMLElement>('.timeline-panel')?.offsetWidth ?? width ?? 300;
-  const commit = (next: number | undefined) => {
-    if (next === undefined) {
-      writeStorage(STEPS_WIDTH_KEY, '');
-      workspace.current?.style.removeProperty('--steps-width');
-      onCommit(undefined);
-      return;
-    }
-    const value = clampStepsWidth(next, rowWidth());
-    writeStorage(STEPS_WIDTH_KEY, String(value));
-    onCommit(value);
-  };
-  const shown = width ?? 300;
-  return (
-    // A tabbable separator is the ARIA pattern for a keyboard-resizable splitter.
-    <div
-      className="steps-resizer"
-      role="separator"
-      aria-orientation="vertical"
-      aria-label="Resize steps panel"
-      aria-valuemin={MIN_STEPS_WIDTH}
-      aria-valuemax={clampStepsWidth(Number.POSITIVE_INFINITY, rowWidth())}
-      aria-valuenow={shown}
-      tabIndex={0}
-      data-testid="steps-resizer"
-      onPointerDown={(event) => {
-        event.currentTarget.setPointerCapture(event.pointerId);
-        const start = currentWidth();
-        drag.current = { startX: event.clientX, startWidth: start, current: start };
-      }}
-      onPointerMove={(event) => {
-        if (!drag.current) return;
-        drag.current.current = clampStepsWidth(drag.current.startWidth + drag.current.startX - event.clientX, rowWidth());
-        workspace.current?.style.setProperty('--steps-width', `${drag.current.current}px`);
-      }}
-      onPointerUp={() => {
-        if (!drag.current) return;
-        commit(drag.current.current);
-        drag.current = undefined;
-      }}
-      onPointerCancel={() => {
-        drag.current = undefined;
-      }}
-      onDoubleClick={() => commit(undefined)}
-      onKeyDown={(event) => {
-        const step = event.shiftKey ? 64 : 16;
-        const base = currentWidth();
-        if (event.key === 'ArrowLeft') commit(base + step);
-        else if (event.key === 'ArrowRight') commit(base - step);
-        else if (event.key === 'Home') commit(MIN_STEPS_WIDTH);
-        else if (event.key === 'End') commit(Number.POSITIVE_INFINITY);
-        else return;
-        event.preventDefault();
-        event.stopPropagation();
-      }}
-    />
-  );
 }
