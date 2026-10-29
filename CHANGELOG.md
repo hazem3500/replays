@@ -19,6 +19,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- **Recorder network bodies, opt-in** ([docs/recorder.md](docs/recorder.md#capture-and-network-bodies)): a new `capture`
+  option on `createRecorder` and `createGuidedRecorder` takes a profile's capture block as is (`network: 'off' | 'headers'
+  | 'bodies'`, `bodies`, `console`, stricter `privacy`). With `'bodies'` the recorder reads fetch and XHR request and
+  response bodies under the capture CLI's rules: JSON, text and form only, 64 KiB with `truncated`, redacted in the page
+  and again on upload. Streams, server-sent events and binary bodies are never read, and the page's own requests and
+  responses are untouched. Every recorder bundle now carries `meta.captured`, consent facts gain
+  `captures.networkBodies`, and the default consent copy says when request content is recorded. Bodies stay off by
+  default.
 - **Recorder messages and formatting** ([docs/recorder.md](docs/recorder.md#messages-and-formatting)): the recorder's
   `messages` option covers every string the default UI, the step kit and `selectError` show, including accessible names,
   tooltips, live announcements, copy-link feedback and the privacy notice. `RecorderMessages` requires every key;
