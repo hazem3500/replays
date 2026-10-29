@@ -240,6 +240,7 @@ export const Inspector = memo(function Inspector({
           <StepList />
         </DockPanel>
       ) : null}
+<<<<<<< HEAD
       <DockPanel value="console">
         <ConsolePanel entries={consoleTrack.entries} reached={consoleCount} human={human} />
       </DockPanel>
@@ -273,6 +274,47 @@ export const Inspector = memo(function Inspector({
       </DockPanel>
       {features.map(({ id, featureTab }) => (
         <DockPanel key={id} value={id}>
+=======
+
+      <TabsContent value="console" className="inspector-panel">
+        {filled ? <ConsolePanel entries={consoleTrack.entries} reached={consoleCount} human={human} /> : null}
+      </TabsContent>
+      <TabsContent value="network" className="inspector-panel">
+        {filled ? (
+          <NetworkPanel
+            rows={networkRows}
+            steps={bundle.steps}
+            duration={player.duration}
+            human={human}
+            selected={expandedRequest}
+            onSelect={setExpandedRequest}
+            peers={networkPeers}
+            captured={sourceBundle.meta.captured}
+          />
+        ) : null}
+      </TabsContent>
+      <TabsContent value="performance" className="inspector-panel">
+        {filled ? (
+          <PerformancePanel
+            model={performanceModel}
+            requests={networkRows}
+            steps={bundle.steps}
+            duration={player.duration}
+            peers={performancePeers}
+            extra={compare?.performance}
+            onOpenRequest={(id) => {
+              setExpandedRequest(id);
+              setTab('network');
+            }}
+          />
+        ) : null}
+      </TabsContent>
+      <TabsContent value="context" className="inspector-panel">
+        {filled ? <ContextPanel bundle={bundle} schema={contextSchema} sections={contextSections} /> : null}
+      </TabsContent>
+      {featureTabs.map(({ id, featureTab }) => (
+        <TabsContent key={id} value={id} className="inspector-panel">
+>>>>>>> d43fd95d (feat(viewer): always-on network timing tied to the playhead, smooth seeking motion, and captured request bodies)
           <featureTab.Panel />
         </DockPanel>
       ))}

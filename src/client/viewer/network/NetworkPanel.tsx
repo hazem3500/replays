@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 
-import type { ReplayStep } from '../../../shared/replay.ts';
+import type { ReplayCaptured, ReplayStep } from '../../../shared/replay.ts';
 import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Empty } from '../Empty.tsx';
@@ -24,7 +24,8 @@ import './network.css';
 export type { NetworkPeer } from './RequestDetail.tsx';
 
 /** Below this many requests the list already shows everything at a glance; the ribbon would be an empty strip. */
-const RIBBON_MIN_ROWS = 12;
+/** Above this many requests the ribbon draws their density; at or below it, one tick per request. */
+const DENSE_ROWS = 12;
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
 const DENSITY_BINS = 160;
@@ -46,12 +47,12 @@ function emptyCopy(total: number, human: boolean) {
   return human ? { title: STRINGS.humanTitle, body: STRINGS.human } : { title: STRINGS.noneTitle, body: STRINGS.none };
 }
 
-function ribbonMarks(rows: readonly NetworkRow[]): RibbonMark[] {
+function ribbonMarks(rows: readonly NetworkRow[], ticks: boolean): RibbonMark[] {
   return rows.flatMap((row): RibbonMark[] => {
     if (row.failed) return [{ id: row.id, at: row.at, end: row.at, tone: 'danger', lane: 'full' }];
     if (row.pending) return [{ id: row.id, at: row.at, end: row.at, tone: 'neutral', lane: 'full' }];
     if (row.slow) return [{ id: row.id, at: row.at, end: row.end, tone: 'warning', lane: 'cap' }];
-    return [];
+    return ticks ? [{ id: row.id, at: row.at, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
   });
 }
 
@@ -68,6 +69,7 @@ export function NetworkPanel({
   selected,
   onSelect,
   peers,
+  captured,
 }: {
   rows: readonly NetworkRow[];
   steps: readonly ReplayStep[];
@@ -76,10 +78,14 @@ export function NetworkPanel({
   selected: string | undefined;
   onSelect: (id?: string) => void;
   peers?: readonly NetworkPeer[] | undefined;
+  /** What the recording kept (`meta.captured`), for the detail's body sections. */
+  captured?: ReplayCaptured | undefined;
 }) {
   const panel = useRef<HTMLDivElement>(null);
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const [filter, setFilter] = useState<NetworkFilter>(NO_FILTER);
+  const [hovered, setHovered] = useState<string>();
+  const dense = rows.length > DENSE_ROWS;
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
   const open = selected ? rows.find((row) => row.id === selected) : undefined;
@@ -101,22 +107,39 @@ export function NetworkPanel({
   return (
     <div ref={panel} className="np" data-stacked={stacked || undefined} data-open={open ? '' : undefined}>
       <NetworkToolbar counts={statusCounts(rows)} types={typeCounts(rows)} filter={filter} shown={shown.length} onFilter={setFilter} />
-      {rows.length > RIBBON_MIN_ROWS ? (
+      {rows.length ? (
         <TimeRibbon
           testId="network-ribbon"
           duration={duration}
-          density={startDensity(unranged, duration, DENSITY_BINS)}
-          marks={ribbonMarks(unranged)}
+          density={dense ? startDensity(unranged, duration, DENSITY_BINS) : undefined}
+          marks={ribbonMarks(unranged, !dense)}
           range={filter.range}
           onRange={(range) => setFilter({ ...filter, range })}
+          highlight={hovered ?? selected}
         />
       ) : null}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
-          <NetworkList rows={shown} steps={steps} ceiling={slowestMeasured(rows)} selected={selected} onSelect={onSelect} empty={empty} />
+          <NetworkList
+            rows={shown}
+            steps={steps}
+            ceiling={slowestMeasured(rows)}
+            selected={selected}
+            onSelect={onSelect}
+            onHover={setHovered}
+            empty={empty}
+          />
         </div>
         {open ? (
-          <RequestDetail row={open} rows={rows} steps={steps} peers={peers ?? NO_PEERS} stacked={stacked} onSelect={onSelect} />
+          <RequestDetail
+            row={open}
+            rows={rows}
+            steps={steps}
+            peers={peers ?? NO_PEERS}
+            stacked={stacked}
+            captured={captured}
+            onSelect={onSelect}
+          />
         ) : null}
       </div>
     </div>

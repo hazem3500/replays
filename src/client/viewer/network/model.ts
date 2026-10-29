@@ -267,10 +267,15 @@ export function formatDuration(ms: number) {
 
 const quote = (value: string) => `'${value.replaceAll("'", String.raw`'\''`)}'`;
 
-/** A shell-safe `curl` line for a captured request: headers as retained (already redacted), no body. */
-export function curlCommand(entry: Pick<ReplayNetworkEntry, 'method' | 'url' | 'requestHeaders'>) {
+/**
+ * A shell-safe `curl` line for a captured request: headers as retained (already redacted), and the body when the
+ * capture kept it whole (a truncated body would send something the page never did).
+ */
+export function curlCommand(entry: Pick<ReplayNetworkEntry, 'method' | 'url' | 'requestHeaders' | 'requestBody'>) {
   const parts = [`curl ${quote(entry.url)}`];
   if (entry.method !== 'GET') parts.push(`-X ${entry.method}`);
   for (const header of entry.requestHeaders) parts.push(`-H ${quote(`${header.name}: ${header.value}`)}`);
+  const body = entry.requestBody;
+  if (body?.text && !body.truncated) parts.push(`--data-raw ${quote(body.text)}`);
   return parts.join(' \\\n  ');
 }

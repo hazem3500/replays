@@ -32,6 +32,9 @@
 .pp-table { --pp-cols: minmax(120px, 180px) 60px 64px 120px minmax(0, 1fr); font-size: var(--text-xs); }
 .pp-row { display: grid; grid-template-columns: var(--pp-cols); align-items: center; column-gap: 12px; min-height: 30px; padding: 0 14px 0 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); }
 .pp-row > * { min-width: 0; }
+.pp-row { transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
+.pp-row :is(.pp-moment button, .pp-took, .pp-why, time) { transition: color var(--motion) var(--ease-out); }
+.pp-bar { transition: opacity var(--motion) var(--ease-out); }
 .pp-head { position: sticky; z-index: 2; top: 0; height: 28px; min-height: 28px; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
 .pp-row:not(.pp-head):hover { background: var(--surface-hover); }
 .pp-row[data-selected], .pp-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }

@@ -35,8 +35,6 @@ export interface PerformancePeer {
   vitals: readonly Vital[];
 }
 
-/** Below this many moments the list says it all; the ribbon would be a mostly empty strip. */
-const RIBBON_MIN_MOMENTS = 4;
 const SIDE_DETAIL_MIN_WIDTH = 760;
 
 const STRINGS = {
@@ -116,8 +114,10 @@ export function PerformancePanel({
   const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
   const [range, setRange] = useState<RibbonRange>();
+  const [hovered, setHovered] = useState<string>();
   const moments = buildMoments(model.signals);
   const vitals = buildVitals(model.signals, moments, model.track);
+  const marks = ribbonMarks(moments, vitals);
   const shown = orderMoments(range ? moments.filter((item) => item.end >= range.from && item.at <= range.to) : moments, order);
   const open = moments.find((item) => item.id === selected);
   const vitalPeers: VitalPeer[] = (peers ?? []).map((peer) => ({
@@ -142,8 +142,15 @@ export function PerformancePanel({
         {moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
       </VitalsBar>
       {extra}
-      {moments.length >= RIBBON_MIN_MOMENTS ? (
-        <TimeRibbon testId="performance-ribbon" duration={duration} marks={ribbonMarks(moments, vitals)} range={range} onRange={setRange} />
+      {marks.length ? (
+        <TimeRibbon
+          testId="performance-ribbon"
+          duration={duration}
+          marks={marks}
+          range={range}
+          onRange={setRange}
+          highlight={hovered ?? selected}
+        />
       ) : null}
       <div className="np-body">
         <div className="np-list" hidden={(stacked && open !== undefined) || undefined}>
@@ -153,6 +160,7 @@ export function PerformancePanel({
             explain={(item) => causeText(causeOf(item, moments, requests))}
             selected={selected}
             onSelect={setSelected}
+            onHover={setHovered}
             empty={empty}
           />
         </div>
