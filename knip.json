@@ -20,7 +20,7 @@
         "scripts/*.{mjs,ts}",
         "test/**/*.test.{ts,tsx}",
         "e2e/**/*.spec.ts",
-        ".storybook/{main,preview,vite.config}.{ts,tsx}",
+        ".storybook/{main,manager,preview,vite.config}.{ts,tsx}",
         "stories/**/*.stories.tsx",
         "examples/*/*.{mjs,ts}"
       ],
