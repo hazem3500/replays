@@ -227,6 +227,11 @@
       "gzip": 607,
       "brotli": 553
     },
+    "dist/client/assets/rotate-ccw-HASH.js": {
+      "raw": 382,
+      "gzip": 275,
+      "brotli": 269
+    },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
       "gzip": 7571,
@@ -1378,6 +1383,16 @@
         "brotli": 2326
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/rotate-ccw-HASH.js",
+      "cap": {
+        "raw": 382,
+        "gzip": 275,
+        "brotli": 269
+      },
+      "reason": "Viewer views: the \"Reset this view\" icon, split into its own chunk. Measured in CI against main 8d1b7534.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     }
   ]
