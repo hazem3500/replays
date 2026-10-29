@@ -76,6 +76,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - `/plugin` exports `HttpError` (status, message, optional headers) and `tooManyRequests(seconds, message?)`.
   - `examples/app-key-ingest`: a public app-key ingest (keys with rotation, origins, limits, retention) built only from these hooks.
 
+- `WebAuthAdapter` (`authenticateRequest`, `handleRequest`, `loginUrlFor`): auth adapters over web `Request`/`Response`, accepted
+  wherever an `AuthAdapter` is (`api.auth`, `AUTH_PLUGIN`, `createApp({ auth })`, `describeAuthAdapter`); `AnyAuthAdapter` names
+  either shape ([docs/extension-api.md](docs/extension-api.md#web-standard-adapters)).
 - Plugin Web APIs, additive in plugin API generation 1 ([docs/extension-api.md](docs/extension-api.md#web-apis-routes-and-middleware)):
   - `api.route(...)`: web-standard handlers under `/api/plugins/<plugin>`, with `auth`, `write` and a Standard Schema `body`
   - `api.middleware(...)`: `pre-auth`/`post-auth` interceptors that return a `Response` or nothing
