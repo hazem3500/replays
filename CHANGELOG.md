@@ -17,6 +17,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Compared recordings go by name: each tile, the inspector's "Showing" switch and the Network and Performance panels
+  name a recording by what tells it apart ("Before", "Firefox", "Run 3": the parts every label shares are dropped)
+  beside one colour swatch, instead of A, B, C. Vitals and request details now say how each other recording did.
 - A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
   mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
   `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
@@ -250,6 +253,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - The separate `/compare?before=&after=` page and its workspace, evidence panels and route.
 
 ### Changed
+
+- "Keep suite and its runs" moved from the suite sidebar's pin button into the viewer's More menu at every width; the
+  sidebar shows "Kept by …" while a suite is kept.
 
 - Dialogs share one geometry from `--dialog-*` tokens: 20 px padding (16 px on phones), the title and close button on one
   line, 13 px body copy, and actions in a right-aligned row on desktop or stacked 44 px full-width buttons on phones and
