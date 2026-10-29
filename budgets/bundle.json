@@ -80,7 +80,7 @@
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2343,
-      "brotli": 2119
+      "brotli": 2117
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 7830,
@@ -108,9 +108,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 102421,
-      "gzip": 34243,
-      "brotli": 29266
+      "raw": 102425,
+      "gzip": 34267,
+      "brotli": 29293
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -209,7 +209,7 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 608,
+      "gzip": 607,
       "brotli": 557
     },
     "dist/client/assets/settings-HASH.js": {
@@ -239,7 +239,7 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 683,
+      "gzip": 682,
       "brotli": 605
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
@@ -1085,11 +1085,11 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 102421,
-        "gzip": 34243,
-        "brotli": 29266
+        "raw": 102425,
+        "gzip": 34267,
+        "brotli": 29293
       },
-      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured against main 5cf1fb6c: +4267 B raw, +1361 B gzip, +1162 B brotli. Replaces #113's allowance for this file.",
+      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured against main 1f1ac8b9: +4292 B raw, +1374 B gzip, +1165 B brotli. Replaces #113's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
