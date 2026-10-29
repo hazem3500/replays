@@ -22,7 +22,7 @@ so every change to the surface shows up in a diff).
 | HTTP API (`/api/replays`, `/api/suites`, `/api/config`, `/api/me`, upload receipts) and environment variables | – | Public: changes are additive |
 | `Identity` (`id`, `email`, `name`, `avatarUrl`, `capabilities`) as produced by auth adapters and seen by hooks | `/plugin`, `/server` | Public: fields are added, not removed |
 | The `comments` plugin name and the comments HTTP API | – | Public: the name is reserved; the API changes additively |
-| Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed |
+| Theme tokens (`THEME_TOKENS`) | `/server` | Public: tokens are added, not renamed; [v2 catalogue](tokens.md) |
 | Host edit write policy (`editing.enabled`, `EDITING_ENABLED`, `/api/config` effective capability) | – | Public: changes are additive; editor format remains beta |
 | The editor (`beta.editor`) and its API | – | Beta: may change in any release |
 | User plugins and the agent bridge (`beta.malleable`): the `.replays-plugin.json` format, `replays.*` sandbox API, `/api/malleable/*`, bridge tool names, `replays mcp` | – | Beta: may change in any release. The JSON Schemas in `docs/formats/` for replays, replay summaries, comments and edits follow the replay-format promise above |

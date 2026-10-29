@@ -1050,3 +1050,16 @@ precede an asynchronously loaded entry; only `replay:open` replays the active st
 Sandboxed user plugins do not get this host activity surface or extra read permissions.
 See the Acme activity panel in `examples/custom-distro/src/client.ts` for cleanup when a view unmounts.
 Comment events are intentionally outside this catalogue while the comments API is being revised.
+
+### Theme tokens v2
+
+`api.branding({ theme })` accepts the [generated token catalogue](tokens.md), including
+`shadow-pop`, `motion-fast`, `text-sm`, `space-4`, `card-radius`, `poster-overlay-bg`,
+`poster-overlay-fg`, `caption-bg`, `caption-fg` and `caption-font`. For a compact host theme:
+
+```ts
+api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms' } } });
+```
+
+The server validates these as plain CSS values and emits them into the initial page head.
+Plugin precedence and config overrides are unchanged. No DOM access or client setup is needed.
