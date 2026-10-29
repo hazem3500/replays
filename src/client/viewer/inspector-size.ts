@@ -1,10 +1,7 @@
 import { readStorage } from '../storage.ts';
+import { STANDARD_VIEW, viewSettingKey } from '../views/settings.ts';
 
-/** The person's diagnostics panel height, per browser (the key predates the splitter, so saved sizes survive). */
-export const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
 export const MIN_INSPECTOR_HEIGHT = 120;
-/** The steps rail is folded on wide screens ('1'), per browser. */
-export const RAIL_COLLAPSED_KEY = 'replays-steps-collapsed';
 /** The panel's default share of the window: about nine table rows at 1280×800, not three. */
 const DEFAULT_SHARE = 0.42;
 const FLOOR = 260;
@@ -26,7 +23,8 @@ export function clampInspectorHeight(height: number) {
   return Math.round(Math.min(Math.max(height, MIN_INSPECTOR_HEIGHT), maxInspectorHeight()));
 }
 
-export function initialInspectorHeight() {
-  const saved = Number(readStorage(INSPECTOR_HEIGHT_KEY));
+/** The person's diagnostics panel height in `view`, per browser, else the default share of the window. */
+export function initialInspectorHeight(view = STANDARD_VIEW) {
+  const saved = Number(readStorage(viewSettingKey(view, 'dock-height')));
   return Number.isFinite(saved) && saved > 0 ? clampInspectorHeight(saved) : defaultInspectorHeight();
 }

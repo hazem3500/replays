@@ -11,6 +11,13 @@ export type PluginInspectorTab = `plugin:${string}`;
 export type FeatureInspectorTab = 'comments';
 export type InspectorTab = BuiltinInspectorTab | PluginInspectorTab | FeatureInspectorTab;
 
+const NAMED_TABS: readonly string[] = ['console', 'network', 'waterfall', 'performance', 'context', 'comments'];
+
+/** A stored or preset tab id the inspector can show; anything else falls back to another tab. */
+export function isInspectorTab(value: string | undefined): value is InspectorTab {
+  return value !== undefined && (NAMED_TABS.includes(value) || /^plugin:\S+$/.test(value));
+}
+
 /**
  * Viewer-level data and actions shared by the transport, header, step rail and shortcuts. The value is
  * stable for a replay: UI state that changes (the inspector tab, the expanded request) is passed to the
@@ -46,6 +53,10 @@ export interface ViewerActions {
   editCaptions?: boolean;
   /** Saved navigation marks mapped onto the playback timeline. */
   highlights?: ProjectedHighlight[];
+  /** The open view's built-in seek bar tracks (`core:steps`, `core:errors`, `core:highlights`); undefined shows all. */
+  tracks?: readonly string[] | undefined;
+  /** The open view's inspector tab order (views/resolve.ts `orderTabs`): listed tabs lead. */
+  tabOrder?: readonly string[] | undefined;
 }
 
 export const ViewerContext = createContext<ViewerActions | null>(null);

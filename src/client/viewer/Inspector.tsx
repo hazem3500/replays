@@ -27,7 +27,9 @@ import { resolveSlot } from '../plugins/registry.ts';
 import { DockPanel, InspectorDock } from './InspectorDock.tsx';
 import { inspectorTabItems } from './inspector-tabs.ts';
 import { consoleBadge } from './tab-badges.ts';
-import { INSPECTOR_HEIGHT_KEY, MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
+import { MIN_INSPECTOR_HEIGHT, maxInspectorHeight } from './inspector-size.ts';
+import { availableTab, orderTabs } from '../views/resolve.ts';
+import { STANDARD_VIEW, viewSettingKey } from '../views/settings.ts';
 export { edgeVelocity } from './TrackList.tsx';
 import { buildPerformance } from './performance.ts';
 
@@ -43,7 +45,7 @@ export interface PanelSize {
 }
 
 const INSPECTOR_SIZE: PanelSize = {
-  storageKey: INSPECTOR_HEIGHT_KEY,
+  storageKey: viewSettingKey(STANDARD_VIEW, 'dock-height'),
   variable: '--inspector-height',
   min: MIN_INSPECTOR_HEIGHT,
   max: maxInspectorHeight,
@@ -138,6 +140,8 @@ export interface MobilePanel {
   onSelectSteps: () => void;
 }
 
+const NO_ORDER: readonly string[] = [];
+
 export const Inspector = memo(function Inspector({
   bundle,
   sourceBundle = bundle,
@@ -165,7 +169,7 @@ export const Inspector = memo(function Inspector({
   compare?: { scope?: ReactNode; performance?: ReactNode; peers?: readonly InspectorPeer[] | undefined } | undefined;
 }) {
   const player = usePlayer();
-  const { setTab, setExpandedRequest } = useViewer();
+  const { setTab, setExpandedRequest, tabOrder: order = NO_ORDER } = useViewer();
   const features = activeFeatures().flatMap((feature) => (feature.tab ? [{ id: feature.id, featureTab: feature.tab }] : []));
   const featureBadges = useFeatureBadges();
   // Rows fill once the page transition has landed (hooks/use-filled-after-transition.ts); until then each panel shows its pending frame.
@@ -199,7 +203,7 @@ export const Inspector = memo(function Inspector({
   const ownContexts = usePluginContexts(bundle, player);
   const pluginContextFor = useContext(PluginContexts) ?? ownContexts;
   const contextSections = usePluginContextSections();
-  const items = inspectorTabItems(
+  const resolved = inspectorTabItems(
     {
       stepCount: bundle.steps.length,
       rail: !mobile,
@@ -219,8 +223,9 @@ export const Inspector = memo(function Inspector({
     },
     resolveSlot,
   );
+  const items = orderTabs(resolved, order);
   const stepsTab = items.some((item) => item.id === 'steps');
-  const current = stepsTab && mobile?.stepsSelected ? 'steps' : tab === 'waterfall' ? 'network' : tab;
+  const current = stepsTab && mobile?.stepsSelected ? 'steps' : availableTab(items, tab === 'waterfall' ? 'network' : tab, order);
 
   return (
     <InspectorDock

@@ -23,6 +23,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- The viewer opens in a view: `?view=<id>` first, then the suite's profile, then the replay's profile, then Compare for
+  two or more recordings, else Standard. **View:** in the top bar (in More on phones) switches it, and `V` / `Shift V`
+  step through the views, without remounting a player. A view orders the inspector's tabs and picks the one shown
+  first, can hide the inspector (Walkthrough leaves **Show details**), fold the steps rail, show step captions, fade the
+  top bar while playing, limit the seek bar's built-in tracks and draw a headline: the new `viewer.headline` slot, with
+  `core:issues`, `core:vitals`, `core:comments` and `core:compare-summary` built in. The dock's height and fold, the
+  steps rail's fold, captions and the default tab are remembered per view (**Reset this view** forgets them); the old
+  global keys are no longer read. `core:view` joins the `viewer.actions` slot, and suites accept a `profile`.
 - **Recorder network bodies, opt-in** ([docs/recorder.md](docs/recorder.md#capture-and-network-bodies)): a new `capture`
   option on `createRecorder` and `createGuidedRecorder` takes a profile's capture block as is (`network: 'off' | 'headers'
   | 'bodies'`, `bodies`, `console`, stricter `privacy`). With `'bodies'` the recorder reads fetch and XHR request and

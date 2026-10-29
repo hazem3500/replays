@@ -246,9 +246,10 @@ export function CopyLinkButton({ suiteHref }: { suiteHref?: string | undefined }
 
 export const ACTIONS_SLOT = 'viewer.actions';
 
-/** The top bar's built-in actions, in their default order: compare first, then edit, details, copy link, download. */
-export type CoreAction = 'core:compare' | 'core:edit' | 'core:info' | 'core:link' | 'core:download';
+/** The top bar's built-in actions, in their default order: the view switcher, compare, edit, details, copy link, download. */
+export type CoreAction = 'core:view' | 'core:compare' | 'core:edit' | 'core:info' | 'core:link' | 'core:download';
 const CORE_ACTIONS: readonly (readonly [CoreAction, number])[] = [
+  ['core:view', 40],
   ['core:compare', 50],
   ['core:edit', 100],
   ['core:info', 200],

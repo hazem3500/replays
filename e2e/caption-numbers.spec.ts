@@ -13,7 +13,7 @@ async function openNumbers(page: Page) {
 }
 
 async function enableCaptions(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('replays-captions', '1'));
+  await page.addInitScript(() => localStorage.setItem('replays-view:standard:captions', '1'));
 }
 
 test('captions default to unnumbered; numbering toggles, persists, and survives visibility shortcuts', async ({ page }) => {

@@ -355,7 +355,38 @@ views: [
 | `headline` | `viewer.headline` slot ids shown above the stage |
 | `speed` | Playback speed on open, 0.25 to 4 |
 
-The viewer applies views in a later release; until then they are served data only.
+A suite names its profile with `profile` on its registration (`PUT /api/suites/<id>`); its view wins over the runs'.
+In the viewer, **View:** in the top bar (in More on phones) and `V` / `Shift V` switch the view; the choice lives in
+`?view=`, which a copied link keeps only when it differs from what the page opens in. Switching never remounts a player.
+Each person's dock height and fold, steps rail fold, captions and default tab are remembered per view, in the browser;
+**Reset this view** forgets them. A view with `inspector.state: 'hidden'` leaves **Show details** on the bottom edge
+(phones fold the panel to its tab row instead). `stage.tracks` limits the seek bar's built-in tracks (`core:steps`,
+`core:errors`, `core:highlights`).
+
+### Headline tiles
+
+`viewer.headline` items draw the strip above the stage; a view shows the ids its `headline` lists, in the slot's order.
+Core ships `core:issues` (error counts and Previous/Next error), `core:vitals` (the performance verdicts),
+`core:comments` (the count and **Comment here**, when comments are on) and `core:compare-summary` (one chip per
+compared recording). A plugin adds a tile with `registerSlotItem`; `when` and `render` receive `{ view, replay }`, and
+`render` returns the tile to draw into its own box:
+
+```ts
+api.registerSlotItem('viewer.headline', {
+  id: 'plugin:acme:budget',
+  order: 500,
+  when: ({ replay }) => replay.performance !== undefined,
+  render: () => ({
+    label: 'Budget',
+    mount(container, context) {
+      container.textContent = `Budget: ${context.replay.meta.title}`;
+    },
+  }),
+});
+```
+
+List the id in a view's `headline` (`views: [{ id: 'performance', headline: ['core:vitals', 'plugin:acme:budget'] }]`)
+to show it there.
 
 ## Render pipeline hooks
 
@@ -845,14 +876,15 @@ Built-in viewer items and their default order:
 | Slot | Built-in items |
 | --- | --- |
 | `viewer.inspector.tabs` | `core:steps` (only without the steps rail, so on phones), `core:console`, `core:network`, `core:performance`, `core:context`, then built-in feature tabs such as `core:comments` |
-| `viewer.actions` | `core:compare`, `core:edit` (when editing is on), `core:info`, `core:link`, `core:download`; phones show `core:compare` and `core:edit` in the bar and the rest in More |
+| `viewer.actions` | `core:view` (the view switcher; in More on phones), `core:compare`, `core:edit` (when editing is on), `core:info`, `core:link`, `core:download`; phones show `core:compare` and `core:edit` in the bar and the rest in More |
+| `viewer.headline` | `core:compare-summary`, `core:issues`, `core:vitals`, `core:comments`; only the ids the open view lists show ([views](#headline-tiles)) |
 | `viewer.context.sections` | `core:summary`, `core:sources` (when the replay has sources), `core:fields` |
 | `viewer.scrubber.tracks` | `core:steps`, `core:errors`, `core:highlights`; their geometry is fixed, so order only places plugin rows, and hiding `core:steps` leaves one unbroken bar |
 
 Plugin items rank after the built-ins unless a host orders them.
 
 Initial slots: `viewer.inspector.tabs`, `viewer.panels.side`, `viewer.actions`,
-`viewer.scrubber.tracks`, `viewer.context.sections`, `index.row.columns`, `index.filters`,
+`viewer.scrubber.tracks`, `viewer.context.sections`, `viewer.headline`, `index.row.columns`, `index.filters`,
 `index.sections`, `settings.sections`. Distributions may define additional slot names. A view
 supplies its built-ins as the same descriptor list; it must render the resolved list to support
 core item configuration. The registry does not discover JSX automatically.
