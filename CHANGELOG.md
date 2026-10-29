@@ -17,6 +17,9 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- A signed-in person sees an account menu in the top bar (in More on phones): who is signed in and, when the auth
+  mode has a way, **Sign out**. `GET /api/me` adds `session: { signedIn, signOutUrl? }`, and auth adapters may offer
+  `signOutUrl(context)` (the OIDC adapter returns its `/auth/logout`). Nothing shows under `AUTH_MODE=none`.
 - Editor cursor styles: `ReplayEdits.cursor.appearance` draws the cursor as the CUA arrow (default), a classic pointer, a
   hand, a dot, a ring or an agent pointer with a name tag, and `cursor.color` tints it with one of six token colors. The
   inspector shows each style drawn by the player's own renderer. Classic, hand, dot and ring add a click ripple or pulse

@@ -177,7 +177,7 @@ The API (`summary.people` and suite `people` carry `avatarUrl` and `profileUrl` 
 | `GET /api/replays?for=me` | Only replays whose people match the signed-in person, each with `reason`: the best-ranked matching role |
 | `GET /api/suites?for=me` (and `&expand=runs`) | Suites matching through their own people or any run's replay people, with `reason` |
 | `…&handle.<id>=value` | Handles the person linked (the viewer keeps them in localStorage); each must match its pattern, else `400` |
-| `GET /api/me` | The (resolved) identity, plus `people: { roles?, handles: [{ id, label, pattern }] }` with `api.people` |
+| `GET /api/me` | The (resolved) identity, plus `people: { roles?, handles: [{ id, label, pattern }] }` with `api.people`, and `session: { signedIn, signOutUrl? }` (`signedIn` is false under `AUTH_MODE=none`; `signOutUrl` comes from the auth adapter) |
 
 A person matches by email (the identity's) or by a linked handle, both ignoring case. The viewer shows an avatar stack on index rows
 that have people (a card with name, role, email to copy and profile link) and a **For me** switch in the filter menu with a field per
