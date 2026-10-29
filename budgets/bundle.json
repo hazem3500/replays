@@ -209,8 +209,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
-      "gzip": 633,
-      "brotli": 585
+      "gzip": 608,
+      "brotli": 557
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 640
+      "brotli": 605
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -278,9 +278,9 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 59620,
-      "gzip": 21200,
-      "brotli": 18490
+      "raw": 60058,
+      "gzip": 21441,
+      "brotli": 18678
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -1233,11 +1233,11 @@
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 59620,
-        "gzip": 21200,
-        "brotli": 18490
+        "raw": 60058,
+        "gzip": 21441,
+        "brotli": 18678
       },
-      "reason": "Top bar actions, Context sections and seek bar tracks resolve through their viewer slots; includes the stacked Splitter (#121) and phone top bar (#125), which CI measures with it.",
+      "reason": "Top bar actions, Context sections and seek bar tracks resolve through their viewer slots. Measured in CI against main (#121 and #125 already merged): +987 B raw, +354 B gzip, +333 B brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/133"
     },
     {
