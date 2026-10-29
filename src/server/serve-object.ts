@@ -2,7 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { extname } from 'node:path';
 import { pipeline } from 'node:stream/promises';
 
-import { notModified } from './app.ts';
+import { notModified } from './http/send.ts';
 import { COMPRESSIBLE, CompressionCache, pickEncoding } from './compression.ts';
 import type { ObjectInfo, ObjectStorage } from './storage/index.ts';
 
