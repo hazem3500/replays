@@ -1,4 +1,4 @@
-import { swappingInPlace } from '../navigation.ts';
+import { swappingInPlace } from '../transitions/state.ts';
 
 /**
  * Rows that rise into place with a stagger: the step rail's steps and the inspector's visible rows when a replay

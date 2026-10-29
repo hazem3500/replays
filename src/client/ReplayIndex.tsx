@@ -21,7 +21,7 @@ import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
-import { rememberListed } from './navigation.ts';
+import { rememberListed } from './transitions/open-hint.ts';
 import { CommandSearch, IndexIdentity, type ProfileCounts, ProfileSegments, ScopeBar } from './index/IndexHeader.tsx';
 import { indexProfiles, pageProfiles } from './profiles.ts';
 import { useMediaQuery } from './media.ts';
@@ -32,7 +32,7 @@ import { MeContext } from './index/People.tsx';
 import { ExpiredReplays } from './index/ExpiredReplays.tsx';
 import { FirstRun } from './index/first-run/FirstRun.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
-import { apiUrl, rememberIndexSearch } from './route.ts';
+import { apiUrl } from './api/fetch.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
@@ -411,17 +411,21 @@ function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
   return a.length === b.length && a.every((item, index) => item.id === b[index]!.id);
 }
 
-export function ReplayIndex() {
-  const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
-  const [forMe, setForMe] = useState(() => forMeFromSearch(location.search));
+/**
+ * `search` is the address it opens on (Back to other filters, a link: the page remounts on it); `onSearch` gets the
+ * filters, sort and view it shows now, for the address and "back to Replays" links.
+ */
+export function ReplayIndex({ search: opened, onSearch }: { search: string; onSearch: (search: string) => void }) {
+  const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(opened));
+  const [forMe, setForMe] = useState(() => forMeFromSearch(opened));
   const [linked, setLinked] = useState(storedLinkedHandles);
   const [me, setMe] = useState<Me>();
   /** The sessions request (and the Back cache's key): the filters, plus For me. */
   const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
   const [restored] = useState(() => restoredIndex(listSearch));
-  const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
+  const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(opened));
   const profiles = pageProfiles();
-  const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(location.search, profiles));
+  const [profile, setProfile] = useState<string | undefined>(() => profileFromSearch(opened, profiles));
   const [query, setQuery] = useState(filters.q ?? '');
   const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
   const [loadError, setError] = useState('');
@@ -433,7 +437,7 @@ export function ReplayIndex() {
   );
   // Every tag seen so far, like hosts: choosing one narrows the list, but the other tags stay on offer.
   const [tags, setTags] = useState<string[]>(() => tagOptions(restored?.items ?? []).sort());
-  const [sort, setSort] = useState<Sort>(() => sortFromSearch(location.search));
+  const [sort, setSort] = useState<Sort>(() => sortFromSearch(opened));
   /** Undefined until the first suites request settles, so suite replays never flash as sessions. */
   const [suites, setSuites] = useState<ReviewSuiteIndexEntry[] | undefined>(restored?.suites);
   // What the feed shows right now (for refreshes) and the newest item this tab has listed (for arrivals).
@@ -466,10 +470,8 @@ export function ReplayIndex() {
   }, [query]);
 
   useEffect(() => {
-    const search = indexSearch(filters, kind, sort, profile, forMe);
-    history.replaceState(history.state, '', `${location.pathname}${search}`);
-    rememberIndexSearch(search);
-  }, [filters, kind, sort, profile, forMe]);
+    onSearch(indexSearch(filters, kind, sort, profile, forMe));
+  }, [filters, kind, sort, profile, forMe, onSearch]);
 
   // Who "me" is, and which handles the deployment lets a person link (used only where people exist).
   useEffect(() => {
@@ -596,7 +598,7 @@ export function ReplayIndex() {
     [unsegmented, profile],
   );
   const listed = Boolean(entries);
-  // Effects re-run when the index is shown again behind a viewer page (App.tsx keeps it in an Activity).
+  // Effects re-run when the index is shown again behind a viewer page (routing/KeptIndex.tsx keeps it in an Activity).
   const entered = useRef(false);
   useLayoutEffect(() => {
     if (!listed) return;
@@ -606,7 +608,7 @@ export function ReplayIndex() {
     if (!restored && !entered.current && shell.current) staggerIn(shell.current);
     entered.current = true;
   }, [listed, restored]);
-  // What a card opens is known before its bundle loads: the viewer's skeleton takes its shape (navigation.ts).
+  // What a card opens is known before its bundle loads: the viewer's skeleton takes its shape (transitions/open-hint.ts).
   useEffect(() => {
     if (items) rememberListed(items);
     for (const suite of suites ?? []) rememberListed((suite.runDetails ?? []).flatMap((run) => (run.replay ? [run.replay] : [])));
