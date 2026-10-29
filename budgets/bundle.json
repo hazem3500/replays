@@ -74,8 +74,8 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
-      "gzip": 13513,
-      "brotli": 11994
+      "gzip": 13512,
+      "brotli": 11989
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 617
+      "brotli": 646
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
@@ -1024,14 +1024,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/136"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
       "file": "dist/client/index.html",
       "cap": {
         "brotli": 3520
@@ -1057,6 +1049,14 @@
         "brotli": 66380
       },
       "reason": "Flat inspector tab row from viewer.inspector.tabs descriptors, compact tab badges and per-panel pending frames, on top of #119's panels; raw stays under main's cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/117"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 646
+      },
+      "reason": "No source change: the suite comparison entry names the lazy inspector chunk by its hash, which changes with this PR's inspector work; measured against main: +0 B raw, +1 B gzip, +28 B brotli (627 against main's 599 and a 617-byte cap). Replaces #119's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/117"
     }
   ]
