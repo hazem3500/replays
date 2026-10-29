@@ -77,6 +77,11 @@ describe('docs/formats', () => {
       expect(hashed?.thumbhash).toBeDefined();
       expect(check(hashed).errors).toBe('No errors');
       expect(check({ ...hashed, thumbhash: 'url(x)' }).ok).toBe(false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
+  });
+
   it('the records retention leaves of removed replays validate', async () => {
     const check = await validator('expired-replay');
     const root = await mkdtemp(join(tmpdir(), 'replays-formats-'));
