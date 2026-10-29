@@ -1,7 +1,6 @@
-import { AnimatedNumber } from '@/components/animated-number.tsx';
 import { cn } from '@/lib/utils.ts';
 
-import { nounFor, plural } from '../plural.ts';
+import { plural } from '../plural.ts';
 
 export type ScopeCountState = 'loading' | 'updating' | 'ready' | 'error';
 
@@ -19,7 +18,7 @@ function countText(replays: number, suites: number) {
 
 /**
  * The index's result count ("22 replays · 4 suites"), never swapped for a sentence: through a refresh the count it
- * had stays (numbers roll to the new values when they land) and dims after 300 ms while RefreshLine draws the
+ * had stays and dims after 300 ms while RefreshLine draws the
  * activity; during the first load a filtered view holds the count's place with a bar the height of its text. Known
  * counts (a list restored for Back, a settled one) show at once. What is going on is said to screen readers only.
  * Visible only while filtered (`shown`); scope-bar.css also hides it when profile tabs take the toolbar's left side.
@@ -52,18 +51,12 @@ function readyText(replays: number | undefined, suites: number) {
   return replays === undefined ? '' : countText(replays, suites);
 }
 
-/** The visible count, rolling to new values; a bar while the first list loads; nothing when unknown otherwise. */
+/** The visible count; a bar while the first list loads; nothing when unknown otherwise. */
 function CountValue({ replays, suites, loading }: { replays: number | undefined; suites: number; loading: boolean }) {
   if (replays === undefined) return loading ? <span className="skel-line skel-appear scope-count-skeleton" aria-hidden="true" /> : null;
   return (
     <span className="scope-count-value" aria-hidden="true">
-      <AnimatedNumber value={replays} /> {nounFor(replays, 'replay')}
-      {suites ? (
-        <>
-          {' · '}
-          <AnimatedNumber value={suites} /> {nounFor(suites, 'suite')}
-        </>
-      ) : null}
+      {countText(replays, suites)}
     </span>
   );
 }

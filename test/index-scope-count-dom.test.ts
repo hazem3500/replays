@@ -35,14 +35,14 @@ describe('index result count while lists load', () => {
 
   it('shows a known count at once, with no skeleton', () => {
     render({ replays: 22, suites: 4, state: 'ready' });
-    expect(visible()?.querySelectorAll('number-flow-react')).toHaveLength(2);
+    expect(visible()?.textContent).toBe('22 replays · 4 suites');
     expect(host.querySelector('.scope-count-skeleton')).toBeNull();
     expect(status()).toBe('22 replays · 4 suites');
   });
 
   it('keeps the count it had through a refresh and says so only to screen readers', () => {
     render({ replays: 1, state: 'updating' });
-    expect(visible()?.textContent).toMatch(/ replay$/);
+    expect(visible()?.textContent).toBe('1 replay');
     expect(host.querySelector('.scope-count')?.getAttribute('data-state')).toBe('updating');
     expect(host.querySelector('[role="status"]')?.classList.contains('sr-only')).toBe(true);
     expect(status()).toBe('Updating replays…');
