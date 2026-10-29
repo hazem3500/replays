@@ -1267,7 +1267,7 @@
         "gzip": 43899,
         "brotli": 36570
       },
-      "reason": "The phone search morph (index/command-search.css: clip-path rest and open states, glyph travel, close button, resting-query dot) and the quick-results stagger; head measures main-HASH.css as allowed here.",
+      "reason": "The phone search morph (index/command-search.css: clip-path rest and open states, glyph travel, close button, resting-query dot) and the quick-results stagger; head measures 255616 raw, 43899 gzip, 36570 brotli bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/115"
     },
     {
@@ -1275,7 +1275,7 @@
       "cap": {
         "raw": 255616
       },
-      "reason": "The phone search morph (index/command-search.css: clip-path rest and open states, glyph travel, close button, resting-query dot) and the quick-results stagger; head measures css as allowed here.",
+      "reason": "The index entry's CSS closure carries the same phone search morph; head measures 255616 raw bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/115"
     },
     {
