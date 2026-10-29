@@ -1,152 +1,167 @@
-/* The composer docked under the comments (Composer.tsx) and its reaction picker (Reactions.tsx). */
-/* ---------- Composer: one line, growing while it has focus or text ---------- */
+/*
+ * The composer docked under the comments (Composer.tsx) and its reaction picker (Reactions.tsx): a plain box, a send
+ * arrow once there is text (the view's one accent), and one quiet line about where the comment goes. It spans the
+ * panel's content width with the same 16 px inset as the list, so both share one column at any dock width.
+ */
 .comment-composer {
   flex: none;
-  padding: 8px 12px 10px;
+  padding: 8px 16px 12px;
   border-top: 1px solid var(--line);
   background: var(--surface);
+  /* why: the list above reserves a stable scrollbar gutter; reserving the same one keeps both right edges in line. */
+  overflow: hidden;
+  scrollbar-gutter: stable;
 }
 .comment-composer-box {
-  display: grid;
-  grid-template-areas: "pin input kbd react";
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
-  gap: 4px 6px;
-  max-width: 760px;
-  padding: 4px 4px 4px 6px;
-  border: 1px solid var(--line-strong);
-  border-radius: 10px;
-  background: var(--surface-raised);
-  transition: border-color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out);
-}
-.comment-composer:focus-within .comment-composer-box {
-  border-color: color-mix(in oklab, var(--accent) 55%, var(--line-strong));
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent);
-}
-.comment-composer:is(:focus-within, [data-filled]) .comment-composer-box {
-  grid-template-areas: "pin input input react" "send send send send";
-  align-items: start;
-}
-.comment-pin-wrap {
-  grid-area: pin;
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  min-height: 28px;
-}
-.comment-pin {
-  display: inline-flex;
-  align-items: center;
+  display: flex;
+  align-items: flex-end;
   gap: 4px;
-  height: 24px;
-  padding: 0 8px 0 6px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  background: var(--accent-soft);
+  padding: 4px 4px 4px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+}
+.comment-composer-box:focus-within {
+  border-color: var(--ring);
+}
+.comment-composer-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 28px;
+  max-height: 160px;
+  padding: 4px 0;
+  resize: none;
+  border: 0;
+  background: transparent;
   color: var(--text);
   font: inherit;
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  cursor: pointer;
+  font-size: var(--text-sm);
+  line-height: 20px;
+  field-sizing: content;
 }
-.comment-pin[aria-pressed="false"] {
-  border-color: var(--line-strong);
-  background: transparent;
-  color: var(--text-secondary);
+.comment-composer-input::placeholder {
+  color: var(--text-tertiary);
 }
-.comment-pin svg,
-.comment-pin-sync svg,
-.comment-react-trigger svg {
-  width: 13px;
-  height: 13px;
+.comment-composer-input:focus-visible {
+  box-shadow: none;
+  outline: none;
 }
-.comment-pin-sync,
-.comment-react-trigger {
+.comment-react-trigger,
+.comment-send {
   display: grid;
+  flex: none;
   place-items: center;
   width: 28px;
   height: 28px;
   padding: 0;
   border: 0;
-  border-radius: var(--radius);
+  border-radius: 6px;
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-}
-.comment-pin-sync {
-  width: 24px;
-  height: 24px;
-}
-.comment-react-trigger {
-  grid-area: react;
 }
 .comment-react-trigger svg {
   width: 16px;
   height: 16px;
 }
-.comment-pin-sync:hover,
-.comment-react-trigger:hover,
 .comment-react-trigger[data-popup-open] {
   background: var(--surface-hover);
   color: var(--text);
 }
-.comment-composer-input.comment-input {
-  grid-area: input;
-  min-height: 28px;
-  max-height: 160px;
-  padding: 5px 2px;
-  resize: none;
-  border: 0;
-  background: transparent;
-  field-sizing: content;
+.comment-send {
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
-.comment-composer-input.comment-input:focus-visible {
-  box-shadow: none;
-  outline: none;
+.comment-send svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2.25;
 }
-.comment-composer:is(:focus-within, [data-filled]) .comment-composer-input {
-  min-height: 52px;
+@media (hover: hover) {
+  .comment-react-trigger:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
 }
-.comment-composer-kbd {
-  grid-area: kbd;
+.comment-send:active {
+  transform: scale(0.96);
+  transition: transform 100ms var(--ease-out);
 }
-.comment-composer-send {
-  grid-area: send;
-  display: none;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 8px;
-}
-.comment-composer:is(:focus-within, [data-filled]) .comment-composer-send {
+
+/* ---------- The line under the box ---------- */
+.comment-composer-note {
   display: flex;
-}
-.comment-composer:is(:focus-within, [data-filled]) .comment-composer-kbd {
-  display: none;
-}
-/* why: anonymity matters at the moment of posting; the rest of the time the "Anonymous" bylines say enough. */
-.comment-composer:is(:focus-within, [data-filled]) .comment-composer-foot {
-  display: block;
-}
-.comment-count {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 12px;
+  min-height: 24px;
+  margin-top: 4px;
+  padding-inline: 2px;
   color: var(--text-tertiary);
-  font-size: var(--text-2xs);
+  font-size: var(--text-xs);
+}
+.comment-placement {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.comment-placement-time {
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
-.comment-composer-foot {
-  display: none;
-  max-width: 760px;
-  margin: 6px 2px 0;
+.comment-unpin {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
   color: var(--text-tertiary);
-  font-size: var(--text-2xs);
+  cursor: pointer;
 }
+.comment-unpin svg {
+  width: 12px;
+  height: 12px;
+}
+.comment-note-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, currentColor 35%, transparent);
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+@media (hover: hover) {
+  .comment-unpin:hover {
+    background: var(--surface-hover);
+    color: var(--text);
+  }
+  .comment-note-action:hover {
+    color: var(--text);
+  }
+}
+.comment-anonymous {
+  margin-left: auto;
+}
+.comment-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Reaction picker ---------- */
 .comment-react-popup.comment-react-popup {
   width: auto;
   padding: 4px;
 }
 .comment-react-set {
   display: flex;
-  gap: 2px;
+  gap: 4px;
 }
 .comment-react-button {
   width: 32px;
@@ -154,33 +169,45 @@
   border: 0;
   border-radius: var(--radius);
   background: transparent;
-  font-size: 17px;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
-  transition: transform var(--motion-fast) var(--ease-out);
 }
-.comment-react-button:hover,
 .comment-react-button:focus-visible {
   background: var(--surface-hover);
-  outline: none;
-  transform: scale(1.12);
+}
+@media (hover: hover) {
+  .comment-react-button:hover {
+    background: var(--surface-hover);
+  }
 }
 
-@media (hover: none), (pointer: coarse) {
-  .comment-composer-kbd {
-    display: none;
-  }
-  .comment-composer-input.comment-input {
+@media (pointer: coarse) {
+  .comment-composer-input {
     font-size: 16px;
+  }
+  .comment-react-trigger,
+  .comment-send {
+    width: 36px;
+    height: 36px;
+  }
+  .comment-unpin {
+    width: 32px;
+    height: 32px;
+    margin-block: -4px;
+  }
+  .comment-react-button {
+    width: 44px;
+    height: 44px;
   }
 }
 @media (max-width: 480px) {
   .comment-composer {
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .comment-react-button {
-    transition: none;
+  .comment-send:active {
+    transform: none;
   }
 }
