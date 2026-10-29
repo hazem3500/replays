@@ -80,7 +80,7 @@ export function SettingsDialog({ open, onOpenChange, section, onSectionChange, s
   const [instant, setInstant] = useState(false);
   const popup = useRef<HTMLDivElement>(null);
   // why: `when` on the Plugins descriptor reads the registry, which changes as plugins load.
-  useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot);
+  useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot, viewerRegistry.getSnapshot);
   const sections = settingsSections({ stacked });
   const current = sections.find((candidate) => candidate.section === section) ?? sections[0];
   if (!current) return null;
