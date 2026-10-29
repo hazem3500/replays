@@ -29,7 +29,7 @@
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
-      "gzip": 1110,
+      "gzip": 1109,
       "brotli": 942
     },
     "dist/client/assets/brand/apple-touch-icon.png": {
@@ -78,9 +78,9 @@
       "brotli": 2680
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 32532,
+      "raw": 33543,
       "gzip": 11374,
-      "brotli": 10155
+      "brotli": 10144
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -168,9 +168,9 @@
       "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 1024353,
-      "gzip": 320466,
-      "brotli": 264886
+      "raw": 967978,
+      "gzip": 303313,
+      "brotli": 251663
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -223,9 +223,14 @@
       "brotli": 553
     },
     "dist/client/assets/settings-HASH.js": {
-      "raw": 24766,
-      "gzip": 8215,
-      "brotli": 7402
+      "raw": 26722,
+      "gzip": 8812,
+      "brotli": 7903
+    },
+    "dist/client/assets/shortcuts-HASH.js": {
+      "raw": 3183,
+      "gzip": 1278,
+      "brotli": 1086
     },
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 16683,
@@ -250,12 +255,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 630
+      "brotli": 615
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21291,
-      "gzip": 9017,
-      "brotli": 7568
+      "raw": 21999,
+      "gzip": 9037,
+      "brotli": 7810
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -283,9 +288,9 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 62374,
-      "gzip": 22308,
-      "brotli": 19444
+      "raw": 64157,
+      "gzip": 23111,
+      "brotli": 20125
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -498,9 +503,9 @@
       "brotli": 517
     },
     "dist/lib/viewer.mjs": {
-      "raw": 20835,
-      "gzip": 5659,
-      "brotli": 4992
+      "raw": 26293,
+      "gzip": 7103,
+      "brotli": 6256
     },
     "initial/index.html/css": {
       "raw": 275556,
@@ -1183,16 +1188,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 275556,
-        "gzip": 47455,
-        "brotli": 39256
-      },
-      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.css",
       "cap": {
         "raw": 2923,
@@ -1229,38 +1224,12 @@
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 275556,
-        "gzip": 47455,
-        "brotli": 39256
-      },
-      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
       "file": "initial/render.html/css",
       "cap": {
         "raw": 6192,
         "brotli": 2248
       },
       "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 632
-      },
-      "reason": "Theme token CSS consumers change the dependency fingerprints of existing viewer chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "gzip": 9022
-      },
-      "reason": "Theme token CSS consumers change the dependency fingerprints of existing viewer chunks.",
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
@@ -1274,42 +1243,89 @@
       "pr": "https://github.com/hazem3500/replays/pull/181"
     },
     {
+      "file": "dist/client/assets/comments-ui-HASH.js",
+      "cap": {
+        "raw": 33543,
+        "brotli": 10181
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 274727,
+        "gzip": 47181
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
       "file": "dist/client/assets/settings-HASH.js",
       "cap": {
-        "raw": 24766,
-        "gzip": 8215,
-        "brotli": 7402
+        "raw": 26722,
+        "gzip": 8812,
+        "brotli": 7903
       },
-      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
-      "pr": "https://github.com/hazem3500/replays/pull/181"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/shortcuts-HASH.js",
+      "cap": {
+        "raw": 3183,
+        "gzip": 1278,
+        "brotli": 1086
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 628
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21999,
+        "gzip": 9037,
+        "brotli": 7810
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 62374,
-        "gzip": 22308,
-        "brotli": 19444
+        "raw": 64157,
+        "gzip": 23111,
+        "brotli": 20125
       },
-      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
-      "pr": "https://github.com/hazem3500/replays/pull/181"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "dist/lib/viewer.mjs",
       "cap": {
-        "raw": 20835,
-        "gzip": 5659,
-        "brotli": 4992
+        "raw": 26293,
+        "gzip": 7103,
+        "brotli": 6256
       },
-      "reason": "Typed plugin activity subscriptions add the owned event registry and hydration-only lifecycle hooks; the viewer entry exposes the additive on method.",
-      "pr": "https://github.com/hazem3500/replays/pull/181"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
-      "file": "dist/client/assets/comments-ui-HASH.js",
+      "file": "initial/index.html/css",
       "cap": {
-        "brotli": 10155
+        "raw": 274727,
+        "gzip": 47181
       },
-      "reason": "Activity registry imports change the dependency fingerprint of the unchanged comments chunk (2 Brotli bytes against fresh main).",
-      "pr": "https://github.com/hazem3500/replays/pull/181"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "dist/client/assets/edits-HASH.js",

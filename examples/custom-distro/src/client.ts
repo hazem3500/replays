@@ -17,6 +17,31 @@ const JUMP_ICON = `data:image/svg+xml,${encodeURIComponent(
 )}`;
 
 export default defineViewerPlugin((api) => {
+  api.registerExportFormat({
+    id: 'console-json',
+    label: 'Console JSON',
+    run: ({ replay }) => ({
+      name: `${replay.meta.id}-console.json`,
+      mime: 'application/json',
+      data: JSON.stringify(replay.console),
+    }),
+  });
+  api.registerShortcut({ id: 'hello', label: 'Acme hello', keys: ['g'], run: (context) => context.notify('Acme shortcut ran') });
+  api.registerEditorTool({
+    id: 'note',
+    label: 'Mark for Acme',
+    run: ({ edits, duration, getTime }) => {
+      const from = Math.max(0, Math.min(getTime(), duration - 1000));
+      return {
+        ...edits,
+        captions: [
+          ...(edits.captions ?? []),
+          { id: crypto.randomUUID(), from, to: Math.min(duration, from + 1000), text: 'Review this moment' },
+        ],
+      };
+    },
+  });
+
   api.registerViewerPanel({
     id: 'activity',
     title: 'Acme activity',
