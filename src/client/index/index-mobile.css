@@ -80,7 +80,7 @@
     text-wrap: pretty;
   }
   .index-shell .feed-meta { flex-wrap: wrap; gap: 4px 6px; font-size: var(--index-phone-meta); line-height: 18px; }
-  /* The time never cuts; only the host gives way (ellipsis), and a suite's run strip wraps under. */
+  /* The time never cuts; only the host gives way (ellipsis). */
   .index-shell .feed-meta .feed-facts { min-width: 0; flex: 0 1 auto; display: flex; }
   .index-shell .feed-meta .feed-facts > * { flex: 0 0 auto; }
   .index-shell .feed-meta .feed-facts > .feed-host { min-width: 0; flex: 0 1 auto; overflow: hidden; text-overflow: ellipsis; }
@@ -89,6 +89,11 @@
   .index-shell .feed-session .feed-meta .source-lead-plain { flex: 0 0 auto; }
   /* The source chip ends the line, away from the title. */
   .index-shell .feed-meta .source-lead-chip { order: 9; margin-left: auto; }
+  /* A suite's run strip always takes the line under its meta, so suite rows share one height instead of short suites
+     keeping theirs beside the time. The break line between them sits between two half gaps. */
+  .index-shell .feed-list[data-view="list"] .feed-suite .feed-meta { row-gap: 2px; }
+  .index-shell .feed-list[data-view="list"] .feed-suite .feed-meta::after { content: ""; flex-basis: 100%; order: 9; }
+  .index-shell .feed-list[data-view="list"] .feed-suite .feed-meta > :is(.run-strip, .run-strip-note) { order: 10; }
   .index-shell .feed-meta .source-lead-plain:not(.suite-kind) { gap: 4px; color: var(--text-tertiary); font-weight: 450; }
   .index-shell .feed-meta .source-lead-plain:not(.suite-kind) .source-mark { width: 12px; height: 12px; flex-basis: 12px; color: var(--text-tertiary); }
   .index-shell .feed-meta .source-lead-plain:not(.suite-kind) + .feed-facts::before,
