@@ -9,6 +9,7 @@ import { usePlayer, usePlayhead } from '../../player.ts';
 import { countAtOrBefore } from '../../timeline.ts';
 import { useWindowedRows } from '../../windowing.ts';
 import { KEY_MOVES, moveIndex, type StepMove } from '../list-keys.ts';
+import { ListSpacer } from '../ListSpacer.tsx';
 import { playheadHorizon } from '../network/model.ts';
 import { HEADER_HEIGHT, SeekTime, TrackList } from '../TrackList.tsx';
 import { type ConsoleRow, LEVEL_NAMES, stackFrames } from './model.ts';
@@ -88,7 +89,7 @@ export function ConsoleList({
             </span>
           </div>
           <div ref={body} role="rowgroup">
-            <div aria-hidden="true" style={{ height: padTop }} />
+            <ListSpacer height={padTop} />
             {rows.slice(start, end).map((row, offset) => (
               <MessageRow
                 key={row.id}
@@ -100,7 +101,7 @@ export function ConsoleList({
                 onStep={step}
               />
             ))}
-            <div aria-hidden="true" style={{ height: padBottom }} />
+            <ListSpacer height={padBottom} />
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ import { formatDuration, stepAt } from '../network/model.ts';
 import { HEADER_HEIGHT, SeekTime } from '../TrackList.tsx';
 import { BUDGETS, type Moment, VERDICT_WORDS } from './model.ts';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
+import { ListSpacer } from '../ListSpacer.tsx';
 
 export const MOMENT_DETAIL_ID = 'performance-detail';
 
@@ -90,7 +91,7 @@ export function MomentList({
             onFocus={(event) => onHover?.(rowIdOf(event.target))}
             onBlur={() => onHover?.()}
           >
-            <div aria-hidden="true" style={{ height: padTop }} />
+            <ListSpacer height={padTop} />
             {moments.slice(start, end).map((item, offset) => (
               <MomentRow
                 key={item.id}
@@ -102,7 +103,7 @@ export function MomentList({
                 onStep={step}
               />
             ))}
-            <div aria-hidden="true" style={{ height: padBottom }} />
+            <ListSpacer height={padBottom} />
           </div>
         </div>
       )}
