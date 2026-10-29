@@ -20,7 +20,6 @@ import {
   type StoredReplayEdits,
 } from '../shared/edits.ts';
 import { type PosterMoment, profilesOf } from '../shared/profiles.ts';
-import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
 import { isThumbHash } from '../shared/thumbhash.ts';
 import {
   DEFAULT_RETENTION,
