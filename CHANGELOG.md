@@ -264,6 +264,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
 
+- Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
+  that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
+  to the whole replay, and offers to move to the playhead once it has drifted. Reactions sit behind one button and
+  show in the list as quiet chips their author can remove. An All / Open / Resolved filter appears once a thread is
+  resolved. Anonymous mode is a short note under the composer while you write, not a banner. Seek-bar comment markers
+  keep a 24 px target and merge when closer than that. `scripts/demo-comments.mjs` seeds demo comments.
+
 - Network and Performance are rethought around "what went wrong or slow, and when". Network has one toolbar row,
   where the status chips (All, Failed, Slow, No response) are both filters and summary. A ribbon on the seek bar's
   axis shows when requests happened (drag to filter a stretch), duration bars use a log scale so 6 ms and 2.4 s both

@@ -8,8 +8,8 @@ import { Avatar } from './Avatar.tsx';
 import { type PlacedThread, useComments } from './CommentsProvider.tsx';
 import './comments.css';
 
-/** Markers drawn closer than this many pixels merge into one with a count. */
-const CLUSTER_GAP = 14;
+/** Markers drawn closer than this many pixels merge into one with a count: each keeps a whole 24 px target. */
+const CLUSTER_GAP = 24;
 /** Longest preview text (characters) on a marker's card and in its accessible name. */
 const SNIPPET = 140;
 

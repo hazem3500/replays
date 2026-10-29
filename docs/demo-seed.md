@@ -48,3 +48,13 @@ node --experimental-strip-types --no-warnings scripts/demo-comparison-seed.mjs -
 ```
 
 Overlay them the same way, then open `/s/demo-compare-performance`, or compare any two recordings with `/r/<id>?with=<id>&layout=grid`.
+
+## Demo comments
+
+`scripts/demo-comments.mjs` gives replays a few fictional review comments (a whole-replay note, threads with replies, a resolved thread and reactions), so the Comments tab and the seek-bar markers have a populated state. It writes `DATA_DIR/<replay-id>/comments.json` only for replays that have no comments yet, and times each comment as a fraction of the replay's duration:
+
+```sh
+node scripts/demo-comments.mjs --data-dir "$DATA_DIR" --sample-dir "$SAMPLE_DIR" demo-seed-checkout-error demo-seed-dashboard-search
+```
+
+Leave at least one replay without comments to see the empty state.
