@@ -200,7 +200,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 644
+      "brotli": 622
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
@@ -349,23 +349,18 @@
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
-      "gzip": 1901,
-      "brotli": 1709
+      "gzip": 1902,
+      "brotli": 1711
     },
-    "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs": {
-      "raw": 752,
-      "gzip": 401,
-      "brotli": 335
+    "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
+      "raw": 3955,
+      "gzip": 1532,
+      "brotli": 1303
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
       "gzip": 1146,
       "brotli": 939
-    },
-    "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs": {
-      "raw": 863,
-      "gzip": 461,
-      "brotli": 367
     },
     "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs": {
       "raw": 1644,
@@ -388,9 +383,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 27207,
-      "gzip": 7884,
-      "brotli": 6908
+      "raw": 26997,
+      "gzip": 7715,
+      "brotli": 6748
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
@@ -398,7 +393,7 @@
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 2904,
+      "raw": 2920,
       "gzip": 854,
       "brotli": 740
     },
@@ -490,26 +485,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
-      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
-      "cap": {
-        "raw": 6769,
-        "gzip": 1901,
-        "brotli": 1709
-      },
-      "reason": "Deferred default-UI loader chunk shared by the recorder entries after the core split.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs",
-      "cap": {
-        "raw": 752,
-        "gzip": 401,
-        "brotli": 335
-      },
-      "reason": "Message formatting chunk shared by the recorder core and UI entries after the split.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
       "file": "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs",
       "cap": {
         "raw": 2889,
@@ -517,16 +492,6 @@
         "brotli": 939
       },
       "reason": "Recorder kit store and timer chunk shared by the kit, React and UI entries.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs",
-      "cap": {
-        "raw": 863,
-        "gzip": 461,
-        "brotli": 367
-      },
-      "reason": "Recorder message catalog chunk shared by the core and UI entries after the split.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
@@ -1058,6 +1023,34 @@
       },
       "reason": "Same raw and gzip size as main; the new Network and Performance chunk hashes it names compress 24 Brotli bytes worse (3486 against a 3468-byte cap).",
       "pr": "https://github.com/hazem3500/replays/pull/119"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
+      "cap": {
+        "raw": 3955,
+        "gzip": 1532,
+        "brotli": 1303
+      },
+      "reason": "Recorder messages and format hooks now share one chunk: every UI string, typed message functions, the template resolver and Intl duration/size/clock defaults.",
+      "pr": "https://github.com/hazem3500/replays/pull/141"
+    },
+    {
+      "file": "dist/lib/recorder.mjs",
+      "cap": {
+        "raw": 2920
+      },
+      "reason": "The recorder entry re-exports defaultRecorderMessages, resolveRecorderMessages and createRecorderFormat.",
+      "pr": "https://github.com/hazem3500/replays/pull/141"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
+      "cap": {
+        "raw": 6769,
+        "gzip": 1902,
+        "brotli": 1711
+      },
+      "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks.",
+      "pr": "https://github.com/hazem3500/replays/pull/141"
     }
   ]
 }
