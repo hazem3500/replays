@@ -255,6 +255,10 @@
  * ceiling: enter and exit 240 ms, ease-out. Width up to 420 px. Reduced motion: opacity only (stacking still positions).
  */
 [data-sonner-toaster][data-sonner-toaster] { --width: min(420px, calc(100vw - 32px)); }
+/* Above Sonner's phone breakpoint a toast hugs its message, centred (up to the 420 px width); phones keep the full row. */
+@media (min-width: 601px) {
+  [data-sonner-toaster] [data-sonner-toast].app-toast { right: 0; left: 0; width: fit-content; max-width: var(--width); margin-inline: auto; }
+}
 [data-sonner-toaster] [data-sonner-toast][data-sonner-toast] { transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms cubic-bezier(0.22, 1, 0.36, 1), height 240ms cubic-bezier(0.22, 1, 0.36, 1); }
 @media (prefers-reduced-motion: reduce) {
   [data-sonner-toaster] [data-sonner-toast][data-sonner-toast] { transition: opacity 120ms linear; }
