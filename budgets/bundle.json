@@ -153,12 +153,12 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 252918,
-      "gzip": 43554,
-      "brotli": 36226
+      "raw": 255616,
+      "gzip": 43899,
+      "brotli": 36570
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 983615,
+      "raw": 984911,
       "gzip": 308973,
       "brotli": 256601
     },
@@ -239,8 +239,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 683,
-      "brotli": 609
+      "gzip": 682,
+      "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
@@ -493,7 +493,7 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 254839,
+      "raw": 255616,
       "gzip": 44031,
       "brotli": 36644
     },
@@ -779,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
