@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 605
+      "brotli": 639
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -1183,14 +1183,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 640
-      },
-      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change when the comments UI moves into its own chunk; measured against main: 0 B raw, -2 B gzip, +31 B brotli (621 against main's 590 and a 608-byte cap). Replaces #119's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 234002,
@@ -1248,6 +1240,14 @@
         "brotli": 37043
       },
       "reason": "The initial index style group carries the same phone index stylesheets.",
+      "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 639
+      },
+      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change with the phone index work; measured against main: 0 B raw, 1 B gzip, +32 B brotli (620 against main's 588 and a 605-byte cap). Replaces #116's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/111"
     }
   ]
