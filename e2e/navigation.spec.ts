@@ -1,6 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-import { origin, gotoHydrated } from './support.ts';
+import { origin, gotoHydrated, serveApp } from './support.ts';
+
+test.describe('server-rendered index', () => {
+  const server = serveApp({ REPLAYS_SSR: '1' });
+  test('the list is visible when JavaScript is disabled', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      await page.goto(server().origin);
+      await expect(page.locator('a.row-target[href="/r/demo-shop"]').first()).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+});
 
 test('a direct replay visit loads the index interface only when returning home', async ({ page }) => {
   const indexRequests: string[] = [];

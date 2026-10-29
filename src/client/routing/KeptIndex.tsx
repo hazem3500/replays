@@ -1,12 +1,10 @@
 import { useRouterState } from '@tanstack/react-router';
-import { Activity, lazy, Suspense, useState } from 'react';
+import { Activity, Suspense, useState } from 'react';
 
+import { indexPage } from './index-page.ts';
 import { indexHref, rememberIndexSearch } from './links.ts';
 import { setPageUrl } from './navigate.ts';
 import { parseSearch, stringifySearch } from './search.ts';
-
-// why: a direct viewer/editor visit never renders the retained index and must not download its UI.
-const ReplayIndex = lazy(() => import('../ReplayIndex.tsx').then((module) => ({ default: module.ReplayIndex })));
 
 const isRenderedView = (data: unknown): data is { view: 'list' | 'grid' } =>
   typeof data === 'object' && data !== null && 'view' in data && (data.view === 'list' || data.view === 'grid');
@@ -52,7 +50,7 @@ export function KeptIndex() {
   return (
     <Activity mode={search === undefined ? 'hidden' : 'visible'}>
       <Suspense fallback={null}>
-        <ReplayIndex key={generation} search={kept} onSearch={onSearch} {...(rendered ? { rendered } : {})} />
+        <indexPage.Component key={generation} search={kept} onSearch={onSearch} {...(rendered ? { rendered } : {})} />
       </Suspense>
     </Activity>
   );

@@ -64,4 +64,3 @@ export function syncViewCookie() {
   const view = storedView();
   if (renderedView() !== view) writePageCookie(VIEW_KEY, view, appBase());
 }
-
