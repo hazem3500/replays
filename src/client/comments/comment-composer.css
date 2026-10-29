@@ -201,9 +201,20 @@
     height: 44px;
   }
 }
+/* invariant: on phones the docked composer owns the bottom safe area (its surface runs to the screen's edge, 8 px over
+   the inset), so the shell's own inset padding steps aside while the composer is the open inspector's last row; while
+   typing the keyboard covers that inset, and only the 8 px remains. */
 @media (max-width: 480px) {
   .comment-composer {
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  }
+  .app-shell[data-mobile]:not([data-inspector-collapsed]):has(.comment-composer) {
+    padding-bottom: 0;
+  }
+}
+@media (max-width: 480px) {
+  .comment-composer:focus-within {
+    padding-bottom: 8px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
