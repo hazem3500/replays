@@ -60,7 +60,7 @@
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
       "gzip": 1253,
-      "brotli": 1138
+      "brotli": 1139
     },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
@@ -155,12 +155,12 @@
     "dist/client/assets/main-HASH.css": {
       "raw": 266630,
       "gzip": 45795,
-      "brotli": 37918
+      "brotli": 37919
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 994149,
       "gzip": 310973,
-      "brotli": 257069
+      "brotli": 257199
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -210,7 +210,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
       "gzip": 608,
-      "brotli": 581
+      "brotli": 562
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -500,7 +500,7 @@
     "initial/index.html/css": {
       "raw": 266630,
       "gzip": 45795,
-      "brotli": 37918
+      "brotli": 37919
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -726,16 +726,6 @@
       },
       "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
-      "file": "dist/client/assets/CommentRowsSource-HASH.js",
-      "cap": {
-        "raw": 2453,
-        "gzip": 1282,
-        "brotli": 1169
-      },
-      "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
       "file": "dist/client/assets/ComparePicker-HASH.js",
@@ -1136,16 +1126,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 994149,
-        "gzip": 310973,
-        "brotli": 257069
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 617
@@ -1234,26 +1214,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37918
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: its phone geometry in skeleton.css, eager because editor.css loads with the editor. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37918
-      },
-      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: the first page's stylesheet is main-HASH.css. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 21285,
@@ -1332,6 +1292,46 @@
       },
       "reason": "The recorder core chunk gains the capture option resolver, meta.captured and the body hooks in the fetch/XHR wrappers; its new source membership renames the former bundle-types.ts-ee6bb78d70a4 chunk.",
       "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/client/assets/CommentRowsSource-HASH.js",
+      "cap": {
+        "raw": 2421,
+        "gzip": 1253,
+        "brotli": 1139
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/182",
+      "reason": "Baseline-only correction: main at 1bc31f4 measures over this cap after #166 and #168 merged (CI Quality / size on main); measured on Boat against current main caps: brotli 1138→1139. Replaces #78's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 266630,
+        "gzip": 45795,
+        "brotli": 37919
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/182",
+      "reason": "Baseline-only correction: main at 1bc31f4 measures over this cap after #166 and #168 merged (CI Quality / size on main); measured on Boat against current main caps: brotli 37918→37919. Replaces #174's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 994149,
+        "gzip": 310973,
+        "brotli": 257199
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/182",
+      "reason": "Baseline-only correction: main at 1bc31f4 measures over this cap after #166 and #168 merged (CI Quality / size on main); measured on Boat against current main caps: brotli 257069→257199. Replaces #174's allowance for this file."
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 266630,
+        "gzip": 45795,
+        "brotli": 37919
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/182",
+      "reason": "Baseline-only correction: main at 1bc31f4 measures over this cap after #166 and #168 merged (CI Quality / size on main); measured on Boat against current main caps: brotli 37918→37919. Replaces #174's allowance for this file."
     }
   ]
 }
