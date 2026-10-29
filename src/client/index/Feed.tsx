@@ -20,6 +20,7 @@ import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
+import { RunMosaic } from './PosterPlaceholder.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
@@ -149,6 +150,9 @@ function RowColumns({ at, host }: { at: string; host: string }) {
 
 /* ---------- Rows ---------- */
 
+/** Rows whose posters load at once with high priority: what a phone or a desktop shows above the fold. */
+const FIRST_ROWS = 6;
+
 function SessionItem({
   summary,
   view,
@@ -195,9 +199,11 @@ function SessionItem({
       <Poster
         id={summary.id}
         host={summary.host}
+        thumbhash={summary.thumbhash}
         size={view === 'grid' ? 'card' : 'row'}
         playing={playing}
         badge={formatBadgeDuration(summary.duration)}
+        priority={place.index < FIRST_ROWS}
       />
       <div className="feed-body">
         <div className="feed-head">
@@ -397,9 +403,11 @@ function SuiteItem({
           <Poster
             id={shownId}
             host={host}
+            fallback={<RunMosaic runs={suite.runDetails} />}
             size="card"
             playing={playing}
             badge={<RunsBadge count={count} />}
+            priority={place.index < FIRST_ROWS}
             {...cyclePosterProps(cycle, capture)}
           />
         </>
@@ -408,9 +416,11 @@ function SuiteItem({
           <Poster
             id={shownId}
             host={host}
+            fallback={<RunMosaic runs={suite.runDetails} />}
             size="row"
             playing={playing}
             badge={<RunsBadge count={count} />}
+            priority={place.index < FIRST_ROWS}
             {...cyclePosterProps(cycle, capture)}
           />
         </PosterStack>

@@ -11,6 +11,8 @@ import { suitePage, warm } from '../routing/pages.ts';
  * failed run (else the first recording) at `/s/<suite>`. Switching runs keeps this page mounted.
  */
 export const Route = createFileRoute('/s/$suiteId')({
+  // why: the player, the suite workspace and plugin pages are browser-only; the server sends the document.
+  ssr: false,
   validateSearch: (raw: Record<string, unknown>) => ({ ...runSearchSchema.parse(raw), ...compareSearchParams(raw) }),
   // why: not awaited: the workspace shows its skeleton inside the page transition, and its own error states.
   loader: ({ context: { queryClient }, params }) => {

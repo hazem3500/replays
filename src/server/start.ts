@@ -1,6 +1,6 @@
-import { createServer as createHttpServer, type Server } from 'node:http';
+import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
-import { readFile } from 'node:fs/promises';
+import { access, readFile } from 'node:fs/promises';
 import { createServer as createNetServer, type Socket } from 'node:net';
 import { resolve } from 'node:path';
 
@@ -301,6 +301,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
       }),
       ...(renderHooks.checks ? { beforeRender: renderHooks.beforeRender } : {}),
       ...(afterRender ? { afterRender } : {}),
+      thumbhash: (id, hash) => store.setThumbHash(id, hash),
       open: { key: (id: string) => store.openStillKey(id), runner: media.open },
       // Hover previews are MP4s: they need ffmpeg too.
       ...(tools.available ? { preview: { key: (id: string) => store.previewKey(id), runner: media.preview } } : {}),
@@ -314,7 +315,9 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
   }
 
   const bridgeHub = (resources.bridgeHub = settings.beta.malleable ? new BridgeHub() : undefined);
+  const pages = dev ? undefined : await startPages(root, env, (request, response) => handle(request, response), log);
   const handle = createApp({
+    ...(pages ? { pages } : {}),
     ...(application ? { application } : {}),
     basePath,
     hosts: settings.hosts,
@@ -368,4 +371,28 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     server,
     close,
   };
+}
+
+/**
+ * Pages rendered by TanStack Start (src/server/pages/start.ts) when `REPLAYS_SSR=1` and the Start build is there; else
+ * the stamped index.html, as before. A Start bundle that fails to load is logged and the server stays up on the SPA page.
+ */
+async function startPages(
+  root: string,
+  env: NodeJS.ProcessEnv,
+  api: (request: IncomingMessage, response: ServerResponse) => Promise<void>,
+  log: (message: string) => void,
+) {
+  if (!/^(1|true|on)$/i.test(env.REPLAYS_SSR ?? '')) return undefined;
+  const entry = resolve(root, 'dist/start/server/server.js');
+  try {
+    await access(entry);
+    const { loadStartRenderer } = await import('./pages/start.ts');
+    const renderer = await loadStartRenderer(entry, api);
+    log('pages rendered on the server (TanStack Start)');
+    return { renderer, clientDir: resolve(root, 'dist/start/client') };
+  } catch (error) {
+    log(`server-rendered pages off (${String(error)}); serving the single-page app`);
+    return undefined;
+  }
 }

@@ -4,14 +4,13 @@ import type * as z from 'zod/mini';
 import type { ReplaySummary } from '../../shared/replay.ts';
 import type { ReviewSuiteIndexEntry } from '../../shared/review-suite.ts';
 import { replaySummaryListSchema, suiteIndexListSchema } from '../../shared/schemas/replay.ts';
-import { apiUrl } from '../api/fetch.ts';
-import { fetchPage } from '../sign-in.tsx';
+import { apiFetch } from '../api/request.ts';
 
 /** Long enough to outlive a visit to a replay and back; the lists are revalidated on every use anyway. */
 const INDEX_GC_MS = 60 * 60_000;
 
 async function fetchList<T>(url: string, label: string, schema: z.ZodMiniType<T>, signal?: AbortSignal) {
-  const response = await fetchPage(apiUrl(url), signal ? { signal } : {});
+  const response = await apiFetch(url, signal ? { signal } : {});
   if (!response.ok) throw new Error(`${label} failed to load (${response.status})`);
   return schema.parse(await response.json());
 }

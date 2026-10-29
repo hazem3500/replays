@@ -20,7 +20,18 @@ import {
   type StoredReplayEdits,
 } from '../shared/edits.ts';
 import { type PosterMoment, profilesOf } from '../shared/profiles.ts';
-import { DEFAULT_RETENTION, expiryMs, type KeepRecord, type Retention, type RetentionPolicy, retentionOf } from '../shared/retention.ts';
+import { isThumbHash } from '../shared/thumbhash.ts';
+import {
+  DEFAULT_RETENTION,
+  expiryMs,
+  type KeepRecord,
+  type Retention,
+  type RetentionPolicy,
+  retentionDays,
+  retentionOf,
+} from '../shared/retention.ts';
+import { DEFAULT_EXPIRED_DAYS, type ExpiredReplays } from '../shared/expired.ts';
+import { ExpiredLedger } from './expired.ts';
 import {
   assertReviewRunRegistration,
   assertReviewSuite,
@@ -129,6 +140,7 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
+ *   _expired/<id>.json             what is left of a replay retention removed, for RETENTION_EXPIRED_DAYS (expired.ts)
  *
  * Committed samples (`sample/<id>.json`) are part of the code, read-only, and never expire.
  */
@@ -157,6 +169,7 @@ export class ReplayStore {
   readonly listTtlMs: number;
   /** Plugins' `summaryFields` (src/server/summary-fields.ts): run whenever a summary is built, into `summary.ext`. */
   private readonly summaryFields: SummaryFieldsRunner | undefined;
+  private readonly expired: ExpiredLedger;
 
   constructor(
     data: string | ObjectStorage,
@@ -177,6 +190,18 @@ export class ReplayStore {
     this.profiles = profilesOf(options) ?? new ProfileCatalog();
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
     this.summaryFields = options.summaryFields;
+    this.expired = new ExpiredLedger(this.storage, this.retention.expiredDays ?? DEFAULT_EXPIRED_DAYS);
+  }
+
+  /** why: a record that cannot be written must not keep the replay from being removed on time. */
+  private async recordExpired(summary: ReplaySummary, now: number) {
+    const days = retentionDays(this.retention, { profile: summary.profile, profileInferred: summary.profileInferred, summary });
+    await this.expired.record(summary, days, now).catch((error: unknown) => console.error('expired record write failed:', error));
+  }
+
+  /** Replays retention removed, still on record (`GET /api/expired-replays`). */
+  async expiredReplays(): Promise<ExpiredReplays> {
+    return { days: this.expired.days, records: await this.expired.list() };
   }
 
   /** A bundle's list summary, with the plugins' summary fields. */
@@ -572,6 +597,7 @@ export class ReplayStore {
       throw error;
     }
     await this.writeSummary(id, await this.summarize(bundle)).catch((error: unknown) => console.error('meta.json write failed:', error));
+    await this.expired.forget(id).catch(() => undefined);
     this.changed();
     return this.replayKey(id);
   }
@@ -600,10 +626,11 @@ export class ReplayStore {
    * sidecars are cached by the object's version, so listing ~2000 replays reads only what changed.
    */
   private async uploadedSummary(id: string, replay: ObjectInfo, meta: ObjectInfo | undefined): Promise<ReplaySummary | undefined> {
+    let parsed: unknown;
     if (meta && meta.updatedMs >= replay.updatedMs) {
       const cached = this.summaryCache.get(id);
       if (cached?.summary && cached.version === meta.version) return cached.summary;
-      const parsed = await readJson(this.storage, this.metaKey(id)).catch(() => undefined);
+      parsed = await readJson(this.storage, this.metaKey(id)).catch(() => undefined);
       if (
         isReplaySummary(parsed) &&
         parsed.id === id &&
@@ -616,9 +643,31 @@ export class ReplayStore {
     }
     const bundle = await this.load(id);
     if (!bundle) return undefined;
-    const summary = await this.summarize(bundle);
+    // why: the poster's ThumbHash is not derived from the bundle; a rebuilt summary keeps it until the poster changes.
+    const thumbhash = isReplaySummary(parsed) && isThumbHash(parsed.thumbhash) ? { thumbhash: parsed.thumbhash } : {};
+    const summary = { ...(await this.summarize(bundle)), ...thumbhash };
     await this.writeSummary(id, summary).catch((error: unknown) => console.error('meta.json backfill failed:', error));
     return summary;
+  }
+
+  /**
+   * Keeps a freshly rendered poster's ThumbHash with the replay's summary, so the list paints it before the poster
+   * loads. Uploads keep it in meta.json; read-only samples read it from their poster's sidecar.
+   */
+  async setThumbHash(id: string, thumbhash: string) {
+    if (!isThumbHash(thumbhash)) return;
+    const replay = await this.storage.stat(this.replayKey(id));
+    if (!replay) {
+      this.summaryCache.delete(`sample:${id}`);
+      this.changed();
+      return;
+    }
+    const stored = await this.uploadedSummary(id, replay, await this.storage.stat(this.metaKey(id)));
+    if (!stored || stored.thumbhash === thumbhash) return;
+    await this.writeSummary(id, { ...stored, thumbhash });
+    // why: a rewrite within the same millisecond keeps the sidecar's version, so the cached summary would win.
+    this.summaryCache.delete(id);
+    this.changed();
   }
 
   /** Committed samples are read-only: their summaries are cached in memory by the file's version. */
@@ -626,9 +675,12 @@ export class ReplayStore {
     const cacheKey = `sample:${id}`;
     const cached = this.summaryCache.get(cacheKey);
     if (cached?.version === sample.version) return cached.summary;
-    const summary = await this.load(id)
+    const built = await this.load(id)
       .then((bundle) => (bundle ? this.summarize(bundle) : undefined))
       .catch(() => undefined);
+    // why: samples have no meta.json; their poster's sidecar (PosterQueue) is where a ThumbHash survives a restart.
+    const sidecar = await readJson<{ thumbhash?: unknown }>(this.storage, `${this.posterKey(id)}.json`).catch(() => undefined);
+    const summary = built && isThumbHash(sidecar?.thumbhash) ? { ...built, thumbhash: sidecar.thumbhash } : built;
     this.summaryCache.set(cacheKey, { version: sample.version, summary });
     return summary;
   }
@@ -1045,10 +1097,11 @@ export class ReplayStore {
           // A committed sample's sidecars (its edit list) live as long as the sample: forever.
           if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
           let expires: number | undefined;
+          let summary: ReplaySummary | undefined;
           if (replay) {
             // Per profile and rule: the summary (sidecar, cached) says which applies.
             const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
-            const summary = stored && this.profiles.apply(stored);
+            summary = stored && this.profiles.apply(stored);
             expires = expiryMs(this.retention, {
               uploadedMs: await serverUploadMs(this.storage, replay),
               profile: summary?.profile,
@@ -1060,6 +1113,7 @@ export class ReplayStore {
             expires = expiryMs(this.retention, { uploadedMs: newest });
           }
           if (expires === undefined || expires >= now) continue;
+          if (summary) await this.recordExpired(summary, now);
           await this.storage.deletePrefix(`${id}/`);
           this.summaryCache.delete(id);
           this.keepCache.delete(this.keepKey(id));
@@ -1079,6 +1133,7 @@ export class ReplayStore {
             removed.push(`suite:${match[1]}`);
           }
         }
+        await this.expired.prune(now).catch((error: unknown) => console.error('expired records prune failed:', error));
         this.lastPrune = now;
         if (removed.length) this.changed();
         const removedSuites = removed.filter((id) => id.startsWith('suite:')).length;

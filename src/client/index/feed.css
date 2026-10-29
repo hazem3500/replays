@@ -192,8 +192,7 @@
 .poster-card { width: 100%; height: auto; aspect-ratio: 16 / 10; }
 .poster img { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; opacity: 0; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] img { opacity: 1; }
-.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: grid; place-items: center; color: var(--text-tertiary); font-size: var(--text-md); font-weight: 600; opacity: 1; transition: opacity 200ms var(--ease-out); }
-.poster-card .poster-placeholder { font-size: var(--text-lg); }
+.poster-placeholder { position: absolute; z-index: 1; inset: 0; display: block; overflow: hidden; opacity: 1; transition: opacity 200ms var(--ease-out); }
 .poster[data-phase="ready"] .poster-placeholder { opacity: 0; }
 @media (prefers-reduced-motion: reduce) {
   .poster[data-phase="loading"]::before { transform: none; animation: none; background: color-mix(in srgb, var(--text-tertiary) 5%, transparent); }
@@ -425,16 +424,6 @@
 @media (max-width: 640px) {
   .index-shell { --gutter: 16px; }
   .index-head > .app-topbar { min-height: 52px; }
-  /* Row 1: the search is an icon until entered, then spans the row above the identity. */
-  .index-head .command-search { position: static; width: 40px; }
-  .index-head .search-field.command-field:has(input:not(:placeholder-shown)):not(:focus-within) { width: 40px; }
-  /* Expanded over the row: sized by its insets, never by the desktop widening rules. */
-  .index-head .search-field.command-field:focus-within:has(input:not(:placeholder-shown)) { width: auto; }
-  .index-head .search-field.command-field { width: 40px; min-width: 0; height: 40px; justify-content: center; padding: 0; border-radius: 20px; background: transparent; }
-  .index-head .search-field.command-field input { width: 0; min-width: 0; flex: 0 0 0; padding: 0; font-size: 16px; }
-  .index-head .search-field.command-field:focus-within { position: absolute; z-index: 2; top: 6px; right: var(--gutter); left: var(--gutter); width: auto; justify-content: flex-start; padding: 0 12px; background: var(--surface); }
-  .index-head .search-field.command-field:focus-within input { width: auto; flex: 1 1 auto; }
-  .index-head .command-results { top: calc(100% - 2px); right: var(--gutter); left: var(--gutter); width: auto; min-width: 0; }
   /* Row 2: the count on the left; Filter and sort on the right. */
   .scope-bar { gap: 8px; }
   .scope-bar-end { gap: 0; }

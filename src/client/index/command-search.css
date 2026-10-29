@@ -1,0 +1,80 @@
+/*
+ * The index's command search (index/IndexHeader.tsx CommandSearch) on phones, and its quick results everywhere.
+ * Imported by tailwind.css after feed.css, so it follows feed.css's desktop search rules within the `app` layer.
+ *
+ * Phones (≤ 640 px = INDEX_COMPACT_QUERY): the field is always laid out across the whole top bar, so its text never
+ * reflows. At rest a clip-path cuts it down to a 40 px circle over its slot in the actions (hooks/use-rest-anchor.ts
+ * publishes the slot's place as --rest-x and --rest-y), with the glyph translated into that circle. Entering the
+ * field opens the clip to the full pill while the glyph travels to the left edge, so the search grows out of its
+ * icon. Only clip-path, translate and opacity animate. 240 ms, like the desktop pill widening: it is the one larger
+ * spatial move in the header. The identity and the other actions step back while it is open.
+ */
+:root { --search-morph: 240ms; }
+
+@keyframes command-option-in { from { opacity: 0; translate: 0 4px; } }
+@keyframes command-pop-in { from { opacity: 0; scale: 0.6; } }
+
+/* Quick results arrive one after another, top first, so the eye lands on the best match. */
+.command-option { animation: command-option-in 180ms var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 6) * 20ms); }
+
+@media (max-width: 640px) {
+  .index-head .command-search { position: static; width: 40px; height: 40px; }
+  .index-head > .app-topbar .command-search .search-field.command-field {
+    --rest-l: calc(var(--rest-x, 0px) - var(--gutter));
+    position: absolute; z-index: 2; top: var(--rest-y, 6px); right: var(--gutter); left: var(--gutter);
+    width: auto; min-width: 0; height: 40px; gap: 10px; justify-content: flex-start; overflow: hidden; padding: 0 0 0 12px;
+    border: 0; border-radius: 20px; background: transparent; box-shadow: none;
+    clip-path: inset(0 calc(100% - var(--rest-l) - 40px) 0 var(--rest-l) round 20px);
+    transition: clip-path var(--search-morph) var(--ease-out), background-color 160ms var(--ease-out);
+  }
+  .index-head > .app-topbar .command-search .search-field.command-field:focus-within {
+    background: var(--surface-hover); box-shadow: none; clip-path: inset(0 round 20px);
+  }
+  .index-head > .app-topbar .command-search .search-field.command-field > svg {
+    flex: 0 0 16px; width: 16px; height: 16px; translate: var(--rest-l) 0;
+    transition: translate var(--search-morph) var(--ease-out), color 150ms var(--ease-out);
+  }
+  .index-head > .app-topbar .command-search .search-field.command-field:focus-within > svg { translate: 0 0; }
+  .index-head > .app-topbar .command-search .search-field.command-field input {
+    width: auto; min-width: 0; flex: 1 1 0; padding: 0; font-size: 16px; opacity: 0;
+    transition: opacity 100ms var(--ease-out);
+  }
+  .index-head > .app-topbar .command-search .search-field.command-field:focus-within input { opacity: 1; transition: opacity 160ms var(--ease-out) 80ms; }
+  .index-head > .app-topbar .command-search .search-field.command-field input:focus-visible { box-shadow: none; }
+  /* A query that is still narrowing the feed while the field rests: a dot on the glyph says so. */
+  .index-head > .app-topbar .command-search .search-field.command-field:has(input:not(:placeholder-shown)):not(:focus-within)::after {
+    content: ""; position: absolute; top: 9px; left: calc(var(--rest-l) + 24px); width: 7px; height: 7px;
+    border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--surface);
+    animation: command-pop-in 200ms var(--ease-settle) both;
+  }
+  .command-cancel {
+    width: 40px; height: 40px; display: grid; flex: 0 0 40px; place-items: center; padding: 0;
+    border: 0; border-radius: 20px; background: transparent; color: var(--text-secondary); cursor: pointer;
+    animation: command-pop-in 180ms var(--ease-out) 120ms both;
+  }
+  .command-cancel svg { width: 18px; height: 18px; }
+  .command-cancel:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
+
+  .index-head :is(.index-identity, .topbar-actions > :not(.command-search)) {
+    transition: opacity 160ms var(--ease-out), translate 200ms var(--ease-out), visibility 0s;
+  }
+  .index-head:has(.command-field:focus-within) .index-identity { translate: -8px 0; }
+  .index-head:has(.command-field:focus-within) :is(.index-identity, .topbar-actions > :not(.command-search)) {
+    opacity: 0; visibility: hidden;
+    transition: opacity 100ms var(--ease-out), translate 200ms var(--ease-out), visibility 0s linear 100ms;
+  }
+
+  .index-head .command-results { top: calc(100% - 2px); right: var(--gutter); left: var(--gutter); width: auto; min-width: 0; transform-origin: top center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .command-option, .command-cancel { animation: none; }
+  .index-head > .app-topbar .command-search .search-field.command-field,
+  .index-head > .app-topbar .command-search .search-field.command-field > svg,
+  .index-head > .app-topbar .command-search .search-field.command-field input,
+  .index-head > .app-topbar .command-search .search-field.command-field:focus-within input,
+  .index-head :is(.index-identity, .topbar-actions > :not(.command-search)),
+  .index-head:has(.command-field:focus-within) :is(.index-identity, .topbar-actions > :not(.command-search)) { transition: none; }
+  .index-head:has(.command-field:focus-within) .index-identity { translate: none; }
+  .index-head > .app-topbar .command-search .search-field.command-field::after { animation: none; }
+}
