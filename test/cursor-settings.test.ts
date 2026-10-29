@@ -33,12 +33,21 @@ describe('saved cursor settings', () => {
       { motion: 'classic' as const },
       { appearance: 'ring' as const },
       { color: 'green' as const },
+      { clickEffect: 'ripple' as const },
     ]) {
       const next = edits({ cursor });
       expect(() => assertReplayEdits(next)).not.toThrow();
       expect(isEmptyEdits(next)).toBe(false);
       expect(editsVersion(next)).not.toBe('');
     }
+  });
+
+  it('saves a click effect only when it differs from the default of its style', () => {
+    expect(normalizeEdits(edits({ cursor: { appearance: 'ring', clickEffect: 'pulse' } })).cursor).toEqual({ appearance: 'ring' });
+    expect(normalizeEdits(edits({ cursor: { appearance: 'ring', clickEffect: 'press' } })).cursor).toEqual({
+      appearance: 'ring',
+      clickEffect: 'press',
+    });
   });
 
   it('rejects unsupported controls and invalid values', () => {
@@ -53,6 +62,7 @@ describe('saved cursor settings', () => {
       { motion: 1 },
       { appearance: 'blob' },
       { color: 'red' },
+      { clickEffect: 'sparkle' },
     ]) {
       expect(() => assertReplayEdits({ ...edits(), cursor })).toThrow('edits.cursor');
     }

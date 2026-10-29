@@ -11,7 +11,7 @@ export function useCursorGlyph(theme: CursorTheme, color: string | undefined) {
   useEffect(() => {
     const node = host.current;
     if (!node) return;
-    const glyph = theme.create(node.ownerDocument, color);
+    const glyph = theme.create(node.ownerDocument, { color });
     node.replaceChildren(...glyph.nodes);
     node.style.width = `${glyph.width}px`;
     node.style.height = `${glyph.height}px`;
