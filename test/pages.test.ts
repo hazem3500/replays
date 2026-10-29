@@ -28,9 +28,12 @@ async function collect(stream: ReadableStream<Uint8Array>) {
 }
 
 const servers: Array<ReturnType<typeof createServer>> = [];
-afterEach(async () => {
-  await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
-});
+/** Registers the enclosing describe's cleanup: every server it started closes. */
+function useServers() {
+  afterEach(async () => {
+    await Promise.all(servers.splice(0).map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
+  });
+}
 
 /** Our server with a page renderer: a stub, or the real one loaded around `createApp`'s own handler. */
 async function start(renderer: PageRenderer | ((api: Parameters<typeof loadStartRenderer>[1]) => Promise<PageRenderer>)) {
@@ -79,6 +82,8 @@ describe('the page head Start renders with', () => {
 });
 
 describe('pages rendered by Start', () => {
+  useServers();
+
   it('hands a browser page load to the renderer with the deployment and the stamped head', async () => {
     const calls: Array<{ base: string; head: string }> = [];
     const origin = await start({
