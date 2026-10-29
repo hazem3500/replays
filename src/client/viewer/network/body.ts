@@ -85,7 +85,7 @@ export type BodyState =
  * What a body section says, never a blank area: the text; "No body" when bodies were captured and this one had none;
  * why it was left out; or "Not captured" when the recording did not keep bodies (`meta.captured`).
  */
-export function bodyState(body: ReplayNetworkBody | undefined, captured?: ReplayCaptured): BodyState {
+export function bodyState(body?: ReplayNetworkBody, captured?: ReplayCaptured): BodyState {
   if (body?.text !== undefined && body.text !== '') return { kind: 'shown', body: { ...body, text: body.text } };
   if (body?.omitted) return { kind: 'omitted', reason: body.omitted };
   if (body || captured?.network === 'bodies') return { kind: 'empty' };
