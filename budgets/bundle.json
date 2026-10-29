@@ -208,7 +208,7 @@
       "brotli": 2681
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 1022,
+      "raw": 982,
       "gzip": 608,
       "brotli": 557
     },
@@ -240,7 +240,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 683,
-      "brotli": 605
+      "brotli": 609
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21170,
@@ -1203,14 +1203,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 640
-      },
-      "reason": "No source change: the suite comparison entry names lazy chunks by their hashes, which change when the comments UI moves into its own chunk; measured against main: 0 B raw, -2 B gzip, +31 B brotli (621 against main's 590 and a 608-byte cap). Replaces #119's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 234002,
@@ -1249,6 +1241,14 @@
       },
       "reason": "The slot wrappers' display: contents rule beside the viewer's layout tokens and seam styles (#121).",
       "pr": "https://github.com/hazem3500/replays/pull/133"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 609
+      },
+      "reason": "The lazy suite glue only re-exports; its bytes are the hashed chunk names it imports, which change with this PR's other chunks. Measures 609 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
     }
   ]
 }
