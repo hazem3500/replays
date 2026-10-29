@@ -13,7 +13,7 @@ import { usePreviewStepIndex } from './preview-time.ts';
 import { useViewer } from './context.ts';
 import { Empty } from './Empty.tsx';
 import { activeStepIndex } from './Transport.tsx';
-import { useFilledAfterTransition } from '../navigation.ts';
+import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import { queueReveal } from './stagger.ts';
 
 /** One glyph per step kind; the kind's name is the icon's accessible label. */

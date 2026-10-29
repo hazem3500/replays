@@ -16,7 +16,7 @@ import { stepPermalink, timePermalink } from '../permalink.ts';
 import { type Playback, usePlayer } from '../player.ts';
 import { resolveSlot } from '../plugins/registry.ts';
 import type { SlotDescriptor } from '../plugins/slots.ts';
-import { editHref } from '../route.ts';
+import { editHref } from '../routing/links.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { notify as showToast } from '../toast.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';

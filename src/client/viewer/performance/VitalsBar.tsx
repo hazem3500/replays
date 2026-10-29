@@ -23,16 +23,17 @@ const MISSING = { 'not-captured': 'Not captured', none: 'None' } as const;
 
 export interface VitalPeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   deltas: Partial<Record<VitalId, number>>;
 }
 
 /** Differences under this are one capture's noise, not a regression or a win. */
 const SAME_WITHIN_MS = 20;
 
-function deltaText(difference: number, letter: string) {
-  if (Math.abs(difference) < SAME_WITHIN_MS) return `Same as ${letter}`;
-  return `${difference > 0 ? '+' : '−'}${formatDuration(Math.abs(difference))} vs ${letter}`;
+function deltaText(difference: number, name: string) {
+  if (Math.abs(difference) < SAME_WITHIN_MS) return `Same as ${name}`;
+  return `${difference > 0 ? '+' : '−'}${formatDuration(Math.abs(difference))} vs ${name}`;
 }
 
 function deltaTone(difference: number) {
@@ -73,8 +74,9 @@ export function VitalsBar({
               {peers.map((peer) => {
                 const difference = peer.deltas[vital.id];
                 return difference === undefined ? null : (
-                  <span key={peer.id} className="pp-delta" data-tone={deltaTone(difference)}>
-                    {deltaText(difference, peer.letter)}
+                  <span key={peer.id} className="pp-delta" data-tone={deltaTone(difference)} data-tile={peer.colour}>
+                    <span className="ct-swatch" aria-hidden="true" />
+                    {deltaText(difference, peer.name)}
                   </span>
                 );
               })}

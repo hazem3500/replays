@@ -177,7 +177,7 @@ The API (`summary.people` and suite `people` carry `avatarUrl` and `profileUrl` 
 | `GET /api/replays?for=me` | Only replays whose people match the signed-in person, each with `reason`: the best-ranked matching role |
 | `GET /api/suites?for=me` (and `&expand=runs`) | Suites matching through their own people or any run's replay people, with `reason` |
 | `…&handle.<id>=value` | Handles the person linked (the viewer keeps them in localStorage); each must match its pattern, else `400` |
-| `GET /api/me` | The (resolved) identity, plus `people: { roles?, handles: [{ id, label, pattern }] }` with `api.people` |
+| `GET /api/me` | The (resolved) identity, plus `people: { roles?, handles: [{ id, label, pattern }] }` with `api.people`, and `session: { signedIn, signOutUrl? }` (`signedIn` is false under `AUTH_MODE=none`; `signOutUrl` comes from the auth adapter) |
 
 A person matches by email (the identity's) or by a linked handle, both ignoring case. The viewer shows an avatar stack on index rows
 that have people (a card with name, role, email to copy and profile link) and a **For me** switch in the filter menu with a field per
@@ -201,6 +201,25 @@ AUTH_MODE (env)  →  config.auth  →  the only plugin adapter  →  built-in d
 
 A name is looked up among plugin adapters first, then the built-ins. `AUTH_MODE=plugin AUTH_PLUGIN=./x.mjs` (the older
 mechanism) still works.
+
+#### Web-standard adapters
+
+An adapter can be written over web `Request`/`Response` instead of Node's request objects. A `WebAuthAdapter` has the
+same contract with web-standard methods, and `api.auth`, `AUTH_PLUGIN`, `createApp({ auth })` and `describeAuthAdapter`
+take either shape. The `AuthAdapter` interface is unchanged.
+
+```ts
+api.auth({
+  name: 'acme-sso',
+  routes: ['/auth/callback'],
+  authenticateRequest: async (request) => verify(request.headers.get('authorization')), // Identity | undefined, authScopes kept
+  handleRequest: async (request, { base }) => (new URL(request.url).pathname === '/auth/callback' ? finishSignIn(request, base) : undefined),
+  loginUrlFor: (request, { base }) => `${base}/auth/login`,
+});
+```
+
+`handleRequest` returns a `Response` when it answered one of its `routes`, or nothing. `signIn`, `routes` and
+`cliDeviceAuth` mean what they mean on `AuthAdapter`.
 
 ## Profiles and retention
 
@@ -883,8 +902,9 @@ Navigation stays under the plugin's root: schemes, other plugins, backslashes an
 are rejected. The route waits for browser plugin loading before deciding a page is missing and
 subscribes to later registrations. Page registrations participate in plugin removal, reset and
 failed-hot-reload rollback. Page title, loader and DOM render are the public surface; head metadata
-and automatic navigation entries are not provided yet. The TanStack route integration is owned
-by the router increment.
+and automatic navigation entries are not provided yet. The page is the `/p/$plugin/$` file route
+([client routing](architecture/client-routing.md)); the loader runs when the page shows, with a signal
+that aborts when it leaves.
 
 Host policy additionally accepts `workspaceRoles`, exact `allow`/`deny` selectors by id or policy
 hash, and validated `watchdog` limits. `Identity.roles` is an optional trusted claim from the auth
