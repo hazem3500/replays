@@ -755,7 +755,11 @@ export function ReplayIndex({ search: opened, onSearch }: { search: string; onSe
         <Topbar
           root={<IndexIdentity />}
           {...(compact
-            ? { phoneMenu: <IndexPhoneMenu items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })} /> }
+            ? {
+                phoneMenu: (
+                  <IndexPhoneMenu items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })} />
+                ),
+              }
             : {})}
           actions={
             <>
