@@ -136,6 +136,12 @@ importers:
       '@size-limit/file':
         specifier: 14.3.0
         version: 14.3.0(size-limit@14.3.0)
+      '@storybook/addon-a11y':
+        specifier: 10.6.3
+        version: 10.6.3(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))
+      '@storybook/addon-docs':
+        specifier: 10.6.3
+        version: 10.6.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))
       '@storybook/react-vite':
         specifier: 10.6.3
         version: 10.6.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))(typescript@5.9.3)
@@ -1292,6 +1298,12 @@ packages:
     resolution: {integrity: sha512-twOKDUr7al60K890HvRcNvoHSfQ2rnGeKJiQs6eUr+Leg+LQ6K+yz3F4K70jykMK1a09ZIgYb3Oc7mAypuKPig==}
     engines: {node: '>=20'}
 
+  '@mdx-js/react@3.1.1':
+    resolution: {integrity: sha512-f++rKLQgUVYDAtECQ6fn/is15GkEH9+nZPM3MS0RcxVqoTfawHvDlSCH7JbMhAM6uJ32v3eXLvLmLvjGu7PTQw==}
+    peerDependencies:
+      '@types/react': '>=16'
+      react: '>=16'
+
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
 
@@ -2399,6 +2411,20 @@ packages:
   '@standard-schema/spec@1.1.0':
     resolution: {integrity: sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w==}
 
+  '@storybook/addon-a11y@10.6.3':
+    resolution: {integrity: sha512-nqvjpmu5g+PPtEKwgE0qAi4wfuQ9yngOb/1Gm24pBBZOuRsd3UMEBjKORSuAGrIAz9X3LCFfQi7sCcBFXvFbwg==}
+    peerDependencies:
+      storybook: ^10.6.3
+
+  '@storybook/addon-docs@10.6.3':
+    resolution: {integrity: sha512-365f712au4w/xvFqEKY6TIvTeGGAY7FKRB8zP4CFa3VSv9oyxHaq/ublFg4YDbCeRagppwl1PZ6k4+PoUor3+A==}
+    peerDependencies:
+      '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0
+      storybook: ^10.6.3
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   '@storybook/builder-vite@10.6.3':
     resolution: {integrity: sha512-1+WCZZg/fPxxyHDB5sFKniFt9/4RFUIzoNqMujv+BLRROM+gQeyUHvdvoyZOZ51+P8ee+/PgnNKHjsTupV+nOA==}
     peerDependencies:
@@ -2722,6 +2748,9 @@ packages:
 
   '@types/jsesc@2.5.1':
     resolution: {integrity: sha512-9VN+6yxLOPLOav+7PwjZbxiID2bVaeq0ED4qSQmdQTdjnXJSaCVKTR58t15oqH1H5t8Ng2ZX1SabJVoN9Q34bw==}
+
+  '@types/mdx@2.0.14':
+    resolution: {integrity: sha512-T48PeuJtvLosNTPVhfnIp3i/n3a4g4Bad7YCq5k64D4u7NwDrAotikQ+5+sjtUvBmxCMlbo3dVL+C2dP0rWHzg==}
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
@@ -5109,6 +5138,10 @@ packages:
     resolution: {integrity: sha512-+QBBXBCvifc56fsbuxZQ6Sic3wqqc3WWaqxs58gvJrcOuN83HGTCwz3oS5phzU9LthRNE9VrJCFCLUgHeeFnfA==}
     engines: {node: '>=18'}
 
+  unplugin@2.3.11:
+    resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
+    engines: {node: '>=18.12.0'}
+
   unstorage@2.0.0-beta.0:
     resolution: {integrity: sha512-VeTY+zQ3ozrNtIFBRQRuSwanHdpuRH+4t/ZzchZIVQO8/oKq2xl7fJ9c+z76tWJDW/BEXSEuzpHOxqoAl6B64A==}
 
@@ -5214,6 +5247,9 @@ packages:
   webidl-conversions@8.0.1:
     resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
     engines: {node: '>=20'}
+
+  webpack-virtual-modules@0.6.2:
+    resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
   whatwg-mimetype@3.0.0:
     resolution: {integrity: sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q==}
@@ -6315,6 +6351,12 @@ snapshots:
     dependencies:
       '@modelcontextprotocol/server': 2.0.0
 
+  '@mdx-js/react@3.1.1(@types/react@19.3.0)(react@19.3.0)':
+    dependencies:
+      '@types/mdx': 2.0.14
+      '@types/react': 19.3.0
+      react: 19.3.0
+
   '@mixmark-io/domino@2.2.0': {}
 
   '@modelcontextprotocol/client@2.0.0':
@@ -6995,6 +7037,27 @@ snapshots:
 
   '@standard-schema/spec@1.1.0': {}
 
+  '@storybook/addon-a11y@10.6.3(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))':
+    dependencies:
+      '@storybook/global': 5.0.0
+      axe-core: 4.13.0
+      storybook: 10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))
+
+  '@storybook/addon-docs@10.6.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))':
+    dependencies:
+      '@mdx-js/react': 3.1.1(@types/react@19.3.0)(react@19.3.0)
+      '@storybook/icons': 2.2.0(react@19.3.0)
+      '@storybook/react-dom-shim': 10.6.3(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+      storybook: 10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))
+      ts-dedent: 2.3.0
+      unplugin: 2.3.11
+    optionalDependencies:
+      '@types/react': 19.3.0
+    transitivePeerDependencies:
+      - '@types/react-dom'
+
   '@storybook/builder-vite@10.6.3(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(storybook@10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1)))':
     dependencies:
       storybook: 10.6.3(@types/react@19.3.0)(react@19.3.0)(vite-plus@1.4.0(@arethetypeswrong/core@0.18.5)(@opentelemetry/api@1.9.1)(@types/node@22.18.10)(@vitest/ui@5.0.5(vitest@5.0.5))(esbuild@0.28.2)(happy-dom@21.0.4)(jiti@2.7.0)(jsdom@27.4.0(@noble/hashes@2.4.0))(msw@3.0.3(@types/node@22.18.10)(@voidzero-dev/vite-plus-core@1.4.0(@arethetypeswrong/core@0.18.5)(@types/node@22.18.10)(esbuild@0.28.2)(jiti@2.7.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))(typescript@5.9.3))(playwright@1.64.0)(publint@0.3.25)(typescript@5.9.3)(yaml@2.9.1))
@@ -7331,6 +7394,8 @@ snapshots:
   '@types/gensync@1.0.5': {}
 
   '@types/jsesc@2.5.1': {}
+
+  '@types/mdx@2.0.14': {}
 
   '@types/ms@2.1.0': {}
 
@@ -9481,6 +9546,13 @@ snapshots:
 
   unicorn-magic@0.3.0: {}
 
+  unplugin@2.3.11:
+    dependencies:
+      '@jridgewell/remapping': 2.3.5
+      acorn: 8.19.0
+      picomatch: 4.0.7
+      webpack-virtual-modules: 0.6.2
+
   unstorage@2.0.0-beta.0: {}
 
   until-async@3.0.2: {}
@@ -9600,6 +9672,8 @@ snapshots:
   weapon-regex@2.0.6: {}
 
   webidl-conversions@8.0.1: {}
+
+  webpack-virtual-modules@0.6.2: {}
 
   whatwg-mimetype@3.0.0: {}
 

@@ -56,4 +56,4 @@ an interception server for one test file, resets per-test overrides after each t
 (`onUnhandledFrame: 'error'`), so a missing mock is a test failure rather than a real connection. `handlers.ts` holds one
 builder per API route (`config`, `previewProbe`); add a builder there when a second test needs a route.
 happy-dom files need `// @vitest-environment-options {"url": "http://localhost/"}` so relative `/api/...` URLs resolve.
-Opt in per file: server integration tests keep talking to their own listeners. Storybook is not wired to MSW yet.
+Opt in per file: server integration tests keep talking to their own listeners. Storybook uses the same library through `msw/vite`; see [storybook.md](storybook.md).
