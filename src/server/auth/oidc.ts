@@ -204,6 +204,8 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       };
     },
 
+    signOutUrl: (context) => `${context.base}/auth/logout`,
+
     loginUrl(request, context) {
       const next = request.url ?? '/';
       return `${context.base}/auth/login?next=${encodeURIComponent(next)}`;
