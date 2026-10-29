@@ -635,16 +635,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/viewer.mjs",
-      "cap": {
-        "raw": 17093,
-        "gzip": 4814,
-        "brotli": 4239
-      },
-      "reason": "The published viewer plugin API now exports the slot registry, slot names and descriptor contracts.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/client/assets/brand/apple-touch-icon.png",
       "cap": {
         "raw": 3240,
@@ -898,16 +888,6 @@
         "raw": 14679,
         "gzip": 4777,
         "brotli": 4367
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/settings-HASH.js",
-      "cap": {
-        "raw": 22466,
-        "gzip": 7571,
-        "brotli": 6796
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -1193,16 +1173,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60104,
-        "gzip": 21487,
-        "brotli": 18749
-      },
-      "reason": "No source change in the viewer: the main chunk's new hash in its imports compresses 11 B larger in gzip (raw -5 B, brotli -1 B). Replaces #167's allowance, keeping its raw and brotli caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/cli/cli.mjs",
       "cap": {
         "raw": 462508,
@@ -1273,16 +1243,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/166"
     },
     {
-      "file": "dist/client/assets/comments-ui-HASH.js",
-      "cap": {
-        "raw": 32532,
-        "gzip": 11374,
-        "brotli": 9857
-      },
-      "reason": "Comments round 2 (#171): the phone action sheet, the desktop overflow menu, the delete dialog and the quieter composer, in the lazy comments chunk (+4236 raw over main).",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
       "file": "dist/client/assets/dropdown-menu-HASH.js",
       "cap": {
         "raw": 122577,
@@ -1313,41 +1273,88 @@
       "pr": "https://github.com/hazem3500/replays/pull/171"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "file": "dist/client/assets/comments-ui-HASH.js",
       "cap": {
-        "raw": 21291,
-        "gzip": 8758
+        "raw": 33543
       },
-      "reason": "A few bytes from the hashed chunk names it imports changing (#171).",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 618
-      },
-      "reason": "Brotli drift of a few bytes from the hashed chunk names it imports changing (#171); raw and gzip are unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37919
+        "raw": 274727,
+        "gzip": 47181
       },
-      "reason": "Brotli drift of 1 byte from hashed asset names in the stylesheet (#171); main measures the same 37919 on the same toolchain, and raw and gzip are unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/settings-HASH.js",
+      "cap": {
+        "raw": 24418,
+        "gzip": 8155,
+        "brotli": 7287
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/shortcuts-HASH.js",
+      "cap": {
+        "raw": 3183,
+        "gzip": 1278,
+        "brotli": 1086
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 628
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21999,
+        "gzip": 9037,
+        "brotli": 7810
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 64157,
+        "gzip": 23111,
+        "brotli": 20125
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
+    },
+    {
+      "file": "dist/lib/viewer.mjs",
+      "cap": {
+        "raw": 22551,
+        "gzip": 6279,
+        "brotli": 5505
+      },
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 266630,
-        "gzip": 45795,
-        "brotli": 37919
+        "raw": 274727,
+        "gzip": 47181
       },
-      "reason": "Brotli drift of 1 byte from hashed asset names in the stylesheet (#171); main measures the same 37919 on the same toolchain, and raw and gzip are unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/171"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     }
   ]
 }

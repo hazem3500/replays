@@ -14,18 +14,18 @@ export function EditorPluginTools({
   children,
 }: {
   context: EditorToolContext;
-  onApply(edits: ReplayEdits): void;
+  onApply: (edits: ReplayEdits) => void;
   children?: ReactNode;
 }) {
   usePluginSnapshot();
-  const items = resolveSlot<EditorToolContext, EditorToolDefinition | undefined>(
+  const items = resolveSlot<EditorToolContext, EditorToolDefinition | null>(
     'editor.tools',
-    [{ id: 'core:tools', order: 100, render: () => undefined }],
+    [{ id: 'core:tools', order: 100, render: () => null }],
     context,
   );
   return items.map((item) => {
     if (item.id === 'core:tools') return <Fragment key={item.id}>{children}</Fragment>;
-    let tool: EditorToolDefinition | undefined;
+    let tool: EditorToolDefinition | null;
     try {
       tool = item.render(context);
       if (!tool || (tool.when && !tool.when(context))) return null;

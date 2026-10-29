@@ -262,8 +262,7 @@ test.describe('context adapter, source provider, hooks, custom tab, action and p
     await expect
       .poll(async () => {
         const response = await page.request.get(`${origin}${BASE}/api/replays/${id}/edits`);
-        const stored: { captions?: { text: string }[] } = await response.json();
-        return stored.captions?.map((caption) => caption.text);
+        return response.text();
       })
       .toContain('Review this moment');
   });

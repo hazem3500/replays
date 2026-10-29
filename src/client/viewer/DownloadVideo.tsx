@@ -1,4 +1,4 @@
-import { usePluginExports } from '../hooks/use-plugin-exports.ts';
+import { type PluginExportOption, usePluginExports } from '../hooks/use-plugin-exports.ts';
 import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { FileVideoCameraIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
@@ -198,7 +198,21 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
           </DropdownMenuTrigger>
         </Hint>
         <DropdownMenuContent align="end" className="w-auto min-w-56" aria-label="Download video">
-          {formats.map((format) =>
+          <FormatItems formats={formats} download={download} exportText={exportText} meta={meta} />
+        </DropdownMenuContent>
+      </DropdownMenu>
+    ) : (
+      <IconButton label={label} tooltipAlign="end" aria-disabled={active} onClick={() => void start()} data-testid="download-video">
+        <AnimatedIcon name="download" />
+      </IconButton>
+    );
+
+  return <DownloadProgress download={download}>{trigger}</DownloadProgress>;
+}
+
+function FormatItems({ formats, download, exportText, meta }: { formats: readonly (PluginExportOption | 'core')[]; download: VideoDownload; exportText: string; meta: ReplayMeta }) {
+  const { canRender, stored, start } = download;
+  return <>{formats.map((format) =>
             format === 'core' ? (
               <Fragment key="core">
                 {canRender ? (
@@ -220,14 +234,5 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
                 {format.label}
               </DropdownMenuItem>
             ),
-          )}
-        </DropdownMenuContent>
-      </DropdownMenu>
-    ) : (
-      <IconButton label={label} tooltipAlign="end" aria-disabled={active} onClick={() => void start()} data-testid="download-video">
-        <AnimatedIcon name="download" />
-      </IconButton>
-    );
-
-  return <DownloadProgress download={download}>{trigger}</DownloadProgress>;
+          )}</>;
 }

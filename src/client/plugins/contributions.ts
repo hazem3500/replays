@@ -7,7 +7,7 @@ export interface EditorToolContext {
   readonly replay: Readonly<ReplayBundle>;
   readonly edits: Readonly<ReplayEdits>;
   readonly duration: number;
-  getTime(): number;
+  getTime(this: void): number;
 }
 
 /** The editor validates this synchronous transform and owns undo and saving. */

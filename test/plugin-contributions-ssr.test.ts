@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { renderToString } from 'react-dom/server';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import { EditorPluginTools } from '../src/client/plugins/EditorTools.tsx';
 import { PluginContexts, createPluginContext } from '../src/client/plugins/PluginUi.tsx';
 import { viewerRegistry } from '../src/client/plugins/registry.ts';
@@ -32,6 +32,7 @@ function Contributions() {
   );
 }
 
+describe('contribution server rendering', () => {
 afterEach(() => viewerRegistry.reset());
 
 it('server renders host contributions without invoking browser actions', () => {
@@ -68,4 +69,6 @@ it('server renders host contributions without invoking browser actions', () => {
   expect(html).toContain('Core tools');
   expect(html).toContain('Console JSON');
   expect(invoked).toEqual([]);
+});
+
 });

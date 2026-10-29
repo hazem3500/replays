@@ -26,7 +26,7 @@ export default defineViewerPlugin((api) => {
       data: JSON.stringify(replay.console),
     }),
   });
-  api.registerShortcut({ id: 'hello', label: 'Acme hello', keys: ['g'], run: ({ notify }) => notify('Acme shortcut ran') });
+  api.registerShortcut({ id: 'hello', label: 'Acme hello', keys: ['g'], run: (context) => context.notify('Acme shortcut ran') });
   api.registerEditorTool({
     id: 'note',
     label: 'Mark for Acme',

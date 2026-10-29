@@ -19,11 +19,11 @@ describe('host contributions', () => {
   it('applies an editor plugin through the core undo model without mutating history', () => {
     const registry = new ViewerRegistry();
     registry.apiFor('host').registerEditorTool(tool);
-    const registered = registry.resolveSlot<undefined, EditorToolDefinition>('editor.tools', [], undefined)[0];
+    const registered = registry.resolveSlot<null, EditorToolDefinition>('editor.tools', [], null)[0];
     expect(registered).toBeDefined();
     if (!registered) throw new Error('tool not registered');
     const initial = initialEditorState(EMPTY_EDITS);
-    const result = runEditorTool(registered.render(undefined), {
+    const result = runEditorTool(registered.render(null), {
       replay: replay(),
       edits: initial.present,
       duration: 1000,
@@ -52,10 +52,10 @@ describe('host contributions', () => {
     api.registerExportFormat({ id: 'text', label: 'Text', run: () => ({ name: 'replay.txt', data: 'recording' }) });
     api.configureSlot('export.formats', { hide: ['plugin:host:json'] });
     expect(
-      registry.resolveSlot<undefined, ExportFormatDefinition>('export.formats', [], undefined).map((item) => item.render(undefined).label),
+      registry.resolveSlot<null, ExportFormatDefinition>('export.formats', [], null).map((item) => item.render(null).label),
     ).toEqual(['Text']);
     registry.removePlugin('host');
-    expect(registry.resolveSlot('export.formats', [], undefined)).toEqual([]);
+    expect(registry.resolveSlot('export.formats', [], null)).toEqual([]);
   });
 
   it('rejects reserved, modifier and colliding shortcuts and releases unloaded keys', () => {
