@@ -1224,10 +1224,10 @@
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
         "raw": 21285,
-        "gzip": 8750,
-        "brotli": 7522
+        "gzip": 8751,
+        "brotli": 7544
       },
-      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 21285 raw, 8750 gzip, 7522 brotli bytes (+115, +39, +22).",
+      "reason": "A suite whose recordings retention removed says when and under which window (SuiteExpired, the expired-replays query); head measures 21285 raw, 8751 gzip, 7544 brotli bytes (+115, +40, +44).",
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
