@@ -9,16 +9,7 @@ import { commentsEnabled } from '../comments/enabled.ts';
 import { SHORTCUT_GROUPS } from '../shortcuts.ts';
 
 /** Modal sheet (Base UI Dialog): the keyboard stays inside, Esc closes, and the opener gets the keyboard back. */
-export function ShortcutSheet({
-  open,
-  onOpenChange,
-  groups = SHORTCUT_GROUPS,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  /** The page's own keys; the viewer's when omitted. */
-  groups?: ReadonlyArray<{ title: string; items: ReadonlyArray<{ keys: string[]; label: string; feature?: 'comments' }> }>;
-}) {
+export function ShortcutSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
   const close = useRef<HTMLButtonElement>(null);
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -45,7 +36,7 @@ export function ShortcutSheet({
           </DialogClose>
         </div>
         <div className="sheet-body">
-          {groups.map((group) => (
+          {SHORTCUT_GROUPS.map((group) => (
             <section key={group.title}>
               <h3>{group.title}</h3>
               <dl>

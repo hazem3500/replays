@@ -71,8 +71,8 @@ import { Timeline } from './Timeline.tsx';
 import { CursorInspector } from './CursorInspector.tsx';
 import { EditorInspector } from './EditorInspector.tsx';
 import { AddMenu, BarTools } from './EditorTools.tsx';
-import { EDITOR_SHORTCUT_GROUPS, IS_MAC, MOD } from './editor-tools.ts';
-import { ShortcutSheet } from '../viewer/ShortcutSheet.tsx';
+import { IS_MAC, MOD } from './editor-tools.ts';
+import { EditorShortcutSheet } from './EditorShortcutSheet.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
 import { EditorExport } from './EditorExport.tsx';
 import { MobileInspector, MobileAddToolbar, mobileTimelineObjects } from './MobileInspector.tsx';
@@ -1079,7 +1079,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
             </span>
           </section>
         </main>
-        <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} groups={EDITOR_SHORTCUT_GROUPS} />
+        <EditorShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
       </ViewerContext.Provider>
     </PlayerContext.Provider>
   );

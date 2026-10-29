@@ -88,9 +88,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 98265,
-      "gzip": 32779,
-      "brotli": 28030
+      "raw": 102332,
+      "gzip": 33984,
+      "brotli": 29020
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 39229,
@@ -998,12 +998,12 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 98265,
-        "gzip": 32779,
-        "brotli": 28030
+        "raw": 102332,
+        "gzip": 33984,
+        "brotli": 29020
       },
-      "reason": "The cursor Click layer (off, press, ripple or pulse) and the one-line cursor summary; measured against main: +460 B raw, -14 B gzip, -22 B brotli. Replaces #136's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/142"
+      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, and the editor shortcut sheet; measured against main: +4280 B raw, +1352 B gzip, +1153 B brotli. Replaces #142's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
