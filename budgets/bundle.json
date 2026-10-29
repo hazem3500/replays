@@ -307,10 +307,10 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-385e24c93576.mjs": {
-      "raw": 311351,
-      "gzip": 81713,
-      "brotli": 66956
+    "dist/lib/chunks/context.schema.json-986116a35059.mjs": {
+      "raw": 305397,
+      "gzip": 80225,
+      "brotli": 65677
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -484,8 +484,8 @@
     },
     "initial/index.html/css": {
       "raw": 254839,
-      "gzip": 44498,
-      "brotli": 37043
+      "gzip": 44450,
+      "brotli": 37038
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -769,7 +769,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1093,16 +1093,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/139"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-385e24c93576.mjs",
-      "cap": {
-        "raw": 311351,
-        "gzip": 81713,
-        "brotli": 66956
-      },
-      "reason": "The context-schema chunk is renamed by its content hash when the shared chunk graph gains the auth wrapper; same module.",
-      "pr": "https://github.com/hazem3500/replays/pull/139"
-    },
-    {
       "file": "dist/client/assets/composite-HASH.js",
       "cap": {
         "raw": 94002,
@@ -1249,6 +1239,26 @@
       },
       "reason": "The initial index style group carries the same phone index stylesheets.",
       "pr": "https://github.com/hazem3500/replays/pull/111"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 8926,
+        "gzip": 3923,
+        "brotli": 3572
+      },
+      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts, render/thumbhash-capture.ts); head measures 8926 raw, 3923 gzip, 3572 brotli bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-986116a35059.mjs",
+      "cap": {
+        "raw": 305397,
+        "gzip": 80225,
+        "brotli": 65677
+      },
+      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-385e24c93576 (caps 311351, 81713, 66956) and measures 305397 raw, 80225 gzip, 65677 brotli bytes, under those caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
     }
   ]
 }
