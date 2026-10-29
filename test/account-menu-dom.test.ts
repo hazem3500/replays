@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { type Account, meQuery, queryClient } from '../src/client/queries.ts';
+import { IndexPhoneMenu, phoneMenuItems } from '../src/client/index/IndexPhoneMenu.tsx';
 import { Topbar } from '../src/client/Topbar.tsx';
 
 let root: Root;
@@ -60,6 +61,18 @@ describe('the account menu', () => {
     renderBar(OIDC, true);
     expect(host.querySelector('[data-testid="account-menu"]')).toBeNull();
     openMore();
+    expect(document.querySelector('[data-testid="sign-out"]')?.getAttribute('href')).toBe('/auth/logout');
+  });
+
+  it('offers Sign out in the index’s phone sheet, which stands in for More there', () => {
+    act(() => {
+      root.render(createElement(IndexPhoneMenu, { items: phoneMenuItems({ account: OIDC }) }));
+    });
+    const trigger = host.querySelector<HTMLButtonElement>('[aria-label="Menu"]');
+    if (!trigger) throw new Error('the phone sheet trigger is not rendered');
+    act(() => {
+      trigger.click();
+    });
     expect(document.querySelector('[data-testid="sign-out"]')?.getAttribute('href')).toBe('/auth/logout');
   });
 
