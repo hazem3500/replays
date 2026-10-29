@@ -73,7 +73,14 @@ export function SettingsButton() {
       trigger={
         <Hint label={strings.open} side="bottom" align="end">
           <DialogTrigger
-            render={<Button variant="ghost" size="icon" aria-label={strings.open} className="text-[var(--text-secondary)] hover:text-foreground" />}
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label={strings.open}
+                className="text-[var(--text-secondary)] hover:text-foreground"
+              />
+            }
           >
             <SettingsIcon className="size-4" aria-hidden="true" />
           </DialogTrigger>
