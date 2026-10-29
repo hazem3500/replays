@@ -173,9 +173,9 @@
       "brotli": 517
     },
     "dist/client/assets/render-HASH.js": {
-      "raw": 8889,
-      "gzip": 3912,
-      "brotli": 3559
+      "raw": 6721,
+      "gzip": 2958,
+      "brotli": 2681
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
@@ -200,12 +200,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 613
+      "brotli": 621
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
       "gzip": 8342,
-      "brotli": 7152
+      "brotli": 7151
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -247,10 +247,10 @@
       "gzip": 20114,
       "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-ac455b893fb5.mjs": {
-      "raw": 305565,
-      "gzip": 80205,
-      "brotli": 65708
+    "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
+      "raw": 308545,
+      "gzip": 80878,
+      "brotli": 66289
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -410,7 +410,7 @@
     "dist/lib/server.mjs": {
       "raw": 1829,
       "gzip": 598,
-      "brotli": 505
+      "brotli": 507
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -425,7 +425,7 @@
     "initial/index.html/js": {
       "raw": 1688508,
       "gzip": 529707,
-      "brotli": 434765
+      "brotli": 434343
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -433,9 +433,9 @@
       "brotli": 2097
     },
     "initial/render.html/js": {
-      "raw": 543991,
-      "gzip": 170056,
-      "brotli": 133515
+      "raw": 542325,
+      "gzip": 169411,
+      "brotli": 132878
     }
   },
   "allowances": [
@@ -732,10 +732,10 @@
       "cap": {
         "raw": 1688508,
         "gzip": 529707,
-        "brotli": 434765
+        "brotli": 434343
       },
-      "reason": "The index entry gains the poster placeholders: the ThumbHash decoder and PNG builder, the site tile with its favicon fallback and a suite's run mosaic, replacing the letter; head measures 1671406 raw, 526765 gzip, 434765 brotli bytes (Brotli +422 over its cap).",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
+      "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
@@ -985,24 +985,23 @@
       "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-ac455b893fb5.mjs",
+      "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
       "cap": {
-        "raw": 305565,
-        "gzip": 80205,
-        "brotli": 65708
+        "raw": 303921,
+        "gzip": 79697,
+        "brotli": 65304
       },
-      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-ed27343081aa (files caps 308545, 80878, 66289) and measures 305565 raw, 80205 gzip, 65708 brotli bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
+      "reason": "The shared chunk holds the edits validator, which now also accepts cursor.appearance and cursor.color with their names; measured against main: +1010 B raw, +281 B gzip, +243 B brotli. Replaces #118's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
       "file": "initial/render.html/js",
       "cap": {
-        "raw": 543991,
-        "gzip": 170056,
-        "brotli": 133515
+        "gzip": 169411,
+        "brotli": 132878
       },
-      "reason": "The render page's closure carries the ThumbHash encoder; head measures 543991 raw, 170056 gzip, 133515 brotli bytes (+1666, +645, +637).",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
+      "reason": "The render page draws the same cursor themes as the viewer (the player chunk's themes and click feedback); measured against main: +5354 B raw, +2116 B gzip, +1677 B brotli; raw passes the existing cap.",
+      "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
       "file": "dist/client/assets/Editor-HASH.css",
@@ -1059,16 +1058,6 @@
       },
       "reason": "Same raw and gzip size as main; the new Network and Performance chunk hashes it names compress 24 Brotli bytes worse (3486 against a 3468-byte cap).",
       "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
-      "file": "dist/client/assets/render-HASH.js",
-      "cap": {
-        "raw": 8889,
-        "gzip": 3912,
-        "brotli": 3559
-      },
-      "reason": "The render page encodes the finished poster's ThumbHash (src/shared/thumbhash-encode.ts, render/thumbhash-capture.ts); head measures 8889 raw, 3912 gzip, 3559 brotli bytes (+2168, +954, +878).",
-      "pr": "https://github.com/hazem3500/replays/pull/123"
     }
   ]
 }

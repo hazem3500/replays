@@ -99,6 +99,27 @@ export const configQuery = queryOptions({
   retry: false,
 });
 
+/** `GET /api/me`'s session: whether a person is signed in, and where they sign out (when the auth mode has a way). */
+export interface Account {
+  id: string;
+  name?: string;
+  email?: string;
+  avatarUrl?: string;
+  session?: { signedIn: boolean; signOutUrl?: string };
+}
+
+/** `GET /api/me`: who is signed in; `null` when the server answers without one (401/403). */
+export const meQuery = queryOptions({
+  queryKey: ['me'] as const,
+  queryFn: async ({ signal }) => {
+    const response = await fetch(apiUrl('me'), { signal });
+    if (!response.ok) return null;
+    return (await response.json()) as Account;
+  },
+  staleTime: Number.POSITIVE_INFINITY,
+  retry: false,
+});
+
 /** Warms a bundle at low network priority (a hover or keyboard visit on a suite run). */
 export function prefetchReplay(client: QueryClient, id: string) {
   return client.prefetchQuery({ ...replayQuery(id), queryFn: ({ signal }) => fetchReplay(id, signal, 'low') });
