@@ -1,3 +1,4 @@
+import type { RecorderBodyLimits } from './body-limits.ts';
 import type { ReplayConsoleLevel } from './bundle-types.ts';
 import type { HttpUploadOptions } from './http-upload.ts';
 import type { IssueReport, IssueReportReceipt, IssueReportUpload, RecorderApp } from './upload.ts';
@@ -46,7 +47,8 @@ export type UploadProgress = { loaded: number; total?: number; fraction?: number
 export type PrivacyFacts = {
   mode: 'masked' | 'visible';
   maxDurationMs: number;
-  captures: { pageText: boolean; inputs: boolean; media: boolean; console: boolean; network: boolean };
+  /** `networkBodies`: request and response content is kept, redacted. */
+  captures: { pageText: boolean; inputs: boolean; media: boolean; console: boolean; network: boolean; networkBodies?: boolean };
   reviewRequired: boolean;
 };
 export type RecorderDecision = { consent: boolean } | { upload: boolean; note?: string };
@@ -134,6 +136,34 @@ export type RecorderPrivacyOptions = {
   allowedHeaders?: readonly string[];
 };
 
+export type { RecorderBodyLimits } from './body-limits.ts';
+
+/** Nothing, method/URL/status/timing/allow-listed headers (the default), or also redacted bodies. */
+export type RecorderCaptureNetwork = 'off' | 'headers' | 'bodies';
+
+/**
+ * What a recording keeps beyond the page, shaped like a profile's `capture`
+ * block so `profile.capture` from `GET /api/config` can be passed as is. Keys
+ * only the capture CLI applies (`performance`, `sampling`, `video`,
+ * `stepPauseMs`, `viewport`, `runs`) are ignored. invariant: it only tightens
+ * `privacy`; an invalid value throws from `createRecorder`.
+ */
+export type RecorderCapture = {
+  /**
+   * Default `'headers'`. `'bodies'` also keeps JSON, text and form bodies of
+   * fetch and XHR calls, cut at 64 KiB and redacted before they leave the
+   * page. Streams, server-sent events and binary bodies are never read.
+   * `privacy.captureNetwork: false` wins.
+   */
+  network?: RecorderCaptureNetwork;
+  /** Lower the body limits; only with `network: 'bodies'`. */
+  bodies?: RecorderBodyLimits;
+  /** Console levels when `privacy.consoleLevels` is not set. */
+  console?: readonly ReplayConsoleLevel[];
+  /** Stricter masking than `privacy`; `true` is the only accepted value. */
+  privacy?: { maskAllText?: true; blockMedia?: true };
+};
+
 /**
  * Which prompts `request()` shows. Both are on by default, which is the
  * customer flow. An internal tool can turn them off for a one-click flow: the
@@ -167,6 +197,8 @@ export type RecorderOptions = {
   /** Default 15 MB; clamped to 20 MB (Replays accepts 25 MB). */
   maxBytes?: number;
   privacy?: RecorderPrivacyOptions;
+  /** Network detail, console levels and stricter masking; bodies stay off unless asked for. */
+  capture?: RecorderCapture;
   /**
    * URLs the network capture skips. Uploads run after capture stops, so the
    * upload endpoint never needs listing.
