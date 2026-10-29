@@ -1,16 +1,7 @@
 import { RadioCard, RadioGroup } from '@/components/ui/radio-group.tsx';
 import { CURSOR_COLORS, type CursorAppearance, type CursorColor, isCursorAppearance, isCursorColor } from '../../shared/cursor.ts';
-import { CURSOR_THEMES, cursorColorValue, type CursorTheme } from '../cursor-themes.ts';
+import { CURSOR_COLOR_LABELS, CURSOR_THEMES, cursorColorValue, type CursorTheme } from '../cursor-themes.ts';
 import { useCursorGlyph } from '../hooks/use-cursor-glyph.ts';
-
-const COLOR_LABELS: Record<CursorColor, string> = {
-  accent: 'Indigo',
-  periwinkle: 'Periwinkle',
-  green: 'Green',
-  amber: 'Amber',
-  coral: 'Coral',
-  graphite: 'Graphite',
-};
 
 const DEFAULT_COLOR = 'default';
 
@@ -77,7 +68,7 @@ export function CursorAppearancePicker({
             value={name}
             className="cursor-color-swatch"
             style={{ background: value }}
-            aria-label={isCursorColor(name) ? COLOR_LABELS[name] : name}
+            aria-label={isCursorColor(name) ? CURSOR_COLOR_LABELS[name] : name}
           />
         ))}
       </RadioGroup>
