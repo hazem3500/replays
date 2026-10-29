@@ -23,7 +23,6 @@ import './network.css';
 
 export type { NetworkPeer } from './RequestDetail.tsx';
 
-/** Below this many requests the list already shows everything at a glance; the ribbon would be an empty strip. */
 /** Above this many requests the ribbon draws their density; at or below it, one tick per request. */
 const DENSE_ROWS = 12;
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
