@@ -7,7 +7,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { tmpdir } from 'node:os';
 import { extname, join } from 'node:path';
 
-import { send } from './app.ts';
+import { sendJson } from './http/send.ts';
 import { isThumbHash } from '../shared/thumbhash.ts';
 import { PREVIEW_SPEED } from '../client/render/frames.ts';
 import { chromiumArgs, ffmpegArgs, RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
@@ -551,11 +551,11 @@ export async function handlePosterApi(
   const kind = match[2] as MediaKind;
   const media = MEDIA[kind];
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    send(response, 405, JSON.stringify({ error: 'method not allowed' }), JSON_TYPE);
+    sendJson(response, 405, { error: 'method not allowed' });
     return true;
   }
   if (!(await options.store.locate(id))) {
-    send(response, 404, JSON.stringify({ error: 'replay not found' }), JSON_TYPE);
+    sendJson(response, 404, { error: 'replay not found' });
     return true;
   }
   const cache = 'private, max-age=604800';
@@ -593,12 +593,12 @@ export async function handlePosterApi(
   }
   const state = options.posters ? await options.posters.request(id, kind) : 'off';
   if (state === 'off') {
-    send(response, 503, JSON.stringify({ error: media.off }), JSON_TYPE);
+    sendJson(response, 503, { error: media.off });
     return true;
   }
   if (state === 'ready' && (await serve())) return true;
   if (state === 'failed') {
-    send(response, 404, JSON.stringify({ error: `no ${kind} for this replay` }), JSON_TYPE);
+    sendJson(response, 404, { error: `no ${kind} for this replay` });
     return true;
   }
   response.writeHead(state === 'full' ? 503 : 202, {

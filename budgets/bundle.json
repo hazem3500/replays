@@ -208,9 +208,9 @@
       "brotli": 3622
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 1022,
+      "raw": 982,
       "gzip": 608,
-      "brotli": 585
+      "brotli": 581
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -312,10 +312,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-06e184308ebe.mjs": {
-      "raw": 310977,
-      "gzip": 81843,
-      "brotli": 67134
+    "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
+      "raw": 312907,
+      "gzip": 83012,
+      "brotli": 67822
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -417,10 +417,20 @@
       "gzip": 1639,
       "brotli": 1418
     },
-    "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
-      "raw": 53813,
-      "gzip": 14538,
-      "brotli": 12809
+    "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
+      "raw": 10646,
+      "gzip": 3358,
+      "brotli": 2988
+    },
+    "dist/lib/recorder-chunks/body-limits.ts-409d44385d21.mjs": {
+      "raw": 801,
+      "gzip": 424,
+      "brotli": 334
+    },
+    "dist/lib/recorder-chunks/bundle-types.ts-6c0193fa9045.mjs": {
+      "raw": 57760,
+      "gzip": 15523,
+      "brotli": 13684
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
@@ -428,9 +438,9 @@
       "brotli": 1711
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 3955,
-      "gzip": 1532,
-      "brotli": 1303
+      "raw": 4058,
+      "gzip": 1584,
+      "brotli": 1337
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -468,9 +478,9 @@
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 2920,
-      "gzip": 854,
-      "brotli": 740
+      "raw": 2967,
+      "gzip": 858,
+      "brotli": 747
     },
     "dist/lib/server-testing.mjs": {
       "raw": 12273,
@@ -726,16 +736,6 @@
       },
       "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
       "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
-      "cap": {
-        "raw": 53813,
-        "gzip": 14538,
-        "brotli": 12809
-      },
-      "reason": "The recorder core now includes the plain HTTP upload transport (createHttpUpload, retryable IssueUploadError), so createRecorder can take { url, headers, ... }; it replaces bundle-types.ts-5850f68df54d (+5.2 KB raw, +1.4 KB gzip).",
-      "pr": "https://github.com/hazem3500/replays/pull/97"
     },
     {
       "file": "dist/client/assets/ComparePicker-HASH.js",
@@ -1204,24 +1204,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
-      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
-      "cap": {
-        "raw": 3955,
-        "gzip": 1532,
-        "brotli": 1303
-      },
-      "reason": "Recorder messages and format hooks now share one chunk: every UI string, typed message functions, the template resolver and Intl duration/size/clock defaults. It replaces format.ts-ae4027eae00a and messages.ts-2df211e12161 (730 + 837 raw bytes on main); measured in CI against fresh main dbc865e9 at 3955 raw, 1532 gzip, 1303 brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/141"
-    },
-    {
-      "file": "dist/lib/recorder.mjs",
-      "cap": {
-        "raw": 2920
-      },
-      "reason": "The recorder entry re-exports defaultRecorderMessages, resolveRecorderMessages and createRecorderFormat; measured in CI against fresh main dbc865e9: +101 B raw, +16 B gzip, +13 B brotli.",
-      "pr": "https://github.com/hazem3500/replays/pull/141"
-    },
-    {
       "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
       "cap": {
         "raw": 6769,
@@ -1292,14 +1274,64 @@
       "reason": "Splitting ReplayStore into src/server/store/* modules adds module and class structure to the unminified CLI bundle (migrate-cli bundles the store); measured on Boat against main 0e7a3fd: main 458431/117681/95827, head 462508/119070/96945 (+4077 B raw, +1389 B gzip, +1118 B brotli). Replaces #130's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-06e184308ebe.mjs",
+      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
       "cap": {
-        "raw": 310977,
-        "gzip": 81843,
-        "brotli": 67134
+        "raw": 312907,
+        "gzip": 83012,
+        "brotli": 67822
       },
-      "pr": "https://github.com/hazem3500/replays/pull/164",
-      "reason": "The shared server chunk gains the src/server/store/* modules, so its source identity changes; measured on Boat against main 0e7a3fd: main 308641/80890/66336 (context.schema.json-7e5a8e2906dd), head 310977/81843/67134 (+2336 B raw, +953 B gzip, +798 B brotli). Replaces #157's entry."
+      "pr": "https://github.com/hazem3500/replays/pull/170",
+      "reason": "Splitting app.ts adds src/server/app/* and src/server/http/{send,serve-file,fail}.ts to the shared server chunk, so its source identity changes; measured on Boat against main: main 310977/81843/67134 (context.schema.json-06e184308ebe.mjs), head 312907/83012/67822 (+1930 B raw, +1169 B gzip, +688 B brotli). Replaces the previous entry for this chunk."
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
+      "cap": {
+        "raw": 4058,
+        "gzip": 1584,
+        "brotli": 1337
+      },
+      "reason": "The default consent copy says when request and response content is recorded.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/lib/recorder.mjs",
+      "cap": {
+        "raw": 2967,
+        "gzip": 858,
+        "brotli": 747
+      },
+      "reason": "The recorder entry imports the renamed core chunk and the new body-limits chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs",
+      "cap": {
+        "raw": 10646,
+        "gzip": 3358,
+        "brotli": 2988
+      },
+      "reason": "Opt-in network body capture for the recorder: a lazy chunk loaded only when capture.network is 'bodies', holding the fetch/XHR body readers and the ported body redaction.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/body-limits.ts-409d44385d21.mjs",
+      "cap": {
+        "raw": 801,
+        "gzip": 424,
+        "brotli": 334
+      },
+      "reason": "The body content-type allowlist and 64 KiB default, shared by the recorder core (to validate the capture option) and the lazy body chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/bundle-types.ts-6c0193fa9045.mjs",
+      "cap": {
+        "raw": 57760,
+        "gzip": 15523,
+        "brotli": 13684
+      },
+      "reason": "The recorder core chunk gains the capture option resolver, meta.captured and the body hooks in the fetch/XHR wrappers; its new source membership renames the former bundle-types.ts-ee6bb78d70a4 chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
     }
   ]
 }

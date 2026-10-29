@@ -1,9 +1,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
-import { send } from './app.ts';
+import { sendJson } from './http/send.ts';
 import type { ReplayStore } from './store.ts';
-
-const JSON_TYPE = 'application/json; charset=utf-8';
 
 /**
  * `GET|PUT|DELETE /api/replays/<id>/keep` and `/api/suites/<id>/keep`, behind the auth adapter
@@ -28,7 +26,7 @@ export async function handleKeepApi(
     case 'HEAD':
       retention = suite ? await store.suiteRetention(id) : await store.replayRetention(id);
       if (!retention) {
-        send(response, 404, JSON.stringify({ error: `${suite ? 'review suite' : 'replay'} not found` }), JSON_TYPE);
+        sendJson(response, 404, { error: `${suite ? 'review suite' : 'replay'} not found` });
         return true;
       }
       break;
@@ -41,9 +39,9 @@ export async function handleKeepApi(
       console.log(`keep ${suite ? 'suite ' : ''}${id}: released by ${options.user}`);
       break;
     default:
-      send(response, 405, JSON.stringify({ error: 'method not allowed' }), JSON_TYPE);
+      sendJson(response, 405, { error: 'method not allowed' });
       return true;
   }
-  send(response, 200, JSON.stringify(retention), JSON_TYPE);
+  sendJson(response, 200, retention);
   return true;
 }
