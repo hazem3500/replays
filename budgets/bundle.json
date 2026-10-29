@@ -78,9 +78,9 @@
       "brotli": 2680
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 31708,
-      "gzip": 11119,
-      "brotli": 9660
+      "raw": 32533,
+      "gzip": 11373,
+      "brotli": 9861
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -170,7 +170,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 962358,
       "gzip": 301788,
-      "brotli": 250661
+      "brotli": 250630
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -250,7 +250,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 617
+      "brotli": 618
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21287,
@@ -1119,14 +1119,6 @@
       },
       "reason": "ScopeCount and RefreshLine replace the count's sentence states; head measures 986487 raw bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/145"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 617
-      },
-      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size; its Brotli size moves with the compare chunk's new hash (617 against 606 on Boat). Replaces #144's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/167"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
