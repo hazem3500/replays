@@ -22,67 +22,85 @@ interface PhoneTimelineOptions {
   onScale: (scale: number) => void;
 }
 
+interface Latest {
+  readonly current: PhoneTimelineOptions;
+}
+
+/** Two fingers or Ctrl + wheel scale px per ms around the playhead, within clampScale. */
+function pinchZoom(latest: Latest) {
+  let pinch: { distance: number; scale: number } | undefined;
+  const zoom = (next: number) => latest.current.onScale(clampScale(next, latest.current.fit));
+  const distance = (touches: TouchList) => {
+    const [a, b] = [touches[0], touches[1]];
+    return a && b ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : 0;
+  };
+  return {
+    active: () => pinch !== undefined,
+    start: (event: TouchEvent) => {
+      if (event.touches.length === 2) pinch = { distance: distance(event.touches), scale: latest.current.scale };
+    },
+    move: (event: TouchEvent) => {
+      if (!pinch || event.touches.length !== 2 || pinch.distance === 0) return;
+      event.preventDefault();
+      zoom((pinch.scale * distance(event.touches)) / pinch.distance);
+    },
+    end: (event: TouchEvent) => {
+      if (event.touches.length < 2) pinch = undefined;
+    },
+    wheel: (event: WheelEvent) => {
+      if (!event.ctrlKey) return;
+      event.preventDefault();
+      zoom(latest.current.scale * Math.exp(-event.deltaY / 240));
+    },
+  };
+}
+
 /**
- * One position for the phone timeline and the playhead: the clock scrolls the lanes under the centre line, and a
- * finger (with the platform's momentum), a wheel or a mouse drag scrolling them scrubs, settling on a step start it
- * lands near. Two fingers or Ctrl + wheel zoom around the playhead.
+ * The lanes' scroll position and the clock as one: `follow` scrolls to the clock, and a scroll it did not make is a
+ * scrub that pauses, seeks and, once quiet, settles on a step start it lands near.
  */
-export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTimelineOptions) {
-  const latest = useRef(options);
-  const expected = useRef(-1);
-  const { player, scale } = options;
-
-  useEffect(() => {
-    latest.current = options;
-  });
-
-  useEffect(() => {
-    if (!scroller) return;
-    expected.current = player.getTime() * scale;
-    scroller.scrollTo({ left: expected.current, behavior: 'instant' });
-  }, [scroller, player, scale]);
-
-  useEffect(() => {
-    if (!scroller) return;
-    let scrubbing = false;
-    let settle = 0;
-    let pinch: { distance: number; scale: number } | undefined;
-    const place = (left: number) => {
-      expected.current = left;
-      scroller.scrollTo({ left, behavior: 'instant' });
-    };
-    const announce = () => {
-      const { seek } = latest.current;
-      if (!seek) return;
-      const time = player.getTime();
-      seek.value = String(Math.round(time));
-      seek.setAttribute('aria-valuetext', formatClock(time));
-    };
-    const follow = () => {
+function scrubber(scroller: HTMLElement, latest: Latest, pinching: () => boolean) {
+  const { player } = latest.current;
+  let expected = -1;
+  let scrubbing = false;
+  let settle = 0;
+  const place = (left: number) => {
+    expected = left;
+    scroller.scrollTo({ left, behavior: 'instant' });
+  };
+  const announce = () => {
+    const { seek } = latest.current;
+    if (!seek) return;
+    const time = player.getTime();
+    seek.value = String(Math.round(time));
+    seek.setAttribute('aria-valuetext', formatClock(time));
+  };
+  const finish = () => {
+    const { scale, snaps } = latest.current;
+    const time = timeAtScroll(scroller.scrollLeft, scale, player.duration);
+    const near = snaps.find((at) => Math.abs(at - time) * scale <= SNAP_PX && Math.abs(at - time) * scale > 0.5);
+    if (near !== undefined) {
+      player.seek(near);
+      scroller.scrollTo({ left: near * scale, behavior: 'smooth' });
+      scroller.toggleAttribute('data-snapped', true);
+      if ('vibrate' in navigator) navigator.vibrate(8);
+      return;
+    }
+    scrubbing = false;
+    expected = scroller.scrollLeft;
+    scroller.removeAttribute('data-snapped');
+    player.endScrub();
+  };
+  return {
+    place,
+    follow: () => {
       announce();
-      if (scrubbing || pinch) return;
+      if (scrubbing || pinching()) return;
       const left = player.getTime() * latest.current.scale;
       if (Math.abs(scroller.scrollLeft - left) >= 0.5) place(left);
-    };
-    const finish = () => {
-      const { scale: current, snaps } = latest.current;
-      const time = timeAtScroll(scroller.scrollLeft, current, player.duration);
-      const near = snaps.find((at) => Math.abs(at - time) * current <= SNAP_PX && Math.abs(at - time) * current > 0.5);
-      if (near !== undefined) {
-        player.seek(near);
-        scroller.scrollTo({ left: near * current, behavior: 'smooth' });
-        scroller.dataset.snapped = '';
-        if ('vibrate' in navigator) navigator.vibrate(8);
-        return;
-      }
-      scrubbing = false;
-      expected.current = scroller.scrollLeft;
-      delete scroller.dataset.snapped;
-      player.endScrub();
-    };
-    const onScroll = () => {
-      if (!scrubbing && Math.abs(scroller.scrollLeft - expected.current) <= 1) return;
-      if (pinch) return;
+    },
+    scroll: () => {
+      if ((!scrubbing && Math.abs(scroller.scrollLeft - expected) <= 1) || pinching()) return;
       if (!scrubbing) {
         scrubbing = true;
         player.pause();
@@ -91,51 +109,63 @@ export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTim
       player.seek(timeAtScroll(scroller.scrollLeft, latest.current.scale, player.duration));
       window.clearTimeout(settle);
       settle = window.setTimeout(finish, SETTLE_MS);
-    };
-    const zoom = (next: number) => {
-      const { fit, onScale } = latest.current;
-      onScale(clampScale(next, fit));
-    };
-    const distance = (touches: TouchList) => {
-      const [a, b] = [touches[0], touches[1]];
-      return a && b ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : 0;
-    };
-    const onTouchStart = (event: TouchEvent) => {
-      if (event.touches.length === 2) pinch = { distance: distance(event.touches), scale: latest.current.scale };
-    };
-    const onTouchMove = (event: TouchEvent) => {
-      if (!pinch || event.touches.length !== 2 || pinch.distance === 0) return;
-      event.preventDefault();
-      zoom((pinch.scale * distance(event.touches)) / pinch.distance);
-    };
-    const onTouchEnd = (event: TouchEvent) => {
-      if (event.touches.length < 2) pinch = undefined;
-    };
-    const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
-      event.preventDefault();
-      zoom(latest.current.scale * Math.exp(-event.deltaY / 240));
-    };
-    follow();
-    const stop = player.subscribeTime(follow);
-    scroller.addEventListener('scroll', onScroll, { passive: true });
-    scroller.addEventListener('touchstart', onTouchStart, { passive: true });
-    scroller.addEventListener('touchmove', onTouchMove, { passive: false });
-    scroller.addEventListener('touchend', onTouchEnd, { passive: true });
-    scroller.addEventListener('touchcancel', onTouchEnd, { passive: true });
-    scroller.addEventListener('wheel', onWheel, { passive: false });
-    return () => {
-      stop();
+    },
+    dispose: () => {
       window.clearTimeout(settle);
       if (scrubbing) player.endScrub();
-      scroller.removeEventListener('scroll', onScroll);
-      scroller.removeEventListener('touchstart', onTouchStart);
-      scroller.removeEventListener('touchmove', onTouchMove);
-      scroller.removeEventListener('touchend', onTouchEnd);
-      scroller.removeEventListener('touchcancel', onTouchEnd);
-      scroller.removeEventListener('wheel', onWheel);
+    },
+  };
+}
+
+function listen<K extends keyof HTMLElementEventMap>(
+  target: HTMLElement,
+  type: K,
+  listener: (event: HTMLElementEventMap[K]) => void,
+  passive: boolean,
+) {
+  target.addEventListener(type, listener, { passive });
+  return () => target.removeEventListener(type, listener);
+}
+
+/**
+ * One position for the phone timeline and the playhead: the clock scrolls the lanes under the centre line, and a
+ * finger (with the platform's momentum), a wheel or a mouse drag scrolling them scrubs, settling on a step start it
+ * lands near. Two fingers or Ctrl + wheel zoom around the playhead.
+ */
+export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTimelineOptions) {
+  const latest = useRef(options);
+  const control = useRef<ReturnType<typeof scrubber>>(null);
+  const { player, scale } = options;
+
+  useEffect(() => {
+    latest.current = options;
+  });
+
+  useEffect(() => {
+    if (!scroller) return;
+    const pinch = pinchZoom(latest);
+    const scrub = scrubber(scroller, latest, pinch.active);
+    control.current = scrub;
+    scrub.follow();
+    const stops = [
+      player.subscribeTime(scrub.follow),
+      listen(scroller, 'scroll', scrub.scroll, true),
+      listen(scroller, 'touchstart', pinch.start, true),
+      listen(scroller, 'touchmove', pinch.move, false),
+      listen(scroller, 'touchend', pinch.end, true),
+      listen(scroller, 'touchcancel', pinch.end, true),
+      listen(scroller, 'wheel', pinch.wheel, false),
+    ];
+    return () => {
+      control.current = null;
+      scrub.dispose();
+      for (const stop of stops) stop();
     };
   }, [scroller, player]);
+
+  useEffect(() => {
+    control.current?.place(player.getTime() * scale);
+  }, [scroller, player, scale]);
 }
 
 /** The lanes' width as they resize (0 until measured): what the whole recording is fitted to. */

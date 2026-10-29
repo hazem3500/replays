@@ -129,7 +129,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [cursorOpen, setCursorOpen] = useState(false);
   const focusCaption = useRef(false);
   const [mobileTrimOpen, setMobileTrimOpen] = useState(false);
-  /** The object (selectionKey) whose settings the phone sheet shows; it closes when another is selected. */
+  // why: keyed by selectionKey, so the phone sheet closes when another object is selected.
   const [sheetFor, setSheetFor] = useState<string>();
   const mobileReturnFocus = useRef<HTMLElement | null>(null);
   const [blurPlacement, setBlurPlacement] = useState<{ from: number; to: number }>();
@@ -345,11 +345,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       pointHighlight: () => {
         const { state: current, timeline: kept } = live.current;
         applyHighlight(
-          // why: a new highlight opens its sheet on a phone, for its label (sheetFor only shows there).
-          (next, select) => {
-            change(next, select);
-            if (select?.kind === 'highlight') setSheetFor(`highlight:${select.id}`);
-          },
+          openingSheet(change, setSheetFor),
           say,
           pointHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
         );
@@ -357,11 +353,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       periodHighlight: () => {
         const { state: current, timeline: kept } = live.current;
         applyHighlight(
-          // why: a new highlight opens its sheet on a phone, for its label (sheetFor only shows there).
-          (next, select) => {
-            change(next, select);
-            if (select?.kind === 'highlight') setSheetFor(`highlight:${select.id}`);
-          },
+          openingSheet(change, setSheetFor),
           say,
           periodHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
         );
@@ -660,7 +652,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     let target = mobileReturnFocus.current;
     mobileReturnFocus.current = null;
     // why: the toolbar swaps with the selection, so the button that opened the sheet may be gone; the object stays.
-    // Without either, the sheet hands focus back to what opened it.
     if (!target?.isConnected && mobileSelection && 'id' in mobileSelection) target = objectFocusTarget(shell.current, mobileSelection.id);
     if (target?.isConnected) target.focus({ preventScroll: true });
   };
@@ -705,7 +696,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       setSheetFor(sheetKey);
     },
     split: (kind, regionId) => {
-      const split = splitEffect(live.current.state.present, kind, regionId, player.getTime(), duration);
+      const split = splitEffect(live.current.state.present, { kind, id: regionId, time: player.getTime(), duration });
       if (split) change(split.edits, { kind, id: split.id });
       else say('Move the playhead inside it, away from its ends, to split it');
     },
@@ -719,6 +710,33 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     speedUp: () => addMobileObject('speed'),
     done: finishMobileObject,
   };
+  const phoneInspector = (
+    <MobileInspector
+      edits={edits}
+      selection={mobileSelection}
+      duration={duration}
+      change={change}
+      commands={{ ...selectionCommands, onDone: closeSheet }}
+      cursorOpen={cursorOpen}
+      placingBlur={Boolean(blurPlacement)}
+      panels={{
+        cursorInspector,
+        effectControls: <EffectControls mobile edits={edits} selection={selection} change={change} />,
+        highlightControls: (
+          <HighlightControls
+            edits={edits}
+            selection={selection}
+            duration={duration}
+            change={change}
+            afterRemove={() => {
+              mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.phone-playhead') ?? null;
+              finishMobileObject();
+            }}
+          />
+        ),
+      }}
+    />
+  );
   const empty = isEmptyEdits(edits);
   const hint = editorHint(selection, suggesting, empty);
 
@@ -1085,31 +1103,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   container={shell}
                   onClose={closeSheet}
                 >
-                  <MobileInspector
-                    edits={edits}
-                    selection={mobileSelection}
-                    duration={duration}
-                    change={change}
-                    commands={{ ...selectionCommands, onDone: closeSheet }}
-                    cursorOpen={cursorOpen}
-                    placingBlur={Boolean(blurPlacement)}
-                    panels={{
-                      cursorInspector,
-                      effectControls: <EffectControls mobile edits={edits} selection={selection} change={change} />,
-                      highlightControls: (
-                        <HighlightControls
-                          edits={edits}
-                          selection={selection}
-                          duration={duration}
-                          change={change}
-                          afterRemove={() => {
-                            mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.phone-playhead') ?? null;
-                            finishMobileObject();
-                          }}
-                        />
-                      ),
-                    }}
-                  />
+                  {phoneInspector}
                 </PhoneSheet>
               </>
             ) : null}
@@ -1144,6 +1138,14 @@ function EditorPreviewFrame({ children }: { children: ReactNode }) {
   );
 }
 
+/** `change` for a new highlight that also opens its sheet on a phone, for its label (the sheet only shows there). */
+function openingSheet(change: (edits: ReplayEdits, select?: Selection) => void, open: (key: string) => void) {
+  return (next: ReplayEdits, select?: Selection) => {
+    change(next, select);
+    if (select?.kind === 'highlight') open(`highlight:${select.id}`);
+  };
+}
+
 /** A fresh id for the `index`-th of several new regions of `kind` added at once. */
 function nextEffectId(edits: ReplayEdits, kind: EffectKind, index: number) {
   const taken = new Set(effectList(edits, kind).map((item) => item.id));
@@ -1157,10 +1159,6 @@ function nextEffectId(edits: ReplayEdits, kind: EffectKind, index: number) {
   }
 }
 
-/**
- * The selected effect's one setting, right after the tools (next to what you just used, not by the lengths): a zoom's depth and a speed-up's rate as a trigger and
- * menu, a caption's text as an inline field. Nothing for other selections.
- */
 /** How long a note stays in the hint line. */
 const NOTE_MS = 3200;
 

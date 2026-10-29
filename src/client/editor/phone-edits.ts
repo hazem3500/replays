@@ -7,13 +7,21 @@ function settingsOf(region: EffectRegion): Record<string, unknown> {
   return settings;
 }
 
+interface SplitAt {
+  kind: EffectKind;
+  id: string;
+  /** Where the region splits (ms, original timeline). */
+  time: number;
+  duration: number;
+}
+
 /**
  * Splits a region at `time` into two with the same settings; the right half gets a fresh id and is returned.
  * Undefined when `time` is outside the region or either half would be shorter than MIN_EDIT_MS.
  */
-export function splitEffect(edits: ReplayEdits, kind: EffectKind, id: string, time: number, duration: number) {
+export function splitEffect(edits: ReplayEdits, { kind, id, time, duration }: SplitAt) {
   const region = effectList(edits, kind).find((item) => item.id === id);
-  if (!region || time - region.from < MIN_EDIT_MS || region.to - time < MIN_EDIT_MS) return undefined;
+  if (!region || time - region.from < MIN_EDIT_MS || region.to - time < MIN_EDIT_MS) return;
   const left = moveEffect(edits, kind, id, 'to', time, duration);
   return addEffect(left, kind, time, region.to, duration, settingsOf(region));
 }
@@ -24,6 +32,6 @@ export function splitEffect(edits: ReplayEdits, kind: EffectKind, id: string, ti
  */
 export function duplicateEffect(edits: ReplayEdits, kind: EffectKind, id: string, duration: number) {
   const region = effectList(edits, kind).find((item) => item.id === id);
-  if (!region) return undefined;
+  if (!region) return;
   return addEffect(edits, kind, region.to, region.to + (region.to - region.from), duration, settingsOf(region));
 }

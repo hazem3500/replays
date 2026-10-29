@@ -1,5 +1,3 @@
-import './phone-editor.css';
-
 import { ScanIcon } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, useState } from 'react';
 

@@ -21,7 +21,7 @@ interface PhoneLanesProps {
 }
 
 function isSelected(selection: Selection, kind: string, id: string) {
-  return selection !== undefined && selection.kind === kind && 'id' in selection && selection.id === id;
+  return selection?.kind === kind && 'id' in selection && selection.id === id;
 }
 
 /** An edge a finger or pointer drags (touch-action: none, so the lanes do not scroll under it). */
@@ -29,11 +29,6 @@ function Handle({ edge, at, onDrag }: { edge: 'from' | 'to'; at: number; onDrag:
   return <span className="phone-handle" data-edge={edge} style={{ left: `${at}px` }} onPointerDown={onDrag} aria-hidden="true" />;
 }
 
-/**
- * The phone timeline's lanes on the original replay's scale: the clip (its step segments, trimmed ends, cuts and
- * highlights) and one slim strip per effect kind that has regions, each region labelled. Tapping selects; a selected
- * object's edges drag.
- */
 /**
  * Drags an edge on the phone track: pointer x to original ms, one undo step per drag. Each move applies to the edits
  * as the drag found them; the step's earlier moves are replaced (merge), so nothing else changes them meanwhile.
@@ -56,6 +51,11 @@ function edgeDrag(duration: number, scale: number, edits: ReplayEdits, dispatch:
 
 type EdgeDrag = ReturnType<typeof edgeDrag>;
 
+/**
+ * The phone timeline's lanes on the original replay's scale: the clip (its step segments, trimmed ends, cuts and
+ * highlights) and one slim strip per effect kind that has regions, each region labelled. Tapping selects; a selected
+ * object's edges drag.
+ */
 export function PhoneLanes({ duration, scale, edits, steps, selection, dispatch }: PhoneLanesProps) {
   const drag = edgeDrag(duration, scale, edits, dispatch);
   const px = (time: number) => time * scale;
@@ -152,16 +152,25 @@ function Region({
   );
 }
 
+interface ClipLaneProps extends Omit<PhoneLanesProps, 'dispatch'> {
+  select: (next: Selection) => void;
+  drag: EdgeDrag;
+}
+
+/**
+ * The kept part of each step (from its start to the next step's), in ms from the trim start. Empty and trimmed-off
+ * segments are left out, so the starts that remain are distinct.
+ */
+function stepSegments(steps: readonly ReplayStep[], trim: { start: number; end: number }) {
+  return steps.flatMap((step, index) => {
+    const from = Math.max(step.at, trim.start);
+    const to = Math.min(steps[index + 1]?.at ?? trim.end, trim.end);
+    return to > from ? [{ at: step.at, offset: from - trim.start, length: to - from, label: step.label }] : [];
+  });
+}
+
 /** The recording: its step segments, trimmed-off ends, cuts and highlights; selected, its trim edges drag. */
-function ClipLane({
-  duration,
-  scale,
-  edits,
-  steps,
-  selection,
-  select,
-  drag,
-}: Omit<PhoneLanesProps, 'dispatch'> & { select: (next: Selection) => void; drag: EdgeDrag }) {
+function ClipLane({ duration, scale, edits, steps, selection, select, drag }: ClipLaneProps) {
   const px = (time: number) => time * scale;
   const trim = trimOf(edits, duration);
   const clipSelected = selection?.kind === 'trim';
@@ -179,21 +188,39 @@ function ClipLane({
         onClick={() => select(clipSelected ? undefined : { kind: 'trim' })}
         data-testid="phone-clip"
       >
-        {steps.map((step, index) => {
-          const next = steps[index + 1]?.at ?? trim.end;
-          const width = px(Math.min(next, trim.end) - Math.max(step.at, trim.start));
-          if (step.at >= trim.end || next <= trim.start || width <= 0) return null;
-          return (
-            <span
-              key={`${step.at}-${index}`}
-              className="phone-step"
-              style={{ left: `${px(Math.max(step.at, trim.start) - trim.start)}px`, width: `${width}px` }}
-            >
-              {width >= LABEL_PX ? step.label : null}
-            </span>
-          );
-        })}
+        {stepSegments(steps, trim).map((segment) => (
+          <span key={segment.at} className="phone-step" style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}>
+            {px(segment.length) >= LABEL_PX ? segment.label : null}
+          </span>
+        ))}
       </button>
+      <ClipMarks edits={edits} scale={scale} selection={selection} select={select} />
+      {clipSelected ? (
+        <SelectedEdges
+          from={px(trim.start)}
+          to={px(trim.end)}
+          onDrag={(edge, event) => drag(event, (current, time) => setTrimEdge(current, edge === 'from' ? 'start' : 'end', time, duration))}
+        />
+      ) : null}
+      {edits.cuts
+        .filter((cut) => isSelected(selection, 'cut', cut.id))
+        .map((cut) => (
+          <SelectedEdges
+            key={cut.id}
+            from={px(cut.from)}
+            to={px(cut.to)}
+            onDrag={(edge, event) => drag(event, (current, time) => moveCut(current, cut.id, edge, time, duration))}
+          />
+        ))}
+    </div>
+  );
+}
+
+/** The cuts and highlights on the clip lane, each a button that selects it. */
+function ClipMarks({ edits, scale, selection, select }: Pick<ClipLaneProps, 'edits' | 'scale' | 'selection' | 'select'>) {
+  const px = (time: number) => time * scale;
+  return (
+    <>
       {edits.cuts.map((cut) => (
         <button
           key={cut.id}
@@ -226,30 +253,6 @@ function ClipLane({
           />
         );
       })}
-      {clipSelected ? (
-        <>
-          <Handle
-            edge="from"
-            at={px(trim.start)}
-            onDrag={(event) => drag(event, (current, time) => setTrimEdge(current, 'start', time, duration))}
-          />
-          <Handle
-            edge="to"
-            at={px(trim.end)}
-            onDrag={(event) => drag(event, (current, time) => setTrimEdge(current, 'end', time, duration))}
-          />
-        </>
-      ) : null}
-      {edits.cuts
-        .filter((cut) => isSelected(selection, 'cut', cut.id))
-        .map((cut) => (
-          <SelectedEdges
-            key={cut.id}
-            from={px(cut.from)}
-            to={px(cut.to)}
-            onDrag={(edge, event) => drag(event, (current, time) => moveCut(current, cut.id, edge, time, duration))}
-          />
-        ))}
-    </div>
+    </>
   );
 }

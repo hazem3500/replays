@@ -48,12 +48,12 @@ test('scrolling the lanes scrubs under the centre playhead, and a scrub ending n
     const track = document.querySelector('.phone-track');
     const scroller = document.querySelector('.phone-lanes');
     const segment = document.querySelectorAll('.phone-step')[2];
-    if (!track || !scroller || !segment) return undefined;
+    if (!track || !scroller || !segment) return null;
     const left = segment.getBoundingClientRect().left - track.getBoundingClientRect().left;
     scroller.scrollLeft = left + 6;
     return left;
   });
-  expect(step).toBeDefined();
+  expect(step).not.toBeNull();
   await expect
     .poll(async () => Math.abs((await page.evaluate(() => document.querySelector('.phone-lanes')?.scrollLeft ?? -1)) - (step ?? 0)))
     .toBeLessThanOrEqual(1);

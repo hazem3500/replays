@@ -9,7 +9,12 @@ const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VE
 
 describe('splitting a region on the phone timeline', () => {
   it('leaves two regions with the same settings that meet at the playhead', () => {
-    const split = splitEffect(edits({ zooms: [{ id: 'zoom-1', from: 1000, to: 5000, scale: 1.8 }] }), 'zoom', 'zoom-1', 3000, DURATION);
+    const split = splitEffect(edits({ zooms: [{ id: 'zoom-1', from: 1000, to: 5000, scale: 1.8 }] }), {
+      kind: 'zoom',
+      id: 'zoom-1',
+      time: 3000,
+      duration: DURATION,
+    });
     expect(split?.edits.zooms).toEqual([
       { id: 'zoom-1', from: 1000, to: 3000, scale: 1.8 },
       { id: split?.id, from: 3000, to: 5000, scale: 1.8 },
@@ -18,8 +23,8 @@ describe('splitting a region on the phone timeline', () => {
 
   it('refuses a split that would leave a sliver at either end', () => {
     const before = edits({ captions: [{ id: 'caption-1', from: 1000, to: 5000, text: 'Hi' }] });
-    expect(splitEffect(before, 'caption', 'caption-1', 1050, DURATION)).toBeUndefined();
-    expect(splitEffect(before, 'caption', 'caption-1', 4950, DURATION)).toBeUndefined();
+    expect(splitEffect(before, { kind: 'caption', id: 'caption-1', time: 1050, duration: DURATION })).toBeUndefined();
+    expect(splitEffect(before, { kind: 'caption', id: 'caption-1', time: 4950, duration: DURATION })).toBeUndefined();
   });
 });
 

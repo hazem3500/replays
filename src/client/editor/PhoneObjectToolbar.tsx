@@ -27,7 +27,7 @@ interface Item {
 
 /** One string per selectable object (its kind and id), so a sheet can stay with the object it was opened for. */
 export function selectionKey(selection: Selection) {
-  if (!selection) return undefined;
+  if (!selection) return;
   if (selection.kind === 'trim' || selection.kind === 'range') return selection.kind;
   return `${selection.kind}:${selection.id}`;
 }

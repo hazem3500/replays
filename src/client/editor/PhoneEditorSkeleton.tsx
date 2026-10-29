@@ -84,6 +84,8 @@ function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: Re
   );
 }
 
+const NO_STEPS: readonly ReplayStep[] = [];
+
 /**
  * The phone editor while it loads, at the loaded layout's geometry (editor.css's and phone-editor.css's phone rules,
  * repeated in skeleton.css): its header with the title, the recording's frame at the screen's width, the timeline's
@@ -95,7 +97,7 @@ export function PhoneEditorSkeleton({
   frame,
   duration,
   edits,
-  steps = [],
+  steps = NO_STEPS,
   progress,
 }: {
   title: string;
