@@ -274,8 +274,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 57050,
-      "gzip": 20540,
-      "brotli": 17790
+      "gzip": 20547,
+      "brotli": 17909
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -1178,16 +1178,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/117"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 57050,
-        "gzip": 20540,
-        "brotli": 17790
-      },
-      "reason": "Shared Splitter primitive and its headless hook replace the viewer's two hand-rolled resizers, adding snap, fold, reset, settle and the separator keyboard pattern plus the folded rail's edge tab.",
-      "pr": "https://github.com/hazem3500/replays/pull/121"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.css",
       "cap": {
         "raw": 5150,
@@ -1255,6 +1245,16 @@
         "brotli": 2170
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 57050,
+        "gzip": 20547,
+        "brotli": 17909
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #121's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/155"
     }
   ]
