@@ -73,24 +73,19 @@
       "brotli": 1755
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 36814,
+      "raw": 36819,
       "gzip": 13164,
-      "brotli": 11701
+      "brotli": 11735
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
       "gzip": 33180,
       "brotli": 29475
     },
-    "dist/client/assets/download-HASH.js": {
-      "raw": 274,
-      "gzip": 223,
-      "brotli": 228
-    },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 43688,
-      "gzip": 7925,
-      "brotli": 7058
+      "raw": 31925,
+      "gzip": 6193,
+      "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 98265,
@@ -180,7 +175,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1022,
       "gzip": 630,
-      "brotli": 568
+      "brotli": 567
     },
     "dist/client/assets/rolldown-runtime-HASH.js": {
       "raw": 748,
@@ -200,10 +195,10 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 617
+      "brotli": 654
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20371,
+      "raw": 20372,
       "gzip": 8342,
       "brotli": 7145
     },
@@ -218,7 +213,7 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50369,
+      "raw": 50360,
       "gzip": 18336,
       "brotli": 15958
     },
@@ -955,6 +950,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 43666,
+        "gzip": 7904,
+        "brotli": 7046
+      },
+      "reason": "Timeline clarity: lane names in the gutter, the hatched and labelled trimmed area, and the duration note; measured against main: +308 B raw, +38 B gzip, +37 B brotli. Replaces #130's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/136"
+    },
+    {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
         "raw": 39229,
@@ -972,14 +977,6 @@
         "brotli": 66316
       },
       "reason": "Network and Performance v2: request and moment models, the ribbon, request and moment details with neighbourhood charts, verdicts and compare deltas replace the old network table and performance view in the lazy inspector graph; the initial JavaScript budget is unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/119"
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 644
-      },
-      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap.",
       "pr": "https://github.com/hazem3500/replays/pull/119"
     },
     {
@@ -1049,23 +1046,11 @@
       "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.css",
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "raw": 43688,
-        "gzip": 7925,
-        "brotli": 7058
+        "brotli": 654
       },
-      "reason": "Timeline clarity: lane names in the gutter, the hatched and labelled trimmed area, and the duration note; measured against main: +308 B raw, +38 B gzip, +37 B brotli. Replaces #130's allowance for this file. Then: Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
-      "pr": "https://github.com/hazem3500/replays/pull/138"
-    },
-    {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "raw": 274,
-        "gzip": 223,
-        "brotli": 228
-      },
-      "reason": "Chunk graph shift from replacing the /compare page with the viewer's lazy compare mode (shared modules moved between chunks).",
+      "reason": "The suite comparison entry names the lazy inspector chunk by its hash, which changed with Network and Performance v2; Brotli measures 625 bytes against a 624-byte cap. Then: Chunk wiring moved by naming compared recordings (shared names and identity module); about 20 bytes brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/138"
     }
   ]
