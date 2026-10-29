@@ -8,7 +8,9 @@ import { Slider, SliderControl, SliderTrack, SliderIndicator, SliderThumb } from
 import { useFocusWhen } from '../hooks/use-focus-when.ts';
 import { normalizeCursor, type ReplayCursorSettings } from '../../shared/cursor.ts';
 import { CursorAppearancePicker } from './CursorAppearancePicker.tsx';
+import { CursorClickPicker } from './CursorClickPicker.tsx';
 import { CursorMotionPicker } from './CursorMotionPicker.tsx';
+import { cursorRecipe } from './cursor-recipe.ts';
 
 const percent = (size: number) => `${Math.round(size * 100)}%`;
 
@@ -72,6 +74,9 @@ export function CursorInspector({
           </IconButton>
         )}
       </header>
+      <p className="cursor-recipe" data-testid="cursor-recipe">
+        {cursorRecipe(settings)}
+      </p>
       <div className="cursor-row">
         <label htmlFor="cursor-visible" className="cursor-row-label">
           Show cursor
@@ -90,6 +95,9 @@ export function CursorInspector({
         </section>
         <section className="cursor-section">
           <CursorMotionPicker value={settings?.motion ?? 'signature_arc'} disabled={!visible} onChange={(motion) => update({ motion })} />
+        </section>
+        <section className="cursor-section">
+          <CursorClickPicker settings={settings} disabled={!visible} onChange={update} />
         </section>
         <section className="cursor-section">
           <div className="cursor-row cursor-row-compact">
@@ -133,17 +141,6 @@ export function CursorInspector({
               disabled={!visible}
               checked={settings?.hideWhenIdle !== false}
               onCheckedChange={(checked) => update({ hideWhenIdle: checked })}
-            />
-          </div>
-          <div className="cursor-row">
-            <label htmlFor="cursor-clicks" className="cursor-row-label">
-              Click feedback<small>A subtle press animation</small>
-            </label>
-            <Switch
-              id="cursor-clicks"
-              disabled={!visible}
-              checked={settings?.clickFeedback !== false}
-              onCheckedChange={(checked) => update({ clickFeedback: checked })}
             />
           </div>
         </section>
