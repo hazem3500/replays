@@ -42,7 +42,7 @@ describe('network body states', () => {
 
   it('says not captured when the recording kept headers only, or predates capture profiles', () => {
     expect(bodyState(undefined, { ...bodies, network: 'headers' })).toEqual({ kind: 'not-captured' });
-    expect(bodyState(undefined, undefined)).toEqual({ kind: 'not-captured' });
+    expect(bodyState(undefined)).toEqual({ kind: 'not-captured' });
   });
 
   it('says there was no body when bodies were captured and this request had none', () => {
