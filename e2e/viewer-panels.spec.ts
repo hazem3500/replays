@@ -59,6 +59,19 @@ test('performance leads with verdicts, ranks slow moments worst first, and opens
   await expect(events.locator('[data-future]')).toHaveCount(0);
 });
 
+test('a capture with no timing data says Performance wasn’t recorded, not that nothing was slow', async ({ page }) => {
+  const id = uniqueId('performance-unrecorded');
+  const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'No timing fixture');
+  bundle.performance = { supported: [], entries: [] };
+  await postBundle(page.request, server().origin, bundle);
+  await openReplay(page, `${server().origin}/r/${id}`);
+  await page.getByTestId('performance-tab').click();
+  await expect(page.getByText('Performance wasn’t recorded')).toBeVisible();
+  await expect(page.getByText('replays capture --profile performance')).toBeVisible();
+  await expect(page.getByText('Nothing was slow')).toHaveCount(0);
+  await expect(page.getByTestId('performance-vitals')).toHaveCount(0);
+});
+
 test('a slow interaction says what it waited on, and a request around it opens in Network', async ({ page }) => {
   const id = uniqueId('performance-cause');
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Performance cause fixture');
