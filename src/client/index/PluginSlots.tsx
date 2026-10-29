@@ -4,7 +4,7 @@ import type { ReplaySummary } from '../../shared/replay.ts';
 import type { Cleanup, IndexColumnContext, IndexPerson, IndexPluginContext, IndexSectionContext } from '../plugins/api.ts';
 import { PluginMount, showPluginError, usePluginSnapshot } from '../plugins/PluginUi.tsx';
 import type { Snapshot } from '../plugins/registry.ts';
-import { apiUrl, appBase } from '../route.ts';
+import { apiUrl, appBase } from '../api/fetch.ts';
 
 /*
  * The index's plugin slots (`registerIndexColumn`, `registerIndexSection`; filters live in FilterMenu.tsx). Client entries
