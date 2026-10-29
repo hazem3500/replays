@@ -74,8 +74,8 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29145,
-      "gzip": 10366,
-      "brotli": 9015
+      "gzip": 10376,
+      "brotli": 9042
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -90,7 +90,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 37956,
       "gzip": 13469,
-      "brotli": 11989
+      "brotli": 11976
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 94002,
@@ -108,9 +108,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101093,
-      "gzip": 33868,
-      "brotli": 28919
+      "raw": 101090,
+      "gzip": 33857,
+      "brotli": 28913
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -118,9 +118,9 @@
       "brotli": 8552
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6582,
-      "gzip": 3182,
-      "brotli": 2811
+      "raw": 25113,
+      "gzip": 9605,
+      "brotli": 8395
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
@@ -153,8 +153,8 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 243165,
-      "gzip": 42020,
+      "raw": 242694,
+      "gzip": 41991,
       "brotli": 35120
     },
     "dist/client/assets/main-HASH.js": {
@@ -209,8 +209,8 @@
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
-      "gzip": 608,
-      "brotli": 560
+      "gzip": 609,
+      "brotli": 554
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -239,7 +239,7 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
-      "gzip": 686,
+      "gzip": 685,
       "brotli": 640
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
@@ -272,10 +272,15 @@
       "gzip": 25666,
       "brotli": 22715
     },
+    "dist/client/assets/Viewer-HASH.css": {
+      "raw": 5150,
+      "gzip": 1400,
+      "brotli": 1200
+    },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50369,
-      "gzip": 18336,
-      "brotli": 15958
+      "raw": 57050,
+      "gzip": 20540,
+      "brotli": 17790
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -478,14 +483,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 243165,
-      "gzip": 42020,
+      "raw": 242694,
+      "gzip": 41991,
       "brotli": 35120
     },
     "initial/index.html/js": {
-      "raw": 1484388,
-      "gzip": 472523,
-      "brotli": 399715
+      "raw": 1484557,
+      "gzip": 473494,
+      "brotli": 400470
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -795,16 +800,6 @@
         "brotli": 572
       },
       "reason": "Lazy /r/<id>?with= page glue: reads and writes the compare state in the viewer URL.",
-      "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 50998,
-        "gzip": 18530,
-        "brotli": 16623
-      },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1146,6 +1141,26 @@
       },
       "reason": "Pending frames for the inspector's built-in panels and the flat tab row's group hairlines and status dots, on top of #119's Network and Performance styles.",
       "pr": "https://github.com/hazem3500/replays/pull/117"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 57050,
+        "gzip": 20540,
+        "brotli": 17790
+      },
+      "reason": "Shared Splitter primitive and its headless hook replace the viewer's two hand-rolled resizers, adding snap, fold, reset, settle and the separator keyboard pattern plus the folded rail's edge tab.",
+      "pr": "https://github.com/hazem3500/replays/pull/121"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.css",
+      "cap": {
+        "raw": 5150,
+        "gzip": 1400,
+        "brotli": 1200
+      },
+      "reason": "New lazy viewer stylesheet: the Splitter seam styles and the viewer layout tokens (dock and rail sizes, folded rail, fewer region lines).",
+      "pr": "https://github.com/hazem3500/replays/pull/121"
     },
     {
       "file": "dist/client/assets/composite-HASH.js",

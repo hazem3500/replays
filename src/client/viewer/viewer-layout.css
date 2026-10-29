@@ -1,0 +1,40 @@
+/*
+ * Viewer layout (desktop and tablet; phones have their own styles). The dock and the steps rail sit on Splitter
+ * seams (ViewerSplits.tsx). Public tokens: --inspector-min-height, --rail-width, --inspector-folded-height (a folded
+ * dock is exactly its tab row).
+ */
+:root {
+  --inspector-min-height: 120px;
+  --rail-width: 300px;
+  --inspector-folded-height: 37px;
+}
+
+.workspace { --steps-default: var(--rail-width); position: relative; }
+
+/* Snaps, resets and folds settle with the splitter's spring; drags follow the pointer directly. */
+.workspace[data-splitter-settling] { transition: grid-template-columns var(--splitter-settle) var(--splitter-spring); }
+.app-shell[data-splitter-settling] { transition: grid-template-rows var(--splitter-settle) var(--splitter-spring); }
+@media (prefers-reduced-motion: reduce) {
+  .workspace[data-splitter-settling], .app-shell[data-splitter-settling] { transition: none; }
+}
+
+/* Side by side only: a stacked layout keeps the rail under the player whatever was folded on a wide screen. */
+@media (min-width: 841px) and (min-height: 561px) {
+  .workspace[data-rail-collapsed] { grid-template-columns: minmax(0, 1fr) 0 0; }
+  .workspace[data-rail-collapsed] > .timeline-panel { visibility: hidden; }
+  /* A folded rail leaves a tab on the player's right edge. */
+  .rail-edge-tab { position: absolute; z-index: 4; top: 12px; right: 0; }
+
+  /*
+   * Fewer lines: regions part by surface tone (the top bar on the page tone, the player on its canvas, the rail and the
+   * tab row raised). Only the seams you can drag keep a hairline, plus table headers and rows.
+   */
+  .app-shell:not(.skeleton-shell, .editor-shell, [data-mobile]) {
+    > .app-topbar { border-bottom-color: transparent; }
+    .player-region > .transport { border-top-color: transparent; }
+    .workspace > .timeline-panel { border-left-color: transparent; }
+    .timeline-panel > .section-heading { border-bottom-color: transparent; }
+    .inspector-tabs { border-bottom-color: transparent; }
+  }
+  .app-shell:not(.skeleton-shell, .editor-shell, [data-mobile])[data-inspector-collapsed] .inspector-tabs { border-top-color: transparent; }
+}

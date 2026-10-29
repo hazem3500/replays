@@ -44,17 +44,15 @@ import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { captionAt } from './step-caption.ts';
-import {
-  clampInspectorHeight,
-  initialInspectorHeight,
-  Inspector,
-  type InspectorPeer,
-  InspectorResizer,
-  type MobilePanel,
-} from './viewer/Inspector.tsx';
+import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
+import { clampInspectorHeight, initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
-import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';
+import { savedStepsWidth, StepRail } from './viewer/StepRail.tsx';
+import { InspectorSplit, RailEdgeTab, RailSplit } from './viewer/ViewerSplits.tsx';
+import { usePersistentFlag } from './hooks/use-persistent-flag.ts';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the viewer's layout tokens and seams load with the lazy viewer chunk.
+import './viewer/viewer-layout.css';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
 
 import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
@@ -83,7 +81,6 @@ const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
 const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
 /** A folded panel keeps just its tab row (36 px) and the hairline above it. */
-const INSPECTOR_TABS_HEIGHT = 37;
 /** An expanded request grows a shorter desktop panel to this share of the window… */
 const REQUEST_PANEL_SHARE = 0.45;
 /** …but never so far that the player gets less than this share of the viewer's height. */
@@ -210,6 +207,7 @@ export function Viewer({
   const [inspectorHeight, setInspectorHeight] = useState(initialInspectorHeight);
   const [speedHud, setSpeedHud] = useState<{ speed: number; id: number }>();
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
+  const [railCollapsed, setRailCollapsed] = usePersistentFlag(RAIL_COLLAPSED_KEY);
   const workspace = useRef<HTMLDivElement>(null);
   const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
   // Step captions on the player: the person's stored choice, else the profile's default (off without one).
@@ -579,7 +577,7 @@ export function Viewer({
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
         data-profile={profile?.id}
-        style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
+        style={{ '--inspector-height': collapsed && !mobile ? 'var(--inspector-folded-height)' : `${inspectorHeight}px` } as CSSProperties}
       >
         {skipLink ? (
           <a className="skip-link" href="#replay-player">
@@ -611,6 +609,7 @@ export function Viewer({
         <div
           ref={workspace}
           className={`workspace ${bundle.steps.length === 0 ? 'no-steps' : ''}`}
+          data-rail-collapsed={(railCollapsed && bundle.steps.length > 0) || undefined}
           style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
         >
           <section ref={playerRegion} className="player-region" aria-label="Replay">
@@ -627,10 +626,29 @@ export function Viewer({
             </div>
             <Transport />
           </section>
-          {bundle.steps.length > 0 && !mobile ? <StepsResizer workspace={workspace} width={stepsWidth} onCommit={setStepsWidth} /> : null}
-          {bundle.steps.length > 0 && !mobile ? <StepRail /> : null}
+          {bundle.steps.length > 0 && !mobile ? (
+            <>
+              <RailSplit
+                workspace={workspace}
+                width={stepsWidth}
+                onWidthChange={setStepsWidth}
+                collapsed={railCollapsed}
+                onCollapsedChange={setRailCollapsed}
+              />
+              <StepRail />
+              {railCollapsed ? <RailEdgeTab onOpen={() => setRailCollapsed(false)} /> : null}
+            </>
+          ) : null}
         </div>
-        {mobile || collapsed ? null : <InspectorResizer shell={shell} height={inspectorHeight} onCommit={setInspectorHeight} />}
+        {mobile ? null : (
+          <InspectorSplit
+            shell={shell}
+            height={inspectorHeight}
+            onHeightChange={setInspectorHeight}
+            collapsed={collapsed}
+            onCollapsedChange={setCollapsed}
+          />
+        )}
         <Inspector
           bundle={bundle}
           sourceBundle={sourceBundle}
