@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/expired-replay.schema.json",
+  "title": "Expired replay",
+  "description": "What is left of a replay the retention sweep removed: `_expired/<id>.json`, and each item of `GET /api/expired-replays` (`{ days, records }`). It holds only what the index row showed, never the recording (no events, URL, comments or media), and is dropped `RETENTION_EXPIRED_DAYS` after the removal. Source of truth: src/shared/expired.ts.",
+  "type": "object",
+  "required": ["id", "title", "host", "capturedAt", "expiredAt", "retentionDays"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,79}$" },
+    "title": { "type": "string", "maxLength": 500 },
+    "host": { "type": "string", "maxLength": 253 },
+    "capturedAt": { "description": "When it was recorded (the producer's clock).", "type": "string", "format": "date-time" },
+    "expiredAt": { "description": "When the retention sweep removed it (the server's clock).", "type": "string", "format": "date-time" },
+    "retentionDays": { "description": "The retention window that applied, in whole days.", "type": "integer", "minimum": 0 },
+    "profile": { "description": "Its profile, when it had one.", "type": "string", "pattern": "^[a-z][a-z0-9-]{0,39}$" },
+    "suiteRun": {
+      "type": "object",
+      "required": ["suiteId", "runId"],
+      "properties": { "suiteId": { "type": "string" }, "runId": { "type": "string" } }
+    }
+  }
+}

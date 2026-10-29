@@ -1,4 +1,5 @@
-import { readdir, readFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, utimes } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import Ajv2020 from 'ajv/dist/2020.js';
@@ -10,6 +11,8 @@ import { assertReplayPeople } from '../src/shared/people.ts';
 import { parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
 import { UserPluginStore } from '../src/server/malleable-store.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
+import { ReplayStore } from '../src/server/store.ts';
+import { replay } from './fixtures.ts';
 
 // docs/formats/*.schema.json are the documented, stable formats shared by tools and plugins. These tests keep them true:
 // real files the app writes must validate, and the schemas must reject what the app rejects.
@@ -39,6 +42,7 @@ describe('docs/formats', () => {
       'comments.schema.json',
       'context.schema.json',
       'edits.schema.json',
+      'expired-replay.schema.json',
       'plugin-manifest.schema.json',
       'replay.schema.json',
       'user-plugin-history.schema.json',
@@ -56,6 +60,23 @@ describe('docs/formats', () => {
       expect(result.ok).toBe(true);
     }
     expect(check({ meta: {}, events: [], console: [], network: [], steps: [] }).ok).toBe(false);
+  });
+
+  it('the records retention leaves of removed replays validate', async () => {
+    const check = await validator('expired-replay');
+    const root = await mkdtemp(join(tmpdir(), 'replays-formats-'));
+    try {
+      const store = new ReplayStore(join(root, 'data'), join(root, 'sample'), { days: 1 });
+      await store.save(replay('removed-replay'));
+      const old = new Date(Date.now() - 3 * 86_400_000);
+      await utimes(join(root, 'data', 'removed-replay', 'replay.json'), old, old);
+      await store.prune();
+      const [record] = (await store.expiredReplays()).records;
+      expect(check(record).errors).toBe('No errors');
+      expect(check({ ...record, retentionDays: 'forever' }).ok).toBe(false);
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it('meta.people: what the server accepts validates, what it refuses does not', async () => {
