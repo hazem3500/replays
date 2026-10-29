@@ -1,4 +1,4 @@
-import { CURSOR_COLORS, type CursorAppearance, type CursorColor } from '../shared/cursor.ts';
+import { CURSOR_COLORS, type CursorAppearance, type CursorClickEffect, type CursorColor } from '../shared/cursor.ts';
 import { CURSOR_CANVAS, CURSOR_HOTSPOT, CURSOR_PATH } from './cursor-motion.ts';
 
 /**
@@ -11,7 +11,7 @@ import { CURSOR_CANVAS, CURSOR_HOTSPOT, CURSOR_PATH } from './cursor-motion.ts';
  * frames are exact. The default arrow keeps the original press squish only; the ripple and pulse belong to the themes
  * that ask for them, and nothing is drawn outside a press.
  */
-export type CursorFeedback = 'ripple' | 'pulse' | 'press';
+export type CursorFeedback = CursorClickEffect;
 
 export interface CursorGlyph {
   /** Appended to the cursor element in order. */
@@ -23,12 +23,18 @@ export interface CursorGlyph {
   feedback(press: number): void;
 }
 
+/** A theme's inputs: an optional tint, and a click effect chosen apart from the style. */
+export interface GlyphOptions {
+  color?: string | undefined;
+  effect?: CursorClickEffect | undefined;
+}
+
 export interface CursorTheme {
   id: CursorAppearance;
   label: string;
   description: string;
   feedback: CursorFeedback;
-  create(doc: Document, color?: string): CursorGlyph;
+  create(doc: Document, options?: GlyphOptions): CursorGlyph;
 }
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -69,6 +75,16 @@ function contrast(a: string, b: string) {
 
 /** Text that reads on `background`: ink or white, whichever contrasts more. */
 export const readableOn = (background: string) => (contrast(background, INK) >= contrast(background, OUTLINE) ? INK : OUTLINE);
+
+/** Each tint's name, as the picker and the cursor summary say it. */
+export const CURSOR_COLOR_LABELS: Record<CursorColor, string> = {
+  accent: 'Indigo',
+  periwinkle: 'Periwinkle',
+  green: 'Green',
+  amber: 'Amber',
+  coral: 'Coral',
+  graphite: 'Graphite',
+};
 
 export const cursorColorValue = (color: CursorColor | undefined) => (color ? CURSOR_COLORS[color] : undefined);
 
@@ -126,9 +142,9 @@ const boxSvg = (doc: Document) => svg(doc, 'svg', { viewBox: `0 0 ${BOX} ${BOX}`
 const ARROW: CursorTheme = {
   id: 'arrow',
   label: 'CUA arrow',
-  description: 'The CUA pointer with a soft press',
+  description: 'The CUA pointer',
   feedback: 'press',
-  create(doc, color) {
+  create(doc, { color, effect }: GlyphOptions = {}) {
     const root = svg(doc, 'svg', { viewBox: `0 0 ${CURSOR_CANVAS} ${CURSOR_CANVAS}`, 'aria-hidden': 'true' });
     const path = svg(doc, 'path', { d: CURSOR_PATH, style: paint(color ?? INK, OUTLINE, 8) });
     root.append(path);
@@ -136,7 +152,7 @@ const ARROW: CursorTheme = {
     return glyph(doc, {
       root,
       hotspot: { x: CURSOR_HOTSPOT.x * scale, y: CURSOR_HOTSPOT.y * scale },
-      feedback: 'press',
+      feedback: effect ?? 'press',
       color: color ?? INK,
     });
   },
@@ -147,38 +163,38 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
   {
     id: 'classic-arrow',
     label: 'Classic',
-    description: 'A familiar desktop pointer with a click ripple',
+    description: 'A familiar desktop pointer',
     feedback: 'ripple',
-    create(doc, color) {
+    create(doc, { color, effect }: GlyphOptions = {}) {
       const root = boxSvg(doc);
       const path = svg(doc, 'path', { d: CLASSIC_ARROW, style: paint(color ?? INK, OUTLINE, 1.75) });
       root.append(path);
-      return glyph(doc, { root, hotspot: { x: 9, y: 5 }, feedback: 'ripple', color: color ?? INK });
+      return glyph(doc, { root, hotspot: { x: 9, y: 5 }, feedback: effect ?? 'ripple', color: color ?? INK });
     },
   },
   {
     id: 'hand',
     label: 'Hand',
-    description: 'The pointing hand of links, with a click ripple',
+    description: 'The pointing hand of links',
     feedback: 'ripple',
-    create(doc, color) {
+    create(doc, { color, effect }: GlyphOptions = {}) {
       const root = boxSvg(doc);
       const path = svg(doc, 'path', { d: HAND, style: paint(color ?? OUTLINE, color ? OUTLINE : INK, 1.5) });
       root.append(path);
-      return glyph(doc, { root, hotspot: { x: 13.5, y: 3.5 }, feedback: 'ripple', color: color ?? INK });
+      return glyph(doc, { root, hotspot: { x: 13.5, y: 3.5 }, feedback: effect ?? 'ripple', color: color ?? INK });
     },
   },
   {
     id: 'dot',
     label: 'Dot',
-    description: 'A small, quiet dot that pulses on clicks',
+    description: 'A small, quiet dot',
     feedback: 'pulse',
-    create(doc, color) {
+    create(doc, { color, effect }: GlyphOptions = {}) {
       const fill = color ?? CURSOR_COLORS.accent;
       const root = boxSvg(doc);
       const dot = svg(doc, 'circle', { cx: 16, cy: 16, r: 5.5, style: paint(fill, OUTLINE, 2) });
       root.append(dot);
-      return glyph(doc, { root, hotspot: { x: 16, y: 16 }, feedback: 'pulse', color: fill });
+      return glyph(doc, { root, hotspot: { x: 16, y: 16 }, feedback: effect ?? 'pulse', color: fill });
     },
   },
   {
@@ -186,7 +202,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     label: 'Ring',
     description: 'A halo around the point, for touch-style demos',
     feedback: 'pulse',
-    create(doc, color) {
+    create(doc, { color, effect }: GlyphOptions = {}) {
       const tint = color ?? CURSOR_COLORS.accent;
       const root = boxSvg(doc);
       const halo = svg(doc, 'circle', { cx: 16, cy: 16, r: 10, style: paint('none', OUTLINE, 4.5) });
@@ -194,7 +210,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
       ring.style.setProperty('fill-opacity', '0.16');
       const centre = svg(doc, 'circle', { cx: 16, cy: 16, r: 1.75, style: paint(tint, 'none', 0) });
       root.append(halo, ring, centre);
-      return glyph(doc, { root, hotspot: { x: 16, y: 16 }, feedback: 'pulse', color: tint, radius: [10, 20] });
+      return glyph(doc, { root, hotspot: { x: 16, y: 16 }, feedback: effect ?? 'pulse', color: tint, radius: [10, 20] });
     },
   },
   {
@@ -202,7 +218,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
     label: 'Agent',
     description: 'A pointer with a name tag, for agent runs',
     feedback: 'press',
-    create(doc, color) {
+    create(doc, { color, effect }: GlyphOptions = {}) {
       const fill = color ?? CURSOR_COLORS.accent;
       const root = boxSvg(doc);
       const path = svg(doc, 'path', { d: AGENT_ARROW, style: paint(fill, OUTLINE, 1.5) });
@@ -214,7 +230,7 @@ export const CURSOR_THEMES: readonly CursorTheme[] = [
         `position:absolute;left:15px;top:19px;padding:1px 7px;border:1.5px solid ${OUTLINE};border-radius:999px;` +
         `background:${fill};color:${readableOn(fill)};font:600 11px/15px system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;` +
         `white-space:nowrap;box-shadow:0 1px 2px rgb(0 0 0 / 0.25)`;
-      return glyph(doc, { root, hotspot: { x: 6, y: 5 }, feedback: 'press', color: fill, extra: [tag] });
+      return glyph(doc, { root, hotspot: { x: 6, y: 5 }, feedback: effect ?? 'press', color: fill, extra: [tag] });
     },
   },
 ];
