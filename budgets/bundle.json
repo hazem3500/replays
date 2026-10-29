@@ -198,9 +198,9 @@
       "brotli": 59853
     },
     "dist/client/assets/render-HASH.css": {
-      "raw": 1397,
-      "gzip": 666,
-      "brotli": 517
+      "raw": 1349,
+      "gzip": 640,
+      "brotli": 500
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 6767,
@@ -279,7 +279,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60089,
-      "gzip": 21459,
+      "gzip": 21468,
       "brotli": 18678
     },
     "dist/client/index.html": {
@@ -289,8 +289,8 @@
     },
     "dist/client/render.html": {
       "raw": 1283,
-      "gzip": 544,
-      "brotli": 407
+      "gzip": 540,
+      "brotli": 405
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -495,7 +495,7 @@
     "initial/index.html/css": {
       "raw": 254839,
       "gzip": 44498,
-      "brotli": 37043
+      "brotli": 36404
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -779,7 +779,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1296,7 +1296,7 @@
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
         "raw": 60089,
-        "gzip": 21459,
+        "gzip": 21468,
         "brotli": 18678
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #133, #152's allowance for this file.",
