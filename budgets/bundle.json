@@ -74,8 +74,8 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38110,
-      "gzip": 13511,
-      "brotli": 11989
+      "gzip": 13521,
+      "brotli": 11994
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 99414,
@@ -200,12 +200,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 613
+      "brotli": 621
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20430,
-      "gzip": 8376,
-      "brotli": 7185
+      "raw": 20382,
+      "gzip": 8342,
+      "brotli": 7151
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -244,13 +244,13 @@
     },
     "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs": {
       "raw": 73309,
-      "gzip": 20111,
-      "brotli": 17392
+      "gzip": 20114,
+      "brotli": 17393
     },
-    "dist/lib/chunks/context.schema.json-4e76cfd0bfaf.mjs": {
-      "raw": 307812,
-      "gzip": 80590,
-      "brotli": 66076
+    "dist/lib/chunks/context.schema.json-ed27343081aa.mjs": {
+      "raw": 308545,
+      "gzip": 80878,
+      "brotli": 66289
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -264,7 +264,7 @@
     },
     "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
       "raw": 32268,
-      "gzip": 9208,
+      "gzip": 9209,
       "brotli": 8197
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
@@ -320,7 +320,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 136
+      "brotli": 144
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -410,7 +410,7 @@
     "dist/lib/server.mjs": {
       "raw": 1829,
       "gzip": 598,
-      "brotli": 501
+      "brotli": 507
     },
     "dist/lib/viewer.mjs": {
       "raw": 17093,
@@ -774,7 +774,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -834,7 +834,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
