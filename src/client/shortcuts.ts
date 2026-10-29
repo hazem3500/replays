@@ -119,6 +119,8 @@ export interface ShortcutItem {
   keys: string[];
   label: string;
   feature?: 'comments';
+  /** The keys are the two directions of one action (back and forward), not alternatives for the same key. */
+  pair?: true;
 }
 
 export const SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutItem[] }> = [
@@ -126,9 +128,9 @@ export const SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutItem[] }> = 
     title: 'Playback',
     items: [
       { keys: ['Space', 'K'], label: 'Play or pause' },
-      { keys: ['←', '→'], label: 'Seek 1 second' },
-      { keys: ['Shift ←', 'Shift →'], label: 'Seek 5 seconds' },
-      { keys: ['<', '>'], label: 'Speed down / up' },
+      { keys: ['←', '→'], label: 'Seek 1 second', pair: true },
+      { keys: ['Shift ←', 'Shift →'], label: 'Seek 5 seconds', pair: true },
+      { keys: ['<', '>'], label: 'Speed down / up', pair: true },
       { keys: ['Shift 0'], label: 'Reset speed' },
       { keys: ['F'], label: 'Fullscreen' },
     ],
@@ -151,7 +153,7 @@ export const SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutItem[] }> = 
       { keys: ['C'], label: 'Console tab' },
       { keys: ['N'], label: 'Network tab' },
       { keys: ['P'], label: 'Performance tab' },
-      { keys: ['↑', '↓'], label: 'Previous / next request (on a Network row)' },
+      { keys: ['↑', '↓'], label: 'Previous / next request (on a Network row)', pair: true },
       { keys: ['Esc'], label: 'Close the open request' },
       { keys: ['\\'], label: 'Collapse or expand the panel' },
       { keys: ['Shift C'], label: 'Step captions on the player' },
