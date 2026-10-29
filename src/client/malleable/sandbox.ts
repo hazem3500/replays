@@ -19,6 +19,18 @@ export function themeVars() {
   return vars;
 }
 
+function sandboxReplay(replay: ViewerPluginContext['replay']) {
+  const { meta, steps, console: consoleEntries, network, performance, context: replayContext } = replay;
+  return {
+    meta,
+    steps,
+    console: consoleEntries,
+    network,
+    ...(performance ? { performance } : {}),
+    ...(replayContext ? { context: replayContext } : {}),
+  };
+}
+
 export type SandboxMode = 'tab' | 'panel' | 'action' | 'section' | 'track';
 
 export interface SandboxHandle {
@@ -138,19 +150,7 @@ export function mountSandbox(options: {
     void readableReplay(plugin, dispose)
       .then((readable) => {
         if (disposed) return;
-        const replay = readable
-          ? (() => {
-              const { meta, steps, console: consoleEntries, network, performance, context: replayContext } = context.replay;
-              return {
-                meta,
-                steps,
-                console: consoleEntries,
-                network,
-                ...(performance ? { performance } : {}),
-                ...(replayContext ? { context: replayContext } : {}),
-              };
-            })()
-          : undefined;
+        const replay = readable ? sandboxReplay(context.replay) : undefined;
         watchdog = new PluginWatchdog(hostInfo().policy.watchdog ?? defaultPolicy().watchdog, (reason) => {
           plugin.log('error', reason);
           dispose();
