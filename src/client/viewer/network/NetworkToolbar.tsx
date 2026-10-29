@@ -1,4 +1,4 @@
-import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
+import { ChartNoAxesGanttIcon, ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
@@ -33,6 +33,7 @@ const STRINGS = {
   status: 'Show requests',
   type: 'Request type',
   search: 'Search requests',
+  timeline: 'Show when requests happened',
   closeSearch: 'Close search',
   placeholder: 'URL, method or status',
   clearRange: (from: number, to: number) => `Show all times, not only ${formatClock(from)} to ${formatClock(to)}`,
@@ -59,6 +60,7 @@ export function NetworkToolbar({
   filter,
   shown,
   onFilter,
+  timeline,
 }: {
   counts: Readonly<Record<StatusFilter, number>>;
   types: ReadonlyArray<{ type: RequestType; count: number }>;
@@ -66,6 +68,8 @@ export function NetworkToolbar({
   /** Rows left after filtering. */
   shown: number;
   onFilter: (next: NetworkFilter) => void;
+  /** On a narrow panel the ribbon is a disclosure: whether it is open, and the switch. */
+  timeline?: { open: boolean; onToggle: () => void } | undefined;
 }) {
   const [searching, setSearching] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
@@ -100,6 +104,20 @@ export function NetworkToolbar({
         </span>
       )}
       <TypeMenu types={types} value={filter.type} onChange={(type) => onFilter({ ...filter, type })} />
+      {timeline && !searching ? (
+        <button
+          type="button"
+          className="np-icon"
+          aria-label={STRINGS.timeline}
+          aria-pressed={timeline.open}
+          data-active={timeline.open ? '' : undefined}
+          data-testid="network-timeline-toggle"
+          onClick={timeline.onToggle}
+          onKeyDown={keepKeys}
+        >
+          <ChartNoAxesGanttIcon aria-hidden="true" />
+        </button>
+      ) : null}
       {searching ? null : (
         <button
           ref={trigger}
@@ -142,6 +160,15 @@ function SearchField({ text, onText, onClose }: { text: string; onText: (text: s
   );
 }
 
+/**
+ * The chips worth showing: each status that occurred, and All only when there are two or more to choose between (a
+ * lone Failed chip already toggles back to every request, and the tab's badge carries the total).
+ */
+function visibleChips(counts: Readonly<Record<StatusFilter, number>>, value: StatusFilter) {
+  const statuses = STATUS_CHIPS.filter((chip) => chip.id !== 'all' && (counts[chip.id] > 0 || chip.id === value));
+  return statuses.length > 1 ? STATUS_CHIPS.filter((chip) => chip.id === 'all' || statuses.includes(chip)) : statuses;
+}
+
 function StatusChips({
   counts,
   value,
@@ -153,7 +180,7 @@ function StatusChips({
 }) {
   return (
     <div className="np-chips" role="group" aria-label={STRINGS.status}>
-      {STATUS_CHIPS.filter((chip) => chip.id === 'all' || counts[chip.id] > 0 || chip.id === value).map((chip) => (
+      {visibleChips(counts, value).map((chip) => (
         <button
           key={chip.id}
           type="button"

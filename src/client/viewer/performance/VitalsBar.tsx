@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 import { formatDuration } from '../network/model.ts';
 import { VERDICT_WORDS, type Vital, type VitalId } from './model.ts';
 
@@ -31,9 +29,10 @@ export interface VitalPeer {
 /** Differences under this are one capture's noise, not a regression or a win. */
 const SAME_WITHIN_MS = 20;
 
-function deltaText(difference: number, name: string) {
-  if (Math.abs(difference) < SAME_WITHIN_MS) return `Same as ${name}`;
-  return `${difference > 0 ? '+' : '−'}${formatDuration(Math.abs(difference))} vs ${name}`;
+/** "+1.16 s": compact, beside its recording's swatch; the words ("vs After") are in the title and for screen readers. */
+function deltaText(difference: number) {
+  if (Math.abs(difference) < SAME_WITHIN_MS) return 'Same';
+  return `${difference > 0 ? '+' : '−'}${formatDuration(Math.abs(difference))}`;
 }
 
 function deltaTone(difference: number) {
@@ -49,13 +48,10 @@ export function VitalsBar({
   vitals,
   peers,
   onPick,
-  children,
 }: {
   vitals: readonly Vital[];
   peers: readonly VitalPeer[];
   onPick: (vital: Vital) => void;
-  /** Controls at the bar's end (the list order). */
-  children?: ReactNode;
 }) {
   return (
     <div className="pp-vitals" data-testid="performance-vitals">
@@ -74,9 +70,16 @@ export function VitalsBar({
               {peers.map((peer) => {
                 const difference = peer.deltas[vital.id];
                 return difference === undefined ? null : (
-                  <span key={peer.id} className="pp-delta" data-tone={deltaTone(difference)} data-tile={peer.colour}>
+                  <span
+                    key={peer.id}
+                    className="pp-delta"
+                    data-tone={deltaTone(difference)}
+                    data-tile={peer.colour}
+                    title={`vs ${peer.name}`}
+                  >
                     <span className="ct-swatch" aria-hidden="true" />
-                    {deltaText(difference, peer.name)}
+                    {deltaText(difference)}
+                    <span className="visually-hidden"> vs {peer.name}</span>
                   </span>
                 );
               })}
@@ -84,7 +87,6 @@ export function VitalsBar({
           </li>
         ))}
       </ul>
-      {children}
     </div>
   );
 }

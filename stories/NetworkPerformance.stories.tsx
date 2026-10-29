@@ -88,7 +88,7 @@ export const NetworkSparse: Story = {
   render: () => <Network bundle={sparse} />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId('network-ribbon').querySelectorAll('.ribbon-mark')).toHaveLength(3);
+    await expect(canvas.queryByTestId('network-ribbon')).toBeNull();
     await expect(canvas.getAllByRole('row')).toHaveLength(4);
   },
 };

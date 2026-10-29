@@ -36,6 +36,7 @@ export function MomentList({
   selected,
   onSelect,
   onHover,
+  headerEnd,
   empty,
 }: {
   moments: readonly Moment[];
@@ -45,6 +46,8 @@ export function MomentList({
   onSelect: (id?: string) => void;
   /** The moment under the pointer or focus, so the time ribbon can light its range; undefined when it leaves. */
   onHover?: ((id?: string) => void) | undefined;
+  /** Controls at the header row's end (the list order), in the list's own header rather than above it. */
+  headerEnd?: ReactNode;
   empty: ReactNode;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -78,7 +81,8 @@ export function MomentList({
               {STRINGS.budget}
             </span>
             <span role="columnheader" className="pp-why">
-              {STRINGS.why}
+              <span className="pp-why-label">{STRINGS.why}</span>
+              {headerEnd}
             </span>
           </div>
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}

@@ -279,6 +279,14 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- Network and Performance are much quieter on phones (and calmer on desktop). Network rows lead with the path in the
+  UI face, the method only when it is not GET, and the status only when it is a failure (one red pill; success is a
+  muted code on desktop and absent on phones), with one muted line for the step and duration. Phones drop the column
+  header, the time column and the bars (except for slow requests). The ribbon appears only when the list overflows,
+  and on phones behind a Timeline switch. The All chip is shown only when there are two filters to choose between.
+  Performance's vitals scroll sideways two at a time on phones, deltas are a compact "+1.16 s" with the recording's
+  swatch, the order switch moved into the list's header row, and rows keep the explanation to one muted line.
+
 - The Console tab reads whole messages. Rows show two lines of the message, monospace with newlines kept, and say how
   many lines more, when a stack came with it, and how many times an identical message repeated (folded as ×N).
   Tapping, clicking or pressing Enter on a row opens it beside the list (in its place on a phone): the full text with

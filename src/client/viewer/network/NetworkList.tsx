@@ -1,6 +1,7 @@
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useRef } from 'react';
 
 import type { ReplayStep } from '../../../shared/replay.ts';
+import { useNarrowerThan } from '../../hooks/use-narrower-than.ts';
 import { useRevealRow } from '../../hooks/use-reveal-row.ts';
 import { useRowHeight } from '../../hooks/use-row-height.ts';
 import { usePlayer, usePlayhead } from '../../player.ts';
@@ -28,6 +29,8 @@ const STRINGS = {
 const ROW_SELECTOR = '.np-row:not(.np-head)';
 
 const FALLBACK_ROW_HEIGHT = 30;
+/** Narrower than this (network.css's phone query), rows are two lines and the list has no column header. */
+const COMPACT_WIDTH = 560;
 
 /**
  * Every request in start order on the shared list frame (TrackList: the now divider, follow and Back to now). Rows are
@@ -57,10 +60,13 @@ export function NetworkList({
   const body = useRef<HTMLDivElement>(null);
   const ats = rows.map((row) => row.at);
   const reached = usePlayhead((time) => countAtOrBefore(ats, playheadHorizon(time, player.duration)));
+  // why: a phone-width list has no column header; the rows say what they are, and the header's 28 px go to rows.
+  const compact = useNarrowerThan(scroller, COMPACT_WIDTH);
+  const header = compact ? 0 : HEADER_HEIGHT;
   const rowHeight = useRowHeight(body, ROW_SELECTOR, rows.length > 0, FALLBACK_ROW_HEIGHT);
-  const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: rows.length, rowHeight, headerHeight: HEADER_HEIGHT });
+  const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: rows.length, rowHeight, headerHeight: header });
   const selectedIndex = selected ? rows.findIndex((row) => row.id === selected) : -1;
-  useRevealRow(scroller, selectedIndex, rowHeight, HEADER_HEIGHT);
+  useRevealRow(scroller, selectedIndex, rowHeight, header);
   const step = (id: string, move: StepMove) => {
     const index = rows.findIndex((row) => row.id === id);
     const next = rows[moveIndex(move, index, rows.length)];
@@ -80,12 +86,13 @@ export function NetworkList({
       extraIndex={selectedIndex}
       ats={ats}
       scroller={scroller}
+      headerHeight={header}
     >
       {rows.length === 0 ? (
         empty
       ) : (
         <div className="np-table" role="table" aria-rowcount={rows.length + 1}>
-          <ListHead />
+          {compact ? null : <ListHead />}
           {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: delegated hover and focus only light the row's mark on the time ribbon; every row keeps its own button. */}
           <div
             ref={body}
@@ -173,6 +180,7 @@ function RequestRow({
       data-selected={selected || undefined}
       data-failed={row.failed || undefined}
       data-pending={row.pending || undefined}
+      data-slow={row.slow || undefined}
       data-future={future || undefined}
     >
       <span role="cell" className="np-time">
@@ -188,7 +196,11 @@ function RequestRow({
           onClick={() => onSelect(selected ? undefined : row.id)}
           onKeyDown={onKeyDown}
         >
-          <span className="method">{row.entry.method}</span>
+          {row.entry.method === 'GET' ? (
+            <span className="visually-hidden">GET </span>
+          ) : (
+            <span className="np-method">{row.entry.method}</span>
+          )}
           <span className="np-name" title={row.entry.url}>
             <span className="np-path">{row.name.path}</span>
             {row.name.query ? <span className="np-query">{row.name.query}</span> : null}
@@ -209,6 +221,10 @@ function RequestRow({
   );
 }
 
+/**
+ * The status as one signal: a failure is a red pill (the code, or Error for a network error), no response a muted
+ * word, and a success only a quiet code (hidden on phones), because success is what a request is expected to do.
+ */
 export function StatusText({ row }: { row: NetworkRow }) {
   if (row.pending)
     return (
@@ -217,14 +233,13 @@ export function StatusText({ row }: { row: NetworkRow }) {
       </span>
     );
   return (
-    <span className="np-code" data-tone={row.failed ? 'bad' : undefined} title={row.entry.statusText || undefined}>
+    <span className="np-code" data-tone={row.failed ? 'bad' : 'ok'} title={row.entry.statusText || undefined}>
       {row.entry.status || STRINGS.error}
     </span>
   );
 }
 
 function durationTone(row: NetworkRow) {
-  if (row.failed) return 'bad';
   return row.slow ? 'slow' : undefined;
 }
 

@@ -137,24 +137,45 @@ test('a busy recording draws request density on the ribbon, and a drag across it
   await expect(range).toBeHidden();
 });
 
-test('a sparse recording gets one tick per request on the ribbon, and the row under the pointer lights its mark', async ({ page }) => {
-  const id = uniqueId('network-ticks');
-  await seedNetworkFixture(page, id);
+async function seedBusy(page: Page, id: string) {
+  const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Busy network fixture');
+  bundle.network = Array.from({ length: 40 }, (_, index) => ({
+    id: `poll-${index}`,
+    at: index * 200,
+    duration: 20,
+    method: 'GET',
+    url: `https://shop.test/api/poll?n=${index}`,
+    status: index === 20 ? 500 : 200,
+    statusText: index === 20 ? 'Server Error' : 'OK',
+    requestHeaders: [],
+    responseHeaders: [],
+  }));
+  await postBundle(page.request, server().origin, bundle);
+}
+
+test('a sparse recording has no ribbon, and on a busy one the row under the pointer lights its mark', async ({ page }) => {
+  const sparse = uniqueId('network-sparse');
+  await seedNetworkFixture(page, sparse);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/r/${id}`);
+  await openReplay(page, `${server().origin}/r/${sparse}`);
+  await page.getByTestId('network-tab').click();
+  await expect(page.locator('[data-request-id]')).toHaveCount(2);
+  await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+
+  const busy = uniqueId('network-busy');
+  await seedBusy(page, busy);
+  await openReplay(page, `${server().origin}/r/${busy}`);
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
-  await expect(ribbon.locator('.ribbon-density')).toHaveCount(0);
-  await expect(ribbon.locator('.ribbon-mark')).toHaveCount(2);
-  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveCount(0);
-  await page.getByRole('button', { name: /POST \/api\/checkout/ }).hover();
-  await expect(ribbon.locator('.ribbon-mark[data-lit]')).toHaveAttribute('data-tone', 'danger');
+  await expect(ribbon).toBeVisible();
+  await page.locator('[data-request-id]').first().hover();
   await expect(ribbon.locator('.ribbon-lit')).toHaveCount(1);
 });
 
 test('the ribbon playhead follows the clock by transform and glides, except under reduced motion', async ({ page }) => {
   const id = uniqueId('network-motion');
-  await seedNetworkFixture(page, id);
+  await seedBusy(page, id);
+  await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('network-tab').click();
   const ribbon = page.getByTestId('network-ribbon');
@@ -164,6 +185,33 @@ test('the ribbon playhead follows the clock by transform and glides, except unde
   expect(await glide()).not.toBe('0s');
   await page.emulateMedia({ reducedMotion: 'reduce' });
   expect(await glide()).toBe('0s');
+});
+
+test.describe('Network on a phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+
+  test('rows are quiet: no header, no success status, one red pill for a failure, the ribbon behind Timeline', async ({ page }) => {
+    const id = uniqueId('network-quiet');
+    await seedNetworkFixture(page, id);
+    await openReplay(page, `${server().origin}/r/${id}`);
+    await page.getByTestId('network-tab').tap();
+    await expect(page.locator('.np-head')).toHaveCount(0);
+    const projects = page.locator('.np-row').filter({ has: page.getByRole('button', { name: /GET \/api\/projects/ }) });
+    await expect(projects.locator('.np-code')).toBeHidden();
+    await expect(projects.locator('.np-method')).toHaveCount(0);
+    const checkout = page.locator('.np-row').filter({ has: page.getByRole('button', { name: /POST \/api\/checkout/ }) });
+    await expect(checkout.locator('.np-code[data-tone="bad"]')).toHaveText('503');
+    await expect(checkout.locator('.np-method')).toHaveText('POST');
+    await expect(page.getByTestId('network-timeline-toggle')).toHaveCount(0);
+
+    const busy = uniqueId('network-quiet-busy');
+    await seedBusy(page, busy);
+    await openReplay(page, `${server().origin}/r/${busy}`);
+    await page.getByTestId('network-tab').tap();
+    await expect(page.getByTestId('network-ribbon')).toHaveCount(0);
+    await page.getByTestId('network-timeline-toggle').tap();
+    await expect(page.getByTestId('network-ribbon')).toBeVisible();
+  });
 });
 
 test('the request detail shows captured bodies, indented and redacted, and says when bodies were not captured', async ({ page }) => {

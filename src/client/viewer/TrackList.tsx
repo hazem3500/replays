@@ -38,6 +38,7 @@ export function TrackList({
   extraHeight = 0,
   ats,
   scroller,
+  headerHeight = HEADER_HEIGHT,
   children,
 }: {
   testId: string;
@@ -50,6 +51,8 @@ export function TrackList({
   /** Entry times, sorted: the divider snaps the playhead to them while dragged. */
   ats: readonly number[];
   scroller: RefObject<HTMLDivElement | null>;
+  /** The sticky header's height above the first row; 0 for a list drawn without one (phones). */
+  headerHeight?: number;
   children: ReactNode;
 }) {
   const player = usePlayer();
@@ -80,7 +83,7 @@ export function TrackList({
       }),
     [player],
   );
-  const dividerTop = nowOffset(reached, total, rowHeight, extraIndex, extraHeight);
+  const dividerTop = nowOffset(reached, total, rowHeight, extraIndex, extraHeight, headerHeight);
   // Between entries the divider always shows; at either end (no entries on one side) only while the pointer is
   // over the panel (data-now-end + CSS), and never as an edge tint.
   // A drag that reaches either end keeps the divider (it is what is being dragged) until release.
@@ -136,7 +139,7 @@ export function TrackList({
       if (performance.now() - userAt.current > USER_SCROLL_GRACE_MS) return;
       if (statusRef.current !== 'playing') setReading(true);
       const top = dividerRef.current;
-      const inView = top >= element.scrollTop + HEADER_HEIGHT && top <= element.scrollTop + element.clientHeight;
+      const inView = top >= element.scrollTop + headerHeight && top <= element.scrollTop + element.clientHeight;
       setFollowing(inView);
     };
     element.addEventListener('wheel', touched, { passive: true });
@@ -166,7 +169,7 @@ export function TrackList({
       element.removeEventListener('keydown', touched);
       element.removeEventListener('scroll', onScroll);
     };
-  }, [scroller]);
+  }, [scroller, headerHeight]);
 
   useLayoutEffect(() => {
     const element = scroller.current;
@@ -178,14 +181,14 @@ export function TrackList({
       return () => window.clearTimeout(retry);
     }
     const top = dividerTop;
-    if (top >= element.scrollTop + HEADER_HEIGHT + 8 && top <= element.scrollTop + element.clientHeight - 8) return;
+    if (top >= element.scrollTop + headerHeight + 8 && top <= element.scrollTop + element.clientHeight - 8) return;
     const target = Math.max(0, Math.round(top - element.clientHeight * 0.75));
     if (target === element.scrollTop) return;
     glideListTo(element, target);
     ours.current = Math.min(target, element.scrollHeight - element.clientHeight);
     // `recall` re-runs this after a seek or "Back to now" even when the divider did not move.
     // oxlint-disable-next-line react/exhaustive-effect-dependencies
-  }, [dividerTop, following, reading, recall, scroller]);
+  }, [dividerTop, following, reading, recall, scroller, headerHeight]);
 
   return (
     <div
@@ -208,6 +211,7 @@ export function TrackList({
         {total > 0 ? (
           <NowDivider
             top={dividerTop}
+            headerHeight={headerHeight}
             reached={reached}
             ats={ats}
             rowHeight={rowHeight}
@@ -261,12 +265,12 @@ const JUMP_TRANSITION = 'none';
 const NEAR_EDGE = 32;
 
 /** Where "now" falls in the scroll content: in the leading gap before any entry, between rows, or in the trailing gap. */
-function nowOffset(reached: number, total: number, rowHeight: number, extraIndex: number, extraHeight: number) {
+function nowOffset(reached: number, total: number, rowHeight: number, extraIndex: number, extraHeight: number, header = HEADER_HEIGHT) {
   const rows = (count: number) => count * rowHeight + (extraIndex >= 0 && extraIndex < count ? extraHeight : 0);
   // At the very start the line rests just under the header's hairline (shown only while the pointer is over the panel).
-  if (reached <= 0) return HEADER_HEIGHT + Math.max(1, TRACK_GAP / 2);
-  if (reached >= total) return HEADER_HEIGHT + TRACK_GAP + rows(total) + TRACK_GAP / 2;
-  return HEADER_HEIGHT + TRACK_GAP + rows(reached);
+  if (reached <= 0) return header + Math.max(1, TRACK_GAP / 2);
+  if (reached >= total) return header + TRACK_GAP + rows(total) + TRACK_GAP / 2;
+  return header + TRACK_GAP + rows(reached);
 }
 
 /**
@@ -355,6 +359,7 @@ export function edgeVelocity(depth: number, zone = DRAG_EDGE, max = EDGE_MAX_SPE
  */
 function NowDivider({
   top,
+  headerHeight,
   reached,
   ats,
   rowHeight,
@@ -366,6 +371,7 @@ function NowDivider({
   onDragChange,
 }: {
   top: number;
+  headerHeight: number;
   reached: number;
   ats: readonly number[];
   rowHeight: number;
@@ -455,7 +461,7 @@ function NowDivider({
   }, []);
   // The line keeps clear of the header's hairline and the bottom edge, never landing inside the first (or last) row;
   // its grip stays centred on it, straddling the hairline at the very top (it draws above the sticky header).
-  const min = view.top + HEADER_HEIGHT + 1;
+  const min = view.top + headerHeight + 1;
   const max = view.height > 0 ? view.top + view.height - 1 : Number.POSITIVE_INFINITY;
   const shown = Math.min(Math.max(top, min), max);
   // Pinned means scrolled out of view (not merely held clear of the header at the very start or end).
@@ -463,7 +469,7 @@ function NowDivider({
     ? undefined
     : view.height > 0 && top > view.top + view.height
       ? 'bottom'
-      : top < view.top + HEADER_HEIGHT
+      : top < view.top + headerHeight
         ? 'top'
         : undefined;
   useLayoutEffect(() => onEdge(pinned), [onEdge, pinned]);
@@ -504,7 +510,7 @@ function NowDivider({
   };
   /** Which boundary a content y falls on (rounded to the nearest), allowing for an expanded request. */
   const countAt = (y: number) => {
-    let offset = y - HEADER_HEIGHT - TRACK_GAP;
+    let offset = y - headerHeight - TRACK_GAP;
     if (extraIndex >= 0 && offset > (extraIndex + 1) * rowHeight) offset -= Math.min(extraHeight, offset - (extraIndex + 1) * rowHeight);
     return Math.min(total, Math.max(0, Math.round(offset / Math.max(1, rowHeight))));
   };
@@ -589,7 +595,7 @@ function NowDivider({
     // The person scrolled the list themselves (a wheel mid-drag): pick up from there.
     if (Math.abs(list.scrollTop - state.scroll) > 2) state.scroll = list.scrollTop;
     const box = list.getBoundingClientRect();
-    const above = box.top + HEADER_HEIGHT + DRAG_EDGE - state.clientY;
+    const above = box.top + headerHeight + DRAG_EDGE - state.clientY;
     const below = state.clientY - (box.bottom - DRAG_EDGE);
     let target = above > 0 ? -edgeVelocity(above) : below > 0 ? edgeVelocity(below) : 0;
     if (state.alt) target /= 4;
@@ -603,7 +609,7 @@ function NowDivider({
       scrollListTo(list, state.scroll);
     }
     const y = Math.min(
-      Math.max(state.clientY - box.top + list.scrollTop, list.scrollTop + HEADER_HEIGHT),
+      Math.max(state.clientY - box.top + list.scrollTop, list.scrollTop + headerHeight),
       list.scrollTop + list.clientHeight,
     );
     const count = countAt(y);
@@ -614,7 +620,7 @@ function NowDivider({
     element.style.transition = JUMP_TRANSITION;
     springs.current?.y.set(
       Math.min(
-        Math.max(nowOffset(state.target, total, rowHeight, extraIndex, extraHeight), list.scrollTop + HEADER_HEIGHT + 1),
+        Math.max(nowOffset(state.target, total, rowHeight, extraIndex, extraHeight, headerHeight), list.scrollTop + headerHeight + 1),
         list.scrollTop + list.clientHeight - 1,
       ),
     );

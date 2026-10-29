@@ -23,7 +23,7 @@ import './network.css';
 
 export type { NetworkPeer } from './RequestDetail.tsx';
 
-/** Above this many requests the ribbon draws their density; at or below it, one tick per request. */
+/** At or below this many requests the list shows them all at a glance, and a ribbon would be an empty strip. */
 const DENSE_ROWS = 12;
 /** Narrower than this, the detail takes the list's place instead of sitting beside it. */
 const SIDE_DETAIL_MIN_WIDTH = 760;
@@ -46,13 +46,20 @@ function emptyCopy(total: number, human: boolean) {
   return human ? { title: STRINGS.humanTitle, body: STRINGS.human } : { title: STRINGS.noneTitle, body: STRINGS.none };
 }
 
-function ribbonMarks(rows: readonly NetworkRow[], ticks: boolean): RibbonMark[] {
+function ribbonMarks(rows: readonly NetworkRow[]): RibbonMark[] {
   return rows.flatMap((row): RibbonMark[] => {
     if (row.failed) return [{ id: row.id, at: row.at, end: row.at, tone: 'danger', lane: 'full' }];
     if (row.pending) return [{ id: row.id, at: row.at, end: row.at, tone: 'neutral', lane: 'full' }];
     if (row.slow) return [{ id: row.id, at: row.at, end: row.end, tone: 'warning', lane: 'cap' }];
-    return ticks ? [{ id: row.id, at: row.at, end: row.end, tone: 'neutral', lane: 'tick' }] : [];
+    return [];
   });
+}
+
+/** The hovered or selected request gets a mark of its own when it has none, so the ribbon can bracket it. */
+function withLit(marks: RibbonMark[], rows: readonly NetworkRow[], lit: string | undefined): RibbonMark[] {
+  if (!lit || marks.some((mark) => mark.id === lit)) return marks;
+  const row = rows.find((candidate) => candidate.id === lit);
+  return row ? [...marks, { id: row.id, at: row.at, end: row.end, tone: 'neutral', lane: 'tick' }] : marks;
 }
 
 /**
@@ -84,7 +91,9 @@ export function NetworkPanel({
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
   const [filter, setFilter] = useState<NetworkFilter>(NO_FILTER);
   const [hovered, setHovered] = useState<string>();
-  const dense = rows.length > DENSE_ROWS;
+  const [timeline, setTimeline] = useState(false);
+  // why: the ribbon earns its height only when the list overflows; a phone keeps it behind the Timeline switch.
+  const ribbon = rows.length > DENSE_ROWS && (!stacked || timeline);
   const unranged = filterRows(rows, { ...filter, range: undefined });
   const shown = filter.range ? filterRows(unranged, { ...NO_FILTER, range: filter.range }) : unranged;
   const open = selected ? rows.find((row) => row.id === selected) : undefined;
@@ -105,13 +114,20 @@ export function NetworkPanel({
   );
   return (
     <div ref={panel} className="np" data-stacked={stacked || undefined} data-open={open ? '' : undefined}>
-      <NetworkToolbar counts={statusCounts(rows)} types={typeCounts(rows)} filter={filter} shown={shown.length} onFilter={setFilter} />
-      {rows.length ? (
+      <NetworkToolbar
+        counts={statusCounts(rows)}
+        types={typeCounts(rows)}
+        filter={filter}
+        shown={shown.length}
+        onFilter={setFilter}
+        timeline={stacked && rows.length > DENSE_ROWS ? { open: timeline, onToggle: () => setTimeline(!timeline) } : undefined}
+      />
+      {ribbon ? (
         <TimeRibbon
           testId="network-ribbon"
           duration={duration}
-          density={dense ? startDensity(unranged, duration, DENSITY_BINS) : undefined}
-          marks={ribbonMarks(unranged, !dense)}
+          density={startDensity(unranged, duration, DENSITY_BINS)}
+          marks={withLit(ribbonMarks(unranged), rows, hovered ?? selected)}
           range={filter.range}
           onRange={(range) => setFilter({ ...filter, range })}
           highlight={hovered ?? selected}

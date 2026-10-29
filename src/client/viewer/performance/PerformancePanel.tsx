@@ -37,6 +37,10 @@ export interface PerformancePeer {
 }
 
 const SIDE_DETAIL_MIN_WIDTH = 760;
+/** Narrower than this (performance.css's phone query), the ribbon is left out. */
+const COMPACT_WIDTH = 560;
+/** Below this many moments the list says it all; the ribbon would be a mostly empty strip. */
+const RIBBON_MIN_MOMENTS = 4;
 
 const STRINGS = {
   order: 'Order',
@@ -128,6 +132,8 @@ export function PerformancePanel({
   const player = usePlayer();
   const panel = useRef<HTMLDivElement>(null);
   const stacked = useNarrowerThan(panel, SIDE_DETAIL_MIN_WIDTH);
+  // why: a phone has no room to explain the ribbon's lanes; the moments say when, so it is left out there.
+  const compact = useNarrowerThan(panel, COMPACT_WIDTH);
   const [selected, setSelected] = useState<string>();
   const [order, setOrder] = useState<MomentOrder>('worst');
   const [range, setRange] = useState<RibbonRange>();
@@ -161,11 +167,9 @@ export function PerformancePanel({
         vitals={vitals}
         peers={vitalPeers}
         onPick={(vital) => (vital.moment ? setSelected(vital.moment.id) : player.seek(vital.at ?? 0))}
-      >
-        {moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
-      </VitalsBar>
+      />
       {extra}
-      {marks.length ? (
+      {marks.length && moments.length >= RIBBON_MIN_MOMENTS && !compact ? (
         <TimeRibbon
           testId="performance-ribbon"
           duration={duration}
@@ -184,6 +188,7 @@ export function PerformancePanel({
             selected={selected}
             onSelect={setSelected}
             onHover={setHovered}
+            headerEnd={moments.length > 1 ? <OrderSwitch order={order} onOrder={setOrder} /> : null}
             empty={empty}
           />
         </div>
