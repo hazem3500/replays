@@ -1,0 +1,87 @@
+/* Story canvas: the app's page colour, type and spacing unit in both themes. Full-page stories own their gutters. */
+:root {
+  --sb-gutter: calc(var(--spacing, 0.25rem) * 8);
+}
+@media (max-width: 640px) {
+  :root {
+    --sb-gutter: calc(var(--spacing, 0.25rem) * 4);
+  }
+}
+
+html,
+body {
+  background: var(--page);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+.sb-show-main.sb-main-padded {
+  padding: var(--sb-gutter);
+}
+
+.sb-show-main.sb-main-centered #storybook-root {
+  padding: var(--sb-gutter);
+}
+
+/* Shared story layouts. */
+.sb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.sb-stack {
+  display: grid;
+  gap: 24px;
+  max-width: 720px;
+}
+
+.sb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.sb-section {
+  display: grid;
+  gap: 12px;
+}
+
+.sb-section > h3 {
+  margin: 0;
+  color: var(--text-tertiary);
+  font-size: var(--text-2xs, 11px);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.sb-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.sb-card code {
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.sb-swatch {
+  height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+
+.sb-panel {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
