@@ -69,8 +69,8 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 29035,
-      "gzip": 10323,
-      "brotli": 8963
+      "gzip": 10324,
+      "brotli": 8967
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5232,
@@ -92,18 +92,13 @@
       "gzip": 33180,
       "brotli": 29475
     },
-    "dist/client/assets/download-HASH.js": {
-      "raw": 274,
-      "gzip": 222,
-      "brotli": 225
-    },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 43666,
-      "gzip": 7904,
-      "brotli": 7046
+      "raw": 31925,
+      "gzip": 6193,
+      "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 97928,
+      "raw": 98265,
       "gzip": 32779,
       "brotli": 28030
     },
@@ -128,9 +123,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 230562,
-      "gzip": 39872,
-      "brotli": 33439
+      "raw": 246064,
+      "gzip": 42460,
+      "brotli": 35304
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 927498,
@@ -159,8 +154,8 @@
     },
     "dist/client/assets/player-HASH.js": {
       "raw": 316832,
-      "gzip": 97953,
-      "brotli": 71173
+      "gzip": 98168,
+      "brotli": 71395
     },
     "dist/client/assets/queryOptions-HASH.js": {
       "raw": 22083,
@@ -208,9 +203,9 @@
       "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 20379,
-      "gzip": 8340,
-      "brotli": 7151
+      "raw": 20382,
+      "gzip": 8342,
+      "brotli": 7145
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -233,8 +228,8 @@
       "brotli": 22698
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50386,
-      "gzip": 18341,
+      "raw": 50369,
+      "gzip": 18336,
       "brotli": 15958
     },
     "dist/client/index.html": {
@@ -433,14 +428,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 232483,
-      "gzip": 40816,
-      "brotli": 34256
+      "raw": 247932,
+      "gzip": 43379,
+      "brotli": 36099
     },
     "initial/index.html/js": {
       "raw": 1688508,
       "gzip": 529707,
-      "brotli": 434343
+      "brotli": 435650
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -448,7 +443,7 @@
       "brotli": 2097
     },
     "initial/render.html/js": {
-      "raw": 542325,
+      "raw": 543485,
       "gzip": 169411,
       "brotli": 132878
     }
@@ -733,16 +728,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "initial/index.html/js",
-      "cap": {
-        "raw": 1688508,
-        "gzip": 529707,
-        "brotli": 434343
-      },
-      "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
       "cap": {
         "raw": 53813,
@@ -751,26 +736,6 @@
       },
       "reason": "The recorder core now includes the plain HTTP upload transport (createHttpUpload, retryable IssueUploadError), so createRecorder can take { url, headers, ... }; it replaces bundle-types.ts-5850f68df54d (+5.2 KB raw, +1.4 KB gzip).",
       "pr": "https://github.com/hazem3500/replays/pull/97"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 254777,
-        "gzip": 44018,
-        "brotli": 36600
-      },
-      "reason": "The dialog geometry utilities (token-driven padding, close size, title line, stacked touch actions) and the solid destructive button join the app stylesheet, about 2.7 KB raw over main.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 256661,
-        "gzip": 44944,
-        "brotli": 37401
-      },
-      "reason": "The initial index style group carries the same dialog and destructive-button utilities.",
-      "pr": "https://github.com/hazem3500/replays/pull/109"
     },
     {
       "file": "dist/client/assets/ComparePicker-HASH.js",
@@ -881,15 +846,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/114"
     },
     {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "gzip": 222,
-        "brotli": 225
-      },
-      "reason": "No source change: this tiny chunk names hashed sibling chunks, whose hashes change with the side panel; measured against main: +0 B raw, -1 B gzip, +34 B brotli. Replaces #109's allowance for this file; its gzip cap is kept.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
-    },
-    {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
       "cap": {
         "raw": 33699,
@@ -960,16 +916,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/130"
     },
     {
-      "file": "dist/client/assets/player-HASH.js",
-      "cap": {
-        "raw": 315334,
-        "gzip": 97953,
-        "brotli": 71173
-      },
-      "reason": "Built-in cursor themes (CUA arrow, classic, hand, dot, ring, agent), tints and ripple or pulse click feedback for playback and export; measured against main: +5273 B raw, +2078 B gzip, +1643 B brotli. Replaces the allowance on main for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/130"
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-ed27343081aa.mjs",
       "cap": {
         "raw": 303921,
@@ -996,16 +942,6 @@
         "brotli": 7046
       },
       "reason": "Timeline clarity: lane names in the gutter, the hatched and labelled trimmed area, and the duration note; measured against main: +308 B raw, +38 B gzip, +37 B brotli. Replaces #130's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/136"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 97928,
-        "gzip": 32779,
-        "brotli": 28030
-      },
-      "reason": "Timeline clarity: lane names, the Trimmed label, the duration note and truncated caption labels; measured against main: +440 B raw, +85 B gzip, +112 B brotli. Replaces #130's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/136"
     },
     {
@@ -1043,6 +979,64 @@
       },
       "reason": "Same raw and gzip size as main; the new Network and Performance chunk hashes it names compress 24 Brotli bytes worse (3486 against a 3468-byte cap).",
       "pr": "https://github.com/hazem3500/replays/pull/119"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 98265,
+        "gzip": 32779,
+        "brotli": 28030
+      },
+      "reason": "The cursor Click layer (off, press, ripple or pulse) and the one-line cursor summary; measured against main: +460 B raw, -14 B gzip, -22 B brotli. Replaces #136's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 246064,
+        "gzip": 42460,
+        "brotli": 35304
+      },
+      "reason": "The editor loading state draws the cursor panel's real headings and controls, so cursor-inspector.css and inspector.css move from the lazy Editor CSS into the eager stylesheet (the Editor CSS shrinks by the same rules), with the skeleton's transport, ruler and clip lane; measured against main: +13123 B raw, +2176 B gzip, +1648 B brotli. Replaces #109's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "dist/client/assets/player-HASH.js",
+      "cap": {
+        "gzip": 98168,
+        "brotli": 71395,
+        "raw": 315990
+      },
+      "reason": "Cursor themes take a click effect chosen apart from the style; measured against main: +670 B raw, +215 B gzip, +222 B brotli. Replaces #130's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 247932,
+        "gzip": 43379,
+        "brotli": 36099
+      },
+      "reason": "The editor loading state's real cursor panel and timeline styles load with the first page (see main-HASH.css); measured against main: +13123 B raw, +2176 B gzip, +1648 B brotli. Replaces #109's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "initial/render.html/js",
+      "cap": {
+        "raw": 543485
+      },
+      "reason": "The render page draws the chosen click effect through the same cursor glyphs; measured against main: +675 B raw, +216 B gzip, +216 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "brotli": 435650,
+        "raw": 1688508,
+        "gzip": 529707
+      },
+      "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
