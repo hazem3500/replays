@@ -144,8 +144,8 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
-      "gzip": 2632,
-      "brotli": 2411
+      "gzip": 2627,
+      "brotli": 2407
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -265,7 +265,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 609
+      "brotli": 603
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -300,7 +300,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
       "gzip": 25851,
-      "brotli": 22462
+      "brotli": 22457
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
@@ -1209,7 +1209,7 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 628
+        "brotli": 603
       },
       "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/184"
@@ -1298,7 +1298,7 @@
       "cap": {
         "raw": 72471,
         "gzip": 25851,
-        "brotli": 22462
+        "brotli": 22457
       },
       "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
@@ -1367,8 +1367,8 @@
       "file": "dist/client/assets/Headline-HASH.js",
       "cap": {
         "raw": 5999,
-        "gzip": 2632,
-        "brotli": 2411
+        "gzip": 2627,
+        "brotli": 2407
       },
       "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
