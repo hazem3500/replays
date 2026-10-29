@@ -92,10 +92,14 @@ const BUILTIN_TRACKS: readonly SlotDescriptor<undefined, null>[] = [
 ];
 
 export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: ReplayStep[]; errors: ReplayError[] }) {
-  const { highlights: allHighlights = NO_HIGHLIGHTS } = useViewer();
+  const { highlights: allHighlights = NO_HIGHLIGHTS, tracks: viewTracks } = useViewer();
   // why: a host's slot configuration changes the registry snapshot; reading it re-renders the bar with it.
   usePluginSnapshot();
-  const tracks = new Set(resolveSlot(TRACKS_SLOT, BUILTIN_TRACKS, undefined).map((track) => track.id));
+  const tracks = new Set(
+    resolveSlot(TRACKS_SLOT, BUILTIN_TRACKS, undefined)
+      .map((track) => track.id)
+      .filter((id) => !viewTracks || viewTracks.includes(id)),
+  );
   const steps = tracks.has('core:steps') ? allSteps : NO_STEPS;
   const errors = tracks.has('core:errors') ? allErrors : NO_ERRORS;
   const highlights = tracks.has('core:highlights') ? allHighlights : NO_HIGHLIGHTS;

@@ -5,7 +5,11 @@ import { boxOf, createSuite, openReplay, serveApp, uniqueId } from './support.ts
 const server = serveApp();
 
 async function captionsOn(page: Page) {
-  await page.addInitScript(() => localStorage.setItem('replays-captions', '1'));
+  // why: captions are remembered per view; a replay on its own opens in Standard, a compared suite in Compare.
+  await page.addInitScript(() => {
+    localStorage.setItem('replays-view:standard:captions', '1');
+    localStorage.setItem('replays-view:compare:captions', '1');
+  });
 }
 
 /** Plays from the start and waits for the step caption to show while a step is under way; returns its pill. */

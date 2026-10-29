@@ -36,6 +36,8 @@ import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults } from '../compare/defaults.ts';
+import { usePageView } from '../hooks/use-page-view.ts';
+import { viewDefaults } from '../views/resolve.ts';
 
 // why: the comparison (tiles, shared clock) is only fetched for suites with two or more recordings.
 const SuiteCompare = lazy(() => import('./SuiteCompare.tsx').then((module) => ({ default: module.SuiteCompare })));
@@ -136,7 +138,13 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     return replayId ? [{ replayId, label: run.label }] : [];
   });
   const [namedRun] = useState(() => Boolean(initialReplayId));
-  const defaults = compareDefaults({ page: 'suite', recordings: playable.length, namedRecording: namedRun });
+  const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: playable.length });
+  const defaults = compareDefaults({
+    page: 'suite',
+    recordings: playable.length,
+    namedRecording: namedRun,
+    viewLayout: viewDefaults(view).layout,
+  });
   const comparing = defaults.compare;
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
@@ -335,6 +343,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
                 skipLink: false,
                 initialTab: tab,
                 onTabChange: setTab,
+                suiteProfile: suite?.profile,
               }}
             />
           </Suspense>
@@ -354,6 +363,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             skipLink={false}
             initialTab={tab}
             onTabChange={setTab}
+            suiteProfile={suite?.profile}
           />
         ) : bundleError ? (
           <main className="app-shell">

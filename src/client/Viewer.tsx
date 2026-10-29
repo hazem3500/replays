@@ -32,7 +32,6 @@ import { CompareButton } from './compare/CompareButton.tsx';
 import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
 import { replayProfile } from './profiles.ts';
-import { DEFAULT_LEAD_MS } from '../shared/profiles.ts';
 import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
@@ -46,12 +45,20 @@ import { copyLinkItems, CopyLinkButton, EditButton, ActionsBar } from './viewer/
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
-import { clampInspectorHeight, initialInspectorHeight, RAIL_COLLAPSED_KEY } from './viewer/inspector-size.ts';
+import { clampInspectorHeight } from './viewer/inspector-size.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail } from './viewer/StepRail.tsx';
 import { InspectorSplit, RailEdgeTab, RailSplit } from './viewer/ViewerSplits.tsx';
-import { usePersistentFlag } from './hooks/use-persistent-flag.ts';
+import { usePageView } from './hooks/use-page-view.ts';
+import { useQuietPlaying } from './hooks/use-quiet-chrome.ts';
+import { useWindowKeydown } from './hooks/use-window-keydown.ts';
+import { useViewState } from './hooks/use-view-state.ts';
+import { pageViews } from './views/catalog.ts';
+import { resolvePageView } from './views/page-view.ts';
+import { cycleView, switcherViews, viewDefaults } from './views/resolve.ts';
+import { viewSettingKey } from './views/settings.ts';
+import { type ViewChoice, ViewMenuItems, ViewSwitcher } from './views/ViewSwitcher.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the viewer's layout tokens and seams load with the lazy viewer chunk.
 import './viewer/viewer-layout.css';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
@@ -73,10 +80,10 @@ import { setPageUrl } from './routing/navigate.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
+// why: a headline (and its tiles' code and styles) loads only for views that list one.
+const ViewHeadline = lazy(() => import('./views/Headline.tsx').then((module) => ({ default: module.ViewHeadline })));
 const ComparePicker = lazy(() => import('./compare/ComparePicker.tsx').then((module) => ({ default: module.ComparePicker })));
 
-const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
-const CAPTIONS_KEY = 'replays-captions';
 const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
 /** A folded panel keeps just its tab row (36 px) and the hairline above it. */
 /** An expanded request grows a shorter desktop panel to this share of the window… */
@@ -109,6 +116,8 @@ export function Viewer({
   inspectorPeers,
   comparing,
   onCompareWith,
+  suiteProfile,
+  compareSummary,
 }: {
   bundle: ReplayBundle;
   /** Original diagnostics for the waterfall's measured spans when playback has saved edits. */
@@ -155,10 +164,16 @@ export function Viewer({
   comparing?: readonly string[];
   /** "Compare with…" picked a recording; by default this replay's URL gains it and shows both in a grid. */
   onCompareWith?: (id: string) => void;
+  /** On a suite page, the suite's profile: it can name the view (views/resolve.ts). */
+  suiteProfile?: string | undefined;
+  /** Comparing: the per-recording chips the Compare view's headline shows. */
+  compareSummary?: ReactNode;
 }) {
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
-  // The deployment's profile for this replay (src/client/profiles.ts) sets how it first opens.
   const profile = useMemo(() => replayProfile(bundle), [bundle]);
+  // why: the page's view (`?view=`, the suite's or replay's profile, the number of recordings) sets how it opens and lays out.
+  const page = usePageView({ replay: bundle, suiteProfile, recordings: comparing?.length ?? 1 });
+  const defaults = viewDefaults(page);
   const opened = useMemo(() => {
     if (sharedPlayer) return { controller: sharedPlayer, step: undefined, resume: false, tab: undefined };
     const controller = new ReplayController(bundle, effects ? { effects } : {});
@@ -169,8 +184,10 @@ export function Viewer({
     const at = handoff ? handoff.time : target.step === undefined ? target.time : bundle.steps[target.step]?.at;
     if (at !== undefined) controller.seek(at);
     // `openAt: 'first-error'` (a bug reproduction): just before the first error, on the tab that holds it. Permalinks win.
-    const firstError = profile?.viewer?.openAt === 'first-error' && at === undefined ? errors[0] : undefined;
-    if (firstError) controller.seek(Math.max(0, firstError.at - (profile?.viewer?.leadMs ?? DEFAULT_LEAD_MS)));
+    const firstError = defaults.openAt === 'first-error' && at === undefined ? errors[0] : undefined;
+    if (firstError) controller.seek(Math.max(0, firstError.at - defaults.leadMs));
+    const speed = SPEEDS.find((candidate) => candidate === defaults.speed);
+    if (speed) controller.setSpeed(speed);
     const step = target.step === undefined ? undefined : { index: target.step, time: controller.getTime() };
     return { controller, step, resume: Boolean(handoff), tab: firstError?.kind };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
@@ -202,65 +219,54 @@ export function Viewer({
   useEffect(() => {
     shortcutsOpenRef.current = shortcutsOpen;
   }, [shortcutsOpen]);
-  const [inspectorHeight, setInspectorHeight] = useState(initialInspectorHeight);
+  const layout = useViewState(page.view.id, defaults, { errorTab: opened.tab, fallbackTab: initialTab });
+  const inspectorHeight = layout.height;
+  const setInspectorHeight = layout.setHeight;
   const [speedHud, setSpeedHud] = useState<{ speed: number; id: number }>();
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
-  const [railCollapsed, setRailCollapsed] = usePersistentFlag(RAIL_COLLAPSED_KEY);
+  const { railCollapsed, setRailCollapsed, tab, captions, switchCaptions } = layout;
   const workspace = useRef<HTMLDivElement>(null);
-  const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
   usePluginEvents(bundle.meta.id, tab, player);
-  // Step captions on the player: the person's stored choice, else the profile's default (off without one).
-  const [captions, setCaptionsState] = useState(() => {
-    const saved = readStorage(CAPTIONS_KEY);
-    return saved === '1' ? true : saved === '0' ? false : profile?.viewer?.captions === true;
-  });
-  const switchCaptions = useCallback(() => {
-    setCaptionsState((current) => {
-      writeStorage(CAPTIONS_KEY, current ? '0' : '1');
-      return !current;
-    });
-  }, []);
   // Viewer-only presentation, independent of caption visibility and saved editor captions.
   const [captionNumbers, setCaptionNumbersState] = useState(() => readStorage(CAPTION_NUMBERS_KEY) === '1');
   const setCaptionNumbers = useCallback((next: boolean) => {
     writeStorage(CAPTION_NUMBERS_KEY, next ? '1' : '0');
     setCaptionNumbersState(next);
   }, []);
-  // The bottom panel folds to its tab row (desktop). Remembered; when nothing is stored, the profile's default (open without one).
-  const [collapsed, setCollapsedState] = useState(() => {
-    // Opening on an error shows the panel that holds it (for this visit; the stored choice stands).
-    if (opened.tab) return false;
-    const saved = readStorage(INSPECTOR_COLLAPSED_KEY);
-    return saved === '1' ? true : saved === '0' ? false : profile?.viewer?.inspector === 'collapsed';
-  });
+  // why: phones have no room for a hidden panel's "Show details" seam; there a hidden inspector folds to its tab row.
+  const mobile = useMediaQuery(MOBILE_QUERY);
+  const hidden = layout.hidden && !mobile;
+  const collapsed = layout.collapsed || (layout.hidden && mobile);
   /** `persist: false` is a transient change for one action (a shortcut that needs the panel), not a preference. */
-  const setCollapsed = useCallback((next: boolean, persist = true) => {
-    if (persist) writeStorage(INSPECTOR_COLLAPSED_KEY, next ? '1' : '0');
-    // Animate the fold only for this change (never while the resizer drags).
-    const element = shell.current;
-    if (element && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      if (element.dataset.mobile !== undefined) foldPhonePanel(element, next);
-      else {
-        element.dataset.inspectorAnimating = '';
-        window.setTimeout(() => delete element.dataset.inspectorAnimating, 260);
+  const { setCollapsed: storeCollapsed, setTab: storeTab } = layout;
+  const setCollapsed = useCallback(
+    (next: boolean, persist = true) => {
+      // Animate the fold only for this change (never while the resizer drags).
+      const element = shell.current;
+      if (element && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        if (element.dataset.mobile !== undefined) foldPhonePanel(element, next);
+        else {
+          element.dataset.inspectorAnimating = '';
+          window.setTimeout(() => delete element.dataset.inspectorAnimating, 260);
+        }
       }
-    }
-    setCollapsedState(next);
-  }, []);
+      storeCollapsed(next, persist);
+    },
+    [storeCollapsed],
+  );
   const collapsedRef = useRef(collapsed);
   useEffect(() => {
     collapsedRef.current = collapsed;
   }, [collapsed]);
   // Phones: one tabbed panel under the player; Steps is its first tab and opens by default.
-  const mobile = useMediaQuery(MOBILE_QUERY);
   const [stepsSelected, setStepsSelected] = useState(true);
   const setTab = useCallback(
-    (next: InspectorTab) => {
-      setTabState(next);
+    (next: InspectorTab, persist = true) => {
+      storeTab(next, persist);
       setStepsSelected(false);
       onTabChange?.(next);
     },
-    [onTabChange],
+    [onTabChange, storeTab],
   );
   const mobilePanel = useMemo<MobilePanel | undefined>(
     () =>
@@ -308,7 +314,7 @@ export function Viewer({
       animate();
       setInspectorHeight(from);
     }
-  }, [roomForRequest]);
+  }, [roomForRequest, setInspectorHeight]);
 
   const notify = useCallback((message: string) => showToast(message), []);
   // Built-in features (plugins/features.tsx, e.g. comments): opening their tab unfolds the panel when it is folded, and a
@@ -333,7 +339,7 @@ export function Viewer({
     const jumpToError = (error: ReplayError) => {
       showPanel();
       player.seek(error.at);
-      setTab(error.kind);
+      setTab(error.kind, false);
       if (error.requestId) {
         const id = error.requestId;
         setExpandedRequest(id);
@@ -393,8 +399,12 @@ export function Viewer({
       editsVersion: edited ? editsVersion(editListOf(edited.stored)) : '',
       editCaptions: Boolean(effects?.captions.length),
       highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
+      tracks: defaults.tracks,
+      tabOrder: defaults.tabs,
     };
   }, [
+    defaults.tabs,
+    defaults.tracks,
     bundle.steps,
     captionNumbers,
     captions,
@@ -523,6 +533,19 @@ export function Viewer({
     return () => window.removeEventListener('hashchange', onHashChange);
   }, [actions, bundle.steps.length]);
 
+  const views = switcherViews(pageViews());
+  const viewChoice: ViewChoice = { views, current: page.view.id, onSelect: page.select, onReset: layout.reset };
+  useWindowKeydown((event) => {
+    if (event.defaultPrevented || shortcutsOpen) return;
+    const action = shortcutFor(event, event.target instanceof HTMLElement ? event.target : null);
+    if (action !== 'next-view' && action !== 'previous-view') return;
+    event.preventDefault();
+    const next = cycleView(views, page.view.id, action === 'next-view' ? 1 : -1);
+    if (next) page.select(next.id);
+  });
+  const quietPlaying = useQuietPlaying(player, defaults.chrome === 'quiet');
+  const showRail = bundle.steps.length > 0 && defaults.steps !== 'hidden';
+
   useEffect(() => {
     const seekBy = (delta: number) => player.seek(player.getTime() + delta);
     const onKeyDown = (event: KeyboardEvent) => {
@@ -570,7 +593,7 @@ export function Viewer({
         case 'shortcuts':
           return actions.openShortcuts();
         case 'switch-inspector':
-          return setCollapsed(!collapsedRef.current);
+          return setCollapsed(hidden ? false : !collapsedRef.current, !hidden);
         case 'switch-captions':
           return actions.switchCaptions();
         case 'add-comment':
@@ -579,7 +602,7 @@ export function Viewer({
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [actions, player, setCollapsed]);
+  }, [actions, hidden, player, setCollapsed]);
 
   const viewer = (
     <ViewerContext.Provider value={actions}>
@@ -589,8 +612,12 @@ export function Viewer({
         data-mobile={mobile || undefined}
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
+        data-inspector-hidden={hidden || undefined}
         data-profile={profile?.id}
-        style={{ '--inspector-height': collapsed && !mobile ? 'var(--inspector-folded-height)' : `${inspectorHeight}px` } as CSSProperties}
+        data-view={page.view.id}
+        data-chrome={defaults.chrome === 'quiet' ? 'quiet' : undefined}
+        data-playing={quietPlaying || undefined}
+        style={{ '--inspector-height': inspectorRow(hidden, collapsed && !mobile, inspectorHeight) } as CSSProperties}
       >
         {skipLink ? (
           <a className="skip-link" href="#replay-player">
@@ -603,7 +630,17 @@ export function Viewer({
           menuItems={headerMenuItems}
           pluginActions={pluginMenu.bar}
           menuFooter={pluginMenu.settings}
-          {...(menu ? { menu } : {})}
+          {...(menu || mobile
+            ? {
+                menu: (
+                  <>
+                    {menu}
+                    {mobile ? <ViewMenuItems {...viewChoice} /> : null}
+                  </>
+                ),
+              }
+            : {})}
+          viewSwitcher={mobile ? null : <ViewSwitcher {...viewChoice} />}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
           {...(backHref ? { backHref } : {})}
@@ -621,11 +658,23 @@ export function Viewer({
         />
         <div
           ref={workspace}
-          className={`workspace ${bundle.steps.length === 0 ? 'no-steps' : ''}`}
+          className={`workspace ${showRail ? '' : 'no-steps'}`}
           data-rail-collapsed={(railCollapsed && bundle.steps.length > 0) || undefined}
           style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
         >
           <section ref={playerRegion} className="player-region" aria-label="Replay">
+            {defaults.headline.length ? (
+              <Suspense fallback={null}>
+                <ViewHeadline
+                  ids={defaults.headline}
+                  view={page.view.id}
+                  bundle={bundle}
+                  openTab={openFeaturePanel}
+                  onComment={() => startComment.current?.()}
+                  compareSummary={compareSummary}
+                />
+              </Suspense>
+            ) : null}
             <div className="stage-wrap">
               {stage ?? <PlayerStage />}
               {/* why: a comparison's stage draws the step caption on its focused tile's frame (CompareTile.tsx). */}
@@ -640,7 +689,7 @@ export function Viewer({
             </div>
             <Transport />
           </section>
-          {bundle.steps.length > 0 && !mobile ? (
+          {showRail && !mobile ? (
             <>
               <RailSplit
                 workspace={workspace}
@@ -654,25 +703,30 @@ export function Viewer({
             </>
           ) : null}
         </div>
-        {mobile ? null : (
+        {mobile || hidden ? null : (
           <InspectorSplit
             shell={shell}
+            storageKey={viewSettingKey(page.view.id, 'dock-height')}
             height={inspectorHeight}
             onHeightChange={setInspectorHeight}
             collapsed={collapsed}
             onCollapsedChange={setCollapsed}
           />
         )}
-        <Inspector
-          bundle={bundle}
-          sourceBundle={sourceBundle}
-          timeline={timeline}
-          tab={tab}
-          expandedRequest={expandedRequest}
-          collapse={inspectorCollapse}
-          {...(mobilePanel ? { mobile: mobilePanel } : {})}
-          compare={inspectorScope || inspectorPeers ? { scope: inspectorScope, peers: inspectorPeers } : undefined}
-        />
+        {hidden ? (
+          <ShowDetails onShow={() => setCollapsed(false, false)} />
+        ) : (
+          <Inspector
+            bundle={bundle}
+            sourceBundle={sourceBundle}
+            timeline={timeline}
+            tab={tab}
+            expandedRequest={expandedRequest}
+            collapse={inspectorCollapse}
+            {...(mobilePanel ? { mobile: mobilePanel } : {})}
+            compare={inspectorScope || inspectorPeers ? { scope: inspectorScope, peers: inspectorPeers } : undefined}
+          />
+        )}
         <StepAnnouncer />
         {pluginMenu.drawer}
         {betaMalleable() ? (
@@ -691,7 +745,7 @@ export function Viewer({
               onPick={(id) => {
                 setPickerOpen(false);
                 if (onCompareWith) onCompareWith(id);
-                else compareWith(bundle.meta.id, id);
+                else compareWith(bundle.meta.id, id, compareLayoutFor(bundle, suiteProfile));
               }}
             />
           </Suspense>
@@ -762,9 +816,12 @@ const ViewerHeader = memo(function ViewerHeader({
   titleMenu,
   titleFrom,
   leadingActions,
+  viewSwitcher,
   hasEdits = false,
 }: {
   bundle: ReplayBundle;
+  /** Desktop: the "View:" menu, first of the bar's actions (phones keep the choice in More). */
+  viewSwitcher: ReactNode;
   /** Before the built-in icon actions (a comparison's layout switch). */
   leadingActions?: ReactNode;
   /** The replay has saved edits: a dot on the Edit button (the title shows "Edited …" as quiet text). */
@@ -784,11 +841,10 @@ const ViewerHeader = memo(function ViewerHeader({
   menuItems: TopbarMenuItem[];
   backHref?: string;
 }) {
-  const { meta } = bundle;
   // The chip is for explicit outcomes only (the suite's run status). Raw error counts are details: they live
   // in the Console and Network rows, not in the header.
   const shared = {
-    title: title ?? meta.title,
+    title: title ?? bundle.meta.title,
     ...(prefix ? { prefix } : {}),
     ...(status ? { status } : {}),
     ...(backHref ? { backHref } : {}),
@@ -819,6 +875,7 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         <ActionsBar
           actions={{
+            'core:view': viewSwitcher,
             'core:compare': leadingActions,
             'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
             'core:info': <ReplayInfoButton bundle={bundle} suite={suite} />,
@@ -954,6 +1011,26 @@ function SkipIndicator() {
         {seconds ? `Skipping ${seconds} seconds of inactivity` : ''}
       </span>
     </>
+  );
+}
+
+/** The layout two recordings open in: the one of the view the page will be in once it compares. */
+function compareLayoutFor(bundle: ReplayBundle, suiteProfile: string | undefined) {
+  return viewDefaults(resolvePageView({ search: location.search, replay: bundle, suiteProfile, recordings: 2 })).layout;
+}
+
+/** The dock's grid row: none while the view hides it, the tab row while folded, else its height. */
+function inspectorRow(hidden: boolean, folded: boolean, height: number) {
+  if (hidden) return '0px';
+  return folded ? 'var(--inspector-folded-height)' : `${height}px`;
+}
+
+/** A view that hides the inspector (Walkthrough) leaves this at the bottom edge; it opens the panel for this visit. */
+function ShowDetails({ onShow }: { onShow: () => void }) {
+  return (
+    <button type="button" className="show-details" onClick={onShow} data-testid="show-details">
+      Show details
+    </button>
   );
 }
 

@@ -272,6 +272,7 @@ describe('public API', () => {
       'viewer.shortcuts',
       'viewer.scrubber.tracks',
       'viewer.context.sections',
+      'viewer.headline',
       'index.row.columns',
       'index.filters',
       'index.sections',

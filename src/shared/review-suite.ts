@@ -8,6 +8,7 @@ import {
   type ReplayPerson,
   type ReplayPersonSummary,
 } from './people.ts';
+import { isProfileId } from './profiles.ts';
 import { assertReplayId, type ReplaySummary } from './replay.ts';
 
 export type ReviewRunStatus = 'running' | 'passed' | 'failed' | 'partial';
@@ -47,6 +48,8 @@ export interface ReviewSuite {
   context?: ReplayContext;
   /** People related to the suite (src/shared/people.ts). Not identity: registering again may replace them. */
   people?: ReplayPerson[];
+  /** The suite's profile id: its `view` is what the suite opens in (src/shared/views.ts). */
+  profile?: string;
   runs: ReviewSuiteRun[];
 }
 
@@ -110,7 +113,7 @@ function date(value: unknown, label: string) {
 }
 
 export function assertReviewSuite(value: unknown): asserts value is ReviewSuite {
-  const suite = record(value, 'suite', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'runs']);
+  const suite = record(value, 'suite', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'profile', 'runs']);
   if (suite.version !== 1) throw new Error('suite.version is unsupported');
   if (typeof suite.id !== 'string') throw new Error('suite.id is invalid');
   assertReplayId(suite.id);
@@ -124,6 +127,7 @@ export function assertReviewSuite(value: unknown): asserts value is ReviewSuite 
   }
   if (suite.context !== undefined) assertReplayContext(suite.context);
   if (suite.people !== undefined) assertReplayPeople(suite.people, 'suite.people');
+  if (suite.profile !== undefined && !isProfileId(suite.profile)) throw new Error('suite.profile is invalid');
   if (!Array.isArray(suite.runs) || suite.runs.length > 100) throw new Error('suite.runs must contain at most 100 entries');
   const ids = new Set<string>();
   const sequences = new Set<number>();
@@ -169,6 +173,8 @@ export interface ReviewSuiteRegistration {
   context?: ReplayContext;
   /** Absent on a later registration keeps the stored people; present replaces them. */
   people?: ReplayPerson[];
+  /** A profile id; the suite opens in that profile's view. */
+  profile?: string;
 }
 
 /** A registration after the server resolved the subject reference into a link. */
@@ -185,7 +191,7 @@ export interface ReviewRunRegistration {
 }
 
 export function assertReviewSuiteRegistration(value: unknown, suiteId: string): asserts value is ReviewSuiteRegistration {
-  const input = record(value, 'suite registration', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people']);
+  const input = record(value, 'suite registration', ['version', 'id', 'title', 'createdAt', 'subject', 'context', 'people', 'profile']);
   if (input.id !== suiteId) throw new Error('suite ID does not match path');
   const { subject, ...rest } = input;
   if (subject !== undefined) record(subject, 'suite.subject', ['provider', 'ref', 'url', 'label']);
