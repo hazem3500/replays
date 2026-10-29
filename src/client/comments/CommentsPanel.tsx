@@ -1,9 +1,7 @@
-import { MessageSquareIcon } from 'lucide-react';
 import { useRef, useState } from 'react';
 
 import { activeThread } from '../../shared/comments.ts';
 import { EmptyState } from '@/components/ui/empty-state.tsx';
-import { Kbd } from '@/components/ui/kbd.tsx';
 import { useThreadFollow } from '../hooks/use-thread-follow.ts';
 import { usePlayhead } from '../player.ts';
 import { Composer } from './Composer.tsx';
@@ -62,7 +60,7 @@ export function CommentsPanelView({ comments }: { comments: CommentsApi }) {
             {commentStrings.loading}
           </p>
         ) : threads.length === 0 ? (
-          <CommentsEmpty />
+          <CommentsEmpty onComment={comments.startComment} />
         ) : items.length === 0 ? (
           <p className="comments-filtered-empty">{commentStrings.filteredEmpty[shown]}</p>
         ) : (
@@ -116,18 +114,16 @@ function FilterBar({
   );
 }
 
-/** Nothing written yet: one calm line that points at the composer below and, with a keyboard, at `M`. */
-function CommentsEmpty() {
+/** Nothing written yet: the shared empty state, with one way forward (a comment at the playhead). */
+function CommentsEmpty({ onComment }: { onComment: () => void }) {
   return (
-    <div className="comments-empty" data-testid="comments-empty">
-      <span className="comments-empty-icon" aria-hidden="true">
-        <MessageSquareIcon />
-      </span>
-      <p className="comments-empty-title">{commentStrings.emptyTitle}</p>
-      <p className="comments-empty-body comments-empty-keyboard">
-        Press <Kbd>M</Kbd> {commentStrings.emptyKeyboard}
-      </p>
-      <p className="comments-empty-body comments-empty-touch">{commentStrings.emptyTouch}</p>
-    </div>
+    <EmptyState
+      variant="compact"
+      icon={null}
+      title={commentStrings.emptyTitle}
+      body={commentStrings.emptyBody}
+      actions={[{ id: 'comment', label: commentStrings.emptyAction, onSelect: onComment }]}
+      testId="comments-empty"
+    />
   );
 }

@@ -137,10 +137,12 @@ export const AnonymousComposing: Story = {
   args: { comments: fixture([], { anonymous: true, me: { name: 'Anonymous', anonymous: true } }) },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByTestId('comments-anonymous-notice')).not.toBeVisible();
+    await expect(canvas.getByTestId('comments-anonymous-notice')).toHaveTextContent('Posting as Anonymous');
+    await expect(canvas.queryByTestId('comment-submit')).toBeNull();
     await userEvent.type(canvas.getByTestId('comment-input'), 'The total wraps onto two lines here');
-    await expect(canvas.getByTestId('comments-anonymous-notice')).toBeVisible();
-    await expect(canvas.getByTestId('comment-submit')).toBeEnabled();
+    await expect(canvas.getByTestId('comment-submit')).toBeVisible();
+    await userEvent.click(canvas.getByTestId('comment-pin-clear'));
+    await expect(canvas.getByTestId('comment-pin')).toHaveTextContent('Whole replay');
   },
 };
 
