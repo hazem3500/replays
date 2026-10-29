@@ -773,8 +773,6 @@ svg.lucide.lucide { stroke-width: 2; }
 @keyframes sk-in { from { opacity: 0; } }
 .sk-topbar { position: relative; }
 .loading-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); padding-inline: 6px; }
-.loading-notice { display: inline-flex; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 12px; line-height: 20px; }
-.loading-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text-tertiary); }
 /* The viewer's own parts while loading (ViewerLoadingParts.tsx): real geometry, inert controls, quiet stand-ins. */
 .sk-topbar[data-untitled] .topbar-title-text { width: min(240px, 40vw); border-radius: var(--radius-sm); background: var(--surface-hover); color: transparent; animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }
 .sk-actions { display: contents; }
