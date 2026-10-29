@@ -295,6 +295,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
   - `examples/custom-distro` (workspace package) with an end-to-end smoke in CI, and `pnpm test:pack`.
   - [docs/downstream-migration.md](docs/downstream-migration.md).
 
+### Fixed
+
+- Comparing recordings: every tile on the stage now plays and follows a scrub on the shared clock. Spotlight's strip and
+  a phone's off-screen tiles used to update about once a second while playing and stayed frozen until a drag ended.
+  During a drag each tile gets one seek per frame to the latest position (a tile that can't keep up shows its last
+  frame and catches up); a tile that has ended holds its last frame.
+
 ### Removed
 
 - The separate `/compare?before=&after=` page and its workspace, evidence panels and route.
