@@ -9,8 +9,8 @@
     },
     "dist/cli/cli.mjs": {
       "raw": 462847,
-      "gzip": 119370,
-      "brotli": 97169
+      "gzip": 119373,
+      "brotli": 97210
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190557,
@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
       "gzip": 981,
-      "brotli": 847
+      "brotli": 845
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -159,7 +159,7 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 994149,
-      "gzip": 310973,
+      "gzip": 310975,
       "brotli": 257225
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -204,8 +204,8 @@
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
-      "gzip": 3989,
-      "brotli": 3625
+      "gzip": 3992,
+      "brotli": 3630
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
@@ -220,7 +220,7 @@
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 16683,
       "gzip": 5908,
-      "brotli": 5388
+      "brotli": 5387
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 2825,
@@ -229,7 +229,7 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 887,
-      "gzip": 539,
+      "gzip": 541,
       "brotli": 504
     },
     "dist/client/assets/storage-HASH.js": {
@@ -255,12 +255,12 @@
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
       "gzip": 256,
-      "brotli": 234
+      "brotli": 232
     },
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 312,
       "gzip": 253,
-      "brotli": 219
+      "brotli": 216
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -315,7 +315,7 @@
     "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs": {
       "raw": 312691,
       "gzip": 83253,
-      "brotli": 68044
+      "brotli": 68065
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -1146,16 +1146,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
-      "file": "dist/client/assets/step-caption-HASH.js",
-      "cap": {
-        "raw": 887,
-        "gzip": 539,
-        "brotli": 504
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
       "file": "initial/render.html/css",
       "cap": {
         "raw": 5999,
@@ -1237,8 +1227,8 @@
       "file": "dist/cli/cli.mjs",
       "cap": {
         "raw": 462847,
-        "gzip": 119370,
-        "brotli": 97169
+        "gzip": 119373,
+        "brotli": 97210
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "The CLI bundles the shared edit validator, now its own module with named check helpers instead of casts; measured on Boat against main 888a8b3 caps: raw 462508→462847 (+339 B), gzip 119070→119370 (+300 B), brotli 96945→97169 (+224 B). Replaces #164's allowance for this file."
@@ -1257,7 +1247,7 @@
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 994149,
-        "gzip": 310973,
+        "gzip": 310975,
         "brotli": 257225
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
@@ -1267,8 +1257,8 @@
       "file": "dist/client/assets/render-HASH.js",
       "cap": {
         "raw": 9060,
-        "gzip": 3989,
-        "brotli": 3625
+        "gzip": 3992,
+        "brotli": 3630
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "Hash drift: the render page imports the shared edits chunk, whose module layout changed; measured on Boat against main 888a8b3 caps: brotli 3622→3625 (+3 B). Replaces #155's allowance for this file."
@@ -1298,10 +1288,20 @@
       "cap": {
         "raw": 312691,
         "gzip": 83253,
-        "brotli": 68044
+        "brotli": 68065
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "The CLI and server share the edit validator; with edits split into list, timeline and validation modules the shared server chunk gets a new source identity; measured on Boat against main: main 312907/83012/67822 (context.schema.json-09ab4a0ff1bb.mjs), head 312691/83253/68044 (-216 B raw, +241 B gzip, +222 B brotli). Replaces the previous entry for this chunk."
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.js",
+      "cap": {
+        "raw": 887,
+        "gzip": 541,
+        "brotli": 504
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
     }
   ]
 }
