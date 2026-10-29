@@ -88,8 +88,8 @@ test.describe('Console on a phone', () => {
     await openReplay(page, `${server().origin}/r/${id}`);
     await page.getByTestId('console-tab').tap();
     const row = page.locator('[data-console-id]').filter({ hasText: 'cart updated' });
-    const box = await row.boundingBox();
-    expect(box!.height).toBeGreaterThanOrEqual(48);
+    const height = await row.evaluate((element) => element.getBoundingClientRect().height);
+    expect(height).toBeGreaterThanOrEqual(48);
     await expect(page.locator('.cp-row').filter({ has: row }).locator('.cp-page')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await row.tap();
