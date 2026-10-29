@@ -811,6 +811,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .suite-sidebar-title h2 { display: -webkit-box; margin: 0; overflow: hidden; color: var(--text); font-size: var(--text-sm); font-weight: 600; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; text-wrap: pretty; }
 .suite-sidebar-meta { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin: 0; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 .suite-sidebar-meta a { color: var(--text-secondary); text-decoration: none; }
+.suite-kept { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
+.suite-kept svg { width: 12px; height: 12px; }
 .sha-button { padding: 0 3px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); cursor: copy; }
 .suite-run-list { min-height: 0; flex: 1; display: grid; align-content: start; gap: 1px; padding: 6px; overflow: auto; }
 .suite-run-item { width: 100%; min-height: 44px; display: grid; grid-template-columns: 2.2ch minmax(0, 1fr); align-items: baseline; gap: 8px; padding: 6px 8px; border: 0; border-radius: var(--radius); background: transparent; color: var(--text-secondary); font-size: var(--text-sm); text-align: left; cursor: pointer; transition: background-color var(--motion-fast) ease, color var(--motion-fast) ease; }

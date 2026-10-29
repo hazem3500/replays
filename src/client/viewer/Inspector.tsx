@@ -139,10 +139,11 @@ export function InspectorResizer({
   );
 }
 
-/** Another recording being compared (compare mode): its letter, title and bundle as it plays. */
+/** Another recording being compared (compare mode): its short name, colour (1 to 9), title and bundle as it plays. */
 export interface InspectorPeer {
   id: string;
-  letter: string;
+  name: string;
+  colour: number;
   label: string;
   bundle: ReplayBundle;
 }
@@ -194,11 +195,17 @@ export const Inspector = memo(function Inspector({
   const peers = compare?.peers ?? [];
   const networkPeers: NetworkPeer[] = peers.map((peer) => ({
     id: peer.id,
-    letter: peer.letter,
+    name: peer.name,
+    colour: peer.colour,
     label: peer.label,
     rows: buildNetworkRows(peer.bundle),
   }));
-  const performancePeers: PerformancePeer[] = peers.map((peer) => ({ id: peer.id, letter: peer.letter, vitals: vitalsOf(peer.bundle) }));
+  const performancePeers: PerformancePeer[] = peers.map((peer) => ({
+    id: peer.id,
+    name: peer.name,
+    colour: peer.colour,
+    vitals: vitalsOf(peer.bundle),
+  }));
   // Once playback reaches the end every entry is in view (some trail the last DOM event). At the very start nothing
   // has happened yet, not even entries stamped 0:00.0, so the now line can rest above every row.
   const horizon = (time: number) => (time >= player.duration ? Number.POSITIVE_INFINITY : time <= 0 ? -1 : time);
