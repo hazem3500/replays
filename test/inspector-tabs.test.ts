@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ViewerRegistry } from '../src/client/plugins/registry.ts';
 import { inspectorTabItems, type InspectorTabContext, type TabResolver } from '../src/client/viewer/inspector-tabs.ts';
-import { consoleBadge } from '../src/client/viewer/tab-badges.ts';
+import { badgeText, consoleBadge } from '../src/client/viewer/tab-badges.ts';
 import type { ReplayConsoleEntry } from '../src/shared/replay.ts';
 
 const context = (overrides: Partial<InspectorTabContext> = {}): InspectorTabContext => ({
@@ -62,5 +62,13 @@ describe('tab badges', () => {
       tone: 'danger',
       label: '3 entries, 1 error, 1 warning',
     });
+  });
+
+  it('shows counts up to 99 and caps larger ones at 99+', () => {
+    expect([badgeText(1), badgeText(99), badgeText(100), badgeText(2400)]).toEqual(['1', '99', '99+', '99+']);
+  });
+
+  it('shows nothing for a zero count', () => {
+    expect(badgeText(0)).toBeUndefined();
   });
 });
