@@ -209,7 +209,7 @@
 .poster-progress[data-shown] { opacity: 1; }
 .poster-progress > span { display: block; height: 100%; background: var(--accent); transform: scaleX(0); transform-origin: left; }
 /* Thumbnail overlays: a replay's duration, or a suite's run count (bottom-right, like a video player). */
-.poster-badge { position: absolute; z-index: 3; right: 4px; bottom: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; border-radius: 3px; background: rgb(16 14 18 / 0.78); color: #f6f2f7; font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 15px; }
+.poster-badge { position: absolute; z-index: 3; right: 4px; bottom: 4px; display: inline-flex; align-items: center; gap: 3px; padding: 0 4px; border-radius: 3px; background: var(--poster-overlay-bg); color: var(--poster-overlay-fg); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 15px; }
 .poster-badge svg { width: 10px; height: 10px; }
 .poster-card .poster-badge { right: 6px; bottom: 6px; padding: 0 5px; font-size: var(--text-xs); line-height: 17px; }
 .poster-card .poster-badge svg { width: 11px; height: 11px; }
@@ -357,7 +357,7 @@
 /* Grid cards: a soft raised surface (layered shadow, no hard border), full-bleed thumbnail on top, equal heights
    per row with the meta row pinned to the bottom. The feed behind the cards takes the page tint so they stand out. */
 .feed-list[data-view="grid"] { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); align-items: stretch; gap: 20px; padding: 28px var(--gutter) 24px; }
-.feed-list[data-view="grid"] .feed-item { --card-radius: 12px; display: flex; flex-direction: column; gap: 0; padding: 0; border: 0; border-radius: var(--card-radius); background: var(--surface-raised); box-shadow: var(--card-shadow); }
+.feed-list[data-view="grid"] .feed-item { display: flex; flex-direction: column; gap: 0; padding: 0; border: 0; border-radius: var(--card-radius); background: var(--surface-raised); box-shadow: var(--card-shadow); }
 .feed-list[data-view="grid"] .poster-card { border-radius: var(--card-radius) var(--card-radius) 0 0; clip-path: inset(0 round var(--card-radius) var(--card-radius) 0 0); }
 .feed-list[data-view="grid"] .poster-card::after { box-shadow: inset 0 -1px 0 var(--line); }
 .feed-list[data-view="grid"] .feed-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px; padding: 14px; }
@@ -471,7 +471,7 @@ html[data-feed-transition]::view-transition-new(root) { animation-duration: 160m
 /* The run on screen: its strip segment brightens and gets a thin ring. */
 .run-seg[data-active] { box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--text) 70%, transparent); filter: brightness(1.25); }
 /* A short "02 · Desktop: login only" on the poster's bottom-left after each change (fades in, holds, fades out). */
-.poster-caption { position: absolute; z-index: 2; bottom: 4px; left: 4px; max-width: calc(100% - 72px); overflow: hidden; padding: 0 5px; border-radius: 3px; background: rgb(16 14 18 / 0.78); color: #f6f2f7; font-size: 10px; font-weight: 600; line-height: 15px; text-overflow: ellipsis; white-space: nowrap; animation: poster-caption 1.2s var(--ease-out) both; pointer-events: none; }
+.poster-caption { position: absolute; z-index: 2; bottom: 4px; left: 4px; max-width: calc(100% - 72px); overflow: hidden; padding: 0 5px; border-radius: 3px; background: var(--poster-overlay-bg); color: var(--poster-overlay-fg); font-size: 10px; font-weight: 600; line-height: 15px; text-overflow: ellipsis; white-space: nowrap; animation: poster-caption 1.2s var(--ease-out) both; pointer-events: none; }
 .poster-card .poster-caption { bottom: 6px; left: 6px; font-size: var(--text-xs); line-height: 17px; }
 @keyframes poster-caption { 0% { opacity: 0; transform: translate3d(0, 3px, 0); } 15%, 75% { opacity: 1; transform: none; } 100% { opacity: 0; } }
 /* The old front's still while it slides back into the pile (under the new front). */

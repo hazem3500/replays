@@ -92,7 +92,17 @@ export default definePlugin((options: AcmeOptions) => ({
     api.branding({
       name: 'Acme Replays',
       logoUrl: LOGO,
-      theme: { dark: { accent: '#ff6600', 'accent-contrast': '#1a0b00' }, light: { accent: '#b84700', 'accent-contrast': '#ffffff' } },
+      theme: {
+        dark: {
+          accent: '#ff6600',
+          'accent-contrast': '#1a0b00',
+          'card-radius': '16px',
+          'motion-fast': '100ms',
+          'caption-bg': '#1a0b00',
+          'caption-fg': '#ffffff',
+        },
+        light: { accent: '#b84700', 'accent-contrast': '#ffffff' },
+      },
     });
     api.basePath('/acme/replays');
 

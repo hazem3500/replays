@@ -1,3 +1,4 @@
+import { useIndexPluginEvents } from './hooks/use-index-plugin-events.ts';
 import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
 import { type QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -493,6 +494,7 @@ export function ReplayIndex({
   // Every tag seen so far, like hosts: choosing one narrows the list, but the other tags stay on offer.
   const [tags, setTags] = useState<string[]>(() => tagOptions(restored?.items ?? []).sort());
   const [sort, setSort] = useState<Sort>(() => sortFromSearch(opened));
+  useIndexPluginEvents(indexSearch(filters, kind, sort, profile, forMe));
   /** Undefined until the first suites request settles, so suite replays never flash as sessions. */
   const [suites, setSuites] = useState<ReviewSuiteIndexEntry[] | undefined>(restored?.suites);
   // What the feed shows right now (for refreshes) and the newest item this tab has listed (for arrivals).

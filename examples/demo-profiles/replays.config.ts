@@ -9,6 +9,7 @@ export default defineConfig({
       order: 0,
       retentionDays: 90,
       viewer: { openAt: 'first-error', leadMs: 1000, inspector: 'open' },
+      capture: { network: 'bodies' },
       poster: 'first-error',
     },
     {
@@ -25,6 +26,7 @@ export default defineConfig({
       order: 2,
       retentionDays: 0,
       viewer: { openAt: 'start', captions: true, inspector: 'collapsed' },
+      capture: { network: 'headers' },
       poster: 'last-step',
     },
   ],
