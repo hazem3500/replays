@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'reac
 import { diffLines } from '../../shared/line-diff.ts';
 import { CAPABILITIES, type Capability, isWriteCapability, PluginFormatError, starterPlugin } from '../../shared/malleable.ts';
 import { targetsFor } from '../../shared/malleable-policy.ts';
-import { appBase } from '../route.ts';
+import { appBase } from '../api/fetch.ts';
 import { notify } from '../toast.ts';
 import { connectAgent, disconnectAgent, useBridge } from './bridge.ts';
 import { DiffView } from './DiffView.tsx';

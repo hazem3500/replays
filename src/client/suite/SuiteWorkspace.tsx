@@ -21,8 +21,9 @@ import { formatClock } from '../../shared/replay.ts';
 import { type ReviewSuite, type ReviewSuiteIndexRun, suiteOverallStatus } from '../../shared/review-suite.ts';
 import { productName } from '../config.ts';
 import { prefetchReplay, replayQuery, type SuiteWithRuns, suiteQuery } from '../queries.ts';
-import { setPageUrl, swapInPlace } from '../navigation.ts';
-import { indexHref, indexReturnHref, parseRoute, replayInSuiteHref, suiteHref } from '../route.ts';
+import { setPageUrl } from '../routing/navigate.ts';
+import { swapInPlace } from '../transitions/swap.ts';
+import { indexHref, indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 import { Topbar } from '../Topbar.tsx';
@@ -121,7 +122,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // refresh of the suite (a run that failed meanwhile) cannot move the viewer to another run.
   useEffect(() => {
     if (chosen || !landing) return;
-    history.replaceState(history.state, '', `${replayInSuiteHref(landing, id)}${location.search}${location.hash}`);
+    setPageUrl(`${replayInSuiteHref(landing, id)}${location.search}${location.hash}`);
     // oxlint-disable-next-line react/set-state-in-effect -- pins a value already on screen; no visible re-render
     setSelected(landing);
   }, [chosen, id, landing]);
@@ -138,7 +139,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const comparing = defaults.compare;
 
   // The run being switched to: the sidebar's selection moves at once, the viewer once its data is in (or after a
-  // short wait), as one calm in-place transition (navigation.ts swapInPlace).
+  // short wait), as one calm in-place transition (transitions/swap.ts).
   const queryClient = useQueryClient();
   const [pending, setPending] = useState<string>();
   const target = pending ?? selected;
@@ -164,8 +165,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
 
   useEffect(() => {
     const onPop = () => {
-      const route = parseRoute(location.pathname, location.search);
-      if (route.kind !== 'suite' || route.id !== id) return;
+      const route = suiteRunOf(location.pathname);
+      if (route?.suiteId !== id) return;
       if (comparing) setSelected(route.replayId);
       else switchTo(route.replayId);
     };
@@ -181,7 +182,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         setSelected(replayId);
         return;
       }
-      history.pushState(null, '', replayInSuiteHref(replayId, id));
+      setPageUrl(replayInSuiteHref(replayId, id), { push: true });
       switchTo(replayId, instant);
     },
     [comparing, id, switchTo, target],

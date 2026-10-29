@@ -21,7 +21,7 @@ import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
 import type { LoadedEdits } from './edits.ts';
-import { editHref } from './route.ts';
+import { editHref } from './routing/links.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
@@ -73,6 +73,7 @@ import { cn } from '@/lib/utils.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { useKeep } from './viewer/keep.ts';
+import { setPageUrl } from './routing/navigate.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
@@ -347,7 +348,7 @@ export function Viewer({
       if (!step) return;
       player.seek(step.at);
       stepCursor.current = { index, time: player.getTime() };
-      history.replaceState(history.state, '', stepPermalink(location.href, index));
+      setPageUrl(stepPermalink(location.href, index));
     };
     const currentStep = () => (stepCursor.current?.time === player.getTime() ? stepCursor.current.index : undefined);
     return {
@@ -377,7 +378,7 @@ export function Viewer({
       },
       copyLink: () => {
         const url = timePermalink(location.href, player.getTime());
-        history.replaceState(history.state, '', url);
+        setPageUrl(url);
         void copyText(url).then((copied) => notify(copied ? `Link to ${formatClock(player.getTime())} copied` : 'Could not copy the link'));
       },
       switchFullscreen: () => {
@@ -1202,7 +1203,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
     url.hash = '';
     if (next) url.searchParams.set('original', '1');
     else url.searchParams.delete('original');
-    history.replaceState(history.state, '', url);
+    setPageUrl(url);
     setOriginalState(next);
   }, []);
   const edited = useMemo(
