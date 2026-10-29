@@ -12,7 +12,10 @@
     "typescript/no-unsafe-argument": "warn",
     "typescript/no-unsafe-type-assertion": "warn",
     "typescript/no-unnecessary-type-assertion": "warn",
-    "typescript/only-throw-error": ["warn", { "allow": [{ "from": "package", "package": "@tanstack/router-core", "name": ["Redirect", "NotFoundError"] }] }],
+    "typescript/only-throw-error": [
+      "warn",
+      { "allow": [{ "from": "package", "package": "@tanstack/router-core", "name": ["Redirect", "NotFoundError"] }] }
+    ],
     "typescript/return-await": ["warn", "in-try-catch"],
     "typescript/require-await": "warn",
     "typescript/no-unnecessary-boolean-literal-compare": "warn",
