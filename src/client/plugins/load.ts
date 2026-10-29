@@ -1,5 +1,6 @@
 import { VIEWER_API_VERSION, type ViewerPlugin } from './api.ts';
 import { viewerRegistry, type ViewerRegistry } from './registry.ts';
+import { pageMeta } from '../page-meta.ts';
 
 export interface ClientEntryInfo {
   plugin: string;
@@ -10,8 +11,7 @@ export interface ClientEntryInfo {
 
 /** The entries the server wrote into `<meta name="app-plugins">`; malformed content means none. */
 export function readClientEntries(): ClientEntryInfo[] {
-  if (typeof document === 'undefined') return [];
-  const content = document.querySelector<HTMLMetaElement>('meta[name="app-plugins"]')?.content;
+  const content = pageMeta('app-plugins');
   if (!content) return [];
   try {
     const parsed: unknown = JSON.parse(content);

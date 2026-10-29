@@ -10,7 +10,11 @@ import { strings } from './strings.ts';
 
 /** Interim view over the public plugin settings API, until the platform's PluginSettingsSection (src/client/plugins/) lands. */
 function PluginSettingRow({ plugin, definition }: { plugin: string; definition: SettingDefinition }) {
-  const value = useSyncExternalStore(subscribeSettings, () => readSetting(plugin, definition));
+  const value = useSyncExternalStore(
+    subscribeSettings,
+    () => readSetting(plugin, definition),
+    () => readSetting(plugin, definition),
+  );
   const labelId = useId();
   return (
     <SettingsRow
@@ -37,7 +41,7 @@ function PluginSettingRow({ plugin, definition }: { plugin: string; definition: 
 }
 
 export function PluginsSection() {
-  const settings = useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot).settings;
+  const settings = useSyncExternalStore(viewerRegistry.subscribe, viewerRegistry.getSnapshot, viewerRegistry.getSnapshot).settings;
   const plugins = [...new Set(settings.map((setting) => setting.plugin))];
   return (
     <>

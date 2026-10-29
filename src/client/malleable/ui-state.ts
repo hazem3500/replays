@@ -24,5 +24,5 @@ export const subscribeMalleableUi = (listener: () => void) => {
   listeners.add(listener);
   return () => listeners.delete(listener);
 };
-export const useMalleableUi = () => useSyncExternalStore(subscribeMalleableUi, getMalleableUi);
+export const useMalleableUi = () => useSyncExternalStore(subscribeMalleableUi, getMalleableUi, getMalleableUi);
 export const openWorkshop = () => setMalleableUi({ workshopOpen: true });
