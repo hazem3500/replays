@@ -867,7 +867,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
           )}
           <section className="editor-stage" aria-label="Preview">
             <EditorPreviewFrame>
-              <PlayerStage />
+              <PlayerStage inset={mobile ? 0 : 12} />
               <BlurOverlay
                 edits={edits}
                 selection={selection}
@@ -991,6 +991,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   selection={mobileSelection}
                   dispatch={timelineDispatch}
                   onPlayPause={playPause}
+                  toEdited={(time) => timeline.toEdited(time)}
                 />
               ) : (
                 <Timeline
@@ -1253,7 +1254,14 @@ function SaveIndicator({
       : 'Changes save as you edit';
   return (
     <Hint label={detail} side="bottom" align="start">
-      <span className="editor-save-state" data-state={saved ? 'saved' : status} data-testid="save-state" role="status" tabIndex={-1}>
+      <span
+        className="editor-save-state"
+        data-state={saved ? 'saved' : status}
+        data-saving={text === 'Saving…' || undefined}
+        data-testid="save-state"
+        role="status"
+        tabIndex={-1}
+      >
         {saved ? <CheckIcon aria-hidden="true" /> : null}
         {text}
       </span>

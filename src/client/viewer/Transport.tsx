@@ -35,7 +35,12 @@ const LIGHT_MOUNT_EVENTS = 3000;
 /** How long a click on the stage waits for a second click (double click = fullscreen) before flipping playback. */
 const DOUBLE_CLICK_MS = 220;
 
-export function PlayerStage() {
+export function PlayerStage({
+  inset = 12,
+}: {
+  /** Room (px) kept around the fitted recording; the phone editor's stage is the recording's shape, so it keeps none. */
+  inset?: number;
+} = {}) {
   const player = usePlayer();
   const viewport = useViewport();
   const box = useRef<HTMLDivElement>(null);
@@ -104,7 +109,7 @@ export function PlayerStage() {
     target.style.width = `${viewport.width}px`;
     target.style.height = `${viewport.height}px`;
     const apply = () => {
-      const fit = fitViewport({ width: element.clientWidth, height: element.clientHeight }, viewport, 12);
+      const fit = fitViewport({ width: element.clientWidth, height: element.clientHeight }, viewport, inset);
       target.style.transform = `scale(${fit.scale})`;
       // Overlays inside the replay (the step target outline) keep a constant on-screen stroke.
       target.style.setProperty('--player-scale', String(fit.scale));
@@ -132,7 +137,7 @@ export function PlayerStage() {
     observer.observe(element);
     apply();
     return () => observer.disconnect();
-  }, [viewport]);
+  }, [viewport, inset]);
 
   // The recorded page is a picture of the session, not part of this app: `inert` keeps Tab from walking every
   // link and field the recorded site had (and screen readers from reading it as live UI). The stage itself

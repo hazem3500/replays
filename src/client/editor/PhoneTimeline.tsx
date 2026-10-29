@@ -8,8 +8,8 @@ import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { useLanesWidth, usePhoneTimeline } from '../hooks/use-phone-timeline.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { usePlayer } from '../player.ts';
-import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
+import { usePlayer, usePlayhead } from '../player.ts';
+import { EditorPlayButton } from './EditorTransport.tsx';
 import { PhoneLanes } from './PhoneLanes.tsx';
 import { clampScale, fitScale, stepBoundaries } from './phone-timeline.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
@@ -41,6 +41,23 @@ function dragToScroll(event: ReactPointerEvent<HTMLDivElement>) {
 }
 
 /**
+ * The one time readout: where the playhead is in the edited result, over the result's length (the recording's own
+ * length is in its tooltip when edits shorten it).
+ */
+function PhoneReadout({ duration, edited, toEdited }: { duration: number; edited: number; toEdited: (time: number) => number }) {
+  const now = usePlayhead((time) => formatClock(toEdited(time)));
+  const shortened = Math.round(edited) !== Math.round(duration);
+  return (
+    <span className="phone-time" title={shortened ? `${formatClock(duration)} recorded` : undefined} data-testid="phone-readout">
+      <span className="editor-clock" data-testid="editor-clock">
+        {now}
+      </span>
+      <span className="phone-duration">/ {formatClock(edited)}</span>
+    </span>
+  );
+}
+
+/**
  * The phone timeline (the mobile video-editor pattern): a fixed centre playhead the full-width lanes scroll under,
  * so dragging the clips scrubs and the platform's momentum carries it; pinch zooms. Play and the time sit in its
  * slim bar; there is no separate ruler or scrub row.
@@ -53,6 +70,7 @@ export function PhoneTimeline({
   selection,
   dispatch,
   onPlayPause,
+  toEdited,
 }: {
   /** The original recording's length, the timeline's scale. */
   duration: number;
@@ -63,6 +81,8 @@ export function PhoneTimeline({
   selection: Selection;
   dispatch: (action: EditorAction) => void;
   onPlayPause: () => void;
+  /** Original ms to the edited result's ms (cuts and trim removed). */
+  toEdited: (time: number) => number;
 }) {
   const player = usePlayer();
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
@@ -77,11 +97,7 @@ export function PhoneTimeline({
     <div className="phone-timeline" data-testid="timeline" data-ready={width > 0 || undefined}>
       <div className="phone-timeline-bar">
         <EditorPlayButton onSwitch={onPlayPause} />
-        <span className="phone-time">
-          <EditorClock />
-          <span className="phone-duration">/ {formatClock(duration)}</span>
-        </span>
-        {Math.round(edited) === Math.round(duration) ? null : <Durations original={duration} edited={edited} />}
+        <PhoneReadout duration={duration} edited={edited} toEdited={toEdited} />
         <IconButton
           label="Fit the whole recording"
           className="phone-fit"

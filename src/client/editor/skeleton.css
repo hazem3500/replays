@@ -36,20 +36,21 @@
    * and tools sit at the editor's arriving opacity (editor-layout.css), so the loaded ones fade up from there.
    */
   .app-shell.editor-loading[data-mobile] { grid-template-rows: auto auto minmax(0, 1fr); background: var(--canvas); }
-  .sk-phone-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); }
-  .sk-phone-heading { min-width: 0; padding: 0 4px; }
-  .sk-phone-heading > h1 { margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
-  .sk-phone-heading > span { display: block; height: 21px; }
+  .sk-phone-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 2px 4px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  .sk-phone-heading { display: flex; align-items: center; min-width: 0; padding: 0 4px; }
+  .sk-phone-heading > h1 { flex: 0 1 auto; min-width: 0; margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
   .sk-phone-icon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--text); }
   .sk-phone-icon svg { width: 14px; height: 14px; }
   .sk-phone-icon[data-disabled] { color: var(--text-secondary); opacity: 0.5; }
   .sk-phone-icon[data-disabled] svg { width: 16px; height: 16px; }
   .sk-phone-more { color: var(--text-secondary); }
   .sk-phone-more svg { width: 20px; height: 20px; }
-  .sk-phone-stage { display: flex; justify-content: center; min-width: 0; padding: 6px 8px; }
-  .sk-phone-stage .stage-wrap { flex: none; width: 100%; max-width: calc((46dvh - 12px) * var(--sk-ratio)); aspect-ratio: var(--sk-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
+  .sk-phone-stage { display: flex; justify-content: center; min-width: 0; padding: 0; }
+  .sk-phone-stage .stage-wrap { flex: none; width: 100%; max-width: calc(46dvh * var(--sk-ratio)); aspect-ratio: var(--sk-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .app-shell.editor-loading[data-mobile] .player-stage { flex: 1; min-height: 0; max-height: none; aspect-ratio: auto; }
-  .sk-phone-dock { display: grid; grid-template-rows: 44px minmax(0, 1fr) auto; min-width: 0; min-height: 0; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); background: var(--surface); }
+  /* why: the phone editor's player keeps no room around the recording (PlayerStage inset 0), so neither does its frame. */
+  .sk-phone-stage .sk-frame { width: min(100cqw, 100cqh * var(--sk-ratio)); }
+  .sk-phone-dock { display: grid; grid-template-rows: 44px minmax(0, 1fr) auto; min-width: 0; min-height: 0; padding: 0; overflow: hidden; border-top: 1px solid var(--line); background: var(--surface); }
   .sk-phone-bar { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 0 6px 0 2px; opacity: 0.55; }
   .sk-phone-play, .sk-phone-fit { display: grid; place-items: center; flex: none; width: 44px; height: 44px; }
   .sk-phone-play svg { width: 16px; height: 16px; }
@@ -86,5 +87,5 @@
 
 @layer utilities {
   /* The phone header's 44 px touch targets, over the buttons' own size utilities (as editor.css does once loaded). */
-  .sk-phone-header .sk-phone-export { height: 44px; }
+  .sk-phone-header .sk-phone-export { height: 32px; padding: 0 12px; border-radius: 8px; }
 }

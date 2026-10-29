@@ -227,11 +227,16 @@
 @layer app {
   /* Phones: the header, the picture at the screen's width, then the timeline and its toolbar (phone-editor.css). */
   .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
-  .editor-mobile-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); }
-  .editor-mobile-heading { min-width: 0; padding: 0 4px; }
-  .editor-mobile-heading h1 { margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
-  .editor-mobile-heading .editor-save-state { max-width: 100%; color: var(--text-secondary); font-size: var(--text-xs); white-space: normal; overflow-wrap: anywhere; }
-  .editor-mobile-header .editor-export { padding: 0 10px; }
+  .editor-mobile-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 2px 4px; border-bottom: 1px solid var(--line); background: var(--surface); }
+  /* One line: the title, then the save state as a glyph (its words stay for screen readers; a failure keeps them visible). */
+  .editor-mobile-heading { display: flex; align-items: center; gap: 6px; min-width: 0; padding: 0 4px; }
+  .editor-mobile-heading h1 { flex: 0 1 auto; min-width: 0; margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+  .editor-mobile-heading .editor-save-state { flex: none; max-width: 60%; overflow: hidden; color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; text-overflow: ellipsis; }
+  .editor-mobile-heading .editor-save-state:not([data-state="failed"], [data-state="unavailable"]) { font-size: 0; }
+  .editor-mobile-heading .editor-save-state[data-saving]::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--text-tertiary); animation: phone-saving 900ms ease-in-out infinite alternate; }
+  @keyframes phone-saving { to { opacity: 0.3; } }
+  .editor-shell[data-mobile] .editor-mobile-header .editor-export { position: relative; min-height: 32px; height: 32px; padding: 0 12px; border-radius: 8px; }
+  .editor-mobile-header .editor-export::after { content: ""; position: absolute; inset: -6px -2px; }
   .editor-mobile-header .editor-export svg { display: block; }
   .editor-mobile-more > summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; list-style: none; }
   .editor-mobile-more > summary::-webkit-details-marker, .editor-add-more > summary::-webkit-details-marker { display: none; }
@@ -239,10 +244,10 @@
   .editor-mobile-menu { position: absolute; top: calc(100% - 2px); right: 6px; display: flex; flex-direction: column; gap: 4px; width: min(270px, calc(100vw - 20px)); max-height: 60dvh; overflow-y: auto; overscroll-behavior: contain; padding: 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-raised); box-shadow: 0 8px 24px rgb(0 0 0 / 0.15); }
   .editor-mobile-more:not([open]) > .editor-mobile-menu, .editor-add-more:not([open]) > .editor-mobile-menu { display: none; }
   .editor-mobile-menu > button { justify-content: flex-start; }
-  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; justify-content: center; padding: 6px 8px; }
-  .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc((46dvh - 12px) * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
+  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; justify-content: center; padding: 0; }
+  .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc(46dvh * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .editor-shell.app-shell[data-mobile] .editor-stage .player-stage { flex: none; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: var(--editor-preview-ratio); background: var(--canvas); }
-  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; min-height: 0; max-height: none; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); }
+  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; min-height: 0; max-height: none; padding: 0; overflow: hidden; border-top: 1px solid var(--line); }
   .editor-timeline-content { min-height: 0; display: flex; flex: 1; flex-direction: column; }
   .editor-shell.app-shell[data-mobile] .editor-timeline-content { grid-area: timeline; min-height: 0; overflow: hidden; }
   .editor-add-toolbar { grid-area: tools; position: relative; z-index: 10; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 6px 0; border-top: 1px solid var(--line); }

@@ -115,7 +115,6 @@ export function PhoneEditorSkeleton({
         </span>
         <div className="sk-phone-heading">
           <h1>{title}</h1>
-          <span aria-hidden="true" />
         </div>
         <span className="sk-phone-icon" data-disabled="" aria-hidden="true">
           <Undo2Icon aria-hidden="true" />
