@@ -153,14 +153,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 261085,
-      "gzip": 44889,
-      "brotli": 37191
+      "raw": 266630,
+      "gzip": 45795,
+      "brotli": 37918
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 986487,
-      "gzip": 308973,
-      "brotli": 256601
+      "raw": 994149,
+      "gzip": 310973,
+      "brotli": 257069
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -208,9 +208,9 @@
       "brotli": 3622
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
-      "raw": 982,
-      "gzip": 607,
-      "brotli": 553
+      "raw": 1022,
+      "gzip": 608,
+      "brotli": 585
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -279,7 +279,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 60104,
-      "gzip": 21476,
+      "gzip": 21487,
       "brotli": 18749
     },
     "dist/client/index.html": {
@@ -488,9 +488,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 261085,
-      "gzip": 44889,
-      "brotli": 37191
+      "raw": 266630,
+      "gzip": 45795,
+      "brotli": 37918
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -744,7 +744,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1050,12 +1050,12 @@
     {
       "file": "dist/client/assets/ReplayComparePage-HASH.js",
       "cap": {
-        "brotli": 585,
         "raw": 1022,
-        "gzip": 633
+        "gzip": 633,
+        "brotli": 585
       },
-      "reason": "No source change: the compare page glue names lazy viewer chunks by their hashes, which change with the loading parts; measured against main: 0 B raw, 2 B gzip, +30 B brotli (567 against main's 537 and a 554-byte cap). Replaces #105's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/127"
+      "reason": "No source change: the compare page glue names lazy chunks by their hashes, and the main chunk's new hash compresses 11 B larger in brotli than main's cap (564 B against 553 B). Replaces #127's allowance, keeping its caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.css",
@@ -1138,10 +1138,12 @@
     {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 986487
+        "raw": 994149,
+        "gzip": 310973,
+        "brotli": 257069
       },
-      "reason": "ScopeCount and RefreshLine replace the count's sentence states; head measures 986487 raw bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/145"
+      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice; the lane glyphs and ruler ticks move here from the editor chunk (Editor JS -569 B brotli). Measured against main a8320745: +7692 B raw, +2289 B gzip, +1694 B brotli. Replaces #145's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
@@ -1243,31 +1245,31 @@
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
         "raw": 60104,
-        "gzip": 21476,
+        "gzip": 21487,
         "brotli": 18749
       },
-      "reason": "Compare draws the step caption on its focused tile, so the viewer's own stage caption steps aside when a comparison supplies the stage: +12 B raw, +7 B gzip measured on Boat against fresh main 0e7a3fdd. Replaces #157's allowance for this file (hash drift), keeping its Brotli cap.",
-      "pr": "https://github.com/hazem3500/replays/pull/167"
+      "reason": "No source change in the viewer: the main chunk's new hash in its imports compresses 11 B larger in gzip (raw -5 B, brotli -1 B). Replaces #167's allowance, keeping its raw and brotli caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 261085,
-        "gzip": 44889,
-        "brotli": 37191
+        "raw": 266630,
+        "gzip": 45795,
+        "brotli": 37918
       },
-      "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/149"
+      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: its phone geometry in skeleton.css, eager because editor.css loads with the editor. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 261085,
-        "gzip": 44889,
-        "brotli": 37191
+        "raw": 266630,
+        "gzip": 45795,
+        "brotli": 37918
       },
-      "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/149"
+      "reason": "Phone editor loading frame (PhoneEditorSkeleton): the phone header, the frame, the transport, the ruler, the cached edits' lanes and regions and the tool row at their loaded rects, replacing the generic stage and the Opening editor notice: the first page's stylesheet is main-HASH.css. Measured against main a8320745: +5545 B raw, +906 B gzip, +759 B brotli. Replaces #149's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",

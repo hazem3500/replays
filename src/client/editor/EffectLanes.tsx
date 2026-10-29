@@ -5,8 +5,24 @@ import { type ReplayBlur, ZOOM_IN_MS } from '../../shared/effects.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { addEffect, type EditorAction, type EffectKind, effectList, moveEffect, removeEffect, type Selection } from './state.ts';
-import { LANES } from './lanes.tsx';
+import { LANE_GLYPHS } from './lanes.tsx';
 import { Lane, RegionBlock, startDrag, useTimelineScale } from './Timeline.tsx';
+
+/** Each lane's name (the gutter's tooltip) and the hint an empty lane shows. */
+const LANE_TEXT: Record<EffectKind, { name: string; empty: string }> = {
+  zoom: {
+    name: 'Zoom: drag on the lane to add a zoom, Z zooms in on every click',
+    empty: 'Zoom · drag to add · Z zooms in on every click',
+  },
+  speed: { name: 'Speed: drag on the lane to speed a stretch up (F)', empty: 'Speed · drag over a stretch to play it faster' },
+  blur: { name: 'Blur: drag on the lane to hide part of the page (B)', empty: 'Blur · drag to hide part of the page while it shows' },
+  caption: {
+    name: 'Captions: drag on the lane to add one, T adds captions from the steps',
+    empty: 'Captions · drag to add one · T writes them from the steps',
+  },
+};
+
+const LANES = LANE_GLYPHS.map((glyph) => ({ ...glyph, ...LANE_TEXT[glyph.kind] }));
 
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
 

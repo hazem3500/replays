@@ -10,39 +10,12 @@ const speedLabel = (speed: ReplaySpeedRange) => `${speed.rate}×`;
 const blurLabel = (blur: ReplayBlur) => (blur.style === 'redact' ? 'Redact' : 'Blur');
 const captionLabel = (caption: ReplayCaption) => caption.text;
 
-/**
- * Each effect lane: its name (the gutter's tooltip), glyph, and how one of its regions is labelled. Shared by the
- * timeline and the phone's loading frame, so both draw the same lanes.
- */
-export const LANES: Array<{ kind: EffectKind; name: string; empty: string; icon: ReactNode; label: (region: never) => string }> = [
-  {
-    kind: 'zoom',
-    name: 'Zoom: drag on the lane to add a zoom, Z zooms in on every click',
-    empty: 'Zoom · drag to add · Z zooms in on every click',
-    icon: <ZoomInIcon />,
-    label: zoomLabel,
-  },
-  {
-    kind: 'speed',
-    name: 'Speed: drag on the lane to speed a stretch up (F)',
-    empty: 'Speed · drag over a stretch to play it faster',
-    icon: <FastForwardIcon />,
-    label: speedLabel,
-  },
-  {
-    kind: 'blur',
-    name: 'Blur: drag on the lane to hide part of the page (B)',
-    empty: 'Blur · drag to hide part of the page while it shows',
-    icon: <EyeOffIcon />,
-    label: blurLabel,
-  },
-  {
-    kind: 'caption',
-    name: 'Captions: drag on the lane to add one, T adds captions from the steps',
-    empty: 'Captions · drag to add one · T writes them from the steps',
-    icon: <CaptionsIcon />,
-    label: captionLabel,
-  },
+/** Each effect lane's glyph and how one of its regions is labelled, shared by the timeline and its phone loading frame. */
+export const LANE_GLYPHS: Array<{ kind: EffectKind; icon: ReactNode; label: (region: never) => string }> = [
+  { kind: 'zoom', icon: <ZoomInIcon />, label: zoomLabel },
+  { kind: 'speed', icon: <FastForwardIcon />, label: speedLabel },
+  { kind: 'blur', icon: <EyeOffIcon />, label: blurLabel },
+  { kind: 'caption', icon: <CaptionsIcon />, label: captionLabel },
 ];
 
 export interface LaneRegion {
@@ -64,7 +37,7 @@ export function laneRegions(edits: ReplayEdits) {
     blur: labelled(edits.blurs, blurLabel),
     caption: labelled(edits.captions, captionLabel),
   };
-  return LANES.filter((lane) => lists[lane.kind].length > 0).map((lane) => ({
+  return LANE_GLYPHS.filter((lane) => lists[lane.kind].length > 0).map((lane) => ({
     kind: lane.kind,
     icon: lane.icon,
     regions: lists[lane.kind],
