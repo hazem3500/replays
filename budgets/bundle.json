@@ -83,14 +83,14 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8344,
-      "gzip": 2182,
-      "brotli": 1873
+      "raw": 7830,
+      "gzip": 2082,
+      "brotli": 1777
     },
     "dist/client/assets/CompareViewer-HASH.js": {
-      "raw": 38057,
-      "gzip": 13526,
-      "brotli": 12013
+      "raw": 37956,
+      "gzip": 13469,
+      "brotli": 11968
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 94002,
@@ -108,9 +108,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 100911,
-      "gzip": 33794,
-      "brotli": 28876
+      "raw": 102425,
+      "gzip": 34267,
+      "brotli": 29308
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -132,25 +132,15 @@
       "gzip": 439,
       "brotli": 380
     },
-    "dist/client/assets/Headline-HASH.css": {
-      "raw": 1089,
-      "gzip": 450,
-      "brotli": 358
-    },
-    "dist/client/assets/Headline-HASH.js": {
-      "raw": 5736,
-      "gzip": 2518,
-      "brotli": 2306
-    },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
       "gzip": 8406,
       "brotli": 7521
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 241143,
-      "gzip": 81999,
-      "brotli": 68772
+      "raw": 240032,
+      "gzip": 81560,
+      "brotli": 68365
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -163,12 +153,12 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 260963,
-      "gzip": 44874,
+      "raw": 261085,
+      "gzip": 44889,
       "brotli": 37191
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 986714,
+      "raw": 986487,
       "gzip": 308973,
       "brotli": 256601
     },
@@ -185,7 +175,7 @@
     "dist/client/assets/pencil-HASH.js": {
       "raw": 321,
       "gzip": 256,
-      "brotli": 246
+      "brotli": 230
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -214,7 +204,7 @@
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
-      "gzip": 3991,
+      "gzip": 3989,
       "brotli": 3622
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
@@ -229,7 +219,7 @@
     },
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 16683,
-      "gzip": 5907,
+      "gzip": 5908,
       "brotli": 5388
     },
     "dist/client/assets/step-caption-HASH.css": {
@@ -240,7 +230,7 @@
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 887,
       "gzip": 539,
-      "brotli": 505
+      "brotli": 504
     },
     "dist/client/assets/storage-HASH.js": {
       "raw": 461,
@@ -253,8 +243,8 @@
       "brotli": 613
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21476,
-      "gzip": 8792,
+      "raw": 21285,
+      "gzip": 8753,
       "brotli": 7566
     },
     "dist/client/assets/tools-HASH.js": {
@@ -270,7 +260,7 @@
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 312,
       "gzip": 253,
-      "brotli": 216
+      "brotli": 219
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -280,22 +270,17 @@
     "dist/client/assets/useTriggerFocusGuards-HASH.js": {
       "raw": 72164,
       "gzip": 25666,
-      "brotli": 22678
+      "brotli": 22682
     },
     "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5969,
-      "gzip": 1562,
-      "brotli": 1344
+      "raw": 5200,
+      "gzip": 1420,
+      "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 67379,
-      "gzip": 23940,
-      "brotli": 20827
-    },
-    "dist/client/assets/VitalsTile-HASH.js": {
-      "raw": 665,
-      "gzip": 461,
-      "brotli": 422
+      "raw": 60092,
+      "gzip": 21469,
+      "brotli": 18726
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -305,7 +290,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 542,
-      "brotli": 403
+      "brotli": 404
     },
     "dist/lib/capture.mjs": {
       "raw": 1703,
@@ -328,9 +313,9 @@
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs": {
-      "raw": 308611,
-      "gzip": 80898,
-      "brotli": 66297
+      "raw": 308481,
+      "gzip": 80873,
+      "brotli": 66283
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -430,7 +415,7 @@
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
       "gzip": 1640,
-      "brotli": 1415
+      "brotli": 1418
     },
     "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs": {
       "raw": 53813,
@@ -439,23 +424,18 @@
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
-      "gzip": 1901,
-      "brotli": 1709
+      "gzip": 1902,
+      "brotli": 1711
     },
-    "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs": {
-      "raw": 752,
-      "gzip": 401,
-      "brotli": 335
+    "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
+      "raw": 3955,
+      "gzip": 1532,
+      "brotli": 1303
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
       "gzip": 1146,
       "brotli": 939
-    },
-    "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs": {
-      "raw": 863,
-      "gzip": 461,
-      "brotli": 367
     },
     "dist/lib/recorder-chunks/privacy.ts-ad04ad224241.mjs": {
       "raw": 1644,
@@ -478,9 +458,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 27207,
-      "gzip": 7884,
-      "brotli": 6908
+      "raw": 26997,
+      "gzip": 7715,
+      "brotli": 6748
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190557,
@@ -488,7 +468,7 @@
       "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
-      "raw": 2904,
+      "raw": 2920,
       "gzip": 854,
       "brotli": 740
     },
@@ -508,8 +488,8 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 260963,
-      "gzip": 44874,
+      "raw": 261085,
+      "gzip": 44889,
       "brotli": 37191
     },
     "initial/index.html/js": {
@@ -570,26 +550,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
-      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
-      "cap": {
-        "raw": 6769,
-        "gzip": 1901,
-        "brotli": 1709
-      },
-      "reason": "Deferred default-UI loader chunk shared by the recorder entries after the core split.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/format.ts-ae4027eae00a.mjs",
-      "cap": {
-        "raw": 752,
-        "gzip": 401,
-        "brotli": 335
-      },
-      "reason": "Message formatting chunk shared by the recorder core and UI entries after the split.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
       "file": "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs",
       "cap": {
         "raw": 2889,
@@ -597,16 +557,6 @@
         "brotli": 939
       },
       "reason": "Recorder kit store and timer chunk shared by the kit, React and UI entries.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/messages.ts-2df211e12161.mjs",
-      "cap": {
-        "raw": 863,
-        "gzip": 461,
-        "brotli": 367
-      },
-      "reason": "Recorder message catalog chunk shared by the core and UI entries after the split.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
@@ -794,12 +744,23 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "pr": "https://github.com/hazem3500/replays/pull/105"
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.css",
+      "cap": {
+        "raw": 8845,
+        "gzip": 2280,
+        "brotli": 1959
+      },
+      "reason": "Styles for the lazy compare mode: tile identities, stage layouts, layout and scope switches, performance comparison table.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
       "file": "dist/client/assets/CompareViewer-HASH.js",
       "cap": {
+        "raw": 38116,
         "gzip": 13526,
         "brotli": 12013
       },
@@ -930,7 +891,8 @@
       "file": "dist/client/assets/pencil-HASH.js",
       "cap": {
         "raw": 321,
-        "gzip": 256
+        "gzip": 256,
+        "brotli": 230
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -1013,16 +975,6 @@
         "brotli": 137465
       },
       "reason": "The render page shares chunks with the app; with the router and the lazy viewer pages the shared code it preloads regroups (gzip +6 bytes, brotli +583 bytes measured in CI against fresh main).",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 101099,
-        "gzip": 33869,
-        "brotli": 28948
-      },
-      "reason": "The editor leaves edit mode through the router (routing/navigate.ts) instead of navigation.ts; measured in CI against fresh main e6d1c47 (gzip 32632 to 32882). Replaces #142's entry (The cursor Click layer (off, press, ripple or pulse) and the one-line cursor summary; measured against main: +460 B raw, -14 B gzip, -22 B brotli. Replaces #136's allowance for this file.)",
       "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
@@ -1116,6 +1068,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/127"
     },
     {
+      "file": "dist/client/assets/Viewer-HASH.css",
+      "cap": {
+        "raw": 5200,
+        "gzip": 1420,
+        "brotli": 1220
+      },
+      "reason": "The slot wrappers' display: contents rule beside the viewer's layout tokens and seam styles (#121).",
+      "pr": "https://github.com/hazem3500/replays/pull/133"
+    },
+    {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
         "raw": 44015,
@@ -1184,6 +1146,24 @@
       "pr": "https://github.com/hazem3500/replays/pull/134"
     },
     {
+      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
+      "cap": {
+        "raw": 308481,
+        "gzip": 80873,
+        "brotli": 66283
+      },
+      "reason": "The server entry now imports src/shared/thumbhash.ts, so the shared schema chunk gets a new source-set identity; it replaces context.schema.json-8e7122d98ca4 (caps 306214, 80205, 65778) and measures 308481 raw, 80873 gzip, 66283 brotli bytes, under those caps.",
+      "pr": "https://github.com/hazem3500/replays/pull/123"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 986487
+      },
+      "reason": "ScopeCount and RefreshLine replace the count's sentence states; head measures 986487 raw bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/145"
+    },
+    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 613
@@ -1192,9 +1172,20 @@
       "pr": "https://github.com/hazem3500/replays/pull/144"
     },
     {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 240032,
+        "gzip": 81560,
+        "brotli": 68365
+      },
+      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/155"
+    },
+    {
       "file": "dist/client/assets/render-HASH.js",
       "cap": {
         "raw": 9060,
+        "gzip": 3989,
         "brotli": 3622
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
@@ -1214,7 +1205,8 @@
       "file": "dist/client/assets/step-caption-HASH.js",
       "cap": {
         "raw": 887,
-        "gzip": 539
+        "gzip": 539,
+        "brotli": 504
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/155"
@@ -1230,161 +1222,82 @@
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
-      "file": "dist/client/assets/main-HASH.css",
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
       "cap": {
-        "raw": 260963,
-        "gzip": 44874,
-        "brotli": 37191
+        "raw": 3955,
+        "gzip": 1532,
+        "brotli": 1303
       },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
+      "reason": "Recorder messages and format hooks now share one chunk: every UI string, typed message functions, the template resolver and Intl duration/size/clock defaults. It replaces format.ts-ae4027eae00a and messages.ts-2df211e12161 (730 + 837 raw bytes on main); measured in CI against fresh main dbc865e9 at 3955 raw, 1532 gzip, 1303 brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/141"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "file": "dist/lib/recorder.mjs",
       "cap": {
-        "brotli": 7566
+        "raw": 2920
       },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
+      "reason": "The recorder entry re-exports defaultRecorderMessages, resolveRecorderMessages and createRecorderFormat; measured in CI against fresh main dbc865e9: +101 B raw, +16 B gzip, +13 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/141"
     },
     {
-      "file": "initial/index.html/css",
+      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
       "cap": {
-        "raw": 260963,
-        "gzip": 44874,
-        "brotli": 37191
+        "raw": 6769,
+        "gzip": 1902,
+        "brotli": 1711
       },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
+      "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks. Measured in CI against fresh main dbc865e9: +158 B raw, +57 B gzip, +52 B brotli. Replaces #69's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/141"
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.css",
+      "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 8344,
-        "gzip": 2182,
-        "brotli": 1873
+        "raw": 102425,
+        "gzip": 34267,
+        "brotli": 29308
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "raw": 38057
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.css",
-      "cap": {
-        "raw": 1089,
-        "gzip": 450,
-        "brotli": 358
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.js",
-      "cap": {
-        "raw": 5736,
-        "gzip": 2518,
-        "brotli": 2306
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 241143,
-        "gzip": 81999,
-        "brotli": 68772
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21476,
-        "gzip": 8792
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/Viewer-HASH.css",
-      "cap": {
-        "raw": 5969,
-        "gzip": 1562,
-        "brotli": 1344
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured in CI against fresh main dbc865e9: +4281 B raw, +1364 B gzip, +1208 B brotli. Replaces #113's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
-        "raw": 67379,
-        "gzip": 23940,
-        "brotli": 20827
+        "raw": 60092,
+        "gzip": 21469,
+        "brotli": 18726
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Hash drift, not growth: the hashed editor chunk names it imports change (+1 B raw, 0 B gzip, -33 B brotli measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/VitalsTile-HASH.js",
+      "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 665,
-        "gzip": 461,
-        "brotli": 422
+        "raw": 261085,
+        "gzip": 44889,
+        "brotli": 37191
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
       "cap": {
-        "raw": 986714
+        "raw": 21285,
+        "gzip": 8753,
+        "brotli": 7566
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Hash drift, not growth: raw matches main; the hashed editor chunk names it imports change (gzip +4 B, brotli -25 B measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/client/assets/pencil-HASH.js",
+      "file": "initial/index.html/css",
       "cap": {
-        "brotli": 246
+        "raw": 261085,
+        "gzip": 44889,
+        "brotli": 37191
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/render-HASH.js",
-      "cap": {
-        "gzip": 3991
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.js",
-      "cap": {
-        "brotli": 505
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-7e5a8e2906dd.mjs",
-      "cap": {
-        "raw": 308611,
-        "gzip": 80898,
-        "brotli": 66297
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips in the comparison; hash drift in chunks that name them. Measured on Boat against main dbc865e9. Replaces earlier allowances for these metrics.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     }
   ]
 }

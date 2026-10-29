@@ -383,7 +383,8 @@ export type EditorShortcut =
   | 'highlight'
   | 'apply'
   | 'delete'
-  | 'deselect';
+  | 'deselect'
+  | 'shortcuts';
 
 /** The editor's keys; `mac` picks ⌘ over Ctrl for undo, redo and save. Typing in a field is left alone. */
 export function editorShortcutFor(event: KeyLike, target?: TargetLike | null, mac = true): EditorShortcut | undefined {
@@ -457,6 +458,8 @@ export function editorShortcutFor(event: KeyLike, target?: TargetLike | null, ma
       return 'delete';
     case 'Escape':
       return 'deselect';
+    case '?':
+      return 'shortcuts';
     default:
       return undefined;
   }

@@ -2,20 +2,14 @@
 export { buildReplayBundle } from './bundle.ts';
 export type * from './bundle-types.ts';
 export * from './compat.ts';
-export { DEFAULT_MESSAGES } from './messages.ts';
-export { formatDuration, formatDurationLong } from './format.ts';
+export { DEFAULT_MESSAGES, defaultRecorderMessages, resolveRecorderMessages } from './messages.ts';
+export type { RecorderMessageError, RecorderMessageOverrides, RecorderMessages } from './messages.ts';
+export { createRecorderFormat, formatDuration, formatDurationLong, type RecorderFormat } from './format.ts';
 export * from './timer.ts';
 export * from './store.ts';
 export * from './deferred-ui.ts';
 export { blockSelector, blockProps, recorderUiProps, CHAT_WIDGET_PRESETS } from './privacy.ts';
-export type {
-  DefaultUiOptions,
-  RecorderMessages,
-  RecorderTheme,
-  CompletionOptions,
-  CompletionAction,
-  CompletionContext,
-} from './default-ui.ts';
+export type { DefaultUiOptions, RecorderTheme, CompletionOptions, CompletionAction, CompletionContext } from './default-ui.ts';
 export {
   BLOCK_ATTRIBUTE,
   DEFAULT_MAX_BYTES,

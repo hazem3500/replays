@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, userEvent } from 'storybook/test';
-import { DEFAULT_MESSAGES } from '../../src/recorder/index.ts';
-import { DefaultUiStage } from './DefaultUiStage.tsx';
-import { inRecorderUi, recorderUi } from './flow.ts';
+import { defaultRecorderMessages } from '../../src/recorder/index.ts';
+import { DefaultUiStage, type DefaultUiStageProps } from './DefaultUiStage.tsx';
+import { inRecorderUi, recorderUi, resultCopy } from './flow.ts';
 
 const meta = {
   title: 'Recorder/Default UI',
@@ -12,12 +12,13 @@ const meta = {
   argTypes: {
     state: { control: 'select', options: ['consent', 'recording', 'uploading', 'sent', 'failed'] },
     theme: { control: 'inline-radio', options: ['dark', 'light'] },
+    copy: { control: false },
   },
   parameters: {
     docs: {
       description: {
         component:
-          'Each surface of `createDefaultUi()` from `@hazem3500/replays/recorder/ui`, driven directly without a recorder. Copy comes from `DEFAULT_MESSAGES`; see Recorder/End to end for the full flow.',
+          'Each surface of `createDefaultUi()` from `@hazem3500/replays/recorder/ui`, driven directly without a recorder. Copy comes from `defaultRecorderMessages`; see Recorder/End to end for the full flow.',
       },
       story: { inline: false, height: '420px' },
     },
@@ -30,9 +31,9 @@ const visible = (text: string) => inRecorderUi(() => recorderUi.text(text));
 
 export const Consent: Story = {
   play: async () => {
-    await visible(DEFAULT_MESSAGES.consentTitle);
-    await inRecorderUi(() => recorderUi.button(DEFAULT_MESSAGES.consentAccept));
-    await inRecorderUi(() => recorderUi.button(DEFAULT_MESSAGES.consentDecline));
+    await visible(defaultRecorderMessages.consentTitle);
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.consentAccept));
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.consentDecline));
   },
 };
 
@@ -40,30 +41,30 @@ export const Recording: Story = {
   args: { state: 'recording' },
   play: async () => {
     await visible('1:13');
-    await userEvent.click(await inRecorderUi(() => recorderUi.button(DEFAULT_MESSAGES.stop)));
-    await visible(DEFAULT_MESSAGES.uploading);
+    await userEvent.click(await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.stop)));
+    await visible(defaultRecorderMessages.uploading);
   },
 };
 
 export const Uploading: Story = {
   args: { state: 'uploading' },
   play: async () => {
-    await visible(DEFAULT_MESSAGES.uploading);
+    await visible(defaultRecorderMessages.uploading);
   },
 };
 
 export const Sent: Story = {
   args: { state: 'sent' },
   play: async () => {
-    await visible(DEFAULT_MESSAGES.sent);
+    await visible(resultCopy.sent);
     const link = await inRecorderUi(() => recorderUi.link('Open replay'));
     await expect(link.href).toBe('https://replays.example/r/demo-42');
   },
 };
 
 const showsFailure = async () => {
-  await visible(DEFAULT_MESSAGES.failed);
-  await inRecorderUi(() => recorderUi.button(DEFAULT_MESSAGES.retry));
+  await visible(resultCopy.failed);
+  await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.retry));
   await expect(recorderUi.text('Upload failed with HTTP 503')).toBeUndefined();
 };
 
@@ -75,4 +76,49 @@ export const Phone: Story = {
   args: { state: 'failed' },
   globals: { viewport: { value: 'narrow', isRotated: false } },
   play: showsFailure,
+};
+
+const german: DefaultUiStageProps['copy'] = {
+  locale: 'de',
+  messages: {
+    consentTitle: 'Diesen Tab aufzeichnen?',
+    consentBody: ({ limit }) => `Bis zu ${limit}. Jederzeit beenden.`,
+    consentPrivacy: 'Seitentext und Eingaben werden maskiert.',
+    consentAccept: 'Aufnahme starten',
+    consentDecline: 'Nicht jetzt',
+    recording: 'Aufnahme',
+    stop: 'Beenden',
+    uploading: 'Wird gesendet…',
+    sent: ({ reference }) => `Aufnahme gesendet (${reference})`,
+    failed: 'Senden fehlgeschlagen',
+    retry: 'Erneut versuchen',
+    close: 'Schließen',
+  },
+  format: { elapsed: (ms) => `${Math.round(ms / 1000)} s` },
+};
+
+/** A host's translations through `messages`, `locale` and a `format` hook; `consentPrivacy` and `failed` use the plain string form. */
+export const Translated: Story = {
+  args: { copy: german },
+  play: async () => {
+    await visible('Diesen Tab aufzeichnen?');
+    await visible('Bis zu 3 Minuten. Jederzeit beenden.');
+    await inRecorderUi(() => recorderUi.button('Aufnahme starten'));
+  },
+};
+
+export const TranslatedRecording: Story = {
+  args: { state: 'recording', copy: german },
+  play: async () => {
+    await visible('73 s');
+    await userEvent.click(await inRecorderUi(() => recorderUi.button('Beenden')));
+    await visible('Wird gesendet…');
+  },
+};
+
+export const TranslatedSent: Story = {
+  args: { state: 'sent', copy: german },
+  play: async () => {
+    await visible('Aufnahme gesendet (SUP-2042)');
+  },
 };
