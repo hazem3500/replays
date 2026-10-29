@@ -1267,7 +1267,7 @@
         "gzip": 43815,
         "brotli": 36442
       },
-      "reason": "The shared loading primitives (loading.css: skeleton tokens, skel-line, skel-appear, load-line) and the result count's refresh styles (scope-count.css); head measures main-HASH.css as allowed here.",
+      "reason": "The shared loading primitives (loading.css: skeleton tokens, skel-line, skel-appear, load-line) and the result count's refresh styles (scope-count.css); head measures 254307 raw, 43815 gzip, 36442 brotli bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/145"
     },
     {
