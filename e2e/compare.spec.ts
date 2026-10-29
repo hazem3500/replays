@@ -106,6 +106,20 @@ test('phones swipe through the compared recordings, the one in view in focus', a
   await stage.evaluate((element) => element.scrollTo({ left: element.clientWidth, behavior: 'instant' }));
   await expect(page).toHaveURL(/focus=human-demo/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
+  // why: the phone top bar keeps its room for the title; the layout choice is in More.
+  await expect(page.getByTestId('layout-switch')).toHaveCount(0);
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByTestId('layout-single').click();
+  await expect(page).not.toHaveURL(/layout=grid/);
+});
+
+test('tile actions stay quiet until the pointer rests on a tile', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, compareUrl());
+  const actions = page.locator('.ct-tile[data-tile-id="human-demo"] .ct-actions');
+  await expect(actions).toHaveCSS('opacity', '0');
+  await page.locator('.ct-tile[data-tile-id="human-demo"]').hover();
+  await expect(actions).toHaveCSS('opacity', '1');
 });
 
 /** Every tile on show lies inside the stage, and the stage ends where the steps rail begins. */

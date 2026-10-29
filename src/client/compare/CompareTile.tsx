@@ -83,6 +83,7 @@ export function CompareTileView({
       data-tile={tile.colour}
       data-role={role}
       data-focused={ringed(focused, single, alone)}
+      data-current={focused || undefined}
       data-ended={ended || undefined}
       data-tile-id={tile.id}
       aria-label={tileName(tile, ended)}

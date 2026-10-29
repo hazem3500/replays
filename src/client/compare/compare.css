@@ -249,10 +249,16 @@
   display: flex;
   gap: 4px;
   opacity: 0;
-  transition: opacity var(--motion-fast) var(--ease-out);
+  transition: opacity 150ms var(--ease-out);
 }
 
-.ct-tile:hover .ct-actions,
+/* why: secondary actions stay quiet until wanted: a pointer resting on the tile, or the keyboard inside it. */
+@media (hover: hover) {
+  .ct-tile:hover .ct-actions {
+    opacity: 1;
+  }
+}
+
 .ct-tile:focus-within .ct-actions {
   opacity: 1;
 }
@@ -341,14 +347,19 @@
   }
 }
 
+/* why: touch has no hover, so only the focused tile (the one in view on a phone) offers its actions. */
 @media (hover: none) {
-  .ct-actions {
+  .ct-tile[data-current] .ct-actions {
     opacity: 1;
   }
 
+  .ct-tile:not([data-current]) .ct-actions {
+    display: none;
+  }
+
   .ct-action {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 }
 

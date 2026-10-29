@@ -11,7 +11,7 @@ import { useCompareSession } from '../hooks/use-compare-session.ts';
 import { useWindowKeydown } from '../hooks/use-window-keydown.ts';
 import { CompareStage } from './CompareStage.tsx';
 import type { TileCommands } from './CompareTile.tsx';
-import { LayoutSwitch } from './LayoutSwitch.tsx';
+import { LayoutMenuItems, LayoutSwitch } from './LayoutSwitch.tsx';
 import { ScopeSwitch } from './ScopeSwitch.tsx';
 import type { CompareLayout } from './compare-search.ts';
 import { type CompareTile, compareTiles, isLoaded, type LoadedTile } from './tiles.ts';
@@ -138,7 +138,17 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
         bundle={focused.bundle}
         player={session.player}
         stage={<CompareStage session={session} tiles={tiles} layout={layout} focus={focused.id} mobile={mobile} commands={commands} />}
-        headerActions={<LayoutSwitch value={layout} onChange={onLayout} phone={mobile} />}
+        headerActions={mobile ? undefined : <LayoutSwitch value={layout} onChange={onLayout} />}
+        menu={
+          mobile ? (
+            <>
+              {compare.page?.menu}
+              <LayoutMenuItems value={layout} onChange={onLayout} />
+            </>
+          ) : (
+            compare.page?.menu
+          )
+        }
         inspectorScope={mobile ? undefined : <ScopeSwitch tiles={tiles} focus={focused.id} onFocus={onFocus} />}
         inspectorPeers={peers}
         comparing={tiles.map((tile) => tile.id)}
