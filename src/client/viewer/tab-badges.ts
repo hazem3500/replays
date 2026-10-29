@@ -35,7 +35,7 @@ export function consoleBadge(entries: readonly ReplayConsoleEntry[]): TabBadge |
 
 /** What a tab's badge shows: nothing for zero, the count up to 99, then "99+" so the badge keeps its small size. */
 export function badgeText(value: number) {
-  if (value <= 0) return undefined;
+  if (value <= 0) return;
   return value > 99 ? '99+' : String(value);
 }
 
