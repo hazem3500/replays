@@ -18,7 +18,8 @@ can host yourself.
 - **Capture that survives navigations.** The recorder is registered over the Chrome DevTools Protocol before the first
   page loads, pulls chunks every second and flushes on `pagehide`.
 - **Private by default.** Inputs are masked at capture time; cookies, credential headers, URL credentials and sensitive
-  query values are removed; request and response bodies are never stored. See the [privacy model](#privacy-model).
+  query values are removed; request and response bodies are kept only when a capture asks for them, and redacted. See
+  the [privacy model](#privacy-model).
 - **Self-hostable and pluggable.** Filesystem or S3-compatible storage, `none` / `header` / `oidc` / plugin auth, your own
   context schema, source-link providers, theming, base path, retention. Optional OpenTelemetry tracing.
 
@@ -203,7 +204,7 @@ replay.json
 ├─ events      rrweb events (masked inputs)
 ├─ steps       what the agent or script did, with times
 ├─ console     level, message, time
-├─ network     method, url, status, timing, redacted request/response headers (no bodies)
+├─ network     method, url, status, timing, redacted request/response headers (bodies only when opted in)
 ├─ performance paint, long tasks, slow interactions
 ├─ context     optional: app/build, test, source links, your own fields
 └─ suiteRun    optional: attaches the replay to a suite run
@@ -375,7 +376,7 @@ A replay contains what was on the screen, so the defaults are conservative and t
 | Credential headers | `Authorization`, `Proxy-Authorization`, `X-Api-Key`, `X-Auth-Token`, anything ending in `-token`, `-secret`, `-jwt`, `-assertion` are dropped | `sanitize.ts` |
 | URL credentials | `user:pass@` removed everywhere (events, steps, network, console, context) | `sanitize.ts` |
 | Sensitive query values | `token`, `api_key`, `password`, `session`, `code`, `email`, `signature`, … (and `*_token`, `*-secret`, …) become `[redacted]`, also inside URL fragments and in text | `sanitize.ts` |
-| Request and response bodies | Never captured (HAR with content omitted; only a whitelist of fields reaches the bundle) | `capture.ts`, `drivers/` |
+| Request and response bodies | Off by default. Opt-in (`--network bodies`, recorder `capture.network: 'bodies'`): JSON, text and form only, cut at 64 KiB, with secret fields, credentials, JWTs, card numbers and e-mail addresses redacted at capture and again on upload | `src/shared/network-bodies.ts`, `src/recorder/body-capture.ts` |
 | Uploads | Sanitized again on the server before storing; the pass is idempotent | `app.ts` |
 | Your own rules | Extra headers, query parameters, JSON keys, text patterns and mask selectors from the config's `redaction` or a plugin's `api.redaction`, applied at capture and again on upload. They add to the defaults and cannot turn any off ([docs/extending.md](docs/extending.md#redaction-rules)) | `src/shared/redaction.ts` |
 | Retention | Uploads expire after `RETENTION_DAYS`, from the *server's* upload time; "keep" pins one | `src/shared/retention.ts` |
