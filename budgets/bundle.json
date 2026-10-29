@@ -153,9 +153,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 266794,
-      "gzip": 45820,
-      "brotli": 37925
+      "raw": 266835,
+      "gzip": 45825,
+      "brotli": 37936
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 994489,
@@ -210,7 +210,7 @@
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 982,
       "gzip": 608,
-      "brotli": 561
+      "brotli": 555
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 22466,
@@ -498,9 +498,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 266794,
-      "gzip": 45820,
-      "brotli": 37925
+      "raw": 266835,
+      "gzip": 45825,
+      "brotli": 37936
     },
     "initial/index.html/js": {
       "raw": 1484557,
@@ -1236,22 +1236,22 @@
     {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
-        "raw": 266794,
-        "gzip": 45820,
-        "brotli": 37925
+        "raw": 266835,
+        "gzip": 45825,
+        "brotli": 37936
       },
-      "reason": "The index's bottom safe-area strip (feed.css): +164 B raw, +25 B gzip measured on Boat against main 1bc31f4f. Replaces #174's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/163"
+      "reason": "Phone inspector tabs: equal 44 px cells and the count badge on the icon's corner with a severity fill (inspector-dock.css): +41 B raw, +5 B gzip, +11 B brotli measured on Boat against main 1bc31f4f with #163. Replaces #163's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 266794,
-        "gzip": 45820,
-        "brotli": 37925
+        "raw": 266835,
+        "gzip": 45825,
+        "brotli": 37936
       },
-      "reason": "The index's bottom safe-area strip ships in the first stylesheet: +164 B raw, +25 B gzip measured on Boat against main 1bc31f4f. Replaces #174's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/163"
+      "reason": "Phone inspector tab badges ship in the first stylesheet: +41 B raw, +5 B gzip, +11 B brotli measured on Boat against main 1bc31f4f with #163. Replaces #163's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
