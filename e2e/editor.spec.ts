@@ -291,6 +291,34 @@ async function editorRects(page: Page, frame: string) {
   };
 }
 
+test('tools carry their names and keys, and ? opens the editor shortcuts', async ({ page }) => {
+  const id = await uploadCopy(page, 'editor-shortcuts');
+  await page.goto(`${base()}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByTestId('add-cut')).toHaveText('Cut');
+  await expect(page.getByTestId('remove-waits')).toHaveText('Waits');
+  await page.getByTestId('add-effect').click();
+  await expect(page.getByRole('menuitem', { name: /Highlight this moment/ })).toContainText('M');
+  await page.keyboard.press('Escape');
+  await page.locator('body').press('?');
+  const sheet = page.getByTestId('shortcut-sheet');
+  await expect(sheet).toBeVisible();
+  await expect(sheet.getByText('Zoom on clicks')).toBeVisible();
+  await expect(sheet.getByText('Trim start / end to the playhead')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+});
+
+test('a ruler with half-second ticks labels every tick with one decimal', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 900 });
+  const id = await uploadCopy(page, 'editor-ruler');
+  await page.goto(`${base()}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  const labels = page.getByTestId('timeline-ruler').locator('.tl-tick-label');
+  await expect(labels.nth(1)).toHaveText('0:00.5');
+  expect((await labels.allTextContents()).filter((text) => !/^\d+:\d{2}\.\d$/.test(text))).toEqual([]);
+});
+
 test('export uses the saved edit revision; viewing original preserves edits', async ({ page }) => {
   const id = await uploadCopy(page, 'editor-export');
   let exported: Record<string, unknown> | undefined;

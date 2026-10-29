@@ -115,9 +115,8 @@ function rulerTicks(width: number, duration: number) {
 function tickLabel(ms: number, step: number) {
   const minutes = Math.floor(ms / 60_000);
   const seconds = (ms % 60_000) / 1000;
-  // Whole seconds read plainly ("0:01"); only the ticks between them carry a decimal ("0:01.5").
-  const whole = step >= 1000 || ms % 1000 === 0;
-  const text = whole ? String(Math.round(seconds)).padStart(2, '0') : seconds.toFixed(1).padStart(4, '0');
+  // why: one precision per ruler, so sub-second steps label every tick with a decimal ("0:01.0", "0:01.5").
+  const text = step >= 1000 ? String(Math.round(seconds)).padStart(2, '0') : seconds.toFixed(1).padStart(4, '0');
   return `${minutes}:${text}`;
 }
 

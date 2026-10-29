@@ -108,9 +108,9 @@
       "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 101077,
-      "gzip": 33857,
-      "brotli": 28913
+      "raw": 102425,
+      "gzip": 34267,
+      "brotli": 29308
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -153,8 +153,8 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 260963,
-      "gzip": 44874,
+      "raw": 261085,
+      "gzip": 44889,
       "brotli": 37191
     },
     "dist/client/assets/main-HASH.js": {
@@ -244,7 +244,7 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21285,
-      "gzip": 8752,
+      "gzip": 8753,
       "brotli": 7566
     },
     "dist/client/assets/tools-HASH.js": {
@@ -278,7 +278,7 @@
       "brotli": 1220
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 60091,
+      "raw": 60092,
       "gzip": 21469,
       "brotli": 18726
     },
@@ -488,8 +488,8 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 260963,
-      "gzip": 44874,
+      "raw": 261085,
+      "gzip": 44889,
       "brotli": 37191
     },
     "initial/index.html/js": {
@@ -978,16 +978,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 101099,
-        "gzip": 33869,
-        "brotli": 28948
-      },
-      "reason": "The editor leaves edit mode through the router (routing/navigate.ts) instead of navigation.ts; measured in CI against fresh main e6d1c47 (gzip 32632 to 32882). Replaces #142's entry (The cursor Click layer (off, press, ripple or pulse) and the one-line cursor summary; measured against main: +460 B raw, -14 B gzip, -22 B brotli. Replaces #136's allowance for this file.)",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
       "file": "dist/lib/server-testing.mjs",
       "cap": {
         "raw": 12273,
@@ -1222,16 +1212,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 60091,
-        "gzip": 21469,
-        "brotli": 18726
-      },
-      "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
       "file": "initial/render.html/css",
       "cap": {
         "raw": 5999,
@@ -1239,36 +1219,6 @@
         "brotli": 2170
       },
       "reason": "The caption pill: em-based geometry, the top-edge variant and its motion (step-caption.css), the shared placement function (caption-placement.ts) in the viewer and the render page, and the viewer's export-scaled caption size. Measured in CI against fresh main. Replaces #114, #123, #133, #152's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.css",
-      "cap": {
-        "raw": 260963,
-        "gzip": 44874,
-        "brotli": 37191
-      },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21285,
-        "gzip": 8752,
-        "brotli": 7566
-      },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #145's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/155"
-    },
-    {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 260963,
-        "gzip": 44874,
-        "brotli": 37191
-      },
-      "reason": "The caption pill: the viewer's caption anchoring (top edge, export-scaled size) in the first stylesheet and the chunks that import step-caption.ts, plus hash drift in chunks that name them. Measured in CI against fresh main 7298765c. Replaces #150's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/155"
     },
     {
@@ -1298,6 +1248,56 @@
       },
       "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks. Measured in CI against fresh main dbc865e9: +158 B raw, +57 B gzip, +52 B brotli. Replaces #69's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/141"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 102425,
+        "gzip": 34267,
+        "brotli": 29308
+      },
+      "reason": "Editor chrome: labelled Cut, Waits and Highlight tools, the Add menu built from descriptors with each key, the editor shortcut sheet and one-precision ruler labels; measured in CI against fresh main dbc865e9: +4281 B raw, +1364 B gzip, +1208 B brotli. Replaces #113's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 60092,
+        "gzip": 21469,
+        "brotli": 18726
+      },
+      "reason": "Hash drift, not growth: the hashed editor chunk names it imports change (+1 B raw, 0 B gzip, -33 B brotli measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.css",
+      "cap": {
+        "raw": 261085,
+        "gzip": 44889,
+        "brotli": 37191
+      },
+      "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 21285,
+        "gzip": 8753,
+        "brotli": 7566
+      },
+      "reason": "Hash drift, not growth: raw matches main; the hashed editor chunk names it imports change (gzip +4 B, brotli -25 B measured in CI against fresh main dbc865e9). Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 261085,
+        "gzip": 44889,
+        "brotli": 37191
+      },
+      "reason": "Editor chrome: the undo and redo group's inset outline and 28 px buttons (editor-layout.css) ship in the first stylesheet; measured in CI against fresh main dbc865e9: +122 B raw, +15 B gzip, -32 B brotli. Replaces #155's allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/149"
     }
   ]
 }
