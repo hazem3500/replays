@@ -147,8 +147,11 @@ test('Storybook renders fixture states, themes and real permission decisions wit
   page.on('request', (request) => {
     if (new URL(request.url()).pathname.startsWith('/api/')) apiRequests.push(request.url());
   });
-  const story = async (id: string, theme = 'dark') =>
-    page.goto(`${storyOrigin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`);
+  const story = async (id: string, theme = 'dark') => {
+    await page.goto(`${storyOrigin}/iframe.html?id=${id}&viewMode=story&globals=theme:${theme}`);
+    // why: MSW reloads a preview that loaded before its service worker took control; later checks need that settled document.
+    await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
+  };
   await story('app-viewer-states--loading');
   await expect(page.getByRole('status')).toHaveText('Loading replay…');
   await story('app-viewer-states--host-context', 'light');
