@@ -2,7 +2,7 @@ import type { RefObject } from 'react';
 
 import { Splitter, SplitterEdgeTab } from '@/components/ui/splitter.tsx';
 
-import { defaultInspectorHeight, INSPECTOR_HEIGHT_KEY, maxInspectorHeight, MIN_INSPECTOR_HEIGHT } from './inspector-size.ts';
+import { defaultInspectorHeight, maxInspectorHeight, MIN_INSPECTOR_HEIGHT } from './inspector-size.ts';
 import { MIN_STEPS_WIDTH, STEPS_WIDTH_KEY } from './StepRail.tsx';
 
 const STRINGS = {
@@ -22,8 +22,11 @@ export function InspectorSplit({
   onHeightChange,
   collapsed,
   onCollapsedChange,
+  storageKey,
 }: {
   shell: RefObject<HTMLElement | null>;
+  /** Where the committed height is kept: the open view's own key. */
+  storageKey: string;
   height: number;
   onHeightChange: (height: number) => void;
   collapsed: boolean;
@@ -46,7 +49,7 @@ export function InspectorSplit({
       onPreview={(size, folded) =>
         shell.current?.style.setProperty('--inspector-height', folded ? 'var(--inspector-folded-height)' : `${size}px`)
       }
-      storageKey={INSPECTOR_HEIGHT_KEY}
+      storageKey={storageKey}
       settleTarget={shell}
       label={STRINGS.inspector}
       className="inspector-split"
