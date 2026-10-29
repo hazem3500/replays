@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 1938,
       "gzip": 954,
-      "brotli": 818
+      "brotli": 819
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -82,13 +82,18 @@
       "gzip": 33180,
       "brotli": 29475
     },
+    "dist/client/assets/download-HASH.js": {
+      "raw": 274,
+      "gzip": 222,
+      "brotli": 225
+    },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 31925,
-      "gzip": 6193,
-      "brotli": 5501
+      "raw": 43666,
+      "gzip": 7904,
+      "brotli": 7046
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 98265,
+      "raw": 97928,
       "gzip": 32779,
       "brotli": 28030
     },
@@ -113,9 +118,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 246064,
-      "gzip": 42460,
-      "brotli": 35304
+      "raw": 237835,
+      "gzip": 41082,
+      "brotli": 34304
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 847504,
@@ -139,8 +144,8 @@
     },
     "dist/client/assets/player-HASH.js": {
       "raw": 316832,
-      "gzip": 98168,
-      "brotli": 71395
+      "gzip": 97953,
+      "brotli": 71173
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -195,12 +200,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 615
+      "brotli": 621
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
       "gzip": 8342,
-      "brotli": 7152
+      "brotli": 7151
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -213,8 +218,8 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50369,
-      "gzip": 18336,
+      "raw": 50387,
+      "gzip": 18341,
       "brotli": 15958
     },
     "dist/client/index.html": {
@@ -413,9 +418,9 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 247932,
-      "gzip": 43379,
-      "brotli": 36099
+      "raw": 239756,
+      "gzip": 42027,
+      "brotli": 35120
     },
     "initial/index.html/js": {
       "raw": 1688508,
@@ -428,7 +433,7 @@
       "brotli": 2097
     },
     "initial/render.html/js": {
-      "raw": 543485,
+      "raw": 542325,
       "gzip": 169411,
       "brotli": 132878
     }
@@ -749,7 +754,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -809,7 +814,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -869,6 +874,15 @@
       },
       "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
       "pr": "https://github.com/hazem3500/replays/pull/114"
+    },
+    {
+      "file": "dist/client/assets/download-HASH.js",
+      "cap": {
+        "gzip": 222,
+        "brotli": 225
+      },
+      "reason": "No source change: this tiny chunk names hashed sibling chunks, whose hashes change with the side panel; measured against main: +0 B raw, -1 B gzip, +34 B brotli. Replaces #109's allowance for this file; its gzip cap is kept.",
+      "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",

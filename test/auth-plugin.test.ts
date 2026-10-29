@@ -118,7 +118,7 @@ describe('AUTH_MODE=plugin', () => {
     const signedIn = await fetch(`${origin}/auth/portal`);
     expect(signedIn.status).toBe(204);
     const me = await fetch(`${origin}/api/me`, { headers: { cookie: 'portal=ada' } });
-    expect(await me.json()).toEqual({ id: 'ada@example.com', name: 'Ada Example' });
+    expect(await me.json()).toEqual({ id: 'ada@example.com', name: 'Ada Example', session: { signedIn: true } });
     expect((await (await fetch(`${origin}/api/config`, { headers: { cookie: 'portal=ada' } })).json()).auth).toBe('portal');
   });
 });
