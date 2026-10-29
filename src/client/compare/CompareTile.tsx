@@ -11,6 +11,8 @@ import type { Fidelity } from './clock.ts';
 import type { Placement } from './layout.ts';
 import type { CompareSession } from './session.ts';
 import { Identity } from './Identity.tsx';
+import { StepCaption } from '../viewer/StepCaption.tsx';
+import { useViewer } from '../viewer/context.ts';
 import type { CompareTile } from './tiles.ts';
 
 const TILE_STRINGS = {
@@ -91,7 +93,7 @@ export function CompareTileView({
       inert={hidden}
     >
       {tile.bundle ? (
-        <TilePicture session={session} id={tile.id} bundle={tile.bundle} fidelity={fidelity} />
+        <TilePicture session={session} id={tile.id} bundle={tile.bundle} fidelity={fidelity} caption={focused} />
       ) : (
         <TileNotice busy={!tile.failure} text={tile.failure || TILE_STRINGS.loading} />
       )}
@@ -201,13 +203,31 @@ function TileNotice({ busy, text }: { busy: boolean; text: string }) {
   );
 }
 
-function TilePicture({ session, id, bundle, fidelity }: { session: CompareSession; id: string; bundle: ReplayBundle; fidelity: Fidelity }) {
+/**
+ * The tile's recorded page. The focused tile carries the step captions when they are on: the panels, the steps rail
+ * and the captions all follow the focused recording, on its own frame.
+ */
+function TilePicture({
+  session,
+  id,
+  bundle,
+  fidelity,
+  caption,
+}: {
+  session: CompareSession;
+  id: string;
+  bundle: ReplayBundle;
+  fidelity: Fidelity;
+  caption: boolean;
+}) {
   const controller = session.controller({ id, bundle });
   const { stage, failure } = useTilePlayer({ session, id, controller, fidelity });
+  const { captions, steps, editCaptions } = useViewer();
   if (failure) return <TileNotice busy={false} text={TILE_STRINGS.unavailable(failure)} />;
   return (
     <div ref={stage} className="ct-picture" data-fidelity={fidelity}>
       <div className="ct-host player-host" inert />
+      {caption && captions && steps.length > 0 && !editCaptions ? <StepCaption /> : null}
     </div>
   );
 }

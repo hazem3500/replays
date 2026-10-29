@@ -1,0 +1,28 @@
+/* invariant: these defaults preserve the core geometry; branding overrides are injected outside cascade layers. */
+:root {
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.18);
+  --shadow-2: 0 2px 8px rgb(0 0 0 / 0.18);
+  --shadow-3: 0 8px 24px rgb(0 0 0 / 0.24);
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --radius-md: var(--radius);
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --z-overlay: 40;
+  --z-popover: 50;
+  --z-toast: 100;
+  --focus-ring-width: 2px;
+  --row-height: 64px;
+  --card-radius: 12px;
+  --poster-overlay-bg: rgb(16 14 18 / 0.78);
+  --poster-overlay-fg: #f6f2f7;
+  --track-height: 3px;
+  --scrubber-height: 28px;
+  --caption-bg: rgb(14 16 21 / 0.86);
+  --caption-fg: #fff;
+  --caption-font: var(--sans, ui-sans-serif, system-ui, sans-serif);
+}

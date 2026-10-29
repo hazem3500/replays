@@ -1,3 +1,4 @@
+import { usePluginEvents } from './hooks/use-plugin-events.ts';
 import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -205,6 +206,7 @@ export function Viewer({
   const [railCollapsed, setRailCollapsed] = usePersistentFlag(RAIL_COLLAPSED_KEY);
   const workspace = useRef<HTMLDivElement>(null);
   const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
+  usePluginEvents(bundle.meta.id, tab, player);
   // Step captions on the player: the person's stored choice, else the profile's default (off without one).
   const [captions, setCaptionsState] = useState(() => {
     const saved = readStorage(CAPTIONS_KEY);
@@ -623,9 +625,10 @@ export function Viewer({
           <section ref={playerRegion} className="player-region" aria-label="Replay">
             <div className="stage-wrap">
               {stage ?? <PlayerStage />}
+              {/* why: a comparison's stage draws the step caption on its focused tile's frame (CompareTile.tsx). */}
               {effects?.captions.length ? (
                 <EditCaption captions={effects.captions} />
-              ) : captions && bundle.steps.length > 0 ? (
+              ) : captions && bundle.steps.length > 0 && !stage ? (
                 <StepCaption />
               ) : null}
               <SkipIndicator />

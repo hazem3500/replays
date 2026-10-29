@@ -28,6 +28,11 @@
   background: var(--surface-pressed);
   color: var(--text-secondary);
 }
+.comment-avatar svg {
+  width: 62%;
+  height: 62%;
+  stroke-width: 2;
+}
 .comment-avatar img {
   width: 100%;
   height: 100%;
@@ -51,7 +56,7 @@
   height: 24px;
   margin-left: -12px;
 }
-/* A 24 px target around the 16 px dot (40 px on touch); markers closer than that merge into one (CommentMarkers.tsx). */
+/* A 24 px target around the small dot or avatar (40 px on touch); markers closer than that merge into one (CommentMarkers.tsx). */
 .comment-marker-button {
   position: relative;
   display: grid;
@@ -74,52 +79,54 @@
     border-radius: 50%;
   }
 }
-.comment-marker-button > :is(.comment-avatar, .comment-marker-emoji) {
+.comment-marker-button > .comment-avatar {
   width: 16px;
   height: 16px;
-  box-shadow: 0 0 0 1.5px var(--surface-raised);
-  transition: box-shadow 120ms var(--ease-out);
-}
-.comment-marker-button .comment-avatar {
   font-size: 7px;
+  box-shadow: 0 0 0 1.5px var(--surface-raised);
+}
+.comment-marker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  box-shadow: 0 0 0 2px var(--surface-raised);
 }
 .comment-marker-emoji {
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--surface-raised);
-  font-size: 10px;
+  font-size: var(--text-xs);
   line-height: 1;
+}
+.comment-marker-count {
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--text);
+  box-shadow: 0 0 0 1.5px var(--surface-raised);
+  color: var(--surface);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  line-height: 16px;
+  text-align: center;
 }
 .comment-marker-button:focus-visible {
   box-shadow: none;
   outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
-.comment-marker-button:is([data-current], [data-selected]) > :is(.comment-avatar, .comment-marker-emoji) {
-  box-shadow: 0 0 0 1.5px var(--surface-raised), 0 0 0 3.5px var(--accent);
+.comment-marker-button:is([data-current], [data-selected]) > .comment-marker-dot {
+  background: var(--text);
+}
+.comment-marker-button:is([data-current], [data-selected]) > :is(.comment-avatar, .comment-marker-count) {
+  box-shadow: 0 0 0 1.5px var(--surface-raised), 0 0 0 2.5px var(--text-secondary);
 }
 .comment-marker-button[data-resolved] {
   opacity: 0.55;
 }
-.comment-marker-count {
-  position: absolute;
-  top: -2px;
-  right: -3px;
-  min-width: 12px;
-  height: 12px;
-  padding: 0 3px;
-  border-radius: 6px;
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 12px;
-  text-align: center;
-}
 @media (hover: hover) and (pointer: fine) {
   .comment-marker-button:hover {
-    transform: scale(1.18);
+    transform: scale(1.12);
   }
 }
 

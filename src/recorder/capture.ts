@@ -1,4 +1,5 @@
-import type { ReplayConsoleLevel } from './bundle-types.ts';
+import type { BodyCapture, PendingBody } from './body-capture.ts';
+import type { ReplayConsoleLevel, ReplayNetworkBody } from './bundle-types.ts';
 import { filterHeaders, redactText, redactUrl } from './redact.ts';
 
 /**
@@ -26,6 +27,8 @@ export type RawNetworkEntry = {
   mimeType?: string;
   requestHeaders: { name: string; value: string }[];
   responseHeaders: { name: string; value: string }[];
+  requestBody?: ReplayNetworkBody;
+  responseBody?: ReplayNetworkBody;
 };
 
 export type ConsoleCaptureOptions = {
@@ -115,7 +118,22 @@ export type NetworkCaptureOptions = {
   /** Requests whose URL matches are not recorded (e.g. the upload endpoint). */
   ignore: (url: string) => boolean;
   onEntry: (entry: RawNetworkEntry) => void;
+  /** Present with `capture.network: 'bodies'`; disposed when the capture stops. */
+  bodies?: BodyCapture;
 };
+
+const UNAVAILABLE: ReplayNetworkBody = Object.freeze({ omitted: 'unavailable' });
+
+/** A body read in the background lands later; until then it is unavailable. */
+function settle(body: PendingBody, apply: (body: ReplayNetworkBody) => void) {
+  if (!body) return;
+  if (!(body instanceof Promise)) {
+    apply(body);
+    return;
+  }
+  apply(UNAVAILABLE);
+  void body.then(apply);
+}
 
 function absoluteUrl(value: string) {
   try {
@@ -152,9 +170,9 @@ type XhrInfo = {
 };
 
 /**
- * Wraps `fetch` and `XMLHttpRequest` while recording. Only method, URL
- * (redacted), status, timing and allow-listed headers are kept; request and
- * response bodies are never read. Returns a function that restores both.
+ * Wraps `fetch` and `XMLHttpRequest` while recording. Method, URL (redacted),
+ * status, timing and allow-listed headers are kept; bodies are read only
+ * through `bodies`. Returns a function that restores both.
  */
 export function captureNetwork(options: NetworkCaptureOptions): () => void {
   let active = true;
@@ -163,7 +181,9 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
     if (!active || count >= options.maxEntries) return;
     count += 1;
     options.onEntry(entry);
+    return entry;
   };
+  const bodies = () => (active && count < options.maxEntries ? options.bodies : undefined);
   const finish = (
     base: { method: string; url: string; start: number; startPerf: number },
     requestHeaders: Iterable<[string, string]>,
@@ -175,7 +195,7 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
   ) => {
     const responseHeaders = filterHeaders(result.headers, options.allowedHeaders);
     const mimeType = mimeTypeOf(responseHeaders);
-    push({
+    return push({
       at: base.start,
       duration: Math.max(0, Math.round(performance.now() - base.startPerf)),
       method: base.method.toUpperCase(),
@@ -202,23 +222,42 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
         start: Date.now(),
         startPerf: performance.now(),
       };
-      const requestHeaders = [...new Headers(init?.headers ?? request?.headers).entries()];
+      const headers = new Headers(init?.headers ?? request?.headers);
+      const requestHeaders = [...headers.entries()];
+      const reader = bodies();
+      const requestBody = reader?.fetchRequest(input, init, headers);
       try {
         const response = await originalFetch(input, init);
-        finish(base, requestHeaders, {
+        const entry = finish(base, requestHeaders, {
           status: response.status,
           statusText: response.statusText,
           headers: response.headers.entries(),
         });
+        if (entry) {
+          settle(requestBody, (body) => {
+            entry.requestBody = body;
+          });
+          settle(reader?.fetchResponse(response), (body) => {
+            entry.responseBody = body;
+          });
+        }
         return response;
       } catch (error) {
         const aborted = error instanceof DOMException && error.name === 'AbortError';
-        finish(base, requestHeaders, {
+        const entry = finish(base, requestHeaders, {
           status: 0,
           // A status of 0 with text marks a failed request in the viewer.
           statusText: aborted ? 'net::ERR_ABORTED' : 'net::ERR_FAILED',
           headers: [],
         });
+        if (entry) {
+          settle(requestBody, (body) => {
+            entry.requestBody = body;
+          });
+          settle(reader && UNAVAILABLE, (body) => {
+            entry.responseBody = body;
+          });
+        }
         throw error;
       }
     };
@@ -252,14 +291,25 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
       if (entry && active && !options.ignore(entry.url)) {
         entry.start = Date.now();
         entry.startPerf = performance.now();
+        const contentType = entry.headers.filter(([name]) => name.toLowerCase() === 'content-type').at(-1)?.[1];
+        const reader = bodies();
+        const requestBody = reader?.xhrRequest(body, contentType);
         this.addEventListener(
           'loadend',
           () => {
-            finish(entry, entry.headers, {
+            const kept = finish(entry, entry.headers, {
               status: this.status,
               statusText: this.status === 0 ? 'net::ERR_FAILED' : this.statusText,
               headers: parseRawHeaders(this.getAllResponseHeaders()),
             });
+            if (kept) {
+              settle(requestBody, (sent) => {
+                kept.requestBody = sent;
+              });
+              settle(reader?.xhrResponse(this), (received) => {
+                kept.responseBody = received;
+              });
+            }
           },
           { once: true },
         );
@@ -281,5 +331,6 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
   return () => {
     active = false;
     for (const restore of restorers) restore();
+    options.bodies?.dispose();
   };
 }

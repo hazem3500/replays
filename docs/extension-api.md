@@ -321,6 +321,10 @@ Bodies are opt-in (`network: 'bodies'` or `--network bodies`) and never loosen a
   secret, password, signature or apikey, in any spelling), the deployment's `redaction.jsonKeys` and text rules,
   `Bearer`/`Basic` credentials, JWTs, Luhn-valid card numbers, email addresses and tokens in embedded URLs.
 
+The in-page recorder takes the same block as its `capture` option ([docs/recorder.md](recorder.md#capture-and-network-bodies)): it
+reads fetch and XHR bodies in the page under these rules, never reads streams, server-sent events or binary bodies, and the
+deployment's rules apply when the upload reaches the server.
+
 Viewers render bodies in a network row's details from these fields; with `meta.captured.network !== 'bodies'` they say the
 bodies were not captured.
 
@@ -1016,3 +1020,46 @@ staff identity, and the endpoint's identity cannot reach them anyway.
 hooks. It has per-app keys with rotation, origin lists, per-key and per-IP limits, a per-app body cap and retention,
 server-chosen ids and an audit line per request. Its counters are per process, so with several replicas use a
 shared store.
+
+### Browser activity events
+
+Trusted browser entries can subscribe with `api.on(type, listener)` and receive a typed, frozen payload.
+The return value unsubscribes; replacing or unloading that plugin removes its observers automatically.
+A throwing observer does not interrupt the operation or another plugin.
+
+```ts
+export default defineViewerPlugin((api) => {
+  api.on('replay:open', ({ replayId }) => console.info('Opened', replayId));
+  api.on('seek', ({ replayId, timeMs }) => console.info('Seek', replayId, timeMs));
+});
+```
+
+Events are local observations. Nothing is sent to a server automatically. The initial catalogue is:
+
+| Event | Payload | When |
+| --- | --- | --- |
+| `replay:open` | `replayId` | A replay mounts; late subscribers also receive the currently open replay ids |
+| `tab:change` | `replayId`, `tab` | The inspector selection changes, including its initial selection |
+| `seek` | `replayId`, `timeMs` | Playback seeks, including scrubbing; normal clock ticks do not emit |
+| `export:start` | `replayId`, `format` | An MP4 export starts (`format: 'core:mp4'`) |
+| `index:filter` | `activeCount` | Applied index filters change, including their initial state |
+
+No event contains recorded content, titles, page URLs, identities, search text or filter values.
+These observers run after hydration, never during server rendering. Initial selection/filter events can
+precede an asynchronously loaded entry; only `replay:open` replays the active state to late subscribers.
+Sandboxed user plugins do not get this host activity surface or extra read permissions.
+See the Acme activity panel in `examples/custom-distro/src/client.ts` for cleanup when a view unmounts.
+Comment events are intentionally outside this catalogue while the comments API is being revised.
+
+### Theme tokens v2
+
+`api.branding({ theme })` accepts the [generated token catalogue](tokens.md), including
+`shadow-pop`, `motion-fast`, `text-sm`, `space-4`, `card-radius`, `poster-overlay-bg`,
+`poster-overlay-fg`, `caption-bg`, `caption-fg` and `caption-font`. For a compact host theme:
+
+```ts
+api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms' } } });
+```
+
+The server validates these as plain CSS values and emits them into the initial page head.
+Plugin precedence and config overrides are unchanged. No DOM access or client setup is needed.

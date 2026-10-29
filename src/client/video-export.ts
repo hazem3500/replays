@@ -13,6 +13,7 @@
  * Everything above `useVideoRender` is pure and unit-tested in
  * test/video-export.test.ts.
  */
+import { viewerRegistry } from './plugins/registry.ts';
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 
 import { renderFilename, renderQuery, type RenderVariant, renderVariantParts } from '../shared/render-variant.ts';
@@ -251,6 +252,7 @@ export function useVideoRender(
     const run = ++generation.current;
     jobVariant.current = { speed, skipInactive, captions, edits };
     dispatch({ type: 'start' });
+    viewerRegistry.emitEvent({ type: 'export:start', replayId, format: 'core:mp4' });
     try {
       const response = await fetch(renderUrl, {
         method: 'POST',
@@ -264,7 +266,7 @@ export function useVideoRender(
     } catch (error) {
       if (run === generation.current) dispatch({ type: 'failed', message: error instanceof Error ? error.message : String(error) });
     }
-  }, [active, apply, captions, edits, renderUrl, skipInactive, speed]);
+  }, [active, apply, captions, edits, renderUrl, replayId, skipInactive, speed]);
 
   const cancel = useCallback(() => {
     generation.current += 1;
