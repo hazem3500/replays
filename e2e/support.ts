@@ -56,7 +56,6 @@ export async function postBundle(request: APIRequestContext, base: string, bundl
   expect(response.status(), await response.text()).toBe(201);
 }
 
-/** Opens a replay and waits until the player has mounted the recorded page. */
 /**
  * Opens a page and waits until it responds to input: a server-rendered page shows its controls before React hydrates
  * them, and a click or keystroke in between is lost. The single-page app has no such gap.
@@ -67,6 +66,7 @@ export async function gotoHydrated(page: Page, url: string) {
   return response;
 }
 
+/** Opens a replay and waits until the player has mounted the recorded page. */
 export async function openReplay(page: Page, url: string) {
   await page.goto(url);
   // why: a suite with two or more recordings opens comparing them, and its tiles are the stage then.
