@@ -17,6 +17,10 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- The viewer's top bar actions (`core:compare`, `core:edit`, `core:info`, `core:link`, `core:download`), its Context
+  tab sections (`core:summary`, `core:sources`, `core:fields`) and its seek bar tracks (`core:steps`, `core:errors`,
+  `core:highlights`) are slot items: `configureSlot` can reorder or hide them like the inspector's tabs. Plugin
+  context sections are placed where a host's order puts them.
 - Compared recordings go by name: each tile, the inspector's "Showing" switch and the Network and Performance panels
   name a recording by what tells it apart ("Before", "Firefox", "Run 3": the parts every label shares are dropped)
   beside one colour swatch, instead of A, B, C. Vitals and request details now say how each other recording did.
@@ -263,6 +267,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Player captions swap the whole line (the new text fades and rises 2 px over 160 ms) instead of morphing per
   character, and a hiding caption keeps its text and number while it fades and drops, so the box never collapses
   first. This removes the `calligraph` and `motion` dependencies.
+
+- Comments tab, redesigned as a review feed: threads own the panel and the composer is docked below them as one line
+  that grows while it has focus or text. Its time chip follows the playhead until you type (or press `M`), switches
+  to the whole replay, and offers to move to the playhead once it has drifted. Reactions sit behind one button and
+  show in the list as quiet chips their author can remove. An All / Open / Resolved filter appears once a thread is
+  resolved. Anonymous mode is a short note under the composer while you write, not a banner. Seek-bar comment markers
+  keep a 24 px target and merge when closer than that. `scripts/demo-comments.mjs` seeds demo comments.
 
 - Network and Performance are rethought around "what went wrong or slow, and when". Network has one toolbar row,
   where the status chips (All, Failed, Slow, No response) are both filters and summary. A ribbon on the seek bar's
