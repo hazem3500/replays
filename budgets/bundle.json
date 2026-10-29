@@ -82,18 +82,13 @@
       "gzip": 33180,
       "brotli": 29475
     },
-    "dist/client/assets/download-HASH.js": {
-      "raw": 274,
-      "gzip": 222,
-      "brotli": 225
-    },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 43666,
-      "gzip": 7904,
-      "brotli": 7046
+      "raw": 31925,
+      "gzip": 6193,
+      "brotli": 5501
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 97928,
+      "raw": 98265,
       "gzip": 32779,
       "brotli": 28030
     },
@@ -118,9 +113,9 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 237835,
-      "gzip": 41082,
-      "brotli": 34304
+      "raw": 246064,
+      "gzip": 42460,
+      "brotli": 35304
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 847504,
@@ -144,8 +139,8 @@
     },
     "dist/client/assets/player-HASH.js": {
       "raw": 316832,
-      "gzip": 97953,
-      "brotli": 71173
+      "gzip": 98168,
+      "brotli": 71395
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 133380,
@@ -200,12 +195,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1164,
       "gzip": 703,
-      "brotli": 621
+      "brotli": 617
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 20382,
       "gzip": 8342,
-      "brotli": 7151
+      "brotli": 7145
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -218,8 +213,8 @@
       "brotli": 238
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 50387,
-      "gzip": 18341,
+      "raw": 50369,
+      "gzip": 18336,
       "brotli": 15958
     },
     "dist/client/index.html": {
@@ -418,14 +413,14 @@
       "brotli": 4239
     },
     "initial/index.html/css": {
-      "raw": 239756,
-      "gzip": 42027,
-      "brotli": 35120
+      "raw": 247932,
+      "gzip": 43379,
+      "brotli": 36099
     },
     "initial/index.html/js": {
       "raw": 1688508,
       "gzip": 529707,
-      "brotli": 434343
+      "brotli": 435650
     },
     "initial/render.html/css": {
       "raw": 5784,
@@ -433,7 +428,7 @@
       "brotli": 2097
     },
     "initial/render.html/js": {
-      "raw": 542325,
+      "raw": 543485,
       "gzip": 169411,
       "brotli": 132878
     }
@@ -728,16 +723,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
-      "file": "initial/index.html/js",
-      "cap": {
-        "raw": 1688508,
-        "gzip": 529707,
-        "brotli": 434343
-      },
-      "reason": "IndexedDB persistence of the index lists and zod/mini wire schemas in the entry (raw stays under main); TanStack DB stays lazy.",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
-    },
-    {
       "file": "dist/lib/recorder-chunks/bundle-types.ts-ee6bb78d70a4.mjs",
       "cap": {
         "raw": 53813,
@@ -754,7 +739,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -814,7 +799,7 @@
         "gzip": 18530,
         "brotli": 16623
       },
-      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with\u2026 picker.",
+      "reason": "The viewer chunk hosts the caption morph element and the highlight-aware scrubber wiring added by this PR, a few bytes over main in Brotli. Then: Viewer slots for compare mode (shared player, stage, header actions, inspector scope) and the lazy Compare with… picker.",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -874,15 +859,6 @@
       },
       "reason": "The video render page loads the same caption stylesheet with the whole-line swap rules.",
       "pr": "https://github.com/hazem3500/replays/pull/114"
-    },
-    {
-      "file": "dist/client/assets/download-HASH.js",
-      "cap": {
-        "gzip": 222,
-        "brotli": 225
-      },
-      "reason": "No source change: this tiny chunk names hashed sibling chunks, whose hashes change with the side panel; measured against main: +0 B raw, -1 B gzip, +34 B brotli. Replaces #109's allowance for this file; its gzip cap is kept.",
-      "pr": "https://github.com/hazem3500/replays/pull/103"
     },
     {
       "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
@@ -1065,6 +1041,16 @@
         "raw": 543485
       },
       "reason": "The render page draws the chosen click effect through the same cursor glyphs; measured against main: +675 B raw, +216 B gzip, +216 B brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/142"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "brotli": 435650,
+        "raw": 1688508,
+        "gzip": 529707
+      },
+      "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/142"
     }
   ]
