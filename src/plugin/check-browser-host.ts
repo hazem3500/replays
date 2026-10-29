@@ -70,17 +70,12 @@ export async function checkBrowser(
 
 function connectBrowser(options: PluginCheckOptions, launch: { executablePath?: string; noSandbox?: boolean }) {
   return options.headless
-      ? await chromium.launch({
-          headless: true,
-          ...(launch.executablePath ? { executablePath: launch.executablePath } : {}),
-          args: [
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-webgl',
-            ...(launch.noSandbox ? ['--no-sandbox'] : []),
-          ],
-        })
-      : await chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
+    ? chromium.launch({
+        headless: true,
+        ...(launch.executablePath ? { executablePath: launch.executablePath } : {}),
+        args: ['--disable-dev-shm-usage', '--disable-gpu', '--disable-webgl', ...(launch.noSandbox ? ['--no-sandbox'] : [])],
+      })
+    : chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
 }
 
 function checkServer(replay: ReplayBundle, script: string): ReturnType<typeof createServer> {
