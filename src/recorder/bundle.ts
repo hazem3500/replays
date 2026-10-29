@@ -1,4 +1,4 @@
-import { RRWEB_EVENT, type ReplayBundle, type ReplayRrwebEvent, type ReplayStep } from './bundle-types.ts';
+import { RRWEB_EVENT, type ReplayBundle, type ReplayCaptured, type ReplayRrwebEvent, type ReplayStep } from './bundle-types.ts';
 import type { RawConsoleEntry, RawNetworkEntry } from './capture.ts';
 import { redactText, redactUrl } from './redact.ts';
 import { redactEventUrls } from './sanitize-events.ts';
@@ -14,6 +14,8 @@ export type BuildBundleInput = {
   console: RawConsoleEntry[];
   network: RawNetworkEntry[];
   steps: RawStep[];
+  /** `meta.captured`; absent leaves the viewer assuming everything but bodies was recorded. */
+  captured?: ReplayCaptured;
   now?: Date;
   randomSuffix?: string;
 };
@@ -83,6 +85,7 @@ export function buildReplayBundle(input: BuildBundleInput): ReplayBundle {
       eventCount: events.length,
       version: 1,
       source: 'human',
+      ...(input.captured ? { captured: { ...input.captured } } : {}),
     },
     events,
     console: input.console.map((entry) => ({ ...entry, at: relative(entry.at) })).sort((a, b) => a.at - b.at),

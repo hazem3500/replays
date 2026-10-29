@@ -321,6 +321,10 @@ Bodies are opt-in (`network: 'bodies'` or `--network bodies`) and never loosen a
   secret, password, signature or apikey, in any spelling), the deployment's `redaction.jsonKeys` and text rules,
   `Bearer`/`Basic` credentials, JWTs, Luhn-valid card numbers, email addresses and tokens in embedded URLs.
 
+The in-page recorder takes the same block as its `capture` option ([docs/recorder.md](recorder.md#capture-and-network-bodies)): it
+reads fetch and XHR bodies in the page under these rules, never reads streams, server-sent events or binary bodies, and the
+deployment's rules apply when the upload reaches the server.
+
 Viewers render bodies in a network row's details from these fields; with `meta.captured.network !== 'bodies'` they say the
 bodies were not captured.
 

@@ -78,13 +78,43 @@ The provider owns and destroys instances created from `options`, tolerates Stric
 
 ## Guarantees and migration
 
-The core checks user activation at start/upload, passes capture facts to every consent renderer, and checks for a registered visible Stop after a one-second grace period and every two seconds afterward. The facts describe text, ordinary inputs, media, console, network, the duration cap and whether review is required. Passwords, hidden inputs, credential URLs and auth headers stay protected. Request and response bodies are never captured.
+The core checks user activation at start/upload, passes capture facts to every consent renderer, and checks for a registered visible Stop after a one-second grace period and every two seconds afterward. The facts describe text, ordinary inputs, media, console, network, the duration cap and whether review is required. Passwords, hidden inputs, credential URLs and auth headers stay protected. Request and response bodies are read only with `capture.network: 'bodies'` ([Capture and network bodies](#capture-and-network-bodies)); the facts then carry `captures.networkBodies: true` and the default consent copy says so.
 
 During the two-minor / 90-day migration window, activation and Stop checks warn once per condition. Set `strictInvariants:true` now to enforce them. With strict enforcement, a missing Stop ends capture with `no-indicator` and discards it; it can never upload. `page-hidden` always discards. No capture occurs without explicit `consent:true`, no upload without `confirmed:true` and a retained reviewed recording. Those flags remain for compatibility: the evidence checks supplement them, and cannot establish the semantic truth of consent copy. Browsers lacking the activation API log once and skip that check.
 
 Both prompts are enabled by default. `prompts.consent:false` makes the host's Record click the decision point; `prompts.review:false` sends when the user clicks Stop. Capture caps remain enforced. `privacy.sanitize:false` is a host policy decision that permits visible page text and ordinary inputs; render the supplied facts accurately. `blockSelector({presets:['crisp','intercom','zendesk'], selectors:['[data-private]']})` validates selectors; invalid or empty selectors throw. Without a DOM, identifier/preset-only construction works and raw selector validation fails clearly.
 
 Use generic `{source:'host',reason:'crisp'}` triggers and `setReportContext({metadata:{...}})` for integrations. `source:'crisp'` and the `crisp` report field are deprecated compatibility aliases for the same two-minor / 90-day window. Product adapters own support copy, endpoints and external IDs.
+
+## Capture and network bodies
+
+`capture` says what a recording keeps beyond the page. It has the shape of a profile's `capture` block, so a host can pass `profile.capture` from `GET /api/config` as is; it sits beside `messages` (copy) and `privacy` (masking) and, like a profile, only tightens privacy.
+
+```ts
+const recorder = createGuidedRecorder({
+  upload,
+  capture: { network: 'bodies', bodies: { maxBytes: 16_384 } },
+  ui: { messages: { consentTitle: 'Record the problem?' } },
+});
+```
+
+| Key | Default | Effect |
+| --- | --- | --- |
+| `network` | `'headers'` | `'off'`, `'headers'` (method, URL, status, timing, allow-listed headers) or `'bodies'` (also request and response bodies). `privacy.captureNetwork: false` wins |
+| `bodies` | 64 KiB of JSON, `*+json`, `text/*` and form data | `{ maxBytes?, contentTypes? }`, only with `network: 'bodies'`; each can only narrow the defaults |
+| `console` | `['warn', 'error']` | Console levels when `privacy.consoleLevels` is not set |
+| `privacy` | none | `{ maskAllText: true, blockMedia: true }` masks more than `privacy` does; `true` is the only accepted value |
+
+`performance`, `sampling`, `video`, `stepPauseMs`, `viewport` and `runs` belong to the capture CLI and are ignored. An invalid block, or one that widens a default, throws from `createRecorder`.
+
+With `network: 'bodies'` the recorder loads a separate chunk at `start()` and wraps fetch and XHR under the same rules as `replays capture --network bodies` (see [network bodies](extension-api.md#network-bodies)):
+
+- Only JSON, `*+json`, `text/*` and form bodies are read. Server-sent events, `ReadableStream` request bodies, `FormData`, `Blob`, `ArrayBuffer` and other binary bodies are recorded as `{ omitted: 'content-type' }` or `{ omitted: 'unavailable' }`, never read.
+- A fetch response is cloned and read in the background, so the page gets its response at once and unread. Reading stops after `maxBytes`, and every read still open (a long poll, a slow stream) is cancelled when recording stops. XHR text is taken from memory, never measured past the cap.
+- Each body is cut on a character boundary with `truncated: true`, then redacted before it leaves the page: secret fields at any depth, secret form fields, `Bearer`/`Basic` credentials, JWTs, Luhn-valid card numbers and, while page text is masked, e-mail addresses. The ingest endpoint redacts it again with the deployment's `redaction` rules.
+- Kept text counts toward `maxBytes`, so a recording with large bodies stops with `max-size` like one with many events. A failed read leaves `{ omitted: 'unavailable' }`; it never reaches the page.
+
+Every bundle carries `meta.captured` (`{ console, network, performance: false, video: false }`), so the viewer says "Not captured" instead of showing an empty body. If the body chunk cannot load, recording continues with headers only and `meta.captured.network` says `'headers'`.
 
 ## Compose the built-in steps
 

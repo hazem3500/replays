@@ -84,6 +84,16 @@ test('the index shows profile segments with counts and narrows the list; the API
   expect(config.profiles.map((profile) => profile.id)).toEqual(['triage', 'walkthrough', 'performance']);
 });
 
+test('a profile tab reached by the keyboard shows the focus ring', async ({ page }) => {
+  await gotoHydrated(page, `${server().origin}/`);
+  await page.getByRole('radiogroup', { name: 'Profile' }).getByRole('radio', { name: /^All/ }).focus();
+  await page.keyboard.press('Shift+Tab');
+  await page.keyboard.press('Tab');
+  const label = page.locator('.profile-segment:has(input:focus-visible) .profile-segment-label');
+  await expect(label).toHaveCount(1);
+  await expect(label).not.toHaveCSS('box-shadow', 'none');
+});
+
 test('an upload with an unknown profile is refused, naming the allowed ids', async ({ request }) => {
   const base = server().origin;
   const bundle = await cloneBundle(request, base, 'demo-shop', uniqueId('bad-profile'));
