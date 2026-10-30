@@ -40,8 +40,8 @@ async function refreshIfNeeded(
     await saveCliToken(refreshed.token);
     return { cached: refreshed.token, status: refreshed.status };
   }
-  // A different CLI process may have rotated this single-use refresh token.
-  // Failed refreshes must not delete credentials saved by that process.
+  /* why: A different CLI process may have rotated this single-use refresh token.
+     Failed refreshes must not delete credentials saved by that process. */
   const latest = await loadCliToken(server, capability.issuer, capability.clientId);
   if (latest && (latest.accessToken !== cached.accessToken || latest.refreshToken !== cached.refreshToken)) return { cached: latest };
   return undefined;
@@ -59,14 +59,14 @@ export async function uploadWithCliAuth(
     await upload(bundle, output, endpoint, options.headerFile);
     return;
   }
-  // A saved credential is considered only for the exact canonical endpoint derived from its saved server base.
-  // An arbitrary --upload-url or a wrapper-approved endpoint that differs from that target never receives a token.
+  /* why: A saved credential is considered only for the exact canonical endpoint derived from its saved server base.
+     An arbitrary --upload-url or a wrapper-approved endpoint that differs from that target never receives a token. */
   let savedServer: string | undefined;
   try {
     const server = await resolveServerUrl(options.serverName ? { explicitName: options.serverName } : {});
     if (endpoint === uploadEndpoint(server.url)) savedServer = server.url;
   } catch {
-    // Explicit standalone upload URLs remain unauthenticated unless they match a saved named/default server.
+    // why: explicit standalone upload URLs remain unauthenticated unless they match a saved named/default server.
   }
   if (!savedServer) {
     if (options.forceLogin) throw new CliAuthError('login requires a configured server; run `replays connect <server-url>` first', 2);
@@ -131,8 +131,8 @@ export async function uploadWithCliAuth(
     await upload(bundle, output, endpoint, undefined, cached.accessToken);
   } catch (error) {
     if (error instanceof UploadHttpError && error.status === 401) {
-      // Keep failures non-destructive: this request may have used an older
-      // token than a concurrent login or refresh has already saved.
+      /* why: keep failures non-destructive: this request may have used an older
+         token than a concurrent login or refresh has already saved. */
       if (options.forceLogin || isInteractive()) {
         const authorized = await beginDeviceLogin(savedServer, auth.deviceFlow);
         const refreshed = tokenFromResponse(savedServer, auth.deviceFlow, authorized.token, authorized.status);
@@ -226,8 +226,8 @@ export async function runLoginCli(argv: string[]) {
         );
         return;
       } catch {
-        // This process may have checked an older access token while another CLI replaced it.
-        // Keep the saved session until explicit logout or a successful replacement.
+        /* why: this process may have checked an older access token while another CLI replaced it.
+           Keep the saved session until explicit logout or a successful replacement. */
       }
     }
     const existing = await loadCliToken(target.url, capability.issuer, capability.clientId);
@@ -249,7 +249,7 @@ export async function runLoginCli(argv: string[]) {
           );
           return;
         } catch {
-          // A failed validation must not remove a credential another process just saved.
+          // why: A failed validation must not remove a credential another process just saved.
         }
       }
     }

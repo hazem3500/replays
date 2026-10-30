@@ -395,7 +395,7 @@ describe('createRecorder', () => {
       expect(recorder.getState().status).toBe('recording');
       expect(oldHide).not.toHaveBeenCalled();
       expect(ui.ui.showResult).not.toHaveBeenCalled();
-      // The current session still owns its indicator and can stop normally.
+      // why: the current session still owns its indicator and can stop normally.
       ui.clickStop();
       await newRequest;
       expect(recorder.getState().status).toBe('uploaded');

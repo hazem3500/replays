@@ -46,7 +46,7 @@ async function keyring(operation: 'get' | 'put' | 'delete', key: string, value?:
       const result = await run('swift', ['-e', script, operation, 'replays-cli', key], value, 60_000);
       if (result.code === 0) return operation === 'get' ? result.stdout : '';
     } catch {
-      // Swift is optional; on machines without its runtime use the owner-only file fallback.
+      // why: swift is optional; on machines without its runtime use the owner-only file fallback.
     }
     return undefined;
   }
@@ -61,7 +61,7 @@ async function keyring(operation: 'get' | 'put' | 'delete', key: string, value?:
     const result = await run('secret-tool', args, operation === 'put' ? value : undefined);
     if (result.code === 0) return operation === 'get' ? result.stdout.trimEnd() : '';
   } catch {
-    // secret-tool is optional. An absent or locked keyring uses the protected file fallback.
+    // why: secret-tool is optional. An absent or locked keyring uses the protected file fallback.
   }
   return undefined;
 }

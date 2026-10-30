@@ -26,8 +26,8 @@ const BINDING = '__replaysNavigationFlush';
 
 /** The recorder page script (rrweb plus console, error and performance capture), bundled for the browser. */
 export async function recorderSource() {
-  // A built CLI ships the bundle next to itself (scripts/build-cli.mjs), the library in dist/lib (scripts/build-lib.mjs; its
-  // shared chunks sit one level down); a checkout bundles it on demand.
+  /* why: A built CLI ships the bundle next to itself (scripts/build-cli.mjs), the library in dist/lib (scripts/build-lib.mjs; its
+     shared chunks sit one level down); a checkout bundles it on demand. */
   const prebuilt = ['./recorder.iife.js', '../recorder.iife.js']
     .map((relative) => fileURLToPath(new URL(relative, import.meta.url)))
     .find((candidate) => existsSync(candidate));
@@ -160,7 +160,7 @@ export class RecorderSession {
     try {
       this.add(JSON.parse(params.payload) as RecorderChunk);
     } catch {
-      /* a malformed page payload is ignored */
+      // why: a malformed page payload is ignored.
     }
   };
 
@@ -178,7 +178,7 @@ export class RecorderSession {
         })) as { result?: { value?: RecorderChunk }; exceptionDetails?: unknown };
         if (!result.exceptionDetails) this.add(result.result?.value);
       } catch {
-        // A navigation can replace the execution context between the timer tick and evaluate.
+        // why: A navigation can replace the execution context between the timer tick and evaluate.
       }
     });
   }

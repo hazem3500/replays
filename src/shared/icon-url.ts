@@ -9,7 +9,7 @@ export const MAX_ICON_URL = 8192;
 
 export function isSafeIconUrl(value: unknown): value is string {
   if (typeof value !== 'string' || value.length === 0 || value.length > MAX_ICON_URL) return false;
-  // Whatever the SVG holds, an <img> renders it inert (no script, no external loads).
+  // why: whatever the SVG holds, an <img> renders it inert (no script, no external loads).
   if (/^data:image\/svg\+xml[;,]/i.test(value)) return true;
   try {
     const url = new URL(value);

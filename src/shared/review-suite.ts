@@ -195,7 +195,7 @@ export function assertReviewSuiteRegistration(value: unknown, suiteId: string): 
   if (input.id !== suiteId) throw new Error('suite ID does not match path');
   const { subject, ...rest } = input;
   if (subject !== undefined) record(subject, 'suite.subject', ['provider', 'ref', 'url', 'label']);
-  // The subject is validated after the server resolves it (source-providers.ts), so check the rest here.
+  // why: the subject is validated after the server resolves it (source-providers.ts), so check the rest here.
   assertReviewSuite({ ...rest, id: suiteId, runs: [] });
 }
 

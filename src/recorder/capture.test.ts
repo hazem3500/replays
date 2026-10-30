@@ -48,7 +48,7 @@ describe('captureNetwork', () => {
       responseHeaders: [{ name: 'content-type', value: 'application/json; charset=utf-8' }],
     });
     expect(JSON.stringify(entries)).not.toMatch(/hunter2|Bearer|secret/);
-    // The response body was not consumed by the recorder.
+    // why: the response body was not consumed by the recorder.
     expect(response.bodyUsed).toBe(false);
     expect(globalThis.fetch).toBe(fake);
   });

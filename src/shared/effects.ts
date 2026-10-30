@@ -74,8 +74,6 @@ export const MAX_CAPTION = 160;
 /** Smallest blur box side, as a fraction of the frame. */
 export const MIN_BLUR_SIZE = 0.01;
 
-/* ---------- Edited timeline ---------- */
-
 /** What effects need from the edit timeline: original → edited time. */
 interface TimeMap {
   toEdited(time: number): number;
@@ -178,8 +176,6 @@ export function playbackEffects(
 /** Original-timing effects for the editor's preview, which plays the original replay (cuts skipped live). */
 export const IDENTITY_TIME = (duration: number): TimeMap => ({ toEdited: (time) => time, duration });
 
-/* ---------- Zoom ---------- */
-
 /** Easing into and out of a zoom region (shortened for short regions), and the pan from one click to the next. */
 export const ZOOM_IN_MS = 600;
 export const ZOOM_OUT_MS = 700;
@@ -219,7 +215,7 @@ export function zoomAt(zooms: readonly PlaybackZoom[], time: number, viewport: {
   let x = zoom.x * viewport.width;
   let y = zoom.y * viewport.height;
   if (zoom.clicks.length) {
-    // Anchor: the latest click (the first before it lands), panning to the next one just before it lands.
+    // why: anchor: the latest click (the first before it lands), panning to the next one just before it lands.
     let index = 0;
     while (index + 1 < zoom.clicks.length && zoom.clicks[index + 1]!.at <= time) index++;
     const current = zoom.clicks[index]!;
@@ -274,8 +270,6 @@ export function proposeZoomRegions(
   return regions;
 }
 
-/* ---------- Blurs and captions ---------- */
-
 /** Whole hundredths of a px. */
 const px = (value: number) => Math.round(value * 100) / 100;
 
@@ -324,8 +318,6 @@ export function effectsKey(effects: PlaybackEffects, viewport: { width: number; 
   const zoomPart = zoom.scale === 1 ? '' : `${zoom.scale.toFixed(3)},${zoom.x.toFixed(1)},${zoom.y.toFixed(1)}`;
   return `${zoomPart}|${blursAt(effects.blurs, time).join(',')}`;
 }
-
-/* ---------- Proposals ---------- */
 
 /** Longest a caption from a step stays up. */
 export const STEP_CAPTION_MAX_MS = 5000;
