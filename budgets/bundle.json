@@ -327,10 +327,15 @@
       "gzip": 106,
       "brotli": 101
     },
+    "dist/lib/chunks/branding-collector.ts-23d124755c82.mjs": {
+      "raw": 34150,
+      "gzip": 8710,
+      "brotli": 7602
+    },
     "dist/lib/chunks/bundle-io.ts-00964f435833.mjs": {
       "raw": 71586,
-      "gzip": 19748,
-      "brotli": 17036
+      "gzip": 19749,
+      "brotli": 17037
     },
     "dist/lib/chunks/compression.ts-47af8e92faec.mjs": {
       "raw": 4312,
@@ -381,11 +386,6 @@
       "raw": 18258,
       "gzip": 4951,
       "brotli": 4342
-    },
-    "dist/lib/chunks/registry.ts-2e034be27725.mjs": {
-      "raw": 33699,
-      "gzip": 8512,
-      "brotli": 7425
     },
     "dist/lib/chunks/start.ts-530ffefc64b4.mjs": {
       "raw": 4541,
@@ -741,16 +741,6 @@
       },
       "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
-    },
-    {
-      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
-      "cap": {
-        "raw": 33699,
-        "gzip": 8512,
-        "brotli": 7425
-      },
-      "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
-      "pr": "https://github.com/hazem3500/replays/pull/131"
     },
     {
       "file": "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs",
@@ -1380,16 +1370,6 @@
       "reason": "Capture split into mask-inputs, mask-selectors, capture-steps and step-labels modules; the shared capture chunks take new source identities; CI Quality / size against fresh main: gzip 84103, brotli 68661. Replaces #186's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/bundle-io.ts-00964f435833.mjs",
-      "cap": {
-        "raw": 71586,
-        "gzip": 19748,
-        "brotli": 17036
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/190",
-      "reason": "Capture split into mask-inputs, mask-selectors, capture-steps and step-labels modules; the shared capture chunks take new source identities; CI Quality / size against fresh main: raw 71586, gzip 19748, brotli 17036."
-    },
-    {
       "file": "dist/lib/chunks/har-bodies.ts-38ded7aa8c17.mjs",
       "cap": {
         "raw": 31868,
@@ -1408,6 +1388,26 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/190",
       "reason": "Hash drift: its imported chunk names change because capture's human-bundle now imports mask-inputs (raw size unchanged); CI Quality / size against fresh main: brotli 1141. Replaces #78's allowance for this file."
+    },
+    {
+      "file": "dist/lib/chunks/bundle-io.ts-00964f435833.mjs",
+      "cap": {
+        "raw": 71586,
+        "gzip": 19749,
+        "brotli": 17037
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/192",
+      "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: gzip 19749, brotli 17037. Replaces #190's allowance for this file."
+    },
+    {
+      "file": "dist/lib/chunks/branding-collector.ts-23d124755c82.mjs",
+      "cap": {
+        "raw": 34150,
+        "gzip": 8710,
+        "brotli": 7602
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/192",
+      "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: raw 34150, gzip 8710, brotli 7602."
     }
   ]
 }

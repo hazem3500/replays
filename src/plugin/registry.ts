@@ -1,13 +1,27 @@
 import { isDeepStrictEqual } from 'node:util';
 
 import type { AnyAuthAdapter, AuthAdapter, AuthPluginFactory, WebAuthAdapter } from '../server/auth/types.ts';
-import { assertThemeTokens, type ThemeTokens } from '../server/branding.ts';
 import { assertRedactionRules, mergeRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import { assertProfileConfig } from '../shared/profiles.ts';
 import { assertViewPreset, BUILT_IN_VIEWS, type ViewPreset } from '../shared/views.ts';
-import { compileHandlePattern, HANDLE_ID, isPersonRole } from '../shared/people.ts';
-import { assertProviderLook, type SourceProvider } from '../shared/source-providers.ts';
+import type { SourceProvider } from '../shared/source-providers.ts';
+import { BrandingCollector } from './branding-collector.ts';
 import { assertPlugin } from './define.ts';
+import { orderPlugins } from './order.ts';
+import {
+  checkClientEntry,
+  checkContextAdapter,
+  checkedBasePath,
+  checkIndexFilter,
+  checkPeople,
+  checkRender,
+  checkSourceProvider,
+  checkSummaryFields,
+  errorMessage,
+  needFunction as checkFunction,
+  PLUGIN_ID,
+} from './registration-checks.ts';
+import type { Owned, PluginRegistry, ResolvedClientEntry } from './registry-types.ts';
 import { PluginError } from './errors.ts';
 import { PACKAGE_VERSION, satisfies } from './version.ts';
 import { validateRequestPolicy, validateUploadEndpoint, assertDistinctPolicies } from './request-policy.ts';
@@ -16,8 +30,6 @@ import type { PluginMiddleware, PluginRoute } from './web-types.ts';
 import type {
   AfterUploadHook,
   BeforeUploadHook,
-  BrandingContribution,
-  ClientEntry,
   ContextAdapter,
   IndexFilterDefinition,
   IdentityResolver,
@@ -42,152 +54,12 @@ import type {
 export const BUILTIN_AUTH = ['none', 'header', 'oidc', 'plugin'] as const;
 export const BUILTIN_STORAGE = ['fs', 's3', 'memory'] as const;
 
-const ID = /^[a-z][a-z0-9-]{0,39}$/;
-/** Plugin index filter params: namespaced, so they can never take a core query parameter, today's or a future one. */
-export const INDEX_FILTER_PARAM = /^x-[a-z0-9][a-z0-9-]{0,38}$/;
-const BASE = /^\/[A-Za-z0-9._~/-]*$/;
+const ID = PLUGIN_ID;
 
-export interface Owned<T> {
-  plugin: string;
-  value: T;
-}
-
-export interface ResolvedClientEntry extends ClientEntry {
-  plugin: string;
-}
-
-/** Everything the plugins registered, in plugin order. Built once at start by `resolvePlugins`. */
-export interface PluginRegistry {
-  /** Plugin names in setup order. */
-  readonly order: readonly string[];
-  readonly auth: ReadonlyMap<string, Owned<AuthPluginFactory>>;
-  readonly contextAdapters: readonly Owned<ContextAdapter>[];
-  readonly sourceProviders: readonly Owned<SourceProvider>[];
-  readonly storage: ReadonlyMap<string, Owned<StorageBackend>>;
-  readonly requestPolicies: readonly Owned<RequestPolicy>[];
-  readonly uploadEndpoints: ReadonlyMap<string, Owned<UploadEndpoint>>;
-  readonly branding: BrandingContribution;
-  readonly basePath: string | undefined;
-  /** Every plugin's `api.redaction` rules, merged (they only add). */
-  readonly redaction: RedactionRules;
-  readonly hooks: {
-    readonly preAuth: readonly Owned<RequestHook>[];
-    readonly postAuth: readonly Owned<RequestHook>[];
-    readonly response: readonly Owned<ResponseHook>[];
-    readonly prepareUpload: readonly Owned<PrepareUploadHook>[];
-    readonly normalizeUpload: readonly Owned<NormalizeUploadHook>[];
-    readonly beforeUpload: readonly Owned<BeforeUploadHook>[];
-    readonly afterUpload: readonly Owned<AfterUploadHook>[];
-    /** `api.middleware`, by phase, in plugin order. */
-    readonly webPreAuth: readonly Owned<PluginMiddleware>[];
-    readonly webPostAuth: readonly Owned<PluginMiddleware>[];
-  };
-  /** `api.route`, in plugin order. */
-  readonly routes: readonly Owned<PluginRoute<unknown>>[];
-  readonly clientEntries: readonly ResolvedClientEntry[];
-  /** `api.profile`, in registration order (src/server/profiles.ts merges them with the config's). */
-  readonly profiles: readonly Owned<ProfileDefinition>[];
-  /** `api.view`, in registration order (src/server/views.ts merges them with the built-ins and the config's). */
-  readonly views: readonly Owned<ViewPreset>[];
-  /** `api.retention` rules. */
-  readonly retention: readonly Owned<RetentionRuleDefinition>[];
-  /** `api.render` hooks, in plugin order (src/server/render-hooks.ts runs them). */
-  readonly render: readonly Owned<RenderHooks>[];
-  readonly summaryFields: readonly Owned<SummaryFieldsDefinition>[];
-  readonly indexFilters: readonly Owned<IndexFilterDefinition>[];
-  /** `api.people`: at most one per deployment. */
-  readonly people: Owned<PeopleOptions> | undefined;
-  readonly identityResolvers: readonly Owned<IdentityResolver>[];
-}
-
-export const EMPTY_REGISTRY: PluginRegistry = Object.freeze({
-  order: [],
-  auth: new Map(),
-  contextAdapters: [],
-  sourceProviders: [],
-  storage: new Map(),
-  requestPolicies: [],
-  uploadEndpoints: new Map(),
-  branding: {},
-  basePath: undefined,
-  redaction: {},
-  hooks: {
-    preAuth: [],
-    postAuth: [],
-    response: [],
-    prepareUpload: [],
-    normalizeUpload: [],
-    beforeUpload: [],
-    afterUpload: [],
-    webPreAuth: [],
-    webPostAuth: [],
-  },
-  routes: [],
-  clientEntries: [],
-  profiles: [],
-  views: [],
-  retention: [],
-  render: [],
-  summaryFields: [],
-  indexFilters: [],
-  people: undefined,
-  identityResolvers: [],
-});
-
-/**
- * Plugin order: dependencies first, then by `order`, then by position in the config. Throws on a missing dependency,
- * a duplicate name or a cycle.
- */
-export function orderPlugins(plugins: readonly ReplaysPlugin[]): ReplaysPlugin[] {
-  const byName = new Map<string, ReplaysPlugin>();
-  for (const plugin of plugins) {
-    if (byName.has(plugin.name)) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: plugin.name });
-    byName.set(plugin.name, plugin);
-  }
-  for (const plugin of plugins)
-    for (const dependency of plugin.dependsOn ?? [])
-      if (!byName.has(dependency))
-        throw new PluginError('missing-dependency', `depends on ${JSON.stringify(dependency)}, which is not in the config`, {
-          plugin: plugin.name,
-        });
-  const position = new Map(plugins.map((plugin, index) => [plugin.name, index]));
-  const rank = (plugin: ReplaysPlugin) => [plugin.order ?? 0, position.get(plugin.name)!] as const;
-  const pending = [...plugins];
-  const done = new Set<string>();
-  const ordered: ReplaysPlugin[] = [];
-  while (pending.length) {
-    const ready = pending.filter((plugin) => (plugin.dependsOn ?? []).every((dependency) => done.has(dependency)));
-    if (!ready.length)
-      throw new PluginError('dependency-cycle', `dependency cycle among ${pending.map((plugin) => plugin.name).join(', ')}`);
-    const next = ready.reduce((best, plugin) => {
-      const [a, b] = [rank(plugin), rank(best)];
-      return a[0] < b[0] || (a[0] === b[0] && a[1] < b[1]) ? plugin : best;
-    });
-    pending.splice(pending.indexOf(next), 1);
-    done.add(next.name);
-    ordered.push(next);
-  }
-  return ordered;
-}
-
-function mergeScalar(
-  merged: Record<string, string>,
-  owners: Map<string, string>,
-  key: string,
-  value: string,
-  plugin: string,
-  label: string,
-) {
-  const previous = merged[key];
-  if (previous !== undefined && previous !== value)
-    throw new PluginError(
-      'conflict',
-      `sets ${label} to ${JSON.stringify(value)}, but ${owners.get(key)} already set ${JSON.stringify(previous)}`,
-      { plugin },
-    );
-  merged[key] = value;
-  owners.set(key, plugin);
-}
+export { INDEX_FILTER_PARAM } from './registration-checks.ts';
+export { mergeRegistries } from './registry-merge.ts';
+export { EMPTY_REGISTRY, type Owned, type PluginRegistry, type ResolvedClientEntry } from './registry-types.ts';
+export { orderPlugins } from './order.ts';
 
 type ResolveOptions = {
   env?: NodeJS.ProcessEnv;
@@ -235,10 +107,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
   const indexFilters: Owned<IndexFilterDefinition>[] = [];
   let people: Owned<PeopleOptions> | undefined;
   const identityResolvers: Owned<IdentityResolver>[] = [];
-  const brandScalars: Record<string, string> = {};
-  const brandOwners = new Map<string, string>();
-  const theme = { dark: {} as Record<string, string>, light: {} as Record<string, string> };
-  const themeOwners = { dark: new Map<string, string>(), light: new Map<string, string>() };
+  const brandingCollector = new BrandingCollector();
   let basePath: { value: string; plugin: string } | undefined;
   const redaction: RedactionRules[] = [];
 
@@ -254,9 +123,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         throw error;
       }
     }
-    function needFunction(value: unknown, what: string) {
-      if (typeof value !== 'function') fail(`${what} must be a function`);
-    }
+    const needFunction = (value: unknown, what: string) => checkFunction(value, what, fail);
     let warnedPurpose = false;
     const legacy = {
       purpose(definition: ProfileDefinition) {
@@ -271,7 +138,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
       try {
         assertProfileConfig(definition, 'profile', ['infer']);
       } catch (error) {
-        fail((error as Error).message);
+        fail(errorMessage(error));
       }
       if (definition.infer !== undefined) needFunction(definition.infer, `profile ${definition.id}: infer`);
       const taken = profiles.find((entry) => entry.value.id === definition.id);
@@ -299,10 +166,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         auth.set(name, { plugin: plugin.name, value: factory ?? (() => registration as AnyAuthAdapter) });
       },
       contextAdapter(adapter) {
-        if (!adapter || typeof adapter.name !== 'string' || !ID.test(adapter.name)) fail('contextAdapter needs a name like "build-info"');
-        if (adapter.normalize !== undefined) needFunction(adapter.normalize, 'contextAdapter.normalize');
-        if (adapter.schema && (adapter.schema.type !== 'object' || typeof adapter.schema !== 'object'))
-          fail(`contextAdapter ${adapter.name}: schema must be a JSON Schema with "type": "object"`);
+        checkContextAdapter(adapter, fail);
         const taken = contextAdapters.find((entry) => entry.value.name === adapter.name);
         if (taken) fail(`context adapter ${JSON.stringify(adapter.name)} is already registered by ${taken.plugin}`, 'conflict');
         if (adapter.schema?.properties) {
@@ -320,16 +184,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         contextAdapters.push({ plugin: plugin.name, value: adapter });
       },
       sourceProvider(provider) {
-        if (!provider || typeof provider.id !== 'string' || !/^[a-z0-9][a-z0-9_-]*$/.test(provider.id))
-          fail('sourceProvider needs an id like "jira"');
-        needFunction(provider.resolve, 'sourceProvider.resolve');
-        try {
-          assertProviderLook(provider);
-        } catch (error) {
-          fail((error as Error).message);
-        }
-        if (['github', 'gitlab', 'url'].includes(provider.id))
-          fail(`source provider ${JSON.stringify(provider.id)} is built in`, 'conflict');
+        checkSourceProvider(provider, fail);
         const taken = sourceProviders.find((entry) => entry.value.id === provider.id);
         if (taken) fail(`source provider ${JSON.stringify(provider.id)} is already registered by ${taken.plugin}`, 'conflict');
         sourceProviders.push({ plugin: plugin.name, value: provider });
@@ -344,29 +199,10 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         storage.set(backend.id, { plugin: plugin.name, value: backend });
       },
       branding(contribution) {
-        if (!contribution || typeof contribution !== 'object') fail('branding needs an object');
-        for (const key of ['name', 'logoUrl'] as const) {
-          const value = contribution[key];
-          if (value === undefined) continue;
-          if (typeof value !== 'string' || !value.trim()) fail(`branding.${key} must be a non-empty string`);
-          mergeScalar(brandScalars, brandOwners, key, value.trim(), plugin.name, `branding.${key}`);
-        }
-        for (const scheme of ['dark', 'light'] as const) {
-          const tokens = contribution.theme?.[scheme];
-          if (!tokens) continue;
-          try {
-            assertThemeTokens(tokens, `branding.theme.${scheme}`);
-          } catch (error) {
-            fail((error as Error).message);
-          }
-          for (const [token, value] of Object.entries(tokens as ThemeTokens))
-            mergeScalar(theme[scheme], themeOwners[scheme], token, value, plugin.name, `theme.${scheme}.${token}`);
-        }
+        brandingCollector.add(contribution, plugin.name, fail);
       },
       basePath(path) {
-        if (typeof path !== 'string' || (path !== '/' && (!BASE.test(path) || path.includes('//') || /(^|\/)\.\.?(\/|$)/.test(path))))
-          fail(`basePath must be "/" or an absolute path like "/replays" (got ${JSON.stringify(path)})`);
-        const normalized = path === '/' ? '' : path.replace(/\/+$/, '');
+        const normalized = checkedBasePath(path, fail);
         if (basePath && basePath.value !== normalized)
           fail(
             `sets basePath ${JSON.stringify(normalized || '/')}, but ${basePath.plugin} already set ${JSON.stringify(basePath.value || '/')}`,
@@ -426,14 +262,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         hooks.afterUpload.push({ plugin: plugin.name, value: hook });
       },
       client(entry) {
-        if (!entry || typeof entry.id !== 'string' || !ID.test(entry.id)) fail('client entry needs an id like "main"');
-        for (const key of ['script', 'style'] as const) {
-          const value = entry[key];
-          if (value === undefined) continue;
-          if (typeof value !== 'string' || !(value.startsWith('https://') || /^(\/|[A-Za-z]:[\\/])/.test(value)))
-            fail(`client ${entry.id}: ${key} must be an absolute file path or an https URL (got ${JSON.stringify(value)})`);
-        }
-        if (typeof entry.script !== 'string') fail(`client ${entry.id}: script is required`);
+        checkClientEntry(entry, fail);
         if (clientEntries.some((existing) => existing.plugin === plugin.name && existing.id === entry.id))
           fail(`client entry ${JSON.stringify(entry.id)} is registered twice`, 'conflict');
         clientEntries.push({ ...entry, plugin: plugin.name });
@@ -442,7 +271,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         try {
           assertRedactionRules(rules);
         } catch (error) {
-          fail((error as Error).message);
+          fail(errorMessage(error));
         }
         redaction.push(rules);
       },
@@ -453,7 +282,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         try {
           assertViewPreset(preset, 'view');
         } catch (error) {
-          fail((error as Error).message);
+          fail(errorMessage(error));
         }
         if (BUILT_IN_VIEWS.some((view) => view.id === preset.id))
           fail(`view ${JSON.stringify(preset.id)} is built in; retune it with a views entry in the config file`, 'conflict');
@@ -467,29 +296,17 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
         retention.push({ plugin: plugin.name, value: rule });
       },
       render(definition) {
-        if (!definition || typeof definition !== 'object') fail('render needs { posterAt?, beforeRender?, afterRender? }');
-        const names = ['posterAt', 'beforeRender', 'afterRender'] as const;
-        const unknown = Object.keys(definition).find((name) => !(names as readonly string[]).includes(name));
-        if (unknown) fail(`render: unknown hook ${JSON.stringify(unknown)} (use ${names.join(', ')})`);
-        if (!names.some((name) => definition[name] !== undefined)) fail('render needs at least one of posterAt, beforeRender, afterRender');
-        for (const name of names) if (definition[name] !== undefined) needFunction(definition[name], `render.${name}`);
+        checkRender(definition, fail);
         render.push({ plugin: plugin.name, value: definition });
       },
       summaryFields(definition) {
-        if (!definition || typeof definition.name !== 'string' || !ID.test(definition.name))
-          fail('summaryFields needs a name like "build"');
-        needFunction(definition.fields, `summaryFields ${definition.name}: fields`);
-        if (definition.version !== undefined && !(Number.isInteger(definition.version) && definition.version > 0))
-          fail(`summaryFields ${definition.name}: version must be a positive integer`);
+        checkSummaryFields(definition, fail);
         if (summaryFields.some((entry) => entry.plugin === plugin.name && entry.value.name === definition.name))
           fail(`summaryFields ${JSON.stringify(definition.name)} is registered twice`, 'conflict');
         summaryFields.push({ plugin: plugin.name, value: definition });
       },
       indexFilter(definition) {
-        if (!definition || typeof definition.id !== 'string' || !ID.test(definition.id)) fail('indexFilter needs an id like "env"');
-        needFunction(definition.match, `indexFilter ${definition.id}: match`);
-        if (typeof definition.param !== 'string' || !INDEX_FILTER_PARAM.test(definition.param))
-          fail(`indexFilter ${definition.id}: param must look like "x-env" (got ${JSON.stringify(definition.param)})`);
+        checkIndexFilter(definition, fail);
         if (indexFilters.some((entry) => entry.plugin === plugin.name && entry.value.id === definition.id))
           fail(`indexFilter ${JSON.stringify(definition.id)} is registered twice`, 'conflict');
         const taken = indexFilters.find((entry) => entry.value.param === definition.param);
@@ -499,32 +316,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
       people(config) {
         if (!config || typeof config !== 'object') fail('people needs an object');
         if (people) fail(`people is already registered by ${people.plugin}; a deployment has one`, 'conflict');
-        for (const key of ['validate', 'avatarUrl', 'profileUrl'] as const)
-          if (config[key] !== undefined) needFunction(config[key], `people.${key}`);
-        if (config.roles !== undefined) {
-          if (!Array.isArray(config.roles) || config.roles.length === 0) fail('people.roles must be a non-empty array');
-          for (const role of config.roles)
-            if (!isPersonRole(role)) fail(`people.roles: ${JSON.stringify(role)} is not a role like "reviewer"`);
-          if (new Set(config.roles).size !== config.roles.length) fail('people.roles lists a role twice');
-        }
-        if (config.handles !== undefined) {
-          if (!Array.isArray(config.handles)) fail('people.handles must be an array');
-          const ids = new Set<string>();
-          for (const handle of config.handles) {
-            if (!handle || typeof handle.id !== 'string' || !HANDLE_ID.test(handle.id)) fail('people.handles needs ids like "github"');
-            if (ids.has(handle.id)) fail(`people.handles lists ${JSON.stringify(handle.id)} twice`);
-            ids.add(handle.id);
-            if (typeof handle.label !== 'string' || !handle.label.trim() || handle.label.length > 60)
-              fail(`people.handles.${handle.id}: label must be 1-60 characters`);
-            if (typeof handle.pattern !== 'string' || !handle.pattern)
-              fail(`people.handles.${handle.id}: pattern must be a regular expression source`);
-            try {
-              compileHandlePattern(handle.pattern);
-            } catch (error) {
-              fail(`people.handles.${handle.id}: pattern does not compile (${(error as Error).message})`);
-            }
-          }
-        }
+        checkPeople(config, fail);
         people = { plugin: plugin.name, value: config };
       },
       identity(resolver) {
@@ -544,10 +336,7 @@ function* collect(plugins: readonly ReplaysPlugin[], options: ResolveOptions): G
     }
   }
 
-  const branding: BrandingContribution = { ...brandScalars };
-  const themeOut: NonNullable<BrandingContribution['theme']> = {};
-  for (const scheme of ['dark', 'light'] as const) if (Object.keys(theme[scheme]).length) themeOut[scheme] = theme[scheme] as ThemeTokens;
-  if (themeOut.dark || themeOut.light) branding.theme = themeOut;
+  const branding = brandingCollector.result();
 
   return {
     order: ordered.map((plugin) => plugin.name),
@@ -603,67 +392,4 @@ export function resolvePluginsSync(plugins: readonly ReplaysPlugin[], options: R
     step = run.next();
   }
   return step.value;
-}
-
-function union<K, V>(a: ReadonlyMap<K, V>, b: ReadonlyMap<K, V>, what: string) {
-  for (const key of a.keys()) if (b.has(key)) throw new PluginError('conflict', `${what} ${JSON.stringify(key)} is registered twice`);
-  return new Map([...a, ...b]);
-}
-
-function mergeIndexFilters(a: readonly Owned<IndexFilterDefinition>[], b: readonly Owned<IndexFilterDefinition>[]) {
-  const clash = b.find((entry) => a.some((other) => other.value.param === entry.value.param));
-  if (clash) throw new PluginError('conflict', `index filter param ${JSON.stringify(clash.value.param)} is registered twice`);
-  return [...a, ...b];
-}
-
-/**
- * One registry from two: `first`'s plugins are set up and their hooks run before `second`'s. The built-in plugins are
- * merged under the user's, so the user's branding and base path win. Names that appear in both are a conflict.
- */
-export function mergeRegistries(first: PluginRegistry, second: PluginRegistry): PluginRegistry {
-  const clash = first.order.find((name) => second.order.includes(name));
-  if (clash) throw new PluginError('duplicate-plugin', 'is listed twice', { plugin: clash });
-  const profile = second.profiles.find((entry) => first.profiles.some((other) => other.value.id === entry.value.id));
-  if (profile)
-    throw new PluginError('conflict', `profile ${JSON.stringify(profile.value.id)} is registered twice`, { plugin: profile.plugin });
-  const view = second.views.find((entry) => first.views.some((other) => other.value.id === entry.value.id));
-  if (view) throw new PluginError('conflict', `view ${JSON.stringify(view.value.id)} is registered twice`, { plugin: view.plugin });
-  if (first.people && second.people)
-    throw new PluginError('conflict', `registers people, but ${first.people.plugin} already did; a deployment has one`, {
-      plugin: second.people.plugin,
-    });
-  assertDistinctPolicies(first.requestPolicies, second.requestPolicies);
-  return {
-    requestPolicies: [...first.requestPolicies, ...second.requestPolicies],
-    uploadEndpoints: union(first.uploadEndpoints, second.uploadEndpoints, 'upload endpoint'),
-    order: [...first.order, ...second.order],
-    auth: union(first.auth, second.auth, 'auth adapter'),
-    contextAdapters: [...first.contextAdapters, ...second.contextAdapters],
-    sourceProviders: [...first.sourceProviders, ...second.sourceProviders],
-    storage: union(first.storage, second.storage, 'storage backend'),
-    branding: { ...first.branding, ...second.branding },
-    basePath: second.basePath ?? first.basePath,
-    redaction: mergeRedactionRules(first.redaction, second.redaction),
-    hooks: {
-      preAuth: [...first.hooks.preAuth, ...second.hooks.preAuth],
-      postAuth: [...first.hooks.postAuth, ...second.hooks.postAuth],
-      response: [...first.hooks.response, ...second.hooks.response],
-      prepareUpload: [...first.hooks.prepareUpload, ...second.hooks.prepareUpload],
-      normalizeUpload: [...first.hooks.normalizeUpload, ...second.hooks.normalizeUpload],
-      beforeUpload: [...first.hooks.beforeUpload, ...second.hooks.beforeUpload],
-      afterUpload: [...first.hooks.afterUpload, ...second.hooks.afterUpload],
-      webPreAuth: [...first.hooks.webPreAuth, ...second.hooks.webPreAuth],
-      webPostAuth: [...first.hooks.webPostAuth, ...second.hooks.webPostAuth],
-    },
-    routes: [...first.routes, ...second.routes],
-    clientEntries: [...first.clientEntries, ...second.clientEntries],
-    profiles: [...first.profiles, ...second.profiles],
-    views: [...first.views, ...second.views],
-    retention: [...first.retention, ...second.retention],
-    render: [...first.render, ...second.render],
-    summaryFields: [...first.summaryFields, ...second.summaryFields],
-    indexFilters: mergeIndexFilters(first.indexFilters, second.indexFilters),
-    people: first.people ?? second.people,
-    identityResolvers: [...first.identityResolvers, ...second.identityResolvers],
-  };
 }
