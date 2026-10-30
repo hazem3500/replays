@@ -4,7 +4,7 @@ import { join } from 'node:path';
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { PosterQueue } from '../src/server/posters.ts';
+import { PosterQueue } from '../src/server/media/poster-queue.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import { replay } from './fixtures.ts';

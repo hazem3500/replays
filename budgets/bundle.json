@@ -144,8 +144,8 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
-      "gzip": 2630,
-      "brotli": 2400
+      "gzip": 2629,
+      "brotli": 2401
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -175,7 +175,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 968797,
       "gzip": 303520,
-      "brotli": 251998
+      "brotli": 252123
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -265,7 +265,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 628
+      "brotli": 609
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -299,13 +299,13 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
-      "gzip": 25780,
-      "brotli": 22436
+      "gzip": 25781,
+      "brotli": 22394
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
-      "gzip": 463,
-      "brotli": 429
+      "gzip": 462,
+      "brotli": 428
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -337,10 +337,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs": {
-      "raw": 312821,
-      "gzip": 83270,
-      "brotli": 68085
+    "dist/lib/chunks/context.schema.json-a920d21ea104.mjs": {
+      "raw": 314897,
+      "gzip": 84102,
+      "brotli": 68637
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -442,6 +442,11 @@
       "gzip": 1638,
       "brotli": 1407
     },
+    "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs": {
+      "raw": 58724,
+      "gzip": 16022,
+      "brotli": 14087
+    },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
       "gzip": 3358,
@@ -452,11 +457,6 @@
       "gzip": 424,
       "brotli": 334
     },
-    "dist/lib/recorder-chunks/bundle-types.ts-6c0193fa9045.mjs": {
-      "raw": 57760,
-      "gzip": 15523,
-      "brotli": 13684
-    },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1902,
@@ -464,8 +464,8 @@
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
       "raw": 4058,
-      "gzip": 1584,
-      "brotli": 1337
+      "gzip": 1596,
+      "brotli": 1358
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -504,7 +504,7 @@
     },
     "dist/lib/recorder.mjs": {
       "raw": 2967,
-      "gzip": 858,
+      "gzip": 860,
       "brotli": 747
     },
     "dist/lib/server-testing.mjs": {
@@ -1063,26 +1063,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
-      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
-      "cap": {
-        "raw": 4058,
-        "gzip": 1584,
-        "brotli": 1337
-      },
-      "reason": "The default consent copy says when request and response content is recorded.",
-      "pr": "https://github.com/hazem3500/replays/pull/166"
-    },
-    {
-      "file": "dist/lib/recorder.mjs",
-      "cap": {
-        "raw": 2967,
-        "gzip": 858,
-        "brotli": 747
-      },
-      "reason": "The recorder entry imports the renamed core chunk and the new body-limits chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/166"
-    },
-    {
       "file": "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs",
       "cap": {
         "raw": 10646,
@@ -1100,16 +1080,6 @@
         "brotli": 334
       },
       "reason": "The body content-type allowlist and 64 KiB default, shared by the recorder core (to validate the capture option) and the lazy body chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/166"
-    },
-    {
-      "file": "dist/lib/recorder-chunks/bundle-types.ts-6c0193fa9045.mjs",
-      "cap": {
-        "raw": 57760,
-        "gzip": 15523,
-        "brotli": 13684
-      },
-      "reason": "The recorder core chunk gains the capture option resolver, meta.captured and the body hooks in the fetch/XHR wrappers; its new source membership renames the former bundle-types.ts-ee6bb78d70a4 chunk.",
       "pr": "https://github.com/hazem3500/replays/pull/166"
     },
     {
@@ -1199,12 +1169,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "raw": 1124,
-        "gzip": 682,
         "brotli": 628
       },
-      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size (615 B Brotli on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/180"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
@@ -1289,11 +1257,11 @@
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
         "raw": 665,
-        "gzip": 463,
+        "gzip": 462,
         "brotli": 429
       },
-      "reason": "Hash drift, not growth: unchanged source; the inspector chunk's new hash moves its gzip size by 1 B (on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/180"
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
@@ -1362,16 +1330,6 @@
       "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs",
-      "cap": {
-        "raw": 312821,
-        "gzip": 83270,
-        "brotli": 68085
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "The CLI and server share the edit validator; with edits split into list, timeline and validation modules the shared server chunk gets a new source identity; measured on Boat against main: main 312907/83012/67822 (context.schema.json-09ab4a0ff1bb.mjs), head 312691/83253/68044 (-216 B raw, +241 B gzip, +222 B brotli). Replaces the previous entry for this chunk."
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.js",
       "cap": {
         "raw": 887,
@@ -1410,6 +1368,46 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 236 B."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
+      "cap": {
+        "raw": 314897,
+        "gzip": 84102,
+        "brotli": 68637
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/186",
+      "reason": "Splitting list media and render state into src/server/media/* adds modules to the shared server chunk, so its source identity changes; CI Quality / size against fresh main: raw 314897, gzip 84102, brotli 68637."
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
+      "cap": {
+        "raw": 4058,
+        "gzip": 1596,
+        "brotli": 1358
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/189",
+      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: gzip 1596, brotli 1358. Replaces #166's allowance for this file."
+    },
+    {
+      "file": "dist/lib/recorder.mjs",
+      "cap": {
+        "raw": 2967,
+        "gzip": 860,
+        "brotli": 747
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/189",
+      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: gzip 860. Replaces #166's allowance for this file."
+    },
+    {
+      "file": "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs",
+      "cap": {
+        "raw": 58724,
+        "gzip": 16022,
+        "brotli": 14087
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/189",
+      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: raw 58724, gzip 16022, brotli 14087."
     }
   ]
 }

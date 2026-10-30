@@ -21,7 +21,7 @@ import {
 } from './render-queue.ts';
 import type { RenderVerdict } from './render-hooks.ts';
 import { RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
-import type { PosterQueue } from './posters.ts';
+import type { PosterQueue } from './media/poster-queue.ts';
 import { serveObject } from './serve-object.ts';
 import type { ReplayStore } from './store.ts';
 
