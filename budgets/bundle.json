@@ -1131,8 +1131,8 @@
       "cap": {
         "brotli": 603
       },
-      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/184"
+      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size (615 B Brotli on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
@@ -1217,11 +1217,11 @@
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
         "raw": 665,
-        "gzip": 462,
+        "gzip": 463,
         "brotli": 429
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Hash drift, not growth: unchanged source; the inspector chunk's new hash moves its gzip size by 1 B (on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
