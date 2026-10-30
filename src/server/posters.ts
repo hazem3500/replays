@@ -237,5 +237,3 @@ export function previewFfmpegArgs(output: string) {
   args.splice(args.indexOf('-movflags'), 0, '-an', '-g', String(PREVIEW_FPS * 2), '-maxrate', '160k', '-bufsize', '320k');
   return args;
 }
-
-const JSON_TYPE = 'application/json; charset=utf-8';
