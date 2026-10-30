@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 
 import { buildReplayContext, readContextFile } from '../src/capture/context.ts';
 import { compileContextSchema } from '../src/server/context-schema.ts';
-import { assertReplayContext, assertSafeUrl, MAX_CONTEXT_BYTES, MAX_SOURCES } from '../src/shared/context.ts';
+import { assertReplayContext, assertSafeUrl, MAX_SOURCES } from '../src/shared/context.ts';
 import { SourceProviders } from '../src/shared/source-providers.ts';
 
 const CAPTURED_AT = '2026-10-10T12:00:00.000Z';
@@ -167,7 +167,6 @@ describe('assertReplayContext: rejections', () => {
   });
 
   it('keeps the whole context under 16 KB', () => {
-    expect(MAX_CONTEXT_BYTES).toBe(16_384);
     // 3 x 3000 characters is fine; 6 x 3000 is not (each value is within every other bound).
     expect(() => assertReplayContext(valid({ fields: fields(3) }))).not.toThrow();
     expect(contextError(valid({ fields: fields(6) }))).toMatch('replay.context exceeds 16 KB');

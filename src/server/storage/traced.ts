@@ -23,7 +23,7 @@ export function tracedStorage<S extends ObjectStorage>(storage: S): S {
         handle.setAttributes({ 'storage.bytes': body?.byteLength, 'storage.found': body !== undefined });
         return body;
       }),
-    // The span covers opening the stream; the body is piped to the response afterwards (the request span covers it).
+    // why: the span covers opening the stream; the body is piped to the response afterwards (the request span covers it).
     stream: (key: string, range?: { start: number; end: number }) =>
       span('stream', { 'storage.key': key, 'storage.range_bytes': range ? range.end - range.start + 1 : undefined }, () =>
         storage.stream(key, range),

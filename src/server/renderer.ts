@@ -129,7 +129,7 @@ export function chromiumArgs(env: NodeJS.ProcessEnv = process.env) {
     '--mute-audio',
     '--force-color-profile=srgb',
     '--font-render-hinting=none',
-    // Never touch the OS keychain (a system Chrome on macOS would otherwise prompt for a password).
+    // why: never touch the OS keychain (a system Chrome on macOS would otherwise prompt for a password).
     '--use-mock-keychain',
     '--password-store=basic',
   ];
@@ -146,14 +146,14 @@ export function ffmpegArgs(options: { fps: number; crf: number; output: string; 
     '-y',
     '-f',
     'image2pipe',
-    // Explicit input codec: no probing, and the image's minimal ffmpeg build only has these two decoders.
+    // why: explicit input codec: no probing, and the image's minimal ffmpeg build only has these two decoders.
     '-c:v',
     options.input === 'png' ? 'png' : 'mjpeg',
     '-framerate',
     String(options.fps),
     '-i',
     '-',
-    // yuv420p needs even dimensions; JPEG frames are full range, players expect limited (tv) range.
+    // why: yuv420p needs even dimensions; JPEG frames are full range, players expect limited (tv) range.
     '-vf',
     'pad=ceil(iw/2)*2:ceil(ih/2)*2,scale=out_range=tv,format=yuv420p',
     '-c:v',
@@ -191,7 +191,7 @@ export function createRenderer(options: RendererOptions): RenderRunner {
     if (!options.tools.available || !options.tools.chromiumPath) throw new Error('render unavailable');
     const started = Date.now();
     const { chromium } = await import('playwright-core');
-    // Playwright launches Chromium with --no-sandbox unless chromiumSandbox is set; keep the sandbox unless told otherwise.
+    // why: Playwright launches Chromium with --no-sandbox unless chromiumSandbox is set; keep the sandbox unless told otherwise.
     const executablePath = options.tools.chromiumPath;
     const browser = await withSpan('render.browser_launch', {}, () =>
       chromium.launch({
@@ -204,7 +204,7 @@ export function createRenderer(options: RendererOptions): RenderRunner {
     const abort = () => void browser.close().catch(() => undefined);
     task.signal.addEventListener('abort', abort, { once: true });
     let ffmpeg: ReturnType<typeof spawn> | undefined;
-    // Spans that outlive one call (tracing.ts); NOOP_SPAN until started, and when tracing is off.
+    // why: spans that outlive one call (tracing.ts); NOOP_SPAN until started, and when tracing is off.
     let ffmpegSpan: SpanHandle = NOOP_SPAN;
     let framesSpan: SpanHandle = NOOP_SPAN;
     try {
@@ -215,14 +215,14 @@ export function createRenderer(options: RendererOptions): RenderRunner {
         serviceWorkers: 'block',
         reducedMotion: 'no-preference',
       });
-      // The token rides only on requests back to this server, never to the replay's third-party asset origins.
+      // why: the token rides only on requests back to this server, never to the replay's third-party asset origins.
       const origin = typeof options.origin === 'function' ? options.origin() : options.origin;
-      // The job's trace context too (tracing.ts; empty when off), so the page's requests join the job's trace.
+      // why: the job's trace context too (tracing.ts; empty when off), so the page's requests join the job's trace.
       const trace = traceHeaders();
       await guardRenderRequests(context, origin, { ...trace, [RENDER_TOKEN_HEADER]: options.token }, options.assetPolicy);
       const page = await context.newPage();
       await withSpan('render.page_load', { 'replay.id': task.id }, async () => {
-        // An edited replay's page applies the edit list it is given the version of (and fails if it changed since).
+        // why: an edited replay's page applies the edit list it is given the version of (and fails if it changed since).
         const pageUrl = new URL(options.pageUrl(task.id));
         if (task.edits) pageUrl.searchParams.set('edits', task.edits);
         await page.goto(pageUrl.toString(), { waitUntil: 'load', timeout: 60_000 });
@@ -245,15 +245,15 @@ export function createRenderer(options: RendererOptions): RenderRunner {
         stdio: ['pipe', 'ignore', 'pipe'],
       });
       ffmpeg = child;
-      // ffmpeg encodes while frames are captured: its span runs from spawn to exit, alongside render.frames.
+      // why: ffmpeg encodes while frames are captured: its span runs from spawn to exit, alongside render.frames.
       const encodeSpan = startSpan('render.ffmpeg', { 'render.fps': fps, 'render.crf': crf });
       ffmpegSpan = encodeSpan;
       let stderr = '';
       child.stderr?.on('data', (chunk: Buffer) => {
         stderr = (stderr + chunk.toString()).slice(-2000);
       });
-      // Every child/pipe error is captured, never left unhandled: a killed ffmpeg (cancel, timeout)
-      // makes the pending stdin write fail with EPIPE, which would otherwise crash the server.
+      /* why: every child/pipe error is captured, never left unhandled: a killed ffmpeg (cancel, timeout)
+         makes the pending stdin write fail with EPIPE, which would otherwise crash the server. */
       let pipeError: Error | undefined;
       const exited = new Promise<number | null>((resolve) => {
         child.once('exit', (code) => {
@@ -282,13 +282,13 @@ export function createRenderer(options: RendererOptions): RenderRunner {
           const seekStart = performance.now();
           await page.evaluate((i) => (window as RenderWindow).__render!.show(i), index);
           const captureStart = performance.now();
-          // CDP directly: page.screenshot() adds font/animation/caret waits we do not need per frame.
+          // why: CDP directly: page.screenshot() adds font/animation/caret waits we do not need per frame.
           const shot = (await cdp.send('Page.captureScreenshot', {
             format: quality > 0 ? 'jpeg' : 'png',
             ...(quality > 0 ? { quality } : {}),
             optimizeForSpeed: true,
             captureBeyondViewport: false,
-            // Without a clip, headless Chrome may capture its window size rather than the emulated viewport.
+            // why: without a clip, headless Chrome may capture its window size rather than the emulated viewport.
             clip: { x: 0, y: 0, width: setup.viewport.width, height: setup.viewport.height, scale: 1 },
           })) as { data: string };
           frame = Buffer.from(shot.data, 'base64');

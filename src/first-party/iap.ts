@@ -90,7 +90,7 @@ export function iapAuth(options: IapOptions, env: NodeJS.ProcessEnv = process.en
         ...(options.fetch ? { fetch: options.fetch } : {}),
         ...(options.now ? { now: options.now() } : {}),
       });
-      // Exact audience: IAP sets one string, never a list.
+      // why: exact audience: IAP sets one string, never a list.
       if (!claims || claims.aud !== audience) return undefined;
       const email = typeof claims.email === 'string' ? claims.email.trim().toLowerCase() : '';
       if (!email || email.length > 254 || !allowed(email)) return undefined;

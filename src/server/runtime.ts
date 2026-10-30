@@ -125,7 +125,7 @@ export async function resolveSettings(options: RuntimeOptions): Promise<Omit<Run
       });
     settings.sources.register(provider.value);
   }
-  // Profiles: the config's merged with the plugins' (src/server/profiles.ts); their windows and the plugins' rules join retention.
+  // why: profiles: the config's merged with the plugins' (src/server/profiles.ts); their windows and the plugins' rules join retention.
   const profiles = createProfileCatalog({ config: configProfiles(file, warnLine), plugins: registry.profiles, env, log: warnLine });
   Object.assign(settings, { profiles, purposes: profiles });
   settings.views = createViewCatalog({ config: file.views, plugins: registry.views, profiles: profiles.list });
