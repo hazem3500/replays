@@ -1,0 +1,137 @@
+/*
+ * StateView (state-view.tsx): empty, error, not-found, offline and not-captured states share one shape. A page state
+ * sits in the upper third (where the eye lands first), centred; a panel state is a compact, left-aligned note at the
+ * top of its panel. Text uses the empty-state tokens (empty-state.css), so both primitives read alike.
+ */
+.state-view {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 14px;
+  min-height: 100%;
+  box-sizing: border-box;
+  padding: max(48px, 16dvh) 24px 48px;
+  text-align: center;
+}
+.state-view[data-layout="panel"] {
+  min-height: 0;
+  justify-items: start;
+  gap: 10px;
+  padding: 16px 16px 18px;
+  text-align: left;
+}
+.state-view-text {
+  display: grid;
+  gap: 6px;
+  max-width: 52ch;
+}
+.state-view-title {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-lg, 20px);
+  font-weight: 600;
+  line-height: 1.3;
+  text-wrap: balance;
+}
+.state-view[data-layout="panel"] .state-view-title {
+  font-size: var(--empty-state-title-size, 14px);
+  line-height: var(--empty-state-title-line, 20px);
+}
+.state-view-cause {
+  margin: 0;
+  color: var(--empty-state-body-color, var(--text-secondary));
+  font-size: var(--empty-state-body-size, 13px);
+  line-height: var(--empty-state-body-line, 19px);
+  text-wrap: pretty;
+}
+.state-view-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+.state-view[data-layout="panel"] .state-view-actions {
+  justify-content: flex-start;
+}
+.state-action {
+  text-decoration: none;
+}
+.state-view[data-layout="panel"] .state-action {
+  height: 32px;
+}
+.state-view-details {
+  max-width: min(60ch, 100%);
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+.state-view-details > summary {
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.state-view-details > summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.state-view-details > pre {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  text-align: left;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* The illustration: a tilted, dashed card behind a plate with the kind's glyph in the kind's colour. */
+.state-art {
+  --art: 64px;
+  --art-ink: var(--text-tertiary);
+  position: relative;
+  width: var(--art);
+  height: var(--art);
+  flex: none;
+}
+.state-view[data-layout="panel"] .state-art {
+  --art: 44px;
+}
+.state-art[data-kind="error"] {
+  --art-ink: var(--danger);
+}
+.state-art[data-kind="offline"] {
+  --art-ink: var(--warning);
+}
+.state-art[data-kind="not-captured"] {
+  --art-ink: var(--accent);
+}
+.state-art-back {
+  position: absolute;
+  inset: 8%;
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  transform: rotate(-9deg) translate(-6%, 4%);
+}
+.state-art-plate {
+  position: absolute;
+  inset: 8%;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--art-ink) 30%, var(--line));
+  border-radius: 14px;
+  background: var(--surface-raised);
+  color: var(--art-ink);
+}
+.state-art-plate > svg {
+  width: 44%;
+  height: 44%;
+}
+@media (forced-colors: active) {
+  .state-art-plate {
+    border-color: CanvasText;
+  }
+}

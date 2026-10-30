@@ -6,7 +6,6 @@ import { type KeyboardEvent, lazy, Suspense, useCallback, useEffect, useLayoutEf
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import { StatusLabel, type StatusTone } from '@/components/ui/status-label.tsx';
 import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu.tsx';
 
@@ -16,7 +15,7 @@ import { productName } from '../config.ts';
 import { prefetchReplay, replayQuery, type SuiteWithRuns, suiteQuery } from '../queries.ts';
 import { setPageUrl } from '../routing/navigate.ts';
 import { swapInPlace } from '../transitions/swap.ts';
-import { indexHref, indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
+import { indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 import { Topbar, type TopbarMenuItem } from '../Topbar.tsx';
@@ -268,28 +267,11 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const runStatus = useMemo(() => (tone ? <RunStatusChip tone={tone} /> : undefined), [tone]);
 
   if (authFailure || (error && !suite)) {
+    const message = authFailure?.message ?? error ?? '';
     return (
-      <main className="state-shell">
-        <a className="state-brand" href={indexHref()}>
-          {productName()}
-        </a>
-        <section className="state-content" role="alert">
-          <span className="state-kicker">Could not open review suite</span>
-          <h1>{authFailure?.message ?? error}</h1>
-          <SignInLink error={authFailure ?? suiteFailure} />
-          <p>
-            Suite <code>{id}</code> may have expired or the link may be incomplete.
-          </p>
-          <div className="state-actions">
-            <Button nativeButton={false} render={<a href={indexHref()} />}>
-              Back to all replays
-            </Button>
-            <Button variant="outline" onClick={() => location.reload()}>
-              Try again
-            </Button>
-          </div>
-        </section>
-      </main>
+      <StateShell {...failureCopy('review suite', message)} details={`${message} · ${id}`} secondary={TRY_AGAIN}>
+        <SignInLink error={authFailure ?? suiteFailure} />
+      </StateShell>
     );
   }
 

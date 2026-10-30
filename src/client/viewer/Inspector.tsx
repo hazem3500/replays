@@ -258,6 +258,7 @@ export const Inspector = memo(function Inspector({
           steps={bundle.steps}
           duration={player.duration}
           peers={performancePeers}
+          meta={bundle.meta}
           extra={compare?.performance}
           onOpenRequest={(id) => {
             setExpandedRequest(id);

@@ -70,6 +70,8 @@
   color: var(--empty-state-body-color);
 }
 
+.empty-state[data-variant='region'] { padding-top: max(48px, 12dvh); }
+
 .empty-state-text {
   display: flex;
   flex-direction: column;

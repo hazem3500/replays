@@ -20,7 +20,7 @@ test('the viewer has no editor entry, never asks for edits and never loads the e
 
 test('there is no edit page', async ({ page }) => {
   await page.goto(`${origin()}/r/demo-shop/edit`);
-  await expect(page.getByRole('heading', { name: 'There is no page at this address' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'There’s no page at this address' })).toBeVisible();
   await expect(page.getByTestId('editor')).toHaveCount(0);
   await expect(page.getByTestId('timeline')).toHaveCount(0);
 });

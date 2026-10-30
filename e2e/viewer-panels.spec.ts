@@ -59,15 +59,19 @@ test('performance leads with verdicts, ranks slow moments worst first, and opens
   await expect(events.locator('[data-future]')).toHaveCount(0);
 });
 
-test('a capture with no timing data says Performance wasn’t recorded, not that nothing was slow', async ({ page }) => {
+test('a capture with no timing data says it has no performance data and how to capture it, not that nothing was slow', async ({
+  page,
+}) => {
   const id = uniqueId('performance-unrecorded');
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'No timing fixture');
   bundle.performance = { supported: [], entries: [] };
   await postBundle(page.request, server().origin, bundle);
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('performance-tab').click();
-  await expect(page.getByText('Performance wasn’t recorded')).toBeVisible();
-  await expect(page.getByText('replays capture --profile performance')).toBeVisible();
+  const state = page.getByTestId('performance-not-captured');
+  await expect(state.getByRole('heading', { name: 'This recording has no performance data' })).toBeVisible();
+  await expect(state.getByText('Capture again without --no-performance:')).toBeVisible();
+  await expect(state.locator('code')).toHaveText(/^replays capture https?:\/\//);
   await expect(page.getByText('Nothing was slow')).toHaveCount(0);
   await expect(page.getByTestId('performance-vitals')).toHaveCount(0);
 });

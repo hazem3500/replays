@@ -739,33 +739,17 @@ svg.lucide.lucide { stroke-width: 2; }
 @media (hover: hover) and (pointer: fine) { .empty-link:hover { text-decoration: underline; } }
 
 /* ---------- Loading and error states ---------- */
-/* A page that could not open reads like EmptyState's error tone (components/ui/empty-state.css), on its tokens:
-   the alert tile, the status line, a title, the reason and the way back, centred, with the brand above. */
-.state-shell { width: min(480px, calc(100vw - 40px)); min-height: 100vh; min-height: 100dvh; display: grid; align-content: center; justify-items: center; gap: 32px; margin: 0 auto; padding-block: 24px; color: var(--text); text-align: center; }
+/* A page that could not open (routing/states.tsx): the product's mark at the top, then its StateView in the upper
+   third (components/ui/state-view.css). */
+.state-shell { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-rows: auto 1fr; justify-items: center; padding: 20px 20px 0; box-sizing: border-box; }
+.state-shell > .state-view { min-height: 0; padding-top: max(32px, 12dvh); }
 .state-brand { justify-content: center; }
-.state-content { display: grid; justify-items: center; gap: var(--empty-state-text-gap); }
-/* why: the tile and its glyph are pseudo-elements stacked in the first grid cell, so every page that renders
-   .state-content (viewer, editor, suite, compare, router states) gets them without new markup. The glyph is lucide's
-   circle-alert as a mask, so it takes the tone's colour in both themes. */
-.state-content::before, .state-content::after { content: ""; grid-area: 1 / 1; width: var(--empty-state-icon-tile); height: var(--empty-state-icon-tile); margin-bottom: calc(var(--empty-state-gap) - var(--empty-state-text-gap)); }
-.state-content::before { border: 1px solid var(--empty-state-error-border); border-radius: var(--empty-state-icon-radius); background: var(--empty-state-error-bg); }
-.state-content::after {
-  background: var(--empty-state-error-color);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cline x1='12' x2='12' y1='8' y2='12'/%3E%3Cline x1='12' x2='12.01' y1='16' y2='16'/%3E%3C/svg%3E") center / var(--empty-state-icon-size) no-repeat;
-}
-.state-kicker { color: var(--empty-state-error-color); font-size: var(--empty-state-status-size); font-weight: 600; }
-.state-content h1 { margin: 0; color: var(--empty-state-title-color); font-size: var(--text-md); font-weight: var(--empty-state-title-weight); line-height: var(--empty-state-title-line); }
-.state-content p { max-width: var(--empty-state-body-measure); margin: 0; color: var(--empty-state-body-color); font-size: var(--empty-state-body-size); line-height: var(--empty-state-body-line); }
 .button { min-height: 32px; display: inline-flex; align-items: center; margin-top: 18px; padding: 0 12px; border: 1px solid var(--accent); border-radius: var(--radius); background: var(--accent); color: var(--accent-contrast); font-size: var(--text-sm); font-weight: 600; text-decoration: none; cursor: pointer; }
 .button.secondary { border-color: var(--line-strong); background: transparent; color: var(--text); }
 
 
 .state-brand { color: var(--text-secondary); text-decoration: none; }
 @media (hover: hover) and (pointer: fine) { .state-brand:hover { color: var(--text); } }
-.state-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--empty-state-action-gap); margin-top: calc(var(--empty-state-gap) + var(--empty-state-text-gap)); }
-/* why: pages build these actions from either the legacy .button or the shadcn Button, whose anchor kept the UA underline. */
-.state-actions > :is(.button, [data-slot="button"]) { min-height: var(--empty-state-action-height); margin-top: 0; padding-inline: var(--empty-state-action-pad); font-size: var(--empty-state-action-size); text-decoration: none; }
-@media (pointer: coarse) { .state-actions > :is(.button, [data-slot="button"]) { min-height: var(--empty-state-action-height-touch); } }
 
 /* ---------- Skeletons (layout-shaped, not spinners) ---------- */
 .skeleton { display: block; height: 12px; border-radius: var(--radius-sm); background: var(--surface-hover); animation: skeleton-pulse 1.2s var(--ease-out) infinite alternate; }

@@ -8,7 +8,7 @@ import { usePageCode } from '../hooks/use-page-code.ts';
 import { replayQuery } from '../queries.ts';
 import { replayHref } from '../routing/links.ts';
 import { editorPage } from '../routing/pages.ts';
-import { StateShell, TryAgain } from '../routing/states.tsx';
+import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
 import { SignInError, SignInLink } from '../sign-in.tsx';
 import { EditorSkeleton, LoadingSwap } from '../ViewerSkeleton.tsx';
 
@@ -20,14 +20,12 @@ function failureOf(...candidates: readonly unknown[]): Error | undefined {
 
 function EditFailure({ id, error }: { id: string; error: Error }) {
   return (
-    <StateShell kicker="Could not open edit mode" title={error.message}>
+    <StateShell
+      {...failureCopy('edit view', error.message)}
+      back={{ label: 'Back to the replay', href: replayHref(id) }}
+      secondary={TRY_AGAIN}
+    >
       <SignInLink error={error} />
-      <div className="state-actions">
-        <a className="button" href={replayHref(id)}>
-          Back to the replay
-        </a>
-        <TryAgain />
-      </div>
     </StateShell>
   );
 }
