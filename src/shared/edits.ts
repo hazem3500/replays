@@ -1,299 +1,42 @@
-/**
- * Non-destructive replay edits: a small JSON edit list stored next to the replay (`<id>/edits.json`,
- * src/server/store.ts), never inside the bundle. The viewer, the editor and the video export all read the
- * original bundle plus this list and apply it with `applyEdits`, so an edit can always be undone and the
- * original is always one click away.
- *
- * Every time in an edit list is on the ORIGINAL replay timeline (ms from the first rrweb event, the
- * timeline steps, console, network and performance entries already share). `editTimeline` maps it to the
- * EDITED timeline (trimmed, cuts removed) that playback, the scrubber, deep links and exports use.
- *
- * The format is deliberately plain (versioned, no derived data) so it can be handed to another tool later.
- */
-
-import {
-  CURSOR_APPEARANCES,
-  CURSOR_CLICK_EFFECTS,
-  CURSOR_COLORS,
-  CURSOR_MOTION_STYLES,
-  isCursorAppearance,
-  isCursorClickEffect,
-  isCursorColor,
-  isCursorMotionStyle,
-  normalizeCursor,
-  type ReplayCursorSettings,
-} from './cursor.ts';
-import {
-  BLUR_STYLES,
-  type BlurStyle,
-  MAX_CAPTION,
-  MAX_EFFECTS,
-  MAX_ZOOM_SCALE,
-  MIN_BLUR_SIZE,
-  MIN_ZOOM_SCALE,
-  NO_EFFECTS,
-  type PlaybackEffects,
-  playbackEffects,
-  type ReplayBlur,
-  type ReplayCaption,
-  type ReplaySpeedRange,
-  type ReplayZoomRegion,
-  SPEED_RATES,
-} from './effects.ts';
+import { normalizeCursor } from './cursor.ts';
+import { type EditTimeline, editTimeline } from './edit-timeline.ts';
+import { NO_EFFECTS, type PlaybackEffects, playbackEffects } from './effects.ts';
 import type { ReplayBundle, ReplayConsoleEntry, ReplayNetworkEntry, ReplayPerformanceEntry, ReplayStep } from './replay.ts';
+import {
+  changesTime,
+  EDITS_VERSION,
+  hasEffectEdits,
+  isEmptyEdits,
+  MAX_LABEL,
+  type ReplayCut,
+  type ReplayEdits,
+  type StoredReplayEdits,
+} from './edit-list.ts';
 
-export const EDITS_VERSION = 1;
-/** Most cuts one replay can hold. */
-export const MAX_CUTS = 200;
-/** Shortest stretch an edit may leave (and the shortest trim): anything shorter is a slip of the mouse. */
-export const MIN_EDIT_MS = 100;
-/** Longest free-form label. */
-export const MAX_LABEL = 120;
-/** Playback navigation annotations kept in the edits sidecar, never drawn into exports. */
-export const MAX_HIGHLIGHTS = 200;
-
-export interface ReplayPointHighlight {
-  id: string;
-  kind: 'point';
-  at: number;
-  label?: string;
-}
-
-export interface ReplayPeriodHighlight {
-  id: string;
-  kind: 'period';
-  from: number;
-  to: number;
-  label?: string;
-}
-
-export type ReplayHighlight = ReplayPointHighlight | ReplayPeriodHighlight;
-
-/** A stretch of the original replay that playback and exports skip. */
-export interface ReplayCut {
-  /** Stable within the list (`[a-z0-9-]`), so undo, selection and links can name a cut. */
-  id: string;
-  /** Original ms; `from < to`. */
-  from: number;
-  to: number;
-  /** Optional note, e.g. the wait step it came from (free-form: sanitized by the server). */
-  label?: string;
-}
-
-/** The edit list as the editor sends it (`PUT /api/replays/<id>/edits`). */
-export interface ReplayEdits {
-  version: typeof EDITS_VERSION;
-  /** What remains of the original: [start, end) in original ms. Absent: the whole replay. */
-  trim?: { start: number; end: number };
-  cuts: ReplayCut[];
-  /** Effects (src/shared/effects.ts), each a list of stretches on the original timeline; absent when empty. */
-  zooms?: ReplayZoomRegion[];
-  speeds?: ReplaySpeedRange[];
-  blurs?: ReplayBlur[];
-  captions?: ReplayCaption[];
-  /** Playback navigation marks on the original timeline; not burned into MP4s. */
-  highlights?: ReplayHighlight[];
-  cursor?: ReplayCursorSettings;
-}
-
-/** As stored and served: the edit list plus who saved it last, and when. */
-export interface StoredReplayEdits extends ReplayEdits {
-  /** Bumped on every saved change (1 for the first save); 0 when nothing was ever saved. */
-  revision: number;
-  /** Identity (auth adapter id) of whoever saved it last. */
-  updatedBy?: string;
-  /** ISO time of the last save. */
-  updatedAt?: string;
-}
-
-export const EMPTY_EDITS: ReplayEdits = { version: EDITS_VERSION, cuts: [] };
-
-const EDIT_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
-const EDIT_FIELDS = ['version', 'trim', 'cuts', 'zooms', 'speeds', 'blurs', 'captions', 'highlights', 'cursor'];
-const STORED_FIELDS = [...EDIT_FIELDS, 'revision', 'updatedBy', 'updatedAt'];
-
-function object(value: unknown, name: string, allowed: readonly string[]) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`${name} must be an object`);
-  const record = value as Record<string, unknown>;
-  const unknown = Object.keys(record).find((key) => !allowed.includes(key));
-  if (unknown) throw new Error(`${name}.${unknown} is not a supported field`);
-  return record;
-}
-
-function checkTime(value: unknown, name: string, duration: number | undefined) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new Error(`${name} must be a time in ms (0 or more)`);
-  if (duration !== undefined && value > duration) throw new Error(`${name} is after the end of the replay`);
-  return value;
-}
-
-function kindOf(raw: unknown) {
-  return typeof raw === 'object' && raw !== null && 'kind' in raw ? raw.kind : undefined;
-}
-
-function fraction(value: unknown, name: string) {
-  if (typeof value !== 'number' || !Number.isFinite(value) || value < 0 || value > 1)
-    throw new Error(`${name} must be a fraction from 0 to 1`);
-}
-
-/** A list of stretches (`id`, `from`, `to` plus `fields`), each checked by `check`. */
-function stretches(
-  value: unknown,
-  name: string,
-  fields: readonly string[],
-  duration: number | undefined,
-  check: (item: Record<string, unknown>, field: string) => void,
-) {
-  if (value === undefined) return;
-  if (!Array.isArray(value) || value.length > MAX_EFFECTS) throw new Error(`${name} must be an array of at most ${MAX_EFFECTS}`);
-  const ids = new Set<string>();
-  for (const [index, raw] of value.entries()) {
-    const field = `${name}[${index}]`;
-    const item = object(raw, field, ['id', 'from', 'to', ...fields]);
-    if (typeof item.id !== 'string' || !EDIT_ID.test(item.id)) throw new Error(`${field}.id must be lowercase letters, digits and dashes`);
-    if (ids.has(item.id)) throw new Error(`${field}.id is used twice`);
-    ids.add(item.id);
-    checkTime(item.from, `${field}.from`, duration);
-    checkTime(item.to, `${field}.to`, duration);
-    if ((item.to as number) - (item.from as number) < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
-    check(item, field);
-  }
-}
-
-/** The effect lists of an edit list (zoom, speed, blur, captions): src/shared/effects.ts. */
-function assertEffects(edits: Record<string, unknown>, name: string, duration: number | undefined) {
-  stretches(edits.zooms, `${name}.zooms`, ['scale', 'x', 'y'], duration, (item, field) => {
-    const scale = item.scale;
-    if (typeof scale !== 'number' || !(scale >= MIN_ZOOM_SCALE && scale <= MAX_ZOOM_SCALE))
-      throw new Error(`${field}.scale must be from ${MIN_ZOOM_SCALE} to ${MAX_ZOOM_SCALE}`);
-    if (item.x !== undefined) fraction(item.x, `${field}.x`);
-    if (item.y !== undefined) fraction(item.y, `${field}.y`);
-  });
-  stretches(edits.speeds, `${name}.speeds`, ['rate'], duration, (item, field) => {
-    if (!SPEED_RATES.includes(item.rate as never)) throw new Error(`${field}.rate must be one of ${SPEED_RATES.join(', ')}`);
-  });
-  if (Array.isArray(edits.speeds)) {
-    const sorted = [...(edits.speeds as ReplaySpeedRange[])].sort((a, b) => a.from - b.from);
-    for (const [index, range] of sorted.entries()) {
-      if (index > 0 && range.from < sorted[index - 1]!.to) throw new Error(`${name}.speeds must not overlap`);
-    }
-  }
-  stretches(edits.blurs, `${name}.blurs`, ['x', 'y', 'width', 'height', 'style'], duration, (item, field) => {
-    for (const key of ['x', 'y', 'width', 'height']) fraction(item[key], `${field}.${key}`);
-    if (item.style !== undefined && !BLUR_STYLES.includes(item.style as BlurStyle))
-      throw new Error(`${field}.style must be one of ${BLUR_STYLES.join(', ')}`);
-    if ((item.width as number) < MIN_BLUR_SIZE || (item.height as number) < MIN_BLUR_SIZE) throw new Error(`${field} is too small`);
-    if ((item.x as number) + (item.width as number) > 1.0001 || (item.y as number) + (item.height as number) > 1.0001)
-      throw new Error(`${field} must stay inside the frame`);
-  });
-  stretches(edits.captions, `${name}.captions`, ['text'], duration, (item, field) => {
-    if (typeof item.text !== 'string' || !item.text.trim() || item.text.length > MAX_CAPTION)
-      throw new Error(`${field}.text must be text of 1 to ${MAX_CAPTION} characters`);
-  });
-}
-
-function label(value: unknown, name: string) {
-  if (value === undefined) return;
-  if (typeof value !== 'string' || value.length > MAX_LABEL) throw new Error(`${name} must be text of at most ${MAX_LABEL} characters`);
-}
-
-function assertHighlights(value: unknown, duration: number | undefined, name: string) {
-  if (value === undefined) return;
-  if (!Array.isArray(value) || value.length > MAX_HIGHLIGHTS) throw new Error(`${name} must be an array of at most ${MAX_HIGHLIGHTS}`);
-  const ids = new Set<string>();
-  const entries: unknown[] = value;
-  for (const [index, raw] of entries.entries()) {
-    const field = `${name}[${index}]`;
-    const item = object(raw, field, kindOf(raw) === 'point' ? ['id', 'kind', 'at', 'label'] : ['id', 'kind', 'from', 'to', 'label']);
-    if (typeof item.id !== 'string' || !EDIT_ID.test(item.id)) throw new Error(`${field}.id must be lowercase letters, digits and dashes`);
-    if (ids.has(item.id)) throw new Error(`${field}.id is used twice`);
-    ids.add(item.id);
-    label(item.label, `${field}.label`);
-    if (item.kind === 'point') checkTime(item.at, `${field}.at`, duration);
-    else if (item.kind === 'period') {
-      const from = checkTime(item.from, `${field}.from`, duration);
-      const to = checkTime(item.to, `${field}.to`, duration);
-      if (to - from < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
-    } else throw new Error(`${field}.kind must be point or period`);
-  }
-}
-
-/**
- * Validates an edit list (the editor's PUT body). With `duration` (the replay's, ms) every time must fall inside
- * the replay and something must remain once trimmed and cut. Throws an Error naming the field, like the other
- * validators in src/shared.
- */
-export function assertReplayEdits(value: unknown, duration?: number, name = 'edits'): asserts value is ReplayEdits {
-  const edits = object(value, name, EDIT_FIELDS);
-  if (edits.version !== EDITS_VERSION) throw new Error(`${name}.version must be ${EDITS_VERSION}`);
-  if (edits.trim !== undefined) {
-    const trim = object(edits.trim, `${name}.trim`, ['start', 'end']);
-    checkTime(trim.start, `${name}.trim.start`, duration);
-    checkTime(trim.end, `${name}.trim.end`, duration);
-    if ((trim.end as number) - (trim.start as number) < MIN_EDIT_MS)
-      throw new Error(`${name}.trim must keep at least ${MIN_EDIT_MS} ms (start before end)`);
-  }
-  if (!Array.isArray(edits.cuts) || edits.cuts.length > MAX_CUTS) throw new Error(`${name}.cuts must be an array of at most ${MAX_CUTS}`);
-  const ids = new Set<string>();
-  for (const [index, raw] of edits.cuts.entries()) {
-    const field = `${name}.cuts[${index}]`;
-    const cut = object(raw, field, ['id', 'from', 'to', 'label']);
-    if (typeof cut.id !== 'string' || !EDIT_ID.test(cut.id)) throw new Error(`${field}.id must be lowercase letters, digits and dashes`);
-    if (ids.has(cut.id)) throw new Error(`${field}.id is used twice`);
-    ids.add(cut.id);
-    checkTime(cut.from, `${field}.from`, duration);
-    checkTime(cut.to, `${field}.to`, duration);
-    if ((cut.to as number) - (cut.from as number) < MIN_EDIT_MS) throw new Error(`${field} must be at least ${MIN_EDIT_MS} ms long`);
-    label(cut.label, `${field}.label`);
-  }
-  if (edits.cursor !== undefined) {
-    const cursor = object(edits.cursor, `${name}.cursor`, [
-      'visible',
-      'size',
-      'hideWhenIdle',
-      'clickFeedback',
-      'motion',
-      'appearance',
-      'color',
-      'clickEffect',
-    ]);
-    for (const key of ['visible', 'hideWhenIdle', 'clickFeedback']) {
-      if (cursor[key] !== undefined && typeof cursor[key] !== 'boolean') throw new Error(`${name}.cursor.${key} must be a boolean`);
-    }
-    if (
-      cursor.size !== undefined &&
-      (typeof cursor.size !== 'number' || !Number.isFinite(cursor.size) || cursor.size < 0.5 || cursor.size > 2)
-    )
-      throw new Error(`${name}.cursor.size must be from 0.5 to 2`);
-    if (cursor.motion !== undefined && !isCursorMotionStyle(cursor.motion))
-      throw new Error(`${name}.cursor.motion must be one of ${CURSOR_MOTION_STYLES.join(', ')}`);
-    if (cursor.appearance !== undefined && !isCursorAppearance(cursor.appearance))
-      throw new Error(`${name}.cursor.appearance must be one of ${CURSOR_APPEARANCES.join(', ')}`);
-    if (cursor.color !== undefined && !isCursorColor(cursor.color))
-      throw new Error(`${name}.cursor.color must be one of ${Object.keys(CURSOR_COLORS).join(', ')}`);
-    if (cursor.clickEffect !== undefined && !isCursorClickEffect(cursor.clickEffect))
-      throw new Error(`${name}.cursor.clickEffect must be one of ${CURSOR_CLICK_EFFECTS.join(', ')}`);
-  }
-  assertEffects(edits, name, duration);
-  assertHighlights(edits.highlights, duration, `${name}.highlights`);
-  if (duration !== undefined && editTimeline(edits as unknown as ReplayEdits, duration).duration < MIN_EDIT_MS) {
-    throw new Error(`${name} remove the whole replay`);
-  }
-}
-
-/** A stored sidecar: an edit list plus revision and authorship. */
-export function assertStoredReplayEdits(value: unknown): asserts value is StoredReplayEdits {
-  const stored = object(value, 'edits', STORED_FIELDS);
-  const { revision, updatedBy, updatedAt, ...edits } = stored;
-  assertReplayEdits(edits);
-  if (!Number.isSafeInteger(revision) || Number(revision) < 0) throw new Error('edits.revision is invalid');
-  if (updatedBy !== undefined && (typeof updatedBy !== 'string' || updatedBy.length > 254)) throw new Error('edits.updatedBy is invalid');
-  if (updatedAt !== undefined && (typeof updatedAt !== 'string' || !Number.isFinite(Date.parse(updatedAt))))
-    throw new Error('edits.updatedAt is invalid');
-}
+export {
+  changesTime,
+  EDITS_VERSION,
+  EMPTY_EDITS,
+  hasEffectEdits,
+  isEmptyEdits,
+  MAX_CUTS,
+  MAX_HIGHLIGHTS,
+  MAX_LABEL,
+  MIN_EDIT_MS,
+  type ReplayCut,
+  type ReplayEdits,
+  type ReplayHighlight,
+  type ReplayPeriodHighlight,
+  type ReplayPointHighlight,
+  type StoredReplayEdits,
+} from './edit-list.ts';
+export { type EditTimeline, editTimeline, mergeRanges } from './edit-timeline.ts';
+export { assertReplayEdits, assertStoredReplayEdits } from './edit-validation.ts';
 
 /** The edit list of a stored sidecar (or a list), without revision and authorship. */
 export function editListOf(stored: ReplayEdits | StoredReplayEdits): ReplayEdits {
-  const { revision: _revision, updatedBy: _by, updatedAt: _at, ...edits } = stored as StoredReplayEdits;
+  const sidecar: ReplayEdits & Partial<Pick<StoredReplayEdits, 'revision' | 'updatedBy' | 'updatedAt'>> = stored;
+  const { revision: _revision, updatedBy: _by, updatedAt: _at, ...edits } = sidecar;
   return edits;
 }
 
@@ -377,23 +120,6 @@ function effectLists(edits: ReplayEdits): Pick<ReplayEdits, 'zooms' | 'speeds' |
   return lists;
 }
 
-/** True when the list has no saved edit or playback-navigation annotation. */
-export function isEmptyEdits(edits: ReplayEdits | undefined) {
-  return !edits || (!edits.trim && edits.cuts.length === 0 && !hasEffectEdits(edits) && !edits.highlights?.length);
-}
-
-/** True when the list has any effect (zoom, speed, blur, caption or cursor presentation). */
-export function hasEffectEdits(edits: ReplayEdits | undefined) {
-  return Boolean(
-    edits?.zooms?.length || edits?.speeds?.length || edits?.blurs?.length || edits?.captions?.length || normalizeCursor(edits?.cursor),
-  );
-}
-
-/** True when the list changes timing (trim, cuts or speed-ups): the bundle has to be remapped. */
-export function changesTime(edits: ReplayEdits | undefined) {
-  return Boolean(edits && (edits.trim || edits.cuts.length || edits.speeds?.length));
-}
-
 /** Same edits (ignoring revision, authorship, rounding and cut order). */
 export function sameEdits(a: ReplayEdits, b: ReplayEdits) {
   return JSON.stringify(normalizeEdits(a)) === JSON.stringify(normalizeEdits(b));
@@ -419,142 +145,23 @@ export function editsVersion(edits: ReplayEdits | undefined) {
   return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36);
 }
 
-/* ---------- Time mapping ---------- */
-
-/** One stretch of the original timeline and how it plays: removed (rate 0), kept at 1×, or sped up (rate 1/n). */
-interface Piece {
-  from: number;
-  to: number;
-  /** Edited ms at `from`. */
-  start: number;
-  /** Edited ms per original ms: 0 removed, 1 kept, 1/n played n× faster. */
-  rate: number;
-}
-
-/** Original ↔ edited time for one edit list and replay duration. */
-export interface EditTimeline {
-  /** Edited length, ms. */
-  duration: number;
-  /** The original replay's length, ms. */
-  originalDuration: number;
-  /** Removed stretches of the original (trimmed ends and cuts, merged), ascending. */
-  removed: Array<{ from: number; to: number }>;
-  /**
-   * Edited time at original time `time` (clamped to the replay). Inside a removed stretch it is the edited time
-   * where that stretch was taken out, so everything in it lands on the same instant.
-   */
-  toEdited(time: number): number;
-  /** Original time shown at edited time `time`: where a cut point resumes (the end of the removed stretch). */
-  toOriginal(time: number): number;
-  /** True when original time `time` is trimmed off or cut (the trim end itself counts as removed). */
-  isRemoved(time: number): boolean;
-}
-
-/** `ranges` clipped to [0, duration], merged where they touch or overlap, ascending. */
-export function mergeRanges(ranges: ReadonlyArray<{ from: number; to: number }>, duration: number) {
-  const sorted = ranges
-    .map((range) => ({ from: Math.max(0, Math.min(duration, range.from)), to: Math.max(0, Math.min(duration, range.to)) }))
-    .filter((range) => range.to > range.from)
-    .sort((a, b) => a.from - b.from);
-  const merged: Array<{ from: number; to: number }> = [];
-  for (const range of sorted) {
-    const last = merged.at(-1);
-    if (last && range.from <= last.to) last.to = Math.max(last.to, range.to);
-    else merged.push({ ...range });
-  }
-  return merged;
-}
-
-export function editTimeline(edits: ReplayEdits | undefined, duration: number): EditTimeline {
-  const total = Math.max(0, duration);
-  const trim = edits?.trim;
-  const removed = mergeRanges(
-    [
-      ...(trim ? [{ from: 0, to: trim.start }] : []),
-      ...(edits?.cuts ?? []),
-      ...(trim && trim.end < total ? [{ from: trim.end, to: total }] : []),
-    ],
-    total,
-  );
-  const pieces: Piece[] = [];
-  let at = 0;
-  let edited = 0;
-  const push = (from: number, to: number, rate: number) => {
-    if (to <= from) return;
-    pieces.push({ from, to, start: edited, rate });
-    edited += (to - from) * rate;
-  };
-  // Kept stretches play at 1×, except inside a speed-up range (cuts and trims win over speed-ups).
-  const speeds = (edits?.speeds ?? [])
-    .map((range) => ({ from: Math.max(0, range.from), to: Math.min(total, range.to), rate: range.rate }))
-    .filter((range) => range.to > range.from)
-    .sort((a, b) => a.from - b.from);
-  const keep = (from: number, to: number) => {
-    let cursor = from;
-    for (const range of speeds) {
-      if (range.to <= cursor || range.from >= to) continue;
-      const start = Math.max(cursor, range.from);
-      push(cursor, start, 1);
-      const end = Math.min(to, range.to);
-      push(start, end, 1 / range.rate);
-      cursor = end;
-    }
-    push(cursor, to, 1);
-  };
-  for (const range of removed) {
-    keep(at, range.from);
-    push(range.from, range.to, 0);
-    at = range.to;
-  }
-  keep(at, total);
-  const editedDuration = edited;
-  const trimEnd = trim && trim.end < total ? trim.end : undefined;
-
-  const pieceAt = (time: number) => {
-    // Binary search: the last piece starting at or before `time`.
-    let low = 0;
-    let high = pieces.length - 1;
-    while (low < high) {
-      const middle = (low + high + 1) >>> 1;
-      if (pieces[middle]!.from <= time) low = middle;
-      else high = middle - 1;
-    }
-    return pieces[low];
-  };
-  return {
-    duration: editedDuration,
-    originalDuration: total,
-    removed,
-    toEdited(time) {
-      const clamped = Math.max(0, Math.min(total, Number.isFinite(time) ? time : 0));
-      const piece = pieceAt(clamped);
-      if (!piece) return 0;
-      return Math.min(editedDuration, piece.start + (Math.min(clamped, piece.to) - piece.from) * piece.rate);
-    },
-    toOriginal(time) {
-      const clamped = Math.max(0, Math.min(editedDuration, Number.isFinite(time) ? time : 0));
-      // The first kept piece that reaches `time`; a cut point resolves to the kept piece after the cut.
-      let last: Piece | undefined;
-      for (const piece of pieces) {
-        if (piece.rate === 0) continue;
-        last = piece;
-        if (clamped < piece.start + (piece.to - piece.from) * piece.rate)
-          return piece.from + Math.max(0, clamped - piece.start) / piece.rate;
-      }
-      return last ? last.to : (trimEnd ?? total);
-    },
-    isRemoved(time) {
-      if (trimEnd !== undefined && time >= trimEnd) return true;
-      return removed.some((range) => time >= range.from && time < range.to);
-    },
-  };
-}
-
-/* ---------- Applying edits to a bundle ---------- */
-
 type BundleEvent = ReplayBundle['events'][number];
-/** rrweb incremental data whose `positions[].timeOffset` are relative to the event (mouse/touch moves, drags). */
-type PositionsData = { positions?: Array<Record<string, unknown> & { timeOffset?: number }> };
+
+const hasTimeOffset = (value: unknown): value is { timeOffset: number } =>
+  typeof value === 'object' && value !== null && 'timeOffset' in value && typeof value.timeOffset === 'number';
+
+/**
+ * rrweb incremental data whose `positions[].timeOffset` are offsets back from their event (mouse/touch moves, drags): each
+ * is remapped, so a collapsed stretch moves at once. Other data is returned as is.
+ */
+function remapPositions(data: unknown, remap: (offset: number) => number): unknown {
+  if (typeof data !== 'object' || data === null || !('positions' in data) || !Array.isArray(data.positions)) return data;
+  const positions: unknown[] = data.positions;
+  return {
+    ...data,
+    positions: positions.map((position) => (hasTimeOffset(position) ? { ...position, timeOffset: remap(position.timeOffset) } : position)),
+  };
+}
 
 /** rrweb's Custom event: marks the edited end so the replay's span (and its clock) matches the edited duration. */
 const CUSTOM_EVENT = 5;
@@ -568,18 +175,8 @@ function mapEvents(events: ReplayBundle['events'], timeline: EditTimeline, end: 
     if (end !== undefined && time > end) break;
     const edited = timeline.toEdited(time);
     const next: BundleEvent = { ...event, timestamp: first + edited };
-    const data = event.data as PositionsData | undefined;
-    if (data && Array.isArray(data.positions) && edited !== time) {
-      // Mouse positions are offsets back from their event: remap each, so a collapsed stretch moves at once.
-      next.data = {
-        ...data,
-        positions: data.positions.map((position) =>
-          typeof position.timeOffset === 'number'
-            ? { ...position, timeOffset: timeline.toEdited(time + position.timeOffset) - edited }
-            : position,
-        ),
-      };
-    }
+    const data = edited === time ? event.data : remapPositions(event.data, (offset) => timeline.toEdited(time + offset) - edited);
+    if (data !== event.data) next.data = data;
     mapped.push(next);
   }
   const last = mapped.at(-1)?.timestamp ?? first;
@@ -668,8 +265,6 @@ export function applyEdits(bundle: ReplayBundle, edits: ReplayEdits | undefined)
   }
   return { bundle: edited, timeline, stepIndices: indices, effects: playbackEffects(edits, timeline, events) };
 }
-
-/* ---------- Proposals ---------- */
 
 /** Real time "Remove waits" leaves at both ends of a wait, so what led to it and what follows still read. */
 export const WAIT_PAD_MS = 400;
