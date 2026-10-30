@@ -1,25 +1,16 @@
 import { spawn } from 'node:child_process';
-
-import { guardRenderRequests, type RenderAssetPolicy } from './media/browser-network.ts';
 import { once } from 'node:events';
-import { mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises';
-import type { IncomingMessage, ServerResponse } from 'node:http';
-import { tmpdir } from 'node:os';
-import { extname, join } from 'node:path';
+import { writeFile } from 'node:fs/promises';
 
-import { sendJson } from './http/send.ts';
-import { isThumbHash } from '../shared/thumbhash.ts';
 import { PREVIEW_SPEED } from '../client/render/frames.ts';
+import { isThumbHash } from '../shared/thumbhash.ts';
+import { guardRenderRequests, type RenderAssetPolicy } from './media/browser-network.ts';
+import type { MediaKind, PosterRunner, PosterTask } from './media/poster-queue.ts';
 import { chromiumArgs, ffmpegArgs, RENDER_TOKEN_HEADER, type RenderTools } from './renderer.ts';
-import type { RenderedFile, RenderJob } from '../plugin/types.ts';
-import type { RenderVerdict } from './render-hooks.ts';
-import { serveObject } from './serve-object.ts';
-import { ObjectExistsError, type ObjectStorage, readJson } from './storage/index.ts';
-import type { PosterChoice, ReplayStore } from './store.ts';
-import { captureLink, traceHeaders, type TraceLink, withSpan } from './tracing.ts';
+import type { PosterChoice } from './store.ts';
+import { traceHeaders } from './tracing.ts';
 
-/**
- * List media for the replay index, made by headless Chromium on the internal render
+/* why: list media for the replay index are made by headless Chromium on the internal render
  * page (src/client/render/main.ts):
  * - a poster: one small JPEG, `__render.poster()` (first full snapshot + 1 s);
  * - an opening still: the same size, at t = 0 as the viewer first paints it (the page is there on load, so
@@ -42,282 +33,6 @@ export const PREVIEW_FPS = 15;
 export const PREVIEW_MAX_OUTPUT_MS = 15_000;
 /** x264 CRF for previews: ~100–250 KB for 6 s at 480 px. */
 export const PREVIEW_CRF = 32;
-/** A failed job is not retried for this long (the client keeps the poster or placeholder meanwhile). */
-const RETRY_FAILED_MS = 10 * 60_000;
-
-export type MediaKind = 'poster' | 'open' | 'preview';
-
-export interface PosterTask {
-  id: string;
-  /** Where the poster is taken: a named moment or a time in ms (posterAt; absent: the default moment). Posters only. */
-  moment?: PosterChoice;
-  /** Write the file here, a local temporary path (the queue stores it, and an optional `<output>.json` sidecar). */
-  output: string;
-  signal: AbortSignal;
-}
-
-export type PosterRunner = (task: PosterTask) => Promise<void>;
-
-export type PosterState = 'ready' | 'pending' | 'failed' | 'full' | 'off';
-
-export interface PosterQueueOptions {
-  /** Where finished media are stored (ReplayStore.storage). */
-  storage: ObjectStorage;
-  /** The finished poster's key (ReplayStore.posterKey), for the moment `posterAt` chose. */
-  key: (id: string, choice?: PosterChoice) => string;
-  runner: PosterRunner;
-  /** The poster moment for a replay (render-hooks.ts posterChooser); absent or undefined means the default. */
-  posterAt?: ((id: string) => Promise<PosterChoice | undefined>) | undefined;
-  /** The plugins' `beforeRender`: a refused job fails (and is retried like any failure). */
-  beforeRender?: ((job: RenderJob) => Promise<RenderVerdict>) | undefined;
-  /** The plugins' `afterRender`, after each stored file (the poster job's opening still too). Errors are logged. */
-  afterRender?: ((job: RenderJob, file: RenderedFile) => void | Promise<void>) | undefined;
-  /** Keeps a finished poster's ThumbHash (its runner's `<output>.json` sidecar) with the replay's summary. Errors are logged. */
-  thumbhash?: ((id: string, hash: string) => Promise<void>) | undefined;
-  /** Hover previews; absent (no ffmpeg) means previews are off. */
-  preview?: { key: (id: string) => string; runner: PosterRunner };
-  /** Opening stills (ReplayStore.openStillKey); the poster runner also leaves one at `<output>.open.jpg`. */
-  open?: { key: (id: string) => string; runner: PosterRunner };
-  /** Where jobs write before the result is stored; the OS temporary directory by default. */
-  tempDir?: string;
-  /** True while something more important (a video render) is using the browser; jobs wait. */
-  busy?: () => boolean;
-  maxQueued?: number;
-  timeoutMs?: number;
-  /** Poll interval while `busy()`. */
-  waitMs?: number;
-  now?: () => number;
-  log?: (line: string) => void;
-}
-
-interface Job {
-  kind: MediaKind;
-  id: string;
-  /** Wall-clock enqueue time and the requesting span, for the job's own trace (tracing.ts). */
-  queuedAtMs?: number;
-  link?: TraceLink | undefined;
-}
-
-const key = (kind: MediaKind, id: string) => `${kind}:${id}`;
-
-export class PosterQueue {
-  private readonly options: Required<
-    Omit<PosterQueueOptions, 'busy' | 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender' | 'thumbhash'>
-  > &
-    Pick<PosterQueueOptions, 'preview' | 'open' | 'tempDir' | 'posterAt' | 'beforeRender' | 'afterRender' | 'thumbhash'> & {
-      busy: () => boolean;
-    };
-  /** Posters first: they are what the list shows; then opening stills (opening a replay); previews only play on hover. */
-  private readonly waiting: Record<MediaKind, Job[]> = { poster: [], open: [], preview: [] };
-  private readonly pending = new Set<string>();
-  private readonly failed = new Map<string, number>();
-  private readonly settledBy = new Map<string, Promise<void>>();
-  private readonly resolvers = new Map<string, () => void>();
-  private running = false;
-  /** Milliseconds each finished job took, newest last (logs, measurements). */
-  readonly timings: Array<{ kind: MediaKind; id: string; ms: number; bytes: number }> = [];
-
-  constructor(options: PosterQueueOptions) {
-    this.options = {
-      busy: () => false,
-      maxQueued: 200,
-      timeoutMs: 120_000,
-      waitMs: 2000,
-      now: Date.now,
-      log: () => undefined,
-      ...options,
-    };
-  }
-
-  /** Whether `kind` can be made here at all (previews need ffmpeg). */
-  supports(kind: MediaKind) {
-    return kind === 'poster' || Boolean(kind === 'open' ? this.options.open : this.options.preview);
-  }
-
-  /** The stored file's key; a poster's names the moment `posterAt` chooses for the replay (memoised there). */
-  async key(id: string, kind: MediaKind = 'poster') {
-    if (kind === 'poster') return this.options.key(id, await this.options.posterAt?.(id));
-    return kind === 'open' ? this.options.open!.key(id) : this.options.preview!.key(id);
-  }
-
-  private get queued() {
-    return this.waiting.poster.length + this.waiting.open.length + this.waiting.preview.length;
-  }
-
-  async exists(id: string, kind: MediaKind = 'poster') {
-    return Boolean(await this.options.storage.stat(await this.key(id, kind)));
-  }
-
-  /** The file's state, queueing it when it is neither stored, queued nor recently failed. */
-  async request(id: string, kind: MediaKind = 'poster'): Promise<PosterState> {
-    if (!this.supports(kind)) return 'off';
-    const name = key(kind, id);
-    if (this.pending.has(name)) return 'pending';
-    if (await this.exists(id, kind)) return 'ready';
-    const failedAt = this.failed.get(name);
-    if (failedAt !== undefined && this.options.now() - failedAt < RETRY_FAILED_MS) return 'failed';
-    if (this.queued >= this.options.maxQueued) return 'full';
-    this.failed.delete(name);
-    this.pending.add(name);
-    this.waiting[kind].push({ kind, id, queuedAtMs: Date.now(), link: captureLink() });
-    this.settledBy.set(name, new Promise<void>((resolve) => this.resolvers.set(name, resolve)));
-    void this.pump();
-    return 'pending';
-  }
-
-  /** Resolves when `id`'s job of `kind` settles (tests, warm-up scripts). */
-  async settled(id: string, kind: MediaKind = 'poster') {
-    await this.settledBy.get(key(kind, id));
-  }
-
-  get size() {
-    return { running: this.running ? 1 : 0, queued: this.queued };
-  }
-
-  private async pump() {
-    if (this.running) return;
-    this.running = true;
-    try {
-      while (this.queued > 0) {
-        while (this.options.busy()) await new Promise((resolve) => setTimeout(resolve, this.options.waitMs));
-        const job = (this.waiting.poster.shift() ?? this.waiting.open.shift() ?? this.waiting.preview.shift())!;
-        const name = key(job.kind, job.id);
-        try {
-          await this.run(job);
-        } catch (error) {
-          this.failed.set(name, this.options.now());
-          this.options.log(`${job.kind} ${job.id}: failed: ${String(error)}`);
-        } finally {
-          this.pending.delete(name);
-          this.resolvers.get(name)?.();
-          this.resolvers.delete(name);
-          this.settledBy.delete(name);
-        }
-      }
-    } finally {
-      this.running = false;
-    }
-  }
-
-  /** Drops a waiting job that another one has already done, settling anyone waiting on it. */
-  private dequeue(kind: MediaKind, id: string) {
-    const index = this.waiting[kind].findIndex((job) => job.id === id);
-    if (index < 0) return;
-    this.waiting[kind].splice(index, 1);
-    const name = key(kind, id);
-    this.pending.delete(name);
-    this.resolvers.get(name)?.();
-    this.resolvers.delete(name);
-    this.settledBy.delete(name);
-  }
-
-  /** One poster, opening still or preview in its own trace (`media.<kind>`), linked to the request that queued it. */
-  private run(job: Job) {
-    const attributes = {
-      'replay.id': job.id,
-      'media.kind': job.kind,
-      'media.queue_wait_ms': job.queuedAtMs === undefined ? undefined : Date.now() - job.queuedAtMs,
-    };
-    return withSpan(
-      `media.${job.kind}`,
-      attributes,
-      async (span) => {
-        const failure = await this.execute(job);
-        if (failure !== undefined) span.setError(failure);
-      },
-      { root: true, links: [job.link] },
-    );
-  }
-
-  /** Makes and stores the file; returns why it failed (undefined when it did not). */
-  private async execute({ kind, id }: Job): Promise<unknown> {
-    const { storage } = this.options;
-    let directory: string | undefined;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(new Error(`${kind} timed out`)), this.options.timeoutMs);
-    const started = this.options.now();
-    const job = (of: MediaKind): RenderJob => ({ id: `${id}-${of}`, replayId: id, kind: of, options: {} });
-    try {
-      directory = await mkdtemp(join(this.options.tempDir ?? tmpdir(), `replays-${kind}-`));
-      const verdict = await this.options.beforeRender?.(job(kind));
-      if (verdict && !verdict.ok) throw new Error(`refused by plugin ${verdict.plugin}: ${verdict.error}`);
-      // One choice for both the file's name and where the page seeks, so the key always says what the file shows.
-      const moment = kind === 'poster' ? await this.options.posterAt?.(id) : undefined;
-      const output = kind === 'poster' ? this.options.key(id, moment) : await this.key(id, kind);
-      const temporary = join(directory, `${kind}${extname(output)}`);
-      const runner = kind === 'poster' ? this.options.runner : kind === 'open' ? this.options.open!.runner : this.options.preview!.runner;
-      await runner({ id, output: temporary, signal: controller.signal, ...(moment !== undefined ? { moment } : {}) });
-      controller.signal.throwIfAborted();
-      // The sidecar first: whoever sees the media also sees what it covers.
-      if (await stat(`${temporary}.json`).catch(() => undefined))
-        await storage.upload(`${output}.json`, `${temporary}.json`, { contentType: 'application/json; charset=utf-8' });
-      const stored = await storage.upload(output, temporary, { contentType: MEDIA[kind].type });
-      if (kind === 'poster') await this.keepThumbHash(id, `${temporary}.json`);
-      const files: Array<[RenderJob, RenderedFile]> = [
-        [job(kind), { file: temporary, key: output, contentType: MEDIA[kind].type, bytes: stored.size }],
-      ];
-      // The opening still is a separate artifact: its own policy must allow persistence,
-      // even though the poster runner already shot it on the way.
-      if (kind === 'poster' && this.options.open && (await stat(`${temporary}.open.jpg`).catch(() => undefined))) {
-        const openJob = job('open');
-        const openVerdict = await this.options.beforeRender?.(openJob);
-        if (openVerdict && !openVerdict.ok) {
-          this.failed.set(key('open', id), this.options.now());
-          this.dequeue('open', id);
-          this.options.log(`open ${id}: refused by plugin ${openVerdict.plugin}: ${openVerdict.error}`);
-        } else {
-          const openKey = this.options.open.key(id);
-          const kept = await storage.upload(openKey, `${temporary}.open.jpg`, { createOnly: true, contentType: MEDIA.open.type }).then(
-            (info) => info,
-            (error: unknown) => {
-              if (!(error instanceof ObjectExistsError)) throw error;
-              return undefined;
-            },
-          );
-          if (kept) {
-            this.dequeue('open', id);
-            files.push([openJob, { file: `${temporary}.open.jpg`, key: openKey, contentType: MEDIA.open.type, bytes: kept.size }]);
-          }
-        }
-      }
-      for (const [done, file] of files)
-        await Promise.resolve()
-          .then(() => this.options.afterRender?.(done, file))
-          .catch((error: unknown) =>
-            this.options.log(`${done.kind} ${id}: afterRender failed: ${String(error instanceof Error ? error.message : error)}`),
-          );
-      const ms = this.options.now() - started;
-      const bytes = stored.size;
-      this.timings.push({ kind, id, ms, bytes });
-      if (this.timings.length > 200) this.timings.shift();
-      this.options.log(`${kind} ${id}: done in ${(ms / 1000).toFixed(1)} s (${Math.round(bytes / 1024)} KB)`);
-      return undefined;
-    } catch (error) {
-      this.failed.set(key(kind, id), this.options.now());
-      this.options.log(
-        `${kind} ${id}: failed: ${String(error instanceof Error ? error.message : error)
-          .split('\n')[0]
-          ?.slice(0, 300)}`,
-      );
-      return error;
-    } finally {
-      clearTimeout(timer);
-      if (directory) await rm(directory, { recursive: true, force: true });
-    }
-  }
-
-  private async keepThumbHash(id: string, sidecar: string) {
-    if (!this.options.thumbhash) return;
-    const hash = await readFile(sidecar, 'utf8')
-      .then((text) => (JSON.parse(text) as { thumbhash?: unknown }).thumbhash)
-      .catch(() => undefined);
-    if (!isThumbHash(hash)) return;
-    await this.options
-      .thumbhash(id, hash)
-      .catch((error: unknown) => this.options.log(`poster ${id}: thumbhash not kept: ${String(error)}`));
-  }
-}
-
 interface RenderWindow {
   __render?: {
     ready: boolean;
@@ -362,9 +77,9 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
     return chromium
       .launch({ executablePath: options.tools.chromiumPath!, headless: true, chromiumSandbox: sandbox, args: chromiumArgs() })
       .catch((error: unknown) => {
-        // Hosts that block unprivileged user namespaces (Ubuntu 23.10+, GitHub's ubuntu-24.04 runners, default
-        // container seccomp) cannot start Chromium's sandbox; every list-media job would fail with a long launch
-        // log whose first line says little. Say what to do instead.
+        /* why: hosts that block unprivileged user namespaces (Ubuntu 23.10+, GitHub's ubuntu-24.04 runners, default
+           container seccomp) cannot start Chromium's sandbox; every job would fail with a long launch log whose first
+           line says little, so the error says what to do instead. */
         const message = error instanceof Error ? error.message : String(error);
         if (sandbox && /sandbox|namespace|zygote/i.test(message))
           throw new Error(
@@ -374,7 +89,6 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       });
   };
 
-  /** Opens the render page for `task.id` at its recorded viewport and hands it to `work`. */
   const withPage = async (task: PosterTask, work: (page: Page, cdp: CDPSession, shoot: () => Promise<Buffer>) => Promise<void>) => {
     if (!options.tools.chromiumPath) throw new Error('list media unavailable');
     clearTimeout(idle);
@@ -394,7 +108,7 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
     task.signal.addEventListener('abort', abort, { once: true });
     try {
       const origin = typeof options.origin === 'function' ? options.origin() : options.origin;
-      // The job's trace context too (tracing.ts; empty when off), so the page's requests join the job's trace.
+      // why: the job's trace context rides along (empty when off), so the page's requests join the job's trace.
       const trace = traceHeaders();
       await guardRenderRequests(context, origin, { ...trace, [RENDER_TOKEN_HEADER]: options.token }, options.assetPolicy);
       const page = await context.newPage();
@@ -408,7 +122,7 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       const viewport = setup.viewport;
       await page.setViewportSize(viewport);
       const cdp = await context.newCDPSession(page);
-      // Scaled down by the compositor: frames come out ~480 px wide, no resize pass needed.
+      // why: the compositor scales frames down to ~480 px wide, so no resize pass is needed.
       const shoot = async () => {
         const shot = (await cdp.send('Page.captureScreenshot', {
           format: 'jpeg',
@@ -436,7 +150,7 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
 
   const poster: PosterRunner = (task) =>
     withPage(task, async (page, _cdp, shoot) => {
-      // The page loads showing t = 0: the opening still comes first, for the price of one screenshot.
+      // why: the page loads showing t = 0, so the opening still costs one screenshot when taken first.
       await writeFile(`${task.output}.open.jpg`, await shoot(), { mode: 0o640 });
       task.signal.throwIfAborted();
       await page.evaluate((moment) => (window as RenderWindow).__render!.poster(moment), task.moment);
@@ -469,7 +183,7 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       child.stderr?.on('data', (chunk: Buffer) => {
         stderr = (stderr + chunk.toString()).slice(-2000);
       });
-      // Every pipe error is captured: a killed ffmpeg makes the pending write fail with EPIPE.
+      // why: a killed ffmpeg makes the pending write fail with EPIPE, so every pipe error is captured.
       let pipeError: Error | undefined;
       const exited = new Promise<number | null>((resolve) => {
         child.once('exit', resolve);
@@ -506,7 +220,7 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
       }
     });
 
-  /** The opening still on its own (replays whose poster predates it): the page as it loads, at t = 0. */
+  // why: replays whose poster predates opening stills get one on its own: the page as it loads, at t = 0.
   const open: PosterRunner = (task) =>
     withPage(task, async (_page, _cdp, shoot) => {
       await writeFile(task.output, await shoot(), { mode: 0o640 });
@@ -518,94 +232,8 @@ export function createMediaRenderer(options: PosterRendererOptions): Record<Medi
 /** H.264 at PREVIEW_FPS, small (CRF PREVIEW_CRF, ≤ 160 kbit/s), silent, +faststart so it plays while downloading. */
 export function previewFfmpegArgs(output: string) {
   const args = ffmpegArgs({ fps: PREVIEW_FPS, crf: PREVIEW_CRF, output, input: 'jpeg' });
-  // No audio track at all, and short GOPs so a looping clip seeks cheaply.
-  // A bitrate ceiling keeps busy pages (constant DOM churn) near the ~300 KB budget for 15 s.
+  /* why: no audio track, short GOPs so a looping clip seeks cheaply, and a bitrate ceiling that keeps busy pages
+     (constant DOM churn) near the ~300 KB budget for 15 s. */
   args.splice(args.indexOf('-movflags'), 0, '-an', '-g', String(PREVIEW_FPS * 2), '-maxrate', '160k', '-bufsize', '320k');
   return args;
-}
-
-const JSON_TYPE = 'application/json; charset=utf-8';
-
-const MEDIA: Record<MediaKind, { type: string; key: (store: ReplayStore, id: string) => string; off: string }> = {
-  poster: { type: 'image/jpeg', key: (store, id) => store.posterKey(id), off: 'posters unavailable' },
-  open: { type: 'image/jpeg', key: (store, id) => store.openStillKey(id), off: 'opening stills unavailable' },
-  preview: { type: 'video/mp4', key: (store, id) => store.previewKey(id), off: 'previews unavailable' },
-};
-
-/**
- * `GET|HEAD /api/replays/<id>/poster`, `/open` (the opening still) and `/preview` (behind the same auth as the rest of the app):
- * 200 JPEG / MP4 (weak ETag, cached a week; the MP4 supports byte ranges) once stored; 202 + Retry-After
- * while it is generated; 404 for an unknown replay or a job that failed; 503 without Retry-After when the
- * kind is off here (posters: no Chromium or RENDER_DISABLED=1; previews: also no ffmpeg), 503 + Retry-After
- * when the queue is full. The client keeps the poster (or placeholder) for anything but 200.
- */
-export async function handlePosterApi(
-  request: IncomingMessage,
-  response: ServerResponse,
-  path: string,
-  options: { store: ReplayStore; posters?: PosterQueue | undefined },
-) {
-  const match = /^\/api\/replays\/([a-z0-9][a-z0-9-]{0,79})\/(poster|open|preview)$/.exec(path);
-  if (!match) return false;
-  const id = match[1]!;
-  const kind = match[2] as MediaKind;
-  const media = MEDIA[kind];
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    sendJson(response, 405, { error: 'method not allowed' });
-    return true;
-  }
-  if (!(await options.store.locate(id))) {
-    sendJson(response, 404, { error: 'replay not found' });
-    return true;
-  }
-  const cache = 'private, max-age=604800';
-  const serve = async () => {
-    // With a queue, the poster's key names the moment its plugins and purpose choose (ReplayStore.posterKey).
-    const objectKey = options.posters?.supports(kind) ? await options.posters.key(id, kind) : media.key(options.store, id);
-    const info = await options.store.storage.stat(objectKey);
-    if (!info) return false;
-    // The preview's sidecar rides along as headers, so the client's HEAD can label a cut-short clip.
-    const meta =
-      kind === 'preview'
-        ? await readJson<{ capped?: boolean; coveredMs?: number; speed?: number }>(options.store.storage, `${objectKey}.json`).catch(
-            () => undefined,
-          )
-        : undefined;
-    const headers: Record<string, string> = meta
-      ? {
-          'x-preview-speed': String(meta.speed ?? PREVIEW_SPEED),
-          'x-preview-covers-ms': String(Math.round(meta.coveredMs ?? 0)),
-          'x-preview-capped': meta.capped ? '1' : '0',
-        }
-      : {};
-    return serveObject(request, response, options.store.storage, objectKey, cache, {
-      contentType: media.type,
-      etag: true,
-      ranges: kind === 'preview',
-      headers,
-      info,
-    });
-  };
-  if (await serve()) {
-    // A listed poster means someone is looking at this replay: warm its opening still and hover preview.
-    if (kind === 'poster') for (const next of ['open', 'preview'] as const) void options.posters?.request(id, next).catch(() => undefined);
-    return true;
-  }
-  const state = options.posters ? await options.posters.request(id, kind) : 'off';
-  if (state === 'off') {
-    sendJson(response, 503, { error: media.off });
-    return true;
-  }
-  if (state === 'ready' && (await serve())) return true;
-  if (state === 'failed') {
-    sendJson(response, 404, { error: `no ${kind} for this replay` });
-    return true;
-  }
-  response.writeHead(state === 'full' ? 503 : 202, {
-    'content-type': JSON_TYPE,
-    'cache-control': 'no-store',
-    'retry-after': state === 'full' ? '30' : '2',
-  });
-  response.end(request.method === 'HEAD' ? undefined : JSON.stringify({ status: state === 'full' ? 'busy' : 'pending' }));
-  return true;
 }

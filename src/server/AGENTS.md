@@ -1,6 +1,6 @@
 # Server
 
-Read the root guide. `app.ts` composes HTTP dispatch in its ordered stages (sign-in, replay files and the page shell live in `app/`; Node responses in `http/send.ts` and `http/serve-file.ts`); `start.ts` owns startup/shutdown; `config.ts` loads host settings. Auth adapters live in `auth/`, storage providers in `storage/`, media work in `posters.ts`, `renderer.ts` and `render-queue.ts`.
+Read the root guide. `app.ts` composes HTTP dispatch in its ordered stages (sign-in, replay files and the page shell live in `app/`; Node responses in `http/send.ts` and `http/serve-file.ts`); `start.ts` owns startup/shutdown; `config.ts` loads host settings. Auth adapters live in `auth/`, storage providers in `storage/`, media work in `media/` (list-media queue and routes), `posters.ts` (list-media renderer), `renderer.ts` and `render-queue.ts`.
 
 - Preserve the root guide's hook/auth ordering and the separate loopback/token internal-render gate.
 - Do not leak internal/provider errors to clients or turn a failed read into an empty value before writing. Check storage versions and key safety (`storage/types.ts`).

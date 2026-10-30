@@ -11,7 +11,7 @@ import { definePlugin, resolvePlugins, resolvePluginsSync, type PluginApi, type 
 import type { Owned } from '../src/plugin/registry.ts';
 import type { RenderedFile, RenderHooks } from '../src/plugin/types.ts';
 import { createApp } from '../src/server/app.ts';
-import { PosterQueue, type PosterTask } from '../src/server/posters.ts';
+import { PosterQueue, type PosterTask } from '../src/server/media/poster-queue.ts';
 import { createRenderHooks } from '../src/server/render-hooks.ts';
 import { RenderQueue } from '../src/server/render-queue.ts';
 import type { RenderService } from '../src/server/render-routes.ts';
