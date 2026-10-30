@@ -83,9 +83,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8845,
+      "raw": 8642,
       "gzip": 2280,
-      "brotli": 1959
+      "brotli": 1953
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38858,
@@ -173,9 +173,9 @@
       "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 996774,
+      "raw": 968797,
       "gzip": 303520,
-      "brotli": 257642
+      "brotli": 252123
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -299,7 +299,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
-      "gzip": 25782,
+      "gzip": 25781,
       "brotli": 22377
     },
     "dist/client/assets/VitalsTile-HASH.js": {
