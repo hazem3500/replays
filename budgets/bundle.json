@@ -90,7 +90,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38858,
       "gzip": 13716,
-      "brotli": 12186
+      "brotli": 12188
     },
     "dist/client/assets/composite-HASH.js": {
       "raw": 94002,
@@ -105,7 +105,7 @@
     "dist/client/assets/dropdown-menu-HASH.js": {
       "raw": 122824,
       "gzip": 41141,
-      "brotli": 35555
+      "brotli": 35558
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 31925,
@@ -119,8 +119,8 @@
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
-      "gzip": 9503,
-      "brotli": 8552
+      "gzip": 9542,
+      "brotli": 8645
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6582,
@@ -145,7 +145,7 @@
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
       "gzip": 2632,
-      "brotli": 2411
+      "brotli": 2401
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -174,7 +174,7 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 996774,
-      "gzip": 311814,
+      "gzip": 303520,
       "brotli": 257642
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -190,7 +190,7 @@
     "dist/client/assets/pencil-HASH.js": {
       "raw": 321,
       "gzip": 256,
-      "brotli": 246
+      "brotli": 235
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
@@ -210,7 +210,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
       "gzip": 69476,
-      "brotli": 59853
+      "brotli": 59828
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1349,
@@ -219,7 +219,7 @@
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
-      "gzip": 4113,
+      "gzip": 4112,
       "brotli": 3732
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
@@ -229,8 +229,8 @@
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 382,
-      "gzip": 275,
-      "brotli": 269
+      "gzip": 273,
+      "brotli": 266
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 26722,
@@ -254,7 +254,7 @@
     },
     "dist/client/assets/step-caption-HASH.js": {
       "raw": 887,
-      "gzip": 539,
+      "gzip": 541,
       "brotli": 505
     },
     "dist/client/assets/storage-HASH.js": {
@@ -280,7 +280,7 @@
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
       "gzip": 256,
-      "brotli": 234
+      "brotli": 236
     },
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 313,
@@ -299,13 +299,13 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
-      "gzip": 25851,
-      "brotli": 22462
+      "gzip": 25782,
+      "brotli": 22436
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
       "gzip": 462,
-      "brotli": 429
+      "brotli": 428
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -337,10 +337,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs": {
-      "raw": 313664,
-      "gzip": 85506,
-      "brotli": 69858
+    "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs": {
+      "raw": 312821,
+      "gzip": 83270,
+      "brotli": 68085
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -439,7 +439,7 @@
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
-      "gzip": 1639,
+      "gzip": 1638,
       "brotli": 1407
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
@@ -514,7 +514,7 @@
     },
     "dist/lib/server.mjs": {
       "raw": 1907,
-      "gzip": 616,
+      "gzip": 615,
       "brotli": 517
     },
     "dist/lib/viewer.mjs": {
@@ -828,16 +828,6 @@
         "raw": 764,
         "gzip": 445,
         "brotli": 401
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/edits-HASH.js",
-      "cap": {
-        "raw": 27331,
-        "gzip": 9503,
-        "brotli": 8552
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -1254,16 +1244,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "raw": 38858,
-        "gzip": 13716,
-        "brotli": 12186
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
       "file": "dist/client/assets/Headline-HASH.css",
       "cap": {
         "raw": 1089,
@@ -1340,30 +1320,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
-      "file": "dist/client/assets/step-caption-HASH.js",
-      "cap": {
-        "brotli": 505
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/lib/chunks/context.schema.json-09ab4a0ff1bb.mjs",
-      "cap": {
-        "raw": 313664
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "raw": 122824
-      },
-      "reason": "Viewer views: hash drift in shared chunks that name the viewer's new chunks. Measured in CI against main 8d1b7534.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
       "file": "dist/client/assets/Headline-HASH.js",
       "cap": {
         "raw": 5999,
@@ -1392,6 +1348,66 @@
       },
       "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/edits-HASH.js",
+      "cap": {
+        "raw": 27331,
+        "gzip": 9542,
+        "brotli": 8645
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs",
+      "cap": {
+        "raw": 312821,
+        "gzip": 83270,
+        "brotli": 68085
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "The CLI and server share the edit validator; with edits split into list, timeline and validation modules the shared server chunk gets a new source identity; measured on Boat against main: main 312907/83012/67822 (context.schema.json-09ab4a0ff1bb.mjs), head 312691/83253/68044 (-216 B raw, +241 B gzip, +222 B brotli). Replaces the previous entry for this chunk."
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.js",
+      "cap": {
+        "raw": 887,
+        "gzip": 541,
+        "brotli": 505
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.js",
+      "cap": {
+        "raw": 38858,
+        "gzip": 13716,
+        "brotli": 12188
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 12188 B. Replaces #159's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 122824,
+        "gzip": 41141,
+        "brotli": 35558
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 35558 B. Replaces #159's allowance for this file."
+    },
+    {
+      "file": "dist/client/assets/ui-state-HASH.js",
+      "cap": {
+        "raw": 335,
+        "gzip": 256,
+        "brotli": 236
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/176",
+      "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 236 B."
     }
   ]
 }
