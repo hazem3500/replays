@@ -108,8 +108,8 @@ export async function beginDeviceLogin(server: string, capability: CliDeviceAuth
     );
   const deviceCode = data.device_code;
   const userCode = data.user_code;
-  // Print only the base verification URI plus user_code. A provider's "complete" link is
-  // unnecessary here and could carry opaque authorization material in its query string.
+  /* why: print only the base verification URI plus user_code. A provider's "complete" link is
+     unnecessary here and could carry opaque authorization material in its query string. */
   const verification = data.verification_uri;
   const expiresIn = data.expires_in;
   const interval = data.interval;
@@ -138,7 +138,7 @@ export async function beginDeviceLogin(server: string, capability: CliDeviceAuth
     throw new CliAuthError('identity provider returned a non-HTTPS approval link', 4);
 
   process.stdout.write(`Approve Replays CLI access for ${server}:\n  ${verificationUrl.href}\n  Code: ${userCode}\n`);
-  // Explicit login in CI may print a code, but waits at most 30 seconds; interactive users get up to 15 minutes.
+  // why: explicit login in CI may print a code, but waits at most 30 seconds; interactive users get up to 15 minutes.
   const maximumWait = process.stdin.isTTY && process.stdout.isTTY ? 15 * 60 : 30;
   const deadline = Date.now() + Math.min(expiresIn, maximumWait) * 1000;
   let pollSeconds = typeof interval === 'number' && interval > 0 ? interval : 5;

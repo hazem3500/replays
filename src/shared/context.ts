@@ -158,7 +158,7 @@ export function assertReplayContext(value: unknown): asserts value is ReplayCont
       if (source.ref !== undefined) text(source.ref, `${name}.ref`, 200, /^[^\s]+$/);
       if (source.label !== undefined) text(source.label, `${name}.label`, 80, /^[^\n\r<>]+$/);
       if (source.attrs !== undefined) {
-        // Stored attrs are already capped (sourceAttrs): anything the cap would change is refused.
+        // why: stored attrs are already capped (sourceAttrs): anything the cap would change is refused.
         const attrs = source.attrs;
         const count = attrs && typeof attrs === 'object' && !Array.isArray(attrs) ? Object.keys(attrs).length : -1;
         const kept = sourceAttrs(attrs);

@@ -51,7 +51,7 @@ export function parseRrwebExport(value: unknown): RrwebEvent[] {
   if (events.length < 2) throw new Error('an rrweb recording needs at least two events');
   if (!events.some((event) => (event as { type: number }).type === FULL_SNAPSHOT))
     throw new Error('the recording has no full snapshot (rrweb event type 2)');
-  // Stable sort: equal timestamps keep their recorded order.
+  // why: stable sort: equal timestamps keep their recorded order.
   return (events as RrwebEvent[])
     .map((event, index) => ({ event, index }))
     .sort((a, b) => a.event.timestamp - b.event.timestamp || a.index - b.index)

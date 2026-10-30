@@ -133,7 +133,7 @@ describe('buildReplayBundle', () => {
     expect(serialized).toContain('mailto:[redacted]');
     expect(serialized).toContain('#access_token=%5Bredacted%5D');
     for (const secret of ['abc', 'jane@', 'token=s', '=t"']) expect(serialized).not.toContain(secret);
-    // The input events are not modified.
+    // why: the input events are not modified.
     expect(JSON.stringify(events[0])).toContain('x?token=s');
   });
 

@@ -26,7 +26,7 @@ describe('createTokenUpload', () => {
       fetch,
     });
     const receipt = await upload({ bundle, note: 'hi' }, { signal: new AbortController().signal });
-    // The replay URL in the response is never surfaced.
+    // why: the replay URL in the response is never surfaced.
     expect(receipt).toEqual({ replayId: 'issue-2026-abc' });
     const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
     expect(url).toBe('https://gateway.example/api/issue-reports');
@@ -37,7 +37,7 @@ describe('createTokenUpload', () => {
   });
 
   it('gzips the body when CompressionStream exists', async () => {
-    // Use the real compression implementation under the DOM harness.
+    // why: use the real compression implementation under the DOM harness.
     vi.stubGlobal('CompressionStream', NodeCompressionStream);
     const fetch = vi.fn<typeof globalThis.fetch>(() => Promise.resolve(okResponse({ id: 'issue-1' })));
     const upload = createTokenUpload({
