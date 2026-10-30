@@ -14,7 +14,10 @@ export function createWarner(): (message: string) => void {
  * Checks that the call follows a user activation. With `strictInvariants` a missing activation throws; otherwise it warns
  * during the migration window.
  */
-export function activationCheck(options: Pick<RecorderOptions, 'activation' | 'strictInvariants'>, warn: (message: string) => void): () => void {
+export function activationCheck(
+  options: Pick<RecorderOptions, 'activation' | 'strictInvariants'>,
+  warn: (message: string) => void,
+): () => void {
   return () => {
     const userActivation = typeof navigator === 'undefined' ? undefined : navigator.userActivation;
     const activation = options.activation ?? (userActivation ? () => userActivation.isActive : undefined);

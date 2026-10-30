@@ -59,7 +59,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const checkActivation = activationCheck(options, warn);
   const stops = new Map<Element, () => void>();
 
-  // A function, so TypeScript does not narrow `state` across awaits.
+  // why: a function, so TypeScript does not narrow `state` across awaits.
   const currentState = (): RecorderState => state;
   const setState = (next: RecorderState) => {
     state = next;
@@ -78,7 +78,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       try {
         cleanup();
       } catch {
-        // A failing cleanup must not keep the others from running.
+        // why: a failing cleanup must not keep the others from running.
       }
     }
     session = undefined;
@@ -86,7 +86,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
     stops.clear();
   };
 
-  /** A prompt `discard()` and `destroy()` can close. */
+  // invariant: `discard()` and `destroy()` can close the open prompt.
   const openPrompt = () => {
     promptAbort?.abort();
     const abort = new AbortController();
@@ -105,7 +105,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
     },
 
     async start(startOptions) {
-      // Checked at runtime too: JavaScript callers can pass anything.
+      // why: checked at runtime too, since JavaScript callers can pass anything.
       if ((startOptions as { consent?: unknown }).consent !== true) {
         throw new Error('Recording needs the user’s explicit consent');
       }
@@ -141,7 +141,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         throw error;
       }
       const bodies = await bodyModule;
-      // discard() or destroy() while rrweb was loading.
+      // why: discard() or destroy() may have run while rrweb was loading.
       if (generation !== lifecycleGeneration || currentState().status !== 'starting') return;
 
       const startedAt = Date.now();
@@ -203,7 +203,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       teardownSession();
 
       if (reason === 'page-hidden' || reason === 'no-indicator') {
-        // Never upload something the user did not get to review.
+        // invariant: never upload something the user did not get to review.
         recording = undefined;
         setState({ status: 'idle' });
         resolveStopWaiters();
@@ -331,8 +331,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
 
     async request(trigger = { source: 'user' }) {
       if (!ui) throw new Error('Pass ui (from @hazem3500/replays/recorder/ui) or use createGuidedRecorder');
-      // In the one-click flow a failed upload stays behind a Retry toast;
-      // pressing Record again drops it and starts over.
+      // why: in the one-click flow a failed upload stays behind a Retry toast; pressing Record again drops it and starts over.
       if (!askToReview && state.status === 'error' && state.phase === 'upload') recorder.discard();
       if (destroyed || !['idle', 'uploaded', 'error'].includes(state.status) || (state.status === 'error' && state.phase === 'upload')) {
         return;
@@ -362,8 +361,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       } catch (error) {
         if (!ownsRequest()) return;
         resolveStopWaiters();
-        if (currentState().status !== 'error')
-          setState({ status: 'error', phase: 'start', error: toError(error) });
+        if (currentState().status !== 'error') setState({ status: 'error', phase: 'start', error: toError(error) });
         ui.showResult?.({
           status: 'error',
           error: toError(error),

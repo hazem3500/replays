@@ -1,3 +1,4 @@
+import type * as BodyCapture from './body-capture.ts';
 import type { RawStep } from './bundle.ts';
 import type { ReplayBundle, ReplayCaptured, ReplayRrwebEvent } from './bundle-types.ts';
 import type { ResolvedCapture } from './capture-options.ts';
@@ -22,7 +23,7 @@ export type Session = {
 };
 
 /** The optional network-body module, loaded only when bodies are captured. */
-export type BodyModule = typeof import('./body-capture.ts');
+export type BodyModule = typeof BodyCapture;
 
 export function newSession(trigger: RecorderTrigger, captured: ReplayCaptured, startedAt: number): Session {
   return {
@@ -147,6 +148,7 @@ function wireEnds(current: Session, wiring: SessionWiring): void {
 /** Starts the session's console, network and DOM capture, its limits and its indicator; each pushes its cleanup. */
 export function wireSession(current: Session, wiring: SessionWiring): void {
   const grow = (bytes: number) => {
+    // oxlint-disable-next-line eslint/no-param-reassign -- why: the session is the recorder's running tally of this recording.
     current.bytes += bytes;
     if (current.bytes <= wiring.limits.maxBytes) return;
     queueMicrotask(() => {

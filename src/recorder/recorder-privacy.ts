@@ -56,7 +56,7 @@ function textMasker(privacy: RecorderPrivacyOptions, maskAllText: boolean): (ele
   return (element) => {
     if (maskAllText) return !unmask || !element || element.closest(unmask) === null;
     if (!maskSelector) return false;
-    return !element || element.closest(maskSelector) !== null;
+    return element?.closest(maskSelector) !== null;
   };
 }
 
