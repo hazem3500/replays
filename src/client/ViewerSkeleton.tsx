@@ -313,9 +313,7 @@ function DesktopSkeleton({
         style={stepsWidth === undefined ? undefined : ({ '--steps-width': `${stepsWidth}px` } as CSSProperties)}
       >
         <section className="player-region">
-          {/* why: two or more recordings open in the Compare view, whose summary headline sits over the stage. */}
-          {tiles > 1 ? <div className="sk-headline" /> : null}
-          {tiles > 1 ? <TilesSkeleton count={tiles} /> : <PlayerSkeleton poster={hint?.poster} />}
+          <StageSkeleton tiles={tiles} poster={hint?.poster} />
           <LoadingTransport steps={hint?.steps} />
         </section>
         {hint?.steps === 0 ? null : (
@@ -330,6 +328,18 @@ function DesktopSkeleton({
         <LoadingTabs mobile={false} steps={hint?.steps} />
         {collapsed ? null : <LoadingPanel />}
       </div>
+    </>
+  );
+}
+
+/** The stage while loading: a comparison's Grid of tiles under its headline row, else the one recording's frame. */
+function StageSkeleton({ tiles, poster }: { tiles: number; poster: string | undefined }) {
+  if (tiles < 2) return <PlayerSkeleton poster={poster} />;
+  return (
+    <>
+      {/* why: two or more recordings open in the Compare view, whose summary headline sits over the stage. */}
+      <div className="sk-headline" />
+      <TilesSkeleton count={tiles} />
     </>
   );
 }
