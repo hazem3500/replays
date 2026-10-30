@@ -74,7 +74,6 @@ export const MAX_CAPTION = 160;
 /** Smallest blur box side, as a fraction of the frame. */
 export const MIN_BLUR_SIZE = 0.01;
 
-
 /** What effects need from the edit timeline: original → edited time. */
 interface TimeMap {
   toEdited(time: number): number;
@@ -177,7 +176,6 @@ export function playbackEffects(
 /** Original-timing effects for the editor's preview, which plays the original replay (cuts skipped live). */
 export const IDENTITY_TIME = (duration: number): TimeMap => ({ toEdited: (time) => time, duration });
 
-
 /** Easing into and out of a zoom region (shortened for short regions), and the pan from one click to the next. */
 export const ZOOM_IN_MS = 600;
 export const ZOOM_OUT_MS = 700;
@@ -272,7 +270,6 @@ export function proposeZoomRegions(
   return regions;
 }
 
-
 /** Whole hundredths of a px. */
 const px = (value: number) => Math.round(value * 100) / 100;
 
@@ -321,7 +318,6 @@ export function effectsKey(effects: PlaybackEffects, viewport: { width: number; 
   const zoomPart = zoom.scale === 1 ? '' : `${zoom.scale.toFixed(3)},${zoom.x.toFixed(1)},${zoom.y.toFixed(1)}`;
   return `${zoomPart}|${blursAt(effects.blurs, time).join(',')}`;
 }
-
 
 /** Longest a caption from a step stays up. */
 export const STEP_CAPTION_MAX_MS = 5000;
