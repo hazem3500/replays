@@ -83,9 +83,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8845,
+      "raw": 8642,
       "gzip": 2280,
-      "brotli": 1959
+      "brotli": 1953
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38858,
@@ -144,8 +144,8 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
-      "gzip": 2632,
-      "brotli": 2401
+      "gzip": 2630,
+      "brotli": 2400
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -173,9 +173,9 @@
       "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 996774,
+      "raw": 968797,
       "gzip": 303520,
-      "brotli": 257642
+      "brotli": 251998
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -265,7 +265,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 609
+      "brotli": 628
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -299,13 +299,13 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
-      "gzip": 25782,
+      "gzip": 25780,
       "brotli": 22436
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
-      "gzip": 462,
-      "brotli": 428
+      "gzip": 463,
+      "brotli": 429
     },
     "dist/client/index.html": {
       "raw": 12638,
@@ -749,7 +749,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1199,10 +1199,12 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
+        "raw": 1124,
+        "gzip": 682,
         "brotli": 628
       },
-      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/184"
+      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size (615 B Brotli on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
@@ -1287,11 +1289,11 @@
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
         "raw": 665,
-        "gzip": 462,
+        "gzip": 463,
         "brotli": 429
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Hash drift, not growth: unchanged source; the inspector chunk's new hash moves its gzip size by 1 B (on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/180"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
