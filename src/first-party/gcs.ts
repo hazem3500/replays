@@ -144,7 +144,7 @@ export class GcsStorage implements ObjectStorage {
     try {
       message = (JSON.parse(detail) as { error?: { message?: string } }).error?.message ?? message;
     } catch {
-      // Not JSON: keep the text.
+      // why: not JSON: keep the text.
     }
     throw new GcsError(response.status, `GCS ${what} failed (${response.status})${message ? `: ${message}` : ''}`);
   }
@@ -163,7 +163,7 @@ export class GcsStorage implements ObjectStorage {
   private preconditions(key: string, options: WriteOptions): Record<string, string> {
     if (options.createOnly) return { ifGenerationMatch: '0' };
     if (options.ifVersion !== undefined) {
-      // Versions are generations; anything else cannot be current.
+      // why: versions are generations; anything else cannot be current.
       if (!/^\d+$/.test(options.ifVersion)) throw new PreconditionFailedError(key);
       return { ifGenerationMatch: options.ifVersion };
     }
@@ -200,7 +200,7 @@ export class GcsStorage implements ObjectStorage {
 
   async stream(key: string, range?: { start: number; end: number }): Promise<Readable> {
     const response = await this.request(this.objectUrl(key, { alt: 'media' }), {
-      // Stored as is: the server negotiates compression with each browser.
+      // why: stored as is: the server negotiates compression with each browser.
       headers: { 'accept-encoding': 'identity', ...(range ? { range: `bytes=${range.start}-${range.end}` } : {}) },
     });
     if (response.status === 404) throw new NotFoundError(key);
@@ -213,7 +213,7 @@ export class GcsStorage implements ObjectStorage {
     const bytes = Buffer.isBuffer(body) ? body : Buffer.from(body);
     if (bytes.byteLength > RESUMABLE_BYTES)
       return this.resumable(key, bytes.byteLength, options, async (start, end) => bytes.subarray(start, end));
-    // One multipart request: the metadata (content type, cache control) and the bytes together.
+    // why: one multipart request: the metadata (content type, cache control) and the bytes together.
     const boundary = `replays-${Math.random().toString(36).slice(2)}`;
     const payload = Buffer.concat([
       Buffer.from(
@@ -282,20 +282,20 @@ export class GcsStorage implements ObjectStorage {
       const bytes = start < size ? await chunk(start, end) : Buffer.alloc(0);
       const response = await this.request(session, {
         method: 'PUT',
-        // If all bytes were acknowledged with 308, probe for the final object metadata.
+        // why: if all bytes were acknowledged with 308, probe for the final object metadata.
         headers: { 'content-range': start < size ? `bytes ${start}-${end - 1}/${size}` : `bytes */${size}` },
-        // A copy typed over a plain ArrayBuffer, which fetch's BodyInit wants.
+        // why: A copy typed over a plain ArrayBuffer, which fetch's BodyInit wants.
         body: Buffer.from(bytes),
       });
       if (response.status === 308) {
         const range = response.headers.get('range');
         await response.body?.cancel();
         const match = range === null ? undefined : /^bytes=0-(\d+)$/.exec(range);
-        // No Range means no bytes persisted. Never advance by how much we sent.
+        // why: no Range means no bytes persisted. Never advance by how much we sent.
         const next = range === null ? 0 : match ? Number(match[1]) + 1 : NaN;
         if (!Number.isSafeInteger(next) || next > end)
           throw new GcsError(308, `GCS resumable upload of ${key} returned an invalid acknowledged Range`);
-        // Compare against the high-water mark so a regressing/oscillating offset cannot retry forever.
+        // why: compare against the high-water mark so a regressing/oscillating offset cannot retry forever.
         stalled = next > acknowledged ? 0 : stalled + 1;
         if (stalled >= MAX_STALLED_ACKS)
           throw new GcsError(308, `GCS resumable upload of ${key} made no progress after ${MAX_STALLED_ACKS} acknowledgments`);
@@ -318,7 +318,7 @@ export class GcsStorage implements ObjectStorage {
   async deletePrefix(prefix: string) {
     const objects = await this.list({ prefix });
     let deleted = 0;
-    // Bounded parallelism: a replay has a handful of objects, prune deletes a few at a time.
+    // why: bounded parallelism: a replay has a handful of objects, prune deletes a few at a time.
     for (let index = 0; index < objects.length; index += 16) {
       const results = await Promise.all(objects.slice(index, index + 16).map((object) => this.delete(object.key)));
       deleted += results.filter(Boolean).length;
@@ -328,7 +328,7 @@ export class GcsStorage implements ObjectStorage {
 
   async list(options: ListOptions = {}) {
     const objects: ObjectInfo[] = [];
-    // GCS filters by matchGlob server-side; filtering again keeps emulators without it exact.
+    // why: GCS filters by matchGlob server-side; filtering again keeps emulators without it exact.
     const pattern = options.glob ? globToRegExp(options.glob) : undefined;
     let pageToken: string | undefined;
     do {

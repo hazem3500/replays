@@ -56,16 +56,16 @@ export async function serveObject(
       response.end();
       return;
     }
-    // Open the object before the head goes out, so a vanished object (pruned meanwhile) can still be a 404.
+    // why: open the object before the head goes out, so a vanished object (pruned meanwhile) can still be a 404.
     const body = await storage.stream(key, range);
     response.writeHead(status, { ...headers, ...extra });
     await pipeline(body, response).catch((error: unknown) => {
-      // A client that goes away mid-video is normal; anything else is logged (headers are already out).
+      // why: A client that goes away mid-video is normal; anything else is logged (headers are already out).
       if ((error as NodeJS.ErrnoException).code !== 'ERR_STREAM_PREMATURE_CLOSE') console.error(`streaming ${key} failed:`, error);
       response.destroy();
     });
   };
-  // Single byte ranges for media (<video> needs them in Safari); multi-range requests get the whole object.
+  // why: single byte ranges for media (<video> needs them in Safari); multi-range requests get the whole object.
   if (options.ranges) {
     headers['accept-ranges'] = 'bytes';
     const range = /^bytes=(\d*)-(\d*)$/.exec(String(request.headers.range ?? '').trim());

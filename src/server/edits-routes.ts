@@ -94,10 +94,10 @@ export async function handleEditsApi(
   }
   const ifVersion = versionFromEtag(ifMatch);
   const text = await readBody(request);
-  // Same privacy pass as uploads: a URL pasted into a label loses credentials and sensitive parameters.
+  // why: same privacy pass as uploads: a URL pasted into a label loses credentials and sensitive parameters.
   const input: unknown = sanitizeUrlFields(parseJsonBody(text));
   try {
-    // An If-Match that is not one of ours can never match: the conflict path answers with the current list.
+    // why: an If-Match that is not one of ours can never match: the conflict path answers with the current list.
     const saved = await store.saveEdits(id, input, { by: options.user, ifVersion: ifVersion === undefined ? '\0' : ifVersion });
     if (saved.changed) console.log(`edits ${id}: saved revision ${saved.edits.revision} by ${options.user}`);
     sendEdits(response, 200, saved.edits, saved.version);
