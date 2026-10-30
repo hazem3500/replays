@@ -196,7 +196,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
   const malleable = parseMalleablePolicy(file.malleable);
   const distribution = parseDistribution(file.distribution);
-  // why: `malleable.enabled` and `beta.malleable` are one switch; the environment variable still wins over both.
+  // `malleable.enabled` and `beta.malleable` are one switch; the environment variable still wins over both.
   const enabled = file.malleable?.enabled;
   const betaFile = file.beta;
   if (enabled !== undefined && betaFile?.malleable !== undefined && betaFile.malleable !== enabled)

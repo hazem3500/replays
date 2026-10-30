@@ -6,7 +6,7 @@ function vary(response: ServerResponse, fields: string[]) {
   const original = response.writeHead.bind(response);
   response.writeHead = ((status: number, reasonOrHeaders?: string | Record<string, unknown> | unknown[], extra?: unknown) => {
     const supplied = typeof reasonOrHeaders === 'string' ? extra : reasonOrHeaders;
-    // why: writeHead accepts either a header object or raw name/value pairs. Copy it before merging.
+    // writeHead accepts either a header object or raw name/value pairs. Copy it before merging.
     const headers: Record<string, unknown> = {};
     if (Array.isArray(supplied)) {
       for (let index = 0; index < supplied.length; index += 2) headers[String(supplied[index])] = supplied[index + 1];
@@ -73,7 +73,7 @@ export function applyRequestPolicy(
     if (policy.credentials) response.setHeader('access-control-allow-credentials', 'true');
     return { handled: false, csrfAllowed: true };
   }
-  // why: reads keep their existing behavior but receive no CORS permission. Non-browser clients without Origin use normal CSRF.
+  // Reads keep their existing behavior but receive no CORS permission. Non-browser clients without Origin use normal CSRF.
   if (origin !== undefined && request.headers['sec-fetch-site'] !== 'same-origin' && !['GET', 'HEAD'].includes(request.method ?? 'GET'))
     return deny();
   return { handled: false, csrfAllowed: false };

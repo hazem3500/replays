@@ -86,7 +86,7 @@ async function forward(route: Route, url: URL, address: Address, headers: Record
       agent: false,
       autoSelectFamily: false,
       lookup: (_host, _options, done) => done(null, address.address, address.family),
-      // why: ignoreHTTPSErrors is needed by self-hosted render origins only.
+      // security: ignoreHTTPSErrors is needed by self-hosted render origins only.
       rejectUnauthorized: !own,
       timeout: 30_000,
     };

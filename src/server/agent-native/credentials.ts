@@ -43,7 +43,7 @@ export class AgentCredentials {
       Number(expiresInSeconds) > MAX_CREDENTIAL_LIFETIME_SECONDS
     )
       fail(400, 'Credential expiry must be between 60 seconds and 30 days');
-    // why: A transaction-scoped owner lock bounds outstanding credentials even under concurrent creation.
+    // A transaction-scoped owner lock bounds outstanding credentials even under concurrent creation.
     if (!this.records.db.transaction) throw new Error('Credential creation requires PostgreSQL transactions');
     const secret = `rpl_${randomBytes(32).toString('base64url')}`;
     const credential: AgentCredential = {

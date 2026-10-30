@@ -7,9 +7,6 @@
 
 /* One page gutter for every left/right edge (identity, search, tabs, headings, thumbnails). */
 .index-shell { --gutter: 32px; }
-/* invariant: viewport-fit=cover lets phone browsers draw the page edge to edge, so the system's gesture handle sits over
-   the feed. Rows scroll under an opaque strip the height of the bottom inset instead (zero where there is none). */
-.index-shell::after { content: ""; position: fixed; z-index: 5; right: 0; bottom: 0; left: 0; height: env(safe-area-inset-bottom, 0px); background: var(--surface); pointer-events: none; }
 /* The feed ends with breathing room, not a footer line. */
 .index-body { padding-bottom: 32px; }
 /* Plugin sections (registerIndexSection): blocks above the list, inside the feed's gutters. */

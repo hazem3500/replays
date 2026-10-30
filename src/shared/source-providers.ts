@@ -121,7 +121,7 @@ export const urlProvider: SourceProvider = {
 export function templateProvider(config: TemplateProviderConfig): SourceProvider {
   if (!/^[a-z0-9][a-z0-9_-]*$/.test(config.id)) throw new Error(`source provider id ${JSON.stringify(config.id)} is invalid`);
   if (!config.template.includes('{ref}')) throw new Error(`source provider ${config.id}: template needs {ref}`);
-  // why: fail at start, not on the first upload.
+  // Fail at start, not on the first upload.
   assertSafeUrl(config.template.replaceAll('{ref}', 'x'), `source provider ${config.id} template`);
   const pattern = config.pattern ? new RegExp(config.pattern) : /^[^\s]{1,200}$/;
   // why: `{ "id": "jira", … }` looks like Jira without saying so.
@@ -196,7 +196,7 @@ export class SourceProviders {
     if (!provider) throw new Error(`${name}.provider must be one of ${this.ids.join(', ')}`);
     let url = input.url;
     let label = input.label;
-    // why: an already resolved source (an explicit url) keeps the attrs it carries; capped either way.
+    // An already resolved source (an explicit url) keeps the attrs it carries; capped either way.
     let attrs = sourceAttrs(input.attrs);
     if (url === undefined) {
       if (!input.ref) throw new Error(`${name} needs a ref or a url`);

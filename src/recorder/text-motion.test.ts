@@ -44,7 +44,7 @@ describe('native recorder text motion', () => {
     expect(node.textContent).toBe('0:10');
     expect(node.querySelectorAll('[aria-hidden=true]')[0]).toBe(zero);
     expect(node.querySelectorAll('[aria-hidden=true]')[1]).toBe(colon);
-    expect(animate).toHaveBeenCalledTimes(2); // why: changed digits stay in their timer columns.
+    expect(animate).toHaveBeenCalledTimes(2); // Changed digits stay in their timer columns.
     expect(node.querySelectorAll('[aria-hidden=true]')).toHaveLength(4);
     expect(node.getAttribute('aria-label')).toBe('0:10');
     expect([...node.querySelectorAll('[data-recorder-word] > span')].every((glyph) => glyph.getAttribute('aria-hidden') === 'true')).toBe(

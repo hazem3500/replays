@@ -93,7 +93,7 @@ export function describeAuthAdapter(name: string, contract: AuthAdapterContract,
       const base = await requestOf(contract.accepts[0]!.request);
       for (const value of junk) {
         const headers: Record<string, string> = {};
-        // why: the accepted request's headers with garbage values, once alone and once repeated (Node joins repeats with ", ").
+        // The accepted request's headers with garbage values, once alone and once repeated (Node joins repeats with ", ").
         for (const header of [...Object.keys(base.headers), 'authorization', 'cookie']) headers[header] = value;
         await adapter.authenticate(fakeRequest({ headers }));
         for (const header of Object.keys(headers)) headers[header] = `${value}, ${value}`;

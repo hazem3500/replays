@@ -4,7 +4,7 @@ export type DiffLine = { kind: 'same' | 'add' | 'del'; text: string };
 export function diffLines(before: string, after: string): DiffLine[] {
   const a = before.split('\n');
   const b = after.split('\n');
-  // why: trim the shared head and tail first: edits are usually small, and the table below is O(n·m).
+  // Trim the shared head and tail first: edits are usually small, and the table below is O(n·m).
   let head = 0;
   while (head < a.length && head < b.length && a[head] === b[head]) head++;
   let tail = 0;

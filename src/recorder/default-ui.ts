@@ -1,22 +1,140 @@
-import type { CompletionAction, CompletionContext, DefaultUiOptions, ReceiptValue, RecorderTheme } from './default-ui-types.ts';
-import { element, link, safeHref } from './default-ui-dom.ts';
-import { DEFAULT_UI_STYLES } from './default-ui-styles.ts';
-import { createRecorderFormat } from './format.ts';
-import { focusReturn, trapFocus } from './kit/index.ts';
-import { resolveRecorderMessages } from './messages.ts';
-import { cleanupText, updateText } from './text-motion.ts';
+import { updateText, cleanupText } from './text-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
-import type { IssueUploadErrorDetails } from './upload.ts';
+import type { IssueReportReceipt, IssueUploadErrorDetails } from './upload.ts';
 
+import { resolveRecorderMessages, type RecorderMessageOverrides } from './messages.ts';
+import { createRecorderFormat, type RecorderFormat } from './format.ts';
+import { focusReturn, trapFocus } from './kit/index.ts';
 export * from './messages.ts';
 export { createRecorderFormat, formatDuration, type RecorderFormat } from './format.ts';
-export type { CompletionAction, CompletionContext, CompletionOptions, DefaultUiOptions, RecorderTheme } from './default-ui-types.ts';
+
+/** CSS colors/fonts/radii. Omitted values inherit Replays host tokens. */
+export type RecorderTheme = Partial<
+  Record<
+    | 'background'
+    | 'foreground'
+    | 'secondary'
+    | 'border'
+    | 'borderStrong'
+    | 'hover'
+    | 'pressed'
+    | 'primary'
+    | 'primaryForeground'
+    | 'danger'
+    | 'font'
+    | 'radius',
+    string
+  >
+>;
+export type CompletionContext = {
+  result: IssueReportReceipt;
+  copy(value?: string): Promise<void>;
+  retry(): void;
+  dismiss(): void;
+};
+type ActionBase = { id: string; label: string; primary?: boolean };
+type ReceiptValue = string | ((result: IssueReportReceipt) => string);
+export type CompletionAction = ActionBase &
+  (
+    | { kind: 'copy'; value?: ReceiptValue }
+    | { kind: 'link'; href: ReceiptValue }
+    | { kind: 'custom'; onAction(context: CompletionContext): void | Promise<void> }
+  );
+export type CompletionOptions = {
+  message?: ReceiptValue;
+  /** Explicit [] produces a message-only completion. */
+  actions?: readonly CompletionAction[];
+  /** Own the completion body; return a cleanup for subscriptions/listeners. */
+  render?: (container: HTMLElement, context: CompletionContext) => void | (() => void);
+};
+export type DefaultUiOptions = {
+  /** Replace any of `defaultRecorderMessages`; see `RecorderMessages`. */
+  messages?: RecorderMessageOverrides;
+  /** BCP 47 locale for the default `format` hooks. Default `en`. */
+  locale?: string;
+  /** Replace how elapsed time, durations and sizes are written. */
+  format?: Partial<RecorderFormat>;
+  theme?: 'dark' | 'light' | RecorderTheme;
+  /** Must reflect capture policy when the host supplies its own UI. */
+  privacyMode?: 'masked' | 'visible';
+  completion?: CompletionOptions;
+  /** Where the UI is mounted. Default `document.body`. */
+  container?: () => HTMLElement;
+  /** `z-index` of the overlay. Default `2147483000`. */
+  zIndex?: number;
+};
+
+const STYLES = `
+:host { all: initial; --r-bg: var(--recorder-background, var(--surface-raised, var(--background, #1a1e26))); --r-fg: var(--recorder-foreground, var(--text, var(--foreground, #eef0f5))); --r-secondary: var(--recorder-secondary, var(--text-secondary, #b2b8c5)); --r-border: var(--recorder-border, var(--line, var(--border, #262b35))); --r-strong: var(--recorder-borderStrong, var(--line-strong, #3a4150)); --r-hover: var(--recorder-hover, var(--surface-hover, #232832)); --r-pressed: var(--recorder-pressed, var(--surface-pressed, #2c323d)); --r-primary: var(--recorder-primary, var(--accent, var(--primary, #8b9dff))); --r-primary-fg: var(--recorder-primaryForeground, #10131b); }
+* { box-sizing: border-box; font-family: var(--recorder-font, var(--sans, Inter, ui-sans-serif, system-ui, sans-serif)); }
+.backdrop { position: fixed; inset: 0; background: rgb(0 0 0 / .4); display: flex; align-items: center; justify-content: center; padding: 16px; }
+.dialog, .pill { background: var(--r-bg); color: var(--r-fg); border: 1px solid var(--r-border); box-shadow: 0 4px 16px rgb(0 0 0 / .12); font-size: 13px; font-weight: 500; line-height: 20px; }
+.dialog { width: min(420px, 100%); border-radius: var(--recorder-radius, var(--radius, 6px)); padding: 24px; }
+h2 { margin: 0 0 8px; font-size: 16px; font-weight: 600; line-height: 24px; }
+p { margin: 0 0 8px; color: var(--r-secondary); }
+label { display: block; margin: 16px 0 4px; color: var(--r-secondary); }
+textarea { width: 100%; min-height: 80px; resize: vertical; font: inherit; padding: 8px; background: var(--r-bg); color: var(--r-fg); border: 1px solid var(--r-strong); border-radius: var(--recorder-radius, var(--radius, 6px)); }
+.actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+button, a { font: inherit; }
+button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; min-height: 32px; font-weight: 600; white-space: nowrap; padding: 5px 12px; border-radius: var(--recorder-radius, var(--radius, 6px)); border: 1px solid var(--r-strong); background: var(--r-bg); color: var(--r-fg); cursor: pointer; }
+button:hover { background: var(--r-hover); }
+button:active { background: var(--r-pressed); }
+button.primary { background: var(--r-primary); border-color: transparent; color: var(--r-primary-fg); }
+button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--r-primary); outline-offset: 2px; }
+.pill { position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; inline-size: max-content; max-inline-size: calc(100vw - 32px); min-block-size: 38px; padding: 4px 6px 4px 12px; border-radius: 20px; box-shadow: 0 2px 8px rgb(0 0 0 / .08); }
+.pill[hidden] { display: none; }
+.pill[data-custom=true] { inline-size: min(440px, calc(100vw - 32px)); border-radius: var(--recorder-radius, var(--radius, 6px)); }
+.surface-content { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; flex-wrap: wrap; }
+.surface-content > .message { flex: 0 0 auto; max-inline-size: 100%; overflow-wrap: break-word; }
+.surface-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-inline-start: auto; }
+.recording-label { white-space: nowrap; }
+.dot { flex: 0 0 6px; height: 6px; border-radius: 50%; background: var(--recorder-danger, #e06c75); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.time { display: inline-block; flex: 0 0 5ch; width: 5ch; text-align: right; font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.pill button { min-height: 28px; padding: 2px 5px; border: 0; border-radius: 12px; background: transparent; color: var(--r-secondary); }
+.pill button:hover { background: var(--r-hover); color: var(--r-fg); }
+.pill .icon-button { width: 28px; padding: 0; }
+.close-icon::before { content: "\\00d7"; }
+.pill button.primary { color: var(--r-primary); }
+.stop-icon { width: 8px; height: 8px; flex-shrink: 0; border-radius: 2px; background: currentColor; }
+.pill a { color: var(--r-primary); text-decoration: none; white-space: nowrap; }
+.pill a:hover { text-decoration: underline; }
+@media (pointer: coarse) { button, .pill button { min-height: 44px; } .pill .icon-button { width: 44px; } }
+@media (prefers-reduced-motion: no-preference) { .pill { transition: inline-size 180ms ease, border-radius 180ms ease, background-color 180ms ease; } .surface-content { animation: reveal 140ms ease; } .dot { animation: pulse 1.6s ease-in-out infinite; } }
+@keyframes reveal { from { opacity: .4; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes pulse { 50% { opacity: .35; } }
+`;
 
 /**
  * The built-in, framework-free UI: a consent dialog, a recording pill with a
  * Stop button, a review dialog and a result toast. It lives in a shadow root
  * marked `data-recorder-ui`, which the recorder never captures.
  */
+const element = <K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  props: Record<string, unknown> = {},
+  children: (Node | string)[] = [],
+): HTMLElementTagNameMap[K] => {
+  const node: HTMLElementTagNameMap[K] = document.createElement(tag);
+  Object.assign(node, props);
+  node.append(...children);
+  return node;
+};
+
+const safeHref = (value: string): string | undefined => {
+  try {
+    const url = new URL(value, document.baseURI);
+    return ['https:', 'http:'].includes(url.protocol) ? url.href : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const link = (label: string, href: string) => {
+  const safe = safeHref(href);
+  return safe ? element('a', { href: safe, target: '_blank', rel: 'noopener noreferrer' }, [label]) : undefined;
+};
+
 export function createDefaultUi(
   options: DefaultUiOptions = {},
 ): RecorderUi & Required<Pick<RecorderUi, 'showUploading' | 'showResult' | 'dismiss'>> {
@@ -61,7 +179,7 @@ export function createDefaultUi(
     host.style.zIndex = zIndex;
     const root = host.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
-    style.textContent = DEFAULT_UI_STYLES;
+    style.textContent = STYLES;
     root.append(style);
     (options.container?.() ?? document.body).append(host);
     return { host, root, remove: () => host.remove() };
@@ -179,7 +297,7 @@ export function createDefaultUi(
         previous.restore();
         resolve(value);
       };
-      // why: discard() or destroy() may close the dialog while it is open.
+      // discard() or destroy() while the dialog is open.
       signal?.addEventListener('abort', onAbort, { once: true });
       const { title, body, focus } = build(finish);
       const heading = element('h2', { id: 'recorder-title' }, [title]);
@@ -224,7 +342,7 @@ export function createDefaultUi(
               element('p', {}, [messages.consentPrivacy(privacy ? { mode, privacy } : { mode })]),
               element('div', { className: 'actions' }, [decline, accept]),
             ],
-            // why: declining is the safe default for an accidental Enter.
+            // Declining is the safe default for an accidental Enter.
             focus: decline,
           };
         },

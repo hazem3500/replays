@@ -126,7 +126,7 @@ function plan(objects: ObjectInfo[]): Unit[] {
   const suites = new Map<string, Unit>();
   const other = new Map<string, Unit>();
   for (const object of objects) {
-    // why: in-flight temporary files of the fs driver; a crash can leave them behind.
+    // In-flight temporary files of the fs driver; a crash can leave them behind.
     if (object.key.endsWith('.tmp')) continue;
     const [top, name] = object.key.split('/') as [string, string | undefined];
     const suite = SUITE.exec(object.key);
@@ -137,7 +137,7 @@ function plan(objects: ObjectInfo[]): Unit[] {
       suites.set(unit.id, unit);
     } else if (ID.test(top) && name !== undefined) {
       const unit = replays.get(top) ?? { id: top, kind: 'replay' as const, others: [] };
-      // why: the list summary is rebuilt from the translated bundle, never copied.
+      // The list summary is rebuilt from the translated bundle, never copied.
       if (object.key === `${top}/replay.json`) unit.main = object;
       else if (object.key !== `${top}/meta.json`) unit.others.push(object);
       replays.set(top, unit);
@@ -147,7 +147,7 @@ function plan(objects: ObjectInfo[]): Unit[] {
       other.set(top, unit);
     }
   }
-  // why: A prefix without its main document (a committed sample's comments or edits) is copied as plain objects.
+  // A prefix without its main document (a committed sample's comments or edits) is copied as plain objects.
   const grouped = [...replays.values(), ...suites.values()].map((unit) => (unit.main ? unit : { ...unit, kind: 'objects' as const }));
   return [...grouped, ...other.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -182,7 +182,7 @@ async function convert(unit: Unit, body: Buffer, options: MigrateOptions): Promi
   if (next.meta.id !== unit.id) throw new Error(`meta.id changed from ${unit.id} to ${String(next.meta.id)}`);
   const problem = next.context?.fields !== undefined ? options.contextSchema?.validate(next.context.fields) : undefined;
   if (problem) throw new Error(problem);
-  // why: the same privacy pass an upload gets: stored data never depends on the translation having sanitized it.
+  // The same privacy pass an upload gets: stored data never depends on the translation having sanitized it.
   const bundle: ReplayBundle = sanitizeReplayBundle(next, options.redaction);
   assertReplayBundle(bundle);
   const profileError = profileProblem(replayProfileId(bundle.meta), profiles);
@@ -197,7 +197,7 @@ async function put(target: ObjectStorage, key: string, body: Buffer | string, dr
     await target.write(key, body, { createOnly: true, contentType: contentType(key) });
     return true;
   } catch (error) {
-    // why: another run (or the target's server) got there first: the target's object stays.
+    // Another run (or the target's server) got there first: the target's object stays.
     if (error instanceof ObjectExistsError) return false;
     throw error;
   }
@@ -205,7 +205,7 @@ async function put(target: ObjectStorage, key: string, body: Buffer | string, dr
 
 async function migrateUnit(unit: Unit, source: ObjectStorage, target: ObjectStorage, options: MigrateOptions) {
   const dryRun = Boolean(options.dryRun);
-  // why: everything is read and checked before the first write, so a failure leaves nothing of this prefix behind.
+  // Everything is read and checked before the first write, so a failure leaves nothing of this prefix behind.
   const main = unit.main ? await convert(unit, await readOrThrow(source, unit.main.key), options) : undefined;
   let mainExists = false;
   if (main && unit.main) {
@@ -216,16 +216,16 @@ async function migrateUnit(unit: Unit, source: ObjectStorage, target: ObjectStor
       try {
         same = isDeepStrictEqual(JSON.parse(existing.toString('utf8')), JSON.parse(main.text));
       } catch {
-        // why: unparsable in the target: not the same.
+        // Unparsable in the target: not the same.
       }
       if (!same) throw new Error(`the target already holds a different ${unit.main.key}`);
     }
   }
   const written: string[] = [];
-  // why: A changed recording cannot reuse media generated from its old DOM. Source video is never sanitizable.
+  // A changed recording cannot reuse media generated from its old DOM. Source video is never sanitizable.
   const media =
     /^(?:poster(?:\.v[^/]*)?\.(?:jpg|png)|open(?:\.v[^/]*)?\.(?:jpg|png)|preview(?:\.v[^/]*)?\.mp4(?:\.json)?|rendered-.*\.mp4|render-.*\.json)$/;
-  // why: sidecars first, the bundle last: a replay shows up in the target's list only once it is complete.
+  // Sidecars first, the bundle last: a replay shows up in the target's list only once it is complete.
   for (const object of unit.others) {
     const name = object.key.slice(unit.id.length + 1);
     if (
@@ -248,7 +248,7 @@ async function migrateUnit(unit: Unit, source: ObjectStorage, target: ObjectStor
     if (await put(target, unit.main.key, main.text, dryRun)) written.push(unit.main.key);
     if (unit.kind === 'replay' && written.includes(unit.main.key) && !dryRun) {
       const summary = summarizeReplay(JSON.parse(main.text) as ReplayBundle);
-      // why: best effort: the store rebuilds a missing or stale meta.json on its own.
+      // Best effort: the store rebuilds a missing or stale meta.json on its own.
       await target.write(`${unit.id}/meta.json`, json(summary), { contentType: contentType('.json') }).catch(() => undefined);
     }
   }
@@ -302,6 +302,8 @@ export async function migrateStore(options: MigrateOptions): Promise<MigrateRepo
   report.failed.sort(byId);
   return report;
 }
+
+// Comparing two stores
 
 /** A list summary as GET /api/replays shows it, without the retention fields (they count from each store's write time). */
 export type ComparableSummary = Omit<ReplaySummary, 'expiresAt' | 'summaryVersion' | 'purpose' | 'purposeInferred'>;

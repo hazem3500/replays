@@ -24,7 +24,7 @@ export interface PlaywrightDriverOptions {
 
 /** Wraps Playwright's CDPSession in the minimal CDP surface the recorder uses. */
 function cdpLike(session: CDPSession): CdpLike {
-  // why: Playwright types CDP methods/events as a closed union; the recorder only uses documented protocol names.
+  // Playwright types CDP methods/events as a closed union; the recorder only uses documented protocol names.
   const loose = session as unknown as {
     send(method: string, params?: object): Promise<unknown>;
     on(event: string, handler: (params: Record<string, unknown>) => void): void;
@@ -121,7 +121,7 @@ export function playwrightDriver(options: PlaywrightDriverOptions = {}): Capture
       if (finished || !context || !launched) return;
       finished = true;
       const video = page?.video();
-      // why: closing the context writes the HAR and finalises the video.
+      // Closing the context writes the HAR and finalises the video.
       await context.close();
       if (launched.videoPath && video) {
         const webm = await video.path();

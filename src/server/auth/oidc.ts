@@ -97,7 +97,7 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       throw error;
     }));
 
-  // why: each cookie kind is signed under its own purpose, so a login cookie can never be replayed as a session.
+  // Each cookie kind is signed under its own purpose, so a login cookie can never be replayed as a session.
   const mac = (purpose: string, body: string) => createHmac('sha256', options.sessionSecret).update(`${purpose}.${body}`).digest();
   const sign = (purpose: string, payload: object) => {
     const body = b64(JSON.stringify(payload));
@@ -132,7 +132,7 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
     const id = email ?? (typeof claims.sub === 'string' ? claims.sub : undefined);
     if (!id) return undefined;
     const name = typeof claims.name === 'string' ? claims.name : undefined;
-    // why: kept short: the identity rides in the session cookie.
+    // Kept short: the identity rides in the session cookie.
     const avatarUrl = typeof claims.picture === 'string' && claims.picture.length <= 512 ? cleanAvatarUrl(claims.picture) : undefined;
     return { id, ...(email ? { email } : {}), ...(name ? { name } : {}), ...(avatarUrl ? { avatarUrl } : {}) };
   };
@@ -179,7 +179,7 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
       if (claimedScope && !claimedScope.includes('replays:upload') && options.deviceFlow) return undefined;
       const identity = identityOf(claims);
       if (!identity) return undefined;
-      // why: any token carrying the upload scope is restricted to the upload routes, even if the issuer over-grants scopes.
+      // Any token carrying the upload scope is restricted to the upload routes, even if the issuer over-grants scopes.
       return claimedScope?.includes('replays:upload')
         ? { ...identity, authScopes: ['replays:upload'], ...(typeof claims.exp === 'number' ? { authExpiresAt: claims.exp } : {}) }
         : identity;
@@ -255,6 +255,7 @@ export function oidcAuth(options: OidcOptions): AuthAdapter {
         return true;
       }
 
+      // /auth/callback
       const login = unsign<{ state: string; nonce: string; verifier: string; next: string }>('login', cookies(request).get(LOGIN_COOKIE));
       const code = url.searchParams.get('code');
       if (!login || !code || url.searchParams.get('state') !== login.state) {

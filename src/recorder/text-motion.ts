@@ -14,7 +14,7 @@ function cancelAnimations(state: TextState) {
 /** Match shared glyphs without mounting two copies of the label. */
 function shared(previous: Glyph[], next: string[]): Map<number, Glyph> {
   const matched = new Map<number, Glyph>();
-  // why: recorder labels are short. Bound the diff work for arbitrary host messages.
+  // Recorder labels are short. Bound the diff work for arbitrary host messages.
   if (previous.length > 160 || next.length > 160) {
     let prefix = 0;
     while (prefix < previous.length && previous[prefix]?.text === next[prefix]) {
@@ -75,7 +75,7 @@ export function updateText(container: HTMLElement, text: string): void {
   }
   const chars = characters(text);
   const retained = previous.filter(({ node }) => container.contains(node));
-  // why: timer columns stay put: a zero changing columns should not jump sideways.
+  // Timer columns stay put: a zero changing columns should not jump sideways.
   const matching =
     /^\d+:\d{2}$/.test(text) && /^\d+:\d{2}$/.test(previousText)
       ? new Map(retained.flatMap((glyph, index) => (glyph.text === chars[index] ? [[index, glyph] as const] : [])))
@@ -92,8 +92,8 @@ export function updateText(container: HTMLElement, text: string): void {
     entering.push(node);
     return { text: char, node };
   });
-  /* why: moving existing nodes retains identity without leaving outgoing glyphs in
-     the layout. Fixed-width/tabular timer styles remain on the parent. */
+  // Moving existing nodes retains identity without leaving outgoing glyphs in
+  // the layout. Fixed-width/tabular timer styles remain on the parent.
   const words: HTMLSpanElement[] = [];
   let word: HTMLSpanElement | undefined;
   for (const glyph of glyphs) {
@@ -122,7 +122,7 @@ export function updateText(container: HTMLElement, text: string): void {
       ],
       { duration: 160, easing: 'cubic-bezier(.2,.7,.2,1)' },
     );
-    // why: cancellation rejects finished; consume it before rapid updates or teardown.
+    // Cancellation rejects finished; consume it before rapid updates or teardown.
     void animation.finished?.catch(() => {});
     state.animations.add(animation);
     const animations = state.animations;

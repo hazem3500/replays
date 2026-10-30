@@ -113,7 +113,7 @@ export function globToRegExp(glob: string) {
   for (let index = 0; index < glob.length; index++) {
     const char = glob[index]!;
     if (char === '*' && glob[index + 1] === '*') {
-      // why: `**/` matches zero or more whole segments; a trailing `**` anything.
+      // `**/` matches zero or more whole segments; a trailing `**` anything.
       if (glob[index + 2] === '/') {
         source += '(?:[^/]+/)*';
         index += 2;

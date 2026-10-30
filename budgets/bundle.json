@@ -13,9 +13,9 @@
       "brotli": 100052
     },
     "dist/cli/recorder.iife.js": {
-      "raw": 190449,
-      "gzip": 60897,
-      "brotli": 39084
+      "raw": 190557,
+      "gzip": 60962,
+      "brotli": 39185
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
@@ -60,7 +60,7 @@
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
       "gzip": 1253,
-      "brotli": 1141
+      "brotli": 1138
     },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
@@ -144,8 +144,8 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
-      "gzip": 2627,
-      "brotli": 2397
+      "gzip": 2632,
+      "brotli": 2399
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -173,9 +173,9 @@
       "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 968797,
+      "raw": 968982,
       "gzip": 303520,
-      "brotli": 252083
+      "brotli": 251932
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -265,7 +265,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 601
+      "brotli": 609
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -299,8 +299,8 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
-      "gzip": 25780,
-      "brotli": 22377
+      "gzip": 25782,
+      "brotli": 22390
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
@@ -327,15 +327,10 @@
       "gzip": 106,
       "brotli": 101
     },
-    "dist/lib/chunks/branding-collector.ts-23d124755c82.mjs": {
-      "raw": 34150,
-      "gzip": 8710,
-      "brotli": 7602
-    },
-    "dist/lib/chunks/bundle-io.ts-00964f435833.mjs": {
-      "raw": 71586,
-      "gzip": 19749,
-      "brotli": 17037
+    "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs": {
+      "raw": 73309,
+      "gzip": 20114,
+      "brotli": 17393
     },
     "dist/lib/chunks/compression.ts-47af8e92faec.mjs": {
       "raw": 4312,
@@ -343,9 +338,9 @@
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-a920d21ea104.mjs": {
-      "raw": 314927,
-      "gzip": 84106,
-      "brotli": 68661
+      "raw": 314897,
+      "gzip": 84102,
+      "brotli": 68637
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -357,10 +352,10 @@
       "gzip": 13571,
       "brotli": 11946
     },
-    "dist/lib/chunks/har-bodies.ts-38ded7aa8c17.mjs": {
-      "raw": 31868,
-      "gzip": 9209,
-      "brotli": 8207
+    "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs": {
+      "raw": 32268,
+      "gzip": 9208,
+      "brotli": 8195
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -386,6 +381,11 @@
       "raw": 18258,
       "gzip": 4951,
       "brotli": 4342
+    },
+    "dist/lib/chunks/registry.ts-2e034be27725.mjs": {
+      "raw": 33699,
+      "gzip": 8512,
+      "brotli": 7425
     },
     "dist/lib/chunks/start.ts-530ffefc64b4.mjs": {
       "raw": 4541,
@@ -442,11 +442,6 @@
       "gzip": 1638,
       "brotli": 1407
     },
-    "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs": {
-      "raw": 58729,
-      "gzip": 16022,
-      "brotli": 14087
-    },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
       "gzip": 3358,
@@ -457,6 +452,11 @@
       "gzip": 424,
       "brotli": 334
     },
+    "dist/lib/recorder-chunks/bundle-types.ts-6c0193fa9045.mjs": {
+      "raw": 57760,
+      "gzip": 15523,
+      "brotli": 13684
+    },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1902,
@@ -464,8 +464,8 @@
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
       "raw": 4058,
-      "gzip": 1596,
-      "brotli": 1358
+      "gzip": 1584,
+      "brotli": 1337
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -498,13 +498,13 @@
       "brotli": 6748
     },
     "dist/lib/recorder.iife.js": {
-      "raw": 190449,
-      "gzip": 60897,
-      "brotli": 39084
+      "raw": 190557,
+      "gzip": 60962,
+      "brotli": 39185
     },
     "dist/lib/recorder.mjs": {
       "raw": 2967,
-      "gzip": 860,
+      "gzip": 858,
       "brotli": 747
     },
     "dist/lib/server-testing.mjs": {
@@ -733,6 +733,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/87"
     },
     {
+      "file": "dist/client/assets/CommentRowsSource-HASH.js",
+      "cap": {
+        "raw": 2453,
+        "gzip": 1282,
+        "brotli": 1169
+      },
+      "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
+      "pr": "https://github.com/hazem3500/replays/pull/78"
+    },
+    {
       "file": "dist/client/assets/ComparePicker-HASH.js",
       "cap": {
         "raw": 5232,
@@ -743,6 +753,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
+      "file": "dist/lib/chunks/registry.ts-2e034be27725.mjs",
+      "cap": {
+        "raw": 33699,
+        "gzip": 8512,
+        "brotli": 7425
+      },
+      "reason": "api.view registration and view preset validation in the plugin registry (main 31747/8084/7058, head 32717/8264/7208).",
+      "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
       "file": "dist/lib/chunks/index.ts-ecfd4b22bd62.mjs",
       "cap": {
         "raw": 43352,
@@ -751,6 +771,26 @@
       },
       "reason": "Chunk membership moved when the shared views, capture-profile and validate modules joined; replaces index.ts-3d8b996b5201 (main 39913/11514/10056).",
       "pr": "https://github.com/hazem3500/replays/pull/131"
+    },
+    {
+      "file": "dist/lib/chunks/bundle-io.ts-a89206f7df21.mjs",
+      "cap": {
+        "raw": 73309,
+        "gzip": 20114,
+        "brotli": 17393
+      },
+      "reason": "Chunk membership moved when capture settings joined the capture library; replaces bundle-io.ts-9a2bdd34cb92 (main 69161 raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
+    },
+    {
+      "file": "dist/lib/chunks/har-bodies.ts-7bbdb5a238a5.mjs",
+      "cap": {
+        "raw": 32268,
+        "gzip": 9209,
+        "brotli": 8197
+      },
+      "reason": "Network body capture and redaction shared by the capture library and the server privacy pass (src/shared/network-bodies.ts, src/capture/har-bodies.ts).",
+      "pr": "https://github.com/hazem3500/replays/pull/129"
     },
     {
       "file": "dist/client/assets/Editor-HASH.css",
@@ -1023,6 +1063,26 @@
       "pr": "https://github.com/hazem3500/replays/pull/149"
     },
     {
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
+      "cap": {
+        "raw": 4058,
+        "gzip": 1584,
+        "brotli": 1337
+      },
+      "reason": "The default consent copy says when request and response content is recorded.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/lib/recorder.mjs",
+      "cap": {
+        "raw": 2967,
+        "gzip": 858,
+        "brotli": 747
+      },
+      "reason": "The recorder entry imports the renamed core chunk and the new body-limits chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
       "file": "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs",
       "cap": {
         "raw": 10646,
@@ -1040,6 +1100,16 @@
         "brotli": 334
       },
       "reason": "The body content-type allowlist and 64 KiB default, shared by the recorder core (to validate the capture option) and the lazy body chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/166"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/bundle-types.ts-6c0193fa9045.mjs",
+      "cap": {
+        "raw": 57760,
+        "gzip": 15523,
+        "brotli": 13684
+      },
+      "reason": "The recorder core chunk gains the capture option resolver, meta.captured and the body hooks in the fetch/XHR wrappers; its new source membership renames the former bundle-types.ts-ee6bb78d70a4 chunk.",
       "pr": "https://github.com/hazem3500/replays/pull/166"
     },
     {
@@ -1330,84 +1400,14 @@
       "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 236 B."
     },
     {
-      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
-      "cap": {
-        "raw": 4058,
-        "gzip": 1596,
-        "brotli": 1358
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/189",
-      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: gzip 1596, brotli 1358. Replaces #166's allowance for this file."
-    },
-    {
-      "file": "dist/lib/recorder.mjs",
-      "cap": {
-        "raw": 2967,
-        "gzip": 860,
-        "brotli": 747
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/189",
-      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: gzip 860. Replaces #166's allowance for this file."
-    },
-    {
-      "file": "dist/lib/chunks/har-bodies.ts-38ded7aa8c17.mjs",
-      "cap": {
-        "raw": 31868,
-        "gzip": 9209,
-        "brotli": 8207
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/190",
-      "reason": "Capture split into mask-inputs, mask-selectors, capture-steps and step-labels modules; the shared capture chunks take new source identities; CI Quality / size against fresh main: raw 31868, gzip 9209, brotli 8207."
-    },
-    {
-      "file": "dist/client/assets/CommentRowsSource-HASH.js",
-      "cap": {
-        "raw": 2421,
-        "gzip": 1253,
-        "brotli": 1141
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/190",
-      "reason": "Hash drift: its imported chunk names change because capture's human-bundle now imports mask-inputs (raw size unchanged); CI Quality / size against fresh main: brotli 1141. Replaces #78's allowance for this file."
-    },
-    {
-      "file": "dist/lib/chunks/bundle-io.ts-00964f435833.mjs",
-      "cap": {
-        "raw": 71586,
-        "gzip": 19749,
-        "brotli": 17037
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/192",
-      "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: gzip 19749, brotli 17037. Replaces #190's allowance for this file."
-    },
-    {
-      "file": "dist/lib/chunks/branding-collector.ts-23d124755c82.mjs",
-      "cap": {
-        "raw": 34150,
-        "gzip": 8710,
-        "brotli": 7602
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/192",
-      "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: raw 34150, gzip 8710, brotli 7602."
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
       "cap": {
-        "raw": 314927,
-        "gzip": 84106,
-        "brotli": 68661
+        "raw": 314897,
+        "gzip": 84102,
+        "brotli": 68637
       },
-      "pr": "https://github.com/hazem3500/replays/pull/194",
-      "reason": "Comment pass: the unminified shared server chunk keeps comments, and tagging reasons with why: adds a few bytes; CI Quality / size against fresh main: raw 314927, gzip 84106. Replaces #190's allowance for this file."
-    },
-    {
-      "file": "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs",
-      "cap": {
-        "raw": 58729,
-        "gzip": 16022,
-        "brotli": 14087
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/195",
-      "reason": "Comment pass: the unminified recorder chunk keeps comments, and tagging reasons adds a few bytes; CI Quality / size against fresh main: raw 58729. Replaces #189's allowance for this file."
+      "pr": "https://github.com/hazem3500/replays/pull/186",
+      "reason": "Splitting list media and render state into src/server/media/* adds modules to the shared server chunk, so its source identity changes; CI Quality / size against fresh main: raw 314897, gzip 84102, brotli 68637."
     }
   ]
 }

@@ -1,4 +1,4 @@
-// invariant: browser-only in-page recording; no server, Node or React imports.
+/** Browser-only in-page recording. No server, Node or React imports. */
 export { buildReplayBundle } from './bundle.ts';
 export type * from './bundle-types.ts';
 export * from './compat.ts';

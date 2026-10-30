@@ -4,7 +4,7 @@
  * must still run its own `sanitizeReplayBundle` pass and never trust this one.
  */
 
-// why: exact names plus any `*_token` / `*-secret` / `*_password` / `*-signature` suffix.
+// Exact names plus any `*_token` / `*-secret` / `*_password` / `*-signature` suffix.
 const SENSITIVE_QUERY =
   /^(access[-_]?token|api[-_]?key|api[-_]?token|auth|authorization|client[-_]?secret|code|e[-_]?mail|id[-_]?token|jwt|password|refresh[-_]?token|secret|session|signature|token)$|[-_](token|secret|password|signature)$/i;
 /** Absolute URLs inside free text (console messages, labels). */
@@ -92,7 +92,7 @@ export function filterHeaders(
   const allow = new Set(allowed.map((name) => name.toLowerCase()));
   const result: { name: string; value: string }[] = [];
   for (const [name, value] of headers) {
-    // why: never allow authentication material, even in a host-provided allow-list.
+    // Never allow authentication material, even in a host-provided allow-list.
     if (
       allow.has(name.toLowerCase()) &&
       !/^(authorization|proxy-authorization|cookie|set-cookie|x-api-key)$|(?:^|[-_])(token|secret|password|credential|session|api[-_]?key)(?:$|[-_])/i.test(

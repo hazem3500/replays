@@ -39,7 +39,7 @@ async function readBody(request: IncomingMessage): Promise<Record<string, unknow
     const parsed: unknown = JSON.parse(Buffer.concat(chunks).toString('utf8'));
     if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed as Record<string, unknown>;
   } catch {
-    // why: a body that is not JSON falls through to the same 400 as one that is not an object.
+    /* falls through */
   }
   throw new PluginStoreError(400, 'send a JSON object');
 }
@@ -91,7 +91,7 @@ export function malleablePlugin(deps: {
   const store = new UserPluginStore(deps.storage);
   const policy = deps.policy ?? defaultPolicy();
   const versions = deps.versions ?? { core: coreVersion() };
-  // why: the host narrows: a scope it turned off, or a capability it denies, is refused before any approval is spent.
+  /** The host narrows: a scope it turned off, or a capability it denies, is refused before any approval is spent. */
   const allowed = async (manifest: UserPluginManifest, scope: PluginScope, source: string) => {
     const problems = [
       ...policyProblems(policy, manifest, scope),
@@ -164,7 +164,7 @@ export function malleablePlugin(deps: {
           if (rest === 'plugins' && method === 'GET') {
             const scope = new URL(request.url ?? '/', 'http://x').searchParams.get('scope');
             if (scope !== null && !isScope(scope)) throw new PluginStoreError(400, 'scope is user or workspace');
-            // why: A scope the host turned off is not listed, so its plugins do not load (they stay stored, untouched).
+            // A scope the host turned off is not listed, so its plugins do not load (they stay stored, untouched).
             const scopes = (scope ? [scope] : (['user', 'workspace'] as PluginScope[])).filter((entry) => policy.scopes.includes(entry));
             const lists = await Promise.all(scopes.map((entry) => store.list(entry, identity.id)));
             const plugins = [];
@@ -245,7 +245,7 @@ export function malleablePlugin(deps: {
               const baseVersion = typeof body.baseVersion === 'number' && Number.isInteger(body.baseVersion) ? body.baseVersion : -1;
               const message = typeof body.message === 'string' ? (sanitizeUrlFields(body.message) as string) : '';
               const version = await store.save(scope, identity.id, id, {
-                // why: what it was kept under, from the server's own versions (a client's `targets` is not trusted).
+                // What it was kept under, from the server's own versions (a client's `targets` is not trusted).
                 manifest: { ...manifest, targets: targetsFor(versions) },
                 source,
                 message,

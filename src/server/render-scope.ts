@@ -38,6 +38,6 @@ export async function withRenderScope<T>(options: RenderScopeOptions, run: (dire
   );
   const result = await Effect.runPromiseExit(program);
   if (Exit.isSuccess(result)) return result.value;
-  // why: public RenderRunner callers keep their existing Error identity/message, rather than a FiberFailure wrapper.
+  // Public RenderRunner callers keep their existing Error identity/message, rather than a FiberFailure wrapper.
   throw Cause.squash(result.cause);
 }

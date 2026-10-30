@@ -1,22 +1,152 @@
-import { createHash, createHmac } from 'node:crypto';
+import { createHash, createHmac, generateKeyPairSync, randomBytes, sign, type KeyObject } from 'node:crypto';
+import { mkdtemp } from 'node:fs/promises';
+import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
-import { oidcAuth } from '../src/server/auth/oidc.ts';
+import { createApp } from '../src/server/app.ts';
+import { oidcAuth, safeNext } from '../src/server/auth/oidc.ts';
 import { authFromEnv } from '../src/server/auth/index.ts';
-import {
-  b64,
-  bearerClaims,
-  CLIENT_ID,
-  CLIENT_SECRET,
-  mint,
-  type OidcSetup,
-  otherKey,
-  PUBLIC_ORIGIN,
-  SESSION_SECRET,
-  startOidcApp,
-  upload,
-} from './oidc-idp.ts';
+import { ReplayStore } from '../src/server/store.ts';
+import { appDefaults, replay } from './fixtures.ts';
+
+const b64 = (value: Buffer | string) => Buffer.from(value).toString('base64url');
+
+const CLIENT_ID = 'replays-client';
+const CLIENT_SECRET = 'client-secret-for-tests';
+const SESSION_SECRET = 'a-session-secret-of-at-least-16-chars';
+const PUBLIC_ORIGIN = 'https://replays.example.test';
+
+let signingKey: KeyObject;
+let jwk: Record<string, unknown>;
+let otherKey: KeyObject;
+
+beforeAll(() => {
+  const pair = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  signingKey = pair.privateKey;
+  jwk = { ...pair.publicKey.export({ format: 'jwk' }), kid: 'test-key', alg: 'RS256', use: 'sig' };
+  otherKey = generateKeyPairSync('rsa', { modulusLength: 2048 }).privateKey;
+});
+
+interface MintOptions {
+  key?: KeyObject;
+  kid?: string;
+  alg?: string;
+}
+
+function mint(claims: Record<string, unknown>, options: MintOptions = {}) {
+  const header = b64(JSON.stringify({ alg: options.alg ?? 'RS256', kid: options.kid ?? 'test-key', typ: 'JWT' }));
+  const payload = b64(JSON.stringify(claims));
+  const signature = options.alg === 'none' ? '' : b64(sign('sha256', Buffer.from(`${header}.${payload}`), options.key ?? signingKey));
+  return `${header}.${payload}.${signature}`;
+}
+
+const sendJson = (response: ServerResponse, status: number, body: unknown) => {
+  response.writeHead(status, { 'content-type': 'application/json' });
+  response.end(JSON.stringify(body));
+};
+
+/** The cookies a response sets, as a `cookie` request header (what a browser would send back). */
+const jar = (response: Response) =>
+  response.headers
+    .getSetCookie()
+    .map((line) => line.split(';')[0]!)
+    .filter((pair) => !pair.endsWith('='))
+    .join('; ');
+
+const upload = (origin: string, token: string, id = 'machine-upload') =>
+  fetch(`${origin}/api/replays`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify(replay(id)),
+  });
+
+interface Pending {
+  nonce: string;
+  challenge: string;
+  redirectUri: string;
+  claims: Record<string, unknown>;
+}
+
+/** An in-process identity provider: discovery, JWKS, and a token endpoint that checks the code, PKCE and client. */
+async function startIdp(clock: () => number) {
+  const codes = new Map<string, Pending>();
+  const tokenRequests: URLSearchParams[] = [];
+  const state = {
+    issuerInDiscovery: undefined as string | undefined,
+    tokenStatus: 200,
+    nonceOverride: undefined as string | undefined,
+    audience: CLIENT_ID,
+  };
+  const server = createServer((request: IncomingMessage, response: ServerResponse) => {
+    void (async () => {
+      const url = new URL(request.url ?? '/', 'http://idp');
+      const issuer = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      if (url.pathname === '/.well-known/openid-configuration') {
+        return sendJson(response, 200, {
+          issuer: state.issuerInDiscovery ?? issuer,
+          authorization_endpoint: `${issuer}/authorize`,
+          token_endpoint: `${issuer}/token`,
+          jwks_uri: `${issuer}/jwks`,
+        });
+      }
+      if (url.pathname === '/jwks') return sendJson(response, 200, { keys: [jwk] });
+      if (url.pathname === '/token' && request.method === 'POST') {
+        const chunks: Buffer[] = [];
+        for await (const chunk of request) chunks.push(chunk as Buffer);
+        const form = new URLSearchParams(Buffer.concat(chunks).toString());
+        tokenRequests.push(form);
+        const pending = codes.get(form.get('code') ?? '');
+        codes.delete(form.get('code') ?? '');
+        const verifier = form.get('code_verifier') ?? '';
+        const valid =
+          state.tokenStatus === 200 &&
+          pending &&
+          form.get('grant_type') === 'authorization_code' &&
+          form.get('client_id') === CLIENT_ID &&
+          form.get('client_secret') === CLIENT_SECRET &&
+          form.get('redirect_uri') === pending.redirectUri &&
+          b64(createHash('sha256').update(verifier).digest()) === pending.challenge;
+        if (!valid) return sendJson(response, state.tokenStatus === 200 ? 400 : state.tokenStatus, { error: 'invalid_grant' });
+        const now = Math.floor(clock() / 1000);
+        return sendJson(response, 200, {
+          id_token: mint({
+            iss: issuer,
+            aud: state.audience,
+            iat: now,
+            exp: now + 300,
+            nonce: state.nonceOverride ?? pending.nonce,
+            ...pending.claims,
+          }),
+        });
+      }
+      sendJson(response, 404, { error: 'not found' });
+    })();
+  });
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const issuer = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  return {
+    issuer,
+    state,
+    tokenRequests,
+    /** What the identity provider does after the user signs in: remembers the request and returns a code. */
+    authorize(authorizeUrl: string, claims: Record<string, unknown>) {
+      const params = new URL(authorizeUrl).searchParams;
+      const code = b64(randomBytes(12));
+      codes.set(code, {
+        nonce: params.get('nonce') ?? '',
+        challenge: params.get('code_challenge') ?? '',
+        redirectUri: params.get('redirect_uri') ?? '',
+        claims,
+      });
+      return code;
+    },
+    close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+  };
+}
 
 const closers: Array<() => Promise<void>> = [];
 afterEach(async () => {
@@ -24,7 +154,89 @@ afterEach(async () => {
   await Promise.all(closers.splice(0).map((close) => close()));
 });
 
-const start = (setup: OidcSetup = {}) => startOidcApp(setup, closers);
+interface Setup {
+  allow?: string[];
+  audience?: string;
+  basePath?: string;
+  sessionHours?: number;
+  signIn?: { path: string };
+}
+
+async function start(setup: Setup = {}) {
+  const clock = { now: Date.parse('2026-10-14T10:00:00.000Z') };
+  const idp = await startIdp(() => clock.now);
+  closers.push(idp.close);
+  const base = setup.basePath ?? '';
+  const root = await mkdtemp(join(tmpdir(), 'replays-oidc-'));
+  const store = new ReplayStore(join(root, 'data'), join(root, 'sample'));
+  const handle = createApp({
+    ...appDefaults(),
+    auth: oidcAuth({
+      issuer: idp.issuer,
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
+      sessionSecret: SESSION_SECRET,
+      publicOrigin: PUBLIC_ORIGIN,
+      now: () => clock.now,
+      ...(setup.allow ? { allow: setup.allow } : {}),
+      ...(setup.audience ? { audience: setup.audience } : {}),
+      ...(setup.sessionHours ? { sessionHours: setup.sessionHours } : {}),
+    }),
+    store,
+    clientDir: join(root, 'client'),
+    basePath: base,
+    ...(setup.signIn ? { signIn: setup.signIn } : {}),
+    publicOrigin: PUBLIC_ORIGIN,
+  });
+  const server = createServer((request, response) => void handle(request, response));
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  closers.push(() => new Promise<void>((resolve) => server.close(() => resolve())));
+  const origin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+  const get = (path: string, headers: Record<string, string> = {}) => fetch(`${origin}${path}`, { redirect: 'manual', headers });
+
+  /** The whole browser flow: start login, sign in at the provider, come back to the callback. */
+  async function signIn(claims: Record<string, unknown> = { sub: 'user-1', email: 'ada@example.com', name: 'Ada Example' }, next?: string) {
+    const login = await get(`${base}/auth/login${next === undefined ? '' : `?next=${encodeURIComponent(next)}`}`);
+    const authorizeUrl = login.headers.get('location')!;
+    const loginCookie = jar(login);
+    const params = new URL(authorizeUrl).searchParams;
+    const code = idp.authorize(authorizeUrl, claims);
+    const callback = await get(`${base}/auth/callback?code=${code}&state=${params.get('state')}`, { cookie: loginCookie });
+    return { login, authorizeUrl, params, loginCookie, code, callback, session: jar(callback) };
+  }
+
+  return { idp, clock, origin, base, get, signIn };
+}
+
+const bearerClaims = (issuer: string, extra: Record<string, unknown> = {}, now = Date.parse('2026-10-14T10:00:00.000Z') / 1000) => ({
+  iss: issuer,
+  aud: CLIENT_ID,
+  sub: 'ci-bot',
+  iat: now,
+  exp: now + 300,
+  ...extra,
+});
+
+describe('safeNext', () => {
+  it('keeps paths inside the app and falls back to the base for anything else', () => {
+    expect(safeNext('/r/abc?t=1', '')).toBe('/r/abc?t=1');
+    expect(safeNext('/replays/s/suite', '/replays')).toBe('/replays/s/suite');
+    expect(safeNext(undefined, '')).toBe('/');
+    expect(safeNext(null, '/replays')).toBe('/replays/');
+    expect(safeNext('', '/replays')).toBe('/replays/');
+    for (const bad of [
+      'https://evil.example/',
+      '//evil.example/path',
+      '/\\evil.example',
+      '\\\\evil.example',
+      'javascript:alert(1)',
+      'r/relative',
+      '/ok\r\nSet-Cookie: x=1',
+      '/a\nb',
+    ])
+      expect(safeNext(bad, '/replays')).toBe('/replays/');
+  });
+});
 
 describe('oidcAuth setup', () => {
   it('needs a session secret of at least 16 characters', () => {

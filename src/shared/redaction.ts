@@ -248,7 +248,7 @@ export function redactJsonKeys(text: string, rules: CompiledRedaction): string {
     try {
       key = JSON.parse(`"${key}"`) as string;
     } catch {
-      // why: a key that cannot be decoded is kept raw.
+      /* keep the raw key */
     }
     const valueStart = match.index + match[0].length;
     if (valueStart >= text.length || !rules.jsonKey(key)) continue;

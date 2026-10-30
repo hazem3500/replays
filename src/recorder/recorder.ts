@@ -1,31 +1,98 @@
-import { buildReplayBundle } from './bundle.ts';
-import type { ReplayBundle } from './bundle-types.ts';
+import { buildReplayBundle, type RawStep } from './bundle.ts';
+import type { ReplayBundle, ReplayCaptured, ReplayRrwebEvent } from './bundle-types.ts';
 import { capturedRecord, resolveCapture } from './capture-options.ts';
-import { activationCheck, createWarner } from './recorder-checks.ts';
-import { BLOCK_ATTRIBUTE, UI_ATTRIBUTE } from './privacy.ts';
-import { recorderLimits } from './recorder-limits.ts';
-import { recorderPrivacy } from './recorder-privacy.ts';
-import { newSession, recordingSummary, type Session, visible, wireSession } from './recorder-session.ts';
-import type { Recorder, RecorderOptions, RecorderState, RecordingSummary, RrwebModule } from './types.ts';
+import { captureConsole, captureNetwork, type RawConsoleEntry, type RawNetworkEntry } from './capture.ts';
+import { DEFAULT_ALLOWED_HEADERS, maskText } from './redact.ts';
+import { createAttributeMasker } from './sanitize-events.ts';
+import type { Recorder, RecorderOptions, RecorderState, RecorderTrigger, RecordingSummary, RrwebModule } from './types.ts';
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
+
+import { UI_ATTRIBUTE, BLOCK_ATTRIBUTE } from './privacy.ts';
+
 import { createUploadProgress } from './upload-progress.ts';
 import { toUpload } from './http-upload.ts';
 
-export {
-  DEFAULT_MAX_BYTES,
-  DEFAULT_MAX_DURATION_MS,
-  MAX_BYTES_CEILING,
-  MAX_DURATION_CEILING_MS,
-  MIN_DURATION_MS,
-} from './recorder-limits.ts';
-export { MASK_INPUT_OPTIONS } from './recorder-privacy.ts';
+export const DEFAULT_MAX_DURATION_MS = 3 * 60_000;
+export const MAX_DURATION_CEILING_MS = 10 * 60_000;
+export const MIN_DURATION_MS = 5_000;
+export const DEFAULT_MAX_BYTES = 15 * 1024 * 1024;
+export const MAX_BYTES_CEILING = 20 * 1024 * 1024;
+const MAX_CONSOLE_ENTRIES = 500;
+const MAX_NETWORK_ENTRIES = 1_000;
+
 export { UI_ATTRIBUTE, BLOCK_ATTRIBUTE };
 
-const toError = (error: unknown): Error => (error instanceof Error ? error : new Error(String(error)));
+const MEDIA_SELECTOR = 'img, picture, video, audio, canvas, iframe, object, embed';
+
+/**
+ * Rrweb's `maskAllInputs` set plus hidden inputs (CSRF tokens). Same set as
+ * Replays' `MASK_INPUT_OPTIONS`.
+ */
+export const MASK_INPUT_OPTIONS = {
+  color: true,
+  date: true,
+  'datetime-local': true,
+  email: true,
+  hidden: true,
+  month: true,
+  number: true,
+  password: true,
+  range: true,
+  search: true,
+  tel: true,
+  text: true,
+  time: true,
+  url: true,
+  week: true,
+  textarea: true,
+  select: true,
+} as const;
+
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
+/**
+ * Throws on an invalid selector. rrweb swallows the error `matches()` throws,
+ * so an invalid privacy selector would silently block or mask nothing.
+ */
+function assertSelector(option: string, selector: string | undefined) {
+  if (!selector) return;
+  try {
+    document.createDocumentFragment().querySelector(selector);
+  } catch {
+    throw new Error(`privacy.${option} is not a valid CSS selector: ${selector}`);
+  }
+}
+
+function matchesAny(url: string, patterns: (string | RegExp)[]) {
+  return patterns.some((pattern) => (typeof pattern === 'string' ? url.startsWith(pattern) : pattern.test(url)));
+}
+
+type Session = {
+  trigger: RecorderTrigger;
+  events: ReplayRrwebEvent[];
+  console: RawConsoleEntry[];
+  network: RawNetworkEntry[];
+  steps: RawStep[];
+  bytes: number;
+  startedAt: number;
+  captured: ReplayCaptured;
+  cleanups: (() => void)[];
+};
 
 type Recording = {
   bundle: ReplayBundle;
   summary: RecordingSummary;
+};
+
+const visible = (element: Element) => {
+  if (!element.isConnected || element.closest('[hidden], [inert], [aria-hidden="true"]')) return false;
+  const style = getComputedStyle(element);
+  return (
+    style.display !== 'none' &&
+    style.visibility !== 'hidden' &&
+    style.opacity !== '0' &&
+    (typeof element.checkVisibility !== 'function' || element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }))
+  );
 };
 
 /**
@@ -37,9 +104,10 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const upload = toUpload(options.upload);
   const askForConsent = options.prompts?.consent !== false;
   const askToReview = options.prompts?.review !== false;
-  const { maxDurationMs, maxBytes } = recorderLimits(options);
+  const maxDurationMs = clamp(options.maxDurationMs ?? DEFAULT_MAX_DURATION_MS, MIN_DURATION_MS, MAX_DURATION_CEILING_MS);
+  const maxBytes = clamp(options.maxBytes ?? DEFAULT_MAX_BYTES, 1024, MAX_BYTES_CEILING);
+  const privacy = options.privacy ?? {};
   const capture = resolveCapture(options);
-  const privacy = recorderPrivacy(options.privacy ?? {}, capture);
   const loadRrweb = options.loadRrweb ?? (() => import('rrweb'));
   const title = options.title ?? (options.app ? `Issue report from ${options.app.name}` : 'Issue report from Replays');
 
@@ -55,11 +123,28 @@ export function createRecorder(options: RecorderOptions): Recorder {
   let lifecycleGeneration = 0;
   let requestGeneration = 0;
   let reviewedReport: IssueReport | undefined;
-  const warn = createWarner();
-  const checkActivation = activationCheck(options, warn);
+  const warnings = new Set<string>();
+  const warn = (message: string) => {
+    if (!warnings.has(message)) {
+      warnings.add(message);
+      console.warn(`[replays recorder] ${message}`);
+    }
+  };
+  const checkActivation = () => {
+    const userActivation = typeof navigator === 'undefined' ? undefined : navigator.userActivation;
+    const activation = options.activation ?? (userActivation ? () => userActivation.isActive : undefined);
+    if (!activation) {
+      warn('User activation API unavailable; check skipped');
+      return;
+    }
+    if (!activation()) {
+      if (options.strictInvariants) throw new Error('A user activation is required');
+      warn('A user activation is required (warn-only migration)');
+    }
+  };
   const stops = new Map<Element, () => void>();
 
-  // why: a function, so TypeScript does not narrow `state` across awaits.
+  // A function, so TypeScript does not narrow `state` across awaits.
   const currentState = (): RecorderState => state;
   const setState = (next: RecorderState) => {
     state = next;
@@ -78,7 +163,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       try {
         cleanup();
       } catch {
-        // why: a failing cleanup must not keep the others from running.
+        // A failing cleanup must not keep the others from running.
       }
     }
     session = undefined;
@@ -86,7 +171,39 @@ export function createRecorder(options: RecorderOptions): Recorder {
     stops.clear();
   };
 
-  // invariant: `discard()` and `destroy()` can close the open prompt.
+  const blockSelector = [
+    `[${UI_ATTRIBUTE}]`,
+    `[${BLOCK_ATTRIBUTE}]`,
+    ...(capture.blockMedia ? [MEDIA_SELECTOR] : []),
+    ...(privacy.blockSelector ? [privacy.blockSelector] : []),
+  ].join(', ');
+  const sanitize = privacy.sanitize !== false;
+  const maskAllText = capture.maskAllText;
+  const unmask = privacy.unmaskTextSelector;
+  const maskSelector = privacy.maskTextSelector;
+  // Same rule as rrweb's text masking; an unknown element is masked.
+  const textMasked = (element: Element | undefined) => {
+    if (maskAllText) {
+      if (!unmask || !element) return true;
+      return element.closest(unmask) === null;
+    }
+    if (!maskSelector) return false;
+    if (!element) return true;
+    return element.closest(maskSelector) !== null;
+  };
+
+  let selectorsChecked = false;
+  const checkSelectors = () => {
+    // Without a DOM (server rendering) the check runs on the first start().
+    if (selectorsChecked || typeof document === 'undefined') return;
+    assertSelector('blockSelector', privacy.blockSelector);
+    assertSelector('maskTextSelector', privacy.maskTextSelector);
+    assertSelector('unmaskTextSelector', privacy.unmaskTextSelector);
+    selectorsChecked = true;
+  };
+  checkSelectors();
+
+  /** A prompt `discard()` and `destroy()` can close. */
   const openPrompt = () => {
     promptAbort?.abort();
     const abort = new AbortController();
@@ -105,13 +222,13 @@ export function createRecorder(options: RecorderOptions): Recorder {
     },
 
     async start(startOptions) {
-      // why: checked at runtime too, since JavaScript callers can pass anything.
+      // Checked at runtime too: JavaScript callers can pass anything.
       if ((startOptions as { consent?: unknown }).consent !== true) {
         throw new Error('Recording needs the user’s explicit consent');
       }
       if (destroyed) throw new Error('The recorder was destroyed');
       checkActivation();
-      privacy.checkSelectors();
+      checkSelectors();
       if (
         state.status !== 'idle' &&
         state.status !== 'consent' &&
@@ -136,35 +253,122 @@ export function createRecorder(options: RecorderOptions): Recorder {
         setState({
           status: 'error',
           phase: 'start',
-          error: toError(error),
+          error: error instanceof Error ? error : new Error(String(error)),
         });
         throw error;
       }
       const bodies = await bodyModule;
-      // why: discard() or destroy() may have run while rrweb was loading.
+      // discard() or destroy() while rrweb was loading.
       if (generation !== lifecycleGeneration || currentState().status !== 'starting') return;
 
       const startedAt = Date.now();
-      const current = newSession(trigger, capturedRecord(capture, Boolean(bodies)), startedAt);
+      const current: Session = {
+        trigger,
+        events: [],
+        console: [],
+        network: [],
+        steps: [{ at: startedAt, kind: 'start', label: 'Recording started' }],
+        bytes: 0,
+        startedAt,
+        captured: capturedRecord(capture, Boolean(bodies)),
+        cleanups: [],
+      };
       session = current;
+      const grow = (bytes: number) => {
+        current.bytes += bytes;
+        if (current.bytes > maxBytes) {
+          queueMicrotask(() => {
+            if (session === current) recorder.stop('max-size');
+          });
+        }
+      };
+
       try {
-        wireSession(current, {
-          rrweb,
-          bodies,
-          capture,
-          privacy,
-          options,
-          limits: { maxDurationMs, maxBytes },
-          isCurrent: () => session === current,
-          stop: (reason) => recorder.stop(reason),
-          attestStop: (element) => recorder.attestStop(element),
+        if (capture.consoleLevels.length) {
+          current.cleanups.push(
+            captureConsole({
+              levels: capture.consoleLevels,
+              maxEntries: MAX_CONSOLE_ENTRIES,
+              onEntry: (entry) => current.console.push(entry),
+            }),
+          );
+        }
+        if (capture.network !== 'off') {
+          const ignore = options.ignoreUrls ?? [];
+          current.cleanups.push(
+            captureNetwork({
+              allowedHeaders: privacy.allowedHeaders ?? DEFAULT_ALLOWED_HEADERS,
+              maxEntries: MAX_NETWORK_ENTRIES,
+              ignore: (url) => matchesAny(url, ignore),
+              onEntry: (entry) => current.network.push(entry),
+              ...(bodies ? { bodies: bodies.createBodyCapture({ limits: capture.bodies, maskEmails: maskAllText, onBytes: grow }) } : {}),
+            }),
+          );
+        }
+
+        const mirror = rrweb.record.mirror;
+        // rrweb masks text nodes only; attributes get the same mask here.
+        const maskAttributes = createAttributeMasker({
+          element: (id) => {
+            const node = mirror?.getNode(id);
+            return node?.nodeType === Node.ELEMENT_NODE ? (node as Element) : undefined;
+          },
+          textMasked,
+          sanitize,
+          ...(privacy.unmaskAttributes ? { allowed: privacy.unmaskAttributes } : {}),
         });
+
+        const stopRrweb = rrweb.record({
+          emit(raw: ReplayRrwebEvent) {
+            if (session !== current) return;
+            const event = maskAttributes(raw);
+            current.events.push(event);
+            grow(JSON.stringify(event).length);
+          },
+          maskAllInputs: sanitize,
+          maskInputOptions: sanitize ? MASK_INPUT_OPTIONS : { password: true, hidden: true },
+          // Every character, spaces included (same as Replays' server pass).
+          maskInputFn: (text: string) => '*'.repeat(text.length),
+          ...(maskAllText ? { maskTextSelector: '*' } : privacy.maskTextSelector ? { maskTextSelector: privacy.maskTextSelector } : {}),
+          maskTextFn: (text: string, element: HTMLElement | null) => (unmask && element?.closest(unmask) ? text : maskText(text)),
+          blockSelector,
+          recordCanvas: false,
+          recordCrossOriginIframes: false,
+          collectFonts: false,
+          inlineImages: false,
+          sampling: { input: 'last', scroll: 150, mousemove: 50 },
+        });
+        if (stopRrweb) current.cleanups.push(stopRrweb);
+
+        const timer = setTimeout(() => {
+          if (session === current) recorder.stop('max-duration');
+        }, maxDurationMs);
+        current.cleanups.push(() => clearTimeout(timer));
+
+        // Leaving the page ends the recording; it is never resumed or stored.
+        const onPageHide = () => {
+          if (session === current) recorder.stop('page-hidden');
+        };
+        addEventListener('pagehide', onPageHide);
+        current.cleanups.push(() => removeEventListener('pagehide', onPageHide));
+
+        if (ui)
+          current.cleanups.push(
+            ui.showIndicator({
+              startedAt,
+              maxDurationMs,
+              attestStop: (element) => recorder.attestStop(element),
+              stop: () => {
+                if (session === current) recorder.stop('user');
+              },
+            }),
+          );
       } catch (error) {
         teardownSession();
         setState({
           status: 'error',
           phase: 'start',
-          error: toError(error),
+          error: error instanceof Error ? error : new Error(String(error)),
         });
         throw error;
       }
@@ -203,7 +407,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       teardownSession();
 
       if (reason === 'page-hidden' || reason === 'no-indicator') {
-        // invariant: never upload something the user did not get to review.
+        // Never upload something the user did not get to review.
         recording = undefined;
         setState({ status: 'idle' });
         resolveStopWaiters();
@@ -219,7 +423,14 @@ export function createRecorder(options: RecorderOptions): Recorder {
           steps: current.steps,
           captured: current.captured,
         });
-        const summary = recordingSummary(bundle, current.bytes, reason);
+        const summary: RecordingSummary = {
+          durationMs: bundle.meta.duration,
+          eventCount: bundle.events.length,
+          consoleErrors: bundle.console.filter((entry) => entry.level === 'error').length,
+          failedRequests: bundle.network.filter((entry) => entry.status >= 400 || entry.status === 0).length,
+          approxBytes: current.bytes,
+          stopReason: reason,
+        };
         recording = { bundle, summary };
         setState({ status: 'review', summary });
         return summary;
@@ -228,7 +439,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         setState({
           status: 'error',
           phase: 'start',
-          error: toError(error),
+          error: error instanceof Error ? error : new Error(String(error)),
         });
         return;
       } finally {
@@ -273,7 +484,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
         setState({ status: 'uploaded', receipt });
         return receipt;
       } catch (error) {
-        const failure = toError(error);
+        const failure = error instanceof Error ? error : new Error(String(error));
         if (!abort.signal.aborted && generation === lifecycleGeneration) {
           setState({
             status: 'error',
@@ -331,7 +542,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
 
     async request(trigger = { source: 'user' }) {
       if (!ui) throw new Error('Pass ui (from @hazem3500/replays/recorder/ui) or use createGuidedRecorder');
-      // why: in the one-click flow a failed upload stays behind a Retry toast; pressing Record again drops it and starts over.
+      // In the one-click flow a failed upload stays behind a Retry toast;
+      // pressing Record again drops it and starts over.
       if (!askToReview && state.status === 'error' && state.phase === 'upload') recorder.discard();
       if (destroyed || !['idle', 'uploaded', 'error'].includes(state.status) || (state.status === 'error' && state.phase === 'upload')) {
         return;
@@ -344,7 +556,19 @@ export function createRecorder(options: RecorderOptions): Recorder {
           .requestConsent({
             trigger,
             maxDurationMs,
-            privacy: privacy.facts(maxDurationMs, askToReview),
+            privacy: {
+              mode: sanitize && maskAllText ? 'masked' : 'visible',
+              maxDurationMs,
+              reviewRequired: askToReview,
+              captures: {
+                pageText: !maskAllText || !!unmask,
+                inputs: !sanitize,
+                media: !capture.blockMedia,
+                console: capture.consoleLevels.length > 0,
+                network: capture.network !== 'off',
+                networkBodies: capture.network === 'bodies',
+              },
+            },
             signal: openPrompt(),
           })
           .catch(() => false);
@@ -361,10 +585,11 @@ export function createRecorder(options: RecorderOptions): Recorder {
       } catch (error) {
         if (!ownsRequest()) return;
         resolveStopWaiters();
-        if (currentState().status !== 'error') setState({ status: 'error', phase: 'start', error: toError(error) });
+        if (currentState().status !== 'error')
+          setState({ status: 'error', phase: 'start', error: error instanceof Error ? error : new Error(String(error)) });
         ui.showResult?.({
           status: 'error',
-          error: toError(error),
+          error: error instanceof Error ? error : new Error(String(error)),
         });
         return;
       }
@@ -391,14 +616,6 @@ export function createRecorder(options: RecorderOptions): Recorder {
         }
       };
 
-      // why: a failed upload shows a Retry that sends the same reviewed payload again.
-      const withRetry = (send: () => Promise<IssueReportReceipt | undefined>): Promise<IssueReportReceipt | undefined> =>
-        send().catch((error: unknown): IssueReportReceipt | undefined => {
-          if (!ownsRequest() || currentState().status !== 'error') return;
-          ui.showResult?.({ status: 'error', error: toError(error), retry: () => void withRetry(send) });
-          return;
-        });
-
       if (!askToReview) {
         if (!ownsRequest()) return;
         const current = currentState();
@@ -407,8 +624,18 @@ export function createRecorder(options: RecorderOptions): Recorder {
           recorder.discard();
           return;
         }
-        // why: finishing the recording is the upload confirmation.
-        return withRetry(() => sendReviewed());
+        // Finishing the recording is the upload confirmation.
+        const attempt = (): Promise<IssueReportReceipt | undefined> =>
+          sendReviewed().catch((error: unknown): IssueReportReceipt | undefined => {
+            if (!ownsRequest() || currentState().status !== 'error') return;
+            ui.showResult?.({
+              status: 'error',
+              error: error instanceof Error ? error : new Error(String(error)),
+              retry: () => void attempt(),
+            });
+            return;
+          });
+        return attempt();
       }
 
       const current = currentState();
@@ -421,8 +648,19 @@ export function createRecorder(options: RecorderOptions): Recorder {
         recorder.discard();
         return;
       }
-      // why: the upload was already reviewed, so a network retry sends the same payload and note without asking again.
-      return withRetry(() => sendReviewed(decision.note));
+      // The upload was already reviewed. A network retry sends the same
+      // payload/note without requiring consent or review a second time.
+      const attempt = (): Promise<IssueReportReceipt | undefined> =>
+        sendReviewed(decision.note).catch((error: unknown): IssueReportReceipt | undefined => {
+          if (!ownsRequest() || currentState().status !== 'error') return;
+          ui.showResult?.({
+            status: 'error',
+            error: error instanceof Error ? error : new Error(String(error)),
+            retry: () => void attempt(),
+          });
+          return;
+        });
+      return attempt();
     },
 
     setReportContext(context) {

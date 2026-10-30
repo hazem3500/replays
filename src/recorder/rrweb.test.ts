@@ -85,13 +85,13 @@ describe('with the real rrweb recorder', () => {
     if (!report) throw new Error('nothing was uploaded');
     const serialized = JSON.stringify(report.bundle.events);
     for (const secret of ['Acme', 'Jane', 'Globex', 'jane@example.com']) expect(serialized).not.toContain(secret);
-    // why: what the replay needs to render stays readable.
+    // What the replay needs to render stays readable.
     expect(serialized).toContain('"class":"entry"');
     expect(serialized).toContain('"data-state":"open"');
     expect(serialized).toContain('"data-state":"closed"');
     expect(serialized).toContain('"aria-expanded":"false"');
     expect(serialized).toContain('"d":"M0 0L10 10"');
-    // why: unmasked chrome keeps its attributes.
+    // Unmasked chrome keeps its attributes.
     expect(serialized).toContain('All projects');
   });
 

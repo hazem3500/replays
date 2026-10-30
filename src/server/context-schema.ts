@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { Ajv2020 } from 'ajv/dist/2020.js';
 import * as formatsModule from 'ajv-formats';
 
-// why: ajv-formats is CommonJS with a default export; under NodeNext the namespace import carries it as `.default`.
+// ajv-formats is CommonJS with a default export; under NodeNext the namespace import carries it as `.default`.
 const addFormats = (formatsModule as unknown as { default: (ajv: Ajv2020) => void }).default;
 
 /**

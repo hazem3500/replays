@@ -115,7 +115,7 @@ export function createTracing(env: NodeJS.ProcessEnv = process.env, options: Cre
     description = `tracing on: OTLP ${protocol} to ${endpointLabel(env, protocol)}`;
   }
 
-  // why: defaults, then ours, then the environment's (OTEL_SERVICE_NAME, OTEL_RESOURCE_ATTRIBUTES) on top.
+  // Defaults, then ours, then the environment's (OTEL_SERVICE_NAME, OTEL_RESOURCE_ATTRIBUTES) on top.
   const resource = defaultResource()
     .merge(
       resourceFromAttributes({
@@ -235,7 +235,7 @@ class SdkTracing implements TracingImpl {
   }
 
   traceRequest(request: IncomingMessage, response: ServerResponse, route: HttpRoute, fn: () => Promise<void>) {
-    // why: continue the caller's trace (W3C traceparent); without one this request starts a new trace.
+    // Continue the caller's trace (W3C traceparent); without one this request starts a new trace.
     const parent = propagator.extract(ROOT_CONTEXT, request.headers, defaultTextMapGetter);
     const method = (request.method ?? 'GET').toUpperCase();
     const known = METHODS.has(method);
@@ -262,9 +262,9 @@ class SdkTracing implements TracingImpl {
       ended = true;
       const status = response.statusCode;
       span.setAttribute('http.response.status_code', status);
-      // why: A response closed before it was finished: the client went away (or a stream broke) mid-body.
+      // A response closed before it was finished: the client went away (or a stream broke) mid-body.
       if (!response.writableFinished) span.setAttribute('http.response.incomplete', true);
-      // why: server spans: only 5xx are errors (OpenTelemetry HTTP semantic conventions); 4xx are the caller's.
+      // Server spans: only 5xx are errors (OpenTelemetry HTTP semantic conventions); 4xx are the caller's.
       if (status >= 500) {
         if (!this.typed.has(span)) span.setAttribute('error.type', String(status));
         span.setStatus({ code: SpanStatusCode.ERROR });

@@ -38,7 +38,7 @@ export const MAX_PEOPLE_BYTES = 4096;
 const ROLE = /^[a-z][a-z0-9-]{0,39}$/;
 export const HANDLE_ID = /^[a-z][a-z0-9-]{0,39}$/;
 const EMAIL = /^[^\s@<>"',;:\\]{1,64}@[^\s@<>"',;:\\]+\.[^\s@<>"',;:\\]+$/;
-// why: no spaces or control characters; a handle is an account name, not prose.
+// No spaces or control characters; a handle is an account name, not prose.
 const HANDLE_VALUE = /^[^\s\p{Cc}]{1,100}$/u;
 const NAME_TEXT = /^[^\p{Cc}]+$/u;
 const PERSON_KEYS = ['role', 'email', 'name', 'handles'];

@@ -5,7 +5,7 @@ import { isProfileId, readAliased } from '../shared/profiles.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import { normalizeUploadUrl } from './server-config.ts';
 
-// why: shared by the capture CLI and the rrweb import CLI.
+// Shared by the capture CLI and the rrweb import CLI.
 
 /** `--profile <id>`, else the deprecated `--purpose <id>` (with a warning); checked as a profile id. */
 export function profileFlag(

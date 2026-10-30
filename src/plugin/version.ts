@@ -13,7 +13,7 @@ function readPackageVersion() {
       const pkg = JSON.parse(readFileSync(file, 'utf8')) as { name?: unknown; version?: unknown };
       if (pkg.name === '@hazem3500/replays' && typeof pkg.version === 'string') return pkg.version;
     } catch {
-      // why: not ours, or unreadable: keep walking.
+      // Not ours, or unreadable: keep walking.
     }
   }
   return '0.0.0';
@@ -43,7 +43,7 @@ function comparators(term: string): Comparator[] | undefined {
   if (!parsed) return undefined;
   const [major, minor, patch] = parsed.version;
   if (op === '^') {
-    // why: the leftmost non-zero part may not change: ^1.2.3 <2.0.0, ^0.4 <0.5.0, ^0.0.3 <0.0.4.
+    // The leftmost non-zero part may not change: ^1.2.3 <2.0.0, ^0.4 <0.5.0, ^0.0.3 <0.0.4.
     const upper: Version =
       major > 0 || parsed.parts === 1 ? [major + 1, 0, 0] : minor > 0 || parsed.parts === 2 ? [0, minor + 1, 0] : [0, 0, patch + 1];
     return [
@@ -52,14 +52,14 @@ function comparators(term: string): Comparator[] | undefined {
     ];
   }
   if (op === '~') {
-    // why: patch-level changes: ~1.2.3 <1.3.0; ~1 <2.0.0.
+    // Patch-level changes: ~1.2.3 <1.3.0; ~1 <2.0.0.
     const upper: Version = parsed.parts === 1 ? [major + 1, 0, 0] : [major, minor + 1, 0];
     return [
       { op: '>=', version: parsed.version },
       { op: '<', version: upper },
     ];
   }
-  // why: A partial version stands for all of it: `0.4` is >=0.4.0 <0.5.0, `<=0.4` is <0.5.0, `>0.4` is >=0.5.0.
+  // A partial version stands for all of it: `0.4` is >=0.4.0 <0.5.0, `<=0.4` is <0.5.0, `>0.4` is >=0.5.0.
   const next: Version = parsed.parts === 1 ? [major + 1, 0, 0] : [major, minor + 1, 0];
   const partial = parsed.parts < 3;
   if (op === '' || op === '=')
@@ -80,7 +80,7 @@ function comparators(term: string): Comparator[] | undefined {
  */
 export function parseRange(range: string): Comparator[] | undefined {
   if (typeof range !== 'string' || !range.trim()) return undefined;
-  // why: `>= 0.4` is one comparator: glue an operator to the version after it.
+  // `>= 0.4` is one comparator: glue an operator to the version after it.
   const terms = range
     .trim()
     .replace(/(>=|<=|>|<|=|\^|~)\s+/g, '$1')

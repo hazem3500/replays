@@ -71,7 +71,7 @@ export class FsStorage implements ObjectStorage {
     try {
       await fill(temporary);
       if (options.createOnly) {
-        // why: link() fails when the name exists, so two racing creators cannot both win (rename would overwrite).
+        // link() fails when the name exists, so two racing creators cannot both win (rename would overwrite).
         await link(temporary, path).catch((error: NodeJS.ErrnoException) => {
           throw error.code === 'EEXIST' ? new ObjectExistsError(key) : error;
         });
@@ -102,7 +102,7 @@ export class FsStorage implements ObjectStorage {
 
   async deletePrefix(prefix: string) {
     const objects = await this.list({ prefix });
-    // why: A `<id>/` prefix is a directory here: remove it whole, temporary leftovers included.
+    // A `<id>/` prefix is a directory here: remove it whole, temporary leftovers included.
     if (prefix.endsWith('/')) {
       const directory = this.path(prefix.slice(0, -1));
       const exists = Boolean((await stat(directory).catch(() => undefined))?.isDirectory());
@@ -117,7 +117,7 @@ export class FsStorage implements ObjectStorage {
     const pattern = options.glob ? globToRegExp(options.glob) : undefined;
     const prefix = options.prefix ?? '';
     const maxDepth = globDepth(options.glob);
-    // why: start at the deepest directory the prefix names, and stop descending past the glob's depth.
+    // Start at the deepest directory the prefix names, and stop descending past the glob's depth.
     const startKey = prefix.includes('/') ? prefix.slice(0, prefix.lastIndexOf('/')) : '';
     const start = startKey ? this.path(startKey) : this.root;
     const keys: string[] = [];
@@ -130,7 +130,7 @@ export class FsStorage implements ObjectStorage {
           if (entry.isDirectory()) {
             if (depth + 1 < maxDepth && (key.startsWith(prefix) || prefix.startsWith(`${key}/`))) await walk(path, depth + 1);
           } else if (entry.isFile() && key.startsWith(prefix) && (!pattern || pattern.test(key))) {
-            // why: in-flight `*.tmp` files are listed too (an unglobbed list): prune clears the ones a crash left.
+            // In-flight `*.tmp` files are listed too (an unglobbed list): prune clears the ones a crash left.
             keys.push(key);
           }
         }),

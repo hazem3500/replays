@@ -31,6 +31,8 @@ describe('idleGaps', () => {
 });
 
 it('leaves capture beats and short waits alone, with 800ms lead around real stalls', () => {
+  expect(INACTIVE_THRESHOLD_MS).toBe(4000);
+  expect(INACTIVE_LEAD_MS).toBe(800);
   expect(idleGaps([at(0, 2), at(1200, 2), at(4000, 2), at(8000, 2)])).toEqual([]);
   expect(idleGaps([at(0, 2), at(4001, 2)])).toEqual([{ from: 800, to: 3201 }]);
 });

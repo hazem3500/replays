@@ -84,7 +84,7 @@ export function createRenderHooks(
         try {
           result = await hook.value.beforeRender!(view(job, options));
         } catch (error) {
-          // why: A check that cannot run refuses: failing open would let a policy hook's bug skip the policy.
+          // A check that cannot run refuses: failing open would let a policy hook's bug skip the policy.
           failed(hook.plugin, 'beforeRender', error);
           return { ok: false, plugin: hook.plugin, error: `the ${job.kind === 'video' ? 'export' : job.kind} check failed` };
         }
@@ -140,7 +140,7 @@ export function createRenderHooks(
         }
         return at;
       });
-      // why: the built-in fallback: the profile's `poster` setting is sugar for a last `posterAt`.
+      // The built-in fallback: the profile's `poster` setting is sugar for a last `posterAt`.
       if (profilePoster) links.push(async (input) => profilePoster(input.profile));
       if (!links.length) return undefined;
 
@@ -160,7 +160,7 @@ export function createRenderHooks(
         if (known) return known;
         const answer = choose(id);
         remembered.set(id, answer);
-        // why: A failed lookup (storage hiccup) is not remembered: the next request asks again.
+        // A failed lookup (storage hiccup) is not remembered: the next request asks again.
         answer.catch(() => remembered.delete(id));
         if (remembered.size > max) remembered.delete(remembered.keys().next().value!);
         return answer;

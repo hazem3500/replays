@@ -85,8 +85,8 @@ export type ReplayMeta = {
   /** End-user recordings are always `human`. */
   source: 'human';
   captured?: ReplayCaptured;
-  /* why: no `profile` or `people`: the ingest endpoint sets the profile itself
-     (see the README), and `people` is staff only, never customers. */
+  // No `profile` or `people`: the ingest endpoint sets the profile itself
+  // (see the README), and `people` is staff only, never customers.
 };
 
 export type ReplayBundle = {

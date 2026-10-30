@@ -144,6 +144,8 @@ export function cleanAvatarUrl(value: unknown): string | undefined {
   }
 }
 
+/* ---------- Anchoring: source time ↔ the timeline on screen ---------- */
+
 /** Where a comment sits on the timeline being watched. */
 export type Placement =
   /** About the whole replay: no marker. */
@@ -170,6 +172,8 @@ export function placeComment(at: number | undefined, timeline?: TimelineLike): P
 export function sourceTimeAt(time: number, timeline?: Pick<EditTimeline, 'toOriginal'>): number {
   return Math.max(0, Math.round(timeline ? timeline.toOriginal(time) : time));
 }
+
+/* ---------- Threads ---------- */
 
 export interface CommentThread {
   root: PublicComment;

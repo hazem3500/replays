@@ -141,7 +141,7 @@ export async function runMigrateCli(argv: string[], options: { env?: NodeJS.Proc
   const env = { ...(options.env ?? process.env), ...(args.config ? { REPLAYS_CONFIG: resolve(cwd, args.config) } : {}) };
   try {
     const { config, settings, registry } = await resolveSettings({ env, cwd });
-    // why: A backend id goes through the same choice as STORAGE: a plugin's backend, else the built-in driver.
+    // A backend id goes through the same choice as STORAGE: a plugin's backend, else the built-in driver.
     const resolveBackend = (id: string, dataDir: string) => chooseStorage({ ...env, STORAGE: id }, config.file, registry, dataDir);
     const [from, to] = await Promise.all([
       openStore(args.from, { env, cwd, resolveBackend }),

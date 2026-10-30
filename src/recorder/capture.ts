@@ -42,7 +42,7 @@ function stringify(value: unknown): string {
   if (value instanceof Error) return `${value.name}: ${value.message}`;
   const seen = new WeakSet<object>();
   try {
-    // why: `undefined`, functions and symbols stringify to `undefined`.
+    // `undefined`, functions and symbols stringify to `undefined`.
     const json = JSON.stringify(value, (_key, nested: unknown) => {
       if (typeof nested === 'object' && nested !== null) {
         if (seen.has(nested)) return '[Circular]';
@@ -104,7 +104,7 @@ export function captureConsole(options: ConsoleCaptureOptions): () => void {
   return () => {
     active = false;
     for (const [level, original] of originals) {
-      // why: leave a later wrapper (another tool) in place; ours is inert now.
+      // Leave a later wrapper (another tool) in place; ours is inert now.
       if (console[level] === wrappers.get(level)) console[level] = original;
     }
     removeEventListener('error', onError);
@@ -246,7 +246,7 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
         const aborted = error instanceof DOMException && error.name === 'AbortError';
         const entry = finish(base, requestHeaders, {
           status: 0,
-          // why: A status of 0 with text marks a failed request in the viewer.
+          // A status of 0 with text marks a failed request in the viewer.
           statusText: aborted ? 'net::ERR_ABORTED' : 'net::ERR_FAILED',
           headers: [],
         });
@@ -319,8 +319,8 @@ export function captureNetwork(options: NetworkCaptureOptions): () => void {
     proto.open = patchedOpen;
     proto.setRequestHeader = patchedSetRequestHeader;
     proto.send = patchedSend;
-    /* why: like fetch: a patch installed after ours (a lazily started RUM or
-       Sentry integration) is left in place. */
+    // Like fetch: a patch installed after ours (a lazily started RUM or
+    // Sentry integration) is left in place.
     restorers.push(() => {
       if (proto.open === patchedOpen) proto.open = open;
       if (proto.send === patchedSend) proto.send = send;

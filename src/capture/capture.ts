@@ -25,14 +25,10 @@ import { playwrightDriver } from './drivers/playwright.ts';
 import type { CaptureDriver, RawStep } from './drivers/types.ts';
 import { networkEntries, sanitizeReplayBundle, sanitizeUrl } from './sanitize.ts';
 import { RecorderSession } from './session.ts';
-import { assertCaptureUrl, readSteps } from './capture-steps.ts';
-import { labelFor } from './step-labels.ts';
 
 export type { RawStep } from './drivers/types.ts';
 export { createPullGate, normalizeConsole, normalizePerformance } from './session.ts';
 export { defaultId, prepareOutputDirectory } from './bundle-io.ts';
-export { validateSteps } from './capture-steps.ts';
-export { labelFor, selectorName } from './step-labels.ts';
 
 export type DriverName = 'playwright' | 'agent-browser';
 
@@ -78,6 +74,78 @@ export interface CaptureArgs extends CapturePacingOptions {
 
 const BOOLEAN_FLAGS = new Set(['video', 'headed', 'upload', 'login', 'no-performance']);
 
+function requiredString(step: Record<string, unknown>, field: string, index: number) {
+  const value = step[field];
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`--steps[${index}].${field} must be a non-empty string`);
+  }
+  return value;
+}
+
+export function validateSteps(value: unknown): RawStep[] {
+  if (!Array.isArray(value)) throw new Error('--steps must be a JSON array');
+  return value.map((rawStep, index) => {
+    if (!rawStep || typeof rawStep !== 'object' || Array.isArray(rawStep)) {
+      throw new Error(`--steps[${index}] must be an object`);
+    }
+    const step = rawStep as Record<string, unknown>;
+    const kind = requiredString(step, 'kind', index);
+    if (step.label !== undefined && (typeof step.label !== 'string' || step.label.length === 0)) {
+      throw new Error(`--steps[${index}].label must be a non-empty string`);
+    }
+    const labelled = typeof step.label === 'string' ? { label: step.label } : {};
+    switch (kind) {
+      case 'click':
+      case 'hover':
+        return { kind, selector: requiredString(step, 'selector', index), ...labelled };
+      case 'type':
+      case 'fill': {
+        const text = step.text;
+        if (typeof text !== 'string') throw new Error(`--steps[${index}].text must be a string`);
+        return { kind, selector: requiredString(step, 'selector', index), text, ...labelled };
+      }
+      case 'press':
+        return { kind, key: requiredString(step, 'key', index), ...labelled };
+      case 'wait': {
+        const ms = step.ms;
+        if (typeof ms !== 'number' || !Number.isFinite(ms) || ms < 0) {
+          throw new Error(`--steps[${index}].ms must be a non-negative number`);
+        }
+        return { kind, ms, ...labelled };
+      }
+      case 'scroll': {
+        const directions = new Set(['up', 'down', 'left', 'right']);
+        if (typeof step.direction !== 'string' || !directions.has(step.direction)) {
+          throw new Error(`--steps[${index}].direction must be up, down, left, or right`);
+        }
+        if (step.pixels !== undefined && (typeof step.pixels !== 'number' || !Number.isFinite(step.pixels) || step.pixels < 0)) {
+          throw new Error(`--steps[${index}].pixels must be a non-negative number`);
+        }
+        return {
+          kind,
+          direction: step.direction as 'up' | 'down' | 'left' | 'right',
+          ...(typeof step.pixels === 'number' ? { pixels: step.pixels } : {}),
+          ...labelled,
+        };
+      }
+      case 'goto': {
+        const url = requiredString(step, 'url', index);
+        assertCaptureUrl(url, `--steps[${index}].url`);
+        return { kind, url, ...labelled };
+      }
+      default:
+        throw new Error(`--steps[${index}].kind is unsupported: ${kind}`);
+    }
+  });
+}
+
+async function readSteps(raw?: string): Promise<RawStep[]> {
+  if (!raw) return [];
+  const source = raw.startsWith('@') ? await readFile(resolve(raw.slice(1)), 'utf8') : raw;
+  const steps: unknown = JSON.parse(source);
+  return validateSteps(steps);
+}
+
 export const CAPTURE_USAGE = `Usage: replays capture --url <https-url> --output <dir> [options]
 
   --url <url>              page to open (https, or http on localhost)
@@ -114,6 +182,13 @@ function parseViewport(value: string | undefined) {
   const match = /^(\d{3,5})x(\d{3,5})$/.exec(value);
   if (!match) throw new Error('--viewport must look like 1440x900');
   return { width: Number(match[1]), height: Number(match[2]) };
+}
+
+function assertCaptureUrl(value: string, flag: string) {
+  const url = new URL(value);
+  const local = ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  if (url.protocol !== 'https:' && !(url.protocol === 'http:' && local))
+    throw new Error(`${flag} must use https (http only for localhost)`);
 }
 
 /**
@@ -212,7 +287,7 @@ export async function parseArgs(argv = process.argv.slice(2)): Promise<CaptureAr
       ? { suiteRun: { suiteId: assertReplayId(values['suite-id'] ?? ''), runId: values['run-id'] ?? '' } }
       : {}),
   } satisfies CaptureArgs & { headed: boolean };
-  // why: a bad context or source is a usage error, so it fails before the browser starts, not as a half-finished capture.
+  // Fail before the browser starts: a bad context or source is a usage error, not a half-finished capture.
   buildContext(args, new Date(0).toISOString());
   return args;
 }
@@ -229,6 +304,78 @@ function buildContext(args: CaptureArgs, capturedAt: string) {
     sources: new SourceProviders({ templates: args.sourceProviders ?? [] }),
     ...(args.contextSchema ? { schema: compileContextSchema(args.contextSchema) } : {}),
   });
+}
+
+function quoted(value: string) {
+  return value
+    .trim()
+    .replace(/^(["'])(.*)\1$/s, '$2')
+    .trim();
+}
+
+/**
+ * A readable name for a selector, for captions: `text=Save` → Save, `button[aria-label="Go to the Next Month"]`
+ * → Go to the Next Month, `[data-tracking-id=holiday-calendar-add-date]` → holiday calendar add date. Undefined
+ * when the selector names nothing a person would recognise.
+ */
+export function selectorName(selector: string) {
+  const text = /^text=(.+)$/s.exec(selector.trim());
+  if (text) return quoted(text[1]!) || undefined;
+  for (const attribute of ['aria-label', 'title', 'alt', 'name', 'placeholder', 'data-tracking-id', 'data-testid']) {
+    const matches = [
+      ...selector.matchAll(new RegExp(`\\[${attribute}\\s*([~|^$*]?=)\\s*("[^"]*"|'[^']*'|[^\\]\\s]+)\\s*(?:[is]\\s*)?\\]`, 'gi')),
+    ];
+    const match = matches.at(-1);
+    if (!match) continue;
+    const value = quoted(match[2]!);
+    if (!value) continue;
+    const name = attribute.startsWith('data-') || attribute === 'name' ? value.replace(/[-_]+/g, ' ').trim() : value;
+    // Partial selectors only give a fragment of the name. Keep that uncertainty visible rather than inventing the rest.
+    if (match[1] === '^=') return `${name}…`;
+    if (match[1] === '$=') return `…${name}`;
+    if (match[1] !== '=') return `…${name}…`;
+    return name;
+  }
+  const hasText = /:has-text\((["'])(.+?)\1\)/.exec(selector);
+  return hasText?.[2]?.trim() || undefined;
+}
+
+function controlDescription(selector: string, field: boolean) {
+  if (field) return 'the field';
+  // Use only known control types, never ids/classes or selector syntax in the visible caption.
+  const control = /(?:^|[\s>+~])(?:button|a|input|textarea|select)(?=[\s.#[:]|$)/gi;
+  const tag = [...selector.matchAll(control)]
+    .at(-1)?.[0]
+    .trim()
+    .replace(/^[>+~]\s*/, '')
+    .toLowerCase();
+  if (tag === 'button') return 'the button';
+  if (tag === 'a') return 'the link';
+  if (tag === 'input' || tag === 'textarea' || tag === 'select') return 'the field';
+  return 'the control';
+}
+
+export function labelFor(step: RawStep) {
+  if (step.label) return step.label;
+  const name = 'selector' in step ? selectorName(step.selector) : undefined;
+  switch (step.kind) {
+    case 'click':
+      return name ? `Click “${name}”` : `Click ${controlDescription(step.selector, false)}`;
+    case 'hover':
+      return `Hover ${name ? `“${name}”` : controlDescription(step.selector, false)}`;
+    case 'type':
+      return `Type into ${name ? `“${name}”` : controlDescription(step.selector, true)}`;
+    case 'fill':
+      return `Fill ${name ? `“${name}”` : controlDescription(step.selector, true)}`;
+    case 'press':
+      return `Press ${step.key}`;
+    case 'wait':
+      return 'Wait for the page';
+    case 'scroll':
+      return `Scroll ${step.direction}`;
+    case 'goto':
+      return `Open ${new URL(step.url).hostname}`;
+  }
 }
 
 /** The driver chosen by name; tests pass their own through `capture()`. */
@@ -326,7 +473,7 @@ export async function capture(args: CaptureArgs, driver: CaptureDriver = createD
       ...(context ? { context } : {}),
       ...(args.suiteRun ? { suiteRun: args.suiteRun } : {}),
     };
-    // why: the host's rules also cover what the steps added (labels, the title), as the server's upload pass does.
+    // The host's rules over what the steps added too (labels, the title): the same pass the server runs on upload.
     if (args.redaction || bodiesRecorded) bundle = sanitizeReplayBundle(bundle, args.redaction);
     const replayPath = join(args.output, 'replay.json');
     await writeFile(replayPath, `${JSON.stringify(bundle)}\n`, { flag: 'wx' });

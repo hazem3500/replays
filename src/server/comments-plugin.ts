@@ -18,7 +18,7 @@ export const COMMENTS_PLUGIN = 'comments';
 export function commentsPlugin(deps: { store: ReplayStore; anonymous: boolean }) {
   return definePlugin({
     name: COMMENTS_PLUGIN,
-    // why: before the deployment's own plugins: their hooks see every request after comments had its routes.
+    // Before the deployment's own plugins: their hooks see every request after comments had its routes.
     order: -100,
     setup(api) {
       const comments = new CommentsStore(deps.store.storage);
