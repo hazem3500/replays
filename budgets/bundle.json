@@ -337,10 +337,10 @@
       "gzip": 1720,
       "brotli": 1488
     },
-    "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs": {
-      "raw": 312821,
-      "gzip": 83270,
-      "brotli": 68085
+    "dist/lib/chunks/context.schema.json-a920d21ea104.mjs": {
+      "raw": 314897,
+      "gzip": 84102,
+      "brotli": 68637
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -1360,16 +1360,6 @@
       "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-2ab762c1e2f6.mjs",
-      "cap": {
-        "raw": 312821,
-        "gzip": 83270,
-        "brotli": 68085
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "The CLI and server share the edit validator; with edits split into list, timeline and validation modules the shared server chunk gets a new source identity; measured on Boat against main: main 312907/83012/67822 (context.schema.json-09ab4a0ff1bb.mjs), head 312691/83253/68044 (-216 B raw, +241 B gzip, +222 B brotli). Replaces the previous entry for this chunk."
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.js",
       "cap": {
         "raw": 887,
@@ -1408,6 +1398,16 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 236 B."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
+      "cap": {
+        "raw": 314897,
+        "gzip": 84102,
+        "brotli": 68637
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/186",
+      "reason": "Splitting list media and render state into src/server/media/* adds modules to the shared server chunk, so its source identity changes; CI Quality / size against fresh main: raw 314897, gzip 84102, brotli 68637."
     }
   ]
 }
