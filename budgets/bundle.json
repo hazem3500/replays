@@ -80,7 +80,7 @@
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
       "gzip": 2343,
-      "brotli": 2113
+      "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
       "raw": 8642,
@@ -115,7 +115,7 @@
     "dist/client/assets/Editor-HASH.js": {
       "raw": 102425,
       "gzip": 34267,
-      "brotli": 29318
+      "brotli": 29308
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 27331,
@@ -270,7 +270,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
       "gzip": 9037,
-      "brotli": 7808
+      "brotli": 7810
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -736,10 +736,10 @@
       "file": "dist/client/assets/ComparePicker-HASH.js",
       "cap": {
         "raw": 5232,
-        "gzip": 2342,
+        "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1129,10 +1129,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 607
+        "brotli": 628
       },
-      "reason": "Hash drift, not growth: this 1 KB chunk of hashed import paths is unchanged in source and raw size (620 B Brotli on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/158"
+      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
+      "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
@@ -1217,11 +1217,11 @@
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
         "raw": 665,
-        "gzip": 463,
+        "gzip": 462,
         "brotli": 429
       },
-      "reason": "Hash drift, not growth: unchanged source; the viewer chunk's new hash moves its gzip size by 1 B (on Boat against main bcc8a92b). Replaces the existing allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/158"
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
