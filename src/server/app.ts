@@ -37,7 +37,7 @@ import { malleablePlugin } from './malleable-plugin.ts';
 import { coreVersion } from './package-info.ts';
 import type { PageRenderer } from './pages/start.ts';
 import { identityResolver } from './people.ts';
-import { handlePosterApi } from './posters.ts';
+import { handlePosterApi } from './media/poster-routes.ts';
 import { clientAsset, runRequestHooks, watchResponse } from './plugin-runtime.ts';
 import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
