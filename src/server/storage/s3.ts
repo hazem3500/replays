@@ -257,7 +257,7 @@ export class S3Storage implements ObjectStorage {
 
   async delete(key: string) {
     const fullKey = this.objectKey(key);
-    // S3 answers 204 whether or not the key existed; HEAD first to tell the caller.
+    // why: S3 answers 204 whether or not the key existed; HEAD first to tell the caller.
     if (!(await this.stat(key))) return false;
     const response = await this.request('DELETE', this.url(fullKey));
     if (!response.ok && response.status !== 404) return this.fail(response, 'DELETE');

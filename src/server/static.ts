@@ -76,7 +76,7 @@ export async function buildStatic(options: BuildStaticOptions): Promise<StaticBu
     .sort();
   await mkdir(out, { recursive: true });
   await cp(clientDir, out, { recursive: true, force: true, filter: (source) => !skip(relative(clientDir, source)) });
-  // A render.html left over from an earlier build with --include-render goes too: the output matches the options.
+  // why: A render.html left over from an earlier build with --include-render goes too: the output matches the options.
   if (!options.includeRender) await rm(resolve(out, 'render.html'), { force: true });
 
   const html = renderIndexHtml(await readFile(template, 'utf8'), {

@@ -84,13 +84,13 @@ export async function handleInternalRender(
   }
   const asset = /^\/internal\/render\/assets\/([\w.-]+)$/.exec(path);
   if (asset) {
-    // Built asset URLs are relative (vite.config.ts), so the page, its scripts, stylesheets and their fonts all
-    // load from this loopback route, outside the authenticated app.
+    /* why: built asset URLs are relative (vite.config.ts), so the page, its scripts, stylesheets and their fonts all
+       load from this loopback route, outside the authenticated app. */
     if (!(await serveFile(request, response, join(render.clientDir, 'assets', asset[1]!), { cacheControl: 'no-store' })))
       send(response, 404, 'not found');
     return;
   }
-  // The edit list an edited export applies (the page checks its version against the one it was asked for).
+  // why: the edit list an edited export applies (the page checks its version against the one it was asked for).
   const edits = options.beta?.editor ? /^\/internal\/render\/([a-z0-9][a-z0-9-]{0,79})\/edits\.json$/.exec(path) : null;
   if (edits) {
     if (!(await options.store.locate(edits[1]!))) send(response, 404, 'not found');
@@ -113,7 +113,7 @@ export async function handleInternalRender(
       send(response, 503, 'render page not built (pnpm build)');
       return;
     }
-    // Its asset URLs are relative (`./assets/…`): they resolve under /internal/render/ (above).
+    // why: its asset URLs are relative (`./assets/…`): they resolve under /internal/render/ (above).
     send(response, 200, html, { contentType: 'text/html; charset=utf-8' });
     return;
   }
@@ -176,8 +176,8 @@ export async function handleRenderApi(
   const queue = options.render?.tools.available ? options.render.queue : undefined;
   if (!queue) {
     const reason = options.render?.tools.reason ? { reason: options.render.tools.reason } : {};
-    // The viewer's status probe (a GET of the job) is an expected question: answer it, not fail it. Starting a
-    // render, cancelling one or fetching the file still gets 503.
+    /* why: the viewer's status probe (a GET of the job) is an expected question: answer it, not fail it. Starting a
+       render, cancelling one or fetching the file still gets 503. */
     if ((request.method ?? 'GET') === 'GET' && !file) json(response, 200, { status: 'unavailable', ...reason });
     else json(response, 503, { error: 'render unavailable', ...reason });
     return true;
@@ -199,9 +199,9 @@ export async function handleRenderApi(
     json(response, 404, { error: 'replay not found' });
     return true;
   }
-  // Exports always apply the replay's edits. The client names the edit list version it shows (`edits`): its status
-  // checks and its download keep to the video it asked for, whatever is saved meanwhile. Scripts and older
-  // clients name none and get the stored list.
+  /* why: exports always apply the replay's edits. The client names the edit list version it shows (`edits`): its status
+     checks and its download keep to the video it asked for, whatever is saved meanwhile. Scripts and older
+     clients name none and get the stored list. */
   const requested = method === 'POST' ? body.edits : search.get('edits');
   if (
     requested !== undefined &&
@@ -211,7 +211,7 @@ export async function handleRenderApi(
     json(response, 400, { error: 'edits must be an edit list version' });
     return true;
   }
-  // Edits exist only with the beta editor on; without it exports render the replay as recorded.
+  // why: edits exist only with the beta editor on; without it exports render the replay as recorded.
   const editorOn = Boolean(options.beta?.editor);
   const current =
     editorOn && (requested === undefined || requested === null || method === 'POST')
@@ -234,7 +234,7 @@ export async function handleRenderApi(
       json(response, (method === 'GET' || method === 'HEAD') && !file ? 200 : 403, { status: 'refused', error: verdict.error });
       return true;
     }
-    // render-hooks.ts only lets checked values through.
+    // why: render-hooks.ts only lets checked values through.
     speed = (verdict.options.speed as RenderSpeedOption | undefined) ?? speed;
     captions = verdict.options.captions ?? captions;
     skipInactive = verdict.options.skipInactive ?? skipInactive;
@@ -276,7 +276,7 @@ export async function handleRenderApi(
     case 'GET':
     case 'HEAD': {
       const job = await queue.status(id, speed, variant);
-      // No render of this variant yet is an expected answer (the viewer probes on every load), not an error: 200.
+      // why: no render of this variant yet is an expected answer (the viewer probes on every load), not an error: 200.
       json(response, 200, job ?? { status: 'none' });
       return true;
     }

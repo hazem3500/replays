@@ -343,8 +343,8 @@
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-a920d21ea104.mjs": {
-      "raw": 314897,
-      "gzip": 84103,
+      "raw": 314927,
+      "gzip": 84106,
       "brotli": 68661
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
@@ -1360,16 +1360,6 @@
       "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: raw 58724, gzip 16022, brotli 14087."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
-      "cap": {
-        "raw": 314897,
-        "gzip": 84103,
-        "brotli": 68661
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/190",
-      "reason": "Capture split into mask-inputs, mask-selectors, capture-steps and step-labels modules; the shared capture chunks take new source identities; CI Quality / size against fresh main: gzip 84103, brotli 68661. Replaces #186's allowance for this file."
-    },
-    {
       "file": "dist/lib/chunks/har-bodies.ts-38ded7aa8c17.mjs",
       "cap": {
         "raw": 31868,
@@ -1408,6 +1398,16 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/192",
       "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: raw 34150, gzip 8710, brotli 7602."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
+      "cap": {
+        "raw": 314927,
+        "gzip": 84106,
+        "brotli": 68661
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/194",
+      "reason": "Comment pass: the unminified shared server chunk keeps comments, and tagging reasons with why: adds a few bytes; CI Quality / size against fresh main: raw 314927, gzip 84106. Replaces #190's allowance for this file."
     }
   ]
 }
