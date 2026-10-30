@@ -1,6 +1,6 @@
 import { record } from 'rrweb';
 
-import { MASK_INPUT_OPTIONS } from './sanitize.ts';
+import { MASK_INPUT_OPTIONS } from './mask-inputs.ts';
 
 declare global {
   interface Window {
