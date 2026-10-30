@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu.tsx';
 import { ADD_ITEMS, BAR_TOOLS, type EditorTool } from './editor-tools.ts';
 import type { EffectKind } from './state.ts';
+import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 
 const TEST_IDS: Record<EditorTool['id'], string> = { cut: 'add-cut', waits: 'remove-waits', highlight: 'add-point-highlight' };
 
@@ -73,6 +74,7 @@ export function AddMenu({
   showEmptyTracks: boolean;
   onShowEmptyTracks: (show: boolean) => void;
 }) {
+  const hasKeyboard = useHasKeyboard();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-add-effect" data-testid="add-effect" />}>
@@ -83,13 +85,13 @@ export function AddMenu({
           const Icon = item.icon;
           return (
             <DropdownMenuItem key={item.kind} onClick={() => onAdd(item.kind)} data-testid={`add-${item.kind}`}>
-              <Icon aria-hidden="true" /> {item.label} <DropdownMenuShortcut>{item.key}</DropdownMenuShortcut>
+              <Icon aria-hidden="true" /> {item.label} {hasKeyboard ? <DropdownMenuShortcut>{item.key}</DropdownMenuShortcut> : null}
             </DropdownMenuItem>
           );
         })}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onPointHighlight} data-testid="add-point-highlight-menu">
-          <MapPinIcon aria-hidden="true" /> Highlight this moment <DropdownMenuShortcut>M</DropdownMenuShortcut>
+          <MapPinIcon aria-hidden="true" /> Highlight this moment {hasKeyboard ? <DropdownMenuShortcut>M</DropdownMenuShortcut> : null}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onPeriodHighlight} data-testid="add-period-highlight">
           <HighlighterIcon aria-hidden="true" /> Highlight the selection

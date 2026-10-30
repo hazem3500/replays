@@ -16,8 +16,9 @@ const strings = {
   uploadHint: '.json or .json.gz recording',
   settings: 'Settings',
   settingsHint: 'CLI setup, shortcuts, experiments',
-  lightTheme: 'Light theme',
-  darkTheme: 'Dark theme',
+  theme: 'Theme',
+  dark: 'Dark',
+  light: 'Light',
   done: 'Done',
 };
 
@@ -47,19 +48,22 @@ export function phoneMenuItems({ onUpload, account }: { onUpload?: () => void; a
   ];
 }
 
-/** One row that flips the theme (like the desktop top bar's switch); the sheet stays open so the flip shows behind it. */
+/**
+ * One row that flips the theme (like the desktop top bar's switch): its label and the current state, the same row as
+ * the viewer's More menu. The sheet stays open so the flip shows behind it.
+ */
 function ThemeRow() {
   const { theme, switchTheme } = useThemeControls();
-  const next = theme === 'dark' ? 'light' : 'dark';
   return (
     <li data-slot-item="theme">
       <button type="button" className="phone-menu-row" data-testid="phone-menu-theme" onClick={switchTheme}>
         <span className="phone-menu-icon" aria-hidden="true">
-          {next === 'light' ? <SunIcon /> : <MoonIcon />}
+          {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
         </span>
         <span className="phone-menu-text">
-          <span className="phone-menu-label">{next === 'light' ? strings.lightTheme : strings.darkTheme}</span>
+          <span className="phone-menu-label">{strings.theme}</span>
         </span>
+        <span className="phone-menu-state">{theme === 'dark' ? strings.dark : strings.light}</span>
       </button>
     </li>
   );

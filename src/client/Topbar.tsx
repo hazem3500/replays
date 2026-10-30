@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils.ts';
 
 import { indexReturnHref } from './routing/links.ts';
 import { productName } from './config.ts';
+import { useHasKeyboard } from './hooks/use-has-keyboard.ts';
 import { ThemeSwitch, useThemeControls } from './theme.tsx';
 import { SettingsButton } from './settings/Settings.tsx';
 import { AccountMenu, accountMenuItems, useSignedIn } from './account/AccountMenu.tsx';
@@ -229,7 +230,7 @@ export interface TopbarMenuItem {
  * A menu has to earn its place: with two or more secondary actions (or the phone's run picker) they share
  * one "More" menu; a lone action is just an icon button with a tooltip; none, nothing.
  */
-function MoreMenu({
+export function MoreMenu({
   items,
   extra,
   footer,
@@ -243,6 +244,7 @@ function MoreMenu({
   always?: boolean;
 }) {
   const [only] = items;
+  const hasKeyboard = useHasKeyboard();
   if (!extra && !footer && !theme && !always && items.length === 1 && only && !only.href) {
     return (
       <IconButton
@@ -294,7 +296,7 @@ function MoreMenu({
           >
             {item.icon}
             {item.label}
-            {item.shortcut ? <DropdownMenuShortcut data-keys="">{item.shortcut}</DropdownMenuShortcut> : null}
+            {item.shortcut && hasKeyboard ? <DropdownMenuShortcut data-keys="">{item.shortcut}</DropdownMenuShortcut> : null}
             {item.detail ? <DropdownMenuShortcut className="tracking-normal tabular-nums">{item.detail}</DropdownMenuShortcut> : null}
           </DropdownMenuItem>
         ))}
@@ -310,14 +312,19 @@ function MoreMenu({
   );
 }
 
-/** Phones: the theme switch as a "More" item; the menu stays open so the flip shows behind it. */
+const THEME_STRINGS = { theme: 'Theme', dark: 'Dark', light: 'Light' };
+
+/**
+ * Phones: the theme as a "More" row, its label and the current state, like the index sheet's (IndexPhoneMenu.tsx).
+ * A tap flips it in place: the menu stays open so the new theme shows behind it.
+ */
 function ThemeMenuItem() {
   const { theme, switchTheme } = useThemeControls();
-  const next = theme === 'dark' ? 'light' : 'dark';
   return (
     <DropdownMenuItem closeOnClick={false} data-testid="theme-menu-item" onClick={switchTheme}>
-      <AnimatedIcon name={next === 'light' ? 'sun' : 'moon'} />
-      {next === 'light' ? 'Light theme' : 'Dark theme'}
+      <AnimatedIcon name={theme === 'dark' ? 'moon' : 'sun'} />
+      {THEME_STRINGS.theme}
+      <DropdownMenuShortcut className="tracking-normal">{theme === 'dark' ? THEME_STRINGS.dark : THEME_STRINGS.light}</DropdownMenuShortcut>
     </DropdownMenuItem>
   );
 }

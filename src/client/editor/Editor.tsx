@@ -4,7 +4,6 @@ import './editor.css';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeftIcon,
-  EllipsisIcon,
   MousePointer2Icon,
   CheckIcon,
   HourglassIcon,
@@ -34,7 +33,8 @@ import { PlayerContext, ReplayController, usePlayerState, usePlayhead, useViewpo
 import { replayHref } from '../routing/links.ts';
 import { nextStepIndex, previousStepIndex } from '../timeline.ts';
 import { notify } from '../toast.ts';
-import { Topbar, type TopbarMenuItem } from '../Topbar.tsx';
+import { MoreMenu, Topbar, type TopbarMenuItem } from '../Topbar.tsx';
+import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 import { ViewerContext, type ViewerActions } from '../viewer/context.ts';
 import { initialPanelHeight, InspectorResizer, type PanelSize } from '../viewer/Inspector.tsx';
 import { PlayerStage } from '../viewer/Transport.tsx';
@@ -77,7 +77,6 @@ import { EditorShortcutSheet } from './EditorShortcutSheet.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
 import { EditorExport } from './EditorExport.tsx';
 import { MobileInspector, MobileAddToolbar, mobileTimelineObjects } from './MobileInspector.tsx';
-import { ThemeSwitch } from '../theme.tsx';
 
 /** Quiet time after the last change before it is saved. */
 const AUTOSAVE_MS = 700;
@@ -122,7 +121,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [showEmptyTracks, setShowEmptyTracks] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [cursorOpen, setCursorOpen] = useState(false);
-  const mobileMore = useRef<HTMLDetailsElement>(null);
   const focusCaption = useRef(false);
   const [mobileTrimOpen, setMobileTrimOpen] = useState(false);
   const mobileReturnFocus = useRef<HTMLElement | null>(null);
@@ -507,6 +505,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     [bundle.steps, errors, player],
   );
 
+  const hasKeyboard = useHasKeyboard();
   const menuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(mobile
@@ -529,13 +528,17 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
             },
           ]
         : []),
-      {
-        label: 'Keyboard shortcuts',
-        icon: <KeyboardIcon aria-hidden="true" />,
-        onSelect: () => setShortcutsOpen(true),
-        shortcut: '?',
-        testId: 'editor-shortcuts',
-      },
+      ...(hasKeyboard
+        ? [
+            {
+              label: 'Keyboard shortcuts',
+              icon: <KeyboardIcon aria-hidden="true" />,
+              onSelect: () => setShortcutsOpen(true),
+              shortcut: '?',
+              testId: 'editor-shortcuts',
+            },
+          ]
+        : []),
       {
         label: 'View original',
         icon: <FileVideoCameraIcon aria-hidden="true" />,
@@ -557,7 +560,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         testId: 'reset-edits',
       },
     ],
-    [actions.removeWaits, change, edits, id, leave, mobile, state],
+    [actions.removeWaits, change, edits, hasKeyboard, id, leave, mobile, state],
   );
 
   const selection = state.selection;
@@ -697,70 +700,32 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 <Undo2Icon aria-hidden="true" />
               </IconButton>
               <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
-              {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- why: native details is interactive; Escape closes its disclosure from descendant controls. */}
-              <details
-                ref={mobileMore}
-                className="editor-mobile-more"
-                onKeyDown={(event) => {
-                  if (event.key === 'Escape' && !event.defaultPrevented) {
-                    event.preventDefault();
-                    if (mobileMore.current) mobileMore.current.open = false;
-                    mobileMore.current?.querySelector('summary')?.focus();
-                  }
-                  if (!event.metaKey && !event.ctrlKey && !event.altKey) event.stopPropagation();
-                }}
-              >
-                <summary aria-label="More editor actions">
-                  <EllipsisIcon aria-hidden="true" />
-                </summary>
-                <div className="editor-mobile-menu" role="group" aria-label="More editor actions">
-                  {menuItems
-                    .filter((item) => item.testId !== 'undo')
-                    .map((item) => (
-                      <Button
-                        key={item.label}
-                        variant="ghost"
-                        disabled={item.disabled}
-                        data-testid={item.testId}
-                        onClick={() => {
-                          item.onSelect();
-                          if (mobileMore.current) mobileMore.current.open = false;
-                          mobileMore.current?.querySelector('summary')?.focus();
-                        }}
-                      >
-                        {item.icon}
-                        {item.label}
-                      </Button>
-                    ))}
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      if (mobileMore.current) mobileMore.current.open = false;
-                      mobileMore.current?.querySelector('summary')?.focus();
-                      rememberMobileFocus();
+              <MoreMenu
+                theme
+                always
+                items={[
+                  ...menuItems.filter((item) => item.testId !== 'undo'),
+                  {
+                    label: 'Cursor options',
+                    icon: <MousePointer2Icon aria-hidden="true" />,
+                    onSelect: () => {
+                      // why: the menu item leaves with the menu; closing the cursor panel returns to the More trigger.
+                      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-mobile-header .topbar-more') ?? null;
                       dispatch({ type: 'select', selection: undefined });
                       setMobileTrimOpen(false);
                       setBlurPlacement(undefined);
                       setCursorOpen(true);
-                    }}
-                  >
-                    <MousePointer2Icon aria-hidden="true" />
-                    Cursor options
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    onClick={() => {
-                      if (mobileMore.current) mobileMore.current.open = false;
-                      mobileMore.current?.querySelector('summary')?.focus();
-                      void leave(replayHref(id));
-                    }}
-                    data-testid="editor-done"
-                  >
-                    View replay
-                  </Button>
-                  <ThemeSwitch />
-                </div>
-              </details>
+                    },
+                    testId: 'editor-cursor-options',
+                  },
+                  {
+                    label: 'View replay',
+                    icon: <ArrowLeftIcon aria-hidden="true" />,
+                    onSelect: () => void leave(replayHref(id)),
+                    testId: 'editor-done',
+                  },
+                ]}
+              />
             </header>
           ) : (
             <Topbar
