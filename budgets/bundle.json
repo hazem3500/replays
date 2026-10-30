@@ -60,7 +60,7 @@
     "dist/client/assets/CommentRowsSource-HASH.js": {
       "raw": 2421,
       "gzip": 1253,
-      "brotli": 1138
+      "brotli": 1141
     },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
@@ -144,8 +144,8 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
-      "gzip": 2628,
-      "brotli": 2399
+      "gzip": 2627,
+      "brotli": 2397
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 44015,
@@ -175,7 +175,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 968797,
       "gzip": 303520,
-      "brotli": 252123
+      "brotli": 252083
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -265,7 +265,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 609
+      "brotli": 601
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -299,7 +299,7 @@
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
-      "gzip": 25781,
+      "gzip": 25780,
       "brotli": 22377
     },
     "dist/client/assets/VitalsTile-HASH.js": {
@@ -731,16 +731,6 @@
       },
       "reason": "This PR build gets a different source-set identity for the shared summary-fields chunk; measured 3834 raw bytes here against 4485 under the previous identity on main, so it is smaller, not larger.",
       "pr": "https://github.com/hazem3500/replays/pull/87"
-    },
-    {
-      "file": "dist/client/assets/CommentRowsSource-HASH.js",
-      "cap": {
-        "raw": 2453,
-        "gzip": 1282,
-        "brotli": 1169
-      },
-      "reason": "Optimistic comment rows over the comments collection, loaded with the viewer (idle-prefetched from the index).",
-      "pr": "https://github.com/hazem3500/replays/pull/78"
     },
     {
       "file": "dist/client/assets/ComparePicker-HASH.js",
@@ -1408,6 +1398,16 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/190",
       "reason": "Capture split into mask-inputs, mask-selectors, capture-steps and step-labels modules; the shared capture chunks take new source identities; CI Quality / size against fresh main: raw 31868, gzip 9209, brotli 8207."
+    },
+    {
+      "file": "dist/client/assets/CommentRowsSource-HASH.js",
+      "cap": {
+        "raw": 2421,
+        "gzip": 1253,
+        "brotli": 1141
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/190",
+      "reason": "Hash drift: its imported chunk names change because capture's human-bundle now imports mask-inputs (raw size unchanged); CI Quality / size against fresh main: brotli 1141. Replaces #78's allowance for this file."
     }
   ]
 }
