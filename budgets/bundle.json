@@ -98,9 +98,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 8845,
+      "raw": 8642,
       "gzip": 2280,
-      "brotli": 1959
+      "brotli": 1953
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 39404,
