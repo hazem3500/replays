@@ -71,7 +71,7 @@ function dragged(drag: Drag, position: number, config: SplitterConfig) {
   const { side, min, max, collapsible = false, snapPoints } = config;
   const raw = drag.from + (position - drag.start) * (side === 'end' ? -1 : 1);
   const folded = collapsible && raw < min - COLLAPSE_PX;
-  return { size: folded ? drag.from : clamp(snapped(raw, snapPoints), min, max), folded };
+  return { size: clamp(snapped(raw, snapPoints), min, max), folded };
 }
 
 /** The separator keyboard pattern: arrows (Shift for four steps), Home/End, Enter folds and unfolds. */
@@ -119,8 +119,11 @@ function useDrag(config: SplitterConfig, commit: ReturnType<typeof useCommit>) {
     drag.current = undefined;
     delete document.documentElement.dataset.splitterDrag;
     setDragging(false);
-    if (keep) commit(state.size, state.folded, state.folded !== collapsed);
-    else config.onPreview?.(value, collapsed);
+    if (keep) {
+      // why: release can precede the queued frame; folding preserves the last committed size for reopening.
+      config.onPreview?.(state.folded ? value : state.size, state.folded);
+      commit(state.size, state.folded, state.folded !== collapsed);
+    } else config.onPreview?.(value, collapsed);
   };
   const handlers = {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
@@ -135,7 +138,7 @@ function useDrag(config: SplitterConfig, commit: ReturnType<typeof useCommit>) {
       const state = drag.current;
       if (!state) return;
       const next = dragged(state, coordinate(event), config);
-      state.size = next.folded ? value : next.size;
+      state.size = next.size;
       state.folded = next.folded;
       if (state.frame) return;
       // why: one layout per frame, however many pointer events arrive.

@@ -9,6 +9,7 @@ let root: Root;
 let host: HTMLDivElement;
 let changes: number[];
 let folds: boolean[];
+let previews: { size: number; folded: boolean }[];
 
 function setUp() {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -18,6 +19,7 @@ function setUp() {
   root = createRoot(host);
   changes = [];
   folds = [];
+  previews = [];
 }
 
 function tearDown() {
@@ -50,6 +52,7 @@ function Harness({ initial = 300, collapsible = true }: { initial?: number; coll
       folds.push(next);
       setCollapsed(next);
     },
+    onPreview: (size: number, folded: boolean) => previews.push({ size, folded }),
     storageKey: 'test-split',
     label: 'Resize panel',
     testId: 'seam',
@@ -146,6 +149,49 @@ describe('Splitter from the keyboard', () => {
 describe('Splitter under the pointer', () => {
   beforeEach(setUp);
   afterEach(tearDown);
+
+  it('stays at its minimum across the fold threshold and restores the saved width only when released', () => {
+    capturePointers();
+    let frame: FrameRequestCallback | undefined;
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frame = callback;
+      return 1;
+    });
+    render();
+    pointer('pointerdown', 500);
+    pointer('pointermove', 700);
+    act(() => frame?.(0));
+    pointer('pointermove', 900);
+    act(() => frame?.(0));
+    expect(previews).toEqual([{ size: 120, folded: false }, { size: 120, folded: true }]);
+    pointer('pointerup', 900);
+    expect(previews.at(-1)).toEqual({ size: 300, folded: true });
+    expect(localStorage.getItem('test-split')).toBeNull();
+    key('Enter');
+    expect(changes).toEqual([300]);
+  });
+
+  it('applies the final preview when release arrives before the next animation frame', () => {
+    capturePointers();
+    vi.stubGlobal('requestAnimationFrame', () => 1);
+    render();
+    pointer('pointerdown', 500);
+    pointer('pointermove', 550);
+    pointer('pointerup', 550);
+    expect(previews).toEqual([{ size: 250, folded: false }]);
+    expect(changes).toEqual([250]);
+  });
+
+  it('restores the committed size when a shrinking drag is cancelled', () => {
+    capturePointers();
+    render();
+    pointer('pointerdown', 500);
+    pointer('pointermove', 900);
+    pointer('pointercancel', 900);
+    expect(previews.at(-1)).toEqual({ size: 300, folded: false });
+    expect(changes).toEqual([]);
+    expect(folds).toEqual([]);
+  });
 
   it('follows a drag, snaps near a snap point, and shows the resize cursor everywhere while held', () => {
     capturePointers();
