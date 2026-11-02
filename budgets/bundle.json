@@ -300,7 +300,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 72471,
       "gzip": 25762,
-      "brotli": 22377
+      "brotli": 22371
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
@@ -1129,10 +1129,10 @@
     {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
-        "brotli": 628
+        "brotli": 617
       },
-      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/184"
+      "reason": "Phone menu glyph changes shared chunk fingerprints. Linux CI measured unchanged SuiteCompare at 617 Brotli bytes versus 601 on main.",
+      "pr": "https://github.com/hazem3500/replays/pull/172"
     },
     {
       "file": "dist/client/assets/SuiteWorkspace-HASH.js",
