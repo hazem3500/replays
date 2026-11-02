@@ -5,6 +5,7 @@ import { createRecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
 import { resolveRecorderMessages } from './messages.ts';
 import { cleanupText, updateText } from './text-motion.ts';
+import { hideSurface as exitSurface, showSurface, type FloatingSurface } from './surface-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
 import type { IssueUploadErrorDetails } from './upload.ts';
 
@@ -67,17 +68,7 @@ export function createDefaultUi(
     return { host, root, remove: () => host.remove() };
   };
 
-  let floating:
-    | {
-        host: HTMLElement;
-        root: ShadowRoot;
-        remove: () => void;
-        shell: HTMLElement;
-        content: HTMLElement;
-        live: HTMLElement;
-        label: HTMLElement;
-      }
-    | undefined;
+  let floating: FloatingSurface | undefined;
   let renderCleanup: (() => void) | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   let generation = 0;
@@ -94,7 +85,7 @@ export function createDefaultUi(
       cleanupText(floating.label);
       floating.root.querySelectorAll<HTMLElement>('.time').forEach(cleanupText);
     }
-    floating?.remove();
+    if (floating) exitSurface(floating.shell, floating.remove);
     floating = undefined;
   };
   const surface = (phase: string, announcement: string) => {
@@ -120,7 +111,7 @@ export function createDefaultUi(
     }
     const focused = floating.root.activeElement;
     const keepFocus = focused instanceof HTMLElement && floating.shell.contains(focused);
-    floating.shell.hidden = false;
+    showSurface(floating.shell);
     floating.shell.dataset.phase = phase;
     delete floating.shell.dataset.custom;
     floating.content.querySelectorAll<HTMLElement>('.time').forEach(cleanupText);
@@ -130,7 +121,7 @@ export function createDefaultUi(
     return floating;
   };
   const hideSurface = () => {
-    if (floating) floating.shell.hidden = true;
+    if (floating) exitSurface(floating.shell);
     clearContent();
   };
 

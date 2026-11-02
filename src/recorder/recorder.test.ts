@@ -195,7 +195,7 @@ describe('createRecorder', () => {
     );
     recorder.discard();
     await expect(request).resolves.toBeUndefined();
-    expect(document.querySelector('[data-recorder-ui]')).toBeNull();
+    await vi.waitFor(() => expect(document.querySelector('[data-recorder-ui]')).toBeNull());
     expect(upload).not.toHaveBeenCalled();
   });
 
