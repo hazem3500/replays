@@ -2,8 +2,8 @@ import { type RefObject, useLayoutEffect, useRef } from 'react';
 
 import { queueReveal, staggerIn } from '../viewer/stagger.ts';
 
-/** The rows of the inspector's panels that stagger in (never the windowing spacers). */
-const PANEL_ROWS = 'tbody > tr:not(.spacer-row):not(.gap-row), .ctx-summary, .ctx-heading, .ctx-source, .ctx-row, .empty';
+/** The rows of the inspector's panels that stagger in. */
+const PANEL_ROWS = 'tbody > tr, .ctx-summary, .ctx-heading, .ctx-source, .ctx-row, .empty';
 
 /**
  * The chosen panel's visible rows rise in (stagger.ts): on the page's reveal clock the first time the dock is

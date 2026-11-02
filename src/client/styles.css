@@ -625,7 +625,6 @@ svg.lucide.lucide { stroke-width: 2; }
 .diagnostic-table tr[data-future] .level-icon { opacity: 0.5; }
 .diagnostic-table tr[data-future].error td, .diagnostic-table tr[data-future].failed td { background: color-mix(in srgb, var(--danger-tint) 45%, transparent); }
 .diagnostic-table tr td { transition: color var(--motion-fast) var(--ease-out); }
-.diagnostic-table .gap-row td { height: auto; padding: 0; border: 0; }
 /* Above the rows and the sticky header (z 2), so at the very top its grip straddles the header's hairline whole (the
    line itself never goes above it; scrolled out of view it is hidden, data-pinned). */
 .now-divider { position: absolute; z-index: 3; top: 0; right: 0; left: 0; height: 0; pointer-events: none; will-change: transform; transition: transform 150ms var(--ease-out); }
@@ -707,7 +706,6 @@ svg.lucide.lucide { stroke-width: 2; }
 .diagnostic-table th { position: sticky; z-index: 2; top: 0; height: 28px; padding: 0 10px; border-bottom: 1px solid var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; letter-spacing: 0.01em; text-align: left; }
 /* Rows: 32 px, soft hairlines (half the panel line), a hover fill; one family across Console, Network, Performance. */
 .diagnostic-table td { height: 32px; padding: 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); vertical-align: middle; }
-.diagnostic-table .spacer-row td { height: auto; padding: 0; border: 0; }
 .diagnostic-table time { font-variant-numeric: tabular-nums; }
 .diagnostic-table time { color: var(--text-tertiary); }
 .console-table th:nth-child(1), .console-table td:nth-child(1) { width: 72px; }
@@ -973,7 +971,6 @@ svg.lucide.lucide { stroke-width: 2; }
   .copy-command:hover { border-color: var(--accent); }
   .inspector-resizer:hover { border-top-color: var(--line-strong); transition-delay: 120ms; }
   .inspector-resizer:hover::after { opacity: 1; scale: 1; transition: opacity 200ms cubic-bezier(0.22, 1, 0.36, 1) 120ms, scale 200ms cubic-bezier(0.22, 1, 0.36, 1) 120ms, background-color 180ms var(--ease-out); }
-  .diagnostic-table tbody tr:not(.error):hover td { background: var(--surface-hover); }
   .button:hover { filter: brightness(1.06); }
 }
 

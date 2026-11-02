@@ -1,0 +1,67 @@
+/* Console tab (ConsolePanel.tsx). Shares network.css's frame, toolbar and detail (.np, .np-toolbar, .np-detail); rows
+   are two lines of the message so a long or multi-line log is readable at a glance, and the whole of it opens beside. */
+.cp { container: console / inline-size; }
+.cp-dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--text-tertiary); }
+.cp-dot[data-level="error"] { background: var(--danger); }
+.cp-dot[data-level="warn"] { background: var(--warning); }
+.cp-dot[data-level="debug"] { border: 1.5px solid var(--text-tertiary); background: transparent; }
+.np-chip[data-level="error"] .np-chip-count { color: var(--danger); }
+
+.cp-table { --cp-cols: 60px minmax(0, 1fr) minmax(0, 160px); font-size: var(--text-xs); }
+.cp-row { display: grid; grid-template-columns: var(--cp-cols); align-items: start; column-gap: 10px; min-height: 44px; padding: 4px 14px 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
+.cp-row > * { min-width: 0; }
+.cp-head { position: sticky; z-index: 2; top: 0; align-items: center; height: 28px; min-height: 28px; padding-block: 0; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
+.cp-row:not(.cp-head):hover { background: var(--surface-hover); }
+.cp-row[data-level="error"] { background: var(--danger-tint); box-shadow: inset 2px 0 var(--danger); }
+.cp-row[data-level="warn"] { background: color-mix(in srgb, var(--warning) 7%, transparent); box-shadow: inset 2px 0 var(--warning); }
+.cp-row[data-selected], .cp-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
+.cp-time { padding-top: 6px; }
+.cp-time time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.cp-message button { width: 100%; min-height: 36px; display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 4px 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.cp-message button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
+/* invariant: two lines, newlines kept, never a sideways scroll; ConsoleList.tsx counts the lines past these two. */
+.cp-text { min-width: 0; flex: 1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-family: var(--mono); font-size: var(--text-xs); line-height: 16px; white-space: pre-wrap; overflow-wrap: anywhere; transition: color var(--motion) var(--ease-out); }
+.cp-level-icon { display: inline-grid; flex: none; place-items: center; height: 16px; }
+.cp-level-icon svg { width: 13px; height: 13px; }
+.cp-level-icon[data-level="error"] { color: var(--danger); }
+.cp-level-icon[data-level="warn"] { color: var(--warning); }
+.cp-badges { display: inline-flex; flex: none; gap: 4px; margin-top: 1px; }
+.cp-badge { height: 16px; padding: 0 5px; border-radius: 8px; background: var(--surface-pressed); color: var(--text-secondary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; line-height: 16px; white-space: nowrap; }
+.cp-count { color: var(--text); font-weight: 600; }
+.cp-page { padding-top: 6px; overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
+.cp-head .cp-page { padding-top: 0; }
+.cp-row[data-future] .cp-text, .cp-row[data-future] .cp-page { color: var(--text-tertiary); }
+.cp-row[data-future] .cp-level-icon { opacity: 0.5; }
+.cp-row[data-future][data-level="error"] { background: color-mix(in srgb, var(--danger-tint) 45%, transparent); }
+
+/* Phones and narrow panels: the message's two lines as one 48 px target on top, time and page on their own line
+   below; nothing is hidden, the page moves under the message instead of being dropped. */
+@container console (max-width: 559px) {
+  .cp-table { --cp-cols: auto minmax(0, 1fr); }
+  .cp-row:not(.cp-head) { grid-template-areas: "message message" "time page"; row-gap: 0; padding: 2px 12px 6px; }
+  .cp-row:not(.cp-head) .cp-message { grid-area: message; margin-inline: -12px; }
+  .cp-row:not(.cp-head) .cp-message button { min-height: 48px; padding: 8px 12px; border-radius: 0; }
+  .cp-row:not(.cp-head) .cp-time { grid-area: time; padding-top: 0; }
+  .cp-row:not(.cp-head) .cp-page { grid-area: page; padding-top: 0; line-height: 24px; }
+  .cp-head { grid-template-columns: minmax(0, 1fr); padding-inline: 12px; }
+  .cp-head > :is(:first-child, .cp-page) { display: none; }
+}
+@media (pointer: coarse) {
+  .cp-row:not(.cp-head) { min-height: 48px; }
+  .cp-message button { min-height: 44px; }
+}
+
+/* The detail: what was logged, whole. */
+.cp-detail-level[data-level="error"] { color: var(--danger); }
+.cp-detail-level[data-level="warn"] { color: var(--warning); }
+.cp-actions { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px 8px 0; }
+.cp-full { margin: 6px 14px 10px; padding: 8px 10px; overflow: auto; border-radius: var(--radius-sm); background: var(--surface); color: var(--text); font-family: var(--mono); font-size: var(--text-xs); line-height: 18px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.cp-json { color: var(--text-secondary); }
+.cp-mono { font-family: var(--mono); font-size: var(--text-xs); }
+.cp-frames { display: grid; gap: 2px; margin: 0; padding: 0; list-style: none; font-family: var(--mono); font-size: var(--text-xs); line-height: 18px; }
+.cp-frames li { display: flex; flex-wrap: wrap; gap: 0 8px; padding: 2px 6px; border-radius: var(--radius-sm); }
+.cp-frames li[data-top] { background: var(--danger-tint); }
+.cp-frame-fn { color: var(--text); }
+.cp-frame-file { color: var(--text-tertiary); overflow-wrap: anywhere; }
+.cp-repeats { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; padding: 0; list-style: none; }
+.cp-pending .cp-pending-chips { width: 240px; }

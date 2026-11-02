@@ -301,6 +301,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Changed
 
+- The Console tab reads whole messages. Rows show two lines of the message, monospace with newlines kept, and say how
+  many lines more, when a stack came with it, and how many times an identical message repeated (folded as ×N).
+  Tapping, clicking or pressing Enter on a row opens it beside the list (in its place on a phone): the full text with
+  logged JSON indented, the stack as frames with the throwing frame's file:line, the page, every time a folded message
+  was logged, Watch from, Copy message and Copy with stack. Level chips filter and summarise like Network's, search
+  opens in place, and phones get a 48 px target per row with the page under the message instead of hidden.
+
 - Pages are served through a TanStack Start build embedded in the server
   ([docs/operations.md](docs/operations.md#server-rendered-pages-tanstack-start)): the index arrives rendered, with its
   lists in the page, so a phone shows replays without waiting for the app's JavaScript (phone index LCP 3.9 s → 1.1 s on

@@ -56,7 +56,7 @@ function GroupList({
     <ul className="feed-list" data-view={view} data-group={group.key} data-has-suites={group.suites || undefined} role="list">
       {segments.flatMap((segment): ReactNode[] => {
         if (segment.kind === 'spacer')
-          return [<li key={segment.key} className="feed-spacer" aria-hidden="true" style={{ height: segment.height }} />];
+          return [<li key={segment.key} className="feed-spacer" aria-hidden="true" inert style={{ height: segment.height }} />];
         const row = rows[segment.index];
         if (row?.kind !== 'row') return [];
         return row.entries.map((entry, column) =>

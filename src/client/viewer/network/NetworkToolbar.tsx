@@ -75,7 +75,7 @@ export function NetworkToolbar({
     requestAnimationFrame(() => trigger.current?.focus());
   };
   return (
-    <div className="np-toolbar" data-searching={searching || undefined}>
+    <div className="np-toolbar" data-testid="network-toolbar" data-searching={searching || undefined}>
       {searching ? (
         <SearchField text={filter.text} onText={(text) => onFilter({ ...filter, text })} onClose={closeSearch} />
       ) : (

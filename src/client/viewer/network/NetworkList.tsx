@@ -9,6 +9,7 @@ import { useWindowedRows } from '../../windowing.ts';
 import { HEADER_HEIGHT, SeekTime, TrackList } from '../TrackList.tsx';
 import { durationShare, formatDuration, type NetworkRow, playheadHorizon, stepAt } from './model.ts';
 import { KEY_MOVES, moveIndex, rowIdOf, type StepMove } from '../list-keys.ts';
+import { ListSpacer } from '../ListSpacer.tsx';
 
 export const REQUEST_DETAIL_ID = 'request-detail';
 
@@ -95,7 +96,7 @@ export function NetworkList({
             onFocus={(event) => onHover?.(rowIdOf(event.target))}
             onBlur={() => onHover?.()}
           >
-            <div aria-hidden="true" style={{ height: padTop }} />
+            <ListSpacer height={padTop} />
             {rows.slice(start, end).map((row, offset) => (
               <RequestRow
                 key={row.id}
@@ -109,7 +110,7 @@ export function NetworkList({
                 onStep={step}
               />
             ))}
-            <div aria-hidden="true" style={{ height: padBottom }} />
+            <ListSpacer height={padBottom} />
           </div>
         </div>
       )}
