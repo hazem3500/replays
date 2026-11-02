@@ -4,7 +4,7 @@
   "files": {
     "bin/replays.mjs": {
       "raw": 1557,
-      "gzip": 739,
+      "gzip": 742,
       "brotli": 624
     },
     "dist/cli/cli.mjs": {
@@ -14,7 +14,7 @@
     },
     "dist/cli/recorder.iife.js": {
       "raw": 190449,
-      "gzip": 60721,
+      "gzip": 60897,
       "brotli": 39084
     },
     "dist/client/assets/api-HASH.js": {
@@ -64,7 +64,7 @@
     },
     "dist/client/assets/comments-HASH.js": {
       "raw": 764,
-      "gzip": 442,
+      "gzip": 445,
       "brotli": 401
     },
     "dist/client/assets/comments-ui-HASH.css": {
@@ -134,7 +134,7 @@
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 721,
-      "gzip": 438,
+      "gzip": 439,
       "brotli": 380
     },
     "dist/client/assets/Headline-HASH.css": {
@@ -144,7 +144,7 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 5999,
-      "gzip": 2623,
+      "gzip": 2627,
       "brotli": 2397
     },
     "dist/client/assets/Inspector-HASH.css": {
@@ -154,17 +154,17 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 256294,
-      "gzip": 85938,
+      "gzip": 86064,
       "brotli": 71595
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
-      "gzip": 87663,
+      "gzip": 87670,
       "brotli": 87626
     },
     "dist/client/assets/inter-latin-wght-normal-HASH.woff2": {
       "raw": 49704,
-      "gzip": 49697,
+      "gzip": 49702,
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
@@ -174,7 +174,7 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 968797,
-      "gzip": 303083,
+      "gzip": 303520,
       "brotli": 252031
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -194,7 +194,7 @@
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 1921,
-      "gzip": 938,
+      "gzip": 945,
       "brotli": 817
     },
     "dist/client/assets/player-HASH.js": {
@@ -209,17 +209,17 @@
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
-      "gzip": 69455,
+      "gzip": 69476,
       "brotli": 59828
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1349,
-      "gzip": 635,
+      "gzip": 640,
       "brotli": 500
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 9060,
-      "gzip": 4109,
+      "gzip": 4112,
       "brotli": 3732
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
@@ -229,7 +229,7 @@
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 382,
-      "gzip": 271,
+      "gzip": 273,
       "brotli": 266
     },
     "dist/client/assets/settings-HASH.js": {
@@ -239,7 +239,7 @@
     },
     "dist/client/assets/shortcuts-HASH.js": {
       "raw": 3371,
-      "gzip": 1315,
+      "gzip": 1328,
       "brotli": 1128
     },
     "dist/client/assets/sign-in-HASH.js": {
@@ -269,8 +269,8 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
-      "gzip": 9023,
-      "brotli": 7808
+      "gzip": 9037,
+      "brotli": 7810
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 34795,
@@ -339,7 +339,7 @@
     },
     "dist/lib/chunks/compression.ts-47af8e92faec.mjs": {
       "raw": 4312,
-      "gzip": 1711,
+      "gzip": 1720,
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-a920d21ea104.mjs": {
@@ -349,12 +349,12 @@
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
-      "gzip": 5314,
+      "gzip": 5317,
       "brotli": 4640
     },
     "dist/lib/chunks/define.ts-d7bc1a10bcb5.mjs": {
       "raw": 48350,
-      "gzip": 13537,
+      "gzip": 13571,
       "brotli": 11946
     },
     "dist/lib/chunks/har-bodies.ts-38ded7aa8c17.mjs": {
@@ -364,12 +364,12 @@
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
-      "gzip": 10756,
+      "gzip": 10764,
       "brotli": 9522
     },
     "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs": {
       "raw": 434,
-      "gzip": 295,
+      "gzip": 296,
       "brotli": 231
     },
     "dist/lib/chunks/index.ts-21682b68ed82.mjs": {
@@ -384,7 +384,7 @@
     },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
-      "gzip": 4942,
+      "gzip": 4951,
       "brotli": 4342
     },
     "dist/lib/chunks/start.ts-530ffefc64b4.mjs": {
@@ -394,12 +394,12 @@
     },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
-      "gzip": 1446,
+      "gzip": 1449,
       "brotli": 1306
     },
     "dist/lib/chunks/tracing-sdk.ts-b5770c1c6523.mjs": {
       "raw": 8741,
-      "gzip": 2917,
+      "gzip": 2922,
       "brotli": 2544
     },
     "dist/lib/chunks/tracing.ts-9f037afed474.mjs": {
@@ -409,7 +409,7 @@
     },
     "dist/lib/chunks/types.ts-b4e3b7897b28.mjs": {
       "raw": 2714,
-      "gzip": 1049,
+      "gzip": 1051,
       "brotli": 884
     },
     "dist/lib/chunks/web.ts-ee44bee371bd.mjs": {
@@ -439,7 +439,7 @@
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4181,
-      "gzip": 1635,
+      "gzip": 1638,
       "brotli": 1407
     },
     "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs": {
@@ -479,7 +479,7 @@
     },
     "dist/lib/recorder-kit.mjs": {
       "raw": 525,
-      "gzip": 236,
+      "gzip": 238,
       "brotli": 202
     },
     "dist/lib/recorder-react.mjs": {
@@ -499,7 +499,7 @@
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
-      "gzip": 60721,
+      "gzip": 60897,
       "brotli": 39084
     },
     "dist/lib/recorder.mjs": {
@@ -943,6 +943,16 @@
       "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 44015,
+        "gzip": 8406,
+        "brotli": 7521
+      },
+      "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
+      "pr": "https://github.com/hazem3500/replays/pull/152"
+    },
+    {
       "file": "dist/client/assets/fetch-HASH.js",
       "cap": {
         "raw": 721,
@@ -1169,6 +1179,16 @@
         "raw": 1089,
         "gzip": 450,
         "brotli": 358
+      },
+      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/159"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 241169,
+        "gzip": 82012,
+        "brotli": 68918
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
@@ -1403,7 +1423,7 @@
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 256294,
-        "gzip": 85938,
+        "gzip": 86064,
         "brotli": 71595
       },
       "pr": "https://github.com/hazem3500/replays/pull/165",
