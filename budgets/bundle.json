@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
       "gzip": 981,
-      "brotli": 848
+      "brotli": 846
     },
     "dist/client/assets/arrow-up-right-HASH.js": {
       "raw": 207,
@@ -263,9 +263,9 @@
       "brotli": 553
     },
     "dist/client/assets/ReplayIndex-HASH.js": {
-      "raw": 208371,
-      "gzip": 69211,
-      "brotli": 59099
+      "raw": 214836,
+      "gzip": 71420,
+      "brotli": 60995
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 382,
@@ -355,7 +355,7 @@
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
       "gzip": 463,
-      "brotli": 429
+      "brotli": 427
     },
     "dist/client/assets/write-HASH.js": {
       "raw": 334228,
@@ -1484,33 +1484,9 @@
       "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "raw": 208371
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/Headline-HASH.js",
       "cap": {
         "gzip": 2639
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "gzip": 69211
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "brotli": 59099
       },
       "pr": "https://github.com/hazem3500/replays/pull/191",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
@@ -1806,6 +1782,16 @@
       },
       "reason": "In-viewport collapsed Steps handles, shared narrow-screen Steps tabs and vertically centred console rows. Measured main/head: raw 5969 to 6139 bytes, gzip 1562 to 1586 bytes, brotli 1344 to 1368 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/200"
+    },
+    {
+      "file": "dist/client/assets/ReplayIndex-HASH.js",
+      "cap": {
+        "raw": 214836,
+        "gzip": 71420,
+        "brotli": 60995
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Measured stack choreography, delayed rear-layer transitions and leading suite posters: main/head raw 207979/208578, gzip 69089/69339, Brotli 58982/59218 bytes on Node 24.22.1. Three percent feature headroom."
     }
   ]
 }
