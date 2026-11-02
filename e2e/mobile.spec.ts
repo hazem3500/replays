@@ -151,9 +151,9 @@ test('the topbar fits at 320 px: the title keeps its room beside Edit and More; 
   await expect(page.getByTestId('theme-menu-item')).toBeVisible();
 
   // Replay details is a bottom sheet headed by the full title (the bar cuts it).
-  const title = await page.locator('#replay-title').textContent();
   await page.getByTestId('replay-details').tap();
   const sheet = page.getByTestId('replay-info');
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByRole('heading', { name: title!.trim() })).toBeVisible();
+  const title = await sheet.getByRole('heading').innerText();
+  await expect(page.locator('#replay-title')).toHaveAccessibleName(title);
 });

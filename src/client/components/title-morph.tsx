@@ -3,7 +3,7 @@ import { lazy, Suspense } from 'react';
 import { useTitleHydrated } from '../hooks/use-title-morph.ts';
 import { useMediaQuery } from '../media.ts';
 
-const MorphCharacters = lazy(() => import('./title-morph-characters.tsx'));
+const MorphCharacters = lazy(() => import('./title-morph-characters.tsx').then((module) => ({ default: module.TitleMorphCharacters })));
 
 /** Morphs a title without exposing outgoing characters to the heading or menu's accessible name. */
 export function TitleMorph({ text, from }: { text: string; from?: string | undefined }) {
