@@ -8,16 +8,16 @@
 .np-chip[data-level="error"] .np-chip-count { color: var(--danger); }
 
 .cp-table { --cp-cols: 60px minmax(0, 1fr) minmax(0, 160px); font-size: var(--text-xs); }
-.cp-row { display: grid; grid-template-columns: var(--cp-cols); align-items: start; column-gap: 10px; min-height: 44px; padding: 4px 14px 4px 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
+.cp-row { display: grid; grid-template-columns: var(--cp-cols); align-items: center; column-gap: 10px; min-height: 36px; padding: 2px 14px 2px 10px; border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); color: var(--text-secondary); transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
 .cp-row > * { min-width: 0; }
 .cp-head { position: sticky; z-index: 2; top: 0; align-items: center; height: 28px; min-height: 28px; padding-block: 0; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
 .cp-row:not(.cp-head):hover { background: var(--surface-hover); }
 .cp-row[data-level="error"] { background: var(--danger-tint); box-shadow: inset 2px 0 var(--danger); }
 .cp-row[data-level="warn"] { background: color-mix(in srgb, var(--warning) 7%, transparent); box-shadow: inset 2px 0 var(--warning); }
 .cp-row[data-selected], .cp-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
-.cp-time { padding-top: 6px; }
+.cp-time { padding-top: 0; }
 .cp-time time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-.cp-message button { width: 100%; min-height: 36px; display: flex; align-items: flex-start; gap: 6px; margin: 0; padding: 4px 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.cp-message button { width: 100%; min-height: 32px; display: flex; align-items: center; gap: 6px; margin: 0; padding: 4px 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .cp-message button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 /* invariant: two lines, newlines kept, never a sideways scroll; ConsoleList.tsx counts the lines past these two. */
 .cp-text { min-width: 0; flex: 1; display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-family: var(--mono); font-size: var(--text-xs); line-height: 16px; white-space: pre-wrap; overflow-wrap: anywhere; transition: color var(--motion) var(--ease-out); }
@@ -28,7 +28,7 @@
 .cp-badges { display: inline-flex; flex: none; gap: 4px; margin-top: 1px; }
 .cp-badge { height: 16px; padding: 0 5px; border-radius: 8px; background: var(--surface-pressed); color: var(--text-secondary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; line-height: 16px; white-space: nowrap; }
 .cp-count { color: var(--text); font-weight: 600; }
-.cp-page { padding-top: 6px; overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
+.cp-page { padding-top: 0; overflow: hidden; color: var(--text-tertiary); text-overflow: ellipsis; white-space: nowrap; }
 .cp-head .cp-page { padding-top: 0; }
 .cp-row[data-future] .cp-text, .cp-row[data-future] .cp-page { color: var(--text-tertiary); }
 .cp-row[data-future] .cp-level-icon { opacity: 0.5; }
