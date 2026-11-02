@@ -95,10 +95,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const error = suiteFailure ? suiteFailure.message : '';
   const [chosen, setSelected] = useState(initialReplayId);
   // `/s/<suite>` lands on the first failed run (else the first recording) until a run is picked.
-  const landing = useMemo(
-    () => (suite && !initialReplayId ? initialRunReplayId(workspaceRuns(suite), Boolean(suite.runDetails)) : undefined),
-    [initialReplayId, suite],
-  );
+  const landing = suite && !initialReplayId ? initialRunReplayId(workspaceRuns(suite), Boolean(suite.runDetails)) : undefined;
   const selected = chosen ?? landing;
   const { data: bundle, error: bundleFailure } = useQuery({ ...replayQuery(selected ?? ''), enabled: Boolean(selected) });
   const bundleError = bundleFailure ? bundleFailure.message : '';
@@ -109,11 +106,9 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
-  const [railPreference, setRailPreference] = useState<boolean | undefined>(undefined);
+  const [collapsed, setRailPreference] = useState(false);
   const narrow = useMediaQuery(MOBILE_QUERY);
   const [sidebarWidth, setSidebarWidth] = useState(() => readSplitterSize('suite-sidebar-width', 256, 200, 400));
-  // Open by default at every desktop width; only an explicit choice collapses it (phones use the run menu).
-  const collapsed = railPreference ?? false;
 
   // The landing run goes into the URL without adding a history entry, and is pinned so a background
   // refresh of the suite (a run that failed meanwhile) cannot move the viewer to another run.
@@ -224,10 +219,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     if (suite) document.title = `${suite.title} · ${productName()}`;
   }, [suite]);
 
-  const switchRail = () => {
-    const next = !collapsed;
-    setRailPreference(next);
-  };
+  const switchRail = () => setRailPreference(!collapsed);
 
   // Memoised props for the viewer's (memo) header, so inspector tab switches do not re-render it.
   const backHref = useMemo(() => indexReturnHref(), []);
@@ -261,12 +253,11 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (shownTitle && shownTitle !== titles.current)
     setTitles({ current: shownTitle, ...(titles.current ? { previous: titles.current } : {}) });
   // Phones hide the runs sidebar, so the run's place in the suite rides along as a muted prefix.
-  const playableRuns = runs.filter((item) => playableReplayId(item, detailed));
+  const playableRuns = playable;
   const runIndex = playableRuns.findIndex((item) => item.replayId === selected);
   const runPrefix = narrow && runIndex >= 0 ? `Run ${runIndex + 1} of ${playableRuns.length}` : undefined;
-  // Memoised (by tone) so the viewer's memo header skips inspector tab switches.
   const tone = run ? statusTone(run, detailed) : undefined;
-  const runStatus = useMemo(() => (tone ? <RunStatusChip tone={tone} /> : undefined), [tone]);
+  const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
 
   if (authFailure || (error && !suite)) {
     const message = authFailure?.message ?? error ?? '';
@@ -292,7 +283,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
       <a className="skip-link" href="#replay-player">
         Skip to replay
       </a>
-      {suite && !narrow ? (
+      {!narrow ? (
         <SuiteSidebar
           suite={suite}
           runs={runs}
@@ -376,7 +367,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
               <SignInLink error={bundleFailure} />
             </div>
           </main>
-        ) : suite && !selected && runs.every((item) => !playableReplayId(item, detailed)) ? (
+        ) : !selected && playable.length === 0 ? (
           <main className="app-shell">
             <Topbar title={suite.title} backHref={backHref} compact={narrow} />
             {runs.some((item) => isExpired(item, detailed)) ? (
