@@ -92,11 +92,6 @@
       "gzip": 13716,
       "brotli": 12188
     },
-    "dist/client/assets/composite-HASH.js": {
-      "raw": 94002,
-      "gzip": 31185,
-      "brotli": 27690
-    },
     "dist/client/assets/createLucideIcon-HASH.js": {
       "raw": 3209,
       "gzip": 1535,
@@ -173,9 +168,9 @@
       "brotli": 39256
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 968797,
-      "gzip": 303520,
-      "brotli": 252031
+      "raw": 352225,
+      "gzip": 113068,
+      "brotli": 96276
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -387,11 +382,6 @@
       "gzip": 4951,
       "brotli": 4342
     },
-    "dist/lib/chunks/start.ts-530ffefc64b4.mjs": {
-      "raw": 4541,
-      "gzip": 1771,
-      "brotli": 1551
-    },
     "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs": {
       "raw": 3950,
       "gzip": 1449,
@@ -528,9 +518,9 @@
       "brotli": 39256
     },
     "initial/index.html/js": {
-      "raw": 1484557,
-      "gzip": 472609,
-      "brotli": 399732
+      "raw": 902393,
+      "gzip": 292848,
+      "brotli": 253676
     },
     "initial/render.html/css": {
       "raw": 6192,
@@ -893,16 +883,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/139"
     },
     {
-      "file": "dist/client/assets/composite-HASH.js",
-      "cap": {
-        "raw": 94002,
-        "gzip": 31185,
-        "brotli": 27690
-      },
-      "reason": "Chunk reshuffle when the comments panel and markers load lazily: shared viewer and Base UI modules from main's icon-button and inertValue chunks (both gone, 148415 raw bytes) land here; measured in CI against main: raw 17369 to 93534, gzip 6482 to 31029; all client JS grows 10 kB raw and the initial index.html JS 1441358 to 1441194 raw bytes. Replaces #105's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/116"
-    },
-    {
       "file": "dist/client/assets/createLucideIcon-HASH.js",
       "cap": {
         "raw": 3209,
@@ -980,16 +960,6 @@
         "brotli": 1488
       },
       "reason": "compression.ts is shared by the server and the Start page renderer, so it becomes its own chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/156"
-    },
-    {
-      "file": "dist/lib/chunks/start.ts-530ffefc64b4.mjs",
-      "cap": {
-        "raw": 4541,
-        "gzip": 1771,
-        "brotli": 1551
-      },
-      "reason": "The Start page renderer (src/server/pages/start.ts, head.ts), loaded only with REPLAYS_SSR=1.",
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
