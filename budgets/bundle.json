@@ -90,7 +90,7 @@
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 33306,
       "gzip": 11413,
-      "brotli": 10056
+      "brotli": 10036
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -104,7 +104,7 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 43146,
-      "gzip": 13893,
+      "gzip": 14870,
       "brotli": 13253
     },
     "dist/client/assets/createLucideIcon-HASH.js": {
@@ -114,7 +114,7 @@
     },
     "dist/client/assets/drawer-HASH.js": {
       "raw": 45033,
-      "gzip": 15991,
+      "gzip": 15992,
       "brotli": 14511
     },
     "dist/client/assets/dropdown-menu-HASH.css": {
@@ -179,7 +179,7 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 259393,
-      "gzip": 87308,
+      "gzip": 87310,
       "brotli": 72775
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -1422,14 +1422,6 @@
       "reason": "Retained index chunk splitting and shared chunk compression measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "gzip": 13893
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/dropdown-menu-HASH.js",
       "cap": {
         "raw": 124084
@@ -1586,7 +1578,7 @@
       "cap": {
         "raw": 45033
       },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1646,14 +1638,6 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/drawer-HASH.js",
-      "cap": {
-        "gzip": 15991
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 625
@@ -1666,7 +1650,7 @@
       "cap": {
         "brotli": 14479
       },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1830,9 +1814,25 @@
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
+      "file": "dist/client/assets/CompareViewer-HASH.js",
+      "cap": {
+        "gzip": 14870
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/162",
+      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/drawer-HASH.js",
+      "cap": {
+        "gzip": 15992
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/162",
+      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
+    },
+    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
-        "gzip": 87271
+        "gzip": 87310
       },
       "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
