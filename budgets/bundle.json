@@ -30,7 +30,7 @@
     "dist/client/assets/Avatar-HASH.js": {
       "raw": 1651,
       "gzip": 920,
-      "brotli": 828
+      "brotli": 861
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -149,7 +149,7 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2132,
-      "gzip": 1063,
+      "gzip": 1059,
       "brotli": 907
     },
     "dist/client/assets/feature-HASH.js": {
@@ -1332,16 +1332,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/177"
     },
     {
-      "file": "dist/client/assets/Avatar-HASH.js",
-      "cap": {
-        "raw": 1651,
-        "gzip": 920,
-        "brotli": 828
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/177"
-    },
-    {
       "file": "dist/client/assets/clipboard-HASH.js",
       "cap": {
         "raw": 343,
@@ -1732,6 +1722,16 @@
       },
       "reason": "Generated modulepreload links reflect the lazy title-motion boundary and extracted shared UI chunks. Same-toolchain main/head: raw 12681 to 12852 bytes, gzip 4292 to 4333 bytes, brotli 3586 to 3636 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/Avatar-HASH.js",
+      "cap": {
+        "raw": 1651,
+        "gzip": 920,
+        "brotli": 861
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/201",
+      "reason": "Rebased comparison/title imports change hashes in this unchanged shared chunk. Fresh main/head: raw 1651/1651, gzip 919/919, Brotli 828/829 bytes. Preserve raw/gzip caps; allow a 32-byte Brotli compression margin."
     }
   ]
 }
