@@ -228,7 +228,7 @@ test('on a phone the preview shows, nothing scrolls sideways, and a no-op says s
   await expect(page.getByTestId('editor-hint')).toBeVisible();
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
   await expect(page.getByTestId('editor-hint')).toBeHidden({ timeout: 5000 });
-  await page.locator('.editor-mobile-more > summary').click();
+  await page.locator('.editor-mobile-header').getByRole('button', { name: 'More actions' }).click();
   await expect(page.getByTestId('editor-done')).toBeInViewport();
 });
 

@@ -1,4 +1,5 @@
 import { usePluginShortcuts } from './hooks/use-plugin-shortcuts.ts';
+import { useHasKeyboard } from './hooks/use-has-keyboard.ts';
 
 import { usePluginEvents } from './hooks/use-plugin-events.ts';
 import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
@@ -448,6 +449,7 @@ export function Viewer({
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   // why: a phone's top bar keeps only Edit and More (and the layout switch while comparing), so Compare waits in More.
+  const hasKeyboard = useHasKeyboard();
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(mobile
@@ -471,8 +473,8 @@ export function Viewer({
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
         : []),
-      // Useless on phones: no keyboard.
-      ...(mobile
+      // why: only where a keyboard can press them (useHasKeyboard): never on a touch screen without one.
+      ...(!hasKeyboard
         ? []
         : [
             {
@@ -486,7 +488,7 @@ export function Viewer({
       // why: keeping is rare and lifts expiry for good, so it comes after the everyday items, never first.
       ...(keepItem ? [keepItem] : []),
     ],
-    [actions.openShortcuts, keepItem, mobile, pluginMenu.items, sharedPlayer],
+    [actions.openShortcuts, hasKeyboard, keepItem, mobile, pluginMenu.items, sharedPlayer],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.

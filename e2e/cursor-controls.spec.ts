@@ -15,14 +15,14 @@ async function seedReplayWithBlur(page: Page, base: string, id: string, blur: Re
 
 /** On a phone the cursor options open from More into a panel; on desktop they sit in the standing presentation panel. */
 function cursorLocators(page: Page, mobile: boolean) {
-  const trigger = page.locator('.editor-mobile-more > summary');
+  const trigger = page.locator('.editor-mobile-header').getByRole('button', { name: 'More actions' });
   const inspector = mobile
     ? page.getByRole('region', { name: 'Cursor properties', exact: true })
     : page.getByRole('complementary', { name: 'Inspector' }).getByRole('group', { name: 'Cursor', exact: true });
   const openCursor = async () => {
     if (!mobile) return;
     await trigger.click();
-    await page.getByRole('button', { name: 'Cursor options', exact: true }).click();
+    await page.getByRole('menuitem', { name: 'Cursor options', exact: true }).click();
   };
   return { trigger, inspector, openCursor };
 }

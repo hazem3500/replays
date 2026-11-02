@@ -6,6 +6,10 @@ import { cn } from '@/lib/utils.ts';
 import { ChevronRightIcon, CheckIcon } from 'lucide-react';
 import { HoverGlide } from '@/components/sliding-highlight.tsx';
 
+import { MOBILE_QUERY, useMediaQuery } from '../../media.ts';
+// oxlint-disable-next-line import/no-unassigned-import -- why: the phone sheet's geometry ships with the menu primitive.
+import './menu-sheet.css';
+
 function DropdownMenu({ ...props }: MenuPrimitive.Root.Props) {
   return <MenuPrimitive.Root data-slot="dropdown-menu" {...props} />;
 }
@@ -18,6 +22,13 @@ function DropdownMenuTrigger({ ...props }: MenuPrimitive.Trigger.Props) {
   return <MenuPrimitive.Trigger data-slot="dropdown-menu-trigger" {...props} />;
 }
 
+const SHEET_STRINGS = { cancel: 'Cancel' };
+
+/**
+ * A menu's popup: anchored to its trigger on wider screens; on phones (MOBILE_QUERY) the same menu (roles, arrow keys,
+ * typeahead, focus trap and return) rises as a bottom sheet in the drawer's geometry (menu-sheet.css): scrim, handle,
+ * 48 px rows, destructive items last, a Cancel row, and the bottom safe area.
+ */
 function DropdownMenuContent({
   align = 'start',
   alignOffset = 0,
@@ -33,10 +44,12 @@ function DropdownMenuContent({
     portalContainer?: MenuPrimitive.Portal.Props['container'];
   }) {
   const popup = React.useRef<HTMLDivElement>(null);
+  const sheet = useMediaQuery(MOBILE_QUERY);
   return (
     <MenuPrimitive.Portal container={portalContainer}>
+      {sheet ? <MenuPrimitive.Backdrop className="menu-sheet-scrim" /> : null}
       <MenuPrimitive.Positioner
-        className="isolate z-50 outline-none"
+        className={cn('isolate z-50 outline-none', sheet && 'menu-sheet-positioner')}
         align={align}
         alignOffset={alignOffset}
         side={side}
@@ -45,10 +58,15 @@ function DropdownMenuContent({
       >
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
-          className={cn(
-            'motion-pop relative z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none data-closed:overflow-hidden',
-            className,
-          )}
+          data-sheet={sheet || undefined}
+          className={
+            sheet
+              ? 'menu-sheet'
+              : cn(
+                  'motion-pop relative z-50 max-h-(--available-height) w-(--anchor-width) min-w-32 origin-(--transform-origin) overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-none data-closed:overflow-hidden',
+                  className,
+                )
+          }
           data-glide=""
           ref={popup}
           // A menu fading out is no longer a menu: no role, hidden from assistive tech, inert, so a menu opened during
@@ -61,9 +79,15 @@ function DropdownMenuContent({
           }}
           {...props}
         >
+          {sheet ? <div className="menu-sheet-handle" aria-hidden="true" /> : null}
           {/* One gliding highlight follows the highlighted item (pointer or keyboard). */}
           <HoverGlide container={popup} itemSelector={GLIDE_ITEMS} followHighlighted />
           {children as React.ReactNode}
+          {sheet ? (
+            <MenuPrimitive.Item data-slot="dropdown-menu-item" className="menu-sheet-cancel" data-testid="menu-sheet-cancel">
+              {SHEET_STRINGS.cancel}
+            </MenuPrimitive.Item>
+          ) : null}
         </MenuPrimitive.Popup>
       </MenuPrimitive.Positioner>
     </MenuPrimitive.Portal>

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Editor } from '../src/client/editor/Editor.tsx';
 import { saveEdits, type LoadedEdits } from '../src/client/edits.ts';
 import type * as editsModule from '../src/client/edits.ts';
+import type * as topbarModule from '../src/client/Topbar.tsx';
 import { navigate } from '../src/client/routing/navigate.ts';
 import type * as navigationModule from '../src/client/routing/navigate.ts';
 import { type Playback, usePlayer } from '../src/client/player.ts';
@@ -27,7 +28,10 @@ function TestStage() {
   return createElement('div', { className: 'player-stage' });
 }
 vi.mock('../src/client/viewer/Transport.tsx', () => ({ PlayerStage: TestStage }));
-vi.mock('../src/client/Topbar.tsx', () => ({ Topbar: () => createElement('header', { 'data-testid': 'desktop-topbar' }) }));
+vi.mock('../src/client/Topbar.tsx', async (importOriginal) => ({
+  ...(await importOriginal<typeof topbarModule>()),
+  Topbar: () => createElement('header', { 'data-testid': 'desktop-topbar' }),
+}));
 vi.mock('../src/client/editor/EditorExport.tsx', () => ({
   EditorExport: ({ dirty, saving }: { dirty: boolean; saving: boolean }) =>
     createElement(
@@ -110,6 +114,13 @@ async function input(element: HTMLInputElement | HTMLTextAreaElement, value: str
     element.dispatchEvent(new Event('change', { bubbles: true }));
   });
 }
+/** Opens the phone header's More (the shared menu, a sheet on phones) and picks one of its items. */
+async function fromMore(selector: string) {
+  await click('.editor-mobile-header .topbar-more');
+  await settle(() => {
+    must(document.querySelector<HTMLElement>(selector)).click();
+  });
+}
 async function tool(selector: string) {
   await click('.editor-add-more');
   await settle(() => {
@@ -140,13 +151,8 @@ describe('timeline-first mobile editor captions', () => {
       seek.dispatchEvent(key);
     });
     expect(key.defaultPrevented).toBe(false);
-    const more = node<HTMLDetailsElement>('.editor-mobile-more');
-    more.open = true;
-    await settle(() => {
-      more.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    });
-    expect(more.open).toBe(false);
-    expect(document.activeElement).toBe(more.querySelector('summary'));
+    await click('.editor-mobile-header .topbar-more');
+    expect(document.querySelector('[data-slot="dropdown-menu-content"][data-sheet] [data-testid="editor-done"]')).not.toBeNull();
   });
 
   it('adds one caption at the playhead, focuses its text and follows undo without generating step captions', async () => {
@@ -228,11 +234,7 @@ describe('timeline-first mobile editor highlights and scrubbing', () => {
     expect(node<HTMLButtonElement>('[data-testid="editor-export"]').disabled).toBe(true);
     await click('[data-testid="undo"]');
     expect(host.querySelectorAll('[data-testid="timeline-highlight"]')).toHaveLength(0);
-    const more = node<HTMLDetailsElement>('.editor-mobile-more');
-    more.open = true;
-    await click('[data-testid="redo"]');
-    expect(more.open).toBe(false);
-    expect(document.activeElement).toBe(more.querySelector('summary'));
+    await fromMore('[data-testid="redo"]');
     expect(host.querySelectorAll('[data-testid="timeline-highlight"]')).toHaveLength(1);
     await tool('[data-testid="select-range"]');
     await click('.editor-context-panel [data-testid="add-period-highlight"]');
@@ -275,21 +277,15 @@ describe('timeline-first mobile editor chrome', () => {
     await renderEditor();
     await tool('[data-testid="add-point-highlight"]');
     await click('[data-testid="mobile-object-done"]');
-    const more = node<HTMLDetailsElement>('.editor-mobile-more');
-    more.open = true;
-    const cursor = [...more.querySelectorAll<HTMLButtonElement>('button')].find((button) => button.textContent?.includes('Cursor options'));
-    await settle(() => {
-      must(cursor).click();
-    });
+    await fromMore('[data-testid="editor-cursor-options"]');
     expect(node('.editor-context-panel h2').textContent).toBe('Cursor');
     expect(document.activeElement).toBe(node('.editor-context-panel h2'));
     await settle(() => {
       node('.editor-context-panel').dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     });
     expect(host.querySelector('.editor-context-panel')).toBeNull();
-    expect(document.activeElement).toBe(more.querySelector('summary'));
-    more.open = true;
-    await click('[data-testid="editor-done"]');
+    expect(document.activeElement).toBe(node('.editor-mobile-header .topbar-more'));
+    await fromMore('[data-testid="editor-done"]');
     expect(saveEdits).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
     expect(node('[data-testid="save-state"]').textContent).toContain('Not saved');

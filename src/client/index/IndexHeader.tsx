@@ -21,6 +21,7 @@ import { entryTime, type FeedEntry, suitePosterRun } from './Feed.tsx';
 import { createMarkMotion, createStreak, crossfadeTitle } from './mark-burst.ts';
 import { Poster } from './Poster.tsx';
 import { sourceText } from './SourceLine.tsx';
+import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 
 /*
  * The index's two quiet header rows (sticky as one block): row 1 is identity (mark, product name h1) with a
@@ -140,6 +141,7 @@ export function CommandSearch({
   total: number | undefined;
   compact: boolean;
 }) {
+  const hasKeyboard = useHasKeyboard();
   // why: the platform is the browser's; a server render (and its hydration) shows the Ctrl key cap first.
   const searchKey = useHydrated() ? indexSearchShortcut() : 'Ctrl K';
   const input = useRef<HTMLInputElement>(null);
@@ -302,7 +304,7 @@ export function CommandSearch({
             }}
           />
         ) : null}
-        {compact ? null : (
+        {compact || !hasKeyboard ? null : (
           // The tooltip lives on the key cap, so entering the field never pops it over the results.
           <Hint label="Search replays" shortcut={`${searchKey} · ${INDEX_SEARCH_ALT_KEY}`} side="bottom" disabled={typing}>
             <span className="command-kbd" aria-hidden="true">

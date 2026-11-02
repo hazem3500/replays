@@ -50,7 +50,7 @@ async function activate(marker: Locator, page: Page, touch: boolean) {
 }
 
 async function finishEditing(page: Page, touch: boolean) {
-  if (touch) await page.locator('.editor-mobile-more > summary').click();
+  if (touch) await page.locator('.editor-mobile-header').getByRole('button', { name: 'More actions' }).click();
   await page.getByTestId('editor-done').click();
 }
 

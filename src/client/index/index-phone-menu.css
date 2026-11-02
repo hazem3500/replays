@@ -47,4 +47,5 @@
 .phone-menu-icon svg { width: 16px; height: 16px; }
 .phone-menu-text { min-width: 0; display: grid; gap: 1px; }
 .phone-menu-label { font-size: var(--text-sm); font-weight: 550; }
+.phone-menu-state { margin-left: auto; color: var(--text-secondary); font-size: var(--text-sm); }
 .phone-menu-hint { color: var(--text-tertiary); font-size: var(--text-xs); }

@@ -235,12 +235,7 @@
   .editor-mobile-heading .editor-save-state { max-width: 100%; color: var(--text-secondary); font-size: var(--text-xs); white-space: normal; overflow-wrap: anywhere; }
   .editor-mobile-header .editor-export { padding: 0 10px; }
   .editor-mobile-header .editor-export svg { display: block; }
-  .editor-mobile-more > summary { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 6px; color: var(--text-secondary); cursor: pointer; list-style: none; }
-  .editor-mobile-more > summary::-webkit-details-marker, .editor-add-more > summary::-webkit-details-marker { display: none; }
-  .editor-mobile-more > summary svg { width: 20px; height: 20px; }
-  .editor-mobile-menu { position: absolute; top: calc(100% - 2px); right: 6px; display: flex; flex-direction: column; gap: 4px; width: min(270px, calc(100vw - 20px)); max-height: 60dvh; overflow-y: auto; overscroll-behavior: contain; padding: 8px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface-raised); box-shadow: 0 8px 24px rgb(0 0 0 / 0.15); }
-  .editor-mobile-more:not([open]) > .editor-mobile-menu, .editor-add-more:not([open]) > .editor-mobile-menu { display: none; }
-  .editor-mobile-menu > button { justify-content: flex-start; }
+  .editor-mobile-header .topbar-more { width: 44px; height: 44px; }
   .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; align-items: center; justify-content: center; padding: 8px 10px; container-type: size; }
   .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc(100cqh * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .editor-shell.app-shell[data-mobile] .editor-stage .player-stage { flex: none; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: var(--editor-preview-ratio); background: var(--canvas); }
@@ -293,7 +288,8 @@
 
   .editor-add-more > summary { border-radius: 6px; list-style: none; }
   .editor-add-more .editor-mobile-menu { top: auto; bottom: calc(100% - 4px); right: 0; }
-  .editor-context-panel { grid-area: properties; min-width: 0; max-height: 34dvh; overflow-y: auto; overscroll-behavior: contain; padding: 8px 4px 4px; border-top: 1px solid var(--line); }
+  /* invariant: the dock is the one scroller (60dvh); a second one here showed a stray scrollbar thumb when squeezed. */
+  .editor-context-panel { grid-area: properties; min-width: 0; padding: 8px 4px 4px; border-top: 1px solid var(--line); }
   .editor-context-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
   .editor-context-panel h2 { margin: 0; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
   .editor-context-panel p, .editor-object-actions small { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
