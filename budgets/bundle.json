@@ -122,6 +122,11 @@
       "gzip": 822,
       "brotli": 659
     },
+    "dist/client/assets/dropdown-menu-HASH.css": {
+      "raw": 2246,
+      "gzip": 822,
+      "brotli": 659
+    },
     "dist/client/assets/dropdown-menu-HASH.js": {
       "raw": 124084,
       "gzip": 41593,
@@ -291,6 +296,11 @@
       "raw": 16683,
       "gzip": 5907,
       "brotli": 5388
+    },
+    "dist/client/assets/sliders-horizontal-HASH.js": {
+      "raw": 464,
+      "gzip": 263,
+      "brotli": 237
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 2923,
@@ -1720,6 +1730,54 @@
         "brotli": 659
       },
       "pr": "https://github.com/hazem3500/replays/pull/191",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.css",
+      "cap": {
+        "raw": 2246
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/178",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "raw": 464
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/178",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.css",
+      "cap": {
+        "gzip": 822
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/178",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "gzip": 263
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/178",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.css",
+      "cap": {
+        "brotli": 659
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/178",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "brotli": 237
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/178",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     }
   ]
