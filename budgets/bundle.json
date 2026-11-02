@@ -88,9 +88,9 @@
       "brotli": 2680
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 33543,
+      "raw": 33306,
       "gzip": 11413,
-      "brotli": 10142
+      "brotli": 10097
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -116,11 +116,6 @@
       "raw": 32312,
       "gzip": 11670,
       "brotli": 10634
-    },
-    "dist/client/assets/dropdown-menu-HASH.css": {
-      "raw": 2246,
-      "gzip": 822,
-      "brotli": 659
     },
     "dist/client/assets/dropdown-menu-HASH.css": {
       "raw": 2246,
@@ -166,11 +161,6 @@
       "raw": 721,
       "gzip": 439,
       "brotli": 380
-    },
-    "dist/client/assets/getElementTransform-HASH.js": {
-      "raw": 12732,
-      "gzip": 5154,
-      "brotli": 4621
     },
     "dist/client/assets/Headline-HASH.css": {
       "raw": 1089,
@@ -320,7 +310,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 609
+      "brotli": 608
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -1435,15 +1425,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/187"
     },
     {
-      "file": "dist/client/assets/getElementTransform-HASH.js",
-      "cap": {
-        "raw": 12732,
-        "brotli": 4621
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/187"
-    },
-    {
       "file": "dist/client/assets/keep-HASH.js",
       "cap": {
         "raw": 7448,
@@ -1581,14 +1562,6 @@
       "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/getElementTransform-HASH.js",
-      "cap": {
-        "gzip": 5154
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/187",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/Headline-HASH.js",
       "cap": {
         "raw": 6000
@@ -1704,30 +1677,6 @@
       "file": "dist/client/assets/ReplayIndex-HASH.js",
       "cap": {
         "brotli": 59099
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.css",
-      "cap": {
-        "raw": 2246
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.css",
-      "cap": {
-        "gzip": 822
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.css",
-      "cap": {
-        "brotli": 659
       },
       "pr": "https://github.com/hazem3500/replays/pull/191",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
