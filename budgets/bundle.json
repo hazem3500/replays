@@ -104,7 +104,7 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 43146,
-      "gzip": 14870,
+      "gzip": 14906,
       "brotli": 13253
     },
     "dist/client/assets/createLucideIcon-HASH.js": {
@@ -123,9 +123,9 @@
       "brotli": 659
     },
     "dist/client/assets/dropdown-menu-HASH.js": {
-      "raw": 124084,
-      "gzip": 41593,
-      "brotli": 36027
+      "raw": 124205,
+      "gzip": 41650,
+      "brotli": 36106
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 31792,
@@ -310,10 +310,10 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 624
+      "brotli": 615
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21994,
+      "raw": 21990,
       "gzip": 9037,
       "brotli": 7810
     },
@@ -343,9 +343,9 @@
       "brotli": 2904
     },
     "dist/client/assets/Viewer-HASH.css": {
-      "raw": 5969,
-      "gzip": 1562,
-      "brotli": 1344
+      "raw": 6324,
+      "gzip": 1634,
+      "brotli": 1410
     },
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 71897,
@@ -794,7 +794,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1141,23 +1141,13 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.css",
-      "cap": {
-        "raw": 5969,
-        "gzip": 1562,
-        "brotli": 1344
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.js",
       "cap": {
         "raw": 72471,
         "gzip": 25851,
         "brotli": 22462
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1192,7 +1182,7 @@
       "cap": {
         "gzip": 4113
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1212,7 +1202,7 @@
         "gzip": 1328,
         "brotli": 1128
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1223,7 +1213,7 @@
         "brotli": 8645
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552\u21928562 (+10 B). Replaces #113's allowance for this file."
+      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
     },
     {
       "file": "dist/client/assets/step-caption-HASH.js",
@@ -1420,30 +1410,6 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/177",
       "reason": "Retained index chunk splitting and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "raw": 124084
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/187",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "gzip": 41593
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/187",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "brotli": 36027
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/187",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
     },
     {
       "file": "dist/client/assets/feature-HASH.js",
@@ -1782,30 +1748,6 @@
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "raw": 43146
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "brotli": 13253
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "gzip": 14870
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/drawer-HASH.js",
       "cap": {
         "gzip": 15992
@@ -1836,6 +1778,34 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.js",
+      "cap": {
+        "gzip": 14906
+      },
+      "reason": "Steps composition changes shared import references; no new feature code was added to this chunk. Measured main/head: gzip 14868 to 14874 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/200"
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 124205,
+        "gzip": 41650,
+        "brotli": 36106
+      },
+      "reason": "Steps composition changes shared import references; no new feature code was added to this chunk. Measured main/head: raw 124084 to 124141 bytes, gzip 41593 to 41618 bytes, brotli 36027 to 36074 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/200"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.css",
+      "cap": {
+        "raw": 6324,
+        "gzip": 1634,
+        "brotli": 1410
+      },
+      "reason": "In-viewport collapsed Steps handles, shared narrow-screen Steps tabs and vertically centred console rows. Measured main/head: raw 5969 to 6139 bytes, gzip 1562 to 1586 bytes, brotli 1344 to 1368 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/200"
     }
   ]
 }
