@@ -42,10 +42,7 @@ function LoadedPluginPage({ plugin, page, path, search }: Props & { page: Plugin
     // why: the page's data changes only when its address does; a refocus must not redraw the plugin.
     refetchOnWindowFocus: false,
   });
-  if (loaded.error)
-    return (
-      <StateShell {...failureCopy('page', loaded.error.message)} secondary={TRY_AGAIN} />
-    );
+  if (loaded.error) return <StateShell {...failureCopy('page', loaded.error.message)} secondary={TRY_AGAIN} />;
   if (!loaded.data) return null;
   const context = pageContext(plugin, path, search, loaded.data.data);
   const render = pageRenderer(page);

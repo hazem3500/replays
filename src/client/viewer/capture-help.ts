@@ -57,6 +57,11 @@ export function captureHelp(track: CaptureTrack, source: ReplaySource, url: stri
   if (source === 'human' && option)
     return { title, why: WHY[track], how: 'Turn it on in the recorder’s options, then record again:', snippet: option, cli };
   if (source === 'human')
-    return { title, why: WHY[track], how: 'The browser recorder doesn’t record it. Capture this page with the command line:', snippet: cli };
+    return {
+      title,
+      why: WHY[track],
+      how: 'The browser recorder doesn’t record it. Capture this page with the command line:',
+      snippet: cli,
+    };
   return { title, why: WHY[track], how: AGAIN[track], snippet: cli };
 }

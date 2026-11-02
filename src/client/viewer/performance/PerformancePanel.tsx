@@ -69,7 +69,6 @@ function recorded(vitals: readonly Vital[], moments: number) {
   return moments > 0 || vitals.some((vital) => vital.missing !== 'not-captured');
 }
 
-
 const otherOrder = (order: MomentOrder): MomentOrder => (order === 'worst' ? 'time' : 'worst');
 
 function OrderSwitch({ order, onOrder }: { order: MomentOrder; onOrder: (order: MomentOrder) => void }) {

@@ -282,8 +282,12 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (!suite) return <ViewerSkeleton suite label="Loading review suite" />;
 
   return (
-    <div className="suite-workspace" data-rail={collapsed || undefined} data-narrow={narrow || undefined}
-      style={!narrow && !collapsed ? { gridTemplateColumns: `${sidebarWidth}px 0 minmax(0, 1fr)` } : undefined}>
+    <div
+      className="suite-workspace"
+      data-rail={collapsed || undefined}
+      data-narrow={narrow || undefined}
+      style={!narrow && !collapsed ? { gridTemplateColumns: `${sidebarWidth}px 0 minmax(0, 1fr)` } : undefined}
+    >
       {/* First in the page, ahead of the runs sidebar, so one Tab reaches it. */}
       <a className="skip-link" href="#replay-player">
         Skip to replay
@@ -307,9 +311,12 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           value={sidebarWidth}
           min={200}
           max={400}
-          defaultValue={256} onChange={setSidebarWidth}
+          defaultValue={256}
+          onChange={setSidebarWidth}
           onPreview={setSidebarWidth}
-          storageKey="suite-sidebar-width" label="Resize runs sidebar" className="suite-sidebar-split"
+          storageKey="suite-sidebar-width"
+          label="Resize runs sidebar"
+          className="suite-sidebar-split"
         />
       ) : null}
 

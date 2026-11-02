@@ -59,9 +59,7 @@ test('performance leads with verdicts, ranks slow moments worst first, and opens
   await expect(events.locator('[data-future]')).toHaveCount(0);
 });
 
-test('a capture with no timing data says it has no performance data and how to capture it, not that nothing was slow', async ({
-  page,
-}) => {
+test('a capture with no timing data says it has no performance data and how to capture it, not that nothing was slow', async ({ page }) => {
   const id = uniqueId('performance-unrecorded');
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'No timing fixture');
   bundle.performance = { supported: [], entries: [] };
