@@ -13,10 +13,6 @@ import { composeUi, consentDialog, recordingIndicator, reviewDialog, resultToast
 import { createFakeRrweb, createFakeTransport, testRecorderUi, queryDeep } from './testing/index.ts';
 import type { RecorderOptions, RecorderUi } from './types.ts';
 
-// why: contract cases test settled controls; surface-motion.test.ts covers animated exits and cancellation.
-beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: true })));
-afterEach(() => vi.unstubAllGlobals());
-
 function setup(options: Partial<RecorderOptions> = {}) {
   const rrweb = createFakeRrweb();
   const transport = createFakeTransport();
@@ -30,10 +26,15 @@ function setup(options: Partial<RecorderOptions> = {}) {
   });
   return { recorder, rrweb, transport };
 }
-testRecorderUi('default UI contract', createDefaultUi, { describe, it });
-testRecorderUi('composed step UI contract', () => composeUi(consentDialog(), recordingIndicator(), reviewDialog(), resultToast()), {
-  describe,
-  it,
+describe('settled recorder UI contracts', () => {
+  // why: contract cases test settled controls; surface-motion.test.ts covers animated exits and cancellation.
+  beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: true })));
+  afterEach(() => vi.unstubAllGlobals());
+  testRecorderUi('default UI contract', createDefaultUi, { describe, it });
+  testRecorderUi('composed step UI contract', () => composeUi(consentDialog(), recordingIndicator(), reviewDialog(), resultToast()), {
+    describe,
+    it,
+  });
 });
 async function rejectsBrokenUi() {
   const cases: (() => void | Promise<void>)[] = [];
@@ -283,9 +284,11 @@ function announcesAndTrapsFocus() {
 }
 
 describe('recorder kit', () => {
+  beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: true })));
   afterEach(() => {
     document.body.replaceChildren();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
   it('rejects a deliberately broken UI contract', rejectsBrokenUi);
   it('dismisses every composed step, including a hidden indicator root', dismissesComposedSteps);
