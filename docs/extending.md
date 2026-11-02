@@ -360,3 +360,36 @@ api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms',
 The same values work in config `theme.dark` and `theme.light`, including before hydration.
 See `examples/custom-distro/src/plugin.ts`. Setting caption colors changes viewer captions;
 the standalone export renderer keeps its defaults unless the render host supplies the same tokens.
+
+A trusted browser entry can add an editor tool, export format or viewer shortcut with
+`registerEditorTool`, `registerExportFormat` and `registerShortcut`. For example:
+
+```ts
+api.registerExportFormat({ id: 'console', label: 'Console JSON', run: ({ replay }) => ({
+  name: 'console.json', mime: 'application/json', data: JSON.stringify(replay.console),
+}) });
+```
+
+The [contribution contracts](extension-api.md#editor-tools-exports-and-shortcuts) preserve core edit validation, undo,
+server authorization and capture privacy. `examples/custom-distro` demonstrates each API.
+
+Trusted browser entries can observe playback without scraping the DOM:
+
+```ts
+api.on('seek', ({ replayId, timeMs }) => console.info('Playback seek', replayId, timeMs));
+```
+
+The [activity event catalogue](extension-api.md#browser-activity-events) contains metadata only and
+has no default network transport. `examples/custom-distro` demonstrates a live activity panel.
+
+The [v2 token catalogue](tokens.md) also exposes motion, easing, type sizes, spacing, elevation,
+focus width, radii, and caption, poster, card and scrubber tokens. For example:
+
+```ts
+api.branding({ theme: { dark: { 'card-radius': '16px', 'motion-fast': '100ms',
+  'caption-bg': '#1a0b00', 'caption-fg': '#ffffff' } } });
+```
+
+The same values work in config `theme.dark` and `theme.light`, including before hydration.
+See `examples/custom-distro/src/plugin.ts`. Setting caption colors changes viewer captions;
+the standalone export renderer keeps its defaults unless the render host supplies the same tokens.
