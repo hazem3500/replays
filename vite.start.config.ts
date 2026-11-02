@@ -28,6 +28,15 @@ export default defineConfig({
       client: { entry: './start/client.tsx' },
       server: { entry: './start/server.ts' },
     }),
+    {
+      name: 'replays:portable-start-manifest',
+      apply: 'build',
+      enforce: 'post',
+      transform(code, id) {
+        if (id !== String.fromCharCode(0) + 'tanstack-start-manifest:v') return;
+        return code.replaceAll(JSON.stringify(fileURLToPath(new URL('.', import.meta.url))).slice(1, -1), '');
+      },
+    },
     react(),
     babel({ presets: [reactCompilerPreset()] }),
     tailwindcss(),
