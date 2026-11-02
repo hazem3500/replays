@@ -144,7 +144,7 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2132,
-      "gzip": 1029,
+      "gzip": 1063,
       "brotli": 907
     },
     "dist/client/assets/feature-HASH.js": {
@@ -1346,15 +1346,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/177"
     },
     {
-      "file": "dist/client/assets/expired-query-HASH.js",
-      "cap": {
-        "raw": 2132,
-        "gzip": 1029
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/185"
-    },
-    {
       "file": "dist/client/assets/keep-HASH.js",
       "cap": {
         "raw": 7448,
@@ -1792,6 +1783,15 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/199",
       "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 12828/12830 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
+    },
+    {
+      "file": "dist/client/assets/expired-query-HASH.js",
+      "cap": {
+        "gzip": 1063,
+        "raw": 2132
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Touch-search stylesheet changes shared import hashes. Same-toolchain main/head: raw 2132/2132, gzip 1028/1031, Brotli 899/905 bytes. This unchanged source receives only a 32-byte gzip margin; existing raw and Brotli caps remain."
     }
   ]
 }
