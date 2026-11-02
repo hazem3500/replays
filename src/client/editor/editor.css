@@ -22,7 +22,7 @@
   .editor-highlight-label, .editor-highlight-time { display: grid; gap: 2px; color: var(--text-tertiary); font-size: 9px; line-height: 1.1; }
   .editor-highlight-label input, .editor-highlight-time input { height: 28px; min-width: 64px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); outline: none; }
   .editor-highlight-label input { width: 112px; }
-  .editor-highlight-label input:focus-visible, .editor-highlight-time input:focus-visible { border-color: var(--ring); box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent); }
+  .editor-highlight-label input:focus-visible, .editor-highlight-time input:focus-visible { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent); }
 
   .editor-stage .player-stage { cursor: default; }
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
@@ -90,7 +90,7 @@
   .tl-trim[data-edge="end"] { right: 0; border-radius: 3px 8px 8px 3px; }
   .tl-trim-grip { width: 2px; height: 14px; border-radius: 1px; background: var(--surface); opacity: 0.9; }
   .tl-trim:hover .tl-trim-grip, .tl-trim:focus-visible .tl-trim-grip, .tl-clip[data-selected] .tl-trim-grip { background: var(--accent-contrast); }
-  .tl-trim:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
+  .tl-trim:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
 
   /* Regions (cuts; the effect lanes reuse them). */
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
@@ -102,7 +102,7 @@
   }
   .tl-region-body:active { cursor: grabbing; opacity: 0.9; }
   @media (prefers-reduced-motion: reduce) { .tl-region-body { transition: none; } }
-  .tl-region-body:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
+  .tl-region-body:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent), 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
   .tl-region[data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--text); }
   .tl-region-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
   .tl-region[data-narrow] .tl-region-label { display: none; }
@@ -132,13 +132,13 @@
   .tl-region[data-kind="caption"] .tl-region-body { padding: 0 8px; border-radius: 3px; justify-content: flex-start; background: var(--surface-hover); font-weight: 500; }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
   .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--text); }
-  .tl-region[data-kind] .tl-region-body:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .tl-region[data-kind] .tl-region-body:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
   /* The selected effect's setting, in the control row. */
   .editor-effect-trigger.editor-effect-trigger { gap: 4px; margin-right: 6px; color: var(--text); font-variant-numeric: tabular-nums; }
   .editor-effect-trigger svg { width: 12px; height: 12px; opacity: 0.7; }
   .editor-caption-field { flex: 1 1 160px; min-width: 120px; max-width: 360px; height: 26px; margin-right: 10px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); outline: none; }
-  .editor-caption-field:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
+  .editor-caption-field:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
 
   /* Blur boxes on the preview, over the recorded frame (PlayerStage sets --frame-*). The blur is drawn underneath. */
   .blur-overlay { position: absolute; z-index: 4; left: var(--frame-x, 0); top: calc(100% - var(--frame-bottom, 0px) - var(--frame-h, 100%)); width: var(--frame-w, 100%); height: var(--frame-h, 100%); pointer-events: none; }
@@ -276,7 +276,7 @@
   .editor-shell[data-mobile] .editor-hint { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
   .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
   .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
-  .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+  .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   .editor-mobile-effect-menu [role="menuitemradio"], body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
   @media (max-height: 520px) and (min-width: 721px) {
     .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr) minmax(320px, 48%); grid-template-rows: auto minmax(0, 1fr); }
