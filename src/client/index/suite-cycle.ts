@@ -111,7 +111,7 @@ function animateShuffle(poster: HTMLElement, still: HTMLElement | undefined, red
   };
   if (still && !reduced) {
     poster.before(still);
-    poster.style.zIndex = '2';
+    poster.style.setProperty('z-index', '2');
     const dropped = 'translateY(42px) scale(0.98)';
     const down = animate(still, [{ transform: 'translateY(0) scale(1)' }, { transform: dropped }], {
       duration: DROP_MS,
@@ -122,7 +122,7 @@ function animateShuffle(poster: HTMLElement, still: HTMLElement | undefined, red
       .then(() => {
         if (!active) return;
         // why: change stacking only at the turn, so the old face returns beneath its successor.
-        still.style.zIndex = '1';
+        still.style.setProperty('z-index', '1');
         const rear = animate(
           still,
           [

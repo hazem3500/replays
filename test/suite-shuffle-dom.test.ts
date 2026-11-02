@@ -67,7 +67,7 @@ function setUp() {
   );
   vi.spyOn(HTMLElement.prototype, 'animate').mockImplementation(function (this: HTMLElement) {
     const animation = new Animation();
-    motions.push({ element: this, finish: () => animation.finish(), cancel: animation.cancel });
+    motions.push({ element: this, finish: () => animation.finish(), cancel: vi.spyOn(animation, 'cancel') });
     return animation;
   });
 }
@@ -95,13 +95,19 @@ describe('Suite shuffle', () => {
     expect(outgoing.style.zIndex).toBe('3');
     expect(motions).toHaveLength(2);
 
-    await act(() => present(motions[0]).finish());
+    await act(async () => {
+      present(motions[0]).finish();
+      await Promise.resolve();
+    });
 
     expect(outgoing.style.zIndex).toBe('1');
     expect(host.querySelector<HTMLElement>('.suite-sheet:not(.suite-sheet-outgoing)')?.style.zIndex).toBe('2');
     expect(motions).toHaveLength(3);
     expect(present(motions[2]).element).toBe(outgoing);
-    await act(() => present(motions[2]).finish());
+    await act(async () => {
+      present(motions[2]).finish();
+      await Promise.resolve();
+    });
     expect(host.querySelector('.suite-sheet-outgoing')).toBeNull();
   });
 
@@ -112,7 +118,10 @@ describe('Suite shuffle', () => {
     const first = [...motions];
 
     render(1, 'list');
-    await act(() => present(first[0]).finish());
+    await act(async () => {
+      present(first[0]).finish();
+      await Promise.resolve();
+    });
 
     for (const motion of first) expect(motion.cancel).toHaveBeenCalledOnce();
     expect(motions).toHaveLength(2);
