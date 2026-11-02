@@ -1,20 +1,15 @@
-import assert from "node:assert/strict";
-import { createRecorder } from "../recorder.ts";
-import type { PrivacyFacts, RecorderUi, RecordingSummary } from "../types.ts";
-import { createFakeRrweb, createFakeTransport } from "./fakes.ts";
-import { queryDeep } from "./query-deep.ts";
+import assert from 'node:assert/strict';
+import { createRecorder } from '../recorder.ts';
+import type { PrivacyFacts, RecorderUi, RecordingSummary } from '../types.ts';
+import { createFakeRrweb, createFakeTransport } from './fakes.ts';
+import { queryDeep } from './query-deep.ts';
 
 type Runner = {
   describe(name: string, run: () => void): unknown;
   it(name: string, run: () => void | Promise<void>): unknown;
 };
 type Options = {
-  controls?: Partial<
-    Record<
-      "accept" | "decline" | "stop" | "send" | "discard" | "retry" | "dismiss" | "note",
-      string
-    >
-  >;
+  controls?: Partial<Record<'accept' | 'decline' | 'stop' | 'send' | 'discard' | 'retry' | 'dismiss' | 'note', string>>;
   render?: (flush: () => Promise<void>) => Promise<void>;
 };
 const summary: RecordingSummary = {
@@ -23,24 +18,24 @@ const summary: RecordingSummary = {
   consoleErrors: 1,
   failedRequests: 1,
   approxBytes: 200,
-  stopReason: "user",
+  stopReason: 'user',
 };
 const privacy: PrivacyFacts = {
-  mode: "masked",
+  mode: 'masked',
   maxDurationMs: 180000,
   reviewRequired: true,
   captures: { pageText: false, inputs: false, media: false, console: true, network: true },
 };
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-const consent = (ui: RecorderUi, mode: PrivacyFacts["mode"] = "masked") =>
+const consent = (ui: RecorderUi, mode: PrivacyFacts['mode'] = 'masked') =>
   ui.requestConsent({
-    trigger: { source: "user" },
+    trigger: { source: 'user' },
     maxDurationMs: 180000,
     privacy: {
       ...privacy,
       mode,
-      captures: { ...privacy.captures, pageText: mode === "visible", inputs: mode === "visible" },
+      captures: { ...privacy.captures, pageText: mode === 'visible', inputs: mode === 'visible' },
     },
     signal: new AbortController().signal,
   });
@@ -57,12 +52,7 @@ const defaultSelectors = {
 };
 
 /** Runner-agnostic DOM contract. Mount framework UIs in factory and flush with options.render. */
-export function testRecorderUi(
-  name: string,
-  factory: () => RecorderUi,
-  runner: Runner,
-  options: Options = {},
-): void {
+export function testRecorderUi(name: string, factory: () => RecorderUi, runner: Runner, options: Options = {}): void {
   const selectors = { ...defaultSelectors, ...options.controls };
   const render = async () => {
     if (options.render) await options.render(flush);
@@ -83,8 +73,7 @@ export function testRecorderUi(
       }
     });
   runner.describe(name, () => {
-    for (const [title, run] of contractCases)
-      test(title, (ui) => run(ui, { control, render, selectors }));
+    for (const [title, run] of contractCases) test(title, (ui) => run(ui, { control, render, selectors }));
   });
 }
 
@@ -95,22 +84,22 @@ type ContractContext = {
 };
 async function acceptConsent(ui: RecorderUi, context: ContractContext): Promise<void> {
   const { control, render } = context;
-  const opener = document.createElement("button");
+  const opener = document.createElement('button');
   document.body.append(opener);
   opener.focus();
   try {
     const pending = consent(ui);
     await render();
     const dialog = queryDeep('[role="dialog"], [role="alertdialog"]');
-    assert.ok(dialog, "Missing consent dialog");
+    assert.ok(dialog, 'Missing consent dialog');
     assert.ok(
-      Boolean(dialog.getAttribute("aria-label")) || Boolean(dialog.getAttribute("aria-labelledby")),
-      "Dialog needs an accessible name",
+      Boolean(dialog.getAttribute('aria-label')) || Boolean(dialog.getAttribute('aria-labelledby')),
+      'Dialog needs an accessible name',
     );
     let active = document.activeElement;
     while (active?.shadowRoot?.activeElement) active = active.shadowRoot.activeElement;
-    assert.notEqual(active, control("accept"), "Accept must not have initial focus");
-    control("accept").click();
+    assert.notEqual(active, control('accept'), 'Accept must not have initial focus');
+    control('accept').click();
     assert.equal(await pending, true);
     await render();
     assert.equal(document.activeElement, opener);
@@ -123,13 +112,11 @@ async function declineConsent(ui: RecorderUi, context: ContractContext): Promise
   const { control, render } = context;
   let pending = consent(ui);
   await render();
-  control("decline").click();
+  control('decline').click();
   assert.equal(await pending, false);
   pending = consent(ui);
   await render();
-  queryDeep('[role="dialog"], [role="alertdialog"]')?.dispatchEvent(
-    new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
-  );
+  queryDeep('[role="dialog"], [role="alertdialog"]')?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
   assert.equal(await pending, false);
 }
 
@@ -137,7 +124,7 @@ async function abortConsent(ui: RecorderUi, context: ContractContext): Promise<v
   const { render } = context;
   const abort = new AbortController();
   const pending = ui.requestConsent({
-    trigger: { source: "user" },
+    trigger: { source: 'user' },
     maxDurationMs: 180000,
     privacy,
     signal: abort.signal,
@@ -154,12 +141,12 @@ async function reflectPrivacy(ui: RecorderUi, context: ContractContext): Promise
   const masked = consent(ui);
   await render();
   const text = queryDeep('[role="dialog"]')?.textContent;
-  control("decline").click();
+  control('decline').click();
   await masked;
-  const visible = consent(ui, "visible");
+  const visible = consent(ui, 'visible');
   await render();
   assert.notEqual(queryDeep('[role="dialog"]')?.textContent, text);
-  control("decline").click();
+  control('decline').click();
   await visible;
 }
 
@@ -180,14 +167,11 @@ async function attestIndicator(ui: RecorderUi, context: ContractContext): Promis
   });
   try {
     await render();
-    const stop = control("stop");
+    const stop = control('stop');
     assert.equal(attested, stop);
     assert.ok(stop.isConnected && !stop.hidden);
     const root = stop.getRootNode();
-    assert.ok(
-      Boolean(stop.closest("[data-recorder-ui]")) ||
-        (root instanceof ShadowRoot && root.host.hasAttribute("data-recorder-ui")),
-    );
+    assert.ok(Boolean(stop.closest('[data-recorder-ui]')) || (root instanceof ShadowRoot && root.host.hasAttribute('data-recorder-ui')));
     stop.click();
     assert.equal(stops, 1);
   } finally {
@@ -195,22 +179,22 @@ async function attestIndicator(ui: RecorderUi, context: ContractContext): Promis
   }
   await render();
   const stop = queryDeep<HTMLElement>(selectors.stop);
-  assert.ok(!stop || stop.hidden || stop.closest("[hidden]"));
+  assert.ok(!stop || stop.hidden || stop.closest('[hidden]'));
 }
 
 async function reviewRecording(ui: RecorderUi, context: ContractContext): Promise<void> {
   const { control, render } = context;
   let pending = ui.confirmUpload({ summary, signal: new AbortController().signal });
   await render();
-  const note = control("note");
-  assert.ok(note instanceof HTMLTextAreaElement, "Note must be a textarea");
-  note.value = "Example note";
-  note.dispatchEvent(new Event("input", { bubbles: true }));
-  control("send").click();
-  assert.deepEqual(await pending, { confirmed: true, note: "Example note" });
+  const note = control('note');
+  assert.ok(note instanceof HTMLTextAreaElement, 'Note must be a textarea');
+  note.value = 'Example note';
+  note.dispatchEvent(new Event('input', { bubbles: true }));
+  control('send').click();
+  assert.deepEqual(await pending, { confirmed: true, note: 'Example note' });
   pending = ui.confirmUpload({ summary, signal: new AbortController().signal });
   await render();
-  control("discard").click();
+  control('discard').click();
   assert.deepEqual(await pending, { confirmed: false });
   const abort = new AbortController();
   pending = ui.confirmUpload({ summary, signal: abort.signal });
@@ -221,27 +205,24 @@ async function reviewRecording(ui: RecorderUi, context: ContractContext): Promis
 
 async function showResult(ui: RecorderUi, context: ContractContext): Promise<void> {
   const { control, render } = context;
-  assert.ok(
-    typeof ui.showResult === "function" && typeof ui.dismiss === "function",
-    "Result and dismiss must be implemented",
-  );
-  ui.showResult({ status: "uploaded", receipt: { replayId: "test" } });
+  assert.ok(typeof ui.showResult === 'function' && typeof ui.dismiss === 'function', 'Result and dismiss must be implemented');
+  ui.showResult({ status: 'uploaded', receipt: { replayId: 'test' } });
   await render();
   assert.ok(queryDeep('[role="status"], [aria-live]')?.textContent);
   let retries = 0;
   ui.showResult({
-    status: "error",
-    error: new Error("Technical detail"),
+    status: 'error',
+    error: new Error('Technical detail'),
     retry: () => {
       retries++;
     },
   });
   await render();
-  control("retry").click();
+  control('retry').click();
   assert.equal(retries, 1);
-  control("dismiss").click();
+  control('dismiss').click();
   await render();
-  assert.equal(queryDeep("[data-recorder-ui]"), null);
+  assert.equal(queryDeep('[data-recorder-ui]'), null);
 }
 
 async function recordFlow(ui: RecorderUi, context: ContractContext): Promise<void> {
@@ -261,22 +242,22 @@ async function recordFlow(ui: RecorderUi, context: ContractContext): Promise<voi
     const result = recorder.request();
     await render();
     assert.equal(rrweb.loads, 0);
-    control("accept").click();
+    control('accept').click();
     await render();
-    assert.equal(recorder.getState().status, "recording");
-    control("stop").click();
+    assert.equal(recorder.getState().status, 'recording');
+    control('stop').click();
     await render();
     assert.equal(transport.reports.length, 0);
-    control("send").click();
+    control('send').click();
     await result;
     assert.equal(transport.reports.length, 1);
     const next = recorder.request();
     await render();
-    control("accept").click();
+    control('accept').click();
     await render();
-    control("stop").hidden = true;
+    control('stop').hidden = true;
     await new Promise((resolve) => setTimeout(resolve, 150));
-    assert.equal(recorder.getState().status, "idle");
+    assert.equal(recorder.getState().status, 'idle');
     await next;
     assert.equal(transport.reports.length, 1);
   } finally {
@@ -285,12 +266,12 @@ async function recordFlow(ui: RecorderUi, context: ContractContext): Promise<voi
 }
 
 const contractCases: [string, (ui: RecorderUi, context: ContractContext) => Promise<void>][] = [
-  ["consent has a named dialog, safe initial focus, accepts and returns focus", acceptConsent],
-  ["decline and Escape refuse consent", declineConsent],
-  ["abort closes consent and removes its dialog", abortConsent],
-  ["visible capture changes privacy copy", reflectPrivacy],
-  ["indicator has a visible, blocked and attested Stop control", attestIndicator],
-  ["review sends the note and discards or aborts", reviewRecording],
-  ["result announces success, exposes one Retry and dismisses", showResult],
-  ["full flow waits for Accept and Send and discards when Stop disappears", recordFlow],
+  ['consent has a named dialog, safe initial focus, accepts and returns focus', acceptConsent],
+  ['decline and Escape refuse consent', declineConsent],
+  ['abort closes consent and removes its dialog', abortConsent],
+  ['visible capture changes privacy copy', reflectPrivacy],
+  ['indicator has a visible, blocked and attested Stop control', attestIndicator],
+  ['review sends the note and discards or aborts', reviewRecording],
+  ['result announces success, exposes one Retry and dismisses', showResult],
+  ['full flow waits for Accept and Send and discards when Stop disappears', recordFlow],
 ];

@@ -22,6 +22,10 @@ button:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px sol
 .surface-content { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; }
 .surface-content > .message { flex: 1 1 auto; min-inline-size: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .surface-controls { display: flex; align-items: center; flex-shrink: 0; gap: 8px; margin-inline-start: auto; }
+.pill:is([data-phase=complete], [data-phase=error], [data-custom=true]) .surface-content { flex-wrap: wrap; }
+.pill:is([data-phase=complete], [data-phase=error], [data-custom=true]) .surface-controls { flex-wrap: wrap; flex-shrink: 1; min-inline-size: 0; max-inline-size: 100%; }
+.pill:is([data-phase=complete], [data-phase=error], [data-custom=true]) .message { white-space: normal; overflow-wrap: anywhere; }
+.surface-controls > :is(button, a) { max-inline-size: 100%; white-space: normal; overflow-wrap: anywhere; }
 .recording-label { white-space: nowrap; }
 .dot { flex: 0 0 6px; height: 6px; border-radius: 50%; background: var(--recorder-danger, #e06c75); }
 .upload-progress { width: 48px; height: 6px; accent-color: var(--r-primary); }
