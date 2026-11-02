@@ -46,12 +46,12 @@ export function useSuiteCycle(runs: readonly ReviewSuiteIndexRun[], front: Revie
   return { current, step, cycling, advance, warmNext };
 }
 
-const SHUFFLE_MS = 350;
-const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+const SHUFFLE_MS = 900;
+const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 
 /**
- * The shuffle, on the card's front poster: a still copy of the old front slides back into the pile (up, narrower,
- * fading) under the new front, which rises from the pile to its place. Transform/opacity only; under reduced
+ * The outgoing sheet rises clear before fading into the rear while the next sheet advances after a short hold.
+ * Transform/opacity only; under reduced
  * motion the new front just fades in.
  */
 export function useShuffle(container: React.RefObject<HTMLElement | null>, step: number) {
@@ -59,12 +59,17 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
   const outgoing = useRef<HTMLElement | undefined>(undefined);
   /** Call before the step changes: keeps a still of the current front for the slide-back. */
   const capture = () => {
-    const poster = container.current?.querySelector<HTMLElement>(':scope > .poster, .stack-front > .poster');
-    const image = poster?.querySelector<HTMLImageElement>(':scope > img');
-    if (!poster || !image) return;
-    const still = poster.cloneNode(false) as HTMLElement;
-    still.append(image.cloneNode(true));
-    still.classList.add('poster-outgoing');
+    const poster = container.current?.querySelector<HTMLElement>(
+      ':scope > .poster, :scope[data-view=grid] > .suite-sheet, .stack-front > .poster',
+    );
+    const image = poster?.querySelector<HTMLImageElement>('img');
+    if (!poster || (!image && !poster.classList.contains('suite-sheet'))) return;
+    const still = poster.cloneNode(true) as HTMLElement;
+    still.inert = true;
+    still.querySelectorAll('video').forEach((video) => video.remove());
+    still.setAttribute('aria-hidden', 'true');
+    still.classList.add(poster.classList.contains('suite-sheet') ? 'suite-sheet-outgoing' : 'poster-outgoing');
+    still.style.zIndex = '3';
     still.style.setProperty('position', 'absolute');
     still.style.setProperty('left', `${poster.offsetLeft}px`);
     still.style.setProperty('top', `${poster.offsetTop}px`);
@@ -79,35 +84,65 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
     previous.current = step;
     const still = outgoing.current;
     outgoing.current = undefined;
-    const poster = container.current?.querySelector<HTMLElement>(':scope > .poster, .stack-front > .poster');
+    const poster = container.current?.querySelector<HTMLElement>(
+      ':scope > .poster, :scope[data-view=grid] > .suite-sheet, .stack-front > .poster',
+    );
     if (!poster || step <= was) {
       still?.remove();
       return;
     }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (still && !reduced) {
-      // Under the new front: the old one slides back into the pile.
+      // why: keep the outgoing sheet above the incoming one until it clears the stack.
       poster.before(still);
+      container.current?.querySelectorAll<HTMLElement>('.card-back').forEach((back) =>
+        back.animate([{ transform: 'translateY(-24px) scale(0.86)' }, { transform: getComputedStyle(back).transform }], {
+          duration: SHUFFLE_MS,
+          easing: EASE,
+        }),
+      );
+      poster.style.zIndex = '1';
       void still
         .animate(
           [
-            { transform: 'translate3d(0, 0, 0) scale(1)', opacity: 1 },
-            { transform: 'translate3d(0, -12px, 0) scale(0.92)', opacity: 0 },
+            { transform: 'translateY(0) scale(1)', opacity: 1 },
+            { transform: 'translateY(-30px) scale(0.98)', opacity: 1, offset: 0.35 },
+            {
+              transform: 'translateY(-30px) scale(0.95)',
+              opacity: 1,
+              offset: 0.5,
+              zIndex: 0,
+            },
+            {
+              transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)',
+              opacity: 1,
+              offset: 0.9,
+              zIndex: 0,
+            },
+            { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 0, zIndex: 0 },
           ],
           { duration: SHUFFLE_MS, easing: EASE, fill: 'forwards' },
         )
         .finished.catch(() => undefined)
         .finally(() => still.remove());
     } else still?.remove();
-    poster.animate(
+    const incoming = poster.animate(
       reduced
         ? [{ opacity: 0.4 }, { opacity: 1 }]
         : [
-            { transform: 'translate3d(0, -10px, 0) scale(0.95)', opacity: 0.35 },
-            { transform: 'translate3d(0, 0, 0) scale(1)', opacity: 1 },
+            { transform: 'translateY(-10px) scale(0.95)', opacity: 1, offset: 0 },
+            { transform: 'translateY(-10px) scale(0.95)', opacity: 1, offset: 0.25 },
+            { transform: 'translateY(0) scale(1)', opacity: 1 },
           ],
-      { duration: SHUFFLE_MS, easing: EASE },
+      { duration: reduced ? 120 : SHUFFLE_MS, easing: EASE },
     );
+    return () => {
+      incoming.cancel();
+      container.current?.querySelectorAll('.card-back').forEach((back) => back.getAnimations().forEach((animation) => animation.cancel()));
+      poster.style.removeProperty('z-index');
+      still?.getAnimations().forEach((animation) => animation.cancel());
+      still?.remove();
+    };
   }, [container, step]);
 
   return capture;

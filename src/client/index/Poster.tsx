@@ -193,7 +193,7 @@ export async function probePreview(id: string, signal?: AbortSignal): Promise<Pr
 }
 
 /** How long a run without a preview keeps the front while a suite cycles, before moving on. */
-const NO_PREVIEW_HOLD_MS = 2500;
+const NO_PREVIEW_HOLD_MS = 4000;
 
 /** Warms a replay's preview (HEAD + a low-priority prefetch of the clip), e.g. the next run in a suite's cycle. */
 export function prefetchPreview(id: string) {
