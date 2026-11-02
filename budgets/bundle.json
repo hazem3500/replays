@@ -74,7 +74,7 @@
     },
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 33543,
-      "gzip": 11374,
+      "gzip": 11413,
       "brotli": 10142
     },
     "dist/client/assets/ComparePicker-HASH.js": {
@@ -89,8 +89,8 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 38858,
-      "gzip": 13716,
-      "brotli": 12188
+      "gzip": 13740,
+      "brotli": 12193
     },
     "dist/client/assets/createLucideIcon-HASH.js": {
       "raw": 3209,
@@ -100,7 +100,7 @@
     "dist/client/assets/dropdown-menu-HASH.js": {
       "raw": 122824,
       "gzip": 41141,
-      "brotli": 35558
+      "brotli": 35581
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 31925,
@@ -118,9 +118,9 @@
       "brotli": 8645
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6582,
-      "gzip": 3180,
-      "brotli": 2796
+      "raw": 6608,
+      "gzip": 3214,
+      "brotli": 2828
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
@@ -783,16 +783,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
-      "file": "dist/client/assets/feature-HASH.js",
-      "cap": {
-        "raw": 25287,
-        "gzip": 9677,
-        "brotli": 8444
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
       "file": "dist/client/assets/queries-HASH.js",
       "cap": {
         "raw": 14679,
@@ -1059,15 +1049,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
-      "file": "dist/client/assets/comments-ui-HASH.js",
-      "cap": {
-        "raw": 33543,
-        "brotli": 10181
-      },
-      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/184"
-    },
-    {
       "file": "dist/client/assets/main-HASH.css",
       "cap": {
         "raw": 274727,
@@ -1250,26 +1231,6 @@
       "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "raw": 38858,
-        "gzip": 13716,
-        "brotli": 12188
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 12188 B. Replaces #159's allowance for this file."
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "raw": 122824,
-        "gzip": 41141,
-        "brotli": 35558
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 35558 B. Replaces #159's allowance for this file."
-    },
-    {
       "file": "dist/client/assets/ui-state-HASH.js",
       "cap": {
         "raw": 335,
@@ -1368,6 +1329,46 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/180",
       "reason": "Phone diagnostic badges and dock layout measured against landed console changes."
+    },
+    {
+      "file": "dist/client/assets/comments-ui-HASH.js",
+      "cap": {
+        "raw": 32693,
+        "gzip": 11413,
+        "brotli": 9909
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/177",
+      "reason": "Lazy route state extraction and preloads change shared chunk fingerprints; measured against current main."
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.js",
+      "cap": {
+        "raw": 38824,
+        "gzip": 13740,
+        "brotli": 12193
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/177",
+      "reason": "Lazy route state extraction and preloads change shared chunk fingerprints; measured against current main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 122587,
+        "gzip": 41122,
+        "brotli": 35581
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/177",
+      "reason": "Lazy route state extraction and preloads change shared chunk fingerprints; measured against current main."
+    },
+    {
+      "file": "dist/client/assets/feature-HASH.js",
+      "cap": {
+        "raw": 6608,
+        "gzip": 3214,
+        "brotli": 2828
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/177",
+      "reason": "Lazy route state extraction and preloads change shared chunk fingerprints; measured against current main."
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
