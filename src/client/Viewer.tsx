@@ -483,7 +483,7 @@ export function Viewer({
       // why: keeping is rare and lifts expiry for good, so it comes after the everyday items, never first.
       ...(keepItem ? [keepItem] : []),
     ],
-    [actions.openShortcuts, hasKeyboard, keepItem, mobile, pluginMenu.items, sharedPlayer],
+    [actions.openShortcuts, hasKeyboard, keepItem, pluginMenu.items, sharedPlayer],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
