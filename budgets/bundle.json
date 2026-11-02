@@ -943,16 +943,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/174"
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 44015,
-        "gzip": 8406,
-        "brotli": 7521
-      },
-      "reason": "Network bodies (#129) in the request detail (folded mono view, redaction chips, truncation note) and the always-on ribbon with its transform-driven playhead and lit marks, on top of #119's panels.",
-      "pr": "https://github.com/hazem3500/replays/pull/152"
-    },
-    {
       "file": "dist/client/assets/fetch-HASH.js",
       "cap": {
         "raw": 721,
@@ -1179,16 +1169,6 @@
         "raw": 1089,
         "gzip": 450,
         "brotli": 358
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 241169,
-        "gzip": 82012,
-        "brotli": 68918
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
