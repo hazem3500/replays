@@ -74,10 +74,12 @@ test('the shared transport plays every recording from one clock', async ({ page 
   await expect(page.getByTestId('playhead')).toHaveText(paused ?? '');
 });
 
-test('the top bar’s Compare adds a recording, and Back returns to the replay alone', async ({ page }) => {
+test('More adds a recording to compare, and Back returns to the replay alone', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${origin()}/r/demo-shop`);
-  await expect(page.getByTestId('compare-with')).toHaveText('Compare');
+  await expect(page.getByTestId('compare-with')).toHaveCount(0);
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await expect(page.getByTestId('compare-with')).toHaveText('Compare with…');
   await page.getByTestId('compare-with').click();
   const picker = page.getByTestId('compare-picker');
   await picker.getByRole('button', { name: await titleOf(page, 'human-demo') }).click();
