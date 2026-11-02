@@ -193,6 +193,12 @@ time { font-variant-numeric: tabular-nums; }
 html[data-theme-switching]::view-transition-old(root) { animation: none; mix-blend-mode: normal; }
 html[data-theme-switching]::view-transition-new(root) { animation: theme-in 180ms var(--ease-out) both; mix-blend-mode: normal; }
 @keyframes theme-in { from { opacity: 0; } }
+/* From the toggle (or the tap): the new theme grows as a circle over the old one, 360 ms ease-out (theme.tsx). */
+html[data-theme-switching="reveal"]::view-transition-new(root) { animation: theme-reveal 360ms var(--ease-out) both; }
+@keyframes theme-reveal {
+  from { clip-path: circle(0 at var(--theme-x, 50%) var(--theme-y, 0)); }
+  to { clip-path: circle(var(--theme-r, 150%) at var(--theme-x, 50%) var(--theme-y, 0)); }
+}
 /* Page navigation crossfades one opaque page over the previous one. No card, title or panel morphs. */
 :root {
   --vt-spring: linear(0, 0.24 8%, 0.58 19%, 0.85 31%, 0.99 44%, 1.025 56%, 1.015 70%, 1);

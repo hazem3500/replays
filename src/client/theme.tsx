@@ -29,6 +29,48 @@ function savedPreference(): ThemePreference {
   return saved === 'light' || saved === 'dark' ? saved : 'system';
 }
 
+/**
+ * Writes a theme to the document in one go: `data-theme` (which carries `color-scheme` and every token) and the
+ * browser chrome colour, so the page and the phone's bar change in the same frame.
+ */
+function applyTheme(theme: Theme) {
+  document.documentElement.dataset.theme = theme;
+  let themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+  if (!themeColor) {
+    themeColor = document.createElement('meta');
+    themeColor.name = 'theme-color';
+    document.head.append(themeColor);
+  }
+  themeColor.content = themeColor.getAttribute(`data-${theme}`) || THEME_COLORS[theme];
+}
+
+/** Holds every element's own transitions while the theme swaps, so hovers and fills never smear between themes. */
+function holdTransitions() {
+  const blocker = document.createElement('style');
+  blocker.dataset.themeSwitch = '';
+  blocker.textContent = '*,*::before,*::after{transition:none!important}';
+  document.head.append(blocker);
+  return () => {
+    void document.documentElement.offsetHeight;
+    requestAnimationFrame(() => blocker.remove());
+  };
+}
+
+/** Where the reveal grows from: the pointer's point, else the middle of the control that was activated. */
+export interface ThemeSwitchOrigin {
+  clientX: number;
+  clientY: number;
+  currentTarget?: EventTarget | null;
+}
+
+function revealFrom(origin: ThemeSwitchOrigin | undefined) {
+  if (!origin) return;
+  if (origin.clientX || origin.clientY) return { x: origin.clientX, y: origin.clientY };
+  if (!(origin.currentTarget instanceof Element)) return;
+  const box = origin.currentTarget.getBoundingClientRect();
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
+}
+
 function systemTheme(): Theme {
   if (typeof matchMedia === 'undefined') return 'dark';
   return matchMedia(LIGHT_QUERY).matches ? 'light' : 'dark';
@@ -51,14 +93,7 @@ export function useTheme() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = theme;
-    let themeColor = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
-    if (!themeColor) {
-      themeColor = document.createElement('meta');
-      themeColor.name = 'theme-color';
-      document.head.append(themeColor);
-    }
-    themeColor.content = themeColor.getAttribute(`data-${theme}`) || THEME_COLORS[theme];
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {
@@ -70,33 +105,51 @@ export function useTheme() {
     }
   }, [preference]);
 
-  /** Flips light ↔ dark. Until the first flip the theme follows the OS preference. */
-  const switchTheme = useCallback(() => {
-    const apply = () => setPreferenceState(theme === 'dark' ? 'light' : 'dark');
-    // A 180 ms crossfade of the whole page (View Transitions) where supported and motion is welcome.
-    if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      document.documentElement.dataset.themeSwitching = 'true';
-      const transition = document.startViewTransition(() => flushSync(apply));
-      void transition.finished.finally(() => delete document.documentElement.dataset.themeSwitching);
-      return;
-    }
-    // Otherwise swap every colour at once instead of letting hover transitions smear the change.
-    const blocker = document.createElement('style');
-    blocker.textContent = '*,*::before,*::after{transition:none!important}';
-    document.head.append(blocker);
-    apply();
-    requestAnimationFrame(() => {
-      void document.documentElement.offsetHeight;
-      requestAnimationFrame(() => blocker.remove());
-    });
-  }, [theme]);
+  /**
+   * Flips light ↔ dark (until the first flip the theme follows the OS). The new theme reveals in a circle from the
+   * toggle (or the tap) where View Transitions run, crossfades without an origin, and swaps at once under reduced
+   * motion; in every case the document, `color-scheme` and the chrome colour change together, element transitions held.
+   */
+  const switchTheme = useCallback(
+    (origin?: ThemeSwitchOrigin) => {
+      const next: Theme = theme === 'dark' ? 'light' : 'dark';
+      const apply = () => {
+        applyTheme(next);
+        setPreferenceState(next);
+      };
+      const release = holdTransitions();
+      const root = document.documentElement;
+      if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        const point = revealFrom(origin);
+        root.dataset.themeSwitching = point ? 'reveal' : 'fade';
+        if (point) {
+          root.style.setProperty('--theme-x', `${point.x}px`);
+          root.style.setProperty('--theme-y', `${point.y}px`);
+          root.style.setProperty(
+            '--theme-r',
+            `${Math.hypot(Math.max(point.x, innerWidth - point.x), Math.max(point.y, innerHeight - point.y))}px`,
+          );
+        }
+        const transition = document.startViewTransition(() => flushSync(apply));
+        void transition.finished.finally(() => {
+          delete root.dataset.themeSwitching;
+          release();
+        });
+        return;
+      }
+      apply();
+      release();
+    },
+    [theme],
+  );
 
   return useMemo(() => ({ theme, switchTheme }), [switchTheme, theme]);
 }
 
 export interface ThemeControls {
   theme: Theme;
-  switchTheme: () => void;
+  /** Pass the click (or tap) so the new theme reveals from it. */
+  switchTheme: (origin?: ThemeSwitchOrigin) => void;
 }
 
 export const ThemeContext = createContext<ThemeControls>({ theme: 'dark', switchTheme: () => undefined });

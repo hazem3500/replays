@@ -175,7 +175,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 968797,
       "gzip": 303520,
-      "brotli": 252083
+      "brotli": 252031
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
