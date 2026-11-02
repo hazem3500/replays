@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hideSurface, showSurface } from './surface-motion.ts';
+import { must } from './testing.ts';
 
 function animatedShell() {
   const shell = document.createElement('div');
@@ -32,7 +33,7 @@ describe('Recorder surface motion', () => {
     expect(shell.hidden).toBe(false);
     expect(shell.inert).toBe(true);
     expect(shell.getAttribute('aria-hidden')).toBe('true');
-    animations[1]!.finish();
+    must(animations[1]).finish();
     await Promise.resolve();
     expect(shell.hidden).toBe(true);
   });
@@ -43,8 +44,8 @@ describe('Recorder surface motion', () => {
     shell.dataset.phase = 'recording';
     hideSurface(shell);
     showSurface(shell);
-    expect(animations[1]!.cancel).toHaveBeenCalledOnce();
-    animations[1]!.finish();
+    expect(must(animations[1]).cancel).toHaveBeenCalledOnce();
+    must(animations[1]).finish();
     await Promise.resolve();
     expect(shell.hidden).toBe(false);
     expect(shell.inert).toBe(false);
@@ -57,7 +58,7 @@ describe('Recorder surface motion', () => {
     const remove = vi.fn<() => void>();
     hideSurface(shell, remove);
     expect(remove).not.toHaveBeenCalled();
-    animations[0]!.finish();
+    must(animations[0]).finish();
     await Promise.resolve();
     expect(remove).toHaveBeenCalledOnce();
   });
