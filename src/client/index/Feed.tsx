@@ -20,7 +20,6 @@ import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
-import { RunMosaic } from './PosterPlaceholder.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
@@ -82,7 +81,10 @@ export function runStatus(run: ReviewSuiteIndexRun): { tone: StatusTone; label: 
       ? { tone: 'waiting', label: 'No recording' }
       : !run.replay
         ? { tone: 'waiting', label: 'Expired' }
-        : { tone: run.status, label: run.status === 'passed' ? 'Passed' : run.status === 'failed' ? 'Failed' : 'Partial' };
+        : {
+            tone: run.status,
+            label: run.status === 'passed' ? 'Passed' : run.status === 'failed' ? 'Failed' : 'Partial',
+          };
 }
 
 /** The run whose poster stands for the suite: the first failed recording, else the first recording. */
@@ -350,7 +352,7 @@ function SuiteItem({
   // While its preview plays, the card cycles through the suite's runs (suite-cycle.ts).
   const card = useRef<HTMLLIElement>(null);
   const cycle = useSuiteCycle(suite.runDetails, front, playing);
-  const capture = useShuffle(card, cycle.step);
+  const capture = useShuffle(card, cycle.step, view);
   const poster = cycle.current;
   const shownId = poster ? playableReplayId(poster, true) : undefined;
   const host = poster?.replay?.host ?? entry.hosts[0] ?? '';
@@ -402,61 +404,63 @@ function SuiteItem({
       data-last={place.last || undefined}
       {...previewHandlers(`suite:${suite.id}`)}
     >
-      {view === 'grid' ? (
-        <>
-          <CardBacks runs={suite.runDetails} front={poster} />
-          <Poster
-            id={shownId}
-            host={host}
-            fallback={<RunMosaic runs={suite.runDetails} />}
-            size="card"
-            playing={playing}
-            badge={<RunsBadge count={count} />}
-            priority={place.index < FIRST_ROWS}
-            {...cyclePosterProps(cycle, capture)}
-          />
-        </>
-      ) : (
-        <PosterStack runs={suite.runDetails} front={poster}>
-          <Poster
-            id={shownId}
-            host={host}
-            fallback={<RunMosaic runs={suite.runDetails} />}
-            size="row"
-            playing={playing}
-            badge={<RunsBadge count={count} />}
-            priority={place.index < FIRST_ROWS}
-            {...cyclePosterProps(cycle, capture)}
-          />
-        </PosterStack>
-      )}
-      <div className="feed-body">
-        <div className="feed-head">
-          <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-            {suite.title}
-          </a>
-        </div>
-        <div className="feed-meta">
-          <span className="source-lead source-lead-plain suite-kind">
-            <LayersIcon className="source-mark" aria-hidden="true" />
-            Review suite
-          </span>
-          {sources ? <SourceLead sources={sources} origin="agent" short /> : null}
-          <PeopleStack people={suite.people} />
-          {view === 'list' ? facts : null}
-          {view === 'list' ? strip() : null}
-        </div>
-        {/* Grid: the time on the left, the run pills right-aligned on the same line, so suite cards are no
-            taller than their neighbours (the same three lines: title, source, facts). */}
+      {view === 'grid' ? <CardBacks runs={suite.runDetails} front={poster} /> : null}
+      <div className="suite-sheet">
         {view === 'grid' ? (
-          <div className="feed-meta feed-meta-end">
-            {facts}
-            {strip()}
+          <span className="shuffle-window">
+            <Poster
+              id={shownId}
+              host={host}
+              thumbhash={poster?.replay?.thumbhash}
+              size="card"
+              playing={playing}
+              badge={<RunsBadge count={count} />}
+              priority={place.index < FIRST_ROWS}
+              {...cyclePosterProps(cycle, capture)}
+            />
+          </span>
+        ) : (
+          <PosterStack runs={suite.runDetails} front={poster}>
+            <Poster
+              id={shownId}
+              host={host}
+              thumbhash={poster?.replay?.thumbhash}
+              size="row"
+              playing={playing}
+              badge={<RunsBadge count={count} />}
+              priority={place.index < FIRST_ROWS}
+              {...cyclePosterProps(cycle, capture)}
+            />
+          </PosterStack>
+        )}
+        <div className="feed-body">
+          <div className="feed-head">
+            <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
+              {suite.title}
+            </a>
           </div>
-        ) : null}
+          <div className="feed-meta">
+            <span className="source-lead source-lead-plain suite-kind">
+              <LayersIcon className="source-mark" aria-hidden="true" />
+              Review suite
+            </span>
+            {sources ? <SourceLead sources={sources} origin="agent" short /> : null}
+            <PeopleStack people={suite.people} />
+            {view === 'list' ? facts : null}
+            {view === 'list' ? strip() : null}
+          </div>
+          {/* Grid: the time on the left, the run pills right-aligned on the same line, so suite cards are no
+            taller than their neighbours (the same three lines: title, source, facts). */}
+          {view === 'grid' ? (
+            <div className="feed-meta feed-meta-end">
+              {facts}
+              {strip()}
+            </div>
+          ) : null}
+        </div>
+        {/* The same trailing column as replays: the time over a muted host. */}
+        {view === 'list' ? <RowColumns at={suite.createdAt} host={host} /> : null}
       </div>
-      {/* The same trailing column as replays: the time over a muted host. */}
-      {view === 'list' ? <RowColumns at={suite.createdAt} host={host} /> : null}
     </li>
   );
 }
@@ -468,7 +472,8 @@ function stackLayers(runCount: number): number[] {
 
 /** The runs drawn on the sheets behind the front poster (nearest first): recorded runs before the rest. */
 function backRuns(runs: readonly ReviewSuiteIndexRun[], front: ReviewSuiteIndexRun | undefined) {
-  const others = runs.filter((run) => run !== front);
+  const start = front ? runs.indexOf(front) : -1;
+  const others = start < 0 ? [...runs] : [...runs.slice(start + 1), ...runs.slice(0, start)];
   const ordered = [...others.filter((run) => playableReplayId(run, true)), ...others.filter((run) => !playableReplayId(run, true))];
   return stackLayers(runs.length).map((layer) => ({ layer, run: ordered[layer - 1] }));
 }

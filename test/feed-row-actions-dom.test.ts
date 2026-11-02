@@ -42,9 +42,9 @@ describe('feed row actions', () => {
     vi.unstubAllGlobals();
   });
 
-  function render(entries: FeedEntry[]) {
+  function render(entries: FeedEntry[], view: 'list' | 'grid' = 'list') {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    const feed = createElement(Feed, { entries, view: 'list', grouped: false, query: '' });
+    const feed = createElement(Feed, { entries, view, grouped: false, query: '' });
     act(() => {
       root.render(createElement(QueryClientProvider, { client }, feed));
     });
@@ -68,5 +68,36 @@ describe('feed row actions', () => {
       session('kept', { expiresAt: new Date(Date.now() + DAY).toISOString(), kept }),
     ]);
     expect(host.querySelector('.feed-expiry')).toBeNull();
+  });
+
+  it.each(['list', 'grid'] as const)('keeps a suite as a stack with one front thumbnail when posters are missing in %s', (view) => {
+    const runs = ['before', 'after'].map((id, index) => ({
+      id,
+      sequence: index + 1,
+      label: id,
+      status: 'passed' as const,
+      startedAt: '2026-11-02T10:00:00.000Z',
+      replayId: id,
+      replay: summarizeReplay(replay(id)),
+    }));
+    render(
+      [
+        {
+          kind: 'suite',
+          id: 'comparison',
+          status: 'Complete',
+          runs,
+          hiddenRuns: 0,
+          hosts: ['example.com'],
+          suite: { id: 'comparison', title: 'Before / after', createdAt: '2026-11-02T10:00:00.000Z', runDetails: runs },
+        },
+      ],
+      view,
+    );
+    const item = host.querySelector('.feed-suite');
+    expect(item?.querySelectorAll(view === 'grid' ? '.shuffle-window > .poster' : '.stack-front > .poster')).toHaveLength(1);
+    expect(item?.querySelector(view === 'grid' ? '.card-back' : '.stack-layer')).not.toBeNull();
+    expect(item?.querySelector('.poster-mosaic')).toBeNull();
+    expect(item?.textContent).toContain('2 runs');
   });
 });

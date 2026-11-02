@@ -16,6 +16,7 @@
 
 /* Quick results arrive one after another, top first, so the eye lands on the best match. */
 .command-option { animation: command-option-in 180ms var(--ease-out) both; animation-delay: calc(min(var(--i, 0), 6) * 20ms); }
+.command-field > svg { pointer-events: none; }
 
 @media (max-width: 640px) {
   .index-head .command-search { position: static; width: 40px; height: 40px; }

@@ -342,7 +342,7 @@
 /* Suites are plain rows like replays: the stacked thumbnail is the only difference, and the trailing column
    lines up with every other row; the run strip sits next to "N runs". */
 /* The pile's sheets peek above the thumbnail: pull it up by that strip so its front aligns with other rows'. */
-.feed-list[data-view="list"] .feed-suite > .poster-stack { margin-top: -15px; }
+.feed-list[data-view="list"] .feed-suite > .suite-sheet > .poster-stack { margin-top: -15px; }
 /* Grid: the run strip shares the facts line, right-aligned after the time and commit (one line, never wrapping). */
 .feed-list[data-view="grid"] .feed-meta.feed-meta-end { margin-top: 0; flex-wrap: nowrap; }
 .feed-list[data-view="grid"] .feed-meta-end > :is(.run-strip, .run-strip-note) { margin-left: auto; }
@@ -577,3 +577,12 @@ html[data-feed-transition]::view-transition-new(root) { animation-duration: 160m
   .feed-keep:hover { color: var(--text); }
 }
 @media (pointer: coarse) { .feed-keep::before { inset: -10px -6px; } }
+
+.shuffle-window { position: relative; display: block; clip-path: inset(-30px 0 0); }
+.stack-front { clip-path: inset(-30px 0 -48px); }
+
+.suite-sheet { display: contents; }
+.feed-list[data-view="grid"] .suite-sheet { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; border-radius: var(--card-radius); background: var(--surface-raised); box-shadow: var(--card-shadow); transform-origin: 50% 0; }
+.feed-list[data-view="grid"] .feed-suite::before { content: none; }
+.feed-list[data-view="grid"] .suite-sheet > .shuffle-window { overflow: hidden; border-radius: var(--card-radius) var(--card-radius) 0 0; }
+.feed-list[data-view="grid"] .suite-sheet-outgoing { position: absolute; inset: 0; z-index: 3; pointer-events: none; }

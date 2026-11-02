@@ -14,6 +14,7 @@ import { ENTER_KEYFRAMES, ENTER_MS, EASE, MORPH_STAGGER_MAX_MS, MORPH_STAGGER_MS
  * - the rest of an item's text (`aside-<id>`, `ext-<id>`, the thumbnail's `badge-<id>`; .feed-aside) moves like
  *   the title, and day headings
  *   (`day-<label>`, .feed-day) glide to their new place too;
+ * - a suite's rear sheets (`back1-<id>`, `back2-<id>`) pair across layouts and follow the front by 20 / 40 ms;
  * - items that arrive are one layer each (`card-<id>`): they fade in and rise 8 px, 25 ms apart (at most 150 ms);
  * - items that leave fade out (120 ms, no slide);
  * - the header is its own live layer (feed.css), so it never fades; everything else crossfades.
@@ -41,22 +42,40 @@ const ident = (id: string) => id.replace(/[^a-zA-Z0-9_-]/g, (character) => `_${c
 /** Each item's layers: its view-transition-class, and where it is in the item ('' = the item itself). */
 const PARTS = {
   card: { className: 'feed-card', selector: '' },
-  poster: { className: 'feed-poster', selector: ':scope > .poster, :scope > .poster-stack .stack-front > .poster' },
+  poster: {
+    className: 'feed-poster',
+    selector:
+      ':scope > .poster, :scope > .poster-stack .stack-front > .poster, :scope > .shuffle-window > .poster, :scope > .suite-sheet .shuffle-window > .poster, :scope > .suite-sheet .stack-front > .poster',
+  },
+  back1: {
+    className: 'feed-back-1',
+    selector: '.card-back-1, .stack-layer-1',
+  },
+  back2: {
+    className: 'feed-back-2',
+    selector: '.card-back-2, .stack-layer-2',
+  },
   title: { className: 'feed-title', selector: '.feed-title' },
   meta: { className: 'feed-meta', selector: '.feed-meta' },
   src: { className: 'feed-src', selector: '.feed-meta .source-lead' },
   // why: the frame's snapshot must be only its surface (it resizes; text must not), so the rest of the item's text
   // (the time column on wide lists, a grid suite's time-and-runs line, plugin fields) gets layers of its own.
-  aside: { className: 'feed-aside', selector: ':scope > .feed-cols, .feed-meta-end' },
+  aside: { className: 'feed-aside', selector: ':scope > .feed-cols, :scope > .suite-sheet > .feed-cols, .feed-meta-end' },
   // why: the thumbnail's duration / run-count badge keeps its size while the thumbnail scales under it.
   badge: {
     className: 'feed-aside',
-    selector: ':scope > .poster > .poster-badge, :scope > .poster-stack .stack-front > .poster > .poster-badge',
+    selector: '.poster > .poster-badge',
   },
   ext: { className: 'feed-aside', selector: '.feed-ext' },
 } as const;
 export type ItemPart = keyof typeof PARTS;
 const PART_NAMES = Object.keys(PARTS) as ItemPart[];
+
+function partElement(item: HTMLElement, part: ItemPart) {
+  const selector = PARTS[part].selector;
+  if (!selector) return item;
+  return [...item.querySelectorAll(selector)].find((element) => !element.closest('.suite-sheet-outgoing, .poster-outgoing')) ?? null;
+}
 
 /** The view-transition-name of one part of a feed entry (its `data-entry-id`), e.g. `poster-session_3ademo-shop`. */
 export function itemLayerName(part: ItemPart, entryId: string) {
@@ -100,7 +119,7 @@ function nameBefore(): string[] {
   const items = nearItems();
   for (const item of items) {
     const id = item.dataset.entryId!;
-    for (const part of PART_NAMES) name(PARTS[part].selector ? item.querySelector(PARTS[part].selector) : item, part, id);
+    for (const part of PART_NAMES) name(partElement(item, part), part, id);
   }
   return items.map((item) => item.dataset.entryId!);
 }
@@ -117,7 +136,7 @@ function nameAfter(before: ReadonlySet<string>) {
       arriving.push(id);
       continue;
     }
-    for (const part of PART_NAMES) name(PARTS[part].selector ? item.querySelector(PARTS[part].selector) : item, part, id);
+    for (const part of PART_NAMES) name(partElement(item, part), part, id);
     staying.push(id);
   }
   return { staying, arriving };
@@ -143,11 +162,13 @@ function staggerLayers(staying: readonly string[], arriving: readonly string[], 
   if (morph)
     for (const [index, id] of staying.entries()) {
       const delay = staggerDelay(index, MORPH_STAGGER_MS, MORPH_STAGGER_MAX_MS);
-      if (delay === 0) continue;
-      const selectors = PART_NAMES.flatMap((part) =>
-        ['group', 'old', 'new'].map((pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`),
-      );
-      rules.push(`${selectors.join(', ')} { animation-delay: ${delay}ms; }`);
+      for (const part of PART_NAMES) {
+        const following = part === 'back1' ? 20 : part === 'back2' ? 40 : 0;
+        const partDelay = delay + following;
+        if (partDelay === 0) continue;
+        const selectors = ['group', 'old', 'new'].map((pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`);
+        rules.push(`${selectors.join(', ')} { animation-delay: ${partDelay}ms; }`);
+      }
     }
   if (rules.length === 0) return undefined;
   const style = document.createElement('style');
@@ -250,6 +271,11 @@ export function staggerIn(container: ParentNode) {
     return box.bottom > 0 && box.top < height;
   });
   for (const [index, item] of visible.entries()) {
-    item.animate(ENTER_KEYFRAMES, { duration: ENTER_MS, delay: staggerDelay(index), easing: EASE, fill: 'backwards' });
+    item.animate(ENTER_KEYFRAMES, {
+      duration: ENTER_MS,
+      delay: staggerDelay(index),
+      easing: EASE,
+      fill: 'backwards',
+    });
   }
 }

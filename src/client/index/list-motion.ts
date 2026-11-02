@@ -11,12 +11,12 @@
  * One strong ease-out (EASE = --ease-out), no overshoot: rows and cards change size by hundreds of pixels.
  */
 export const EASE = 'cubic-bezier(0.23, 1, 0.32, 1)';
-export const ENTER_MS = 240;
-export const ENTER_RISE_PX = 8;
+export const ENTER_MS = 300;
+export const ENTER_RISE_PX = 3;
 export const LEAVE_MS = 120;
 export const GLIDE_MS = 280;
-export const STAGGER_MS = 25;
-export const STAGGER_MAX_MS = 150;
+export const STAGGER_MS = 40;
+export const STAGGER_MAX_MS = 200;
 /** List ↔ grid: the items that stay start a little apart too, in visual order. */
 export const MORPH_STAGGER_MS = 8;
 export const MORPH_STAGGER_MAX_MS = 60;

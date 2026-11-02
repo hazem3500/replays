@@ -20,7 +20,7 @@
     "dist/client/assets/api-HASH.js": {
       "raw": 2038,
       "gzip": 981,
-      "brotli": 848
+      "brotli": 846
     },
     "dist/client/assets/arrow-up-right-HASH.js": {
       "raw": 207,
@@ -144,7 +144,7 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2132,
-      "gzip": 1029,
+      "gzip": 1063,
       "brotli": 907
     },
     "dist/client/assets/feature-HASH.js": {
@@ -179,7 +179,7 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 259393,
-      "gzip": 87310,
+      "gzip": 87343,
       "brotli": 72775
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -263,9 +263,9 @@
       "brotli": 553
     },
     "dist/client/assets/ReplayIndex-HASH.js": {
-      "raw": 208371,
-      "gzip": 69211,
-      "brotli": 59099
+      "raw": 214836,
+      "gzip": 71420,
+      "brotli": 60995
     },
     "dist/client/assets/rotate-ccw-HASH.js": {
       "raw": 382,
@@ -319,7 +319,7 @@
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 35973,
-      "gzip": 12828,
+      "gzip": 12862,
       "brotli": 11550
     },
     "dist/client/assets/ui-state-HASH.js": {
@@ -355,7 +355,7 @@
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
       "gzip": 463,
-      "brotli": 429
+      "brotli": 427
     },
     "dist/client/assets/write-HASH.js": {
       "raw": 334228,
@@ -1346,15 +1346,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/177"
     },
     {
-      "file": "dist/client/assets/expired-query-HASH.js",
-      "cap": {
-        "raw": 2132,
-        "gzip": 1029
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/185"
-    },
-    {
       "file": "dist/client/assets/keep-HASH.js",
       "cap": {
         "raw": 7448,
@@ -1484,33 +1475,9 @@
       "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "raw": 208371
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/Headline-HASH.js",
       "cap": {
         "gzip": 2639
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "gzip": 69211
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "brotli": 59099
       },
       "pr": "https://github.com/hazem3500/replays/pull/191",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
@@ -1692,14 +1659,6 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/tools-HASH.js",
-      "cap": {
-        "gzip": 12828
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
       "cap": {
         "raw": 315379
@@ -1756,14 +1715,6 @@
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "gzip": 87310
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "brotli": 624
@@ -1806,6 +1757,41 @@
       },
       "reason": "In-viewport collapsed Steps handles, shared narrow-screen Steps tabs and vertically centred console rows. Measured main/head: raw 5969 to 6139 bytes, gzip 1562 to 1586 bytes, brotli 1344 to 1368 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/200"
+    },
+    {
+      "file": "dist/client/assets/ReplayIndex-HASH.js",
+      "cap": {
+        "raw": 214836,
+        "gzip": 71420,
+        "brotli": 60995
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Measured stack choreography, delayed rear-layer transitions and leading suite posters: main/head raw 207979/208578, gzip 69089/69339, Brotli 58982/59218 bytes on Node 24.22.1. Three percent feature headroom."
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "gzip": 87343
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 87308/87311 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
+    },
+    {
+      "file": "dist/client/assets/tools-HASH.js",
+      "cap": {
+        "gzip": 12862
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 12828/12830 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
+    },
+    {
+      "file": "dist/client/assets/expired-query-HASH.js",
+      "cap": {
+        "gzip": 1063,
+        "raw": 2132
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Touch-search stylesheet changes shared import hashes. Same-toolchain main/head: raw 2132/2132, gzip 1028/1031, Brotli 899/905 bytes. This unchanged source receives only a 32-byte gzip margin; existing raw and Brotli caps remain."
     }
   ]
 }
