@@ -61,7 +61,7 @@ function setUp() {
           this.finish = resolve;
           this.cancel.mockImplementation(() => reject(new Error('Animation cancelled')));
         });
-        void this.finished.catch(() => undefined);
+        void this.finished.catch(() => {});
       }
     },
   );

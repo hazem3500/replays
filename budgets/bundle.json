@@ -179,7 +179,7 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 259393,
-      "gzip": 87310,
+      "gzip": 87343,
       "brotli": 72775
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -319,7 +319,7 @@
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 35973,
-      "gzip": 12828,
+      "gzip": 12862,
       "brotli": 11550
     },
     "dist/client/assets/ui-state-HASH.js": {
@@ -1668,14 +1668,6 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/tools-HASH.js",
-      "cap": {
-        "gzip": 12828
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
       "cap": {
         "raw": 315379
@@ -1727,14 +1719,6 @@
       "file": "dist/client/assets/drawer-HASH.js",
       "cap": {
         "gzip": 15992
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "gzip": 87310
       },
       "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
@@ -1792,6 +1776,22 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/199",
       "reason": "Measured stack choreography, delayed rear-layer transitions and leading suite posters: main/head raw 207979/208578, gzip 69089/69339, Brotli 58982/59218 bytes on Node 24.22.1. Three percent feature headroom."
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "gzip": 87343
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 87308/87311 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
+    },
+    {
+      "file": "dist/client/assets/tools-HASH.js",
+      "cap": {
+        "gzip": 12862
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/199",
+      "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 12828/12830 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
     }
   ]
 }
