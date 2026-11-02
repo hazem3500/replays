@@ -563,8 +563,8 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 27867,
-      "gzip": 7830,
+      "raw": 27915,
+      "gzip": 7836,
       "brotli": 6831
     },
     "dist/lib/recorder.iife.js": {
@@ -617,11 +617,11 @@
     {
       "file": "dist/lib/recorder-ui.mjs",
       "cap": {
-        "raw": 27867,
-        "gzip": 7830,
+        "raw": 27915,
+        "gzip": 7836,
         "brotli": 6831
       },
-      "reason": "Add cancellable recorder shell entrance/exit animations, reduced-motion handling and bounded exit cleanup. Same-toolchain main/head: raw 26222 to 27867 bytes, gzip 7435 to 7830 bytes, brotli 6487 to 6831 bytes. Headless core is unchanged.",
+      "reason": "Add cancellable recorder shell entrance/exit animations, reduced-motion handling and bounded exit cleanup. Same-toolchain main/head: raw 26222 to 27915 bytes, gzip 7435 to 7836 bytes, brotli 6487 to 6830 bytes. Headless core is unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/202"
     },
     {

@@ -47,8 +47,8 @@ function transition(shell: HTMLElement, entering: boolean, complete: () => void)
 export function showSurface(shell: HTMLElement) {
   const entering = shell.hidden || !shell.dataset.phase;
   cancel(shell);
-  shell.hidden = false;
-  shell.inert = false;
+  shell.removeAttribute('hidden');
+  shell.removeAttribute('inert');
   shell.removeAttribute('aria-hidden');
   if (entering) transition(shell, true, () => {});
 }
@@ -57,10 +57,10 @@ export function showSurface(shell: HTMLElement) {
 export function hideSurface(
   shell: HTMLElement,
   complete = () => {
-    shell.hidden = true;
+    shell.setAttribute('hidden', '');
   },
 ) {
-  shell.inert = true;
+  shell.setAttribute('inert', '');
   shell.setAttribute('aria-hidden', 'true');
   transition(shell, false, complete);
 }
