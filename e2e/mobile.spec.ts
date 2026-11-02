@@ -144,6 +144,8 @@ test('the topbar fits at 320 px: the title keeps its room beside Edit and More; 
   expect((await page.locator('#replay-title').boundingBox())!.width).toBeGreaterThanOrEqual(120);
   await expect(header.getByRole('button', { name: 'Replay details' })).toHaveCount(0);
   await expect(header.getByRole('button', { name: /^Switch to (light|dark) theme$/ })).toHaveCount(0);
+  const title = 'Demo shop: checkout with a bad coupon';
+  await expect(page.locator('#replay-title')).toHaveAccessibleName(title);
 
   // A tap on an icon button never leaves a tooltip behind.
   await header.getByRole('button', { name: 'More actions' }).tap();
@@ -154,6 +156,5 @@ test('the topbar fits at 320 px: the title keeps its room beside Edit and More; 
   await page.getByTestId('replay-details').tap();
   const sheet = page.getByTestId('replay-info');
   await expect(sheet).toBeVisible();
-  const title = await sheet.getByRole('heading').innerText();
-  await expect(page.locator('#replay-title')).toHaveAccessibleName(title);
+  await expect(sheet.getByRole('heading', { name: title, exact: true })).toBeVisible();
 });
