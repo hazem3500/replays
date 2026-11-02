@@ -147,3 +147,30 @@ test('tiles stay inside the stage, clear of the steps rail, at every width and l
     }
   }
 });
+
+test('on a phone the switch above the stage and the swipe always agree, and nothing sits on the page', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openReplay(page, compareUrl());
+  const stage = page.getByTestId('compare-stage');
+  const options = page.getByTestId('phone-switch').getByRole('radio');
+  await expect(options).toHaveCount(2);
+  await expect(options.first()).toHaveAttribute('aria-checked', 'true');
+  // why: the switch names the recording, so the page carries no name pill, error badge, floating button or frame.
+  await expect(stage.locator('.ct-nametag').first()).toBeHidden();
+  await expect(stage.locator('.ct-actions').first()).toBeHidden();
+  await expect(page.locator('.stage-wrap .fullscreen-button')).toBeHidden();
+  await expect(stage.locator('.ct-tile').first()).toHaveCSS('outline-style', 'none');
+
+  await stage.evaluate((element) => element.scrollTo({ left: element.clientWidth, behavior: 'instant' }));
+  await expect(options.nth(1)).toHaveAttribute('aria-checked', 'true');
+  await expect(page).toHaveURL(/focus=human-demo/);
+
+  await options.first().click();
+  await expect(page).not.toHaveURL(/focus=/);
+  await expect.poll(() => stage.evaluate((element) => Math.round(element.scrollLeft))).toBe(0);
+
+  await options.first().focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(options.nth(1)).toBeFocused();
+  await expect.poll(() => stage.evaluate((element) => Math.round(element.scrollLeft / element.clientWidth))).toBe(1);
+});

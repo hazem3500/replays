@@ -1,8 +1,11 @@
 import { useQueries } from '@tanstack/react-query';
+import { ArrowUpRightIcon } from 'lucide-react';
 import { type ComponentProps, useState } from 'react';
 
+import { DropdownMenuItem } from '@/components/ui/dropdown-menu.tsx';
+
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
-import { parsePermalink } from '../permalink.ts';
+import { formatSeconds, parsePermalink } from '../permalink.ts';
 import { replayQuery } from '../queries.ts';
 import { shortcutFor } from '../shortcuts.ts';
 import { Viewer } from '../Viewer.tsx';
@@ -86,6 +89,16 @@ function CompareFailed({ tiles }: { tiles: readonly CompareTile[] }) {
   return <StateShell {...failureCopy('comparison', failureOf(tiles))} secondary={TRY_AGAIN} />;
 }
 
+/** Phones: the recording on show, on its own at this moment (desktop has it on the tile). */
+function OpenOnItsOwnItem({ name, onSelect }: { name: string; onSelect: () => void }) {
+  return (
+    <DropdownMenuItem onClick={onSelect} data-testid="open-on-its-own">
+      <ArrowUpRightIcon aria-hidden="true" />
+      Open {name} on its own
+    </DropdownMenuItem>
+  );
+}
+
 /** `#step-n` wins over `t`, as in the single viewer; a step is the focused recording's. */
 function linkedTime(focused: LoadedTile, time: number | undefined) {
   const { steps } = focused.bundle;
@@ -127,7 +140,7 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
   };
 
   return (
-    <div className="compare-viewer" data-compare={layout}>
+    <div className="compare-viewer" data-compare={layout} data-phone={mobile || undefined}>
       <Viewer
         {...compare.page}
         bundle={focused.bundle}
@@ -138,6 +151,10 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
           mobile ? (
             <>
               {compare.page?.menu}
+              <OpenOnItsOwnItem
+                name={focused.name}
+                onSelect={() => window.open(compare.href(focused.id, formatSeconds(session.clock.getTime())), '_blank', 'noopener')}
+              />
               <LayoutMenuItems value={layout} onChange={onLayout} />
             </>
           ) : (
