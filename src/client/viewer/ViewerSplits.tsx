@@ -85,7 +85,10 @@ export function RailSplit({
       collapsed={collapsed}
       onChange={onWidthChange}
       onCollapsedChange={onCollapsedChange}
-      onPreview={(size, folded) => workspace.current?.style.setProperty('--steps-width', `${folded ? 0 : size}px`)}
+      onPreview={(size) => {
+        // why: the collapsed grid hides the rail; its width must remain available when only the fold flag changes.
+        workspace.current?.style.setProperty('--steps-width', `${size}px`);
+      }}
       storageKey={STEPS_WIDTH_KEY}
       settleTarget={workspace}
       label={STRINGS.rail}

@@ -46,7 +46,7 @@ import { copyLinkItems, CopyLinkButton, EditButton, ActionsBar } from './viewer/
 import './step-caption.css';
 import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
 import { clampInspectorHeight } from './viewer/inspector-size.ts';
-import { MOBILE_QUERY, useMediaQuery } from './media.ts';
+import { MOBILE_QUERY, STACKED_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
 import { savedStepsWidth, StepRail } from './viewer/StepRail.tsx';
 import { InspectorSplit, RailEdgeTab, RailSplit } from './viewer/ViewerSplits.tsx';
@@ -236,10 +236,11 @@ export function Viewer({
     writeStorage(CAPTION_NUMBERS_KEY, next ? '1' : '0');
     setCaptionNumbersState(next);
   }, []);
-  // why: phones have no room for a hidden panel's "Show details" seam; there a hidden inspector folds to its tab row.
+  // why: stacked layouts keep Steps in the inspector, so even a hidden inspector must keep its tab row.
   const mobile = useMediaQuery(MOBILE_QUERY);
-  const hidden = layout.hidden && !mobile;
-  const collapsed = layout.collapsed || (layout.hidden && mobile);
+  const stacked = useMediaQuery(STACKED_QUERY);
+  const hidden = layout.hidden && !stacked;
+  const collapsed = layout.collapsed || (layout.hidden && stacked);
   /** `persist: false` is a transient change for one action (a shortcut that needs the panel), not a preference. */
   const { setCollapsed: storeCollapsed, setTab: storeTab } = layout;
   const setCollapsed = useCallback(
@@ -261,7 +262,7 @@ export function Viewer({
   useEffect(() => {
     collapsedRef.current = collapsed;
   }, [collapsed]);
-  // Phones: one tabbed panel under the player; Steps is its first tab and opens by default.
+  // why: stacked layouts share one panel, with Steps selected until a diagnostics tab is chosen.
   const [stepsSelected, setStepsSelected] = useState(true);
   const setTab = useCallback(
     (next: InspectorTab, persist = true) => {
@@ -273,13 +274,13 @@ export function Viewer({
   );
   const mobilePanel = useMemo<MobilePanel | undefined>(
     () =>
-      mobile
+      stacked
         ? {
             stepsSelected,
             onSelectSteps: () => setStepsSelected(true),
           }
         : undefined,
-    [mobile, stepsSelected],
+    [stacked, stepsSelected],
   );
   const [expandedRequest, setExpandedRequest] = useState<string>();
   // An expanded request needs room: a short desktop panel grows to 45% of the window while it is open (not
@@ -290,7 +291,7 @@ export function Viewer({
   useEffect(() => {
     inspectorHeightRef.current = inspectorHeight;
   }, [inspectorHeight]);
-  const roomForRequest = Boolean(expandedRequest) && tab === 'network' && !mobile && !collapsed;
+  const roomForRequest = Boolean(expandedRequest) && tab === 'network' && !stacked && !collapsed;
   useEffect(() => {
     const element = shell.current;
     const animate = () => {
@@ -612,7 +613,7 @@ export function Viewer({
         ref={shell}
         className="app-shell"
         data-mobile={mobile || undefined}
-        data-tab={mobile && stepsSelected ? 'steps' : tab}
+        data-tab={stacked && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
         data-inspector-hidden={hidden || undefined}
         data-profile={profile?.id}
@@ -686,7 +687,7 @@ export function Viewer({
             </div>
             <Transport />
           </section>
-          {showRail && !mobile ? (
+          {showRail && !stacked ? (
             <>
               <RailSplit
                 workspace={workspace}
@@ -700,7 +701,7 @@ export function Viewer({
             </>
           ) : null}
         </div>
-        {mobile || hidden ? null : (
+        {stacked || hidden ? null : (
           <InspectorSplit
             shell={shell}
             storageKey={viewSettingKey(page.view.id, 'dock-height')}
