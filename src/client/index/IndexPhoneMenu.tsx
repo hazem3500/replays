@@ -1,4 +1,4 @@
-import { MoonIcon, SettingsIcon, SunIcon, UploadIcon, UserRoundIcon } from 'lucide-react';
+import { EllipsisIcon, MoonIcon, SettingsIcon, SunIcon, UploadIcon, UserRoundIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button.tsx';
@@ -82,13 +82,14 @@ function PhoneMenuRowContent({ item }: { item: IndexPhoneMenuItem }) {
 /**
  * Phones: the index header keeps two actions, search and this one. Upload, the theme and Settings fold into one
  * bottom sheet (thumb-reachable, 52 px rows) instead of four 40 px icons crowding the product name. Upload and
- * Settings open their own dialogs (still mounted by the header) after the sheet has closed.
+ * Settings open their own dialogs (still mounted by the header) after the sheet has closed. The trigger draws a person
+ * only when someone is signed in (the sheet then holds their account); otherwise the More ellipsis the viewer uses.
  */
-export function IndexPhoneMenu({ items }: { items: IndexPhoneMenuItem[] }) {
+export function IndexPhoneMenu({ items, signedIn = false }: { items: IndexPhoneMenuItem[]; signedIn?: boolean }) {
   return (
     <Drawer>
       <DrawerTrigger className="phone-menu-trigger" aria-label={strings.trigger}>
-        <UserRoundIcon aria-hidden="true" />
+        {signedIn ? <UserRoundIcon aria-hidden="true" /> : <EllipsisIcon aria-hidden="true" />}
       </DrawerTrigger>
       <DrawerContent className="phone-menu-sheet">
         <DrawerTitle className="phone-menu-title">{productName()}</DrawerTitle>

@@ -117,3 +117,14 @@ test.describe('desktop settings', () => {
     await expect(page.getByRole('button', { name: 'Settings', exact: true })).toBeFocused();
   });
 });
+
+test.describe('phone header menu', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  test('with nobody signed in, the menu button draws the More ellipsis rather than a person', async ({ page }) => {
+    await gotoHydrated(page, `${origin()}/`);
+    const menu = page.getByRole('button', { name: 'Menu' });
+    await expect(menu.locator('svg.lucide-ellipsis')).toHaveCount(1);
+    await expect(menu.locator('svg.lucide-user-round')).toHaveCount(0);
+  });
+});
