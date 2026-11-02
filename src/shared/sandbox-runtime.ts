@@ -37,7 +37,7 @@ const RUNTIME = String.raw`
   var port = null;
   var nextId = 1;
   var pending = {};
-  var defs = { tab: {}, panel: {}, action: {} };
+  var defs = { tab: {}, panel: {}, action: {}, section: {}, track: {} };
   var timeListeners = [];
   var lastTime = 0;
   var cleanups = [];
@@ -77,7 +77,7 @@ const RUNTIME = String.raw`
       defs[kind][id] = fn;
     };
   }
-  window.replays = { tab: register('tab'), panel: register('panel'), action: register('action') };
+  window.replays = { tab: register('tab'), panel: register('panel'), action: register('action'), section: register('section'), track: register('track') };
 
   function denied(name) {
     return function () { return Promise.reject(new Error('permission-denied: ' + name)); };
@@ -132,9 +132,9 @@ const RUNTIME = String.raw`
       return;
     }
     Promise.resolve()
-      .then(function () { return fn(init.mode === 'action' ? ctx : root, ctx); })
-      .then(function (result) { if (typeof result === 'function') cleanups.push(result); if (init.mode === 'action') fire('done', {}); else fire('rendered', {}); })
-      .catch(function (error) { reportError(error); if (init.mode === 'action') fire('done', {}); else fire('rendered', {}); });
+      .then(function () { return fn(init.mode === 'action' || init.mode === 'track' ? ctx : root, ctx); })
+      .then(function (result) { if (init.mode === 'track') { fire('markers', { markers: result }); return; } if (typeof result === 'function') cleanups.push(result); if (init.mode === 'action') fire('done', {}); else fire('rendered', {}); })
+      .catch(function (error) { reportError(error); if (init.mode === 'action' || init.mode === 'track') fire('done', {}); else fire('rendered', {}); });
   }
 
   window.addEventListener('message', function onInit(event) {

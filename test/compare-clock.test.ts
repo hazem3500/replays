@@ -160,19 +160,6 @@ describe('SharedClock tiles', () => {
     expect(long.status).toBe('paused');
   });
 
-  it('restarts from the beginning when played after the end', () => {
-    const frames = fakeFrames();
-    const { clock } = liveClock(frames, [1000]);
-    clock.play();
-    frames.advance(1200);
-    expect(clock.getSnapshot().status).toBe('ended');
-    clock.play();
-    expect(clock.getTime()).toBe(0);
-    expect(clock.getSnapshot().status).toBe('playing');
-  });
-});
-
-describe('SharedClock scrubbing', () => {
   it('scrubs live players throttled and resumes after the drop', () => {
     const frames = fakeFrames();
     const { clock, players } = liveClock(frames, [9000]);
@@ -187,48 +174,14 @@ describe('SharedClock scrubbing', () => {
     expect(live?.time).toBe(4000);
   });
 
-  it('moves every tile on the stage during a scrub, thumbnails too, before the drop', () => {
+  it('restarts from the beginning when played after the end', () => {
     const frames = fakeFrames();
-    const clock = new SharedClock(frames.clock);
-    const live = player(9000);
-    const thumb = player(9000);
-    clock.add('live', live);
-    clock.add('thumb', thumb);
-    clock.setFidelity('live', 'live');
-    clock.setFidelity('thumb', 'thumb');
-    clock.beginScrub();
-    clock.seek(3000);
-    frames.advance(16);
-    expect(live.time).toBe(3000);
-    expect(thumb.time).toBe(3000);
-    expect(thumb.scrubs).toBe(1);
-  });
-
-  it('carries several scrub moves in one frame to each tile as one seek to the latest', () => {
-    const frames = fakeFrames();
-    const { clock, players } = liveClock(frames, [9000]);
-    const [tile] = players;
-    clock.beginScrub();
-    const seeks = tile?.seeks ?? 0;
-    clock.seek(1000);
-    clock.seek(2000);
-    clock.seek(2500);
-    frames.advance(16);
-    expect((tile?.seeks ?? 0) - seeks).toBe(1);
-    expect(tile?.time).toBe(2500);
-  });
-
-  it('leaves a tile that has ended where it is while a scrub moves past its end', () => {
-    const frames = fakeFrames();
-    const { clock, players } = liveClock(frames, [2000, 9000]);
-    const [short] = players;
-    clock.beginScrub();
-    clock.seek(5000);
-    frames.advance(16);
-    const seeks = short?.seeks ?? 0;
-    clock.seek(6000);
-    frames.advance(16);
-    expect(short?.time).toBe(2000);
-    expect(short?.seeks).toBe(seeks);
+    const { clock } = liveClock(frames, [1000]);
+    clock.play();
+    frames.advance(1200);
+    expect(clock.getSnapshot().status).toBe('ended');
+    clock.play();
+    expect(clock.getTime()).toBe(0);
+    expect(clock.getSnapshot().status).toBe('playing');
   });
 });

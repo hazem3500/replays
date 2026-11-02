@@ -240,7 +240,12 @@ async function checkServer(options: PluginCheckOptions, replay: ReplayBundle, re
 }
 
 export async function checkPlugin(options: PluginCheckOptions, env: NodeJS.ProcessEnv = {}): Promise<PluginCheckResult> {
-  const browserOptions = { ...options, ...(env.REPLAYS_PLUGIN_CDP && !options.cdp ? { cdp: env.REPLAYS_PLUGIN_CDP } : {}) };
+  const browserOptions = {
+    ...options,
+    ...(env.REPLAYS_PLUGIN_CDP && !options.cdp ? { cdp: env.REPLAYS_PLUGIN_CDP } : {}),
+    ...(env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {}),
+    noSandbox: env.CHROMIUM_NO_SANDBOX === '1',
+  };
   const result: PluginCheckResult = {
     kind: options.kind ?? (options.file.endsWith('.replays-plugin.json') ? 'user' : 'server'),
     output: [],

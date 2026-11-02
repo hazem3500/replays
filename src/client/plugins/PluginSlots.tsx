@@ -114,7 +114,11 @@ function TrackRow({
               data-testid="plugin-track-marker"
               tabIndex={index === 0 ? 0 : -1}
               aria-label={`${track.label}: ${marker.label}, at ${formatClock(marker.at)}`}
-              onClick={() => context.seek(marker.at)}
+              onClick={() => {
+                void Promise.resolve()
+                  .then(() => (track.onSelect ? track.onSelect(marker.at, context) : context.seek(marker.at)))
+                  .catch(() => context.notify('The marker could not be opened'));
+              }}
               onKeyDown={onKeyDown}
             />
             <div className="plugin-track-card" aria-hidden="true">

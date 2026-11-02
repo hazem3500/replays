@@ -49,6 +49,8 @@ export interface UserPluginManifest {
   contributes: {
     /** Inspector tabs (bottom panel, next to Console and Network). */
     tabs?: Contribution[];
+    contextSections?: Contribution[];
+    tracks?: Contribution[];
     /** Side drawer panels, opened from the More menu. */
     panels?: Contribution[];
     /** Entries in the More menu that run the plugin's function once. */
@@ -157,13 +159,15 @@ export function parseManifest(value: unknown): UserPluginManifest {
   if (!contributesInput || typeof contributesInput !== 'object' || Array.isArray(contributesInput))
     throw new PluginFormatError('manifest.contributes must be an object');
   const c = contributesInput as Record<string, unknown>;
-  const extraKey = Object.keys(c).find((key) => !['tabs', 'panels', 'actions'].includes(key));
+  const extraKey = Object.keys(c).find((key) => !['tabs', 'panels', 'actions', 'contextSections', 'tracks'].includes(key));
   if (extraKey) throw new PluginFormatError(`manifest.contributes.${extraKey} is not a supported field`);
   const tabs = contributions(c.tabs, 'tabs');
   const panels = contributions(c.panels, 'panels');
   const actions = contributions(c.actions, 'actions');
-  if (!tabs?.length && !panels?.length && !actions?.length)
-    throw new PluginFormatError('a plugin must contribute at least one tab, panel or action');
+  const contextSections = contributions(c.contextSections, 'contextSections');
+  const tracks = contributions(c.tracks, 'tracks');
+  if (!tabs?.length && !panels?.length && !actions?.length && !contextSections?.length && !tracks?.length)
+    throw new PluginFormatError('a plugin must contribute at least one viewer contribution');
   const targets = parseTargets(input.targets);
   let settings: PluginSettingDefinition[] | undefined;
   try {
@@ -177,7 +181,13 @@ export function parseManifest(value: unknown): UserPluginManifest {
     name: input.name.trim(),
     ...(input.description ? { description: input.description as string } : {}),
     permissions: [...new Set(permissions as Capability[])],
-    contributes: { ...(tabs?.length ? { tabs } : {}), ...(panels?.length ? { panels } : {}), ...(actions?.length ? { actions } : {}) },
+    contributes: {
+      ...(contextSections?.length ? { contextSections } : {}),
+      ...(tracks?.length ? { tracks } : {}),
+      ...(tabs?.length ? { tabs } : {}),
+      ...(panels?.length ? { panels } : {}),
+      ...(actions?.length ? { actions } : {}),
+    },
     ...(targets ? { targets } : {}),
     ...(settings ? { settings } : {}),
   };

@@ -82,8 +82,6 @@ export class SharedClock {
   private resumeAfterScrub = false;
   private scrubbing = false;
   private pendingTime: number | undefined;
-  /** The one animation frame that carries a scrub's latest position to every tile (several moves, one seek each). */
-  private scrubFrame: number | undefined;
   private snapshot: ClockSnapshot = { status: 'paused', speed: 1, duration: 0, ended: new Set() };
 
   constructor(clock: FrameClock = browserClock) {
@@ -183,17 +181,14 @@ export class SharedClock {
 
   readonly isScrubbing = () => this.scrubbing;
 
-  /**
-   * While a scrubber is dragged every tile on the stage follows it: each renders throttled (a tile that can't keep up
-   * shows its last frame and catches up), and the latest position reaches each one once per frame.
-   */
+  /** While a scrubber is dragged, live players render throttled and thumbnails wait for the drop. */
   readonly beginScrub = () => {
     if (this.scrubbing) return;
     this.resumeAfterScrub = this.snapshot.status === 'playing';
     this.pause();
     this.scrubbing = true;
     for (const [id, tile] of this.tiles) {
-      tile.scrubbing = this.getFidelity(id) !== 'off';
+      tile.scrubbing = this.getFidelity(id) === 'live';
       if (tile.scrubbing) tile.player.beginScrub();
     }
   };
@@ -201,7 +196,6 @@ export class SharedClock {
   readonly endScrub = () => {
     if (!this.scrubbing) return;
     this.scrubbing = false;
-    this.cancelScrubFrame();
     for (const tile of this.tiles.values()) {
       if (tile.scrubbing) tile.player.endScrub();
       tile.scrubbing = false;
@@ -249,8 +243,7 @@ export class SharedClock {
     if (next !== 'playing') this.cancelFrame();
     const changed = next !== previous.status || duration !== previous.duration || !sameSet(ended, previous.ended);
     if (changed) this.snapshot = { ...previous, status: next, duration, ended };
-    if (this.scrubbing) this.scheduleScrubSync();
-    else this.sync(force || changed);
+    this.sync(force || changed);
     for (const listener of this.timeListeners) listener();
     if (changed) for (const listener of this.listeners) listener();
   }
@@ -293,28 +286,6 @@ export class SharedClock {
     if (!shouldPlay && playing) player.pause();
     if (force || Math.abs(player.getTime() - target) > LIVE_DRIFT_MS) player.seek(target);
     if (shouldPlay && !playing) player.play();
-  }
-
-  private scheduleScrubSync() {
-    if (this.scrubFrame !== undefined) return;
-    this.scrubFrame = this.clock.request(() => {
-      this.scrubFrame = undefined;
-      if (this.scrubbing) this.syncScrub();
-    });
-  }
-
-  private cancelScrubFrame() {
-    if (this.scrubFrame !== undefined) this.clock.cancel(this.scrubFrame);
-    this.scrubFrame = undefined;
-  }
-
-  /** One seek per scrubbing tile to the latest position; a tile already there (one that has ended) is left alone. */
-  private syncScrub() {
-    for (const tile of this.tiles.values()) {
-      if (!tile.scrubbing) continue;
-      const target = clamp(this.time, tile.player.duration);
-      if (Math.abs(tile.player.getTime() - target) > 1) tile.player.seek(target);
-    }
   }
 
   private readonly tick = () => {

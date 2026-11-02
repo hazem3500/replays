@@ -90,7 +90,7 @@
     "dist/client/assets/comments-ui-HASH.js": {
       "raw": 33306,
       "gzip": 11413,
-      "brotli": 10065
+      "brotli": 10056
     },
     "dist/client/assets/ComparePicker-HASH.js": {
       "raw": 5222,
@@ -145,7 +145,7 @@
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2132,
       "gzip": 1029,
-      "brotli": 906
+      "brotli": 907
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6645,
@@ -178,9 +178,9 @@
       "brotli": 8029
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 259279,
-      "gzip": 87269,
-      "brotli": 72705
+      "raw": 259393,
+      "gzip": 87308,
+      "brotli": 72775
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -310,7 +310,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 625
+      "brotli": 616
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
@@ -318,9 +318,9 @@
       "brotli": 7810
     },
     "dist/client/assets/tools-HASH.js": {
-      "raw": 34795,
-      "gzip": 12373,
-      "brotli": 11139
+      "raw": 35973,
+      "gzip": 12828,
+      "brotli": 11548
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
@@ -354,8 +354,8 @@
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
-      "gzip": 462,
-      "brotli": 428
+      "gzip": 463,
+      "brotli": 429
     },
     "dist/client/assets/write-HASH.js": {
       "raw": 334228,
@@ -398,9 +398,9 @@
       "brotli": 1488
     },
     "dist/lib/chunks/context.schema.json-a920d21ea104.mjs": {
-      "raw": 314927,
-      "gzip": 84106,
-      "brotli": 68661
+      "raw": 315379,
+      "gzip": 84253,
+      "brotli": 68799
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -475,7 +475,7 @@
     "dist/lib/config.mjs": {
       "raw": 348,
       "gzip": 168,
-      "brotli": 145
+      "brotli": 133
     },
     "dist/lib/index.mjs": {
       "raw": 1588,
@@ -1174,11 +1174,10 @@
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
         "raw": 665,
-        "gzip": 462,
         "brotli": 429
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "pr": "https://github.com/hazem3500/replays/pull/185"
     },
     {
       "file": "dist/client/assets/main-HASH.js",
@@ -1317,16 +1316,6 @@
       "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: raw 34150, gzip 8710, brotli 7602."
     },
     {
-      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
-      "cap": {
-        "raw": 314927,
-        "gzip": 84106,
-        "brotli": 68661
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/194",
-      "reason": "Comment pass: the unminified shared server chunk keeps comments, and tagging reasons with why: adds a few bytes; CI Quality / size against fresh main: raw 314927, gzip 84106. Replaces #190's allowance for this file."
-    },
-    {
       "file": "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs",
       "cap": {
         "raw": 58729,
@@ -1383,7 +1372,7 @@
         "gzip": 1029
       },
       "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/161"
+      "pr": "https://github.com/hazem3500/replays/pull/185"
     },
     {
       "file": "dist/client/assets/keep-HASH.js",
@@ -1623,7 +1612,7 @@
       "cap": {
         "raw": 45033
       },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
+      "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1655,23 +1644,7 @@
       "cap": {
         "raw": 116582
       },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 259279
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "gzip": 87269
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
+      "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1699,51 +1672,11 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/expired-query-HASH.js",
-      "cap": {
-        "brotli": 906
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/drawer-HASH.js",
       "cap": {
         "gzip": 15991
       },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/drawer-HASH.js",
-      "cap": {
-        "brotli": 14511
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "gzip": 38923
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "brotli": 33129
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "brotli": 72705
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
+      "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
@@ -1755,28 +1688,140 @@
       "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
+      "file": "dist/client/assets/drawer-HASH.js",
+      "cap": {
+        "brotli": 14479
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "gzip": 38920
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "brotli": 33098
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/expired-query-HASH.js",
+      "cap": {
+        "brotli": 907
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 259393
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/tools-HASH.js",
+      "cap": {
+        "raw": 35973
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/VitalsTile-HASH.js",
+      "cap": {
+        "gzip": 463
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
       "file": "dist/client/assets/sliders-horizontal-HASH.js",
       "cap": {
         "raw": 464
       },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
       "file": "dist/client/assets/sliders-horizontal-HASH.js",
       "cap": {
         "gzip": 263
       },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
       "file": "dist/client/assets/sliders-horizontal-HASH.js",
       "cap": {
         "brotli": 237
       },
-      "pr": "https://github.com/hazem3500/replays/pull/161",
-      "reason": "Phone run strip and integrated timeline shared chunks measured in Linux CI against main."
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "gzip": 87308
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "brotli": 72775
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/tools-HASH.js",
+      "cap": {
+        "gzip": 12828
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/tools-HASH.js",
+      "cap": {
+        "brotli": 11548
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
+      "cap": {
+        "raw": 315379
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
+      "cap": {
+        "gzip": 84253
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-a920d21ea104.mjs",
+      "cap": {
+        "brotli": 68799
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/185",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     }
   ]
 }

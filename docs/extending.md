@@ -328,6 +328,8 @@ longer than 4000ms, keeps 800ms at each end and fast-forwards the middle at 16×
 preceding label through legacy unlabelled waits and repeated actions, while their number follows the
 active rail step. Exports use the same caption selection and time mapping.
 
+User plugins can add Context blocks and timeline markers through `contributes.contextSections` / `contributes.tracks` and `replays.section` / `replays.track`. Import the custom distribution's `sandbox-surfaces.replays-plugin.json` for a complete example. Replay access and marker seeking retain the manifest and broker permission checks. See [sandboxed viewer sections and tracks](extension-api.md#sandboxed-viewer-sections-and-tracks).
+
 A trusted browser entry can add an editor tool, export format or viewer shortcut with
 `registerEditorTool`, `registerExportFormat` and `registerShortcut`. For example:
 

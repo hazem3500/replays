@@ -48,4 +48,15 @@ describe.skipIf(process.env.REPLAYS_PLUGIN_BROWSER_TESTS !== '1')('plugin check 
     const failure = await checkPlugin({ file: bad, headless: true });
     expect(failure.errors.join(' ')).toMatch(/sandbox fixture error/);
   }, 30_000);
+  it('checks the declared sandbox sections and tracks with their real runtime', async () => {
+    const starter = starterPlugin();
+    starter.manifest.contributes = { contextSections: [{ id: 'release', label: 'Release' }], tracks: [{ id: 'events', label: 'Events' }] };
+    const source =
+      "replays.section('release', (el) => { el.textContent='Release section'; console.log('section ran'); }); replays.track('events', () => [{ atMs: 100, label: 'Fixture marker' }]);";
+    const path = await file('surfaces.replays-plugin.json', JSON.stringify(pluginFile(starter.manifest, source)));
+    const result = await checkPlugin({ file: path, headless: true });
+    expect(result.errors).toEqual([]);
+    expect(result.output).toContain('section:release: section ran');
+    expect(result.output).toContain('track:events: markers: [{"atMs":100,"label":"Fixture marker"}]');
+  }, 30_000);
 });

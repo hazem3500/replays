@@ -8,7 +8,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EMPTY_COMMENTS } from '../src/shared/comments.ts';
 import { assertReplayPeople } from '../src/shared/people.ts';
-import { parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
+import { parseManifest, parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
 import { UserPluginStore } from '../src/server/malleable-store.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
 import { ReplayStore } from '../src/server/store.ts';
@@ -36,6 +36,15 @@ async function validator(name: string) {
 }
 
 describe('docs/formats', () => {
+  it('validates sandbox tracks and context sections with the manifest schema', async () => {
+    const check = await validator('plugin-manifest');
+    const manifest = parseManifest({
+      ...starterPlugin().manifest,
+      contributes: { tracks: [{ id: 'events', label: 'Events' }], contextSections: [{ id: 'release', label: 'Release' }] },
+    });
+    expect(check(manifest).errors).toBe('No errors');
+    expect(check({ ...manifest, contributes: { tracks: [{ id: 'Bad Id', label: 'Events' }] } }).ok).toBe(false);
+  });
   it('every schema compiles', async () => {
     const instance = await ajv();
     const files = (await readdir(dir)).filter((name) => name.endsWith('.schema.json'));

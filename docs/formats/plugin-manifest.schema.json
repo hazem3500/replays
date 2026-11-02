@@ -44,6 +44,12 @@
         },
         "actions": {
           "$ref": "#/$defs/contributions"
+        },
+        "contextSections": {
+          "$ref": "#/$defs/contributions"
+        },
+        "tracks": {
+          "$ref": "#/$defs/contributions"
         }
       }
     },

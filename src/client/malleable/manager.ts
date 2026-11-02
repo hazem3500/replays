@@ -1,3 +1,4 @@
+import { registerSandboxSurfaces } from './surfaces.ts';
 import { bindUserSettings } from '../plugins/settings.ts';
 import { useSyncExternalStore } from 'react';
 
@@ -196,6 +197,7 @@ class PluginManager {
     if (entry.manifest.settings?.length) bindUserSettings(registryName(entry.id), entry.scope, entry.id);
     viewerRegistry.replacePlugin(registryName(entry.id), (api) => {
       for (const setting of entry.manifest.settings ?? []) api.registerSetting(setting);
+      registerSandboxSurfaces(api, contributes, ref, track);
       for (const tab of contributes.tabs ?? [])
         api.registerInspectorTab({
           id: tab.id,

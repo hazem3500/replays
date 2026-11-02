@@ -10,6 +10,11 @@ import { SANDBOX_CSP, SANDBOX_HTML, SANDBOX_PATH } from '../shared/sandbox-runti
 import { browserHarnessSource } from './check-browser.ts';
 import type { PluginCheckOptions, PluginCheckResult } from './check.ts';
 
+interface BrowserCheckOptions extends PluginCheckOptions {
+  executablePath?: string;
+  noSandbox?: boolean;
+}
+
 interface BrowserReport {
   done: boolean;
   output: string[];
@@ -22,7 +27,7 @@ declare global {
 }
 
 export async function checkBrowser(
-  options: PluginCheckOptions,
+  options: BrowserCheckOptions,
   replay: ReplayBundle,
   result: PluginCheckResult,
   file?: UserPluginFile,
@@ -52,9 +57,7 @@ export async function checkBrowser(
   });
   let browser: Browser | undefined;
   try {
-    browser = options.headless
-      ? await chromium.launch({ headless: true, args: ['--disable-dev-shm-usage', '--disable-gpu', '--disable-webgl'] })
-      : await chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
+    browser = await connectBrowser(options);
     const context = await browser.newContext({ viewport: { width: 1000, height: 700 }, deviceScaleFactor: 1 });
     try {
       const address = server.address();
@@ -67,6 +70,16 @@ export async function checkBrowser(
     await browser?.close();
     await new Promise<void>((resolveClose) => server.close(() => resolveClose()));
   }
+}
+
+function connectBrowser(options: BrowserCheckOptions) {
+  return options.headless
+    ? chromium.launch({
+        headless: true,
+        ...(options.executablePath ? { executablePath: options.executablePath } : {}),
+        args: ['--disable-dev-shm-usage', '--disable-gpu', '--disable-webgl', ...(options.noSandbox ? ['--no-sandbox'] : [])],
+      })
+    : chromium.connectOverCDP(options.cdp ?? 'http://127.0.0.1:9222', { timeout: 5000 });
 }
 
 function checkServer(replay: ReplayBundle, script: string): ReturnType<typeof createServer> {
