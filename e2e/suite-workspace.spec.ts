@@ -78,10 +78,13 @@ test('at 390 px the sidebar becomes a run switcher in the topbar title', async (
   await page.goto(`${server().origin}/s/${suite}/r/${one}`);
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
   await expect(page.getByRole('tablist', { name: 'Replay diagnostics' })).toBeInViewport({ ratio: 1 });
-  await expect(page.getByRole('heading', { level: 1, name: /Run 1 of 2\s+Desktop: run 1/ })).toBeVisible();
+  // why: comparing, the switch above the stage names the runs and says which is on show; the title keeps its room.
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1', exact: true })).toBeVisible();
+  await expect(page.getByTestId('phone-switch').getByRole('radio', { checked: true })).toHaveAccessibleName(/^Run 1\b/);
   await page.getByTestId('title-menu').click();
   await page.getByRole('menuitemradio', { name: /Desktop: run 2/ }).click();
   await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
+  await expect(page.getByTestId('phone-switch').getByRole('radio', { checked: true })).toHaveAccessibleName(/^Run 2\b/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
 });
 
