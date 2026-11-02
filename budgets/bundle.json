@@ -1822,6 +1822,30 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.css",
+      "cap": {
+        "raw": 2246
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/162",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.css",
+      "cap": {
+        "gzip": 822
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/162",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.css",
+      "cap": {
+        "brotli": 659
+      },
+      "pr": "https://github.com/hazem3500/replays/pull/162",
+      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     }
   ]
 }
