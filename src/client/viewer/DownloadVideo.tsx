@@ -187,7 +187,7 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
       <DropdownMenu>
         <Hint label={label} side="bottom" align="end">
           <DropdownMenuTrigger
-            disabled={active || pending}
+            disabled={active}
             render={
               <Button
                 variant="ghost"
