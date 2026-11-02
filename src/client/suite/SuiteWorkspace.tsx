@@ -325,7 +325,6 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
               onFocus={select}
               page={{
                 ...(runTitle ? { title: runTitle } : {}),
-                ...(runPrefix ? { prefix: runPrefix } : {}),
                 ...(runStatus ? { status: runStatus } : {}),
                 ...(suiteDetails ? { suite: suiteDetails } : {}),
                 ...(runMenu ? { titleMenu: runMenu } : {}),
