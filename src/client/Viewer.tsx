@@ -58,7 +58,7 @@ import { pageViews } from './views/catalog.ts';
 import { resolvePageView } from './views/page-view.ts';
 import { cycleView, switcherViews, viewDefaults } from './views/resolve.ts';
 import { viewSettingKey } from './views/settings.ts';
-import { type ViewChoice, ViewMenuItems, ViewSwitcher } from './views/ViewSwitcher.tsx';
+import { type ViewChoice, ViewMenuItems } from './views/ViewSwitcher.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the viewer's layout tokens and seams load with the lazy viewer chunk.
 import './viewer/viewer-layout.css';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
@@ -633,17 +633,12 @@ export function Viewer({
           menuItems={headerMenuItems}
           pluginActions={pluginMenu.bar}
           menuFooter={pluginMenu.settings}
-          {...(menu || mobile
-            ? {
-                menu: (
-                  <>
-                    {menu}
-                    {mobile ? <ViewMenuItems {...viewChoice} /> : null}
-                  </>
-                ),
-              }
-            : {})}
-          viewSwitcher={mobile ? null : <ViewSwitcher {...viewChoice} />}
+          menu={
+            <>
+              {menu}
+              <ActionsBar actions={{ 'core:view': <ViewMenuItems {...viewChoice} /> }} />
+            </>
+          }
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
           {...(backHref ? { backHref } : {})}
@@ -814,12 +809,9 @@ const ViewerHeader = memo(function ViewerHeader({
   titleMenu,
   titleFrom,
   leadingActions,
-  viewSwitcher,
   hasEdits = false,
 }: {
   bundle: ReplayBundle;
-  /** Desktop: the "View:" menu, first of the bar's actions (phones keep the choice in More). */
-  viewSwitcher: ReactNode;
   /** Before the built-in icon actions (a comparison's layout switch). */
   leadingActions?: ReactNode;
   /** The replay has saved edits: a dot on the Edit button (the title shows "Edited …" as quiet text). */
@@ -873,7 +865,6 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         <ActionsBar
           actions={{
-            'core:view': viewSwitcher,
             'core:compare': leadingActions,
             'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
             'core:info': <ReplayInfoButton bundle={bundle} suite={suite} />,

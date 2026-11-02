@@ -876,7 +876,7 @@ Built-in viewer items and their default order:
 | Slot | Built-in items |
 | --- | --- |
 | `viewer.inspector.tabs` | `core:steps` (only without the steps rail, so on phones), `core:console`, `core:network`, `core:performance`, `core:context`, then built-in feature tabs such as `core:comments` |
-| `viewer.actions` | `core:view` (the view switcher; in More on phones), `core:compare`, `core:edit` (when editing is on), `core:info`, `core:link`, `core:download`; phones show `core:compare` and `core:edit` in the bar and the rest in More |
+| `viewer.actions` | `core:view` (view choices in More at every width; still hideable through this slot), `core:compare`, `core:edit` (when editing is on), `core:info`, `core:link`, `core:download`; phones show `core:compare` and `core:edit` in the bar and the rest in More |
 | `viewer.headline` | `core:compare-summary`, `core:issues`, `core:vitals`, `core:comments`; only the ids the open view lists show ([views](#headline-tiles)) |
 | `viewer.context.sections` | `core:summary`, `core:sources` (when the replay has sources), `core:fields` |
 | `viewer.scrubber.tracks` | `core:steps`, `core:errors`, `core:highlights`; their geometry is fixed, so order only places plugin rows, and hiding `core:steps` leaves one unbroken bar |

@@ -95,7 +95,7 @@ export function ViewSwitcher(choice: ViewChoice) {
   );
 }
 
-/** Phones: the same choice inside the top bar's More menu, so the bar keeps its room for the title. */
+/** View choices inside the top bar's More menu, keeping the bar's room for the title. */
 export function ViewMenuItems(choice: ViewChoice) {
   return <ViewItems {...choice} />;
 }

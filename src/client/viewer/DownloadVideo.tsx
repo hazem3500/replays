@@ -174,7 +174,10 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
 
   const hasPlugins = formats.some((format) => format !== 'core');
   const showCore = formats.includes('core');
-  if (((!stored && !canRender) || !showCore) && !hasPlugins) return null;
+  const [lastAvailable, setLastAvailable] = useState(canRender);
+  const pending = download.availability === 'unknown';
+  if (!pending && lastAvailable !== canRender) setLastAvailable(canRender);
+  if (((!stored && !canRender && !(pending && lastAvailable)) || !showCore) && !hasPlugins) return null;
 
   const exportText = exportLabel('Export video', variant);
   const idleLabel = !stored && !canRender ? 'Download replay' : exportLabel('Download video', variant);
@@ -184,7 +187,7 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
       <DropdownMenu>
         <Hint label={label} side="bottom" align="end">
           <DropdownMenuTrigger
-            disabled={active}
+            disabled={active || pending}
             render={
               <Button
                 variant="ghost"
@@ -203,7 +206,15 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
         </DropdownMenuContent>
       </DropdownMenu>
     ) : (
-      <IconButton label={label} tooltipAlign="end" aria-disabled={active} onClick={() => void start()} data-testid="download-video">
+      <IconButton
+        label={label}
+        tooltipAlign="end"
+        aria-disabled={active || pending}
+        onClick={() => {
+          if (!pending) void start();
+        }}
+        data-testid="download-video"
+      >
         <AnimatedIcon name="download" />
       </IconButton>
     );
