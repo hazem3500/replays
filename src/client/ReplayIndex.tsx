@@ -820,10 +820,7 @@ export function ReplayIndex({
           {...(compact
             ? {
                 phoneMenu: (
-                  <IndexPhoneMenu
-                    items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })}
-                    signedIn={Boolean(account)}
-                  />
+                  <IndexPhoneMenu signedIn={Boolean(account)} items={phoneMenuItems({ onUpload: () => upload.current?.open(), ...(account ? { account } : {}) })} />
                 ),
               }
             : {})}
