@@ -100,6 +100,7 @@ export function Viewer({
   initialTab = 'console',
   onTabChange,
   menu,
+  keep: pageKeep,
   titleMenu,
   titleFrom,
   backHref,
@@ -142,6 +143,8 @@ export function Viewer({
   onTabChange?: (tab: InspectorTab) => void;
   /** Extra items for the topbar's "More" menu. */
   menu?: ReactNode;
+  /** The page's own Keep (a suite's covers every run): it replaces the replay's and, like it, closes the More menu. */
+  keep?: TopbarMenuItem | undefined;
   /** Phones: the title opens this menu (the suite workspace's run switcher). */
   titleMenu?: ReactNode;
   /** The title this page replaces (the previous suite run's): the top bar's title morphs from it. */
@@ -423,7 +426,7 @@ export function Viewer({
 
   // Keep (no expiry): a "More" item on every screen; uploads only (committed samples never expire).
   const keep = useKeep(bundle.meta.id);
-  const keepItem = useMemo<TopbarMenuItem | undefined>(
+  const replayKeep = useMemo<TopbarMenuItem | undefined>(
     () =>
       keep.available
         ? {
@@ -437,6 +440,7 @@ export function Viewer({
         : undefined,
     [keep.available, keep.kept, keep.pending, keep.flip],
   );
+  const keepItem = pageKeep ?? replayKeep;
   // Client plugins (src/client/plugins/): one context per plugin for this replay; their actions and panel entries are
   // More-menu items (bar actions are header buttons on desktop), their settings close the menu, open panels draw in a drawer.
   const pluginContexts = usePluginContexts(bundle, player);
@@ -446,7 +450,6 @@ export function Viewer({
   // why: a phone's top bar keeps only Edit and More (and the layout switch while comparing), so Compare waits in More.
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
-      ...(keepItem ? [keepItem] : []),
       ...(mobile
         ? [
             sharedPlayer
@@ -480,6 +483,8 @@ export function Viewer({
               ariaKeyshortcuts: 'Shift+?',
             },
           ]),
+      // why: keeping is rare and lifts expiry for good, so it comes after the everyday items, never first.
+      ...(keepItem ? [keepItem] : []),
     ],
     [actions.openShortcuts, keepItem, mobile, pluginMenu.items, sharedPlayer],
   );
@@ -905,7 +910,7 @@ function PhoneHeader({
   hasEdits?: boolean;
   leadingActions: ReactNode;
   suite: SuiteDetails | undefined;
-  /** The viewer's own items (Keep, Compare), after details and links and before the downloads. */
+  /** The viewer's own items (Compare, then Keep), after details and links and before the downloads. */
   menuItems: TopbarMenuItem[];
   menu: ReactNode;
   menuFooter: ReactNode;
