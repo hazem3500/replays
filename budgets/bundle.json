@@ -67,6 +67,11 @@
       "gzip": 241,
       "brotli": 190
     },
+    "dist/client/assets/button-HASH.js": {
+      "raw": 4153,
+      "gzip": 1694,
+      "brotli": 1523
+    },
     "dist/client/assets/clipboard-HASH.js": {
       "raw": 343,
       "gzip": 241,
@@ -317,6 +322,11 @@
       "gzip": 9037,
       "brotli": 7810
     },
+    "dist/client/assets/title-morph-characters-HASH.js": {
+      "raw": 167909,
+      "gzip": 55676,
+      "brotli": 49776
+    },
     "dist/client/assets/tools-HASH.js": {
       "raw": 36104,
       "gzip": 12910,
@@ -341,6 +351,11 @@
       "raw": 8582,
       "gzip": 3167,
       "brotli": 2904
+    },
+    "dist/client/assets/useTriggerFocusGuards-HASH.js": {
+      "raw": 38667,
+      "gzip": 14312,
+      "brotli": 12975
     },
     "dist/client/assets/Viewer-HASH.css": {
       "raw": 6324,
@@ -596,21 +611,6 @@
       "raw": 557837,
       "gzip": 174500,
       "brotli": 137465
-    },
-    "dist/client/assets/title-morph-characters-HASH.js": {
-      "raw": 167909,
-      "gzip": 55676,
-      "brotli": 49776
-    },
-    "dist/client/assets/useTriggerFocusGuards-HASH.js": {
-      "raw": 38667,
-      "gzip": 14312,
-      "brotli": 12975
-    },
-    "dist/client/assets/button-HASH.js": {
-      "raw": 4153,
-      "gzip": 1694,
-      "brotli": 1523
     }
   },
   "allowances": [
