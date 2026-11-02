@@ -269,7 +269,12 @@ function RunStrip({
   const summary = `${plural(runs.length, 'run')}${failed ? `, ${failed} failed` : ''}`;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className={cn('run-strip', className)} aria-label={`Runs of ${suite.title}: ${summary}`}>
+      <DropdownMenuTrigger
+        className={cn('run-strip', className)}
+        aria-label={`Runs of ${suite.title}: ${summary}`}
+        data-runs={runs.length}
+        data-recordings={runs.filter((run) => playableReplayId(run, true)).length}
+      >
         {segments.map(({ run, width }) => (
           <span
             key={run.id}

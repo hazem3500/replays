@@ -68,8 +68,9 @@ export function CompareViewer(props: CompareViewerProps) {
   const settled = results.every((result) => result.data !== undefined || result.isError);
   const first = tiles.find(isLoaded);
   if (!opened && settled && first) setOpened(true);
-  if (!first) return settled ? <CompareFailed tiles={tiles} /> : <ViewerSkeleton label="Loading recordings" />;
-  if (!opened) return <ViewerSkeleton label="Loading recordings" />;
+  const skeleton = <ViewerSkeleton label="Loading recordings" comparing={props.layout === 'grid' ? tiles.length : 0} />;
+  if (!first) return settled ? <CompareFailed tiles={tiles} /> : skeleton;
+  if (!opened) return skeleton;
   const focused = tiles.find((tile): tile is LoadedTile => tile.id === props.focus && isLoaded(tile)) ?? first;
   return <CompareSessionView compare={props} tiles={tiles} focused={focused} />;
 }

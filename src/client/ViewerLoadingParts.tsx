@@ -5,6 +5,7 @@ import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.
 import { buttonVariants } from '@/components/ui/button.tsx';
 import { cn } from '@/lib/utils.ts';
 
+import { commentsEnabled } from './comments/enabled.ts';
 import { editingEnabled } from './config.ts';
 import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 
@@ -20,6 +21,7 @@ const STRINGS = {
   stepCount: (count: number) => `1 of ${count}`,
   time: '0:00.0',
   tabs: ['Console', 'Network', 'Performance', 'Context'],
+  comments: 'Comments',
 };
 
 /** Desktop's bar icons, in the viewer's order (Edit only where editing is on); phones keep Edit and More. */
@@ -55,7 +57,7 @@ function InertIcon({ name }: { name: AnimatedIconName }) {
   );
 }
 
-function LoadingActions({ mobile }: { mobile: boolean }) {
+function LoadingActions({ mobile, compare }: { mobile: boolean; compare: boolean }) {
   const edit = editingEnabled() ? <InertIcon name="pencil" /> : null;
   if (mobile)
     return (
@@ -65,10 +67,17 @@ function LoadingActions({ mobile }: { mobile: boolean }) {
     );
   return (
     <span className="sk-actions" aria-hidden="true">
-      <InertButton className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-[var(--text-tertiary)]')}>
-        <Columns2Icon aria-hidden="true" />
-        {STRINGS.compare}
-      </InertButton>
+      {compare ? (
+        <>
+          <span className="sk-layout-switch" />
+          <InertButton className={ICON_BUTTON}>{null}</InertButton>
+        </>
+      ) : (
+        <InertButton className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-[var(--text-tertiary)]')}>
+          <Columns2Icon aria-hidden="true" />
+          {STRINGS.compare}
+        </InertButton>
+      )}
       {edit}
       {DESKTOP_ICONS.map((name) => (
         <InertIcon key={name} name={name} />
@@ -80,14 +89,25 @@ function LoadingActions({ mobile }: { mobile: boolean }) {
 /**
  * The top bar while loading: the back link works, the title is the one the opening page knew (a quiet bar when the
  * replay was opened directly), and the viewer's icons wait inert in their places. `progress` hangs along its bottom edge.
+ * A comparison's bar (a suite's) keeps the places of its layout switch and Add a recording instead of Compare.
  */
-export function LoadingTopbar({ title, mobile, progress }: { title: string | undefined; mobile: boolean; progress: ReactNode }) {
+export function LoadingTopbar({
+  title,
+  mobile,
+  compare = false,
+  progress,
+}: {
+  title: string | undefined;
+  mobile: boolean;
+  compare?: boolean;
+  progress: ReactNode;
+}) {
   return (
     <div className="sk-topbar" data-untitled={title ? undefined : ''}>
       <Topbar
         title={title ?? STRINGS.untitled}
         compact={mobile}
-        actions={<LoadingActions mobile={mobile} />}
+        actions={<LoadingActions mobile={mobile} compare={compare} />}
         alwaysMenu
         menuItems={mobile ? [] : WAITING_ITEMS}
       />
@@ -154,7 +174,8 @@ export function LoadingPanel() {
 
 /** The inspector's tab row: desktop's labels, or phones' icon tabs (Steps first when there are steps). */
 export function LoadingTabs({ mobile, steps }: { mobile: boolean; steps: number | undefined }) {
-  const count = mobile ? STRINGS.tabs.length + (steps ? 1 : 0) + 1 : 0;
+  const tabs = commentsEnabled() ? [...STRINGS.tabs, STRINGS.comments] : STRINGS.tabs;
+  const count = mobile ? tabs.length + (steps ? 1 : 0) : 0;
   return (
     <div className={mobile ? 'inspector-tabs sk-tabs-phone' : 'inspector-tabs sk-tabs'} aria-hidden="true">
       <div className="inspector-tablist">
@@ -164,7 +185,7 @@ export function LoadingTabs({ mobile, steps }: { mobile: boolean; steps: number 
                 <span className="skeleton sk-tab-icon" />
               </span>
             ))
-          : STRINGS.tabs.map((label) => (
+          : tabs.map((label) => (
               <span key={label} className="inspector-tab sk-tab">
                 {label}
               </span>

@@ -317,7 +317,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
       ) : null}
       <div className="suite-viewer">
         {comparing && selected ? (
-          <Suspense fallback={<ViewerSkeleton label="Loading runs" />}>
+          <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>
             <SuiteCompare
               runs={playable}
               fallback={defaults.layout}

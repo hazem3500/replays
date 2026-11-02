@@ -41,6 +41,18 @@ export const LoadingPhone: Story = {
 export const LoadingSuite: Story = {
   parameters: { layout: 'fullscreen' },
   render: () => <ViewerSkeleton suite label="Loading review suite" />,
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('.sk-run')).toHaveLength(3);
+    await expect(canvasElement.querySelector('.sk-layout-switch')).not.toBeNull();
+  },
+};
+
+export const LoadingSuiteGrid: Story = {
+  parameters: { layout: 'fullscreen' },
+  render: () => <ViewerSkeleton label="Loading runs" comparing={4} />,
+  play: async ({ canvasElement }) => {
+    await expect(canvasElement.querySelectorAll('.sk-tile')).toHaveLength(4);
+  },
 };
 
 const bundle = {
