@@ -1,6 +1,6 @@
 import { record } from 'rrweb';
 
-import { MASK_INPUT_OPTIONS } from './sanitize.ts';
+import { MASK_INPUT_OPTIONS } from './mask-inputs.ts';
 
 declare global {
   interface Window {
@@ -31,7 +31,7 @@ try {
     const maxPerformanceEntries = 300;
     const supported = new Set(typeof PerformanceObserver === 'undefined' ? [] : (PerformanceObserver.supportedEntryTypes ?? []));
     let finalMetricsSent = false;
-    // LCP entries are not buffered on the performance timeline, so only an observer can see them.
+    // why: LCP entries are not buffered on the performance timeline, so only an observer can see them.
     let latestLcp: { startTime: number } | undefined;
 
     const interactionTypes = new Set(['click', 'keydown', 'keyup', 'input', 'beforeinput', 'pointerdown', 'pointerup', 'compositionend']);
@@ -64,7 +64,7 @@ try {
         performanceObservers.push(observer);
         supportedTypes.add(type);
       } catch {
-        // The entry type exists in the browser but this context cannot observe it.
+        // why: the entry type exists in the browser but this context cannot observe it.
       }
     }
     if (supported.has('paint')) supportedTypes.add('paint');
@@ -78,7 +78,7 @@ try {
         performanceObservers.push(observer);
         supportedTypes.add('largest-contentful-paint');
       } catch {
-        // The entry type exists in the browser but this context cannot observe it.
+        // why: the entry type exists in the browser but this context cannot observe it.
       }
     }
 
@@ -122,14 +122,14 @@ try {
 
     const maskTextSelector = typeof window.__REPLAYS_MASK_TEXT__ === 'string' ? window.__REPLAYS_MASK_TEXT__ : undefined;
     delete window.__REPLAYS_MASK_TEXT__;
-    // An invalid selector stops the recorder (the capture fails) rather than recording the text it should hide.
+    // why: an invalid selector stops the recorder (the capture fails) rather than recording the text it should hide.
     if (maskTextSelector) document.createDocumentFragment().querySelector(maskTextSelector);
 
     record({
       emit(event) {
         events.push(event as unknown as RecorderChunk['events'][number]);
       },
-      // rrweb's maskAllInputs set plus hidden inputs (CSRF tokens); see sanitize.ts.
+      // why: rrweb's maskAllInputs set plus hidden inputs (CSRF tokens); see sanitize.ts.
       maskInputOptions: MASK_INPUT_OPTIONS,
       ...(maskTextSelector ? { maskTextSelector } : {}),
     });

@@ -1,12 +1,9 @@
 import { RRWEB_EVENT, type ReplayRrwebEvent } from './bundle-types.ts';
+import { isTextAttribute, URL_ATTRIBUTES } from './attribute-classes.ts';
 import { REDACTED, maskText, redactUrl } from './redact.ts';
 
-/**
- * Attribute passes over rrweb events. rrweb copies every element attribute as
- * is (its text masking only covers text nodes), so the recorder masks
- * text-bearing attributes and redacts URL attributes itself, in the full
- * snapshot and in mutations.
- */
+/* why: rrweb copies every element attribute as is (its text masking only covers text nodes), so these passes mask
+   text-bearing attributes and redact URL attributes themselves, in the full snapshot and in mutations. */
 
 /** Rrweb-snapshot `NodeType.Element`. */
 const ELEMENT_NODE = 2;
@@ -14,126 +11,7 @@ const ELEMENT_NODE = 2;
 const MUTATION_SOURCE = 0;
 const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
 
-/** Attributes that hold a URL. Redacted, never masked (the replay needs them). */
-const URL_ATTRIBUTES = new Set(['action', 'background', 'cite', 'formaction', 'href', 'longdesc', 'ping', 'poster', 'src', 'xlink:href']);
 const NON_HTTP_SCHEME = /^\s*(mailto|tel|sms):/i;
-
-/**
- * Attributes that never carry customer text and that the replay needs to
- * render: layout, state the CSS selects on, ARIA states and id references.
- * Every other HTML attribute (`title`, `aria-label`, `placeholder`, `alt`,
- * `value`, `content`, `data-*`…) is masked like the element's text.
- */
-const SAFE_ATTRIBUTES = new Set([
-  'align',
-  'autocomplete',
-  'charset',
-  'checked',
-  'class',
-  'colspan',
-  'cols',
-  'contenteditable',
-  'crossorigin',
-  'decoding',
-  'dir',
-  'disabled',
-  'draggable',
-  'enctype',
-  'for',
-  'height',
-  'hidden',
-  'http-equiv',
-  'id',
-  'inputmode',
-  'lang',
-  'loading',
-  'max',
-  'maxlength',
-  'media',
-  'method',
-  'min',
-  'minlength',
-  'multiple',
-  'name',
-  'open',
-  'readonly',
-  'rel',
-  'required',
-  'reversed',
-  'role',
-  'rows',
-  'rowspan',
-  'selected',
-  'size',
-  'sizes',
-  'span',
-  'spellcheck',
-  'start',
-  'step',
-  'style',
-  'tabindex',
-  'target',
-  'type',
-  'valign',
-  'width',
-  'xmlns',
-  'xmlns:xlink',
-  // ARIA states and id references, not labels.
-  'aria-activedescendant',
-  'aria-atomic',
-  'aria-autocomplete',
-  'aria-busy',
-  'aria-checked',
-  'aria-colcount',
-  'aria-colindex',
-  'aria-colspan',
-  'aria-controls',
-  'aria-current',
-  'aria-describedby',
-  'aria-disabled',
-  'aria-expanded',
-  'aria-haspopup',
-  'aria-hidden',
-  'aria-invalid',
-  'aria-labelledby',
-  'aria-level',
-  'aria-live',
-  'aria-modal',
-  'aria-multiline',
-  'aria-multiselectable',
-  'aria-orientation',
-  'aria-owns',
-  'aria-posinset',
-  'aria-pressed',
-  'aria-readonly',
-  'aria-relevant',
-  'aria-required',
-  'aria-rowcount',
-  'aria-rowindex',
-  'aria-rowspan',
-  'aria-selected',
-  'aria-setsize',
-  'aria-sort',
-  'aria-valuemax',
-  'aria-valuemin',
-  'aria-valuenow',
-  // State attributes Radix (and the design system) style on.
-  'data-align',
-  'data-active',
-  'data-checked',
-  'data-disabled',
-  'data-highlighted',
-  'data-orientation',
-  'data-selected',
-  'data-side',
-  'data-size',
-  'data-state',
-  'data-swipe',
-  'data-variant',
-]);
-
-/** Text-bearing attributes that are masked on SVG elements too. */
-const SVG_TEXT_ATTRIBUTES = new Set(['alt', 'content', 'label', 'title']);
 
 type Attributes = Record<string, unknown>;
 
@@ -251,9 +129,8 @@ function decodeCssEscapes(value: string): string {
 }
 
 function redactEmbeddedCssUrls(value: string): string {
-  // rrweb can resolve a style text URL and leave the original absolute URL
-  // nested in its path. The CSS token scanner finds the URL first; this pass
-  // sanitizes that nested absolute URL with the same existing URL redactor.
+  /* why: rrweb can resolve a style text URL and leave the original absolute URL nested in its path. The CSS token scanner
+     finds the URL first; this pass sanitizes that nested absolute URL with the same URL redactor. */
   const scheme = /(?:https?|wss?):\/\//gi;
   let cursor = 0;
   let result = value;
@@ -269,8 +146,7 @@ function redactEmbeddedCssUrls(value: string): string {
       const clean = redactUrl(result.slice(start, end));
       result = result.slice(0, start) + clean + result.slice(end);
     }
-    // Continue after this scheme so a second absolute URL nested in the first
-    // URL's path is visited too.
+    // why: continuing after this scheme visits a second absolute URL nested in the first URL's path too.
     cursor = start + match[0].length;
   }
   return result;
@@ -283,12 +159,11 @@ function redactCssUrl(raw: string): string {
     try {
       redacted = new URL(redactUrl(`https://redaction.invalid/${decoded}`)).hash;
     } catch {
-      // Preserve malformed fragment URLs.
+      // why: a malformed fragment URL is kept as it was.
     }
   }
-  // `redactUrl` intentionally recognizes root-relative and query-only URLs.
-  // CSS commonly uses `../asset.css?token=...`, so sanitize its query/hash
-  // through the same URL logic while retaining its relative path.
+  /* why: `redactUrl` only recognizes absolute, root-relative and query-only URLs, but CSS commonly uses
+     `../asset.css?token=...`; its query and hash go through the same URL logic while the relative path is kept. */
   if (redacted === decoded && !/^(?:[a-z][a-z\d+.-]*:|\/\/|\/|\?|#)/i.test(decoded) && /[?#]/.test(decoded)) {
     try {
       const split = decoded.search(/[?#]/);
@@ -297,12 +172,11 @@ function redactCssUrl(raw: string): string {
       const cleaned = new URL(redactUrl(parsed.href));
       redacted = `${path}${cleaned.search}${cleaned.hash}`;
     } catch {
-      // Keep malformed CSS URLs intact; valid CSS URLs are handled above.
+      // why: malformed CSS URLs are kept intact; valid ones are handled above.
     }
   }
   if (redacted === decoded) return raw;
-  // URL redaction only substitutes credentials/query values; preserve CSS
-  // delimiters and quote style while escaping characters meaningful to CSS.
+  // invariant: URL redaction only substitutes credentials and query values, so CSS delimiters and quotes are kept and escaped.
   return redacted
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
@@ -438,9 +312,8 @@ function transformCssTextValue(value: unknown): unknown {
   let changed = false;
   const result: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(value)) {
-    // rrweb also carries style-element content in ordinary snapshot text nodes
-    // and mutation `texts`. Sanitizing CSS URL tokens here needs no live DOM or
-    // node-id history, and leaves strings without those tokens unchanged.
+    /* why: rrweb also carries style-element content in ordinary snapshot text nodes and mutation `texts`. Sanitizing CSS
+       URL tokens here needs no live DOM or node-id history, and leaves strings without those tokens unchanged. */
     const mapped =
       typeof entry === 'string' && /^(?:_?cssText|textContent|text|value)$/i.test(key)
         ? redactCssUrls(entry)
@@ -454,17 +327,6 @@ function transformCssTextValue(value: unknown): unknown {
 function transformCssText(event: ReplayRrwebEvent): ReplayRrwebEvent {
   const data = transformCssTextValue(event.data);
   return data === event.data ? event : { ...event, data };
-}
-
-/** Whether an attribute can carry customer text and must follow text masking. */
-export function isTextAttribute(name: string, isSVG: boolean, allowed: ReadonlySet<string> = new Set()): boolean {
-  // rrweb's own attributes: element sizes, inlined stylesheets.
-  if (name.startsWith('rr_') || name.startsWith('_')) return false;
-  if (URL_ATTRIBUTES.has(name) || name === 'srcset') return false;
-  if (SAFE_ATTRIBUTES.has(name) || allowed.has(name)) return false;
-  // SVG presentation attributes (`d`, `fill`, `viewBox`…) carry no text.
-  if (isSVG) return name.startsWith('aria-') || name.startsWith('data-') || SVG_TEXT_ATTRIBUTES.has(name);
-  return true;
 }
 
 export type AttributeMaskerOptions = {
@@ -494,7 +356,7 @@ export function createAttributeMasker(options: AttributeMaskerOptions): (event: 
     return secret || (id !== undefined && secretInputs.has(id));
   };
   return (event) => {
-    // rrweb input events carry a separate text field outside node attributes.
+    // why: rrweb input events carry a separate text field outside node attributes.
     const data = event.data;
     if (
       event.type === RRWEB_EVENT.Incremental &&
@@ -513,7 +375,7 @@ export function createAttributeMasker(options: AttributeMaskerOptions): (event: 
       if (secret && name === 'value') return maskText(value);
       if (options.sanitize === false) return value;
       const isSVG = context.isSVG ?? element?.namespaceURI === SVG_NAMESPACE;
-      // rrweb input values must stay masked even inside unmasked text regions.
+      // invariant: rrweb input values stay masked even inside unmasked text regions.
       if (name === 'value' && element?.matches('input, textarea, select')) return maskText(value);
       if (!isTextAttribute(name, isSVG, allowed)) return value;
       return options.textMasked(element) ? maskText(value) : value;

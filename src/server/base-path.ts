@@ -184,7 +184,7 @@ export function withBase(html: string, base: string, branding?: PageBranding) {
     const color = branding.themeColor;
     if (color?.dark || color?.light)
       out = out.replace(THEME_COLOR_META, (meta) => {
-        // A scheme the theme leaves alone keeps the built-in colour index.html ships.
+        // why: A scheme the theme leaves alone keeps the built-in colour index.html ships.
         const current = (scheme: 'dark' | 'light') => new RegExp(` data-${scheme}="([^"]*)"`).exec(meta)?.[1];
         const dark = escapeHtml(color.dark ?? current('dark') ?? '');
         const light = escapeHtml(color.light ?? current('light') ?? '');

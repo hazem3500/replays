@@ -12,7 +12,7 @@ import { buildHumanBundle } from './human-bundle.ts';
 import { flagMap, prepareOutputDirectory, profileFlag } from './bundle-io.ts';
 import { uploadConfigured } from './upload.ts';
 
-// The conversion itself is pure and shared with the server's import route.
+// why: the conversion itself is pure and shared with the server's import route.
 export { buildHumanBundle, describeRecording, parseRrwebExport, type HumanImportOptions } from './human-bundle.ts';
 
 export async function importRecording(args: {
@@ -33,7 +33,7 @@ export async function importRecording(args: {
   login?: boolean;
   serverName?: string;
 }) {
-  // Validate flags before reading the recording.
+  // why: validate flags before reading the recording.
   if (args.tags?.length) assertReplayTags(args.tags, '--tag');
   const people = parsePeopleFlags(args.person ?? []);
   const source: unknown = JSON.parse(await readFile(resolve(args.rrweb), 'utf8'));

@@ -81,8 +81,8 @@ export async function createApplicationRuntime(
   if (options.databaseUrl) records = await openApplicationRecords(options.databaseUrl);
   const credentials = records && options.credentials ? new AgentCredentials(records) : undefined;
   const h3 = new H3();
-  // The framework supports mounting into a host's Nitro app. Only this explicit read action is mounted;
-  // claim all automatic plugin slots before bootstrap so no login, terminal, code execution or agent tools appear.
+  /* why: the framework supports mounting into a host's Nitro app. Only this explicit read action is mounted;
+     claim all automatic plugin slots before bootstrap so no login, terminal, code execution or agent tools appear. */
   const hooks = new Map<string, Array<(...args: unknown[]) => unknown>>();
   const nitro = {
     h3,
@@ -230,7 +230,7 @@ export async function createApplicationRuntime(
         } else if (path === '/_agent-native/actions/inspect-replay' && ['GET', 'HEAD'].includes(request.method ?? '')) {
           signal.throwIfAborted();
           const query = new URL(request.url ?? '/', 'http://localhost').search;
-          // No forwarded client identity/org/capability headers enter the framework dispatcher.
+          // why: no forwarded client identity/org/capability headers enter the framework dispatcher.
           const result = await h3.fetch(new Request(`http://localhost${path}${query}`, { method: request.method ?? 'GET', signal }));
           response.writeHead(result.status, {
             'content-type': result.headers.get('content-type') ?? 'application/json',

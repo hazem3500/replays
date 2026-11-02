@@ -100,7 +100,7 @@ export async function loadPluginSpec(spec: PluginSpec, dir: string, index = 0): 
   if (typeof specifier !== 'string')
     throw new PluginError('invalid-plugin', `${where} must be a plugin, a module specifier or [specifier, options]`);
   const loaded = await importModule(specifierTarget(specifier, dir), `${where} ${specifier}`);
-  // A CommonJS package arrives as `default: module.exports`, which may itself be `{ default }` (transpiled ESM).
+  // why: A CommonJS package arrives as `default: module.exports`, which may itself be `{ default }` (transpiled ESM).
   let exported = loaded.default;
   if (exported && typeof exported === 'object' && !('setup' in exported) && 'default' in exported)
     exported = (exported as { default: unknown }).default;

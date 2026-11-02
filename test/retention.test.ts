@@ -18,8 +18,8 @@ const daysAgo = (days: number) => new Date(NOW - days * DAY).toISOString();
 
 describe('retention rules', () => {
   it('expires an upload after one number of days counted from the server upload time', () => {
-    expect(DEFAULT_RETENTION).toEqual({ days: 30 });
     const uploadedMs = Date.parse('2026-01-01T00:00:00.000Z');
+    expect(expiryMs(DEFAULT_RETENTION, { uploadedMs })).toBe(uploadedMs + 30 * DAY);
     expect(expiryMs({ days: 30 }, { uploadedMs })).toBe(uploadedMs + 30 * DAY);
     expect(expiryMs({ days: 1 }, { uploadedMs })).toBe(uploadedMs + DAY);
     // A clock that cannot be read never expires anything.

@@ -149,7 +149,7 @@ export function assertReplayBundle(value: unknown): asserts value is ReplayBundl
     throw new Error("replay.meta.source must be 'agent' or 'human'");
   }
   if (replay.meta.tags !== undefined) assertReplayTags(replay.meta.tags);
-  // Only the shape here; the server checks the id against the profiles it defines.
+  // why: only the shape here; the server checks the id against the profiles it defines.
   const aliased: AliasedProfile = replay.meta;
   for (const key of ['profile', 'purpose'] as const)
     if (aliased[key] !== undefined && !isProfileId(aliased[key]))
@@ -232,8 +232,8 @@ export interface ReplaySourceLink {
   attrs?: SourceAttrs;
 }
 
-/** Bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily. */
-// Version 9 renames purpose to profile (8 combined purposes, people, source attributes and plugin summary fields).
+// why: bump when ReplaySummary gains derived fields: stored sidecars of an older version are rebuilt lazily.
+// why: version 9 renames purpose to profile (8 combined purposes, people, source attributes and plugin summary fields).
 export const SUMMARY_VERSION = 9;
 export const TIMELINE_CAP = 200;
 const MAX_SOURCE_LINKS = 3;
@@ -349,7 +349,7 @@ export function summarizeTimeline(bundle: Pick<ReplayBundle, 'meta' | 'steps' | 
     ...bundle.console.filter((entry) => entry.level === 'error').map((entry) => clamp(entry.at)),
     ...bundle.network.filter(isFailedRequest).map((entry) => clamp(entry.at)),
   ].sort((a, b) => a - b);
-  // 0.5 % of the duration: about one dot per pixel at the widest list row, and at most ~200 groups.
+  // why: 0.5 % of the duration: about one dot per pixel at the widest list row, and at most ~200 groups.
   return { steps, errors: mergeErrorTimes(errorTimes, Math.max(1, duration * 0.005)) };
 }
 
@@ -452,7 +452,7 @@ export function matchesFilters(summary: ReplaySummary, filters: ReplayFilters) {
 }
 
 export function formatClock(milliseconds: number) {
-  // Integer tenths avoid float drift and "0:60.0" when 59.96 s rounds up.
+  // why: integer tenths avoid float drift and "0:60.0" when 59.96 s rounds up.
   const tenths = Math.round(Math.max(0, milliseconds) / 100);
   const minutes = Math.floor(tenths / 600);
   const rest = tenths % 600;
