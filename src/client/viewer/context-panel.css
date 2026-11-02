@@ -113,3 +113,4 @@
 @media (prefers-reduced-motion: reduce) {
   .ctx-source, .ctx-source-arrow, .ctx-open { transition: none; }
 }
+.ctx-slot { display: contents; }

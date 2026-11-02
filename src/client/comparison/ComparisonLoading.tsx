@@ -1,42 +1,20 @@
 import { Component, type ReactNode } from 'react';
-import { Topbar } from '../Topbar.tsx';
 import { indexReturnHref } from '../route.ts';
 import './comparison.css';
+import { MeetingShell } from './meeting/MeetingShell.tsx';
 
-/** Eager, provider-free frame: a slow player chunk must not erase the whole workspace. */
+/** Eager, provider-free frame: the meeting view's own chrome with calm tiles until its code and recordings arrive. */
 export function ComparisonLoading() {
-  return (
-    <main className="cmp-workspace cmp-replay cmp-loading" aria-label="Replay comparison">
-      <Topbar title="Compare recordings" prefix="Compare" backHref={indexReturnHref()} compact />
-      <div className="cmp-stages">
-        {['A · Before', 'B · After'].map((label) => (
-          <section key={label} className="cmp-side" aria-label={label} aria-busy="true">
-            <header>
-              <h2>{label}</h2>
-            </header>
-            <div className="cmp-stage cmp-loading-stage">
-              <span role="status">Preparing player</span>
-            </div>
-          </section>
-        ))}
-      </div>
-      <section className="cmp-transport" aria-label="Shared playback controls">
-        <button type="button" disabled>
-          Play
-        </button>
-        <p className="cmp-help">Playback becomes available as recordings load.</p>
-      </section>
-    </main>
-  );
+  return <MeetingShell />;
 }
 
 /** Failed code downloads need an exit and recovery, rather than a blank comparison. */
 export class ComparisonLoadBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
-  state = { failed: false };
+  override state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };
   }
-  render() {
+  override render() {
     if (!this.state.failed) return this.props.children;
     return (
       <main className="cmp-workspace">

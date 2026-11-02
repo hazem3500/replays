@@ -109,3 +109,83 @@ test('the sidebar pin keeps the suite on click', async ({ page }) => {
   await pin.click();
   await expect(pin).toHaveAttribute('aria-pressed', 'true');
 });
+
+test('the layout switch shows the suite’s runs side by side in place, without remounting a tile', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, `${server().origin}/s/${suite}/r/${two}`);
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  const layouts = sidebar.getByRole('radiogroup', { name: 'Layout' });
+
+  await layouts.getByRole('radio', { name: 'Grid' }).click();
+  await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/${two}\\?layout=grid$`));
+  await expect(page.locator('.mt-stage-area')).toHaveAttribute('data-layout', 'grid');
+  const frames = page.locator('.mt-tile iframe');
+  await expect(frames).toHaveCount(2);
+  await frames.evaluateAll((elements) => elements.forEach((element) => element.setAttribute('data-kept', '')));
+
+  await layouts.getByRole('radio', { name: 'Spotlight' }).click();
+  await expect(page).toHaveURL(new RegExp(`\\?layout=spotlight&pin=${two}$`));
+  await expect(page.locator(`.mt-tile[data-tile-id="${two}"]`)).toHaveAttribute('data-role', 'spotlight');
+  await sidebar.locator(`[data-replay-id="${one}"]`).click();
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=spotlight&pin=${one}$`));
+  await expect(page.locator(`.mt-tile[data-tile-id="${one}"]`)).toHaveAttribute('data-role', 'spotlight');
+  await expect(page.locator('.mt-tile iframe[data-kept]')).toHaveCount(2);
+
+  await layouts.getByRole('radio', { name: 'Single' }).click();
+  await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/${one}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+  await expect(page.locator('.mt-tile')).toHaveCount(0);
+});
+
+test('a suite link with ?layout=grid opens on its runs as tiles', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${server().origin}/s/${suite}?layout=grid`);
+  await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/${two}\\?layout=grid$`));
+  await expect(page.locator('.mt-tile')).toHaveCount(2);
+  await expect(page.locator(`.mt-tile[data-tile-id="${one}"] .mt-label`)).toHaveText('Desktop: run 1');
+  await expect(page.getByRole('radio', { name: 'Grid' })).toHaveAttribute('aria-checked', 'true');
+});
+
+test('at 390 px “Show all runs” swaps the viewer for swipeable tiles and Single brings it back', async ({ page }) => {
+  const { suite, one } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await openReplay(page, `${server().origin}/s/${suite}/r/${one}`);
+  await page.getByRole('button', { name: 'More actions' }).click();
+  await page.getByTestId('show-all-runs').click();
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=grid$`));
+  await expect(page.locator('.mt-stage-area')).toHaveAttribute('data-layout', 'carousel');
+  await page
+    .locator(`.mt-tile[data-tile-id="${one}"]`)
+    .getByRole('button', { name: /^More for / })
+    .click();
+  const sheet = page.getByTestId('tile-sheet');
+  await expect(sheet.getByRole('button', { name: 'Hide from comparison' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  await page.getByRole('radio', { name: 'Single' }).click();
+  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
+});
+
+test('Grid keeps the diagnostics dock under the tiles, scoped to one run and flipped without moving the tiles', async ({ page }) => {
+  const { suite, one, two } = await threeRuns(page.request);
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.goto(`${server().origin}/s/${suite}/r/${two}?layout=grid`);
+  await expect(page.locator('.mt-tile iframe')).toHaveCount(2);
+  await page.locator('.mt-tile iframe').evaluateAll((elements) => elements.forEach((element) => element.setAttribute('data-kept', '')));
+
+  const dock = page.locator('.mt-dock');
+  const runs = dock.getByRole('radiogroup', { name: 'Recording the diagnostics show' });
+  await expect(runs.getByRole('radio', { checked: true })).toContainText('Desktop: run 1');
+  await runs.getByRole('radio', { name: /Desktop: run 2/ }).click();
+  await expect(runs.getByRole('radio', { checked: true })).toContainText('Desktop: run 2');
+  await dock.getByRole('tab', { name: /Network/ }).click();
+  await expect(dock.getByRole('tab', { name: /Network/ })).toHaveAttribute('aria-selected', 'true');
+
+  await page.locator(`.mt-tile[data-tile-id="${one}"]`).click({ position: { x: 40, y: 40 } });
+  await expect(runs.getByRole('radio', { checked: true })).toContainText('Desktop: run 1');
+  await expect(page.locator('.mt-stage-area')).toHaveAttribute('data-layout', 'grid');
+  await expect(page.locator('.mt-tile iframe[data-kept]')).toHaveCount(2);
+});

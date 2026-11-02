@@ -72,6 +72,10 @@ export const TEXT_PAIRS: Array<[string, string]> = [
   ['--text', '--danger-tint'],
   ['--text-secondary', '--danger-tint'],
   ['--text-tertiary', '--danger-tint'],
+  // Destructive buttons (solid fill): the label at rest, hovered and pressed.
+  ['--danger-solid-foreground', '--danger-solid'],
+  ['--danger-solid-foreground', '--danger-solid-hover'],
+  ['--danger-solid-foreground', '--danger-solid-pressed'],
   ['--warning', '--surface'],
   ['--success', '--surface'],
   ['--page', '--text'],

@@ -227,6 +227,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
 | `EDITING_ENABLED` | `true` | Host edit write policy within `beta.editor`; `false` hides editing and rejects saves while saved edits still play and export. Also `editing.enabled` in config |
 | `REPLAYS_BETA_MALLEABLE` | `false` | Turns on the beta plugin workshop and agent bridge ([Malleable viewer](#malleable-viewer-beta-off-by-default)). Also `beta.malleable` in the config file; the variable wins |
+| `REPLAYS_BETA_GROUPED_INSPECTOR` | – | Removed (the Inspector has one flat tab row). Still accepted, with `beta.groupedInspector`, and ignored with a warning; delete it |
 | `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
 | `RENDER_ASSETS` | `public` | Render public third-party assets; `origin-only` restricts requests to this server and the explicit allowlist |
@@ -413,6 +414,28 @@ plays. Threads take replies and can be **resolved** and reopened by anyone; **ed
 ![The Comments tab: a thread with replies, a resolved one](docs/screenshots/comments-panel.png)
 ![Comments on a phone (390×844)](docs/screenshots/comments-mobile.png)
 
+## Beta features and Labs
+
+Beta features are decided in two places, listed once in [`src/shared/beta-flags.ts`](src/shared/beta-flags.ts):
+
+1. **The server allows them.** Every flag is off until an admin sets its variable or config key (the variable wins):
+
+   | Flag | Variable | Config file | In Settings › Labs |
+   | --- | --- | --- | --- |
+   | Replay editor | `REPLAYS_BETA_EDITOR` | `beta.editor` | On by default; turning it off hides editing (saved edits still play) |
+   | Plugin workshop | `REPLAYS_BETA_MALLEABLE` | `beta.malleable` | On by default; turning it off loads no plugin code or agent bridge (applies after a reload) |
+
+   A flag the server does not allow does not exist for anyone: no UI, its routes answer `404`, its code is never loaded.
+   The page learns the allowed set from `<meta name="app-beta">` and `GET /api/config` (`beta`).
+2. **Each person opts out (or back in) under Settings › Labs.** Only allowed flags are listed; with none allowed, Labs says
+   so. Choices are saved in the browser today; the client keeps them behind one store
+   (`setLabsChoiceStore` in `src/client/settings/labs.ts`) so per-user storage can replace it once sign-in carries preferences.
+
+In short: effective = allowed by the server ∧ (the person's choice, or on by default).
+
+Removed flags stay accepted so a deployment keeps starting: `REPLAYS_BETA_GROUPED_INSPECTOR` / `beta.groupedInspector` (the
+grouped Inspector navigation; the Inspector now has one flat tab row) is ignored with a warning.
+
 ## Replay editor (beta, off by default)
 
 Edit mode lets you tidy a recording without touching it: trim the start and end, cut ranges, **Remove waits** (cuts the
@@ -431,8 +454,8 @@ page, and **captions** (written from the steps). Open it with the *Edit* button 
   See [host editing policy](docs/extension-api.md#host-editing-write-policy) for precedence and validation.
 - **With the flag off** (the default): no Edit button or "Edited" label, `/r/<id>/edit` just opens the replay, the
   `GET|PUT /api/replays/<id>/edits` endpoints answer `404`, exports ignore any edit list, and the editor's code chunk is
-  never requested. There is deliberately no client-only switch: an editor without its API cannot save, so the flag
-  lives on the server. For local preview run `REPLAYS_BETA_EDITOR=true pnpm dev`.
+  never requested. A client can never switch it on by itself (an editor without its API cannot save), so the server
+  allows it; each person can then hide editing under Settings › Labs. For local preview run `REPLAYS_BETA_EDITOR=true pnpm dev`.
 - It is a beta: the edit-list format (`src/shared/edits.ts`, `src/shared/effects.ts`) may still change before 1.0.
 
 ![Edit mode: the replay above and one timeline of lanes for clip, cuts, zoom, speed, blur and captions](docs/screenshots/editor.png)
@@ -484,6 +507,8 @@ A **suite** groups the runs of one job (for example every browser flow a pull re
 | `GET /api/replays`, `GET /api/replays/<id>` | List summaries (`?q=&host=&errors=1&source=&tag=`) / the bundle |
 | `GET /api/suites`, `GET /api/suites/<id>`, `PUT /api/suites/<id>[/runs/<run>]` | Suites |
 | `PUT\|DELETE /api/replays/<id>/keep` | Keep / release |
+| `GET\|PATCH /api/replays/<id>/meta` | Title, tags and purpose people changed (`{ title?, tags?, purpose? }`, `purpose: null` drops it; `400` with `issues` when invalid). The bundle stays as recorded; lists, search and filters use the new values |
+| `DELETE /api/replays/<id>`, `POST /api/replays/<id>/restore` | Move to the trash (out of every list, the bundle answers `404`; restorable for 7 days, then swept; `409` while kept) / restore |
 | `GET\|POST /api/replays/<id>/comments`, `PATCH\|DELETE …/comments/<comment>` | Comments (`{ body, at?, parentId? }`, `{ emoji, at }`, `{ body }` / `{ resolved }`); `at` is source ms |
 | `GET /api/me`, `GET /api/config` | Identity; branding and context schema |
 | `GET /api/malleable/plugins[/<scope>/<id>]`, `POST …/approvals`, `PUT\|DELETE …/plugins/<scope>/<id>`, `…/bridge/*`, `GET /_malleable/sandbox.html` | User plugins and the agent bridge (beta, `REPLAYS_BETA_MALLEABLE`; `404` when off). Saves need an approval token |

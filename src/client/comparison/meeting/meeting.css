@@ -1,0 +1,676 @@
+/* The meeting-style comparison: tiles on one shared clock (src/client/comparison/meeting). */
+.mt-workspace {
+  /* why: nine tile identities kept clear of the coral hue, which only ever means failure. */
+  --tile-1: #8b9dff;
+  --tile-2: #5fd0c5;
+  --tile-3: #e8bd72;
+  --tile-4: #c792ff;
+  --tile-5: #7cc4ff;
+  --tile-6: #a6d672;
+  --tile-7: #f2a0d0;
+  --tile-8: #d6c38a;
+  --tile-9: #9fb4c8;
+  --tile-radius: 10px;
+  --tile-glide: 380ms;
+
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  height: 100dvh;
+  min-width: 0;
+  background: var(--page);
+  color: var(--text);
+}
+
+:root[data-theme="light"] .mt-workspace {
+  --tile-1: #3d4fd1;
+  --tile-2: #0e786e;
+  --tile-3: #9a6510;
+  --tile-4: #7a3fc4;
+  --tile-5: #1f6fb0;
+  --tile-6: #4c7a17;
+  --tile-7: #b03c82;
+  --tile-8: #7a6420;
+  --tile-9: #4d6275;
+}
+
+.mt-stage-area {
+  position: relative;
+  min-height: 0;
+  margin: 4px 16px 0;
+  contain: strict;
+}
+
+.mt-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  border-radius: var(--tile-radius);
+  background: var(--canvas);
+  box-shadow: 0 0 0 1px var(--line);
+  outline: none;
+  transition:
+    transform var(--tile-glide) var(--ease-out),
+    width var(--tile-glide) var(--ease-out),
+    height var(--tile-glide) var(--ease-out),
+    box-shadow var(--motion) var(--ease-out);
+  cursor: default;
+}
+
+.mt-tile[data-role="strip"] {
+  cursor: pointer;
+}
+
+.mt-tile:focus-visible {
+  box-shadow:
+    0 0 0 1px var(--line),
+    0 0 0 3px var(--ring);
+}
+
+.mt-tile[data-pinned] {
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--tile) 70%, transparent);
+}
+
+.mt-tile[data-alert] {
+  box-shadow:
+    0 0 0 2px var(--danger),
+    0 0 24px -6px var(--danger);
+}
+
+.mt-tile[data-drop-target]:hover {
+  box-shadow: 0 0 0 2px var(--tile);
+}
+
+.mt-player,
+.mt-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.mt-stage {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.mt-host {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.mt-host iframe {
+  display: block;
+  border: 0;
+}
+
+.mt-host :is(.replayer-mouse, .replayer-mouse-tail) {
+  display: none !important;
+}
+
+.mt-player-pending {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent));
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.mt-shell .mt-stage-area {
+  animation:
+    skeleton-appear var(--skeleton-fade) var(--ease-out) var(--skeleton-delay) both,
+    pending-breathe 2.4s ease-in-out var(--skeleton-delay) infinite;
+}
+
+.mt-shell .mt-tile {
+  transition: none;
+}
+
+.mt-player-failure {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 16px;
+  color: var(--danger);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.mt-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in oklab, var(--canvas) 55%, transparent);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 550;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  animation: mt-fade var(--motion-enter) var(--ease-out);
+}
+
+.mt-overlay > span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 85%, transparent);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.mt-tile[data-role="strip"] .mt-overlay {
+  font-size: var(--text-2xs);
+}
+
+@keyframes mt-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.mt-nametag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 16px);
+  padding: 3px 8px 3px 3px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 1px var(--line);
+  font-size: var(--text-xs);
+  pointer-events: none;
+}
+
+.mt-letter {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--tile);
+  color: var(--accent-contrast);
+  font-size: var(--text-2xs);
+  font-weight: 650;
+}
+
+.mt-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-errors {
+  flex: none;
+  min-width: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.mt-tile[data-role="strip"] .mt-label {
+  display: none;
+}
+
+.mt-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--surface) 82%, transparent);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 0 1px var(--line);
+  opacity: 0;
+  transform: translateY(-2px);
+  transition:
+    opacity var(--motion-fast) var(--ease-out),
+    transform var(--motion-fast) var(--ease-out);
+}
+
+.mt-tile:is(:hover, :focus-within) .mt-actions,
+.mt-actions:has([data-popup-open]) {
+  opacity: 1;
+  transform: none;
+}
+
+.mt-tile[data-role="strip"] .mt-actions {
+  display: none;
+}
+
+.mt-action {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.mt-action:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.mt-action[data-popup-open] {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* The "⋯" menu on touch: a bottom sheet of labelled rows. */
+.mt-sheet-title {
+  padding: 4px 4px 8px;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mt-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+}
+
+.mt-sheet-item:active {
+  background: var(--surface-hover);
+}
+
+.mt-sheet-item svg {
+  width: 18px;
+  height: 18px;
+  color: var(--text-secondary);
+}
+
+.mt-action:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.mt-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.mt-tile[data-muted] .mt-letter {
+  background: color-mix(in oklab, var(--tile) 35%, var(--surface-pressed));
+}
+
+.mt-transport {
+  display: grid;
+  gap: 2px;
+  margin: 8px 16px 12px;
+  padding: 6px 10px 4px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.mt-transport-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.mt-readout {
+  margin: 0 8px;
+  color: var(--text-secondary);
+  font-family: var(--mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.mt-roster-slot {
+  flex: 1;
+  min-width: 0;
+}
+
+.mt-roster {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mt-chip {
+  display: inline-grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+.mt-chip:hover,
+.mt-speed:hover {
+  background: var(--surface-hover);
+}
+
+.mt-chip[aria-pressed="false"] {
+  display: inline-flex;
+  gap: 6px;
+  max-width: 200px;
+  padding: 0 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+.mt-chip[aria-pressed="false"] .mt-letter {
+  opacity: 0.5;
+}
+
+.mt-chip[aria-pressed="false"] svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+
+.mt-chip-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mt-chip[data-state="ended"] .mt-letter {
+  box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--canvas) 45%, transparent);
+}
+
+.mt-chip:focus-visible {
+  outline: 2px solid var(--ring);
+}
+
+.mt-speed {
+  width: auto;
+  height: 28px;
+  padding: 0 8px;
+  appearance: none;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-xs);
+}
+
+.mt-scrubber {
+  position: relative;
+  height: 28px;
+}
+
+.mt-markers {
+  position: absolute;
+  inset: 4px 7px auto;
+  height: 8px;
+  pointer-events: none;
+}
+
+.mt-markers i {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 8px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--tile);
+}
+
+.mt-probe {
+  position: absolute;
+  top: -3px;
+  width: 4px;
+  height: 14px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--tile);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--tile) 35%, transparent);
+}
+
+.mt-tile[data-highlight] {
+  box-shadow:
+    0 0 0 2px var(--tile),
+    0 0 0 6px color-mix(in oklab, var(--tile) 25%, transparent);
+}
+
+.mt-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.mt-range::-webkit-slider-runnable-track {
+  height: 4px;
+  margin-top: 8px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) calc(var(--progress, 0) * 100%), var(--line-strong) 0);
+}
+
+.mt-range::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--accent) calc(var(--progress, 0) * 100%), var(--line-strong) 0);
+}
+
+.mt-range::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--text);
+  appearance: none;
+  transition: transform var(--motion-press) var(--ease-out);
+}
+
+.mt-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--text);
+}
+
+.mt-range:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+
+.mt-range:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.mt-add-filter,
+.mt-align input,
+.mt-align select {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+}
+
+.mt-add-list {
+  display: grid;
+  max-height: min(52vh, 420px);
+  overflow-y: auto;
+}
+
+.mt-add-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.mt-add-row input {
+  grid-row: span 2;
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+}
+
+.mt-add-row[data-included] {
+  opacity: 0.6;
+}
+
+.mt-add-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mt-add-meta,
+.mt-add-note,
+.mt-align-note {
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.mt-align-list {
+  display: grid;
+  gap: 12px;
+  max-height: min(56vh, 480px);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.mt-align-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+}
+
+.mt-align-row fieldset {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  align-items: end;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.mt-align-row legend {
+  margin-bottom: 4px;
+  font-weight: 550;
+}
+
+.mt-align-row label {
+  display: grid;
+  gap: 2px;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.mt-align-form {
+  display: grid;
+  gap: 12px;
+}
+
+/* why: phones get one tile per screen, swiped, with the transport pinned within thumb reach. */
+.mt-stage-area[data-layout="carousel"] {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0 12px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 12px;
+  scrollbar-width: none;
+  contain: layout paint;
+}
+
+.mt-stage-area[data-layout="carousel"] .mt-tile {
+  position: relative;
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: center;
+  transform: none;
+}
+
+.mt-workspace[data-mobile] .mt-actions {
+  opacity: 1;
+  transform: none;
+}
+
+.mt-workspace[data-mobile] .mt-transport {
+  position: sticky;
+  bottom: 0;
+  margin: 8px 0 0;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+  border-radius: 12px 12px 0 0;
+}
+
+@media (pointer: coarse) {
+  .mt-action,
+  .mt-chip {
+    min-width: 40px;
+    height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-workspace {
+    --tile-glide: 0ms;
+  }
+
+  .mt-overlay,
+  .mt-shell .mt-stage-area {
+    animation: none;
+  }
+}

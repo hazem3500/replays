@@ -326,7 +326,7 @@ Comments ship as a plugin, `comments`, so they use the same surface as yours and
   A user plugin registers as `user:<id>` (keys `plugin:user:<id>:<contribution>`); a host plugin's name cannot contain `:`, so the two
   never collide and a user plugin cannot replace or remove a host plugin's tabs, panels or actions.
 - **The host's policy for user plugins** (`malleable` in the config, typed `MalleableConfig` from `/config`): the deployment can only
-  narrow. `scopes` (`'user'`, `'workspace'`; default both) says where a plugin may be kept; `capabilities` maps each capability to
+  narrow. `scopes` (`'user'`, `'workspace'`; default personal scope only) says where a plugin may be kept; `capabilities` maps each capability to
   `'allow' | 'ask' | 'deny'` (a write capability, `comments:write` or `export:download`, is `'ask'` or `'deny'`; `'allow'` is a start-up
   error); `lockedSurfaces` lists surfaces user plugins may not replace or hide (`inspector:<tab>`, `inspector:<plugin>:<tab>`,
   `panel:<plugin>:<id>`, `action:<plugin>:<id>`). The server refuses (403) to keep a plugin that declares a denied capability or targets a
@@ -672,3 +672,90 @@ const auth: AuthAdapter = { name: 'proxy', signIn: { path: '/auth/return' }, aut
 ```
 
 `SignInConfig` is exported as a type from `/server`. Existing adapters remain unchanged unless they opt in.
+
+## Unified slots
+
+The viewer entry exports `SlotRegistry`, `SLOT_NAMES`, and the types `SlotDescriptor<C, R>`,
+`SlotConfiguration` and `SlotMountContext<C>`. A descriptor is
+`{ id, order, when?: (context) => boolean, render: (context) => result }`.
+Use `core:<id>` for built-ins and `plugin:<owner>:<id>` for plugin items. Numeric order is ascending;
+built-ins use gaps (100, 200, …). Equal orders retain registration order. Resolution is pure: it
+filters and sorts without mutating descriptors or calling `render`.
+
+Host browser entries can call `api.configureSlot('viewer.inspector.tabs', {
+  order: ['plugin:acme:build', 'core:console'], hide: ['core:performance'],
+})` and `api.registerSlotItem(slot, descriptor)`. Explicitly ordered ids precede unspecified items;
+`hide` removes items. Configuration replaces the previous configuration for that slot. Unknown ids
+are retained so configuration can precede lazy registration. Locked surfaces reject configuration
+before it changes anything. Hosts can lock legacy ids such as `inspector:context`, or any slot/item
+pair such as `index.filters/core:owner`. Sandboxed user plugins cannot configure host slots.
+
+Initial slots: `viewer.inspector.tabs`, `viewer.panels.side`, `viewer.actions`,
+`viewer.scrubber.tracks`, `viewer.context.sections`, `index.row.columns`, `index.filters`,
+`index.sections`, `settings.sections`. Distributions may define additional slot names. A view
+supplies its built-ins as the same descriptor list; it must render the resolved list to support
+core item configuration. The registry does not discover JSX automatically.
+
+Existing `register*` methods remain supported. Their DOM descriptors receive
+`{ container, context }`; action descriptors receive the viewer context, track descriptors return
+markers, and filter/settings descriptors return the definition for the host renderer. Registry
+snapshots continue to expose the original metadata. Slot containers use `data-slot="<slot>"` and
+items use `data-slot-item="<namespaced id>"`; these two attributes are public hooks for host CSS.
+Other DOM structure and classes remain private.
+
+Sandboxed plugin manifests now accept the same boolean/choice setting definition as
+`registerSetting`. Their `ctx.settings.get(id)` / `set(id, value)` are asynchronous and persisted
+per person and plugin through the malleable API. Host `ViewerPluginContext.settings` retains its
+synchronous `get` and `onChange` contract. Internal Settings renderers use the combined registry
+settings list, `readSetting`, `subscribeSettings` and `writeSettingValue` (awaitable, reports failed
+saves); `writeSetting` remains the existing fire-and-forget menu helper.
+
+## Check a plugin from the CLI
+
+`replays plugin check ./plugin.mjs --replay ./fixture.json` runs server setup, fixture before-upload
+hooks, summary derivation, and registered auth/storage contracts. `--config ./replays.config.ts`
+loads dependencies and host configuration. Storage contracts use disposable `_plugin-check/…`
+namespaces and clean them up; configure adapters for a test backend. Use `--request request.json` (method, URL and headers) to supply an accepted auth request. Auth contracts report a missing acceptance fixture rather than silently skipping it.
+
+`replays plugin check ./entry.mjs --kind browser --cdp http://127.0.0.1:9222` checks a browser entry.
+`replays plugin check ./example.replays-plugin.json` validates and runs each declared contribution
+in the real sandbox. By default these connect to an existing browser. Use `--headless` to launch a fresh local Chromium (install it separately with `pnpm exec playwright install --with-deps chromium`); this is suitable for CI or an isolated Boat box. The
+CDP browser must be able to reach the CLI's loopback check server (run them on the same host, or
+forward both loopback endpoints). Each check creates and closes one browser context. External
+requests are blocked; fixture comments/downloads are printed. `--out ./shots` captures at most
+eight contribution screenshots. Output includes registrations, fixture results and errors;
+failures exit 1, argument errors exit 2. The default fixture is a small valid in-memory replay.
+
+The viewer entry now exports `ViewerRegistry` for hosts and harnesses needing an isolated registry;
+its documented `apiFor`, `configureSlot`, `registerSlotItem`, `resolveSlot`, `getSnapshot` and
+subscription lifecycle share the API used by the running app. The application singleton remains
+internal. These additions keep plugin and viewer API generation 1.
+
+
+## Plugin pages
+
+Host browser entries register one page with `api.registerPluginPage({ title, loader?, render })`.
+The owner is always `api.pluginName`; sandboxed user plugins cannot register routes. The route is
+`/p/<plugin>/<path>` and preserves plugin search parameters. The optional loader receives
+`PluginPageLoadContext` (`path`, `search`, `signal`), and may return a value or promise. The DOM
+renderer receives `PluginPageContext`: those fields, the loader's `data`, theme/base-path/API URL
+helpers and `navigate(path, search?)`. Return a cleanup function as with tabs.
+
+Navigation stays under the plugin's root: schemes, other plugins, backslashes and dot traversal
+are rejected. The route waits for browser plugin loading before deciding a page is missing and
+subscribes to later registrations. Page registrations participate in plugin removal, reset and
+failed-hot-reload rollback. Page title, loader and DOM render are the public surface; head metadata
+and automatic navigation entries are not provided yet. The TanStack route integration is owned
+by the router increment.
+
+Host policy additionally accepts `workspaceRoles`, exact `allow`/`deny` selectors by id or policy
+hash, and validated `watchdog` limits. `Identity.roles` is an optional trusted claim from the auth
+adapter. See [malleability.md](malleability.md#host-admission-workspace-review-and-runtime-budgets)
+for defaults, enforcement and the remaining requirements before default-on.
+
+Additional published slot names used by the redesign are `index.chips`, `inspector.network.columns`,
+`performance.vitals`, `editor.topbar.actions`, `editor.inspector.sections`, `editor.tools`,
+`editor.timeline.lanes` and `export.formats`. All legacy `register*` contributions receive slot order
+`1000 + (definition.order ?? 0)` so default plugin contributions remain after core items; their
+snapshot definition order retains its original value. Generic descriptors use their numeric
+order directly.

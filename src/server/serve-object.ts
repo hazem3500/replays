@@ -88,7 +88,14 @@ export async function serveObject(
       if (!body) throw Object.assign(new Error(`${key} vanished`), { status: 404 });
       return body;
     });
-    response.writeHead(200, { ...headers, 'content-encoding': encoding, 'content-length': String(payload.byteLength) });
+    // The decoded size too: Content-Length is the compressed one, and the viewer's loading bar counts decoded bytes
+    // (load-progress.ts). Same-origin, so readable without exposing it.
+    response.writeHead(200, {
+      ...headers,
+      'content-encoding': encoding,
+      'content-length': String(payload.byteLength),
+      'x-decoded-length': String(info.size),
+    });
     response.end(request.method === 'HEAD' ? undefined : payload);
     return true;
   }

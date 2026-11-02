@@ -8,7 +8,7 @@ import { origin } from './support.ts';
  */
 const viewer = () => `${origin()}/r/demo-shop`;
 
-const KEY_ELEMENTS = ['.app-topbar', '.player-stage', '.transport', '.timeline-panel', '.inspector', '.inspector-tabs'];
+const KEY_ELEMENTS = ['.app-topbar', '.player-stage', '.transport', '.timeline-panel', '.inspector', '.inspector-navigation-tabs'];
 
 /** Holds the bundle request until `release` is called. */
 async function holdBundle(page: Page) {
@@ -53,7 +53,7 @@ for (const [label, viewport, mobile] of [
     await page.goto(viewer());
     const skeleton = page.locator('main.skeleton-shell');
     await expect(skeleton).toHaveCSS('opacity', '1');
-    const selectors = mobile ? KEY_ELEMENTS.filter((selector) => selector !== '.timeline-panel') : KEY_ELEMENTS;
+    const selectors = mobile ? ['.app-topbar', '.player-stage'] : KEY_ELEMENTS;
     const before = await rects(page, selectors);
     release();
     await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
@@ -75,18 +75,84 @@ test('after 1.2 s still loading, a thin progress line shows under the top bar', 
   release();
 });
 
-test('under reduced motion loading is static and contains no pretend controls', async ({ browser }) => {
+test('under reduced motion the loading trace is static', async ({ browser }) => {
   const context = await browser.newContext({ reducedMotion: 'reduce', viewport: { width: 1280, height: 800 } });
   const page = await context.newPage();
   const release = await holdBundle(page);
   await page.goto(viewer());
-  const block = page.locator('main.skeleton-shell');
-  await expect(block).toBeAttached();
-  await expect(block.locator('.sk, .sk-step, .sk-table-row')).toHaveCount(0);
-  await expect(block.locator('.loading-notice')).toHaveText('Opening replay…');
-  expect(await block.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
+  const trace = page.locator('main.skeleton-shell .sk-progress > span');
+  await expect(trace).toBeAttached();
+  await expect(page.locator('main.skeleton-shell .sk-progress')).toHaveAttribute('data-visible', 'true');
+  expect(await trace.evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
   release();
   await context.close();
+});
+
+for (const folded of [false, true]) {
+  test(`cold phone link without a hint keeps an aspect-sized frame (inspector ${folded ? 'folded' : 'unfolded'})`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await page.addInitScript((isFolded) => {
+      sessionStorage.removeItem('replays-open-hint');
+      localStorage.removeItem('replays-open-hint');
+      if (isFolded) localStorage.setItem('replays-inspector-collapsed', '1');
+      else localStorage.removeItem('replays-inspector-collapsed');
+    }, folded);
+    const release = await holdBundle(page);
+    await page.goto(viewer());
+    const shell = page.locator('main.skeleton-shell');
+    await expect(shell).toHaveAttribute('aria-busy', 'true');
+    if (folded) await expect(shell).toHaveAttribute('data-inspector-collapsed', 'true');
+    else await expect(shell).not.toHaveAttribute('data-inspector-collapsed', 'true');
+    await expect(shell.locator('.sk-poster')).toHaveCount(0);
+    await expect(shell.locator('.sk-play')).toBeVisible();
+    const geometry = await shell.locator('.sk-frame').evaluate((element) => {
+      const frame = element.getBoundingClientRect();
+      const stage = element.closest('.player-stage')!.getBoundingClientRect();
+      return {
+        frame: [frame.x, frame.y, frame.width, frame.height] as const,
+        stage: [stage.x, stage.y, stage.width, stage.height] as const,
+      };
+    });
+    expect(geometry.frame[2]).toBeGreaterThan(geometry.stage[2] * 0.65);
+    expect(geometry.frame[3]).toBeGreaterThan(100);
+    expect(Math.abs(geometry.frame[0] + geometry.frame[2] / 2 - (geometry.stage[0] + geometry.stage[2] / 2))).toBeLessThanOrEqual(2);
+    expect(geometry.frame[2]! / geometry.frame[3]!).toBeCloseTo(1.6, 1);
+    release();
+  });
+}
+
+test('a stale substring hint does not apply to a different replay id', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem(
+      'replays-open-hint',
+      JSON.stringify({ id: 'demo', title: 'Wrong replay', poster: '/wrong-poster.png', viewport: { width: 900, height: 900 } }),
+    );
+  });
+  const release = await holdBundle(page);
+  await page.goto(viewer());
+  const shell = page.locator('main.skeleton-shell');
+  await expect(shell.locator('.sk-poster')).toHaveCount(0);
+  await expect(shell.locator('.sk-play')).toBeVisible();
+  expect(await shell.locator('.sk-frame').evaluate((element) => getComputedStyle(element).aspectRatio)).toBe('1.6 / 1');
+  release();
+});
+
+test('a failed opening poster falls back without a broken image glyph', async ({ page }) => {
+  await page.addInitScript(() => {
+    sessionStorage.setItem(
+      'replays-open-hint',
+      JSON.stringify({ id: 'demo-shop', viewport: { width: 1440, height: 900 }, poster: '/failed-poster.png' }),
+    );
+  });
+  await page.route('**/failed-poster.png', (route) => route.abort());
+  const failedPoster = page.waitForEvent('requestfailed', (request) => request.url().endsWith('/failed-poster.png'));
+  const release = await holdBundle(page);
+  await page.goto(viewer());
+  const shell = page.locator('main.skeleton-shell');
+  await failedPoster;
+  await expect(shell.locator('.sk-poster')).toHaveCount(0);
+  await expect(shell.locator('.sk-play')).toBeVisible();
+  release();
 });
 
 test('a suite opens on a skeleton with its runs sidebar', async ({ page }) => {

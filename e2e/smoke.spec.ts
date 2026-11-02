@@ -118,21 +118,25 @@ test.describe('viewer', () => {
     await expect(page.getByRole('button', { name: 'Pause' })).toBeVisible();
   });
 
-  test('the diagnostics tabs show console, network, performance and context', async ({ page }) => {
+  test('the diagnostics tabs show issues, console, network, performance and context', async ({ page }) => {
     await openReplay(page, viewer());
     await page.getByRole('slider', { name: 'Seek' }).press('End');
 
-    await expect(page.getByTestId('console-tab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('issues-tab')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('issues-headline')).toContainText('The server rejected “Apply the coupon” (404)');
+
+    await page.getByTestId('console-tab').click();
     await expect(page.getByTestId('console-list')).toContainText('Coupon service answered 404');
 
     await page.getByTestId('network-tab').click();
-    await expect(page.locator('[data-request-id]')).toHaveCount(8);
-    await page.getByRole('button', { name: 'GET /api/coupons/SPRING10' }).click();
+    const requests = page.getByRole('grid', { name: 'Network requests' }).locator('.net-body [role="row"]');
+    await expect(requests).toHaveCount(8);
+    await requests.filter({ hasText: '/api/coupons/SPRING10' }).click();
     await expect(page.getByTestId('request-detail')).toContainText('/api/coupons/SPRING10');
     await expect(page.getByTestId('request-detail')).toContainText('404');
 
     await page.getByTestId('performance-tab').click();
-    await expect(page.getByTestId('performance-events')).toContainText(/contentful paint/i);
+    await expect(page.getByTestId('performance-events').getByRole('row').first()).toContainText('Long task');
 
     await page.getByTestId('context-tab').click();
     const panel = page.getByTestId('context-panel');

@@ -243,6 +243,11 @@ export interface ReplaySummary {
   summaryVersion?: number;
   /** Recorded viewport, for poster aspect ratios. */
   viewport?: { width: number; height: number };
+  /**
+   * The list poster's ThumbHash (src/shared/thumbhash.ts), base64: the index draws it as the card's picture until the
+   * poster itself has loaded. Added by the server when it lists (src/server/posters.ts); absent until a poster exists.
+   */
+  posterHash?: string;
   timeline?: ReplayTimelineSummary;
   /** `meta.tags`, as given. */
   tags?: string[];

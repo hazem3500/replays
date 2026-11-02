@@ -42,6 +42,7 @@ import { coreVersion } from './package-info.ts';
 import { type EditingSettings, editingFromEnv } from './editing-config.ts';
 import { handleEditsApi } from './edits-routes.ts';
 import { handleKeepApi } from './keep-routes.ts';
+import { handleReplayMetaApi } from './replay-meta-routes.ts';
 import { handlePosterApi } from './posters.ts';
 import { checkPeople, decorateSuite, decorateSummary, forMeQuery, identityResolver, peopleConfig } from './people.ts';
 import {
@@ -593,7 +594,11 @@ export function createApp(options: AppOptions) {
           plugins: [...registry.order],
           purposes: options.store.purposes.list,
           ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
-          beta: { editor: Boolean(options.beta?.editor), malleable: Boolean(options.beta?.malleable) },
+          beta: {
+            editor: Boolean(options.beta?.editor),
+            malleable: Boolean(options.beta?.malleable),
+            groupedInspector: Boolean(options.beta?.groupedInspector),
+          },
           comments: commentsOn,
           versions,
           ...(options.beta?.malleable ? { malleable: policy } : {}),
@@ -613,6 +618,7 @@ export function createApp(options: AppOptions) {
       if (await handleRenderApi(request, response, path, raw.searchParams, { ...options, beforeRender, identity: user })) return;
       if (await handlePosterApi(request, response, path, { store: options.store, posters: options.render?.posters })) return;
       if (await handleKeepApi(request, response, path, { store: options.store, user: user.id })) return;
+      if (await handleReplayMetaApi(request, response, path, { store: options.store, user: user.id })) return;
       // Beta: the editor's edit lists. Off by default: the path then falls through to the generic API 404.
       if (options.beta?.editor && (await handleEditsApi(request, response, path, { store: options.store, user: user.id, editing }))) return;
 

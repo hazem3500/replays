@@ -1,81 +1,157 @@
 import { flushSync } from 'react-dom';
 
+import { ENTER_KEYFRAMES, ENTER_MS, EASE, MORPH_STAGGER_MAX_MS, MORPH_STAGGER_MS, reducedMotion, staggerDelay } from './list-motion.ts';
+
 /**
- * Feed changes (sort, filters, search results, list/grid, a refresh that brings new items) as one
- * View Transition in which every feed item on or near the screen is its own layer (feed.css):
- * - items that stay glide to their new place (and morph between list and grid);
- * - items that leave fade out and shrink to 0.98 (140 ms, all at once);
- * - items that arrive rise 10 px and grow from 0.98 (260 ms, soft spring), 25 ms apart, at most the first
- *   12 (the rest just appear);
- * - the header is its own live layer, so it never fades.
- * With more than 60 items near the screen the change is a plain crossfade (no per-item layers).
- * List ↔ grid moves only the thumbnails (each glides and grows into its new place) while the text crossfades:
- * morphing whole rows into cards would stretch their text mid-flight.
+ * The index list's motion system: one View Transition for every feed change (sort, filters, search results,
+ * list ↔ grid, a refresh that brings new items), with the same per-item layers for all of them (list-motion.css;
+ * the shared numbers are in list-motion.ts):
+ * - items that stay glide to their new place, part by part: the item's frame (`card-<id>`, .feed-card) and its
+ *   thumbnail (`poster-<id>`, .feed-poster) move and resize; its title, meta line and source chip (`title-<id>`,
+ *   `meta-<id>`, `src-<id>`; .feed-title, .feed-meta, .feed-src) only move, their two snapshots kept at their
+ *   natural size and crossfading, so a title reflowing between one line (list) and two (grid) reads as text
+ *   settling, never as text stretching. List ↔ grid starts them 8 ms apart in visual order (at most 60 ms);
+ * - the rest of an item's text (`aside-<id>`, `ext-<id>`, the thumbnail's `badge-<id>`; .feed-aside) moves like
+ *   the title, and day headings
+ *   (`day-<label>`, .feed-day) glide to their new place too;
+ * - items that arrive are one layer each (`card-<id>`): they fade in and rise 8 px, 25 ms apart (at most 150 ms);
+ * - items that leave fade out (120 ms, no slide);
+ * - the header is its own live layer (feed.css), so it never fades; everything else crossfades.
+ * Only items on or near the screen get layers (at most 24); names come from itemLayerName and exist only while the
+ * transition runs, so they never meet a page transition's.
  *
  * Changes made from inside an open popup skip the transition (updateUnderPopup), so the popup stays on top.
  *
- * Never queued: a change while one runs (or within REPEAT_MS of the last, e.g. a held key repeating) finishes the running one at once and applies instantly, after the running one's own change, so the
- * last key always wins. Reduced motion, no View Transitions support, or a page transition still running: the
- * change just applies.
+ * Never queued: a change while one runs (or within REPEAT_MS of the last: a held key repeating, search keystrokes)
+ * finishes the running one at once and applies instantly, after the running one's own change, so the last key
+ * always wins and nothing stacks. Reduced motion, no View Transitions support, or a page transition still running:
+ * the change just applies.
  */
 const REPEAT_MS = 250;
-const MAX_LAYERS = 60;
-const MAX_STAGGERED = 12;
-const STAGGER_MS = 25;
-/** Same curve as --vt-spring (styles.css): a soft settle with ~2.5 % overshoot. */
-const SPRING = 'linear(0, 0.24 8%, 0.58 19%, 0.85 31%, 0.99 44%, 1.025 56%, 1.015 70%, 1)';
+const MAX_NAMED = 24;
 
 let running: ViewTransition | undefined;
 /** The running transition's update, until its callback runs (after the old view is captured). */
 let pending: (() => void) | undefined;
 let lastAt = Number.NEGATIVE_INFINITY;
 
-/** A valid <custom-ident> per entry id ("session:abc" → "feed-session_3aabc"). */
-function layerName(id: string) {
-  return `feed-${id.replace(/[^a-zA-Z0-9_-]/g, (character) => `_${character.charCodeAt(0).toString(16)}`)}`;
+/** An entry id as the tail of a valid <custom-ident> ("session:abc" → "session_3aabc"). */
+const ident = (id: string) => id.replace(/[^a-zA-Z0-9_-]/g, (character) => `_${character.charCodeAt(0).toString(16)}`);
+
+/** Each item's layers: its view-transition-class, and where it is in the item ('' = the item itself). */
+const PARTS = {
+  card: { className: 'feed-card', selector: '' },
+  poster: { className: 'feed-poster', selector: ':scope > .poster, :scope > .poster-stack .stack-front > .poster' },
+  title: { className: 'feed-title', selector: '.feed-title' },
+  meta: { className: 'feed-meta', selector: '.feed-meta' },
+  src: { className: 'feed-src', selector: '.feed-meta .source-lead' },
+  // why: the frame's snapshot must be only its surface (it resizes; text must not), so the rest of the item's text
+  // (the time column on wide lists, a grid suite's time-and-runs line, plugin fields) gets layers of its own.
+  aside: { className: 'feed-aside', selector: ':scope > .feed-cols, .feed-meta-end' },
+  // why: the thumbnail's duration / run-count badge keeps its size while the thumbnail scales under it.
+  badge: {
+    className: 'feed-aside',
+    selector: ':scope > .poster > .poster-badge, :scope > .poster-stack .stack-front > .poster > .poster-badge',
+  },
+  ext: { className: 'feed-aside', selector: '.feed-ext' },
+} as const;
+export type ItemPart = keyof typeof PARTS;
+const PART_NAMES = Object.keys(PARTS) as ItemPart[];
+
+/** The view-transition-name of one part of a feed entry (its `data-entry-id`), e.g. `poster-session_3ademo-shop`. */
+export function itemLayerName(part: ItemPart, entryId: string) {
+  return `${part}-${ident(entryId)}`;
 }
 
-/** What becomes a layer: whole items, or (list ↔ grid) just their thumbnails. */
-type Layer = 'item' | 'poster';
-let layer: Layer = 'item';
+function name(element: Element | null, part: ItemPart, entryId: string) {
+  if (!(element instanceof HTMLElement)) return;
+  element.style.setProperty('view-transition-name', itemLayerName(part, entryId));
+  element.style.setProperty('view-transition-class', PARTS[part].className);
+}
 
-const target = (item: HTMLElement) =>
-  layer === 'item' ? item : item.querySelector<HTMLElement>(':scope > .poster, :scope > .poster-stack .stack-front > .poster');
-
-/** Names the feed items on or near the screen; returns their ids in document order (empty: too many to name). */
-function nameItems(): string[] {
-  const items = [...document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')];
+/** The feed items on or near the screen (at most MAX_NAMED, in document order, which is also visual order). */
+function nearItems() {
   const height = window.innerHeight;
-  // Read every box first, then write: no layout thrash.
-  const near = items.filter((item) => {
-    const box = item.getBoundingClientRect();
-    return box.bottom > -height / 2 && box.top < height * 1.5;
+  // why: read every box first, then write, so naming never thrashes layout.
+  return [...document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')]
+    .filter((item) => {
+      const box = item.getBoundingClientRect();
+      return box.bottom > -height / 4 && box.top < height * 1.25;
+    })
+    .slice(0, MAX_NAMED);
+}
+
+/** Day headings on or near the screen glide too (`day-<label>`), instead of crossfading between two places. */
+function nameDays() {
+  const height = window.innerHeight;
+  const days = [...document.querySelectorAll<HTMLElement>('.feed-groups .feed-day')].filter((day) => {
+    const box = day.getBoundingClientRect();
+    return box.bottom > -height / 4 && box.top < height * 1.25;
   });
-  if (near.length > MAX_LAYERS) return [];
-  for (const item of near) {
-    const element = target(item);
-    element?.style.setProperty('view-transition-name', layerName(item.dataset.entryId!));
-    element?.style.setProperty('view-transition-class', layer === 'item' ? 'feed-item' : 'feed-poster');
+  for (const day of days) {
+    day.style.setProperty('view-transition-name', `day-${ident(day.textContent ?? '')}`);
+    day.style.setProperty('view-transition-class', 'feed-day');
   }
-  return near.map((item) => item.dataset.entryId!);
+}
+
+/** Before the change: every near item, part by part. Returns their ids. */
+function nameBefore(): string[] {
+  nameDays();
+  const items = nearItems();
+  for (const item of items) {
+    const id = item.dataset.entryId!;
+    for (const part of PART_NAMES) name(PARTS[part].selector ? item.querySelector(PARTS[part].selector) : item, part, id);
+  }
+  return items.map((item) => item.dataset.entryId!);
+}
+
+/** After the change: items that stay part by part (they pair with their old parts), arrivals as one layer. */
+function nameAfter(before: ReadonlySet<string>) {
+  nameDays();
+  const staying: string[] = [];
+  const arriving: string[] = [];
+  for (const item of nearItems()) {
+    const id = item.dataset.entryId!;
+    if (!before.has(id)) {
+      name(item, 'card', id);
+      arriving.push(id);
+      continue;
+    }
+    for (const part of PART_NAMES) name(PARTS[part].selector ? item.querySelector(PARTS[part].selector) : item, part, id);
+    staying.push(id);
+  }
+  return { staying, arriving };
 }
 
 function unnameItems() {
-  for (const element of document.querySelectorAll<HTMLElement>('.feed-list [style*="view-transition-name"]')) {
+  for (const element of document.querySelectorAll<HTMLElement>(':is(.feed-list, .feed-groups) [style*="view-transition-name"]')) {
     element.style.removeProperty('view-transition-name');
     element.style.removeProperty('view-transition-class');
   }
 }
 
-/** Arriving items (in the new view, not the old one) rise in one after another: per-layer delays. */
-function staggerArrivals(before: readonly string[], after: readonly string[]) {
-  const old = new Set(before);
-  const arriving = after.filter((id) => !old.has(id)).slice(0, MAX_STAGGERED);
-  if (arriving.length === 0) return undefined;
+/**
+ * Per-layer delays: arrivals one after another (25 ms apart, at most 150 ms); on list ↔ grid also the items that
+ * stay (8 ms apart, at most 60 ms).
+ */
+function staggerLayers(staying: readonly string[], arriving: readonly string[], morph: boolean) {
+  const rules: string[] = [];
+  arriving.forEach((id, index) => {
+    const delay = staggerDelay(index);
+    if (delay > 0) rules.push(`::view-transition-new(${itemLayerName('card', id)}) { animation-delay: ${delay}ms; }`);
+  });
+  if (morph)
+    staying.forEach((id, index) => {
+      const delay = staggerDelay(index, MORPH_STAGGER_MS, MORPH_STAGGER_MAX_MS);
+      if (delay === 0) return;
+      const selectors = PART_NAMES.flatMap((part) =>
+        ['group', 'old', 'new'].map((pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`),
+      );
+      rules.push(`${selectors.join(', ')} { animation-delay: ${delay}ms; }`);
+    });
+  if (rules.length === 0) return undefined;
   const style = document.createElement('style');
-  style.textContent = arriving
-    .map((id, index) => `::view-transition-new(${layerName(id)}):only-child { animation-delay: ${index * STAGGER_MS}ms; }`)
-    .join('\n');
+  style.textContent = rules.join('\n');
   document.head.append(style);
   return style;
 }
@@ -97,13 +173,14 @@ function popupOpen() {
 function updateUnderPopup(update: () => void) {
   const before = new Set([...document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')].map((item) => item.dataset.entryId));
   flushSync(update);
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reducedMotion()) return;
   for (const item of document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')) {
-    if (!before.has(item.dataset.entryId)) item.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+    if (!before.has(item.dataset.entryId)) item.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ENTER_MS, easing: EASE });
   }
 }
 
-export function feedTransition(update: () => void, layers: Layer = 'item') {
+/** `'poster'`: the change is list ↔ grid (the items that stay also start a little apart). */
+export function feedTransition(update: () => void, layers: 'item' | 'poster' = 'item') {
   const now = performance.now();
   const repeat = now - lastAt < REPEAT_MS;
   lastAt = now;
@@ -112,14 +189,14 @@ export function feedTransition(update: () => void, layers: Layer = 'item') {
     running ||
     repeat ||
     typeof document.startViewTransition !== 'function' ||
-    matchMedia('(prefers-reduced-motion: reduce)').matches ||
-    // A page transition (or the theme switch's crossfade) owns the screen while it runs.
+    reducedMotion() ||
+    // why: a page transition (or the theme switch's crossfade) owns the screen while it runs.
     (document as Document & { activeViewTransition?: ViewTransition | null }).activeViewTransition ||
     root.dataset.themeSwitching
   ) {
     running?.skipTransition();
     if (pending) {
-      // The running transition hasn't applied its change yet: queue this one right behind it, in order.
+      // why: the running transition hasn't applied its change yet; this one must follow it, in order.
       const first = pending;
       pending = () => {
         first();
@@ -134,9 +211,9 @@ export function feedTransition(update: () => void, layers: Layer = 'item') {
     updateUnderPopup(update);
     return;
   }
-  root.dataset.feedTransition = '';
-  layer = layers;
-  const before = nameItems();
+  const morph = layers === 'poster';
+  root.dataset.feedTransition = morph ? 'view' : 'list';
+  const before = nameBefore();
   let stagger: HTMLStyleElement | undefined;
   pending = update;
   const transition = document.startViewTransition(() => {
@@ -146,8 +223,8 @@ export function feedTransition(update: () => void, layers: Layer = 'item') {
       pending = undefined;
       apply?.();
     });
-    // Too many items for a layer each before: stay a plain crossfade after, too.
-    if (before.length > 0) stagger = staggerArrivals(before, nameItems());
+    const { staying, arriving } = nameAfter(new Set(before));
+    stagger = staggerLayers(staying, arriving, morph);
   });
   running = transition;
   void transition.finished.finally(() => {
@@ -160,24 +237,19 @@ export function feedTransition(update: () => void, layers: Layer = 'item') {
 }
 
 /**
- * First load: the first items on screen rise in one after another (WAAPI, the same motion as arriving items).
- * The caller skips it when the list was restored on Back (it should simply be there).
+ * First load: the items on screen rise in one after another (WAAPI, the same entrance as arriving items; the
+ * skeleton's copy leaves on the same beat, FeedSkeleton.tsx). The caller skips it when the list was restored on
+ * Back (it should simply be there).
  */
 export function staggerIn(container: ParentNode) {
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reducedMotion()) return;
   const height = window.innerHeight;
   const items = [...container.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')];
   const visible = items.filter((item) => {
     const box = item.getBoundingClientRect();
     return box.bottom > 0 && box.top < height;
   });
-  visible.slice(0, MAX_STAGGERED).forEach((item, index) => {
-    item.animate(
-      [
-        { opacity: 0, transform: 'translate3d(0, 10px, 0) scale(0.98)' },
-        { opacity: 1, transform: 'none' },
-      ],
-      { duration: 260, delay: index * STAGGER_MS, easing: SPRING, fill: 'backwards' },
-    );
+  visible.forEach((item, index) => {
+    item.animate(ENTER_KEYFRAMES, { duration: ENTER_MS, delay: staggerDelay(index), easing: EASE, fill: 'backwards' });
   });
 }

@@ -1,5 +1,6 @@
 import { SignInError, SignInLink, fetchPage } from './sign-in.tsx';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { startTransition, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AnimatedText } from '@/components/animated-text.tsx';
 
 import { PRODUCT_SLUG } from '../shared/brand.ts';
@@ -12,21 +13,28 @@ import {
 } from '../shared/review-suite.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { SwitchIconButton } from '@/components/icon-button.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select.tsx';
 import { cn } from '@/lib/utils.ts';
 
-import { copyText } from './clipboard.ts';
 import { productName } from './config.ts';
-import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
-import { tagOptions } from './index/feed.ts';
+import { useIndexLists } from './data/index-feed.ts';
+import { useAutoRetry } from './hooks/use-auto-retry.ts';
+import { useShownLists } from './hooks/use-shown-lists.ts';
+import { Feed, type FeedView } from './index/Feed.tsx';
+import { FeedReveal, FeedSkeleton } from './index/FeedSkeleton.tsx';
+import { knownShape, rememberShape } from './index/index-cache.ts';
+import { indexReplaysQuery, indexSuitesQuery } from './index/index-queries.ts';
+import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
 import { rememberListed } from './navigation.ts';
 import { CommandSearch, IndexIdentity, type PurposeCounts, PurposeSegments, ScopeBar } from './index/IndexHeader.tsx';
 import { pagePurposes } from './purposes.ts';
 import { useMediaQuery } from './media.ts';
-import { CompactFilterChips, SortMenu } from './ReplayIndexCompact.tsx';
-import { FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
+import { SortMenu } from './ReplayIndexCompact.tsx';
+import { FirstRun } from './index/first-run/FirstRun.tsx';
+import { activeFilterTokens, FilterMenu, FilterSheet, type LinkableHandle } from './index/FilterMenu.tsx';
+import { IndexEmpty, type IndexEmptyInput } from './index/index-empty.tsx';
+import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { MeContext } from './index/People.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, rememberIndexSearch } from './route.ts';
@@ -354,59 +362,6 @@ export function replayCount(entries: IndexEntry[]) {
   );
 }
 
-/** The last list this tab showed, so Back from a replay renders the feed at once (and at its scroll offset). */
-const INDEX_CACHE_KEY = `${PRODUCT_SLUG}-index-cache`;
-const INDEX_CACHE_MAX = 1_500_000;
-
-interface IndexCache {
-  search: string;
-  items: ReplaySummary[];
-  suites: ReviewSuiteIndexEntry[];
-  /** Newest capturedAt this tab has listed: anything newer on a refresh is new (and glows). */
-  newest?: string;
-}
-
-/** On Back/Forward only: the cached list for this request (a fresh visit always starts from the server). */
-function restoredIndex(search: string): IndexCache | undefined {
-  const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
-  if (navigation?.type !== 'back_forward') return undefined;
-  try {
-    const cache = JSON.parse(sessionStorage.getItem(INDEX_CACHE_KEY) ?? 'null') as IndexCache | null;
-    return cache && cache.search === search ? cache : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function saveIndexCache(cache: IndexCache) {
-  try {
-    const json = JSON.stringify(cache);
-    if (json.length <= INDEX_CACHE_MAX) sessionStorage.setItem(INDEX_CACHE_KEY, json);
-    else sessionStorage.removeItem(INDEX_CACHE_KEY);
-  } catch {
-    // Storage full or blocked: Back just loads the list again.
-  }
-}
-
-const newestOf = (items: readonly ReplaySummary[], since?: string) =>
-  items.reduce((newest, item) => (newest === undefined || item.capturedAt > newest ? item.capturedAt : newest), since);
-
-/** Rings new items once they're on screen (after any feed transition has placed them). */
-function markArrivals(ids: readonly string[]) {
-  window.setTimeout(() => {
-    for (const id of ids) {
-      const item = document.querySelector<HTMLElement>(`.feed-list [data-entry-id="${CSS.escape(id)}"]`);
-      if (!item) continue;
-      item.dataset.arrived = '';
-      window.setTimeout(() => delete item.dataset.arrived, 1600);
-    }
-  }, 50);
-}
-
-function sameIds(a: readonly { id: string }[], b: readonly { id: string }[]) {
-  return a.length === b.length && a.every((item, index) => item.id === b[index]!.id);
-}
-
 export function ReplayIndex() {
   const [filters, setFilters] = useState<ReplayFilters>(() => filtersFromSearch(location.search));
   const [forMe, setForMe] = useState(() => forMeFromSearch(location.search));
@@ -414,29 +369,35 @@ export function ReplayIndex() {
   const [me, setMe] = useState<Me>();
   /** The sessions request (and the Back cache's key): the filters, plus For me. */
   const listSearch = withForMe(searchFromFilters(filters), forMe, linked);
-  const [restored] = useState(() => restoredIndex(listSearch));
+  const suitesRequest = withForMe(INDEX_SUITES_URL, forMe, linked);
+  /** What the server filters (For me, plugin params); everything else runs here, on the keystroke (data/index-feed.ts). */
+  const baseSearch = withForMe(searchFromFilters(filters.params ? { params: filters.params } : {}), forMe, linked);
+  const queryClient = useQueryClient();
+  /** The whole feed came from the cache (persisted, preloaded or this tab's): it is simply there (no entrance), and only revalidates. */
+  const [instant] = useState(() =>
+    Boolean(
+      (queryClient.getQueryData(indexReplaysQuery(baseSearch).queryKey) ?? queryClient.getQueryData(indexReplaysQuery(listSearch).queryKey)) &&
+        queryClient.getQueryData(indexSuitesQuery(suitesRequest).queryKey),
+    ),
+  );
   const [kind, setKind] = useState<IndexKind | undefined>(() => kindFromSearch(location.search));
   const purposes = pagePurposes();
   const [purpose, setPurpose] = useState<string | undefined>(() => purposeFromSearch(location.search, purposes));
   const [query, setQuery] = useState(filters.q ?? '');
-  const [items, setItems] = useState<ReplaySummary[] | undefined>(restored?.items);
-  const [loadError, setError] = useState('');
-  const [authFailure, setAuthFailure] = useState<SignInError>();
-  const [settledFilters, setSettledFilters] = useState<ReplayFilters | undefined>(restored ? filters : undefined);
-  const [hosts, setHosts] = useState<string[]>(() =>
-    [...new Set((restored?.items ?? []).map((summary) => summary.host).filter(Boolean))].sort(),
-  );
-  // Every tag seen so far, like hosts: choosing one narrows the list, but the other tags stay on offer.
-  const [tags, setTags] = useState<string[]>(() => tagOptions(restored?.items ?? []).sort());
+  const [meFailure, setAuthFailure] = useState<SignInError>();
   const [sort, setSort] = useState<Sort>(() => sortFromSearch(location.search));
-  /** Undefined until the first suites request settles, so suite replays never flash as sessions. */
-  const [suites, setSuites] = useState<ReviewSuiteIndexEntry[] | undefined>(restored?.suites);
-  // What the feed shows right now (for refreshes) and the newest item this tab has listed (for arrivals).
-  const shown = useRef({ items: restored?.items, suites: restored?.suites });
-  useLayoutEffect(() => {
-    shown.current = { items, suites };
-  }, [items, suites]);
-  const newest = useRef(restored?.newest);
+  // The lists as collections (filters live, on the keystroke), then what the feed shows: a server change for the same
+  // view moves in place, and new arrivals glow (data/index-shown.ts). Suites stay undefined until first known, so
+  // suite replays never flash as sessions.
+  const lists = useIndexLists({ filters, baseSearch, listSearch, suitesRequest });
+  const { items, suites } = useShownLists(lists, listSearch);
+  const { hosts, tags } = lists;
+  const authFailure = meFailure ?? lists.authFailure;
+  const loadError = lists.error
+    ? lists.error instanceof TypeError
+      ? `Could not reach ${productName()}. Check your connection.`
+      : lists.error.message
+    : '';
   const [preferredView, setPreferredView] = useState<FeedView>(storedView);
   // Phones get a sort menu and a filter sheet instead of the row of selects (same URL state), and always the list.
   const compact = useMediaQuery(INDEX_COMPACT_QUERY);
@@ -451,7 +412,15 @@ export function ReplayIndex() {
     document.title = productName();
   }, []);
 
-  // Debounce typing into the search box; other filters apply immediately.
+  // Typing filters on the keystroke when the list is here; when the server filters (a big list), it waits for a pause.
+  const type = (value: string) => {
+    setQuery(value);
+    // The field updates at once; the feed follows in a transition, so a long list never holds up the next key.
+    if (lists.local)
+      startTransition(() =>
+        setFilters((current) => (current.q === (value || undefined) ? current : withFilter(current, 'q', value || undefined))),
+      );
+  };
   useEffect(() => {
     const timer = window.setTimeout(
       () => setFilters((current) => (current.q === (query || undefined) ? current : withFilter(current, 'q', query || undefined))),
@@ -508,80 +477,9 @@ export function ReplayIndex() {
     return () => observer.disconnect();
   }, []);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchPage(apiUrl(`replays${listSearch}`), { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Replays failed to load (${response.status})`);
-        return (await response.json()) as ReplaySummary[];
-      })
-      .then((summaries) => {
-        if (controller.signal.aborted) return;
-        const previous = shown.current.items;
-        // Newer than anything this tab listed before (e.g. your upload): it glows once it's in (feed.css).
-        const arrived = newest.current ? summaries.filter((summary) => summary.capturedAt > newest.current!) : [];
-        newest.current = newestOf(summaries, newest.current);
-        const apply = () => {
-          setError('');
-          setItems(summaries);
-          setHosts((known) => [...new Set([...known, ...summaries.map((summary) => summary.host).filter(Boolean)])].sort());
-          setTags((known) => [...new Set([...known, ...tagOptions(summaries)])].sort());
-        };
-        // A changed list (filters, search, a refresh with new items) moves in place; the same list just settles.
-        if (previous && !sameIds(previous, summaries)) feedTransition(apply);
-        else apply();
-        if (arrived.length > 0) markArrivals(arrived.map((summary) => `session:${summary.id}`));
-      })
-      .catch((reason: unknown) => {
-        if (controller.signal.aborted || (reason as Error).name === 'AbortError') return;
-        if (reason instanceof SignInError) setAuthFailure(reason);
-        // fetch rejects with a TypeError ("Failed to fetch") when the server cannot be reached at all.
-        setError(
-          reason instanceof TypeError
-            ? `Could not reach ${productName()}. Check your connection.`
-            : reason instanceof Error
-              ? reason.message
-              : String(reason),
-        );
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setSettledFilters(filters);
-      });
-    return () => controller.abort();
-    // `listSearch` follows `filters` and For me; changing For me or a linked handle also replaces `filters` (changeForMe).
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [filters]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    // Default cache mode so index.html's preload of this exact URL is reused; the server answers
-    // `Cache-Control: no-store`, so the list is never stale.
-    fetchPage(apiUrl(withForMe(INDEX_SUITES_URL, forMe, linked)), { signal: controller.signal })
-      .then(async (response) => {
-        if (!response.ok) throw new Error(`Review suites failed to load (${response.status})`);
-        return (await response.json()) as ReviewSuiteIndexEntry[];
-      })
-      .then((loaded) => {
-        const previous = shown.current.suites;
-        if (previous && !sameIds(previous, loaded)) feedTransition(() => setSuites(loaded));
-        else setSuites(loaded);
-        const runs = loaded.flatMap((suite) => suite.runDetails);
-        setHosts((known) => [...new Set([...known, ...runs.map((run) => run.replay?.host ?? '').filter(Boolean)])].sort());
-        setTags((known) => [...new Set([...known, ...tagOptions(runs.flatMap((run) => (run.replay ? [run.replay] : [])))])].sort());
-      })
-      .catch((reason: unknown) => {
-        if ((reason as Error).name === 'AbortError') return;
-        if (reason instanceof SignInError) setAuthFailure(reason);
-        console.warn('Review suites unavailable:', reason);
-        setSuites([]);
-      });
-    return () => controller.abort();
-  }, [forMe, linked]);
-
   const unsegmented = useMemo(
-    () => (items && suites ? sortEntries(buildIndexEntries(items, suites, settledFilters ?? filters, kind), sort) : undefined),
-    // Filter suites with the filters the session list was loaded for, so both kinds update together.
-    [items, suites, settledFilters, filters, kind, sort],
+    () => (items && suites ? sortEntries(buildIndexEntries(items, suites, filters, kind), sort) : undefined),
+    [items, suites, filters, kind, sort],
   );
   // The purpose segment narrows what the other filters keep (client-side, so every tab can show its count).
   const counts = useMemo(() => (purposes.length && unsegmented ? purposeCounts(unsegmented) : undefined), [purposes, unsegmented]);
@@ -597,19 +495,14 @@ export function ReplayIndex() {
     const top = indexHistoryState().indexScroll;
     if (top) window.scrollTo(0, top);
     // A fresh visit: the first items rise in. Back from a replay: the feed is simply there, where you left it.
-    if (!restored && !entered.current && shell.current) staggerIn(shell.current);
+    if (!instant && !entered.current && shell.current) staggerIn(shell.current);
     entered.current = true;
-  }, [listed, restored]);
+  }, [listed, instant]);
   // What a card opens is known before its bundle loads: the viewer's skeleton takes its shape (navigation.ts).
   useEffect(() => {
     if (items) rememberListed(items);
     for (const suite of suites ?? []) rememberListed((suite.runDetails ?? []).flatMap((run) => (run.replay ? [run.replay] : [])));
   }, [items, suites]);
-  // Remember the list for Back (only once the server has answered for the current filters).
-  useEffect(() => {
-    if (!items || !suites || settledFilters !== filters || (restored && items === restored.items)) return;
-    saveIndexCache({ search: listSearch, items, suites, ...(newest.current ? { newest: newest.current } : {}) });
-  }, [items, suites, settledFilters, filters, restored, listSearch]);
   const filtered = Boolean(
     filters.q || filters.host || filters.tag || filters.errors || filters.source || kind || purpose || forMe || hasPluginFilters(filters),
   );
@@ -620,9 +513,17 @@ export function ReplayIndex() {
     Boolean(items?.some((summary) => summary.people?.length)) ||
     Boolean(suites?.some((suite) => suite.people?.length || suite.runDetails.some((run) => run.replay?.people?.length)));
   const meContext = useMemo(() => ({ ...(me?.email ? { email: me.email } : {}), handles: linked }), [me, linked]);
-  const pending = settledFilters !== filters || query !== (filters.q ?? '') || !suites;
-  const error = settledFilters === filters ? loadError : '';
-  const connectionError = error.startsWith('Could not reach ');
+  const pending = lists.refreshing || query !== (filters.q ?? '') || !suites;
+  const error = items ? '' : loadError;
+  // why: a proxy in front of a stopped server answers 502–504; for the person that is "can't reach", not a server bug.
+  const unreachable = lists.error instanceof TypeError || /\((?:502|503|504)\)$/.test(lists.error?.message ?? '');
+  // why: a saved list (the persisted cache) beats a blank page; say it may be stale and keep trying.
+  const stale = Boolean(items && lists.error) && !authFailure;
+  const autoRetry = useAutoRetry({
+    failing: Boolean(lists.error) && !authFailure,
+    pending: lists.refreshing,
+    retry: () => void queryClient.refetchQueries({ queryKey: ['index'], type: 'active' }),
+  });
   const replays = entries ? replayCount(entries) : 0;
   const suiteRows = entries ? entries.filter((entry) => entry.kind === 'suite').length : 0;
 
@@ -674,18 +575,24 @@ export function ReplayIndex() {
     if (next !== preferredView) feedTransition(() => setPreferredView(next), 'poster');
     writeStorage(VIEW_KEY, next);
   };
-  const searchField = <CommandSearch value={query} onChange={setQuery} entries={entries} total={entries?.length} compact={compact} />;
+  const searchField = <CommandSearch value={query} onChange={type} entries={entries} total={entries?.length} compact={compact} />;
+  // The count stays on screen through refreshes (ScopeCount); the header's hairline shows a refresh past 300 ms.
+  const refreshing = Boolean(entries) && !error && lists.refreshing;
   const count = (
-    <span className={cn('scope-count', !filtered && !pending && 'sr-only')} role="status" aria-atomic="true">
-      {pending
-        ? items
-          ? 'Updating replays…'
-          : 'Loading replays…'
-        : !error && entries
-          ? `${replays} ${replays === 1 ? 'replay' : 'replays'}${suiteRows ? ` · ${suiteRows} ${suiteRows === 1 ? 'suite' : 'suites'}` : ''}`
-          : ''}
-    </span>
+    <ScopeCount
+      replays={entries ? replays : undefined}
+      suites={suiteRows}
+      shown={filtered}
+      state={error ? 'error' : !entries ? 'loading' : refreshing ? 'updating' : 'ready'}
+    />
   );
+  // How this exact view (filters, kind, purpose) looked: the next skeleton for it draws as many entries, with the
+  // room a leading suite stack peeks into.
+  const viewKey = `${listSearch}|${kind ?? ''}|${purpose ?? ''}`;
+  useEffect(() => {
+    if (entries && !pending && !error)
+      rememberShape(viewKey, { count: entries.length, leadingSuite: entries.slice(0, 4).some((entry) => entry.kind === 'suite') });
+  }, [entries, pending, error, viewKey]);
   const filterState = {
     filters,
     kind,
@@ -697,10 +604,40 @@ export function ReplayIndex() {
     clearFilters,
     ...(peopleOn ? { forMe, setForMe: changeForMe, handles: me?.people?.handles ?? [], linked, setLinked: changeLinked } : {}),
   };
+  // why: an empty view names what narrowed it (purpose first, then each filter) so the way back is obvious.
+  const pluginFilters = usePluginSnapshot().filters;
+  const purposeInfo = purpose ? purposes.find((item) => item.id === purpose) : undefined;
+  const narrowing = [
+    ...(purposeInfo ? [purposeInfo.label] : []),
+    ...activeFilterTokens(filterState, pluginFilters).map((token) => token.name),
+  ];
+  const searchText = filters.q?.trim() ?? '';
+  const emptyView: IndexEmptyInput | undefined =
+    !entries || entries.length > 0
+      ? undefined
+      : searchText
+        ? {
+            kind: 'search',
+            query: searchText,
+            narrowing,
+            onClearSearch: () => type(''),
+            onSearchEverything: () =>
+              feedTransition(() => {
+                setKind(undefined);
+                setForMe(false);
+                setPurpose(undefined);
+                setFilters((current) => (current.q ? { q: current.q } : {}));
+              }),
+          }
+        : purposeInfo && narrowing.length === 1
+          ? { kind: 'purpose', purpose: purposeInfo, onShowAll: () => changePurpose(undefined) }
+          : filtered
+            ? { kind: 'filtered', active: narrowing, onClearFilters: clear }
+            : undefined;
 
   return (
     <main className="index-shell" ref={shell}>
-      {/* One sticky block: identity + search + actions, then scope (count, filter, sort, layout), then chips. */}
+      {/* One sticky block: identity + search + actions, then the toolbar (purposes, active filters, filter, sort, layout). */}
       <div ref={toolbar} className="index-head">
         <Topbar
           root={<IndexIdentity />}
@@ -711,8 +648,11 @@ export function ReplayIndex() {
             </>
           }
         />
-        {purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : null}
-        <ScopeBar count={count}>
+        {/* One toolbar row: purpose tabs on the left; active filters (desktop), Filter, sort and layout on the right. */}
+        <ScopeBar
+          count={count}
+          lead={purposes.length ? <PurposeSegments purposes={purposes} value={purpose} counts={counts} onChange={changePurpose} /> : undefined}
+        >
           {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
           <SortMenu sort={sort} onChange={changeSort} />
           {compact ? null : (
@@ -727,40 +667,31 @@ export function ReplayIndex() {
             </div>
           )}
         </ScopeBar>
-        <CompactFilterChips {...filterState} />
+        <RefreshLine active={refreshing} />
       </div>
 
       <section className="index-body" aria-label="Replays" aria-busy={pending}>
         {/* Plugins' blocks above the list (registerIndexSection), given what the list shows. */}
         {items && !error ? <IndexSections summaries={items} /> : null}
         {authFailure ? <SignInLink error={authFailure} /> : null}
-        {error ? (
-          <div className="empty" role="alert">
-            <strong>{connectionError ? 'Can’t reach Replays' : 'Could not load replays'}</strong>
-            <span>{connectionError ? 'Check your connection or VPN, then try again.' : error}</span>
-            <button type="button" className="button secondary" onClick={() => window.location.reload()}>
-              Try again
-            </button>
-          </div>
-        ) : entries && entries.length === 0 ? (
-          filtered ? (
-            <div className="empty">
-              <strong>No replays match</strong>
-              <span>Clear a filter or switch purpose to see more replays.</span>
-              <button type="button" className="button secondary" onClick={clear}>
-                Clear filters
-              </button>
-            </div>
-          ) : (
-            <EmptyIndex onUpload={() => upload.current?.open()} />
-          )
-        ) : entries ? (
-          <MeContext value={meContext}>
-            <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
-          </MeContext>
-        ) : (
-          <FeedSkeleton view={view} />
-        )}
+        {stale ? <IndexEmpty input={{ kind: 'offline', connection: unreachable, retry: autoRetry }} /> : null}
+        {/* The skeleton (as many placeholders as this view last showed) hands over to what arrives (FeedSkeleton.tsx). */}
+        <FeedReveal
+          loading={!error && !entries}
+          skeleton={<FeedSkeleton view={view} grouped={sort.key === 'capturedAt'} known={knownShape(viewKey)} />}
+        >
+          {error ? (
+            <IndexEmpty input={{ kind: 'error', product: productName(), connection: unreachable, reason: error, retry: autoRetry }} />
+          ) : emptyView ? (
+            <IndexEmpty input={emptyView} onUpload={() => upload.current?.open()} />
+          ) : entries && entries.length === 0 ? (
+            <FirstRun onUpload={() => upload.current?.open()} purposes={purposes} />
+          ) : entries ? (
+            <MeContext value={meContext}>
+              <Feed entries={entries} view={view} grouped={sort.key === 'capturedAt'} query={filters.q?.trim() ?? ''} />
+            </MeContext>
+          ) : null}
+        </FeedReveal>
       </section>
       {dropOverlay}
     </main>
@@ -828,115 +759,3 @@ function withFilter<K extends keyof ReplayFilters>(filters: ReplayFilters, key: 
   return next;
 }
 
-function EmptyIndex({ onUpload }: { onUpload: () => void }) {
-  const uploadUrl = `${location.origin}${apiUrl('replays')}`;
-  const askText = '@Toki record a replay of creating a project on track.toggl.space';
-  const [copied, setCopied] = useState(false);
-  return (
-    <div className="empty-index">
-      <header className="empty-index-intro">
-        <span className="empty-index-eyebrow">Replays</span>
-        <h2>See what happened in a browser session</h2>
-        <p>Page, console and network activity, recorded together on one timeline.</p>
-      </header>
-      <div className="empty-index-ways">
-        <section className="empty-index-way empty-index-toki">
-          <div className="empty-index-way-top">
-            <h3>Ask Toki</h3>
-            <span className="empty-index-badge">Fastest</span>
-          </div>
-          <p>Describe the flow in Slack. Toki records it and shares the replay link.</p>
-          <blockquote>
-            <span>@Toki</span> record a replay of creating a project on track.toggl.space
-          </blockquote>
-          <div className="empty-index-actions">
-            <a className="button" href="https://app.slack.com/client/" target="_blank" rel="noreferrer">
-              Open Slack
-            </a>
-            <button className="button secondary" type="button" onClick={() => void copyText(askText).then(setCopied)}>
-              {copied ? 'Copied' : 'Copy request'}
-            </button>
-          </div>
-        </section>
-        <section className="empty-index-way">
-          <div className="empty-index-way-top">
-            <h3>Upload a replay</h3>
-          </div>
-          <p>
-            Bring a <code>replay.json</code> or an rrweb export recorded with inputs masked.
-          </p>
-          <Button className="empty-index-drop" onClick={onUpload}>
-            Drop a file anywhere or choose one
-          </Button>
-        </section>
-        <section className="empty-index-way">
-          <div className="empty-index-way-top">
-            <h3>Capture from code</h3>
-            <span className="empty-index-badge muted">Engineers</span>
-          </div>
-          <p>
-            Use the capture CLI from a <code>hazem3500/replays</code> checkout.
-          </p>
-          <details className="empty-index-engineer">
-            <summary>Show capture and import commands</summary>
-            <CommandBlock
-              label="Capture a scripted run from a hazem3500/replays checkout"
-              command={`pnpm capture --url https://example.com --title "Example" --steps '[{"kind":"wait","ms":800}]' --upload-url ${uploadUrl}`}
-            />
-            <CommandBlock
-              label="Import an rrweb recording"
-              command={`pnpm cli import --rrweb events.json --title "Checkout bug" --upload-url ${uploadUrl}`}
-            />
-          </details>
-        </section>
-      </div>
-      <div className="empty-index-uses">
-        <div>
-          <strong>Triage</strong>
-          <span>Reproduce a bug with errors and failed requests attached.</span>
-        </div>
-        <div>
-          <strong>Design review</strong>
-          <span>Step through a flow and compare it with the design.</span>
-        </div>
-        <div>
-          <strong>Walkthrough</strong>
-          <span>Show how a flow works, step by step.</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** A shell command that scrolls sideways inside its own box; Copy sits outside the scroll area so it is always reachable. */
-function CommandBlock({ label, command }: { label: string; command: string }) {
-  const [copied, setCopied] = useState<boolean>();
-  useEffect(() => {
-    if (copied === undefined) return;
-    const timer = window.setTimeout(() => setCopied(undefined), 2000);
-    return () => window.clearTimeout(timer);
-  }, [copied]);
-  return (
-    <figure className="command-block">
-      <figcaption>
-        <span>{label}</span>
-        <button
-          type="button"
-          className="copy-command"
-          aria-label={`Copy command: ${label}`}
-          onClick={() => void copyText(command).then(setCopied)}
-        >
-          {copied === undefined ? 'Copy' : copied ? 'Copied' : 'Copy failed'}
-        </button>
-      </figcaption>
-      {/* Reachable by keyboard so a long line can be scrolled sideways. */}
-      {/* oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex */}
-      <pre tabIndex={0} aria-label={label}>
-        <code>{command}</code>
-      </pre>
-      <span className="visually-hidden" role="status">
-        {copied === undefined ? '' : copied ? 'Command copied' : 'Could not copy the command'}
-      </span>
-    </figure>
-  );
-}

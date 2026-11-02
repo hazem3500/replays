@@ -1,14 +1,23 @@
+/* invariant: tailwind.css is the first import. The bundle's CSS follows import order and tailwind.css declares the
+   cascade-layer order (theme < base < app < components < utilities); a component stylesheet with an `@layer app`
+   block loaded first would make `app` the lowest layer, so Tailwind's `--ease-out: var(--ease-out)` would win and
+   resolve the app's tokens to nothing. */
+import './tailwind.css';
 import { StrictMode } from 'react';
 import { flushSync } from 'react-dom';
 import { createRoot } from 'react-dom/client';
 
 import { App } from './App.tsx';
 import { registerCommentsFeature } from './comments/feature.tsx';
+import { persistIndexQueries } from './data/persist.ts';
 import { betaMalleable } from './malleable/flag.ts';
 import { loadClientPlugins } from './plugins/load.ts';
-import './tailwind.css';
+import { queryClient } from './queries.ts';
 
 registerCommentsFeature();
+
+// why: the first render stays synchronous (page transitions snapshot it); restored lists land within the skeleton delay.
+void persistIndexQueries(queryClient);
 
 const root = document.querySelector('#root');
 if (!root) throw new Error('Missing #root');

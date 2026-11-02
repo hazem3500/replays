@@ -6,6 +6,7 @@ import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts
 import { readTextWithProgress } from './load-progress.ts';
 import { rememberServedPurpose } from './purposes.ts';
 import { apiUrl } from './route.ts';
+import { hydrateEmbedded } from './embedded-data.ts';
 
 /*
  * The client's data cache (TanStack Query). Pages are separate documents (cross-document view
@@ -75,6 +76,8 @@ export const replayQuery = (id: string) =>
     queryFn: ({ signal }) => fetchReplay(id, signal),
     staleTime: Number.POSITIVE_INFINITY,
     gcTime: 10 * 60_000,
+    // Up to ~20 MB: never dehydrated into a server-rendered page.
+    meta: { ssr: false },
   });
 
 /** Suites gain runs while a review runs: shown from cache at once, refreshed in the background. */
@@ -188,3 +191,5 @@ export function createQueryClient() {
 }
 
 export const queryClient = createQueryClient();
+// The page's embedded first-paint data; main.tsx then restores the persisted index lists (data/persist.ts).
+hydrateEmbedded(queryClient);

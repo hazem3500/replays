@@ -1,4 +1,3 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
@@ -12,11 +11,13 @@ import {
 } from '../../shared/comments.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
 import { copyText } from '../clipboard.ts';
+import { type CommentState, commentState, useCommentDrafts } from '../data/comment-drafts.ts';
+import { useCommentRows } from '../data/comments.ts';
 import { commentPermalink, parsePermalink } from '../permalink.ts';
 import { usePlayer } from '../player.ts';
 import { notify } from '../toast.ts';
 import { formatClock } from '../../shared/replay.ts';
-import { commentsQuery, createComment, deleteComment, editComment, type NewCommentInput, resolveComment } from './api.ts';
+import type { NewCommentInput } from './api.ts';
 
 export interface PlacedThread extends CommentThread {
   placement: Placement;
@@ -32,6 +33,8 @@ export interface CommentsApi {
   replayId: string;
   loaded: boolean;
   error: string | undefined;
+  /** Loads the comments again (the failed-load state's "Try again"). */
+  retry: () => void;
   me: CommentsResponse['me'] | undefined;
   /** No sign-in: comments are labelled "Anonymous" and anyone may change anonymous ones. */
   anonymous: boolean;
@@ -55,6 +58,11 @@ export interface CommentsApi {
   edit: (id: string, body: string) => Promise<PublicComment>;
   resolve: (id: string, resolved: boolean) => Promise<PublicComment>;
   remove: (id: string) => Promise<void>;
+  /** Sends a refused comment again. */
+  resend: (id: string) => Promise<PublicComment | undefined>;
+  /** Forgets a refused comment. */
+  discard: (id: string) => void;
+  stateOf: (comment: PublicComment) => CommentState;
   copyLink: (thread: PlacedThread) => void;
   /** URL of the original recording at a removed comment's moment (the edited timeline cannot show it). */
   originalHref: (comment: PublicComment) => string;
@@ -87,16 +95,16 @@ export function CommentsProvider({
   children: ReactNode;
 }) {
   const player = usePlayer();
-  const client = useQueryClient();
-  const query = useQuery(commentsQuery(replayId));
-  const key = commentsQuery(replayId).queryKey;
+  const rows = useCommentRows(replayId);
+  const { loaded, error, me, anonymous, retry, edit, resolve, remove } = rows;
+  const { comments, create, resend, discard } = useCommentDrafts(replayId, rows);
   const [selectedId, setSelectedId] = useState<string>();
   const [composerRequest, setComposerRequest] = useState<ComposerRequest>();
   const requests = useRef(0);
 
   const threads = useMemo<PlacedThread[]>(
-    () => threadsOf(query.data?.comments ?? []).map((thread) => ({ ...thread, placement: placeComment(thread.root.at, timeline) })),
-    [query.data?.comments, timeline],
+    () => threadsOf(comments).map((thread) => ({ ...thread, placement: placeComment(thread.root.at, timeline) })),
+    [comments, timeline],
   );
   const pins = useMemo(
     () =>
@@ -105,7 +113,7 @@ export function CommentsProvider({
         .sort((a, b) => a.at - b.at),
     [threads],
   );
-  const count = useMemo(() => (query.data?.comments ?? []).filter((comment) => !comment.emoji).length, [query.data?.comments]);
+  const count = useMemo(() => comments.filter((comment) => !comment.emoji).length, [comments]);
 
   const threadsRef = useRef(threads);
   useEffect(() => {
@@ -134,7 +142,7 @@ export function CommentsProvider({
   // A comment permalink (#comment-<id>) opens the panel and seeks to the comment, once the comments have loaded.
   const opened = useRef<string | undefined>(undefined);
   useEffect(() => {
-    if (!query.data) return;
+    if (!loaded) return;
     const follow = () => {
       const target = parsePermalink(location.search, location.hash, 0).comment;
       if (!target || opened.current === target) return;
@@ -150,7 +158,7 @@ export function CommentsProvider({
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
-  }, [query.data, reveal]);
+  }, [loaded, reveal]);
 
   const startComment = useCallback(() => {
     player.pause();
@@ -158,26 +166,14 @@ export function CommentsProvider({
     setComposerRequest({ id: ++requests.current, at: player.getTime() });
   }, [player]);
 
-  const merge = useCallback(
-    (change: (comments: PublicComment[]) => PublicComment[]) =>
-      client.setQueryData<CommentsResponse>(key, (old) => (old ? { ...old, comments: change(old.comments) } : old)),
-    [client, key],
-  );
-  const replace = useCallback(
-    (saved: PublicComment) => {
-      merge((comments) => comments.map((comment) => (comment.id === saved.id ? saved : comment)));
-      return saved;
-    },
-    [merge],
-  );
-
   const api = useMemo<CommentsApi>(
     () => ({
       replayId,
-      loaded: query.data !== undefined,
-      error: query.error ? query.error.message : undefined,
-      me: query.data?.me,
-      anonymous: Boolean(query.data?.anonymous),
+      loaded,
+      error: error ? error.message : undefined,
+      retry,
+      me,
+      anonymous,
       threads,
       pins,
       count,
@@ -188,22 +184,16 @@ export function CommentsProvider({
       consumeComposerRequest: () => setComposerRequest(undefined),
       startComment,
       sourceTime: (watched) => sourceTimeAt(watched, timeline),
-      async create(input) {
-        const saved = await createComment(replayId, input);
-        merge((comments) => [...comments, saved]);
-        return saved;
-      },
-      async edit(id, body) {
-        return replace(await editComment(replayId, id, body));
-      },
-      async resolve(id, resolved) {
-        return replace(await resolveComment(replayId, id, resolved));
-      },
+      create,
+      edit,
+      resolve,
       async remove(id) {
-        await deleteComment(replayId, id);
-        merge((comments) => comments.filter((comment) => comment.id !== id && comment.parentId !== id));
+        await remove(id);
         setSelectedId((current) => (current === id ? undefined : current));
       },
+      resend,
+      discard,
+      stateOf: commentState,
       copyLink(thread) {
         const at = thread.placement.state === 'visible' ? thread.placement.at : undefined;
         const url = commentPermalink(location.href, thread.root.id, at);
@@ -221,7 +211,28 @@ export function CommentsProvider({
         return url.toString();
       },
     }),
-    [composerRequest, count, merge, pins, query.data, query.error, replace, replayId, reveal, selectedId, startComment, threads, timeline],
+    [
+      anonymous,
+      composerRequest,
+      count,
+      create,
+      discard,
+      edit,
+      error,
+      loaded,
+      me,
+      pins,
+      remove,
+      replayId,
+      resend,
+      resolve,
+      retry,
+      reveal,
+      selectedId,
+      startComment,
+      threads,
+      timeline,
+    ],
   );
 
   return <CommentsContext.Provider value={api}>{children}</CommentsContext.Provider>;

@@ -107,7 +107,7 @@ describe('replay server', () => {
       auth: 'none',
       plugins: [],
       purposes: [],
-      beta: { editor: false, malleable: false },
+      beta: { editor: false, malleable: false, groupedInspector: false },
       editing: { enabled: false },
       comments: false,
       core: coreVersion(),

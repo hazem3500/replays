@@ -1,0 +1,64 @@
+/* The inspector's one tab row (InspectorNavigation.tsx): tabs, group hairlines, the gliding underline, "More". */
+.inspector-tabs {
+  --inspector-tab-pad: 10px;
+  --inspector-tab-group-gap: 9px;
+  --inspector-tab-indicator: 2px;
+  --inspector-tab-glide: 150ms;
+  --inspector-badge-height: 16px;
+  --inspector-tab-fade: 24px;
+}
+.inspector-navigation { display: contents; }
+.inspector-navigation-tabs { position: relative; display: flex; min-width: 0; flex: 1 1 auto; align-items: stretch; gap: 2px; overflow: hidden; }
+.inspector-navigation-tabs > [role="tab"] {
+  position: relative; display: inline-flex; min-width: 44px; min-height: var(--inspector-tab-height); flex: 0 0 auto; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 var(--inspector-tab-pad); border: 0; border-radius: 0; background: transparent; color: var(--text-secondary); font: inherit; font-size: var(--text-sm); font-weight: 500; white-space: nowrap; cursor: pointer;
+  transition: color 120ms var(--ease-out);
+}
+.inspector-navigation-tabs > :is([role="tab"][aria-selected="true"], [data-pending]) { color: var(--text); }
+.inspector-navigation-tabs:has([data-pending]) > [aria-selected="true"]:not([data-pending]) { color: var(--text-secondary); }
+@media (hover: hover) { .inspector-navigation-tabs > [role="tab"]:hover { color: var(--text); } }
+/* Groups (Steps | diagnostics | Context | more) part with a hairline, not a second row. */
+.inspector-navigation-tabs > [data-group-start] { margin-inline-start: var(--inspector-tab-group-gap); }
+.inspector-navigation-tabs > [data-group-start]::before {
+  position: absolute; top: 30%; bottom: 30%; left: calc(var(--inspector-tab-group-gap) / -2 - 1.5px); width: 1px; background: var(--line); content: '';
+}
+/* Spilled tabs stay laid out (so they can be measured) but out of flow, unseen and unfocusable; "More" lists them. */
+.inspector-navigation-tabs > [data-overflowed] { position: absolute; visibility: hidden; pointer-events: none; }
+.inspector-navigation-tabs[data-scroll] { overflow-x: auto; overscroll-behavior-inline: contain; scrollbar-width: none; }
+.inspector-navigation-tabs[data-scroll]::-webkit-scrollbar { display: none; }
+.inspector-navigation-tabs[data-fade-start] { mask-image: linear-gradient(to right, transparent, #000 var(--inspector-tab-fade)); }
+.inspector-navigation-tabs[data-fade-end] { mask-image: linear-gradient(to left, transparent, #000 var(--inspector-tab-fade)); }
+.inspector-navigation-tabs[data-fade-start][data-fade-end] { mask-image: linear-gradient(to right, transparent, #000 var(--inspector-tab-fade), #000 calc(100% - var(--inspector-tab-fade)), transparent); }
+/* 100 px wide, scaled to the tab (use-tab-indicator.ts): transform-only, so it glides on the compositor. */
+.inspector-navigation-indicator { position: absolute; z-index: 1; bottom: 0; left: 0; width: 100px; height: var(--inspector-tab-indicator); opacity: 0; pointer-events: none; transform-origin: 0 0; transition: transform var(--inspector-tab-glide) var(--ease-out); }
+.inspector-navigation-indicator::after { position: absolute; inset: 0 7%; border-radius: var(--inspector-tab-indicator); background: var(--accent); content: ''; }
+.inspector-navigation-icon { display: inline-flex; flex: none; }
+.inspector-navigation-icon svg { width: 16px; height: 16px; }
+.inspector-navigation-count {
+  min-width: var(--inspector-badge-height); height: var(--inspector-badge-height); display: inline-grid; place-items: center; padding: 0 5px; border-radius: 999px;
+  background: var(--surface-hover); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; line-height: 1; font-variant-numeric: tabular-nums;
+}
+.inspector-navigation-count[data-tone="danger"] { background: var(--danger-soft); color: var(--danger); }
+.inspector-navigation-count[data-tone="warning"] { background: color-mix(in oklab, var(--warning) 16%, transparent); color: var(--warning); }
+.inspector-navigation-more {
+  display: inline-flex; min-height: var(--inspector-tab-height); flex: 0 0 auto; align-items: center; gap: 4px; padding: 0 8px; border: 0; background: transparent;
+  color: var(--text-secondary); font: inherit; font-size: var(--text-sm); font-weight: 500; white-space: nowrap; cursor: pointer;
+}
+.inspector-navigation-more svg { width: 14px; height: 14px; }
+.inspector-navigation-more[data-popup-open] { color: var(--text); }
+@media (hover: hover) { .inspector-navigation-more:hover { color: var(--text); } }
+.inspector-navigation-more[data-empty] { position: absolute; visibility: hidden; pointer-events: none; }
+.inspector-navigation-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--warning); }
+.inspector-navigation-dot[data-tone="danger"] { background: var(--danger); }
+.inspector-navigation :is([role="tab"], .inspector-navigation-more):focus-visible { z-index: 2; outline: 2px solid var(--accent); outline-offset: -2px; }
+.inspector-tabs > .inspector-collapse, .inspector-tabs > .panel-expand,
+.inspector-navigation > .inspector-collapse, .inspector-navigation > .panel-expand { order: 2; flex: 0 0 auto; margin-left: auto; }
+@media (max-width: 600px) {
+  .inspector-tabs { --inspector-tab-pad: 8px; --inspector-tab-group-gap: 7px; }
+}
+@media (max-width: 370px) {
+  .inspector-tabs { --inspector-tab-pad: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .inspector-navigation-indicator { transition: none; }
+}

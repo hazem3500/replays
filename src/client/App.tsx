@@ -1,6 +1,6 @@
 import { SignInError, SignInLink } from './sign-in.tsx';
 import { QueryClientProvider, useQuery } from '@tanstack/react-query';
-import { Activity, lazy, Suspense, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { Activity, lazy, Suspense, useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 
 import { Toaster } from '@/components/ui/sonner.tsx';
 import { TooltipProvider } from '@/components/ui/tooltip.tsx';
@@ -13,8 +13,12 @@ import { currentIndexGeneration, currentRoute, installNavigation, setRoutePrepar
 import { indexHref, replayHref, type Route } from './route.ts';
 import { notify } from './toast.ts';
 import { ThemeContext, useTheme } from './theme.tsx';
-import { EditorSkeleton, LoadingSwap, ViewerSkeleton } from './ViewerSkeleton.tsx';
+import { EditorSkeleton, LoadingSwap, readOpenHint, ViewerSkeleton } from './ViewerSkeleton.tsx';
 import { ComparisonLoading, ComparisonLoadBoundary } from './comparison/ComparisonLoading.tsx';
+import { ProgressiveViewerShell } from './ProgressiveViewerShell.tsx';
+import { MOBILE_QUERY, useMediaQuery } from './media.ts';
+import { defaultInspectorPanel } from './viewer/default-panel.ts';
+import { hasIssues } from './viewer/has-issues.ts';
 
 // The index ships alone; the viewer (rrweb + player) and the suite workspace are split chunks.
 // Each loader is memoised so the route can start the download before React asks for it.
@@ -81,8 +85,8 @@ function inCache(key: readonly unknown[]) {
 }
 
 /**
- * Readies a page before a same-document navigation renders it (navigation.ts waits a short budget for this):
- * its code, and its data when the Query cache has it or a prefetch is already on the way. Uncached data is
+ * Warms a page for same-document navigation without holding the route update: its code, and its data when
+ * the Query cache has it or a prefetch is already on the way. Uncached data is
  * left to the page itself, which shows the skeleton meanwhile.
  */
 function prepareRoute(next: Route) {
@@ -188,6 +192,19 @@ function ReplayPage({ id }: { id: string }) {
   // The saved edits come with it (small, revalidated); a failed load shows the replay as recorded.
   const edits = useQuery(editsQuery(id));
   const editsSettled = edits.data !== undefined || edits.isError;
+  const mobile = useMediaQuery(MOBILE_QUERY);
+  const [activePanel, setActivePanel] = useState(() => defaultInspectorPanel({ mobile, steps: readOpenHint()?.steps }));
+  const issues = bundle ? hasIssues(bundle) : false;
+  const [navigationFocused, setNavigationFocused] = useState(false);
+  const [panelTouched, setPanelTouched] = useState(false);
+  const onPanelChange = useCallback((panel: string) => {
+    setPanelTouched(true);
+    setActivePanel(panel);
+  }, []);
+  const onNavigationFocusChange = useCallback((focused: boolean) => {
+    setNavigationFocused(focused);
+  }, []);
+  const selectedPanel = !panelTouched && bundle ? defaultInspectorPanel({ mobile, steps: bundle.steps.length, issues }) : activePanel;
   useEffect(() => {
     if (edits.isError && bundle && !(edits.error instanceof SignInError))
       notify('Could not load this replay’s edits', 'info', 'Showing it as recorded.');
@@ -239,10 +256,27 @@ function ReplayPage({ id }: { id: string }) {
 
   // Fast loads skip the delayed skeleton; ready content replaces it immediately.
   return (
-    <LoadingSwap ready={Boolean(bundle) && ready && editsSettled} skeleton={<ViewerSkeleton />}>
+    <LoadingSwap
+      ready={Boolean(bundle) && ready && editsSettled}
+      skeleton={
+        <ProgressiveViewerShell
+          {...(bundle ? { title: bundle.meta.title, bundle } : {})}
+          activePanel={selectedPanel}
+          onPanelChange={onPanelChange}
+          onNavigationFocusChange={onNavigationFocusChange}
+        />
+      }
+    >
       {bundle && editsSettled ? (
         <Suspense fallback={<ViewerSkeleton />}>
-          <Viewer bundle={bundle} edits={edits.data} />
+          <Viewer
+            bundle={bundle}
+            edits={edits.data}
+            initialPanel={selectedPanel}
+            preferInitialPanel={panelTouched}
+            onPanelChange={onPanelChange}
+            focusPanelOnMount={navigationFocused}
+          />
         </Suspense>
       ) : null}
     </LoadingSwap>

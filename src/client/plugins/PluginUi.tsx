@@ -88,6 +88,8 @@ export function PluginMount<C>({
   testId,
   className,
   inline = false,
+  slot,
+  itemId,
 }: {
   render: (container: HTMLElement, context: C) => Cleanup;
   context: C;
@@ -96,6 +98,8 @@ export function PluginMount<C>({
   className?: string;
   /** A `span` (for a slot inside a line of text) instead of a `div`. */
   inline?: boolean;
+  slot?: string;
+  itemId?: string;
 }) {
   const host = useRef<HTMLDivElement & HTMLSpanElement>(null);
   useEffect(() => {
@@ -119,7 +123,7 @@ export function PluginMount<C>({
     };
   }, [render, context, label]);
   const Tag = inline ? 'span' : 'div';
-  return <Tag ref={host} className={className ?? 'plugin-mount'} data-testid={testId} />;
+  return <Tag ref={host} className={className ?? 'plugin-mount'} data-testid={testId} data-slot={slot} data-slot-item={itemId} />;
 }
 
 /** An action's glyph: its own icon (a safe image URL, drawn as an <img>), else the puzzle piece. */
@@ -171,6 +175,8 @@ export function usePluginMenu(
               tooltipSide="bottom"
               tooltipAlign="end"
               className="plugin-bar-action"
+              data-slot="viewer.actions"
+              data-slot-item={action.key}
               data-testid={`plugin-action:${action.plugin}:${action.definition.id}`}
               onClick={() => runAction(action.definition, contextFor(action.plugin))}
             >
@@ -204,6 +210,8 @@ export function usePluginMenu(
     ? createPortal(
         <aside
           className="plugin-drawer"
+          data-slot="viewer.panels.side"
+          data-slot-item={active.key}
           aria-label={active.definition.title}
           data-testid={`plugin-panel:${active.plugin}:${active.definition.id}`}
         >

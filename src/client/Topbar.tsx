@@ -4,7 +4,7 @@ import { AnimatedText } from '@/components/animated-text.tsx';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
-import { Button, buttonVariants } from '@/components/ui/button.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 import { Tooltip, TooltipContent, TooltipTrigger, useCanHover } from '@/components/ui/tooltip.tsx';
-import { cn } from '@/lib/utils.ts';
-
 import { indexReturnHref } from './route.ts';
+import { swappingInPlace } from './navigation.ts';
 import { productName } from './config.ts';
+import { ViewerBackLink, ViewerPageTitle, ViewerTopbarFrame } from './viewer/presentation.tsx';
 import { ThemeSwitch, useThemeControls } from './theme.tsx';
 import { SettingsButton } from './settings/Settings.tsx';
 
@@ -77,38 +77,37 @@ export function Topbar({
   /** The title this bar replaces (switching suite runs remounts the page): it morphs from that one. */
   titleFrom?: string;
 }) {
+  // The page/run snapshot already animates the whole header. Capture its final title rather than
+  // AnimatedText's outgoing layer, and keep the label morph for changes outside navigation.
+  const previousTitle = swappingInPlace() ? undefined : titleFrom;
   return (
-    <header className={cn('topbar app-topbar', compact && 'topbar-compact')}>
+    <ViewerTopbarFrame compact={compact}>
       {title === undefined && root ? (
         root
       ) : title === undefined ? (
         // The index is the root itself: its h1 is the product's name.
-        <h1 className="topbar-title topbar-root">
+        <ViewerPageTitle root>
           <span className="topbar-title-text">{productName()}</span>
-        </h1>
+        </ViewerPageTitle>
       ) : (
         <>
           <Hint label={backLabel} side="bottom" align="start">
-            <a
-              href={backHref ?? indexReturnHref()}
-              className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'topbar-back [&_svg:not([class*=size-])]:size-4')}
-              aria-label={backLabel}
-            >
+            <ViewerBackLink href={backHref ?? indexReturnHref()} label={backLabel}>
               <AnimatedIcon name="chevron-left" />
-            </a>
+            </ViewerBackLink>
           </Hint>
           {titleMenu ? (
             <TopbarTitleMenu
               title={title}
               menu={titleMenu}
-              {...(titleFrom ? { from: titleFrom } : {})}
+              {...(previousTitle ? { from: previousTitle } : {})}
               {...(prefix ? { prefix } : {})}
               {...(titleId ? { id: titleId } : {})}
             />
           ) : (
             <TopbarTitle
               title={title}
-              {...(titleFrom ? { from: titleFrom } : {})}
+              {...(previousTitle ? { from: previousTitle } : {})}
               {...(prefix ? { prefix } : {})}
               {...(titleId ? { id: titleId } : {})}
             />
@@ -123,7 +122,7 @@ export function Topbar({
         {title === undefined ? <SettingsButton /> : null}
         <MoreMenu items={menuItems} extra={menu} footer={menuFooter} theme={compact} always={alwaysMenu} />
       </div>
-    </header>
+    </ViewerTopbarFrame>
   );
 }
 
@@ -133,7 +132,7 @@ function TopbarTitle({ title, from, prefix, id }: { title: string; from?: string
   const [open, setOpen] = useState(false);
   const canHover = useCanHover();
   return (
-    <h1 id={id} className="topbar-title">
+    <ViewerPageTitle id={id}>
       {prefix ? <span className="topbar-prefix">{prefix}</span> : null}
       <Tooltip
         disabled={!canHover}
@@ -150,7 +149,7 @@ function TopbarTitle({ title, from, prefix, id }: { title: string; from?: string
           {title}
         </TooltipContent>
       </Tooltip>
-    </h1>
+    </ViewerPageTitle>
   );
 }
 
@@ -172,7 +171,7 @@ function TopbarTitleMenu({
   menu: ReactNode;
 }) {
   return (
-    <h1 id={id} className="topbar-title topbar-title-menu">
+    <ViewerPageTitle id={id} className="topbar-title-menu">
       <DropdownMenu>
         <DropdownMenuTrigger render={<button type="button" className="topbar-title-trigger" data-testid="title-menu" />}>
           {prefix ? (
@@ -189,7 +188,7 @@ function TopbarTitleMenu({
           {menu}
         </DropdownMenuContent>
       </DropdownMenu>
-    </h1>
+    </ViewerPageTitle>
   );
 }
 

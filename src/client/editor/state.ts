@@ -11,6 +11,7 @@ import {
   normalizeEdits,
   proposeWaitCuts,
   type ReplayCut,
+  type ReplayHighlight,
   type ReplayEdits,
   sameEdits,
 } from '../../shared/edits.ts';
@@ -30,6 +31,7 @@ import { isTypingTarget, type KeyLike, type TargetLike } from '../shortcuts.ts';
 export type Selection =
   | { kind: 'trim' }
   | { kind: 'cut'; id: string }
+  | { kind: 'highlight'; id: string }
   | { kind: EffectKind; id: string }
   | { kind: 'range'; from: number; to: number }
   | undefined;
@@ -72,6 +74,7 @@ export function initialEditorState(edits: ReplayEdits = EMPTY_EDITS): EditorStat
 function validSelection(edits: ReplayEdits, selection: Selection): Selection {
   if (selection?.kind === 'trim') return edits.trim ? selection : undefined;
   if (selection?.kind === 'cut') return edits.cuts.some((cut) => cut.id === selection.id) ? selection : undefined;
+  if (selection?.kind === 'highlight') return edits.highlights?.some((item) => item.id === selection.id) ? selection : undefined;
   if (selection && selection.kind !== 'range')
     return effectList(edits, selection.kind).some((item) => item.id === selection.id) ? selection : undefined;
   return selection;
@@ -201,6 +204,56 @@ export function moveCut(edits: ReplayEdits, id: string, edge: 'from' | 'to' | 'm
 
 export function removeCut(edits: ReplayEdits, id: string): ReplayEdits {
   return { ...edits, cuts: edits.cuts.filter((cut) => cut.id !== id) };
+}
+
+function nextHighlightId(edits: ReplayEdits) {
+  const taken = new Set((edits.highlights ?? []).map((highlight) => highlight.id));
+  for (let index = 1; ; index++) if (!taken.has(`highlight-${index}`)) return `highlight-${index}`;
+}
+
+export function addPointHighlight(edits: ReplayEdits, at: number, duration: number) {
+  const time = clamp(at, 0, duration);
+  const existing = edits.highlights?.find((highlight) => highlight.kind === 'point' && highlight.at === time);
+  if (existing) return { edits, id: existing.id };
+  const id = nextHighlightId(edits);
+  const highlight: ReplayHighlight = { id, kind: 'point', at: time };
+  return { edits: { ...edits, highlights: [...(edits.highlights ?? []), highlight] }, id };
+}
+
+export function addPeriodHighlight(edits: ReplayEdits, from: number, to: number, duration: number) {
+  const start = clamp(Math.min(from, to), 0, duration);
+  const end = clamp(Math.max(from, to), 0, duration);
+  if (end - start < MIN_EDIT_MS) return undefined;
+  const id = nextHighlightId(edits);
+  const highlight: ReplayHighlight = { id, kind: 'period', from: start, to: end };
+  return { edits: { ...edits, highlights: [...(edits.highlights ?? []), highlight] }, id };
+}
+
+export function updateHighlight(edits: ReplayEdits, id: string, patch: Partial<ReplayHighlight>, duration: number): ReplayEdits {
+  return {
+    ...edits,
+    highlights: (edits.highlights ?? []).map((highlight) => {
+      if (highlight.id !== id) return highlight;
+      const label = Object.hasOwn(patch, 'label') ? patch.label?.trim().slice(0, 120) : highlight.label;
+      if (highlight.kind === 'point') {
+        const at = patch.kind === 'point' ? patch.at : undefined;
+        const next = { ...highlight, ...(typeof at === 'number' && Number.isFinite(at) ? { at: clamp(at, 0, duration) } : {}) };
+        return label ? { ...next, label } : (({ label: _label, ...rest }) => rest)(next);
+      }
+      const from = patch.kind === 'period' && typeof patch.from === 'number' && Number.isFinite(patch.from) ? patch.from : highlight.from;
+      const to = patch.kind === 'period' && typeof patch.to === 'number' && Number.isFinite(patch.to) ? patch.to : highlight.to;
+      const start = clamp(from, 0, Math.max(0, duration - MIN_EDIT_MS));
+      const end = clamp(to, start + MIN_EDIT_MS, duration);
+      const next = { ...highlight, from: start, to: end };
+      return label ? { ...next, label } : (({ label: _label, ...rest }) => rest)(next);
+    }),
+  };
+}
+
+export function removeHighlight(edits: ReplayEdits, id: string): ReplayEdits {
+  const highlights = (edits.highlights ?? []).filter((highlight) => highlight.id !== id);
+  const { highlights: _old, ...rest } = edits;
+  return highlights.length ? { ...rest, highlights } : rest;
 }
 
 export function setCutLabel(edits: ReplayEdits, id: string, label: string): ReplayEdits {
@@ -376,6 +429,7 @@ export type EditorShortcut =
   | 'speed'
   | 'blur'
   | 'caption'
+  | 'highlight'
   | 'apply'
   | 'delete'
   | 'deselect';
@@ -444,6 +498,9 @@ export function editorShortcutFor(event: KeyLike, target?: TargetLike | null, ma
     case 't':
     case 'T':
       return 'caption';
+    case 'm':
+    case 'M':
+      return 'highlight';
     case 'Delete':
     case 'Backspace':
       return 'delete';

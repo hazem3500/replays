@@ -1,0 +1,56 @@
+/*
+ * FeedSkeleton.tsx: the real feed, pending. Every text in it is redacted to a soft bar drawn on the text's own line
+ * boxes (so a two-line title gets two bars of its real line lengths), icons, badges and avatars keep their room but
+ * vanish, posters are plain tiles. The list fades in after --skeleton-delay and then breathes; FeedReveal hands
+ * over to the arriving content. Imported after feed.css (FeedSkeleton.tsx), so within the `app` layer these rules
+ * follow the feed's own.
+ */
+@layer properties, theme, base, app, components, utilities;
+
+@layer app {
+  .feed-pending {
+    /* A band the height of the text's capitals, soft at its top and bottom edges, in the middle of each line box. */
+    --redact: color-mix(in srgb, var(--text) 8%, transparent);
+    --redact-band: linear-gradient(to bottom, transparent, var(--redact) 18%, var(--redact) 82%, transparent);
+    pointer-events: none;
+    user-select: none;
+    animation: skeleton-appear 240ms var(--ease-out) var(--skeleton-delay) both;
+  }
+  :root[data-theme="light"] .feed-pending { --redact: color-mix(in srgb, var(--text) 7%, transparent); }
+  /* One breathing layer for the whole list (opacity only): calm, and cheap however many cards there are. */
+  .feed-pending .feed-list { animation: feed-pending-breathe 2.4s ease-in-out calc(var(--skeleton-delay) + 240ms) infinite; }
+  @keyframes feed-pending-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.62; } }
+
+  /* Redaction wins over every colour the feed gives its text (a mode, not a style). */
+  .feed-pending :is(.feed-title-text, .feed-facts > *, .feed-when > *, .source-lead) {
+    color: transparent !important;
+    background: var(--redact-band) 0 55% / 100% 0.68em no-repeat;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  .feed-pending .feed-item :is(*, *::before) { color: transparent !important; }
+  /* Grid cards give the source line the row's full width; its bar should be as long as its words. The facts keep
+     their own row, as in the real card. */
+  .feed-pending .feed-list[data-view="grid"] .feed-meta .source-lead:not(.suite-kind) { flex: 0 1 auto; }
+  .feed-pending .feed-list[data-view="grid"] .feed-session .feed-meta .feed-facts { flex-basis: 100%; }
+  /* The day heading keeps its band and background; the label is a stand-in, so its bar is a nominal width. */
+  .feed-pending .feed-day { color: transparent; background: var(--redact-band) var(--gutter) 55% / 56px 0.68em no-repeat, var(--surface); }
+  .feed-pending :is(svg, .poster-badge, .people-stack, .feed-ext) { visibility: hidden; }
+  /* feed.css gives a grid without suites 12 px less room on top (no stack peeks above it); match whichever led. */
+  .feed-pending[data-leading-suite] .feed-list[data-view="grid"] { padding-top: 28px; }
+
+  /* FeedReveal: the pending feed's copy fades out over the arriving content (the real cards stagger in beneath). */
+  .feed-reveal { position: relative; }
+  .feed-reveal-ghost { position: absolute; z-index: 1; top: 0; right: 0; left: 0; display: none; pointer-events: none; }
+  .feed-reveal-ghost[data-leaving] { display: block; }
+  /* Each stand-in leaves on the cards' clock (list-motion.ts via FeedReveal: --leave-ms, --leave-delay). */
+  .feed-reveal-ghost .feed-pending, .feed-reveal-ghost .feed-pending .feed-list { animation: none; }
+  .feed-reveal-ghost .feed-item { animation: skeleton-leave var(--leave-ms, 120ms) var(--leave-ease, var(--ease-out)) var(--leave-delay, 0ms) both; }
+  .feed-reveal-ghost .feed-day { animation: skeleton-leave var(--leave-ms, 120ms) var(--leave-ease, var(--ease-out)) both; }
+  @keyframes skeleton-leave { from { opacity: 1; } to { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .feed-pending .feed-list { animation: none; }
+    .feed-reveal-ghost { display: none; }
+  }
+}

@@ -109,7 +109,7 @@ export function publicConfig(
     purposes?: readonly PurposeInfo[];
     /** Plugin index filters (`api.indexFilter`): which `x-*` params `GET /api/replays` understands. */
     indexFilters?: Array<{ plugin: string; id: string; param: string }>;
-    beta?: { editor: boolean; malleable?: boolean };
+    beta?: { editor: boolean; malleable?: boolean; groupedInspector?: boolean };
     comments?: boolean;
     editing?: { enabled: boolean };
     versions?: HostVersions;
@@ -127,7 +127,7 @@ export function publicConfig(
     plugins: extra.plugins ?? [],
     purposes: extra.purposes ?? [],
     ...(extra.indexFilters ? { indexFilters: extra.indexFilters } : {}),
-    beta: extra.beta ?? { editor: false, malleable: false },
+    beta: extra.beta ?? { editor: false, malleable: false, groupedInspector: false },
     ...(extra.editing ? { editing: extra.editing } : {}),
     ...(extra.comments === undefined ? {} : { comments: extra.comments }),
     ...(extra.versions ? { core: extra.versions.core } : {}),

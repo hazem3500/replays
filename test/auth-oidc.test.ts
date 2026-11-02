@@ -160,6 +160,8 @@ interface Setup {
   basePath?: string;
   sessionHours?: number;
   signIn?: { path: string };
+  deviceFlow?: boolean;
+  publicClient?: boolean;
 }
 
 async function start(setup: Setup = {}) {
@@ -174,9 +176,10 @@ async function start(setup: Setup = {}) {
     auth: oidcAuth({
       issuer: idp.issuer,
       clientId: CLIENT_ID,
-      clientSecret: CLIENT_SECRET,
+      ...(setup.publicClient ? {} : { clientSecret: CLIENT_SECRET }),
       sessionSecret: SESSION_SECRET,
       publicOrigin: PUBLIC_ORIGIN,
+      ...(setup.deviceFlow ? { deviceFlow: true } : {}),
       now: () => clock.now,
       ...(setup.allow ? { allow: setup.allow } : {}),
       ...(setup.audience ? { audience: setup.audience } : {}),
@@ -611,6 +614,26 @@ describe('bearer tokens for machine uploads', () => {
     const other = mint(bearerClaims(idp.issuer, { email: 'eve@evil.test' }));
     expect((await get('/api/me', { authorization: `Bearer ${ok}` })).status).toBe(200);
     expect((await get('/api/me', { authorization: `Bearer ${other}` })).status).toBe(401);
+  });
+
+  it('restricts opt-in upload-scoped tokens to replay and video uploads plus self-status', async () => {
+    const { idp, get, origin } = await start({ deviceFlow: true, publicClient: true, audience: 'replays-api' });
+    const token = mint(bearerClaims(idp.issuer, { aud: 'replays-api', email: 'ci@example.com', scope: 'openid replays:upload' }));
+    expect((await upload(origin, token, 'upload-only')).status).toBe(201);
+    expect((await fetch(`${origin}/api/replays/upload-only/video`, {
+      method: 'PUT',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'video/mp4' },
+      body: new Uint8Array([0, 1, 2]),
+    })).status).toBe(201);
+    expect((await get('/api/cli/auth/status', { authorization: `Bearer ${token}` })).status).toBe(200);
+    expect((await get('/api/replays/upload-only', { authorization: `Bearer ${token}` })).status).toBe(403);
+    expect((await get('/api/me', { authorization: `Bearer ${token}` })).status).toBe(403);
+    expect((await fetch(`${origin}/api/replays/import`, { method: 'POST', headers: { authorization: `Bearer ${token}` } })).status).toBe(403);
+    expect((await fetch(`${origin}/api/replays/upload-only/video`, { method: 'GET', headers: { authorization: `Bearer ${token}` } })).status).toBe(403);
+    const noScope = mint(bearerClaims(idp.issuer, { aud: 'replays-api', email: 'ci@example.com' }));
+    expect((await upload(origin, noScope, 'missing-scope')).status).toBe(401);
+    const broadAudience = mint(bearerClaims(idp.issuer, { aud: ['replays-api', 'other-api'], email: 'ci@example.com', scope: 'replays:upload' }));
+    expect((await upload(origin, broadAudience, 'broad-audience')).status).toBe(401);
   });
 });
 

@@ -4,18 +4,31 @@ import { type KeyboardEvent, type ReactNode, useCallback, useEffect, useId, useL
 import { activeThread, MAX_COMMENT_BODY, type PublicComment, REACTION_EMOJI } from '../../shared/comments.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { Button } from '@/components/ui/button.tsx';
+import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { Hint } from '@/components/icon-button.tsx';
-import { formatRelative } from '../format.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
 import { notify } from '../toast.ts';
-import { Empty } from '../viewer/Empty.tsx';
 import { Avatar } from './Avatar.tsx';
+import { commentsEmptyStrings } from './strings.ts';
+import { CommentNotSentError } from '../data/comment-drafts.ts';
+import type { NewCommentInput } from './api.ts';
+import { CommentWhen, notSent } from './CommentStatus.tsx';
 import { type CommentsApi, type PlacedThread, useComments } from './CommentsProvider.tsx';
+import { PanelPending } from '../viewer/PanelPending.tsx';
 import './comments.css';
 
 /** A refused or failed write, told plainly (the server's reason when it gave one: rate limit, permission, limits). */
 function fail(error: unknown) {
   notify(error instanceof Error ? error.message : 'Could not save the comment', 'error');
+}
+
+/** A new comment, reply or reaction: on screen at once; a refusal keeps it as "Not sent" and offers Retry. */
+function post(comments: CommentsApi, input: NewCommentInput) {
+  return comments.create(input).catch((error: unknown) => {
+    if (error instanceof CommentNotSentError) notSent(error, comments);
+    else fail(error);
+    return undefined;
+  });
 }
 
 /**
@@ -25,7 +38,7 @@ function fail(error: unknown) {
  */
 export function CommentsPanel() {
   const comments = useComments();
-  if (!comments) return null;
+  if (!comments) return <PanelPending panel="comments" />;
   return <PanelBody comments={comments} />;
 }
 
@@ -54,13 +67,7 @@ function PanelBody({ comments }: { comments: CommentsApi }) {
     if (selectedId) scrollToThread(list.current, selectedId);
   }, [selectedId]);
 
-  const react = async (emoji: string) => {
-    try {
-      await comments.create({ emoji, at: comments.sourceTime(player.getTime()) });
-    } catch (error) {
-      fail(error);
-    }
-  };
+  const react = (emoji: string) => void post(comments, { emoji, at: comments.sourceTime(player.getTime()) });
 
   return (
     <div ref={list} className="table-scroll comments" data-testid="comments-panel">
@@ -90,11 +97,25 @@ function PanelBody({ comments }: { comments: CommentsApi }) {
           ))}
         </div>
         {comments.error && !comments.loaded ? (
-          <Empty title="Comments didn’t load">{comments.error}</Empty>
+          <EmptyState
+            variant="compact"
+            tone="error"
+            title={commentsEmptyStrings.failedTitle}
+            body={comments.error}
+            actions={[{ id: 'retry', label: 'Try again', primary: true, onSelect: comments.retry }]}
+            testId="comments-error"
+          />
         ) : !comments.loaded ? (
-          <p className="comments-loading">Loading comments…</p>
+          <PanelPending panel="comments" />
         ) : threads.length === 0 ? (
-          <Empty title="No comments yet">Press M to comment at the current time, or write one for the whole replay.</Empty>
+          <EmptyState
+            variant="compact"
+            icon="comment"
+            title={commentsEmptyStrings.emptyTitle}
+            body={commentsEmptyStrings.emptyBody}
+            actions={[{ id: 'comment', label: commentsEmptyStrings.commentHere, primary: true, onSelect: comments.startComment }]}
+            testId="comments-empty"
+          />
         ) : (
           <ol className="comment-list" data-testid="comment-list">
             {threads.map((thread) => (
@@ -124,7 +145,6 @@ function Composer({ comments }: { comments: CommentsApi }) {
   const [text, setText] = useState('');
   const [pinned, setPinned] = useState(true);
   const [pinAt, setPinAt] = useState(() => player.getTime());
-  const [pending, setPending] = useState(false);
   const id = useId();
   const { composerRequest, consumeComposerRequest } = comments;
 
@@ -144,20 +164,10 @@ function Composer({ comments }: { comments: CommentsApi }) {
   }, [composerRequest, consumeComposerRequest]);
 
   const submit = async () => {
-    if (!text.trim() || pending) return;
-    setPending(true);
-    try {
-      const saved = await comments.create({
-        body: text,
-        ...(pinned ? { at: comments.sourceTime(pinAt) } : {}),
-      });
-      setText('');
-      comments.select(saved.id);
-    } catch (error) {
-      fail(error);
-    } finally {
-      setPending(false);
-    }
+    if (!text.trim()) return;
+    setText('');
+    const saved = await post(comments, { body: text, ...(pinned ? { at: comments.sourceTime(pinAt) } : {}) });
+    if (saved) comments.select(saved.id);
   };
   const onKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
@@ -219,7 +229,7 @@ function Composer({ comments }: { comments: CommentsApi }) {
             {MAX_COMMENT_BODY - text.length}
           </span>
         ) : null}
-        <Button size="sm" disabled={!text.trim() || pending} onClick={() => void submit()} data-testid="comment-submit">
+        <Button size="sm" disabled={!text.trim()} onClick={() => void submit()} data-testid="comment-submit">
           <SendIcon aria-hidden="true" />
           Comment
         </Button>
@@ -354,7 +364,13 @@ function CommentRow({
   };
   const author = comment.author;
   return (
-    <div className="comment" data-testid="comment" data-comment-id={comment.id} data-mine={comment.mine || undefined}>
+    <div
+      className="comment"
+      data-testid="comment"
+      data-comment-id={comment.id}
+      data-mine={comment.mine || undefined}
+      data-state={comments.stateOf(comment)}
+    >
       <Avatar name={author.name} avatarUrl={author.avatarUrl} anonymous={Boolean(author.anonymous)} />
       <div className="comment-main">
         <div className="comment-head">
@@ -362,9 +378,7 @@ function CommentRow({
             {author.name}
           </strong>
           {lead}
-          <time dateTime={comment.createdAt} title={new Date(comment.createdAt).toLocaleString()} className="comment-when">
-            {formatRelative(comment.createdAt, undefined, 'narrow')}
-          </time>
+          <CommentWhen comment={comment} comments={comments} />
           {comment.editedAt ? <span className="comment-when">· edited</span> : null}
         </div>
         {editing ? (
@@ -378,7 +392,7 @@ function CommentRow({
             {comment.body}
           </p>
         )}
-        {editing ? null : (
+        {editing || comments.stateOf(comment) !== 'sent' ? null : (
           <div className="comment-actions">
             {actions}
             {comment.mine && !comment.emoji ? (
@@ -435,10 +449,14 @@ function ReplyBox({
   }, []);
   const submit = async () => {
     if (!text.trim() || pending) return;
+    if (!editing) {
+      onDone();
+      await post(comments, { body: text, parentId: parentId! });
+      return;
+    }
     setPending(true);
     try {
-      if (editing) await comments.edit(editing.id, text);
-      else await comments.create({ body: text, parentId: parentId! });
+      await comments.edit(editing.id, text);
       onDone();
     } catch (error) {
       fail(error);

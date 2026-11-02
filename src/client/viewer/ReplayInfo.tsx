@@ -11,7 +11,6 @@ import {
   MonitorIcon,
   UploadIcon,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { type ReactNode, useRef } from 'react';
 
 import { CopyButton } from '@/components/copy-button.tsx';
@@ -24,7 +23,8 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerTrigger } from '@/components/
 import { formatClock, type ReplayBundle } from '../../shared/replay.ts';
 import { formatRelative } from '../format.ts';
 import { useViewer } from './context.ts';
-import { retentionLabel, retentionQuery } from './keep.ts';
+import { useRetention } from '../data/retention.ts';
+import { retentionLabel } from './keep.ts';
 
 /** The review suite a run belongs to, for the details popover. */
 export interface SuiteDetails {
@@ -87,7 +87,7 @@ function Detail({
 
 /** "Expires in N days", "Kept by …" or "Doesn't expire" (src/shared/retention.ts); nothing until it loads. */
 function RetentionDetail({ id }: { id: string }) {
-  const { data: retention } = useQuery(retentionQuery(id));
+  const retention = useRetention('replay', id);
   if (!retention) return null;
   const title = retention.kept
     ? `Kept ${new Date(retention.kept.at).toLocaleString()}`

@@ -5,12 +5,17 @@ import { PluginMount } from '../src/client/plugins/PluginUi.tsx';
 import { SourceLead } from '../src/client/index/SourceLine.tsx';
 import type { ReplayBundle } from '../src/shared/replay.ts';
 
-const meta = { title: 'Viewer/States', parameters: { layout: 'fullscreen' } } satisfies Meta;
+const meta = {
+  title: 'App/Viewer/Loading and integration',
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Loading: Story = { render: () => <ViewerSkeleton /> };
-export const LoadingSuite: Story = { render: () => <ViewerSkeleton suite label="Loading review suite" /> };
+export const LoadingSuite: Story = {
+  render: () => <ViewerSkeleton suite label="Loading review suite" />,
+};
 
 const bundle = {
   meta: {
@@ -28,11 +33,19 @@ const bundle = {
     capturedAt: '2026-10-25T10:00:00Z',
     app: { name: 'Example host', environment: 'staging' },
     fields: { environment: 'staging', release: 'v1.2.3', customerSession: false },
-    sources: [{ provider: 'github', ref: 'example/shop#42', url: 'https://github.com/example/shop/pull/42', label: 'Checkout fix' }],
+    sources: [
+      {
+        provider: 'github',
+        ref: 'example/shop#42',
+        url: 'https://github.com/example/shop/pull/42',
+        label: 'Checkout fix',
+      },
+    ],
   },
 } satisfies Pick<ReplayBundle, 'meta' | 'context'>;
 
 export const HostContext: Story = {
+  parameters: { layout: 'padded' },
   render: () => (
     <div style={{ height: 500 }}>
       <ContextPanel
@@ -49,8 +62,9 @@ export const HostContext: Story = {
     </div>
   ),
 };
-export const EmptyContext: Story = { render: () => <ContextPanel bundle={{ meta: bundle.meta }} /> };
+export const EmptyContext: Story = { parameters: { layout: 'padded' }, render: () => <ContextPanel bundle={{ meta: bundle.meta }} /> };
 export const SourceLinks: Story = {
+  parameters: { layout: 'padded' },
   render: () => (
     <div style={{ padding: 24 }}>
       <SourceLead sources={bundle.context!.sources} origin="agent" />
@@ -65,9 +79,13 @@ const renderHost = (container: HTMLElement, context: { title: string }) => {
   return () => line.remove();
 };
 export const HostPlugin: Story = {
+  parameters: { layout: 'padded' },
   render: () => <PluginMount label="Company handoff" render={renderHost} context={{ title: 'Staging · reviewer@example.com' }} />,
 };
 const broken = () => {
   throw new Error('Fixture plugin failed');
 };
-export const PluginError: Story = { render: () => <PluginMount label="Company handoff" render={broken} context={{}} /> };
+export const PluginError: Story = {
+  parameters: { layout: 'padded' },
+  render: () => <PluginMount label="Company handoff" render={broken} context={{}} />,
+};

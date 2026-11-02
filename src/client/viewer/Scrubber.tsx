@@ -1,12 +1,17 @@
-import { memo, type RefObject, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { memo, type CSSProperties, type RefObject, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
+import type { ProjectedHighlight } from '../../shared/highlights.ts';
 import type { ReplayError } from '../issues.ts';
 import { usePlayer } from '../player.ts';
 import { positionText } from '../timeline.ts';
 import { FeatureScrubberOverlays } from '../plugins/features.tsx';
 import { PluginTimelineTracks } from '../plugins/PluginSlots.tsx';
+import { resolveSlot } from '../plugins/registry.ts';
+import type { SlotDescriptor } from '../plugins/slots.ts';
+import { useViewer } from './context.ts';
 import { setPreviewTime } from './preview-time.ts';
+import { highlightTargetOffsets } from '../highlights-layout.ts';
 import {
   barBox,
   clampCentre,
@@ -42,6 +47,7 @@ const SEEK_GLIDE_MS = 220;
 const SNAP_PX = 4;
 /** After the last seek (a drag, a key, a jump) the knob stays this long, then fades. */
 const KNOB_LINGER_MS = 800;
+const ANNOTATION_DRAG_PX = 5;
 
 function useTrackWidth(element: RefObject<HTMLElement | null>) {
   const [width, setWidth] = useState(0);
@@ -66,7 +72,23 @@ function useTrackWidth(element: RefObject<HTMLElement | null>) {
  * gives the 28 px (40 px on touch) hit area. Everything that moves with the playhead or the pointer is
  * written straight to the DOM, so neither playback nor hovering re-renders React.
  */
+const TRACKS_SLOT = 'viewer.scrubber.tracks';
+const NO_STEPS: ReplayStep[] = [];
+const NO_ERRORS: ReplayError[] = [];
+
+/**
+ * The seek bar's built-in tracks as `viewer.scrubber.tracks` items, so the platform's hide applies to them like to plugin
+ * tracks (which the registry ranks after these). Their geometry is fixed (steps shape the bars, errors notch them,
+ * highlights sit above), so order only places plugin rows; a hidden steps track leaves one unbroken bar.
+ */
+const BUILTIN_TRACKS: readonly SlotDescriptor<undefined, null>[] = [
+  { id: 'core:steps', order: 100, render: () => null },
+  { id: 'core:errors', order: 200, render: () => null },
+  { id: 'core:highlights', order: 300, render: () => null },
+];
+
 export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: ReplayError[] }) {
+  const { highlights = [] } = useViewer();
   const player = usePlayer();
   const root = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLInputElement>(null);
@@ -76,7 +98,10 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
   const bubble = useRef<HTMLDivElement>(null);
   const bubbleTime = useRef<HTMLSpanElement>(null);
   const bubbleLabel = useRef<HTMLSpanElement>(null);
+  const beginAnnotationScrub = useRef<((event: PointerEvent) => void) | undefined>(undefined);
+  const ignoreAnnotationClick = useRef(false);
   const width = useTrackWidth(root);
+  const [selectedHighlight, setSelectedHighlight] = useState<string>();
 
   // The range's value and text, which assistive tech reads, follow pauses and explicit seeks but not the
   // playback clock: a slider the keyboard sits on would otherwise be announced on every frame while the replay plays.
@@ -97,12 +122,15 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
     };
   }, [player]);
 
-  const segments = useMemo(() => scrubberSegments(steps, player.duration, width), [player.duration, steps, width]);
+  const tracks = new Set(resolveSlot(TRACKS_SLOT, BUILTIN_TRACKS, undefined).map((track) => track.id));
+  const shownSteps = tracks.has('core:steps') ? steps : NO_STEPS;
+  const shownErrors = tracks.has('core:errors') ? errors : NO_ERRORS;
+  const segments = useMemo(() => scrubberSegments(shownSteps, player.duration, width), [player.duration, shownSteps, width]);
   // Error notches: merged within 4 px, and moved out of any gap onto the nearest bar.
   const errorMarks = useMemo(() => {
     const boxes = segments.map((segment, index) => barBox(segment, index, segments.length, player.duration, width));
-    return scrubberMarks([], errors, player.duration, width, ERROR_NOTCH_GAP).map((mark) => ({ ...mark, x: notchX(mark.x, boxes) }));
-  }, [errors, player.duration, segments, width]);
+    return scrubberMarks([], shownErrors, player.duration, width, ERROR_NOTCH_GAP).map((mark) => ({ ...mark, x: notchX(mark.x, boxes) }));
+  }, [shownErrors, player.duration, segments, width]);
 
   // The interaction engine: plain listeners and refs, rebuilt only when the bars, marks or width change.
   useLayoutEffect(() => {
@@ -402,6 +430,8 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
       alt = event.altKey;
     };
     let pointer = -1;
+    let annotationPointer = false;
+    let annotationStartX = 0;
     const onDown = (event: PointerEvent) => {
       if (event.button !== 0) return;
       pointer = event.pointerId;
@@ -420,15 +450,29 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
       show(at, true);
       setPreviewTime(toTime(at));
       if (event.pointerType === 'mouse') return;
+      if (annotationPointer) {
+        seekTo(event.clientX);
+        return;
+      }
       range.setPointerCapture(event.pointerId);
       seekTo(event.clientX);
     };
     const onDrag = (event: PointerEvent) => {
-      if (event.pointerId === pointer && event.pointerType !== 'mouse' && range.hasPointerCapture(event.pointerId)) seekTo(event.clientX);
+      if (event.pointerId !== pointer) return;
+      if (annotationPointer && Math.abs(event.clientX - annotationStartX) >= ANNOTATION_DRAG_PX) ignoreAnnotationClick.current = true;
+      if (event.pointerType !== 'mouse' && range.hasPointerCapture(event.pointerId)) seekTo(event.clientX);
+    };
+    const onAnnotationMove = (event: PointerEvent) => {
+      if (!annotationPointer || event.pointerId !== pointer) return;
+      if (Math.abs(event.clientX - annotationStartX) >= ANNOTATION_DRAG_PX) {
+        ignoreAnnotationClick.current = true;
+        seekTo(event.clientX);
+      }
     };
     const onUp = (event: PointerEvent) => {
       if (!scrubbing || event.pointerId !== pointer) return;
       pointer = -1;
+      annotationPointer = false;
       scrubbing = false;
       delete element.dataset.scrubbing;
       seeking();
@@ -443,6 +487,16 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
         hide();
         setPreviewTime(null);
       }
+      if (ignoreAnnotationClick.current)
+        window.setTimeout(() => {
+          ignoreAnnotationClick.current = false;
+        }, 0);
+    };
+
+    beginAnnotationScrub.current = (event) => {
+      annotationPointer = true;
+      annotationStartX = event.clientX;
+      onDown(event);
     };
 
     // ---- Keyboard: no hover bubble, except naming a step a key lands exactly on ----
@@ -485,6 +539,7 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
     range.addEventListener('blur', onBlur);
     window.addEventListener('pointerup', onUp, true);
     window.addEventListener('pointercancel', onUp, true);
+    window.addEventListener('pointermove', onAnnotationMove, true);
     window.addEventListener('pointermove', trackAlt, true);
     window.addEventListener('keydown', trackAlt, true);
     window.addEventListener('keyup', trackAlt, true);
@@ -503,6 +558,7 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
       range.removeEventListener('blur', onBlur);
       window.removeEventListener('pointerup', onUp, true);
       window.removeEventListener('pointercancel', onUp, true);
+      window.removeEventListener('pointermove', onAnnotationMove, true);
       window.removeEventListener('pointermove', trackAlt, true);
       window.removeEventListener('keydown', trackAlt, true);
       window.removeEventListener('keyup', trackAlt, true);
@@ -510,17 +566,22 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
       window.clearTimeout(linger);
       cancelAnimationFrame(frame);
       if (scrubbing) player.endScrub();
+      beginAnnotationScrub.current = undefined;
       setPreviewTime(null);
     };
   }, [errorMarks, player, segments, steps, width]);
 
   return (
-    <div ref={root} className="scrubber">
+    <div ref={root} className="scrubber" data-slot={TRACKS_SLOT}>
       <div className="scrubber-rail" aria-hidden="true">
         <div className="scrubber-key-ring" />
         <div ref={bars} className="scrubber-bars">
-          <Segments segments={segments} width={width} />
-          <ErrorNotches marks={errorMarks} />
+          <div className="scrubber-track" data-slot-item="core:steps">
+            <Segments segments={segments} width={width} />
+          </div>
+          <div className="scrubber-track" data-slot-item="core:errors">
+            <ErrorNotches marks={errorMarks} />
+          </div>
         </div>
       </div>
       <input
@@ -543,12 +604,112 @@ export function Scrubber({ steps, errors }: { steps: ReplayStep[]; errors: Repla
       </div>
       <FeatureScrubberOverlays width={width} inset={INSET} />
       <PluginTimelineTracks width={width} inset={INSET} />
+      {tracks.has('core:highlights') ? (
+        <div className="scrubber-track" data-slot-item="core:highlights">
+          <HighlightMarks
+            marks={highlights}
+            width={width}
+            duration={player.duration}
+            selected={selectedHighlight}
+            onPointerDown={(event) => beginAnnotationScrub.current?.(event)}
+            onFocus={setSelectedHighlight}
+            onSelect={(id, at) => {
+              if (ignoreAnnotationClick.current) {
+                ignoreAnnotationClick.current = false;
+                return;
+              }
+              setSelectedHighlight(id);
+              player.seek(at);
+            }}
+          />
+        </div>
+      ) : null}
       <div ref={anchor} className="scrubber-bubble-anchor" aria-hidden="true">
         <div ref={bubble} className="scrubber-bubble" data-visible="false" data-kind="time" data-testid="scrubber-bubble">
           <span ref={bubbleTime} className="scrubber-bubble-time" data-testid="scrubber-bubble-time" />
           <span ref={bubbleLabel} className="scrubber-bubble-label" data-testid="scrubber-bubble-label" />
         </div>
       </div>
+    </div>
+  );
+}
+
+function HighlightMarks({
+  marks,
+  width,
+  duration,
+  selected,
+  onPointerDown,
+  onFocus,
+  onSelect,
+}: {
+  marks: ProjectedHighlight[];
+  width: number;
+  duration: number;
+  selected?: string | undefined;
+  onPointerDown: (event: PointerEvent) => void;
+  onFocus: (id: string) => void;
+  onSelect: (id: string, at: number) => void;
+}) {
+  if (width <= 0 || duration <= 0 || marks.length === 0) return null;
+  const targetSize = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches ? 44 : 28;
+  const x = (time: number) => Math.min(width, Math.max(0, (time / duration) * width));
+  const markers = marks.flatMap((mark) => {
+    const from = mark.kind === 'point' ? mark.at : mark.from;
+    const to = mark.kind === 'point' ? mark.at : mark.to;
+    return [from, ...(mark.kind === 'period' ? [to] : [])].map((at, index) => ({ mark, at, index, x: x(at) }));
+  });
+  const offsets = highlightTargetOffsets(
+    markers.map((marker) => marker.x),
+    width,
+    targetSize,
+  );
+  let markerIndex = 0;
+  return (
+    <div className="scrubber-highlight-layer" data-testid="scrubber-highlights">
+      {marks.map((mark) => {
+        const from = mark.kind === 'point' ? mark.at : mark.from;
+        const to = mark.kind === 'point' ? mark.at : mark.to;
+        const label = mark.label?.trim();
+        const title = `${mark.kind === 'point' ? 'Point highlight' : 'Period highlight'}${label ? `: ${label}` : ''}`;
+        return (
+          <span key={`${mark.id}-${mark.kind === 'period' ? mark.part : 'point'}`} className="scrubber-highlight" data-kind={mark.kind}>
+            {mark.kind === 'period' ? (
+              <span
+                className="scrubber-highlight-band"
+                aria-hidden="true"
+                style={{ left: `${x(from)}px`, width: `${Math.max(2, x(to) - x(from))}px` }}
+              />
+            ) : null}
+            {[from, ...(mark.kind === 'period' ? [to] : [])].map((at, index) => {
+              const targetOffset = offsets[markerIndex++] ?? 0;
+              const edge = mark.kind === 'period' ? (index === 0 ? 'from' : 'to') : undefined;
+              return (
+                <button
+                  key={`${mark.id}-${index}`}
+                  type="button"
+                  className="scrubber-highlight-marker"
+                  data-kind={mark.kind}
+                  data-edge={edge}
+                  data-selected={selected === mark.id || undefined}
+                  aria-label={`${title} at ${formatClock(at)}`}
+                  aria-pressed={selected === mark.id}
+                  title={`${label ? `${label} · ` : ''}${formatClock(at)}`}
+                  style={{ left: `${x(at)}px`, '--target-offset': `${targetOffset}px` } as CSSProperties}
+                  onFocus={() => onFocus(mark.id)}
+                  onPointerDown={(event) => onPointerDown(event.nativeEvent)}
+                  onClick={() => onSelect(mark.id, at)}
+                >
+                  <span className="scrubber-highlight-glyph" aria-hidden="true" />
+                  {selected === mark.id && label && (mark.kind === 'point' || (mark.part === 0 && index === 0)) ? (
+                    <span className="scrubber-highlight-label">{label}</span>
+                  ) : null}
+                </button>
+              );
+            })}
+          </span>
+        );
+      })}
     </div>
   );
 }

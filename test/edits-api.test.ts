@@ -135,7 +135,7 @@ async function start(render = false, beta = true, editing?: boolean) {
   };
   const handle = createApp({
     ...appDefaults(),
-    beta: { editor: beta, malleable: false },
+    beta: { editor: beta, malleable: false, groupedInspector: false },
     ...(editing !== undefined ? { editing: { enabled: editing } } : {}),
     store,
     clientDir,

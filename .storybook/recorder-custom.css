@@ -1,0 +1,21 @@
+/* The reference example runs with Replays' existing Tailwind utilities and tokens in this lab.
+   Avoid importing its standalone preflight, global font and global colour overrides into every story. */
+.sb-custom-recorder [data-warning="soon"],
+.sb-custom-recorder [data-warning="final"] {
+  border-color: var(--warning);
+}
+.sb-custom-recorder [data-warning="final"] {
+  color: var(--danger);
+}
+.sb-custom-recorder {
+  min-height: 100vh;
+  background: var(--page);
+  color: var(--text);
+  font-family: var(--sans);
+}
+
+/* The example normally gets transparent buttons from its standalone preflight. */
+.sb-custom-recorder [data-warning] [data-recorder-action="stop"] {
+  background: var(--surface-raised);
+  color: var(--text);
+}

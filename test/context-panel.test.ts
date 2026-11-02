@@ -57,7 +57,7 @@ describe('ContextPanel', () => {
 
     const empty = render(undefined);
     expect(empty).not.toContain('data-testid="context-panel"');
-    expect(empty).toContain('No context was captured');
+    expect(empty).toContain('No context was attached');
   });
 
   it('renders fields with the schema: titles, order, help, links, booleans, chips and nested objects', () => {

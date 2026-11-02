@@ -34,6 +34,7 @@ import {
 } from '../shared/review-suite.ts';
 import { serverUploadMs, uploadAgeKey } from './upload-age.ts';
 import { PurposeCatalog } from './purposes.ts';
+import { applyOverrides, overridesKey, ReplaySidecars, TRASH_DAYS, trashKey } from './replay-meta.ts';
 import { FsStorage, ObjectExistsError, type ObjectInfo, type ObjectStorage, PreconditionFailedError, readJson } from './storage/index.ts';
 import type { SummaryFieldsRunner } from './summary-fields.ts';
 import { captureLink, withSpan } from './tracing.ts';
@@ -123,6 +124,8 @@ function parseKeep(value: unknown): KeepRecord | undefined {
  *   <id>/meta.json                 its list summary (rebuilt when missing, stale, an older SUMMARY_VERSION or other summary fields)
  *   <id>/keep.json                 `{ by, at }` while someone keeps it (no expiry)
  *   <id>/edits.json                its edit list (src/shared/edits.ts): trims and cuts applied on playback and export
+ *   <id>/overrides.json            title, tags or purpose people changed (src/server/replay-meta.ts), applied on top of meta
+ *   <id>/trash.json                `{ by, at }` once deleted: out of every list, restorable for TRASH_DAYS, then swept
  *   <id>/poster.v2[-<moment>].jpg, open.v1.jpg, preview.v2.mp4(.json), session.mp4, rendered-*.mp4, render-*.json
  *   _suites/<id>.json              a review suite
  *   _suites/<id>.keep.json         kept suite
@@ -136,6 +139,8 @@ export class ReplayStore {
   readonly retention: RetentionPolicy;
   /** The deployment's purposes: listed summaries get their (inferred) purpose from here. Empty by default. */
   readonly purposes: PurposeCatalog;
+  /** Overrides and trash records (src/server/replay-meta.ts). */
+  readonly sidecars: ReplaySidecars;
   /** Parsed summaries keyed by id, valid while the sidecar's version (generation / mtime) is unchanged. */
   private readonly summaryCache = new Map<string, { version: string; summary: ReplaySummary | undefined }>();
   private readonly keepCache = new Map<string, { version: string; keep: KeepRecord | undefined }>();
@@ -165,6 +170,7 @@ export class ReplayStore {
     this.samples = new FsStorage(sampleDir);
     this.retention = policyFrom(retention);
     this.purposes = options.purposes ?? new PurposeCatalog();
+    this.sidecars = new ReplaySidecars(this.storage, () => this.changed());
     this.listTtlMs = options.listTtlMs ?? Math.max(0, Number(this.storage.listCacheMs) || 0);
     this.summaryFields = options.summaryFields;
   }
@@ -527,8 +533,8 @@ export class ReplayStore {
    */
   async locate(id: string): Promise<LocatedReplay | undefined> {
     assertReplayId(id);
-    const uploaded = await this.storage.stat(this.replayKey(id));
-    if (uploaded) return { storage: this.storage, key: this.replayKey(id), info: uploaded, uploaded: true };
+    const [uploaded, trashed] = await Promise.all([this.storage.stat(this.replayKey(id)), this.storage.stat(trashKey(id))]);
+    if (uploaded) return trashed ? undefined : { storage: this.storage, key: this.replayKey(id), info: uploaded, uploaded: true };
     const sample = await this.samples.stat(this.sampleKey(id));
     if (sample) return { storage: this.samples, key: this.sampleKey(id), info: sample, uploaded: false };
     return undefined;
@@ -650,15 +656,18 @@ export class ReplayStore {
    */
   async summary(id: string, { suites = true }: { suites?: boolean } = {}): Promise<ReplaySummary | undefined> {
     assertReplayId(id);
-    const [replay, meta, keepInfo] = await Promise.all([
+    const [replay, meta, keepInfo, overrides, trashed] = await Promise.all([
       this.storage.stat(this.replayKey(id)),
       this.storage.stat(this.metaKey(id)),
       this.storage.stat(this.keepKey(id)),
+      this.storage.stat(overridesKey(id)),
+      this.storage.stat(trashKey(id)),
     ]);
     if (replay) {
+      if (trashed) return undefined;
       const stored = await this.uploadedSummary(id, replay, meta);
       if (!stored) return undefined;
-      const summary = this.purposes.apply(stored);
+      const summary = this.purposes.apply(applyOverrides(stored, await this.sidecars.overrides(id, overrides)));
       const keep = await this.keepOf(this.keepKey(id), keepInfo);
       const keptBySuite = suites && !keep && (await this.keptSuiteReplays()).has(id);
       return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite)) };
@@ -690,29 +699,29 @@ export class ReplayStore {
   private async listAll(): Promise<ReplaySummary[]> {
     // One listing of just the small JSON objects (GCS matchGlob): ~4 pages for 2000 replays, no media.
     const [objects, samples, suites] = await Promise.all([
-      this.storage.list({ glob: '*/{replay,meta,keep}.json' }),
+      this.storage.list({ glob: '*/{replay,meta,keep,overrides,trash}.json' }),
       this.samples.list({ glob: '*.json' }),
       this.suiteObjects(),
     ]);
     const keptBySuite = suites.kept.size ? await this.keptSuiteReplays(suites.kept) : new Set<string>();
-    const uploads = new Map<string, { replay?: ObjectInfo; meta?: ObjectInfo; keep?: ObjectInfo }>();
+    const uploads = new Map<string, Partial<Record<'replay' | 'meta' | 'keep' | 'overrides' | 'trash', ObjectInfo>>>();
     for (const object of objects) {
       const [id, name] = object.key.split('/') as [string, string];
       if (!ID.test(id)) continue;
       const entry = uploads.get(id) ?? {};
-      entry[name.slice(0, -'.json'.length) as 'replay' | 'meta' | 'keep'] = object;
+      entry[name.slice(0, -'.json'.length) as 'replay' | 'meta' | 'keep' | 'overrides' | 'trash'] = object;
       uploads.set(id, entry);
     }
     // Sidecar reads (only the changed ones once warm) go a few dozen at a time, not 2000 sockets at once.
     const gate = limiter(32);
     const summaries = await Promise.all([
-      ...[...uploads].map(async ([id, { replay, meta, keep: keepInfo }]) => {
-        if (!replay) return undefined;
+      ...[...uploads].map(async ([id, { replay, meta, keep: keepInfo, overrides, trash }]) => {
+        if (!replay || trash) return undefined;
         await gate.acquire();
         try {
           const stored = await this.uploadedSummary(id, replay, meta).catch(() => undefined);
           if (!stored) return undefined;
-          const summary = this.purposes.apply(stored);
+          const summary = this.purposes.apply(applyOverrides(stored, await this.sidecars.overrides(id, overrides)));
           const keep = await this.keepOf(this.keepKey(id), keepInfo);
           return { ...summary, ...(await this.retentionFor(summary, replay, keep, keptBySuite.has(id))) };
         } finally {
@@ -897,6 +906,32 @@ export class ReplayStore {
   }
 
   /**
+   * When one replay prefix may be swept (ms; Infinity or undefined: never): a trashed replay at the end of the trash
+   * window, otherwise per retention. Kept replays, runs of kept suites and committed samples' sidecars are never swept.
+   */
+  private async groupExpiry(id: string, group: readonly ObjectInfo[], keptBySuite: ReadonlySet<string>) {
+    const name = (file: string) => group.find((object) => object.key === `${id}/${file}`);
+    const trash = await this.sidecars.trash(id, name('trash.json'));
+    if (trash) return Date.parse(trash.at) + TRASH_DAYS * 86_400_000;
+    if (name('keep.json') || keptBySuite.has(id)) return Number.POSITIVE_INFINITY;
+    const replay = name('replay.json');
+    // why: a committed sample's sidecars (its edit list) live as long as the sample: forever.
+    if (!replay) {
+      if (await this.samples.stat(this.sampleKey(id))) return Number.POSITIVE_INFINITY;
+      return expiryMs(this.retention, { uploadedMs: Math.max(...group.map((object) => object.updatedMs)) });
+    }
+    // why: per purpose and rule; the summary (sidecar, cached) says which applies.
+    const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
+    const summary = stored && this.purposes.apply(stored);
+    return expiryMs(this.retention, {
+      uploadedMs: await serverUploadMs(this.storage, replay),
+      purpose: summary?.purpose,
+      purposeInferred: summary?.purposeInferred,
+      summary,
+    });
+  }
+
+  /**
    * Deletes what has expired (src/shared/retention.ts) from the server's upload time; kept
    * replays and suites, the runs of kept suites and committed samples never.
    * Prefixes without a replay.json (an interrupted upload) expire by their newest object, at the default.
@@ -927,26 +962,7 @@ export class ReplayStore {
 
         const removed: string[] = [];
         for (const [id, group] of groups) {
-          const name = (file: string) => group.find((object) => object.key === `${id}/${file}`);
-          if (name('keep.json') || keptBySuite.has(id)) continue;
-          const replay = name('replay.json');
-          // A committed sample's sidecars (its edit list) live as long as the sample: forever.
-          if (!replay && (await this.samples.stat(this.sampleKey(id)))) continue;
-          let expires: number | undefined;
-          if (replay) {
-            // Per purpose and rule: the summary (sidecar, cached) says which applies.
-            const stored = await this.uploadedSummary(id, replay, name('meta.json')).catch(() => undefined);
-            const summary = stored && this.purposes.apply(stored);
-            expires = expiryMs(this.retention, {
-              uploadedMs: await serverUploadMs(this.storage, replay),
-              purpose: summary?.purpose,
-              purposeInferred: summary?.purposeInferred,
-              summary,
-            });
-          } else {
-            const newest = Math.max(...group.map((object) => object.updatedMs));
-            expires = expiryMs(this.retention, { uploadedMs: newest });
-          }
+          const expires = await this.groupExpiry(id, group, keptBySuite);
           if (expires === undefined || expires >= now) continue;
           await this.storage.deletePrefix(`${id}/`);
           this.summaryCache.delete(id);

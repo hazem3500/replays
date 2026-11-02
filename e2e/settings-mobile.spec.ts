@@ -12,68 +12,45 @@ function box(rect: Rect): Box {
 test.describe('touch phone settings', () => {
   test.use({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 
-  test('keeps settings sections readable and usable on a touch phone', async ({ page }) => {
+  test('shows CLI guidance directly without a redundant appearance section on a touch phone', async ({ page }) => {
     await page.goto(origin());
     await page.getByRole('button', { name: 'Settings', exact: true }).tap();
 
     const dialog = page.getByRole('dialog', { name: 'Settings' });
-    const tabList = dialog.getByRole('tablist', { name: 'Settings sections' });
-    const panel = dialog.getByRole('tabpanel');
+    const section = dialog.locator('section[aria-labelledby="settings-agent-access"]');
     await expect(dialog.getByRole('heading', { name: 'Settings' })).toBeVisible();
-    await expect(tabList).toBeVisible();
-    await expect(tabList.getByRole('tab', { name: 'Appearance' })).toBeVisible();
-    await expect(tabList.getByRole('tab', { name: 'Agent access' })).toBeVisible();
-    await expect(panel.getByRole('heading', { name: 'Color theme' })).toBeVisible();
-    await page.screenshot({ path: '.review-artifacts/settings-mobile-390x800.png', fullPage: true });
+    await expect(section.getByRole('heading', { name: 'CLI & agent access' })).toBeVisible();
+    await expect(dialog.getByRole('tablist')).toHaveCount(0);
+    await expect(dialog.getByRole('radio')).toHaveCount(0);
+    await expect(dialog.getByText('Color theme')).toHaveCount(0);
+    await page.screenshot({ path: '.review-artifacts/settings-mobile-390x800.png' });
 
-    const appearanceGeometry = await page.evaluate(() => {
-      const tabsRoot = document.querySelector<HTMLElement>('[data-slot="tabs"]')!;
-      const tabListElement = tabsRoot.querySelector<HTMLElement>('[role="tablist"]')!;
-      const panelElement = tabsRoot.querySelector<HTMLElement>('[role="tabpanel"]')!;
-      const appearance = panelElement.querySelector<HTMLElement>('section[aria-labelledby="settings-appearance"]')!;
-      const dialogElement = tabsRoot.closest<HTMLElement>('[role="dialog"]')!;
+    const sectionGeometry = await section.evaluate((sectionElement) => {
+      const scrollRegion = sectionElement.parentElement!;
+      const dialogElement = sectionElement.closest<HTMLElement>('[role="dialog"]')!;
       return {
-        flexDirection: getComputedStyle(tabsRoot).flexDirection,
+        scrollRegionHeight: scrollRegion.getBoundingClientRect().height,
         dialogWidth: dialogElement.getBoundingClientRect().width,
-        tabList: tabListElement.getBoundingClientRect().toJSON(),
-        panel: panelElement.getBoundingClientRect().toJSON(),
-        appearance: appearance.getBoundingClientRect().toJSON(),
-        appearanceClientWidth: appearance.clientWidth,
-        appearanceScrollWidth: appearance.scrollWidth,
+        dialogHeight: dialogElement.getBoundingClientRect().height,
+        viewportHeight: window.innerHeight,
+        sectionClientWidth: sectionElement.clientWidth,
+        sectionScrollWidth: sectionElement.scrollWidth,
         documentScrollWidth: document.documentElement.scrollWidth,
         viewportWidth: window.innerWidth,
         deviceScaleFactor: window.devicePixelRatio,
       };
     });
-    appearanceGeometry.tabList = box(appearanceGeometry.tabList);
-    appearanceGeometry.panel = box(appearanceGeometry.panel);
-    appearanceGeometry.appearance = box(appearanceGeometry.appearance);
-    expect(appearanceGeometry.flexDirection).toBe('column');
-    expect(appearanceGeometry.tabList.bottom).toBeLessThanOrEqual(appearanceGeometry.panel.y + 1);
-    expect(appearanceGeometry.panel.width).toBeGreaterThan(appearanceGeometry.dialogWidth * 0.85);
-    expect(appearanceGeometry.appearanceClientWidth).toBeGreaterThan(300);
-    expect(appearanceGeometry.appearanceScrollWidth).toBeLessThanOrEqual(appearanceGeometry.appearanceClientWidth + 1);
-    expect(appearanceGeometry.documentScrollWidth).toBe(appearanceGeometry.viewportWidth);
-    expect(appearanceGeometry.deviceScaleFactor).toBe(1);
+    expect(sectionGeometry.dialogHeight).toBeLessThanOrEqual(sectionGeometry.viewportHeight - 24);
+    expect(sectionGeometry.scrollRegionHeight).toBeGreaterThan(200);
+    expect(sectionGeometry.sectionClientWidth).toBeGreaterThan(300);
+    expect(sectionGeometry.sectionScrollWidth).toBeLessThanOrEqual(sectionGeometry.sectionClientWidth + 1);
+    expect(sectionGeometry.documentScrollWidth).toBe(sectionGeometry.viewportWidth);
+    expect(sectionGeometry.deviceScaleFactor).toBe(1);
 
-    await tabList.getByRole('tab', { name: 'Agent access' }).tap();
-    await expect(panel.getByRole('heading', { name: 'Connect an agent' })).toBeVisible();
-    await expect(panel.getByRole('heading', { name: 'Agent credentials' })).toBeVisible();
-    const agentGeometry = await panel.evaluate((element) => {
-      const section = element.querySelector<HTMLElement>('section[aria-labelledby="settings-agent-access"]')!;
-      const dialogElement = element.closest<HTMLElement>('[role="dialog"]')!;
-      return {
-        panelWidth: element.getBoundingClientRect().width,
-        dialogWidth: dialogElement.getBoundingClientRect().width,
-        sectionClientWidth: section.clientWidth,
-        sectionScrollWidth: section.scrollWidth,
-        documentScrollWidth: document.documentElement.scrollWidth,
-        viewportWidth: window.innerWidth,
-      };
-    });
-    expect(agentGeometry.panelWidth).toBeGreaterThan(agentGeometry.dialogWidth * 0.85);
-    expect(agentGeometry.sectionScrollWidth).toBeLessThanOrEqual(agentGeometry.sectionClientWidth + 1);
-    expect(agentGeometry.documentScrollWidth).toBe(agentGeometry.viewportWidth);
+    await section.locator('details summary').tap();
+    await expect(section.getByRole('heading', { name: 'Agent credentials' })).toBeVisible();
+    await expect(section.getByText('Credential creation isn’t enabled for this deployment.')).toBeVisible();
+    await page.screenshot({ path: '.review-artifacts/settings-agent-mobile-390x800.png' });
 
     const close = dialog.locator('[data-slot="dialog-close"]');
     await expect(close).toBeVisible();
@@ -83,42 +60,70 @@ test.describe('touch phone settings', () => {
   });
 });
 
+test.describe('agent access capability states', () => {
+  test.use({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+
+  test('uses the active auth mode and only exposes credential creation when supported', async ({ page }) => {
+    await page.route('**/api/config', (route) => route.fulfill({ json: { auth: 'session' } }));
+    await page.route('**/api/agent-capabilities', (route) =>
+      route.fulfill({ json: { credentials: { enabled: true, scopes: ['replays:read'], maxExpirySeconds: 86400 } } }),
+    );
+    await page.route('**/api/agent-credentials', (route) => route.fulfill({ json: { credentials: [] } }));
+    await page.goto(origin());
+    await page.getByRole('button', { name: 'Settings', exact: true }).tap();
+    const dialog = page.getByRole('dialog', { name: 'Settings' });
+    const section = dialog.locator('section[aria-labelledby="settings-agent-access"]');
+    await expect(section.getByText('Host-managed sign-in · this deployment does not advertise CLI device login.')).toBeVisible();
+    await expect(section.locator('pre code').last()).toContainText('--header-file headers.json');
+    await section.locator('details summary').tap();
+    await expect(section.getByRole('button', { name: 'New credential' })).toBeVisible();
+    await expect(section.getByText(/Restricted to these scopes/)).toBeVisible();
+  });
+
+  test('keeps open-access command free of credential instructions', async ({ page }) => {
+    await page.route('**/api/config', (route) => route.fulfill({ json: { auth: 'none' } }));
+    await page.route('**/api/agent-capabilities', (route) => route.fulfill({ status: 404 }));
+    await page.goto(origin());
+    await page.getByRole('button', { name: 'Settings', exact: true }).tap();
+    const dialog = page.getByRole('dialog', { name: 'Settings' });
+    const section = dialog.locator('section[aria-labelledby="settings-agent-access"]');
+    await expect(section.getByText('Open access · use only on a trusted network.')).toBeVisible();
+    for (const command of await section.locator('pre code').all()) await expect(command).not.toContainText('--header-file');
+    await section.locator('details summary').tap();
+    await expect(section.getByText('Credential creation isn’t enabled for this deployment.')).toBeVisible();
+  });
+});
+
 test.describe('desktop settings', () => {
   test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1 });
 
-  test('preserves the desktop settings sheet layout and keyboard close behavior', async ({ page }) => {
+  test('keeps the direct CLI settings sheet usable on desktop and preserves keyboard close behavior', async ({ page }) => {
     await page.goto(origin());
     const trigger = page.getByRole('button', { name: 'Settings', exact: true });
     await trigger.click();
     const dialog = page.getByRole('dialog', { name: 'Settings' });
     await expect(dialog).toBeVisible();
-    const appearanceTab = dialog.getByRole('tab', { name: 'Appearance' });
-    await expect(appearanceTab).toHaveAttribute('aria-selected', 'true');
-    const appearancePanel = dialog.getByRole('tabpanel');
-    await expect(appearancePanel.getByRole('heading', { name: 'Color theme' })).toBeVisible();
+    const section = dialog.locator('section[aria-labelledby="settings-agent-access"]');
+    await expect(section.getByRole('heading', { name: 'CLI & agent access' })).toBeVisible();
+    await expect(dialog.getByRole('tablist')).toHaveCount(0);
+    await expect(dialog.getByRole('radio')).toHaveCount(0);
     const geometry = await dialog.evaluate((dialogElement) => {
-      const tabsRoot = dialogElement.querySelector<HTMLElement>('[data-slot="tabs"]')!;
-      const tabList = tabsRoot.querySelector<HTMLElement>('[role="tablist"]')!;
-      const panel = tabsRoot.querySelector<HTMLElement>('[role="tabpanel"]')!;
+      const sectionElement = dialogElement.querySelector<HTMLElement>('section[aria-labelledby="settings-agent-access"]')!;
+      const scrollRegion = sectionElement.parentElement!;
       return {
-        flexDirection: getComputedStyle(tabsRoot).flexDirection,
         dialog: dialogElement.getBoundingClientRect().toJSON(),
-        tabList: tabList.getBoundingClientRect().toJSON(),
-        panel: panel.getBoundingClientRect().toJSON(),
-        panelClientWidth: panel.clientWidth,
-        panelScrollWidth: panel.scrollWidth,
+        scrollRegion: scrollRegion.getBoundingClientRect().toJSON(),
+        sectionClientWidth: sectionElement.clientWidth,
+        sectionScrollWidth: sectionElement.scrollWidth,
         documentScrollWidth: document.documentElement.scrollWidth,
         viewportWidth: window.innerWidth,
       };
     });
     geometry.dialog = box(geometry.dialog);
-    geometry.tabList = box(geometry.tabList);
-    geometry.panel = box(geometry.panel);
-    expect(geometry.flexDirection).toBe('column');
-    expect(geometry.tabList.bottom).toBeLessThanOrEqual(geometry.panel.y + 1);
-    expect(geometry.panel.width).toBeGreaterThan(geometry.dialog.width * 0.85);
-    expect(geometry.panelClientWidth).toBeGreaterThan(450);
-    expect(geometry.panelScrollWidth).toBeLessThanOrEqual(geometry.panelClientWidth + 1);
+    geometry.scrollRegion = box(geometry.scrollRegion);
+    expect(geometry.scrollRegion.width).toBeGreaterThan(geometry.dialog.width * 0.85);
+    expect(geometry.sectionClientWidth).toBeGreaterThan(450);
+    expect(geometry.sectionScrollWidth).toBeLessThanOrEqual(geometry.sectionClientWidth + 1);
     expect(geometry.documentScrollWidth).toBe(geometry.viewportWidth);
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();

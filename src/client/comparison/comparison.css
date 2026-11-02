@@ -53,8 +53,7 @@
 .cmp-error-ruler { position: relative; height: 12px; margin: -6px 9px 6px; }
 .cmp-error-ruler i { position: absolute; top: 0; width: 2px; height: 5px; background: var(--danger); }
 .cmp-error-ruler i[data-side="b"] { top: 7px; }
-.cmp-help, .cmp-empty { color: var(--text-tertiary); font-size: 11px; }
-.cmp-empty { padding: 12px; }
+.cmp-help { color: var(--text-tertiary); font-size: 11px; }
 .cmp-marker-picker { flex-wrap: wrap; margin-top: 10px; font-size: 12px; }
 .cmp-marker-picker select { width: 100%; min-width: 0; }
 .cmp-offset { display: flex; flex-wrap: wrap; align-items: end; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }

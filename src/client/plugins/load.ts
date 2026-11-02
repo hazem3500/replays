@@ -30,10 +30,23 @@ export function readClientEntries(): ClientEntryInfo[] {
  * Imports each entry and runs its default export. A failing plugin is logged and skipped: it never breaks the
  * viewer or the other plugins. Resolves when all have settled.
  */
-export async function loadClientPlugins(
+export function loadClientPlugins(
   entries: readonly ClientEntryInfo[] = readClientEntries(),
   registry: ViewerRegistry = viewerRegistry,
   importer: (url: string) => Promise<{ default?: unknown }> = (url) => import(/* @vite-ignore */ url),
+) {
+  return (settled = loadEntries(entries, registry, importer));
+}
+
+let settled: Promise<void> | undefined;
+
+/** Resolves once the page's plugin entries have all loaded or failed (at once when none were requested). */
+export const pluginsSettled = () => settled ?? Promise.resolve();
+
+async function loadEntries(
+  entries: readonly ClientEntryInfo[],
+  registry: ViewerRegistry,
+  importer: (url: string) => Promise<{ default?: unknown }>,
 ) {
   await Promise.all(
     entries.map(async (entry) => {

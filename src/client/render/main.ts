@@ -15,13 +15,16 @@
  * captions. Posters and previews show the replay as recorded.
  */
 import './render.css';
+import '../caption-style.css';
 
 import { applyEdits, assertReplayEdits, editListOf, editsVersion, type ReplayEdits } from '../../shared/edits.ts';
+import { captionStyleData } from '../../shared/caption-style.ts';
 import { editCaptionAt, effectsKey } from '../../shared/effects.ts';
 import type { PosterMoment } from '../../shared/purposes.ts';
 import { isFailedRequest, type ReplayBundle } from '../../shared/replay.ts';
 import { buildCursorTrack, cursorInput, cursorPose } from '../cursor-motion.ts';
 import { ReplayController } from '../player.ts';
+import { loadClientPlugins } from '../plugins/load.ts';
 import { idleGaps } from '../../shared/skip.ts';
 import { CAPTION_IN_MS, captionAt, captionKey, exportCaptionScale, type CaptionFrame } from '../step-caption.ts';
 import { dirtyAt, exportMap, exportTimes, type PlaybackMap, posterMoment, poseKey, type PreviewPlan, previewPlan } from './frames.ts';
@@ -104,6 +107,8 @@ async function start() {
   ]);
   if (!response.ok) throw new Error(`bundle ${response.status}`);
   const { bundle, effects } = applyEdits((await response.json()) as ReplayBundle, edits);
+  // why: a saved plugin cursor theme needs its entry loaded before the cursor mounts (none load unless the server lists them).
+  await loadClientPlugins();
   const host = document.querySelector<HTMLElement>('#render-host');
   if (!host) throw new Error('no render host');
   const { width, height } = bundle.meta.viewport;
@@ -117,7 +122,12 @@ async function start() {
   const snapshotTimes = eventTimes.filter((_, index) => bundle.events[index]?.type === FULL_SNAPSHOT);
   // The same pure track ReplayCursor draws from, so "cursor changed" matches what lands on screen.
   const track = buildCursorTrack(cursorInput(bundle.events), { settings: effects.cursor });
-  const cursorKey = (time: number) => poseKey(cursorPose(track, first + time));
+  // why: click feedback (ripple, pulse, a CUA theme's click frames) is drawn from the press age, so it marks frames dirty too.
+  const cursorKey = (time: number) => {
+    const pose = cursorPose(track, first + time);
+    const key = poseKey(pose);
+    return pose.press !== undefined && pose.press >= 0 && key !== 'hidden' ? `${key}|${pose.press.toFixed(0)}` : key;
+  };
   let captions = false;
   // The edit list's own captions, when it has any, are always drawn (they are part of the edit).
   const editCaptions = effects.captions.length > 0;
@@ -151,6 +161,8 @@ async function start() {
       const root = document.createElement('div');
       root.className = 'step-caption';
       root.setAttribute('aria-hidden', 'true');
+      // why: the edit list's caption style applies to its own captions only, never to step captions.
+      if (editCaptions) for (const [name, value] of Object.entries(captionStyleData(effects.captionStyle))) root.setAttribute(name, value);
       const text = document.createElement('span');
       text.className = 'step-caption-text';
       const label = document.createElement('span');
@@ -200,6 +212,8 @@ async function start() {
       shownAt = time;
       controller.seek(time);
       await drawCaption(time);
+      // why: cursor themes that draw asynchronously (CUA .lottie) settle their frame before capture.
+      await controller.cursorReady();
       const navigated = previous < 0 || time < previous || snapshotTimes.some((at) => at > previous && at <= time);
       // rrweb applies the DOM synchronously and Page.captureScreenshot waits for a fresh compositor frame,
       // so only a navigation (new document, new images and fonts) needs to wait here.

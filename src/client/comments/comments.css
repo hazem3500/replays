@@ -210,6 +210,8 @@
   padding: 12px 16px 20px;
   max-width: 760px;
 }
+/* why: the panel already pads its content; the empty state lines up with the composer instead of adding its own inset. */
+.comments-inner > .empty-state { --empty-state-pad-compact: 8px 0 0; }
 .comments-notice {
   margin: 0;
   padding: 8px 10px;
@@ -511,4 +513,13 @@
   .comment-card {
     transition: none;
   }
+}
+
+/* why: a comment on its way to the server, or refused, reads as not yet there; no spinner. */
+.comment[data-state='sending'] :is(.comment-body, .comment-reaction),
+.comment[data-state='failed'] :is(.comment-body, .comment-reaction) {
+  opacity: 0.6;
+}
+.comment-not-sent .comment-link {
+  font-size: inherit;
 }

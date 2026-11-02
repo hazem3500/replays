@@ -6,6 +6,7 @@ import { useSyncExternalStore } from 'react';
  */
 export interface MalleableUi {
   workshopOpen: boolean;
+  workshopPlugin?: string | undefined;
   /** Plugin id whose "keep" dialog is open. */
   keepFor: string | undefined;
 }

@@ -1,48 +1,15 @@
-import { mkdtemp } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { definePlugin } from '../src/plugin/index.ts';
 import { McpServer } from '../src/mcp/server.ts';
-import { startServer, type RunningServer } from '../src/server/start.ts';
+import type { RunningServer } from '../src/server/start.ts';
+import { approval as testApproval, asUser, boot, closeServers, who } from './malleable-server-fixture.ts';
 import { diffLines } from '../src/shared/line-diff.ts';
 import { BRIDGE_TOOLS } from '../src/shared/malleable-tools.ts';
 import { parseManifest, parsePluginFile, pluginFile, PluginFormatError, starterPlugin } from '../src/shared/malleable.ts';
 import { SANDBOX_CSP } from '../src/shared/sandbox-runtime.ts';
 
-const running: RunningServer[] = [];
-afterEach(async () => {
-  await Promise.all(running.splice(0).map((server) => server.close()));
-});
+afterEach(closeServers);
 
-const who = definePlugin({
-  name: 'who',
-  setup(api) {
-    api.auth({
-      name: 'who-am-i',
-      authenticate(request) {
-        const id = request.headers['x-who'];
-        return typeof id === 'string' ? { id, name: id } : undefined;
-      },
-    });
-  },
-});
-
-async function boot(env: Record<string, string> = {}, plugins = [who]) {
-  const server = await startServer({
-    env: { DATA_DIR: await mkdtemp(join(tmpdir(), 'replays-mall-')), POSTERS_DISABLED: '1', RENDER_DISABLED: '1', ...env },
-    port: 0,
-    config: { dir: process.cwd(), file: {}, plugins: [] },
-    plugins,
-    log: () => {},
-  });
-  running.push(server);
-  return server;
-}
-
-const asUser = (name: string) => ({ 'x-who': name, 'content-type': 'application/json' });
 const starter = () => starterPlugin('failed-by-endpoint');
 
 async function approve(
@@ -53,13 +20,7 @@ async function approve(
   id: string,
   content?: { manifest: unknown; source: string },
 ) {
-  const response = await fetch(`${server.origin}/api/malleable/approvals`, {
-    method: 'POST',
-    headers: asUser(user),
-    body: JSON.stringify({ action, scope, id, ...content }),
-  });
-  expect(response.status).toBe(200);
-  return ((await response.json()) as { token: string }).token;
+  return testApproval(server, user, { action, scope, id, ...(content ? { content } : {}) });
 }
 
 async function save(
@@ -86,7 +47,7 @@ describe('with beta.malleable off (the default)', () => {
     const call = await fetch(`${server.origin}/api/malleable/bridge/call`, { method: 'POST', headers: asUser('ada'), body: '{}' });
     expect(call.status).toBe(404);
     const config = await (await fetch(`${server.origin}/api/config`, { headers: asUser('ada') })).json();
-    expect(config.beta).toEqual({ editor: false, malleable: false });
+    expect(config.beta).toEqual({ editor: false, malleable: false, groupedInspector: false });
     expect(config.plugins).not.toContain('malleable');
     const home = await fetch(`${server.origin}/`, { headers: { ...asUser('ada'), accept: 'text/html' } });
     expect(home.headers.get('content-security-policy')).toBeNull();
@@ -95,6 +56,23 @@ describe('with beta.malleable off (the default)', () => {
 });
 
 describe('with beta.malleable on', () => {
+  it('stores declared plugin settings per signed-in person with version checks', async () => {
+    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
+    const content = starter();
+    content.manifest.settings = [{ id: 'compact', label: 'Compact', type: 'boolean', default: false }];
+    expect((await save(server, 'ada', 'user', content, 0)).status).toBe(200);
+    const url = `${server.origin}/api/malleable/settings/user/${content.manifest.id}`;
+    expect(await (await fetch(url, { headers: asUser('ada') })).json()).toEqual({ version: 0, values: { compact: false } });
+    const update = (body: unknown) => fetch(url, { method: 'PUT', headers: asUser('ada'), body: JSON.stringify(body) });
+    expect((await update({ id: 'compact', value: true, baseVersion: 0 })).status).toBe(200);
+    expect((await update({ id: 'compact', value: false, baseVersion: 0 })).status).toBe(409);
+    expect((await update({ id: 'compact', value: 'yes', baseVersion: 1 })).status).toBe(400);
+    expect((await fetch(url, { headers: asUser('grace') })).status).toBe(404);
+    expect(await (await fetch(url, { headers: asUser('ada') })).json()).toEqual({ version: 1, values: { compact: true } });
+  });
+});
+
+describe('saved user plugins', () => {
   it('serves the sandbox page with a CSP that forbids every outgoing request, and tells the page', async () => {
     const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
     const page = await fetch(`${server.origin}/_malleable/sandbox.html`);
@@ -183,7 +161,7 @@ describe('with beta.malleable on', () => {
   });
 
   it('keeps user plugins private and shares workspace plugins', async () => {
-    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' });
+    const server = await boot({ REPLAYS_BETA_MALLEABLE: 'true' }, [who], { malleable: { scopes: ['user', 'workspace'] } });
     const mine = starterPlugin('mine');
     const shared = starterPlugin('shared');
     expect((await save(server, 'ada', 'user', mine, 0)).status).toBe(200);

@@ -19,83 +19,54 @@ test('the rendered Network toolbar stays usable at phone widths across themes an
     await openReplay(page, `${server().origin}/r/${id}`);
     await page.getByTestId('network-tab').click();
 
-    const toolbar = page.locator('.network-toolbar');
+    const toolbar = page.locator('.net-toolbar');
     await expect(toolbar).toBeVisible();
     expect(await toolbar.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
-    if (width <= 600) {
-      const targets = await toolbar.locator('button').evaluateAll((buttons) =>
-        buttons.map((button) => {
-          const rect = button.getBoundingClientRect();
-          return { width: rect.width, height: rect.height };
-        }),
-      );
-      expect(targets.every(({ width: targetWidth, height: targetHeight }) => targetWidth >= 44 && targetHeight >= 44)).toBe(true);
+    const phone = width <= 600;
+    if (phone) {
+      const targets = await toolbar
+        .locator('button:visible, select:visible, .net-search')
+        .evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+      expect(targets.every((targetHeight) => targetHeight >= 44)).toBe(true);
     }
 
     await checkSearch(page);
-    await page.getByTestId('network-filter-toggle').click();
-    const popover = page.locator('.network-filter-popover');
-    await expect(popover).toBeVisible();
-    if (width <= 600) {
-      const optionHeights = await popover
-        .locator('.network-filter-option')
-        .evaluateAll((options) => options.map((option) => option.getBoundingClientRect().height));
-      expect(optionHeights.every((optionHeight) => optionHeight >= 44)).toBe(true);
-    }
-    const bounds = await popover.evaluate((element) => {
-      const rect = element.getBoundingClientRect();
-      return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height };
-    });
-    expect(bounds.left).toBeGreaterThanOrEqual(0);
-    expect(bounds.right).toBeLessThanOrEqual(width);
-    expect(bounds.top).toBeGreaterThanOrEqual(0);
-    expect(bounds.bottom).toBeLessThanOrEqual(height);
-    await popover.getByRole('button', { name: /Failed/ }).click();
-    await expect(page.locator('.network-row')).toHaveCount(1);
-    await expect(page.locator('.network-row').first()).toContainText('/api/checkout');
-    await page.getByRole('button', { name: 'Clear active network filters' }).click();
-    await expect(page.locator('.network-row')).toHaveCount(2);
+    await toolbar.getByRole('button', { name: 'Failed' }).click();
+    await expect(rows(page)).toHaveCount(1);
+    await expect(rows(page).first()).toContainText('/api/checkout');
+    await toolbar.getByRole('button', { name: 'All', exact: true }).first().click();
+    await expect(rows(page)).toHaveCount(2);
 
-    const timing = page.getByRole('button', { name: 'Show or hide request waterfall' });
-    await timing.click();
-    await expect(page.locator('.network-timing-heading')).toHaveCount(0);
-    await timing.click();
-    await expect(page.locator('.network-timing-heading')).toHaveCount(1);
+    const timing = page.getByRole('button', { name: 'Show the Timing column' });
+    if (phone) await expect(timing).toHaveCount(0);
+    else {
+      await expect(page.locator('.net-ruler')).toHaveCount(1);
+      await timing.click();
+      await expect(page.locator('.net-ruler')).toHaveCount(0);
+      await timing.click();
+      await expect(page.locator('.net-ruler')).toHaveCount(1);
+    }
   }
 });
 
+const rows = (page: Page) => page.getByRole('grid', { name: 'Network requests' }).locator('.net-body [role="row"]');
+
 async function checkSearch(page: Page) {
-  const searchToggle = page.getByTestId('network-search-toggle');
-  await expect(page.locator('.network-search-panel input[type="search"]')).toBeDisabled();
-  await searchToggle.click();
-  const search = page.getByRole('searchbox', { name: 'Search network requests' });
-  await expect(search).toBeFocused();
+  const search = page.getByRole('searchbox', { name: 'Filter requests' });
   await search.fill('check');
   await search.fill('checkout');
-  if ((page.viewportSize()?.width ?? 1280) <= 600) {
-    const searchTargets = await page
-      .locator('.network-search-field button')
-      .evaluateAll((buttons) =>
-        buttons.map((button) => ({ width: button.getBoundingClientRect().width, height: button.getBoundingClientRect().height })),
-      );
-    expect(searchTargets.every((target) => target.width >= 44 && target.height >= 44)).toBe(true);
-  }
-  await expect(page.locator('.network-row')).toHaveCount(1);
-  await expect(page.locator('.network-row').first()).toContainText('/api/checkout');
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first()).toContainText('/api/checkout');
   await search.fill('not-a-request');
-  await expect(page.getByText('No matching requests')).toBeVisible();
-  await search.fill('');
-  await expect(page.locator('.network-row')).toHaveCount(2);
+  await expect(page.getByText('No requests match these filters')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear filters' }).click();
+  await expect(search).toHaveValue('');
+  await expect(rows(page)).toHaveCount(2);
   await search.fill('checkout');
   await search.press('Escape');
   await expect(search).toHaveValue('');
-  await expect(search).toBeFocused();
-  await search.press('Escape');
-  await expect(searchToggle).toBeFocused();
-  // Collapsing makes the field inert and removes it from the accessible tree.
-  await expect(page.locator('.network-search-field input')).toBeDisabled();
-  await expect(page.locator('.network-row')).toHaveCount(2);
+  await expect(rows(page)).toHaveCount(2);
 }
 
 async function seedNetworkFixture(page: Page, id: string) {

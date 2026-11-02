@@ -1,0 +1,522 @@
+{
+  "meta": {
+    "id": "demo-seed-long-activity",
+    "title": "Team workspace · longer activity session",
+    "url": "https://workspace.northstar.demo.test/team",
+    "capturedAt": "2026-10-26T08:35:00.000Z",
+    "duration": 63200,
+    "viewport": { "width": 1440, "height": 900 },
+    "eventCount": 28,
+    "version": 1,
+    "source": "agent",
+    "tags": ["demo", "synthetic", "activity", "long-session", "team"]
+  },
+  "events": [
+    {
+      "type": 4,
+      "data": {
+        "href": "https://workspace.northstar.demo.test/team",
+        "width": 1440,
+        "height": 900
+      },
+      "timestamp": 1793003700000
+    },
+    {
+      "type": 2,
+      "data": {
+        "node": {
+          "type": 0,
+          "childNodes": [
+            { "type": 1, "name": "html", "publicId": "", "systemId": "", "id": 218 },
+            {
+              "type": 2,
+              "tagName": "html",
+              "attributes": { "lang": "en" },
+              "childNodes": [
+                {
+                  "type": 2,
+                  "tagName": "head",
+                  "attributes": { "lang": "en" },
+                  "childNodes": [
+                    {
+                      "type": 2,
+                      "tagName": "meta",
+                      "attributes": { "charset": "utf-8" },
+                      "childNodes": [],
+                      "id": 219
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "title",
+                      "attributes": {},
+                      "childNodes": [{ "type": 3, "textContent": "Team activity", "id": 220 }],
+                      "id": 221
+                    },
+                    {
+                      "type": 2,
+                      "tagName": "style",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 3,
+                          "textContent": "\n  :root{font:15px/1.5 system-ui,sans-serif;color:#24313d;background:#f4f7f6}*{box-sizing:border-box}\n  body{margin:0;padding:36px}main{max-width:850px;margin:auto;background:white;border:1px solid #dce5e1;border-radius:16px;padding:30px;box-shadow:0 12px 32px #22332212}\n  h1{font-size:26px;margin:0 0 6px}p{color:#66756f;margin:0 0 20px}.eyebrow{color:#26765c;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}\n  .row{display:flex;gap:12px;align-items:center}.card{border:1px solid #dce5e1;border-radius:10px;padding:16px;margin:12px 0;background:#fbfdfc}\n  button{border:0;border-radius:7px;padding:9px 13px;background:#26765c;color:white;font:inherit;font-weight:650}.quiet{background:#edf4f0;color:#26765c}\n  label{display:block;font-weight:650;margin:12px 0 5px}input{font:inherit;border:1px solid #cbd7d1;border-radius:7px;padding:9px;width:100%}\n  .error{color:#a43b32;background:#fff2ef;padding:10px 12px;border-radius:8px}.ok{color:#236846}.muted{color:#7b8982}.pill{display:inline-block;padding:3px 8px;border-radius:99px;background:#edf4f0;color:#26765c;font-size:12px}\n  ul{padding-left:20px}li{margin:5px 0}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}\n",
+                          "id": 222
+                        }
+                      ],
+                      "id": 223
+                    }
+                  ],
+                  "id": 224
+                },
+                {
+                  "type": 2,
+                  "tagName": "body",
+                  "attributes": {},
+                  "childNodes": [
+                    {
+                      "type": 2,
+                      "tagName": "main",
+                      "attributes": {},
+                      "childNodes": [
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "eyebrow" },
+                          "childNodes": [{ "type": 3, "textContent": "Northstar workspace · demo", "id": 212 }],
+                          "id": 213
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "h1",
+                          "attributes": {},
+                          "childNodes": [{ "type": 3, "textContent": "Team activity", "id": 214 }],
+                          "id": 215
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "p",
+                          "attributes": {},
+                          "childNodes": [
+                            {
+                              "type": 3,
+                              "textContent": "A longer fictional session moving between a task, comments, and a saved view.",
+                              "id": 216
+                            }
+                          ],
+                          "id": 217
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "card" },
+                          "childNodes": [
+                            {
+                              "type": 2,
+                              "tagName": "strong",
+                              "attributes": {},
+                              "childNodes": [{ "type": 3, "textContent": "Launch checklist", "id": 187 }],
+                              "id": 188
+                            },
+                            {
+                              "type": 2,
+                              "tagName": "p",
+                              "attributes": {},
+                              "childNodes": [
+                                {
+                                  "type": 3,
+                                  "textContent": "8 of 10 items complete · updated just now",
+                                  "id": 189
+                                }
+                              ],
+                              "id": 190
+                            },
+                            {
+                              "type": 2,
+                              "tagName": "button",
+                              "attributes": {},
+                              "childNodes": [{ "type": 3, "textContent": "Open checklist", "id": 191 }],
+                              "id": 192
+                            }
+                          ],
+                          "id": 193
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": { "class": "card" },
+                          "childNodes": [
+                            {
+                              "type": 2,
+                              "tagName": "strong",
+                              "attributes": {},
+                              "childNodes": [{ "type": 3, "textContent": "Recent activity", "id": 194 }],
+                              "id": 195
+                            },
+                            {
+                              "type": 2,
+                              "tagName": "ul",
+                              "attributes": {},
+                              "childNodes": [
+                                {
+                                  "type": 2,
+                                  "tagName": "li",
+                                  "attributes": {},
+                                  "childNodes": [
+                                    {
+                                      "type": 3,
+                                      "textContent": "Avery moved “Review email copy” to Done",
+                                      "id": 196
+                                    }
+                                  ],
+                                  "id": 197
+                                },
+                                {
+                                  "type": 2,
+                                  "tagName": "li",
+                                  "attributes": {},
+                                  "childNodes": [
+                                    {
+                                      "type": 3,
+                                      "textContent": "Morgan added a note to “Mobile navigation”",
+                                      "id": 198
+                                    }
+                                  ],
+                                  "id": 199
+                                },
+                                {
+                                  "type": 2,
+                                  "tagName": "li",
+                                  "attributes": {},
+                                  "childNodes": [
+                                    {
+                                      "type": 3,
+                                      "textContent": "Taylor created “Release smoke checks”",
+                                      "id": 200
+                                    }
+                                  ],
+                                  "id": 201
+                                },
+                                {
+                                  "type": 2,
+                                  "tagName": "li",
+                                  "attributes": {},
+                                  "childNodes": [
+                                    {
+                                      "type": 3,
+                                      "textContent": "Avery saved the “My open tasks” view",
+                                      "id": 202
+                                    }
+                                  ],
+                                  "id": 203
+                                }
+                              ],
+                              "id": 204
+                            }
+                          ],
+                          "id": 205
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "div",
+                          "attributes": {},
+                          "childNodes": [
+                            {
+                              "type": 2,
+                              "tagName": "label",
+                              "attributes": { "for": "member-search" },
+                              "childNodes": [{ "type": 3, "textContent": "Find a teammate", "id": 206 }],
+                              "id": 207
+                            },
+                            {
+                              "type": 2,
+                              "tagName": "input",
+                              "attributes": { "id": "member-search", "type": "text", "value": "" },
+                              "childNodes": [],
+                              "id": 208
+                            }
+                          ],
+                          "id": 209
+                        },
+                        {
+                          "type": 2,
+                          "tagName": "button",
+                          "attributes": { "class": "quiet", "id": "save-view" },
+                          "childNodes": [{ "type": 3, "textContent": "Save this view", "id": 210 }],
+                          "id": 211
+                        }
+                      ],
+                      "id": 225
+                    }
+                  ],
+                  "id": 226
+                }
+              ],
+              "id": 227
+            }
+          ],
+          "initialOffset": { "left": 0, "top": 0 },
+          "id": 228
+        },
+        "initialOffset": { "left": 0, "top": 0 }
+      },
+      "timestamp": 1793003700020
+    },
+    {
+      "type": 3,
+      "data": { "source": 1, "positions": [{ "x": 325, "y": 150, "id": 192, "timeOffset": 0 }] },
+      "timestamp": 1793003705230
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 1, "id": 192, "x": 325, "y": 150 },
+      "timestamp": 1793003705300
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 2, "id": 192, "x": 325, "y": 150 },
+      "timestamp": 1793003705301
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 0, "id": 192, "x": 325, "y": 150 },
+      "timestamp": 1793003705302
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 189, "value": "Checklist opened · 8 of 10 items complete" }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1793003706000
+    },
+    {
+      "type": 3,
+      "data": { "source": 1, "positions": [{ "x": 615, "y": 150, "id": 197, "timeOffset": 0 }] },
+      "timestamp": 1793003721530
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 1, "id": 197, "x": 615, "y": 150 },
+      "timestamp": 1793003721600
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 2, "id": 197, "x": 615, "y": 150 },
+      "timestamp": 1793003721601
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 0, "id": 197, "x": 615, "y": 150 },
+      "timestamp": 1793003721602
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 198, "value": "Mobile navigation · note opened by Morgan" }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1793003724000
+    },
+    {
+      "type": 3,
+      "data": { "source": 1, "positions": [{ "x": 180, "y": 265, "id": 208, "timeOffset": 0 }] },
+      "timestamp": 1793003730630
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 1, "id": 208, "x": 180, "y": 265 },
+      "timestamp": 1793003730700
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 2, "id": 208, "x": 180, "y": 265 },
+      "timestamp": 1793003730701
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 0, "id": 208, "x": 180, "y": 265 },
+      "timestamp": 1793003730702
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 5,
+        "id": 208,
+        "text": "Morgan",
+        "isChecked": false,
+        "userTriggered": true
+      },
+      "timestamp": 1793003731000
+    },
+    {
+      "type": 3,
+      "data": { "source": 1, "positions": [{ "x": 325, "y": 265, "id": 208, "timeOffset": 0 }] },
+      "timestamp": 1793003738830
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 1, "id": 208, "x": 325, "y": 265 },
+      "timestamp": 1793003738900
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 2, "id": 208, "x": 325, "y": 265 },
+      "timestamp": 1793003738901
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 0, "id": 208, "x": 325, "y": 265 },
+      "timestamp": 1793003738902
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 194, "value": "Recent activity · Morgan match found" }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1793003741000
+    },
+    {
+      "type": 3,
+      "data": { "source": 1, "positions": [{ "x": 470, "y": 265, "id": 211, "timeOffset": 0 }] },
+      "timestamp": 1793003748030
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 1, "id": 211, "x": 470, "y": 265 },
+      "timestamp": 1793003748100
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 2, "id": 211, "x": 470, "y": 265 },
+      "timestamp": 1793003748101
+    },
+    {
+      "type": 3,
+      "data": { "source": 2, "type": 0, "id": 211, "x": 470, "y": 265 },
+      "timestamp": 1793003748102
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 202, "value": "Saved view · “My open tasks”" }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1793003752000
+    },
+    {
+      "type": 3,
+      "data": {
+        "source": 0,
+        "texts": [{ "id": 187, "value": "Launch checklist · demo session complete" }],
+        "attributes": [],
+        "removes": [],
+        "adds": []
+      },
+      "timestamp": 1793003763200
+    }
+  ],
+  "steps": [
+    { "at": 800, "kind": "goto", "label": "Open the team workspace" },
+    { "at": 5300, "kind": "click", "label": "Open the launch checklist", "selector": "button" },
+    { "at": 12400, "kind": "scroll", "label": "Read recent activity" },
+    { "at": 21600, "kind": "click", "label": "Open the mobile navigation note", "selector": "li" },
+    { "at": 30700, "kind": "fill", "label": "Find a teammate", "selector": "#member-search" },
+    { "at": 38900, "kind": "press", "label": "Filter team activity", "selector": "#member-search" },
+    { "at": 48100, "kind": "click", "label": "Save the current view", "selector": "button.quiet" },
+    { "at": 59600, "kind": "wait", "label": "Review the saved activity view" }
+  ],
+  "console": [],
+  "network": [
+    {
+      "id": "team-page",
+      "at": 250,
+      "duration": 120,
+      "method": "GET",
+      "url": "https://workspace.northstar.demo.test/team",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "text/html",
+      "requestHeaders": [],
+      "responseHeaders": [{ "name": "content-type", "value": "text/html" }]
+    },
+    {
+      "id": "team-tasks",
+      "at": 900,
+      "duration": 240,
+      "method": "GET",
+      "url": "https://api.northstar.demo.test/v1/tasks?view=launch",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "application/json",
+      "requestHeaders": [],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    },
+    {
+      "id": "team-events",
+      "at": 12400,
+      "duration": 304,
+      "method": "GET",
+      "url": "https://events.northstar.demo.test/v1/activity?team=demo",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "application/json",
+      "requestHeaders": [],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    },
+    {
+      "id": "team-search",
+      "at": 38900,
+      "duration": 159,
+      "method": "GET",
+      "url": "https://identity.northstar.demo.test/v1/members?q=Morgan",
+      "status": 200,
+      "statusText": "OK",
+      "mimeType": "application/json",
+      "requestHeaders": [],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    },
+    {
+      "id": "team-save-view",
+      "at": 48100,
+      "duration": 207,
+      "method": "PUT",
+      "url": "https://api.northstar.demo.test/v1/views/demo-open-tasks",
+      "status": 201,
+      "statusText": "Created",
+      "mimeType": "application/json",
+      "requestHeaders": [{ "name": "content-type", "value": "application/json" }],
+      "responseHeaders": [{ "name": "content-type", "value": "application/json" }]
+    }
+  ],
+  "performance": { "supported": [], "entries": [] },
+  "context": {
+    "version": 1,
+    "capturedAt": "2026-10-26T08:35:00.000Z",
+    "app": {
+      "name": "Northstar Workspace",
+      "environment": "demo",
+      "origin": "https://workspace.northstar.demo.test",
+      "version": "demo-1.0"
+    },
+    "test": {
+      "suite": "Workspace activity",
+      "case": "demo seed long activity",
+      "runId": "demo-seed-long-activity"
+    },
+    "fields": { "demo": true, "fictional": true }
+  },
+  "suiteRun": { "suiteId": "demo-suite-workspace-activity", "runId": "team-long-session" }
+}

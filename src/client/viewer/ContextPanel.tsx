@@ -20,13 +20,24 @@ import { formatRelative } from '../format.ts';
 import { sourceLook } from '../source-looks.ts';
 import { type FieldRow, type FieldValue, fieldGroups, httpsHref, type Signal, type SignalState } from './context-fields.ts';
 import { ViewerContext } from './context.ts';
-import { Empty } from './Empty.tsx';
+import { EmptyState } from '@/components/ui/empty-state.tsx';
+import type { SlotDescriptor } from '../plugins/slots.ts';
+import { CONTEXT_SECTIONS_SLOT, contextSections } from './context-sections.tsx';
 import { SourceIcon } from '@/components/brand-icon.tsx';
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
 
 import './context-panel.css';
+
+export const contextStrings = {
+  emptyTitle: 'No context was attached',
+  emptyBody: 'Context is the build, test and source links behind a run. Captures add it with --context-file.',
+  emptyDocs: 'How to attach context',
+} as const;
+const CONTEXT_DOCS = 'https://github.com/hazem3500/replays#context-metadata-schema';
+/** A field that is present but empty; a word, never a dash. */
+const EMPTY_VALUE = 'None';
 
 /*
  * The Context tab: a properties panel for the opt-in replay context (see README "Capture a replay").
@@ -47,6 +58,23 @@ function useNotify() {
   return useContext(ViewerContext)?.notify;
 }
 
+interface SectionContext {
+  context: ReplayContext;
+  schema?: FieldSchema | undefined;
+}
+
+/** The tab's built-in blocks, in `viewer.context.sections` order: plugin sections come after (registry +1000 base). */
+const CORE_SECTIONS: readonly SlotDescriptor<SectionContext, ReactNode>[] = [
+  { id: 'core:summary', order: 100, render: ({ context }) => <Summary context={context} /> },
+  {
+    id: 'core:sources',
+    order: 200,
+    when: ({ context }) => Boolean(context.sources?.length),
+    render: ({ context }) => <Sources sources={context.sources ?? []} />,
+  },
+  { id: 'core:fields', order: 300, render: ({ context, schema }) => <Groups context={context} schema={schema} /> },
+];
+
 export function ContextPanel({
   bundle,
   schema,
@@ -61,20 +89,21 @@ export function ContextPanel({
   if (!context) {
     return (
       <div className="table-scroll" data-testid="context-empty">
-        <Empty title="No context was captured">
-          Pass --context-file to the capture CLI to attach the build, test and sources behind a run.
-        </Empty>
+        <EmptyState
+          variant="compact"
+          icon="none"
+          title={contextStrings.emptyTitle}
+          body={contextStrings.emptyBody}
+          actions={[{ id: 'docs', label: contextStrings.emptyDocs, href: CONTEXT_DOCS, external: true }]}
+        />
         {sections ? <div className="ctx-inner ctx-plugin-sections">{sections}</div> : null}
       </div>
     );
   }
   return (
     <div data-testid="context-panel" className="table-scroll ctx">
-      <div className="ctx-inner">
-        <Summary context={context} />
-        {context.sources?.length ? <Sources sources={context.sources} /> : null}
-        <Groups context={context} schema={schema} />
-        {sections}
+      <div className="ctx-inner" data-slot={CONTEXT_SECTIONS_SLOT}>
+        {contextSections(CORE_SECTIONS, { context, schema }, sections)}
       </div>
     </div>
   );
@@ -321,7 +350,7 @@ function FieldList({ rows, nested = false }: { rows: FieldRow[]; nested?: boolea
 function FieldValueView({ value }: { value: FieldValue }): ReactElement {
   switch (value.kind) {
     case 'empty':
-      return <span className="ctx-value ctx-muted">—</span>;
+      return <span className="ctx-value ctx-muted">{EMPTY_VALUE}</span>;
     case 'text':
       return <Text value={value.text} />;
     case 'boolean':

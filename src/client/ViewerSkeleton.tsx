@@ -1,118 +1,62 @@
 import './editor/skeleton.css';
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import { ChevronDownIcon } from 'lucide-react';
+import { type CSSProperties, type ReactNode, useState } from 'react';
 
-import { useLoadProgress } from './load-progress.ts';
+import { Button } from '@/components/ui/button.tsx';
+
+import { EditorTopbar } from './editor/EditorTopbar.tsx';
+import { editorStrings } from './editor/strings.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
+import { ProgressiveViewerShell } from './ProgressiveViewerShell.tsx';
+import { parseRoute, replayHref } from './route.ts';
 import { readStorage } from './storage.ts';
+import { SuiteSidebarPending } from './suite/SuiteSidebar.tsx';
+import { useShellHandover } from './hooks/use-shell-handover.ts';
+import { LoadingPlayer, ProgressHint } from './viewer/LoadingParts.tsx';
+import { readOpenHint, readViewerLoadingLayout } from './viewer/open-hint.ts';
 
-/** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
+export { OPEN_HINT_KEY, type OpenHint, readOpenHint, readViewerLoadingLayout } from './viewer/open-hint.ts';
+export { ProgressHint } from './viewer/LoadingParts.tsx';
 
-/* Repeated from the viewer chunk (StepRail.tsx, Inspector.tsx, Viewer.tsx); keep in sync. */
-const STEPS_WIDTH_KEY = 'replays-steps-width';
-const INSPECTOR_HEIGHT_KEY = 'replays-inspector-height';
-const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
-const DEFAULT_INSPECTOR_HEIGHT = 260;
-const MIN_INSPECTOR_HEIGHT = 120;
-const INSPECTOR_TABS_HEIGHT = 37;
-
-/**
- * What the page opening the replay already knows (the index writes it before navigating; see OPEN_HINT_KEY):
- * the title, the recording's viewport and step count.
+/*
+ * The replay, suite and editor pages while they load. One principle throughout (viewer/LoadingParts.tsx): the page's
+ * real chrome at once (top bar, transport, tabs, headers, the editor's real top bar), the card's poster where the
+ * player will be, and stand-ins only for data that is not known yet, drawn in the real markup and redacted
+ * (`.pending`, loading.css), breathing slowly. Nothing shows for waits under --skeleton-delay; the ready page's
+ * regions then arrive one by one (html[data-shell-handover]).
  */
-export const OPEN_HINT_KEY = 'replays-open-hint';
-export interface OpenHint {
-  id: string;
-  title?: string;
-  viewport?: { width: number; height: number };
-  steps?: number;
-  /** A source chip (a linked pull request or ticket) shows beside the title. */
-  source?: boolean;
-  /** The card's poster, or its opening still when loaded: the frame shows it while loading (navigation.ts). */
-  poster?: string;
-  /** `poster` is the opening still (the replay's first paint), not the list poster. */
-  still?: boolean;
-}
 
-function readHint(): OpenHint | undefined {
-  try {
-    const raw = sessionStorage.getItem(OPEN_HINT_KEY);
-    if (!raw) return undefined;
-    const hint = JSON.parse(raw) as OpenHint;
-    return location.pathname.includes(`/${encodeURIComponent(hint.id)}`) ? hint : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-function layout(hint: OpenHint | undefined) {
-  const savedHeight = Number(readStorage(INSPECTOR_HEIGHT_KEY));
-  const maxHeight = Math.max(MIN_INSPECTOR_HEIGHT, Math.round(window.innerHeight * 0.6));
-  const height =
-    Number.isFinite(savedHeight) && savedHeight > 0
-      ? Math.round(Math.min(Math.max(savedHeight, MIN_INSPECTOR_HEIGHT), maxHeight))
-      : DEFAULT_INSPECTOR_HEIGHT;
-  const savedCollapsed = readStorage(INSPECTOR_COLLAPSED_KEY);
-  const collapsed = savedCollapsed === '1';
-  const stepsWidth = Number(readStorage(STEPS_WIDTH_KEY));
-  const ratio = hint?.viewport && hint.viewport.height > 0 ? hint.viewport.width / hint.viewport.height : 16 / 10;
-  return { height, collapsed, stepsWidth: Number.isFinite(stepsWidth) && stepsWidth > 0 ? stepsWidth : undefined, ratio };
-}
-
-/** A skeleton that disappeared this recently hands over to the next one at once (no second fade-in). */
-let lastVisibleAt = Number.NEGATIVE_INFINITY;
-const SHOW_DELAY_MS = 150;
-
+/** The replay page's loading layout, standing alone (Suspense fallbacks, the suite route, a run switching in). */
 export function ViewerSkeleton({ label = 'Loading replay', suite = false }: { label?: string; suite?: boolean }) {
   const mobile = useMediaQuery(MOBILE_QUERY);
-  const [hint] = useState(readHint);
-  const [shape] = useState(() => layout(hint));
-  const [instant] = useState(() => performance.now() - lastVisibleAt < 120);
-  useEffect(() => {
-    const started = performance.now();
-    return () => {
-      if (instant || performance.now() - started >= SHOW_DELAY_MS) lastVisibleAt = performance.now();
-    };
-  }, [instant]);
-  const collapsed = shape.collapsed;
-  const viewer = (
-    <main
-      className="app-shell skeleton-shell"
-      data-mobile={mobile || undefined}
-      data-inspector-collapsed={collapsed || undefined}
-      data-instant={instant || undefined}
-      aria-busy="true"
-      aria-label={label}
-      style={
-        {
-          '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${shape.height}px`,
-          '--sk-ratio': String(shape.ratio),
-        } as CSSProperties
-      }
-    >
-      <span className="visually-hidden" role="status">
-        {label}…
-      </span>
-      {mobile ? <PhoneSkeleton hint={hint} /> : <DesktopSkeleton hint={hint} stepsWidth={shape.stepsWidth} collapsed={collapsed} />}
-    </main>
-  );
+  const [panel, setPanel] = useState(() => (mobile && (readOpenHint()?.steps ?? 0) > 0 ? 'steps' : 'console'));
+  const viewer = <ProgressiveViewerShell activePanel={panel} onPanelChange={setPanel} status={label} />;
   if (!suite || mobile) return viewer;
   return (
-    <div className="suite-workspace skeleton-suite" data-instant={instant || undefined}>
-      <SuiteSidebarSkeleton />
+    <div className="suite-workspace skeleton-suite">
+      {/* The real sidebar, pending (suite/SuiteSidebar.tsx): its own markup with redacted stand-in runs. */}
+      <SuiteSidebarPending />
       <div className="suite-viewer">{viewer}</div>
     </div>
   );
 }
 
-/** Edit loads retain the editor's single stage and compact timeline; no viewer inspector or step rail flashes. */
+/**
+ * The editor while it loads: its real top bar (back, "Edit", the title, Undo/Redo and Export disabled; Done already
+ * works), the stage with the card's poster and the download ring, and the dock as a calm, breathing tile.
+ */
 export function EditorSkeleton() {
   const mobile = useMediaQuery(MOBILE_QUERY);
-  const [hint] = useState(readHint);
+  const [hint] = useState(readOpenHint);
+  useShellHandover('player');
   const [height] = useState(() => {
     const saved = Number(readStorage('replays-editor-dock-height'));
     return Math.round(Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : 168, 148), Math.max(148, window.innerHeight * 0.65)));
   });
+  const route = parseRoute(location.pathname, location.search);
+  const id = route.kind === 'edit' || route.kind === 'replay' ? route.id : hint?.id;
+  const back = id ? replayHref(id) : '/';
   return (
     <main
       className="app-shell skeleton-shell editor-loading"
@@ -120,134 +64,55 @@ export function EditorSkeleton() {
       aria-busy="true"
       aria-label="Loading editor"
       data-testid="editor-skeleton"
-      style={{ '--editor-loading-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties}
+      style={{ '--editor-loading-height': `${height}px`, '--sk-ratio': String(readViewerLoadingLayout(hint).ratio) } as CSSProperties}
     >
       <span className="visually-hidden" role="status">
         Loading editor…
       </span>
-      <LoadingHeader hint={hint} />
+      <div className="editor-loading-topbar">
+        <EditorTopbar
+          title={hint?.title ?? 'Replay'}
+          backHref={back}
+          status={null}
+          context={{
+            canUndo: false,
+            canRedo: false,
+            undo: noop,
+            redo: noop,
+            done: () => location.assign(back),
+            exportAction: <PendingExport />,
+            menu: [],
+          }}
+        />
+        <ProgressHint />
+      </div>
       <section className="editor-loading-stage" aria-hidden="true">
-        <PlayerSkeleton poster={hint?.poster} />
+        <LoadingPlayer poster={hint?.poster} />
       </section>
       {mobile ? null : <div className="editor-loading-divider" aria-hidden="true" />}
       <section className="editor-loading-dock" aria-hidden="true">
-        <LoadingNotice label="Opening editor" />
+        <div className="editor-loading-tools" />
+        <div className="editor-loading-track" />
       </section>
     </main>
   );
 }
 
-/** The thin line under the top bar after 1.2 s: indeterminate, or the share downloaded when the size is known. */
-function ProgressHint() {
-  // Visibility is loading state, not an animation side effect. It must survive disabled/cancelled animations.
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setVisible(true), 1200);
-    return () => window.clearTimeout(timer);
-  }, []);
-  const progress = useLoadProgress();
-  const share = progress?.total ? Math.min(1, progress.loaded / progress.total) : undefined;
+const noop = () => undefined;
+
+/** The Export control as it will be (EditorExport.tsx), disabled until the editor can render a video. */
+function PendingExport() {
   return (
-    <span
-      className="sk-progress"
-      data-visible={visible || undefined}
-      data-determinate={share === undefined ? undefined : ''}
-      aria-hidden="true"
-    >
-      <span style={share === undefined ? undefined : { transform: `scaleX(${share})` }} />
+    <span className="inline-flex">
+      <Button className="editor-export" disabled>
+        {editorStrings.export.button}
+        <ChevronDownIcon aria-hidden="true" className="editor-export-chevron" />
+      </Button>
     </span>
   );
 }
 
-function LoadingHeader({ hint }: { hint: OpenHint | undefined }) {
-  return (
-    <div className="topbar app-topbar sk-topbar" aria-hidden="true">
-      <span className="loading-title">{hint?.title ?? 'Replay'}</span>
-      <ProgressHint />
-    </div>
-  );
-}
-
-function LoadingNotice({ label = 'Opening replay' }: { label?: string }) {
-  return (
-    <span className="loading-notice">
-      <span className="loading-dot" />
-      {label}…
-    </span>
-  );
-}
-
-/** The player: the stage's canvas, the recording's frame at its aspect ratio (as the viewer fits it), a faint play glyph. */
-function PlayerSkeleton({ poster }: { poster?: string | undefined }) {
-  return (
-    <div className="stage-wrap">
-      <div className="player-stage sk-stage">
-        <div className="sk-frame">
-          {poster ? <img className="sk-poster" src={poster} alt="" decoding="sync" draggable={false} /> : null}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DesktopSkeleton({
-  hint,
-  stepsWidth,
-  collapsed,
-}: {
-  hint: OpenHint | undefined;
-  stepsWidth: number | undefined;
-  collapsed: boolean;
-}) {
-  return (
-    <>
-      <LoadingHeader hint={hint} />
-      <div
-        className="workspace"
-        aria-hidden="true"
-        style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
-      >
-        <section className="player-region">
-          <PlayerSkeleton poster={hint?.poster} />
-          <div className="transport loading-transport">
-            <LoadingNotice />
-          </div>
-        </section>
-        <span />
-        <aside className="timeline-panel" />
-      </div>
-      {collapsed ? null : <div className="skeleton-divider" aria-hidden="true" />}
-      <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs" />
-      </div>
-    </>
-  );
-}
-
-function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
-  return (
-    <>
-      <LoadingHeader hint={hint} />
-      <div className="workspace" aria-hidden="true">
-        <section className="player-region">
-          <PlayerSkeleton poster={hint?.poster} />
-          <div className="transport loading-transport">
-            <LoadingNotice />
-          </div>
-        </section>
-      </div>
-      <div className="inspector" aria-hidden="true">
-        <div className="inspector-tabs sk-tabs-phone" />
-      </div>
-    </>
-  );
-}
-
-function SuiteSidebarSkeleton() {
-  return <aside className="suite-sidebar" aria-hidden="true" />;
-}
-
-/** Loading is a single layout, replaced as soon as content is ready. CSS delays its entrance for fast loads. */
+/** Loading is a single layout, replaced as soon as content is ready. CSS delays its placeholders for fast loads. */
 export function LoadingSwap({ ready, skeleton, children }: { ready: boolean; skeleton: ReactNode; children: ReactNode }) {
   return <>{ready ? children : skeleton}</>;
 }

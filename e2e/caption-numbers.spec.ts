@@ -22,10 +22,12 @@ test('captions default to unnumbered; numbering toggles, persists, and survives 
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   const caption = page.getByTestId('step-caption');
   await expect(caption).toBeVisible();
-  await expect(caption).toHaveAttribute('aria-hidden', 'true');
+  await expect(caption).toHaveRole('status');
+  await expect(caption).toHaveAttribute('aria-live', 'off');
   await expect(caption.locator('.step-caption-text')).toHaveCSS('animation-duration', '0s');
   await expect(caption.locator('.step-caption-number')).toHaveCount(0);
   const label = await caption.locator('.step-caption-label').textContent();
+  await expect(caption).toHaveAccessibleName(label!);
   const numbers = await openNumbers(page);
   await expect(numbers).toHaveAttribute('aria-checked', 'false');
   await numbers.click();
@@ -78,7 +80,7 @@ test('numbering follows the edited rail after cuts, including repeated labels', 
     route.fulfill({ json: { version: 1, revision: 1, cuts: [{ id: 'opening', from: 0, to: 1000 }] } }),
   );
   await openReplay(page, replay());
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   for (const index of [0, 1, 2]) {
     await page.getByTestId('step-timeline').locator(`[data-step-index="${index}"]`).click();
     const caption = page.getByTestId('step-caption');
@@ -126,3 +128,43 @@ test('blocked preference storage still allows toggling numbers for this visit', 
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   await expect(page.getByTestId('step-caption').locator('.step-caption-number')).toHaveText('2');
 });
+
+for (const reducedMotion of ['no-preference', 'reduce'] as const) {
+  test(`saved caption host survives rapid seeks and gaps (${reducedMotion})`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion });
+    await page.route('**/api/replays/demo-shop', async (route) => {
+      const response = await route.fetch();
+      const bundle = await response.json();
+      bundle.steps = [0, 1000, 2000, 3000].map((at, index) => ({ at, kind: 'click', label: `Step ${index + 1}` }));
+      await route.fulfill({ response, json: bundle });
+    });
+    await page.route('**/api/replays/demo-shop/edits', (route) => route.fulfill({ json: {
+      version: 1,
+      revision: 1,
+      cuts: [],
+      captions: [
+        { id: 'opening', from: 0, to: 1500, text: 'Review the cart' },
+        { id: 'closing', from: 2500, to: 5000, text: 'Save the cart' },
+      ],
+    } }));
+    await openReplay(page, replay());
+    const caption = page.getByTestId('edit-caption');
+    const steps = page.getByTestId('step-timeline');
+    await steps.locator('[data-step-index="0"]').click();
+    await expect(caption).toHaveAccessibleName('Review the cart');
+    const mounted = await caption.locator('[data-caption-morph]').elementHandle();
+    expect(mounted).not.toBeNull();
+    // Actual step click handlers seek through a caption gap and repeatedly retarget the saved caption.
+    await steps.evaluate((rail) => {
+      for (const index of [3, 0, 2, 1, 3]) rail.querySelector<HTMLElement>(`[data-step-index="${index}"]`)!.click();
+    });
+    await expect(caption).toHaveAccessibleName('Save the cart');
+    await expect(caption).toHaveAttribute('aria-live', 'off');
+    await expect(caption.locator('[data-caption-morph]')).toHaveText('Save the cart');
+    expect(await caption.locator('[data-caption-morph]').evaluate((node, before) => node === before, mounted!)).toBe(true);
+    await expect(caption.locator('.step-caption-number')).toHaveCount(0);
+    await expect(caption.locator('[data-caption-morph]')).toHaveAttribute('data-motion', reducedMotion === 'reduce' ? 'reduced' : 'full');
+    await expect(caption.locator('[data-caption-text]')).toHaveCount(1);
+    await mounted?.dispose();
+  });
+}

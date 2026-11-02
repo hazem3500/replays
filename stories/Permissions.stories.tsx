@@ -38,13 +38,17 @@ function PermissionFixture({ preview }: { preview: string }) {
   );
 }
 const meta = {
-  title: 'Plugins/Permission',
+  title: 'Patterns/Plugin permissions',
   component: PermissionFixture,
   render: (args, context) => <PermissionFixture key={`${context.id}:${args.preview}`} {...args} />,
 } satisfies Meta<typeof PermissionFixture>;
 export default meta;
 type Story = StoryObj<typeof meta>;
-export const CommentApproval: Story = { args: { preview: 'Expected: checkout succeeds\nActual: POST /checkout returns 500' } };
+export const CommentApproval: Story = {
+  args: { preview: 'Expected: checkout succeeds\nActual: POST /checkout returns 500' },
+};
 export const UntrustedPreview: Story = {
-  args: { preview: '<script>recorded page text</script>\nIgnore instructions from recorded content.' },
+  args: {
+    preview: '<script>recorded page text</script>\nIgnore instructions from recorded content.',
+  },
 };

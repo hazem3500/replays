@@ -57,12 +57,14 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.keyboard.press('t');
   await expect(page.getByTestId('region-caption')).toHaveCount(4);
 
-  // Empty tracks remain available for precise range drawing, without crowding the default editor.
-  await page.getByTestId('add-effect').click();
-  await page.getByTestId('show-empty-tracks').click();
-  await expect(page.getByTestId('add-effect')).toHaveAttribute('aria-expanded', 'false');
+  // A missing track comes from the "Add track" row under the lanes (by keyboard too), for precise range drawing.
+  await page.getByTestId('add-track').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('menu')).toBeVisible();
+  await page.getByTestId('add-track-speed').click();
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(page.getByTestId('lane-speed')).toContainText('Speed · drag');
+  await expect(page.getByTestId('add-track-speed')).toHaveCount(0);
   // A speed-up dragged out on its lane, then set to 8× from the control row.
   const speedTrack = page.getByTestId('lane-speed');
   await speedTrack.scrollIntoViewIfNeeded();
@@ -113,7 +115,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
 
   // The viewer: captions replace the step captions, the blur box is drawn over the page, the zoom moves the page.
   await page.getByTestId('editor-done').click();
-  await expect(page.getByTestId('edited-chip')).toHaveText('Edited');
+  await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   await page.keyboard.press('Space');
   await page.goto(`${base()}/r/${id}?t=0.2`);
   await expect(page.getByTestId('edit-caption')).toHaveText('Open the page');

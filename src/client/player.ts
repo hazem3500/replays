@@ -61,6 +61,8 @@ export class ReplayController {
   private effects: PlaybackEffects;
   private layer: EffectsLayer | undefined;
   private cursor: ReplayCursor | undefined;
+  /** The agent cursor tag: who drove the recording. */
+  private readonly cursorLabel: string;
   private time = 0;
   private state: PlayerState = { status: 'paused', speed: 1, skipInactive: true };
   private viewport: Viewport;
@@ -83,6 +85,7 @@ export class ReplayController {
     this.groups = snapshotGroups(bundle.events, bundle.network);
     this.idleGaps = idleGaps(bundle.events as unknown as Array<{ type: number; timestamp: number; data?: unknown }>);
     this.viewport = { ...bundle.meta.viewport };
+    this.cursorLabel = bundle.meta.source === 'human' ? 'Human' : 'Agent';
   }
 
   /** Mounts an rrweb Replayer into `root`; returns the cleanup. */
@@ -109,7 +112,9 @@ export class ReplayController {
     this.replayer = replayer;
     replayer.pause(this.offsetFor(this.time));
     // Replay cursor: our own overlay (rrweb's mouse is hidden in CSS), a pure function of the playhead.
-    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, this.effects.cursor);
+    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, this.effects.cursor, {
+      label: this.cursorLabel,
+    });
     this.cursor = cursor;
     cursor.update(this.time);
     const unsubscribeCursor = this.subscribeTime(() => cursor.update(this.time));
@@ -132,6 +137,11 @@ export class ReplayController {
       replayer.destroy();
       root.replaceChildren();
     };
+  }
+
+  /** Settles once the replay cursor's current frame is drawn (cursor themes that draw asynchronously). */
+  cursorReady() {
+    return this.cursor?.ready() ?? Promise.resolve();
   }
 
   /** The effects drawn over the replay; the editor swaps them as edits change. */

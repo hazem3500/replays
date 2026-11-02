@@ -9,6 +9,13 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ### Added
 
+- Replay meta and trash routes: `PATCH /api/replays/<id>/meta` changes a replay's title, tags or purpose on top of the recorded
+  bundle (lists, search and filters use the new values; `GET …/meta` returns them), `DELETE /api/replays/<id>` moves a replay to
+  the trash (out of every list, restorable for 7 days with `POST /api/replays/<id>/restore`, then swept; refused while kept).
+- Source-provider marks: a provider may name one of the viewer's built-in monochrome marks with `mark` (`github`, `gitlab`,
+  `slack`, `linear`, `jira`, `notion`, `link`), drawn in the text colour. The built-in providers carry theirs, and a
+  config-file provider whose id names a mark gets it by default; an `icon` still wins. Index rows show the provider's icon
+  beside the source's label, and on phones a small icon chip that opens a sheet of the replay's sources.
 - Capture pacing: optional `CaptureArgs.stepPauseMs`, config `capture.stepPauseMs`, and CLI `--step-pause`
   (0–10000ms after non-wait actions; default 0 for compatibility, set 1200 for demonstration captures).
   Built-in drivers type at 80ms/character, selector-derived labels omit typed values, and unlabelled waits

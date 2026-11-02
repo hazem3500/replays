@@ -1,0 +1,25 @@
+/*
+ * Poster placeholder (Poster.tsx): what a replay's thumbnail shows until its picture arrives, and for good when
+ * there is none (posters off on this server, a failed render, a suite run without a recording). Imported after
+ * feed.css (Poster.tsx), so within the `app` layer these rules follow the feed's poster rules.
+ *
+ *   ThumbHash  the summary's `posterHash`, decoded to a soft 32 px picture and scaled up behind the poster: the
+ *              card has its colours at once and the real image fades in over them (feed.css, 200 ms).
+ *   Tile       without one, a calm tile: a faint wash of the text colour, nothing drawn in it (no fake page).
+ *   Loading    only while a poster is genuinely on its way and there is no ThumbHash: the tile breathes (opacity,
+ *              slowly), starting after --skeleton-delay so a cached poster or an "off" answer never shows motion.
+ */
+@layer properties, theme, base, app, components, utilities;
+
+@layer app {
+  .poster-placeholder { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent)); }
+  .poster[data-thumb] .poster-placeholder { background: var(--poster-thumb) center / cover no-repeat; }
+
+  /* Breathing replaces the feed's sweep (same layer, same selector, later rule). */
+  .poster[data-phase="loading"]::before { background: color-mix(in srgb, var(--text) 5%, transparent); transform: none; opacity: 0; animation: skeleton-breathe 2.4s ease-in-out var(--skeleton-delay) infinite; }
+  .poster[data-phase="loading"][data-thumb]::before { content: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .poster[data-phase="loading"]::before { opacity: 0.5; animation: none; }
+  }
+}

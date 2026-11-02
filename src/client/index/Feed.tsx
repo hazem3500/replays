@@ -1,5 +1,5 @@
 import { ArrowRightIcon, LayersIcon } from 'lucide-react';
-import { createContext, type PointerEvent, type ReactNode, useContext, useId, useRef } from 'react';
+import { createContext, type PointerEvent, type ReactNode, useContext, useRef } from 'react';
 
 import { formatClock, type ReplaySummary } from '../../shared/replay.ts';
 import type { ReviewSuiteIndexEntry, ReviewSuiteIndexRun, SuiteOverallStatus } from '../../shared/review-suite.ts';
@@ -16,7 +16,7 @@ import { cn } from '@/lib/utils.ts';
 import { formatRelative } from '../format.ts';
 import { replayHref, replayInSuiteHref, suiteHref } from '../route.ts';
 import { playableReplayId } from '../suite/runs.ts';
-import { errorTotal, feedTime, formatBadgeDuration, groupByDay, runStrip } from './feed.ts';
+import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
@@ -24,6 +24,10 @@ import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
 import { useIntentPrefetch } from '../intent-prefetch.ts';
+import { FeedList, type FeedRowPlace } from './FeedList.tsx';
+import { ExpiryHint } from './FeedRowActions.tsx';
+import './card-motion.css';
+import './list-motion.css';
 
 /*
  * The replay index as a visual feed: sessions and review suites as rows (list) or cards (grid), each
@@ -147,7 +151,19 @@ function RowColumns({ at, host }: { at: string; host: string }) {
 
 /* ---------- Rows ---------- */
 
-function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: FeedView; query: string }) {
+function SessionItem({
+  summary,
+  view,
+  query,
+  place,
+  rowRef,
+}: {
+  summary: ReplaySummary;
+  view: FeedView;
+  query: string;
+  place: FeedRowPlace;
+  rowRef: ((element: HTMLElement | null) => void) | undefined;
+}) {
   const errors = errorTotal(summary);
   const imported = summary.source === 'human';
   const showId = Boolean(query) && summary.id.toLowerCase().includes(query.toLowerCase());
@@ -169,14 +185,19 @@ function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: F
     .join(', ');
   return (
     <li
+      ref={rowRef}
       className="feed-item feed-session"
       data-view={view}
       data-entry-id={`session:${summary.id}`}
+      data-row={place.index}
+      data-index={place.measured ? place.index : undefined}
+      data-last={place.last || undefined}
       {...previewHandlers(`session:${summary.id}`)}
     >
       <Poster
         id={summary.id}
         host={summary.host}
+        hash={summary.posterHash}
         size={view === 'grid' ? 'card' : 'row'}
         playing={playing}
         badge={formatBadgeDuration(summary.duration)}
@@ -184,7 +205,8 @@ function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: F
       <div className="feed-body">
         <div className="feed-head">
           <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-            {summary.title}
+            {/* An inline span: a pending feed (FeedSkeleton) redacts it line by line. */}
+            <span className="feed-title-text">{summary.title}</span>
           </a>
         </div>
         <div className="feed-meta">
@@ -201,6 +223,7 @@ function SessionItem({ summary, view, query }: { summary: ReplaySummary; view: F
               </code>
             ) : null}
           </span>
+          <ExpiryHint summary={summary} />
         </div>
         {/* Plugins' fields (registerIndexColumn), drawn from summary.ext. */}
         <IndexColumns summary={summary} />
@@ -300,7 +323,17 @@ function RunStrip({
   );
 }
 
-function SuiteItem({ entry, view }: { entry: SuiteFeedEntry; view: FeedView }) {
+function SuiteItem({
+  entry,
+  view,
+  place,
+  rowRef,
+}: {
+  entry: SuiteFeedEntry;
+  view: FeedView;
+  place: FeedRowPlace;
+  rowRef: ((element: HTMLElement | null) => void) | undefined;
+}) {
   const { suite } = entry;
   const status = SUITE_STATUS[entry.status];
   const count = suite.runDetails.length;
@@ -350,10 +383,16 @@ function SuiteItem({ entry, view }: { entry: SuiteFeedEntry; view: FeedView }) {
     );
   return (
     <li
-      ref={card}
+      ref={(node) => {
+        card.current = node;
+        rowRef?.(node);
+      }}
       className="feed-item feed-suite"
       data-view={view}
       data-entry-id={`suite:${suite.id}`}
+      data-row={place.index}
+      data-index={place.measured ? place.index : undefined}
+      data-last={place.last || undefined}
       {...previewHandlers(`suite:${suite.id}`)}
     >
       {view === 'grid' ? (
@@ -362,6 +401,7 @@ function SuiteItem({ entry, view }: { entry: SuiteFeedEntry; view: FeedView }) {
           <Poster
             id={shownId}
             host={host}
+            hash={poster?.replay?.posterHash}
             size="card"
             playing={playing}
             badge={<RunsBadge count={count} />}
@@ -373,6 +413,7 @@ function SuiteItem({ entry, view }: { entry: SuiteFeedEntry; view: FeedView }) {
           <Poster
             id={shownId}
             host={host}
+            hash={poster?.replay?.posterHash}
             size="row"
             playing={playing}
             badge={<RunsBadge count={count} />}
@@ -383,7 +424,7 @@ function SuiteItem({ entry, view }: { entry: SuiteFeedEntry; view: FeedView }) {
       <div className="feed-body">
         <div className="feed-head">
           <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
-            {suite.title}
+            <span className="feed-title-text">{suite.title}</span>
           </a>
         </div>
         <div className="feed-meta">
@@ -429,7 +470,7 @@ function backRuns(runs: readonly ReviewSuiteIndexRun[], front: ReviewSuiteIndexR
  */
 function BackPoster({ run }: { run: ReviewSuiteIndexRun | undefined }) {
   const id = run ? playableReplayId(run, true) : undefined;
-  return id ? <Poster id={id} host={run?.replay?.host ?? ''} size="fill" className="back-poster" /> : null;
+  return id ? <Poster id={id} host={run?.replay?.host ?? ''} hash={run?.replay?.posterHash} size="fill" className="back-poster" /> : null;
 }
 
 /**
@@ -516,43 +557,25 @@ function RunsBadge({ count }: { count: number }) {
 
 /* ---------- Lists ---------- */
 
-function FeedItems({ entries, view, query }: { entries: FeedEntry[]; view: FeedView; query: string }) {
-  return (
-    // `role="list"`: Safari drops list semantics from unstyled lists.
-    // oxlint-disable-next-line jsx-a11y/no-redundant-roles
-    <ul className="feed-list" data-view={view} role="list">
-      {entries.map((entry) =>
-        entry.kind === 'session' ? (
-          <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} />
-        ) : (
-          <SuiteItem key={`suite:${entry.id}`} entry={entry} view={view} />
-        ),
-      )}
-    </ul>
-  );
-}
+export { entryTime } from './feed-layout.ts';
 
-export function entryTime(entry: FeedEntry) {
-  return entry.kind === 'session' ? entry.summary.capturedAt : entry.suite.createdAt;
-}
-
-/** The feed: day groups with sticky headings when sorted by time, else one flat list. */
+/** The feed: day groups with sticky headings when sorted by time, else one flat list (FeedList.tsx lays it out). */
 export function Feed({ entries, view, grouped, query }: { entries: FeedEntry[]; view: FeedView; grouped: boolean; query: string }) {
-  const id = useId();
   useIntentPrefetch(entries);
-  if (!grouped) return <FeedItems entries={entries} view={view} query={query} />;
   return (
-    <GroupedContext.Provider value={true}>
-      <div className="feed-groups">
-        {groupByDay(entries, entryTime).map((group, index) => (
-          <section key={group.label} className="feed-group" aria-labelledby={`${id}-${index}`}>
-            <h2 className="feed-day" id={`${id}-${index}`}>
-              {group.label}
-            </h2>
-            <FeedItems entries={group.items} view={view} query={query} />
-          </section>
-        ))}
-      </div>
+    <GroupedContext.Provider value={grouped}>
+      <FeedList
+        entries={entries}
+        view={view}
+        grouped={grouped}
+        renderEntry={(entry, place, rowRef) =>
+          entry.kind === 'session' ? (
+            <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} place={place} rowRef={rowRef} />
+          ) : (
+            <SuiteItem key={`suite:${entry.id}`} entry={entry} view={view} place={place} rowRef={rowRef} />
+          )
+        }
+      />
     </GroupedContext.Provider>
   );
 }

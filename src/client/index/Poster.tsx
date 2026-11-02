@@ -1,15 +1,21 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { createContext, type CSSProperties, type ReactNode, useContext, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { cn } from '@/lib/utils.ts';
 
+import { thumbHashDataUrl } from '../../shared/thumbhash.ts';
 import { apiUrl } from '../route.ts';
 import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
+import '../loading.css';
+import './poster.css';
 
 /*
  * A replay's list thumbnail: a plain lazy <img> of GET /api/replays/<id>/poster over a neutral
- * placeholder (the host's initial). The server answers 202 while it renders the poster, and 404/503
- * when there is none; an <img> cannot read those, so after an error one HEAD request decides between
- * "retry after Retry-After" and "keep the placeholder". A 503 switches posters off for the page.
+ * placeholder: the poster's ThumbHash when the summary carries one (a soft picture of the poster, decoded at once),
+ * else a calm tile with nothing drawn in it (no fake page). The
+ * server answers 202 while it renders the poster, and 404/503 when there is none; an <img> cannot read those,
+ * so after an error one HEAD request decides between "retry after Retry-After" and "keep the placeholder".
+ * A 503 switches posters off for the page: every poster still waiting stops its sheen at once and settles on
+ * the placeholder (its <img> stays, since a poster stored before posters went off is still served).
  *
  * While `playing` (the row is hovered or reached by keyboard, preview.ts), a muted looping <video> of
  * GET /api/replays/<id>/preview (the replay at 3×, idle gaps squeezed) fades in over the poster with a
@@ -22,19 +28,51 @@ const POSTER_VERSION = 2;
 
 const MAX_RETRIES = 6;
 let postersOff = false;
+const offListeners = new Set<() => void>();
+
+function setPostersOff(next: boolean) {
+  if (postersOff === next) return;
+  postersOff = next;
+  for (const listener of offListeners) listener();
+}
+
+function subscribePostersOff(listener: () => void) {
+  offListeners.add(listener);
+  return () => void offListeners.delete(listener);
+}
 
 /** Test hook: forget a previous 503. */
 export function resetPosters() {
-  postersOff = false;
+  setPostersOff(false);
 }
 
 type State = { id: string | undefined; phase: 'loading' | 'ready' | 'none'; attempt: number };
 
-const initialState = (id: string | undefined): State => ({ id, phase: id && !postersOff ? 'loading' : 'none', attempt: 0 });
+// Posters off still asks once for the stored one (served regardless), just without the sheen.
+const initialState = (id: string | undefined): State => ({ id, phase: id ? 'loading' : 'none', attempt: 0 });
+
+export type PosterSize = 'row' | 'card' | 'mini' | 'fill';
+
+/**
+ * Inside a pending feed (FeedSkeleton renders the real feed with stand-in entries): posters draw only their tile and
+ * never fetch, since the entries are not real replays.
+ */
+export const PosterPendingContext = createContext(false);
+
+/** Decoded ThumbHashes by value: a card re-rendering (or the same replay in two places) decodes once. */
+const thumbs = new Map<string, string | undefined>();
+function thumbFor(hash: string | undefined) {
+  if (!hash) return undefined;
+  if (!thumbs.has(hash)) {
+    if (thumbs.size > 500) thumbs.clear();
+    thumbs.set(hash, thumbHashDataUrl(hash));
+  }
+  return thumbs.get(hash);
+}
 
 export function Poster({
   id,
-  host,
+  hash,
   className,
   size = 'row',
   playing = false,
@@ -45,9 +83,12 @@ export function Poster({
 }: {
   /** Replay id; absent draws the placeholder only (a suite run without a recording). */
   id: string | undefined;
+  /** The replay's host. The tile no longer draws it (the card's meta line names it); kept for callers. */
   host: string;
+  /** The summary's `posterHash`: drawn at once under the poster, which fades in over it. */
+  hash?: string | undefined;
   className?: string;
-  size?: 'row' | 'card' | 'mini' | 'fill';
+  size?: PosterSize;
   /** Play the hover preview (when this device allows autoplay). */
   playing?: boolean;
   /** Bottom-right overlay: a replay's duration, or a suite's run count. */
@@ -63,6 +104,12 @@ export function Poster({
   // A different replay starts over (derived during render rather than reset in an effect).
   const state = stored.id === id ? stored : initialState(id);
   if (stored !== state) setState(state);
+  const off = useSyncExternalStore(subscribePostersOff, () => postersOff, () => false);
+  const pending = useContext(PosterPendingContext);
+  // "On its way" (a quiet breathing tile): never while posters are off (a stored poster may still arrive and fade
+  // in), and not over a ThumbHash, which already is the picture's stand-in.
+  const thumb = thumbFor(hash);
+  const phase = pending ? 'none' : state.phase === 'loading' && off ? 'none' : state.phase;
   const src = id
     ? `${apiUrl(`replays/${encodeURIComponent(id)}/poster`)}?v=${POSTER_VERSION}${state.attempt ? `&try=${state.attempt}` : ''}`
     : '';
@@ -75,7 +122,7 @@ export function Poster({
     const attempt = state.attempt;
     void fetch(src, { method: 'HEAD' })
       .then((response) => {
-        if (response.status === 503 && !response.headers.get('retry-after')) postersOff = true;
+        if (response.status === 503 && !response.headers.get('retry-after')) setPostersOff(true);
         if (response.status !== 202 && response.status !== 503) throw new Error(String(response.status));
         if (postersOff) throw new Error('posters off');
         const wait = Math.min(30, Math.max(1, Number(response.headers.get('retry-after')) || 2)) * 1000 * (1 + attempt / 2);
@@ -87,11 +134,16 @@ export function Poster({
       .catch(() => setState((current) => (current.attempt === attempt ? { ...current, phase: 'none' } : current)));
   };
 
-  const initial = (host.replace(/^www\./, '')[0] ?? '·').toUpperCase();
   return (
-    <span className={cn('poster', `poster-${size}`, className)} data-phase={state.phase} aria-hidden="true">
-      <span className="poster-placeholder">{initial}</span>
-      {id && state.phase !== 'none' ? (
+    <span
+      className={cn('poster', `poster-${size}`, className)}
+      data-phase={phase}
+      data-thumb={thumb ? '' : undefined}
+      aria-hidden="true"
+      style={thumb ? ({ '--poster-thumb': `url("${thumb}")` } as CSSProperties) : undefined}
+    >
+      <span className="poster-placeholder" />
+      {!pending && id && state.phase !== 'none' ? (
         <img
           key={state.attempt}
           src={src}
@@ -105,7 +157,7 @@ export function Poster({
       ) : null}
       {badge ? <span className="poster-badge">{badge}</span> : null}
       {caption}
-      {playing && id && !previewsOff && previewsAllowed(currentPreviewEnvironment()) ? (
+      {playing && !pending && id && !previewsOff && previewsAllowed(currentPreviewEnvironment()) ? (
         <PreviewVideo
           key={id}
           id={id}
@@ -113,6 +165,34 @@ export function Poster({
           {...(onPreviewHalf ? { onHalf: onPreviewHalf } : {})}
         />
       ) : null}
+    </span>
+  );
+}
+
+/** A poster frame with only its placeholder tile (stories, and anything drawn before its replay is known). */
+export function PosterPlaceholder({
+  size = 'row',
+  hash,
+  loading = false,
+  className,
+  style,
+}: {
+  size?: PosterSize;
+  hash?: string | undefined;
+  loading?: boolean;
+  className?: string;
+  style?: CSSProperties;
+}) {
+  const thumb = thumbFor(hash);
+  return (
+    <span
+      className={cn('poster', `poster-${size}`, className)}
+      data-phase={loading ? 'loading' : 'none'}
+      data-thumb={thumb ? '' : undefined}
+      aria-hidden="true"
+      style={{ ...style, ...(thumb ? ({ '--poster-thumb': `url("${thumb}")` } as CSSProperties) : {}) }}
+    >
+      <span className="poster-placeholder" />
     </span>
   );
 }

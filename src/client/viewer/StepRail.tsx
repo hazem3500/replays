@@ -11,10 +11,15 @@ import { useActiveStep } from './active-step.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { usePreviewStepIndex } from './preview-time.ts';
 import { useViewer } from './context.ts';
-import { Empty } from './Empty.tsx';
+import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { activeStepIndex } from './Transport.tsx';
 import { useFilledAfterTransition } from '../navigation.ts';
 import { queueReveal } from './stagger.ts';
+
+export const stepRailStrings = {
+  emptyTitle: 'No steps in this replay',
+  emptyBody: 'Steps come from agent and scripted captures. This is a browser session, so scrub the timeline or open Console and Network to follow it.',
+} as const;
 
 /** One glyph per step kind; the kind's name is the icon's accessible label. */
 const STEP_ICONS: Record<string, { icon: AnimatedIconName; label: string }> = {
@@ -176,7 +181,7 @@ export const StepList = memo(function StepList() {
     <div className="timeline-wrap">
       <div ref={list} className="timeline" data-testid="step-timeline">
         {steps.length === 0 ? (
-          <Empty title="No agent steps">This replay contains browser events only.</Empty>
+          <EmptyState variant="compact" icon="steps" title={stepRailStrings.emptyTitle} body={stepRailStrings.emptyBody} testId="steps-empty" />
         ) : (
           <>
             <HoverGlide container={list} itemSelector=".step" />

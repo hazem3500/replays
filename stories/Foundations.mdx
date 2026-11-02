@@ -1,0 +1,14 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { DocsHero, DocsCards } from "./fixtures/docs-guide.tsx";
+
+<Meta title="Foundations/Design language" />
+
+<DocsHero eyebrow="The materials" title={["Quiet UI.", "Clear evidence."]} description="One indigo accent, cool neutral surfaces, and a small type scale. Colour describes an action or a state. Motion helps a change feel connected." />
+
+<DocsCards cards={[{"eyebrow": "COLOUR", "title": "Surfaces with a purpose", "description": "Page → surface → raised → hover → pressed. Semantic text, failure, warning and success tokens retain their meaning in both themes."}, {"eyebrow": "TYPE", "title": "Inter, locally served", "description": "The real variable font, with tabular numbers where timing matters. Monospace is reserved for code, selectors and diagnostic data."}, {"eyebrow": "MOTION", "title": "Small, deliberate transitions", "description": "App motion and easing tokens are shown alongside the icon inventory. Reduced-motion preferences continue to work in every story."}]} />
+
+## Tokens are the source of truth
+
+The **Tokens** stories discover CSS custom property names from the actual app stylesheets, then read their resolved values from the rendered document. The light theme is a toolbar switch away. A token change in the app is reflected here without editing a copied palette.
+
+The app does not yet expose a shared spacing-token scale. The Spacing story calls that out explicitly; it does not invent a second scale for Storybook.

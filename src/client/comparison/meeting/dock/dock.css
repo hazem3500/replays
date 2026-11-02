@@ -1,0 +1,109 @@
+/* The inspector dock under the meeting stage (MeetingDock.tsx): resizable and foldable like the viewer's. */
+.mt-dock {
+  --mt-dock-folded: calc(var(--inspector-tabs-height, 37px) + 37px);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: var(--mt-dock-height, 280px);
+  min-height: 0;
+  border-top: 1px solid var(--line);
+  background: var(--surface);
+  transition: height var(--motion) var(--ease-out);
+}
+
+.mt-dock[data-collapsed] {
+  height: var(--mt-dock-folded);
+}
+
+.mt-dock[data-mobile] {
+  height: auto;
+  max-height: 55dvh;
+}
+
+.mt-dock[data-mobile][data-collapsed] {
+  height: auto;
+}
+
+.mt-dock .inspector {
+  flex: 1;
+  min-height: 0;
+}
+
+.mt-dock-split {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  z-index: 3;
+  transform: translateY(-50%);
+}
+
+.mt-dock-sources {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 37px;
+  padding: 4px 12px;
+  border-bottom: 1px solid var(--line);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mt-dock-showing {
+  flex: none;
+  color: var(--text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.mt-dock-chips {
+  display: flex;
+  gap: 4px;
+}
+
+.mt-dock-chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  max-width: 220px;
+  height: 28px;
+  padding: 0 10px 0 2px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition:
+    background var(--motion) var(--ease-out),
+    color var(--motion) var(--ease-out);
+}
+
+.mt-dock-chip:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.mt-dock-chip[aria-checked="true"] {
+  background: color-mix(in oklab, var(--tile) 16%, var(--surface));
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--tile) 55%, transparent);
+}
+
+.mt-dock-chip:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+
+.mt-dock-chip-label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mt-dock {
+    transition: none;
+  }
+}

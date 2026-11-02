@@ -1,0 +1,91 @@
+/*
+ * Edit mode's frame (Editor.tsx and its parts): the topbar's one family of controls, the preview in the viewer's
+ * player frame, the presentation panel beside it, and a dock as tall as its content. Loaded after editor.css, same
+ * `app` layer; control sizing that must beat Tailwind's utilities sits in the `utilities` block at the end.
+ * Every colour is a token; light and dark come from token values.
+ */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
+@layer app {
+  .editor-shell {
+    --editor-panel-width: 280px;
+    --editor-control-height: 32px;
+    --lane-height: 32px;
+    --lane-height-clip: 44px;
+    --lane-gap: 6px;
+    --region-ring: var(--text-tertiary);
+    --region-handle-size: 2px;
+    --playhead-color: var(--accent);
+    --cut-color: color-mix(in srgb, var(--text-tertiary) 45%, transparent);
+  }
+
+  /* ---------- Topbar ---------- */
+  .editor-topbar-actions { gap: 4px; }
+  /* Descriptor wrappers don't take part in the layout. */
+  .editor-topbar-item { display: contents; }
+  .editor-shell .editor-history { gap: 0; margin-right: 4px; padding-right: 8px; border-right: 1px solid var(--line); }
+  .editor-export-chevron { opacity: 0.75; }
+  .editor-export-format-text { display: grid; gap: 1px; min-width: 0; }
+  .editor-export-format-text small { color: var(--text-tertiary); font-size: var(--text-2xs); }
+
+  /* ---------- Stage: the viewer's player frame (canvas, inset, ring from --stage-* in styles.css) ---------- */
+  .editor-shell:not([data-mobile]) .editor-stage { background: var(--canvas); }
+
+  /* ---------- Presentation panel ---------- */
+  .editor-shell .editor-presentation {
+    flex: 0 0 var(--editor-panel-width); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+    scrollbar-width: thin; background: var(--surface); font-size: 13px;
+  }
+  /* The seams (components/ui/splitter): the panel's edge is its splitter's hairline; folded, a tab brings it back. */
+  .editor-panel-edge-tab { position: absolute; z-index: 4; top: 12px; right: 0; }
+  .editor-shell[data-splitter-settling] .editor-presentation { transition: flex-basis var(--splitter-settle) var(--splitter-spring); }
+  .editor-shell[data-splitter-settling] .editor-dock { transition: max-height var(--splitter-settle) var(--splitter-spring); }
+  @media (prefers-reduced-motion: reduce) {
+    .editor-shell[data-splitter-settling] :is(.editor-presentation, .editor-dock) { transition: none; }
+  }
+  .editor-shell .editor-presentation-header { padding: 16px 16px 12px; border-bottom: 0; }
+  .editor-presentation-header h2 { margin: 0; color: var(--text); font-size: 13px; font-weight: 600; line-height: 20px; }
+  .editor-presentation-header p { margin: 0; color: var(--text-tertiary); font-size: var(--text-xs); line-height: 16px; }
+  .editor-presentation-section { padding: 16px; border-top: 1px solid var(--line); }
+  /* The section's container only: CursorInspector draws its own rows. */
+  .editor-shell .editor-presentation .cursor-inspector { max-height: none; overflow: visible; padding: 0; border: 0; border-radius: 0; background: transparent; font-size: 13px; }
+  .editor-presentation .cursor-inspector-header { margin-bottom: 8px; }
+  .editor-presentation .cursor-inspector-header h2 { font-size: 13px; }
+  /* The panel's header already says the scope once; the section keeps only its Reset. */
+  .editor-presentation .cursor-inspector-footer { justify-content: flex-end; }
+  .editor-presentation .cursor-inspector-footer > span { display: none; }
+
+  /* The Captions section: CursorInspector's rhythm (13 px labels, 36 px rows), settings as segmented controls. */
+  .caption-style-section h2 { margin: 0 0 8px; color: var(--text); font-size: 13px; font-weight: 600; }
+  .caption-style-hint { margin: 0 0 8px; color: var(--text-tertiary); font-size: var(--text-xs); }
+  .caption-style-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 36px; color: var(--text); }
+  .caption-style-row .segmented button { min-width: 32px; }
+
+  /* ---------- Dock: as tall as its content, up to the splitter's height (rows in editor.css) ---------- */
+  .editor-shell:not([data-mobile]) .editor-dock { max-height: var(--dock-height, 168px); }
+  .editor-shell:not([data-mobile]) :is(.editor-timeline-content, .timeline) { flex: 0 1 auto; }
+}
+
+@layer utilities {
+  /* One family of 32 px controls on the editor's bar, one radius, one press (0.97 over 100 ms, the app's press-settle). */
+  .editor-shell:not([data-mobile]) .topbar :is(.editor-topbar-actions button, .topbar-back) { height: var(--editor-control-height); border-radius: var(--radius); }
+  .editor-shell:not([data-mobile]) .topbar :is(.editor-history button, .editor-more, .topbar-back) { width: var(--editor-control-height); }
+  .editor-shell:not([data-mobile]) .topbar :is(.editor-history, .editor-more, .topbar-back) svg:not([class*="size-"]) { width: 16px; height: 16px; }
+  .editor-shell:not([data-mobile]) .topbar :is(.editor-topbar-actions button:not(.editor-export), .topbar-back):active:not(:disabled) { background-color: var(--surface-pressed); }
+  @media (prefers-reduced-motion: no-preference) {
+    .editor-shell:not([data-mobile]) .topbar :is(.editor-topbar-actions button, .topbar-back):active:not(:disabled) { scale: 0.97; }
+  }
+  .editor-shell .editor-done.editor-done { padding: 0 12px; color: var(--text-secondary); font-size: 13px; font-weight: 500; }
+  @media (hover: hover) and (pointer: fine) {
+    .editor-shell .editor-done.editor-done:hover { background-color: var(--surface-hover); color: var(--text); }
+  }
+  /* Export is the one filled control: the accent, never muted. */
+  .editor-shell .editor-export.editor-export { gap: 6px; padding: 0 10px 0 12px; background-color: var(--accent); color: var(--accent-contrast); font-size: 13px; font-weight: 600; }
+  .editor-shell .editor-export.editor-export svg { width: 14px; height: 14px; }
+  .editor-shell .editor-export.editor-export svg.editor-export-chevron { width: 12px; height: 12px; }
+  @media (hover: hover) and (pointer: fine) {
+    .editor-shell .editor-export.editor-export:hover { background-color: color-mix(in oklab, var(--accent) 88%, var(--accent-contrast)); }
+  }
+  .editor-shell .editor-export.editor-export:is(:active, [data-popup-open]) { background-color: color-mix(in oklab, var(--accent) 80%, var(--accent-contrast)); }
+  .editor-shell[data-mobile] .editor-export.editor-export { height: 40px; }
+}

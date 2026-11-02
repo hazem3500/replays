@@ -37,7 +37,8 @@ export interface ComparisonWorkspaceProps {
 }
 
 /** Mount below the app's existing QueryClientProvider and ThemeContext. Original timelines only in this beta. */
-export function ComparisonWorkspace(props: ComparisonWorkspaceProps) {
+/** The two-recording workspace with evidence panels; `/compare` now opens the meeting view (meeting/MeetingRoute.tsx). */
+export function PairWorkspace(props: ComparisonWorkspaceProps) {
   const [coordinator, setCoordinator] = useState<ComparisonCoordinator>();
   useEffect(() => {
     // Construct in the effect so StrictMode's setup/cleanup rehearsal gets a fresh live coordinator.
@@ -491,3 +492,5 @@ function SourcePicker({ side, value, onSelect }: { side: ComparisonSide; value: 
     </form>
   );
 }
+
+export { ComparisonWorkspace } from './meeting/MeetingRoute.tsx';

@@ -25,6 +25,7 @@ import { Switch } from '@/components/ui/switch.tsx';
 import { useViewer } from './context.ts';
 import { afterMorphStart, afterPageTransition, freshPoster, swappingInPlace } from '../navigation.ts';
 import { Scrubber } from './Scrubber.tsx';
+import { ViewerPlayButton, ViewerTransportFrame } from './presentation.tsx';
 
 /** Replays up to this many events mount during the page transition (a few ms); bigger ones after it. */
 const LIGHT_MOUNT_EVENTS = 3000;
@@ -171,13 +172,13 @@ export function PlayerStage() {
 export function Transport() {
   const { steps, errors, editCaptions } = useViewer();
   return (
-    <div className="transport" role="group" aria-label="Playback controls">
+    <ViewerTransportFrame>
       <PlayButton />
       <TimeReadout />
       <Scrubber steps={steps} errors={errors} />
       {steps.length > 0 && !editCaptions ? <CaptionsSwitch /> : null}
       <PlaybackOptions />
-    </div>
+    </ViewerTransportFrame>
   );
 }
 
@@ -186,13 +187,7 @@ function PlayButton() {
   const { status } = usePlayerState();
   const label = status === 'playing' ? 'Pause' : status === 'ended' ? 'Replay from start' : 'Play';
   return (
-    <IconButton
-      label={label}
-      shortcut={shortcutLabel('play-pause')}
-      tooltipAlign="start"
-      className="play-button text-foreground"
-      onClick={() => player.playPause()}
-    >
+    <ViewerPlayButton label={label} shortcut={shortcutLabel('play-pause')} onClick={() => player.playPause()}>
       <span className="icon-swap" data-state={status === 'playing' ? 'b' : 'a'} aria-hidden="true">
         {status === 'ended' ? (
           <AnimatedIcon name="rotate-ccw" className="icon-a" />
@@ -201,7 +196,7 @@ function PlayButton() {
         )}
         <AnimatedIcon name="pause" className="icon-b filled-icon" trigger="state" play={status === 'playing' ? 'playing' : false} />
       </span>
-    </IconButton>
+    </ViewerPlayButton>
   );
 }
 

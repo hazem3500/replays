@@ -200,13 +200,24 @@
     .tip-morph-viewport > * { transition: none; }
   }
 
-  /* Modals: scale up from 0.96 over a fading backdrop; close faster. */
-  .motion-modal { transition: opacity var(--motion-enter) var(--ease-out), transform var(--motion-enter) var(--ease-out); }
+  /* Modals (the popover language, centred): scale up from 0.96 with a fade over a fading backdrop, 200 ms ease-out;
+     close faster (120 ms). The scale origin stays the centre: a modal belongs to the viewport, not its trigger
+     (the centring uses `translate`, so `transform` is free for the scale). Reduced motion: the fade only. */
+  .motion-modal {
+    transform-origin: center;
+    transition-property: opacity, transform;
+    transition-duration: var(--motion-enter);
+    transition-timing-function: var(--ease-out);
+  }
   .motion-modal[data-starting-style] { opacity: 0; transform: scale(0.96); }
   .motion-modal[data-ending-style] { opacity: 0; transform: scale(0.96); transition-duration: var(--motion-exit); }
   .motion-backdrop { transition: opacity var(--motion-enter) var(--ease-out); }
   .motion-backdrop[data-starting-style], .motion-backdrop[data-ending-style] { opacity: 0; }
   .motion-backdrop[data-ending-style] { transition-duration: var(--motion-exit); }
+  @media (prefers-reduced-motion: reduce) {
+    .motion-modal, .motion-backdrop { transition: opacity var(--motion-exit) linear !important; }
+    .motion-modal[data-starting-style], .motion-modal[data-ending-style] { transform: none !important; }
+  }
 
   /* Physical press (buttons, flips): colours follow in 100 ms ease-out; the scale goes in at 0.97 over 100 ms
      ease-out and, on release, settles back over 160 ms with a hair of overshoot (≈ 1.002) so the button feels

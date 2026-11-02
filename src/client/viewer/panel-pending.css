@@ -1,0 +1,36 @@
+/*
+ * PanelPending.tsx: an inspector panel before its code (or its first frame) is there. Its own geometry, standing
+ * alone (the panels' CSS loads with their lazy chunks): the network toolbar (40 px), performance's vitals strip, the
+ * 28 px column headers, rows of 28 px (44 px on touch). Chrome at once; the stand-in rows fade in after
+ * --skeleton-delay and breathe, fading out downwards.
+ */
+@layer properties, theme, base, app, components, utilities;
+
+@layer app {
+  .panel-pending { display: flex; flex-direction: column; min-width: 0; min-height: 0; height: 100%; font-size: var(--text-xs); }
+  .panel-pending-toolbar { display: flex; flex: none; align-items: center; gap: 8px; min-width: 0; height: 40px; padding: 0 12px; overflow: hidden; border-bottom: 1px solid var(--line); color: var(--text-tertiary); white-space: nowrap; }
+  .panel-pending-search { flex: 0 1 260px; min-width: 120px; height: 26px; display: flex; align-items: center; padding: 0 10px; overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); text-overflow: ellipsis; }
+  .panel-pending-chip { flex: none; height: 26px; display: inline-flex; align-items: center; padding: 0 9px; border-radius: 13px; background: var(--surface-hover); color: var(--text-secondary); }
+  .panel-pending-vitals { display: grid; flex: none; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); border-bottom: 1px solid var(--line); }
+  .panel-pending-vital { display: grid; gap: 2px; padding: 8px 12px; color: var(--text-tertiary); }
+  .panel-pending-vital strong { font-size: var(--text-md); font-weight: 600; }
+  .panel-pending-row { display: grid; grid-template-columns: minmax(0, 1fr) 72px; column-gap: 12px; align-items: center; height: 28px; padding: 0 12px; }
+  .panel-pending-row > * { min-width: 0; overflow: hidden; white-space: nowrap; }
+  .panel-pending-head { flex: none; border-bottom: 1px solid var(--line); color: var(--text-tertiary); font-weight: 500; }
+  .panel-pending-rows {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    mask-image: linear-gradient(to bottom, #000 30%, transparent 96%);
+    animation: skeleton-appear var(--skeleton-fade) var(--ease-out) var(--skeleton-delay) both, pending-breathe 2.4s ease-in-out calc(var(--skeleton-delay) + var(--skeleton-fade)) infinite;
+  }
+  .panel-pending-rows .panel-pending-row { border-bottom: 1px solid color-mix(in srgb, var(--line) 55%, transparent); }
+  .panel-pending-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--skeleton-fill, color-mix(in srgb, var(--text) 8%, transparent)); }
+  .panel-pending[data-panel="issues"] .panel-pending-rows { padding-top: 8px; }
+  @media (pointer: coarse) {
+    .panel-pending-rows .panel-pending-row { height: 44px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel-pending-rows { animation: none; }
+  }
+}

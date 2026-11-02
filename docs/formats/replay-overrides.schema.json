@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/replay-overrides.schema.json",
+  "title": "Replay overrides",
+  "description": "`<replay id>/overrides.json`: what people changed about a stored replay through `PATCH /api/replays/<id>/meta`, also what `GET /api/replays/<id>/meta` answers. The bundle stays as recorded; these apply on top of it wherever the replay is listed or opened. A field that is absent keeps the recorded value. Source of truth: src/shared/schemas/replay-meta.ts.",
+  "type": "object",
+  "required": ["by", "updatedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "tags": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "Replaces the recorded tags; an empty list drops them.",
+      "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._:-]{0,39}$" }
+    },
+    "purpose": {
+      "type": ["string", "null"],
+      "description": "One of the deployment's purposes, or null for none (an inferred purpose may then apply)."
+    },
+    "by": { "type": "string", "description": "The identity that made the last change." },
+    "updatedAt": { "type": "string", "format": "date-time" }
+  }
+}

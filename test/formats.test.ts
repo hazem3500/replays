@@ -9,6 +9,7 @@ import { EMPTY_COMMENTS } from '../src/shared/comments.ts';
 import { assertReplayPeople } from '../src/shared/people.ts';
 import { parsePluginFile, starterPlugin } from '../src/shared/malleable.ts';
 import { UserPluginStore } from '../src/server/malleable-store.ts';
+import { overridesKey, ReplaySidecars, trashKey } from '../src/server/replay-meta.ts';
 import { MemoryStorage } from '../src/server/storage/memory.ts';
 
 // docs/formats/*.schema.json are the documented, stable formats shared by tools and plugins. These tests keep them true:
@@ -40,6 +41,8 @@ describe('docs/formats', () => {
       'context.schema.json',
       'edits.schema.json',
       'plugin-manifest.schema.json',
+      'replay-overrides.schema.json',
+      'replay-trash.schema.json',
       'replay.schema.json',
       'user-plugin-history.schema.json',
       'user-plugin.schema.json',
@@ -97,6 +100,18 @@ describe('docs/formats', () => {
     };
     expect(check(file).errors).toBe('No errors');
     expect(check({ ...file, comments: [{ ...file.comments[0], id: 'nope' }] }).ok).toBe(false);
+  });
+
+  it('the overrides and trash records the server writes validate', async () => {
+    const storage = new MemoryStorage();
+    const sidecars = new ReplaySidecars(storage, () => {});
+    const now = new Date('2026-10-27T12:00:00.000Z');
+    await sidecars.update('demo', { title: 'Renamed', tags: ['checkout'], purpose: null }, 'ada@example.com', now);
+    await sidecars.markTrashed('demo', 'ada@example.com', now);
+    const read = async (key: string): Promise<unknown> => JSON.parse(String(await storage.read(key)));
+    expect((await validator('replay-overrides'))(await read(overridesKey('demo'))).errors).toBe('No errors');
+    expect((await validator('replay-trash'))(await read(trashKey('demo'))).errors).toBe('No errors');
+    expect((await validator('replay-overrides'))({ tags: ['Not A Tag'], by: 'x', updatedAt: now.toISOString() }).ok).toBe(false);
   });
 
   it('edit lists validate', async () => {

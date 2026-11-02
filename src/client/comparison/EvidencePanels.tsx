@@ -5,6 +5,7 @@ import { performanceHasDuration } from '../viewer/waterfall.ts';
 import type { ComparisonCoordinator, ComparisonSide } from './coordinator.ts';
 import { type ComparisonError, sharedEventTime, SIDE_LABELS } from './model.ts';
 import type { ComparisonPanel } from './preferences.ts';
+import { EmptyState, type EmptyStateIcon } from '@/components/ui/empty-state.tsx';
 
 type Bundles = Partial<Record<ComparisonSide, ReplayBundle>>;
 export interface EvidenceProps {
@@ -53,7 +54,17 @@ function Jump({
 }
 
 /** Paginate lists rather than creating thousands of diagnostic rows for two captures. */
-function EvidenceList<T>({ items, children, empty }: { items: readonly T[]; children(item: T, index: number): ReactNode; empty: string }) {
+function EvidenceList<T>({
+  items,
+  children,
+  empty,
+  icon = null,
+}: {
+  items: readonly T[];
+  children(item: T, index: number): ReactNode;
+  empty: string;
+  icon?: EmptyStateIcon | null;
+}) {
   const [page, setPage] = useState(0);
   const last = Math.max(0, Math.ceil(items.length / 30) - 1);
   const current = Math.min(page, last);
@@ -67,7 +78,7 @@ function EvidenceList<T>({ items, children, empty }: { items: readonly T[]; chil
           ))}
         </ol>
       ) : (
-        <p className="cmp-empty">{empty}</p>
+        <EmptyState variant="compact" icon={icon} title={empty} />
       )}
       {last > 0 ? (
         <nav className="cmp-pagination" aria-label="Evidence pages">
@@ -92,7 +103,11 @@ function Sides({ bundles, children }: { bundles: Bundles; children(bundle: Repla
       {(['a', 'b'] as const).map((side) => (
         <section key={side} aria-label={`${SIDE_LABELS[side]} evidence`}>
           <h3>{SIDE_LABELS[side]}</h3>
-          {bundles[side] ? children(bundles[side]!, side) : <p className="cmp-empty">Recording not available yet.</p>}
+          {bundles[side] ? (
+            children(bundles[side]!, side)
+          ) : (
+            <EmptyState variant="compact" icon={null} title="This recording isn’t available yet" />
+          )}
         </section>
       ))}
     </div>
@@ -149,7 +164,7 @@ export function EvidencePanel({ panel, ...props }: EvidenceProps & { panel: Comp
           return (
             <>
               <p className="cmp-help">Captions follow recorded step labels on the original timeline.</p>
-              <EvidenceList items={bundle.steps} empty="No steps or step captions recorded.">
+              <EvidenceList items={bundle.steps} icon="steps" empty="No steps or captions were recorded">
                 {(step) => (
                   <>
                     {jump(step.at)}
@@ -167,7 +182,7 @@ export function EvidencePanel({ panel, ...props }: EvidenceProps & { panel: Comp
           );
         if (panel === 'console')
           return (
-            <EvidenceList items={bundle.console} empty="No console entries captured.">
+            <EvidenceList items={bundle.console} icon="console" empty="No console output was captured">
               {(entry) => (
                 <>
                   {jump(entry.at)}
@@ -183,7 +198,7 @@ export function EvidencePanel({ panel, ...props }: EvidenceProps & { panel: Comp
             </EvidenceList>
           );
         return (
-          <EvidenceList items={bundle.network} empty="No network requests captured.">
+          <EvidenceList items={bundle.network} icon="network" empty="No network requests were captured">
             {(entry) => (
               <>
                 {jump(entry.at)}
@@ -225,7 +240,7 @@ function ErrorEvidence({ errors, selectedError, onError, coordinator }: Evidence
           {selected.request ? <RequestDetail entry={selected.request} /> : <pre>{selected.consoleEntry?.message ?? selected.label}</pre>}
         </section>
       ) : null}
-      <EvidenceList items={errors} empty="No console errors or failed requests captured in the available recordings.">
+      <EvidenceList items={errors} empty="No errors or failed requests in these recordings">
         {(error) => (
           <>
             <button
@@ -328,7 +343,7 @@ function PerformanceSide({
         })}
         <p className="cmp-help">0 → {formatClock(horizon)} shared elapsed. B lanes use the visible offset. Use the event list to seek.</p>
       </div>
-      <EvidenceList items={rows} empty="No matching performance observations captured.">
+      <EvidenceList items={rows} icon="performance" empty="No performance observations match">
         {(row) => (
           <>
             <Jump side={side} at={row.at} offsetB={offsetB} offsetA={offsetA} coordinator={coordinator} reveal={reveal} />

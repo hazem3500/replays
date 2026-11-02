@@ -1,0 +1,46 @@
+/*
+ * Viewer layout (desktop and tablet; phone layouts live in the mobile styles). Public tokens, from the malleability
+ * audit's "Viewer layout" row: --inspector-min-height, --rail-width. The folded panel is exactly its tab row.
+ */
+:root {
+  --inspector-tab-height: 40px;
+  --inspector-tabs-height: calc(var(--inspector-tab-height) + 2px);
+  /* The ready viewer's seam (the Splitter's hairline row) is the folded row's top edge. */
+  --inspector-folded-height: calc(var(--inspector-tabs-height) - 1px);
+  --inspector-min-height: 120px;
+  --rail-width: 300px;
+}
+@media (max-width: 600px) {
+  :root { --inspector-tab-height: 44px; }
+}
+
+.workspace { --steps-default: var(--rail-width); position: relative; }
+
+/* Snaps, resets and folds settle with the splitter's spring; drags follow the pointer directly. */
+.workspace[data-splitter-settling] { transition: grid-template-columns var(--splitter-settle) var(--splitter-spring); }
+.app-shell[data-splitter-settling] { transition: grid-template-rows var(--splitter-settle) var(--splitter-spring); }
+@media (prefers-reduced-motion: reduce) {
+  .workspace[data-splitter-settling], .app-shell[data-splitter-settling] { transition: none; }
+}
+
+/* A folded rail leaves a tab on the player's right edge. */
+.rail-edge-tab { position: absolute; z-index: 4; top: 12px; right: 0; }
+
+/*
+ * Fewer lines: regions part by surface tone (topbar on the page tone, the player on its canvas, the rail and the tab row
+ * raised) and only the seams you can drag keep a hairline, plus table headers and rows.
+ */
+.app-shell:not(.editor-shell, .editor-loading, [data-mobile]) {
+  > .app-topbar { border-bottom-color: transparent; }
+  .player-region > .transport { border-top-color: transparent; }
+  .workspace > .timeline-panel { border-left-color: transparent; }
+  .timeline-panel > .section-heading { border-bottom-color: transparent; }
+  .inspector-tabs { border-bottom-color: transparent; }
+}
+.app-shell:not(.skeleton-shell, .editor-shell, [data-mobile])[data-inspector-collapsed] .inspector-tabs { border-top-color: transparent; }
+
+/* The rail is the steps' one home: the current step shows its whole title (long ones wrap) beside its selector. */
+.timeline-panel .step.active { height: auto; min-height: 32px; align-items: start; padding-block: 6px; }
+.timeline-panel .step.active .step-copy { flex-wrap: wrap; row-gap: 2px; white-space: normal; }
+.timeline-panel .step.active .step-copy strong { overflow-wrap: anywhere; }
+.timeline-panel .step.active time { line-height: 20px; }

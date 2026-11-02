@@ -1,0 +1,125 @@
+/* Issues: the default Diagnostics view. Tokens marked "promote" belong in styles.css :root (design lead). */
+.issues-panel {
+  /* promote */
+  --verdict-good: var(--success);
+  --verdict-warn: var(--warning);
+  --verdict-poor: var(--danger);
+  --bar-failed: var(--danger);
+  --bar-done: color-mix(in oklab, var(--text-tertiary) 55%, transparent);
+  --ruler-tick: var(--line);
+  /* local */
+  --issues-list-width: minmax(300px, 38%);
+  --issues-pad: 12px;
+  --issue-dot: 7px;
+  --lane-label-width: 84px;
+  --lane-height: 18px;
+  --lane-bar-height: 6px;
+  --lane-row-gap: 7px;
+  --lane-plot-fill: color-mix(in oklab, var(--surface-hover) 45%, transparent);
+  --lane-focus: color-mix(in oklab, var(--accent) 12%, transparent);
+  --lane-focus-edge: color-mix(in oklab, var(--accent) 45%, transparent);
+  display: grid;
+  flex: 1;
+  grid-template-columns: var(--issues-list-width) minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  color: var(--text);
+}
+
+/* List */
+.issues-list { display: flex; flex-direction: column; gap: 2px; min-height: 0; padding: 10px var(--issues-pad) 14px; overflow: auto; overscroll-behavior: contain; border-right: 1px solid var(--line); }
+.issues-headline { margin: 0 4px 2px; font-size: var(--text-sm); line-height: 1.45; text-wrap: pretty; }
+.issues-headline strong { font-weight: 600; }
+.issues-layers { display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 6px 4px 8px; padding: 0; list-style: none; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.issues-layers li { display: inline-flex; align-items: center; gap: 5px; color: var(--text-secondary); }
+.issues-layers li[data-clear] { color: var(--text-tertiary); }
+.issues-layers li[data-clear] .issue-layer { background: transparent; box-shadow: inset 0 0 0 1px var(--line); color: var(--text-tertiary); }
+.issue-card { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: var(--radius); background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; transition: background-color var(--motion-fast) var(--ease-out); }
+@media (hover: hover) { .issue-card:hover { background: var(--surface-hover); } }
+.issue-card:is([aria-current="true"], [aria-expanded="true"]) { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.issue-card:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.issue-card > .issue-severity { margin-top: 6px; }
+.issue-card-main { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.issue-card-title { font-size: var(--text-sm); font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+.issue-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; color: var(--text-tertiary); font-size: var(--text-xs); }
+.issue-card-time { font-variant-numeric: tabular-nums; }
+.issue-severity { display: inline-block; flex: none; width: var(--issue-dot); height: var(--issue-dot); border-radius: 50%; background: var(--text-tertiary); }
+.issue-severity:is([data-severity="failure"], [data-severity="poor"]) { background: var(--verdict-poor); }
+.issue-severity[data-severity="needs-improvement"] { background: var(--verdict-warn); }
+.issue-severity[data-severity="good"] { background: var(--verdict-good); }
+.issues-fine { display: flex; align-items: baseline; gap: 8px; margin: 8px 4px 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
+.issues-fine .issue-severity { transform: translateY(-1px); }
+
+/* Layer chip: categorical, so neutral; colour stays for severity. */
+.issue-layer { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 7px; border-radius: 10px; background: var(--surface-hover); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 500; white-space: nowrap; }
+.issue-layer svg { width: 12px; height: 12px; }
+
+/* Case */
+.issues-case { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.issue-evidence { display: flex; flex-direction: column; gap: 8px; padding: 12px 18px 18px; }
+.issue-evidence-title { display: flex; align-items: baseline; gap: 10px; margin: 0; font-size: var(--text-md); font-weight: 600; line-height: 1.35; overflow-wrap: anywhere; }
+.issue-evidence-title .issue-severity { transform: translateY(-2px); }
+.issue-reason { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.6; }
+.issue-reason .issue-layer { margin-right: 4px; vertical-align: 1px; }
+.issue-subhead { display: flex; gap: 6px; margin: 6px 0 0; color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
+.issue-subhead span { font-weight: 400; letter-spacing: 0; text-transform: none; }
+.issue-chain { margin: 0; padding: 0; list-style: none; }
+.issue-link { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 30px; }
+.issue-link:not(:last-child)::after { position: absolute; top: 24px; bottom: -6px; left: 10.5px; width: 1px; background: var(--line-strong); content: ''; }
+.issue-link-icon { display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--surface-hover); color: var(--text-secondary); }
+.issue-link-icon svg { width: 12px; height: 12px; }
+.issue-link[data-tone="bad"] .issue-link-icon { background: var(--danger-soft); color: var(--danger); }
+.issue-link[data-tone="warn"] .issue-link-icon { background: color-mix(in oklab, var(--warning) 18%, transparent); color: var(--warning); }
+.issue-link[data-tone="ok"] .issue-link-icon { background: color-mix(in oklab, var(--success) 18%, transparent); color: var(--success); }
+.issue-link-main { display: flex; align-items: baseline; gap: 8px; min-width: 0; padding: 4px 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.issue-link-main:hover .issue-link-label { text-decoration: underline; text-decoration-color: var(--line-strong); }
+.issue-link-label { overflow: hidden; font-size: var(--text-xs); text-overflow: ellipsis; white-space: nowrap; }
+.issue-link-label[data-mono] { font-family: var(--mono); }
+.issue-link-detail { flex: none; color: var(--text-tertiary); font-size: var(--text-2xs); }
+.issue-link[data-tone="bad"] .issue-link-detail { color: var(--danger); }
+.issue-time { padding: 0; border: 0; background: transparent; color: var(--text-tertiary); font: inherit; font-size: var(--text-xs); font-variant-numeric: tabular-nums; cursor: pointer; }
+.issue-link:first-child .issue-time { color: var(--accent); }
+.issue-time:hover { color: var(--accent); text-decoration: underline; }
+.issue-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.issue-evidence :is(.issue-link-main, .issue-time):focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: var(--radius-sm); }
+
+/* Lanes (±1 s on the shared axis) */
+.lanes { display: flex; flex-direction: column; gap: 3px; padding: 2px 0 4px; }
+.lane { display: grid; grid-template-columns: var(--lane-label-width) minmax(0, 1fr); align-items: stretch; min-height: var(--lane-height); }
+.lane-label { display: flex; align-items: center; color: var(--text-tertiary); font-size: var(--text-2xs); }
+.lane-plot { position: relative; overflow: hidden; border-radius: 3px; background: var(--lane-plot-fill); }
+.lane-plot::after { position: absolute; top: 0; bottom: 0; left: var(--lane-playhead, -10%); width: 1px; background: var(--accent); content: ''; opacity: 0.7; pointer-events: none; }
+.lane[data-slot-item="core:network"] .lane-plot { min-height: calc(var(--lane-row-gap) * 3 + 5px); }
+.lane-axis { min-height: 16px; }
+.lane-axis .lane-plot { overflow: visible; background: transparent; }
+.lane-axis .lane-plot::after { display: none; }
+.lane-tick { position: absolute; top: 0; bottom: 0; left: var(--lane-x); display: flex; align-items: center; padding-left: 4px; border-left: 1px solid var(--ruler-tick); color: var(--text-tertiary); font-size: 10px; font-variant-numeric: tabular-nums; }
+.lane-focus { position: absolute; top: 0; left: var(--lane-x); width: max(var(--lane-width), 2px); height: 400%; min-height: 96px; border-inline: 1px solid var(--lane-focus-edge); background: var(--lane-focus); pointer-events: none; }
+.lane-plot > button { position: absolute; padding: 0; border: 0; cursor: pointer; }
+.lane-plot > .lane-step { top: 2px; bottom: 2px; left: var(--lane-x); max-width: 45%; overflow: hidden; border-left: 2px solid var(--line-strong); background: transparent; color: var(--text-secondary); font: inherit; font-size: 10px; line-height: 14px; text-align: left; white-space: nowrap; }
+.lane-plot > .lane-step[data-linked] { border-left-color: var(--accent); }
+.lane-step > span { padding-left: 4px; }
+.lane-bar { left: var(--lane-x); width: max(var(--lane-width), 3px); height: var(--lane-bar-height); border-radius: 2px; background: var(--bar-done); }
+.lane[data-slot-item="core:network"] .lane-bar { top: calc(3px + var(--lane-row, 0) * var(--lane-row-gap)); }
+.lane[data-slot-item="core:main"] .lane-bar { top: calc(50% - var(--lane-bar-height) / 2); }
+.lane-bar[data-failed] { background: var(--bar-failed); }
+.lane-bar[data-kind="long-task"] { background: var(--verdict-warn); }
+.lane-bar[data-kind="long-task"][data-verdict="poor"] { background: var(--verdict-poor); }
+.lane[data-slot-item="core:main"] .lane-bar[data-kind="slow-interaction"] { top: 3px; height: 3px; background: var(--text-tertiary); }
+.lane[data-slot-item="core:main"] .lane-bar[data-kind="slow-interaction"][data-verdict="needs-improvement"] { background: var(--verdict-warn); }
+.lane[data-slot-item="core:main"] .lane-bar[data-kind="slow-interaction"][data-verdict="poor"] { background: var(--verdict-poor); }
+.lane-bar[data-linked], .lane-dot[data-linked] { box-shadow: 0 0 0 1.5px var(--surface), 0 0 0 2.5px currentColor; color: var(--text); }
+.lane-dot { top: calc(50% - 4px); left: var(--lane-x); width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: var(--text-tertiary); }
+.lane-dot[data-level="error"] { background: var(--danger); }
+.lane-dot[data-level="warn"] { background: var(--warning); }
+.lane-none { position: absolute; inset: 0; display: flex; align-items: center; padding-left: 8px; color: var(--text-tertiary); font-size: var(--text-2xs); }
+.lane-plot > button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* Phones: one column; the open card's case unfolds under it. */
+@media (max-width: 600px) {
+  .issues-panel { grid-template-columns: minmax(0, 1fr); --lane-label-width: 60px; --issues-pad: 8px; }
+  .issues-list { border: 0; }
+  .issue-card { min-height: 44px; }
+  .issue-evidence { padding: 4px 4px 14px 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .issue-card { transition: none; } }

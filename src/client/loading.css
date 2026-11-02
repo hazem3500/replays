@@ -1,0 +1,90 @@
+/*
+ * Loading states, shared: the tokens and primitives every skeleton and placeholder draws with (the index's
+ * FeedSkeleton, Poster's page silhouette; the viewer and editor skeletons adopt them too).
+ *
+ *   Fill    placeholder shapes are the text colour at a low alpha, so one token reads on every surface (page,
+ *           card, panel) in both themes, never a fixed grey that is too heavy on one and invisible on another.
+ *   Lines   `.skel-line` is one line box of the text it stands for (the parent's font size and line height), with
+ *           a bar the height of that text's capitals drawn in its middle, its corners rounded like a word's (not a
+ *           pill): content lands with no shift.
+ *   Appear  a skeleton fades in only after --skeleton-delay, so fast loads never flash one.
+ *   Sheen   one soft band sweeping across a placeholder picture, then a pause; it moves with `transform` only
+ *           (compositor), never `background-position`. Text bars stay still: the pictures carry the motion.
+ *           Stop it when there is nothing left to wait for (Poster drops `data-phase="loading"`).
+ *   Reduced motion: no sweep (a still veil instead); the fade-in is instant (styles.css zeroes animations).
+ */
+@layer properties, theme, base, app, components, utilities;
+
+@layer app {
+  :root {
+    --skeleton-fill: color-mix(in srgb, var(--text) 8%, transparent);
+    --skeleton-fill-faint: color-mix(in srgb, var(--text) 4.5%, transparent);
+    --skeleton-sheen: color-mix(in srgb, var(--text) 5%, transparent);
+    --skeleton-sweep: 2.6s;
+    /* Under ~200 ms a wait shows nothing at all. */
+    --skeleton-delay: 200ms;
+    --skeleton-fade: 200ms;
+    --skeleton-stagger: 45ms;
+  }
+  :root[data-theme="light"] {
+    --skeleton-fill: color-mix(in srgb, var(--text) 7%, transparent);
+    --skeleton-fill-faint: color-mix(in srgb, var(--text) 4%, transparent);
+    --skeleton-sheen: rgb(255 255 255 / 0.65);
+  }
+
+  .skel-appear { animation: skeleton-appear var(--skeleton-fade) var(--ease-out) var(--skeleton-delay) both; }
+  @keyframes skeleton-appear { from { opacity: 0; } }
+
+  .skel-line { position: relative; display: block; width: var(--w, 100%); max-width: 100%; height: 1lh; }
+  .skel-line::before { content: ""; position: absolute; top: 50%; right: 0; left: 0; height: 0.66em; border-radius: 0.28em; background: var(--skeleton-fill); translate: 0 -50%; }
+  .skel-line.skel-faint::before { background: var(--skeleton-fill-faint); }
+  .skel-dot { display: block; flex: 0 0 auto; width: var(--size, 12px); height: var(--size, 12px); border-radius: 999px; background: var(--skeleton-fill); }
+
+  .skel-sheen { position: relative; overflow: hidden; isolation: isolate; }
+  .skel-sheen::after { content: ""; position: absolute; z-index: 2; inset: 0; pointer-events: none; background: linear-gradient(100deg, transparent 20%, var(--skeleton-sheen) 50%, transparent 80%); transform: translateX(-100%); animation: skeleton-sweep var(--skeleton-sweep) cubic-bezier(0.45, 0, 0.55, 1) calc(var(--skeleton-delay) + var(--skel-i, 0) * var(--skeleton-stagger)) infinite; }
+  /* A sweep (the first 60 %), then a rest, so the light reads as passing by rather than strobing. */
+  @keyframes skeleton-sweep { 0% { transform: translateX(-100%); } 60%, 100% { transform: translateX(100%); } }
+  /* Breathing: the default motion for anything pending. Slow, opacity only, starting from rest. */
+  @keyframes skeleton-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+
+  /* Pending mode: real markup with stand-in text, every `.redact` drawn as a band the height of its capitals on its
+     own line boxes (box-decoration-break: one band per line, as long as that line), soft at its top and bottom.
+     The whole region breathes as one layer. Used by the viewer's loading rows; the index's pending feed applies the
+     same band to the feed's own text (feed-skeleton.css). */
+  .pending {
+    --redact: color-mix(in srgb, var(--text) 8%, transparent);
+    --redact-band: linear-gradient(to bottom, transparent, var(--redact) 18%, var(--redact) 82%, transparent);
+    pointer-events: none;
+    user-select: none;
+  }
+  :root[data-theme="light"] .pending { --redact: color-mix(in srgb, var(--text) 7%, transparent); }
+  .pending .redact {
+    /* As long as its words, even where the real element stretches (a table cell's flex child). */
+    flex: 0 1 auto;
+    width: fit-content;
+    max-width: 100%;
+    color: transparent !important;
+    background: var(--redact-band) 0 55% / 100% 0.68em no-repeat;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+  @keyframes pending-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.62; } }
+
+  /* Progress hairline: 2 px of accent along a header's bottom edge (the header is its containing block). It fades in
+     only after --load-line-delay, so a quick refresh never shows it. Indeterminate: a short segment gliding across,
+     paused whenever the line is hidden. Determinate (`data-determinate`): scaleX(share) on the inner span. */
+  .load-line { position: absolute; z-index: 1; right: 0; bottom: -1px; left: 0; height: 2px; overflow: hidden; opacity: 0; pointer-events: none; transition: opacity 150ms var(--ease-out); }
+  .load-line[data-active] { opacity: 1; transition: opacity 200ms var(--ease-out) var(--load-line-delay, 300ms); }
+  .load-line > span { position: absolute; inset: 0; background: var(--accent); transform-origin: left center; }
+  .load-line:not([data-determinate]) > span { width: 28%; animation: load-line-glide 1.4s cubic-bezier(0.45, 0, 0.55, 1) infinite paused; }
+  .load-line[data-active]:not([data-determinate]) > span { animation-play-state: running; }
+  .load-line[data-determinate] > span { transition: transform 200ms var(--ease-out); }
+  @keyframes load-line-glide { from { transform: translateX(-100%); } to { transform: translateX(360%); } }
+
+  /* Reduced motion (styles.css also zeroes every animation): the band becomes a still, faint veil, so a picture
+     that is loading still differs from one that has settled on its placeholder. */
+  @media (prefers-reduced-motion: reduce) {
+    .skel-sheen::after { transform: none; background: var(--skeleton-fill-faint); animation: none; }
+    .load-line:not([data-determinate]) > span { width: 100%; opacity: 0.5; animation: none; }
+  }
+}

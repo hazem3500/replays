@@ -1,8 +1,9 @@
-import { XIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import { AnimatedText } from '@/components/animated-text.tsx';
-import type { MouseEvent } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { Button } from '@/components/ui/button.tsx';
+import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,17 +12,21 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 
-import { type FilterState, KIND_OPTIONS, pluginFilterLabel, SOURCE_OPTIONS } from './index/FilterMenu.tsx';
-import { usePluginSnapshot } from './plugins/PluginUi.tsx';
-import { COLUMNS, type Sort, sortFromSearch } from './ReplayIndex.tsx';
+import { useMediaQuery } from './media.ts';
+import { COLUMNS, INDEX_COMPACT_QUERY, type Sort, sortFromSearch } from './ReplayIndex.tsx';
+import './index/index-mobile.css';
 
 /*
- * The replay index's compact controls: the sort menu (every width), and on phones (≤ 640 px,
- * INDEX_COMPACT_QUERY) a bottom sheet plus removable chips instead of the row of filter selects.
- * Every control writes the same URL state as the desktop toolbar.
+ * The replay index's sort control: a menu on desktop, quiet text opening a bottom sheet on phones (≤ 640 px,
+ * INDEX_COMPACT_QUERY). Active filters live with the Filter control (index/filters/): tokens beside it on desktop,
+ * the count inside the button and the bottom sheet on phones.
  */
 
-/* ---------- Sort menu ---------- */
+const strings = {
+  sort: 'Sort',
+  done: 'Done',
+  trigger: (label: string) => `Sort: ${label}`,
+};
 
 const SORT_OPTIONS = [
   { value: '-capturedAt', label: 'Newest' },
@@ -41,13 +46,57 @@ function sortLabel(sort: Sort) {
   return `${column} ${sort.direction === 'ascending' ? '↑' : '↓'}`;
 }
 
+const triggerContent = (label: string) => (
+  <>
+    <AnimatedText text={label} />
+    <AnimatedIcon name="chevron-down" />
+  </>
+);
+
+/** Phones: each order a 48 px radio row; choosing one applies it and closes the sheet. */
+function SortSheet({ sort, onChange, label }: { sort: Sort; onChange: (sort: Sort) => void; label: string }) {
+  const current = sortToken(sort);
+  return (
+    <Drawer>
+      <DrawerTrigger className="index-sort-trigger" aria-label={strings.trigger(label)}>
+        {triggerContent(label)}
+      </DrawerTrigger>
+      <DrawerContent className="sort-sheet">
+        <DrawerTitle className="sort-sheet-title">{strings.sort}</DrawerTitle>
+        <div className="sort-sheet-options" role="radiogroup" aria-label={strings.sort}>
+          {SORT_OPTIONS.map((option) => {
+            const checked = option.value === current;
+            return (
+              <DrawerClose
+                key={option.value}
+                role="radio"
+                aria-checked={checked}
+                className="sort-sheet-option"
+                data-slot-item="sort-option"
+                onClick={() => onChange(sortFromSearch(`?sort=${option.value}`))}
+              >
+                <span>{option.label}</span>
+                {checked ? <CheckIcon className="sort-sheet-check" aria-hidden="true" /> : null}
+              </DrawerClose>
+            );
+          })}
+        </div>
+        <DrawerFooter className="sheet-footer">
+          <DrawerClose render={<Button variant="secondary" className="h-[44px] w-full text-[13px]" />}>{strings.done}</DrawerClose>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
+  );
+}
+
 export function SortMenu({ sort, onChange }: { sort: Sort; onChange: (sort: Sort) => void }) {
   const label = sortLabel(sort);
+  const phone = useMediaQuery(INDEX_COMPACT_QUERY);
+  if (phone) return <SortSheet sort={sort} onChange={onChange} label={label} />;
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger className="index-sort-trigger" aria-label={`Sort: ${label}`}>
-        <AnimatedText text={label} />
-        <AnimatedIcon name="chevron-down" />
+      <DropdownMenuTrigger className="index-sort-trigger" aria-label={strings.trigger(label)}>
+        {triggerContent(label)}
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto min-w-40">
         <DropdownMenuRadioGroup value={sortToken(sort)} onValueChange={(value: string) => onChange(sortFromSearch(`?sort=${value}`))}>
@@ -59,63 +108,5 @@ export function SortMenu({ sort, onChange }: { sort: Sort; onChange: (sort: Sort
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
     </DropdownMenu>
-  );
-}
-
-// The removed chip takes the keyboard position with it: hand it to a neighbour, or back to the Filters button.
-function handOff(event: MouseEvent<HTMLButtonElement>) {
-  const buttons = [...(event.currentTarget.parentElement?.querySelectorAll('button') ?? [])];
-  const index = buttons.indexOf(event.currentTarget);
-  const next =
-    buttons[index + 1] ??
-    buttons[index - 1] ??
-    event.currentTarget.closest('.index-shell')?.querySelector<HTMLElement>('.index-filters-button, .scope-button');
-  next?.focus();
-}
-
-/** Active filters as small removable chips under the search; nothing when none are set. */
-export function CompactFilterChips({ filters, kind, update, setParam, setKind, forMe, setForMe }: FilterState) {
-  const plugins = usePluginSnapshot().filters;
-  const chips: Array<{ id: string; label: string; name: string; remove: () => void }> = [];
-  if (forMe && setForMe) chips.push({ id: 'for-me', label: 'For me', name: 'For me', remove: () => setForMe(false) });
-  if (filters.host) chips.push({ id: 'host', label: filters.host, name: `Host ${filters.host}`, remove: () => update('host', undefined) });
-  if (filters.tag) chips.push({ id: 'tag', label: filters.tag, name: `Tag ${filters.tag}`, remove: () => update('tag', undefined) });
-  if (filters.source) {
-    const label = SOURCE_OPTIONS.find((option) => option.value === filters.source)?.label ?? filters.source;
-    chips.push({ id: 'source', label, name: `Source ${label}`, remove: () => update('source', undefined) });
-  }
-  if (kind) {
-    const label = KIND_OPTIONS.find((option) => option.value === kind)?.label ?? kind;
-    chips.push({ id: 'kind', label, name: `Kind ${label}`, remove: () => setKind(undefined) });
-  }
-  if (filters.errors) chips.push({ id: 'errors', label: 'Has errors', name: 'Has errors', remove: () => update('errors', undefined) });
-  // Plugin filters; a param whose plugin has not loaded (yet) shows as itself, so it can still be removed.
-  for (const [param, value] of Object.entries(filters.params ?? {})) {
-    const filter = plugins.find((candidate) => candidate.definition.param === param);
-    const label = filter ? pluginFilterLabel(filter, value) : `${param}: ${value}`;
-    chips.push({ id: param, label, name: label, remove: () => setParam(param, undefined) });
-  }
-  if (chips.length === 0) return null;
-
-  return (
-    <div className="index-chips" role="group" aria-label="Active filters">
-      {chips.map((chip) => (
-        <button
-          key={chip.id}
-          type="button"
-          className="index-chip"
-          aria-label={`Remove filter: ${chip.name}`}
-          onClick={(event) => {
-            handOff(event);
-            chip.remove();
-          }}
-        >
-          <span className="index-chip-pill">
-            {chip.label}
-            <XIcon aria-hidden="true" />
-          </span>
-        </button>
-      ))}
-    </div>
   );
 }

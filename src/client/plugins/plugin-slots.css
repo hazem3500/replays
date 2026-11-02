@@ -51,6 +51,16 @@
     inset: -10px -8px;
   }
 }
+/* A range can be a few px wide: its hit box is at least 24 × 24 (WCAG target size), centred on the range, while the
+   visible bar keeps its true width. */
+.plugin-track-marker[data-range] .plugin-track-hit {
+  inset: auto;
+  top: 50%;
+  left: 50%;
+  width: max(100% + 8px, 24px);
+  height: 24px;
+  translate: -50% -50%;
+}
 .plugin-track-hit:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 0;

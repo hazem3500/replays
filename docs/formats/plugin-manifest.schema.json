@@ -4,42 +4,173 @@
   "title": "User plugin manifest (beta.malleable)",
   "description": "What a user plugin contributes and which capabilities it asks for. The plugin's code runs in a sandboxed frame and can use only the capabilities listed in `permissions`; `comments:write` and `export:download` additionally ask the person each time the page loads. Source of truth: src/shared/malleable.ts.",
   "type": "object",
-  "required": ["format", "id", "name", "contributes"],
+  "required": [
+    "format",
+    "id",
+    "name",
+    "contributes"
+  ],
   "additionalProperties": false,
   "properties": {
-    "format": { "const": "replays-user-plugin/1" },
-    "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
-    "name": { "type": "string", "minLength": 1, "maxLength": 60 },
-    "description": { "type": "string", "maxLength": 300 },
+    "format": {
+      "const": "replays-user-plugin/1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,31}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 60
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 300
+    },
     "permissions": {
       "type": "array",
       "uniqueItems": true,
       "default": [],
-      "items": { "enum": ["replay:read", "playback:seek", "comments:read", "notify", "comments:write", "export:download"] }
+      "items": {
+        "enum": [
+          "replay:read",
+          "playback:seek",
+          "comments:read",
+          "notify",
+          "comments:write",
+          "export:download"
+        ]
+      }
     },
     "contributes": {
       "type": "object",
       "minProperties": 1,
       "additionalProperties": false,
       "properties": {
-        "tabs": { "$ref": "#/$defs/contributions" },
-        "panels": { "$ref": "#/$defs/contributions" },
-        "actions": { "$ref": "#/$defs/contributions" }
+        "tabs": {
+          "$ref": "#/$defs/contributions"
+        },
+        "panels": {
+          "$ref": "#/$defs/contributions"
+        },
+        "actions": {
+          "$ref": "#/$defs/contributions"
+        }
       }
     },
     "targets": {
       "type": "object",
       "description": "The versions the plugin was kept under, written by the server on every save (a value sent by the client is replaced). The viewer uses it to recognise a plugin that stopped loading after an upgrade; nothing is disabled or changed because of it.",
-      "required": ["core"],
+      "required": [
+        "core"
+      ],
       "additionalProperties": false,
       "properties": {
-        "core": { "type": "string", "minLength": 1, "maxLength": 40, "description": "The @hazem3500/replays package version." },
+        "core": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "The @hazem3500/replays package version."
+        },
         "distribution": {
           "type": "string",
           "minLength": 1,
           "maxLength": 130,
           "description": "The deployment's `distribution` config as `name@version`, when it sets one."
         }
+      }
+    },
+    "settings": {
+      "type": "array",
+      "maxItems": 32,
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "type",
+              "default"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,31}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "order": {
+                "type": "number"
+              },
+              "type": {
+                "const": "boolean"
+              },
+              "default": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "label",
+              "type",
+              "default",
+              "options"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]{0,31}$"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "order": {
+                "type": "number"
+              },
+              "type": {
+                "const": "choice"
+              },
+              "default": {
+                "type": "string"
+              },
+              "options": {
+                "type": "array",
+                "minItems": 2,
+                "maxItems": 32,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "value"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "value": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "label": {
+                      "type": "string",
+                      "maxLength": 80
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
       }
     }
   },
@@ -50,11 +181,21 @@
       "maxItems": 8,
       "items": {
         "type": "object",
-        "required": ["id", "label"],
+        "required": [
+          "id",
+          "label"
+        ],
         "additionalProperties": false,
         "properties": {
-          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,31}$" },
-          "label": { "type": "string", "minLength": 1, "maxLength": 40 }
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,31}$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
         }
       }
     }

@@ -1,3 +1,5 @@
+import { SLOT_NAMES } from '../src/client/plugins/api.ts';
+import type { ViewerPluginApi, SlotDescriptor, SlotConfiguration, PluginPageDefinition } from '../src/client/plugins/api.ts';
 import type { PluginApi, PrepareUploadHook, RequestPolicy, UploadEndpoint } from '../src/plugin/index.ts';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -26,6 +28,21 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'MAX_BYTES_CEILING',
       'MAX_DURATION_CEILING_MS',
       'UI_ATTRIBUTE',
+      'CHAT_WIDGET_PRESETS',
+      'blockProps',
+      'blockSelector',
+      'recorderUiProps',
+      'createDeferredUi',
+      'createRecorderStore',
+      'createRecordingTimer',
+      'recordingTimer',
+      'formatDurationLong',
+      'selectView',
+      'selectCanRequest',
+      'selectSummary',
+      'selectReceipt',
+      'selectError',
+      'selectUploadProgress',
       'buildReplayBundle',
       'createDefaultUi',
       'createRecorder',
@@ -35,6 +52,54 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'redactText',
       'redactUrl',
     ],
+  },
+  './recorder/kit': {
+    source: '../src/recorder/kit/index.ts',
+    values: [
+      'BLOCK_ATTRIBUTE',
+      'UI_ATTRIBUTE',
+      'CHAT_WIDGET_PRESETS',
+      'blockProps',
+      'blockSelector',
+      'recorderUiProps',
+      'createAnnouncer',
+      'focusReturn',
+      'trapFocus',
+      'markRecorderUi',
+      'mountRecorderRoot',
+    ],
+  },
+  './recorder/ui': {
+    source: '../src/recorder/ui/index.ts',
+    values: [
+      'createDefaultUi',
+      'DEFAULT_MESSAGES',
+      'formatDuration',
+      'createGuidedRecorder',
+      'composeUi',
+      'consentDialog',
+      'recordingIndicator',
+      'reviewDialog',
+      'resultToast',
+    ],
+  },
+  './recorder/react': {
+    source: '../src/recorder/react/index.tsx',
+    values: [
+      'RecorderProvider',
+      'RecorderRegion',
+      'useRecorder',
+      'useRecorderActions',
+      'useRecorderState',
+      'useRecordingTimer',
+      'useRecorderPrompt',
+      'useStopAttestation',
+      'useAnnouncer',
+    ],
+  },
+  './recorder/testing': {
+    source: '../src/recorder/testing/index.ts',
+    values: ['testRecorderUi', 'queryDeep', 'createFakeRrweb', 'createFakeTransport'],
   },
   './plugin': {
     source: '../src/plugin/index.ts',
@@ -53,7 +118,10 @@ const entries: Record<string, { source: string; values: string[] }> = {
     ],
   },
   './config': { source: '../src/config/index.ts', values: ['CONFIG_FILES', 'defineConfig', 'loadConfig', 'loadPluginSpec'] },
-  './viewer': { source: '../src/client/plugins/api.ts', values: ['MAX_TRACK_MARKERS', 'VIEWER_API_VERSION', 'defineViewerPlugin'] },
+  './viewer': {
+    source: '../src/client/plugins/api.ts',
+    values: ['MAX_TRACK_MARKERS', 'VIEWER_API_VERSION', 'defineViewerPlugin', 'SLOT_NAMES', 'SlotRegistry', 'ViewerRegistry'],
+  },
   './server': {
     source: '../src/server/index.ts',
     values: [
@@ -143,6 +211,32 @@ const entries: Record<string, { source: string; values: string[] }> = {
 };
 
 describe('public API', () => {
+  it('pins the published slot names', () => {
+    expect(SLOT_NAMES).toEqual([
+      'viewer.inspector.tabs',
+      'viewer.panels.side',
+      'viewer.actions',
+      'viewer.scrubber.tracks',
+      'viewer.context.sections',
+      'index.row.columns',
+      'index.filters',
+      'index.sections',
+      'settings.sections',
+      'index.chips',
+      'inspector.network.columns',
+      'performance.vitals',
+      'editor.topbar.actions',
+      'editor.inspector.sections',
+      'editor.tools',
+      'editor.timeline.lanes',
+      'export.formats',
+    ]);
+  });
+  it('publishes the additive slot configuration and descriptor signatures', () => {
+    expectTypeOf<ViewerPluginApi['registerPluginPage']>().parameter(0).toEqualTypeOf<PluginPageDefinition>();
+    expectTypeOf<ViewerPluginApi['configureSlot']>().parameter(1).toEqualTypeOf<SlotConfiguration>();
+    expectTypeOf<SlotDescriptor<{ enabled: boolean }, string>['render']>().toEqualTypeOf<(context: { enabled: boolean }) => string>();
+  });
   it('exposes typed host intake registration and the existing prepare hook contract', () => {
     expectTypeOf<PluginApi['requestPolicy']>().parameter(0).toEqualTypeOf<RequestPolicy>();
     expectTypeOf<PluginApi['uploadEndpoint']>().parameter(0).toEqualTypeOf<UploadEndpoint>();
@@ -182,6 +276,10 @@ describe('public API', () => {
       './plugins/iap',
       './plugins/gcs',
       './package.json',
+      './recorder/kit',
+      './recorder/ui',
+      './recorder/react',
+      './recorder/testing',
       './recorder',
     ]);
     for (const target of Object.values(pkg.exports)) {
@@ -190,7 +288,9 @@ describe('public API', () => {
       expect(target.types).toMatch(/^\.\/dist\/types\/.+\.d\.ts$/);
     }
   });
+});
 
+describe('public API distribution compatibility', () => {
   it('ships what a custom distribution needs at run time: the built viewer, the samples and the docs it links to', () => {
     for (const path of ['dist/lib', 'dist/types', 'dist/client', 'sample', 'bin']) expect(pkg.files).toContain(path);
   });

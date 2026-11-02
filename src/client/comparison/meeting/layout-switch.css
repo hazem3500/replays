@@ -1,0 +1,85 @@
+/* Single · Grid · Spotlight (LayoutSwitch.tsx): equal segments, one thumb gliding under the choice. */
+.layout-switch {
+  --segment: 28px;
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: 0;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--surface-hover);
+}
+
+.layout-switch[data-vertical] {
+  grid-auto-flow: row;
+  grid-auto-rows: var(--segment);
+}
+
+.layout-switch button {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: var(--segment);
+  height: var(--segment);
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color var(--motion) var(--ease-out);
+}
+
+.layout-switch[data-compact] button {
+  padding: 0;
+}
+
+.layout-switch button svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.layout-switch button:hover,
+.layout-switch button[aria-checked="true"] {
+  color: var(--text);
+}
+
+.layout-switch button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.layout-switch-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: calc((100% - 4px) / var(--count));
+  height: var(--segment);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  box-shadow: 0 0 0 1px var(--line);
+  transform: translateX(calc(var(--index) * 100%));
+  transition: transform var(--motion) var(--ease-out);
+}
+
+.layout-switch[data-vertical] .layout-switch-thumb {
+  width: calc(100% - 4px);
+  transform: translateY(calc(var(--index) * 100%));
+}
+
+.layout-switch-thumb[data-hidden] {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .layout-switch-thumb {
+    transition: none;
+  }
+}

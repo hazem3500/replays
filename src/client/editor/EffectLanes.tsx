@@ -1,49 +1,22 @@
-import { CaptionsIcon, EyeOffIcon, FastForwardIcon, ZoomInIcon } from 'lucide-react';
-import { type ReactNode, useEffect, useRef } from 'react';
+import { PlusIcon } from 'lucide-react';
+
+import { Button } from '@/components/ui/button.tsx';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu.tsx';
 
 import type { ReplayEdits } from '../../shared/edits.ts';
-import { type ReplayBlur, type ReplayCaption, type ReplaySpeedRange, type ReplayZoomRegion, ZOOM_IN_MS } from '../../shared/effects.ts';
+import { type ReplayBlur, ZOOM_IN_MS } from '../../shared/effects.ts';
 import { formatClock } from '../../shared/replay.ts';
+import { useLatest } from '../hooks/use-latest.ts';
 import { usePlayer } from '../player.ts';
 import { addEffect, type EditorAction, type EffectKind, effectList, moveEffect, removeEffect, type Selection } from './state.ts';
-import { Lane, RegionBlock, startDrag, useTimelineScale } from './Timeline.tsx';
-
-/** Each effect lane: its name (the gutter's tooltip), glyph, and how one of its regions is labelled. */
-export const LANES: Array<{ kind: EffectKind; name: string; empty: string; icon: ReactNode; label: (region: never) => string }> = [
-  {
-    kind: 'zoom',
-    name: 'Zoom: drag on the lane to add a zoom, Z zooms in on every click',
-    empty: 'Zoom · drag to add · Z zooms in on every click',
-    icon: <ZoomInIcon />,
-    label: (zoom: ReplayZoomRegion) => `${zoom.scale}×`,
-  },
-  {
-    kind: 'speed',
-    name: 'Speed: drag on the lane to speed a stretch up (F)',
-    empty: 'Speed · drag over a stretch to play it faster',
-    icon: <FastForwardIcon />,
-    label: (speed: ReplaySpeedRange) => `${speed.rate}×`,
-  },
-  {
-    kind: 'blur',
-    name: 'Blur: drag on the lane to hide part of the page (B)',
-    empty: 'Blur · drag to hide part of the page while it shows',
-    icon: <EyeOffIcon />,
-    label: () => 'Blur',
-  },
-  {
-    kind: 'caption',
-    name: 'Captions: drag on the lane to add one, T adds captions from the steps',
-    empty: 'Captions · drag to add one · T writes them from the steps',
-    icon: <CaptionsIcon />,
-    label: (caption: ReplayCaption) => caption.text,
-  },
-];
-
-const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
+import { Lane } from './timeline/Lane.tsx';
+import { RegionBlock } from './timeline/RegionBlock.tsx';
+import { startDrag, useTimelineScale } from './timeline/scale.ts';
+import { editorStrings } from './strings.ts';
+import { type EditorTool, editorTimelineLanes } from './tools.tsx';
 
 /**
- * The effect lanes under the clip, on the timeline's scale: Zoom, Speed, Blur, Captions. Dragging on an empty stretch
+ * The effect lanes under the clip, on the timeline's scale, one per editing tool (`editor.timeline.lanes`). Dragging on an empty stretch
  * of a lane adds a region over it (one undo step); a click there seeks. Regions move, resize and go like cuts
  * (Timeline.tsx RegionBlock).
  */
@@ -52,74 +25,109 @@ export function EffectLanes({
   selection,
   dispatch,
   showEmpty = false,
+  added = [],
+  onAddTrack,
 }: {
   edits: ReplayEdits;
   selection: Selection;
+  /** Every lane, empty or not (stories). */
   showEmpty?: boolean;
+  /** Lanes shown empty because they were added from the "Add track" row. */
+  added?: readonly EffectKind[];
+  /** Shows the "Add track" row under the lanes (desktop). */
+  onAddTrack?: (kind: EffectKind) => void;
   dispatch: (action: EditorAction) => void;
 }) {
   const scale = useTimelineScale();
   const player = usePlayer();
-  const latest = useRef(edits);
-  useEffect(() => {
-    latest.current = edits;
-  }, [edits]);
+  const latest = useLatest(edits);
   const change = (next: ReplayEdits, first: boolean, select?: Selection) =>
     dispatch({ type: 'change', edits: next, merge: !first, ...(select ? { select } : {}) });
 
+  const shown = (kind: EffectKind) => showEmpty || effectList(edits, kind).length > 0 || selection?.kind === kind || added.includes(kind);
+  const lanes = editorTimelineLanes();
+  const missing = lanes.filter((tool) => !shown(tool.kind));
+
   return (
     <>
-      {LANES.filter(({ kind }) => showEmpty || effectList(edits, kind).length > 0 || selection?.kind === kind).map(
-        ({ kind, name, empty, icon, label }) => (
-          <Lane
-            key={kind}
-            name={name}
-            kind={kind}
-            reveal={selection?.kind === kind}
-            icon={icon}
-            empty={effectList(edits, kind).length ? undefined : empty}
-            onTrackPointerDown={(event) => {
-              if (event.button !== 0) return;
-              const base = latest.current;
-              const start = scale.timeAt(event.clientX);
-              startDrag(event, scale, {
-                move: (time, first) => {
-                  const added = addEffect(base, kind, start, time, scale.duration);
-                  if (added) change(added.edits, first, { kind, id: added.id });
-                },
-                end: (moved, time) => {
-                  if (moved) return;
-                  dispatch({ type: 'select', selection: undefined });
-                  player.seek(time);
-                },
-              });
-            }}
-          >
-            {effectList(edits, kind).map((region) => {
-              const text = (label as (region: unknown) => string)(region);
-              return (
-                <RegionBlock
-                  key={region.id}
-                  id={region.id}
-                  kind={kind}
-                  from={region.from}
-                  to={region.to}
-                  label={text}
-                  title={`${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`}
-                  selected={selection?.kind === kind && selection.id === region.id}
-                  seekTo={kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined}
-                  onSelect={() => dispatch({ type: 'select', selection: { kind, id: region.id } })}
-                  onEdit={(edge, time, first) =>
-                    change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id })
-                  }
-                  onRemove={() => change(removeEffect(latest.current, kind, region.id), true)}
-                />
-              );
-            })}
-          </Lane>
-        ),
-      )}
+      {lanes
+        .filter(({ kind }) => shown(kind))
+        .map((tool) => {
+          const { kind, lane } = tool;
+          return (
+            <Lane
+              key={tool.id}
+              name={lane.name}
+              kind={kind}
+              reveal={selection?.kind === kind || added.at(-1) === kind}
+              icon={tool.render({})}
+              empty={effectList(edits, kind).length ? undefined : lane.empty}
+              onTrackPointerDown={(event) => {
+                if (event.button !== 0) return;
+                const base = latest.current;
+                const start = scale.timeAt(event.clientX);
+                startDrag(event, scale, {
+                  move: (time, first) => {
+                    const created = addEffect(base, kind, start, time, scale.duration);
+                    if (created) change(created.edits, first, { kind, id: created.id });
+                  },
+                  end: (moved, time) => {
+                    if (moved) return;
+                    dispatch({ type: 'select', selection: undefined });
+                    player.seek(time);
+                  },
+                });
+              }}
+            >
+              {effectList(edits, kind).map((region) => {
+                const text = (lane.label as (region: unknown) => string)(region);
+                return (
+                  <RegionBlock
+                    key={region.id}
+                    id={region.id}
+                    kind={kind}
+                    from={region.from}
+                    to={region.to}
+                    label={text}
+                    title={`${lane.region} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`}
+                    selected={selection?.kind === kind && selection.id === region.id}
+                    seekTo={kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined}
+                    onSelect={() => dispatch({ type: 'select', selection: { kind, id: region.id } })}
+                    onEdit={(edge, time, first) =>
+                      change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id })
+                    }
+                    onRemove={() => change(removeEffect(latest.current, kind, region.id), true)}
+                  />
+                );
+              })}
+            </Lane>
+          );
+        })}
+      {onAddTrack && missing.length ? <AddTrackRow tools={missing} onAdd={onAddTrack} /> : null}
     </>
+  );
+}
+
+/** Under the lanes: a quiet "+ Add track" listing the tools whose lane isn't showing. Lanes that show add by dragging. */
+function AddTrackRow({ tools, onAdd }: { tools: readonly EditorTool[]; onAdd: (kind: EffectKind) => void }) {
+  return (
+    <div className="tl-lane tl-add-track" data-slot="editor.timeline.lanes">
+      <span className="tl-gutter-spacer" aria-hidden="true" />
+      <div className="tl-add-track-cell">
+        <DropdownMenu>
+          <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="tl-add-track-button" data-testid="add-track" />}>
+            <PlusIcon aria-hidden="true" /> {editorStrings.dock.addTrack}
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-auto min-w-44" aria-label={editorStrings.dock.addTrackMenu}>
+            {tools.map((tool) => (
+              <DropdownMenuItem key={tool.id} onClick={() => onAdd(tool.kind)} data-testid={`add-track-${tool.kind}`} data-slot-item={tool.id}>
+                {tool.render({})} {tool.lane.track}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    </div>
   );
 }
 

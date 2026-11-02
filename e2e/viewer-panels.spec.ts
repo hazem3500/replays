@@ -1,11 +1,10 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 import { cloneBundle, openReplay, postBundle, uniqueId, serveApp } from './support.ts';
 
 const server = serveApp();
 
-test('performance signals follow the playhead and open with the P key', async ({ page }) => {
-  const id = uniqueId('performance');
+async function seedPerformance(page: Page, id: string) {
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id, 'Performance fixture');
   bundle.performance = {
     supported: ['paint', 'longtask', 'event'],
@@ -16,262 +15,83 @@ test('performance signals follow the playhead and open with the P key', async ({
     ],
   };
   await postBundle(page.request, server().origin, bundle);
+}
 
+const eventRows = (page: Page) => page.getByTestId('performance-events').getByRole('row');
+
+test('performance events sort worst first, follow the playhead and open with the P key', async ({ page }) => {
+  const id = uniqueId('performance');
+  await seedPerformance(page, id);
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('step-timeline').locator('[data-step-index="1"]').click();
   await page.getByTestId('performance-tab').click();
-  // Captured event rows share the player; future observations remain explicit.
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 1 of 3 signals reached');
-  const events = page.getByTestId('performance-events');
-  const rows = events.getByRole('button');
+
+  const rows = eventRows(page);
   await expect(rows).toHaveCount(3);
-  await expect(events.locator('[data-future]')).toHaveCount(2);
-  await expect(rows.first()).toContainText(/contentful paint/i);
-  await expect(rows.first()).toContainText('500 ms');
-  await expect(rows.nth(1)).toContainText('Upcoming');
+  await expect(rows.first()).toContainText('Long task');
+  await expect(page.getByTestId('performance-events').locator('[data-future]')).toHaveCount(2);
 
-  await rows.nth(1).click();
-  await expect(page.getByTestId('playhead')).toHaveText('0:05.0');
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 2 of 3 signals reached');
-  await expect(events.locator('[data-future]')).toHaveCount(1);
-  const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
-  await expect(evidence.locator('.perf-facts')).toContainText('Captured duration72 ms');
-  await rows.nth(1).press('ArrowDown');
-  await expect(page.getByTestId('playhead')).toHaveText('0:08.0');
-  await expect(rows.nth(2)).toBeFocused();
-  await expect(evidence.locator('h2')).toHaveText('Slow interaction · click');
-  await expect(evidence).toContainText('96 ms');
-  await expect(evidence).toContainText('Time from input to the next paint');
-  await page.keyboard.press('Escape');
-  await expect(evidence).toBeHidden();
-  await expect(rows.nth(2)).toBeFocused();
-
-  await page.getByRole('button', { name: 'Paints', exact: true }).click();
-  await expect(rows).toHaveCount(1);
-  await expect(rows.first()).toContainText('nav.');
   await rows.first().click();
-  await expect(evidence.locator('.perf-facts')).toContainText('Since navigation500 ms');
-  await expect(evidence.locator('.perf-raw')).not.toHaveAttribute('open');
+  await expect(page.getByTestId('playhead')).toHaveText('0:05.0');
+  const detail = page.getByRole('region', { name: 'Selected performance event' });
+  await expect(detail).toContainText('72 ms · Needs work');
+  await expect(detail).toContainText('What was happening');
+  await rows.first().press('ArrowDown');
+  await expect(page.getByTestId('playhead')).toHaveText('0:08.0');
+  await expect(rows.nth(1)).toBeFocused();
+  await expect(detail).toContainText('Slow interaction · click');
   await page.keyboard.press('Escape');
-  await page.getByRole('button', { name: 'All', exact: true }).click();
+  await expect(detail).toBeHidden();
+  await expect(rows.nth(1)).toBeFocused();
+
+  await page.getByRole('button', { name: 'Timeline', exact: true }).click();
+  await expect(rows.first()).toContainText('First contentful paint');
+
+  const longest = page.getByRole('button', { name: /^Longest task/ });
+  await longest.click();
+  await expect(longest).toHaveAttribute('aria-pressed', 'true');
+  await expect(rows).toHaveCount(1);
+  await expect(detail).toContainText('Long task');
+  await longest.click();
+  await expect(rows).toHaveCount(3);
 
   await page.getByTestId('console-tab').click();
   await page.keyboard.press('p');
   await expect(page.getByTestId('performance-tab')).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('slider', { name: 'Seek' }).press('End');
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 3 of 3 signals reached');
-  await expect(events.locator('[data-future]')).toHaveCount(0);
-  await expect(rows.nth(2)).toContainText('click');
-  await page.getByRole('slider', { name: 'Seek' }).press('Home');
-  await expect(page.getByTestId('performance-tab')).toHaveAccessibleName('Performance, 0 of 3 signals reached');
-  await expect(events.locator('[data-future]')).toHaveCount(3);
 });
 
-test('performance virtualization keeps row and clock offsets aligned across responsive resize', async ({ page }) => {
-  const id = uniqueId('performance-virtualized');
+test('performance says “not captured” apart from “nothing slow happened”', async ({ page }) => {
+  const id = uniqueId('performance-empty');
   const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id);
-  bundle.performance = {
-    supported: ['longtask'],
-    entries: Array.from({ length: 120 }, (_, index) => ({ at: 10 + index * 8, kind: 'long-task', value: 2 + (index % 4) })),
-  };
+  bundle.performance = { supported: [], entries: [] };
   await postBundle(page.request, server().origin, bundle);
-  await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/r/${id}`);
   await page.getByTestId('performance-tab').click();
-
-  const events = page.getByTestId('performance-events');
-  const panel = page.getByTestId('performance-diagnostics');
-  const row = (index: number) => events.locator(`[data-performance-id="performance-${index}"]`);
-  const assertWindowAt = async (index: number, rowHeight: number) => {
-    await expect(panel).toHaveAttribute('data-row-height', String(rowHeight));
-    await events.evaluate(
-      (element, top) => {
-        element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
-        element.scrollTop = top;
-      },
-      index * rowHeight + 28,
-    );
-    await expect(row(index)).toBeAttached();
-    await row(index).evaluate((element) => element.scrollIntoView({ block: 'center' }));
-    await expect(row(index)).toBeInViewport();
-    const visible = await events
-      .locator('.perf-event')
-      .evaluateAll((elements) => elements.map((element) => Number((element as HTMLElement).dataset.performanceId?.split('-').at(-1))));
-    expect(visible.length).toBeLessThan(120);
-    expect(visible).toContain(index);
-    expect(visible).toContain(index + 1);
-    await expect(row(index)).toHaveCSS('height', `${rowHeight}px`);
-  };
-  const assertDividerAfterSelected = async (index: number, rowHeight: number) => {
-    await row(index).click();
-    await expect(row(index)).toHaveAttribute('aria-expanded', 'true');
-    const visibleOffset = 28 + (index + 1) * rowHeight - 100;
-    await events.evaluate((element, top) => {
-      element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
-      element.scrollTop = top;
-    }, visibleOffset);
-    await expect.poll(() => events.evaluate((element) => element.scrollTop)).toBe(visibleOffset);
-    const alignment = await events.evaluate((element, nextIndex) => {
-      const divider = element.querySelector<HTMLElement>('[data-testid="now-divider"]');
-      const next = element.querySelector<HTMLElement>(`[data-performance-id="performance-${nextIndex}"]`);
-      return {
-        reached: Number(divider?.dataset.reached),
-        dividerTop: divider?.getBoundingClientRect().top,
-        nextTop: next?.getBoundingClientRect().top,
-      };
-    }, index + 1);
-    expect(alignment.reached).toBe(index + 1);
-    expect(alignment.nextTop).toBeDefined();
-    expect(alignment.dividerTop).toBeDefined();
-    expect(Math.abs(alignment.nextTop! - alignment.dividerTop!)).toBeLessThanOrEqual(1);
-    await expect(row(index)).toBeFocused();
-    await row(index).press('ArrowDown');
-    await expect(row(index + 1)).toBeFocused();
-    await expect(row(index + 1)).toHaveAttribute('aria-expanded', 'true');
-    await expect(row(index + 1)).toHaveCSS('height', `${rowHeight}px`);
-  };
-
-  await assertWindowAt(60, 32);
-  await assertDividerAfterSelected(60, 32);
-  const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
-  const detailHeading = evidence.locator('h2');
-  const selectedHeading = await detailHeading.textContent();
-  const assertSelectedSurvivesResize = async (index: number, rowHeight: number) => {
-    await expect(panel).toHaveAttribute('data-row-height', String(rowHeight));
-    await expect(row(index)).toBeFocused();
-    await expect(row(index)).toHaveAttribute('aria-expanded', 'true');
-    await expect
-      .poll(() =>
-        row(index).evaluate((element) => {
-          const scroller = element.closest<HTMLElement>('[data-testid="performance-events"]')!;
-          const rowBox = element.getBoundingClientRect();
-          const listBox = scroller.getBoundingClientRect();
-          return rowBox.top >= listBox.top + 28 && rowBox.bottom <= listBox.bottom;
-        }),
-      )
-      .toBe(true);
-    await expect(detailHeading).toHaveText(selectedHeading!);
-    const aligned = await events.evaluate((element, nextIndex) => {
-      const divider = element.querySelector<HTMLElement>('[data-testid="now-divider"]');
-      const next = element.querySelector<HTMLElement>(`[data-performance-id="performance-${nextIndex}"]`);
-      return Math.abs((divider?.getBoundingClientRect().top ?? Infinity) - (next?.getBoundingClientRect().top ?? -Infinity));
-    }, index + 1);
-    expect(aligned).toBeLessThanOrEqual(1);
-  };
-  await page.setViewportSize({ width: 390, height: 800 });
-  await assertSelectedSurvivesResize(61, 44);
-  await row(61).press('ArrowDown');
-  await expect(row(62)).toBeFocused();
-  await expect(row(62)).toHaveAttribute('aria-expanded', 'true');
-  await expect(detailHeading).toHaveText(selectedHeading!);
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await assertSelectedSurvivesResize(62, 32);
-  await row(62).press('ArrowDown');
-  await expect(row(63)).toBeFocused();
-  await page.getByRole('button', { name: 'Search performance events' }).click();
-  const searchInput = page.getByRole('searchbox', { name: 'Search performance events' });
-  await expect(searchInput).toBeFocused();
-  await page.setViewportSize({ width: 390, height: 800 });
-  await expect(panel).toHaveAttribute('data-row-height', '44');
-  await expect(searchInput).toBeFocused();
-  await expect(detailHeading).toHaveText(selectedHeading!);
-  await page.getByRole('button', { name: 'Close event search' }).click();
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
-  await events.evaluate((element) => {
-    element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
-    element.scrollTop = element.scrollHeight;
-  });
-  await expect(row(119)).toBeAttached();
-  await row(119).evaluate((element) => element.scrollIntoView({ block: 'center' }));
-  await expect(row(119)).toBeInViewport();
-
-  await page.setViewportSize({ width: 390, height: 800 });
-  await assertWindowAt(60, 44);
-  await assertDividerAfterSelected(60, 44);
-  await page.keyboard.press('Escape');
-  await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
-  await events.evaluate((element) => {
-    element.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
-    element.scrollTop = element.scrollHeight;
-  });
-  await expect(row(119)).toBeAttached();
-  await row(119).evaluate((element) => element.scrollIntoView({ block: 'center' }));
-  await expect(row(119)).toBeInViewport();
+  await expect(page.getByTestId('perf-unsupported')).toContainText('Not captured by this browser');
 });
 
 test.describe('Performance on a phone', () => {
   test.use({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
 
-  test('keeps timing columns within their rows and evidence scrollable at 390px', async ({ page }) => {
+  test('keeps rows touch-sized, the detail in place of the table, and nothing wider than the screen', async ({ page }) => {
     const id = uniqueId('performance-phone');
-    const bundle = await cloneBundle(page.request, server().origin, 'demo-shop', id);
-    bundle.steps = [{ at: 1800, kind: 'click', label: 'Open project with a long captured action label' }];
-    bundle.performance = {
-      supported: ['paint', 'longtask', 'event'],
-      entries: [
-        { at: 1700, kind: 'slow-interaction', value: 420, eventType: 'pointerdown' },
-        { at: 1900, kind: 'long-task', value: 182 },
-        { at: 2400, kind: 'first-contentful-paint', value: 196 },
-        { at: 2500, kind: 'largest-contentful-paint', value: 196 },
-        { at: 3000, kind: 'slow-interaction', value: 0, eventType: 'beforeinput' },
-      ],
-    };
-    await postBundle(page.request, server().origin, bundle);
+    await seedPerformance(page, id);
     await openReplay(page, `${server().origin}/r/${id}`);
     await page.getByTestId('performance-tab').tap();
-    const panel = page.getByTestId('performance-diagnostics');
-    const events = page.getByTestId('performance-events');
-    await expect(events.locator('.perf-event')).toHaveCount(5);
-    await expect(events.locator('.perf-replay-compact')).toBeVisible();
-    await expect(events.locator('.perf-replay-wide')).toBeHidden();
+    const panel = page.getByTestId('performance-panel');
+    const rows = eventRows(page);
+    await expect(rows).toHaveCount(3);
+    const heights = await rows.evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().height));
+    expect(heights.every((height) => height >= 44)).toBe(true);
+    expect(await panel.evaluate((element) => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
 
-    const assertGeometry = async () => {
-      const geometry = await panel.evaluate((element) => {
-        const header = element.querySelector<HTMLElement>('.perf-event-columns')!;
-        const headerBox = header.getBoundingClientRect();
-        const rows = [...element.querySelectorAll<HTMLElement>('.perf-events .perf-event')];
-        // The helper must remain inside the serialized browser evaluation.
-        // oxlint-disable-next-line unicorn/consistent-function-scoping
-        function within(inner: DOMRect, outer: DOMRect) {
-          return (
-            inner.left >= outer.left - 1 && inner.right <= outer.right + 1 && inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1
-          );
-        }
-        return {
-          overflow: [element, ...element.querySelectorAll<HTMLElement>('.perf-events, .perf-main, .perf-detail')].some(
-            (node) => node.scrollWidth > node.clientWidth + 1,
-          ),
-          headerHeight: headerBox.height,
-          headerFits: [...header.children].every(
-            (cell) => !cell.getBoundingClientRect().width || within(cell.getBoundingClientRect(), headerBox),
-          ),
-          rowsFit: rows.every((row) => {
-            const box = row.getBoundingClientRect();
-            return (
-              box.height >= 43 &&
-              [...row.children].every((cell) => !cell.getBoundingClientRect().width || within(cell.getBoundingClientRect(), box))
-            );
-          }),
-        };
-      });
-      expect(geometry).toEqual({ overflow: false, headerHeight: 28, headerFits: true, rowsFit: true });
-    };
-    await assertGeometry();
-    await events.locator('[data-performance-id="performance-0"]').tap();
-    const evidence = page.getByRole('region', { name: 'Selected performance evidence' });
-    await expect(evidence.locator('h2')).toHaveText('Slow interaction · pointerdown');
-    await expect(evidence.locator('.perf-facts')).toContainText('Captured duration420 ms');
-    await expect(evidence.locator('[data-performance-id="action-0"]')).toBeAttached();
-    await assertGeometry();
-    const evidenceSize = await evidence.boundingBox();
-    const eventsSize = await events.boundingBox();
-    expect(evidenceSize!.height).toBeGreaterThan(eventsSize!.height);
-    await evidence.focus();
-    await page.keyboard.press('Escape');
-    await expect(evidence).toBeHidden();
-    await expect(events.locator('[data-performance-id="performance-0"]')).toBeFocused();
-    await expect(events.locator('.now-grip')).toHaveAttribute('role', 'slider');
+    await rows.first().tap();
+    const detail = page.getByRole('region', { name: 'Selected performance event' });
+    await expect(detail).toBeVisible();
+    await expect(page.getByTestId('performance-events')).toBeHidden();
+    await page.getByRole('button', { name: 'Close event details' }).tap();
+    await expect(detail).toBeHidden();
+    await expect(rows.first()).toBeFocused();
   });
 });
 

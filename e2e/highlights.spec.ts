@@ -1,0 +1,138 @@
+import { expect, test } from '@playwright/test';
+
+import { serveApp } from './support.ts';
+
+const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
+
+async function dragOnClip(page: import('@playwright/test').Page, x1: number, x2: number, touch: boolean) {
+  const clip = (await page.getByTestId('lane-clip').boundingBox())!;
+  const y = clip.y + clip.height / 2;
+  const from = clip.x + clip.width * x1;
+  const to = clip.x + clip.width * x2;
+  if (touch) {
+    const session = await page.context().newCDPSession(page);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: from, y }] });
+    for (let step = 1; step <= 5; step++)
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: from + ((to - from) * step) / 5, y }] });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await session.detach();
+  } else {
+    await page.mouse.move(from, y);
+    await page.mouse.down();
+    await page.mouse.move(to, y, { steps: 5 });
+    await page.mouse.up();
+  }
+}
+
+async function dragFromViewerMarker(page: import('@playwright/test').Page, touch: boolean) {
+  const marker = (await page.locator('.scrubber-highlight-marker').first().boundingBox())!;
+  const from = { x: marker.x + marker.width / 2, y: marker.y + marker.height / 2 };
+  const to = { x: from.x + 56, y: from.y };
+  if (touch) {
+    const session = await page.context().newCDPSession(page);
+    await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [from] });
+    for (let step = 1; step <= 5; step++)
+      await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: from.x + (56 * step) / 5, y: from.y }] });
+    await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await session.detach();
+  } else {
+    await page.mouse.move(from.x, from.y);
+    await page.mouse.down();
+    await page.mouse.move(to.x, to.y, { steps: 5 });
+    await page.mouse.up();
+  }
+}
+
+async function runHighlightFlow(page: import('@playwright/test').Page, width: number, height: number, touch: boolean) {
+  await page.setViewportSize({ width, height });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const base = server().origin;
+  const id = `highlights-${width}-${Date.now().toString(36)}`;
+  const bundle = await (await page.request.get(`${base}/api/replays/human-demo`)).json();
+  bundle.meta.id = id;
+  bundle.meta.title = 'Highlight check';
+  expect((await page.request.post(`${base}/api/replays`, { data: bundle })).status()).toBe(201);
+
+  await page.goto(`${base}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+
+  // A point mark starts at the playhead; its label and timing are undoable.
+  await page.locator('body').press('m');
+  await expect(page.getByTestId('timeline-highlight')).toHaveCount(1);
+  await page.getByRole('textbox', { name: 'Highlight label' }).fill('Entry point');
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(page.getByRole('textbox', { name: 'Highlight label' })).toHaveValue('');
+  await page.keyboard.press('ControlOrMeta+Shift+z');
+  await expect(page.getByRole('textbox', { name: 'Highlight label' })).toHaveValue('Entry point');
+  await page.getByRole('spinbutton', { name: 'Time in seconds' }).fill('0.5');
+  await expect(page.getByRole('spinbutton', { name: 'Time in seconds' })).toHaveValue('0.5');
+
+  // Select a bounded period on the clip. The same menu is reachable by touch and keyboard.
+  await dragOnClip(page, 0.2, 0.52, touch);
+  await expect(page.getByTestId('range-selection')).toBeVisible();
+  // Desktop: the control row's Add menu; phones: the selected range's own panel offers it directly.
+  if (!touch) await page.getByTestId('add-effect').click();
+  await page.getByTestId('add-period-highlight').click();
+  await expect(page.getByTestId('timeline-highlight')).toHaveCount(3);
+  const label = page.getByRole('textbox', { name: 'Highlight label' });
+  await label.fill('Checkout flow');
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+
+  // Cut through the period; the editor keeps its source range, while playback projects the two remaining spans.
+  await dragOnClip(page, 0.32, 0.38, touch);
+  await page.keyboard.press('c');
+  await expect(page.getByTestId('region-cut')).toHaveCount(1);
+  await page.getByTestId('editor-done').click();
+  await expect(page.getByTestId('scrubber-highlights')).toBeVisible();
+  await expect(page.locator('.scrubber-highlight-marker')).toHaveCount(5);
+  const seek = page.getByRole('slider', { name: 'Seek' });
+  const viewerMark = page.locator('.scrubber-highlight-marker').nth(0);
+  if (touch) await viewerMark.tap();
+  else {
+    await viewerMark.focus();
+    await page.keyboard.press('Enter');
+  }
+  await expect(seek).not.toHaveValue('0');
+  const seekBeforeDrag = await seek.inputValue();
+  await dragFromViewerMarker(page, touch);
+  await expect(seek).not.toHaveValue(seekBeforeDrag);
+
+  // Reload the editor, trim past the point and verify that playback hides it while keeping the cut-split period.
+  const stored = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
+  expect(stored.highlights).toHaveLength(2);
+  expect(stored.highlights.map((mark: { kind: string }) => mark.kind).sort()).toEqual(['period', 'point']);
+  await page.goto(`${base}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await page.locator('.tl-highlight-marker[data-kind="period"]').first().click();
+  await expect(page.getByRole('textbox', { name: 'Highlight label' })).toHaveValue('Checkout flow');
+  await page.locator('.tl-highlight-marker[data-kind="point"]').click();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('i');
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+  await page.getByTestId('editor-done').click();
+  await expect(page.locator('.scrubber-highlight-marker')).toHaveCount(4);
+
+  // The source point remains editable until explicitly deleted; deletion itself survives a reload.
+  await page.goto(`${base}/r/${id}/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await page.locator('.tl-highlight-marker[data-kind="point"]').click();
+  await page.getByTestId('remove-highlight').click();
+  await expect(page.getByTestId('timeline-highlight')).toHaveCount(2);
+  await expect(page.getByTestId('save-state')).toHaveText('Saved');
+  await page.reload();
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await expect(page.getByTestId('timeline-highlight')).toHaveCount(2);
+}
+
+test.describe('desktop', () => {
+  test('create, edit, delete, undo/redo, autosave, reload and navigate through a cut', async ({ page }) => {
+    await runHighlightFlow(page, 1280, 800, false);
+  });
+});
+
+test.describe('phone', () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  test('create, edit, delete, undo/redo, autosave, reload and navigate through a cut', async ({ page }) => {
+    await runHighlightFlow(page, 390, 844, true);
+  });
+});

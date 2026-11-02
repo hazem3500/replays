@@ -1,0 +1,81 @@
+/*
+ * The replay page while it loads (viewer/LoadingParts.tsx): real chrome at once, quiet placeholders for data only,
+ * and a per-region hand-over to the ready page. Shapes and timing come from loading.css.
+ */
+@layer properties, theme, base, app, components, utilities;
+
+@layer app {
+  /* The chrome is real, so the page shows at once; only the placeholders wait (--skeleton-delay). */
+  .app-shell.progressive-viewer-loading { animation: none; }
+
+  /* ---------- Player: the card's poster at full strength under a dark scrim, a ring that fills where play will be ---------- */
+  .loading-frame { position: relative; overflow: hidden; background: color-mix(in srgb, var(--surface-raised) 60%, var(--canvas)); box-shadow: none; }
+  .loading-frame[data-poster] { background: var(--canvas); }
+  .loading-poster { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+  /* Darker toward the edges, so the ring reads at the centre: "about to play", never a washed-out grey. */
+  .loading-frame[data-poster]::after { content: ""; position: absolute; inset: 0; background: radial-gradient(closest-side, rgb(6 8 12 / 0.1), rgb(6 8 12 / 0.36)); pointer-events: none; }
+  :root[data-theme="light"] .loading-frame[data-poster]::after { background: radial-gradient(closest-side, rgb(14 18 28 / 0.04), rgb(14 18 28 / 0.22)); }
+  .loading-ring { position: absolute; z-index: 1; top: 50%; left: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; border-radius: 50%; background: rgb(10 12 16 / 0.5); color: #fff; animation: skeleton-appear var(--skeleton-fade) var(--ease-out) var(--skeleton-delay) both; }
+  .loading-frame:not([data-poster]) .loading-ring { background: color-mix(in srgb, var(--text) 8%, transparent); color: var(--text); }
+  .loading-ring svg { width: 36px; height: 36px; overflow: visible; }
+  .loading-ring-track, .loading-ring-arc { fill: none; stroke-width: 2.5; }
+  .loading-ring-track { stroke: currentColor; opacity: 0.22; }
+  .loading-ring-arc { stroke: currentColor; stroke-linecap: round; transform: rotate(-90deg); transform-origin: 50% 50%; transition: stroke-dashoffset 240ms var(--ease-out); }
+  .loading-ring-play { fill: currentColor; opacity: 0.9; }
+  /* Size unknown: a quarter arc turning (transform only). */
+  .loading-ring:not([data-determinate]) svg { animation: loading-ring-turn 1.1s linear infinite; }
+  .loading-ring:not([data-determinate]) .loading-ring-play { display: none; }
+  @keyframes loading-ring-turn { to { transform: rotate(360deg); } }
+
+  /* ---------- Rows: the rail's and the panel's real geometry ---------- */
+  /* Real rows from the bundle (step labels, console messages) arrive with it, quickly. */
+  .loading-real { animation: handover-in 200ms var(--ease-out) both; pointer-events: none; }
+  .loading-step-kind { width: 6px; height: 6px; justify-self: center; border-radius: 50%; background: var(--text-tertiary); opacity: 0.5; }
+  .loading-level { flex: 0 0 auto; width: 6px; height: 6px; margin: 0 4px; border-radius: 50%; background: var(--text-tertiary); opacity: 0.6; align-self: center; }
+  .loading-level[data-level="error"] { background: var(--danger); opacity: 0.8; }
+  .loading-level[data-level="warn"] { background: var(--warning); opacity: 0.8; }
+  /* Stand-in rows (`.pending`, loading.css): they appear after the player (it is what is nearly ready), then breathe
+     as one layer per region, fading out downwards. */
+  .loading-rows {
+    --region-delay: 120ms;
+    mask-image: linear-gradient(to bottom, #000 25%, transparent 96%);
+    animation: skeleton-appear 240ms var(--ease-out) calc(var(--skeleton-delay) + var(--region-delay)) both, pending-breathe 2.4s ease-in-out calc(var(--skeleton-delay) + var(--region-delay) + 240ms) infinite;
+  }
+  .loading-rows[data-region="panel"] { --region-delay: 260ms; }
+  .loading-step { cursor: default; }
+  .pending .loading-step-kind { visibility: hidden; }
+  .loading-table td { height: 32px; }
+  .loading-list { display: grid; padding: 6px 0; }
+  .loading-list-row { height: 32px; display: flex; align-items: center; gap: 14px; padding: 0 14px; font-size: var(--text-xs); }
+
+  /* ---------- Transport: the full row, inert; the track fills with what has loaded ---------- */
+  .loading-scrubber .scrubber-segment { width: auto; }
+  .loading-buffered { position: absolute; inset: 0; background: color-mix(in srgb, var(--text) 16%, transparent); transform-origin: 0 50%; transition: transform 240ms var(--ease-out); }
+  .progressive-viewer-loading .transport :is(button, [role="button"]):disabled { opacity: 0.55; }
+  .loading-actions :is(button):disabled { opacity: 0.5; }
+
+  /* ---------- Suite (ViewerSkeleton suite): the real runs sidebar, pending (SuiteSidebarPending) ---------- */
+  .skeleton-suite { animation: none; }
+  .skeleton-suite .suite-sidebar.pending :is(.suite-sidebar-head, .suite-run-list) { animation: skeleton-appear 240ms var(--ease-out) var(--skeleton-delay) both, pending-breathe 2.4s ease-in-out calc(var(--skeleton-delay) + 240ms) infinite; }
+
+  /* ---------- Editor (EditorSkeleton): its real top bar, the poster stage, the dock as a calm tile ---------- */
+  .editor-loading-topbar { position: relative; }
+  .editor-loading-track { background: linear-gradient(180deg, color-mix(in srgb, var(--text) 5%, transparent), color-mix(in srgb, var(--text) 2.5%, transparent)); animation: skeleton-appear 240ms var(--ease-out) var(--skeleton-delay) both, pending-breathe 2.4s ease-in-out calc(var(--skeleton-delay) + 240ms) infinite; }
+
+  /* ---------- Hand-over (LoadingParts.tsx useShellHandover): the ready page's regions arrive one by one ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-shell-handover] .app-shell:not(.skeleton-shell) { animation: none; }
+    html[data-shell-handover~="player"] .app-shell:not(.skeleton-shell) .player-frame { animation: handover-in 260ms var(--ease-out) both; }
+    /* The step segments, error notches and highlights grow in along the track, left to right. */
+    html[data-shell-handover~="player"] .app-shell:not(.skeleton-shell) :is(.scrubber-bars, .scrubber-highlight-layer) { animation: handover-reveal 360ms var(--ease-out) 60ms both; }
+    html[data-shell-handover] .app-shell:not(.skeleton-shell) :is(.transport, .topbar-actions) > * { animation: handover-enable 200ms var(--ease-out) both; }
+    /* Placeholders give way to rows (a fade in); real rows only settle as their controls arrive. */
+    html[data-shell-handover~="steps"] .app-shell:not(.skeleton-shell) .timeline-panel .timeline { animation: handover-in 240ms var(--ease-out) 40ms both; }
+    html[data-shell-handover~="steps-data"] .app-shell:not(.skeleton-shell) .timeline-panel .timeline { animation: handover-enable 200ms var(--ease-out) both; }
+    html[data-shell-handover~="panel"] .app-shell:not(.skeleton-shell) .inspector-panel { animation: handover-in 240ms var(--ease-out) 80ms both; }
+    html[data-shell-handover~="panel-data"] .app-shell:not(.skeleton-shell) .inspector-panel { animation: handover-enable 200ms var(--ease-out) both; }
+  }
+  @keyframes handover-in { from { opacity: 0; } }
+  @keyframes handover-enable { from { opacity: 0.6; } }
+  @keyframes handover-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+}

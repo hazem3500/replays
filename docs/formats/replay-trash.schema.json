@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/replay-trash.schema.json",
+  "title": "Replay trash record",
+  "description": "`<replay id>/trash.json`: present once the replay was deleted (`DELETE /api/replays/<id>`). The replay is out of every list and its bundle answers 404; `POST /api/replays/<id>/restore` removes the record within the trash window (7 days), after which the retention sweep deletes the replay. Source of truth: src/shared/schemas/replay-meta.ts.",
+  "type": "object",
+  "required": ["by", "at"],
+  "additionalProperties": false,
+  "properties": {
+    "by": { "type": "string", "description": "The identity that deleted it." },
+    "at": { "type": "string", "format": "date-time" }
+  }
+}

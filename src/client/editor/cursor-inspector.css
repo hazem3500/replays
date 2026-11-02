@@ -1,0 +1,81 @@
+/*
+ * Cursor inspector's appearance, colour and motion pickers (CursorInspector.tsx, CursorAppearancePicker.tsx). Same `app` layer as editor.css, loaded after it.
+ * Rows are compact radios: a mini trajectory, a name and one line of description. Selection is the accent's
+ * soft fill and an accent path; hover is a surface tint on fine pointers only. The dot travels the path once
+ * when a row is chosen or hovered (WAAPI from the planner's samples), never on mount or under reduced motion.
+ */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
+@layer app {
+  .cursor-motion { margin: 0 0 14px; }
+  .cursor-motion-label { display: flex; align-items: center; min-height: 32px; color: var(--text); }
+  .cursor-motion-list { display: grid; gap: 2px; margin: 0 -8px; }
+  .cursor-motion-option {
+    box-sizing: border-box; display: grid; grid-template-columns: 44px minmax(0, 1fr); align-items: center; gap: 10px;
+    min-height: 40px; padding: 5px 8px; border-radius: var(--radius); color: var(--text); cursor: pointer; outline: none;
+    transition: background-color var(--motion-fast) ease;
+  }
+  .cursor-motion-option[data-checked] { background: var(--accent-soft); }
+  .cursor-motion-option[data-disabled] { cursor: default; }
+  .cursor-motion-option:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; box-shadow: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .cursor-motion-option:not([data-checked], [data-disabled]):hover { background: var(--surface-hover); }
+  }
+  @media (pointer: coarse) {
+    .cursor-motion-option { min-height: 44px; }
+  }
+
+  .cursor-motion-preview { display: block; width: 44px; height: 30px; overflow: visible; }
+  .cursor-motion-path { fill: none; stroke: var(--text-tertiary); stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; transition: stroke var(--motion-fast) ease; }
+  .cursor-motion-target { fill: var(--text-tertiary); transition: fill var(--motion-fast) ease; }
+  .cursor-motion-option[data-checked] .cursor-motion-path { stroke: var(--accent); }
+  .cursor-motion-option[data-checked] .cursor-motion-target { fill: var(--accent); }
+  .cursor-motion-dot { fill: var(--accent); opacity: 0; }
+
+  .cursor-motion-text { display: grid; gap: 1px; min-width: 0; }
+  .cursor-motion-name { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--text); font-size: 13px; font-weight: 550; line-height: 1.3; }
+  .cursor-motion-tag {
+    flex: none; padding: 0 5px; border-radius: var(--radius-sm); background: color-mix(in srgb, var(--text-tertiary) 14%, transparent);
+    color: var(--text-secondary); font-size: 10px; font-weight: 500; line-height: 15px;
+  }
+  .cursor-motion-description { overflow: hidden; color: var(--text-tertiary); font-size: 12px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Appearance rows reuse the motion rows; the preview is the player's own glyph at 75 % (CursorAppearancePicker.tsx). */
+  .cursor-appearance-preview { position: relative; display: block; width: 44px; height: 30px; overflow: visible; }
+  .cursor-appearance-glyph { position: absolute; left: 10px; top: 3px; width: 32px; height: 32px; scale: 0.75; transform-origin: 0 0; }
+  /* why: a name tag runs right of the arrow; start further left so it stays inside the preview cell. */
+  .cursor-appearance-glyph:has(.replay-cursor-tag) { left: 0; top: 1px; }
+  .cursor-appearance-glyph > svg { display: block; width: 100%; height: 100%; overflow: visible; filter: drop-shadow(0 1px 1.5px rgb(0 0 0 / 0.35)); }
+  /* invariant: the default arrow is styled like .replay-cursor path (styles.css), so the preview matches the player. */
+  .cursor-appearance-glyph path { fill: #111; stroke: #fff; stroke-width: 8; stroke-linejoin: round; stroke-linecap: round; }
+  .cursor-appearance-placeholder { display: block; width: 44px; height: 30px; }
+  .cursor-appearance-placeholder circle { fill: none; stroke: var(--text-tertiary); stroke-width: 1.25; stroke-dasharray: 2 2.5; }
+  .cursor-appearance-placeholder path { fill: var(--text-tertiary); }
+  .cursor-appearance-note { margin: 6px 0 0; color: var(--text-tertiary); font-size: 12px; line-height: 1.35; }
+
+  .cursor-swatches { margin: 0 0 14px; }
+  .cursor-swatch-list { display: flex; flex-wrap: wrap; gap: 2px; margin: 0 -6px; }
+  .cursor-swatch {
+    display: grid; place-items: center; width: 32px; height: 32px; border-radius: 999px; cursor: pointer; outline: none;
+    transition: background-color var(--motion-fast) ease;
+  }
+  .cursor-swatch[data-disabled] { cursor: default; opacity: 0.4; }
+  .cursor-swatch:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; box-shadow: none; }
+  .cursor-swatch-chip {
+    width: 20px; height: 20px; border-radius: 999px; box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2);
+    transition: box-shadow var(--motion-fast) ease;
+  }
+  .cursor-swatch[data-swatch="own"] .cursor-swatch-chip { background: linear-gradient(135deg, #ffffff 0 50%, #111111 50% 100%); }
+  .cursor-swatch[data-checked] .cursor-swatch-chip { box-shadow: inset 0 0 0 1px rgb(0 0 0 / 0.2), 0 0 0 2px var(--surface), 0 0 0 4px var(--text); }
+  @media (hover: hover) and (pointer: fine) {
+    .cursor-swatch:not([data-disabled]):hover { background: var(--surface-hover); }
+  }
+  @media (pointer: coarse) {
+    .cursor-swatch { width: 40px; height: 40px; }
+    .cursor-swatch-list { gap: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cursor-motion-option, .cursor-motion-path, .cursor-motion-target, .cursor-swatch, .cursor-swatch-chip { transition: none; }
+  }
+}

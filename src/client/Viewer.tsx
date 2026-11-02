@@ -1,16 +1,27 @@
-import { FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
+import { ChevronDownIcon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { applyEdits, type EditTimeline, editListOf, editsVersion, isEmptyEdits, type StoredReplayEdits } from '../shared/edits.ts';
+import {
+  applyEdits,
+  type EditTimeline,
+  editListOf,
+  editTimeline,
+  editsVersion,
+  isEmptyEdits,
+  type ReplayHighlight,
+  type StoredReplayEdits,
+} from '../shared/edits.ts';
+import { projectHighlights } from '../shared/highlights.ts';
 import type { PlaybackEffects } from '../shared/effects.ts';
 import { formatClock, type ReplayBundle } from '../shared/replay.ts';
 import { editingEnabled } from './config.ts';
 import { FeatureProviders } from './plugins/features.tsx';
 import { EditCaption } from './edit-caption.tsx';
+import { LiveCaption } from './LiveCaption.tsx';
 import type { LoadedEdits } from './edits.ts';
-import { comparisonHref, editHref } from './route.ts';
+import { editHref } from './route.ts';
 import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
@@ -31,13 +42,15 @@ import { useActiveStep } from './viewer/active-step.ts';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { captionAt } from './step-caption.ts';
-import { clampInspectorHeight, initialInspectorHeight, Inspector, InspectorResizer, type MobilePanel } from './viewer/Inspector.tsx';
+import { clampInspectorHeight, initialInspectorHeight, Inspector, type MobilePanel } from './viewer/Inspector.tsx';
+import { InspectorSplit, RAIL_COLLAPSED_KEY, RailEdgeTab, RailSplit } from './viewer/ViewerSplits.tsx';
+import { usePersistentFlag } from './hooks/use-persistent-flag.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { ShortcutSheet } from './viewer/ShortcutSheet.tsx';
-import { savedStepsWidth, StepRail, StepsResizer } from './viewer/StepRail.tsx';
+import { savedStepsWidth, StepRail } from './viewer/StepRail.tsx';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
 
-import { Topbar, TopbarChip, type TopbarMenuItem } from './Topbar.tsx';
+import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,12 +69,11 @@ import { useKeep } from './viewer/keep.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
 const MalleableHost = lazy(() => import('./malleable/MalleableHost.tsx'));
+const ComparePicker = lazy(() => import('./comparison/ComparePicker.tsx').then((module) => ({ default: module.ComparePicker })));
 
 const INSPECTOR_COLLAPSED_KEY = 'replays-inspector-collapsed';
 const CAPTIONS_KEY = 'replays-captions';
 const CAPTION_NUMBERS_KEY = 'replays-caption-numbers';
-/** A folded panel keeps just its tab row (36 px) and the hairline above it. */
-const INSPECTOR_TABS_HEIGHT = 37;
 /** An expanded request grows a shorter desktop panel to this share of the window… */
 const REQUEST_PANEL_SHARE = 0.45;
 /** …but never so far that the player gets less than this share of the viewer's height. */
@@ -74,7 +86,11 @@ export function Viewer({
   status,
   suite,
   initialTab = 'console',
+  initialPanel,
+  preferInitialPanel = false,
   onTabChange,
+  onPanelChange,
+  focusPanelOnMount = false,
   menu,
   titleMenu,
   titleFrom,
@@ -83,6 +99,7 @@ export function Viewer({
   edited,
   effects,
   timeline,
+  highlights,
   sourceBundle = bundle,
 }: {
   bundle: ReplayBundle;
@@ -90,6 +107,8 @@ export function Viewer({
   sourceBundle?: ReplayBundle;
   /** Saved edits' timeline (source ↔ edited time) when they are applied: comments are anchored to source time. */
   timeline?: EditTimeline;
+  /** Saved playback navigation annotations, stored on the source timeline. */
+  highlights?: ReplayHighlight[];
   /** Zoom, blur and captions from the saved edits, on this bundle's timeline. */
   effects?: PlaybackEffects;
   /** The replay has saved edits: who and when, whether the original is on screen, and the switch between them. */
@@ -103,7 +122,14 @@ export function Viewer({
   /** The review suite this run belongs to, for the details popover. */
   suite?: SuiteDetails;
   initialTab?: InspectorTab;
+  /** Leaf panel selected in the lightweight loader, including the separate Steps panel. */
+  initialPanel?: string;
+  /** A panel explicitly chosen during loading takes precedence over a purpose default. */
+  preferInitialPanel?: boolean;
   onTabChange?: (tab: InspectorTab) => void;
+  onPanelChange?: (panel: string) => void;
+  /** Carry keyboard focus across the loading-to-ready navigation handoff. */
+  focusPanelOnMount?: boolean;
   /** Extra items for the topbar's "More" menu. */
   menu?: ReactNode;
   /** Phones: the title opens this menu (the suite workspace's run switcher). */
@@ -155,6 +181,7 @@ export function Viewer({
   const playerRegion = useRef<HTMLElement>(null);
   const shell = useRef<HTMLElement>(null);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [comparing, setComparing] = useState(false);
   const shortcutsOpenRef = useRef(false);
   useEffect(() => {
     shortcutsOpenRef.current = shortcutsOpen;
@@ -162,8 +189,17 @@ export function Viewer({
   const [inspectorHeight, setInspectorHeight] = useState(initialInspectorHeight);
   const [speedHud, setSpeedHud] = useState<{ speed: number; id: number }>();
   const [stepsWidth, setStepsWidth] = useState(savedStepsWidth);
+  const [railCollapsed, setRailCollapsed] = usePersistentFlag(RAIL_COLLAPSED_KEY);
   const workspace = useRef<HTMLDivElement>(null);
-  const [tab, setTabState] = useState<InspectorTab>(() => opened.tab ?? initialTab);
+  const [tab, setTabState] = useState<InspectorTab | 'steps'>(
+    () =>
+      (preferInitialPanel ? (initialPanel as InspectorTab | 'steps' | undefined) : opened.tab) ??
+      (initialPanel === 'steps' ? 'steps' : ((initialPanel as InspectorTab | undefined) ?? initialTab)),
+  );
+  useEffect(() => {
+    if (!focusPanelOnMount) return;
+    shell.current?.querySelector<HTMLElement>('.inspector-navigation [role="tab"][aria-selected="true"]')?.focus({ preventScroll: true });
+  }, [focusPanelOnMount]);
   // Step captions on the player: the person's stored choice, else the purpose's default (off without one).
   const [captions, setCaptionsState] = useState(() => {
     const saved = readStorage(CAPTIONS_KEY);
@@ -208,24 +244,28 @@ export function Viewer({
   }, [collapsed]);
   // Phones: one tabbed panel under the player; Steps is its first tab and opens by default.
   const mobile = useMediaQuery(MOBILE_QUERY);
-  const [stepsSelected, setStepsSelected] = useState(true);
+  const [stepsSelected, setStepsSelected] = useState(initialPanel === undefined || initialPanel === 'steps');
   const setTab = useCallback(
-    (next: InspectorTab) => {
+    (next: InspectorTab | 'steps') => {
       setTabState(next);
       setStepsSelected(false);
-      onTabChange?.(next);
+      if (next !== 'steps') onTabChange?.(next);
+      onPanelChange?.(next);
     },
-    [onTabChange],
+    [onPanelChange, onTabChange],
   );
   const mobilePanel = useMemo<MobilePanel | undefined>(
     () =>
       mobile
         ? {
             stepsSelected,
-            onSelectSteps: () => setStepsSelected(true),
+            onSelectSteps: () => {
+              setStepsSelected(true);
+              onPanelChange?.('steps');
+            },
           }
         : undefined,
-    [mobile, stepsSelected],
+    [mobile, onPanelChange, stepsSelected],
   );
   const [expandedRequest, setExpandedRequest] = useState<string>();
   // An expanded request needs room: a short desktop panel grows to 45% of the window while it is open (not
@@ -347,6 +387,7 @@ export function Viewer({
       notify,
       editsVersion: edited ? editsVersion(editListOf(edited.stored)) : '',
       editCaptions: Boolean(effects?.captions.length),
+      highlights: projectHighlights(highlights, timeline ?? editTimeline(undefined, player.duration)),
     };
   }, [
     bundle.steps,
@@ -354,6 +395,8 @@ export function Viewer({
     captions,
     edited,
     effects,
+    highlights,
+    timeline,
     errors,
     notify,
     player,
@@ -387,13 +430,7 @@ export function Viewer({
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       ...(keepItem ? [keepItem] : []),
-      {
-        label: 'Compare recordings',
-        icon: <AnimatedIcon name="search" />,
-        href: comparisonHref(bundle.meta.id, bundle.meta.id),
-        onSelect: () => {},
-        detail: 'Beta',
-      },
+      { label: 'Compare with…', icon: <AnimatedIcon name="search" />, onSelect: () => setComparing(true), testId: 'compare-with' },
       ...pluginMenu.items,
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
@@ -411,7 +448,7 @@ export function Viewer({
             },
           ]),
     ],
-    [actions.openShortcuts, bundle.meta.id, keepItem, mobile, pluginMenu.items],
+    [actions.openShortcuts, keepItem, mobile, pluginMenu.items],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -530,7 +567,9 @@ export function Viewer({
         data-tab={mobile && stepsSelected ? 'steps' : tab}
         data-inspector-collapsed={collapsed || undefined}
         data-purpose={purpose?.id}
-        style={{ '--inspector-height': collapsed && !mobile ? `${INSPECTOR_TABS_HEIGHT}px` : `${inspectorHeight}px` } as CSSProperties}
+        style={
+          { '--inspector-height': collapsed && !mobile ? 'var(--inspector-folded-height)' : `${inspectorHeight}px` } as CSSProperties
+        }
       >
         {skipLink ? (
           <a className="skip-link" href="#replay-player">
@@ -551,17 +590,19 @@ export function Viewer({
           {...(prefix ? { prefix } : {})}
           {...(headerStatus ? { status: headerStatus } : {})}
           {...(suite ? { suite } : {})}
+          hasEdits={Boolean(edited)}
         />
         <div
           ref={workspace}
           className={`workspace ${bundle.steps.length === 0 ? 'no-steps' : ''}`}
-          style={stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
+          data-rail-collapsed={(railCollapsed && !mobile) || undefined}
+          style={railCollapsed && !mobile ? ({ '--steps-width': '0px' } as CSSProperties) : stepsWidth ? ({ '--steps-width': `${stepsWidth}px` } as CSSProperties) : undefined}
         >
           <section ref={playerRegion} className="player-region" aria-label="Replay">
             <div className="stage-wrap">
               <PlayerStage />
               {effects?.captions.length ? (
-                <EditCaption captions={effects.captions} />
+                <EditCaption captions={effects.captions} style={effects.captionStyle} />
               ) : captions && bundle.steps.length > 0 ? (
                 <StepCaption />
               ) : null}
@@ -571,10 +612,14 @@ export function Viewer({
             </div>
             <Transport />
           </section>
-          {bundle.steps.length > 0 && !mobile ? <StepsResizer workspace={workspace} width={stepsWidth} onCommit={setStepsWidth} /> : null}
-          {bundle.steps.length > 0 && !mobile ? <StepRail /> : null}
+          {bundle.steps.length > 0 && !mobile ? (
+            <RailSplit workspace={workspace} width={stepsWidth} onWidthChange={setStepsWidth} collapsed={railCollapsed} onCollapsedChange={setRailCollapsed} />
+          ) : null}
+          {bundle.steps.length > 0 && !mobile ? railCollapsed ? <RailEdgeTab onOpen={() => setRailCollapsed(false)} /> : <StepRail /> : null}
         </div>
-        {mobile || collapsed ? null : <InspectorResizer shell={shell} height={inspectorHeight} onCommit={setInspectorHeight} />}
+        {mobile ? null : (
+          <InspectorSplit shell={shell} height={inspectorHeight} onHeightChange={setInspectorHeight} collapsed={collapsed} onCollapsedChange={setCollapsed} />
+        )}
         <Inspector
           bundle={bundle}
           sourceBundle={sourceBundle}
@@ -592,6 +637,15 @@ export function Viewer({
           </Suspense>
         ) : null}
         <ShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        {comparing ? (
+          <Suspense fallback={null}>
+            <ComparePicker
+              base={{ ...bundle.meta, ...(bundle.suiteRun ? { suiteRun: bundle.suiteRun } : {}) }}
+              open
+              onOpenChange={setComparing}
+            />
+          </Suspense>
+        ) : null}
       </main>
     </ViewerContext.Provider>
   );
@@ -657,8 +711,11 @@ const ViewerHeader = memo(function ViewerHeader({
   backHref,
   titleMenu,
   titleFrom,
+  hasEdits = false,
 }: {
   bundle: ReplayBundle;
+  /** The replay has saved edits: a dot on the Edit button (the title shows "Edited …" as quiet text). */
+  hasEdits?: boolean;
   /** Client plugins' settings, at the bottom of the More menu. */
   menuFooter: ReactNode;
   /** Client plugins' bar actions (desktop): icon buttons after the built-in ones. */
@@ -686,7 +743,7 @@ const ViewerHeader = memo(function ViewerHeader({
     ...(titleFrom ? { titleFrom } : {}),
     titleId: 'replay-title',
   };
-  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} {...shared} />;
+  if (compact) return <PhoneHeader bundle={bundle} suite={suite} menu={menu} menuItems={menuItems} menuFooter={menuFooter} hasEdits={hasEdits} {...shared} />;
   return (
     <Topbar
       {...shared}
@@ -697,7 +754,7 @@ const ViewerHeader = memo(function ViewerHeader({
       actions={
         // One quiet icon set: edit, details, copy link and download.
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} />
           <CopyLinkButton suiteHref={suite?.href} />
           <DownloadVideoButton meta={bundle.meta} />
@@ -718,9 +775,11 @@ function PhoneHeader({
   menu,
   menuItems,
   menuFooter,
+  hasEdits = false,
   ...props
 }: {
   bundle: ReplayBundle;
+  hasEdits?: boolean;
   suite: SuiteDetails | undefined;
   menu: ReactNode;
   menuFooter: ReactNode;
@@ -744,7 +803,7 @@ function PhoneHeader({
       menuFooter={menuFooter}
       actions={
         <>
-          {editingEnabled() ? <EditButton id={bundle.meta.id} /> : null}
+          {editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null}
           <ReplayInfoButton bundle={bundle} suite={suite} sheet title={props.title} />
           <CopyLinkButton suiteHref={suite?.href} />
           {download.progress}
@@ -801,15 +860,14 @@ function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
 /**
  * Step captions: the current step's label as a calm caption at the bottom of the player while it plays, and
  * while you scrub or seek (pointer drag, touch drag, keys, a step click) and stay paused there; a pause without
- * a seek, or the end, clears it. The caption fades in once; then the label morphs from step to step, and a fast
- * drag across many steps swaps it instantly, so it never flickers.
+ * a seek, or the end, clears it. The stable caption host retargets its shared characters between step labels.
  */
 function StepCaption() {
   const player = usePlayer();
   const { steps, captionNumbers } = useViewer();
   const { status } = usePlayerState();
   // The same step index the step rail shows (one source), so caption and rail never disagree at a boundary.
-  const active = useActiveStep(steps);
+  const activeIndex = useActiveStep(steps);
   const [seeked, setSeeked] = useState(false);
   useEffect(() => {
     const offSeek = player.subscribeSeek(() => setSeeked(true));
@@ -825,16 +883,13 @@ function StepCaption() {
   const captionIndex = usePlayhead((time) => captionAt(steps, time, player.duration)?.index ?? -1);
   const step = steps[captionIndex];
   const playing = status === 'playing';
-  if (!step || !(playing || (seeked && status !== 'ended'))) return null;
+  const active = Boolean(step && (playing || (seeked && status !== 'ended')));
   return (
-    <div className="step-caption" aria-hidden="true" data-testid="step-caption">
-      {/* One persistent caption: it fades in once, then the label morphs from step to step (AnimatedText); a fast
-          scrub swaps it instantly. */}
-      <span className="step-caption-text">
-        {captionNumbers ? <span className="step-caption-number">{active + 1}</span> : null}
-        <AnimatedText className="step-caption-label" text={step.label} />
-      </span>
-    </div>
+    <LiveCaption
+      text={active ? (step?.label ?? '') : undefined}
+      number={active && captionNumbers ? activeIndex + 1 : undefined}
+      testId="step-caption"
+    />
   );
 }
 
@@ -1017,18 +1072,19 @@ function SpeedHud({ speed }: { speed: number }) {
   );
 }
 
-/** Edit uses the same quiet icon button as the viewer's other toolbar actions. */
-function EditButton({ id }: { id: string }) {
+/** Edit uses the same quiet icon button as the viewer's other toolbar actions; a dot on it says the replay has edits. */
+function EditButton({ id, hasEdits = false }: { id: string; hasEdits?: boolean }) {
   return (
-    <Hint label="Edit replay · Trim, cut and add effects" side="bottom" align="end">
+    <Hint label={hasEdits ? 'Edit replay · This replay has edits' : 'Edit replay · Trim, cut and add effects'} side="bottom" align="end">
       <a
         href={editHref(id)}
         className={cn(
           buttonVariants({ variant: 'ghost', size: 'icon' }),
           'edit-entry text-[var(--text-secondary)] hover:text-foreground [&_svg:not([class*=size-])]:size-4',
         )}
-        aria-label="Edit replay"
+        aria-label={hasEdits ? 'Edit replay (has edits)' : 'Edit replay'}
         data-testid="edit-replay"
+        data-has-edits={hasEdits || undefined}
       >
         <AnimatedIcon name="pencil" />
       </a>
@@ -1045,8 +1101,9 @@ export interface EditedState {
 }
 
 /**
- * The quiet "Edited" label beside the title (hairline chip, no colour), and its menu: who saved the edits and when,
- * a switch to the original recording (and back), and edit mode. Reads "Original" while the original is shown.
+ * The edit state as quiet text beside the title ("Edited 2h ago", no border — the run status is the row's one strong
+ * mark), and its menu: who saved the edits and when, a switch to the original recording (and back), and edit mode.
+ * Reads "Original recording" while the original is shown.
  */
 function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedState; fresh?: boolean }) {
   const { stored, original, setOriginal } = edited;
@@ -1063,7 +1120,10 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
           />
         }
       >
-        <TopbarChip>{original ? 'Original' : 'Edited'}</TopbarChip>
+        <span className="edited-label">
+          {original ? 'Original recording' : stored.updatedAt ? `Edited ${savedAgo(stored.updatedAt)}` : 'Edited'}
+          <ChevronDownIcon aria-hidden="true" />
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-56">
         <DropdownMenuGroup>
@@ -1125,6 +1185,7 @@ export function EditedViewer({ edits, ...props }: Parameters<typeof Viewer>[0] &
       bundle={shown?.bundle ?? bundle}
       sourceBundle={bundle}
       {...(shown ? { effects: shown.effects, timeline: shown.timeline } : {})}
+      {...(stored?.highlights ? { highlights: stored.highlights } : {})}
       {...(edited ? { edited } : {})}
     />
   );

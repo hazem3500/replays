@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { describe, expect, it } from 'vitest';
 
 import { contrast, oklchLightness, TEXT_PAIRS, themeTokens } from './contrast.ts';
@@ -28,6 +31,10 @@ describe.each(['dark', 'light'] as const)('%s theme contrast', (theme) => {
   it('section headings (secondary, 13 px) and titles clear 7:1 on the page', () => {
     expect(contrast(tokens['--text']!, tokens['--surface']!)).toBeGreaterThanOrEqual(7);
     expect(contrast(tokens['--text-secondary']!, tokens['--surface']!)).toBeGreaterThanOrEqual(7);
+  });
+
+  it('the destructive button fill stands out (3:1) on the raised surface dialogs use', () => {
+    expect(contrast(tokens['--danger-solid']!, tokens['--surface-raised']!)).toBeGreaterThanOrEqual(3);
   });
 
   it('keyboard ring is at least 3:1 against the page', () => {
@@ -69,3 +76,27 @@ function hue(hex: string) {
   const raw = max === r ? ((g - b) / delta) % 6 : max === g ? (b - r) / delta + 2 : (r - g) / delta + 4;
   return (raw * 60 + 360) % 360;
 }
+
+describe.each(['dark', 'light'] as const)('%s comparison tile identities', (theme) => {
+  const css = readFileSync(resolve(import.meta.dirname, '../src/client/comparison/meeting/meeting.css'), 'utf8');
+  const scoped = (selector: string) =>
+    Object.fromEntries([...(css.split(`${selector} {`)[1]?.split('}')[0] ?? '').matchAll(/(--tile-\d+):\s*(#[0-9a-f]{6})/g)].map((match) => [match[1]!, match[2]!]));
+  const tiles = theme === 'dark' ? scoped('.mt-workspace') : { ...scoped('.mt-workspace'), ...scoped(':root[data-theme="light"] .mt-workspace') };
+  const tokens = themes[theme];
+
+  it('defines nine hues', () => expect(Object.keys(tiles)).toHaveLength(9));
+
+  it.each(Array.from({ length: 9 }, (_, index) => `--tile-${index + 1}`))('the name-tag letter on %s is at least 4.5:1', (tile) => {
+    expect(contrast(tokens['--accent-contrast']!, tiles[tile]!), `${tile} ${tiles[tile]}`).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(Array.from({ length: 9 }, (_, index) => `--tile-${index + 1}`))('the %s timeline marker is at least 3:1 on the transport', (tile) => {
+    expect(contrast(tiles[tile]!, tokens['--surface']!), `${tile} ${tiles[tile]}`).toBeGreaterThanOrEqual(3);
+  });
+
+  it('name-tag text, status and error count clear 4.5:1 on their backgrounds', () => {
+    expect(contrast(tokens['--text']!, tokens['--surface']!)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(tokens['--text-tertiary']!, tokens['--surface']!)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(tokens['--danger']!, tokens['--danger-soft']!)).toBeGreaterThanOrEqual(4.5);
+  });
+});

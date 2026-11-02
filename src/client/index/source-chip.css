@@ -1,0 +1,71 @@
+/*
+ * Source links on index rows (index/SourceLine.tsx). Unlayered: wins over feed.css (app layer).
+ * Desktop: provider icon + label + ↗, quiet secondary text. Phones: one 24 px icon chip at the END of the meta line
+ * (away from the title, where the thumb lands to open the row), with a 32 px hit area, opening a sheet of sources.
+ */
+:root {
+  --source-chip-size: 24px;
+  --source-chip-hit: 32px;
+  --source-chip-bg: var(--surface-hover);
+  --source-chip-bg-pressed: var(--surface-pressed);
+  --source-chip-fg: var(--text-secondary);
+}
+
+.source-lead .source-mark { color: var(--text-secondary); }
+.provider-icon { flex: 0 0 auto; }
+.provider-icon-image { object-fit: contain; }
+
+/* ---------- Phones: the chip ---------- */
+.source-lead-chip { z-index: 1; flex: 0 0 auto; }
+.source-chip {
+  position: relative;
+  min-width: var(--source-chip-size);
+  height: var(--source-chip-size);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0;
+  padding: 0 5px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: var(--source-chip-bg);
+  color: var(--source-chip-fg);
+  font: inherit;
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--motion-press) var(--ease-out), background-color var(--motion-fast) ease;
+}
+/* WCAG 2.5.8: a 32 px target around a 24 px chip, never overlapping the row's other controls. */
+.source-chip::before { content: ""; position: absolute; inset: calc((var(--source-chip-size) - var(--source-chip-hit)) / 2) -4px; }
+.source-chip .source-mark { width: 13px; height: 13px; flex-basis: 13px; color: currentColor; }
+.source-chip:active, .source-chip[data-popup-open] { background: var(--source-chip-bg-pressed); color: var(--text); }
+.source-chip:active { transform: scale(0.96); }
+.source-chip:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+@media (prefers-reduced-motion: reduce) { .source-chip { transition: background-color var(--motion-fast) ease; } .source-chip:active { transform: none; } }
+@media (forced-colors: active) { .source-chip { border: 1px solid CanvasText; } }
+
+/* ---------- Phones: the sheet ---------- */
+.source-sheet-title { padding: 4px 4px 8px; color: var(--text); font-size: var(--text-md); font-weight: 600; }
+.source-sheet-list { margin: 0 0 12px; padding: 0; list-style: none; }
+.source-sheet-row {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: var(--radius);
+  color: var(--text);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.source-sheet-row:active { background: var(--surface-hover); }
+.source-sheet-row:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
+.source-sheet-icon { width: 18px; height: 18px; color: var(--text-secondary); }
+.source-sheet-text { min-width: 0; flex: 1 1 auto; display: grid; gap: 1px; }
+.source-sheet-label { min-width: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.source-sheet-noun { color: var(--text-tertiary); font-size: var(--text-xs); }
+.source-sheet-arrow { width: 14px; height: 14px; flex: 0 0 14px; color: var(--text-tertiary); }

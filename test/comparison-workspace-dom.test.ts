@@ -3,7 +3,7 @@ import { act, createElement, StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ComparisonWorkspace } from '../src/client/comparison/ComparisonWorkspace.tsx';
+import { PairWorkspace as ComparisonWorkspace } from '../src/client/comparison/ComparisonWorkspace.tsx';
 import { performanceFixture } from './performance-fixture.ts';
 
 interface TestPlayer {

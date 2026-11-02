@@ -78,13 +78,17 @@ for (const theme of THEMES) {
       test.slow();
       await openReplay(page, `${server().origin}/r/demo-shop`);
       await page.getByRole('slider', { name: 'Seek' }).press('End');
-      for (const tab of ['console', 'network', 'performance', 'context']) {
+      for (const tab of ['issues', 'console', 'network', 'performance', 'context']) {
         await page.getByTestId(`${tab}-tab`).click();
         await expect(page.getByTestId(`${tab}-tab`)).toHaveAttribute('aria-selected', 'true');
         await audit(page, `viewer, ${tab} tab`);
       }
       await page.getByTestId('network-tab').click();
-      await page.getByRole('button', { name: 'GET /api/coupons/SPRING10' }).click();
+      await page
+        .getByRole('grid', { name: 'Network requests' })
+        .locator('.net-body [role="row"]')
+        .filter({ hasText: '/api/coupons/SPRING10' })
+        .click();
       await expect(page.getByTestId('request-detail')).toBeVisible();
       await audit(page, 'viewer, request detail');
 
@@ -172,7 +176,7 @@ for (const theme of THEMES) {
       await page.keyboard.press('Escape');
 
       await openReplay(page, `${server().origin}/r/demo-shop`);
-      for (const tab of ['steps', 'console', 'network', 'performance', 'context']) {
+      for (const tab of ['issues', 'steps', 'console', 'network', 'performance', 'context']) {
         await page.getByTestId(`${tab}-tab`).click();
         await expect(page.getByTestId(`${tab}-tab`)).toHaveAttribute('aria-selected', 'true');
         await audit(page, `phone viewer, ${tab} tab`);
@@ -187,19 +191,17 @@ for (const theme of THEMES) {
       await useTheme(page, theme);
       await openReplay(page, `${server().origin}/r/demo-shop`);
       await page.getByTestId('performance-tab').click();
-      const list = page.getByTestId('performance-events');
-      const first = list.getByRole('button').first();
+      const first = page.getByTestId('performance-events').getByRole('row').first();
       await expect(first).toBeVisible();
       const bounds = await first.boundingBox();
       expect(bounds!.height).toBeGreaterThanOrEqual(44);
       await first.focus();
       await first.press('End');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
-      await list.locator('[aria-expanded="true"]').press('Escape');
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeHidden();
-      await first.click();
-      await expect(page.getByRole('region', { name: 'Selected performance evidence' })).toBeVisible();
+      const detail = page.getByRole('region', { name: 'Selected performance event' });
+      await expect(detail).toBeVisible();
       await audit(page, 'phone Performance events and selected evidence');
+      await page.getByRole('button', { name: 'Close event details' }).click();
+      await expect(detail).toBeHidden();
       await context.close();
     });
   });

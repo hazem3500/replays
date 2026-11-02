@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+@theme inline {
+  --color-border: #d4d4d8; --color-input: #d4d4d8; --color-muted: #f4f4f5;
+  --color-popover: #fff; --color-popover-foreground: #18181b; --color-ring: #71717a; --color-primary: #18181b;
+}
+body { font-family: ui-sans-serif, system-ui, sans-serif; color: #18181b; }
+[data-warning="soon"], [data-warning="final"] { border-color: #d97706; }
+[data-warning="final"] { color: #b91c1c; }

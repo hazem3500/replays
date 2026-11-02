@@ -1,0 +1,34 @@
+/* The suite's layout switch (Single · Grid · Spotlight) under the sidebar head, and its single ⇄ tiles transition. */
+.suite-layout {
+  padding: 8px 10px 8px 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.suite-layout .layout-switch {
+  display: grid;
+  width: 100%;
+}
+
+.suite-workspace[data-rail] .suite-layout {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.suite-workspace[data-rail] .suite-layout .layout-switch {
+  display: inline-grid;
+  width: auto;
+}
+
+.suite-viewer > .mt-workspace {
+  height: 100%;
+}
+
+html[data-page-transition="layout"] .suite-sidebar { view-transition-name: vt-runs; }
+html[data-page-transition="layout"] .suite-viewer { view-transition-name: vt-stage; }
+html[data-page-transition="layout"]::view-transition-group(root) { animation: none; }
+html[data-page-transition="layout"]::view-transition-old(vt-runs) { display: none; }
+html[data-page-transition="layout"]::view-transition-new(vt-runs) { animation: none; }
+html[data-page-transition="layout"]::view-transition-group(*) { animation-duration: 260ms; animation-timing-function: var(--ease-out); }
+html[data-page-transition="layout"]::view-transition-old(vt-layout-run),
+html[data-page-transition="layout"]::view-transition-new(vt-layout-run) { height: 100%; object-fit: contain; }

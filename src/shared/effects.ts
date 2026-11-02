@@ -10,6 +10,7 @@
  * Everything here is pure and identical in Node and the browser.
  */
 
+import { normalizeCaptionStyle, type ReplayCaptionStyle } from './caption-style.ts';
 import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
 
 /** Speed-up rates a range can play at. */
@@ -98,6 +99,8 @@ export interface PlaybackZoom {
 
 export interface PlaybackEffects {
   cursor?: ReplayCursorSettings;
+  /** How the captions look; absent means the defaults (src/shared/caption-style.ts). */
+  captionStyle?: ReplayCaptionStyle;
   zooms: PlaybackZoom[];
   blurs: Array<Omit<ReplayBlur, 'id'>>;
   captions: Array<Omit<ReplayCaption, 'id'>>;
@@ -146,12 +149,15 @@ function mapStretches<T extends { from: number; to: number }>(items: readonly T[
  * applyEdits): auto-zoom follows the clicks that are left.
  */
 export function playbackEffects(
-  edits: { zooms?: ReplayZoomRegion[]; blurs?: ReplayBlur[]; captions?: ReplayCaption[]; cursor?: ReplayCursorSettings } | undefined,
+  edits:
+    | { zooms?: ReplayZoomRegion[]; blurs?: ReplayBlur[]; captions?: ReplayCaption[]; cursor?: ReplayCursorSettings; captionStyle?: ReplayCaptionStyle }
+    | undefined,
   timeline: TimeMap,
   editedEvents: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>,
 ): PlaybackEffects {
   if (!edits) return NO_EFFECTS;
   const cursor = normalizeCursor(edits.cursor);
+  const captionStyle = normalizeCaptionStyle(edits.captionStyle);
   const clicks = edits.zooms?.length ? clicksOf(editedEvents) : [];
   const zooms = mapStretches(edits.zooms, timeline).map((zoom) => ({
     from: zoom.from,
@@ -166,6 +172,7 @@ export function playbackEffects(
     blurs: mapStretches(edits.blurs, timeline),
     captions: mapStretches(edits.captions, timeline),
     ...(cursor ? { cursor } : {}),
+    ...(captionStyle ? { captionStyle } : {}),
   };
 }
 

@@ -10,9 +10,13 @@ validator for sizes and the privacy pass), and `test/formats.test.ts` keeps them
 | [`context.schema.json`](context.schema.json) | `replay.context` |
 | [`comments.schema.json`](comments.schema.json) | `<id>/comments.json` |
 | [`edits.schema.json`](edits.schema.json) | `<id>/edits.json` (beta editor) |
+| [`replay-overrides.schema.json`](replay-overrides.schema.json) | `<id>/overrides.json`: title, tags and purpose people changed |
+| [`replay-trash.schema.json`](replay-trash.schema.json) | `<id>/trash.json`: a deleted replay, restorable for 7 days |
 | [`plugin-manifest.schema.json`](plugin-manifest.schema.json) | A user plugin's manifest (beta.malleable) |
 | [`user-plugin.schema.json`](user-plugin.schema.json) | A shareable `*.replays-plugin.json` file |
 | [`user-plugin-history.schema.json`](user-plugin-history.schema.json) | A saved plugin's version history |
 
 Versioning: each format carries a `version` or `format` field. Changes are additive, or the version is bumped and the old one stays
 readable ([../api-stability.md](../api-stability.md)). Design background: [../malleability.md](../malleability.md#data-as-the-stable-core).
+
+See [edits.md](edits.md) for how saved edits, including viewer-only highlights, affect playback and video exports.

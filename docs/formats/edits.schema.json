@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/hazem3500/replays/docs/formats/edits.schema.json",
   "title": "Replay edits",
-  "description": "`<replay id>/edits.json` (beta editor): a non-destructive edit list. The recording is never changed; viewers and exports apply this list to it. Every time is on the ORIGINAL timeline (ms from the first rrweb event). `revision`, `updatedBy` and `updatedAt` are written by the server. Source of truth: src/shared/edits.ts and src/shared/effects.ts.",
+  "description": "`<replay id>/edits.json` (beta editor): a non-destructive edit list. The recording is never changed; viewers apply this list, and video exports render the timing and visual effects but exclude navigation highlights. Every time is on the ORIGINAL timeline (ms from the first rrweb event). `revision`, `updatedBy` and `updatedAt` are written by the server. Source of truth: src/shared/edits.ts and src/shared/effects.ts.",
   "type": "object",
   "required": ["version", "cuts"],
   "additionalProperties": false,
@@ -60,6 +60,38 @@
         "properties": { "text": { "type": "string", "maxLength": 160 } }
       }
     },
+    "highlights": {
+      "type": "array",
+      "maxItems": 200,
+      "description": "Playback navigation annotations on the original timeline. They are mapped for the viewer and are not burned into video exports.",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["id", "kind", "at"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,39}$" },
+              "kind": { "const": "point" },
+              "at": { "type": "number", "minimum": 0 },
+              "label": { "type": "string", "maxLength": 120 }
+            }
+          },
+          {
+            "type": "object",
+            "required": ["id", "kind", "from", "to"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,39}$" },
+              "kind": { "const": "period" },
+              "from": { "type": "number", "minimum": 0 },
+              "to": { "type": "number", "minimum": 0, "description": "At least 100 ms after `from`." },
+              "label": { "type": "string", "maxLength": 120 }
+            }
+          }
+        ]
+      }
+    },
     "cursor": {
       "type": "object",
       "additionalProperties": false,
@@ -67,7 +99,36 @@
         "visible": { "type": "boolean", "default": true },
         "size": { "type": "number", "minimum": 0.5, "maximum": 2, "default": 1 },
         "hideWhenIdle": { "type": "boolean", "default": true },
-        "clickFeedback": { "type": "boolean", "default": true }
+        "clickFeedback": { "type": "boolean", "default": true },
+        "motionStyle": {
+          "enum": ["signature_arc", "spring_settle", "magnetic", "comet_swoop", "adaptive", "classic"],
+          "default": "signature_arc",
+          "description": "CUA Cursor Motion trajectory between recorded cursor targets. Omitted means signature_arc."
+        },
+        "appearance": {
+          "type": "string",
+          "maxLength": 120,
+          "anyOf": [
+            { "enum": ["core:arrow", "core:classic-arrow", "core:dot", "core:ring", "core:hand", "core:agent"] },
+            { "pattern": "^plugin:(?:user:)?[a-z][a-z0-9-]*:[a-z][a-z0-9-]*$" }
+          ],
+          "default": "core:arrow",
+          "description": "Cursor theme (a cursor.themes slot item id). A plugin theme that is not installed draws core:arrow."
+        },
+        "color": {
+          "enum": ["accent", "periwinkle", "green", "amber", "coral", "graphite"],
+          "description": "Tint for themes that take one. Omitted means the theme's own colours."
+        }
+      }
+    },
+    "captionStyle": {
+      "type": "object",
+      "description": "How the edit list's captions look, the same in the viewer, the editor and exported video. Omitted fields mean the defaults.",
+      "additionalProperties": false,
+      "properties": {
+        "size": { "enum": ["s", "m", "l"], "description": "Caption text size. Omitted means m." },
+        "position": { "enum": ["bottom", "top"], "description": "Where captions sit on the recorded frame. Omitted means bottom." },
+        "background": { "enum": ["solid", "translucent"], "description": "The surface behind the text. Omitted means solid (the dark caption surface)." }
       }
     },
     "revision": { "type": "integer", "minimum": 0 },
