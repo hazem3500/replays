@@ -30,7 +30,7 @@
     "dist/client/assets/Avatar-HASH.js": {
       "raw": 1651,
       "gzip": 920,
-      "brotli": 861
+      "brotli": 854
     },
     "dist/client/assets/boot-HASH.js": {
       "raw": 2321,
@@ -178,14 +178,14 @@
       "brotli": 2469
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 50533,
-      "gzip": 9327,
-      "brotli": 8359
+      "raw": 50526,
+      "gzip": 9319,
+      "brotli": 8353
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 269257,
       "gzip": 90540,
-      "brotli": 75434
+      "brotli": 75349
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -315,7 +315,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1191,
       "gzip": 711,
-      "brotli": 650
+      "brotli": 634
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21990,
@@ -380,7 +380,7 @@
     "dist/client/index.html": {
       "raw": 13238,
       "gzip": 4463,
-      "brotli": 3746
+      "brotli": 3741
     },
     "dist/client/render.html": {
       "raw": 1283,
@@ -563,9 +563,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 26997,
-      "gzip": 7659,
-      "brotli": 6682
+      "raw": 27867,
+      "gzip": 7830,
+      "brotli": 6831
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
@@ -615,6 +615,16 @@
   },
   "allowances": [
     {
+      "file": "dist/lib/recorder-ui.mjs",
+      "cap": {
+        "raw": 27867,
+        "gzip": 7830,
+        "brotli": 6831
+      },
+      "reason": "Add cancellable recorder shell entrance/exit animations, reduced-motion handling and bounded exit cleanup. Same-toolchain main/head: raw 26222 to 27867 bytes, gzip 7435 to 7830 bytes, brotli 6487 to 6831 bytes. Headless core is unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/202"
+    },
+    {
       "file": "dist/lib/recorder-kit.mjs",
       "cap": {
         "raw": 525,
@@ -642,16 +652,6 @@
         "brotli": 2719
       },
       "reason": "The new recorder testing subpath ships the fakes and contract suite for custom UI authors.",
-      "pr": "https://github.com/hazem3500/replays/pull/69"
-    },
-    {
-      "file": "dist/lib/recorder-ui.mjs",
-      "cap": {
-        "raw": 27207,
-        "gzip": 7884,
-        "brotli": 6908
-      },
-      "reason": "The default guided recorder UI moved to its own published subpath when the core was split.",
       "pr": "https://github.com/hazem3500/replays/pull/69"
     },
     {
