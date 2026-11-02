@@ -9,7 +9,12 @@ const MorphCharacters = lazy(() => import('./title-morph-characters.tsx'));
 export function TitleMorph({ text, from }: { text: string; from?: string | undefined }) {
   const hydrated = useTitleHydrated();
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
-  if (!hydrated || reduced) return <span data-title-morph="" data-motion="reduced">{text}</span>;
+  if (!hydrated || reduced)
+    return (
+      <span data-title-morph="" data-motion="reduced">
+        {text}
+      </span>
+    );
   return (
     <span data-title-morph="" data-motion="full">
       <span className="visually-hidden">{text}</span>

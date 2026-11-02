@@ -88,7 +88,7 @@
       "brotli": 2680
     },
     "dist/client/assets/comments-ui-HASH.js": {
-      "raw": 33306,
+      "raw": 33288,
       "gzip": 11413,
       "brotli": 10036
     },
@@ -113,8 +113,8 @@
       "brotli": 1392
     },
     "dist/client/assets/drawer-HASH.js": {
-      "raw": 45033,
-      "gzip": 15992,
+      "raw": 45147,
+      "gzip": 16048,
       "brotli": 14511
     },
     "dist/client/assets/dropdown-menu-HASH.css": {
@@ -123,9 +123,9 @@
       "brotli": 659
     },
     "dist/client/assets/dropdown-menu-HASH.js": {
-      "raw": 124205,
-      "gzip": 41650,
-      "brotli": 36106
+      "raw": 89669,
+      "gzip": 29712,
+      "brotli": 25675
     },
     "dist/client/assets/Editor-HASH.css": {
       "raw": 31792,
@@ -133,8 +133,8 @@
       "brotli": 5531
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 116582,
-      "gzip": 38923,
+      "raw": 116689,
+      "gzip": 38976,
       "brotli": 33129
     },
     "dist/client/assets/edits-HASH.js": {
@@ -148,9 +148,9 @@
       "brotli": 907
     },
     "dist/client/assets/feature-HASH.js": {
-      "raw": 6645,
-      "gzip": 3228,
-      "brotli": 2856
+      "raw": 6743,
+      "gzip": 3280,
+      "brotli": 2913
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
@@ -168,19 +168,19 @@
       "brotli": 358
     },
     "dist/client/assets/Headline-HASH.js": {
-      "raw": 6000,
-      "gzip": 2639,
-      "brotli": 2412
+      "raw": 6118,
+      "gzip": 2701,
+      "brotli": 2469
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 48437,
-      "gzip": 8956,
-      "brotli": 8029
+      "raw": 50533,
+      "gzip": 9327,
+      "brotli": 8359
     },
     "dist/client/assets/Inspector-HASH.js": {
-      "raw": 259393,
-      "gzip": 87343,
-      "brotli": 72775
+      "raw": 269257,
+      "gzip": 90540,
+      "brotli": 75434
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -308,9 +308,9 @@
       "brotli": 158
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1124,
-      "gzip": 682,
-      "brotli": 615
+      "raw": 1191,
+      "gzip": 711,
+      "brotli": 650
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21990,
@@ -318,9 +318,9 @@
       "brotli": 7810
     },
     "dist/client/assets/tools-HASH.js": {
-      "raw": 35973,
-      "gzip": 12862,
-      "brotli": 11550
+      "raw": 36104,
+      "gzip": 12910,
+      "brotli": 11608
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
@@ -333,9 +333,9 @@
       "brotli": 397
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
-      "raw": 93536,
-      "gzip": 31053,
-      "brotli": 27580
+      "raw": 92361,
+      "gzip": 30628,
+      "brotli": 27230
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -348,9 +348,9 @@
       "brotli": 1410
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 71897,
-      "gzip": 25653,
-      "brotli": 22291
+      "raw": 70462,
+      "gzip": 25306,
+      "brotli": 21972
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 665,
@@ -363,9 +363,9 @@
       "brotli": 84059
     },
     "dist/client/index.html": {
-      "raw": 12681,
-      "gzip": 4313,
-      "brotli": 3601
+      "raw": 13238,
+      "gzip": 4463,
+      "brotli": 3746
     },
     "dist/client/render.html": {
       "raw": 1283,
@@ -596,6 +596,21 @@
       "raw": 557837,
       "gzip": 174500,
       "brotli": 137465
+    },
+    "dist/client/assets/title-morph-characters-HASH.js": {
+      "raw": 167909,
+      "gzip": 55676,
+      "brotli": 49776
+    },
+    "dist/client/assets/useTriggerFocusGuards-HASH.js": {
+      "raw": 38667,
+      "gzip": 14312,
+      "brotli": 12975
+    },
+    "dist/client/assets/button-HASH.js": {
+      "raw": 4153,
+      "gzip": 1694,
+      "brotli": 1523
     }
   },
   "allowances": [
@@ -886,15 +901,6 @@
       },
       "reason": "The malleable API module takes apiUrl from api/fetch.ts, which reads the deployment, instead of route.ts. Replaces #78's entry (Comments API calls validated with the shared zod/mini schemas, shared by the provider and the lazy rows chunk.)",
       "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/index.html",
-      "cap": {
-        "gzip": 4313,
-        "brotli": 3601
-      },
-      "reason": "The inline preload script comments name the new routing modules (src/client/routes, api/fetch.ts). Replaces #109's entry, #105's entry (Brotli drift of a few bytes when the hashed asset names in the page change; raw is unchanged.; Modulepreload links for the shared chunks that moved out of main when the static ComparisonLoading import went away.)",
-      "pr": "https://github.com/hazem3500/replays/pull/187"
     },
     {
       "file": "initial/render.html/js",
@@ -1403,86 +1409,6 @@
       "reason": "Retained index chunk splitting and shared chunk compression measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/feature-HASH.js",
-      "cap": {
-        "raw": 6645
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/feature-HASH.js",
-      "cap": {
-        "gzip": 3228
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.js",
-      "cap": {
-        "raw": 6000
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/index.html",
-      "cap": {
-        "raw": 12681
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/187",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/feature-HASH.js",
-      "cap": {
-        "brotli": 2856
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.js",
-      "cap": {
-        "brotli": 2412
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "raw": 48437
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "gzip": 8956
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.css",
-      "cap": {
-        "brotli": 8029
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Compare tile shared clock and shared chunk compression measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.js",
-      "cap": {
-        "gzip": 2639
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/191",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/dropdown-menu-HASH.css",
       "cap": {
         "raw": 2246
@@ -1504,14 +1430,6 @@
         "brotli": 659
       },
       "pr": "https://github.com/hazem3500/replays/pull/178",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/drawer-HASH.js",
-      "cap": {
-        "raw": 45033
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1539,14 +1457,6 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 116582
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/use-focus-when-HASH.js",
       "cap": {
         "raw": 677
@@ -1571,51 +1481,11 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/drawer-HASH.js",
-      "cap": {
-        "brotli": 14479
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "gzip": 38920
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "brotli": 33098
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/expired-query-HASH.js",
       "cap": {
         "brotli": 907
       },
       "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 259393
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/tools-HASH.js",
-      "cap": {
-        "raw": 35973
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1648,14 +1518,6 @@
         "brotli": 237
       },
       "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "brotli": 72775
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
@@ -1707,30 +1569,6 @@
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/drawer-HASH.js",
-      "cap": {
-        "gzip": 15992
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 624
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/tools-HASH.js",
-      "cap": {
-        "brotli": 11550
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/CompareViewer-HASH.js",
       "cap": {
         "gzip": 14906
@@ -1769,22 +1607,6 @@
       "reason": "Measured stack choreography, delayed rear-layer transitions and leading suite posters: main/head raw 207979/208578, gzip 69089/69339, Brotli 58982/59218 bytes on Node 24.22.1. Three percent feature headroom."
     },
     {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "gzip": 87343
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/199",
-      "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 87308/87311 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
-    },
-    {
-      "file": "dist/client/assets/tools-HASH.js",
-      "cap": {
-        "gzip": 12862
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/199",
-      "reason": "Unchanged shared source has new import hashes after the library motion update. Fresh Linux CI main/head gzip: 12828/12830 bytes; 32-byte compression margin. Raw size is unchanged. Replaces this metric only."
-    },
-    {
       "file": "dist/client/assets/expired-query-HASH.js",
       "cap": {
         "gzip": 1063,
@@ -1792,6 +1614,124 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/199",
       "reason": "Touch-search stylesheet changes shared import hashes. Same-toolchain main/head: raw 2132/2132, gzip 1028/1031, Brotli 899/905 bytes. This unchanged source receives only a 32-byte gzip margin; existing raw and Brotli caps remain."
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 116689,
+        "gzip": 38976
+      },
+      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 116582 to 116625 bytes, gzip 38920 to 38944 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/Headline-HASH.js",
+      "cap": {
+        "raw": 6118,
+        "gzip": 2701,
+        "brotli": 2469
+      },
+      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 5987 to 6054 bytes, gzip 2627 to 2669 bytes, brotli 2404 to 2437 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.css",
+      "cap": {
+        "raw": 50533,
+        "gzip": 9327,
+        "brotli": 8359
+      },
+      "reason": "Compact Vitals comparisons reveal peer deltas in an accessible popover rather than repeating every run under every metric. Same-toolchain main/head: raw 48437 to 49061 bytes, gzip 8956 to 9055 bytes, brotli 8029 to 8115 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 269257,
+        "gzip": 90540,
+        "brotli": 75434
+      },
+      "reason": "Compact Vitals comparisons reveal peer deltas in an accessible popover rather than repeating every run under every metric. Same-toolchain main/head: raw 259393 to 261414 bytes, gzip 87308 to 87902 bytes, brotli 72660 to 73236 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1191,
+        "gzip": 711,
+        "brotli": 650
+      },
+      "reason": "The expanded run sidebar replaces duplicated comparison-summary chips; collapsing the sidebar restores the summary. Same-toolchain main/head: raw 1095 to 1156 bytes, gzip 666 to 690 bytes, brotli 624 to 631 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/button-HASH.js",
+      "cap": {
+        "raw": 4153,
+        "gzip": 1694,
+        "brotli": 1523
+      },
+      "reason": "Deferred replay-title motion and shared UI chunks extracted by that lazy boundary; absent from the clean main inventory. Same-toolchain main/head: raw new to 4032 bytes, gzip new to 1644 bytes, brotli new to 1478 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/drawer-HASH.js",
+      "cap": {
+        "raw": 45147,
+        "gzip": 16048
+      },
+      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 45033 to 45083 bytes, gzip 15991 to 16016 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/feature-HASH.js",
+      "cap": {
+        "raw": 6743,
+        "gzip": 3280,
+        "brotli": 2913
+      },
+      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 6604 to 6679 bytes, gzip 3201 to 3248 bytes, brotli 2823 to 2881 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/title-morph-characters-HASH.js",
+      "cap": {
+        "raw": 167909,
+        "gzip": 55676,
+        "brotli": 49776
+      },
+      "reason": "Deferred replay-title motion and shared UI chunks extracted by that lazy boundary; absent from the clean main inventory. Same-toolchain main/head: raw new to 163018 bytes, gzip new to 54054 bytes, brotli new to 48326 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/tools-HASH.js",
+      "cap": {
+        "raw": 36104,
+        "gzip": 12910,
+        "brotli": 11608
+      },
+      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 35973 to 36040 bytes, gzip 12828 to 12878 bytes, brotli 11550 to 11576 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/assets/useTriggerFocusGuards-HASH.js",
+      "cap": {
+        "raw": 38667,
+        "gzip": 14312,
+        "brotli": 12975
+      },
+      "reason": "Deferred replay-title motion and shared UI chunks extracted by that lazy boundary; absent from the clean main inventory. Same-toolchain main/head: raw new to 37540 bytes, gzip new to 13895 bytes, brotli new to 12597 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
+    },
+    {
+      "file": "dist/client/index.html",
+      "cap": {
+        "raw": 13238,
+        "gzip": 4463,
+        "brotli": 3746
+      },
+      "reason": "Generated modulepreload links reflect the lazy title-motion boundary and extracted shared UI chunks. Same-toolchain main/head: raw 12681 to 12852 bytes, gzip 4292 to 4333 bytes, brotli 3586 to 3636 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/201"
     }
   ]
 }
