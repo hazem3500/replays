@@ -1,14 +1,6 @@
-import { flushSync } from "react-dom";
+import { flushSync } from 'react-dom';
 
-import {
-  ENTER_KEYFRAMES,
-  ENTER_MS,
-  EASE,
-  MORPH_STAGGER_MAX_MS,
-  MORPH_STAGGER_MS,
-  reducedMotion,
-  staggerDelay,
-} from "./list-motion.ts";
+import { ENTER_KEYFRAMES, ENTER_MS, EASE, MORPH_STAGGER_MAX_MS, MORPH_STAGGER_MS, reducedMotion, staggerDelay } from './list-motion.ts';
 
 /**
  * The index list's motion system: one View Transition for every feed change (sort, filters, search results,
@@ -22,6 +14,7 @@ import {
  * - the rest of an item's text (`aside-<id>`, `ext-<id>`, the thumbnail's `badge-<id>`; .feed-aside) moves like
  *   the title, and day headings
  *   (`day-<label>`, .feed-day) glide to their new place too;
+ * - a suite's rear sheets (`back1-<id>`, `back2-<id>`) pair across layouts and follow the front by 20 / 40 ms;
  * - items that arrive are one layer each (`card-<id>`): they fade in and rise 8 px, 25 ms apart (at most 150 ms);
  * - items that leave fade out (120 ms, no slide);
  * - the header is its own live layer (feed.css), so it never fades; everything else crossfades.
@@ -44,32 +37,45 @@ let pending: (() => void) | undefined;
 let lastAt = Number.NEGATIVE_INFINITY;
 
 /** An entry id as the tail of a valid <custom-ident> ("session:abc" → "session_3aabc"). */
-const ident = (id: string) =>
-  id.replace(/[^a-zA-Z0-9_-]/g, (character) => `_${character.charCodeAt(0).toString(16)}`);
+const ident = (id: string) => id.replace(/[^a-zA-Z0-9_-]/g, (character) => `_${character.charCodeAt(0).toString(16)}`);
 
 /** Each item's layers: its view-transition-class, and where it is in the item ('' = the item itself). */
 const PARTS = {
-  card: { className: "feed-card", selector: "" },
+  card: { className: 'feed-card', selector: '' },
   poster: {
-    className: "feed-poster",
+    className: 'feed-poster',
     selector:
-      ":scope > .poster, :scope > .poster-stack .stack-front > .poster, :scope > .shuffle-window > .poster, :scope > .suite-sheet .shuffle-window > .poster, :scope > .suite-sheet .stack-front > .poster",
+      ':scope > .poster, :scope > .poster-stack .stack-front > .poster, :scope > .shuffle-window > .poster, :scope > .suite-sheet .shuffle-window > .poster, :scope > .suite-sheet .stack-front > .poster',
   },
-  title: { className: "feed-title", selector: ".feed-title" },
-  meta: { className: "feed-meta", selector: ".feed-meta" },
-  src: { className: "feed-src", selector: ".feed-meta .source-lead" },
+  back1: {
+    className: 'feed-back-1',
+    selector: '.card-back-1, .stack-layer-1',
+  },
+  back2: {
+    className: 'feed-back-2',
+    selector: '.card-back-2, .stack-layer-2',
+  },
+  title: { className: 'feed-title', selector: '.feed-title' },
+  meta: { className: 'feed-meta', selector: '.feed-meta' },
+  src: { className: 'feed-src', selector: '.feed-meta .source-lead' },
   // why: the frame's snapshot must be only its surface (it resizes; text must not), so the rest of the item's text
   // (the time column on wide lists, a grid suite's time-and-runs line, plugin fields) gets layers of its own.
-  aside: { className: "feed-aside", selector: ":scope > .feed-cols, .feed-meta-end" },
+  aside: { className: 'feed-aside', selector: ':scope > .feed-cols, :scope > .suite-sheet > .feed-cols, .feed-meta-end' },
   // why: the thumbnail's duration / run-count badge keeps its size while the thumbnail scales under it.
   badge: {
-    className: "feed-aside",
-    selector: ".poster > .poster-badge",
+    className: 'feed-aside',
+    selector: '.poster > .poster-badge',
   },
-  ext: { className: "feed-aside", selector: ".feed-ext" },
+  ext: { className: 'feed-aside', selector: '.feed-ext' },
 } as const;
 export type ItemPart = keyof typeof PARTS;
 const PART_NAMES = Object.keys(PARTS) as ItemPart[];
+
+function partElement(item: HTMLElement, part: ItemPart) {
+  const selector = PARTS[part].selector;
+  if (!selector) return item;
+  return [...item.querySelectorAll(selector)].find((element) => !element.closest('.suite-sheet-outgoing, .poster-outgoing')) ?? null;
+}
 
 /** The view-transition-name of one part of a feed entry (its `data-entry-id`), e.g. `poster-session_3ademo-shop`. */
 export function itemLayerName(part: ItemPart, entryId: string) {
@@ -78,15 +84,15 @@ export function itemLayerName(part: ItemPart, entryId: string) {
 
 function name(element: Element | null, part: ItemPart, entryId: string) {
   if (!(element instanceof HTMLElement)) return;
-  element.style.setProperty("view-transition-name", itemLayerName(part, entryId));
-  element.style.setProperty("view-transition-class", PARTS[part].className);
+  element.style.setProperty('view-transition-name', itemLayerName(part, entryId));
+  element.style.setProperty('view-transition-class', PARTS[part].className);
 }
 
 /** The feed items on or near the screen (at most MAX_NAMED, in document order, which is also visual order). */
 function nearItems() {
   const height = window.innerHeight;
   // why: read every box first, then write, so naming never thrashes layout.
-  return [...document.querySelectorAll<HTMLElement>(".feed-list [data-entry-id]")]
+  return [...document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')]
     .filter((item) => {
       const box = item.getBoundingClientRect();
       return box.bottom > -height / 4 && box.top < height * 1.25;
@@ -97,15 +103,13 @@ function nearItems() {
 /** Day headings on or near the screen glide too (`day-<label>`), instead of crossfading between two places. */
 function nameDays() {
   const height = window.innerHeight;
-  const days = [...document.querySelectorAll<HTMLElement>(".feed-groups .feed-day")].filter(
-    (day) => {
-      const box = day.getBoundingClientRect();
-      return box.bottom > -height / 4 && box.top < height * 1.25;
-    },
-  );
+  const days = [...document.querySelectorAll<HTMLElement>('.feed-groups .feed-day')].filter((day) => {
+    const box = day.getBoundingClientRect();
+    return box.bottom > -height / 4 && box.top < height * 1.25;
+  });
   for (const day of days) {
-    day.style.setProperty("view-transition-name", `day-${ident(day.textContent ?? "")}`);
-    day.style.setProperty("view-transition-class", "feed-day");
+    day.style.setProperty('view-transition-name', `day-${ident(day.textContent ?? '')}`);
+    day.style.setProperty('view-transition-class', 'feed-day');
   }
 }
 
@@ -115,8 +119,7 @@ function nameBefore(): string[] {
   const items = nearItems();
   for (const item of items) {
     const id = item.dataset.entryId!;
-    for (const part of PART_NAMES)
-      name(PARTS[part].selector ? item.querySelector(PARTS[part].selector) : item, part, id);
+    for (const part of PART_NAMES) name(partElement(item, part), part, id);
   }
   return items.map((item) => item.dataset.entryId!);
 }
@@ -129,23 +132,20 @@ function nameAfter(before: ReadonlySet<string>) {
   for (const item of nearItems()) {
     const id = item.dataset.entryId!;
     if (!before.has(id)) {
-      name(item, "card", id);
+      name(item, 'card', id);
       arriving.push(id);
       continue;
     }
-    for (const part of PART_NAMES)
-      name(PARTS[part].selector ? item.querySelector(PARTS[part].selector) : item, part, id);
+    for (const part of PART_NAMES) name(partElement(item, part), part, id);
     staying.push(id);
   }
   return { staying, arriving };
 }
 
 function unnameItems() {
-  for (const element of document.querySelectorAll<HTMLElement>(
-    ':is(.feed-list, .feed-groups) [style*="view-transition-name"]',
-  )) {
-    element.style.removeProperty("view-transition-name");
-    element.style.removeProperty("view-transition-class");
+  for (const element of document.querySelectorAll<HTMLElement>(':is(.feed-list, .feed-groups) [style*="view-transition-name"]')) {
+    element.style.removeProperty('view-transition-name');
+    element.style.removeProperty('view-transition-class');
   }
 }
 
@@ -157,25 +157,22 @@ function staggerLayers(staying: readonly string[], arriving: readonly string[], 
   const rules: string[] = [];
   for (const [index, id] of arriving.entries()) {
     const delay = staggerDelay(index);
-    if (delay > 0)
-      rules.push(
-        `::view-transition-new(${itemLayerName("card", id)}) { animation-delay: ${delay}ms; }`,
-      );
+    if (delay > 0) rules.push(`::view-transition-new(${itemLayerName('card', id)}) { animation-delay: ${delay}ms; }`);
   }
   if (morph)
     for (const [index, id] of staying.entries()) {
       const delay = staggerDelay(index, MORPH_STAGGER_MS, MORPH_STAGGER_MAX_MS);
-      if (delay === 0) continue;
-      const selectors = PART_NAMES.flatMap((part) =>
-        ["group", "old", "new"].map(
-          (pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`,
-        ),
-      );
-      rules.push(`${selectors.join(", ")} { animation-delay: ${delay}ms; }`);
+      for (const part of PART_NAMES) {
+        const following = part === 'back1' ? 20 : part === 'back2' ? 40 : 0;
+        const partDelay = delay + following;
+        if (partDelay === 0) continue;
+        const selectors = ['group', 'old', 'new'].map((pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`);
+        rules.push(`${selectors.join(', ')} { animation-delay: ${partDelay}ms; }`);
+      }
     }
   if (rules.length === 0) return undefined;
-  const style = document.createElement("style");
-  style.textContent = rules.join("\n");
+  const style = document.createElement('style');
+  style.textContent = rules.join('\n');
   document.head.append(style);
   return style;
 }
@@ -195,21 +192,16 @@ function popupOpen() {
  * steady, and only items that weren't there before fade in.
  */
 function updateUnderPopup(update: () => void) {
-  const before = new Set(
-    [...document.querySelectorAll<HTMLElement>(".feed-list [data-entry-id]")].map(
-      (item) => item.dataset.entryId,
-    ),
-  );
+  const before = new Set([...document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')].map((item) => item.dataset.entryId));
   flushSync(update);
   if (reducedMotion()) return;
-  for (const item of document.querySelectorAll<HTMLElement>(".feed-list [data-entry-id]")) {
-    if (!before.has(item.dataset.entryId))
-      item.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ENTER_MS, easing: EASE });
+  for (const item of document.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')) {
+    if (!before.has(item.dataset.entryId)) item.animate([{ opacity: 0 }, { opacity: 1 }], { duration: ENTER_MS, easing: EASE });
   }
 }
 
 /** `'poster'`: the change is list ↔ grid (the items that stay also start a little apart). */
-export function feedTransition(update: () => void, layers: "item" | "poster" = "item") {
+export function feedTransition(update: () => void, layers: 'item' | 'poster' = 'item') {
   const now = performance.now();
   const repeat = now - lastAt < REPEAT_MS;
   lastAt = now;
@@ -217,11 +209,10 @@ export function feedTransition(update: () => void, layers: "item" | "poster" = "
   if (
     running ||
     repeat ||
-    typeof document.startViewTransition !== "function" ||
+    typeof document.startViewTransition !== 'function' ||
     reducedMotion() ||
     // why: a page transition (or the theme switch's crossfade) owns the screen while it runs.
-    (document as Document & { activeViewTransition?: ViewTransition | null })
-      .activeViewTransition ||
+    (document as Document & { activeViewTransition?: ViewTransition | null }).activeViewTransition ||
     root.dataset.themeSwitching
   ) {
     running?.skipTransition();
@@ -241,8 +232,8 @@ export function feedTransition(update: () => void, layers: "item" | "poster" = "
     updateUnderPopup(update);
     return;
   }
-  const morph = layers === "poster";
-  root.dataset.feedTransition = morph ? "view" : "list";
+  const morph = layers === 'poster';
+  root.dataset.feedTransition = morph ? 'view' : 'list';
   const before = nameBefore();
   let stagger: HTMLStyleElement | undefined;
   pending = update;
@@ -274,7 +265,7 @@ export function feedTransition(update: () => void, layers: "item" | "poster" = "
 export function staggerIn(container: ParentNode) {
   if (reducedMotion()) return;
   const height = window.innerHeight;
-  const items = [...container.querySelectorAll<HTMLElement>(".feed-list [data-entry-id]")];
+  const items = [...container.querySelectorAll<HTMLElement>('.feed-list [data-entry-id]')];
   const visible = items.filter((item) => {
     const box = item.getBoundingClientRect();
     return box.bottom > 0 && box.top < height;
@@ -284,7 +275,7 @@ export function staggerIn(container: ParentNode) {
       duration: ENTER_MS,
       delay: staggerDelay(index),
       easing: EASE,
-      fill: "backwards",
+      fill: 'backwards',
     });
   }
 }

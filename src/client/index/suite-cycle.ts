@@ -46,22 +46,23 @@ export function useSuiteCycle(runs: readonly ReviewSuiteIndexRun[], front: Revie
   return { current, step, cycling, advance, warmNext };
 }
 
-const SHUFFLE_MS = 900;
+const DROP_MS = 220;
+const RETURN_MS = 300;
 const EASE = 'cubic-bezier(0.25, 0.1, 0.25, 1)';
 
 /**
- * The outgoing sheet rises clear before fading into the rear while the next sheet advances after a short hold.
- * Transform/opacity only; under reduced
- * motion the new front just fades in.
+ * The outgoing sheet slides down as its successor advances, then returns upward behind the new front.
+ * Reduced motion replaces the shuffle with a short fade.
  */
-export function useShuffle(container: React.RefObject<HTMLElement | null>, step: number) {
+export function useShuffle(container: React.RefObject<HTMLElement | null>, step: number, view?: string) {
   const previous = useRef(step);
   const outgoing = useRef<HTMLElement | undefined>(undefined);
   /** Call before the step changes: keeps a still of the current front for the slide-back. */
   const capture = () => {
-    const poster = container.current?.querySelector<HTMLElement>(
+    const candidates = container.current?.querySelectorAll<HTMLElement>(
       ':scope > .poster, :scope[data-view=grid] > .suite-sheet, .stack-front > .poster',
     );
+    const poster = candidates && [...candidates].find((candidate) => !candidate.closest('.suite-sheet-outgoing, .poster-outgoing'));
     const image = poster?.querySelector<HTMLImageElement>('img');
     if (!poster || (!image && !poster.classList.contains('suite-sheet'))) return;
     const still = poster.cloneNode(true) as HTMLElement;
@@ -80,70 +81,70 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
   };
 
   useLayoutEffect(() => {
+    const element = container.current;
     const was = previous.current;
     previous.current = step;
     const still = outgoing.current;
     outgoing.current = undefined;
-    const poster = container.current?.querySelector<HTMLElement>(
-      ':scope > .poster, :scope[data-view=grid] > .suite-sheet, .stack-front > .poster',
+    const candidates = element?.querySelectorAll<HTMLElement>(
+      view === 'grid' ? ':scope > .suite-sheet' : ':scope > .poster, .stack-front > .poster',
     );
+    const poster = candidates && [...candidates].find((candidate) => !candidate.closest('.suite-sheet-outgoing, .poster-outgoing'));
     if (!poster || step <= was) {
       still?.remove();
       return;
     }
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const animations: Animation[] = [];
+    let active = true;
+    const animate = (target: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions) => {
+      const animation = target.animate(frames, options);
+      animations.push(animation);
+      return animation;
+    };
     if (still && !reduced) {
-      // why: keep the outgoing sheet above the incoming one until it clears the stack.
       poster.before(still);
-      container.current?.querySelectorAll<HTMLElement>('.card-back').forEach((back) =>
-        back.animate([{ transform: 'translateY(-24px) scale(0.86)' }, { transform: getComputedStyle(back).transform }], {
-          duration: SHUFFLE_MS,
-          easing: EASE,
-        }),
-      );
-      poster.style.zIndex = '1';
-      void still
-        .animate(
-          [
-            { transform: 'translateY(0) scale(1)', opacity: 1 },
-            { transform: 'translateY(-30px) scale(0.98)', opacity: 1, offset: 0.35 },
-            {
-              transform: 'translateY(-30px) scale(0.95)',
-              opacity: 1,
-              offset: 0.5,
-              zIndex: 0,
-            },
-            {
-              transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)',
-              opacity: 1,
-              offset: 0.9,
-              zIndex: 0,
-            },
-            { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 0, zIndex: 0 },
-          ],
-          { duration: SHUFFLE_MS, easing: EASE, fill: 'forwards' },
-        )
-        .finished.catch(() => undefined)
+      poster.style.zIndex = '2';
+      const dropped = 'translateY(42px) scale(0.98)';
+      const down = animate(still, [{ transform: 'translateY(0) scale(1)' }, { transform: dropped }], {
+        duration: DROP_MS,
+        easing: EASE,
+        fill: 'forwards',
+      });
+      void down.finished
+        .then(() => {
+          if (!active) return;
+          // why: change stacking only at the turn, so the old face returns beneath its successor.
+          still.style.zIndex = '1';
+          const rear = animate(
+            still,
+            [
+              { transform: dropped, opacity: 1 },
+              { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 1, offset: 0.85 },
+              { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 0 },
+            ],
+            { duration: RETURN_MS, easing: EASE, fill: 'forwards' },
+          );
+          down.cancel();
+          return rear.finished;
+        })
+        .catch(() => undefined)
         .finally(() => still.remove());
     } else still?.remove();
-    const incoming = poster.animate(
+    animate(
+      poster,
       reduced
         ? [{ opacity: 0.4 }, { opacity: 1 }]
-        : [
-            { transform: 'translateY(-10px) scale(0.95)', opacity: 1, offset: 0 },
-            { transform: 'translateY(-10px) scale(0.95)', opacity: 1, offset: 0.25 },
-            { transform: 'translateY(0) scale(1)', opacity: 1 },
-          ],
-      { duration: reduced ? 120 : SHUFFLE_MS, easing: EASE },
+        : [{ transform: 'translateY(-10px) scale(0.95)' }, { transform: 'translateY(0) scale(1)' }],
+      { duration: reduced ? 120 : 280, delay: reduced ? 0 : 60, easing: EASE, fill: 'backwards' },
     );
     return () => {
-      incoming.cancel();
-      container.current?.querySelectorAll('.card-back').forEach((back) => back.getAnimations().forEach((animation) => animation.cancel()));
+      active = false;
+      for (const animation of animations) animation.cancel();
       poster.style.removeProperty('z-index');
-      still?.getAnimations().forEach((animation) => animation.cancel());
       still?.remove();
     };
-  }, [container, step]);
+  }, [container, step, view]);
 
   return capture;
 }

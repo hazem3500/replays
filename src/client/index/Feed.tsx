@@ -20,7 +20,6 @@ import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
-import { RunMosaic } from './PosterPlaceholder.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
@@ -353,7 +352,7 @@ function SuiteItem({
   // While its preview plays, the card cycles through the suite's runs (suite-cycle.ts).
   const card = useRef<HTMLLIElement>(null);
   const cycle = useSuiteCycle(suite.runDetails, front, playing);
-  const capture = useShuffle(card, cycle.step);
+  const capture = useShuffle(card, cycle.step, view);
   const poster = cycle.current;
   const shownId = poster ? playableReplayId(poster, true) : undefined;
   const host = poster?.replay?.host ?? entry.hosts[0] ?? '';
@@ -405,18 +404,14 @@ function SuiteItem({
       data-last={place.last || undefined}
       {...previewHandlers(`suite:${suite.id}`)}
     >
-      {view === 'grid' ? (
-        <>
-          <CardBacks runs={suite.runDetails} front={poster} />
-        </>
-      ) : null}
+      {view === 'grid' ? <CardBacks runs={suite.runDetails} front={poster} /> : null}
       <div className="suite-sheet">
         {view === 'grid' ? (
           <span className="shuffle-window">
             <Poster
               id={shownId}
               host={host}
-              fallback={<RunMosaic runs={suite.runDetails} />}
+              thumbhash={poster?.replay?.thumbhash}
               size="card"
               playing={playing}
               badge={<RunsBadge count={count} />}
@@ -429,7 +424,7 @@ function SuiteItem({
             <Poster
               id={shownId}
               host={host}
-              fallback={<RunMosaic runs={suite.runDetails} />}
+              thumbhash={poster?.replay?.thumbhash}
               size="row"
               playing={playing}
               badge={<RunsBadge count={count} />}

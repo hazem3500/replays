@@ -7,15 +7,13 @@
  *              to the real poster changes detail, never layout.
  *   Site       a calm page: a faint browser bar, a site glyph in a chip and the host. Container queries
  *              drop the host on rows and the bar on the smallest thumbnails.
- *   Mosaic     a suite: up to four runs side by side, each its ThumbHash or its site, edged red when it failed and
- *              hatched when it has no recording; run labels show where a cell has room.
  *   Loading    only while a poster is genuinely on its way: the tile breathes (opacity, slowly) after
  *              --skeleton-delay (loading.css), so a cached poster or an "off" answer never shows motion.
  */
 @keyframes skeleton-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
-.poster-placeholder, .poster-run { container-type: size; background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent)), var(--surface-raised); }
-.poster-placeholder[data-thumbhash], .poster-run-hash { background-position: top left; background-repeat: no-repeat; background-size: cover; }
+.poster-placeholder { container-type: size; background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent)), var(--surface-raised); }
+.poster-placeholder[data-thumbhash] { background-position: top left; background-repeat: no-repeat; background-size: cover; }
 
 .poster-site { position: absolute; inset: 0; display: grid; place-items: center; }
 .poster-site-bar { position: absolute; top: 0; right: 0; left: 0; height: clamp(6px, 9cqh, 14px); border-bottom: 1px solid color-mix(in srgb, var(--text) 7%, transparent); background: radial-gradient(circle, color-mix(in srgb, var(--text) 16%, transparent) 0 1.5px, transparent 2px) 4px 50% / 7px 7px repeat-x, color-mix(in srgb, var(--text) 3%, transparent); background-size: 7px 7px, auto; }
@@ -35,19 +33,6 @@
   .poster-site-chip { width: 16px; height: 16px; background: transparent; box-shadow: none; }
   .poster-site-icon { width: 12px; height: 12px; }
 }
-
-.poster-mosaic { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; gap: 1px; background: var(--line); }
-.poster-mosaic[data-count="1"] { grid-template-columns: 1fr; }
-.poster-mosaic[data-count="3"] > :first-child { grid-row: span 2; }
-.poster-run { position: relative; overflow: hidden; }
-.poster-run-hash { position: absolute; inset: 0; }
-.poster-run:not([data-recorded]) { background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in srgb, var(--text-tertiary) 14%, transparent) 6px 7px), var(--surface-raised); }
-.poster-run:not([data-recorded]) .poster-site-mark { display: none; }
-.poster-run[data-status="failed"]::after { content: ""; position: absolute; right: 0; bottom: 0; left: 0; height: 2px; background: var(--danger); }
-.poster-run-label { position: absolute; top: calc(clamp(6px, 9cqh, 14px) + 4px); left: 6px; max-width: calc(100% - 12px); overflow: hidden; padding: 1px 5px; border-radius: 4px; background: color-mix(in srgb, var(--surface) 82%, transparent); color: var(--text-secondary); font-size: 10px; font-weight: 550; line-height: 14px; text-overflow: ellipsis; white-space: nowrap; }
-@container (max-width: 120px) { .poster-run-label { display: none; } }
-/* Row and quick-result thumbnails: the cells stay calm tiles with their status edges, no icons. */
-@container (max-width: 100px) { .poster-mosaic .poster-site-mark, .poster-mosaic .poster-site-bar { display: none; } }
 
 /* Breathing replaces the feed's sweep (same layer, same selector, later rule). */
 .poster[data-phase="loading"]::before { background: color-mix(in srgb, var(--text) 5%, transparent); transform: none; opacity: 0; animation: skeleton-breathe 2.4s ease-in-out var(--skeleton-delay) infinite; }

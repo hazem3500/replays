@@ -8,7 +8,7 @@ import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
 
 /*
  * A replay's list thumbnail: a plain lazy <img> of GET /api/replays/<id>/poster over a placeholder that is never a
- * made-up letter (PosterPlaceholder.tsx: the poster's ThumbHash, else the recorded host, or a suite's run mosaic). The
+ * made-up letter (PosterPlaceholder.tsx: the poster's ThumbHash, else the recorded host). The
  * server answers 202 while it renders the poster, and 404/503 when there is none; an <img> cannot read those, so after
  * an error one HEAD request decides between "retry after Retry-After" and "keep the placeholder". A 503 switches
  * posters off for the page: every poster still waiting stops breathing at once and settles on its placeholder (its
@@ -67,7 +67,7 @@ export function Poster({
   host: string;
   /** The summary's ThumbHash: the placeholder paints the poster's colours until it loads, then crossfades to it. */
   thumbhash?: string | undefined;
-  /** Shown instead of the replay's own placeholder: a suite's run mosaic. */
+  /** Optional custom placeholder content. */
   fallback?: ReactNode;
   className?: string;
   size?: 'row' | 'card' | 'mini' | 'fill';

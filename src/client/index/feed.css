@@ -579,7 +579,7 @@ html[data-feed-transition]::view-transition-new(root) { animation-duration: 160m
 @media (pointer: coarse) { .feed-keep::before { inset: -10px -6px; } }
 
 .shuffle-window { position: relative; display: block; clip-path: inset(-30px 0 0); }
-.stack-front { clip-path: inset(-30px 0 0); }
+.stack-front { clip-path: inset(-30px 0 -48px); }
 
 .suite-sheet { display: contents; }
 .feed-list[data-view="grid"] .suite-sheet { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; border-radius: var(--card-radius); background: var(--surface-raised); box-shadow: var(--card-shadow); transform-origin: 50% 0; }
