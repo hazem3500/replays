@@ -128,9 +128,9 @@
       "brotli": 35581
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 31925,
-      "gzip": 6193,
-      "brotli": 5501
+      "raw": 31293,
+      "gzip": 6081,
+      "brotli": 5405
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 102425,
@@ -310,7 +310,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1124,
       "gzip": 682,
-      "brotli": 618
+      "brotli": 605
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21999,
