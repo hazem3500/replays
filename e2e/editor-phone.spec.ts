@@ -101,10 +101,12 @@ test('Adjust opens the settings in a sheet under the picture; Escape closes it b
 
   await page.getByTestId('phone-adjust').click();
   await expect(sheet).toBeVisible();
-  const handle = await boxOf(sheet.locator('[data-slot="drawer-handle"]'));
+  const grip = sheet.locator('[data-slot="drawer-handle"]');
+  await grip.click({ trial: true });
+  const handle = await boxOf(grip);
   const session = await page.context().newCDPSession(page);
   const x = handle.x + handle.width / 2;
-  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: handle.y }] });
+  await session.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: handle.y + handle.height / 2 }] });
   for (let step = 1; step <= 8; step++)
     await session.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: handle.y + step * 40 }] });
   await session.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });

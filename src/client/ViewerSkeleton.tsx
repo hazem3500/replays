@@ -6,7 +6,6 @@ import { PhoneEditorSkeleton } from './editor/PhoneEditorSkeleton.tsx';
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 import type { ReplayEdits } from '../shared/edits.ts';
-import type { ReplayStep } from '../shared/replay.ts';
 import { apiUrl } from './api/fetch.ts';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
@@ -47,14 +46,6 @@ export interface OpenHint {
   /** A suite card's run count, and how many of those runs have a recording (the tiles its Grid compares). */
   runs?: number;
   recordings?: number;
-}
-
-/** The opening still's format version (src/server/posters.ts); bumping it refetches every cached still. */
-export const OPEN_STILL_VERSION = 1;
-
-/** A replay's opening still by id: what the player paints first, for loads that no card's poster describes. */
-function openStillUrl(id: string) {
-  return apiUrl(`replays/${encodeURIComponent(id)}/open?v=${OPEN_STILL_VERSION}`);
 }
 
 /** The opening still's format version (src/server/posters.ts); bumping it refetches every cached still. */
@@ -186,14 +177,11 @@ export function EditorSkeleton({
   id,
   meta,
   edits,
-  steps,
 }: {
   id: string;
   meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
   /** The last edits seen for this replay, while the fresh copy loads: their lanes are drawn where they will be. */
   edits?: ReplayEdits | undefined;
-  /** The recording's steps once its bundle is in (the phone clip's segments). */
-  steps?: readonly ReplayStep[] | undefined;
 }) {
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [stored] = useState(readHint);
@@ -225,7 +213,6 @@ export function EditorSkeleton({
           frame={<PlayerSkeleton poster={poster} />}
           duration={meta?.duration}
           edits={edits}
-          steps={steps}
           progress={<ProgressHint />}
         />
       </main>

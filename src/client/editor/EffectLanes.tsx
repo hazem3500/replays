@@ -23,6 +23,7 @@ const LANE_TEXT: Record<EffectKind, { name: string; empty: string }> = {
 };
 
 const LANES = LANE_GLYPHS.map((glyph) => ({ ...glyph, ...LANE_TEXT[glyph.kind] }));
+
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
 
 /**
