@@ -148,13 +148,13 @@
       "brotli": 2397
     },
     "dist/client/assets/Inspector-HASH.css": {
-      "raw": 47550,
-      "gzip": 8794,
-      "brotli": 7872
+      "raw": 47896,
+      "gzip": 8843,
+      "brotli": 7924
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 256294,
-      "gzip": 86067,
+      "gzip": 86072,
       "brotli": 71727
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
@@ -1392,22 +1392,22 @@
     {
       "file": "dist/client/assets/Inspector-HASH.css",
       "cap": {
-        "raw": 47550,
-        "gzip": 8794,
-        "brotli": 7872
+        "raw": 47896,
+        "gzip": 8843,
+        "brotli": 7924
       },
-      "pr": "https://github.com/hazem3500/replays/pull/165",
-      "reason": "Console full messages, stack frames, folding and phone rows measured against current main."
+      "pr": "https://github.com/hazem3500/replays/pull/180",
+      "reason": "Phone diagnostic badges and dock layout measured against landed console changes."
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
-        "raw": 256294,
-        "gzip": 86067,
-        "brotli": 71727
+        "raw": 256230,
+        "gzip": 86072,
+        "brotli": 71639
       },
-      "pr": "https://github.com/hazem3500/replays/pull/165",
-      "reason": "Console full messages, stack frames, folding and phone rows measured against current main."
+      "pr": "https://github.com/hazem3500/replays/pull/180",
+      "reason": "Phone diagnostic badges and dock layout measured against landed console changes."
     }
   ]
 }
