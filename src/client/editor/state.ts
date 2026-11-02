@@ -41,7 +41,7 @@ export type Selection =
 export type EffectKind = 'zoom' | 'speed' | 'blur' | 'caption';
 export const EFFECT_KINDS: readonly EffectKind[] = ['zoom', 'speed', 'blur', 'caption'];
 const LISTS = { zoom: 'zooms', speed: 'speeds', blur: 'blurs', caption: 'captions' } as const;
-type EffectRegion = ReplayZoomRegion | ReplaySpeedRange | ReplayBlur | ReplayCaption;
+export type EffectRegion = ReplayZoomRegion | ReplaySpeedRange | ReplayBlur | ReplayCaption;
 
 export interface EditorState {
   present: ReplayEdits;

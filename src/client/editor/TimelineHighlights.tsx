@@ -43,7 +43,6 @@ export function TimelineHighlights({
   x,
   width,
   pad,
-  mobile,
   dispatch,
 }: {
   highlights?: readonly ReplayHighlight[] | undefined;
@@ -51,7 +50,6 @@ export function TimelineHighlights({
   x: (time: number) => number;
   width: number;
   pad: number;
-  mobile: boolean;
   dispatch: (action: EditorAction) => void;
 }) {
   const player = usePlayer();
@@ -88,13 +86,12 @@ export function TimelineHighlights({
               title={`${title} · ${formatClock(at)}`}
               style={cssVars({ '--target-offset': `${offsets.get(highlight.id)?.[index] ?? 0}px` }, { left: `${x(at)}px` })}
               onFocus={() => {
-                if (!mobile) dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
+                dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
               }}
               onPointerDown={(event) => event.stopPropagation()}
               onClick={() => {
                 dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
                 player.seek(at);
-                if (mobile) player.pause();
               }}
             >
               <span className="tl-highlight-glyph" aria-hidden="true" />

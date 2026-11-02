@@ -40,7 +40,7 @@ export function EditPage({ id }: { id: string }) {
   if (error) return <EditFailure id={id} error={error} />;
   // why: fresh edits only: a cached copy could be older than someone else's save.
   const loaded = edits.data && !edits.isFetching ? edits.data : undefined;
-  const skeleton = <EditorSkeleton id={id} meta={bundle?.meta} edits={edits.data?.stored} />;
+  const skeleton = <EditorSkeleton id={id} meta={bundle?.meta} edits={edits.data?.stored} steps={bundle?.steps} />;
   return (
     <LoadingSwap ready={Boolean(bundle && loaded) && ready} skeleton={skeleton}>
       {bundle && loaded ? (
