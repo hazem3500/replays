@@ -179,7 +179,7 @@ async function attestIndicator(ui: RecorderUi, context: ContractContext): Promis
   }
   await render();
   const stop = queryDeep<HTMLElement>(selectors.stop);
-  assert.ok(!stop || stop.hidden || stop.closest('[hidden]'));
+  assert.ok(!stop || stop.hidden || stop.closest('[hidden], [inert][aria-hidden="true"]'));
 }
 
 async function reviewRecording(ui: RecorderUi, context: ContractContext): Promise<void> {

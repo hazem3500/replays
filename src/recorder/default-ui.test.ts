@@ -11,7 +11,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 describe('default recorder surface', () => {
-  it('keeps the same floating shell across recording, upload and completion', () => {
+  it('keeps the same floating shell across recording, upload and completion', async () => {
     const ui = createDefaultUi();
     const stop = vi.fn<() => void>();
     const hide = ui.showIndicator({ startedAt: Date.now(), maxDurationMs: 600000, stop });
@@ -34,7 +34,7 @@ describe('default recorder surface', () => {
     expect(shell.textContent).not.toContain('internal-id');
     expect(root().querySelectorAll('[role=status]')).toHaveLength(1);
     ui.dismiss?.();
-    expect(document.querySelector('[data-recorder-ui]')).toBeNull();
+    await vi.waitFor(() => expect(document.querySelector('[data-recorder-ui]')).toBeNull());
   });
   it('uses tabular fixed-width time and announces the final warning once', () => {
     vi.useFakeTimers();

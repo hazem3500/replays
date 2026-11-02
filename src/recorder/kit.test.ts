@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { must } from './testing.ts';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRecorder } from './recorder.ts';
 import { createDefaultUi } from './default-ui.ts';
 import { createDeferredUi } from './deferred-ui.ts';
@@ -26,10 +26,15 @@ function setup(options: Partial<RecorderOptions> = {}) {
   });
   return { recorder, rrweb, transport };
 }
-testRecorderUi('default UI contract', createDefaultUi, { describe, it });
-testRecorderUi('composed step UI contract', () => composeUi(consentDialog(), recordingIndicator(), reviewDialog(), resultToast()), {
-  describe,
-  it,
+describe('settled recorder UI contracts', () => {
+  // why: contract cases test settled controls; surface-motion.test.ts covers animated exits and cancellation.
+  beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: true })));
+  afterEach(() => vi.unstubAllGlobals());
+  testRecorderUi('default UI contract', createDefaultUi, { describe, it });
+  testRecorderUi('composed step UI contract', () => composeUi(consentDialog(), recordingIndicator(), reviewDialog(), resultToast()), {
+    describe,
+    it,
+  });
 });
 async function rejectsBrokenUi() {
   const cases: (() => void | Promise<void>)[] = [];
@@ -50,13 +55,13 @@ async function rejectsBrokenUi() {
   await expect(must(cases[0], 'broken contract test')()).rejects.toThrow(/assert|dialog|Missing/i);
 }
 
-function dismissesComposedSteps() {
+async function dismissesComposedSteps() {
   const ui = composeUi(consentDialog(), recordingIndicator(), reviewDialog(), resultToast());
   const hide = ui.showIndicator({ startedAt: Date.now(), maxDurationMs: 180000, stop: () => {} });
   hide();
   ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'test' } });
   ui.dismiss?.();
-  expect(document.querySelectorAll('[data-recorder-ui]')).toHaveLength(0);
+  await vi.waitFor(() => expect(document.querySelectorAll('[data-recorder-ui]')).toHaveLength(0));
 }
 
 async function loadsCompatibilityUi() {
@@ -279,9 +284,11 @@ function announcesAndTrapsFocus() {
 }
 
 describe('recorder kit', () => {
+  beforeEach(() => vi.stubGlobal('matchMedia', () => ({ matches: true })));
   afterEach(() => {
     document.body.replaceChildren();
     vi.useRealTimers();
+    vi.unstubAllGlobals();
   });
   it('rejects a deliberately broken UI contract', rejectsBrokenUi);
   it('dismisses every composed step, including a hidden indicator root', dismissesComposedSteps);
