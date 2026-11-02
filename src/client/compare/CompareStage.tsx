@@ -14,15 +14,18 @@ interface StageStyle extends CSSProperties {
   '--stage-aspect': string;
 }
 
-/** Grid tiles beyond this many play as low-rate thumbnails, except the focused one. */
+/** Up to this many recordings all play on the shared clock; beyond it, tiles other than the focused one are thumbnails. */
 const LIVE_BUDGET = 6;
 
+/**
+ * Every recording on the stage plays in step: Spotlight's strip and a phone's off-screen tiles too, so a glance or a
+ * swipe always finds them at the shared moment. Single's hidden tiles rest until shown; past the budget, the focused
+ * tile and the spotlight play and the rest are thumbnails.
+ */
 function fidelityFor(placement: Placement | undefined, count: number, focused: boolean, carousel: boolean): Fidelity {
-  if (carousel) return focused ? 'live' : 'thumb';
-  if (!placement || placement.role === 'hidden') return 'off';
-  if (placement.role === 'spotlight' || placement.role === 'single' || focused) return 'live';
-  if (placement.role === 'strip') return 'thumb';
-  return count <= LIVE_BUDGET ? 'live' : 'thumb';
+  if (!carousel && (!placement || placement.role === 'hidden')) return 'off';
+  if (count <= LIVE_BUDGET || focused || placement?.role === 'spotlight' || placement?.role === 'single') return 'live';
+  return 'thumb';
 }
 
 /**

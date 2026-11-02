@@ -10,7 +10,8 @@ import { fitViewport } from '../timeline.ts';
  * Mounts a tile's player into `stage` (its first child is rrweb's host) and keeps the recorded page fitted while
  * the tile glides and resizes. The player mounts once per controller: a layout change only moves the box. The
  * fitted frame's box is published on `stage` the way PlayerStage publishes it, so a caption anchors to the frame.
- * The tile reports its fidelity to the clock, and `off` when it goes; a mount failure is kept by the session.
+ * The tile reports its fidelity to the clock, and `off` when it goes; a mount failure is kept by the session. Its
+ * playhead shows on `stage` as `data-time` (ms, to the tenth of a second).
  */
 export function useTilePlayer({
   session,
@@ -49,12 +50,18 @@ export function useTilePlayer({
       box.style.setProperty('--frame-bottom', `${box.clientHeight - rect.y - height}px`);
       box.style.setProperty('--caption-scale', String(exportCaptionScale(viewport.width) * rect.scale));
     };
+    // why: the tile's own playhead, to the tenth of a second, for anyone checking that every tile keeps the shared time.
+    const mark = () => {
+      const tenths = String(Math.round(controller.getTime() / 100) * 100);
+      if (box.getAttribute('data-time') !== tenths) box.setAttribute('data-time', tenths);
+    };
     try {
       cleanups.push(controller.mount(root));
       const observer = new ResizeObserver(fit);
       observer.observe(box);
-      cleanups.push(() => observer.disconnect(), controller.subscribeViewport(fit));
+      cleanups.push(() => observer.disconnect(), controller.subscribeViewport(fit), controller.subscribeTime(mark));
       fit();
+      mark();
     } catch (cause) {
       session.fail(id, cause instanceof Error ? cause.message : 'The recorded page could not be mounted.');
     }
