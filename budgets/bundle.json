@@ -154,8 +154,8 @@
     },
     "dist/client/assets/Inspector-HASH.js": {
       "raw": 256294,
-      "gzip": 86064,
-      "brotli": 71595
+      "gzip": 86067,
+      "brotli": 71727
     },
     "dist/client/assets/inter-latin-ext-wght-normal-HASH.woff2": {
       "raw": 87621,
@@ -1403,8 +1403,8 @@
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 256294,
-        "gzip": 86064,
-        "brotli": 71595
+        "gzip": 86067,
+        "brotli": 71727
       },
       "pr": "https://github.com/hazem3500/replays/pull/165",
       "reason": "Console full messages, stack frames, folding and phone rows measured against current main."
