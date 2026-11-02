@@ -23,6 +23,8 @@ describe('default recorder surface', () => {
     expect(stop).toHaveBeenCalledOnce();
     hide();
     const hideUpload = ui.showUploading?.();
+    expect(root().querySelector('button')).toBeNull();
+    expect(node('progress').hasAttribute('value')).toBe(false);
     expect(node('.pill')).toBe(shell);
     expect(shell.getAttribute('data-phase')).toBe('uploading');
     hideUpload?.();
@@ -37,7 +39,11 @@ describe('default recorder surface', () => {
   it('uses tabular fixed-width time and announces the final warning once', () => {
     vi.useFakeTimers();
     const ui = createDefaultUi();
-    ui.showIndicator({ startedAt: Date.now() - 599000, maxDurationMs: 600000, stop: vi.fn<() => void>() });
+    ui.showIndicator({
+      startedAt: Date.now() - 599000,
+      maxDurationMs: 600000,
+      stop: vi.fn<() => void>(),
+    });
     expect(node('.time').textContent).toBe('9:59');
     vi.advanceTimersByTime(1000);
     expect(node('.time').textContent).toBe('10:00');
@@ -85,7 +91,10 @@ describe('default recorder surface', () => {
     const ui = createDefaultUi();
     ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'a', url: 'javascript:alert(1)' } });
     expect(root().querySelector('a')).toBeNull();
-    ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'a', url: 'https://example.com/r/a' } });
+    ui.showResult?.({
+      status: 'uploaded',
+      receipt: { replayId: 'a', url: 'https://example.com/r/a' },
+    });
     expect(node('[data-action=copy-link]').textContent).toBe('Copy link');
     expect(root().querySelector('a')).toBeNull();
     ui.dismiss?.();
@@ -94,9 +103,15 @@ describe('default recorder surface', () => {
     const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     const ui = createDefaultUi();
-    ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'private', reference: 'internal-reference' } });
+    ui.showResult?.({
+      status: 'uploaded',
+      receipt: { replayId: 'private', reference: 'internal-reference' },
+    });
     expect(root().querySelector('[data-action]')).toBeNull();
-    ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'private', url: 'https://example.com/replay' } });
+    ui.showResult?.({
+      status: 'uploaded',
+      receipt: { replayId: 'private', url: 'https://example.com/replay' },
+    });
     press('Copy link');
     await Promise.resolve();
     expect(writeText).toHaveBeenCalledWith('https://example.com/replay');
@@ -126,7 +141,11 @@ describe('default recorder surface', () => {
     const ui = createDefaultUi();
     ui.showUploading?.();
     const shell = node('.pill');
-    ui.showResult?.({ status: 'error', error: Object.assign(new Error('Secret backend 502'), { userMessage: 'Try again.' }), retry });
+    ui.showResult?.({
+      status: 'error',
+      error: Object.assign(new Error('Secret backend 502'), { userMessage: 'Try again.' }),
+      retry,
+    });
     expect(node('.pill')).toBe(shell);
     expect(shell.textContent).toContain('Try again.');
     expect(shell.textContent).not.toContain('Secret');
@@ -137,7 +156,11 @@ describe('default recorder surface', () => {
   it('requires consent and closes on abort', async () => {
     const ui = createDefaultUi();
     const abort = new AbortController();
-    const decision = ui.requestConsent({ trigger: { source: 'user' }, maxDurationMs: 180000, signal: abort.signal });
+    const decision = ui.requestConsent({
+      trigger: { source: 'user' },
+      maxDurationMs: 180000,
+      signal: abort.signal,
+    });
     expect(node('[role=dialog]').getAttribute('aria-modal')).toBe('true');
     expect(root().activeElement?.textContent).toBe('Not now');
     abort.abort();
@@ -145,7 +168,10 @@ describe('default recorder surface', () => {
     expect(document.querySelector('[data-recorder-ui]')).toBeNull();
   });
   it('supports explicit light theme and host overrides', () => {
-    const ui = createDefaultUi({ theme: { background: 'pink', primary: 'blue' }, completion: { actions: [] } });
+    const ui = createDefaultUi({
+      theme: { background: 'pink', primary: 'blue' },
+      completion: { actions: [] },
+    });
     ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'a' } });
     expect((root().host as HTMLElement).style.getPropertyValue('--recorder-background')).toBe('pink');
     ui.dismiss?.();

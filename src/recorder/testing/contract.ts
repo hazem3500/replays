@@ -4,7 +4,10 @@ import type { PrivacyFacts, RecorderUi, RecordingSummary } from '../types.ts';
 import { createFakeRrweb, createFakeTransport } from './fakes.ts';
 import { queryDeep } from './query-deep.ts';
 
-type Runner = { describe(name: string, run: () => void): unknown; it(name: string, run: () => void | Promise<void>): unknown };
+type Runner = {
+  describe(name: string, run: () => void): unknown;
+  it(name: string, run: () => void | Promise<void>): unknown;
+};
 type Options = {
   controls?: Partial<Record<'accept' | 'decline' | 'stop' | 'send' | 'discard' | 'retry' | 'dismiss' | 'note', string>>;
   render?: (flush: () => Promise<void>) => Promise<void>;
@@ -29,7 +32,11 @@ const consent = (ui: RecorderUi, mode: PrivacyFacts['mode'] = 'masked') =>
   ui.requestConsent({
     trigger: { source: 'user' },
     maxDurationMs: 180000,
-    privacy: { ...privacy, mode, captures: { ...privacy.captures, pageText: mode === 'visible', inputs: mode === 'visible' } },
+    privacy: {
+      ...privacy,
+      mode,
+      captures: { ...privacy.captures, pageText: mode === 'visible', inputs: mode === 'visible' },
+    },
     signal: new AbortController().signal,
   });
 
@@ -84,7 +91,7 @@ async function acceptConsent(ui: RecorderUi, context: ContractContext): Promise<
     const pending = consent(ui);
     await render();
     const dialog = queryDeep('[role="dialog"], [role="alertdialog"]');
-    assert.ok(dialog);
+    assert.ok(dialog, 'Missing consent dialog');
     assert.ok(
       Boolean(dialog.getAttribute('aria-label')) || Boolean(dialog.getAttribute('aria-labelledby')),
       'Dialog needs an accessible name',
@@ -116,7 +123,12 @@ async function declineConsent(ui: RecorderUi, context: ContractContext): Promise
 async function abortConsent(ui: RecorderUi, context: ContractContext): Promise<void> {
   const { render } = context;
   const abort = new AbortController();
-  const pending = ui.requestConsent({ trigger: { source: 'user' }, maxDurationMs: 180000, privacy, signal: abort.signal });
+  const pending = ui.requestConsent({
+    trigger: { source: 'user' },
+    maxDurationMs: 180000,
+    privacy,
+    signal: abort.signal,
+  });
   await render();
   abort.abort();
   assert.equal(await pending, false);

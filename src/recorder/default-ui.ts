@@ -81,27 +81,6 @@ export function createDefaultUi(
   let renderCleanup: (() => void) | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
   let generation = 0;
-  let previousWidth = 0;
-  let resizeAnimation: Animation | undefined;
-  const settleSurface = () => {
-    if (!floating) return;
-    resizeAnimation?.cancel();
-    const width = floating.shell.getBoundingClientRect().width;
-    if (
-      previousWidth &&
-      width &&
-      previousWidth !== width &&
-      typeof floating.shell.animate === 'function' &&
-      !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    ) {
-      resizeAnimation = floating.shell.animate([{ inlineSize: `${previousWidth}px` }, { inlineSize: `${width}px` }], {
-        duration: 220,
-        easing: 'cubic-bezier(.2,.8,.2,1)',
-      });
-    }
-    void resizeAnimation?.finished?.catch(() => {});
-    previousWidth = width;
-  };
   const clearContent = () => {
     if (timer) clearInterval(timer);
     timer = undefined;
@@ -110,8 +89,6 @@ export function createDefaultUi(
   };
   const dismiss = () => {
     generation++;
-    resizeAnimation?.cancel();
-    previousWidth = 0;
     clearContent();
     if (floating) {
       cleanupText(floating.label);
@@ -133,7 +110,13 @@ export function createDefaultUi(
       const shell = element('div', { className: 'pill', tabIndex: -1 }, [content]);
       shell.setAttribute('aria-label', messages.recording);
       mounted.root.append(shell, live);
-      floating = { ...mounted, shell, content, live, label: element('span', { className: 'message' }) };
+      floating = {
+        ...mounted,
+        shell,
+        content,
+        live,
+        label: element('span', { className: 'message' }),
+      };
     }
     const focused = floating.root.activeElement;
     const keepFocus = focused instanceof HTMLElement && floating.shell.contains(focused);
@@ -243,14 +226,13 @@ export function createDefaultUi(
       dot.setAttribute('aria-hidden', 'true');
       const icon = element('span', { className: 'stop-icon' });
       icon.setAttribute('aria-hidden', 'true');
-      const stopButton = element('button', { type: 'button', className: 'icon-button', title: messages.stop, onclick: stop }, [
+      const stopButton = element('button', { type: 'button', className: 'finish-button', title: messages.stop, onclick: stop }, [
         icon,
-        element('span', { className: 'sr-only' }, [messages.stop]),
+        element('span', {}, [messages.stop]),
       ]);
       stopButton.dataset.recorderAction = 'stop';
       content.append(dot, label, time, stopButton);
       const releaseStop = attestStop?.(stopButton);
-      settleSurface();
       let warning = 'none';
       timer = setInterval(() => {
         updateText(time, format.elapsed(Date.now() - startedAt));
@@ -311,8 +293,9 @@ export function createDefaultUi(
       const { content, label } = surface('uploading', messages.uploading);
       label.className = 'message';
       updateText(label, messages.uploading);
-      content.append(label);
-      settleSurface();
+      const progress = element('progress', { className: 'upload-progress' });
+      progress.setAttribute('aria-label', messages.uploading);
+      content.append(progress, label);
       return hideSurface;
     },
 
@@ -366,7 +349,14 @@ export function createDefaultUi(
           const actions: readonly CompletionAction[] =
             completion?.actions ??
             (receipt.url && safeHref(receipt.url)
-              ? [{ id: 'copy-link', label: messages.copyLink, kind: 'copy', value: safeHref(receipt.url)! }]
+              ? [
+                  {
+                    id: 'copy-link',
+                    label: messages.copyLink,
+                    kind: 'copy',
+                    value: safeHref(receipt.url)!,
+                  },
+                ]
               : []);
           for (const action of actions) {
             let control: HTMLElement | undefined;
@@ -409,7 +399,6 @@ export function createDefaultUi(
       close.setAttribute('aria-label', messages.close);
       controls.append(close);
       current.content.append(controls);
-      settleSurface();
     },
   };
 }
