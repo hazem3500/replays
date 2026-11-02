@@ -55,7 +55,7 @@ export const ResettingAView: Story = {
     await userEvent.click(within(canvasElement).getByRole('button', { name: 'View: Review' }));
     const menu = await screen.findByRole('menu');
     await opened(menu);
-    await userEvent.click(within(menu).getByRole('menuitem', { name: /Reset this view/ }));
+    await userEvent.click(within(menu).getByRole('menuitem', { name: 'Reset view' }));
     await expect(args.onReset).toHaveBeenCalledOnce();
   },
 };

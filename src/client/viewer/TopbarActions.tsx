@@ -257,6 +257,16 @@ const CORE_ACTIONS: readonly (readonly [CoreAction, number])[] = [
   ['core:download', 400],
 ];
 
+/** Secondary actions keep their slot's host visibility and ordering when rendered in More. */
+export function actionMenuItems(actions: Partial<Record<CoreAction, TopbarMenuItem[]>>): TopbarMenuItem[] {
+  const builtins: SlotDescriptor<undefined, TopbarMenuItem[]>[] = CORE_ACTIONS.flatMap(([id, order]) =>
+    actions[id] ? [{ id, order, render: () => actions[id]! }] : [],
+  );
+  return resolveSlot(ACTIONS_SLOT, builtins, undefined)
+    .filter((descriptor) => descriptor.id.startsWith('core:'))
+    .flatMap((descriptor) => descriptor.render(undefined));
+}
+
 /**
  * The top bar's actions as `viewer.actions` items: hosts may reorder or hide the built-ins (`configureSlot`). Plugin bar
  * actions keep their own renderer and follow the built-ins.

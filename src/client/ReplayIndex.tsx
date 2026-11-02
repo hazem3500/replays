@@ -757,7 +757,7 @@ export function ReplayIndex({
   if (firstRun && !leftFirstRun) setLeftFirstRun(true);
 
   return (
-    <main className="index-shell" ref={shell}>
+    <main className="index-shell" ref={shell} data-index-hydrated={hydrated ? '' : undefined}>
       {/* One sticky block: identity + search + actions, then the toolbar (profiles, active filters, filter, sort, layout). */}
       <div ref={toolbar} className="index-head">
         <Topbar

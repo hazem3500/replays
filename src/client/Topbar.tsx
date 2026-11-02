@@ -1,6 +1,7 @@
-import { type ReactNode, useRef, useState } from 'react';
+import { type ReactNode, type RefObject, useRef, useState } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { TitleMorph } from '@/components/title-morph.tsx';
+import { TopbarIdentity } from '@/components/topbar-identity.tsx';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
@@ -41,6 +42,8 @@ export function Topbar({
   menu,
   menuItems = [],
   menuFooter,
+  menuSettings,
+  menuTail,
   alwaysMenu = false,
   backHref,
   backLabel = 'All replays',
@@ -49,6 +52,8 @@ export function Topbar({
   titleMenu,
   titleFrom,
   phoneMenu,
+  appearanceInMenu = false,
+  menuAnchor,
 }: {
   /** The page's h1. Omit on the index, where the product's name is the page itself. */
   title?: string;
@@ -63,6 +68,10 @@ export function Topbar({
   menuItems?: TopbarMenuItem[];
   /** Menu content after the items (client plugins' settings); always gets the "More" menu. */
   menuFooter?: ReactNode;
+  /** View choices beside appearance, after recording actions. */
+  menuSettings?: ReactNode;
+  /** A final, separated action such as resetting the panel arrangement. */
+  menuTail?: ReactNode;
   /** A "More" menu even for one item, so an item (Keyboard shortcuts) stays put while others come and go. */
   alwaysMenu?: boolean;
   /** Extra menu content above the items (the phone's run picker); always gets the "More" menu. */
@@ -77,10 +86,14 @@ export function Topbar({
   root?: ReactNode;
   /** Phones: the title itself opens this menu (the suite's run switcher), so the h1 doubles as the picker. */
   titleMenu?: ReactNode;
-  /** The title this bar replaces (switching suite runs remounts the page): it morphs from that one. */
+  /** The title this bar replaces, so a remounted run can fade its title and status in together. */
   titleFrom?: string;
   /** Phones (the index): one sheet in place of the theme switch and "More"; Settings stays mounted for its dialog. */
   phoneMenu?: ReactNode;
+  /** Viewer tools keep appearance with the other secondary actions at every width. */
+  appearanceInMenu?: boolean;
+  /** Anchors a secondary panel opened from More. */
+  menuAnchor?: RefObject<HTMLButtonElement | null>;
 }) {
   const account = useSignedIn();
   return (
@@ -103,29 +116,20 @@ export function Topbar({
               <AnimatedIcon name="chevron-left" />
             </a>
           </Hint>
-          {titleMenu ? (
-            <TopbarTitleMenu
-              title={title}
-              menu={titleMenu}
-              {...(titleFrom ? { from: titleFrom } : {})}
-              {...(prefix ? { prefix } : {})}
-              {...(titleId ? { id: titleId } : {})}
-            />
-          ) : (
-            <TopbarTitle
-              title={title}
-              {...(titleFrom ? { from: titleFrom } : {})}
-              {...(prefix ? { prefix } : {})}
-              {...(titleId ? { id: titleId } : {})}
-            />
-          )}
-          {status ? <div className="topbar-status">{status}</div> : null}
+          <TopbarIdentity title={title} from={titleFrom}>
+            {titleMenu ? (
+              <TopbarTitleMenu title={title} menu={titleMenu} {...(prefix ? { prefix } : {})} {...(titleId ? { id: titleId } : {})} />
+            ) : (
+              <TopbarTitle title={title} {...(prefix ? { prefix } : {})} {...(titleId ? { id: titleId } : {})} />
+            )}
+            {status ? <div className="topbar-status">{status}</div> : null}
+          </TopbarIdentity>
         </>
       )}
       <div className="topbar-actions">
         {actions}
         {/* Phones: the theme is a "More" item, so the bar keeps room for the title at 360 px. */}
-        {compact || phoneMenu ? null : <ThemeSwitch />}
+        {compact || phoneMenu || appearanceInMenu ? null : <ThemeSwitch />}
         {title === undefined ? <SettingsButton /> : null}
         {account && !compact ? <AccountMenu account={account} /> : null}
         {phoneMenu ?? (
@@ -133,8 +137,11 @@ export function Topbar({
             items={compact ? [...menuItems, ...accountMenuItems(account)] : menuItems}
             extra={menu}
             footer={menuFooter}
-            theme={compact}
+            settings={menuSettings}
+            tail={menuTail}
+            theme={compact || appearanceInMenu}
             always={alwaysMenu}
+            triggerRef={menuAnchor}
           />
         )}
       </div>
@@ -143,7 +150,7 @@ export function Topbar({
 }
 
 /** The h1; the full title shows in a tooltip only when the line is cut. */
-function TopbarTitle({ title, from, prefix, id }: { title: string; from?: string; prefix?: string; id?: string }) {
+function TopbarTitle({ title, prefix, id }: { title: string; prefix?: string; id?: string }) {
   const text = useRef<HTMLSpanElement>(null);
   const [open, setOpen] = useState(false);
   const canHover = useCanHover();
@@ -159,7 +166,7 @@ function TopbarTitle({ title, from, prefix, id }: { title: string; from?: string
         }}
       >
         <TooltipTrigger render={<span ref={text} className="topbar-title-text" />}>
-          <TitleMorph text={title} from={from} />
+          <TitleMorph text={title} />
         </TooltipTrigger>
         <TooltipContent side="bottom" align="start">
           {title}
@@ -173,19 +180,7 @@ function TopbarTitle({ title, from, prefix, id }: { title: string; from?: string
  * Phones: the h1 is a menu trigger ("Run 1/2 · Desktop: login ⌄") that opens the run switcher; the full title
  * is in the menu's label, since a phone has no hover tooltip for the cut line.
  */
-function TopbarTitleMenu({
-  title,
-  from,
-  prefix,
-  id,
-  menu,
-}: {
-  title: string;
-  from?: string;
-  prefix?: string;
-  id?: string;
-  menu: ReactNode;
-}) {
+function TopbarTitleMenu({ title, prefix, id, menu }: { title: string; prefix?: string; id?: string; menu: ReactNode }) {
   return (
     <h1 id={id} className="topbar-title topbar-title-menu">
       <DropdownMenu>
@@ -198,7 +193,7 @@ function TopbarTitleMenu({
             </span>
           ) : null}
           <span className="topbar-title-text">
-            <TitleMorph text={title} from={from} />
+            <TitleMorph text={title} />
           </span>
           <AnimatedIcon name="chevron-down" className="topbar-title-chevron" />
         </DropdownMenuTrigger>
@@ -226,6 +221,8 @@ export interface TopbarMenuItem {
   detail?: string;
   disabled?: boolean;
   testId?: string;
+  /** Less frequent utilities follow the view and appearance settings. */
+  section?: 'after-settings';
 }
 
 /**
@@ -238,16 +235,21 @@ export function MoreMenu({
   footer,
   theme = false,
   always = false,
+  triggerRef,
+  settings,
+  tail,
 }: {
   items: TopbarMenuItem[];
   extra?: ReactNode;
   footer?: ReactNode;
+  settings?: ReactNode;
+  tail?: ReactNode;
   theme?: boolean;
   always?: boolean;
+  triggerRef?: RefObject<HTMLButtonElement | null> | undefined;
 }) {
   const [only] = items;
-  const hasKeyboard = useHasKeyboard();
-  if (!extra && !footer && !theme && !always && items.length === 1 && only && !only.href) {
+  if (!extra && !footer && !settings && !tail && !theme && !always && items.length === 1 && only && !only.href) {
     return (
       <IconButton
         label={only.label}
@@ -261,13 +263,14 @@ export function MoreMenu({
       </IconButton>
     );
   }
-  if (!extra && !footer && !theme && items.length === 0) return null;
+  if (!extra && !footer && !settings && !tail && !theme && items.length === 0) return null;
   return (
     <DropdownMenu>
       <Hint label="More" side="bottom" align="end">
         <DropdownMenuTrigger
           render={
             <Button
+              ref={triggerRef}
               variant="ghost"
               size="icon"
               className="topbar-more text-[var(--text-secondary)] hover:text-foreground [&_svg:not([class*=size-])]:size-4"
@@ -281,36 +284,49 @@ export function MoreMenu({
       <DropdownMenuContent side="bottom" align="end" className="w-auto min-w-56">
         {extra}
         {extra && items.length ? <DropdownMenuSeparator /> : null}
-        {items.map((item) => (
-          <DropdownMenuItem
-            key={item.label}
-            onClick={item.onSelect}
-            {...(item.disabled ? { disabled: true } : {})}
-            {...(item.href
-              ? {
-                  // Base UI renders the item's children into this link.
-                  // oxlint-disable-next-line jsx-a11y/anchor-has-content
-                  render: <a href={item.href} {...(item.download ? { download: item.download } : {})} />,
-                }
-              : {})}
-            {...(item.testId ? { 'data-testid': item.testId } : {})}
-            {...(item.ariaKeyshortcuts ? { 'aria-keyshortcuts': item.ariaKeyshortcuts } : {})}
-          >
-            {item.icon}
-            {item.label}
-            {item.shortcut && hasKeyboard ? <DropdownMenuShortcut data-keys="">{item.shortcut}</DropdownMenuShortcut> : null}
-            {item.detail ? <DropdownMenuShortcut className="tracking-normal tabular-nums">{item.detail}</DropdownMenuShortcut> : null}
-          </DropdownMenuItem>
-        ))}
+        <MoreItems items={items.filter((item) => item.section !== 'after-settings')} />
+        {settings || theme ? <DropdownMenuSeparator /> : null}
+        {settings}
+        {theme ? <ThemeMenuItem /> : null}
+        <MoreItems items={items.filter((item) => item.section === 'after-settings')} />
         {footer}
-        {theme ? (
+        {tail ? (
           <>
-            {extra || items.length ? <DropdownMenuSeparator /> : null}
-            <ThemeMenuItem />
+            <DropdownMenuSeparator />
+            {tail}
           </>
         ) : null}
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function MoreItems({ items }: { items: TopbarMenuItem[] }) {
+  const hasKeyboard = useHasKeyboard();
+  return (
+    <>
+      {items.map((item) => (
+        <DropdownMenuItem
+          key={item.label}
+          onClick={item.onSelect}
+          {...(item.disabled ? { disabled: true } : {})}
+          {...(item.href
+            ? {
+                // Base UI renders the item's children into this link.
+                // oxlint-disable-next-line jsx-a11y/anchor-has-content
+                render: <a href={item.href} {...(item.download ? { download: item.download } : {})} />,
+              }
+            : {})}
+          {...(item.testId ? { 'data-testid': item.testId } : {})}
+          {...(item.ariaKeyshortcuts ? { 'aria-keyshortcuts': item.ariaKeyshortcuts } : {})}
+        >
+          {item.icon}
+          {item.label}
+          {item.shortcut && hasKeyboard ? <DropdownMenuShortcut data-keys="">{item.shortcut}</DropdownMenuShortcut> : null}
+          {item.detail ? <DropdownMenuShortcut className="tracking-normal tabular-nums">{item.detail}</DropdownMenuShortcut> : null}
+        </DropdownMenuItem>
+      ))}
+    </>
   );
 }
 

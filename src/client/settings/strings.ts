@@ -1,5 +1,9 @@
 /** Sign-in mode names by auth adapter; an adapter not listed shows its own name. */
-const AUTH_LABELS: Partial<Record<string, string>> = { none: 'Open access', oidc: 'OpenID Connect', header: 'Trusted proxy headers' };
+const AUTH_LABELS: Partial<Record<string, string>> = {
+  none: 'App sign-in disabled',
+  oidc: 'OpenID Connect',
+  header: 'Trusted proxy headers',
+};
 
 /** Every user-visible string in Settings (one place, so extraction for translation is mechanical later). */
 export const strings = {
@@ -28,13 +32,18 @@ export const strings = {
     loading: 'Loading connection settings…',
     loadFailed: 'Connection settings could not be loaded.',
     retry: 'Try again',
+    install: 'First time? Set up the CLI',
+    installCommand: 'CLI setup command',
+    installIntro: 'The CLI is not published to npm yet. Run it from a source checkout.',
+    installHint:
+      'Requires Node.js 22.22+ (22.x), 24.11+ (24.x), or 26+ and pnpm 10. Already have a checkout? Skip this step. Run the remaining commands from that directory.',
     connect: 'Connect the CLI',
     connectCommand: 'Server setup command',
     connectHint: 'Saves this server’s address and checks it is reachable.',
     connectHintSignIn: 'Saves this server’s address and checks it is reachable. Sign-in is a separate step.',
     signIn: 'Sign in once',
     signInCommand: 'Sign-in command',
-    signInHint: 'Approve the link and short code in a browser. Uploads reuse the saved session; replays status checks it.',
+    signInHint: 'Approve the link and short code in a browser. Uploads reuse the saved session; pnpm cli status checks it.',
     upload: 'Upload a recording',
     uploadCommand: 'Upload command',
     uploadOpen: 'Run it beside replay.json.',
@@ -42,10 +51,12 @@ export const strings = {
     uploadOidc: 'headers.json carries a provider-issued bearer token this server accepts. Keep it out of source control.',
     uploadHeader: 'headers.json carries the identity headers your trusted proxy sends. Keep it out of source control.',
     uploadOther: 'headers.json carries the credentials this deployment’s sign-in accepts. Keep it out of source control.',
-    accessOpen: 'Open access · use only on a trusted network.',
+    accessOpen: 'App sign-in is disabled. Anyone who can reach this app can use it.',
+    accessOpenHint: 'A proxy in front of the app may require separate sign-in. These settings do not describe that proxy.',
     accessDevice: 'Device sign-in · upload-only CLI sessions.',
     accessManaged: 'Host-managed sign-in · no CLI device login.',
     agents: 'Agent credentials',
+    agentsAdvanced: 'Advanced: agent credentials',
     agentsHint:
       'For agent APIs only: they cannot upload replays or approve plugins. The beta MCP bridge (replays mcp) talks to an open viewer tab instead.',
     cliGuide: 'CLI guide',

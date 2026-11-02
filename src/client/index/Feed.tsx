@@ -1,5 +1,5 @@
 import { ArrowRightIcon, LayersIcon } from 'lucide-react';
-import { createContext, type PointerEvent, type ReactNode, useContext, useRef } from 'react';
+import { createContext, type CSSProperties, type PointerEvent, type ReactNode, useContext, useRef } from 'react';
 
 import { formatClock, type ReplaySummary } from '../../shared/replay.ts';
 import type { ReviewSuiteIndexEntry, ReviewSuiteIndexRun, SuiteOverallStatus } from '../../shared/review-suite.ts';
@@ -16,13 +16,15 @@ import { cn } from '@/lib/utils.ts';
 import { formatRelative } from '../format.ts';
 import { replayHref, replayInSuiteHref, suiteHref } from '../routing/links.ts';
 import { playableReplayId } from '../suite/runs.ts';
-import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
+import { errorTotal, type FeedCalendar, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
+import { useHydrated } from '../hooks/use-hydrated.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
-import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
+import { type SuiteCycle, useSuiteCycle } from './suite-cycle.ts';
+import { useShuffle } from '../hooks/use-suite-shuffle.ts';
 import { useIntentPrefetch } from '../intent-prefetch.ts';
 import { FeedList, type FeedRowPlace } from './FeedList.tsx';
 import { ExpiryHint } from './FeedRowActions.tsx';
@@ -120,7 +122,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 /** Rows under day headings (Feed, grouped by time): the heading already says the day. */
-const GroupedContext = createContext(false);
+const GroupedContext = createContext<{ grouped: boolean; calendar: FeedCalendar }>({ grouped: false, calendar: 'utc' });
 
 /**
  * A row's time. Under day headings it doesn't repeat the heading: the time of day under Today/Yesterday, the date
@@ -128,11 +130,11 @@ const GroupedContext = createContext(false);
  * headings (other sorts) it stays relative.
  */
 function Relative({ at, narrow }: { at: string; narrow?: boolean }) {
-  const grouped = useContext(GroupedContext);
+  const { grouped, calendar } = useContext(GroupedContext);
   const relative = formatRelative(at, undefined, 'long');
   return (
     <time dateTime={at} {...(grouped ? { title: relative } : {})}>
-      {grouped ? feedTime(at) : formatRelative(at, undefined, narrow ? 'narrow' : 'long')}
+      {grouped ? feedTime(at, undefined, calendar) : formatRelative(at, undefined, narrow ? 'narrow' : 'long')}
     </time>
   );
 }
@@ -399,15 +401,21 @@ function SuiteItem({
       className="feed-item feed-suite"
       data-view={view}
       data-entry-id={`suite:${suite.id}`}
+      data-stack-front={poster?.id}
       data-row={place.index}
       data-index={place.measured ? place.index : undefined}
       data-last={place.last || undefined}
       {...previewHandlers(`suite:${suite.id}`)}
     >
-      {view === 'grid' ? <CardBacks runs={suite.runDetails} front={poster} /> : null}
       <div className="suite-sheet">
         {view === 'grid' ? (
           <span className="shuffle-window">
+            <CardBacks runs={suite.runDetails} front={poster} />
+            {count > 6 ? (
+              <span className="stack-more" aria-hidden="true">
+                +{count - 6} more
+              </span>
+            ) : null}
             <Poster
               id={shownId}
               host={host}
@@ -465,9 +473,9 @@ function SuiteItem({
   );
 }
 
-/** Sheets behind a suite's front card, back to front: one per other run, at most two. */
+/** Up to five exposed rear sheets and one buried reserve keep large suites bounded. */
 function stackLayers(runCount: number): number[] {
-  return runCount >= 3 ? [2, 1] : runCount === 2 ? [1] : [];
+  return Array.from({ length: Math.min(6, Math.max(0, runCount - 1)) }, (_, index) => Math.min(6, runCount - 1) - index);
 }
 
 /** The runs drawn on the sheets behind the front poster (nearest first): recorded runs before the rest. */
@@ -488,7 +496,7 @@ function BackPoster({ run }: { run: ReviewSuiteIndexRun | undefined }) {
 }
 
 /**
- * A suite's thumbnail as a pile: the front poster plus one plain sheet per other run (at most two) behind it.
+ * A suite's thumbnail as a pile: the front poster plus up to five exposed sheets behind it.
  * While the row is hovered or reached by keyboard the sheets fan out a little (feed.css); the hover preview starts later, after its intent delay.
  */
 function PosterStack({
@@ -503,7 +511,14 @@ function PosterStack({
   return (
     <span className="poster-stack" aria-hidden="true">
       {backRuns(runs, front).map(({ layer, run }) => (
-        <span key={layer} className={`stack-layer stack-layer-${layer}`}>
+        <span
+          key={layer}
+          className={`stack-layer stack-layer-${layer}`}
+          data-run-id={run?.id}
+          data-stack-depth={layer}
+          data-stack-reserve={layer > 5 || undefined}
+          style={{ '--stack-depth': Math.min(layer, 5), '--stack-scale': 1 - layer * 0.035, zIndex: 7 - layer } as CSSProperties}
+        >
           <BackPoster run={run} />
         </span>
       ))}
@@ -513,8 +528,7 @@ function PosterStack({
 }
 
 /**
- * Grid suites as an album stack (Apple Photos style): card-shaped plain sheets behind the whole card, centred,
- * peeking above its top edge; one per other run (at most two). Per-run status lives in the run pills.
+ * Grid suites keep the other runs as thumbnail sheets, independent of the stationary information below.
  */
 function CardBacks({ runs, front }: { runs: ReviewSuiteIndexRun[]; front: ReviewSuiteIndexRun | undefined }) {
   return (
@@ -523,6 +537,10 @@ function CardBacks({ runs, front }: { runs: ReviewSuiteIndexRun[]; front: Review
         <span
           key={layer}
           className={`card-back card-back-${layer}`}
+          data-run-id={run?.id}
+          data-stack-depth={layer}
+          data-stack-reserve={layer > 5 || undefined}
+          style={{ '--stack-depth': Math.min(layer, 5), '--stack-scale': 1 - layer * 0.035, zIndex: 7 - layer } as CSSProperties}
           aria-hidden="true"
           // The backs are part of the card: a click on the strip above it opens the suite, like the card.
           onClick={(event) => event.currentTarget.closest('li')?.querySelector<HTMLAnchorElement>('.row-target')?.click()}
@@ -576,12 +594,16 @@ export { entryTime } from './feed-layout.ts';
 /** The feed: day groups with sticky headings when sorted by time, else one flat list (FeedList.tsx lays it out). */
 export function Feed({ entries, view, grouped, query }: { entries: FeedEntry[]; view: FeedView; grouped: boolean; query: string }) {
   useIntentPrefetch(entries);
+  const hydrated = useHydrated();
+  // why: the server cannot know this browser's locale or time zone; headings and row clocks switch together after hydration.
+  const calendar: FeedCalendar = hydrated ? 'local' : 'utc';
   return (
-    <GroupedContext.Provider value={grouped}>
+    <GroupedContext.Provider value={{ grouped, calendar }}>
       <FeedList
         entries={entries}
         view={view}
         grouped={grouped}
+        calendar={calendar}
         renderEntry={(entry, place, rowRef) =>
           entry.kind === 'session' ? (
             <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} place={place} rowRef={rowRef} />

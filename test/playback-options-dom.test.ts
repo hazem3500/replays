@@ -157,24 +157,25 @@ describe('playback menu in fullscreen', () => {
 describe('step number option', () => {
   const steps = [{ at: 0, kind: 'click', label: 'Review the cart' }];
 
-  it('uses the existing playback popup and forwards the switch and label changes', async () => {
+  it('keeps numbering beside captions and forwards switch and label changes', async () => {
     const setCaptionNumbers = vi.fn<(value: boolean) => void>();
     await renderTransport({ steps, captions: true, setCaptionNumbers });
-    await click(find('.playback-options'));
-    const numbers = find('[role="switch"][id$="-numbers"]');
+    await click(find('[aria-label="Caption settings"]'));
+    const menu = find('[data-slot="popover-content"][aria-label="Caption settings"]');
+    const numbers = find('[data-slot="popover-content"][aria-label="Caption settings"] [role="switch"]');
     expect(numbers.getAttribute('aria-checked')).toBe('false');
     await click(numbers);
     expect(setCaptionNumbers.mock.calls[0]?.[0]).toBe(true);
-    await click(find('label[for$="-numbers"]'));
+    await click(menu.querySelector('label')!);
     expect(setCaptionNumbers).toHaveBeenCalledTimes(2);
-    expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
+    expect(find('[aria-label="Caption settings"][aria-haspopup]').getAttribute('aria-expanded')).toBe('true');
   });
 
   it('retains the choice while captions are hidden and disables changes', async () => {
     const setCaptionNumbers = vi.fn<(value: boolean) => void>();
     await renderTransport({ steps, captions: false, captionNumbers: true, setCaptionNumbers });
-    await click(find('.playback-options'));
-    const numbers = find<HTMLButtonElement>('[role="switch"][id$="-numbers"]');
+    await click(find('[aria-label="Caption settings"]'));
+    const numbers = find<HTMLButtonElement>('[data-slot="popover-content"][aria-label="Caption settings"] [role="switch"]');
     expect(numbers.getAttribute('aria-checked')).toBe('true');
     expect(numbers.disabled).toBe(true);
     await click(numbers);
@@ -184,6 +185,6 @@ describe('step number option', () => {
   it.each([{ steps: [] }, { steps, editCaptions: true }])('omits numbering without generated captions: %j', async (overrides) => {
     await renderTransport({ captions: true, setCaptionNumbers: vi.fn<(value: boolean) => void>(), ...overrides });
     await click(find('.playback-options'));
-    expect(document.querySelector('[role="switch"][id$="-numbers"]')).toBeNull();
+    expect(document.querySelector('[aria-label="Caption settings"]')).toBeNull();
   });
 });

@@ -3,8 +3,19 @@ import { SignInError, SignInLink } from '../sign-in.tsx';
 import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
-import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
-import { type KeyboardEvent, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
+import {
+  type CSSProperties,
+  type KeyboardEvent,
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
@@ -20,7 +31,7 @@ import { swapInPlace } from '../transitions/swap.ts';
 import { indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
-import { Topbar, type TopbarMenuItem } from '../Topbar.tsx';
+import { Topbar } from '../Topbar.tsx';
 import { EditedViewer } from '../Viewer.tsx';
 import { editsQuery } from '../edits.ts';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
@@ -30,6 +41,7 @@ import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults } from '../compare/defaults.ts';
+import { TILE_COLOURS } from '../compare/tiles.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
 import { viewDefaults } from '../views/resolve.ts';
 
@@ -232,17 +244,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     const subject = subjectLink(suite);
     return { title: suite.title, href: suiteHref(id), ...(subject ? { subject } : {}) };
   }, [id, suite]);
-  // why: keeping a suite is rare and the only way to stop its expiry, so it waits in More at every width; the
-  // sidebar only says when the suite is kept.
   const keep = useKeepSuite(id);
-  const keepItem: TopbarMenuItem = {
-    label: keep.kept ? 'Suite kept' : 'Keep suite and its runs',
-    icon: keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />,
-    onSelect: keep.flip,
-    ...(keep.kept ? { detail: 'Release' } : {}),
-    disabled: keep.pending,
-    testId: 'keep-suite',
-  };
   // Phones: no sidebar; the title is the run switcher (tap "Run 1 of 2 · label ⌄").
   const runMenu = useMemo(
     () => (suite && narrow ? <RunMenuItems runs={runs} detailed={detailed} selected={target} onSelect={select} /> : undefined),
@@ -329,7 +331,6 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
                 ...(runStatus ? { status: runStatus } : {}),
                 ...(suiteDetails ? { suite: suiteDetails } : {}),
                 ...(runMenu ? { titleMenu: runMenu } : {}),
-                keep: keepItem,
                 backHref,
                 skipLink: false,
                 initialTab: tab,
@@ -348,7 +349,6 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
             {...(runStatus ? { status: runStatus } : {})}
             {...(suiteDetails ? { suite: suiteDetails } : {})}
             {...(runMenu ? { titleMenu: runMenu } : {})}
-            keep={keepItem}
             {...(titles.previous && titles.previous !== runTitle ? { titleFrom: titles.previous } : {})}
             backHref={backHref}
             skipLink={false}
@@ -418,6 +418,7 @@ function SuiteSidebar({
   const subject = subjectLink(suite);
   const subjectLabel = subject?.label ? `${subject.provider} · ${subject.label}` : subject?.provider;
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
+  const recordedRuns = runs.filter((run) => playableReplayId(run, detailed));
   const { highlight, place } = useSlidingHighlight(list, { selector: '[aria-current="page"]', index: selectedIndex });
   // After the current run changes (or the rail collapses), slide the one highlight to it.
   useLayoutEffect(() => {
@@ -447,9 +448,13 @@ function SuiteSidebar({
           <div className="suite-sidebar-title">
             <h2 title={suite.title}>{suite.title}</h2>
             <p className="suite-sidebar-meta">
-              <span className={`status-dot tone-${overall.toLowerCase()}`} aria-hidden="true" />
-              <span>{overall}</span>
-              <span>{formatClock(duration)}</span>
+              <span className="suite-sidebar-status">
+                <span className={`status-dot tone-${overall.toLowerCase()}`} aria-hidden="true" />
+                {overall}
+              </span>
+              <span className="suite-sidebar-duration" title="Total recording duration">
+                {formatClock(duration)}
+              </span>
               {keep.kept ? (
                 <span className="suite-kept" data-testid="suite-kept">
                   <PinIcon aria-hidden="true" />
@@ -458,7 +463,7 @@ function SuiteSidebar({
               ) : null}
             </p>
             {subject ? (
-              <p className="suite-sidebar-meta">
+              <p className="suite-sidebar-meta suite-sidebar-subject" title={subjectLabel}>
                 {isHttps(subject.url) ? (
                   <a href={subject.url} target="_blank" rel="noopener noreferrer">
                     {subjectLabel} ↗
@@ -489,7 +494,7 @@ function SuiteSidebar({
           const expired = isExpired(run, detailed);
           const tone = statusTone(run, detailed);
           const current = playable !== undefined && playable === selected;
-          // The label gets the full line; status, duration and errors sit on one muted meta line below it.
+          const colour = playable ? (recordedRuns.indexOf(run) % TILE_COLOURS) + 1 : undefined;
           const content = collapsed ? (
             <>
               <span className="run-seq">{sequenceLabel(run)}</span>
@@ -499,13 +504,15 @@ function SuiteSidebar({
             <>
               <span className="run-seq">{sequenceLabel(run)}</span>
               <span className="run-copy">
-                <span className="run-label">{run.label}</span>
+                <span className="run-label" title={run.label}>
+                  {run.label}
+                </span>
                 <span className="run-meta">
                   <span className={`status-dot tone-${tone}`} aria-hidden="true" />
                   <span className="run-status">{playable ? tone : expired ? 'Expired' : 'No recording'}</span>
-                  {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
                   {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
                 </span>
+                {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
               </span>
             </>
           );
@@ -526,6 +533,7 @@ function SuiteSidebar({
                     type="button"
                     className="suite-run-item"
                     data-replay-id={playable}
+                    style={{ '--run-colour': `var(--tile-${colour}, var(--text-tertiary))` } as CSSProperties}
                     aria-current={current ? 'page' : undefined}
                     aria-label={label}
                     tabIndex={current || (!selected && run === runs[0]) ? 0 : -1}
@@ -538,7 +546,7 @@ function SuiteSidebar({
                   </button>
                 </Hint>
               ) : (
-                <div className="suite-run-item" aria-disabled="true" aria-label={label}>
+                <div className="suite-run-item" aria-disabled="true" aria-label={label} title={label}>
                   {content}
                 </div>
               )}

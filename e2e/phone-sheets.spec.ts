@@ -45,7 +45,7 @@ test('the editor’s More on a phone is the same sheet, with the theme as a row'
   await page.goto(`${origin()}/r/demo-shop/edit`);
   await page.locator('.editor-mobile-header').getByRole('button', { name: 'More actions' }).tap();
   const sheet = page.locator('[data-slot="dropdown-menu-content"][data-sheet]');
-  await expect(sheet.getByTestId('editor-done')).toBeVisible();
+  await expect(sheet.getByTestId('editor-done')).toHaveCount(0);
   await expect(sheet.getByTestId('theme-menu-item')).toContainText('Theme');
   await expect(sheet.getByRole('menuitem', { name: /Keyboard shortcuts/ })).toHaveCount(0);
 });

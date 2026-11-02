@@ -4,15 +4,15 @@
  * Two layers decide whether a beta feature is on:
  *
  *   1. The server is the ceiling. `REPLAYS_BETA_<NAME>=true` or `{ "beta": { "<configKey>": true } }` in the config file
- *      *allows* a flag (src/server/beta.ts parses them; the variable wins). A flag the server does not allow does not
- *      exist for the page: no UI, no routes, no code loaded.
+ *      *allows* a flag (src/server/beta.ts parses them; the variable wins). A flag the server does not allow exposes none of its editing or creation UI.
+ *      Saved content can still play where its contract allows it.
  *   2. The person opts in or out under Settings › Labs (stored per browser today, src/client/settings/labs.ts; a per-user
  *      store can replace it once sign-in carries preferences). With no choice saved, `defaultOn` applies.
  *
  *   effective = allowed ∧ (userToggle ? (choice ?? defaultOn) : true)
  *
- * Every flag here is something an admin deliberately switched on for the deployment, so each defaults on and offers an
- * opt-out: a fresh browser sees exactly what the admin enabled. `userToggle: false` would make a flag a pure server
+ * Every flag requires explicit deployment permission. Its defaultOn determines whether a fresh browser also needs
+ * to opt in under Labs. `userToggle: false` would make a flag a pure server
  * capability (on whenever allowed, never listed in Labs).
  */
 
@@ -50,6 +50,17 @@ export const BETA_FLAGS = [
     applies: 'live',
   },
   {
+    id: 'cursorCustomization',
+    label: 'Cursor customization',
+    description: 'Adjust the replay cursor in the editor. Saved cursor settings play either way.',
+    env: 'REPLAYS_BETA_CURSOR_CUSTOMIZATION',
+    configKey: 'cursorCustomization',
+    token: 'cursor-customization',
+    userToggle: true,
+    defaultOn: false,
+    applies: 'live',
+  },
+  {
     id: 'malleable',
     label: 'Plugin workshop',
     // invariant: opting out loads none of src/client/malleable: no workshop, agent bridge or WebMCP tools in this browser.
@@ -66,13 +77,14 @@ export const BETA_FLAGS = [
 /** One registry entry, with its literal id. */
 export type BetaFlag = (typeof BETA_FLAGS)[number];
 export type BetaFlagId = BetaFlag['id'];
-export type BetaFlags = Record<BetaFlagId, boolean>;
+/** New capability keys are optional so older host configuration literals remain compatible. */
+export type BetaFlags = Record<Exclude<BetaFlagId, 'cursorCustomization'>, boolean> & { cursorCustomization?: boolean };
 /** A person's saved choices; a missing id means "no choice" (the flag's default applies). */
 export type BetaChoices = Partial<Record<BetaFlagId, boolean>>;
 
 export const BETA_FLAG_IDS: readonly BetaFlagId[] = BETA_FLAGS.map((flag) => flag.id);
 
-export const NO_BETA: Readonly<BetaFlags> = Object.freeze({ editor: false, malleable: false });
+export const NO_BETA: Readonly<BetaFlags> = Object.freeze({ editor: false, cursorCustomization: false, malleable: false });
 
 function flagsWhere(on: (flag: BetaFlag) => boolean): BetaFlags {
   const flags: BetaFlags = { ...NO_BETA };

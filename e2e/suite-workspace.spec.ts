@@ -152,3 +152,26 @@ test('on phones a suite row puts its run strip on the line under its meta, a sho
     expect(strip.y).toBeGreaterThanOrEqual(facts.y + facts.height);
   }
 });
+
+test('the suite thumbnail and title both open the card in grid view', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const { suite } = await threeRuns(page.request);
+  for (const target of ['thumbnail', 'title'] as const) {
+    await gotoHydrated(page, server().origin);
+    const grid = page.getByRole('button', { name: 'Grid', exact: true });
+    if ((await grid.getAttribute('aria-pressed')) !== 'true') await grid.click();
+    const card = page.locator(`[data-entry-id="suite:${suite}"]`);
+    await expect(card).toBeVisible();
+    await expect(card).toHaveAttribute('data-view', 'grid');
+    if (target === 'thumbnail') {
+      const poster = card.locator('.shuffle-window > .poster:not(.poster-outgoing)');
+      const box = await boxOf(poster);
+      const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      await expect
+        .poll(() => page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('a')?.classList.contains('row-target'), point))
+        .toBe(true);
+      await page.mouse.click(point.x, point.y);
+    } else await card.locator('.row-target').click();
+    await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/`));
+  }
+});

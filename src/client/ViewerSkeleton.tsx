@@ -1,5 +1,6 @@
 import './editor/skeleton.css';
 import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
+import { useBetaFlag } from './settings/labs.ts';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 import { PhoneEditorSkeleton } from './editor/PhoneEditorSkeleton.tsx';
 
@@ -187,6 +188,7 @@ export function EditorSkeleton({
   /** The recording's steps once its bundle is in (the phone clip's segments). */
   steps?: readonly ReplayStep[] | undefined;
 }) {
+  const { enabled: cursorCustomization } = useBetaFlag('cursorCustomization');
   const mobile = useMediaQuery(MOBILE_QUERY);
   const [stored] = useState(readHint);
   // why: from the viewer the bundle is already cached, so its real title and frame shape replace the guess.
@@ -245,9 +247,11 @@ export function EditorSkeleton({
       />
       <section className="editor-stage" aria-hidden="true">
         <PlayerSkeleton poster={poster} />
-        <aside className="editor-presentation">
-          <InspectorSkeleton />
-        </aside>
+        {cursorCustomization ? (
+          <aside className="editor-presentation">
+            <InspectorSkeleton />
+          </aside>
+        ) : null}
       </section>
       <div className="inspector-resizer" aria-hidden="true" />
       <DockSkeleton duration={meta?.duration} />

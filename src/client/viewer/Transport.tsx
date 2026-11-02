@@ -16,7 +16,7 @@ import { SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../
 import { exportCaptionScale } from '../step-caption.ts';
 import { activeStepIndex, fitViewport } from '../timeline.ts';
 
-import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
+import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { shortcutLabel } from '../shortcuts.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
@@ -26,6 +26,8 @@ import { useViewer } from './context.ts';
 import { afterMorphStart, afterPageTransition, swappingInPlace } from '../transitions/state.ts';
 import { freshPoster } from '../transitions/open-hint.ts';
 import { Scrubber } from './Scrubber.tsx';
+import { CaptionControls } from './CaptionControls.tsx';
+import { useFullscreenPopover } from '../hooks/use-fullscreen-popover.ts';
 
 export { activeStepIndex };
 
@@ -180,7 +182,7 @@ export function Transport() {
       <PlayButton />
       <TimeReadout />
       <Scrubber steps={steps} errors={errors} />
-      {steps.length > 0 && !editCaptions ? <CaptionsSwitch /> : null}
+      {steps.length > 0 && !editCaptions ? <CaptionControls /> : null}
       <PlaybackOptions />
     </div>
   );
@@ -235,21 +237,8 @@ const WIDEST_SPEED = SPEEDS.reduce((widest, speed) => (String(speed).length > St
 function PlaybackOptions() {
   const rateId = useId();
   const player = usePlayer();
-  const { steps, captions, editCaptions, captionNumbers, setCaptionNumbers } = useViewer();
   const { speed, skipInactive } = usePlayerState();
-  const [open, setOpen] = useState(false);
-  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
-  useEffect(() => {
-    // A body portal is outside the browser's fullscreen top layer and cannot be seen or clicked.
-    // Close on either transition so an open menu never keeps focus in the old portal.
-    const update = () => {
-      setOpen(false);
-      setPortalContainer(document.fullscreenElement instanceof HTMLElement ? document.fullscreenElement : undefined);
-    };
-    update();
-    document.addEventListener('fullscreenchange', update);
-    return () => document.removeEventListener('fullscreenchange', update);
-  }, []);
+  const { open, setOpen, portalContainer } = useFullscreenPopover();
   return (
     <Popover
       open={open}
@@ -341,22 +330,6 @@ function PlaybackOptions() {
           ))}
         </div>
         <SkipInactiveSwitch id={`${rateId}-skip`} />
-        {steps.length > 0 && !editCaptions && setCaptionNumbers ? (
-          <div className="playback-skip">
-            <label id={`${rateId}-numbers-label`} htmlFor={`${rateId}-numbers`}>
-              Show step numbers
-            </label>
-            <Switch
-              id={`${rateId}-numbers`}
-              nativeButton
-              render={<button type="button" />}
-              aria-labelledby={`${rateId}-numbers-label`}
-              checked={captionNumbers === true}
-              disabled={!captions}
-              onCheckedChange={setCaptionNumbers}
-            />
-          </div>
-        ) : null}
       </PopoverContent>
     </Popover>
   );
@@ -381,27 +354,6 @@ function SkipInactiveSwitch({ id }: { id: string }) {
         onCheckedChange={(checked) => player.setSkipInactive(checked)}
       />
     </div>
-  );
-}
-
-/** Step captions on the player: a quiet switch, shown only when the replay has step labels. */
-function CaptionsSwitch() {
-  const { captions, switchCaptions } = useViewer();
-  return (
-    <SwitchIconButton
-      // Pressed = accent icon on a faint 28 px accent tint (the chip), no ring; on touch the 40 px target grows
-      // around the same chip, so the row keeps desktop's rhythm.
-      className="captions-switch h-7 min-w-7 px-0 aria-pressed:ring-0 aria-pressed:bg-transparent aria-pressed:text-[var(--accent)]"
-      label={captions ? 'Hide step captions' : 'Show step captions'}
-      shortcut={shortcutLabel('switch-captions')}
-      pressed={captions}
-      onPressedChange={switchCaptions}
-      data-testid="captions-switch"
-    >
-      <span className="captions-chip" aria-hidden="true">
-        <AnimatedIcon name="captions" />
-      </span>
-    </SwitchIconButton>
   );
 }
 

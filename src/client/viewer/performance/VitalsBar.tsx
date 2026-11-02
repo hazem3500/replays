@@ -97,25 +97,47 @@ function VitalDelta({ vital, peer }: { vital: Vital; peer: VitalPeer }) {
 
 function VitalComparisons({ vital, peers }: { vital: Vital; peers: readonly VitalPeer[] }) {
   const measured = peers.filter((peer) => peer.deltas[vital.id] !== undefined);
-  if (!measured.length) return null;
+  if (!measured.length || vital.value === undefined) return null;
+  const currentValue = vital.value;
   return (
     <Popover>
       <PopoverTrigger
         className="pp-compare"
         aria-label={`Compare ${LABELS[vital.id].toLowerCase()} with ${measured.length} ${measured.length === 1 ? 'recording' : 'recordings'}`}
       >
-        Compare {measured.length}
+        {measured.length} other {measured.length === 1 ? 'recording' : 'recordings'}
       </PopoverTrigger>
       <PopoverContent className="pp-comparisons" align="start">
         <PopoverTitle>{LABELS[vital.id]} comparison</PopoverTitle>
-        <p>Selected recording compared with:</p>
-        <ul>
-          {measured.map((peer) => (
-            <li key={peer.id}>
-              <VitalDelta vital={vital} peer={peer} />
-            </li>
-          ))}
-        </ul>
+        <p>Current recording: {formatDuration(currentValue)}</p>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Recording</th>
+              <th scope="col">Value</th>
+              <th scope="col">vs current</th>
+            </tr>
+          </thead>
+          <tbody>
+            {measured.map((peer) => {
+              const difference = -(peer.deltas[vital.id] ?? 0);
+              return (
+                <tr key={peer.id}>
+                  <th scope="row" data-tile={peer.colour}>
+                    <span className="ct-swatch" aria-hidden="true" />
+                    {peer.name}
+                  </th>
+                  <td>{formatDuration(currentValue + difference)}</td>
+                  <td className="pp-delta" data-tone={deltaTone(difference)}>
+                    {Math.abs(difference) < SAME_WITHIN_MS
+                      ? 'About the same'
+                      : `${difference > 0 ? '+' : '−'}${formatDuration(Math.abs(difference))}`}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
       </PopoverContent>
     </Popover>
   );

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { viewerRegistry } from '../src/client/plugins/registry.ts';
 import type { SlotDescriptor } from '../src/client/plugins/slots.ts';
 import { contextSections } from '../src/client/viewer/context-sections.tsx';
-import { ActionsBar } from '../src/client/viewer/TopbarActions.tsx';
+import { actionMenuItems, ActionsBar } from '../src/client/viewer/TopbarActions.tsx';
 
 let root: Root;
 let host: HTMLDivElement;
@@ -65,6 +65,18 @@ describe('viewer.actions', () => {
   it('keeps plugin bar actions after the built-ins', () => {
     render(createElement(ActionsBar, { actions: { 'core:edit': text('Edit') }, plugins: text('Plugin action') }));
     expect(host.textContent).toBe('EditPlugin action');
+  });
+
+  it('retains host hiding and ordering when secondary actions move into More', () => {
+    const details = { label: 'Details', icon: text('Info'), onSelect: () => {} };
+    const download = { label: 'Download', icon: text('Download'), onSelect: () => {} };
+    viewerRegistry.configureSlot('viewer.actions', { order: ['core:download'] });
+    expect(actionMenuItems({ 'core:info': [details], 'core:download': [download] }).map((item) => item.label)).toEqual([
+      'Download',
+      'Details',
+    ]);
+    viewerRegistry.configureSlot('viewer.actions', { hide: ['core:info'] });
+    expect(actionMenuItems({ 'core:info': [details], 'core:download': [download] }).map((item) => item.label)).toEqual(['Download']);
   });
 });
 

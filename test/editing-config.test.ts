@@ -21,7 +21,7 @@ describe('host editing config', () => {
     for (const disabled of ['false', '0', 'NO', 'off']) expect(editingFromEnv({ EDITING_ENABLED: disabled })).toEqual({ enabled: false });
     expect(editingFromEnv({ EDITING_ENABLED: '  ' }, { enabled: false })).toEqual({ enabled: false });
     const settings = await loadSettings({ EDITING_ENABLED: 'true' });
-    expect(settings.beta).toEqual({ editor: false, malleable: false });
+    expect(settings.beta).toEqual({ editor: false, cursorCustomization: false, malleable: false });
   });
 
   it('fails startup on invalid shapes and non-booleans even when an environment value overrides the file', async () => {

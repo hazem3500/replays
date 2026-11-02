@@ -32,6 +32,24 @@ export function cardFor(opens: (link: HTMLAnchorElement) => boolean, clicked?: H
   );
   const card = link?.closest<HTMLElement>('.feed-item');
   if (!link || !card) return undefined;
-  const poster = card.querySelector('.stack-front > .poster') ?? card.querySelector(':scope > .poster');
+  const poster = card.querySelector(
+    '.suite-sheet > .shuffle-window > .poster:not(.poster-outgoing), .stack-front > .poster, :scope > .poster',
+  );
   return { card, link, poster: poster && onScreen(poster) ? poster : undefined };
+}
+
+/** Only the recorded image travels; duration badges and card controls stay with the library. */
+export function cardPicture(match: CardMatch | undefined) {
+  const video = match?.poster?.querySelector<HTMLVideoElement>(':scope > .poster-video[data-shown]');
+  if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && onScreen(video)) return video;
+  const image = match?.poster?.querySelector<HTMLImageElement>(':scope > img');
+  return image?.complete && image.naturalWidth > 0 && onScreen(image) ? image : undefined;
+}
+
+/** The focused comparison picture, single player, or matching loading frame, without its surrounding controls. */
+export function viewerPicture() {
+  const element = document.querySelector(
+    '.app-shell .ct-tile[data-current] .ct-picture, .app-shell .player-frame, .app-shell .sk-frame:has(.sk-poster)',
+  );
+  return element && onScreen(element) ? element : undefined;
 }

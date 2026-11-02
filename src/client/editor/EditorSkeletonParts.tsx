@@ -26,9 +26,6 @@ export function TopbarActionsSkeleton() {
           <Redo2Icon aria-hidden="true" />
         </Button>
       </div>
-      <Button variant="ghost" size="sm" className="editor-done" disabled tabIndex={-1} aria-hidden="true">
-        View replay
-      </Button>
       <Button size="sm" className="editor-export" disabled tabIndex={-1} aria-hidden="true">
         <DownloadIcon aria-hidden="true" /> Export
       </Button>

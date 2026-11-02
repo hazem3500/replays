@@ -8,13 +8,48 @@ const replay = () => `${server().origin}/r/demo-shop`;
 test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 
 async function openNumbers(page: Page) {
-  await page.getByRole('button', { name: /^Playback: / }).click();
+  await page.getByRole('button', { name: 'Caption settings', exact: true }).click();
   return page.getByRole('switch', { name: 'Show step numbers' });
 }
 
 async function enableCaptions(page: Page) {
   await page.addInitScript(() => localStorage.setItem('replays-view:standard:captions', '1'));
 }
+
+for (const width of [1280, 390]) {
+  test(`caption display settings live beside captions at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await enableCaptions(page);
+    await openReplay(page, replay());
+    await page.getByRole('button', { name: /^Playback: / }).click();
+    await expect(page.getByRole('switch', { name: 'Show step numbers' })).toHaveCount(0);
+    await expect(page.getByRole('slider', { name: 'Playback speed' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    const numbers = await openNumbers(page);
+    await expect(numbers).toBeEnabled();
+    await expect(page.getByRole('slider', { name: 'Playback speed' })).toHaveCount(0);
+    await numbers.click();
+    await expect(numbers).toHaveAttribute('aria-checked', 'true');
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('button', { name: 'Caption settings', exact: true })).toBeFocused();
+    await page.getByTestId('captions-switch').click();
+    await openNumbers(page);
+    await expect(numbers).toBeDisabled();
+  });
+}
+
+test('compared recordings share the caption display settings', async ({ page }) => {
+  await openReplay(page, `${replay()}?with=human-demo&layout=grid`);
+  await expect(page.getByTestId('compare-stage')).toBeVisible();
+  await page.getByTestId('captions-switch').click();
+  const numbers = await openNumbers(page);
+  await expect(numbers).toBeEnabled();
+  await numbers.click();
+  await expect(numbers).toHaveAttribute('aria-checked', 'true');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: /^Playback: / }).click();
+  await expect(page.getByRole('switch', { name: 'Show step numbers' })).toHaveCount(0);
+});
 
 test('captions default to unnumbered; numbering toggles, persists, and survives visibility shortcuts', async ({ page }) => {
   await enableCaptions(page);
@@ -37,8 +72,8 @@ test('captions default to unnumbered; numbering toggles, persists, and survives 
   await page.keyboard.press('Escape');
   // Base UI restores focus after its closing transition. A body press cannot
   // focus the non-focusable body while the outgoing popup still owns focus.
-  await expect(page.getByRole('dialog', { name: 'Playback', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Playback: / })).toBeFocused();
+  await expect(page.getByRole('dialog', { name: 'Caption settings', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Caption settings', exact: true })).toBeFocused();
 
   await page.keyboard.press('Shift+C');
   await expect(page.getByTestId('captions-switch')).toHaveAttribute('aria-label', 'Show step captions');

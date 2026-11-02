@@ -73,6 +73,7 @@ test.describe('agent access capability states', () => {
     await dialog.getByRole('button', { name: 'CLI & agents' }).tap();
     await expect(dialog.getByText('Host-managed sign-in · no CLI device login.')).toBeVisible();
     await expect(dialog.getByRole('textbox', { name: 'Upload command' })).toHaveValue(/--header-file headers\.json/);
+    await dialog.getByText('Advanced: agent credentials', { exact: true }).tap();
     await expect(dialog.getByRole('button', { name: 'New credential' })).toBeVisible();
   });
 
@@ -82,8 +83,11 @@ test.describe('agent access capability states', () => {
     await gotoHydrated(page, origin());
     const dialog = await openSettings(page, true);
     await dialog.getByRole('button', { name: 'CLI & agents' }).tap();
-    await expect(dialog.getByText('Open access · use only on a trusted network.')).toBeVisible();
-    await expect(dialog.getByRole('textbox', { name: 'Upload command' })).toHaveValue('replays upload replay.json');
+    await expect(dialog.getByText('App sign-in is disabled. Anyone who can reach this app can use it.')).toBeVisible();
+    await expect(dialog.getByRole('textbox', { name: 'CLI setup command' })).toHaveValue(/git clone .*pnpm install --frozen-lockfile/);
+    await expect(dialog.getByRole('textbox', { name: 'Upload command' })).toHaveValue('pnpm cli upload replay.json');
+    await expect(dialog.getByText('Credential creation isn’t enabled for this deployment.')).toBeHidden();
+    await dialog.getByText('Advanced: agent credentials', { exact: true }).tap();
     await expect(dialog.getByText('Credential creation isn’t enabled for this deployment.')).toBeVisible();
   });
 });

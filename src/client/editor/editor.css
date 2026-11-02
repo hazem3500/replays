@@ -207,7 +207,6 @@
   /* The viewer's phone rules size the player by its aspect ratio in a column; here the stage is a row that fills. */
   .editor-shell.app-shell[data-mobile] .stage-wrap { min-width: 0; flex: 1; }
   .editor-shell.app-shell[data-mobile] .player-stage { min-height: 0; flex: 1; aspect-ratio: auto; max-height: none; }
-  .editor-shell[data-mobile] .editor-done { max-width: 82px; overflow: hidden; white-space: nowrap; }
   .editor-shell[data-mobile] .editor-export svg { display: none; }
   /* No standing hint on phones (it speaks of keys); a note still shows. */
   .editor-shell[data-mobile] .editor-hint:not([data-note]) { display: none; }

@@ -75,6 +75,7 @@ import { cssVars } from '../lib/css-vars.ts';
 import { editorHint } from './hint.ts';
 import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
+import { useBetaFlag } from '../settings/labs.ts';
 import { CursorInspector } from './CursorInspector.tsx';
 import { EditorInspector } from './EditorInspector.tsx';
 import { AddMenu, BarTools } from './EditorTools.tsx';
@@ -108,7 +109,7 @@ const DOCK_SIZE: PanelSize = {
  * timeline that holds every edit (src/client/editor/Timeline.tsx). Everything is direct manipulation: drag the clip's
  * edges to trim, drag across the clip to select and C to cut, drag a cut's edges or remove it from its ×. "Remove
  * waits" first shows the waits it found on the track; Enter applies them all. Playback previews the result live (cuts
- * are skipped, it stops at the trim end). Changes save on their own (a quiet "Saved"); View replay returns to the viewer.
+ * are skipped, it stops at the trim end). Changes save on their own (a quiet "Saved"); the back button returns to the viewer.
  * Edits are a non-destructive list next to the replay (src/shared/edits.ts).
  */
 export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: LoadedEdits }) {
@@ -126,6 +127,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [suggesting, setSuggesting] = useState(false);
   const [showEmptyTracks, setShowEmptyTracks] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const { enabled: cursorCustomization } = useBetaFlag('cursorCustomization');
   const [cursorOpen, setCursorOpen] = useState(false);
   const focusCaption = useRef(false);
   const [mobileTrimOpen, setMobileTrimOpen] = useState(false);
@@ -666,7 +668,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     dispatch({ type: 'select', selection: { kind: 'range', from, to: Math.min(bounds.end, from + 1000) } });
     player.seek(from);
   };
-  const cursorInspector = (
+  const cursorInspector = cursorCustomization ? (
     <CursorInspector
       embedded={!mobile}
       settings={edits.cursor}
@@ -676,7 +678,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       }}
       onClose={finishMobileObject}
     />
-  );
+  ) : null;
   const selectionCommands = {
     onSelectRange: (from: number, to: number) => dispatch({ type: 'select', selection: { kind: 'range', from, to } }),
     onDone: mobile ? finishMobileObject : () => dispatch({ type: 'select', selection: undefined }),
@@ -776,25 +778,24 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 always
                 items={[
                   ...menuItems.filter((item) => item.testId !== 'undo'),
-                  {
-                    label: 'Cursor options',
-                    icon: <MousePointer2Icon aria-hidden="true" />,
-                    onSelect: () => {
-                      // why: the menu item leaves with the menu; closing the cursor panel returns to the More trigger.
-                      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-mobile-header .topbar-more') ?? null;
-                      dispatch({ type: 'select', selection: undefined });
-                      setMobileTrimOpen(false);
-                      setBlurPlacement(undefined);
-                      setCursorOpen(true);
-                    },
-                    testId: 'editor-cursor-options',
-                  },
-                  {
-                    label: 'View replay',
-                    icon: <ArrowLeftIcon aria-hidden="true" />,
-                    onSelect: () => void leave(replayHref(id)),
-                    testId: 'editor-done',
-                  },
+                  ...(cursorCustomization
+                    ? [
+                        {
+                          label: 'Cursor options',
+                          icon: <MousePointer2Icon aria-hidden="true" />,
+                          onSelect: () => {
+                            // why: the menu item leaves with the menu; closing the cursor panel returns to the More trigger.
+                            mobileReturnFocus.current =
+                              shell.current?.querySelector<HTMLElement>('.editor-mobile-header .topbar-more') ?? null;
+                            dispatch({ type: 'select', selection: undefined });
+                            setMobileTrimOpen(false);
+                            setBlurPlacement(undefined);
+                            setCursorOpen(true);
+                          },
+                          testId: 'editor-cursor-options',
+                        },
+                      ]
+                    : []),
                 ]}
               />
             </header>
@@ -832,18 +833,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                       <Redo2Icon aria-hidden="true" />
                     </IconButton>
                   </div>
-                  <Hint label="Back to the replay, edits applied" side="bottom" align="end">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="editor-done"
-                      aria-label="View replay"
-                      onClick={() => void leave(replayHref(id))}
-                      data-testid="editor-done"
-                    >
-                      View replay
-                    </Button>
-                  </Hint>
                   <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
                 </>
               }
@@ -868,7 +857,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
               />
               {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
             </EditorPreviewFrame>
-            {!mobile ? (
+            {!mobile && (selection || cursorCustomization) ? (
               <aside className="editor-presentation" aria-label="Inspector">
                 <EditorInspector
                   edits={edits}
@@ -1040,16 +1029,20 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         },
                         testId: 'add-point-highlight',
                       },
-                      {
-                        label: 'Cursor options',
-                        action: () => {
-                          rememberMobileFocus();
-                          setMobileTrimOpen(false);
-                          setBlurPlacement(undefined);
-                          dispatch({ type: 'select', selection: undefined });
-                          setCursorOpen(true);
-                        },
-                      },
+                      ...(cursorCustomization
+                        ? [
+                            {
+                              label: 'Cursor options',
+                              action: () => {
+                                rememberMobileFocus();
+                                setMobileTrimOpen(false);
+                                setBlurPlacement(undefined);
+                                dispatch({ type: 'select', selection: undefined });
+                                setCursorOpen(true);
+                              },
+                            },
+                          ]
+                        : []),
                       {
                         label: 'Generate captions from steps',
                         disabled: Boolean(edits.captions?.length),

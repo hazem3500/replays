@@ -4,6 +4,7 @@ import { useFeedVirtualizer } from '../hooks/use-feed-virtualizer.ts';
 import { useGridColumns } from '../hooks/use-grid-columns.ts';
 import { useScrollReveal } from '../hooks/use-scroll-reveal.ts';
 import type { FeedEntry, FeedView } from './Feed.tsx';
+import type { FeedCalendar } from './feed.ts';
 import { entryKey, type FeedGroup, type FeedRow, feedLayout, groupSegments } from './feed-layout.ts';
 import { EASE, ENTER_KEYFRAMES, ENTER_MS, reducedMotion, staggerDelay } from './list-motion.ts';
 
@@ -76,17 +77,19 @@ export function FeedList({
   entries,
   view,
   grouped,
+  calendar,
   renderEntry,
 }: {
   entries: readonly FeedEntry[];
   view: FeedView;
   grouped: boolean;
+  calendar: FeedCalendar;
   renderEntry: RenderEntry;
 }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
   const columns = useGridColumns(root, view === 'grid');
-  const { rows, groups } = feedLayout(entries, { grouped, columns });
+  const { rows, groups } = feedLayout(entries, { grouped, columns, calendar });
   const specs = rows.map((row) => ({
     key: row.key,
     estimate: row.kind === 'head' ? ESTIMATE.head : ESTIMATE[view],

@@ -30,6 +30,7 @@ export interface LabsChoiceStore {
 
 const STORAGE: Record<BetaFlagId, { key: string; on: string; off: string }> = {
   editor: { key: 'replays-labs-editor', on: 'on', off: 'off' },
+  cursorCustomization: { key: 'replays-labs-cursor-customization', on: 'on', off: 'off' },
   malleable: { key: 'replays-labs-malleable', on: 'on', off: 'off' },
 };
 
@@ -107,7 +108,7 @@ export function betaAllowedFlags(): BetaFlags {
 }
 
 export function betaAllowed(id: BetaFlagId) {
-  return betaAllowedFlags()[id];
+  return Boolean(betaAllowedFlags()[id]);
 }
 
 /** This person's saved choice, or undefined (the default applies). */

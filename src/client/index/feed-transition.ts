@@ -14,7 +14,7 @@ import { ENTER_KEYFRAMES, ENTER_MS, EASE, MORPH_STAGGER_MAX_MS, MORPH_STAGGER_MS
  * - the rest of an item's text (`aside-<id>`, `ext-<id>`, the thumbnail's `badge-<id>`; .feed-aside) moves like
  *   the title, and day headings
  *   (`day-<label>`, .feed-day) glide to their new place too;
- * - a suite's rear sheets (`back1-<id>`, `back2-<id>`) pair across layouts and follow the front by 20 / 40 ms;
+ * - a suite's rear sheets (`back1-<id>`, `back2-<id>`) pair across layouts and move together with the front;
  * - items that arrive are one layer each (`card-<id>`): they fade in and rise 8 px, 25 ms apart (at most 150 ms);
  * - items that leave fade out (120 ms, no slide);
  * - the header is its own live layer (feed.css), so it never fades; everything else crossfades.
@@ -163,11 +163,9 @@ function staggerLayers(staying: readonly string[], arriving: readonly string[], 
     for (const [index, id] of staying.entries()) {
       const delay = staggerDelay(index, MORPH_STAGGER_MS, MORPH_STAGGER_MAX_MS);
       for (const part of PART_NAMES) {
-        const following = part === 'back1' ? 20 : part === 'back2' ? 40 : 0;
-        const partDelay = delay + following;
-        if (partDelay === 0) continue;
+        if (delay === 0) continue;
         const selectors = ['group', 'old', 'new'].map((pseudo) => `::view-transition-${pseudo}(${itemLayerName(part, id)})`);
-        rules.push(`${selectors.join(', ')} { animation-delay: ${partDelay}ms; }`);
+        rules.push(`${selectors.join(', ')} { animation-delay: ${delay}ms; }`);
       }
     }
   if (rules.length === 0) return undefined;

@@ -2,7 +2,7 @@ import { usePluginShortcuts } from './hooks/use-plugin-shortcuts.ts';
 import { useHasKeyboard } from './hooks/use-has-keyboard.ts';
 
 import { usePluginEvents } from './hooks/use-plugin-events.ts';
-import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PinIcon, PinOffIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
+import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -40,8 +40,8 @@ import { type Playback, PlayerContext, ReplayController, SPEEDS, usePlayer, useP
 import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
-import { DownloadVideoButton, usePhoneDownload } from './viewer/DownloadVideo.tsx';
-import { copyLinkItems, CopyLinkButton, EditButton, ActionsBar } from './viewer/TopbarActions.tsx';
+import { useDownloadMenu } from './viewer/DownloadVideo.tsx';
+import { copyLinkItems, EditButton, ActionsBar } from './viewer/TopbarActions.tsx';
 // The caption's look is shared with exported videos (render page); the viewer must load it itself.
 import './step-caption.css';
 import { Inspector, type InspectorPeer, type MobilePanel } from './viewer/Inspector.tsx';
@@ -58,7 +58,7 @@ import { pageViews } from './views/catalog.ts';
 import { resolvePageView } from './views/page-view.ts';
 import { cycleView, switcherViews, viewDefaults } from './views/resolve.ts';
 import { viewSettingKey } from './views/settings.ts';
-import { type ViewChoice, ViewMenuItems } from './views/ViewSwitcher.tsx';
+import { ResetViewItem, type ViewChoice, ViewMenuItems } from './views/ViewSwitcher.tsx';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the viewer's layout tokens and seams load with the lazy viewer chunk.
 import './viewer/viewer-layout.css';
 import { activeStepIndex, FullscreenButton, PlayerStage, Transport } from './viewer/Transport.tsx';
@@ -75,7 +75,7 @@ import {
 import { SourceChip, topbarSource } from './viewer/SourceChip.tsx';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
-import { useKeep } from './viewer/keep.ts';
+import { DesktopHeader } from './viewer/DesktopHeader.tsx';
 import { setPageUrl } from './routing/navigate.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
@@ -100,7 +100,6 @@ export function Viewer({
   initialTab = 'console',
   onTabChange,
   menu,
-  keep: pageKeep,
   titleMenu,
   titleFrom,
   backHref,
@@ -143,8 +142,6 @@ export function Viewer({
   onTabChange?: (tab: InspectorTab) => void;
   /** Extra items for the topbar's "More" menu. */
   menu?: ReactNode;
-  /** The page's own Keep (a suite's covers every run): it replaces the replay's and, like it, closes the More menu. */
-  keep?: TopbarMenuItem | undefined;
   /** Phones: the title opens this menu (the suite workspace's run switcher). */
   titleMenu?: ReactNode;
   /** The title this page replaces (the previous suite run's): the top bar's title morphs from it. */
@@ -175,7 +172,8 @@ export function Viewer({
   const errors = useMemo(() => collectErrors(bundle), [bundle]);
   const profile = useMemo(() => replayProfile(bundle), [bundle]);
   // why: the page's view (`?view=`, the suite's or replay's profile, the number of recordings) sets how it opens and lays out.
-  const page = usePageView({ replay: bundle, suiteProfile, recordings: comparing?.length ?? 1 });
+  const comparisonContext = Boolean(stage && (comparing?.length ?? 0) > 1);
+  const page = usePageView({ replay: bundle, suiteProfile, recordings: comparing?.length ?? 1, comparison: comparisonContext });
   const defaults = viewDefaults(page);
   const opened = useMemo(() => {
     if (sharedPlayer) return { controller: sharedPlayer, step: undefined, resume: false, tab: undefined };
@@ -425,23 +423,6 @@ export function Viewer({
     switchCaptions,
   ]);
 
-  // Keep (no expiry): a "More" item on every screen; uploads only (committed samples never expire).
-  const keep = useKeep(bundle.meta.id);
-  const replayKeep = useMemo<TopbarMenuItem | undefined>(
-    () =>
-      keep.available
-        ? {
-            label: keep.kept ? 'Kept' : 'Keep',
-            icon: keep.kept ? <PinOffIcon aria-hidden="true" /> : <PinIcon aria-hidden="true" />,
-            onSelect: keep.flip,
-            ...(keep.kept ? { detail: 'Release' } : {}),
-            disabled: keep.pending,
-            testId: 'keep-replay',
-          }
-        : undefined,
-    [keep.available, keep.kept, keep.pending, keep.flip],
-  );
-  const keepItem = pageKeep ?? replayKeep;
   // Client plugins (src/client/plugins/): one context per plugin for this replay; their actions and panel entries are
   // More-menu items (bar actions are header buttons on desktop), their settings close the menu, open panels draw in a drawer.
   const pluginContexts = usePluginContexts(bundle, player);
@@ -479,12 +460,11 @@ export function Viewer({
               onSelect: actions.openShortcuts,
               shortcut: shortcutLabel('shortcuts'),
               ariaKeyshortcuts: 'Shift+?',
+              section: 'after-settings' as const,
             },
           ]),
-      // why: keeping is rare and lifts expiry for good, so it comes after the everyday items, never first.
-      ...(keepItem ? [keepItem] : []),
     ],
-    [actions.openShortcuts, hasKeyboard, keepItem, pluginMenu.items, sharedPlayer],
+    [actions.openShortcuts, hasKeyboard, pluginMenu.items, sharedPlayer],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -539,7 +519,7 @@ export function Viewer({
   const views = switcherViews(pageViews());
   const viewChoice: ViewChoice = { views, current: page.view.id, onSelect: page.select, onReset: layout.reset };
   useWindowKeydown((event) => {
-    if (event.defaultPrevented || shortcutsOpen) return;
+    if (event.defaultPrevented || shortcutsOpen || comparisonContext) return;
     const action = shortcutFor(event, event.target instanceof HTMLElement ? event.target : null);
     if (action !== 'next-view' && action !== 'previous-view') return;
     event.preventDefault();
@@ -633,12 +613,9 @@ export function Viewer({
           menuItems={headerMenuItems}
           pluginActions={pluginMenu.bar}
           menuFooter={pluginMenu.settings}
-          menu={
-            <>
-              {menu}
-              <ActionsBar actions={{ 'core:view': <ViewMenuItems {...viewChoice} /> }} />
-            </>
-          }
+          menu={menu}
+          menuSettings={comparisonContext ? null : <ViewMenuItems {...viewChoice} showReset={false} />}
+          menuTail={<ResetViewItem onReset={layout.reset} />}
           {...(titleMenu ? { titleMenu } : {})}
           {...(titleFrom ? { titleFrom } : {})}
           {...(backHref ? { backHref } : {})}
@@ -804,6 +781,8 @@ const ViewerHeader = memo(function ViewerHeader({
   menu,
   menuItems,
   menuFooter,
+  menuSettings,
+  menuTail,
   pluginActions,
   backHref,
   titleMenu,
@@ -828,6 +807,8 @@ const ViewerHeader = memo(function ViewerHeader({
   suite?: SuiteDetails;
   compact: boolean;
   menu?: ReactNode;
+  menuSettings?: ReactNode;
+  menuTail?: ReactNode;
   menuItems: TopbarMenuItem[];
   backHref?: string;
 }) {
@@ -850,30 +831,26 @@ const ViewerHeader = memo(function ViewerHeader({
         menu={menu}
         menuItems={menuItems}
         menuFooter={menuFooter}
+        menuSettings={menuSettings}
+        menuTail={menuTail}
         hasEdits={hasEdits}
         leadingActions={leadingActions}
         {...shared}
       />
     );
   return (
-    <Topbar
+    <DesktopHeader
       {...shared}
+      bundle={bundle}
+      suite={suite}
       menu={menu}
       menuItems={menuItems}
       menuFooter={menuFooter}
-      alwaysMenu
-      actions={
-        <ActionsBar
-          actions={{
-            'core:compare': leadingActions,
-            'core:edit': editingEnabled() ? <EditButton id={bundle.meta.id} hasEdits={hasEdits} /> : null,
-            'core:info': <ReplayInfoButton bundle={bundle} suite={suite} />,
-            'core:link': <CopyLinkButton suiteHref={suite?.href} />,
-            'core:download': <DownloadVideoButton meta={bundle.meta} />,
-          }}
-          plugins={pluginActions}
-        />
-      }
+      menuSettings={menuSettings}
+      menuTail={menuTail}
+      leadingActions={leadingActions}
+      pluginActions={pluginActions}
+      hasEdits={hasEdits}
     />
   );
 });
@@ -894,10 +871,12 @@ function PhoneHeader({
   hasEdits?: boolean;
   leadingActions: ReactNode;
   suite: SuiteDetails | undefined;
-  /** The viewer's own items (Compare, then Keep), after details and links and before the downloads. */
+  /** Recording actions, with comparison first and keyboard utilities after settings. */
   menuItems: TopbarMenuItem[];
   menu: ReactNode;
   menuFooter: ReactNode;
+  menuSettings?: ReactNode;
+  menuTail?: ReactNode;
   title: string;
   titleId: string;
   prefix?: string;
@@ -906,7 +885,7 @@ function PhoneHeader({
   titleMenu?: ReactNode;
   titleFrom?: string;
 }) {
-  const download = usePhoneDownload(bundle.meta);
+  const download = useDownloadMenu(bundle.meta);
   const player = usePlayer();
   const { steps } = useViewer();
   const [details, setDetails] = useState(false);
@@ -921,7 +900,14 @@ function PhoneHeader({
       <Topbar
         {...props}
         compact
-        menuItems={[detailsItem, ...copyLinkItems(player, steps, suite?.href), ...menuItems, ...download.items]}
+        appearanceInMenu
+        menuItems={[
+          ...menuItems.filter((item) => item.testId === 'compare-with'),
+          detailsItem,
+          ...copyLinkItems(player, steps, suite?.href),
+          ...menuItems.filter((item) => item.testId !== 'compare-with'),
+          ...download.items,
+        ]}
         actions={
           <>
             <ActionsBar

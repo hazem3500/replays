@@ -1,7 +1,8 @@
-import { ArrowUpRightIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react';
+import { XIcon } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
 import type { ReplayBundle } from '../../shared/replay.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { useClockState } from '../hooks/use-clock.ts';
 import { useTilePlayer } from '../hooks/use-tile-player.ts';
@@ -159,7 +160,7 @@ function TileActions({
             data-testid="tile-spotlight"
             onClick={() => commands.onSpotlight(tile.id)}
           >
-            {spotlit ? <Minimize2Icon aria-hidden="true" /> : <Maximize2Icon aria-hidden="true" />}
+            <AnimatedIcon name={spotlit ? 'minimize' : 'maximize'} />
           </button>
         </Hint>
       )}
@@ -175,7 +176,7 @@ function TileActions({
             window.open(commands.href(tile.id, here()), '_blank', 'noopener');
           }}
         >
-          <ArrowUpRightIcon aria-hidden="true" />
+          <AnimatedIcon name="arrow-up-right" />
         </a>
       </Hint>
       {commands.onRemove && tile.removable ? (

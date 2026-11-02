@@ -6,56 +6,70 @@ import type { ReplaySummary } from '../../shared/replay.ts';
  */
 
 const DAY = 24 * 3600_000;
+export type FeedCalendar = 'local' | 'utc';
 
-function startOfDay(time: number) {
+function startOfDay(time: number, calendar: FeedCalendar) {
   const date = new Date(time);
-  date.setHours(0, 0, 0, 0);
+  if (calendar === 'utc') date.setUTCHours(0, 0, 0, 0);
+  else date.setHours(0, 0, 0, 0);
   return date.getTime();
 }
 
-/** Monday 00:00 of the week containing `time`, local time. */
-function startOfWeek(time: number) {
-  const date = new Date(startOfDay(time));
-  const weekday = (date.getDay() + 6) % 7; // Monday = 0
-  date.setDate(date.getDate() - weekday);
+/** Monday 00:00 of the week containing `time`, in the selected calendar. */
+function startOfWeek(time: number, calendar: FeedCalendar) {
+  const date = new Date(startOfDay(time, calendar));
+  const weekday = ((calendar === 'utc' ? date.getUTCDay() : date.getDay()) + 6) % 7;
+  if (calendar === 'utc') date.setUTCDate(date.getUTCDate() - weekday);
+  else date.setDate(date.getDate() - weekday);
   return date.getTime();
 }
 
-const MONTH = new Intl.DateTimeFormat('en', { month: 'long' });
-const MONTH_YEAR = new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric' });
+function calendarFormats(calendar: FeedCalendar) {
+  const zone = calendar === 'utc' ? { timeZone: 'UTC' } : {};
+  const locale = calendar === 'utc' ? 'en' : undefined;
+  const clock = { hour: 'numeric', minute: '2-digit', ...zone } as const;
+  return {
+    month: new Intl.DateTimeFormat('en', { month: 'long', ...zone }),
+    monthYear: new Intl.DateTimeFormat('en', { month: 'long', year: 'numeric', ...zone }),
+    time: new Intl.DateTimeFormat(locale, clock),
+    date: new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric', ...clock }),
+    dateYear: new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric', ...clock }),
+  };
+}
+const FORMATS = { local: calendarFormats('local'), utc: calendarFormats('utc') };
+const yearOf = (time: number, calendar: FeedCalendar) =>
+  calendar === 'utc' ? new Date(time).getUTCFullYear() : new Date(time).getFullYear();
 
 /** "Today", "Yesterday", "Earlier this week", then "October" (with the year when it is not this year). */
-export function dayLabel(iso: string, now = Date.now()) {
+export function dayLabel(iso: string, now = Date.now(), calendar: FeedCalendar = 'local') {
   const time = Date.parse(iso);
   if (!Number.isFinite(time)) return 'Undated';
-  const today = startOfDay(now);
+  const today = startOfDay(now, calendar);
   if (time >= today) return 'Today';
   if (time >= today - DAY) return 'Yesterday';
-  if (time >= startOfWeek(now)) return 'Earlier this week';
-  const date = new Date(time);
-  return date.getFullYear() === new Date(now).getFullYear() ? MONTH.format(date) : MONTH_YEAR.format(date);
+  if (time >= startOfWeek(now, calendar)) return 'Earlier this week';
+  const sameYear = yearOf(time, calendar) === yearOf(now, calendar);
+  const formats = FORMATS[calendar];
+  const formatter = sameYear ? formats.month : formats.monthYear;
+  return formatter.format(time);
 }
-
-const TIME_OF_DAY = new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' });
-const DATE_TIME = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-const DATE_TIME_YEAR = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-});
 
 /**
  * A row's time under a day heading, without repeating it: the time of day under Today and Yesterday ("4:55 PM"),
- * the date and time under older headings ("Oct 3, 4:55 PM"; with the year when it isn't this one). Locale-aware.
+ * the date and time under older headings ("Oct 3, 4:55 PM"; with the year when it isn't this one).
+ * UTC English is stable through hydration; local formatting follows once the browser has taken over.
  */
-export function feedTime(iso: string, now = Date.now()) {
+export function feedTime(iso: string, now = Date.now(), calendar: FeedCalendar = 'local') {
   const time = Date.parse(iso);
   if (!Number.isFinite(time)) return '';
-  const label = dayLabel(iso, now);
-  if (label === 'Today' || label === 'Yesterday') return TIME_OF_DAY.format(time);
-  return (new Date(time).getFullYear() === new Date(now).getFullYear() ? DATE_TIME : DATE_TIME_YEAR).format(time);
+  const label = dayLabel(iso, now, calendar);
+  const recent = label === 'Today' || label === 'Yesterday';
+  const sameYear = yearOf(time, calendar) === yearOf(now, calendar);
+  const formats = FORMATS[calendar];
+  let formatter = sameYear ? formats.date : formats.dateYear;
+  if (recent) formatter = formats.time;
+  // why: Node ICU and Chromium can use different non-breaking spaces for the same English time.
+  return formatter.format(time).replace(/[\u00a0\u202f]/g, ' ');
 }
 
 export interface FeedGroup<T> {
@@ -64,10 +78,15 @@ export interface FeedGroup<T> {
 }
 
 /** Consecutive items with the same day label, in the given order (works for newest- and oldest-first). */
-export function groupByDay<T>(items: readonly T[], at: (item: T) => string, now = Date.now()): Array<FeedGroup<T>> {
+export function groupByDay<T>(
+  items: readonly T[],
+  at: (item: T) => string,
+  now = Date.now(),
+  calendar: FeedCalendar = 'local',
+): Array<FeedGroup<T>> {
   const groups: Array<FeedGroup<T>> = [];
   for (const item of items) {
-    const label = dayLabel(at(item), now);
+    const label = dayLabel(at(item), now, calendar);
     const last = groups.at(-1);
     if (last?.label === label) last.items.push(item);
     else groups.push({ label, items: [item] });

@@ -81,7 +81,6 @@
     "@tanstack/react-virtual": "3.14.23",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
-    "calligraph": "1.4.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "effect": "4.0.6",
@@ -91,13 +90,13 @@
     "playwright-core": "1.64.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "rou3": "1.0.0",
     "rrweb": "2.1.7",
     "sonner": "2.0.8",
+    "srvx": "1.0.7",
     "tailwind-merge": "3.7.0",
     "ws": "8.22.0",
     "xstate": "5.33.3",
-    "rou3": "1.0.0",
-    "srvx": "1.0.7",
     "zod": "4.6.7"
   },
   "devDependencies": {

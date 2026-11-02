@@ -84,7 +84,7 @@ export function publicConfig(
     views?: readonly ViewInfo[];
     /** Plugin index filters (`api.indexFilter`): which `x-*` params `GET /api/replays` understands. */
     indexFilters?: Array<{ plugin: string; id: string; param: string }>;
-    beta?: { editor: boolean; malleable?: boolean };
+    beta?: { editor: boolean; cursorCustomization?: boolean; malleable?: boolean };
     comments?: boolean;
     editing?: { enabled: boolean };
     versions?: HostVersions;

@@ -67,6 +67,7 @@ export function StateView({
   details,
   layout = 'page',
   testId,
+  illustration,
   children,
 }: {
   kind: StateKind;
@@ -78,6 +79,8 @@ export function StateView({
   details?: string | undefined;
   layout?: 'page' | 'panel';
   testId?: string | undefined;
+  /** A restrained glyph or custom illustration in place of the default artwork. */
+  illustration?: ReactNode;
   children?: ReactNode;
 }) {
   // why: a page that failed replaces what was asked for, so it is announced; empty and not-captured notes are not.
@@ -85,7 +88,7 @@ export function StateView({
   const { primary: action, secondary } = actions ?? {};
   return (
     <section className="state-view" data-kind={kind} data-layout={layout} role={alert ? 'alert' : undefined} data-testid={testId}>
-      <StateArt kind={kind} />
+      {illustration ?? <StateArt kind={kind} />}
       <div className="state-view-text">
         {layout === 'page' ? <h1 className="state-view-title">{title}</h1> : <h2 className="state-view-title">{title}</h2>}
         {cause ? <p className="state-view-cause">{cause}</p> : null}

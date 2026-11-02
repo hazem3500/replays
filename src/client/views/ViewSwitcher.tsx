@@ -1,4 +1,4 @@
-import { ChevronDownIcon, RotateCcwIcon } from 'lucide-react';
+import { ChevronDownIcon, ChevronLeftIcon, RotateCcwIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { buttonVariants } from '@/components/ui/button.tsx';
@@ -11,17 +11,20 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 import { cn } from '@/lib/utils.ts';
 
 import type { ViewInfo } from '../../shared/views.ts';
+import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 
 const STRINGS = {
   group: 'View',
   trigger: (label: string) => `View: ${label}`,
-  reset: 'Reset this view',
-  resetDetail: 'Forget its panel sizes and tab',
+  reset: 'Reset view',
 };
 
 export interface ViewChoice {
@@ -32,7 +35,7 @@ export interface ViewChoice {
   onReset: () => void;
 }
 
-function ViewItems({ views, current, onSelect, onReset }: ViewChoice) {
+function ViewItems({ views, current, onSelect, onReset, showReset = true }: ViewChoice & { showReset?: boolean }) {
   return (
     <>
       <DropdownMenuGroup>
@@ -45,15 +48,23 @@ function ViewItems({ views, current, onSelect, onReset }: ViewChoice) {
           ))}
         </DropdownMenuRadioGroup>
       </DropdownMenuGroup>
-      <DropdownMenuSeparator />
-      <DropdownMenuItem onClick={onReset} data-testid="view-reset">
-        <RotateCcwIcon aria-hidden="true" />
-        <span className="flex flex-col">
-          {STRINGS.reset}
-          <span className="text-[var(--text-tertiary)]">{STRINGS.resetDetail}</span>
-        </span>
-      </DropdownMenuItem>
+      {showReset ? (
+        <>
+          <DropdownMenuSeparator />
+          <ResetViewItem onReset={onReset} />
+        </>
+      ) : null}
     </>
+  );
+}
+
+/** Comparison keeps its context and resets only the remembered panel arrangement. */
+export function ResetViewItem({ onReset }: { onReset: () => void }) {
+  return (
+    <DropdownMenuItem onClick={onReset} data-testid="view-reset">
+      <RotateCcwIcon aria-hidden="true" />
+      {STRINGS.reset}
+    </DropdownMenuItem>
   );
 }
 
@@ -95,7 +106,31 @@ export function ViewSwitcher(choice: ViewChoice) {
   );
 }
 
-/** View choices inside the top bar's More menu, keeping the bar's room for the title. */
-export function ViewMenuItems(choice: ViewChoice) {
-  return <ViewItems {...choice} />;
+/** View choices are one secondary row in More, with a back action in the phone sheet. */
+export function ViewMenuItems({ showReset = true, ...choice }: ViewChoice & { showReset?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const phone = useMediaQuery(MOBILE_QUERY);
+  const label = choice.views.find((view) => view.id === choice.current)?.label ?? choice.current;
+  return (
+    <DropdownMenuSub open={open} onOpenChange={setOpen}>
+      <DropdownMenuSubTrigger aria-label={STRINGS.trigger(label)} data-testid="view-submenu-trigger">
+        {STRINGS.group}
+        <span className="ml-auto text-[var(--text-tertiary)]" aria-hidden="true">
+          {label}
+        </span>
+      </DropdownMenuSubTrigger>
+      <DropdownMenuSubContent className="min-w-48" sideOffset={4} data-testid="view-submenu">
+        {phone ? (
+          <>
+            <DropdownMenuItem closeOnClick={false} onClick={() => setOpen(false)}>
+              <ChevronLeftIcon aria-hidden="true" />
+              Back to actions
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+          </>
+        ) : null}
+        <ViewItems {...choice} showReset={showReset} />
+      </DropdownMenuSubContent>
+    </DropdownMenuSub>
+  );
 }

@@ -152,6 +152,7 @@ const getApiConfigAnswer = {
     auth: 'none',
     beta: {
       editor: false,
+      cursorCustomization: false,
       malleable: false,
     },
     comments: false,

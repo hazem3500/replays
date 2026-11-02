@@ -12,7 +12,7 @@ import {
   UploadIcon,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { type ReactNode, useRef } from 'react';
+import { type ReactNode, type RefObject, useRef } from 'react';
 
 import { CopyButton } from '@/components/copy-button.tsx';
 import { Hint } from '@/components/icon-button.tsx';
@@ -114,6 +114,7 @@ export function ReplayInfoButton({
   title,
   open,
   onOpenChange,
+  anchor,
 }: {
   bundle: ReplayBundle;
   suite?: SuiteDetails | undefined;
@@ -123,6 +124,8 @@ export function ReplayInfoButton({
   /** Phones: the sheet opens from the More menu, so it has no trigger of its own. */
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  /** Desktop More opens the panel beside its own trigger. */
+  anchor?: RefObject<HTMLElement | null>;
 }) {
   const { notify } = useViewer();
   const { meta } = bundle;
@@ -255,40 +258,45 @@ export function ReplayInfoButton({
   }
   return (
     <Popover
+      {...(open === undefined ? {} : { open })}
       onOpenChange={(opened) => {
+        onOpenChange?.(opened);
         // Closing hands the keyboard back to ⓘ (keyboard users continue from there). Opened with a pointer, that is not
         // shown as a ring (focusVisible: false); opened from the keyboard, it is.
         if (opened || !openedByPointer.current) return;
         requestAnimationFrame(() => trigger.current?.focus({ focusVisible: false } as FocusOptions));
       }}
     >
-      <Hint label="Replay details" side="bottom" align="end">
-        <PopoverTrigger
-          render={
-            <Button
-              ref={trigger}
-              onPointerDown={() => {
-                openedByPointer.current = true;
-              }}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' || event.key === ' ') openedByPointer.current = false;
-              }}
-              variant="ghost"
-              size="icon"
-              aria-label="Replay details"
-              className="topbar-info text-[var(--text-secondary)] hover:text-foreground data-[popup-open]:text-foreground [&_svg:not([class*=size-])]:size-4"
-            />
-          }
-        >
-          <AnimatedIcon name="info" />
-        </PopoverTrigger>
-      </Hint>
+      {open === undefined ? (
+        <Hint label="Replay details" side="bottom" align="end">
+          <PopoverTrigger
+            render={
+              <Button
+                ref={trigger}
+                onPointerDown={() => {
+                  openedByPointer.current = true;
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') openedByPointer.current = false;
+                }}
+                variant="ghost"
+                size="icon"
+                aria-label="Replay details"
+                className="topbar-info text-[var(--text-secondary)] hover:text-foreground data-[popup-open]:text-foreground [&_svg:not([class*=size-])]:size-4"
+              />
+            }
+          >
+            <AnimatedIcon name="info" />
+          </PopoverTrigger>
+        </Hint>
+      ) : null}
       <PopoverContent
+        {...(anchor ? { anchor } : {})}
         align="end"
         // Short screens (phone landscape): never taller than the space below the bar; the details scroll.
         className="replay-info max-h-(--available-height) w-[min(360px,92vw)] gap-0 overflow-y-auto overscroll-contain p-0"
         data-testid="replay-info"
-        finalFocus={() => !openedByPointer.current}
+        finalFocus={() => anchor?.current ?? !openedByPointer.current}
       >
         <PopoverTitle className="visually-hidden">Replay details</PopoverTitle>
         {details}

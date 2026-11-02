@@ -45,7 +45,7 @@ async function namesLiveLayers() {
   await Promise.resolve();
 }
 
-async function trailsRearLayers() {
+async function synchronizesRearLayers() {
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
   vi.spyOn(performance, 'now').mockReturnValue(20_000);
   document.body.innerHTML = `
@@ -80,12 +80,13 @@ async function trailsRearLayers() {
   );
   expect(before).toEqual(['back1-suite_3afirst', 'back2-suite_3afirst', 'back1-suite_3asecond', 'back2-suite_3asecond']);
   expect(after).toEqual(before);
-  const stagger = [...document.head.querySelectorAll('style')].find((style) => style.textContent?.includes('back1-suite_3afirst'));
+  const stagger = [...document.head.querySelectorAll('style')].find((style) => style.textContent?.includes('back1-suite_3asecond'));
+  expect(stagger?.textContent).not.toContain('back1-suite_3afirst');
   expect(stagger?.textContent).toContain(
-    '::view-transition-group(back1-suite_3afirst), ::view-transition-old(back1-suite_3afirst), ::view-transition-new(back1-suite_3afirst) { animation-delay: 20ms; }',
+    '::view-transition-group(card-suite_3asecond), ::view-transition-old(card-suite_3asecond), ::view-transition-new(card-suite_3asecond) { animation-delay: 8ms; }',
   );
   expect(stagger?.textContent).toContain(
-    '::view-transition-group(back2-suite_3asecond), ::view-transition-old(back2-suite_3asecond), ::view-transition-new(back2-suite_3asecond) { animation-delay: 48ms; }',
+    '::view-transition-group(back2-suite_3asecond), ::view-transition-old(back2-suite_3asecond), ::view-transition-new(back2-suite_3asecond) { animation-delay: 8ms; }',
   );
   await Promise.resolve();
   expect(stagger?.isConnected).toBe(false);
@@ -95,5 +96,5 @@ async function trailsRearLayers() {
 describe('Feed transitions', () => {
   afterEach(tearDown);
   it('names live suite layers and nested columns while an outgoing shuffle clone is present', namesLiveLayers);
-  it('pairs rear grid sheets with list sheets and trails each item by a small layer delay', trailsRearLayers);
+  it('moves paired rear sheets with their card when switching list and grid', synchronizesRearLayers);
 });

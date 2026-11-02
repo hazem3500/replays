@@ -25,7 +25,7 @@
 @media (min-width: 841px) and (min-height: 561px) {
   .workspace[data-rail-collapsed] { grid-template-columns: minmax(0, 1fr) 0 0; }
   .workspace[data-rail-collapsed] > .timeline-panel { visibility: hidden; }
-  .workspace[data-rail-collapsed] > .rail-split { position: absolute; top: 0; right: 0; bottom: 0; width: var(--splitter-hit); }
+  .workspace[data-rail-collapsed] > .rail-split { --splitter-line: transparent; position: absolute; top: 0; right: 0; bottom: 0; width: var(--splitter-hit); }
   .workspace[data-rail-collapsed] > .rail-split::before { inset: 0; }
   /* A folded rail leaves a tab on the player's right edge. */
   .rail-edge-tab { position: absolute; z-index: 4; top: 12px; right: 0; }

@@ -1,0 +1,26 @@
+/* why: one picture morphs between its real rectangles while the opaque page crossfades beneath it. */
+html[data-navigated] .skeleton-shell,
+html[data-navigated] .skeleton-suite { animation: none; }
+html[data-page-hero]::view-transition-group(vt-page-hero) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--vt-spring);
+  overflow: hidden;
+  border-radius: 8px;
+}
+html[data-page-hero="to-index"]::view-transition-group(vt-page-hero) { animation-duration: 380ms; }
+html[data-page-hero]::view-transition-image-pair(vt-page-hero) { isolation: isolate; }
+html[data-page-hero]::view-transition-old(vt-page-hero),
+html[data-page-hero]::view-transition-new(vt-page-hero) {
+  height: 100%;
+  width: 100%;
+  object-fit: fill;
+  mix-blend-mode: normal;
+}
+html[data-page-hero]::view-transition-old(vt-page-hero) { animation: none; }
+html[data-page-hero]::view-transition-new(vt-page-hero) { animation: page-picture-in 280ms ease-out both; }
+@keyframes page-picture-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-page-hero]::view-transition-group(vt-page-hero),
+  html[data-page-hero]::view-transition-old(vt-page-hero),
+  html[data-page-hero]::view-transition-new(vt-page-hero) { animation-duration: 1ms; }
+}

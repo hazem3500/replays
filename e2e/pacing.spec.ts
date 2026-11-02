@@ -36,7 +36,7 @@ test('held captions retain their label while the number follows legacy wait and 
   });
   await openReplay(page, `${origin()}/r/demo-shop`);
   await page.getByTestId('captions-switch').click();
-  await page.getByRole('button', { name: /^Playback: / }).click();
+  await page.getByRole('button', { name: 'Caption settings', exact: true }).click();
   await page.getByRole('switch', { name: 'Show step numbers' }).click();
   await page.keyboard.press('Escape');
   for (const [index, label] of [
