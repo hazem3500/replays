@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { openReplay, origin } from './support.ts';
+import { boxOf, openReplay, origin } from './support.ts';
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -12,8 +12,8 @@ test('dragging Steps closed and reopening restores its saved width', async ({ pa
   const seam = page.getByRole('separator', { name: 'Resize steps panel' });
   await seam.press('End');
   await expect(seam).toHaveAttribute('aria-valuenow', '480');
-  const before = (await rail.boundingBox())!.width;
-  const handle = (await seam.boundingBox())!;
+  const before = (await boxOf(rail)).width;
+  const handle = await boxOf(seam);
   await page.mouse.move(handle.x, handle.y + handle.height / 2);
   await page.mouse.down();
   await page.mouse.move(1275, handle.y + handle.height / 2, { steps: 12 });
@@ -21,10 +21,10 @@ test('dragging Steps closed and reopening restores its saved width', async ({ pa
   await expect(rail).toBeHidden();
   await page.getByRole('button', { name: 'Show steps' }).click();
   await expect(rail).toBeVisible();
-  await expect.poll(async () => (await rail.boundingBox())!.width).toBe(before);
+  await expect.poll(async () => (await boxOf(rail)).width).toBe(before);
   await page.reload();
   await expect(rail).toBeVisible();
-  await expect.poll(async () => (await rail.boundingBox())!.width).toBe(before);
+  await expect.poll(async () => (await boxOf(rail)).width).toBe(before);
 });
 
 test('the collapsed Steps separator stays inside the viewport and can be dragged open', async ({ page }) => {
@@ -33,7 +33,7 @@ test('the collapsed Steps separator stays inside the viewport and can be dragged
   await seam.press('Enter');
   await expect(seam).toHaveAttribute('aria-valuenow', '0');
   await expect(seam).toBeInViewport({ ratio: 1 });
-  const handle = (await seam.boundingBox())!;
+  const handle = await boxOf(seam);
   const x = handle.x + handle.width / 2;
   const y = handle.y + handle.height / 2;
   await page.mouse.move(x, y);

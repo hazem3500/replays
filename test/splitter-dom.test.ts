@@ -163,7 +163,10 @@ describe('Splitter under the pointer', () => {
     act(() => frame?.(0));
     pointer('pointermove', 900);
     act(() => frame?.(0));
-    expect(previews).toEqual([{ size: 120, folded: false }, { size: 120, folded: true }]);
+    expect(previews).toEqual([
+      { size: 120, folded: false },
+      { size: 120, folded: true },
+    ]);
     pointer('pointerup', 900);
     expect(previews.at(-1)).toEqual({ size: 300, folded: true });
     expect(localStorage.getItem('test-split')).toBeNull();
