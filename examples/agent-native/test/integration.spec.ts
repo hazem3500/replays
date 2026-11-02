@@ -153,6 +153,8 @@ test('Storybook renders fixture states, themes and real permission decisions wit
     await page.waitForFunction(() => navigator.serviceWorker.controller !== null);
   };
   await story('app-viewer-states--loading');
+  // why: worker control can precede MSW's queued reload; start assertions in an explicitly controlled document.
+  await page.reload();
   await expect(page.getByRole('status')).toHaveText('Loading replay…');
   await story('app-viewer-states--host-context', 'light');
   await expect(page.getByTestId('context-panel')).toContainText('Example host');

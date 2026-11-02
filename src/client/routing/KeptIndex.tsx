@@ -1,7 +1,7 @@
 import { useRouterState } from '@tanstack/react-router';
-import { Activity, useState } from 'react';
+import { Activity, Suspense, useState } from 'react';
 
-import { ReplayIndex } from '../ReplayIndex.tsx';
+import { indexPage } from './index-page.ts';
 import { indexHref, rememberIndexSearch } from './links.ts';
 import { setPageUrl } from './navigate.ts';
 import { parseSearch, stringifySearch } from './search.ts';
@@ -49,7 +49,9 @@ export function KeptIndex() {
   if (kept === undefined) return null;
   return (
     <Activity mode={search === undefined ? 'hidden' : 'visible'}>
-      <ReplayIndex key={generation} search={kept} onSearch={onSearch} {...(rendered ? { rendered } : {})} />
+      <Suspense fallback={null}>
+        <indexPage.Component key={generation} search={kept} onSearch={onSearch} {...(rendered ? { rendered } : {})} />
+      </Suspense>
     </Activity>
   );
 }

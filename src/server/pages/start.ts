@@ -8,6 +8,7 @@ import { fetchNodeHandler, NodeRequest } from 'srvx/node';
 import { PAGE_HEADER, type PageDeployment, pageContexts } from '../../shared/page-context.ts';
 import { type Encoding, pickEncoding } from '../compression.ts';
 import { headInjector, headMetas } from './head.ts';
+import { loadPagePreloads, pagePreloadInjector } from './preloads.ts';
 
 type NodeHandler = (request: IncomingMessage, response: ServerResponse) => void | Promise<void>;
 
@@ -34,6 +35,7 @@ export async function loadStartRenderer(entryFile: string, api: NodeHandler): Pr
   const loaded: unknown = await import(pathToFileURL(entryFile).href);
   if (!isStartModule(loaded)) throw new Error(`${entryFile} does not export a Start server entry`);
   const entry = loaded.default;
+  const preloads = await loadPagePreloads(entryFile);
   return {
     async render(request, response, { deployment, head }) {
       const id = randomUUID();
@@ -63,7 +65,7 @@ export async function loadStartRenderer(entryFile: string, api: NodeHandler): Pr
           await page.body?.cancel();
           return false;
         }
-        await sendPage(request, response, page, head);
+        await sendPage(request, response, page, { head, preloads: preloads(request.url ?? '/', deployment.base, headMetas(head)) });
         return true;
       } finally {
         pageContexts.delete(id);
@@ -73,7 +75,12 @@ export async function loadStartRenderer(entryFile: string, api: NodeHandler): Pr
 }
 
 /** Streams the page with the deployment's head added and each chunk flushed, so the shell reaches the browser first. */
-async function sendPage(request: IncomingMessage, response: ServerResponse, page: Response, head: string) {
+async function sendPage(
+  request: IncomingMessage,
+  response: ServerResponse,
+  page: Response,
+  { head, preloads }: { head: string; preloads: string[] },
+) {
   const html = Boolean(page.headers.get('content-type')?.startsWith('text/html'));
   const encoding = html && page.body ? pickEncoding(request.headers['accept-encoding']) : undefined;
   response.writeHead(page.status, pageHeaders(page, response.getHeader('vary'), html, encoding));
@@ -81,7 +88,8 @@ async function sendPage(request: IncomingMessage, response: ServerResponse, page
     response.end();
     return;
   }
-  const body = html ? page.body.pipeThrough(headInjector(head)) : page.body;
+  const stamped = html ? page.body.pipeThrough(headInjector(head)) : page.body;
+  const body = html && preloads.length ? stamped.pipeThrough(pagePreloadInjector(preloads)) : stamped;
   const compressor = encoding ? compressorFor(encoding) : undefined;
   compressor?.pipe(response);
   const sink = compressor ?? response;

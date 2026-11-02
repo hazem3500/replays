@@ -1,6 +1,45 @@
 import { expect, test } from '@playwright/test';
 
-import { origin, gotoHydrated } from './support.ts';
+import { origin, gotoHydrated, serveApp } from './support.ts';
+
+test.describe('server-rendered index', () => {
+  const server = serveApp({ REPLAYS_SSR: '1' });
+  test('the list is visible when JavaScript is disabled', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    try {
+      const page = await context.newPage();
+      await page.goto(server().origin);
+      await expect(page.locator('a.row-target[href="/r/demo-shop"]').first()).toBeVisible();
+    } finally {
+      await context.close();
+    }
+  });
+});
+
+test('a direct replay visit loads the index interface only when returning home', async ({ page }) => {
+  const indexRequests: string[] = [];
+  page.on('request', (request) => {
+    if (/\/ReplayIndex-[^/]+\.js/.test(request.url())) indexRequests.push(request.url());
+  });
+  await gotoHydrated(page, `${origin()}/r/demo-shop`);
+  await expect(page.getByTestId('replay-player').locator('iframe')).toBeAttached();
+  expect(indexRequests).toEqual([]);
+  await page.getByRole('link', { name: 'All replays', exact: true }).click();
+  await expect(page.locator('a.row-target[href="/r/demo-shop"]').first()).toBeVisible();
+  expect(indexRequests).toHaveLength(1);
+});
+
+test('the index downloads the player only after row intent', async ({ page }) => {
+  const playerRequests: string[] = [];
+  page.on('request', (request) => {
+    if (/\/(?:Viewer|player)-[^/]+\.js/.test(request.url())) playerRequests.push(request.url());
+  });
+  await gotoHydrated(page, origin());
+  await page.waitForTimeout(4500);
+  expect(playerRequests).toEqual([]);
+  await page.locator('a.row-target[href="/r/demo-shop"]').first().hover();
+  await expect.poll(() => playerRequests.length).toBeGreaterThan(0);
+});
 
 test('opening a replay uses one page crossfade and one loading layout', async ({ page }) => {
   let release!: () => void;

@@ -18,6 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/u
 import { cn } from '@/lib/utils.ts';
 
 import { productName } from './config.ts';
+import { filtersFromSearch, searchFromFilters, INDEX_SUITES_URL, VIEW_KEY, storedView } from './index/route-state.ts';
 import { useAutoRetry } from './hooks/use-auto-retry.ts';
 import { useStickyStack } from './hooks/use-sticky-stack.ts';
 import { usePluginSnapshot } from './plugins/PluginUi.tsx';
@@ -39,7 +40,7 @@ import { FirstRun } from './index/first-run/FirstRun.tsx';
 import { RefreshLine, ScopeCount } from './index/ScopeCount.tsx';
 import { IndexSections } from './index/PluginSlots.tsx';
 import { apiUrl, appBase } from './api/fetch.ts';
-import { pageCookie, writePageCookie } from './page-meta.ts';
+import { writePageCookie } from './page-meta.ts';
 import { readStorage, writeStorage } from './storage.ts';
 import { sourceText } from './index/SourceLine.tsx';
 import { playableReplayId } from './suite/runs.ts';
@@ -65,43 +66,8 @@ export const COLUMNS: Array<{ key: SortKey; label: string; numeric?: boolean }> 
   { key: 'errors', label: 'Errors', numeric: true },
 ];
 
-/** Plugin filter params (registerIndexFilter / api.indexFilter): the same rule as the server's. */
-const PLUGIN_PARAM = /^x-[a-z0-9][a-z0-9-]{0,38}$/;
-
 /** True when a plugin filter is set: those are matched only by the server. */
 const hasPluginFilters = (filters: ReplayFilters) => Object.keys(filters.params ?? {}).length > 0;
-
-export function filtersFromSearch(search: string): ReplayFilters {
-  const params = new URLSearchParams(search);
-  const filters: ReplayFilters = {};
-  const q = params.get('q');
-  if (q) filters.q = q;
-  const host = params.get('host');
-  if (host) filters.host = host;
-  if (params.get('errors') === '1') filters.errors = true;
-  const source = params.get('source');
-  if (source === 'agent' || source === 'human') filters.source = source;
-  const tag = params.get('tag');
-  if (tag) filters.tag = tag;
-  // Plugin filters (`x-*`, registerIndexFilter): carried as they are, before or without the plugin's entry; the server matches.
-  const plugin: Record<string, string> = {};
-  for (const [key, value] of params)
-    if (PLUGIN_PARAM.test(key) && value.trim() && !(key in plugin)) plugin[key] = value.trim().slice(0, 200);
-  if (Object.keys(plugin).length) filters.params = plugin;
-  return filters;
-}
-
-export function searchFromFilters(filters: ReplayFilters) {
-  const params = new URLSearchParams();
-  if (filters.q?.trim()) params.set('q', filters.q.trim());
-  if (filters.host) params.set('host', filters.host);
-  if (filters.errors) params.set('errors', '1');
-  if (filters.source) params.set('source', filters.source);
-  if (filters.tag) params.set('tag', filters.tag);
-  for (const key of Object.keys(filters.params ?? {}).sort()) params.set(key, filters.params![key]!);
-  const query = params.toString();
-  return query ? `?${query}` : '';
-}
 
 /** Which kinds of row the index shows; kept in the URL as `kind=`, client-side only. */
 export type IndexKind = 'suites' | 'sessions';
@@ -148,9 +114,6 @@ interface Me {
   email?: string;
   people?: { roles?: string[]; handles: LinkableHandle[] };
 }
-
-/** The index's suites request; index.html preloads the same URL (keep the two in step). */
-export const INDEX_SUITES_URL = 'suites?expand=runs&limit=100';
 
 /** At or below this width the index is a list, not a table; styles.css keys its compact rules off the same query. */
 export const INDEX_COMPACT_QUERY = '(max-width: 640px)';
@@ -208,24 +171,6 @@ export function indexSearch(
 /** What the index keeps in its history entry so the back button returns to the same view. */
 interface IndexHistoryState {
   indexScroll?: number;
-}
-
-const VIEW_KEY = `${PRODUCT_SLUG}-index-view`;
-
-/** List or grid, remembered per browser; phones always get the list. */
-export function storedView(): FeedView {
-  return readStorage(VIEW_KEY) === 'grid' ? 'grid' : 'list';
-}
-
-/** The view a server render shows: the choice mirrored into a cookie (this browser's storage stays the source). */
-export function renderedView(): FeedView {
-  return pageCookie(VIEW_KEY) === 'grid' ? 'grid' : 'list';
-}
-
-/** Keeps the cookie a server render reads in step with the saved view (choices made before it existed included). */
-export function syncViewCookie() {
-  const view = storedView();
-  if (renderedView() !== view) writePageCookie(VIEW_KEY, view, appBase());
 }
 
 function indexHistoryState(): IndexHistoryState {
@@ -943,3 +888,5 @@ function withFilter<K extends keyof ReplayFilters>(filters: ReplayFilters, key: 
   else next[key] = value;
   return next;
 }
+
+export { filtersFromSearch, searchFromFilters, INDEX_SUITES_URL, storedView, renderedView, syncViewCookie } from './index/route-state.ts';
