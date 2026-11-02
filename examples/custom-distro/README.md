@@ -49,3 +49,5 @@ The index shows the plugin's column, section and filter, with summary fields der
 CI runs it in the `Custom distribution example` job.
 
 The example enables the beta editor to demonstrate a trusted caption tool. Its browser entry also adds Console JSON to Download and a `g` shortcut. These use the host editor/save policy and existing sanitized replay data.
+
+Import `sandbox-surfaces.replays-plugin.json` in Workshop on hosts enabling malleable plugins to try sandboxed Context sections and timeline tracks.
