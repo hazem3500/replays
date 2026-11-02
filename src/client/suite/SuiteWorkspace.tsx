@@ -1,4 +1,5 @@
 import { SignInError, SignInLink } from '../sign-in.tsx';
+import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
@@ -110,6 +111,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
   const [railPreference, setRailPreference] = useState<boolean | undefined>(undefined);
   const narrow = useMediaQuery(MOBILE_QUERY);
+  const [sidebarWidth, setSidebarWidth] = useState(() => readSplitterSize('suite-sidebar-width', 256, 200, 400));
   // Open by default at every desktop width; only an explicit choice collapses it (phones use the run menu).
   const collapsed = railPreference ?? false;
 
@@ -280,7 +282,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (!suite) return <ViewerSkeleton suite label="Loading review suite" />;
 
   return (
-    <div className="suite-workspace" data-rail={collapsed || undefined} data-narrow={narrow || undefined}>
+    <div className="suite-workspace" data-rail={collapsed || undefined} data-narrow={narrow || undefined}
+      style={!narrow && !collapsed ? { gridTemplateColumns: `${sidebarWidth}px 0 minmax(0, 1fr)` } : undefined}>
       {/* First in the page, ahead of the runs sidebar, so one Tab reaches it. */}
       <a className="skip-link" href="#replay-player">
         Skip to replay
@@ -297,6 +300,19 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           keep={keep}
         />
       ) : null}
+      {!narrow && !collapsed ? (
+        <Splitter
+          orientation="vertical"
+          side="start"
+          value={sidebarWidth}
+          min={200}
+          max={400}
+          defaultValue={256} onChange={setSidebarWidth}
+          onPreview={setSidebarWidth}
+          storageKey="suite-sidebar-width" label="Resize runs sidebar" className="suite-sidebar-split"
+        />
+      ) : null}
+
       <div className="suite-viewer">
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>

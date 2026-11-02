@@ -29,7 +29,6 @@ import { savedAgo } from './editor/state.ts';
 import { clearHandoff, peekHandoff } from './editor/handoff.ts';
 import { copyText } from './clipboard.ts';
 import { notify as showToast } from './toast.ts';
-import { CompareButton } from './compare/CompareButton.tsx';
 import { compareWith } from './compare/open.ts';
 import { betaMalleable } from './malleable/flag.ts';
 import { replayProfile } from './profiles.ts';
@@ -448,27 +447,23 @@ export function Viewer({
   usePluginShortcuts(pluginContexts);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
-  // why: a phone's top bar keeps only Edit and More (and the layout switch while comparing), so Compare waits in More.
+  // why: the recording picker stays in More so the top bar keeps room for the view and layout switches.
   const hasKeyboard = useHasKeyboard();
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
-      ...(mobile
-        ? [
-            sharedPlayer
-              ? {
-                  label: 'Add a recording',
-                  icon: <PlusIcon aria-hidden="true" />,
-                  onSelect: () => setPickerOpen(true),
-                  testId: 'compare-with',
-                }
-              : {
-                  label: 'Compare with…',
-                  icon: <Columns2Icon aria-hidden="true" />,
-                  onSelect: () => setPickerOpen(true),
-                  testId: 'compare-with',
-                },
-          ]
-        : []),
+      sharedPlayer
+        ? {
+            label: 'Add a recording',
+            icon: <PlusIcon aria-hidden="true" />,
+            onSelect: () => setPickerOpen(true),
+            testId: 'compare-with',
+          }
+        : {
+            label: 'Compare with…',
+            icon: <Columns2Icon aria-hidden="true" />,
+            onSelect: () => setPickerOpen(true),
+            testId: 'compare-with',
+          },
       ...pluginMenu.items,
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
@@ -655,12 +650,7 @@ export function Viewer({
           {...(prefix ? { prefix } : {})}
           {...(headerStatus ? { status: headerStatus } : {})}
           {...(suite ? { suite } : {})}
-          leadingActions={
-            <>
-              {headerActions}
-              {mobile ? null : <CompareButton comparing={Boolean(sharedPlayer)} compact={mobile} onClick={() => setPickerOpen(true)} />}
-            </>
-          }
+          leadingActions={headerActions}
           hasEdits={Boolean(edited)}
         />
         <div
