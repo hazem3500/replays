@@ -1,16 +1,16 @@
 // @vitest-environment happy-dom
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { feedTransition } from '../src/client/index/feed-transition.ts';
 
-afterEach(() => {
+function tearDown() {
   document.body.replaceChildren();
   Reflect.deleteProperty(document, 'startViewTransition');
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
-});
+}
 
-it('names live suite layers and nested columns while an outgoing shuffle clone is present', async () => {
+async function namesLiveLayers() {
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
   vi.spyOn(performance, 'now').mockReturnValue(10_000);
   document.body.innerHTML = `
@@ -43,9 +43,9 @@ it('names live suite layers and nested columns while an outgoing shuffle clone i
   expect(live?.querySelector<HTMLElement>('.stack-layer-1')?.style.getPropertyValue('view-transition-name')).toBe('back1-suite_3ademo');
   expect(document.querySelector('.suite-sheet-outgoing [style*="view-transition-name"]')).toBeNull();
   await Promise.resolve();
-});
+}
 
-it('pairs rear grid sheets with list sheets and trails each item by a small layer delay', async () => {
+async function trailsRearLayers() {
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
   vi.spyOn(performance, 'now').mockReturnValue(20_000);
   document.body.innerHTML = `
@@ -66,7 +66,9 @@ it('pairs rear grid sheets with list sheets and trails each item by a small laye
   Object.defineProperty(document, 'startViewTransition', { configurable: true, value: start });
 
   feedTransition(() => {
-    document.querySelector<HTMLElement>('.feed-list')!.dataset.view = 'list';
+    const list = document.querySelector<HTMLElement>('.feed-list');
+    if (!list) throw new Error('Expected the feed list');
+    list.dataset.view = 'list';
     for (const item of document.querySelectorAll('li')) {
       item.innerHTML = '<span class="poster-stack"><span class="stack-layer-1"></span><span class="stack-layer-2"></span></span>';
     }
@@ -88,4 +90,10 @@ it('pairs rear grid sheets with list sheets and trails each item by a small laye
   await Promise.resolve();
   expect(stagger?.isConnected).toBe(false);
   expect(document.querySelector('[style*="view-transition-name"]')).toBeNull();
+}
+
+describe('Feed transitions', () => {
+  afterEach(tearDown);
+  it('names live suite layers and nested columns while an outgoing shuffle clone is present', namesLiveLayers);
+  it('pairs rear grid sheets with list sheets and trails each item by a small layer delay', trailsRearLayers);
 });

@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { act, createElement, useRef } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useShuffle } from '../src/client/index/suite-cycle.ts';
 
@@ -10,7 +10,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 interface Motion {
   element: HTMLElement;
   finish: () => void;
-  cancel: ReturnType<typeof vi.fn>;
+  cancel: () => void;
 }
 
 let host: HTMLDivElement;
@@ -42,62 +42,81 @@ function render(step: number, view = 'grid') {
   act(() => root.render(createElement(Harness, { step, view })));
 }
 
-beforeEach(() => {
+function setUp() {
   host = document.createElement('div');
   document.body.append(host);
   root = createRoot(host);
   motions = [];
   vi.stubGlobal('matchMedia', () => ({ matches: false }));
+  vi.stubGlobal(
+    'Animation',
+    class {
+      finished: Promise<void>;
+      finish: () => void = () => {
+        throw new Error('Animation has not started');
+      };
+      cancel = vi.fn<() => void>();
+      constructor() {
+        this.finished = new Promise<void>((resolve, reject) => {
+          this.finish = resolve;
+          this.cancel.mockImplementation(() => reject(new Error('Animation cancelled')));
+        });
+        void this.finished.catch(() => undefined);
+      }
+    },
+  );
   vi.spyOn(HTMLElement.prototype, 'animate').mockImplementation(function (this: HTMLElement) {
-    let finish!: () => void;
-    let reject!: (reason: Error) => void;
-    const finished = new Promise<void>((resolve, rejectPromise) => {
-      finish = resolve;
-      reject = rejectPromise;
-    });
-    void finished.catch(() => undefined);
-    const cancel = vi.fn<() => void>(() => reject(new Error('Animation cancelled')));
-    motions.push({ element: this, finish, cancel });
-    return { finished, cancel } as unknown as Animation;
+    const animation = new Animation();
+    motions.push({ element: this, finish: () => animation.finish(), cancel: animation.cancel });
+    return animation;
   });
-});
+}
 
-afterEach(() => {
+function tearDown() {
   act(() => root.unmount());
   host.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
-});
+}
 
-it('returns the outgoing sheet behind the live front only after its downward phase finishes', async () => {
-  render(0);
-  act(() => host.querySelector('button')!.click());
-  render(1);
-  const outgoing = host.querySelector<HTMLElement>('.suite-sheet-outgoing')!;
-  expect(outgoing.style.zIndex).toBe('3');
-  expect(motions).toHaveLength(2);
+function present<T>(value: T | null | undefined): T {
+  if (value === null || value === undefined) throw new Error('Expected the shuffle target');
+  return value;
+}
 
-  await act(async () => motions[0]!.finish());
+describe('Suite shuffle', () => {
+  beforeEach(setUp);
+  afterEach(tearDown);
+  it('returns the outgoing sheet behind the live front only after its downward phase finishes', async () => {
+    render(0);
+    act(() => present(host.querySelector('button')).click());
+    render(1);
+    const outgoing = present(host.querySelector<HTMLElement>('.suite-sheet-outgoing'));
+    expect(outgoing.style.zIndex).toBe('3');
+    expect(motions).toHaveLength(2);
 
-  expect(outgoing.style.zIndex).toBe('1');
-  expect(host.querySelector<HTMLElement>('.suite-sheet:not(.suite-sheet-outgoing)')?.style.zIndex).toBe('2');
-  expect(motions).toHaveLength(3);
-  expect(motions[2]!.element).toBe(outgoing);
-  await act(async () => motions[2]!.finish());
-  expect(host.querySelector('.suite-sheet-outgoing')).toBeNull();
-});
+    await act(() => present(motions[0]).finish());
 
-it('cancels a pending shuffle on a view switch without starting its return phase', async () => {
-  render(0);
-  act(() => host.querySelector('button')!.click());
-  render(1);
-  const first = [...motions];
+    expect(outgoing.style.zIndex).toBe('1');
+    expect(host.querySelector<HTMLElement>('.suite-sheet:not(.suite-sheet-outgoing)')?.style.zIndex).toBe('2');
+    expect(motions).toHaveLength(3);
+    expect(present(motions[2]).element).toBe(outgoing);
+    await act(() => present(motions[2]).finish());
+    expect(host.querySelector('.suite-sheet-outgoing')).toBeNull();
+  });
 
-  render(1, 'list');
-  await act(async () => first[0]!.finish());
+  it('cancels a pending shuffle on a view switch without starting its return phase', async () => {
+    render(0);
+    act(() => present(host.querySelector('button')).click());
+    render(1);
+    const first = [...motions];
 
-  expect(first.every((motion) => motion.cancel.mock.calls.length === 1)).toBe(true);
-  expect(motions).toHaveLength(2);
-  expect(host.querySelector('.suite-sheet-outgoing')).toBeNull();
-  expect(host.querySelector<HTMLElement>('.suite-sheet')?.style.zIndex).toBe('');
+    render(1, 'list');
+    await act(() => present(first[0]).finish());
+
+    for (const motion of first) expect(motion.cancel).toHaveBeenCalledOnce();
+    expect(motions).toHaveLength(2);
+    expect(host.querySelector('.suite-sheet-outgoing')).toBeNull();
+    expect(host.querySelector<HTMLElement>('.suite-sheet')?.style.zIndex).toBe('');
+  });
 });

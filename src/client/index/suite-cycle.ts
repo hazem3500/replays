@@ -67,7 +67,7 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
     if (!poster || (!image && !poster.classList.contains('suite-sheet'))) return;
     const still = poster.cloneNode(true) as HTMLElement;
     still.inert = true;
-    still.querySelectorAll('video').forEach((video) => video.remove());
+    for (const video of still.querySelectorAll('video')) video.remove();
     still.setAttribute('aria-hidden', 'true');
     still.classList.add(poster.classList.contains('suite-sheet') ? 'suite-sheet-outgoing' : 'poster-outgoing');
     still.style.zIndex = '3';
@@ -94,57 +94,61 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
       still?.remove();
       return;
     }
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const animations: Animation[] = [];
-    let active = true;
-    const animate = (target: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions) => {
-      const animation = target.animate(frames, options);
-      animations.push(animation);
-      return animation;
-    };
-    if (still && !reduced) {
-      poster.before(still);
-      poster.style.zIndex = '2';
-      const dropped = 'translateY(42px) scale(0.98)';
-      const down = animate(still, [{ transform: 'translateY(0) scale(1)' }, { transform: dropped }], {
-        duration: DROP_MS,
-        easing: EASE,
-        fill: 'forwards',
-      });
-      void down.finished
-        .then(() => {
-          if (!active) return;
-          // why: change stacking only at the turn, so the old face returns beneath its successor.
-          still.style.zIndex = '1';
-          const rear = animate(
-            still,
-            [
-              { transform: dropped, opacity: 1 },
-              { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 1, offset: 0.85 },
-              { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 0 },
-            ],
-            { duration: RETURN_MS, easing: EASE, fill: 'forwards' },
-          );
-          down.cancel();
-          return rear.finished;
-        })
-        .catch(() => undefined)
-        .finally(() => still.remove());
-    } else still?.remove();
-    animate(
-      poster,
-      reduced
-        ? [{ opacity: 0.4 }, { opacity: 1 }]
-        : [{ transform: 'translateY(-10px) scale(0.95)' }, { transform: 'translateY(0) scale(1)' }],
-      { duration: reduced ? 120 : 280, delay: reduced ? 0 : 60, easing: EASE, fill: 'backwards' },
-    );
-    return () => {
-      active = false;
-      for (const animation of animations) animation.cancel();
-      poster.style.removeProperty('z-index');
-      still?.remove();
-    };
+    return animateShuffle(poster, still, matchMedia('(prefers-reduced-motion: reduce)').matches);
   }, [container, step, view]);
 
   return capture;
+}
+
+/** Owns one shuffle and cancels every phase when its caller leaves or changes layout. */
+function animateShuffle(poster: HTMLElement, still: HTMLElement | undefined, reduced: boolean) {
+  const animations: Animation[] = [];
+  let active = true;
+  const animate = (target: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions) => {
+    const animation = target.animate(frames, options);
+    animations.push(animation);
+    return animation;
+  };
+  if (still && !reduced) {
+    poster.before(still);
+    poster.style.zIndex = '2';
+    const dropped = 'translateY(42px) scale(0.98)';
+    const down = animate(still, [{ transform: 'translateY(0) scale(1)' }, { transform: dropped }], {
+      duration: DROP_MS,
+      easing: EASE,
+      fill: 'forwards',
+    });
+    void down.finished
+      .then(() => {
+        if (!active) return;
+        // why: change stacking only at the turn, so the old face returns beneath its successor.
+        still.style.zIndex = '1';
+        const rear = animate(
+          still,
+          [
+            { transform: dropped, opacity: 1 },
+            { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 1, offset: 0.85 },
+            { transform: 'translateY(-11px) rotate(1.25deg) scale(0.9)', opacity: 0 },
+          ],
+          { duration: RETURN_MS, easing: EASE, fill: 'forwards' },
+        );
+        down.cancel();
+        return rear.finished;
+      })
+      .catch(() => undefined)
+      .finally(() => still.remove());
+  } else still?.remove();
+  animate(
+    poster,
+    reduced
+      ? [{ opacity: 0.4 }, { opacity: 1 }]
+      : [{ transform: 'translateY(-10px) scale(0.95)' }, { transform: 'translateY(0) scale(1)' }],
+    { duration: reduced ? 120 : 280, delay: reduced ? 0 : 60, easing: EASE, fill: 'backwards' },
+  );
+  return () => {
+    active = false;
+    for (const animation of animations) animation.cancel();
+    poster.style.removeProperty('z-index');
+    still?.remove();
+  };
 }
