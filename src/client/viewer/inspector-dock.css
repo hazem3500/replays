@@ -1,8 +1,9 @@
 /*
  * InspectorDock.tsx: one flat tab row. Groups (steps | console, network, performance | context | comments and
- * plugins) part with a short hairline before the group's first tab, never a second row. Badges are one neutral
- * total; a dot before it says part of it is a problem (red: errors and failures; amber: warnings and slow work), so a
- * red badge never reads as a count of failures.
+ * plugins) part with a short hairline before the group's first tab, never a second row. A badge is the tab's total;
+ * its fill says part of it is a problem (red: errors and failures; amber: warnings and slow work), the same on
+ * desktop's labelled tabs and on the icon tabs, where it sits on the icon's top-right corner of an equal-width,
+ * 44 px or wider cell, so the underline centres under the icon.
  *
  * Pending frames (PanelPending.tsx): a panel before its rows render borrows the loaded panel's own classes (table,
  * toolbar, context rows, step rows), so the frame has the loaded geometry; only the stand-in bars are new. The bars
@@ -10,15 +11,18 @@
  */
 .inspector-tab.inspector-tab[data-group-start] { margin-left: 9px; }
 .inspector-tab.inspector-tab[data-group-start]::before { content: ""; position: absolute; top: 50%; left: -6px; width: 1px; height: 16px; translate: 0 -50%; background: var(--line); pointer-events: none; }
-.tab-badge.tab-badge { color: var(--text-secondary); }
+.tab-badge.tab-badge { justify-content: center; color: var(--text-secondary); }
 [data-active] > .tab-badge.tab-badge { color: var(--text); }
-.tab-badge.tab-badge { gap: 4px; }
-.tab-badge-dot { width: 6px; height: 6px; flex: none; border-radius: 50%; background: var(--danger); }
-.tab-badge[data-tone="warning"] .tab-badge-dot { background: var(--warning); }
+.tab-badge.tab-badge[data-tone="danger"] { background: var(--danger); color: var(--surface); }
+.tab-badge.tab-badge[data-tone="warning"] { background: var(--warning); color: var(--surface); }
+/* Icon tabs: equal cells across the row, the count on the icon's corner (a 16 px icon centred in the cell). */
+.inspector-tabs[data-icon-tabs] .inspector-tab.inspector-tab { min-width: 44px; flex: 1 1 0; padding: 0; }
+.inspector-tabs[data-icon-tabs] .tab-badge.tab-badge { position: absolute; top: calc(50% - 17px); left: calc(50% + 3px); min-width: 16px; padding: 0 4px; font-size: 10px; font-weight: 600; box-shadow: 0 0 0 2px var(--surface); }
 .inspector-tabs[data-icon-tabs] .inspector-tab.inspector-tab[data-group-start] { margin-left: 5px; }
 .inspector-tabs[data-icon-tabs] .inspector-tab.inspector-tab[data-group-start]::before { left: -4px; }
 @media (forced-colors: active) {
-  .inspector-tab.inspector-tab[data-group-start]::before, .tab-badge-dot { background: CanvasText; }
+  .inspector-tab.inspector-tab[data-group-start]::before { background: CanvasText; }
+  .tab-badge.tab-badge { border: 1px solid CanvasText; }
 }
 
 .panel-pending { position: relative; display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; }
