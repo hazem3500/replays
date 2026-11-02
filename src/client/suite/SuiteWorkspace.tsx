@@ -256,14 +256,14 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (shownTitle && shownTitle !== titles.current)
     setTitles({ current: shownTitle, ...(titles.current ? { previous: titles.current } : {}) });
   // Phones hide the runs sidebar, so the run's place in the suite rides along as a muted prefix.
-  const playableRuns = runs.filter((item) => playableReplayId(item, detailed));
-  const runIndex = playableRuns.findIndex((item) => item.replayId === selected);
+  const playableRuns = runs.flatMap((item) => playableReplayId(item, detailed) ?? []);
+  const runIndex = playableRuns.indexOf(selected ?? '');
   const runPrefix = narrow && runIndex >= 0 ? `Run ${runIndex + 1} of ${playableRuns.length}` : undefined;
   const tone = run ? statusTone(run, detailed) : undefined;
-  const runStatus = useMemo(() => (tone ? <RunStatusChip tone={tone} /> : undefined), [tone]);
+  const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
 
   if (authFailure || (error && !suite)) {
-    const message = authFailure?.message ?? error ?? '';
+    const message = authFailure?.message ?? error;
     return (
       <StateShell {...failureCopy('review suite', message)} details={`${message} · ${id}`} secondary={TRY_AGAIN}>
         <SignInLink error={authFailure ?? suiteFailure} />
@@ -286,7 +286,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
       <a className="skip-link" href="#replay-player">
         Skip to replay
       </a>
-      {suite && !narrow ? (
+      {!narrow ? (
         <SuiteSidebar
           suite={suite}
           runs={runs}
@@ -409,11 +409,13 @@ function SuiteSidebar({
   onSwitch: () => void;
   keep: ReturnType<typeof useKeepSuite>;
 }) {
+  const RailIcon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon;
   const overall = suiteOverallStatus(runs);
   const duration = runs.reduce((total, run) => total + (run.duration ?? 0), 0);
   const list = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const subject = subjectLink(suite);
+  const subjectLabel = subject?.label ? `${subject.provider} · ${subject.label}` : subject?.provider;
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const { highlight, place } = useSlidingHighlight(list, { selector: '[aria-current="page"]', index: selectedIndex });
   // After the current run changes (or the rail collapses), slide the one highlight to it.
@@ -458,10 +460,10 @@ function SuiteSidebar({
               <p className="suite-sidebar-meta">
                 {isHttps(subject.url) ? (
                   <a href={subject.url} target="_blank" rel="noopener noreferrer">
-                    {subject.label ? `${subject.provider} · ${subject.label}` : subject.provider} ↗
+                    {subjectLabel} ↗
                   </a>
                 ) : (
-                  <span>{subject.label ? `${subject.provider} · ${subject.label}` : subject.provider}</span>
+                  <span>{subjectLabel}</span>
                 )}
               </p>
             ) : null}
@@ -474,7 +476,7 @@ function SuiteSidebar({
           className="suite-rail-switch"
           onClick={onSwitch}
         >
-          {collapsed ? <PanelLeftOpenIcon aria-hidden="true" /> : <PanelLeftCloseIcon aria-hidden="true" />}
+          <RailIcon aria-hidden="true" />
         </IconButton>
       </div>
       <div ref={list} className="suite-run-list" role="list" aria-label="Runs">
