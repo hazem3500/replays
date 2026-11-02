@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button.tsx';
+import { StateArt } from '@/components/ui/state-view.tsx';
 
 const ICONS = {
   alert: CircleAlertIcon,
@@ -77,11 +78,7 @@ export function EmptyState({
   const Icon = name ? ICONS[name] : undefined;
   return (
     <div className="empty-state" data-tone={tone} data-variant={variant} role={ROLE[tone]} data-testid={testId}>
-      {Icon ? (
-        <span className="empty-state-icon" aria-hidden="true">
-          <Icon />
-        </span>
-      ) : null}
+      {Icon ? <EmptyStateGlyph icon={Icon} tone={tone} region={variant === 'region'} /> : null}
       <div className="empty-state-text">
         <p className="empty-state-title">{title}</p>
         {body ? <p className="empty-state-body">{body}</p> : null}
@@ -102,6 +99,16 @@ export function EmptyState({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/** A page-sized state draws the StateView illustration; compact and banner states keep the small glyph tile. */
+function EmptyStateGlyph({ icon: Icon, tone, region }: { icon: LucideIcon; tone: EmptyStateTone; region: boolean }) {
+  if (region) return <StateArt kind={tone} glyph={Icon} />;
+  return (
+    <span className="empty-state-icon" aria-hidden="true">
+      <Icon />
+    </span>
   );
 }
 

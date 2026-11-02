@@ -11,7 +11,7 @@ import { PluginMount } from '../plugins/PluginUi.tsx';
 import { viewerRegistry } from '../plugins/registry.ts';
 import { navigate } from '../routing/navigate.ts';
 import { stringifySearch } from '../routing/search.ts';
-import { NotFoundPage, StateShell, TryAgain } from '../routing/states.tsx';
+import { failureCopy, NotFoundPage, StateShell, TRY_AGAIN } from '../routing/states.tsx';
 
 interface Props {
   plugin: string;
@@ -42,14 +42,7 @@ function LoadedPluginPage({ plugin, page, path, search }: Props & { page: Plugin
     // why: the page's data changes only when its address does; a refocus must not redraw the plugin.
     refetchOnWindowFocus: false,
   });
-  if (loaded.error)
-    return (
-      <StateShell kicker={page.title} title={loaded.error.message || 'This page failed to load'}>
-        <div className="state-actions">
-          <TryAgain />
-        </div>
-      </StateShell>
-    );
+  if (loaded.error) return <StateShell {...failureCopy('page', loaded.error.message)} secondary={TRY_AGAIN} />;
   if (!loaded.data) return null;
   const context = pageContext(plugin, path, search, loaded.data.data);
   const render = pageRenderer(page);

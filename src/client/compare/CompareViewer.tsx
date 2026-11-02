@@ -6,6 +6,7 @@ import { parsePermalink } from '../permalink.ts';
 import { replayQuery } from '../queries.ts';
 import { shortcutFor } from '../shortcuts.ts';
 import { Viewer } from '../Viewer.tsx';
+import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
 import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useCompareSession } from '../hooks/use-compare-session.ts';
 import { useWindowKeydown } from '../hooks/use-window-keydown.ts';
@@ -82,15 +83,7 @@ function failureOf(tiles: readonly CompareTile[]) {
 }
 
 function CompareFailed({ tiles }: { tiles: readonly CompareTile[] }) {
-  return (
-    <main className="state-shell">
-      <section className="state-content" role="alert">
-        <span className="state-kicker">Could not compare recordings</span>
-        <h1>{failureOf(tiles)}</h1>
-        <p>They may have expired, or the link may be incomplete.</p>
-      </section>
-    </main>
-  );
+  return <StateShell {...failureCopy('comparison', failureOf(tiles))} secondary={TRY_AGAIN} />;
 }
 
 /** `#step-n` wins over `t`, as in the single viewer; a step is the focused recording's. */

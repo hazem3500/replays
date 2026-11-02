@@ -1,4 +1,6 @@
+import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
 import { SignInError, SignInLink } from '../sign-in.tsx';
+import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon, PinOffIcon } from 'lucide-react';
@@ -6,7 +8,6 @@ import { type KeyboardEvent, lazy, Suspense, useCallback, useEffect, useLayoutEf
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import { StatusLabel, type StatusTone } from '@/components/ui/status-label.tsx';
 import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu.tsx';
 
@@ -16,7 +17,7 @@ import { productName } from '../config.ts';
 import { prefetchReplay, replayQuery, type SuiteWithRuns, suiteQuery } from '../queries.ts';
 import { setPageUrl } from '../routing/navigate.ts';
 import { swapInPlace } from '../transitions/swap.ts';
-import { indexHref, indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
+import { indexReturnHref, replayInSuiteHref, suiteHref, suiteRunOf } from '../routing/links.ts';
 import { shortcutFor, shortcutLabel } from '../shortcuts.ts';
 import { MOBILE_QUERY, useMediaQuery } from '../media.ts';
 import { Topbar, type TopbarMenuItem } from '../Topbar.tsx';
@@ -109,10 +110,9 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const authFailure = [suiteFailure, bundleFailure, edits.error].find((candidate) => candidate instanceof SignInError);
   const [tab, setTab] = useState<InspectorTab>('console');
   // A suite always opens with the runs sidebar expanded; collapsing it only lasts for this visit.
-  const [railPreference, setRailPreference] = useState<boolean | undefined>(undefined);
+  const [collapsed, setRailPreference] = useState(false);
   const narrow = useMediaQuery(MOBILE_QUERY);
-  // Open by default at every desktop width; only an explicit choice collapses it (phones use the run menu).
-  const collapsed = railPreference ?? false;
+  const [sidebarWidth, setSidebarWidth] = useState(() => readSplitterSize('suite-sidebar-width', 256, 200, 400));
 
   // The landing run goes into the URL without adding a history entry, and is pinned so a background
   // refresh of the suite (a run that failed meanwhile) cannot move the viewer to another run.
@@ -223,10 +223,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
     if (suite) document.title = `${suite.title} · ${productName()}`;
   }, [suite]);
 
-  const switchRail = () => {
-    const next = !collapsed;
-    setRailPreference(next);
-  };
+  const switchRail = () => setRailPreference(!collapsed);
 
   // Memoised props for the viewer's (memo) header, so inspector tab switches do not re-render it.
   const backHref = useMemo(() => indexReturnHref(), []);
@@ -260,36 +257,18 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (shownTitle && shownTitle !== titles.current)
     setTitles({ current: shownTitle, ...(titles.current ? { previous: titles.current } : {}) });
   // Phones hide the runs sidebar, so the run's place in the suite rides along as a muted prefix.
-  const playableRuns = runs.filter((item) => playableReplayId(item, detailed));
-  const runIndex = playableRuns.findIndex((item) => item.replayId === selected);
+  const playableRuns = runs.flatMap((item) => playableReplayId(item, detailed) ?? []);
+  const runIndex = playableRuns.indexOf(selected ?? '');
   const runPrefix = narrow && runIndex >= 0 ? `Run ${runIndex + 1} of ${playableRuns.length}` : undefined;
-  // Memoised (by tone) so the viewer's memo header skips inspector tab switches.
   const tone = run ? statusTone(run, detailed) : undefined;
-  const runStatus = useMemo(() => (tone ? <RunStatusChip tone={tone} /> : undefined), [tone]);
+  const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
 
   if (authFailure || (error && !suite)) {
+    const message = authFailure?.message ?? error;
     return (
-      <main className="state-shell">
-        <a className="state-brand" href={indexHref()}>
-          {productName()}
-        </a>
-        <section className="state-content" role="alert">
-          <span className="state-kicker">Could not open review suite</span>
-          <h1>{authFailure?.message ?? error}</h1>
-          <SignInLink error={authFailure ?? suiteFailure} />
-          <p>
-            Suite <code>{id}</code> may have expired or the link may be incomplete.
-          </p>
-          <div className="state-actions">
-            <Button nativeButton={false} render={<a href={indexHref()} />}>
-              Back to all replays
-            </Button>
-            <Button variant="outline" onClick={() => location.reload()}>
-              Try again
-            </Button>
-          </div>
-        </section>
-      </main>
+      <StateShell {...failureCopy('review suite', message)} details={`${message} · ${id}`} secondary={TRY_AGAIN}>
+        <SignInLink error={authFailure ?? suiteFailure} />
+      </StateShell>
     );
   }
 
@@ -298,12 +277,17 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (!suite) return <ViewerSkeleton suite label="Loading review suite" />;
 
   return (
-    <div className="suite-workspace" data-rail={collapsed || undefined} data-narrow={narrow || undefined}>
+    <div
+      className="suite-workspace"
+      data-rail={collapsed || undefined}
+      data-narrow={narrow || undefined}
+      style={!narrow && !collapsed ? { gridTemplateColumns: `${sidebarWidth}px 0 minmax(0, 1fr)` } : undefined}
+    >
       {/* First in the page, ahead of the runs sidebar, so one Tab reaches it. */}
       <a className="skip-link" href="#replay-player">
         Skip to replay
       </a>
-      {suite && !narrow ? (
+      {!narrow ? (
         <SuiteSidebar
           suite={suite}
           runs={runs}
@@ -315,6 +299,22 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           keep={keep}
         />
       ) : null}
+      {!narrow && !collapsed ? (
+        <Splitter
+          orientation="vertical"
+          side="start"
+          value={sidebarWidth}
+          min={200}
+          max={400}
+          defaultValue={256}
+          onChange={setSidebarWidth}
+          onPreview={setSidebarWidth}
+          storageKey="suite-sidebar-width"
+          label="Resize runs sidebar"
+          className="suite-sidebar-split"
+        />
+      ) : null}
+
       <div className="suite-viewer">
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>
@@ -371,7 +371,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
               <SignInLink error={bundleFailure} />
             </div>
           </main>
-        ) : suite && !selected && runs.every((item) => !playableReplayId(item, detailed)) ? (
+        ) : !selected && playable.length === 0 ? (
           <main className="app-shell">
             <Topbar title={suite.title} backHref={backHref} compact={narrow} />
             {runs.some((item) => isExpired(item, detailed)) ? (
@@ -410,11 +410,13 @@ function SuiteSidebar({
   onSwitch: () => void;
   keep: ReturnType<typeof useKeepSuite>;
 }) {
+  const RailIcon = collapsed ? PanelLeftOpenIcon : PanelLeftCloseIcon;
   const overall = suiteOverallStatus(runs);
   const duration = runs.reduce((total, run) => total + (run.duration ?? 0), 0);
   const list = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const subject = subjectLink(suite);
+  const subjectLabel = subject?.label ? `${subject.provider} · ${subject.label}` : subject?.provider;
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const { highlight, place } = useSlidingHighlight(list, { selector: '[aria-current="page"]', index: selectedIndex });
   // After the current run changes (or the rail collapses), slide the one highlight to it.
@@ -459,10 +461,10 @@ function SuiteSidebar({
               <p className="suite-sidebar-meta">
                 {isHttps(subject.url) ? (
                   <a href={subject.url} target="_blank" rel="noopener noreferrer">
-                    {subject.label ? `${subject.provider} · ${subject.label}` : subject.provider} ↗
+                    {subjectLabel} ↗
                   </a>
                 ) : (
-                  <span>{subject.label ? `${subject.provider} · ${subject.label}` : subject.provider}</span>
+                  <span>{subjectLabel}</span>
                 )}
               </p>
             ) : null}
@@ -475,7 +477,7 @@ function SuiteSidebar({
           className="suite-rail-switch"
           onClick={onSwitch}
         >
-          {collapsed ? <PanelLeftOpenIcon aria-hidden="true" /> : <PanelLeftCloseIcon aria-hidden="true" />}
+          <RailIcon aria-hidden="true" />
         </IconButton>
       </div>
       <div ref={list} className="suite-run-list" role="list" aria-label="Runs">

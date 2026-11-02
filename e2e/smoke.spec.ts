@@ -235,7 +235,7 @@ test.describe('viewer', () => {
 
   test('an unknown replay says so', async ({ page }) => {
     await page.goto(viewer('does-not-exist'));
-    await expect(page.getByText(/not found|could not|no replay/i).first()).toBeVisible();
+    await expect(page.getByText(/isn’t here|not found|could not|no replay/i).first()).toBeVisible();
   });
 
   test('the theme switch flips and remembers the colour scheme', async ({ page }) => {

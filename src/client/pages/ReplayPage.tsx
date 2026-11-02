@@ -10,9 +10,8 @@ import { useEditsFailureNote } from '../hooks/use-edits-failure-note.ts';
 import { useLocationSearch } from '../hooks/use-location-search.ts';
 import { usePageCode } from '../hooks/use-page-code.ts';
 import { replayQuery } from '../queries.ts';
-import { indexHref } from '../routing/links.ts';
 import { comparePage, viewerPage } from '../routing/pages.ts';
-import { StateShell, TryAgain } from '../routing/states.tsx';
+import { failureCopy, StateShell, TRY_AGAIN } from '../routing/states.tsx';
 import { SignInError, SignInLink } from '../sign-in.tsx';
 import { LoadingSwap, ViewerSkeleton } from '../ViewerSkeleton.tsx';
 
@@ -42,17 +41,8 @@ function SingleReplayPage({ id }: { id: string }) {
 
   if (error) {
     return (
-      <StateShell kicker="Could not open replay" title={error}>
+      <StateShell {...failureCopy('replay', error)} details={`${error} · ${id}`} secondary={TRY_AGAIN}>
         <SignInLink error={authFailure ?? failure ?? edits.error} />
-        <p>
-          Replay <code>{id}</code> may have expired or the link may be incomplete.
-        </p>
-        <div className="state-actions">
-          <a className="button" href={indexHref()}>
-            Back to all replays
-          </a>
-          <TryAgain />
-        </div>
       </StateShell>
     );
   }

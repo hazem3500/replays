@@ -82,5 +82,3 @@
 .pp-meaning .pp-bar { max-width: none; height: 8px; margin-bottom: 6px; }
 .pp-detail .np-detail-status { gap: 8px; color: var(--text); }
 .pp-pending .pp-pending-vitals { width: 60%; margin: auto 14px; }
-.pp-record { display: inline-flex; align-items: center; gap: 4px; padding: 2px 2px 2px 8px; border-radius: var(--radius-sm); background: var(--surface-raised); }
-.pp-record code { color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); }

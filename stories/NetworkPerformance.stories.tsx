@@ -68,6 +68,7 @@ function Performance({ bundle, width, compare }: { bundle: ReplayBundle; width?:
         steps={STEPS}
         duration={bundle.meta.duration}
         peers={compare ? [{ id: 'before', name: 'Before', colour: 1, vitals: vitalsOf(before) }] : []}
+        meta={bundle.meta}
         onOpenRequest={() => {}}
       />
     </PanelFrame>
