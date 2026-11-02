@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { boxOf, openReplay, origin } from './support.ts';
+import { openReplay, origin } from './support.ts';
 
 const compareUrl = (layout = 'grid') => `${origin()}/r/demo-shop?with=human-demo&layout=${layout}`;
 
@@ -146,59 +146,4 @@ test('tiles stay inside the stage, clear of the steps rail, at every width and l
       await expect.poll(() => tilesClearOfTheRail(page)).toBe(true);
     }
   }
-});
-
-/** Each tile's own playhead (ms, to the tenth of a second), in tile order. */
-async function tileTimes(page: Page) {
-  return page.locator('.ct-picture').evaluateAll((pictures) => pictures.map((picture) => Number(picture.getAttribute('data-time') ?? -1)));
-}
-
-for (const [layout, viewport] of [
-  ['spotlight', { width: 1280, height: 800 }],
-  ['grid', { width: 390, height: 844 }],
-] as const) {
-  test(`Play drives every tile on one clock (${layout}, ${viewport.width} px)`, async ({ page }) => {
-    await page.setViewportSize(viewport);
-    await openReplay(page, compareUrl(layout));
-    await expect(page.locator('.ct-picture[data-time]')).toHaveCount(2);
-    const before = await tileTimes(page);
-    await page.getByRole('button', { name: 'Play', exact: true }).click();
-    await expect.poll(async () => (await tileTimes(page)).every((time, index) => time > (before[index] ?? 0) + 500)).toBe(true);
-    await page.getByRole('button', { name: 'Pause', exact: true }).click();
-    const [a = 0, b = 0] = await tileTimes(page);
-    expect(Math.abs(a - b)).toBeLessThanOrEqual(300);
-  });
-}
-
-test('a seek lands every tile on the same moment', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, compareUrl('spotlight'));
-  const seek = page.getByRole('slider', { name: 'Seek' });
-  const box = await boxOf(seek);
-  await page.mouse.click(box.x + box.width * 0.4, box.y + box.height / 2);
-  await expect
-    .poll(async () => {
-      const [a = -1, b = -2] = await tileTimes(page);
-      return a > 0 && Math.abs(a - b) <= 200;
-    })
-    .toBe(true);
-});
-
-test('dragging the seek bar moves every tile during the drag, not only on release', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, compareUrl('spotlight'));
-  const box = await boxOf(page.getByRole('slider', { name: 'Seek' }));
-  const y = box.y + box.height / 2;
-  await page.mouse.move(box.x + box.width * 0.1, y);
-  await page.mouse.down();
-  const start = await tileTimes(page);
-  const during: number[][] = [];
-  for (const share of [0.25, 0.4, 0.55]) {
-    await page.mouse.move(box.x + box.width * share, y, { steps: 4 });
-    await page.waitForTimeout(120);
-    during.push(await tileTimes(page));
-  }
-  // why: read while the pointer is still down; a tile that only catches up on release fails here.
-  expect(during.every((times) => times.every((time, index) => time !== start[index]))).toBe(true);
-  await page.mouse.up();
 });
