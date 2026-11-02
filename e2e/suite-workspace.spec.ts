@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 import { expect, test } from '@playwright/test';
 
-import { createSuite, openReplay, uniqueId, serveApp, gotoHydrated } from './support.ts';
+import { boxOf, createSuite, openReplay, uniqueId, serveApp, gotoHydrated } from './support.ts';
 
 const server = serveApp();
 
@@ -128,4 +128,24 @@ test('a suite link that names a run opens comparing, that run in the spotlight',
   await openReplay(page, `${server().origin}/s/${suite}/r/${two}`);
   await expect(page.locator('.ct-tile[data-role="spotlight"]')).toHaveAttribute('data-tile-id', two);
   await expect(page.getByTestId('layout-switch').getByRole('radio', { checked: true })).toHaveAttribute('data-layout', 'spotlight');
+});
+
+test('on phones a suite row puts its run strip on the line under its meta, a short suite as well as a long one', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const short = uniqueId('short');
+  const long = uniqueId('long');
+  await createSuite(page.request, server().origin, short, [{ id: 'attempt-1', label: 'Desktop', status: 'passed' }]);
+  const runs = Array.from({ length: 8 }, (_, index) => ({
+    id: `attempt-${index + 1}`,
+    label: `Run ${index + 1}`,
+    status: 'passed' as const,
+  }));
+  await createSuite(page.request, server().origin, long, runs);
+  await page.goto(`${server().origin}/`);
+  for (const id of [short, long]) {
+    const row = page.locator('.feed-suite', { has: page.getByRole('link', { name: new RegExp(`^Review ${id},`) }) });
+    const facts = await boxOf(row.locator('.feed-facts'));
+    const strip = await boxOf(row.getByRole('button', { name: new RegExp(`^Runs of Review ${id}`) }));
+    expect(strip.y).toBeGreaterThanOrEqual(facts.y + facts.height);
+  }
 });
