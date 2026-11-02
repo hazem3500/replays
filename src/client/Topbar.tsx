@@ -197,7 +197,9 @@ function TopbarTitleMenu({
               <span className="visually-hidden">{prefix}</span>
             </span>
           ) : null}
-          <span className="topbar-title-text"><TitleMorph text={title} from={from} /></span>
+          <span className="topbar-title-text">
+            <TitleMorph text={title} from={from} />
+          </span>
           <AnimatedIcon name="chevron-down" className="topbar-title-chevron" />
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-64 max-w-[calc(100vw-16px)]">

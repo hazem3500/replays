@@ -12,12 +12,16 @@ function TitleChanges() {
     <section>
       <header className="topbar app-topbar" style={{ maxWidth: 320 }}>
         <h1 className="topbar-title">
-          <span className="topbar-title-text"><TitleMorph text={TITLES[selected] ?? TITLES[0]} /></span>
+          <span className="topbar-title-text">
+            <TitleMorph text={TITLES[selected] ?? TITLES[0]} />
+          </span>
         </h1>
       </header>
       <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
         {TITLES.map((title, index) => (
-          <button key={title} type="button" onClick={() => setSelected(index)}>Run {index + 1}</button>
+          <button key={title} type="button" onClick={() => setSelected(index)}>
+            Run {index + 1}
+          </button>
         ))}
       </div>
     </section>

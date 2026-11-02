@@ -39,7 +39,7 @@ function ViewItems({ views, current, onSelect, onReset }: ViewChoice) {
         <DropdownMenuLabel>{STRINGS.group}</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={current} onValueChange={(next) => onSelect(String(next))}>
           {views.map((view) => (
-            <DropdownMenuRadioItem key={view.id} value={view.id} data-testid={`view-${view.id}`}>
+            <DropdownMenuRadioItem closeOnClick key={view.id} value={view.id} data-testid={`view-${view.id}`}>
               {view.label}
             </DropdownMenuRadioItem>
           ))}
