@@ -34,10 +34,7 @@ export default defineConfig({
       enforce: 'post',
       transform(code, id) {
         if (id !== String.fromCharCode(0) + 'tanstack-start-manifest:v') return;
-        return code.replaceAll(
-          JSON.stringify(fileURLToPath(new URL('.', import.meta.url))).slice(1, -1),
-          '',
-        );
+        return code.replaceAll(JSON.stringify(fileURLToPath(new URL('.', import.meta.url))).slice(1, -1), '');
       },
     },
     react(),
