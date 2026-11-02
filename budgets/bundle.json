@@ -789,7 +789,7 @@
         "gzip": 2350,
         "brotli": 2126
       },
-      "reason": "Lazy \"Compare with\u2026\" picker opened from the viewer's More menu (ranked likely matches, filter).",
+      "reason": "Lazy \"Compare with…\" picker opened from the viewer's More menu (ranked likely matches, filter).",
       "pr": "https://github.com/hazem3500/replays/pull/105"
     },
     {
@@ -1193,7 +1193,7 @@
         "gzip": 25851,
         "brotli": 22462
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1229,7 +1229,7 @@
       "cap": {
         "gzip": 4113
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1238,7 +1238,7 @@
         "raw": 5999,
         "gzip": 2632
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/177"
     },
     {
@@ -1258,7 +1258,7 @@
         "gzip": 1328,
         "brotli": 1128
       },
-      "reason": "View presets, per-view state and lazy headlines integrate with main\u2019s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
+      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
@@ -1269,7 +1269,7 @@
         "brotli": 8645
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552\u21928562 (+10 B). Replaces #113's allowance for this file."
+      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
     },
     {
       "file": "dist/client/assets/step-caption-HASH.js",
