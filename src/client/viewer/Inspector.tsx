@@ -13,8 +13,8 @@ import { useContextSchema } from './context-schema.ts';
 import { readStorage, writeStorage } from '../storage.ts';
 import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import type { EditTimeline } from '../../shared/edits.ts';
-import { ConsolePanel, ConsolePending } from './console/ConsolePanel.tsx';
-import { NotCaptured } from './NotCaptured.tsx';
+import { ConsolePending } from './console/ConsolePanel.tsx';
+import { ConsoleCapture } from './console/ConsoleCapture.tsx';
 import { buildNetworkRows, networkBadge } from './network/model.ts';
 import { type NetworkPeer, NetworkPanel, NetworkPending } from './network/NetworkPanel.tsx';
 import { buildMoments, performanceBadge, vitalsOf } from './performance/model.ts';
@@ -238,11 +238,7 @@ export const Inspector = memo(function Inspector({
         </DockPanel>
       ) : null}
       <DockPanel value="console" pending={ConsolePending}>
-        {!consoleTrack.entries.length && (sourceBundle.meta.captured ? !sourceBundle.meta.captured.console : human) ? (
-          <NotCaptured track="console" meta={sourceBundle.meta} testId="console-not-captured" />
-        ) : (
-          <ConsolePanel entries={consoleTrack.entries} human={human} />
-        )}
+        <ConsoleCapture entries={consoleTrack.entries} human={human} meta={sourceBundle.meta} />
       </DockPanel>
       <DockPanel value="network" pending={NetworkPending}>
         <NetworkPanel
