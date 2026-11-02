@@ -95,7 +95,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const error = suiteFailure ? suiteFailure.message : '';
   const [chosen, setSelected] = useState(initialReplayId);
   // `/s/<suite>` lands on the first failed run (else the first recording) until a run is picked.
-  const landing = suite && !initialReplayId ? initialRunReplayId(workspaceRuns(suite), Boolean(suite.runDetails)) : undefined;
+  const landing = useMemo(
+    () => (suite && !initialReplayId ? initialRunReplayId(workspaceRuns(suite), Boolean(suite.runDetails)) : undefined),
+    [initialReplayId, suite],
+  );
   const selected = chosen ?? landing;
   const { data: bundle, error: bundleFailure } = useQuery({ ...replayQuery(selected ?? ''), enabled: Boolean(selected) });
   const bundleError = bundleFailure ? bundleFailure.message : '';
@@ -253,11 +256,11 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   if (shownTitle && shownTitle !== titles.current)
     setTitles({ current: shownTitle, ...(titles.current ? { previous: titles.current } : {}) });
   // Phones hide the runs sidebar, so the run's place in the suite rides along as a muted prefix.
-  const playableRuns = playable;
+  const playableRuns = runs.filter((item) => playableReplayId(item, detailed));
   const runIndex = playableRuns.findIndex((item) => item.replayId === selected);
   const runPrefix = narrow && runIndex >= 0 ? `Run ${runIndex + 1} of ${playableRuns.length}` : undefined;
   const tone = run ? statusTone(run, detailed) : undefined;
-  const runStatus = tone ? <RunStatusChip tone={tone} /> : undefined;
+  const runStatus = useMemo(() => (tone ? <RunStatusChip tone={tone} /> : undefined), [tone]);
 
   if (authFailure || (error && !suite)) {
     const message = authFailure?.message ?? error ?? '';
@@ -283,7 +286,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
       <a className="skip-link" href="#replay-player">
         Skip to replay
       </a>
-      {!narrow ? (
+      {suite && !narrow ? (
         <SuiteSidebar
           suite={suite}
           runs={runs}
