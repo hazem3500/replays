@@ -787,6 +787,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .sk-run-meta { width: 46%; }
 .sk-layout-switch { width: 88px; height: 32px; flex: none; align-self: center; margin-right: 6px; border-radius: var(--radius); background: var(--surface-hover); }
 .sk-headline { flex: none; height: 45px; box-sizing: border-box; border-bottom: 1px solid var(--line); background: var(--surface); }
+.suite-workspace:not([data-rail]):not([data-narrow]) .sk-headline { display: none; }
 .sk-stage.sk-tiles { display: flex; flex-wrap: wrap; place-content: center; gap: 8px; padding: 12px; }
 .sk-tile { position: relative; width: min(calc((100cqw - (var(--sk-cols) - 1) * 8px) / var(--sk-cols)), calc((100cqh - (var(--sk-rows) - 1) * 8px) / var(--sk-rows) * var(--sk-ratio, 1.6))); aspect-ratio: var(--sk-ratio, 1.6); border-radius: 10px; background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
 .sk-tile-name { position: absolute; bottom: 8px; left: 8px; width: 88px; height: 24px; border-radius: 999px; }

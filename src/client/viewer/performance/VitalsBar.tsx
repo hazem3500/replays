@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react';
 
+import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
+
 import { formatDuration } from '../network/model.ts';
 import { VERDICT_WORDS, type Vital, type VitalId } from './model.ts';
 
@@ -42,8 +44,8 @@ function deltaTone(difference: number) {
 }
 
 /**
- * One row of verdicts: each vital's value, a verdict word (never colour alone) and, when comparing, how far it is from
- * each other recording. A vital with a moment behind it selects that moment; a paint seeks to when it happened.
+ * Selected recording's measurements, with pairwise differences inline or larger comparisons available on demand.
+ * A vital with a moment behind it selects that moment; a paint seeks to when it happened.
  */
 export function VitalsBar({
   vitals,
@@ -71,21 +73,51 @@ export function VitalsBar({
             >
               <span className="pp-vital-label">{LABELS[vital.id]}</span>
               <VitalValue vital={vital} />
-              {peers.map((peer) => {
-                const difference = peer.deltas[vital.id];
-                return difference === undefined ? null : (
-                  <span key={peer.id} className="pp-delta" data-tone={deltaTone(difference)} data-tile={peer.colour}>
-                    <span className="ct-swatch" aria-hidden="true" />
-                    {deltaText(difference, peer.name)}
-                  </span>
-                );
-              })}
+              {peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
             </button>
+            {peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
           </li>
         ))}
       </ul>
       {children}
     </div>
+  );
+}
+
+function VitalDelta({ vital, peer }: { vital: Vital; peer: VitalPeer }) {
+  const difference = peer.deltas[vital.id];
+  if (difference === undefined) return null;
+  return (
+    <span className="pp-delta" data-tone={deltaTone(difference)} data-tile={peer.colour}>
+      <span className="ct-swatch" aria-hidden="true" />
+      {deltaText(difference, peer.name)}
+    </span>
+  );
+}
+
+function VitalComparisons({ vital, peers }: { vital: Vital; peers: readonly VitalPeer[] }) {
+  const measured = peers.filter((peer) => peer.deltas[vital.id] !== undefined);
+  if (!measured.length) return null;
+  return (
+    <Popover>
+      <PopoverTrigger
+        className="pp-compare"
+        aria-label={`Compare ${LABELS[vital.id].toLowerCase()} with ${measured.length} ${measured.length === 1 ? 'recording' : 'recordings'}`}
+      >
+        Compare {measured.length}
+      </PopoverTrigger>
+      <PopoverContent className="pp-comparisons" align="start">
+        <PopoverTitle>{LABELS[vital.id]} comparison</PopoverTitle>
+        <p>Selected recording compared with:</p>
+        <ul>
+          {measured.map((peer) => (
+            <li key={peer.id}>
+              <VitalDelta vital={vital} peer={peer} />
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   );
 }
 

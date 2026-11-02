@@ -15,6 +15,7 @@ export function SuiteCompare({
   focus,
   onFocus,
   page,
+  hideCompareSummary,
 }: {
   runs: ReadonlyArray<{ replayId: string; label: string }>;
   /** The layout a URL without `layout` means (compare/defaults.ts). */
@@ -22,6 +23,7 @@ export function SuiteCompare({
   focus: string;
   onFocus: (replayId: string) => void;
   page: ComparePageProps;
+  hideCompareSummary: boolean;
 }) {
   const { layout, t } = parseCompareSearch(useLocationSearch(), '', fallback);
   return (
@@ -39,6 +41,7 @@ export function SuiteCompare({
       }}
       href={(id, seconds) => `${replayHref(id)}?t=${seconds}`}
       page={page}
+      hideCompareSummary={hideCompareSummary}
     />
   );
 }

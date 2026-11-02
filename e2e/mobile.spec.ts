@@ -44,8 +44,14 @@ test('the search grows from its icon across the row, finds a replay and closes b
   await gotoHydrated(page, `${origin()}/`);
   const search = page.getByRole('combobox', { name: 'Search replays' });
   const slot = page.locator('.command-search');
-  const rest = (await slot.boundingBox())!;
-  expect(rest.width).toBe(40);
+  const rest = { x: 0, width: 0 };
+  await expect
+    .poll(async () => {
+      const box = await slot.boundingBox();
+      if (box) Object.assign(rest, box);
+      return box?.width;
+    })
+    .toBe(40);
   await slot.tap();
   await expect(search).toBeFocused();
   await expect(page.getByRole('heading', { level: 1 })).toBeHidden();
@@ -59,7 +65,7 @@ test('the search grows from its icon across the row, finds a replay and closes b
   await expect(search).not.toBeFocused();
   await expect(search).toHaveValue('');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  expect((await slot.boundingBox())!.x).toBe(rest.x);
+  await expect.poll(async () => (await slot.boundingBox())?.x).toBe(rest.x);
 });
 
 test('open, play, scrub by touch, switch tabs, fold and unfold the panel', async ({ page, context }) => {
@@ -144,6 +150,8 @@ test('the topbar fits at 320 px: the title keeps its room beside Edit and More; 
   expect((await page.locator('#replay-title').boundingBox())!.width).toBeGreaterThanOrEqual(120);
   await expect(header.getByRole('button', { name: 'Replay details' })).toHaveCount(0);
   await expect(header.getByRole('button', { name: /^Switch to (light|dark) theme$/ })).toHaveCount(0);
+  const title = 'Demo shop: checkout with a bad coupon';
+  await expect(page.locator('#replay-title')).toHaveAccessibleName(title);
 
   // A tap on an icon button never leaves a tooltip behind.
   await header.getByRole('button', { name: 'More actions' }).tap();
@@ -151,9 +159,8 @@ test('the topbar fits at 320 px: the title keeps its room beside Edit and More; 
   await expect(page.getByTestId('theme-menu-item')).toBeVisible();
 
   // Replay details is a bottom sheet headed by the full title (the bar cuts it).
-  const title = await page.locator('#replay-title').textContent();
   await page.getByTestId('replay-details').tap();
   const sheet = page.getByTestId('replay-info');
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByRole('heading', { name: title!.trim() })).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: title, exact: true })).toBeVisible();
 });

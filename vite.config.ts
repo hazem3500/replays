@@ -113,7 +113,10 @@ export default defineConfig(({ command }) => ({
     appBaseMeta(),
   ],
   // shadcn/ui convention: "@/components/ui/…" resolves inside the client.
-  resolve: { alias: { '@': fileURLToPath(new URL('./src/client', import.meta.url)) } },
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src/client', import.meta.url)) },
+    dedupe: ['react', 'react-dom'],
+  },
   build: {
     // Quality budgets follow static imports for initial JS/CSS and inventory every lazy chunk.
     manifest: true,

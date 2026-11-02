@@ -153,7 +153,7 @@ test('a loading shell cannot satisfy the profile-free viewer assertions', async 
 
     release();
     const viewer = await loadedViewer(page);
-    await expect(viewer.getByRole('heading', { level: 1 })).toHaveText('Delayed profile-free replay');
+    await expect(viewer.getByRole('heading', { level: 1 })).toHaveAccessibleName('Delayed profile-free replay');
     await expect(viewer).not.toHaveAttribute('data-profile');
   } finally {
     release();

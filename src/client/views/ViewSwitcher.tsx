@@ -39,7 +39,7 @@ function ViewItems({ views, current, onSelect, onReset }: ViewChoice) {
         <DropdownMenuLabel>{STRINGS.group}</DropdownMenuLabel>
         <DropdownMenuRadioGroup value={current} onValueChange={(next) => onSelect(String(next))}>
           {views.map((view) => (
-            <DropdownMenuRadioItem key={view.id} value={view.id} data-testid={`view-${view.id}`}>
+            <DropdownMenuRadioItem closeOnClick key={view.id} value={view.id} data-testid={`view-${view.id}`}>
               {view.label}
             </DropdownMenuRadioItem>
           ))}
@@ -95,7 +95,7 @@ export function ViewSwitcher(choice: ViewChoice) {
   );
 }
 
-/** Phones: the same choice inside the top bar's More menu, so the bar keeps its room for the title. */
+/** View choices inside the top bar's More menu, keeping the bar's room for the title. */
 export function ViewMenuItems(choice: ViewChoice) {
   return <ViewItems {...choice} />;
 }

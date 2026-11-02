@@ -1,6 +1,6 @@
 import { type ReactNode, useRef, useState } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { AnimatedText } from '@/components/animated-text.tsx';
+import { TitleMorph } from '@/components/title-morph.tsx';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { Badge } from '@/components/ui/badge.tsx';
@@ -159,7 +159,7 @@ function TopbarTitle({ title, from, prefix, id }: { title: string; from?: string
         }}
       >
         <TooltipTrigger render={<span ref={text} className="topbar-title-text" />}>
-          <AnimatedText text={title} from={from} />
+          <TitleMorph text={title} from={from} />
         </TooltipTrigger>
         <TooltipContent side="bottom" align="start">
           {title}
@@ -197,7 +197,9 @@ function TopbarTitleMenu({
               <span className="visually-hidden">{prefix}</span>
             </span>
           ) : null}
-          <AnimatedText className="topbar-title-text" text={title} from={from} />
+          <span className="topbar-title-text">
+            <TitleMorph text={title} from={from} />
+          </span>
           <AnimatedIcon name="chevron-down" className="topbar-title-chevron" />
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-64 max-w-[calc(100vw-16px)]">

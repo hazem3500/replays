@@ -319,6 +319,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>
             <SuiteCompare
+              hideCompareSummary={!narrow && !collapsed}
               runs={playable}
               fallback={defaults.layout}
               focus={selected}

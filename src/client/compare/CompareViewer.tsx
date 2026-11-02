@@ -52,6 +52,8 @@ export interface CompareViewerProps {
   time?: number | undefined;
   /** The page's own viewer props for the focused recording (a suite run's title, status and menus). */
   page?: ComparePageProps | undefined;
+  /** The expanded suite sidebar already presents each run's summary. */
+  hideCompareSummary?: boolean;
 }
 
 /**
@@ -165,7 +167,7 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
         inspectorPeers={peers}
         comparing={tiles.map((tile) => tile.id)}
         onCompareWith={compare.onAdd}
-        compareSummary={<CompareSummary tiles={ready} focus={focused.id} onFocus={onFocus} />}
+        compareSummary={compare.hideCompareSummary ? undefined : <CompareSummary tiles={ready} focus={focused.id} onFocus={onFocus} />}
       />
     </div>
   );
