@@ -26,14 +26,15 @@ interface Latest {
   readonly current: PhoneTimelineOptions;
 }
 
+const distance = (touches: TouchList) => {
+  const [a, b] = [touches[0], touches[1]];
+  return a && b ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : 0;
+};
+
 /** Two fingers or Ctrl + wheel scale px per ms around the playhead, within clampScale. */
 function pinchZoom(latest: Latest) {
   let pinch: { distance: number; scale: number } | undefined;
   const zoom = (next: number) => latest.current.onScale(clampScale(next, latest.current.fit));
-  const distance = (touches: TouchList) => {
-    const [a, b] = [touches[0], touches[1]];
-    return a && b ? Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY) : 0;
-  };
   return {
     active: () => pinch !== undefined,
     start: (event: TouchEvent) => {
@@ -165,7 +166,7 @@ export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTim
 
   useEffect(() => {
     control.current?.place(player.getTime() * scale);
-  }, [scroller, player, scale]);
+  }, [player, scale]);
 }
 
 /** The lanes' width as they resize (0 until measured): what the whole recording is fitted to. */

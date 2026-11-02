@@ -887,26 +887,19 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
           </section>
           {mobile ? null : <InspectorResizer shell={shell} height={dockHeight} onCommit={setDockHeight} size={DOCK_SIZE} />}
           <section className="editor-dock" aria-label={mobile ? 'Editing tools' : 'Timeline'}>
-            {mobile ? (
-              <>
-                <div className="flex gap-1 overflow-x-auto px-3">
-                  <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
-                    {null}
-                  </EditorPluginTools>
-                </div>
-                {suggesting && suggestions.length ? (
-                  <div className="editor-suggest" role="status" data-testid="wait-suggestions">
-                    {suggestions.length} waits found
-                    <Button variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
-                      Remove all
-                    </Button>
-                    <Button variant="ghost" onClick={() => setSuggesting(false)}>
-                      Dismiss
-                    </Button>
-                  </div>
-                ) : null}
-              </>
-            ) : (
+            {mobile ? <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change} /> : null}
+            {mobile && suggesting && suggestions.length ? (
+              <div className="editor-suggest" role="status" data-testid="wait-suggestions">
+                {suggestions.length} waits found
+                <Button variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
+                  Remove all
+                </Button>
+                <Button variant="ghost" onClick={() => setSuggesting(false)}>
+                  Dismiss
+                </Button>
+              </div>
+            ) : null}
+            {mobile ? null : (
               <div className="editor-bar" role="group" aria-label="Playback and tools">
                 <EditorPlayButton onSwitch={playPause} />
                 <EditorClock />
