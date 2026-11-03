@@ -16,8 +16,12 @@ export function useRegionFeedback(selected: boolean) {
         document.documentElement.hasAttribute('data-timeline-dragging') || matchMedia('(prefers-reduced-motion: reduce)').matches;
       for (const node of root.querySelectorAll<HTMLElement>('.tl-region-edge-mark, .tl-region-remove')) {
         const from = getComputedStyle(node).opacity;
-        controls.get(node)?.stop();
-        if (instant || typeof node.animate !== 'function') node.style.setProperty('opacity', String(target));
+        // invariant: never animate or stop an element that is not rendered (a short clip hides its ×); Motion's stop
+        // commits styles and throws on it, which took the whole editor down.
+        const rendered = node.getClientRects().length > 0;
+        if (rendered) controls.get(node)?.stop();
+        controls.delete(node);
+        if (!rendered || instant || typeof node.animate !== 'function') node.style.setProperty('opacity', String(target));
         else controls.set(node, animate([node], { opacity: [Number(from), target] }, { duration: 0.16, ease: [0.23, 1, 0.32, 1] }));
       }
     };
@@ -47,7 +51,7 @@ export function useRegionFeedback(selected: boolean) {
       root.removeEventListener('pointerleave', leave);
       root.removeEventListener('focusin', focus);
       root.removeEventListener('focusout', blur);
-      for (const animation of controls.values()) animation.stop();
+      for (const [node, animation] of controls) if (node.getClientRects().length > 0) animation.stop();
     };
   }, [selected]);
   return element;
