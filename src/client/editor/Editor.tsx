@@ -29,9 +29,9 @@ import { EditCaption } from '../edit-caption.tsx';
 import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
-import { Durations, EditorPlayButton, EditorTime } from './EditorTransport.tsx';
+import { Durations } from './EditorTransport.tsx';
 import { EDITOR_DOCK } from './dock-size.ts';
-import { EditHistory, InspectorAside, PhoneUndo, WaitSuggestion } from './EditorChrome.tsx';
+import { EditHistory, EditorDockBar, InspectorAside, PhoneUndo, WaitSuggestion } from './EditorChrome.tsx';
 import { removeSelection } from './remove-selection.ts';
 import { duplicateEffect, splitEffect } from './phone-edits.ts';
 import { type PhoneObjectActions, PhoneObjectToolbar, selectionKey } from './PhoneObjectToolbar.tsx';
@@ -875,12 +875,10 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 </div>
               ) : null}
               {mobile ? null : (
-                <div className="editor-bar" role="group" aria-label="Playback and tools">
-                  <div className="editor-bar-start">
-                    <EditorPlayButton onSwitch={playPause} />
-                    <EditorTime total={timeline.originalDuration} />
-                  </div>
-                  <div className="editor-bar-tools">
+                <EditorDockBar
+                  onPlay={playPause}
+                  total={timeline.originalDuration}
+                  tools={
                     <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
                       <BarTools
                         rangeSelected={selection?.kind === 'range'}
@@ -888,7 +886,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
                       />
                     </EditorPluginTools>
-                    <span className="editor-bar-divider" aria-hidden="true" />
+                  }
+                  add={
                     <AddMenu
                       onAdd={actions.effect}
                       onPointHighlight={actions.pointHighlight}
@@ -896,15 +895,15 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                       showEmptyTracks={showEmptyTracks}
                       onShowEmptyTracks={setShowEmptyTracks}
                     />
-                  </div>
-                  <div className="editor-bar-end">
-                    {suggesting && suggestions.length ? (
+                  }
+                  end={
+                    suggesting && suggestions.length ? (
                       <WaitSuggestion count={suggestions.length} onApply={applySuggestions} onDismiss={() => setSuggesting(false)} />
                     ) : (
                       <Durations original={timeline.originalDuration} edited={timeline.duration} />
-                    )}
-                  </div>
-                </div>
+                    )
+                  }
+                />
               )}
               {conflict ? (
                 <div className="editor-conflict" role="status">

@@ -6,6 +6,7 @@ import { IconButton } from '@/components/icon-button.tsx';
 
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { IS_MAC, MOD } from './editor-tools.ts';
+import { EditorPlayButton, EditorTime } from './EditorTransport.tsx';
 import { EditorInspector } from './EditorInspector.tsx';
 import type { SelectionCommands } from './SelectionInspector.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
@@ -94,5 +95,39 @@ export function WaitSuggestion({ count, onApply, onDismiss }: { count: number; o
         Dismiss
       </Button>
     </span>
+  );
+}
+
+/**
+ * The desktop dock's bar in three zones: play and the "0:04.0 / 0:13.5" timecode on the left, the editing tools
+ * centred in one quiet group (`tools`, then `add`), and on the right what the edits leave or the waits found (`end`).
+ */
+export function EditorDockBar({
+  onPlay,
+  total,
+  tools,
+  add,
+  end,
+}: {
+  onPlay: () => void;
+  /** The recording's length, ms. */
+  total: number;
+  tools: ReactNode;
+  add: ReactNode;
+  end: ReactNode;
+}) {
+  return (
+    <div className="editor-bar" role="group" aria-label="Playback and tools">
+      <div className="editor-bar-start">
+        <EditorPlayButton onSwitch={onPlay} />
+        <EditorTime total={total} />
+      </div>
+      <div className="editor-bar-tools">
+        {tools}
+        <span className="editor-bar-divider" aria-hidden="true" />
+        {add}
+      </div>
+      <div className="editor-bar-end">{end}</div>
+    </div>
   );
 }

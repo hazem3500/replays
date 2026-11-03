@@ -143,9 +143,9 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 31792,
-      "gzip": 6222,
-      "brotli": 5531
+      "raw": 33455,
+      "gzip": 6480,
+      "brotli": 5776
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 130902,
@@ -159,8 +159,8 @@
     },
     "dist/client/assets/elements-HASH.js": {
       "raw": 17285,
-      "gzip": 6333,
-      "brotli": 5792
+      "gzip": 6332,
+      "brotli": 5791
     },
     "dist/client/assets/enabled-HASH.js": {
       "raw": 98,
@@ -254,7 +254,7 @@
     },
     "dist/client/assets/measure-HASH.js": {
       "raw": 30211,
-      "gzip": 11747,
+      "gzip": 11746,
       "brotli": 10819
     },
     "dist/client/assets/microtask-HASH.js": {
@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 66
+      "brotli": 71
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -273,7 +273,7 @@
       "brotli": 1555
     },
     "dist/client/assets/open-hint-HASH.css": {
-      "raw": 21975,
+      "raw": 21746,
       "gzip": 4642,
       "brotli": 4077
     },
@@ -339,7 +339,7 @@
     },
     "dist/client/assets/ReplayIndex-HASH.js": {
       "raw": 228026,
-      "gzip": 75900,
+      "gzip": 75899,
       "brotli": 64138
     },
     "dist/client/assets/settings-HASH.js": {
@@ -454,7 +454,7 @@
     },
     "dist/client/index.html": {
       "raw": 14204,
-      "gzip": 4630,
+      "gzip": 4629,
       "brotli": 3878
     },
     "dist/client/render.html": {
@@ -1249,30 +1249,6 @@
       "file": "dist/client/assets/dropdown-menu-HASH.css",
       "cap": {
         "brotli": 659
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/178",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "raw": 31792
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/178",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "gzip": 6222
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/178",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "brotli": 5531
       },
       "pr": "https://github.com/hazem3500/replays/pull/178",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
@@ -2142,16 +2118,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/208"
     },
     {
-      "file": "dist/client/assets/motion-features-HASH.js",
-      "cap": {
-        "raw": 66,
-        "gzip": 81,
-        "brotli": 70
-      },
-      "reason": "Shared Motion feature chunk regrouped by one more importer of the transform motion hook. Reviewed and approved by Hazem. CI same-runner main/head: brotli 64 to 67 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/208"
-    },
-    {
       "file": "dist/client/assets/open-hint-HASH.css",
       "cap": {
         "raw": 21975,
@@ -2170,6 +2136,26 @@
       },
       "reason": "The transform motion hook moved into this shared chunk once first run dropped its own chevron code for the shared disclosure. Reviewed and approved by Hazem. CI same-runner main/head: raw 303 to 531, gzip 246 to 391, brotli 211 to 349 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/208"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 33455,
+        "gzip": 6480,
+        "brotli": 5776
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03): the editor's inspector cards, lifted timeline clips (#217) and the calmer dock, three-zone toolbar and lane invitation (#221), after removing about 460 bytes of dead rules. CI same-runner main/head: raw 31772 to 32480, gzip 6198 to 6291, brotli 5518 to 5607 bytes; caps keep the budget's 3% headroom. Replaces the #178 entries for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/221"
+    },
+    {
+      "file": "dist/client/assets/motion-features-HASH.js",
+      "cap": {
+        "raw": 66,
+        "gzip": 81,
+        "brotli": 71
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03): this unchanged 64-byte chunk's brotli output shifts by two bytes as neighbouring chunk names change. CI same-runner main/head: raw 64 to 64, gzip 78 to 78, brotli 66 to 68 bytes; raw and gzip keep their current caps. Replaces the #208 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/221"
     }
   ]
 }
