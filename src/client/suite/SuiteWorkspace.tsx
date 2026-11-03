@@ -161,10 +161,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
           setPending(undefined);
         },
         replayId
-          ? Promise.all([
-              queryClient.query(replayQuery(replayId)),
-              queryClient.query(editsQuery(replayId)).catch(() => undefined),
-            ])
+          ? Promise.all([queryClient.query(replayQuery(replayId)), queryClient.query(editsQuery(replayId)).catch(() => undefined)])
           : Promise.resolve(),
         { instant },
       );
