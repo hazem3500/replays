@@ -45,7 +45,8 @@ async function listen(handler: (request: import('node:http').IncomingMessage, re
   return { base: `http://127.0.0.1:${address.port}`, server };
 }
 
-describe('installed CLI server setup', () => {
+// why: a test spawns the CLI up to seven times in a row; on a busy two-core CI runner that exceeds the 5 s default.
+describe('installed CLI server setup', { timeout: 30_000 }, () => {
   it('saves a private default, checks a base path, and uploads with saved target plus caller credentials', async () => {
     const dataDir = await tempDir();
     const received: Array<{ path: string; authorization?: string; body?: string }> = [];

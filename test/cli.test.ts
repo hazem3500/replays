@@ -265,7 +265,8 @@ const runSource = (...args: string[]) =>
     cwd: tmpdir(),
   });
 
-describe('the replays command', () => {
+// why: each test spawns the CLI several times in a row; on a busy two-core CI runner that exceeds the 5 s default.
+describe('the replays command', { timeout: 30_000 }, () => {
   it.each([
     ['bin/replays.mjs', run],
     ['src/cli.ts', runSource],
