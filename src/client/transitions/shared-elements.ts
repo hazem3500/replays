@@ -58,7 +58,8 @@ export function holdStill(card: HTMLElement | undefined) {
     pause() {
       if (releaseHold !== release) return;
       for (const animation of card?.getAnimations({ subtree: true }) ?? []) {
-        if (animation.playState !== 'running') continue;
+        // invariant: only finite motion is held; a looping one (a pulse, a hover preview) cannot finish when released.
+        if (animation.playState !== 'running' || animation.effect?.getComputedTiming().endTime === Infinity) continue;
         animation.pause();
         paused.push(animation);
       }
