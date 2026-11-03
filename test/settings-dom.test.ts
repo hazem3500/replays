@@ -155,7 +155,7 @@ describe('Settings', () => {
     await vi.waitFor(() => expect(panel()?.querySelector('.cli-access dd')?.textContent).toBe('Disabled'));
     expect(panel()?.textContent).toContain('Install from source until the npm release.');
     expect(panel()?.querySelector('a[href$="#quickstart"]')?.textContent).toContain('Get the source');
-    expect(panel()?.querySelector('.settings-credentials')?.hasAttribute('open')).toBe(false);
+    expect(panel()?.querySelector('.settings-credentials button')?.getAttribute('aria-expanded')).toBe('false');
     expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toBe('replays upload replay.json');
   });
 

@@ -1,0 +1,42 @@
+/* Disclosure (disclosure.tsx): a tertiary-text trigger whose chevron turns a quarter, and the panel it reveals. */
+.ui-disclosure-trigger {
+  width: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 0 0 -2px;
+  padding: 0 4px 0 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-tertiary);
+  font: inherit;
+  cursor: pointer;
+  transition: color var(--motion-press) var(--ease-out);
+}
+.ui-disclosure-trigger:focus-visible,
+.ui-disclosure-trigger[data-panel-open] {
+  color: var(--text-secondary);
+}
+@media (hover: hover) {
+  .ui-disclosure-trigger:hover {
+    color: var(--text);
+  }
+}
+.ui-disclosure-chevron {
+  display: inline-flex;
+  flex: none;
+}
+.ui-disclosure-chevron > svg {
+  width: 14px;
+  height: 14px;
+}
+.ui-disclosure-panel {
+  padding-top: 6px;
+}
+@media (pointer: coarse) {
+  .ui-disclosure-trigger {
+    min-height: 40px;
+  }
+}

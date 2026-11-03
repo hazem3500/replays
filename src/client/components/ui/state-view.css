@@ -62,19 +62,15 @@
 }
 .state-view-details {
   max-width: min(60ch, 100%);
-  color: var(--text-tertiary);
+  display: grid;
+  justify-items: center;
   font-size: var(--text-xs);
 }
-.state-view-details > summary {
-  cursor: pointer;
-  border-radius: var(--radius-sm);
+.state-view[data-layout="panel"] .state-view-details {
+  justify-items: start;
 }
-.state-view-details > summary:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-.state-view-details > pre {
-  margin: 8px 0 0;
+.state-view-details pre {
+  margin: 2px 0 0;
   padding: 8px 10px;
   overflow-x: auto;
   border: 1px solid var(--line);

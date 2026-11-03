@@ -1,6 +1,7 @@
 import { GaugeIcon } from 'lucide-react';
 
 import { CopyButton } from '@/components/copy-button.tsx';
+import { Disclosure } from '@/components/ui/disclosure.tsx';
 import { StateView } from '@/components/ui/state-view.tsx';
 
 import type { ReplayMeta } from '../../shared/replay.ts';
@@ -60,11 +61,10 @@ export function NotCaptured({
         <Snippet value={help.snippet} />
         {peers.length ? <p>{STRINGS.peers(peers)}</p> : null}
         {help.cli ? (
-          <details className="not-captured-cli">
-            <summary>{STRINGS.cliTitle}</summary>
+          <Disclosure className="not-captured-cli" panelClassName="not-captured-cli-panel" summary={STRINGS.cliTitle}>
             <p>{STRINGS.cliWhat}</p>
             <Snippet value={help.cli} />
-          </details>
+          </Disclosure>
         ) : null}
       </div>
     </StateView>

@@ -1,13 +1,13 @@
-import { BotIcon, ChevronRightIcon, CircleDotIcon, LinkIcon, TerminalIcon, UploadIcon } from 'lucide-react';
+import { BotIcon, CircleDotIcon, LinkIcon, TerminalIcon, UploadIcon } from 'lucide-react';
 import { useState } from 'react';
 
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible.tsx';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { Disclosure } from '@/components/ui/disclosure.tsx';
 
 import type { ProfileInfo } from '../../../shared/profiles.ts';
 import { copyText } from '../../clipboard.ts';
 import { resolveSlot } from '../../plugins/registry.ts';
 import { apiUrl } from '../../api/fetch.ts';
-import { useTransformMotion } from '../../hooks/use-transform-motion.ts';
 import { useHydrated } from '../../hooks/use-hydrated.ts';
 import { coreWays, FIRST_RUN_SLOT, type FirstRunCommand, type FirstRunContext, type FirstRunWay, firstRunStrings } from './model.ts';
 
@@ -48,8 +48,6 @@ function CommandBlock({ command }: { command: FirstRunCommand }) {
 }
 
 function WayCard({ id, way }: { id: string; way: FirstRunWay }) {
-  const [moreOpen, setMoreOpen] = useState(false);
-  const chevron = useTransformMotion<SVGSVGElement>(`rotate(${moreOpen ? 90 : 0}deg)`);
   const Icon = ICONS[way.icon ?? 'link'];
   return (
     <section className="first-run-way" data-slot-item={id} aria-labelledby={`first-run-${id}`}>
@@ -70,20 +68,14 @@ function WayCard({ id, way }: { id: string; way: FirstRunWay }) {
       ) : null}
       {way.command ? <CommandBlock command={way.command} /> : null}
       {way.more ? (
-        <Collapsible className="first-run-more" open={moreOpen} onOpenChange={setMoreOpen}>
-          <CollapsibleTrigger className="first-run-more-trigger">
-            <ChevronRightIcon ref={chevron} aria-hidden="true" />
-            {way.more.label}
-          </CollapsibleTrigger>
-          <CollapsibleContent className="first-run-more-panel">
-            <CommandBlock command={way.more.command} />
-          </CollapsibleContent>
-        </Collapsible>
+        <Disclosure className="first-run-more" summary={way.more.label}>
+          <CommandBlock command={way.more.command} />
+        </Disclosure>
       ) : null}
       {way.action ? (
         <a className="first-run-link" href={way.action.href} target="_blank" rel="noreferrer">
           {way.action.label}
-          <ChevronRightIcon aria-hidden="true" />
+          <AnimatedIcon name="chevron-right" />
         </a>
       ) : null}
     </section>

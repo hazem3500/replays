@@ -12,10 +12,12 @@ test('a missing replay says so plainly in the upper third, with one way back and
   expect((await boxOf(title)).y).toBeLessThan(800 / 3);
   await expect(state.getByRole('link', { name: 'Back to all replays' })).toBeVisible();
   await expect(state.getByRole('button', { name: 'Try again' })).toBeVisible();
-  const details = state.locator('details.state-view-details');
-  await expect(details.locator('pre')).toBeHidden();
-  await details.locator('summary').click();
-  await expect(details.locator('pre')).toContainText('no-such-replay-here');
+  const details = state.getByRole('button', { name: 'Details' });
+  await expect(details).toHaveAttribute('aria-expanded', 'false');
+  await expect(state.locator('.state-view-details pre')).toBeHidden();
+  await details.click();
+  await expect(details).toHaveAttribute('aria-expanded', 'true');
+  await expect(state.locator('.state-view-details pre')).toContainText('no-such-replay-here');
 });
 
 test('an imported recording without console says why it matters and how its source captures it', async ({ page }) => {
