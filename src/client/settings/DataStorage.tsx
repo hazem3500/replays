@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { RotateCcwIcon, Trash2Icon } from 'lucide-react';
+import { Trash2Icon } from 'lucide-react';
 
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import type { DataStorageInfo } from '../../shared/data-storage.ts';
@@ -57,7 +58,7 @@ function TrashList({
             void refresh();
           }}
         >
-          <RotateCcwIcon />
+          <AnimatedIcon name="rotate-ccw" />
           {copy.refresh}
         </Button>
       </div>

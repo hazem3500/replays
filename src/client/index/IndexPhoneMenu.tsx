@@ -1,6 +1,7 @@
-import { EllipsisIcon, MoonIcon, SettingsIcon, SunIcon, UploadIcon, UserRoundIcon } from 'lucide-react';
+import { SettingsIcon, UserRoundIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer.tsx';
 
@@ -35,7 +36,9 @@ export interface IndexPhoneMenuItem {
 /** The sheet's rows: the built-ins, then the signed-in account's (who, and Sign out where the auth mode has one). */
 export function phoneMenuItems({ onUpload, account }: { onUpload?: () => void; account?: Account }): IndexPhoneMenuItem[] {
   return [
-    ...(onUpload ? [{ id: 'upload', label: strings.upload, hint: strings.uploadHint, icon: <UploadIcon />, onSelect: onUpload }] : []),
+    ...(onUpload
+      ? [{ id: 'upload', label: strings.upload, hint: strings.uploadHint, icon: <AnimatedIcon name="upload" />, onSelect: onUpload }]
+      : []),
     { id: 'settings', label: strings.settings, hint: strings.settingsHint, icon: <SettingsIcon />, onSelect: () => openSettings() },
     ...accountMenuItems(account).map((item) => ({
       id: item.testId ?? item.label,
@@ -58,7 +61,7 @@ function ThemeRow() {
     <li data-slot-item="theme">
       <button type="button" className="phone-menu-row" data-testid="phone-menu-theme" onClick={switchTheme}>
         <span className="phone-menu-icon" aria-hidden="true">
-          {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+          <AnimatedIcon name={theme === 'dark' ? 'moon' : 'sun'} />
         </span>
         <span className="phone-menu-text">
           <span className="phone-menu-label">{strings.theme}</span>
@@ -93,7 +96,7 @@ export function IndexPhoneMenu({ items, signedIn = false }: { items: IndexPhoneM
   return (
     <Drawer>
       <DrawerTrigger className="phone-menu-trigger" aria-label={strings.trigger}>
-        {signedIn ? <UserRoundIcon aria-hidden="true" /> : <EllipsisIcon aria-hidden="true" />}
+        {signedIn ? <UserRoundIcon aria-hidden="true" /> : <AnimatedIcon name="ellipsis" />}
       </DrawerTrigger>
       <DrawerContent className="phone-menu-sheet">
         <DrawerTitle className="phone-menu-title">{productName()}</DrawerTitle>

@@ -7,6 +7,7 @@ import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { cn } from '@/lib/utils.ts';
 import { HoverGlide } from '@/components/sliding-highlight.tsx';
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from 'lucide-react';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 const Select = SelectPrimitive.Root;
 
@@ -37,7 +38,9 @@ function SelectTrigger({
       {...props}
     >
       {children}
-      <SelectPrimitive.Icon render={<ChevronDownIcon className="pointer-events-none size-3.5 text-muted-foreground" />} />
+      <SelectPrimitive.Icon className="pointer-events-none flex text-muted-foreground">
+        <AnimatedIcon name="chevron-down" className="size-3.5" />
+      </SelectPrimitive.Icon>
     </SelectPrimitive.Trigger>
   );
 }
