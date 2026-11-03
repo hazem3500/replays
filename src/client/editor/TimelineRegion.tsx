@@ -101,8 +101,9 @@ function RegionEdge({ side, actions }: { side: 'from' | 'to'; actions: RegionAct
 
 /**
  * One region on a lane (a cut here; zoom, speed, blur and caption regions use it too): drag the body to move it, its
- * edges to resize, × (on hover or when selected) to remove it. A click selects it and shows where it starts. It is
- * a button for the keyboard: arrows move it (Shift: by a second), Delete or Backspace removes it.
+ * edges to resize. Selected, it lifts and a Remove bubble floats above it (next in Tab order). A click selects it and
+ * shows where it starts. It is a button for the keyboard: arrows move it (Shift: by a second), Delete or Backspace
+ * removes it.
  */
 export function RegionBlock({ region, selected, actions }: { region: RegionSpec; selected: boolean; actions: RegionActions }) {
   const scale = useTimelineScale();
@@ -131,12 +132,14 @@ export function RegionBlock({ region, selected, actions }: { region: RegionSpec;
         type="button"
         className="tl-region-remove"
         aria-label={`Remove ${title}`}
-        tabIndex={-1}
+        aria-keyshortcuts="Delete"
+        tabIndex={selected ? 0 : -1}
         data-testid={`remove-${kind}`}
         onPointerDown={(event) => event.stopPropagation()}
         onClick={actions.onRemove}
       >
-        <AnimatedIcon name="x" size={12} strokeWidth={2.25} />
+        <AnimatedIcon name="x" size={11} strokeWidth={2.25} />
+        <span aria-hidden="true">Remove</span>
       </button>
     </div>
   );

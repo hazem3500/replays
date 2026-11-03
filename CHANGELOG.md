@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Editor: inspector panels group each setting in a soft card, with the object's remove or reset action as a labelled icon in the panel header; timeline clips are neutral with a stripe in their lane's colour, lift when selected and show a Remove bubble above them, and captions fade out at the clip's end.
+
 - Edits: speed-ups can also play at 1.5×, and captions no longer overlap (an overlapping saved list is separated on save). Older edit lists still load unchanged. The editor sets zoom with a continuous slider and its inspectors share one layout.
 
 - Added pure network, performance, waterfall and error builders at `/viewer/diagnostics`, with packed browser-consumer checks for optional React and recorder compositions.

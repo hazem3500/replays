@@ -94,28 +94,35 @@ test('a caption’s end edge dragged into its neighbour stops at the neighbour�
   expect((await stored(page, id)).captions?.[1]).toMatchObject({ from: 2000, to: 3500 });
 });
 
-test('a selected region’s remove control has a 24 px target clear of its edge handle and keeps the label still', async ({ page }) => {
+test('a selected clip lifts a labelled Remove bubble above it, next in Tab order, and Enter or Delete removes it', async ({ page }) => {
   await seed(page, { zooms: [{ id: 'zoom-1', from: 400, to: 2400, scale: 1.8 }] });
   const region = page.getByTestId('region-zoom');
-  const label = region.locator('.tl-region-label');
-  // why: selecting scrolls the lane into view, so compare the label's place inside its region, not on the page.
-  const offset = async () => {
-    const [own, block] = await Promise.all([boxOf(label), boxOf(region)]);
-    return { left: own.x - block.x, width: own.width };
-  };
-  const before = await offset();
+  const bubble = region.getByRole('button', { name: /^Remove Zoom / });
+  await region.locator('.tl-region-body').hover();
+  await expect(bubble).toHaveCSS('opacity', '0');
   await region.locator('.tl-region-body').click();
-  const remove = region.getByRole('button', { name: /^Remove / });
-  await expect(remove).toHaveCSS('opacity', '1');
-  const hit = await remove.evaluate((node) => {
-    const box = node.getBoundingClientRect();
-    const inset = Number.parseFloat(getComputedStyle(node, '::before').top);
-    return { size: box.width - inset * 2, right: box.right - inset };
-  });
-  expect(hit.size).toBeGreaterThanOrEqual(24);
-  const edge = await boxOf(region.locator('.tl-region-edge[data-edge="to"]'));
-  expect(hit.right).toBeLessThanOrEqual(edge.x + 0.5);
-  expect(await offset()).toEqual(before);
+  await expect(bubble).toHaveCSS('opacity', '1');
+  expect((await boxOf(bubble)).y + (await boxOf(bubble)).height).toBeLessThanOrEqual((await boxOf(region)).y);
+  await region.locator('.tl-region-body').focus();
+  await page.keyboard.press('Tab');
+  await expect(bubble).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('region-zoom')).toHaveCount(0);
+  await page.keyboard.press('ControlOrMeta+z');
+  await page.getByTestId('region-zoom').locator('.tl-region-body').focus();
+  await page.keyboard.press('Delete');
+  await expect(page.getByTestId('region-zoom')).toHaveCount(0);
+});
+
+test('the inspector header names its remove action, follows the back link in Tab order and removes the object', async ({ page }) => {
+  await seed(page, { captions: [{ id: 'caption-1', from: 500, to: 2500, text: 'Fill in the form' }] });
+  await page.getByTestId('region-caption').locator('.tl-region-body').click();
+  const inspector = page.getByRole('complementary', { name: 'Inspector' });
+  await inspector.getByTestId('inspector-back').focus();
+  await page.keyboard.press('Tab');
+  await expect(inspector.getByRole('button', { name: 'Remove caption' })).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByTestId('region-caption')).toHaveCount(0);
 });
 
 for (const theme of ['light', 'dark'] as const)

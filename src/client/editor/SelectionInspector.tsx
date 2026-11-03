@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { IconButton } from '@/components/icon-button.tsx';
+import { cn } from '@/lib/utils.ts';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { InspectorAction, InspectorFooter } from './InspectorParts.tsx';
 import { type ChangeEdits, effectList, moveCut, moveEffect, setTrimEdge, trimOf, type Selection } from './state.ts';
@@ -58,39 +61,55 @@ export type SelectionPanels = {
   cursorInspector: ReactNode;
 };
 
-/**
- * The panel's closing action. Removing an effect or highlight is the one destructive thing, in red; resetting a trim
- * or restoring a cut section undoes an edit, so it stays neutral. A range is not an edit yet: cutting it is the point.
- */
-function ObjectActions({ kind, title, commands }: { kind: string | undefined; title: string; commands: SelectionCommands }) {
-  if (kind === 'range')
-    return (
-      <InspectorFooter>
-        <InspectorAction tone="primary" icon="scissors" onClick={commands.onCut} data-testid="cut-selection">
-          Cut selection
-        </InspectorAction>
-        <InspectorAction icon="map-pin" onClick={commands.onPeriodHighlight} data-testid="add-period-highlight">
-          Highlight range
-        </InspectorAction>
-      </InspectorFooter>
-    );
+/** What the panel's header action does for an object: removing is destructive; resetting a trim or restoring a cut is not. */
+function objectAction(kind: string | undefined, title: string) {
+  if (!kind || kind === 'range') return;
   if (kind === 'trim' || kind === 'cut')
-    return (
-      <InspectorFooter>
-        <InspectorAction icon="rotate-ccw" onClick={commands.onDelete} data-testid="mobile-remove-object">
-          {kind === 'trim' ? 'Reset trim' : 'Restore section'}
-        </InspectorAction>
-      </InspectorFooter>
-    );
+    return {
+      label: kind === 'trim' ? 'Reset trim' : 'Restore section',
+      icon: 'rotate-ccw',
+      tone: 'neutral',
+      testId: 'mobile-remove-object',
+    } as const;
+  return {
+    label: `Remove ${title.toLowerCase()}`,
+    icon: 'trash-2',
+    tone: 'danger',
+    testId: kind === 'highlight' ? 'remove-highlight' : 'mobile-remove-object',
+  } as const;
+}
+
+/**
+ * The object's one undoable action, as an icon in the panel header beside its title: named for screen readers and in
+ * its tooltip, reached by Tab after the back link, and the same as pressing Delete on the timeline.
+ */
+export function ObjectHeaderAction({ kind, title, onAction }: { kind: string | undefined; title: string; onAction: () => void }) {
+  const action = objectAction(kind, title);
+  if (!action) return null;
+  return (
+    <IconButton
+      label={action.label}
+      shortcut="Delete"
+      tooltipSide="bottom"
+      className={cn('inspector-header-action', action.tone === 'danger' && 'hover:bg-(--danger-soft) hover:text-(--danger)')}
+      data-tone={action.tone}
+      data-testid={action.testId}
+      onClick={onAction}
+    >
+      <AnimatedIcon name={action.icon} size={16} />
+    </IconButton>
+  );
+}
+
+/** A dragged-out range is not an edit yet: cutting it is the point, so its actions stay in the panel. */
+function RangeActions({ commands }: { commands: SelectionCommands }) {
   return (
     <InspectorFooter>
-      <InspectorAction
-        tone="danger"
-        icon="trash-2"
-        onClick={commands.onDelete}
-        data-testid={kind === 'highlight' ? 'remove-highlight' : 'mobile-remove-object'}
-      >
-        Remove {title.toLowerCase()}
+      <InspectorAction tone="primary" icon="scissors" onClick={commands.onCut} data-testid="cut-selection">
+        Cut selection
+      </InspectorAction>
+      <InspectorAction icon="map-pin" onClick={commands.onPeriodHighlight} data-testid="add-period-highlight">
+        Highlight range
       </InspectorAction>
     </InspectorFooter>
   );
@@ -120,14 +139,12 @@ function retimeSelection({ edits, selection, duration, change, commands }: Retim
 /** A selection's properties: its own setting, then its timing, then what can be done with it. */
 export function SelectionBody({
   retime,
-  title,
   from,
   to,
   panels,
   commands,
 }: {
   retime: Retime;
-  title: string;
   from: number | undefined;
   to: number | undefined;
   panels: SelectionPanels;
@@ -147,7 +164,7 @@ export function SelectionBody({
           ]}
         />
       ) : null}
-      <ObjectActions kind={kind} title={title} commands={commands} />
+      {kind === 'range' ? <RangeActions commands={commands} /> : null}
     </div>
   );
 }

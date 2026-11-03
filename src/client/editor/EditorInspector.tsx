@@ -5,7 +5,14 @@ import { Button } from '@/components/ui/button.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { InspectorSkeleton } from './InspectorSkeleton.tsx';
 import { spanText } from './TimingFields.tsx';
-import { objectTitle, SelectionBody, selectionSpan, type SelectionCommands, type SelectionPanels } from './SelectionInspector.tsx';
+import {
+  ObjectHeaderAction,
+  objectTitle,
+  SelectionBody,
+  selectionSpan,
+  type SelectionCommands,
+  type SelectionPanels,
+} from './SelectionInspector.tsx';
 import type { ChangeEdits, Selection } from './state.ts';
 import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 
@@ -69,12 +76,16 @@ export function EditorInspector({
                   <AnimatedIcon name="chevron-left" size={14} />
                   Replay
                 </Button>
-                <h2 id="inspector-heading">{title}</h2>
-                <p className="inspector-subtitle">{spanText(from, to)}</p>
+                <div className="inspector-title-row">
+                  <div className="inspector-title">
+                    <h2 id="inspector-heading">{title}</h2>
+                    <p className="inspector-subtitle">{spanText(from, to)}</p>
+                  </div>
+                  <ObjectHeaderAction kind={selection.kind} title={title} onAction={commands.onDelete} />
+                </div>
               </header>
               <SelectionBody
                 retime={{ edits, selection, duration, change, commands }}
-                title={title}
                 from={from}
                 to={to}
                 panels={{ ...panels, cursorInspector: null }}

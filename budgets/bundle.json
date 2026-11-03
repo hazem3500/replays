@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 68
+      "brotli": 66
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -340,7 +340,7 @@
     "dist/client/assets/ReplayIndex-HASH.js": {
       "raw": 228026,
       "gzip": 75900,
-      "brotli": 64174
+      "brotli": 64138
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 26722,

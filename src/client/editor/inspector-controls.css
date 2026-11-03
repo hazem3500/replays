@@ -1,6 +1,6 @@
 /*
  * The controls inside inspector sections (EffectSettings.tsx, InspectorParts.tsx): the zoom slider and its quick
- * marks and the footer action, then the phone sizes of every inspector control (44 px targets, 16 px
+ * marks and a range's actions, then the phone sizes of every inspector control (44 px targets, 16 px
  * inputs so the page never zooms). Loaded with the editor, not the loading skeleton, which draws none of them.
  */
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
@@ -14,20 +14,16 @@
   .inspector-mark[aria-pressed="true"] { color: var(--text); font-weight: 600; }
   .inspector-mark:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
 
-  /* The closing action: a full-width row whose icon and label line up with the labels above (negative inset). */
-  .inspector-footer { display: grid; gap: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
-  .inspector-action.inspector-action { width: calc(100% + 20px); margin-inline: -10px; border-radius: 8px; font-weight: 500; }
+  /* A range's actions under its cards: cut it (the point of a range) or mark it, side by side. */
+  .inspector-footer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding-top: 4px; }
+  .inspector-action.inspector-action { width: 100%; justify-content: center; border-radius: 8px; font-weight: 500; }
   .inspector-action[data-tone="neutral"] { color: var(--text-secondary); }
-  .inspector-action[data-tone="danger"] { color: var(--danger); }
-  @media (hover: hover) and (pointer: fine) {
-    .inspector-action[data-tone="neutral"]:hover { color: var(--text); }
-    .inspector-action[data-tone="danger"]:hover { background: var(--danger-soft); color: var(--danger); }
-  }
-  .inspector-action[data-tone="primary"].inspector-action { width: 100%; margin-inline: 0; }
+  @media (hover: hover) and (pointer: fine) { .inspector-action[data-tone="neutral"]:hover { color: var(--text); } }
 
   /* Phone: the same panel in the sheet, sized for touch and readable without zooming. */
   .editor-context-panel .inspector-body { font-size: var(--text-sm); line-height: 20px; }
-  .editor-context-panel .inspector-section:first-child { border-top: 0; padding-top: 4px; }
+  .editor-context-panel > header h2 { flex: 1; min-width: 0; }
+  .editor-context-panel .inspector-header-action { width: 44px; height: 44px; margin: 0; }
   .editor-context-panel .inspector-hint { font-size: var(--text-xs); line-height: 16px; }
   .editor-context-panel :is(.inspector-time, .inspector-input) { height: 44px; }
   .editor-context-panel :is(.inspector-time input, .inspector-input, .inspector-textarea) { font-size: 16px; }
