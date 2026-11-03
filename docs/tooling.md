@@ -57,5 +57,3 @@ an interception server for one test file, resets per-test overrides after each t
 builder per API route (`config`, `previewProbe`); add a builder there when a second test needs a route.
 happy-dom files need `// @vitest-environment-options {"url": "http://localhost/"}` so relative `/api/...` URLs resolve.
 Opt in per file: server integration tests keep talking to their own listeners. Storybook uses the same library through `msw/vite`; see [storybook.md](storybook.md).
-
-<!-- CI cost probe for round 2, reverted before merge. -->
