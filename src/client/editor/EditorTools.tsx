@@ -1,5 +1,6 @@
 import { ChevronDownIcon, HighlighterIcon, MapPinIcon, PlusIcon } from 'lucide-react';
 
+import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import {
@@ -107,5 +108,28 @@ export function AddMenu({
         </DropdownMenuCheckboxItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+const INVITE_ICONS: Record<EffectKind, AnimatedIconName> = { zoom: 'zoom-in', speed: 'fast-forward', blur: 'eye-off', caption: 'captions' };
+const INVITE_LABELS: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed up', blur: 'Blur', caption: 'Captions' };
+
+/**
+ * Under a timeline with no effects yet: what can be added at the playhead, as quiet chips (each names its key in its
+ * tooltip), so the space under the clip invites the next step instead of sitting empty.
+ */
+export function LaneInvitation({ onAdd }: { onAdd: (kind: EffectKind) => void }) {
+  return (
+    <div className="tl-invite" role="group" aria-label="Add to the timeline" data-testid="lane-invitation">
+      <span className="tl-invite-text">Add at the playhead</span>
+      {ADD_ITEMS.map((item) => (
+        <Hint key={item.kind} label={item.label} shortcut={item.key}>
+          <Button variant="ghost" size="sm" className="tl-invite-chip" onClick={() => onAdd(item.kind)} data-testid={`invite-${item.kind}`}>
+            <AnimatedIcon name={INVITE_ICONS[item.kind]} size={14} />
+            {INVITE_LABELS[item.kind]}
+          </Button>
+        </Hint>
+      ))}
+    </div>
   );
 }

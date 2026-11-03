@@ -36,6 +36,16 @@ export function EditorClock() {
   );
 }
 
+/** "0:04.0 / 0:13.5": where the playhead is and how long the recording runs, read as one timecode. */
+export function EditorTime({ total }: { total: number }) {
+  return (
+    <span className="editor-time">
+      <EditorClock />
+      <span className="editor-time-total">/ {formatClock(total)}</span>
+    </span>
+  );
+}
+
 /** "0:03.2 → 0:01.9": the recording's length and what the edits leave (just the length when nothing is removed). */
 export function Durations({ original, edited }: { original: number; edited: number }) {
   const changed = Math.round(edited) !== Math.round(original);
