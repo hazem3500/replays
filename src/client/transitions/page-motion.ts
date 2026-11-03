@@ -7,7 +7,7 @@ import { cardFor, cardPicture, namePicture, unnameAll, viewerPicture } from './s
 import { motionView } from './motion-view.ts';
 import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from './state.ts';
 import { stopPictureWait, waitForPicture } from './wait-for-picture.ts';
-import { createCompositorHero } from './compositor-hero.ts';
+import { createCompositorHero, rememberInFlight } from './compositor-hero.ts';
 import { createRecordingTransition } from './recording-transition.ts';
 import { heroCrossfade, heroSpring } from './hero-spring.ts';
 
@@ -76,6 +76,7 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
   delete root.dataset.pageHero;
   root.dataset.pageTransition = 'motion-page';
   // why: the returning snapshot must match the focused card's brightness before focus is restored at handoff.
+  for (const card of document.querySelectorAll('[data-transition-return]')) card.removeAttribute('data-transition-return');
   if (plan.direction === 'to-index') plan.card?.setAttribute('data-transition-return', '');
   const before = plan.before();
   const recordings = createRecordingTransition(plan.card, plan.direction === 'to-index');
@@ -129,8 +130,9 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
     .then(() => {
       hero.clear();
       recordings.clear();
-      plan.card?.removeAttribute('data-transition-return');
+      // invariant: a newer page change owns the card now; it may already have marked it returning.
       if (!isTurn(plan.turn)) return;
+      plan.card?.removeAttribute('data-transition-return');
       delete root.dataset.pageTransition;
       delete root.dataset.pageHero;
       unnameAll();
@@ -198,6 +200,7 @@ export function installPageMotion(router: AppRouter) {
     if (from.key === to.key) return;
     stopPictureWait();
     const direction = directionFor(from, to);
+    rememberInFlight();
     const turn = nextTurn();
     if (direction === 'to-viewer') opening = { page: to, turn };
     document.documentElement.dataset.navigated = '';

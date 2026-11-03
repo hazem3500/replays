@@ -22,13 +22,26 @@ function isPlayback(value: unknown): value is ViewPlayback {
   );
 }
 
+/** The browser animations behind Motion's controls: its view layers, retimed or created for this transition. */
+function layerAnimations(controls: ViewPlayback) {
+  const children: unknown = 'animations' in controls ? controls.animations : undefined;
+  if (!Array.isArray(children)) return [];
+  return children.flatMap((child: unknown) =>
+    typeof child === 'object' && child !== null && 'animation' in child && child.animation instanceof Animation ? [child.animation] : [],
+  );
+}
+
 /** Completes the controls of a transition the browser has already ended, so their finished promise can settle. */
 function settle(controls: ViewPlayback) {
+  const layers = layerAnimations(controls);
   try {
     controls.complete();
   } catch {
     // why: a layer removed with its pseudo-element may refuse to finish; the browser has already dropped it.
   }
+  // invariant: completing revives the layers the browser cancelled; left filling, they would style the next
+  // transition's layers of the same name (an interrupted Back stayed pinned where the skipped open would have landed).
+  for (const animation of layers) animation.cancel();
 }
 
 /**

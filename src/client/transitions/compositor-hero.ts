@@ -1,4 +1,4 @@
-import { pictureOpacity, pictureRadius } from './picture-clip.ts';
+import { pictureOpacity, pictureRadius, placePicture } from './picture-clip.ts';
 
 const WIDTH = '--page-hero-width';
 const HEIGHT = '--page-hero-height';
@@ -22,10 +22,16 @@ interface Morph {
   after: Picture;
   width: number;
   height: number;
+  /** The canvas in units of the front picture: where the front sits inside each snapshot. */
+  unit: DOMRect;
   snapshots: Record<'old' | 'new', { x: number; y: number; width: number; height: number }>;
 }
 
 const owners = new Map<string, { token: object; sheet: HTMLStyleElement }>();
+/** Each landing hero's on-screen front picture, read while its transition runs. */
+const flying = new Map<string, () => DOMRect | undefined>();
+/** Where interrupted heroes were when a newer page change skipped their transition. */
+const interrupted = new Map<string, DOMRect>();
 const SNAPSHOT_PROPERTIES = ['x', 'y', 'width', 'height'] as const;
 
 function frontOf(element: Element, rect: DOMRect) {
@@ -92,6 +98,7 @@ function register(before: Picture, after: Picture): Morph {
     after: projectedAfter,
     width: base.width,
     height: base.height,
+    unit: new DOMRect(left, top, width, height),
     snapshots: { old: snapshotBox(old), new: snapshotBox(next) },
   };
 }
@@ -138,6 +145,53 @@ function measure(element: Element | null | undefined): Picture | undefined {
   };
 }
 
+/** The front picture's rectangle on screen right now, from its group's animated canvas. */
+function frontInFlight(name: string, morph: Morph) {
+  const style = getComputedStyle(document.documentElement, `::view-transition-group(${name})`);
+  if (style.transform === 'none') return;
+  const matrix = new DOMMatrixReadOnly(style.transform);
+  const width = morph.width * matrix.a;
+  const height = morph.height * matrix.d;
+  if (!(width > 0 && height > 0)) return;
+  const { unit } = morph;
+  return new DOMRect(
+    matrix.e - (unit.x / unit.width) * width,
+    matrix.f - (unit.y / unit.height) * height,
+    width / unit.width,
+    height / unit.height,
+  );
+}
+
+/** Places a picture so its front sits at `front`, keeping its own proportions, and measures it there. */
+function startAt(element: Element | null | undefined, picture: Picture, front: DOMRect) {
+  const scaleX = front.width / picture.front.width;
+  const scaleY = front.height / picture.front.height;
+  const { rect } = picture;
+  if (element)
+    placePicture(
+      element,
+      new DOMRect(
+        front.x + (rect.x - picture.front.x) * scaleX,
+        front.y + (rect.y - picture.front.y) * scaleY,
+        rect.width * scaleX,
+        rect.height * scaleY,
+      ),
+    );
+  return measure(element) ?? picture;
+}
+
+/**
+ * Records where every flying hero is, before a newer page change skips the transition carrying it.
+ * why: the next transition then starts each shared picture where it is on screen, not where the skipped one would land.
+ */
+export function rememberInFlight() {
+  interrupted.clear();
+  for (const [name, read] of flying) {
+    const front = read();
+    if (front) interrupted.set(name, front);
+  }
+}
+
 function transform(picture: Picture, morph: Morph) {
   const { rect } = picture;
   return `translate(${rect.left}px, ${rect.top}px) scale(${rect.width / morph.width}, ${rect.height / morph.height})`;
@@ -176,10 +230,14 @@ function retarget(effect: KeyframeEffect, morph: Morph) {
 export function createCompositorHero(element: Element | null | undefined, name = 'vt-page-hero', zIndex = 2) {
   if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name)) throw new Error('Invalid compositor hero name');
   if (!Number.isFinite(zIndex)) throw new Error('Invalid compositor hero depth');
-  const before = measure(element);
+  const measured = measure(element);
+  const start = interrupted.get(name);
+  interrupted.delete(name);
+  const before = measured && start ? startAt(element, measured, start) : measured;
   const token = {};
   let morph: Morph | undefined;
   let sheet: HTMLStyleElement | undefined;
+  const read = () => (morph ? frontInFlight(name, morph) : undefined);
   return {
     capture(afterElement: Element | null | undefined) {
       const after = measure(afterElement);
@@ -189,6 +247,7 @@ export function createCompositorHero(element: Element | null | undefined, name =
       owners.get(name)?.sheet.remove();
       sheet = registration(name, morph, zIndex);
       owners.set(name, { token, sheet });
+      flying.set(name, read);
       return true;
     },
     prepare() {
@@ -201,6 +260,7 @@ export function createCompositorHero(element: Element | null | undefined, name =
       }
     },
     clear() {
+      if (flying.get(name) === read) flying.delete(name);
       morph = undefined;
       sheet?.remove();
       sheet = undefined;
