@@ -108,9 +108,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 10155,
-      "gzip": 2490,
-      "brotli": 2152
+      "raw": 12170,
+      "gzip": 2951,
+      "brotli": 2568
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
@@ -174,7 +174,7 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
-      "gzip": 3274,
+      "gzip": 3273,
       "brotli": 2859
     },
     "dist/client/assets/features-animation-HASH.js": {
@@ -385,12 +385,12 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
       "gzip": 9037,
-      "brotli": 7810
+      "brotli": 8079
     },
     "dist/client/assets/tiles-HASH.js": {
-      "raw": 1300,
-      "gzip": 742,
-      "brotli": 681
+      "raw": 1468,
+      "gzip": 807,
+      "brotli": 733
     },
     "dist/client/assets/toast-HASH.js": {
       "raw": 34790,
@@ -418,9 +418,9 @@
       "brotli": 362
     },
     "dist/client/assets/use-replay-deletion-HASH.js": {
-      "raw": 8944,
-      "gzip": 3987,
-      "brotli": 3498
+      "raw": 8836,
+      "gzip": 3940,
+      "brotli": 3461
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
@@ -655,12 +655,12 @@
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1902,
-      "brotli": 1765
+      "brotli": 1764
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 4058,
-      "gzip": 1596,
-      "brotli": 1358
+      "raw": 4652,
+      "gzip": 1792,
+      "brotli": 1529
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -688,9 +688,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 31615,
-      "gzip": 8580,
-      "brotli": 7514
+      "raw": 38053,
+      "gzip": 10247,
+      "brotli": 8986
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
