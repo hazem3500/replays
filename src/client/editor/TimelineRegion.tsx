@@ -4,6 +4,7 @@ import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from '
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
+import { cssVars } from '../lib/css-vars.ts';
 import { usePlayer } from '../player.ts';
 import { startDrag, timeKeys, useTimelineScale } from './timeline-drag.ts';
 
@@ -123,7 +124,7 @@ export function RegionBlock({ region, selected, actions }: { region: RegionSpec;
       data-compact={width < 88 || undefined}
       data-region-id={id}
       data-testid={`region-${kind}`}
-      style={{ left: `${left}px`, width: `${width}px` }}
+      style={cssVars({ '--bubble-room': `${scale.x(scale.duration) + 10 - left}px` }, { left: `${left}px`, width: `${width}px` })}
     >
       <RegionBody region={region} selected={selected} actions={actions} showLabel={kind !== 'caption' || width >= 56} />
       <RegionEdge side="from" actions={actions} />
