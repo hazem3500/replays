@@ -63,6 +63,20 @@ export function preparePictureClip(element: HTMLElement) {
   }
 }
 
+/**
+ * Places a picture so it covers `rect` for the next capture; restored with the other capture-owned properties.
+ * why: an interrupted page change shows its first captured frame while the router commits; it must match the screen.
+ */
+export function placePicture(element: Element, rect: DOMRect) {
+  if (!(element instanceof HTMLElement)) return;
+  override(element, 'transform', 'none');
+  const layout = element.getBoundingClientRect();
+  if (!(layout.width > 0 && layout.height > 0)) return;
+  override(element, 'transform-origin', '0 0');
+  const scale = `scale(${rect.width / layout.width}, ${rect.height / layout.height})`;
+  override(element, 'transform', `translate(${rect.x - layout.x}px, ${rect.y - layout.y}px) ${scale}`);
+}
+
 /** Restores only capture-owned properties, including inline priorities, on commit and cancellation. */
 export function restorePictureClips() {
   for (const [element, properties] of styles) {

@@ -75,7 +75,7 @@ describe('built-in viewer features', () => {
   });
 
   it('comments register as a feature with a tab, a provider and seek-bar markers, active only when the page enables them', () => {
-    registerCommentsFeature();
+    void registerCommentsFeature();
     setCommentsEnabledForTests(false);
     expect(activeFeatures()).toEqual([]);
     setCommentsEnabledForTests(true);

@@ -1,16 +1,15 @@
-import { spring } from 'motion';
-
 import type { AppRouter } from '../router.tsx';
 import { type Page, pageOf, pageOfPublicPath } from '../routing/page-key.ts';
 import { preparePage } from '../routing/pages.ts';
 import { settleFocus, stopFocusHandOff } from './focus.ts';
 import { forgetHint, onCardIntent, writeHint } from './open-hint.ts';
-import { cardFor, cardPicture, namePicture, unnameAll, viewerPicture } from './shared-elements.ts';
+import { cardFor, cardPicture, holdStill, namePicture, unnameAll, viewerPicture } from './shared-elements.ts';
 import { motionView } from './motion-view.ts';
 import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from './state.ts';
 import { stopPictureWait, waitForPicture } from './wait-for-picture.ts';
-import { createCompositorHero } from './compositor-hero.ts';
+import { createCompositorHero, rememberInFlight } from './compositor-hero.ts';
 import { createRecordingTransition } from './recording-transition.ts';
+import { heroLayers, heroSpring } from './hero-spring.ts';
 
 /* why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
  * the Query cache, the loaded viewer code and the index itself (kept mounted but hidden, routing/KeptIndex.tsx)
@@ -77,7 +76,9 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
   delete root.dataset.pageHero;
   root.dataset.pageTransition = 'motion-page';
   // why: the returning snapshot must match the focused card's brightness before focus is restored at handoff.
+  for (const card of document.querySelectorAll('[data-transition-return]')) card.removeAttribute('data-transition-return');
   if (plan.direction === 'to-index') plan.card?.setAttribute('data-transition-return', '');
+  let still = holdStill(undefined);
   const before = plan.before();
   const recordings = createRecordingTransition(plan.card, plan.direction === 'to-index');
   if (!recordings.active) namePicture(before, 'vt-page-hero');
@@ -87,6 +88,7 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
       await plan.ready;
       await commit();
       if (!isTurn(plan.turn)) return;
+      if (plan.direction === 'to-index') still = holdStill(plan.card);
       unnameAll();
       const after = plan.waitForStage ? await waitForPicture(() => isTurn(plan.turn), 500, recordings.ids) : plan.after();
       if (!isTurn(plan.turn)) return;
@@ -106,19 +108,20 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
       }
       if (!before) return;
       const returning = plan.direction === 'to-index';
+      const fade = heroLayers(returning);
       view
         .add('[style*="view-transition-name: vt-page-hero"]')
         .group(false)
         .crop(true)
-        .layout({ type: spring, duration: plan.direction === 'to-index' ? 0.46 : 0.52, bounce: 0.24 })
-        // why: the complete stack stays primary in flight; a flat old snapshot must not fill its transparent gaps on Back.
-        .old({ opacity: returning ? [1, 0] : [1, 1] }, { duration: returning ? 0.08 : 0.52 })
-        .new({ opacity: [0, 1] }, { delay: returning ? 0 : 0.4, duration: returning ? 0.08 : 0.12 })
+        .layout(heroSpring(returning))
+        .old(fade.source.keyframes, fade.source.options)
+        .new(fade.destination.keyframes, fade.destination.options)
         .exit({ opacity: [1, 0] }, { duration: 0.12 })
         .enter({ opacity: [0, 1] });
     },
     () => {
       if (isTurn(plan.turn)) {
+        still.pause();
         hero.prepare();
         recordings.prepare();
       }
@@ -130,8 +133,10 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
     .then(() => {
       hero.clear();
       recordings.clear();
-      plan.card?.removeAttribute('data-transition-return');
+      still.release();
+      // invariant: a newer page change owns the card now; it may already have marked it returning.
       if (!isTurn(plan.turn)) return;
+      plan.card?.removeAttribute('data-transition-return');
       delete root.dataset.pageTransition;
       delete root.dataset.pageHero;
       unnameAll();
@@ -164,7 +169,8 @@ function planFor(
     animate: direction !== 'page' && !uaAnimated && supportsTransitions(),
     ready,
     turn,
-    before: () => (direction === 'to-viewer' ? cardPicture(match) : viewerPicture(true)),
+    // why: Back during a slow open leaves from the loading frame's poster, the picture the open was flying to.
+    before: () => (direction === 'to-viewer' ? cardPicture(match) : viewerPicture()),
     after: () => (direction === 'to-index' ? cardPicture(returning()) : viewerPicture()),
     waitForStage: direction === 'to-viewer' && to.kind === 'suite',
     card: direction === 'to-viewer' ? match?.card : returning()?.card,
@@ -199,6 +205,7 @@ export function installPageMotion(router: AppRouter) {
     if (from.key === to.key) return;
     stopPictureWait();
     const direction = directionFor(from, to);
+    rememberInFlight();
     const turn = nextTurn();
     if (direction === 'to-viewer') opening = { page: to, turn };
     document.documentElement.dataset.navigated = '';

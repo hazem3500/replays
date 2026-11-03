@@ -1,6 +1,8 @@
-import { spring, type animateView } from 'motion';
+import type { animateView } from 'motion';
 
 import { createCompositorHero } from './compositor-hero.ts';
+import { fanLag } from './fan-out.ts';
+import { heroLayers, heroSpring } from './hero-spring.ts';
 import { cardPictures, namePicture, viewerPictures } from './shared-elements.ts';
 
 function recordingName(id: string) {
@@ -43,19 +45,24 @@ export function createRecordingTransition(card: HTMLElement | undefined, returni
       return paired.size > 0;
     },
     configure(view: ReturnType<typeof animateView>) {
+      const fade = heroLayers(returning);
       view
         .add('[style*="view-transition-name: vt-page-sheet-"]')
         .group(false)
         .crop(true)
-        .layout({ type: spring, duration: returning ? 0.46 : 0.52, bounce: 0.24 })
-        .old({ opacity: [1, 0] }, { duration: 0.28 })
-        .new({ opacity: [0, 1] }, { duration: 0.28 })
+        .layout(heroSpring(returning))
+        .old(fade.source.keyframes, fade.source.options)
+        .new(fade.destination.keyframes, fade.destination.options)
         .exit({ opacity: [1, 0] }, { duration: 0.12 });
     },
     prepare() {
+      const flights = layers.flatMap((layer) =>
+        paired.has(layer.name) ? [layer.hero.flight()].filter((flight) => flight !== undefined) : [],
+      );
+      const shape = { lag: fanLag(flights, returning), returning };
       const unmatched = new Set<string>();
       for (const layer of layers) {
-        if (paired.has(layer.name)) layer.hero.prepare();
+        if (paired.has(layer.name)) layer.hero.prepare(shape);
         else unmatched.add(`::view-transition-old(${layer.name})`);
       }
       fadeUnmatched(unmatched);

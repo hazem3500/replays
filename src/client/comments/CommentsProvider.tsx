@@ -1,4 +1,4 @@
-import { createContext, lazy, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, type ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   type CommentsResponse,
@@ -17,6 +17,7 @@ import { notify } from '../toast.ts';
 import { formatClock } from '../../shared/replay.ts';
 import type { NewCommentInput } from './api.ts';
 import type { CommentRows } from '../data/comments.ts';
+import { lazyPage } from '../routing/lazy-page.tsx';
 import { loadCommentRowsSource } from './rows.ts';
 import { setPageUrl } from '../routing/navigate.ts';
 
@@ -79,19 +80,27 @@ interface CommentsProviderProps {
   children: ReactNode;
 }
 
-const CommentRowsSource = lazy(() => loadCommentRowsSource().then((module) => ({ default: module.CommentRowsSource })));
+// why: once loaded with the viewer's code, the rows render at once; React.lazy would suspend the viewer for a tick.
+const rowsSource = lazyPage(loadCommentRowsSource, (module) => module.CommentRowsSource);
+
+/** Loads the rows chunk the provider renders from; the viewer's code loads it before its page renders. */
+export const preloadCommentRows = () =>
+  rowsSource.preload().then(
+    () => {},
+    () => {},
+  );
 
 /**
  * The open replay's comments: loaded once and refreshed in the background, placed on the timeline being watched
  * (`placeComment`: source time → edited time, with trimmed and cut moments marked removed), and the actions the
  * panel and the seek bar share. Mounted by the viewer only when comments are enabled. The rows come from a chunk of
- * their own (the TanStack DB data layer): a viewer that opens before the idle prefetch has it waits once, behind its
- * own skeleton.
+ * their own (the TanStack DB data layer), loaded with the viewer's code (feature.tsx), so the viewer renders without
+ * suspending once its page is ready.
  *
  * `openPanel` is how the viewer brings the Comments tab up (unfolding the bottom panel when it is folded).
  */
 export function CommentsProvider(props: CommentsProviderProps) {
-  return <CommentRowsSource replayId={props.replayId}>{(rows) => <CommentsBody {...props} rows={rows} />}</CommentRowsSource>;
+  return <rowsSource.Component replayId={props.replayId}>{(rows) => <CommentsBody {...props} rows={rows} />}</rowsSource.Component>;
 }
 
 function CommentsBody({ replayId, timeline, openPanel, children, rows }: CommentsProviderProps & { rows: CommentRows }) {

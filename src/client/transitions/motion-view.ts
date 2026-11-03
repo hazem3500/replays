@@ -22,6 +22,28 @@ function isPlayback(value: unknown): value is ViewPlayback {
   );
 }
 
+/** The browser animations behind Motion's controls: its view layers, retimed or created for this transition. */
+function layerAnimations(controls: ViewPlayback) {
+  const children: unknown = 'animations' in controls ? controls.animations : undefined;
+  if (!Array.isArray(children)) return [];
+  return children.flatMap((child: unknown) =>
+    typeof child === 'object' && child !== null && 'animation' in child && child.animation instanceof Animation ? [child.animation] : [],
+  );
+}
+
+/**
+ * Lets Motion's controls settle once the browser has ended their transition, without reviving any layer.
+ * invariant: finishing a layer the browser cancelled brings it back under its pseudo-element's name; there it styles,
+ * or stops the browser from restarting, the next transition's layer of that name (an interrupted Back stood still).
+ */
+function settle(controls: ViewPlayback) {
+  for (const animation of layerAnimations(controls)) {
+    if (animation.playState === 'finished') continue;
+    animation.cancel();
+    animation.onfinish?.call(animation, new AnimationPlaybackEvent('finish'));
+  }
+}
+
 /**
  * Motion owns the spring, layout, crop and snapshot animations. The browser only captures the live recorded page,
  * so React never clones or reparents its iframe. This bridge preserves the router's commit and player-ready gates.
@@ -35,6 +57,7 @@ export function motionView(
   const finished = deferred();
   const committed = deferred();
   let playback: ViewPlayback | undefined;
+  let native: ViewTransition | null | undefined;
   let skipped = false;
   let updating: Promise<void> | undefined;
   const run = () => {
@@ -63,13 +86,19 @@ export function motionView(
         return;
       }
       playback = controls;
-      const native = (document as Document & { activeViewTransition?: ViewTransition | null }).activeViewTransition;
+      native = (document as Document & { activeViewTransition?: ViewTransition | null }).activeViewTransition;
       prepare?.();
-      if (skipped) controls.complete();
-      else controls.play();
+      if (!skipped) controls.play();
+      else if (native) native.skipTransition();
+      else controls.complete();
       ready.resolve();
       // why: constructing players before the browser removes its snapshot layers stalls the final compositor handoff.
-      void Promise.allSettled([controls.finished, native?.finished]).then(() => finished.resolve());
+      const browser = native;
+      void Promise.allSettled([browser ? browser.finished : controls.finished]).then(() => {
+        // invariant: an ended or aborted transition drops its layers; Motion's queue waits on them before the next one.
+        if (browser) settle(controls);
+        finished.resolve();
+      });
     }, failed)
     .catch(failed);
   return {
@@ -78,7 +107,9 @@ export function motionView(
     updateCallbackDone: committed.promise,
     skipTransition: () => {
       skipped = true;
-      playback?.complete();
+      // why: the browser ends its own transition; completing Motion's layers would revive them for the next one.
+      if (native) native.skipTransition();
+      else playback?.complete();
     },
   };
 }

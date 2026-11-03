@@ -11,6 +11,8 @@ const MAX_TARGETS = 240;
 type Owned = { kind: string; stop(): void; restore(): void };
 
 function loadingShell(element: HTMLElement) {
+  // why: a page change's snapshot captures the loading frame it flies to; a delayed entrance would show a blank page.
+  if (document.documentElement.hasAttribute('data-navigated')) return false;
   return (
     !element.hasAttribute('data-instant') && !(element.matches('.skeleton-shell') && element.parentElement?.closest('.skeleton-suite'))
   );
