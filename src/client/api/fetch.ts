@@ -13,3 +13,4 @@ export function appBase() {
 export function apiUrl(path: string) {
   return `${appBase()}/api/${path}`;
 }
+// why: CI cost probe for round 2, reverted before merge.
