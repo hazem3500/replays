@@ -174,7 +174,7 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
-      "gzip": 3276,
+      "gzip": 3274,
       "brotli": 2860
     },
     "dist/client/assets/features-animation-HASH.js": {
@@ -339,7 +339,7 @@
     },
     "dist/client/assets/ReplayIndex-HASH.js": {
       "raw": 228026,
-      "gzip": 75901,
+      "gzip": 75900,
       "brotli": 64174
     },
     "dist/client/assets/settings-HASH.js": {
@@ -389,7 +389,7 @@
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1300,
-      "gzip": 743,
+      "gzip": 742,
       "brotli": 683
     },
     "dist/client/assets/toast-HASH.js": {
@@ -444,7 +444,7 @@
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 691,
-      "gzip": 477,
+      "gzip": 476,
       "brotli": 429
     },
     "dist/client/assets/write-HASH.js": {
@@ -454,8 +454,8 @@
     },
     "dist/client/index.html": {
       "raw": 14204,
-      "gzip": 4631,
-      "brotli": 3882
+      "gzip": 4630,
+      "brotli": 3878
     },
     "dist/client/render.html": {
       "raw": 1283,

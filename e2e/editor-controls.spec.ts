@@ -144,3 +144,24 @@ for (const theme of ['light', 'dark'] as const)
       );
     }
   });
+
+test('hovering then selecting a clip too short to show its remove control keeps the editor open', async ({ page }) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(String(error)));
+  await seed(page, {
+    captions: [
+      { id: 'caption-1', from: 1000, to: 1300, text: 'Short' },
+      { id: 'caption-2', from: 2000, to: 3500, text: 'Long enough to show its remove control' },
+    ],
+  });
+  const short = page.locator('[data-region-id="caption-1"]');
+  await expect(short).toHaveAttribute('data-compact');
+  await short.locator('.tl-region-body').hover();
+  await page.mouse.move(5, 5);
+  await short.locator('.tl-region-body').hover();
+  await short.locator('.tl-region-body').click();
+  await expect(page.getByRole('complementary', { name: 'Inspector' }).getByRole('heading', { name: 'Caption' })).toBeVisible();
+  await page.locator('[data-region-id="caption-2"] .tl-region-body').click();
+  await expect(page.getByTestId('timeline')).toBeVisible();
+  expect(errors).toEqual([]);
+});
