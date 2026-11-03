@@ -1,0 +1,17 @@
+name: Remember a passing suite
+description: Save a pass marker under the suite's input hash so a later run with identical inputs can skip it
+inputs:
+  key:
+    required: true
+    description: Pass marker cache key from the scope job
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: mkdir -p .ci-pass && printf '%s\n' "$GITHUB_SHA" > .ci-pass/ok
+    # why: an existing key only warns, and a failed save must never turn a passing suite red.
+    - uses: actions/cache/save@v4
+      continue-on-error: true
+      with:
+        path: .ci-pass
+        key: ${{ inputs.key }}

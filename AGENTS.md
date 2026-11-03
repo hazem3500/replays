@@ -43,6 +43,10 @@ On your own Boat, use `pnpm check:quick` for cached lint/format/tsrs types plus 
 
 `pnpm check` remains the full pre-handoff check; also run the relevant browser/example/Storybook checks. Root, Storybook, examples and declaration emission use pinned tsrs with reference defaults (`--fast false`). Type-aware lint retains the Oxlint backend until tsrs supports the same rules; see `docs/quality-tooling.md`. `pnpm build` and `pnpm build:cli` replay successful Vite Task results only while tracked inputs/environment match; `pnpm exec vp run --no-cache cached:build` forces a fresh viewer build. See [CI timings and tradeoffs](docs/ci-performance.md).
 
+## CI
+
+Open pull requests as drafts while iterating: CI and Code quality do not run on drafts, so run checks on your Boat. Mark the PR ready with `gh pr ready` when done and batch fixes into one push. CI reruns only the suites whose inputs changed since a passing run on this PR or on main; the weekly schedule and manual runs are full. A skipped job means identical inputs already passed. Bump `CACHE_VERSION` in `scripts/ci-scope.mjs` to force a full rerun everywhere. See [CI timings and tradeoffs](docs/ci-performance.md#round-2-run-only-what-changed-november-2026).
+
 ## Invariants
 
 - Preserve privacy defaults, URL/header redaction and masking. Relevant coverage: `test/sanitize.test.ts`, `test/redaction.test.ts`, `test/capture-playwright.test.ts`, recorder sanitizer tests.
