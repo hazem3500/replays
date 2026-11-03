@@ -71,6 +71,38 @@ function tooltipGeometry(node: HTMLElement, options: GeometryOptions) {
   running.set(node, animate([node], frames, { duration: 0.18, ease: [0.23, 1, 0.32, 1] }));
 }
 
+/**
+ * invariant: an opening tooltip is placed, never flown in. Base UI writes a provisional position before it measures
+ * the trigger, then the real one; both land inside the first frames after `data-open` appears, so geometry stays
+ * instant until two frames have passed and only hops between triggers of an already visible tooltip glide.
+ */
+function settleAfterOpen() {
+  let open = false;
+  let settling = false;
+  let frame = 0;
+  const cancel = () => {
+    if (frame) cancelAnimationFrame(frame);
+    frame = 0;
+  };
+  return {
+    cancel,
+    settling(nowOpen: boolean) {
+      if (nowOpen && !open) {
+        settling = true;
+        cancel();
+        frame = requestAnimationFrame(() => {
+          frame = requestAnimationFrame(() => {
+            frame = 0;
+            settling = false;
+          });
+        });
+      }
+      open = nowOpen;
+      return settling;
+    },
+  };
+}
+
 /** Neighbouring tooltip geometry and retained labels share a cancellable Motion timeline; keyboard hops remain immediate. */
 export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) {
   const element = useRef<HTMLDivElement>(null);
@@ -85,9 +117,11 @@ export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) 
     const dimensions = new Map<string, string>();
     const labels = new WeakMap<Element, string>();
     const running = new Map<Element, ReturnType<typeof animate>>();
+    const opening = settleAfterOpen();
     const update = () => {
       const popup = root.querySelector<HTMLElement>('.tip-morph-popup');
       const instant =
+        opening.settling(root.hasAttribute('data-open')) ||
         root.hasAttribute('data-tip-jump') ||
         root.hasAttribute('data-instant') ||
         Boolean(popup?.hasAttribute('data-instant')) ||
@@ -107,6 +141,7 @@ export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) 
     });
     return () => {
       observer.disconnect();
+      opening.cancel();
       for (const animation of running.values()) animation.stop();
     };
   }, []);
