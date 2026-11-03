@@ -230,6 +230,8 @@ export function Viewer({
   const { railCollapsed, setRailCollapsed, tab, captions, switchCaptions } = layout;
   const workspace = useRef<HTMLDivElement>(null);
   usePluginEvents(bundle.meta.id, tab, player);
+  // why: saved editor captions are the author's and show by default; the caption toggle hides them for this visit only.
+  const [editedCaptionsHidden, setEditedCaptionsHidden] = useState(false);
   // Viewer-only presentation, independent of caption visibility and saved editor captions.
   const [captionNumbers, setCaptionNumbersState] = useState(() => readStorage(CAPTION_NUMBERS_KEY) === '1');
   const setCaptionNumbers = useCallback((next: boolean) => {
@@ -384,8 +386,8 @@ export function Viewer({
         if (document.fullscreenElement) void document.exitFullscreen();
         else void playerRegion.current?.requestFullscreen?.();
       },
-      captions,
-      switchCaptions,
+      captions: effects?.captions.length ? !editedCaptionsHidden : captions,
+      switchCaptions: effects?.captions.length ? () => setEditedCaptionsHidden((was) => !was) : switchCaptions,
       captionNumbers,
       setCaptionNumbers,
       openShortcuts: () => {
@@ -404,6 +406,7 @@ export function Viewer({
     bundle.steps,
     captionNumbers,
     captions,
+    editedCaptionsHidden,
     edited,
     effects,
     highlights,
@@ -654,11 +657,8 @@ export function Viewer({
             <div className="stage-wrap">
               {stage ?? <PlayerStage />}
               {/* why: a comparison's stage draws the step caption on its focused tile's frame (CompareTile.tsx). */}
-              {effects?.captions.length ? (
-                <EditCaption captions={effects.captions} />
-              ) : captions && bundle.steps.length > 0 && !stage ? (
-                <StepCaption />
-              ) : null}
+              {effects?.captions.length && !editedCaptionsHidden ? <EditCaption captions={effects.captions} /> : null}
+              {!effects?.captions.length && captions && bundle.steps.length > 0 && !stage ? <StepCaption /> : null}
               <SkipIndicator />
               {speedHud ? <SpeedHud key={speedHud.id} speed={speedHud.speed} /> : null}
               <FullscreenButton region={playerRegion} />

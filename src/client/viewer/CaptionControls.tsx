@@ -8,8 +8,11 @@ import { useFullscreenPopover } from '../hooks/use-fullscreen-popover.ts';
 import { shortcutLabel } from '../shortcuts.ts';
 import { useViewer } from './context.ts';
 
-/** The quick caption toggle and its display preferences stay together on every player layout. */
-export function CaptionControls() {
+/**
+ * The quick caption toggle and its display preferences stay together on every player layout. `edited`: the replay's
+ * captions come from its saved edits, so the toggle shows or hides those and step numbers do not apply.
+ */
+export function CaptionControls({ edited = false }: { edited?: boolean }) {
   const { captions, switchCaptions, captionNumbers, setCaptionNumbers } = useViewer();
   const { open, setOpen, portalContainer } = useFullscreenPopover();
   const numbersId = useId();
@@ -17,7 +20,7 @@ export function CaptionControls() {
     <div className="flex items-center [grid-area:captions]">
       <SwitchIconButton
         className="captions-switch h-7 min-w-7 px-0 aria-pressed:ring-0 aria-pressed:bg-transparent aria-pressed:text-[var(--accent)]"
-        label={captions ? 'Hide step captions' : 'Show step captions'}
+        label={`${captions ? 'Hide' : 'Show'} ${edited ? 'captions' : 'step captions'}`}
         shortcut={shortcutLabel('switch-captions')}
         pressed={captions}
         onPressedChange={switchCaptions}
@@ -27,7 +30,7 @@ export function CaptionControls() {
           <AnimatedIcon name="captions" />
         </span>
       </SwitchIconButton>
-      {setCaptionNumbers ? (
+      {setCaptionNumbers && !edited ? (
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={

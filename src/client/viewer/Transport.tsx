@@ -181,7 +181,7 @@ export function Transport() {
       <PlayButton />
       <TimeReadout />
       <Scrubber steps={steps} errors={errors} />
-      {steps.length > 0 && !editCaptions ? <CaptionControls /> : null}
+      {steps.length > 0 || editCaptions ? <CaptionControls edited={editCaptions === true} /> : null}
       <PlaybackOptions />
     </div>
   );
