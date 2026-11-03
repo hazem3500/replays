@@ -3,10 +3,18 @@ import { resolve } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json'), 'utf8')) as {
-  exports: Record<string, string | { types: string; default: string }>;
-  files: string[];
-};
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function packageJson() {
+  const parsed: unknown = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.json'), 'utf8'));
+  if (!isRecord(parsed) || !isRecord(parsed.exports) || !Array.isArray(parsed.files))
+    throw new Error('package.json must declare exports and files');
+  return { exports: parsed.exports, files: parsed.files.filter((file): file is string => typeof file === 'string') };
+}
+
+const pkg = packageJson();
 
 describe('public API distribution compatibility', () => {
   it('package.json exposes exactly the documented subpaths, each with types and an ES module', () => {
@@ -34,7 +42,7 @@ describe('public API distribution compatibility', () => {
       './viewer/react/style.css',
     ]);
     for (const target of Object.values(pkg.exports)) {
-      if (typeof target === 'string') continue;
+      if (!isRecord(target)) continue;
       expect(target.default).toMatch(/^\.\/dist\/lib\/[a-z-]+\.(mjs|css)$/);
       expect(target.types).toMatch(/^\.\/dist\/types\/.+\.d\.ts$/);
     }

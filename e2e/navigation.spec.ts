@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { captureHandoff, expectSuiteHandoff, hoverSuiteCard, watchCoverDecode } from './suite-handoff.ts';
+import { expectSuiteHandoff, type HandoffCapture, hoverSuiteCard } from './suite-handoff.ts';
 import { origin, gotoHydrated, serveApp } from './support.ts';
 import { deferred } from '../src/client/lib/deferred.ts';
 
@@ -266,6 +266,79 @@ function recordHeroTransitions() {
       capture.unfinishedAtFinish = heroAnimations(document).filter(
         (animation) => animation.playState !== 'finished' && animation.playState !== 'idle',
       ).length;
+    });
+    return transition;
+  };
+}
+
+/** In the page: slows and records comparison cover decodes, and logs the focused tile's phase and size as it changes. */
+function watchCoverDecode(decodeDelay: number) {
+  const decode = HTMLImageElement.prototype.decode;
+  const decoded = new WeakSet<HTMLImageElement>();
+  const decodeState = { fulfilled: 0 };
+  HTMLImageElement.prototype.decode = async function (this: HTMLImageElement) {
+    await decode.call(this);
+    if (!this.matches('.ct-cover')) return;
+    // why: decoded-image cache reuse must not bypass this slow browser decode boundary.
+    if (decodeDelay > 0) await new Promise<void>((resolve) => window.setTimeout(resolve, decodeDelay));
+    decoded.add(this);
+    decodeState.fulfilled++;
+  };
+  let previous = '';
+  const timeline: Array<{ elapsed: number; phase: string; width: number; height: number }> = [];
+  const observer = new MutationObserver(() => {
+    const picture = document.querySelector('.ct-tile[data-current] .ct-picture');
+    const rect = picture?.getBoundingClientRect();
+    let phase = document.querySelector('.skeleton-shell') ? 'skeleton' : 'pending';
+    if (picture) phase = 'comparison';
+    const state = `${phase}:${rect?.width}:${rect?.height}`;
+    if (state === previous) return;
+    previous = state;
+    const started = window.coldSuiteStarted ?? 0;
+    timeline.push({ elapsed: performance.now() - started, phase, width: rect?.width ?? 0, height: rect?.height ?? 0 });
+  });
+  observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'data-current'] });
+  Object.assign(window, {
+    coldSuiteTimeline: timeline,
+    coldSuiteObserver: observer,
+    coldSuiteDecodeState: decodeState,
+    coldSuiteDecoded: decoded,
+  });
+}
+
+/** In the page: records what the view transition's new snapshot sees once the navigation has committed. */
+function captureHandoff() {
+  const start = document.startViewTransition.bind(document);
+  const decoded = window.coldSuiteDecoded ?? new WeakSet<HTMLImageElement>();
+  const captures: HandoffCapture[] = [];
+  Object.assign(window, { coldSuiteCaptures: captures });
+  document.startViewTransition = (update) => {
+    const started = performance.now();
+    Object.assign(window, { coldSuiteStarted: started });
+    const source = document.querySelector<HTMLElement>(
+      '[style*="view-transition-name: vt-page-hero"], [style*="view-transition-name: vt-page-sheet-"]',
+    )?.tagName;
+    const transition = start(async () => {
+      if (typeof update !== 'function') throw new Error('Expected a navigation commit callback');
+      await update();
+      const picture = document.querySelector('.ct-tile[data-current] .ct-picture');
+      const cover = picture?.querySelector<HTMLImageElement>('.ct-cover');
+      const rect = picture?.getBoundingClientRect() ?? new DOMRect();
+      captures.push({
+        source,
+        elapsed: performance.now() - started,
+        real: Boolean(picture),
+        hero:
+          picture instanceof HTMLElement &&
+          (picture.style.viewTransitionName === 'vt-page-hero' || picture.style.viewTransitionName.startsWith('vt-page-sheet-')),
+        paired: document.documentElement.dataset.pageHero,
+        coverReady: Boolean(cover?.complete && cover.naturalWidth > 0),
+        coverDecoded: Boolean(cover && decoded.has(cover)),
+        rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+      });
+    });
+    void transition.finished.then(() => {
+      Object.assign(window, { coldSuiteHandoffPlayers: document.querySelectorAll('.ct-tile iframe').length });
     });
     return transition;
   };
