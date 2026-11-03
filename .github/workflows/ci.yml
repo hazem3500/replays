@@ -68,19 +68,6 @@ jobs:
       key_e2e_3: ${{ steps.scope.outputs.key_e2e_3 }}
       key_browser: ${{ steps.scope.outputs.key_browser }}
       key_docker: ${{ steps.scope.outputs.key_docker }}
-    services:
-      postgres:
-        image: postgres:17.6-alpine
-        env:
-          POSTGRES_PASSWORD: replays-test-only
-          POSTGRES_DB: replays_architecture
-        ports:
-          - 55432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_API: ${{ vars.TURBO_API }}
@@ -92,6 +79,12 @@ jobs:
       CHROMIUM_NO_SANDBOX: '1'
       REPLAYS_TEST_DATABASE_URL: postgresql://postgres:replays-test-only@127.0.0.1:55432/replays_architecture
     steps:
+      # why: a service container made every gate wait about 12 s for the image pull and health check before its first
+      # step. Started in the background here, PostgreSQL boots while checkout and install run; only its tests wait.
+      - name: Start PostgreSQL in the background
+        run: >-
+          nohup docker run -d --name postgres -p 55432:5432 -e POSTGRES_PASSWORD=replays-test-only
+          -e POSTGRES_DB=replays_architecture postgres:17.6-alpine > "$RUNNER_TEMP/postgres.log" 2>&1 &
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -104,7 +97,12 @@ jobs:
           cache: pnpm
       - id: scope
         uses: ./.github/actions/scope
-      - run: node --test scripts/ci-scope.test.mjs
+      # why: the suite selector's own tests only need to run when the selector or the workflows change.
+      - name: Suite selector tests
+        run: |
+          if [ -z "$PR_BASE" ] || ! git diff --quiet "$PR_BASE" HEAD -- scripts/ci-scope.mjs scripts/ci-scope.test.mjs .github/; then
+            node --test scripts/ci-scope.test.mjs
+          fi
       - id: install
         run: pnpm install --frozen-lockfile --prefer-offline
       - name: Turborepo tasks
@@ -133,6 +131,12 @@ jobs:
           fi
           status=0
           pnpm exec turbo run "${tasks[@]}" "${flags[@]}" --concurrency=2 || status=1
+          # invariant: TCP readiness, not the socket, so the image's init-only server never counts as up.
+          for i in $(seq 1 60); do
+            docker exec postgres pg_isready -h 127.0.0.1 -U postgres -q 2>/dev/null && break
+            [ "$i" = 60 ] && { cat "$RUNNER_TEMP/postgres.log"; docker logs postgres; echo '::error::PostgreSQL did not start'; status=1; }
+            sleep 1
+          done
           # why: the unit suites have 5 second timeouts tuned for a quiet runner; sharing two cores with builds timed them out.
           pnpm exec turbo run "${units[@]}" "${flags[@]}" --concurrency=1 || status=1
           if [ -n "$PR_BASE" ]; then
@@ -155,7 +159,8 @@ jobs:
             cat "$report"
           done
       - uses: actions/upload-artifact@v4
-        if: always()
+        # why: a green gate's summary is already in the log above; the upload cost every passing run about 4 s.
+        if: failure()
         # Storage quota must not turn a passing gate into a failed check; the logs above retain the evidence.
         continue-on-error: true
         with:

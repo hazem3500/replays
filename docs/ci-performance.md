@@ -170,6 +170,8 @@ Measured on #212 (billed minutes = sum over jobs of whole started minutes, all o
 
 In the cold Gate run, the 25 non-unit tasks took 87 seconds at concurrency 2 (build 55, size baseline 41, lint ratchet 16, dedupe 12). The full unit suite took 113 seconds alone, and PostgreSQL 7. Setup, install and reports add about 50 seconds. Typical pushes (runtime change, unit-test-only change, documentation) were probed on a separate pull request after the merge, because every push to #212 changed the dependency files and so ran the browser suites.
 
+Probes after #218 (pull request #215): a one-package server change billed 4 (Gate 184 s: build 44 s and the affected units 60 s dominate), a unit-test-only change 2 (96 s), a documentation-only change 0 (no run starts), and an empty re-push 1 (57 s, 23 of 24 tasks replayed). In the warm run about 40 s was fixed setup, so the Gate now starts PostgreSQL in the background instead of as a service container (the service made every run wait about 12 s first), uploads its reports only on failure (about 4 s) and runs the suite selector's own tests only when the selector or workflows change (about 2 s).
+
 ## Local loop
 
 Run these on your session's Boat. `pnpm check:quick` caches lint/format/types and runs `test:changed` against fetched `origin/main`; it is a feedback loop, not a replacement for `pnpm check` before handoff. `pnpm test:watch` watches units; `pnpm typecheck:watch` watches tsrs; `pnpm dev` serves API + Vite HMR. Lefthook from #57 already checks only staged paths, in parallel, without rewriting or restaging: opt in with `pnpm hooks:install`.
