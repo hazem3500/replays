@@ -572,8 +572,9 @@ function SuiteSidebar({
                   </button>
                 </Hint>
               ) : (
-                <div className="suite-run-item" aria-disabled="true" aria-label={label} title={label}>
+                <div className="suite-run-item" aria-disabled="true" title={label}>
                   {content}
+                  {collapsed ? <span className="visually-hidden">{label}</span> : null}
                 </div>
               )}
             </div>
