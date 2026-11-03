@@ -108,11 +108,23 @@ The common set excluded from every suite is root `*.md`, `docs/**/*.md`, `docs/s
 Limits:
 
 - Cache entries expire after 7 days without use, after which the suite simply runs again.
-- Cache scope follows GitHub's rules: a pull request can reuse markers saved on main and on its own earlier runs, but main cannot reuse a pull request's markers, and pull requests cannot see each other's.
+- Markers live in Ubicloud's transparent Actions cache, which is shared across branches (GitHub's own cache would scope it per ref). A marker saved by any pull request or by main is reusable everywhere, so main reuses the pull request's passes when the merged tree is identical to the last tested merge commit. Anyone who can push a branch can therefore write a marker that main trusts; that is acceptable only while every pusher is a trusted collaborator of this private repository. Revisit before accepting outside contributors (bump `CACHE_VERSION` and scope keys by ref).
 - The hash covers tracked inputs and the Node version only. Runner image, apt packages, registry state and service images can drift without changing it; the weekly scheduled run and manual runs ignore markers and run everything to catch that. Bump `CACHE_VERSION` to invalidate every marker at once.
 - Exclusions are a reviewed claim that a suite never reads those paths. When a suite starts reading a new path, check `SUITES` and its fixture tests in `scripts/ci-scope.test.mjs`.
 
-Billed minutes for the new layout have not been measured yet; record the first full and the first reused pull-request runs here.
+Measured on #207 (billed minutes = sum over jobs of whole started minutes; CI plus Code quality):
+
+| Push | CI | Code quality | Total | Before |
+| --- | ---: | ---: | ---: | ---: |
+| Full run (CI or dependency change, or main moved) | 29–35 | 3–4 | 32–39 | ~51 |
+| Viewer-only change | 28 | 4 | 32 | ~51 |
+| Unit-test-only change | 7 | 3 | 10 | ~51 |
+| Documentation added to a code pull request | 1 | 4 | 5 | ~10 |
+| Identical inputs again (revert, re-push) | 1 | 3 | 4 | ~51 |
+| Documentation-only pull request, or a draft | 0 | 0 | 0 | ~10 |
+| Push to main after merging an up-to-date pull request | 1 | — | 1 | ~48 |
+
+Six of the 29–35 minutes of a full run are setup; the floor is the three end-to-end shards (16–19 minutes).
 
 ## Local loop
 
