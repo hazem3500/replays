@@ -67,6 +67,12 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
   return orderedRuns(rows);
 }
 
+/** "GitHub · Faster checkout": the provider as it names itself (an id until a look names it), then the label. */
+function subjectText(subject: NonNullable<SuiteDetails['subject']>) {
+  const provider = sourceLook(subject.provider)?.label ?? subject.provider;
+  return subject.label ? `${provider} · ${subject.label}` : provider;
+}
+
 /** The suite's subject as a link (provider, address, label), when it names one. */
 function subjectLink(suite: Pick<ReviewSuite, 'subject'>): SuiteDetails['subject'] {
   const { subject } = suite;
@@ -414,8 +420,7 @@ function SuiteSidebar({
   const list = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const subject = subjectLink(suite);
-  const provider = subject && (sourceLook(subject.provider)?.label ?? subject.provider);
-  const subjectLabel = subject?.label ? `${provider} · ${subject.label}` : provider;
+  const subjectLabel = subject && subjectText(subject);
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const recordedRuns = runs.filter((run) => playableReplayId(run, detailed));
   const names = shortNames(runs.map((run) => run.label));

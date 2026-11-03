@@ -74,6 +74,15 @@ function tooltipGeometry(node: HTMLElement, options: GeometryOptions) {
   running.set(node, animate([node], frames, { duration: 0.18, ease: [0.23, 1, 0.32, 1] }));
 }
 
+/**
+ * invariant: an opening tooltip is placed, never flown in. Base UI writes a provisional corner position before it
+ * measures the trigger, at a time that depends on the machine; only a switch between triggers shows an outgoing label,
+ * so only that switch may glide.
+ */
+function switchingTriggers(root: HTMLElement) {
+  return Boolean(root.querySelector('.tip-morph-viewport > [data-previous]'));
+}
+
 /** Neighbouring tooltip geometry and retained labels share a cancellable Motion timeline; keyboard hops remain immediate. */
 export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) {
   const element = useRef<HTMLDivElement>(null);
@@ -96,10 +105,7 @@ export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) 
         Boolean(popup?.hasAttribute('data-instant')) ||
         !root.hasAttribute('data-open') ||
         matchMedia('(prefers-reduced-motion: reduce)').matches;
-      // invariant: an opening tooltip is placed, never flown in. Base UI writes a provisional corner position before it
-      // measures the trigger, at a time that depends on the machine; only a switch between triggers shows an outgoing
-      // label, so only that switch may glide.
-      const hopping = Boolean(root.querySelector('.tip-morph-viewport > [data-previous]'));
+      const hopping = switchingTriggers(root);
       const geometry = { instant, hopping, running };
       tooltipGeometry(root, { keys: ['top', 'left', 'right', 'bottom'], previous: positions, ...geometry });
       if (popup) tooltipGeometry(popup, { keys: ['width', 'height'], previous: dimensions, ...geometry, cssVariables: true });
