@@ -35,5 +35,3 @@ Also checked and rejected: `agentreel` (npm and GitHub taken, `.dev` registered)
 Recommendation: **replaytape**, the only one with no neighbouring project at all. If the name changes, also rename
 the GitHub repository (GitHub redirects the old URL), `package.json` `name`/`bin`, `src/shared/brand.ts`, the
 `replays-*` storage keys and cookie names (derived from `PRODUCT_SLUG`) and the Docker image label.
-
-<!-- CI round 3 docs probe, reverted before close -->
