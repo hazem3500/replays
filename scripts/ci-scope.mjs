@@ -102,7 +102,13 @@ export function suiteKey(suite, { cwd = process.cwd(), nodeVersion = process.env
   const { exclude, include = [] } = SUITES[suite];
   const hash = createHash('sha256').update(`${CACHE_VERSION}\0${suite}\0${nodeVersion}\0`);
   hash.update(stagedTree(cwd, ['.', ...exclude.map((pattern) => `:(exclude,glob)${pattern}`)]));
-  if (include.length > 0) hash.update('\0include\0').update(stagedTree(cwd, include.map((pattern) => `:(glob)${pattern}`)));
+  if (include.length > 0)
+    hash.update('\0include\0').update(
+      stagedTree(
+        cwd,
+        include.map((pattern) => `:(glob)${pattern}`),
+      ),
+    );
   return hash.digest('hex');
 }
 

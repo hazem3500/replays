@@ -42,6 +42,21 @@ function changedSuites(path) {
   return Object.keys(SUITES).filter((suite) => changed[suite] !== baseline[suite]);
 }
 
+/** Runs the CLI in the fixture repo for `event` and returns its parsed outputs and step summary. */
+function run(event) {
+  const output = join(outputs, `${event}-output`);
+  const summary = join(outputs, `${event}-summary`);
+  writeFileSync(output, '');
+  writeFileSync(summary, '');
+  execFileSync(process.execPath, [resolve(import.meta.dirname, 'ci-scope.mjs')], {
+    cwd: directory,
+    env: { ...process.env, CI_EVENT: event, NODE_VERSION: '22', GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary },
+  });
+  const lines = readFileSync(output, 'utf8').trim().split('\n');
+  const values = Object.fromEntries(lines.map((line) => line.split('=')));
+  return { values, summary: readFileSync(summary, 'utf8') };
+}
+
 before(() => {
   directory = mkdtempSync(join(tmpdir(), 'replays-ci-scope-'));
   git('init', '-q');
@@ -105,20 +120,6 @@ describe('suite keys', () => {
 });
 
 describe('command line', () => {
-  const run = (event) => {
-    const output = join(outputs, `${event}-output`);
-    const summary = join(outputs, `${event}-summary`);
-    writeFileSync(output, '');
-    writeFileSync(summary, '');
-    execFileSync(process.execPath, [resolve(import.meta.dirname, 'ci-scope.mjs')], {
-      cwd: directory,
-      env: { ...process.env, CI_EVENT: event, NODE_VERSION: '22', GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary },
-    });
-    const lines = readFileSync(output, 'utf8').trim().split('\n');
-    const values = Object.fromEntries(lines.map((line) => line.split('=')));
-    return { values, summary: readFileSync(summary, 'utf8') };
-  };
-
   it('forces a full run for scheduled and manual events only', () => {
     assert.equal(run('schedule').values.force, 'true');
     assert.equal(run('workflow_dispatch').values.force, 'true');
