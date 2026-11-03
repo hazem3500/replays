@@ -399,6 +399,8 @@ function NowDivider({
         last: number;
         alt: boolean;
         shift: boolean;
+        /** Where on the line the pointer took hold (px below it), so the line moves with the pointer without a jump. */
+        grab: number;
       }
     | undefined
   >(undefined);
@@ -407,8 +409,8 @@ function NowDivider({
   const [dragging, setDragging] = useState(false);
   const [view, setView] = useState({ top: 0, height: 0 });
   const total = ats.length;
-  // Weight: the grip trails the pointer, and while dragging the line settles onto each snapped boundary,
-  // on one shared spring tuning (src/client/spring.ts). Created once; they write transforms directly.
+  // The grip's x and the line's y, on one shared spring tuning (src/client/spring.ts). Created once; they write transforms
+  // directly. A drag places the line immediately; only the grip's reveal uses the spring.
   const springs = useRef<{ x: ReturnType<typeof createSpring>; y: ReturnType<typeof createSpring> } | undefined>(undefined);
   useLayoutEffect(() => {
     const element = line.current;
@@ -590,21 +592,22 @@ function NowDivider({
       state.scroll = Math.min(Math.max(state.scroll + state.velocity * dt, 0), maxScroll);
       scrollListTo(list, state.scroll);
     }
-    const y = Math.min(
-      Math.max(state.clientY - box.top + list.scrollTop, list.scrollTop + HEADER_HEIGHT),
-      list.scrollTop + list.clientHeight,
-    );
+    const pointer = state.clientY - state.grab - box.top + list.scrollTop;
+    const y = Math.min(Math.max(pointer, list.scrollTop + HEADER_HEIGHT), list.scrollTop + list.clientHeight);
     const count = countAt(y);
     if (count !== state.target) {
       state.target = seekTo(count);
     }
-    // The line settles onto the snapped boundary with weight; the grip keeps to the pointer's x.
+    // invariant: while dragging, the line is the pointer, 1:1 and unanimated, held between the first and last row
+    // boundaries and inside the viewport; only the playhead snaps. A per-frame spring retarget lagged and oscillated.
     element.style.transition = JUMP_TRANSITION;
     springs.current?.y.set(
       Math.min(
-        Math.max(nowOffset(state.target, total, rowHeight, extraIndex, extraHeight), list.scrollTop + HEADER_HEIGHT + 1),
+        Math.max(pointer, nowOffset(0, total, rowHeight, extraIndex, extraHeight), list.scrollTop + HEADER_HEIGHT + 1),
+        nowOffset(total, total, rowHeight, extraIndex, extraHeight),
         list.scrollTop + list.clientHeight - 1,
       ),
+      true,
     );
     onInteract();
     state.frame = state.velocity || target ? requestAnimationFrame(follow) : 0;
@@ -627,6 +630,7 @@ function NowDivider({
       last: performance.now(),
       alt: event.altKey,
       shift: event.shiftKey,
+      grab: line.current ? event.clientY - line.current.getBoundingClientRect().top : 0,
     };
     showGrip(event.clientX);
     pointerPress.current = true;

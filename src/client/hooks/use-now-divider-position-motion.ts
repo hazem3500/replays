@@ -32,7 +32,12 @@ export function useNowDividerPositionMotion(
     const element = line.current;
     const last = previous.current;
     const position = springs.current?.y;
-    if (!element || !position || drag.current || dragging) return;
+    if (drag.current || dragging) {
+      // why: the drag owns the line; its release lands exactly on the snapped row instead of gliding like a clock move.
+      previous.current = { ...previous.current, shown: -1 };
+      return;
+    }
+    if (!element || !position) return;
     const reduced = matchMedia('(prefers-reduced-motion: reduce)');
     const steps = Math.abs(reached - last.reached);
     const glide =
