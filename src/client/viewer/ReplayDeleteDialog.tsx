@@ -42,9 +42,7 @@ export function ReplayDeleteDialog({
         <DialogHeader>
           <DialogTitle>Delete replay?</DialogTitle>
           <DialogDescription>
-            <span className="mb-2 block font-medium text-foreground wrap-anywhere">{title}</span>
-            <span className="block">This moves only this recording to trash.</span>
-            <RestoreWindow />
+            <span className="font-medium text-foreground wrap-anywhere">{title}</span> moves to trash. <RestoreWindow />
           </DialogDescription>
         </DialogHeader>
         {error ? (

@@ -15,7 +15,7 @@ export function ReplayRowMenu({ id, title }: { id: string; title: string }) {
             <Button
               variant="ghost"
               size="icon"
-              className="relative z-2 ml-3 size-8 shrink-0 pointer-coarse:size-11"
+              className="row-menu relative z-2 ml-3 size-8 shrink-0 pointer-coarse:size-11"
               aria-label={`Actions for ${title}`}
             />
           }

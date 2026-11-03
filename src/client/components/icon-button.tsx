@@ -126,7 +126,7 @@ export interface SwitchIconButtonProps extends Omit<
   children: ReactNode;
 }
 
-/** Icon switch with aria-pressed. "On" is accent-tinted ink with a faint ring, not a filled block. */
+/** Icon switch with aria-pressed. "On" is full ink on a quiet fill, never a ring, so it cannot pass for keyboard focus. */
 export function SwitchIconButton({
   label,
   shortcut,
@@ -150,7 +150,7 @@ export function SwitchIconButton({
         pressed={pressed}
         onPressedChange={(next) => onPressedChange(next)}
         className={cn(
-          'text-[var(--text-secondary)] [&_svg:not([class*=size-])]:size-4 aria-pressed:bg-transparent aria-pressed:text-primary aria-pressed:ring-1 aria-pressed:ring-primary/35 aria-pressed:hover:bg-muted',
+          'text-[var(--text-secondary)] [&_svg:not([class*=size-])]:size-4 aria-pressed:bg-[var(--surface-hover)] aria-pressed:text-foreground aria-pressed:hover:bg-[var(--surface-pressed)]',
           className,
         )}
         {...props}
