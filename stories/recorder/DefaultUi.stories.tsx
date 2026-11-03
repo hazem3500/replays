@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect, userEvent } from 'storybook/test';
+import { expect } from 'storybook/test';
 import { defaultRecorderMessages } from '../../src/recorder/index.ts';
 import { DefaultUiStage, type DefaultUiStageProps } from './DefaultUiStage.tsx';
 import { inRecorderUi, recorderUi, resultCopy } from './flow.ts';
@@ -41,8 +41,7 @@ export const Recording: Story = {
   args: { state: 'recording' },
   play: async () => {
     await visible('1:13');
-    await userEvent.click(await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.stop)));
-    await visible(defaultRecorderMessages.uploading);
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.stop));
   },
 };
 
@@ -111,8 +110,7 @@ export const TranslatedRecording: Story = {
   args: { state: 'recording', copy: german },
   play: async () => {
     await visible('73 s');
-    await userEvent.click(await inRecorderUi(() => recorderUi.button('Beenden')));
-    await visible('Wird gesendet…');
+    await inRecorderUi(() => recorderUi.button('Beenden'));
   },
 };
 

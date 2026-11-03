@@ -63,6 +63,9 @@ export async function postBundle(request: APIRequestContext, base: string, bundl
 export async function gotoHydrated(page: Page, url: string) {
   const response = await page.goto(url);
   await expect(page.locator('html:is([data-hydrated], :not([data-rendered]))')).toBeAttached();
+  // why: the library's Activity boundary can hydrate after the outer document shell.
+  if ((await page.locator('.index-shell:visible').count()) > 0)
+    await expect(page.locator('.index-shell:visible')).toHaveAttribute('data-index-hydrated', '');
   return response;
 }
 

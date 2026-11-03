@@ -1,3 +1,4 @@
+import { useRegionFeedback } from '../hooks/use-region-feedback.ts';
 import { FilmIcon, ScissorsIcon, XIcon } from 'lucide-react';
 import {
   createContext,
@@ -19,6 +20,9 @@ import { usePlayer } from '../player.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { type EditorAction, moveCut, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
+import { HostSurfaceSlot, type SurfaceContent } from '../plugins/HostSurface.tsx';
+import type { HostSurfaceContext } from '../plugins/surface-contracts.ts';
+import type { SlotDescriptor } from '../plugins/slots.ts';
 
 /** Room left and right of the track, so the trim edges at 0 and at the end stay easy to grab. */
 const PAD = 14;
@@ -139,6 +143,7 @@ export function RegionBlock({
 }) {
   const scale = useTimelineScale();
   const player = usePlayer();
+  const feedback = useRegionFeedback(selected);
   const left = scale.x(from);
   const naturalWidth = scale.x(to) - left;
   // Captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
@@ -156,6 +161,7 @@ export function RegionBlock({
   };
   return (
     <div
+      ref={feedback}
       className="tl-region"
       data-kind={kind}
       data-selected={selected || undefined}
@@ -197,8 +203,12 @@ export function RegionBlock({
         {label && showLabel ? <span className="tl-region-label">{label}</span> : null}
         {children}
       </button>
-      <span className="tl-region-edge" data-edge="from" aria-hidden="true" onPointerDown={edge('from')} />
-      <span className="tl-region-edge" data-edge="to" aria-hidden="true" onPointerDown={edge('to')} />
+      <span className="tl-region-edge" data-edge="from" aria-hidden="true" onPointerDown={edge('from')}>
+        <span className="tl-region-edge-mark" />
+      </span>
+      <span className="tl-region-edge" data-edge="to" aria-hidden="true" onPointerDown={edge('to')}>
+        <span className="tl-region-edge-mark" />
+      </span>
       <button
         type="button"
         className="tl-region-remove"
@@ -264,6 +274,37 @@ export function Lane({
   );
 }
 
+/** The clip's trimmed-away ends, dimmed and labelled outside the kept clip. */
+function TrimmedOutside({ trim, duration, scale }: { trim: { start: number; end: number }; duration: number; scale: TimelineScale }) {
+  return (
+    <>
+      {trim.start > 0 ? (
+        <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }}>
+          <span className="tl-outside-label">Trimmed</span>
+        </span>
+      ) : null}
+      {trim.end < duration ? (
+        <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }}>
+          <span className="tl-outside-label">Trimmed</span>
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** The waits "Remove waits" would cut, shown before they are applied. */
+function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayCut[]; scale: TimelineScale }) {
+  return suggestions.map((cut) => (
+    <span
+      key={cut.id}
+      className="tl-suggestion"
+      data-testid="wait-suggestion"
+      title={cut.label ? `Wait: ${cut.label}` : 'Wait'}
+      style={{ left: `${scale.x(cut.from)}px`, width: `${Math.max(4, scale.x(cut.to) - scale.x(cut.from))}px` }}
+    />
+  ));
+}
+
 /**
  * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, the
  * the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
@@ -287,7 +328,7 @@ export function Timeline({
   suggestions: readonly ReplayCut[];
   /** Cut the selected range (the selection pill). */
   onCutRange: () => void;
-  lanes?: ReactNode;
+  lanes?: readonly SlotDescriptor<HostSurfaceContext, SurfaceContent>[];
 }) {
   const player = usePlayer();
   // The track column (the ruler): held in state, so the scale is rebuilt once it exists and when it resizes.
@@ -395,99 +436,93 @@ export function Timeline({
           </div>
         </div>
 
-        <Lane
-          name="Clip: drag its edges to trim, drag across it to select a cut"
-          kind="clip"
-          tall
-          icon={<FilmIcon />}
-          onTrackPointerDown={(event) => {
-            if (event.button !== 0) return;
-            const start = scale.timeAt(event.clientX);
-            startDrag(event, scale, {
-              move: (time) => {
-                dispatch({ type: 'select', selection: { kind: 'range', from: Math.min(start, time), to: Math.max(start, time) } });
-                player.seek(time);
-              },
-              end: (moved, time) => {
-                if (moved) return;
-                dispatch({ type: 'select', selection: undefined });
-                player.seek(time);
-              },
-            });
-          }}
-        >
-          {trim.start > 0 ? (
-            <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }}>
-              <span className="tl-outside-label">Trimmed</span>
-            </span>
-          ) : null}
-          {trim.end < duration ? (
-            <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }}>
-              <span className="tl-outside-label">Trimmed</span>
-            </span>
-          ) : null}
-          <div
-            className="tl-clip"
-            data-selected={selection?.kind === 'trim' || undefined}
-            style={{ left: `${scale.x(trim.start)}px`, width: `${Math.max(0, scale.x(trim.end) - scale.x(trim.start))}px` }}
-          >
-            {trimEdge('start')}
-            {trimEdge('end')}
-          </div>
-          {suggestions.map((cut) => (
-            <span
-              key={cut.id}
-              className="tl-suggestion"
-              data-testid="wait-suggestion"
-              title={cut.label ? `Wait: ${cut.label}` : 'Wait'}
-              style={{ left: `${scale.x(cut.from)}px`, width: `${Math.max(4, scale.x(cut.to) - scale.x(cut.from))}px` }}
-            />
-          ))}
-          {edits.cuts.map((cut) => (
-            <RegionBlock
-              key={cut.id}
-              id={cut.id}
-              kind="cut"
-              from={cut.from}
-              to={cut.to}
-              title={`Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`}
-              selected={selection?.kind === 'cut' && selection.id === cut.id}
-              onSelect={() => dispatch({ type: 'select', selection: { kind: 'cut', id: cut.id } })}
-              onEdit={(edge, time, first) =>
-                change(moveCut(latest.current, cut.id, edge, time, duration), first, { kind: 'cut', id: cut.id })
-              }
-              onRemove={() => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true)}
-            />
-          ))}
-          <TimelineHighlights
-            highlights={edits.highlights}
-            selectedId={selectedHighlightId(selection)}
-            x={(time) => scale.x(time)}
-            width={scale.width}
-            pad={PAD}
-            dispatch={dispatch}
-          />
-          {range ? (
-            <div
-              className="tl-range"
-              data-testid="range-selection"
-              style={{ left: `${scale.x(range.from)}px`, width: `${Math.max(2, scale.x(range.to) - scale.x(range.from))}px` }}
-            >
-              <button
-                type="button"
-                className="tl-range-cut"
-                data-testid="cut-selection"
-                onPointerDown={(event) => event.stopPropagation()}
-                onClick={onCutRange}
-              >
-                <ScissorsIcon aria-hidden="true" />
-                Cut <kbd>C</kbd>
-              </button>
-            </div>
-          ) : null}
-        </Lane>
-
-        {lanes}
+        <HostSurfaceSlot
+          slot="editor.timeline.lanes"
+          context={{ edits, duration, scale, seek: player.seek }}
+          builtins={[
+            {
+              id: 'core:clip',
+              order: 100,
+              render: () => (
+                <Lane
+                  name="Clip: drag its edges to trim, drag across it to select a cut"
+                  kind="clip"
+                  tall
+                  icon={<FilmIcon />}
+                  onTrackPointerDown={(event) => {
+                    if (event.button !== 0) return;
+                    const start = scale.timeAt(event.clientX);
+                    startDrag(event, scale, {
+                      move: (time) => {
+                        dispatch({ type: 'select', selection: { kind: 'range', from: Math.min(start, time), to: Math.max(start, time) } });
+                        player.seek(time);
+                      },
+                      end: (moved, time) => {
+                        if (moved) return;
+                        dispatch({ type: 'select', selection: undefined });
+                        player.seek(time);
+                      },
+                    });
+                  }}
+                >
+                  <TrimmedOutside trim={trim} duration={duration} scale={scale} />
+                  <div
+                    className="tl-clip"
+                    data-selected={selection?.kind === 'trim' || undefined}
+                    style={{ left: `${scale.x(trim.start)}px`, width: `${Math.max(0, scale.x(trim.end) - scale.x(trim.start))}px` }}
+                  >
+                    {trimEdge('start')}
+                    {trimEdge('end')}
+                  </div>
+                  <WaitSuggestions suggestions={suggestions} scale={scale} />
+                  {edits.cuts.map((cut) => (
+                    <RegionBlock
+                      key={cut.id}
+                      id={cut.id}
+                      kind="cut"
+                      from={cut.from}
+                      to={cut.to}
+                      title={`Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`}
+                      selected={selection?.kind === 'cut' && selection.id === cut.id}
+                      onSelect={() => dispatch({ type: 'select', selection: { kind: 'cut', id: cut.id } })}
+                      onEdit={(edge, time, first) =>
+                        change(moveCut(latest.current, cut.id, edge, time, duration), first, { kind: 'cut', id: cut.id })
+                      }
+                      onRemove={() => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true)}
+                    />
+                  ))}
+                  <TimelineHighlights
+                    highlights={edits.highlights}
+                    selectedId={selectedHighlightId(selection)}
+                    x={(time) => scale.x(time)}
+                    width={scale.width}
+                    pad={PAD}
+                    dispatch={dispatch}
+                  />
+                  {range ? (
+                    <div
+                      className="tl-range"
+                      data-testid="range-selection"
+                      style={{ left: `${scale.x(range.from)}px`, width: `${Math.max(2, scale.x(range.to) - scale.x(range.from))}px` }}
+                    >
+                      <button
+                        type="button"
+                        className="tl-range-cut"
+                        data-testid="cut-selection"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={onCutRange}
+                      >
+                        <ScissorsIcon aria-hidden="true" />
+                        Cut <kbd>C</kbd>
+                      </button>
+                    </div>
+                  ) : null}
+                </Lane>
+              ),
+            },
+            ...(lanes ?? []),
+          ]}
+        />
 
         <div className="tl-playhead-layer" aria-hidden="true">
           <div ref={playhead} className="tl-playhead">

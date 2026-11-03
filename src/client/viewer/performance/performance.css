@@ -5,7 +5,6 @@
 .pp-vitals > ul { min-width: 0; flex: 1; display: flex; margin: 0; padding: 0; overflow-x: auto; list-style: none; scrollbar-width: none; }
 .pp-vitals > ul > li { flex: none; display: flex; flex-direction: column; border-right: 1px solid var(--line); }
 .pp-vital { min-width: 112px; display: flex; flex-direction: column; justify-content: center; gap: 1px; padding: 6px 14px; border: 0; background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
-.pp-vital:hover:not(:disabled) { background: var(--surface-hover); }
 .pp-vital:disabled { cursor: default; }
 .pp-vital:focus-visible, .pp-compare:focus-visible, .pp-order button:focus-visible, .pp-moment button:focus-visible { outline: 2px solid var(--ring); outline-offset: -2px; }
 .pp-vital-label { color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; white-space: nowrap; }
@@ -24,10 +23,26 @@
 .pp-delta[data-tone="worse"] { color: var(--danger); }
 .pp-delta[data-tone="better"] { color: var(--success); }
 .pp-compare { align-self: flex-start; margin: 0 6px 4px; min-height: 24px; padding: 2px 8px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-tertiary); font: inherit; font-size: var(--text-2xs); cursor: pointer; }
-.pp-compare:hover, .pp-compare[data-popup-open] { background: var(--surface-hover); color: var(--text); }
-.pp-comparisons { gap: 8px; width: max-content; max-width: calc(100vw - 24px); padding: 12px; }
-.pp-comparisons p { margin: 0; color: var(--text-tertiary); }
-.pp-comparisons ul { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.pp-vital, .pp-compare { transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), box-shadow var(--motion-fast) var(--ease-out); }
+.pp-vital-label { transition: color var(--motion-fast) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .pp-vital:hover:not(:disabled), .pp-compare:hover { background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line); color: var(--text); }
+  .pp-vital:hover:not(:disabled) .pp-vital-label { color: var(--text-secondary); }
+}
+.pp-vital:active:not(:disabled), .pp-compare:active { background: color-mix(in srgb, var(--surface-hover) 70%, var(--line)); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.pp-compare[data-popup-open] { background: var(--accent-soft); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent); color: var(--text); }
+@media (prefers-reduced-motion: reduce) {
+  .pp-vital, .pp-compare, .pp-vital-label { transition: none; }
+}
+.pp-comparisons { gap: 6px; width: 300px; max-width: calc(100vw - 24px); padding: 10px; }
+.pp-comparisons p { margin: 0; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.4; }
+.pp-comparisons table { width: 100%; table-layout: fixed; border-collapse: collapse; font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
+.pp-comparisons th, .pp-comparisons td { height: 28px; padding: 4px 0; text-align: right; white-space: nowrap; }
+.pp-comparisons th:first-child { width: 42%; overflow: hidden; text-align: left; text-overflow: ellipsis; }
+.pp-comparisons thead th { padding-top: 0; border-bottom: 1px solid var(--line); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 400; }
+.pp-comparisons tbody th { color: var(--text-secondary); font-weight: 500; }
+.pp-comparisons .ct-swatch { display: inline-block; margin-right: 6px; }
+.pp-comparisons td.pp-delta { display: table-cell; }
 .pp-order { flex: none; display: flex; align-items: center; gap: 2px; margin: 0 8px 0 auto; padding-left: 8px; }
 .pp-order button { height: 26px; padding: 0 9px; border: 0; border-radius: 13px; background: transparent; color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; cursor: pointer; }
 .pp-order button:hover { background: var(--surface-hover); color: var(--text); }
@@ -39,7 +54,6 @@
 .pp-row > * { min-width: 0; }
 .pp-row { transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
 .pp-row :is(.pp-moment button, .pp-took, .pp-why, time) { transition: color var(--motion) var(--ease-out); }
-.pp-bar { transition: opacity var(--motion) var(--ease-out); }
 .pp-head { position: sticky; z-index: 2; top: 0; height: 28px; min-height: 28px; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
 .pp-row:not(.pp-head):hover { background: var(--surface-hover); }
 .pp-row[data-selected], .pp-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }

@@ -46,7 +46,11 @@ export function sessionRoutes(services: ApiServices) {
             profiles: deployment.store.profiles.list,
             views: deployment.views.list,
             ...(registry.indexFilters.length ? { indexFilters: publicIndexFilters(registry.indexFilters) } : {}),
-            beta: { editor: Boolean(deployment.beta?.editor), malleable: Boolean(deployment.beta?.malleable) },
+            beta: {
+              editor: Boolean(deployment.beta?.editor),
+              cursorCustomization: Boolean(deployment.beta?.cursorCustomization),
+              malleable: Boolean(deployment.beta?.malleable),
+            },
             comments: services.commentsOn,
             versions: services.versions,
             ...(deployment.beta?.malleable ? { malleable: services.policy } : {}),

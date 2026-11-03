@@ -49,7 +49,9 @@ function openingImage(poster: string): { poster: string; still?: boolean } {
 }
 
 function warmStill(card: Element) {
-  const poster = card.querySelector<HTMLImageElement>('.stack-front > .poster > img, :scope > .poster > img');
+  const poster = card.querySelector<HTMLImageElement>(
+    '.suite-sheet > .shuffle-window > .poster:not(.poster-outgoing) > img, .stack-front > .poster > img, :scope > .poster > img',
+  );
   const still = poster?.src ? stillFor(poster.src) : undefined;
   if (!still || decodedStills.has(still)) return;
   const image = new Image();

@@ -1,12 +1,13 @@
-import { type ComponentPropsWithoutRef, useLayoutEffect, useRef, useState } from 'react';
+import { type ComponentPropsWithoutRef, useState } from 'react';
 
 import { cn } from '@/lib/utils.ts';
+import { type TextTrack, useTextMotion } from '../hooks/use-text-motion.ts';
 
 /**
  * In-place label changes, morphed: the old label fades out with a slight blur and a 3 px drift up while the new one
  * fades in from 3 px below, and the wrapper's width eases from the old label's to the new one's (180 ms ease-out;
  * transform, opacity, filter and width only; animated-text styles in styles.css). Labels only: counts, times and the
- * speed keep NumberFlow.
+ * speed use the Motion number renderer.
  *
  * - The first render never animates; under prefers-reduced-motion every change is a plain swap.
  * - A change within RAPID_MS of the previous one swaps instantly (scrubbing, key repeat), so bursts never queue
@@ -42,21 +43,12 @@ export function textChange({
   return 'animate';
 }
 
-/* Read outside render-time purity rules: the clock and the motion preference at the moment of a change. */
+/* why: preferences and the clock are sampled only when a label changes, keeping rapid retargeting synchronous. */
 function clock() {
   return performance.now();
 }
 function prefersReduced() {
   return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-}
-
-interface Track {
-  text: string;
-  /** The label morphing out, while a morph runs. */
-  out: string | undefined;
-  at: number;
-  /** Bumps per morph, so a new morph restarts the layers' animations. */
-  id: number;
 }
 
 export function AnimatedText({
@@ -70,10 +62,8 @@ export function AnimatedText({
   from?: string | undefined;
   className?: string;
 } & Omit<ComponentPropsWithoutRef<'span'>, 'children'>) {
-  const [track, setTrack] = useState<Track>(() => ({ text: from ?? text, out: undefined, at: Number.NEGATIVE_INFINITY, id: 0 }));
-  const wrapper = useRef<HTMLSpanElement>(null);
-  const restWidth = useRef(0);
-  // Derived state, updated during render (React's "adjusting state when a prop changes").
+  const [track, setTrack] = useState<TextTrack>(() => ({ text: from ?? text, out: undefined, at: Number.NEGATIVE_INFINITY, id: 0 }));
+  // why: adjusting the tracked label during render exposes the final accessible name immediately.
   if (track.text !== text) {
     const now = clock();
     const change = textChange({ previous: track.text, next: text, previousAt: track.at, now, reduced: prefersReduced() });
@@ -81,26 +71,7 @@ export function AnimatedText({
   }
   const morphing = track.out !== undefined && track.text === text;
 
-  useLayoutEffect(() => {
-    const element = wrapper.current;
-    if (!element) return;
-    if (!morphing) {
-      element.style.removeProperty('width');
-      restWidth.current = element.getBoundingClientRect().width;
-      return;
-    }
-    // Width: from the old label's rest width to the new layer's, eased (the layers sit in one grid cell).
-    const incoming = element.querySelector<HTMLElement>('[data-in]');
-    const to = incoming?.getBoundingClientRect().width ?? 0;
-    element.style.width = `${restWidth.current}px`;
-    void element.offsetWidth;
-    element.style.width = `${to}px`;
-    const timer = window.setTimeout(
-      () => setTrack((current) => (current.id === track.id ? { ...current, out: undefined } : current)),
-      MORPH_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [morphing, track.id]);
+  const wrapper = useTextMotion(track, morphing, setTrack);
 
   if (!morphing) {
     return (

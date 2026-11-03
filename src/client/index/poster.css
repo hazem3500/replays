@@ -10,7 +10,6 @@
  *   Loading    only while a poster is genuinely on its way: the tile breathes (opacity, slowly) after
  *              --skeleton-delay (loading.css), so a cached poster or an "off" answer never shows motion.
  */
-@keyframes skeleton-breathe { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
 
 .poster-placeholder { container-type: size; background: linear-gradient(180deg, color-mix(in srgb, var(--text) 4%, transparent), color-mix(in srgb, var(--text) 1.5%, transparent)), var(--surface-raised); }
 .poster-placeholder[data-thumbhash] { background-position: top left; background-repeat: no-repeat; background-size: cover; }
@@ -34,10 +33,5 @@
   .poster-site-icon { width: 12px; height: 12px; }
 }
 
-/* Breathing replaces the feed's sweep (same layer, same selector, later rule). */
-.poster[data-phase="loading"]::before { background: color-mix(in srgb, var(--text) 5%, transparent); transform: none; opacity: 0; animation: skeleton-breathe 2.4s ease-in-out var(--skeleton-delay) infinite; }
-.poster[data-phase="loading"]:has(> .poster-placeholder[data-thumbhash])::before { background: color-mix(in srgb, var(--text) 3%, transparent); }
-
-@media (prefers-reduced-motion: reduce) {
-  .poster[data-phase="loading"]::before { opacity: 0.5; animation: none; }
-}
+/* why: the real poster-breath element owns loading motion through usePosterMotion. */
+.poster[data-phase="loading"]::before { content: none; }

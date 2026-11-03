@@ -1,25 +1,33 @@
 // Initial rollout: findings (exit 1) are reported; crashes and missing tools still fail.
 // QUALITY_STRICT=1 turns the same commands into gates after the documented cleanup.
 import { spawnSync } from 'node:child_process';
-import { appendFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { appendFileSync, closeSync, mkdirSync, openSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export function report(tool, args) {
   const commandArgs = tool === 'pnpm' ? args : ['exec', tool, ...args];
-  const result = spawnSync('pnpm', commandArgs, {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-    // Oxc's raw-transfer buffer can exceed a small CI/Boat worker's virtual memory.
-    env: tool === 'knip' ? { ...process.env, KNIP_DISABLE_RAW_TRANSFER: '1' } : process.env,
-  });
   const name = tool === 'pnpm' ? 'dedupe' : tool;
   const directory = resolve('.review-artifacts/quality');
   mkdirSync(directory, { recursive: true });
-  const stdout = result.stdout ?? '';
-  const stderr = result.stderr ?? '';
   const json = args.includes('json') || args.includes('--json');
-  writeFileSync(resolve(directory, `${name}.${json ? 'json' : 'log'}`), stdout);
+  const outputPath = resolve(directory, `${name}.${json ? 'json' : 'log'}`);
+  const output = openSync(outputPath, 'w');
+  let result;
+  try {
+    // why: file-backed stdout cannot lose buffered JSON when a child exits before a pipe drains.
+    result = spawnSync('pnpm', commandArgs, {
+      encoding: 'utf8',
+      stdio: ['ignore', output, 'pipe'],
+      maxBuffer: 64 * 1024 * 1024,
+      // why: Oxc's raw-transfer buffer can exceed a small CI/Boat worker's virtual memory.
+      env: tool === 'knip' ? { ...process.env, KNIP_DISABLE_RAW_TRANSFER: '1' } : process.env,
+    });
+  } finally {
+    closeSync(output);
+  }
+  const stdout = readFileSync(outputPath, 'utf8');
+  const stderr = result.stderr ?? '';
   writeFileSync(resolve(directory, `${name}.stderr.log`), stderr);
   writeFileSync(
     resolve(directory, `${name}.status.json`),

@@ -1,0 +1,2 @@
+.topbar-identity { min-width: 0; flex: 0 1 auto; display: flex; align-items: center; gap: 6px; }
+.topbar-identity > .topbar-title { min-width: 0; }

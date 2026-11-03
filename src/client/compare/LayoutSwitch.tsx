@@ -3,6 +3,7 @@ import { type KeyboardEvent, useRef } from 'react';
 
 import { Hint } from '@/components/icon-button.tsx';
 import { DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem } from '@/components/ui/dropdown-menu.tsx';
+import { useTransformMotion } from '../hooks/use-transform-motion.ts';
 import type { CompareLayout } from './compare-search.ts';
 
 const LAYOUT_STRINGS = {
@@ -28,6 +29,7 @@ export function LayoutSwitch({ value, onChange }: { value: CompareLayout; onChan
   const options = LAYOUTS;
   const shown = value;
   const index = options.indexOf(shown);
+  const thumb = useTransformMotion(`translateX(${index * 100}%)`);
 
   const onKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
     const step = ARROW_STEPS[event.key] ?? 0;
@@ -49,7 +51,7 @@ export function LayoutSwitch({ value, onChange }: { value: CompareLayout; onChan
       data-testid="layout-switch"
       data-index={index}
     >
-      <span className="layout-switch-thumb" aria-hidden="true" />
+      <span ref={thumb} className="layout-switch-thumb" aria-hidden="true" />
       {options.map((option) => {
         const Icon = ICONS[option];
         return (

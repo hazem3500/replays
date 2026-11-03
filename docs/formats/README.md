@@ -10,6 +10,9 @@ validator for sizes and the privacy pass), and `test/formats.test.ts` keeps them
 | [`context.schema.json`](context.schema.json) | `replay.context` |
 | [`replay-summary.schema.json`](replay-summary.schema.json) | `<id>/meta.json` and each `GET /api/replays` item, including the poster's ThumbHash |
 | [`expired-replay.schema.json`](expired-replay.schema.json) | `_expired/<id>.json`, what is left of a replay retention removed, and each `GET /api/expired-replays` item |
+| [`data-storage.schema.json`](data-storage.schema.json) | Authenticated `GET /api/data-storage` policy and access-filtered trash |
+| [`bulk-trash-request.schema.json`](bulk-trash-request.schema.json) | Explicit `POST /api/data-storage/trash` confirmation |
+| [`bulk-trash-result.schema.json`](bulk-trash-result.schema.json) | Authorized bulk trash result counts |
 | [`comments.schema.json`](comments.schema.json) | `<id>/comments.json` |
 | [`edits.schema.json`](edits.schema.json) | `<id>/edits.json` (beta editor) |
 | [`plugin-manifest.schema.json`](plugin-manifest.schema.json) | A user plugin's manifest (beta.malleable) |

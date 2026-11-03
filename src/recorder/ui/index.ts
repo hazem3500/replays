@@ -1,7 +1,23 @@
 import { createRecorder } from '../recorder.ts';
 import { createDefaultUi, type DefaultUiOptions } from '../default-ui.ts';
 import type { Recorder, RecorderOptions, RecorderUi } from '../types.ts';
-export * from '../default-ui.ts';
+export {
+  createDefaultUi,
+  createRecorderFormat,
+  DEFAULT_MESSAGES,
+  defaultRecorderMessages,
+  formatDuration,
+  resolveRecorderMessages,
+  type CompletionAction,
+  type CompletionContext,
+  type CompletionOptions,
+  type DefaultUiOptions,
+  type RecorderFormat,
+  type RecorderMessageError,
+  type RecorderMessageOverrides,
+  type RecorderMessages,
+  type RecorderTheme,
+} from '../default-ui.ts';
 
 /** One-line built-in consent → indicator → review → result flow. */
 export function createGuidedRecorder(options: Omit<RecorderOptions, 'ui'> & { ui?: RecorderUi | DefaultUiOptions }): Recorder {

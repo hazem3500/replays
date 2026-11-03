@@ -6,6 +6,7 @@ const shell = (page: Page) => page.locator('main.app-shell:not([aria-busy="true"
 
 async function pickView(page: Page, label: string) {
   await page.getByRole('button', { name: 'More actions', exact: true }).click();
+  await page.getByTestId('view-submenu-trigger').click();
   await page.getByRole('menuitemradio', { name: label }).click();
   // why: the menu fades out; the next pick must not reach into the closing one.
   await expect(page.getByTestId('view-standard')).toHaveCount(0);
@@ -50,6 +51,75 @@ test('V steps to the next view and Shift V back', async ({ page }) => {
   await page.keyboard.press('Shift+V');
   await expect(shell(page)).toHaveAttribute('data-view', 'standard');
 });
+
+test('Standard leads with Console while Performance keeps its own tab order', async ({ page }) => {
+  await openReplay(page, `${origin()}/r/demo-shop?view=performance`);
+  const diagnostics = page.getByRole('tablist', { name: 'Replay diagnostics' });
+  const order = () =>
+    diagnostics
+      .getByRole('tab')
+      .evaluateAll((tabs) => tabs.map((tab) => tab.id).filter((id) => ['console-tab', 'network-tab', 'performance-tab'].includes(id)));
+  await expect.poll(order).toEqual(['performance-tab', 'network-tab', 'console-tab']);
+  await pickView(page, 'Standard');
+  await expect(shell(page)).toHaveAttribute('data-view', 'standard');
+  await expect.poll(order).toEqual(['console-tab', 'network-tab', 'performance-tab']);
+});
+
+test('comparison keeps its context instead of offering unrelated view presets', async ({ page }) => {
+  await openReplay(page, `${origin()}/r/demo-shop?with=human-demo&layout=grid&view=review`);
+  await expect(page.getByTestId('compare-stage')).toBeVisible();
+  await expect(shell(page)).toHaveAttribute('data-view', 'compare');
+  await page.keyboard.press('v');
+  await expect(shell(page)).toHaveAttribute('data-view', 'compare');
+  await page.keyboard.press('Shift+V');
+  await expect(shell(page)).toHaveAttribute('data-view', 'compare');
+  await page.getByRole('button', { name: 'More actions', exact: true }).click();
+  await expect(page.getByTestId('view-submenu-trigger')).toHaveCount(0);
+  await expect(page.getByTestId('view-reset')).toHaveText('Reset view');
+});
+
+test('the viewer keeps recording details and appearance in More', async ({ page }) => {
+  await page.route('**/api/replays/demo-shop/render*', (route) => route.fulfill({ json: { status: 'none' } }));
+  await openReplay(page, `${origin()}/r/demo-shop`);
+  const header = page.locator('.app-topbar');
+  await expect(header.getByTestId('copy-link')).toBeVisible();
+  await expect(header.getByRole('button', { name: 'Replay details', exact: true })).toHaveCount(0);
+  await expect(header.getByTestId('download-video')).toBeVisible();
+  await header.getByRole('button', { name: 'More actions', exact: true }).click();
+  await expect(page.getByTestId('theme-menu-item')).toBeVisible();
+  await expect(page.getByRole('menuitem').first()).toHaveAttribute('data-testid', 'compare-with');
+  await expect(page.getByRole('menuitem').last()).toHaveAttribute('data-testid', 'view-reset');
+  await expect(page.getByTestId('keep-replay')).toHaveCount(0);
+  await page.getByRole('menuitem', { name: 'Replay details', exact: true }).click();
+  await expect(page.getByTestId('replay-info')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(header.getByRole('button', { name: 'More actions', exact: true })).toBeFocused();
+});
+
+for (const width of [1280, 390]) {
+  test(`More keeps presets secondary and reset separate at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 800 });
+    await openReplay(page, `${origin()}/r/demo-shop`);
+    await page.getByRole('button', { name: 'More actions', exact: true }).click();
+    const trigger = page.getByTestId('view-submenu-trigger');
+    await expect(trigger).toHaveAccessibleName('View: Standard');
+    await expect(page.getByRole('menuitemradio')).toHaveCount(0);
+    await expect(page.getByTestId('view-reset')).toHaveText('Reset view');
+    await trigger.click();
+    const submenu = page.getByTestId('view-submenu');
+    await expect(submenu.getByRole('menuitemradio', { name: 'Standard', exact: true })).toHaveAttribute('aria-checked', 'true');
+    await expect(submenu.getByTestId('view-reset')).toHaveCount(0);
+    if (width === 390) {
+      await submenu.getByRole('menuitem', { name: 'Back to actions' }).click();
+      await expect(submenu).toBeHidden();
+      await expect(trigger).toBeVisible();
+      await trigger.click();
+    }
+    await submenu.getByRole('menuitemradio', { name: 'Review', exact: true }).click();
+    await expect(shell(page)).toHaveAttribute('data-view', 'review');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+  });
+}
 
 test('Walkthrough hides the inspector until Show details opens it for this visit', async ({ page }) => {
   await openReplay(page, `${origin()}/r/demo-shop?view=walkthrough`);

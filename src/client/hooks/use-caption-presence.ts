@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 import type { CaptionEdge } from '../caption-placement.ts';
 
@@ -14,7 +14,7 @@ export interface CaptionPresence {
   next: CaptionEdge;
 }
 
-/** How long a caption takes to leave an edge (step-caption.css `--caption-exit`) before it shows at the other one. */
+/** The browser Motion exit duration before the caption changes frame edge. */
 export const CAPTION_MOVE_MS = 140;
 
 /**
@@ -22,7 +22,7 @@ export const CAPTION_MOVE_MS = 140;
  * whole instead of collapsing first. `text` undefined means no caption now. A caption that changes edge (top or
  * bottom of the frame) leaves its old edge whole, then shows fresh at the new one: it never slides across the page.
  */
-export function useCaptionPresence(text: string | undefined, number?: number | undefined, edge: CaptionEdge = 'bottom'): CaptionPresence {
+export function useCaptionPresence(text: string | undefined, number?: number | undefined, edge: CaptionEdge = 'bottom') {
   const [state, setState] = useState<CaptionPresence>(() => ({
     text,
     number,
@@ -47,14 +47,6 @@ export function useCaptionPresence(text: string | undefined, number?: number | u
   // why: adjusted during render, so the hiding frame still draws the old caption.
   if (next !== state) setState(next);
 
-  const moving = next.moving;
-  useEffect(() => {
-    if (!moving) return;
-    const timer = window.setTimeout(
-      () => setState((current) => (current.moving ? { ...current, moving: false } : current)),
-      CAPTION_MOVE_MS,
-    );
-    return () => window.clearTimeout(timer);
-  }, [moving]);
-  return next;
+  const completeMove = () => setState((current) => (current.moving ? { ...current, moving: false } : current));
+  return { ...next, completeMove };
 }

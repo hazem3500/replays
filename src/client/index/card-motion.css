@@ -1,24 +1,4 @@
-/*
- * Feed hover motion (index/Feed.tsx): grid cards and list rows. Imported by Feed.tsx after feed.css (tailwind.css),
- * so within the `app` layer these rules follow the feed's own.
- *
- * Hover is a tens-of-times-a-day interaction: quick, quiet, interruptible. CSS transitions only (they retarget
- * mid-flight), exact properties, transform and opacity only, behind `(hover: hover) and (pointer: fine)`.
- * Exits are faster than entries. The lift and the press use the individual `translate` and `scale` properties,
- * so each keeps its own timing: entering, leaving, pressing and releasing never wait on each other.
- *
- *   Grid card  lifts 2 px as one unit (220 ms in, 160 ms out, --ease-out) · a pre-rendered shadow layer fades in
- *   List row   a tint layer fades in (120 ms in, 100 ms out); rows keep their hairlines, so they never lift
- *   Thumbnail  never zooms: the poster is part of the card and never leaves its frame ("it breaks the feeling that
- *              it's part of a card for it to zoom/expand beyond the card boundaries"). Its frame clips and paints
- *              in isolation; the hover preview cross-fades in place inside it (160 ms in, 120 ms out).
- *   Suites     the back sheets fan from the stack's bottom centre (a px or two higher, turned ±1–2°, always
- *              inside the front's width), front first, then each sheet 25 ms later; they fold back together, faster
- *   Press      grid cards scale 0.985, list rows 0.995 (the same ~2–3 px edge travel on a full-width row),
- *              100 ms --ease-out; release settles over 160 ms (--ease-settle); fine pointers only, so touch
- *              scrolling never squeezes a card
- *   Reduced motion: no translate, scale or rotate; the shadow, tint and sheet veils still cross-fade.
- */
+/* why: hover keeps the familiar card lift while thumbnail shuffles leave the information in place. */
 @layer properties, theme, base, app, components, utilities;
 
 @layer app {
@@ -36,95 +16,13 @@
     --card-hover-tint: rgb(255 255 255 / 0.025);
   }
 
-  .feed-list:not(.feed-skeleton) {
-    --card-enter: 220ms;
-    --card-leave: 160ms;
-    --card-press: 100ms;
-    --card-release: 160ms;
-    --tint-enter: 120ms;
-    --tint-leave: 100ms;
-    --fan-stagger: 25ms;
-  }
-
-  /* ---------- Rest: what every state transitions back to (the leave timings) ---------- */
-  .feed-list:not(.feed-skeleton) .feed-item {
-    isolation: isolate;
-    transition: translate var(--card-leave) var(--ease-out), scale var(--card-release) var(--ease-settle);
-  }
-  /* The hover layer, painted once behind the content (z −1 inside the isolated item); only its opacity changes.
-     Zero specificity for the box, so grid suites keep feed.css's inset below their peeking backs. */
-  :where(.feed-list:not(.feed-skeleton) .feed-item)::after {
-    content: "";
-    position: absolute;
-    z-index: -1;
-    inset: 0;
-    border-radius: inherit;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity var(--card-leave) var(--ease-out);
-  }
-  .feed-list[data-view="list"]:not(.feed-skeleton) .feed-item::after { background: var(--surface-hover); transition-duration: var(--tint-leave); }
-  /* Grid: a soft two-layer shadow under the card's own resting shadow (suites keep their inset below the peeking backs). */
-  .feed-list[data-view="grid"]:not(.feed-skeleton) .feed-item::after { border-radius: var(--card-radius); background: var(--card-hover-tint); box-shadow: var(--card-shadow-hover); }
-
-  /* The poster is part of the card: its frame (flush with the card, so its top corners are the card's radius, feed.css)
-     clips and paints in isolation, so nothing in it bleeds past the card while the card moves. The hover preview
-     cross-fades in place inside it. */
+  .feed-list:not(.feed-skeleton) .feed-item { isolation: isolate; }
+  .feed-hover { position: absolute; z-index: -1; inset: 0; border-radius: inherit; pointer-events: none; }
+  .feed-list[data-view="list"] .feed-hover { background: var(--surface-hover); }
+  .feed-list[data-view="grid"] .feed-hover { border-radius: var(--card-radius); background: var(--card-hover-tint); box-shadow: var(--card-shadow-hover); }
+  .feed-list[data-view="grid"] .feed-suite::after { content: none; }
   .feed-list .feed-item .poster:not(.back-poster) { isolation: isolate; contain: paint; }
-  .feed-list .feed-item .poster:not(.back-poster) > .poster-video { transition: opacity 120ms var(--ease-out), filter 200ms var(--ease-out); }
-  .feed-list .feed-item .poster:not(.back-poster) > .poster-video[data-shown] { transition-duration: 160ms, 200ms; }
-
-  /* Suite sheets: the rest pose, written as the hover pose's twin (same transform functions) so the two interpolate
-     function by function. `translateY(100%) rotate() translateY(-100%)` rotates about the sheet's bottom centre
-     while its scale stays about the top centre (transform-origin 50% 0, feed.css). */
-  .stack-layer, .feed-list[data-view="grid"] .card-back {
-    transition: transform var(--card-leave) var(--ease-out), opacity var(--card-leave) var(--ease-out);
-  }
-  .stack-layer-1 { transform: translate3d(0, -4px, 0) translateY(100%) rotate(0deg) translateY(-100%) scale(0.92, 1); }
-  .stack-layer-2 { transform: translate3d(0, -8px, 0) translateY(100%) rotate(0deg) translateY(-100%) scale(0.84, 1); }
-  .feed-list[data-view="grid"] .card-back-1 { transform: translate3d(0, -5px, 0) translateY(100%) rotate(0deg) translateY(-100%) scale(0.94); }
-  .feed-list[data-view="grid"] .card-back-2 { transform: translate3d(0, -10px, 0) translateY(100%) rotate(0deg) translateY(-100%) scale(0.88); }
-  /* The veil over the other runs' screenshots, and the screenshots themselves. */
-  :is(.stack-layer, .card-back)::before, .back-poster img { transition: opacity var(--card-leave) var(--ease-out); }
-
-  /* ---------- Hover: colour and depth (opacity only, so reduced motion keeps them) ---------- */
   @media (hover: hover) and (pointer: fine) {
-    .feed-list:not(.feed-skeleton) .feed-item:hover::after { opacity: 1; transition-duration: var(--card-enter); }
-    .feed-list[data-view="list"]:not(.feed-skeleton) .feed-item:hover::after { transition-duration: var(--tint-enter); }
-    /* The other runs' screenshots brighten as their veil lifts, sheet by sheet like the fan. */
-    .feed-suite:hover :is(.stack-layer, .card-back)::before { opacity: 0.35; }
-    .feed-suite:hover .back-poster[data-phase="ready"] img { opacity: 0.95; }
-    .feed-suite:hover :is(.stack-layer-1, .card-back-1)::before,
-    .feed-suite:hover :is(.stack-layer-1, .card-back-1) .back-poster img { transition-duration: var(--card-enter); transition-delay: var(--fan-stagger); }
-    .feed-suite:hover :is(.stack-layer-2, .card-back-2)::before,
-    .feed-suite:hover :is(.stack-layer-2, .card-back-2) .back-poster img { transition-duration: var(--card-enter); transition-delay: calc(2 * var(--fan-stagger)); }
-  }
-
-  /* ---------- Hover and press: movement ---------- */
-  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-    /* Grid cards lift; the click overlay reaches down to where the card was, so the pointer never loses it. */
-    .feed-list[data-view="grid"]:not(.feed-skeleton) .feed-item:hover {
-      translate: 0 -2px;
-      transition: translate var(--card-enter) var(--ease-out), scale var(--card-release) var(--ease-settle);
-    }
-    .feed-list[data-view="grid"]:not(.feed-skeleton) .feed-item:hover .row-target::after { bottom: -2px; }
-
-    /* Press: only when the item's own link is pressed (a control inside it, like the run strip, presses alone). */
-    .feed-list:not(.feed-skeleton) .feed-item:has(.row-target:active) {
-      scale: 0.995;
-      transition: translate var(--card-enter) var(--ease-out), scale var(--card-press) var(--ease-out);
-    }
-    .feed-list[data-view="grid"]:not(.feed-skeleton) .feed-item:has(.row-target:active) { scale: 0.985; }
-
-    /* Suites: the sheets fan out from the stack's bottom centre, front first, then one sheet every 25 ms. Grid backs
-       are ~330 px tall, so 1° already swings their top corners ~6 px: they stay inside the front card's width
-       (0.95 / 0.9 leave 7 / 14 px each side) and peek at most a few px higher than at rest. */
-    .feed-suite:hover :is(.stack-layer, .card-back) { transition-duration: var(--card-enter); }
-    .feed-suite:hover :is(.stack-layer-1, .card-back-1) { transition-delay: var(--fan-stagger); }
-    .feed-suite:hover :is(.stack-layer-2, .card-back-2) { transition-delay: calc(2 * var(--fan-stagger)); }
-    .feed-suite:hover .stack-layer-1 { transform: translate3d(0, -6px, 0) translateY(100%) rotate(-1.5deg) translateY(-100%) scale(0.95, 1); }
-    .feed-suite:hover .stack-layer-2 { transform: translate3d(0, -11px, 0) translateY(100%) rotate(2deg) translateY(-100%) scale(0.88, 1); }
-    .feed-list[data-view="grid"] .feed-suite:hover .card-back-1 { transform: translate3d(0, -6px, 0) translateY(100%) rotate(-1deg) translateY(-100%) scale(0.95); }
-    .feed-list[data-view="grid"] .feed-suite:hover .card-back-2 { transform: translate3d(0, -11px, 0) translateY(100%) rotate(1.25deg) translateY(-100%) scale(0.9); }
+    .feed-list[data-view="grid"] .feed-item:hover .row-target::after { bottom: -2px; }
   }
 }

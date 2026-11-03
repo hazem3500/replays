@@ -53,6 +53,25 @@ function ActionButton({ action, primary }: { action: StateAction; primary: boole
   );
 }
 
+function presentationOf(presentation: StateKind | { kind: StateKind; illustration: ReactNode }, layout: 'page' | 'panel') {
+  const kind = typeof presentation === 'string' ? presentation : presentation.kind;
+  const illustration = typeof presentation === 'string' ? undefined : presentation.illustration;
+  // why: a page that failed replaces what was asked for, so it is announced; empty and not-captured notes are not.
+  const alert = layout === 'page' && (kind === 'error' || kind === 'not-found' || kind === 'offline');
+  return { kind, illustration, alert };
+}
+
+function StateActions({ actions }: { actions?: { primary?: StateAction | undefined; secondary?: StateAction | undefined } | undefined }) {
+  const { primary, secondary } = actions ?? {};
+  if (!primary && !secondary) return null;
+  return (
+    <div className="state-view-actions">
+      {primary ? <ActionButton action={primary} primary /> : null}
+      {secondary ? <ActionButton action={secondary} primary={false} /> : null}
+    </div>
+  );
+}
+
 /**
  * One look for every empty, error, not-found, offline and not-captured state: the kind's illustration, a plain
  * headline, the cause, one primary action (and at most one quiet secondary), collapsible details for the raw error,
@@ -60,7 +79,7 @@ function ActionButton({ action, primary }: { action: StateAction; primary: boole
  * compact form at the top of a panel.
  */
 export function StateView({
-  kind,
+  kind: presentation,
   title,
   cause,
   actions,
@@ -69,7 +88,8 @@ export function StateView({
   testId,
   children,
 }: {
-  kind: StateKind;
+  /** A state kind, optionally paired with replacement artwork. */
+  kind: StateKind | { kind: StateKind; illustration: ReactNode };
   title: string;
   cause?: ReactNode;
   /** One primary action, and at most one quiet secondary. */
@@ -80,23 +100,16 @@ export function StateView({
   testId?: string | undefined;
   children?: ReactNode;
 }) {
-  // why: a page that failed replaces what was asked for, so it is announced; empty and not-captured notes are not.
-  const alert = layout === 'page' && (kind === 'error' || kind === 'not-found' || kind === 'offline');
-  const { primary: action, secondary } = actions ?? {};
+  const { kind, illustration, alert } = presentationOf(presentation, layout);
   return (
     <section className="state-view" data-kind={kind} data-layout={layout} role={alert ? 'alert' : undefined} data-testid={testId}>
-      <StateArt kind={kind} />
+      {illustration ?? <StateArt kind={kind} />}
       <div className="state-view-text">
         {layout === 'page' ? <h1 className="state-view-title">{title}</h1> : <h2 className="state-view-title">{title}</h2>}
         {cause ? <p className="state-view-cause">{cause}</p> : null}
       </div>
       {children}
-      {action || secondary ? (
-        <div className="state-view-actions">
-          {action ? <ActionButton action={action} primary /> : null}
-          {secondary ? <ActionButton action={secondary} primary={false} /> : null}
-        </div>
-      ) : null}
+      <StateActions actions={actions} />
       {details ? (
         <details className="state-view-details">
           <summary>{STRINGS.details}</summary>

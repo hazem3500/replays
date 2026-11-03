@@ -1,3 +1,5 @@
+import { bulkTrashRoutes } from './bulk-trash.ts';
+import { dataStorageRoutes } from './data-storage.ts';
 import type { RouteDefinition } from '../http/route.ts';
 import { expiredRoutes } from './expired.ts';
 import { replayMetaRoutes } from './replay-meta.ts';
@@ -13,6 +15,8 @@ export type { ApiServices } from './services.ts';
 export function coreRoutes(services: ApiServices): RouteDefinition[] {
   return [
     ...sessionRoutes(services),
+    ...dataStorageRoutes(services),
+    ...bulkTrashRoutes(services),
     ...replayRoutes(services),
     ...expiredRoutes(services),
     ...replayMetaRoutes(services),

@@ -80,37 +80,22 @@
   line-height: 1.35;
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 4px);
-  transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), visibility 0s linear 120ms;
+  translate: -50% 0;
+  transform: translateY(4px);
   visibility: hidden;
 }
 .plugin-track-marker[data-range] .plugin-track-card {
   left: 0;
-  transform: translate(0, 4px);
+  translate: 0 0;
 }
 .plugin-track-marker[data-side="start"] .plugin-track-card {
   left: -8px;
-  transform: translate(0, 4px);
+  translate: 0 0;
 }
 .plugin-track-marker[data-side="end"] .plugin-track-card {
   right: -8px;
   left: auto;
-  transform: translate(0, 4px);
-}
-.plugin-track-marker:hover .plugin-track-card,
-.plugin-track-marker:has(:focus-visible) .plugin-track-card {
-  opacity: 1;
-  transform: translate(-50%, 0);
-  transition-delay: 0s;
-  visibility: visible;
-}
-.plugin-track-marker[data-range]:hover .plugin-track-card,
-.plugin-track-marker[data-range]:has(:focus-visible) .plugin-track-card,
-.plugin-track-marker[data-side="start"]:hover .plugin-track-card,
-.plugin-track-marker[data-side="start"]:has(:focus-visible) .plugin-track-card,
-.plugin-track-marker[data-side="end"]:hover .plugin-track-card,
-.plugin-track-marker[data-side="end"]:has(:focus-visible) .plugin-track-card {
-  transform: translate(0, 0);
+  translate: 0 0;
 }
 .plugin-track-card-head {
   color: var(--text-tertiary);
@@ -138,10 +123,4 @@
 [role="menuitem"] .plugin-action-icon {
   width: 14px;
   height: 14px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .plugin-track-card {
-    transition: none;
-  }
 }

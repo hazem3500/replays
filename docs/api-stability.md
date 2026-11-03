@@ -14,6 +14,10 @@ so every change to the surface shows up in a diff).
 | Config file keys and `defineConfig` | `@hazem3500/replays/config` | Public |
 | Plugin API: `definePlugin`, `PluginApi` methods (including the web-standard `route` and `middleware`, with `PluginRoute`, `PluginMiddleware` and `StandardSchemaV1`) and their hook contexts, upload endpoint options, `PluginError` codes, `rejectUpload`, `HttpError`, `tooManyRequests`, `PLUGIN_API_VERSION` | `/plugin` | Public |
 | Browser plugin API: `defineViewerPlugin`, `ViewerPluginApi`, `ViewerPluginContext`, the tab / action / panel definitions, editor tools, export formats and viewer shortcuts and typed activity subscriptions | `/viewer` | Public |
+| Portable replay, edit, effect and additive privacy models and validators, with no runtime environment dependency | `/model` | Public: curated exports, additive changes |
+| Browser playback engine and independently owned playback service (`createReplayPlayback`, snapshots, actions, load, mount and destroy) | `/viewer/playback` | Public: browser only, independent of React and the hosted application |
+| Pure network, performance, waterfall and error diagnostic builders with captured source values and optional edit timelines | `/viewer/diagnostics` | Public: browser and server safe; no React, DOM, playback engine or application dependency |
+| Optional unstyled React playback provider, hooks and composition primitives | `/viewer/react` | Public: independent provider instances; the hosted app's internal React contexts remain private |
 | Server entry: `startServer`, `createApp`, `ReplayStore`, auth and storage classes, `ObjectStorage` / `AuthAdapter` / `WebAuthAdapter` / `AnyAuthAdapter` types, `migrateStore` / `compareStores` and their report types | `/server` | Public |
 | Contract suites: `describeObjectStorage`, `describeAuthAdapter`, `fakeRequest`. New checks may be added in a minor release when they pin documented behaviour | `/server/testing` | Public |
 | Browser-safe in-page recorder, default UI, messages and formatting (`RecorderMessages`, `defaultRecorderMessages`, `RecorderFormat`; keys are added, not renamed), the `capture` option (`RecorderCapture`, `RecorderBodyLimits`; a profile's `capture` block is accepted as is, and keys only tighten), completion/theme contracts and upload helpers (`createTokenUpload`, `createHttpUpload`, `IssueUploadError`) | `/recorder` | Public |
@@ -30,6 +34,8 @@ so every change to the surface shows up in a diff).
 
 Deep imports are blocked by `exports`; if you need something that is not exported, open an issue instead of copying the path:
 it is a candidate for the surface.
+
+See [independent playback and models](playback-and-model.md) for lifecycle, data ownership and privacy boundaries.
 
 The capture entry also exports `normalizeServerUrl`, `normalizeUploadUrl`, `resolveServerUrl`,
 `resolveUploadEndpoint`, `saveServer`, and `uploadEndpoint` for CLI integrations. Server configuration stores
@@ -128,3 +134,18 @@ runs. The malleable feature flag remains off by default. API generations remain 
 flag-default change requires an announced minor release as described in malleability.md.
 
 The additive sandbox viewer surface contract includes manifest `contextSections` and `tracks`, runtime `replays.section` and `replays.track`, and the host adapter's optional `TimelineTrackDefinition.onSelect`. The existing user-plugin format version remains 1; older hosts reject unknown contribution fields rather than running them with weaker permissions.
+
+`HostSurfaceContext` and `HostSurfaceDefinition` are additive framework independent types in
+`/viewer`, with the diagnostic, editor and settings slots documented in the extension API.
+Their documented core ids and lifecycle follow the slot stability rules above. Editor commands
+validate edits before updating state; host renderers remain trusted code.
+
+The read-only `/api/data-storage` route and `settings.sections/core:data-storage` are additive.
+The optional `ApiServices.canReadReplay` gate is fail-closed for trash ID disclosure: direct
+core-route consumers that omit it receive policy information with an empty trash list. Existing
+per-replay trash/restore write contracts are unchanged.
+
+`DataStorageInfo.replayCount`, `POST /api/data-storage/trash` and the optional
+`ApiServices.canDeleteReplay` gate are additive. Bulk trash requires both per-item read and delete
+gates; missing gates disable that operation. Existing individual DELETE behavior and keep protection
+are unchanged. Bulk replies contain counts only and do not confer any extra per-replay permission.

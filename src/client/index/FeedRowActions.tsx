@@ -1,3 +1,6 @@
+import { useRef } from 'react';
+
+import { useKeepButtonMotion } from '../hooks/use-feed-control-motion.ts';
 import type { ReplaySummary } from '../../shared/replay.ts';
 import { daysUntil, useKeep } from '../viewer/keep.ts';
 
@@ -14,6 +17,8 @@ export function ExpiryHint({ summary }: { summary: ReplaySummary }) {
 /** Mounted only for rows about to expire, so only they ask for their retention (useKeep shares the viewer's cache). */
 function Expiry({ id, title, expiresAt }: { id: string; title: string; expiresAt: string }) {
   const keep = useKeep(id);
+  const button = useRef<HTMLButtonElement>(null);
+  useKeepButtonMotion(button, keep.available && !keep.kept);
   if (keep.kept) return null;
   const days = daysUntil(expiresAt);
   const full = new Date(expiresAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
@@ -23,7 +28,7 @@ function Expiry({ id, title, expiresAt }: { id: string; title: string; expiresAt
         {days === 0 ? 'Expires today' : `Expires in ${days} ${days === 1 ? 'day' : 'days'}`}
       </time>
       {keep.available ? (
-        <button type="button" className="feed-keep" onClick={keep.flip} disabled={keep.pending} aria-label={`Keep ${title}`}>
+        <button ref={button} type="button" className="feed-keep" onClick={keep.flip} disabled={keep.pending} aria-label={`Keep ${title}`}>
           Keep
         </button>
       ) : null}

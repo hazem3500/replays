@@ -1,4 +1,4 @@
-import { type RefObject, useEffect, useState } from 'react';
+import { type RefObject, useLayoutEffect, useState } from 'react';
 
 /** How long after the last size change the stage still counts as resizing. */
 const SETTLE_MS = 160;
@@ -13,7 +13,7 @@ export interface StageBox {
 /** The stage's content box, kept current as it resizes; zero until it is measured. */
 export function useStageBox(element: RefObject<HTMLElement | null>) {
   const [box, setBox] = useState<StageBox>({ width: 0, height: 0, resizing: false });
-  useEffect(() => {
+  useLayoutEffect(() => {
     const node = element.current;
     if (!node) return;
     let measured = false;

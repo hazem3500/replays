@@ -13,9 +13,13 @@ import {
 
 describe('beta flag registry', () => {
   it('lists each flag once with its server switches and one-line copy', () => {
-    expect(BETA_FLAG_IDS).toEqual(['editor', 'malleable']);
-    expect(BETA_FLAGS.map((flag) => flag.env)).toEqual(['REPLAYS_BETA_EDITOR', 'REPLAYS_BETA_MALLEABLE']);
-    expect(BETA_FLAGS.map((flag) => flag.token)).toEqual(['editor', 'malleable']);
+    expect(BETA_FLAG_IDS).toEqual(['editor', 'cursorCustomization', 'malleable']);
+    expect(BETA_FLAGS.map((flag) => flag.env)).toEqual([
+      'REPLAYS_BETA_EDITOR',
+      'REPLAYS_BETA_CURSOR_CUSTOMIZATION',
+      'REPLAYS_BETA_MALLEABLE',
+    ]);
+    expect(BETA_FLAGS.map((flag) => flag.token)).toEqual(['editor', 'cursor-customization', 'malleable']);
     for (const flag of BETA_FLAGS) {
       expect(flag.configKey).toBe(flag.id);
       expect(flag.label.length).toBeGreaterThan(0);
@@ -23,15 +27,15 @@ describe('beta flag registry', () => {
       expect(flag.description.length).toBeLessThanOrEqual(90);
     }
     expect(new Set(BETA_FLAGS.map((flag) => flag.token)).size).toBe(BETA_FLAGS.length);
-    expect(NO_BETA).toEqual({ editor: false, malleable: false });
+    expect(NO_BETA).toEqual({ editor: false, cursorCustomization: false, malleable: false });
   });
 
   it('round-trips the allowed set through the index.html meta tokens', () => {
     expect(betaTokens(NO_BETA)).toBe('');
-    expect(betaTokens({ editor: true, malleable: true })).toBe('editor malleable');
+    expect(betaTokens({ editor: true, cursorCustomization: false, malleable: true })).toBe('editor malleable');
     expect(betaTokens({ malleable: true })).toBe('malleable');
-    expect(betaFromTokens('editor retired-flag')).toEqual({ editor: true, malleable: false });
-    expect(betaFromTokens('malleable,editor unknown')).toEqual({ editor: true, malleable: true });
+    expect(betaFromTokens('editor retired-flag')).toEqual({ editor: true, cursorCustomization: false, malleable: false });
+    expect(betaFromTokens('malleable,editor unknown')).toEqual({ editor: true, cursorCustomization: false, malleable: true });
     expect(betaFromTokens(null)).toEqual(NO_BETA);
   });
 
@@ -40,10 +44,18 @@ describe('beta flag registry', () => {
     expect(betaEffective('editor', true)).toBe(true);
     expect(betaEffective('editor', true, false)).toBe(false);
     expect(betaEffective('malleable', true, true)).toBe(true);
-    expect(resolveBetaFlags({ editor: true, malleable: true }, { malleable: false })).toEqual({
+    expect(resolveBetaFlags({ editor: true, cursorCustomization: false, malleable: true }, { malleable: false })).toEqual({
       editor: true,
+      cursorCustomization: false,
       malleable: false,
     });
+  });
+
+  it('requires both deployment permission and browser opt-in for cursor customization', () => {
+    expect(betaEffective('cursorCustomization', false, true)).toBe(false);
+    expect(betaEffective('cursorCustomization', true)).toBe(false);
+    expect(betaEffective('cursorCustomization', true, true)).toBe(true);
+    expect(betaFromTokens('editor cursor-customization').cursorCustomization).toBe(true);
   });
 
   it('offers in Labs only the flags this server allows', () => {

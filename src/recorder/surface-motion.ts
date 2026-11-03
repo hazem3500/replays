@@ -1,3 +1,5 @@
+import { animate } from 'motion/mini';
+
 export type FloatingSurface = {
   host: HTMLElement;
   root: ShadowRoot;
@@ -8,7 +10,7 @@ export type FloatingSurface = {
   label: HTMLElement;
 };
 
-const transitions = new WeakMap<HTMLElement, { animation: Animation; timer: ReturnType<typeof setTimeout> }>();
+const transitions = new WeakMap<HTMLElement, { animation: ReturnType<typeof animate>; timer: ReturnType<typeof setTimeout> }>();
 const resting = { opacity: 1, transform: 'translateX(-50%) translateY(0) scale(1)' };
 const away = { opacity: 0, transform: 'translateX(-50%) translateY(8px) scale(.98)' };
 
@@ -17,7 +19,7 @@ function cancel(shell: HTMLElement) {
   transitions.delete(shell);
   if (previous) {
     clearTimeout(previous.timer);
-    previous.animation.cancel();
+    previous.animation.stop();
   }
 }
 
@@ -27,11 +29,16 @@ function transition(shell: HTMLElement, entering: boolean, complete: () => void)
     complete();
     return;
   }
-  const animation = shell.animate(entering ? [away, resting] : [resting, away], {
-    duration: entering ? 200 : 140,
-    easing: entering ? 'cubic-bezier(.16, 1, .3, 1)' : 'ease-in',
-    fill: 'both',
-  });
+  const from = entering ? away : resting;
+  const to = entering ? resting : away;
+  const animation = animate(
+    [shell],
+    { opacity: [from.opacity, to.opacity], transform: [from.transform, to.transform] },
+    {
+      duration: entering ? 0.2 : 0.14,
+      ease: entering ? [0.16, 1, 0.3, 1] : 'easeIn',
+    },
+  );
   const finish = () => {
     if (transitions.get(shell)?.animation !== animation) return;
     cancel(shell);
@@ -50,6 +57,8 @@ export function showSurface(shell: HTMLElement) {
   shell.removeAttribute('hidden');
   shell.removeAttribute('inert');
   shell.removeAttribute('aria-hidden');
+  shell.style.opacity = '';
+  shell.style.transform = '';
   if (entering) transition(shell, true, () => {});
 }
 

@@ -12,7 +12,8 @@ export interface WaterfallSegment {
   from: number;
   to: number;
 }
-interface RowTiming {
+/** Captured and visible timing shared by portable network, step and performance rows. */
+export interface RowTiming {
   id: string;
   label: string;
   /** First visible instant, in the player's clock. */

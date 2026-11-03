@@ -1,3 +1,4 @@
+import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 import { UploadIcon } from 'lucide-react';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 
@@ -69,12 +70,19 @@ export function useReplayDrop(onFile: (file: File) => void, { enabled = true }: 
   }, [enabled]);
 
   return (
-    <div className="upload-drop-overlay" data-active={dragging || undefined} aria-hidden={!dragging} data-testid="upload-drop-overlay">
-      <div className="upload-drop-message">
+    <SurfaceMotion
+      open={dragging}
+      kind="backdrop"
+      className="upload-drop-overlay"
+      data-active={dragging || undefined}
+      aria-hidden={!dragging}
+      data-testid="upload-drop-overlay"
+    >
+      <SurfaceMotion open={dragging} kind="modal" className="upload-drop-message">
         <UploadIcon aria-hidden="true" />
         <p>Drop a replay.json or rrweb export</p>
         <span>.json or .json.gz, up to 25 MB</span>
-      </div>
-    </div>
+      </SurfaceMotion>
+    </SurfaceMotion>
   );
 }

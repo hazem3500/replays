@@ -1,10 +1,18 @@
-import { ArrowUpRightIcon, Maximize2Icon, Minimize2Icon, XIcon } from 'lucide-react';
-import type { CSSProperties } from 'react';
+import { useOpacityMotion } from '../hooks/use-opacity-motion.ts';
+import { XIcon } from 'lucide-react';
+import type { MotionStyle } from 'motion/react';
+import { useRef, useState } from 'react';
+import * as m from 'motion/react-m';
 
 import type { ReplayBundle } from '../../shared/replay.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 import { useClockState } from '../hooks/use-clock.ts';
 import { useTilePlayer } from '../hooks/use-tile-player.ts';
+import { useTileCoverMotion } from '../hooks/use-tile-cover-motion.ts';
+import { apiUrl } from '../api/fetch.ts';
+import { freshPoster } from '../transitions/open-hint.ts';
 import { formatSeconds } from '../permalink.ts';
 import { plural } from '../plural.ts';
 import type { Fidelity } from './clock.ts';
@@ -14,6 +22,7 @@ import { Identity } from './Identity.tsx';
 import { StepCaption } from '../viewer/StepCaption.tsx';
 import { useViewer } from '../viewer/context.ts';
 import type { CompareTile } from './tiles.ts';
+import { REPLAY_LAYOUT_SPRING } from './motion.ts';
 
 const TILE_STRINGS = {
   loading: 'Loading recording',
@@ -38,9 +47,15 @@ export interface TileCommands {
   href: (id: string, seconds: string) => string;
 }
 
-function placementStyle(placement: Placement | undefined): CSSProperties | undefined {
-  if (!placement) return undefined;
-  return { transform: `translate(${placement.x}px, ${placement.y}px)`, width: placement.width, height: placement.height };
+function placementStyle(placement: Placement | undefined): MotionStyle {
+  if (!placement) return {};
+  return {
+    left: placement.x,
+    top: placement.y,
+    width: placement.width,
+    height: placement.height,
+    borderRadius: placement.role === 'single' ? 0 : 10,
+  };
 }
 
 function tileName(tile: CompareTile, ended: boolean) {
@@ -56,6 +71,7 @@ export function CompareTileView({
   focused,
   alone,
   fidelity,
+  motion,
   commands,
 }: {
   session: CompareSession;
@@ -64,6 +80,7 @@ export function CompareTileView({
   focused: boolean;
   alone: boolean;
   fidelity: Fidelity;
+  motion: { enabled: boolean; dependency: string; instant: boolean };
   commands: TileCommands;
 }) {
   const ended = useClockState(session.clock, (snapshot) => snapshot.ended.has(tile.id));
@@ -79,7 +96,12 @@ export function CompareTileView({
   };
 
   return (
-    <section
+    <m.section
+      layout={motion.enabled}
+      layoutDependency={motion.dependency}
+      initial={false}
+      animate={{ opacity: hidden ? 0 : 1 }}
+      transition={{ layout: REPLAY_LAYOUT_SPRING, opacity: { duration: motion.instant ? 0 : 0.16, ease: 'easeOut' } }}
       className="ct-tile"
       style={placementStyle(placement)}
       data-tile={tile.colour}
@@ -93,7 +115,15 @@ export function CompareTileView({
       inert={hidden}
     >
       {tile.bundle ? (
-        <TilePicture session={session} id={tile.id} bundle={tile.bundle} fidelity={fidelity} caption={focused} />
+        <TilePicture
+          session={session}
+          id={tile.id}
+          bundle={tile.bundle}
+          fidelity={fidelity}
+          caption={focused}
+          ended={ended}
+          size={placement}
+        />
       ) : (
         <TileNotice busy={!tile.failure} text={tile.failure || TILE_STRINGS.loading} />
       )}
@@ -105,9 +135,9 @@ export function CompareTileView({
         onClick={onHit}
         onDoubleClick={onSpotlight}
       />
-      <TileLabel tile={tile} ended={ended && !single} />
+      <TileLabel tile={tile} ended={ended && !single} single={single} instant={motion.instant} />
       {single ? null : <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />}
-    </section>
+    </m.section>
   );
 }
 
@@ -116,7 +146,7 @@ function ringed(focused: boolean, single: boolean, alone: boolean) {
   return (focused && !single && !alone) || undefined;
 }
 
-function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
+function TileLabel({ tile, ended, single, instant }: { tile: CompareTile; ended: boolean; single: boolean; instant: boolean }) {
   return (
     <>
       {ended ? (
@@ -124,10 +154,16 @@ function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
           {TILE_STRINGS.ended}
         </span>
       ) : null}
-      <footer className="ct-nametag" aria-hidden="true">
+      <m.footer
+        className="ct-nametag"
+        aria-hidden="true"
+        initial={false}
+        animate={{ bottom: single ? 20 : 8, left: single ? 20 : 8 }}
+        transition={{ duration: instant ? 0 : 0.18, ease: 'easeOut' }}
+      >
         <Identity tile={tile} />
         {tile.errors ? <span className="ct-errors">{tile.errors}</span> : null}
-      </footer>
+      </m.footer>
     </>
   );
 }
@@ -145,11 +181,13 @@ function TileActions({
   alone: boolean;
   commands: TileCommands;
 }) {
+  const actions = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(actions, 'compare');
   const spotlightLabel = spotlit ? TILE_STRINGS.grid : TILE_STRINGS.spotlight;
   // why: the link carries the moment it is opened at, not the moment it was rendered at.
   const here = () => formatSeconds(Math.min(session.clock.getTime(), tile.bundle?.meta.duration ?? 0));
   return (
-    <div className="ct-actions" role="toolbar" aria-label={tile.label}>
+    <div ref={actions} className="ct-actions" role="toolbar" aria-label={tile.label}>
       {alone ? null : (
         <Hint label={spotlightLabel} side="bottom">
           <button
@@ -159,7 +197,7 @@ function TileActions({
             data-testid="tile-spotlight"
             onClick={() => commands.onSpotlight(tile.id)}
           >
-            {spotlit ? <Minimize2Icon aria-hidden="true" /> : <Maximize2Icon aria-hidden="true" />}
+            <AnimatedIcon name={spotlit ? 'minimize' : 'maximize'} />
           </button>
         </Hint>
       )}
@@ -175,7 +213,7 @@ function TileActions({
             window.open(commands.href(tile.id, here()), '_blank', 'noopener');
           }}
         >
-          <ArrowUpRightIcon aria-hidden="true" />
+          <AnimatedIcon name="arrow-up-right" />
         </a>
       </Hint>
       {commands.onRemove && tile.removable ? (
@@ -213,20 +251,32 @@ function TilePicture({
   bundle,
   fidelity,
   caption,
+  ended,
+  size,
 }: {
   session: CompareSession;
   id: string;
   bundle: ReplayBundle;
   fidelity: Fidelity;
   caption: boolean;
+  ended: boolean;
+  size: Pick<Placement, 'width' | 'height'> | undefined;
 }) {
   const controller = session.controller({ id, bundle });
-  const { stage, failure } = useTilePlayer({ session, id, controller, fidelity });
+  const { stage, failure, painted } = useTilePlayer({ session, id, controller, fidelity, size });
+  useOpacityMotion(stage, ended ? 0.55 : 1);
+  const cover = useTileCoverMotion(painted);
+  const [poster] = useState(() => {
+    const hinted = caption ? freshPoster() : undefined;
+    const path = `replays/${encodeURIComponent(bundle.meta.id)}/`;
+    return hinted?.includes(`/${path}`) ? hinted : apiUrl(`${path}poster?v=2`);
+  });
   const { captions, steps, editCaptions } = useViewer();
   if (failure) return <TileNotice busy={false} text={TILE_STRINGS.unavailable(failure)} />;
   return (
     <div ref={stage} className="ct-picture" data-fidelity={fidelity}>
       <div className="ct-host player-host" inert />
+      <img ref={cover} className="ct-cover" src={poster} alt="" aria-hidden="true" />
       {caption && captions && steps.length > 0 && !editCaptions ? <StepCaption /> : null}
     </div>
   );

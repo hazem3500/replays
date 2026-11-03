@@ -53,13 +53,26 @@ export function CliSection() {
   const deviceLogin = Boolean(config.data.cliDeviceAuth);
   const mode = signInMode(auth, deviceLogin);
   return (
-    <>
-      <p className="settings-intro">{ACCESS[mode]}</p>
+    <div className="settings-cli">
+      <dl className="cli-access">
+        <dt>{strings.cli.access}</dt>
+        <dd>{ACCESS[mode]}</dd>
+      </dl>
+      <SettingsGroup title={strings.cli.install}>
+        <p className="cli-source">
+          {strings.cli.installIntro} <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.source}</ExternalLink>
+        </p>
+        <CommandField
+          label={strings.cli.installCommand}
+          command="pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g ."
+          hint={strings.cli.installHint}
+        />
+      </SettingsGroup>
       <SettingsGroup title={strings.cli.connect}>
         <CommandField
           label={strings.cli.connectCommand}
           command={`replays connect ${shellQuote(serverUrl())} && replays doctor`}
-          hint={anonymous ? strings.cli.connectHint : strings.cli.connectHintSignIn}
+          hint={strings.cli.connectHint}
         />
       </SettingsGroup>
       {deviceLogin ? (
@@ -74,14 +87,15 @@ export function CliSection() {
           hint={mode === 'managed' ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther) : UPLOAD_HINTS[mode]}
         />
       </SettingsGroup>
-      <div className="settings-group settings-credentials">
+      <details className="settings-group settings-credentials">
+        <summary className="settings-group-title">{strings.cli.agentsAdvanced}</summary>
         <AgentCredentials />
         <p className="settings-group-footer">{strings.cli.agentsHint}</p>
-      </div>
+      </details>
       <nav className="settings-links" aria-label={strings.sections.cli}>
         <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.cliGuide}</ExternalLink>
         <ExternalLink href={SETTINGS_LINKS.auth}>{strings.cli.authGuide}</ExternalLink>
       </nav>
-    </>
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { setBetaAllowedForTests, setBetaChoice } from '../src/client/settings/labs.ts';
 import { Editor } from '../src/client/editor/Editor.tsx';
 import { saveEdits, type LoadedEdits } from '../src/client/edits.ts';
 import type * as editsModule from '../src/client/edits.ts';
@@ -73,6 +74,8 @@ const click = async (selector: string) => {
 /** Registers the shared happy-dom editor environment for the enclosing describe. */
 function useEditorHarness() {
   beforeEach(() => {
+    setBetaAllowedForTests({ editor: true, cursorCustomization: true });
+    setBetaChoice('cursorCustomization', true);
     mobile = true;
     player = undefined;
     vi.clearAllMocks();
@@ -97,6 +100,8 @@ function useEditorHarness() {
     await settle(() => {
       root.unmount();
     });
+    setBetaChoice('cursorCustomization', undefined);
+    setBetaAllowedForTests(undefined);
     client.clear();
     host.remove();
     vi.clearAllTimers();
@@ -158,7 +163,7 @@ describe('phone editor captions', () => {
     });
     expect(key.defaultPrevented).toBe(false);
     await click('.editor-mobile-header .topbar-more');
-    expect(document.querySelector('[data-slot="dropdown-menu-content"][data-sheet] [data-testid="editor-done"]')).not.toBeNull();
+    expect(document.querySelector('[data-slot="dropdown-menu-content"][data-sheet] [data-testid="editor-done"]')).toBeNull();
   });
 
   it('adds one caption at the playhead with its text focused in the sheet, follows undo, and reopens it rather than adding another', async () => {
@@ -291,7 +296,7 @@ describe('phone editor chrome', () => {
     });
     expect(sheet()).toBeNull();
     expect(document.activeElement).toBe(node('.editor-mobile-header .topbar-more'));
-    await fromMore('[data-testid="editor-done"]');
+    await click('.editor-mobile-header [aria-label="Back to the replay"]');
     expect(saveEdits).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
     expect(node('[data-testid="save-state"]').textContent).toContain('Not saved');

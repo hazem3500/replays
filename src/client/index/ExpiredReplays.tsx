@@ -1,11 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
-import { type CSSProperties, useId, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import type { ProfileInfo } from '../../shared/profiles.ts';
 import { nounFor } from '../plural.ts';
 import { expiredReason, expiredReplaysQuery, recordedOn, visibleExpired } from './expired-query.ts';
+import { useListArrival } from '../hooks/use-list-arrival.ts';
+import { useChevronMotion } from '../hooks/use-chevron-motion.ts';
 
 /**
  * Below the feed: how many replays retention removed recently, and "Show expired" to list them, dimmed, with when and
@@ -23,8 +25,11 @@ export function ExpiredReplays({
 }) {
   const { data } = useQuery(expiredReplaysQuery);
   const [open, setOpen] = useState(false);
+  const chevron = useChevronMotion(open);
   const listId = useId();
   const records = data ? visibleExpired(data.records, { query, profile }) : [];
+  const panel = useRef<HTMLDivElement>(null);
+  useListArrival(panel, '.expired-row', open, records.map((record) => record.id).join('|'));
   if (!data?.days || records.length === 0) return null;
   return (
     <section className="expired" aria-label="Expired replays" data-open={open || undefined}>
@@ -34,15 +39,16 @@ export function ExpiredReplays({
         </p>
         <button type="button" className="expired-toggle" aria-expanded={open} aria-controls={listId} onClick={() => setOpen(!open)}>
           {open ? 'Hide expired' : 'Show expired'}
-          <AnimatedIcon name="chevron-down" />
+          <span ref={chevron} className="expired-chevron">
+            <AnimatedIcon name="chevron-down" />
+          </span>
         </button>
       </div>
-      <div id={listId} className="expired-panel" hidden={!open}>
+      <div ref={panel} id={listId} className="expired-panel" hidden={!open}>
         <ul className="expired-list">
-          {records.map((record, index) => {
-            const stagger: CSSProperties & { '--i': number } = { '--i': index };
+          {records.map((record) => {
             return (
-              <li key={record.id} className="expired-row" style={stagger}>
+              <li key={record.id} className="expired-row">
                 <span className="expired-tile" aria-hidden="true" />
                 <span className="expired-text">
                   <span className="expired-title">{record.title}</span>

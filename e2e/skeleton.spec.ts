@@ -85,10 +85,13 @@ test('under reduced motion loading is static: the viewer’s parts wait without 
   await expect(block.getByRole('status')).toHaveText('Loading replay…');
   // why: the bar's controls are the viewer's own, disabled until it is there, never live fakes.
   await expect(block.locator('header button:not(:disabled)')).toHaveCount(2);
-  const animations = await block.evaluate((element) =>
-    [element, ...element.querySelectorAll('.skeleton')].map((node) => getComputedStyle(node).animationName),
+  const animations = await block.evaluate(
+    (element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length,
   );
-  expect(new Set(animations)).toEqual(new Set(['none']));
+  expect(animations).toBe(0);
+  const line = block.locator('.sk-progress');
+  await expect(line).toHaveAttribute('data-visible', 'true');
+  await expect(line).toHaveCSS('opacity', '1');
   release();
   await context.close();
 });

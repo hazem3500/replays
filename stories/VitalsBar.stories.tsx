@@ -17,7 +17,7 @@ const peers: VitalPeer[] = Array.from({ length: 5 }, (_, index) => ({
   id: `run-${index + 2}`,
   name: `Run ${index + 2}`,
   colour: index + 2,
-  deltas: { fcp: index === 2 ? -1160 : 0, lcp: 0, interaction: 0, task: 0, tbt: 0 },
+  deltas: { fcp: index === 2 ? -1160 : index === 3 ? 200 : 0, lcp: 0, interaction: 0, task: 0, tbt: 0 },
 }));
 
 const meta = {
@@ -39,8 +39,12 @@ export const SixRecordings: Story = {
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const popup = await page.findByRole('dialog', { name: 'First paint comparison' });
-    await expect(within(popup).getByText('Same as Run 2')).toBeVisible();
-    await expect(within(popup).getByText('−1.16 s vs Run 4')).toBeVisible();
+    await expect(within(popup).getByRole('heading', { name: /^First paint comparison$/ })).toBeVisible();
+    await expect(within(popup).getByRole('columnheader', { name: 'Change' })).toBeVisible();
+    const slowerRun = within(popup).getByRole('row', { name: 'Run 4 1.70 s +1.16 s' });
+    await expect(slowerRun).toBeVisible();
+    await expect(within(popup).getByRole('row', { name: 'Run 5 340 ms −200 ms' })).toBeVisible();
+    await expect(within(popup).getByRole('row', { name: 'Run 2 540 ms Same' })).toBeVisible();
     await expect(popup.querySelectorAll('.pp-delta')).toHaveLength(5);
     await userEvent.keyboard('{Escape}');
     await expect(trigger).toHaveFocus();

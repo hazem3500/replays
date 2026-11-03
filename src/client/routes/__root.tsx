@@ -8,6 +8,7 @@ import { TooltipProvider } from '@/components/ui/tooltip.tsx';
 import { rootSearchSchema } from '../../shared/schemas/search.ts';
 import type { Deployment } from '../deployment.ts';
 import { useHydrated } from '../hooks/use-hydrated.ts';
+import { useLoadingMotion } from '../hooks/use-loading-motion.ts';
 import { KeptIndex } from '../routing/KeptIndex.tsx';
 import { ThemeContext, useTheme } from '../theme.tsx';
 
@@ -41,6 +42,7 @@ function Document({ children }: { children: ReactNode }) {
 }
 
 function Root() {
+  useLoadingMotion();
   const themeControls = useTheme();
   // why: one provider: hints open after 500 ms, then neighbours open instantly for 400 ms.
   return (

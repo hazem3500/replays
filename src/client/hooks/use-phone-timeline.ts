@@ -1,3 +1,4 @@
+import { animate } from 'motion/mini';
 import { useEffect, useRef, useState } from 'react';
 
 import { formatClock } from '../../shared/replay.ts';
@@ -56,6 +57,20 @@ function pinchZoom(latest: Latest) {
   };
 }
 
+/** The snap pulse is UI feedback, independent of the deterministic replay clock. */
+function snapFeedback(scroller: HTMLElement) {
+  let animation: ReturnType<typeof animate> | undefined;
+  return {
+    flash: () => {
+      animation?.stop();
+      const marker = scroller.parentElement?.querySelector<HTMLElement>('.phone-snap-marker');
+      if (!marker || typeof marker.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      animation = animate([marker], { transform: ['scaleX(1)', 'scaleX(2.5)', 'scaleX(1)'] }, { duration: 0.24, ease: [0.23, 1, 0.32, 1] });
+    },
+    dispose: () => animation?.stop(),
+  };
+}
+
 /**
  * The lanes' scroll position and the clock as one: `follow` scrolls to the clock, and a scroll it did not make is a
  * scrub that pauses, seeks and, once quiet, settles on a step start it lands near.
@@ -65,6 +80,7 @@ function scrubber(scroller: HTMLElement, latest: Latest, pinching: () => boolean
   let expected = -1;
   let scrubbing = false;
   let settle = 0;
+  const snap = snapFeedback(scroller);
   const place = (left: number) => {
     expected = left;
     scroller.scrollTo({ left, behavior: 'instant' });
@@ -84,6 +100,7 @@ function scrubber(scroller: HTMLElement, latest: Latest, pinching: () => boolean
       player.seek(near);
       scroller.scrollTo({ left: near * scale, behavior: 'smooth' });
       scroller.toggleAttribute('data-snapped', true);
+      snap.flash();
       if ('vibrate' in navigator) navigator.vibrate(8);
       return;
     }
@@ -112,6 +129,7 @@ function scrubber(scroller: HTMLElement, latest: Latest, pinching: () => boolean
       settle = window.setTimeout(finish, SETTLE_MS);
     },
     dispose: () => {
+      snap.dispose();
       window.clearTimeout(settle);
       if (scrubbing) player.endScrub();
     },

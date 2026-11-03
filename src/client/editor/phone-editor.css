@@ -50,9 +50,7 @@
   .phone-handle::after { content: ""; position: absolute; top: 50%; left: 4px; width: 2px; height: 10px; margin-top: -5px; border-radius: 1px; background: var(--accent-contrast); }
 
   /* The centre playhead: one line over the lanes; its range input takes the keyboard (Arrow keys seek). */
-  .phone-lanes-frame::after { content: ""; position: absolute; z-index: 5; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
-  .phone-lanes-frame:has(> .phone-lanes[data-snapped])::after { animation: phone-snap 240ms var(--ease-out); }
-  @keyframes phone-snap { 50% { scale: 2.5 1; } }
+  .phone-snap-marker { position: absolute; z-index: 5; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
   .phone-playhead { position: absolute; z-index: 6; top: 0; bottom: 0; left: 50%; width: 24px; margin: 0 0 0 -12px; padding: 0; appearance: none; -webkit-appearance: none; background: transparent; opacity: 0; pointer-events: none; }
   .phone-playhead:focus-visible { opacity: 1; outline: 2px solid var(--focus); outline-offset: 0; border-radius: 4px; }
   .phone-playhead::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 0; height: 0; }
@@ -63,7 +61,6 @@
   /* The settings sheet (PhoneSheet.tsx): the phone panel's content without its inline frame. */
   .phone-sheet .editor-context-panel { max-height: none; overflow: visible; padding: 0 0 8px; border-top: 0; }
   @media (prefers-reduced-motion: reduce) {
-    .phone-lanes-frame:has(> .phone-lanes[data-snapped])::after { animation: none; }
   }
 }
 

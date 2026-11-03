@@ -56,21 +56,12 @@ describe('live caption presence', () => {
     expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Place the order');
   });
 
-  it('leaves its old edge whole before it shows at the other one, instead of sliding across the page', async () => {
-    vi.useFakeTimers();
-    try {
-      await render('Open the cart');
-      expect(caption().dataset.edge).toBe('bottom');
-      await render('Place the order', undefined, 'top');
-      expect(caption().dataset.active).toBe('false');
-      expect(caption().dataset.edge).toBe('bottom');
-      expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Open the cart');
-      await settle(() => vi.advanceTimersByTime(200));
-      expect(caption().dataset.active).toBe('true');
-      expect(caption().dataset.edge).toBe('top');
-      expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Place the order');
-    } finally {
-      vi.useRealTimers();
-    }
+  it('lands immediately at the new edge when the host has no browser animation API', async () => {
+    await render('Open the cart');
+    expect(caption().dataset.edge).toBe('bottom');
+    await render('Place the order', undefined, 'top');
+    expect(caption().dataset.active).toBe('true');
+    expect(caption().dataset.edge).toBe('top');
+    expect(caption().querySelector('[data-caption-text]')?.textContent).toBe('Place the order');
   });
 });

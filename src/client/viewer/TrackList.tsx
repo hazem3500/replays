@@ -11,6 +11,8 @@ import {
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayer, usePlayerState } from '../player.ts';
 import { createSpring } from '../spring.ts';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
+import { useNowDividerPositionMotion } from '../hooks/use-now-divider-position-motion.ts';
 import { Button } from '@/components/ui/button.tsx';
 
 export const HEADER_HEIGHT = 28;
@@ -54,6 +56,8 @@ export function TrackList({
 }) {
   const player = usePlayer();
   const { status } = usePlayerState();
+  const presence = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(presence, 'track');
   const [following, setFollowing] = useState(true);
   const [recall, setRecall] = useState(0);
   // Reading mode: a text selection in the panel or a scroll while paused (and, while paused, an expanded
@@ -189,6 +193,7 @@ export function TrackList({
 
   return (
     <div
+      ref={presence}
       className="track-panel"
       data-now-edge={midway ? edge : undefined}
       data-now-end={total > 0 && !midway ? '' : undefined}
@@ -302,8 +307,6 @@ function frameTime() {
 function placeLine(element: HTMLElement, y: number) {
   element.style.transform = `translateY(${y.toFixed(1)}px)`;
 }
-/** Moves of more than this many rows (a seek, a step jump) are instant; smaller ones glide while playing. */
-const GLIDE_MAX_ROWS = 3;
 /** Hover intent: the pointer rests this long in the line's band before the line and grip come up. */
 const HOVER_REVEAL_MS = 250;
 /** The grip's keyboard x (the Time column's gutter) and its width. */
@@ -381,7 +384,6 @@ function NowDivider({
   const player = usePlayer();
   const { status } = usePlayerState();
   const line = useRef<HTMLDivElement>(null);
-  const previous = useRef({ shown: -1, reached, viewTop: 0, viewHeight: 0 });
   const drag = useRef<
     | {
         pointerId: number;
@@ -470,29 +472,15 @@ function NowDivider({
   // Unmounted (the playhead left the middle of the list): no edge tint either.
   useLayoutEffect(() => () => onEdge(undefined), [onEdge]);
 
-  // Imperative, so the glide decision sees the previous position without re-rendering. Skipped while
-  // dragging: the drag's spring owns the line then.
-  useLayoutEffect(() => {
-    const element = line.current;
-    const last = previous.current;
-    if (!element || drag.current) return;
-    springs.current?.y.stop();
-    const steps = Math.abs(reached - last.reached);
-    const glide =
-      last.shown >= 0 &&
-      status === 'playing' &&
-      steps > 0 &&
-      steps <= GLIDE_MAX_ROWS &&
-      view.top === last.viewTop &&
-      view.height === last.viewHeight &&
-      !pinned;
-    element.style.transition = glide ? '' : JUMP_TRANSITION;
-    placeLine(element, shown);
-    springs.current?.y.set(shown, true);
-    previous.current = { shown, reached, viewTop: view.top, viewHeight: view.height };
-    // `dragging` re-places the line where it belongs when a drag ends.
-    // oxlint-disable-next-line react/exhaustive-effect-dependencies
-  }, [pinned, reached, shown, status, view.top, view.height, dragging]);
+  const cancelPositionMotion = useNowDividerPositionMotion(line, drag, springs, {
+    shown,
+    reached,
+    playing: status === 'playing',
+    viewTop: view.top,
+    viewHeight: view.height,
+    pinned: Boolean(pinned),
+    dragging,
+  });
 
   /** The playhead for "now after `count` entries": the start, an entry's time, or the end. */
   const timeFor = (count: number) =>
@@ -623,6 +611,7 @@ function NowDivider({
   };
   const onPointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (event.button !== 0) return;
+    cancelPositionMotion();
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
     const list = line.current?.parentElement;
@@ -743,6 +732,7 @@ function NowDivider({
       data-pinned={pinned}
       data-dragging={dragging || undefined}
     >
+      <span className="now-line" aria-hidden="true" />
       <span
         className="now-hit"
         aria-hidden="true"

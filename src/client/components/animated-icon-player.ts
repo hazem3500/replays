@@ -13,8 +13,8 @@ export const COALESCE_MS = 250;
 export interface PlayTarget {
   setAttribute(name: string, value: string): void;
   removeAttribute(name: string): void;
-  /** Read to force a style flush, so re-adding the attribute restarts the CSS animation. */
-  getBoundingClientRect?(): unknown;
+  /** Starts the visual gesture and returns its cancellation. */
+  startMotion?(): () => void;
 }
 
 export interface PlayerEnvironment {
@@ -59,11 +59,14 @@ export function createIconPlayer(target: PlayTarget, ms: number, environment: Pl
   let timer: unknown;
   let playing = false;
   let lastRequestAt = Number.NEGATIVE_INFINITY;
+  let stopMotion: (() => void) | undefined;
 
   const stop = () => {
     if (timer !== undefined) environment.clearTimeout(timer);
     timer = undefined;
     playing = false;
+    stopMotion?.();
+    stopMotion = undefined;
     target.removeAttribute(PLAYING_ATTRIBUTE);
   };
 
@@ -81,9 +84,9 @@ export function createIconPlayer(target: PlayTarget, ms: number, environment: Pl
       if (playing) return false;
       playing = true;
       target.removeAttribute(PLAYING_ATTRIBUTE);
-      target.getBoundingClientRect?.();
       target.setAttribute(PLAYING_ATTRIBUTE, '');
-      // A little margin past the longest part so `fill: both` never snaps before the last frame.
+      stopMotion = target.startMotion?.();
+      // why: a small scheduling margin lets every Motion part finish before its static pose is restored.
       timer = environment.setTimeout(stop, ms + 40);
       return true;
     },

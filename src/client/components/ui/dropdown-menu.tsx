@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { SurfaceMotion } from './surface-motion.tsx';
 import { Menu as MenuPrimitive } from '@base-ui/react/menu';
 import { cn } from '@/lib/utils.ts';
 import { ChevronRightIcon, CheckIcon } from 'lucide-react';
@@ -47,7 +48,12 @@ function DropdownMenuContent({
   const sheet = useMediaQuery(MOBILE_QUERY);
   return (
     <MenuPrimitive.Portal container={portalContainer}>
-      {sheet ? <MenuPrimitive.Backdrop className="menu-sheet-scrim" /> : null}
+      {sheet ? (
+        <MenuPrimitive.Backdrop
+          className="menu-sheet-scrim"
+          render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="backdrop" />}
+        />
+      ) : null}
       <MenuPrimitive.Positioner
         className={cn('isolate z-50 outline-none', sheet && 'menu-sheet-positioner')}
         align={align}
@@ -72,10 +78,10 @@ function DropdownMenuContent({
           // A menu fading out is no longer a menu: no role, hidden from assistive tech, inert, so a menu opened during
           // another's exit is the only one there (to users and to tests alike).
           render={(renderProps, state) => {
-            if (state.open) return <div {...renderProps} />;
+            if (state.open) return <SurfaceMotion {...renderProps} open kind={sheet ? 'sheet' : 'popover'} />;
             const closing = { ...renderProps };
             delete closing.role;
-            return <div {...closing} aria-hidden inert />;
+            return <SurfaceMotion {...closing} open={false} kind={sheet ? 'sheet' : 'popover'} aria-hidden inert />;
           }}
           {...props}
         >
@@ -158,7 +164,7 @@ function DropdownMenuSubTrigger({
       data-slot="dropdown-menu-sub-trigger"
       data-inset={inset}
       className={cn(
-        "flex min-h-7 cursor-default items-center gap-2 rounded-md px-2 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7.5 data-popup-open:bg-accent data-popup-open:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+        "relative flex min-h-7 cursor-default items-center gap-2 rounded-md px-2 py-1 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-7.5 data-popup-open:bg-accent data-popup-open:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
         className,
       )}
       {...props}

@@ -1,6 +1,6 @@
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ANIMATED_ICON_NAMES, AnimatedIcon } from '../src/client/components/animated-icon.tsx';
 import { ANIMATED_ICONS } from '../src/client/components/animated-icon-data.ts';
@@ -14,18 +14,10 @@ import {
 
 function fakeTarget() {
   const attributes = new Map<string, string>();
-  let flushes = 0;
   return {
     attributes,
-    get flushes() {
-      return flushes;
-    },
     setAttribute: (name: string, value: string) => void attributes.set(name, value),
     removeAttribute: (name: string) => void attributes.delete(name),
-    getBoundingClientRect: () => {
-      flushes += 1;
-      return {};
-    },
   };
 }
 
@@ -64,7 +56,6 @@ describe('icon player', () => {
     const player = createIconPlayer(target, 300, environment);
     expect(player.play()).toBe(true);
     expect(target.attributes.has(PLAYING_ATTRIBUTE)).toBe(true);
-    expect(target.flushes).toBe(1);
     advance(200);
     expect(player.play()).toBe(false); // no restart mid-gesture
     advance(200);
@@ -111,6 +102,20 @@ describe('icon player', () => {
     player.cancel();
     expect(target.attributes.has(PLAYING_ATTRIBUTE)).toBe(false);
     expect(timers.size).toBe(0);
+  });
+
+  it('starts the visual gesture only once and cancels it when the player returns to rest', () => {
+    const stopMotion = vi.fn<() => void>();
+    const startMotion = vi.fn<() => () => void>(() => stopMotion);
+    const { environment, advance } = fakeEnvironment();
+    const player = createIconPlayer({ ...fakeTarget(), startMotion }, 300, environment);
+    player.play();
+    player.play();
+    expect(startMotion).toHaveBeenCalledOnce();
+    advance(340);
+    expect(stopMotion).toHaveBeenCalledOnce();
+    player.cancel();
+    expect(stopMotion).toHaveBeenCalledOnce();
   });
 });
 

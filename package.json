@@ -45,7 +45,7 @@
     "hooks:install": "lefthook install",
     "quality": "pnpm quality:knip && pnpm quality:boundaries && pnpm quality:package && pnpm quality:size && pnpm quality:dedupe && pnpm quality:hooks && pnpm quality:test",
     "quality:size:ratchet": "node scripts/quality-size.mjs --ratchet",
-    "quality:test": "node --test scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs scripts/mutation-report.test.mjs",
+    "quality:test": "node --test scripts/build-lib.test.mjs scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs scripts/mutation-report.test.mjs scripts/quality-report.test.mjs",
     "check:quick": "vp run cached:lint && vp run cached:format && vp run cached:types && pnpm test:changed",
     "test:changed": "vp test run --config vitest.config.ts --changed=origin/main --passWithNoTests",
     "test:watch": "vp test --config vitest.config.ts",
@@ -62,7 +62,6 @@
   "dependencies": {
     "@agent-native/core": "0.220.0",
     "@base-ui/react": "1.9.0",
-    "@number-flow/react": "0.6.2",
     "@opentelemetry/api": "1.9.1",
     "@opentelemetry/context-async-hooks": "2.12.0",
     "@opentelemetry/core": "2.12.0",
@@ -81,23 +80,23 @@
     "@tanstack/react-virtual": "3.14.23",
     "ajv": "^8.20.0",
     "ajv-formats": "^3.0.1",
-    "calligraph": "1.4.1",
     "class-variance-authority": "0.7.1",
     "clsx": "2.1.1",
     "effect": "4.0.6",
     "esbuild": "0.28.2",
     "h3": "2.0.8",
     "lucide-react": "1.55.0",
+    "motion": "14.9.0",
     "playwright-core": "1.64.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "rou3": "1.0.0",
     "rrweb": "2.1.7",
     "sonner": "2.0.8",
+    "srvx": "1.0.7",
     "tailwind-merge": "3.7.0",
     "ws": "8.22.0",
     "xstate": "5.33.3",
-    "rou3": "1.0.0",
-    "srvx": "1.0.7",
     "zod": "4.6.7"
   },
   "devDependencies": {
@@ -162,6 +161,7 @@
     "docs/extension-api.md",
     "docs/extending.md",
     "docs/packaging.md",
+    "docs/playback-and-model.md",
     "README.md",
     "LICENSE",
     "docs/recorder.md",
@@ -226,10 +226,34 @@
       "types": "./dist/types/recorder/index.d.ts",
       "browser": "./dist/lib/recorder.mjs",
       "default": "./dist/lib/recorder.mjs"
+    },
+    "./model": {
+      "types": "./dist/types/shared/model.d.ts",
+      "default": "./dist/lib/model.mjs"
+    },
+    "./viewer/playback": {
+      "types": "./dist/types/client/playback/index.d.ts",
+      "default": "./dist/lib/viewer-playback.mjs"
+    },
+    "./viewer/diagnostics": {
+      "types": "./dist/types/client/diagnostics.d.ts",
+      "default": "./dist/lib/viewer-diagnostics.mjs"
+    },
+    "./viewer/react": {
+      "types": "./dist/types/client/compose/index.d.ts",
+      "default": "./dist/lib/viewer-react.mjs"
+    },
+    "./viewer/playback/style.css": {
+      "types": "./dist/types/client/styles/render.d.ts",
+      "default": "./dist/lib/viewer-playback.css"
+    },
+    "./viewer/react/style.css": {
+      "types": "./dist/types/client/styles/render.d.ts",
+      "default": "./dist/lib/viewer-react.css"
     }
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=19"
   },
   "peerDependenciesMeta": {
     "react": {

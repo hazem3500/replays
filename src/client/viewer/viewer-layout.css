@@ -14,18 +14,11 @@
 /* The top bar's `viewer.actions` items (TopbarActions.tsx) keep the bar's own flex row: their wrappers have no box. */
 .viewer-actions, .viewer-action { display: contents; }
 
-/* Snaps, resets and folds settle with the splitter's spring; drags follow the pointer directly. */
-.workspace[data-splitter-settling] { transition: grid-template-columns var(--splitter-settle) var(--splitter-spring); }
-.app-shell[data-splitter-settling] { transition: grid-template-rows var(--splitter-settle) var(--splitter-spring); }
-@media (prefers-reduced-motion: reduce) {
-  .workspace[data-splitter-settling], .app-shell[data-splitter-settling] { transition: none; }
-}
-
 /* Side by side only: a stacked layout keeps the rail under the player whatever was folded on a wide screen. */
 @media (min-width: 841px) and (min-height: 561px) {
   .workspace[data-rail-collapsed] { grid-template-columns: minmax(0, 1fr) 0 0; }
   .workspace[data-rail-collapsed] > .timeline-panel { visibility: hidden; }
-  .workspace[data-rail-collapsed] > .rail-split { position: absolute; top: 0; right: 0; bottom: 0; width: var(--splitter-hit); }
+  .workspace[data-rail-collapsed] > .rail-split { --splitter-line: transparent; position: absolute; top: 0; right: 0; bottom: 0; width: var(--splitter-hit); }
   .workspace[data-rail-collapsed] > .rail-split::before { inset: 0; }
   /* A folded rail leaves a tab on the player's right edge. */
   .rail-edge-tab { position: absolute; z-index: 4; top: 12px; right: 0; }
@@ -65,7 +58,6 @@
 .app-shell[data-inspector-hidden] .transport { padding-right: 120px; }
 
 /* A quiet view lets the top bar fade while the replay plays; it returns on hover and while it holds focus. */
-.app-shell[data-chrome="quiet"] > .app-topbar { transition: opacity var(--motion-slow, 240ms) ease; }
 .app-shell[data-chrome="quiet"][data-playing] > .app-topbar:not(:hover, :focus-within) { opacity: 0.12; }
 @media (prefers-reduced-motion: reduce) {
   .app-shell[data-chrome="quiet"] > .app-topbar { transition: none; }

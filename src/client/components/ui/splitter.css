@@ -26,26 +26,14 @@
 .splitter[data-orientation="horizontal"]::before { inset: calc(var(--splitter-hit) / -2) 0; }
 .splitter[data-orientation="vertical"]::before { inset: 0 calc(var(--splitter-hit) / -2); }
 
-.splitter-line { position: absolute; background: var(--splitter-line); pointer-events: none; transition: background-color var(--splitter-fade) var(--ease-out), scale var(--splitter-fade) var(--ease-out); }
+.splitter-line { position: absolute; background: var(--splitter-line); pointer-events: none; }
 .splitter[data-orientation="horizontal"] .splitter-line { inset: 0 0 auto; height: 1px; }
 .splitter[data-orientation="vertical"] .splitter-line { inset: 0 auto 0 0; width: 1px; }
 
-.splitter-grip { position: absolute; top: 50%; left: 50%; border-radius: 999px; background: var(--splitter-active); opacity: 0; pointer-events: none; translate: -50% -50%; scale: 0.6; transition: opacity var(--splitter-fade) var(--ease-out), scale var(--splitter-fade) var(--ease-out); }
+.splitter-grip { position: absolute; top: 50%; left: 50%; border-radius: 999px; background: var(--splitter-active); opacity: 0; pointer-events: none; translate: -50% -50%; scale: 0.6; }
 .splitter[data-orientation="horizontal"] .splitter-grip { width: var(--splitter-grip-length); height: var(--splitter-grip-width); }
 .splitter[data-orientation="vertical"] .splitter-grip { width: var(--splitter-grip-width); height: var(--splitter-grip-length); }
 
-/* Active: hovered a moment (fine pointers), focused from the keyboard, or held. */
-@media (hover: hover) and (pointer: fine) {
-  .splitter:hover .splitter-line, .splitter:hover .splitter-grip { transition-delay: var(--splitter-hover-delay); }
-  .splitter:hover .splitter-line { background: var(--splitter-active); }
-  .splitter[data-orientation="horizontal"]:hover .splitter-line { scale: 1 var(--splitter-active-width); }
-  .splitter[data-orientation="vertical"]:hover .splitter-line { scale: var(--splitter-active-width) 1; }
-  .splitter:hover .splitter-grip { opacity: 1; scale: 1; }
-}
-.splitter:is(:focus-visible, [data-dragging]) .splitter-line { background: var(--splitter-active); transition-delay: 0ms; }
-.splitter[data-orientation="horizontal"]:is(:focus-visible, [data-dragging]) .splitter-line { scale: 1 var(--splitter-active-width); }
-.splitter[data-orientation="vertical"]:is(:focus-visible, [data-dragging]) .splitter-line { scale: var(--splitter-active-width) 1; }
-.splitter:is(:focus-visible, [data-dragging]) .splitter-grip { opacity: 1; scale: 1; transition-delay: 0ms; }
 .splitter:focus-visible .splitter-grip { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ring); }
 
 /* While a seam is held, the whole document shows its cursor and nothing gets selected. */
@@ -61,7 +49,3 @@ html[data-splitter-drag] iframe { pointer-events: none; }
 .splitter-edge-label { writing-mode: vertical-rl; }
 @media (hover: hover) { .splitter-edge-tab:hover { color: var(--text); } }
 .splitter-edge-tab:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
-
-@media (prefers-reduced-motion: reduce) {
-  .splitter-line, .splitter-grip { transition: none; }
-}

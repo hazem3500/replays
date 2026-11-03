@@ -20,6 +20,45 @@ async function markPlayers(page: Page) {
   });
 }
 
+test('comparison stills keep their fitted geometry while route motion defers iframe construction', async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await page.addInitScript(() => {
+    let release: (() => void) | undefined;
+    const finished = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    Object.defineProperty(document, 'activeViewTransition', {
+      configurable: true,
+      value: {
+        ready: Promise.resolve(),
+        finished,
+        skipTransition: () => release?.(),
+      },
+    });
+    document.addEventListener(
+      'release-test-transition',
+      () => {
+        Reflect.deleteProperty(document, 'activeViewTransition');
+        release?.();
+      },
+      { once: true },
+    );
+  });
+  await page.goto(compareUrl());
+  const pictures = page.locator('.ct-picture');
+  await expect(pictures).toHaveCount(2);
+  await expect(page.locator('.ct-cover')).toHaveCount(2);
+  await expect(page.locator('.ct-tile iframe')).toHaveCount(0);
+  expect(
+    await pictures.evaluateAll((elements) =>
+      elements.every((element) => element instanceof HTMLElement && Number.parseFloat(element.style.getPropertyValue('--frame-w')) > 0),
+    ),
+  ).toBe(true);
+  await page.evaluate(() => document.dispatchEvent(new Event('release-test-transition')));
+  await expect(page.locator('.ct-tile iframe')).toHaveCount(2);
+  await expect(page.locator('.ct-cover:not([hidden])')).toHaveCount(0);
+});
+
 test('a replay compares with another in its own viewer, each tile under its own title', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, compareUrl());
@@ -48,9 +87,21 @@ test('inspecting a tile scopes the title, inspector and URL to it', async ({ pag
 });
 
 test('layouts glide the same players: Grid, Spotlight and Single never remount a tile', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, compareUrl());
   await markPlayers(page);
+  const stage = page.getByTestId('compare-stage');
+  await expect(stage).not.toHaveAttribute('data-resizing');
+  const before = await stage.boundingBox();
+  await stage.evaluate((element) => {
+    const observer = new MutationObserver(() => {
+      const tile = element.querySelector<HTMLElement>('.ct-tile[data-current]');
+      if (!tile || Math.abs(tile.getBoundingClientRect().width - tile.offsetWidth) < 2) return;
+      element.setAttribute('data-gliding-tile', element.getAttribute('data-layout') ?? '');
+    });
+    observer.observe(element, { subtree: true, attributes: true, attributeFilter: ['style'] });
+  });
   const layouts = page.getByTestId('layout-switch');
   await layouts.getByRole('radio', { name: 'Spotlight' }).click();
   await expect(page).toHaveURL(/layout=spotlight/);
@@ -58,7 +109,28 @@ test('layouts glide the same players: Grid, Spotlight and Single never remount a
   await layouts.getByRole('radio', { name: 'Single' }).click();
   await expect(page).not.toHaveURL(/layout=/);
   await expect(page.locator('.ct-tile[data-role="single"]')).toHaveCount(1);
+  await expect(stage).toHaveAttribute('data-gliding-tile', 'single');
+  await expect(stage.locator('.ct-tile[data-current] .replayer-wrapper')).toHaveCSS('box-shadow', 'none');
+  expect(await stage.boundingBox()).toEqual(before);
+  await stage.evaluate((element) => element.removeAttribute('data-gliding-tile'));
   await layouts.getByRole('radio', { name: 'Grid' }).click();
+  await expect(page.locator('.ct-tile[data-role="grid"]')).toHaveCount(2);
+  await expect(stage).toHaveAttribute('data-gliding-tile', 'grid');
+  expect(await stage.boundingBox()).toEqual(before);
+  await expect.poll(() => page.locator('.ct-tile[data-current]').evaluate((tile) => tile.style.transform || 'none')).toBe('none');
+  await expect(page.locator('.ct-tile iframe[data-marked]')).toHaveCount(2);
+});
+
+test('reduced motion switches comparison layouts immediately without replacing players', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  await openReplay(page, compareUrl());
+  await markPlayers(page);
+  await page.getByTestId('layout-switch').getByRole('radio', { name: 'Single' }).click();
+  await expect(page.locator('.ct-tile[data-role="hidden"]')).toHaveAttribute('inert', '');
+  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveCSS('transition-duration', '0s');
+  await expect.poll(() => page.locator('.ct-tile[data-current]').evaluate((tile) => tile.style.transform || 'none')).toBe('none');
+  await page.getByTestId('layout-switch').getByRole('radio', { name: 'Grid' }).click();
   await expect(page.locator('.ct-tile[data-role="grid"]')).toHaveCount(2);
   await expect(page.locator('.ct-tile iframe[data-marked]')).toHaveCount(2);
 });

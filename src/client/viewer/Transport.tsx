@@ -1,8 +1,14 @@
+import { useReplayFirstPaint } from '../hooks/use-replay-first-paint.ts';
+import { useTileCoverMotion } from '../hooks/use-tile-cover-motion.ts';
+import { IconSwap } from '../components/icon-swap.tsx';
+import { useStageFlashMotion } from '../hooks/use-stage-flash-motion.ts';
+import { MotionLabel } from '../components/entry-motion.tsx';
 import {
   type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   type RefObject,
+  type ReactNode,
   useEffect,
   useId,
   useLayoutEffect,
@@ -10,27 +16,28 @@ import {
   useState,
 } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { useFullscreenPresence } from '../hooks/use-fullscreen-presence.ts';
 
 import { formatClock } from '../../shared/replay.ts';
-import { SPEEDS, usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
+import { usePlayer, usePlayerState, usePlayhead, useViewport } from '../player.ts';
 import { exportCaptionScale } from '../step-caption.ts';
 import { activeStepIndex, fitViewport } from '../timeline.ts';
 
-import { Hint, IconButton, SwitchIconButton } from '@/components/icon-button.tsx';
+import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { shortcutLabel } from '../shortcuts.ts';
 import { Button } from '@/components/ui/button.tsx';
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { Slider, SliderControl, SliderIndicator, SliderThumb, SliderTrack } from '@/components/ui/slider.tsx';
 import { Switch } from '@/components/ui/switch.tsx';
 import { useViewer } from './context.ts';
-import { afterMorphStart, afterPageTransition, swappingInPlace } from '../transitions/state.ts';
 import { freshPoster } from '../transitions/open-hint.ts';
 import { Scrubber } from './Scrubber.tsx';
+import { APP_PLAYBACK_SPEEDS } from './playback-speeds.ts';
+import { useAppPlaybackSpeed } from '../hooks/use-app-playback-speed.ts';
+import { CaptionControls } from './CaptionControls.tsx';
+import { useFullscreenPopover } from '../hooks/use-fullscreen-popover.ts';
 
 export { activeStepIndex };
-
-/** Replays up to this many events mount during the page transition (a few ms); bigger ones after it. */
-const LIGHT_MOUNT_EVENTS = 3000;
 
 /** How long a click on the stage waits for a second click (double click = fullscreen) before flipping playback. */
 const DOUBLE_CLICK_MS = 220;
@@ -78,24 +85,10 @@ export function PlayerStage() {
     },
   };
   const [cover] = useState(freshPoster);
-  const [covering, setCovering] = useState(Boolean(cover));
+  const painted = useReplayFirstPaint(host, player);
+  const covering = Boolean(cover) && !painted;
+  const coverImage = useTileCoverMotion(painted);
   const frame = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    let live = true;
-    let unmount: (() => void) | undefined;
-    const mount = () => {
-      if (!live || !host.current) return;
-      unmount = player.mount(host.current);
-      requestAnimationFrame(() => requestAnimationFrame(() => live && setCovering(false)));
-    };
-    // A run switch crossfades in place: the new run's frame is painted inside it (transitions/swap.ts).
-    if (swappingInPlace()) mount();
-    else void (player.eventCount <= LIGHT_MOUNT_EVENTS ? afterMorphStart() : afterPageTransition()).then(mount);
-    return () => {
-      live = false;
-      unmount?.();
-    };
-  }, [player]);
 
   useLayoutEffect(() => {
     const element = box.current;
@@ -152,15 +145,23 @@ export function PlayerStage() {
       <div ref={frame} className="player-frame">
         <div ref={host} className="player-host" inert />
         {cover ? (
-          <img className="player-cover" src={cover} alt="" decoding="sync" draggable={false} data-covering={covering || undefined} />
+          <img
+            ref={coverImage}
+            className="player-cover"
+            src={cover}
+            alt=""
+            decoding="sync"
+            draggable={false}
+            data-covering={covering || undefined}
+          />
         ) : null}
       </div>
       {flash ? (
-        <span key={flash.id} className="stage-flash" data-kind={flash.kind} aria-hidden="true" data-testid="stage-flash">
+        <StageFlash key={flash.id} kind={flash.kind}>
           <svg viewBox="0 0 24 24">
             {flash.kind === 'play' ? <path d="M8 5.5v13l10.5-6.5z" /> : <path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" />}
           </svg>
-        </span>
+        </StageFlash>
       ) : null}
     </div>
   );
@@ -180,9 +181,18 @@ export function Transport() {
       <PlayButton />
       <TimeReadout />
       <Scrubber steps={steps} errors={errors} />
-      {steps.length > 0 && !editCaptions ? <CaptionsSwitch /> : null}
+      {steps.length > 0 && !editCaptions ? <CaptionControls /> : null}
       <PlaybackOptions />
     </div>
+  );
+}
+
+function StageFlash({ kind, children }: { kind: 'play' | 'pause'; children: ReactNode }) {
+  const ref = useStageFlashMotion();
+  return (
+    <span ref={ref} className="stage-flash" data-kind={kind} aria-hidden="true" data-testid="stage-flash">
+      {children}
+    </span>
   );
 }
 
@@ -198,14 +208,14 @@ function PlayButton() {
       className="play-button text-foreground"
       onClick={() => player.playPause()}
     >
-      <span className="icon-swap" data-state={status === 'playing' ? 'b' : 'a'} aria-hidden="true">
+      <IconSwap state={status === 'playing' ? 'b' : 'a'}>
         {status === 'ended' ? (
           <AnimatedIcon name="rotate-ccw" className="icon-a" />
         ) : (
           <AnimatedIcon name="play" className="icon-a filled-icon" trigger="state" play={status === 'playing' ? false : status} />
         )}
         <AnimatedIcon name="pause" className="icon-b filled-icon" trigger="state" play={status === 'playing' ? 'playing' : false} />
-      </span>
+      </IconSwap>
     </IconButton>
   );
 }
@@ -229,34 +239,22 @@ function TimeReadout() {
  * Shift- or Alt-click on the trigger
  * cycles the speed without opening.
  */
-/** The rate whose label is widest in tabular figures (0.5 and 1.5 tie); it sizes the speed button. */
-const WIDEST_SPEED = SPEEDS.reduce((widest, speed) => (String(speed).length > String(widest).length ? speed : widest));
+/** The widest rate label reserves a stable width for the speed button. */
+const WIDEST_SPEED = APP_PLAYBACK_SPEEDS.reduce((widest, speed) => (String(speed).length > String(widest).length ? speed : widest));
 
 function PlaybackOptions() {
   const rateId = useId();
   const player = usePlayer();
-  const { steps, captions, editCaptions, captionNumbers, setCaptionNumbers } = useViewer();
-  const { speed, skipInactive } = usePlayerState();
-  const [open, setOpen] = useState(false);
-  const [portalContainer, setPortalContainer] = useState<HTMLElement>();
-  useEffect(() => {
-    // A body portal is outside the browser's fullscreen top layer and cannot be seen or clicked.
-    // Close on either transition so an open menu never keeps focus in the old portal.
-    const update = () => {
-      setOpen(false);
-      setPortalContainer(document.fullscreenElement instanceof HTMLElement ? document.fullscreenElement : undefined);
-    };
-    update();
-    document.addEventListener('fullscreenchange', update);
-    return () => document.removeEventListener('fullscreenchange', update);
-  }, []);
+  const { speed: recordedSpeed, skipInactive } = usePlayerState();
+  const speed = useAppPlaybackSpeed(player, recordedSpeed);
+  const { open, setOpen, portalContainer } = useFullscreenPopover();
   return (
     <Popover
       open={open}
       onOpenChange={(next, details) => {
         const event = details.event as MouseEvent | undefined;
         if (next && (event?.shiftKey || event?.altKey)) {
-          player.setSpeed(SPEEDS[(SPEEDS.indexOf(speed) + 1) % SPEEDS.length]!);
+          player.setSpeed(APP_PLAYBACK_SPEEDS[(APP_PLAYBACK_SPEEDS.indexOf(speed) + 1) % APP_PLAYBACK_SPEEDS.length]!);
           return;
         }
         setOpen(next);
@@ -283,9 +281,9 @@ function PlaybackOptions() {
             <span className="playback-speed-sizer" aria-hidden="true">
               {WIDEST_SPEED}×
             </span>
-            <span key={speed} className="playback-speed number-pop" data-testid="speed-tag">
+            <MotionLabel key={speed} kind="number" className="playback-speed number-pop" data-testid="speed-tag">
               {speed}×
-            </span>
+            </MotionLabel>
           </span>
         </PopoverTrigger>
       </Hint>
@@ -293,7 +291,7 @@ function PlaybackOptions() {
         side="top"
         align="end"
         portalContainer={portalContainer}
-        className="playback-menu w-60 gap-3 p-3"
+        className="playback-menu w-64 gap-3 p-3"
         aria-label="Playback"
         onKeyDown={(event) => {
           // Slider arrows, Home/End and switch Space belong to these controls, not replay shortcuts.
@@ -308,55 +306,35 @@ function PlaybackOptions() {
         </div>
         <Slider
           min={0}
-          max={SPEEDS.length - 1}
+          max={APP_PLAYBACK_SPEEDS.length - 1}
           step={1}
-          value={SPEEDS.indexOf(speed)}
-          onValueChange={(value) => player.setSpeed(SPEEDS[value]!)}
+          value={APP_PLAYBACK_SPEEDS.indexOf(speed)}
+          onValueChange={(value) => player.setSpeed(APP_PLAYBACK_SPEEDS[value]!)}
           className="playback-rate-slider"
         >
           <SliderControl>
             <SliderTrack>
               <SliderIndicator />
-              <span className="playback-rate-ticks" aria-hidden="true">
-                {SPEEDS.map((value) => (
-                  <i key={value} />
-                ))}
-              </span>
-              <SliderThumb id={rateId} aria-label="Playback speed" getAriaValueText={(value) => `${SPEEDS[Number(value)]}×`} />
+              <SliderThumb id={rateId} aria-label="Playback speed" getAriaValueText={(value) => `${APP_PLAYBACK_SPEEDS[Number(value)]}×`} />
             </SliderTrack>
           </SliderControl>
         </Slider>
         <div className="playback-rate-labels" aria-label="Speed presets">
-          {[0, 2, 6].map((index) => (
-            <button
-              key={index}
-              type="button"
-              style={{ '--rate-position': `${(index / (SPEEDS.length - 1)) * 100}%` } as CSSProperties}
-              aria-label={`Set playback speed to ${SPEEDS[index]}×`}
-              aria-pressed={speed === SPEEDS[index]}
-              onClick={() => player.setSpeed(SPEEDS[index]!)}
+          {([0.5, 1, 2, 4] as const).map((preset) => (
+            <Button
+              key={preset}
+              variant={speed === preset ? 'secondary' : 'ghost'}
+              size="sm"
+              className="flex-1 tabular-nums"
+              aria-label={`Set playback speed to ${preset}×`}
+              aria-pressed={speed === preset}
+              onClick={() => player.setSpeed(preset)}
             >
-              {SPEEDS[index]}×
-            </button>
+              {preset}×
+            </Button>
           ))}
         </div>
         <SkipInactiveSwitch id={`${rateId}-skip`} />
-        {steps.length > 0 && !editCaptions && setCaptionNumbers ? (
-          <div className="playback-skip">
-            <label id={`${rateId}-numbers-label`} htmlFor={`${rateId}-numbers`}>
-              Show step numbers
-            </label>
-            <Switch
-              id={`${rateId}-numbers`}
-              nativeButton
-              render={<button type="button" />}
-              aria-labelledby={`${rateId}-numbers-label`}
-              checked={captionNumbers === true}
-              disabled={!captions}
-              onCheckedChange={setCaptionNumbers}
-            />
-          </div>
-        ) : null}
       </PopoverContent>
     </Popover>
   );
@@ -384,29 +362,9 @@ function SkipInactiveSwitch({ id }: { id: string }) {
   );
 }
 
-/** Step captions on the player: a quiet switch, shown only when the replay has step labels. */
-function CaptionsSwitch() {
-  const { captions, switchCaptions } = useViewer();
-  return (
-    <SwitchIconButton
-      // Pressed = accent icon on a faint 28 px accent tint (the chip), no ring; on touch the 40 px target grows
-      // around the same chip, so the row keeps desktop's rhythm.
-      className="captions-switch h-7 min-w-7 px-0 aria-pressed:ring-0 aria-pressed:bg-transparent aria-pressed:text-[var(--accent)]"
-      label={captions ? 'Hide step captions' : 'Show step captions'}
-      shortcut={shortcutLabel('switch-captions')}
-      pressed={captions}
-      onPressedChange={switchCaptions}
-      data-testid="captions-switch"
-    >
-      <span className="captions-chip" aria-hidden="true">
-        <AnimatedIcon name="captions" />
-      </span>
-    </SwitchIconButton>
-  );
-}
-
 /** Fullscreen sits on the player itself, bottom-right; it fades in on hover or keyboard navigation (always shown on touch). */
 export function FullscreenButton({ region }: { region: RefObject<HTMLElement | null> }) {
+  const presence = useFullscreenPresence();
   const { switchFullscreen } = useViewer();
   const [fullscreen, setFullscreen] = useState(false);
   useEffect(() => {
@@ -418,6 +376,7 @@ export function FullscreenButton({ region }: { region: RefObject<HTMLElement | n
   const label = fullscreen ? 'Exit fullscreen' : 'Fullscreen';
   return (
     <IconButton
+      ref={presence}
       className="fullscreen-button"
       label={label}
       shortcut={shortcutLabel('fullscreen')}

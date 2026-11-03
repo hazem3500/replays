@@ -1,3 +1,4 @@
+import { SurfaceMotion, TooltipPositionMotion } from './surface-motion.tsx';
 import { Tooltip as TooltipPrimitive } from '@base-ui/react/tooltip';
 import { createContext, type ReactNode, useContext, useRef, useState, useSyncExternalStore } from 'react';
 import { cn } from '@/lib/utils.ts';
@@ -121,6 +122,7 @@ function TooltipContent({
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner
+        render={(dom) => <TooltipPositionMotion {...dom} />}
         align={align}
         alignOffset={alignOffset}
         side={side}
@@ -129,6 +131,7 @@ function TooltipContent({
         data-tip-jump={morph ? undefined : ''}
       >
         <TooltipPrimitive.Popup
+          render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="tooltip" />}
           data-slot="tooltip-content"
           className={cn(
             'motion-tip tip-morph-popup z-50 max-w-xs origin-(--transform-origin) rounded-md bg-[var(--surface-raised)] text-xs text-foreground shadow-[var(--shadow-pop)] ring-1 ring-[var(--line-strong)] **:data-[slot=kbd]:relative **:data-[slot=kbd]:isolate **:data-[slot=kbd]:z-50 **:data-[slot=kbd]:rounded-sm',

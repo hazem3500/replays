@@ -1,14 +1,20 @@
+import { animate } from 'motion/mini';
+
 type Glyph = { text: string; node: HTMLSpanElement };
-type TextState = { text: string; glyphs: Glyph[]; animations: Set<Animation>; originalLabel: string | null };
+type TextState = { text: string; glyphs: Glyph[]; animations: Set<ReturnType<typeof animate>>; originalLabel: string | null };
 const states = new WeakMap<HTMLElement, TextState>();
 const segmenter = typeof Intl.Segmenter === 'function' ? new Intl.Segmenter(undefined, { granularity: 'grapheme' }) : undefined;
 const characters = (text: string) => (segmenter ? [...segmenter.segment(text)].map(({ segment }) => segment) : Array.from(text));
 
 function cancelAnimations(state: TextState) {
   for (const animation of state.animations) {
-    animation.cancel();
+    animation.stop();
   }
   state.animations.clear();
+  for (const { node } of state.glyphs) {
+    node.style.opacity = '';
+    node.style.transform = '';
+  }
 }
 
 /** Match shared glyphs without mounting two copies of the label. */
@@ -50,7 +56,7 @@ function shared(previous: Glyph[], next: string[]): Map<number, Glyph> {
 
 /**
  * Update a recorder label in place. Shared glyphs survive; only entering glyphs
- * receive a short native animation. No React, overlays, duplicated labels or
+ * receive a short Motion mini animation. No React, overlays, duplicated labels or
  * animation frames are required. The parent retains its own timer/shell sizing.
  */
 export function updateText(container: HTMLElement, text: string): void {
@@ -115,22 +121,18 @@ export function updateText(container: HTMLElement, text: string): void {
   state.glyphs = glyphs;
   if (!animateChanges) return;
   for (const node of entering) {
-    const animation = node.animate(
-      [
-        { opacity: 0, transform: 'translateY(3px)' },
-        { opacity: 1, transform: 'translateY(0)' },
-      ],
-      { duration: 160, easing: 'cubic-bezier(.2,.7,.2,1)' },
+    const animation = animate(
+      [node],
+      { opacity: [0, 1], transform: ['translateY(3px)', 'translateY(0)'] },
+      {
+        duration: 0.16,
+        ease: [0.2, 0.7, 0.2, 1],
+      },
     );
-    // why: cancellation rejects finished; consume it before rapid updates or teardown.
-    void animation.finished?.catch(() => {});
     state.animations.add(animation);
     const animations = state.animations;
-    const release = () => {
-      animations.delete(animation);
-    };
-    animation.addEventListener('finish', release, { once: true });
-    animation.addEventListener('cancel', release, { once: true });
+    const release = () => animations.delete(animation);
+    void animation.finished.then(release, release);
   }
 }
 

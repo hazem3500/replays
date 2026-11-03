@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/bulk-trash-request.schema.json",
+  "title": "Bulk replay trash confirmation",
+  "type": "object",
+  "required": ["confirm"],
+  "additionalProperties": false,
+  "properties": {
+    "confirm": {
+      "const": "trash-all"
+    }
+  }
+}

@@ -1,10 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
-import { flushSync } from 'react-dom';
-
 import { IconButton } from '@/components/icon-button.tsx';
+import { IconSwap } from '@/components/icon-swap.tsx';
 import { cn } from '@/lib/utils.ts';
+import { switchThemeWithTransition } from '@/lib/theme-transition.ts';
+import { useControlMotion } from './hooks/use-control-motion.ts';
 
 export type Theme = 'light' | 'dark';
 /** A fixed theme once the person flips it; until then, follow the OS. */
@@ -44,31 +45,11 @@ function applyTheme(theme: Theme) {
   themeColor.content = themeColor.getAttribute(`data-${theme}`) || THEME_COLORS[theme];
 }
 
-/** Holds every element's own transitions while the theme swaps, so hovers and fills never smear between themes. */
-function holdTransitions() {
-  const blocker = document.createElement('style');
-  blocker.dataset.themeSwitch = '';
-  blocker.textContent = '*,*::before,*::after{transition:none!important}';
-  document.head.append(blocker);
-  return () => {
-    void document.documentElement.offsetHeight;
-    requestAnimationFrame(() => blocker.remove());
-  };
-}
-
-/** Where the reveal grows from: the pointer's point, else the middle of the control that was activated. */
+/** Activation event accepted by existing theme controls. */
 export interface ThemeSwitchOrigin {
   clientX: number;
   clientY: number;
   currentTarget?: EventTarget | null;
-}
-
-function revealFrom(origin: ThemeSwitchOrigin | undefined) {
-  if (!origin) return;
-  if (origin.clientX || origin.clientY) return { x: origin.clientX, y: origin.clientY };
-  if (!(origin.currentTarget instanceof Element)) return;
-  const box = origin.currentTarget.getBoundingClientRect();
-  return { x: box.left + box.width / 2, y: box.top + box.height / 2 };
 }
 
 function systemTheme(): Theme {
@@ -77,6 +58,7 @@ function systemTheme(): Theme {
 }
 
 export function useTheme() {
+  useControlMotion();
   const [preference, setPreferenceState] = useState<ThemePreference>(savedPreference);
   const [system, setSystem] = useState<Theme>(() => {
     // index.html's inline script has already resolved it before first paint.
@@ -106,49 +88,22 @@ export function useTheme() {
   }, [preference]);
 
   /**
-   * Flips light ↔ dark (until the first flip the theme follows the OS). The new theme reveals in a circle from the
-   * toggle (or the tap) where View Transitions run, crossfades without an origin, and swaps at once under reduced
-   * motion; in every case the document, `color-scheme` and the chrome colour change together, element transitions held.
+   * Flips light ↔ dark with one short page crossfade, or instantly under reduced motion and rapid repeated toggles.
+   * The document, `color-scheme` and browser chrome colour change together while component transitions are held.
    */
-  const switchTheme = useCallback(
-    (origin?: ThemeSwitchOrigin) => {
-      const next: Theme = theme === 'dark' ? 'light' : 'dark';
-      const apply = () => {
-        applyTheme(next);
-        setPreferenceState(next);
-      };
-      const release = holdTransitions();
-      const root = document.documentElement;
-      if (document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        const point = revealFrom(origin);
-        root.dataset.themeSwitching = point ? 'reveal' : 'fade';
-        if (point) {
-          root.style.setProperty('--theme-x', `${point.x}px`);
-          root.style.setProperty('--theme-y', `${point.y}px`);
-          root.style.setProperty(
-            '--theme-r',
-            `${Math.hypot(Math.max(point.x, innerWidth - point.x), Math.max(point.y, innerHeight - point.y))}px`,
-          );
-        }
-        const transition = document.startViewTransition(() => flushSync(apply));
-        void transition.finished.finally(() => {
-          delete root.dataset.themeSwitching;
-          release();
-        });
-        return;
-      }
-      apply();
-      release();
-    },
-    [theme],
-  );
+  const switchTheme = () => {
+    switchThemeWithTransition((next) => {
+      applyTheme(next);
+      setPreferenceState(next);
+    });
+  };
 
-  return useMemo(() => ({ theme, switchTheme }), [switchTheme, theme]);
+  return { theme, switchTheme };
 }
 
 export interface ThemeControls {
   theme: Theme;
-  /** Pass the click (or tap) so the new theme reveals from it. */
+  /** Accepts the activating click or tap for compatibility with button handlers. */
   switchTheme: (origin?: ThemeSwitchOrigin) => void;
 }
 
@@ -170,11 +125,11 @@ export function ThemeSwitch({ className }: { className?: string }) {
       tooltipAlign="end"
       onClick={switchTheme}
     >
-      <span className="icon-swap" data-state={theme === 'dark' ? 'a' : 'b'} aria-hidden="true">
+      <IconSwap state={theme === 'dark' ? 'a' : 'b'}>
         {/* Each plays when it appears and on hover / keyboard navigation (sun: rays turn in; moon: a tilt). */}
         <AnimatedIcon name="sun" className="icon-a" trigger="state" hover play={theme === 'dark' ? 'dark' : false} />
         <AnimatedIcon name="moon" className="icon-b" trigger="state" hover play={theme === 'light' ? 'light' : false} />
-      </span>
+      </IconSwap>
     </IconButton>
   );
 }

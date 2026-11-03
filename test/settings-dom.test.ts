@@ -85,6 +85,7 @@ describe('Settings', () => {
     expect([...document.querySelectorAll('[role="tab"]')].map((element) => element.getAttribute('data-slot-item'))).toEqual([
       'core:cli',
       'core:keyboard',
+      'core:data-storage',
       'core:labs',
       'core:about',
     ]);
@@ -119,7 +120,8 @@ describe('Settings', () => {
     await click(tab('CLI & agents'));
     await vi.waitFor(() => expect(panel()?.textContent).toContain('Device sign-in'));
     const commands = [...document.querySelectorAll<HTMLInputElement>('.settings-command-text')].map((input) => input.value);
-    expect(commands[0]).toContain('replays connect');
+    expect(commands[0]).toBe('pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g .');
+    expect(commands[1]).toContain('replays connect');
     expect(commands).toContain('replays login');
     expect(commands.at(-1)).toBe('replays upload replay.json');
   });
@@ -133,7 +135,7 @@ describe('Settings', () => {
     await render();
     await settle(() => openSettings('cli'));
     expect(fetchConfig).toHaveBeenCalledWith('/workspace/api/config', expect.objectContaining({ signal: expect.any(AbortSignal) }));
-    await vi.waitFor(() => expect(panel()?.textContent).toContain('Host-managed sign-in'));
+    await vi.waitFor(() => expect(panel()?.textContent).toContain('Managed by host'));
     expect(panel()?.textContent).toContain('Credential creation isn’t enabled for this deployment.');
     const setup = document.querySelector<HTMLInputElement>('input[aria-label="Server setup command"]');
     expect(setup?.readOnly).toBe(true);
@@ -150,7 +152,10 @@ describe('Settings', () => {
     mockConfig('none');
     await render();
     await settle(() => openSettings('cli'));
-    await vi.waitFor(() => expect(panel()?.textContent).toContain('Open access · use only on a trusted network.'));
+    await vi.waitFor(() => expect(panel()?.querySelector('.cli-access dd')?.textContent).toBe('Disabled'));
+    expect(panel()?.textContent).toContain('Install from source until the npm release.');
+    expect(panel()?.querySelector('a[href$="#quickstart"]')?.textContent).toContain('Get the source');
+    expect(panel()?.querySelector('.settings-credentials')?.hasAttribute('open')).toBe(false);
     expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toBe('replays upload replay.json');
   });
 

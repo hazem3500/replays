@@ -29,7 +29,11 @@
       "@hazem3500/replays/recorder/kit": ["./src/recorder/kit/index.ts"],
       "@hazem3500/replays/recorder/ui": ["./src/recorder/ui/index.ts"],
       "@hazem3500/replays/recorder/react": ["./src/recorder/react/index.tsx"],
-      "@hazem3500/replays/recorder/testing": ["./src/recorder/testing/index.ts"]
+      "@hazem3500/replays/recorder/testing": ["./src/recorder/testing/index.ts"],
+      "@hazem3500/replays/model": ["./src/shared/model.ts"],
+      "@hazem3500/replays/viewer/playback": ["./src/client/playback/index.ts"],
+      "@hazem3500/replays/viewer/diagnostics": ["./src/client/diagnostics.ts"],
+      "@hazem3500/replays/viewer/react": ["./src/client/compose/index.ts"]
     },
     "noFallthroughCasesInSwitch": true,
     "allowUnreachableCode": false,

@@ -1,10 +1,10 @@
+import { MotionLabel } from '../components/entry-motion.tsx';
 import { type PluginExportOption, usePluginExports } from '../hooks/use-plugin-exports.ts';
 import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { FileVideoCameraIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
-import { Button } from '@/components/ui/button.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,6 +12,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
+import { Button } from '@/components/ui/button.tsx';
 import { Popover, PopoverContent } from '@/components/ui/popover.tsx';
 import { Progress } from '@/components/ui/progress.tsx';
 
@@ -95,9 +96,9 @@ function DownloadProgress({ download, children }: { download: VideoDownload; chi
         data-testid="video-export-status"
       >
         <div className="flex items-center justify-between gap-2">
-          <span key={state.kind} className={`text-swap ${state.kind === 'error' ? 'text-destructive' : 'tabular-nums'}`}>
+          <MotionLabel key={state.kind} className={`text-swap ${state.kind === 'error' ? 'text-destructive' : 'tabular-nums'}`}>
             {progressLabel(state)}
-          </span>
+          </MotionLabel>
           {state.kind === 'error' ? (
             <span className="flex shrink-0 gap-1">
               <Button variant="ghost" size="xs" onClick={() => void start()}>
@@ -122,20 +123,23 @@ function DownloadProgress({ download, children }: { download: VideoDownload; chi
 }
 
 /**
- * Phones: the download lives in the topbar's "More" menu (the bar keeps room for the title at 360 px). Returns
+ * Downloads live in the topbar's "More" menu. Returns
  * the menu items and the progress anchor, which sits at the end of the bar's actions, under "More".
  */
-export function usePhoneDownload(meta: ReplayMeta): { items: TopbarMenuItem[]; progress: ReactNode } {
+export function useDownloadMenu(meta: ReplayMeta): { items: TopbarMenuItem[]; progress: ReactNode } {
   const formats = usePluginExports();
   const download = useVideoDownload(meta);
   const { stored, canRender, active, variant, start } = download;
   const items: TopbarMenuItem[] = [];
-  if (canRender) {
+  const [lastAvailable, setLastAvailable] = useState(canRender);
+  const pending = download.availability === 'unknown';
+  if (!pending && lastAvailable !== canRender) setLastAvailable(canRender);
+  if (canRender || (pending && lastAvailable)) {
     items.push({
       label: active ? 'Rendering video…' : exportLabel(stored ? 'Export video' : 'Download video', variant),
       icon: <AnimatedIcon name="download" />,
       onSelect: () => void start(),
-      disabled: active,
+      disabled: active || pending,
       testId: stored ? 'export-video' : 'download-video',
     });
   }

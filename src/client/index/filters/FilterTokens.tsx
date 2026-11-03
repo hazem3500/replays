@@ -3,10 +3,11 @@ import { type MouseEvent, useRef } from 'react';
 
 import { useGlide } from '../../hooks/use-glide.ts';
 import { usePresence } from '../../hooks/use-presence.ts';
+import { useFilterTokenMotion } from '../../hooks/use-filter-token-motion.ts';
 import { type FilterToken, filterStrings } from './model.ts';
 
 const MAX_TOKENS = 3;
-/** Fallback only: tokens leave on their own `transitionend`. */
+/** Fallback only: Motion's completion callback normally removes departed tokens. */
 const TOKEN_EXIT_FALLBACK_MS = 600;
 
 /** The removed token takes the keyboard position with it: to a neighbour, else to the Filter button. */
@@ -30,16 +31,15 @@ function Token({
   onOpen: (token: FilterToken) => void;
   onExited: (id: string) => void;
 }) {
+  const ref = useFilterTokenMotion(token.id, exiting, onExited);
   return (
     <span
+      ref={ref}
       className="filter-token"
       data-token-id={token.id}
       data-slot-item={token.id}
       data-exiting={exiting || undefined}
       inert={exiting || undefined}
-      onTransitionEnd={(event) => {
-        if (exiting && event.target === event.currentTarget && event.propertyName === 'opacity') onExited(token.id);
-      }}
     >
       <button type="button" className="filter-token-open" aria-label={filterStrings.editToken(token.name)} onClick={() => onOpen(token)}>
         {token.field ? <span className="filter-token-field">{token.field}</span> : null}

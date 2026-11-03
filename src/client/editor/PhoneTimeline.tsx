@@ -91,6 +91,7 @@ export function PhoneTimeline({
         </IconButton>
       </div>
       <div className="phone-lanes-frame">
+        <span className="phone-snap-marker" aria-hidden="true" />
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
           <div className="phone-lanes-content">
             <div className="phone-track" style={cssVars({ '--span': `${duration * scale}px` })}>

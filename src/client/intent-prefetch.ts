@@ -6,7 +6,7 @@ import { prefetchReplay, queryClient, suiteQuery } from './queries.ts';
 import { clientRouter } from './routing/client.ts';
 import { isAppPage } from './routing/links.ts';
 import { pageOfPublicPath } from './routing/page-key.ts';
-import { suitePage, viewerPage, warm } from './routing/pages.ts';
+import { suiteComparePage, suitePage, viewerPage, warm } from './routing/pages.ts';
 import { initialRunReplayId } from './suite/runs.ts';
 
 /*
@@ -54,7 +54,10 @@ export function prefetchTarget(target: IntentTarget | undefined) {
   const replayId = target.kind === 'replay' ? target.id : target.landing;
   if (replayId) void prefetchReplay(queryClient, replayId);
   warm(viewerPage);
-  if (target.kind === 'suite') warm(suitePage);
+  if (target.kind === 'suite') {
+    warm(suitePage);
+    warm(suiteComparePage);
+  }
 }
 
 type Landing = (suiteId: string) => string | undefined;

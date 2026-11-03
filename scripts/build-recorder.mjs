@@ -16,7 +16,7 @@ const { metafile } = await build({
   platform: 'browser',
   format: 'esm',
   target: 'es2022',
-  external: ['rrweb', 'react', 'react/jsx-runtime', 'node:assert/strict'],
+  external: ['rrweb', 'motion/mini', 'react', 'react/jsx-runtime', 'node:assert/strict'],
   metafile: true,
 });
 if (Object.keys(metafile.inputs).some((path) => !path.startsWith('src/recorder/'))) throw new Error('Recorder includes non-browser source');

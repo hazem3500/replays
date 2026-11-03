@@ -1,3 +1,4 @@
+import { useViewerPresenceMotion } from '../../hooks/use-viewer-presence-motion.ts';
 import { type KeyboardEvent as ReactKeyboardEvent, type ReactNode, useRef } from 'react';
 
 import type { ReplayStep } from '../../../shared/replay.ts';
@@ -50,6 +51,7 @@ export function MomentList({
 }) {
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(body, 'rows', moments.length > 0);
   const rowHeight = useRowHeight(body, '.pp-row:not(.pp-head)', moments.length > 0, FALLBACK_ROW_HEIGHT);
   const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: moments.length, rowHeight, headerHeight: HEADER_HEIGHT });
   useRevealRow(scroller, selected ? moments.findIndex((item) => item.id === selected) : -1, rowHeight, HEADER_HEIGHT);

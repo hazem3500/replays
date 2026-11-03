@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/bulk-trash-result.schema.json",
+  "title": "Bulk replay trash result",
+  "description": "Counts only readable and delete-authorized uploads; no IDs, identities or provider details.",
+  "type": "object",
+  "required": ["trashed", "protected", "unavailable", "failed"],
+  "properties": {
+    "trashed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "protected": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "unavailable": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "failed": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

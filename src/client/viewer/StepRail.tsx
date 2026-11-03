@@ -15,6 +15,7 @@ import { Empty } from './Empty.tsx';
 import { activeStepIndex } from './Transport.tsx';
 import { useFilledAfterTransition } from '../hooks/use-filled-after-transition.ts';
 import { queueReveal } from './stagger.ts';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 
 /** One glyph per step kind; the kind's name is the icon's accessible label. */
 const STEP_ICONS: Record<string, { icon: AnimatedIconName; label: string }> = {
@@ -86,6 +87,8 @@ export const StepList = memo(function StepList() {
   const player = usePlayer();
   const active = usePlayhead((time) => activeStepIndex(steps, time, player.duration));
   const list = useRef<HTMLDivElement>(null);
+  const presence = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(presence, 'steps');
   // Hovering (or tabbing to) a step with a selector outlines what it matches in the replay, after a short intent,
   // and only when that step's page is the one on screen (otherwise nothing).
   const targetTimer = useRef(0);
@@ -173,7 +176,7 @@ export const StepList = memo(function StepList() {
 
   const previewed = preview >= 0 ? steps[preview] : undefined;
   return (
-    <div className="timeline-wrap">
+    <div ref={presence} className="timeline-wrap">
       <div ref={list} className="timeline" data-testid="step-timeline">
         {steps.length === 0 ? (
           <Empty title="No agent steps">This replay contains browser events only.</Empty>
