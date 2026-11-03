@@ -81,6 +81,15 @@ export type RecorderUi = {
     stop: () => void;
     attestStop?: (element: Element) => () => void;
   }): () => void;
+  /**
+   * Optional step before consent. `request()` calls it only when `choices` offers a real choice; resolve with the
+   * user's choice, or `undefined` to cancel. The core ignores anything outside `offer`.
+   */
+  chooseOptions?(context: {
+    trigger: RecorderTrigger;
+    offer: RecordingChoiceOffer;
+    signal: AbortSignal;
+  }): Promise<RecordingChoice | undefined>;
   /** `signal` works as in `requestConsent`. */
   confirmUpload(context: { summary: RecordingSummary; signal: AbortSignal }): Promise<UploadDecision>;
   /**
@@ -137,6 +146,51 @@ export type RecorderPrivacyOptions = {
 };
 
 export type { RecorderBodyLimits } from './body-limits.ts';
+
+/** How much of the page one recording shows, loosest first. The host's `privacy` caps every mode. */
+export type RecorderPrivacyMode = 'visible' | 'text-masked' | 'masked';
+
+/**
+ * A profile the deployment defines (`meta.profile`), as the options step shows it. Shaped like the server's
+ * configured profiles (`GET /api/config`), so a host can pass them as they come.
+ */
+export type RecorderProfileOption = {
+  id: string;
+  /** Default: the id in words. */
+  label?: string;
+  /** One quiet line under the profile in the menu, such as "A bug to reproduce and fix". */
+  description?: string;
+};
+
+/** What the user picked for one recording. */
+export type RecordingChoice = { privacy?: RecorderPrivacyMode; profile?: string };
+
+/**
+ * Opt-in options step for internal hosts: staff choose masking and profile right before each recording.
+ * invariant: a mode relaxes masking only as far as the host's own `privacy` allows; a host whose `privacy` hides
+ * text, inputs and media (the default, and so every support or customer host) never offers a choice.
+ */
+export type RecorderChoices = {
+  /** Modes to offer. Each is capped by `privacy`; modes the cap makes identical are offered once. */
+  privacy?: readonly RecorderPrivacyMode[];
+  /** Profiles to offer; the chosen id becomes the bundle's `meta.profile`. */
+  profiles?: readonly (string | RecorderProfileOption)[];
+  /** The first choice until the user makes one. Default: the most masked mode offered and the first profile. */
+  defaults?: RecordingChoice;
+  /** Remember the last choice for this origin in `localStorage`. Default `true`. */
+  remember?: boolean;
+};
+
+/** What `chooseOptions` may offer, already capped by the host's `privacy`. */
+export type RecordingChoiceOffer = {
+  /** Loosest first; `facts` is what a recording in that mode captures. */
+  privacy: readonly { mode: RecorderPrivacyMode; facts: PrivacyFacts }[];
+  profiles: readonly { id: string; label: string; description?: string }[];
+  /** The remembered choice when it is still offered, else the defaults. */
+  initial: RecordingChoice;
+  /** The host's defaults, reduced to the offer; a UI can mark a choice that differs. */
+  defaults: RecordingChoice;
+};
 
 /** Nothing, method/URL/status/timing/allow-listed headers (the default), or also redacted bodies. */
 export type RecorderCaptureNetwork = 'off' | 'headers' | 'bodies';
@@ -199,6 +253,8 @@ export type RecorderOptions = {
   privacy?: RecorderPrivacyOptions;
   /** Network detail, console levels and stricter masking; bodies stay off unless asked for. */
   capture?: RecorderCapture;
+  /** Let staff choose masking and profile before each recording. Off unless set; see `RecorderChoices`. */
+  choices?: RecorderChoices;
   /**
    * URLs the network capture skips. Uploads run after capture stops, so the
    * upload endpoint never needs listing.
@@ -229,8 +285,8 @@ export type Recorder = {
    * discarded, or the recorder was busy.
    */
   request(trigger?: RecorderTrigger): Promise<IssueReportReceipt | undefined>;
-  /** Starts recording. Only call after the user agreed in your own UI. */
-  start(options: { consent: true; trigger?: RecorderTrigger }): Promise<void>;
+  /** Starts recording. Only call after the user agreed in your own UI. `choice` is capped like `chooseOptions` answers. */
+  start(options: { consent: true; trigger?: RecorderTrigger; choice?: RecordingChoice }): Promise<void>;
   /** Stops recording and keeps the result in memory for review. */
   stop(reason?: StopReason): RecordingSummary | undefined;
   /** Uploads the reviewed recording. Only call after the user confirmed. */

@@ -1,7 +1,37 @@
 import { useEffect } from 'react';
+import { recorderChoices } from '../../../src/recorder/recorder-choices.ts';
+import { settingsBuilder } from '../../../src/recorder/recorder-settings.ts';
+import type { RecorderOptions } from '../../../src/recorder/types.ts';
 import { createDefaultUi, type DefaultUiOptions } from '../../../src/recorder/ui/index.ts';
 
-export type DefaultUiState = 'consent' | 'recording' | 'final-seconds' | 'review' | 'uploading' | 'sent' | 'failed';
+export type DefaultUiState =
+  | 'options'
+  | 'options-capped'
+  | 'consent'
+  | 'recording'
+  | 'final-seconds'
+  | 'review'
+  | 'uploading'
+  | 'sent'
+  | 'failed';
+
+const CHOICES: RecorderOptions['choices'] = {
+  privacy: ['visible', 'text-masked', 'masked'],
+  // why: shaped like a deployment's configured profiles, as a host would pass them from GET /api/config.
+  profiles: [
+    { id: 'triage', label: 'Triage', description: 'A bug to reproduce and fix' },
+    { id: 'performance', label: 'Performance', description: 'Slow pages, with vitals and requests' },
+    { id: 'design-review', label: 'Design review', description: 'Layout and visual feedback' },
+    { id: 'walkthrough', label: 'Walkthrough', description: 'A guided tour of a flow' },
+    { id: 'support', label: 'Support', description: 'A customer issue for the support team' },
+  ],
+  remember: false,
+};
+/** An internal host that allows everything, and one that keeps media blocked, offering the same modes through the real core cap. */
+const HOSTS: Record<'options' | 'options-capped', Pick<RecorderOptions, 'privacy' | 'choices'>> = {
+  options: { privacy: { sanitize: false, blockMedia: false }, choices: CHOICES },
+  'options-capped': { privacy: { sanitize: false }, choices: CHOICES },
+};
 
 const FIXED_NOW = new Date('2026-10-27T12:00:00.000Z').getTime();
 
@@ -9,6 +39,11 @@ type Shown = { hide?: () => void; abort: AbortController };
 
 function show(ui: ReturnType<typeof createDefaultUi>, state: DefaultUiState): Shown {
   const abort = new AbortController();
+  if (state === 'options' || state === 'options-capped') {
+    const offer = recorderChoices(HOSTS[state], settingsBuilder(HOSTS[state])).offer((privacy) => privacy.facts(180_000, true));
+    if (offer) void ui.chooseOptions({ trigger: { source: 'user' }, offer, signal: abort.signal });
+    return { abort };
+  }
   if (state === 'consent') {
     void ui.requestConsent({ trigger: { source: 'user' }, maxDurationMs: 180_000, signal: abort.signal });
     return { abort };

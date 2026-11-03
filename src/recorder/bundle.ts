@@ -16,6 +16,8 @@ export type BuildBundleInput = {
   steps: RawStep[];
   /** `meta.captured`; absent leaves the viewer assuming everything but bodies was recorded. */
   captured?: ReplayCaptured;
+  /** `meta.profile`: the profile the user chose in the options step. */
+  profile?: string;
   now?: Date;
   randomSuffix?: string;
 };
@@ -86,6 +88,7 @@ export function buildReplayBundle(input: BuildBundleInput): ReplayBundle {
       version: 1,
       source: 'human',
       ...(input.captured ? { captured: { ...input.captured } } : {}),
+      ...(input.profile ? { profile: input.profile } : {}),
     },
     events,
     console: input.console.map((entry) => ({ ...entry, at: relative(entry.at) })).sort((a, b) => a.at - b.at),

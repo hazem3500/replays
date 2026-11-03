@@ -11,7 +11,7 @@ import {
   type DefaultUiOptions,
   type RecorderMessages,
 } from './ui/index.ts';
-import type { PrivacyFacts, RecorderUi, RecordingSummary } from './types.ts';
+import type { PrivacyFacts, RecorderUi, RecordingChoiceOffer, RecordingSummary } from './types.ts';
 import { must } from './testing.ts';
 
 const mark = (key: string) => `«${key}»`;
@@ -40,6 +40,15 @@ const sentinels: RecorderMessages = {
   copied: mark('copied'),
   copyFailed: mark('copyFailed'),
   close: mark('close'),
+  optionsTitle: mark('optionsTitle'),
+  optionsSummary: () => mark('optionsSummary'),
+  privacyLabel: mark('privacyLabel'),
+  profileLabel: mark('profileLabel'),
+  privacyUnavailable: mark('privacyUnavailable'),
+  privacyMode: () => mark('privacyMode'),
+  privacyHint: () => mark('privacyHint'),
+  privacyAlways: mark('privacyAlways'),
+  record: mark('record'),
 };
 const options: DefaultUiOptions = {
   messages: sentinels,
@@ -87,7 +96,25 @@ const surfaceAction = (selector: string) =>
   );
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
+const offer: RecordingChoiceOffer = {
+  privacy: [
+    { mode: 'visible', facts: { ...privacy, mode: 'visible', captures: { ...privacy.captures, pageText: true, inputs: true } } },
+    { mode: 'masked', facts: privacy },
+  ],
+  profiles: [{ id: 'triage', label: mark('profile.label'), description: mark('profile.description') }],
+  initial: { privacy: 'masked', profile: 'triage' },
+  defaults: { privacy: 'masked', profile: 'triage' },
+};
+
 async function prompts(ui: RecorderUi, check: () => void) {
+  if (ui.chooseOptions) {
+    const abort = new AbortController();
+    const choice = ui.chooseOptions({ trigger: { source: 'user' }, offer, signal: abort.signal });
+    await vi.waitFor(() => surfaceAction('[data-recorder-action=record]'));
+    check();
+    abort.abort();
+    await choice;
+  }
   for (const facts of [privacy, undefined]) {
     const abort = new AbortController();
     const answer = ui.requestConsent({
@@ -149,7 +176,25 @@ async function walk(ui: RecorderUi) {
   return [...seen].sort();
 }
 
-const rendered = [...Object.keys(defaultRecorderMessages).filter((key) => key !== 'startFailed'), 'format.elapsed'].sort();
+const OPTIONS_KEYS = new Set([
+  'optionsTitle',
+  'optionsSummary',
+  'privacyLabel',
+  'profileLabel',
+  'privacyUnavailable',
+  'privacyMode',
+  'privacyHint',
+  'privacyAlways',
+  'record',
+]);
+const rendered = [
+  ...Object.keys(defaultRecorderMessages).filter((key) => key !== 'startFailed'),
+  'format.elapsed',
+  'profile.label',
+  'profile.description',
+].sort();
+// why: the kit has no options step; hosts opt into it with the full default UI.
+const renderedByKit = rendered.filter((key) => !OPTIONS_KEYS.has(key) && !key.startsWith('profile.'));
 
 describe('recorder messages coverage', () => {
   afterEach(() => {
@@ -163,7 +208,7 @@ describe('recorder messages coverage', () => {
 
   it('renders nothing but overridden messages in every state of the composed kit steps', async () => {
     const ui = composeUi(consentDialog(options), recordingIndicator(options), reviewDialog(options), resultToast(options));
-    expect(await walk(ui)).toEqual(rendered);
+    expect(await walk(ui)).toEqual(renderedByKit);
   });
 
   it('accepts an override for exactly the keys that have defaults', () => {

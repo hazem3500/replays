@@ -1,3 +1,4 @@
+import { SHARED_ICON_GESTURES, type AnimatedIconDefinition, type IconPart, type PartMotion } from '../../recorder/icon-gestures.ts';
 import { MENU_ICONS } from './animated-menu-icons.ts';
 
 /**
@@ -10,44 +11,7 @@ import { MENU_ICONS } from './animated-menu-icons.ts';
  * info, ellipsis, list, pause) are drawn here in the same style. Motion's mini animate drives the moving SVG parts.
  */
 
-/** How a part moves while the icon plays. Every gesture returns to the lucide pose. */
-export interface PartMotion {
-  /**
-   * shift: out to the offset and back (a nudge). from: settles in from the offset (an entrance).
-   * spin: rotates to `rotate` (only for shapes that look the same there, e.g. 180° hourglass, 360° arrow).
-   * draw: strokes the path in (needs pathLength 1, set automatically).
-   */
-  kind: 'shift' | 'from' | 'spin' | 'draw';
-  x?: number;
-  y?: number;
-  /** Uniform scale; `sx` / `sy` override per axis. */
-  scale?: number;
-  sx?: number;
-  sy?: number;
-  /** Degrees. */
-  rotate?: number;
-  opacity?: number;
-  /** ms after the icon starts; the part still ends with the icon. */
-  delay?: number;
-  /** transform-origin inside the part's own box (fill-box), e.g. 'left', 'center bottom'. */
-  origin?: string;
-}
-
-export type PartElement = 'path' | 'circle' | 'rect';
-
-export interface IconPart {
-  el: PartElement;
-  attrs: Record<string, string>;
-  motion?: PartMotion;
-}
-
-export interface AnimatedIconDefinition {
-  /** Total play time in ms. */
-  ms: number;
-  /** Moves the whole glyph (wrapped in a <g>), on top of any per-part motion. */
-  motion?: PartMotion;
-  parts: IconPart[];
-}
+export type { AnimatedIconDefinition, IconPart, PartElement, PartMotion } from '../../recorder/icon-gestures.ts';
 
 const path = (d: string, motion?: PartMotion): IconPart => (motion ? { el: 'path', attrs: { d }, motion } : { el: 'path', attrs: { d } });
 
@@ -279,21 +243,7 @@ const ICONS = {
     motion: { kind: 'shift', x: -1.5, y: -1.5, rotate: -8 },
     parts: [path('m21 21-4.34-4.34'), { el: 'circle', attrs: { cx: '11', cy: '11', r: '8' } }],
   },
-  'sliders-horizontal': {
-    ms: 360,
-    parts: [
-      // Each knob slides 3 units; the two halves of its rail stretch/shrink so they stay joined to it.
-      path('M10 5H3', { kind: 'shift', sx: 4 / 7, origin: 'left' }),
-      path('M12 19H3', { kind: 'shift', sx: 6 / 9, origin: 'left', delay: 60 }),
-      path('M14 3v4', { kind: 'shift', x: -3 }),
-      path('M16 17v4', { kind: 'shift', x: -3, delay: 60 }),
-      path('M21 12h-9', { kind: 'shift', sx: 6 / 9, origin: 'right', delay: 30 }),
-      path('M21 19h-5', { kind: 'shift', sx: 8 / 5, origin: 'right', delay: 60 }),
-      path('M21 5h-7', { kind: 'shift', sx: 10 / 7, origin: 'right' }),
-      path('M8 10v4', { kind: 'shift', x: 3, delay: 30 }),
-      path('M8 12H3', { kind: 'shift', sx: 8 / 5, origin: 'left', delay: 30 }),
-    ],
-  },
+  'sliders-horizontal': SHARED_ICON_GESTURES['sliders-horizontal'],
   'layout-grid': {
     ms: 300,
     parts: [

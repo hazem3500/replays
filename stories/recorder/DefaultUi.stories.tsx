@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { expect } from 'storybook/test';
+import { expect, userEvent } from 'storybook/test';
 import { defaultRecorderMessages } from '../../src/recorder/index.ts';
 import { DefaultUiStage, type DefaultUiStageProps } from './DefaultUiStage.tsx';
 import { inRecorderUi, recorderUi, resultCopy } from './flow.ts';
@@ -10,7 +10,10 @@ const meta = {
   render: (args, context) => <DefaultUiStage key={`${context.id}:${args.state}:${args.theme}:${args.palette}:${args.actions}`} {...args} />,
   args: { state: 'consent', theme: 'dark', palette: 'replays', actions: 'default' },
   argTypes: {
-    state: { control: 'select', options: ['consent', 'recording', 'final-seconds', 'review', 'uploading', 'sent', 'failed'] },
+    state: {
+      control: 'select',
+      options: ['options', 'options-capped', 'consent', 'recording', 'final-seconds', 'review', 'uploading', 'sent', 'failed'],
+    },
     theme: { control: 'inline-radio', options: ['dark', 'light'] },
     palette: { control: 'inline-radio', options: ['replays', 'host'] },
     actions: { control: 'inline-radio', options: ['default', 'copy-only'] },
@@ -30,6 +33,57 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 const visible = (text: string) => inRecorderUi(() => recorderUi.text(text));
+const openMenu = async () => {
+  const trigger = await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.optionsTitle));
+  await userEvent.click(trigger);
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+};
+
+/** The opt-in options step (`choices` on an internal host): the recording pill's Record, a quiet options button and close. */
+export const Options: Story = {
+  args: { state: 'options' },
+  play: async () => {
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.record));
+    const options = await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.optionsTitle));
+    await expect(options).toHaveAttribute('title', 'Masked · Triage');
+  },
+};
+
+/** The options menu: a Profile group with each profile's description, then Privacy with what each mode records. */
+export const OptionsMenuOpen: Story = {
+  args: { state: 'options' },
+  play: async () => {
+    await openMenu();
+    await inRecorderUi(() => recorderUi.item('Support'));
+    await visible('Slow pages, with vitals and requests');
+    await visible('Hides text, inputs and media');
+    await visible(defaultRecorderMessages.privacyAlways);
+  },
+};
+
+/** A host that keeps media blocked: Visible is capped to its privacy, and Text masked is disabled. */
+export const OptionsCapped: Story = {
+  args: { state: 'options-capped' },
+  play: async () => {
+    await openMenu();
+    const textMasked = await inRecorderUi(() => recorderUi.item('Text masked'));
+    await expect(textMasked).toHaveAttribute('aria-disabled', 'true');
+    await visible(defaultRecorderMessages.privacyUnavailable);
+  },
+};
+
+export const OptionsLight: Story = {
+  args: { state: 'options', theme: 'light' },
+  globals: { theme: 'light' },
+  play: openMenu,
+};
+
+/** On phones the menu is a full-width sheet above the pill. */
+export const OptionsPhone: Story = {
+  args: { state: 'options' },
+  globals: { viewport: { value: 'narrow', isRotated: false } },
+  play: openMenu,
+};
 
 export const Consent: Story = {
   play: async () => {

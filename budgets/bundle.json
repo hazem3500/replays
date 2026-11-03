@@ -174,7 +174,7 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
-      "gzip": 3273,
+      "gzip": 3272,
       "brotli": 2859
     },
     "dist/client/assets/features-animation-HASH.js": {
@@ -310,7 +310,7 @@
     "dist/client/assets/progress-HASH.js": {
       "raw": 27680,
       "gzip": 11217,
-      "brotli": 9991
+      "brotli": 9989
     },
     "dist/client/assets/queries-HASH.js": {
       "raw": 16231,
@@ -384,7 +384,7 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
-      "gzip": 9311,
+      "gzip": 9310,
       "brotli": 8068
     },
     "dist/client/assets/tiles-HASH.js": {
@@ -637,10 +637,10 @@
       "gzip": 1704,
       "brotli": 1459
     },
-    "dist/lib/recorder-chunks/attribute-classes.ts-7ce204b477b8.mjs": {
-      "raw": 65301,
-      "gzip": 17710,
-      "brotli": 15580
+    "dist/lib/recorder-chunks/attribute-classes.ts-1cc4ef463b88.mjs": {
+      "raw": 67186,
+      "gzip": 18144,
+      "brotli": 15967
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -652,15 +652,20 @@
       "gzip": 424,
       "brotli": 334
     },
+    "dist/lib/recorder-chunks/default-ui-gesture-icon.ts-610fd4f3974e.mjs": {
+      "raw": 18061,
+      "gzip": 5426,
+      "brotli": 4735
+    },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1902,
-      "brotli": 1764
+      "brotli": 1763
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 4652,
-      "gzip": 1792,
-      "brotli": 1529
+      "raw": 5454,
+      "gzip": 2038,
+      "brotli": 1730
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -671,6 +676,11 @@
       "raw": 1644,
       "gzip": 767,
       "brotli": 630
+    },
+    "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs": {
+      "raw": 4323,
+      "gzip": 1571,
+      "brotli": 1377
     },
     "dist/lib/recorder-kit.mjs": {
       "raw": 525,
@@ -698,9 +708,9 @@
       "brotli": 39084
     },
     "dist/lib/recorder.mjs": {
-      "raw": 2967,
-      "gzip": 860,
-      "brotli": 747
+      "raw": 3137,
+      "gzip": 901,
+      "brotli": 780
     },
     "dist/lib/server-testing.mjs": {
       "raw": 12273,
@@ -1168,16 +1178,6 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
-    },
-    {
-      "file": "dist/lib/recorder.mjs",
-      "cap": {
-        "raw": 2967,
-        "gzip": 860,
-        "brotli": 747
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/189",
-      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: gzip 860. Replaces #166's allowance for this file."
     },
     {
       "file": "dist/client/assets/CommentRowsSource-HASH.js",
@@ -1896,16 +1896,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/recorder-chunks/attribute-classes.ts-7ce204b477b8.mjs",
-      "cap": {
-        "raw": 65301,
-        "gzip": 17710,
-        "brotli": 15580
-      },
-      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 63399, gzip new to 17194, brotli new to 15126 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
       "cap": {
         "raw": 6769,
@@ -2114,16 +2104,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/213"
     },
     {
-      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
-      "cap": {
-        "raw": 4652,
-        "gzip": 1792,
-        "brotli": 1529
-      },
-      "reason": "Recorder messages gain the openLink default and a privacy sentence that groups what is hidden. Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: raw 4052 to 4516, gzip 1589 to 1739, brotli 1352 to 1484 bytes; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/213"
-    },
-    {
       "file": "dist/lib/recorder-ui.mjs",
       "cap": {
         "raw": 38053,
@@ -2141,6 +2121,56 @@
       },
       "reason": "The collapsed runs rail draws a monogram tile per run with a corner status dot, and names a run without a recording with visually hidden text. Small justified growth under Hazem's standing approval (2026-11-03). CI same-runner main to head: gzip 9004 to 9039, brotli 7799 to 7833 bytes; caps are head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/213"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
+      "cap": {
+        "raw": 5454,
+        "gzip": 2038,
+        "brotli": 1730
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03). Main 4516/1739/1484 B, head 5295/1978/1679 B raw/gzip/brotli: nine short options-step message keys.",
+      "pr": "https://github.com/hazem3500/replays/pull/219"
+    },
+    {
+      "file": "dist/lib/recorder.mjs",
+      "cap": {
+        "raw": 3137,
+        "gzip": 901,
+        "brotli": 780
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03). Main 2967/857/743 B, head 3045/874/757 B raw/gzip/brotli: the lazy compatibility facade forwards chooseOptions.",
+      "pr": "https://github.com/hazem3500/replays/pull/219"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/attribute-classes.ts-1cc4ef463b88.mjs",
+      "cap": {
+        "raw": 67186,
+        "gzip": 18144,
+        "brotli": 15967
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03). The recorder core chunk under a new source membership (adds recorder-settings.ts), replacing attribute-classes.ts-7ce204b477b8. Main 63399/17194/15126 B, head 65229/17615/15501 B raw/gzip/brotli: per-recording settings, start({ choice }) and meta.profile; the choices logic itself is a lazy chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/219"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs",
+      "cap": {
+        "raw": 4323,
+        "gzip": 1571,
+        "brotli": 1377
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03). New lazy chunk, loaded only for hosts that pass choices; absent on main. Head 4197/1525/1336 B raw/gzip/brotli: the core privacy cap and profile list for the options step.",
+      "pr": "https://github.com/hazem3500/replays/pull/219"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/default-ui-gesture-icon.ts-610fd4f3974e.mjs",
+      "cap": {
+        "raw": 18061,
+        "gzip": 5426,
+        "brotli": 4735
+      },
+      "reason": "Small justified growth under Hazem's standing approval (2026-11-03). New lazy chunk, loaded only when the options step opens; absent on main. Head 17534/5267/4597 B raw/gzip/brotli: the options button, its Profile and Privacy menu, their styles and the viewer's shared sliders and close gestures (4.1 KB raw).",
+      "pr": "https://github.com/hazem3500/replays/pull/219"
     }
   ]
 }

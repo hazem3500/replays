@@ -116,6 +116,68 @@ With `network: 'bodies'` the recorder loads a separate chunk at `start()` and wr
 
 Every bundle carries `meta.captured` (`{ console, network, performance: false, video: false }`), so the viewer says "Not captured" instead of showing an empty body. If the body chunk cannot load, recording continues with headers only and `meta.captured.network` says `'headers'`.
 
+## Options step for internal hosts
+
+An internal host (staff on staging, a design review) can let people choose how much a recording shows and why it was made, right before each recording. It is off unless the host passes `choices`, so a customer-facing host sees no change.
+
+```ts
+const recorder = createGuidedRecorder({
+  upload,
+  // The most any recording may show. Every mode is capped by this.
+  privacy: { sanitize: false, blockMedia: false },
+  choices: {
+    privacy: ['visible', 'text-masked', 'masked'],
+    profiles: ['triage', { id: 'design-review', label: 'Design review' }, 'walkthrough'],
+    defaults: { privacy: 'text-masked', profile: 'triage' },
+  },
+});
+await recorder.request(); // From the host's Record click.
+```
+
+`request()` then shows the pill where the recording pill sits, before the consent dialog (or instead of it with `prompts.consent: false`). It has the recording pill's controls and nothing else: **Record**, a quiet options button and close. The options and close icons are the viewer's own animated icons (the sliders' knobs slide, the cross turns once) and stay still under reduced motion. The options button's tooltip names the current choice ("Masked · Triage"), and a small dot marks a choice that differs from `defaults`. It opens one small menu above the pill (a full-width sheet on phones) that scrolls when long:
+
+- **Profile**: the profiles the host passes, each with its optional description as a quiet line under it.
+- **Privacy**: Visible, Text masked and Masked, each with one quiet line from what that mode actually records once the host's cap applies ("Records text and inputs", "Hides text and inputs", "Hides text, inputs and media"), and a note at the end: "Passwords always stay hidden". A mode the host's privacy does not allow is disabled, its line saying "Not allowed here".
+
+Each line is tied to its item with `aria-describedby`, and the note to the Privacy group. Check marks show the current choices. It is a menu button with radio items: arrow keys, Home and End move across both groups and skip disabled modes, Enter, Space or a click chooses and closes, Escape and Tab close it, and a press outside closes it. Escape with the menu closed, or close, records nothing. The consent prompt describes the chosen mode.
+
+Profiles belong to the deployment (the config's `profiles`, or plugins), and the ingest endpoint refuses an id it does not define. `GET /api/config` lists them as `profiles: [{ id, label, ... }]`, which `choices.profiles` takes as is; add a `description` where a one-line hint helps:
+
+```ts
+const { profiles } = await (await fetch(`${replaysOrigin}/api/config`, { credentials: 'include' })).json();
+const hints: Record<string, string> = { triage: 'A bug to reproduce and fix', support: 'A customer issue for the support team' };
+const recorder = createGuidedRecorder({
+  upload,
+  privacy: { sanitize: false, blockMedia: false },
+  choices: {
+    privacy: ['visible', 'text-masked', 'masked'],
+    profiles: profiles.map(({ id, label }) => ({ id, label, description: hints[id] })),
+  },
+});
+```
+
+| Mode | Page text | Typed values | Media | Core settings before the cap |
+| --- | --- | --- | --- | --- |
+| `visible` | Recorded | Recorded, passwords and hidden inputs masked | Recorded | `sanitize: false`, `maskAllText: false`, `blockMedia: false` |
+| `text-masked` | Masked | Masked | Recorded | `sanitize: true`, `maskAllText: true`, `blockMedia: false` |
+| `masked` | Masked | Masked | Blocked | `sanitize: true`, `maskAllText: true`, `blockMedia: true` |
+
+The core enforces the cap, not the UI:
+
+- Each setting is the stricter of the mode and the host's own `privacy` (and `capture.privacy`). A mode never shows more than the host allows; modes the cap makes identical are offered once, under the stricter name. With `privacy: { sanitize: false }` (media blocked), `visible` records text and typed values but no media, and `text-masked` becomes `masked`.
+- A host whose `privacy` hides text, inputs and media (the default, so every support or customer host) never shows the step, and any choice it receives changes nothing.
+- Passwords, hidden inputs, credential URLs, sensitive query parameters and headers outside `allowedHeaders` stay protected in every mode, `visible` included. `maskTextSelector`, `unmaskTextSelector`, `blockSelector`, console and network settings stay as the host set them.
+- A choice applies to that recording only. The chosen profile becomes the bundle's `meta.profile`, which the ingest endpoint checks against the deployment's profiles. Profile ids are lower-case letters, digits and `-`; an invalid one fails the start of a recording.
+
+| `choices` key | Default | Effect |
+| --- | --- | --- |
+| `privacy` | none | Modes to offer, from `visible`, `text-masked` and `masked`. Without it the recording uses `privacy` as is |
+| `profiles` | none | Profile ids, or `{ id, label?, description? }` (the shape of `GET /api/config`'s `profiles`); the label defaults to the id in words |
+| `defaults` | most masked mode, first profile | The first choice until the user makes one |
+| `remember` | `true` | Keep the last choice for this origin in `localStorage`. Blocked or unreadable storage falls back to `defaults` |
+
+The step shows when at least two modes or two profiles remain after the cap. Its code and styles are separate chunks that load only for a host that passes `choices`, so customer pages carry none of it. A recording started without a choice (no options UI, or `start()` without `choice`) uses `defaults`, so it is never less masked than the host asked for. A host that renders its own UI implements `chooseOptions({ trigger, offer, signal })` on its `RecorderUi`: `offer` lists the capped modes with their `facts`, the profiles, the `initial` choice and the host's `defaults`; resolve with `{ privacy?, profile? }`, or `undefined` to cancel. `start({ consent: true, choice })` takes the same choice and caps it the same way. `createDeferredUi` and the React adapter do not render the step yet; their recordings use `defaults`.
+
 ## Compose the built-in steps
 
 ```ts
@@ -162,6 +224,15 @@ Static keys are strings. Data-bearing keys are functions of typed params, so you
 | `copied` | | Copy action after a successful copy, announced | Copied |
 | `copyFailed` | | Copy action after a failed copy, announced | Couldn't copy |
 | `close` | | Dismiss button name and tooltip | Close |
+| `optionsTitle` | | Options step, options button and menu name; the step's announcement | Recording options |
+| `optionsSummary` | `privacy?: string`, `profile?: string` (display names) | Options button tooltip | Masked · Triage |
+| `privacyLabel` | | Privacy group heading in the options menu | Privacy |
+| `profileLabel` | | Profile group heading in the options menu | Profile |
+| `privacyUnavailable` | | Beside a mode the host's privacy does not allow | Not allowed here |
+| `privacyMode` | `mode: RecorderPrivacyMode` | A mode's name | Visible, Text masked, Masked |
+| `privacyHint` | `mode: RecorderPrivacyMode`, `privacy: PrivacyFacts` | One quiet line under a mode, from what it records | Records text and inputs; Hides text and inputs; Hides text, inputs and media |
+| `privacyAlways` | | Note at the end of the Privacy group | Passwords always stay hidden |
+| `record` | | Options step button that starts the recording | Record |
 
 Labels you pass yourself (completion `message` and `actions`, an error's `userMessage` and `link.label`) are already yours and are shown as given.
 
@@ -201,7 +272,7 @@ Run with a DOM environment. Standard controls use `data-recorder-action="consent
 
 `pnpm storybook` (on Boat) opens the recorder under **Recorder** in the sidebar:
 
-- **Default UI**: each `createDefaultUi()` surface on its own (consent, recording, sending, sent, failed), in both themes and at phone width. Edit `src/recorder/default-ui.ts` or `messages.ts` and the story reloads with your change.
+- **Default UI**: each `createDefaultUi()` surface on its own (the options step closed, with its menu open, capped by the host, consent, recording, sending, sent, failed), in both themes and at phone width. Edit `src/recorder/default-ui.ts` or `messages.ts` and the story reloads with your change.
 - **Custom UI (kit)**: the `examples/recorder-shadcn` React UI on `@hazem3500/replays/recorder/react`, including warnings and upload progress.
 - **End to end**: the production `createRecorder()` and default UI on a demo checkout page. rrweb loads through its real dynamic import and the upload leaves the page through the real transport. A Mock Service Worker ([msw](https://mswjs.io), served by `msw/vite`) answers as the ingest endpoint, so nothing in the recorder is stubbed.
 
