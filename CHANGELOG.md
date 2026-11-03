@@ -7,6 +7,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 - Editor: inspector panels group each setting in a soft card, with the object's remove or reset action as a labelled icon in the panel header; timeline clips are neutral with a stripe in their lane's colour, lift when selected and show a Remove bubble above them, and captions fade out at the clip's end.
 
+- Recorder default UI: one redesigned floating pill (fully round, even weights, tabular timer, a clear red Stop control with hover, focus and press states, a calmer live dot and a red timer in the final 10 seconds), quieter consent and review dialogs, and status icons on results. A receipt URL now offers **Open** (new message key `openLink`) beside **Copy link**; hosts that pass `completion.actions` keep full control.
+
 - Edits: speed-ups can also play at 1.5×, and captions no longer overlap (an overlapping saved list is separated on save). Older edit lists still load unchanged. The editor sets zoom with a continuous slider and its inspectors share one layout.
 
 - Added pure network, performance, waterfall and error builders at `/viewer/diagnostics`, with packed browser-consumer checks for optional React and recorder compositions.

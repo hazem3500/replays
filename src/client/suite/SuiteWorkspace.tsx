@@ -33,7 +33,7 @@ import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults } from '../compare/defaults.ts';
-import { shortNames, TILE_COLOURS } from '../compare/tiles.ts';
+import { monograms, shortNames, TILE_COLOURS } from '../compare/tiles.ts';
 import { apiUrl } from '../api/fetch.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
@@ -424,6 +424,7 @@ function SuiteSidebar({
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const recordedRuns = runs.filter((run) => playableReplayId(run, detailed));
   const names = shortNames(runs.map((run) => run.label));
+  const marks = monograms(names);
   const { highlight, place } = useSlidingHighlight(list, { selector: '[aria-current="page"]', index: selectedIndex });
   // After the current run changes (or the rail collapses), slide the one highlight to it.
   useLayoutEffect(() => {
@@ -508,10 +509,10 @@ function SuiteSidebar({
           const current = playable !== undefined && playable === selected;
           const colour = playable ? (recordedRuns.indexOf(run) % TILE_COLOURS) + 1 : undefined;
           const content = collapsed ? (
-            <>
-              <span className="run-seq">{sequenceLabel(run)}</span>
-              <span className={`status-dot tone-${tone}`} aria-hidden="true" />
-            </>
+            <span className="run-monogram" aria-hidden="true">
+              {marks[index]}
+              <span className={`status-dot tone-${tone}`} />
+            </span>
           ) : (
             <>
               <span className="suite-run-thumbnail" aria-hidden="true">
@@ -571,8 +572,9 @@ function SuiteSidebar({
                   </button>
                 </Hint>
               ) : (
-                <div className="suite-run-item" aria-disabled="true" aria-label={label} title={label}>
+                <div className="suite-run-item" aria-disabled="true" title={label}>
                   {content}
+                  {collapsed ? <span className="visually-hidden">{label}</span> : null}
                 </div>
               )}
             </div>

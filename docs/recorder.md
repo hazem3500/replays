@@ -126,9 +126,9 @@ const recorder = createRecorder({upload, ui: composeUi(
 )});
 ```
 
-Later renderers win; `composeUi` validates all three required methods and calls every part’s dismiss cleanup. Each step mounts independently; the full default UI shares a floating surface across recording, sending and completion. Dialogs trap focus, inert siblings, return focus and cancel on Escape/abort. Copy, formatting and theme overrides are available through `DefaultUiOptions` (see [Messages and formatting](#messages-and-formatting)). Success says “Recording sent”; failure says “Couldn't send recording” with one Retry, an optional host link and dismiss. Technical error messages are hidden; an explicit `userMessage` is a host override.
+Later renderers win; `composeUi` validates all three required methods and calls every part’s dismiss cleanup. Each step mounts independently; the full default UI shares a floating surface across recording, sending and completion. Dialogs trap focus, inert siblings, return focus and cancel on Escape/abort. Copy, formatting and theme overrides are available through `DefaultUiOptions` (see [Messages and formatting](#messages-and-formatting)). The floating pill keeps one geometry through every phase: a live dot, label and tabular timer beside a round Stop control while recording (the timer turns red in the final 10 seconds), then sending, then the result. Success says “Recording sent” and, when the receipt has an HTTP(S) URL, offers **Open** (the primary action, a new tab with `rel="noopener noreferrer"`) and **Copy link**; Copy link confirms with “Copied” and returns to its label after two seconds. Failure says “Couldn't send recording” with a primary Retry, an optional host link and dismiss. Technical error messages are hidden; an explicit `userMessage` is a host override.
 
-Theme tokens: background, foreground, secondary, border, borderStrong, hover, pressed, primary, primaryForeground, danger, font, radius. Use `theme:'light'|'dark'`, a typed object or `--recorder-*` CSS variables. Completion supports message, copy/link/custom actions and `render(container,{result,copy,retry,dismiss})` returning cleanup. URLs are restricted to HTTP(S); internal IDs are not shown by default.
+Theme tokens: background, foreground, secondary, border, borderStrong, hover, pressed, primary, primaryForeground, danger, font, radius. Use `theme:'light'|'dark'`, a typed object or `--recorder-*` CSS variables. Completion supports message, copy/link/custom actions and `render(container,{result,copy,retry,dismiss})` returning cleanup. Passing `actions` replaces the Open and Copy link defaults entirely: `[{ id: 'copy-link', kind: 'copy', label: 'Copy link' }]` keeps a customer-facing host copy-only, and `[]` leaves the message alone. A `primary: true` action, link or button, takes the filled style. URLs are restricted to HTTP(S); internal IDs are not shown by default.
 
 ## Messages and formatting
 
@@ -140,7 +140,7 @@ Static keys are strings. Data-bearing keys are functions of typed params, so you
 | --- | --- | --- | --- |
 | `consentTitle` | | Consent heading | Record this tab? |
 | `consentBody` | `minutes: number`, `maxDurationMs: number`, `limit: string` | Consent time limit; `limit` is `format.duration(maxDurationMs)` | Up to 3 minutes. Stop whenever you like. |
-| `consentPrivacy` | `mode: 'masked' \| 'visible'`, `privacy?: PrivacyFacts` | Consent privacy notice, from the capture facts | Page text is masked. Inputs are masked. Media is blocked. Review before sending. |
+| `consentPrivacy` | `mode: 'masked' \| 'visible'`, `privacy?: PrivacyFacts` | Consent privacy notice, from the capture facts | Page text, inputs and media are hidden. You review it before it is sent. |
 | `consentAccept` | | Consent accept button | Start recording |
 | `consentDecline` | | Consent decline button | Not now |
 | `recording` | | Indicator label, its accessible name and the start announcement | Recording |
@@ -148,18 +148,19 @@ Static keys are strings. Data-bearing keys are functions of typed params, so you
 | `warningSoon` | `seconds: number` (30) | Announced once near the limit | 30 seconds left |
 | `warningFinal` | `seconds: number` (10) | Announced once near the limit | 10 seconds left |
 | `reviewTitle` | | Review heading | Send recording? |
-| `reviewBody` | `summary: RecordingSummary`, `duration: string`, `size: string` | Review summary; `duration` and `size` come from `format` | Duration: 1 minute 13 seconds. |
+| `reviewBody` | `summary: RecordingSummary`, `duration: string`, `size: string` | Review summary; `duration` and `size` come from `format` | You recorded 1 minute 13 seconds. |
 | `noteLabel` | | Review note label | Add a note (optional) |
 | `send` | | Review send button | Send recording |
 | `discard` | | Review discard button | Discard |
-| `uploading` | | Sending status and announcement | Sending… |
+| `uploading` | | Sending status and announcement | Sending |
 | `sent` | `reference: string`, `receipt: IssueReportReceipt` | Success message; `reference` falls back to the replay id | Recording sent |
 | `failed` | `error: RecorderMessageError`, `canRetry: boolean` | Upload failure message, unless the error has a `userMessage` | Couldn't send recording |
 | `startFailed` | `error: RecorderMessageError` | `selectError` start failure, unless the error has a `userMessage` | Couldn't start recording |
 | `retry` | | Retry button | Retry |
+| `openLink` | | Default primary action that opens a receipt URL in a new tab | Open |
 | `copyLink` | | Default copy action for a receipt URL | Copy link |
 | `copied` | | Copy action after a successful copy, announced | Copied |
-| `copyFailed` | | Copy action after a failed copy, announced | Could not copy |
+| `copyFailed` | | Copy action after a failed copy, announced | Couldn't copy |
 | `close` | | Dismiss button name and tooltip | Close |
 
 Labels you pass yourself (completion `message` and `actions`, an error's `userMessage` and `link.label`) are already yours and are shown as given.

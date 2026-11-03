@@ -73,3 +73,11 @@ export function hideSurface(
   shell.setAttribute('aria-hidden', 'true');
   transition(shell, false, complete);
 }
+
+/** A dialog's entrance: the scrim fades while the panel rises a few pixels. Reduced motion shows both at rest. */
+export function enterDialog(backdrop: HTMLElement, box: HTMLElement) {
+  if (typeof box.animate !== 'function' || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches))
+    return;
+  animate([backdrop], { opacity: [0, 1] }, { duration: 0.16, ease: 'easeOut' });
+  animate([box], { opacity: [0, 1], transform: ['translateY(6px) scale(.98)', 'none'] }, { duration: 0.2, ease: [0.16, 1, 0.3, 1] });
+}

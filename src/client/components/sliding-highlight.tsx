@@ -1,5 +1,12 @@
 import { type RefObject, useLayoutEffect, useRef } from 'react';
-import { moveLayer, stopLayer } from '../lib/layer-motion.ts';
+import { layerMoving, moveLayer, stopLayer } from '../lib/layer-motion.ts';
+
+/**
+ * A wrapping segmented control's selection move: 200 ms on a no-overshoot ease-out that settles like a critically damped
+ * spring. Its text emphasis and figures use the same curve and length (`--strip-move` in compare.css).
+ */
+const ROW_EASE: [number, number, number, number] = [0.22, 1, 0.36, 1];
+const ROW_GLIDE = { duration: 0.2, ease: ROW_EASE };
 
 /** Changes faster than this apart (a held key, a scrub) move the highlight instantly. */
 const RAPID_MS = 250;
@@ -72,9 +79,15 @@ export function useSlidingHighlight(
  * The horizontal sibling for segmented controls and tabs: one pill (or underline) that slides to the
  * selected cell (Motion transform and width). It jumps without motion on
  * the first placement (a popover opening), on resizes, and on rapid changes (a held arrow key).
- * `selector` finds the selected cell inside `container`; `value` is what changes when the selection does.
+ * `selector` finds the selected cell inside `container`; `value` is what changes when the selection does. `rows` is for a
+ * control that wraps onto more than one line: the pill takes the cell's size outright and moves by transform alone
+ * (compositor-only, so a busy main thread does not stall it) on ROW_GLIDE; a move to another line fades in place
+ * instead of travelling diagonally across the grid.
  */
-export function useSlidingPill(container: RefObject<HTMLElement | null>, { selector, value }: { selector: string; value: unknown }) {
+export function useSlidingPill(
+  container: RefObject<HTMLElement | null>,
+  { selector, value, rows = false }: { selector: string; value: unknown; rows?: boolean },
+) {
   const pill = useRef<HTMLSpanElement>(null);
   const last = useRef({ at: 0, placed: false });
 
@@ -88,6 +101,24 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, { selec
         element.style.opacity = '0';
         return;
       }
+      const target = `${cell.offsetLeft},${cell.offsetTop},${cell.offsetWidth},${cell.offsetHeight}`;
+      // invariant: a placement toward where the pill is already headed is a no-op, so a re-render, a route change or an
+      // observer report never restarts or snaps a glide in flight.
+      if (element.dataset.target === target && element.style.opacity === '1') return;
+      element.dataset.target = target;
+      if (rows) {
+        const line = String(cell.offsetTop);
+        const otherLine = element.dataset.line !== undefined && element.dataset.line !== line;
+        element.dataset.line = line;
+        element.style.width = `${cell.offsetWidth}px`;
+        element.style.height = `${cell.offsetHeight}px`;
+        const transform = `translate(${cell.offsetLeft}px, ${cell.offsetTop}px)`;
+        if (animate && otherLine) {
+          moveLayer(element, { transform, opacity: '0' }, true);
+          moveLayer(element, { opacity: '1' }, false, ROW_GLIDE.duration, ROW_GLIDE.ease);
+        } else moveLayer(element, { opacity: '1', transform }, !animate, ROW_GLIDE.duration, ROW_GLIDE.ease);
+        return;
+      }
       moveLayer(element, { opacity: '1', width: `${cell.offsetWidth}px`, transform: `translateX(${cell.offsetLeft}px)` }, !animate);
     };
     // The selection this placement is for (also handy when inspecting the DOM).
@@ -95,26 +126,17 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, { selec
     const now = performance.now();
     place(last.current.placed && now - last.current.at > RAPID_MS);
     last.current = { at: now, placed: true };
-    // Labels and counts change cell widths without resizing the control: watch every cell. A new observer
-    // reports every cell once on observe(); only a real size change may move the pill instantly, otherwise
-    // that first report would cancel the glide this selection change just started.
-    const widths = new Map<Element, number>();
-    const observer = new ResizeObserver((entries) => {
-      let changed = false;
-      for (const entry of entries) {
-        const width = Math.round(entry.contentRect.width);
-        if (widths.has(entry.target) && widths.get(entry.target) !== width) changed = true;
-        widths.set(entry.target, width);
-      }
-      if (changed) place(false);
-    });
+    // Labels and counts change cell widths without resizing the control: watch every cell. A report only moves the pill
+    // when the selected cell's box really changed (including before the first report): at rest it follows at once,
+    // mid-glide it retargets, so a reflow during a switch never snaps the glide.
+    const observer = new ResizeObserver(() => place(layerMoving(element)));
     // Never the pill itself: its own width animates during a glide, and reacting to that would snap it.
     for (const cell of host.children) if (cell !== element) observer.observe(cell);
     return () => {
       observer.disconnect();
       stopLayer(element);
     };
-  }, [container, selector, value]);
+  }, [container, selector, value, rows]);
 
   return pill;
 }

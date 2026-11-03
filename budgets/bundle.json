@@ -108,9 +108,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 10155,
-      "gzip": 2490,
-      "brotli": 2152
+      "raw": 12170,
+      "gzip": 2951,
+      "brotli": 2568
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
@@ -174,7 +174,7 @@
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
-      "gzip": 3274,
+      "gzip": 3273,
       "brotli": 2859
     },
     "dist/client/assets/features-animation-HASH.js": {
@@ -384,13 +384,13 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
-      "gzip": 9037,
-      "brotli": 7810
+      "gzip": 9311,
+      "brotli": 8068
     },
     "dist/client/assets/tiles-HASH.js": {
-      "raw": 1300,
-      "gzip": 742,
-      "brotli": 681
+      "raw": 1468,
+      "gzip": 807,
+      "brotli": 733
     },
     "dist/client/assets/toast-HASH.js": {
       "raw": 34790,
@@ -418,9 +418,9 @@
       "brotli": 362
     },
     "dist/client/assets/use-replay-deletion-HASH.js": {
-      "raw": 8944,
-      "gzip": 3987,
-      "brotli": 3498
+      "raw": 8836,
+      "gzip": 3940,
+      "brotli": 3461
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
@@ -440,7 +440,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 74027,
       "gzip": 26665,
-      "brotli": 23007
+      "brotli": 22998
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 691,
@@ -655,12 +655,12 @@
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
       "gzip": 1902,
-      "brotli": 1765
+      "brotli": 1764
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 4058,
-      "gzip": 1596,
-      "brotli": 1358
+      "raw": 4652,
+      "gzip": 1792,
+      "brotli": 1529
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -688,9 +688,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 31615,
-      "gzip": 8580,
-      "brotli": 7514
+      "raw": 38053,
+      "gzip": 10247,
+      "brotli": 8986
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
@@ -1103,16 +1103,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "raw": 21999,
-        "gzip": 9037,
-        "brotli": 7810
-      },
-      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/184"
-    },
-    {
       "file": "dist/lib/viewer.mjs",
       "cap": {
         "raw": 26293,
@@ -1178,16 +1168,6 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
-    },
-    {
-      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
-      "cap": {
-        "raw": 4058,
-        "gzip": 1596,
-        "brotli": 1358
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/189",
-      "reason": "Recorder split into recorder-privacy, recorder-limits, recorder-session, recorder-checks, attribute-classes and default-ui modules; the shared recorder chunk is renamed by its first source and its neighbours drift; CI Quality / size against fresh main: gzip 1596, brotli 1358. Replaces #166's allowance for this file."
     },
     {
       "file": "dist/lib/recorder.mjs",
@@ -1260,30 +1240,6 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/CompareViewer-HASH.css",
-      "cap": {
-        "raw": 10155
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/CompareViewer-HASH.css",
-      "cap": {
-        "gzip": 2490
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/CompareViewer-HASH.css",
-      "cap": {
-        "brotli": 2152
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/162",
-      "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
       "file": "dist/client/assets/Viewer-HASH.css",
@@ -1661,16 +1617,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/client/assets/tiles-HASH.js",
-      "cap": {
-        "raw": 1300,
-        "gzip": 743,
-        "brotli": 684
-      },
-      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1262, gzip new to 721, brotli new to 664 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/client/assets/toast-HASH.js",
       "cap": {
         "raw": 34790,
@@ -1970,16 +1916,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/recorder-ui.mjs",
-      "cap": {
-        "raw": 31615,
-        "gzip": 8580,
-        "brotli": 7514
-      },
-      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 27915 to 30694, gzip 7836 to 8330, brotli 6830 to 7295 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/server.mjs",
       "cap": {
         "raw": 2181,
@@ -2156,6 +2092,55 @@
       },
       "reason": "Small justified growth under Hazem's standing approval (2026-11-03): this unchanged 64-byte chunk's brotli output shifts by two bytes as neighbouring chunk names change. CI same-runner main/head: raw 64 to 64, gzip 78 to 78, brotli 66 to 68 bytes; raw and gzip keep their current caps. Replaces the #208 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/221"
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.css",
+      "cap": {
+        "raw": 12170,
+        "gzip": 2951,
+        "brotli": 2568
+      },
+      "reason": "The comparison headline becomes one aligned strip of equal segments with fixed figure columns, a raised neutral selection surface that glides between segments on one curve with its text and deltas, and container-query folding into even rows. Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: raw 9885 to 11815, gzip 2481 to 2865, brotli 2136 to 2493 bytes; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/213"
+    },
+    {
+      "file": "dist/client/assets/tiles-HASH.js",
+      "cap": {
+        "raw": 1468,
+        "gzip": 807,
+        "brotli": 733
+      },
+      "reason": "The monograms helper gives each run a one-glyph mark for the collapsed runs rail. Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: raw 1262 to 1425, gzip 721 to 783, brotli 662 to 711 bytes; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/213"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
+      "cap": {
+        "raw": 4652,
+        "gzip": 1792,
+        "brotli": 1529
+      },
+      "reason": "Recorder messages gain the openLink default and a privacy sentence that groups what is hidden. Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: raw 4052 to 4516, gzip 1589 to 1739, brotli 1352 to 1484 bytes; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/213"
+    },
+    {
+      "file": "dist/lib/recorder-ui.mjs",
+      "cap": {
+        "raw": 38053,
+        "gzip": 10247,
+        "brotli": 8986
+      },
+      "reason": "Recorder default UI redesign: one concentric floating pill with status icons, a red Stop control with hover, focus and press states, soft-tinted Open and Copy link actions, refined consent and review dialogs and their entrance motion. Reviewed and approved by Hazem. Same-runner main to head: raw 30694 to 36944, gzip 8330 to 9948, brotli 7295 to 8724 bytes; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/213"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "gzip": 9311,
+        "brotli": 8068
+      },
+      "reason": "The collapsed runs rail draws a monogram tile per run with a corner status dot, and names a run without a recording with visually hidden text. Small justified growth under Hazem's standing approval (2026-11-03). CI same-runner main to head: gzip 9004 to 9039, brotli 7799 to 7833 bytes; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/213"
     }
   ]
 }

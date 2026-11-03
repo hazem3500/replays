@@ -35,6 +35,7 @@ const sentinels: RecorderMessages = {
   failed: () => mark('failed'),
   startFailed: () => mark('startFailed'),
   retry: mark('retry'),
+  openLink: mark('openLink'),
   copyLink: mark('copyLink'),
   copied: mark('copied'),
   copyFailed: mark('copyFailed'),

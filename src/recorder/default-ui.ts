@@ -1,13 +1,15 @@
 import type { CompletionAction, CompletionContext, DefaultUiOptions, ReceiptValue, RecorderTheme } from './default-ui-types.ts';
 import { element, link, safeHref } from './default-ui-dom.ts';
 import { DEFAULT_UI_STYLES } from './default-ui-styles.ts';
+import { icon } from './default-ui-icons.ts';
+import { RECORDER_THEME_PRESETS } from './default-ui-themes.ts';
 import { createRecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
 import { resolveRecorderMessages } from './messages.ts';
 import { createUploadActivity } from './upload-activity.ts';
 import { startRecordingPulse } from './recording-pulse.ts';
 import { cleanupText, updateText } from './text-motion.ts';
-import { hideSurface as exitSurface, showSurface, type FloatingSurface } from './surface-motion.ts';
+import { enterDialog, hideSurface as exitSurface, showSurface, type FloatingSurface } from './surface-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
 import type { IssueUploadErrorDetails } from './upload.ts';
 
@@ -33,33 +35,7 @@ export function createDefaultUi(
     host.setAttribute('data-recorder-ui', '');
     host.style.position = 'relative';
     const theme: RecorderTheme | undefined =
-      typeof options.theme === 'object'
-        ? options.theme
-        : options.theme === 'light'
-          ? {
-              background: '#ffffff',
-              foreground: '#181b22',
-              secondary: '#434a59',
-              border: '#dde0e7',
-              borderStrong: '#c1c6d1',
-              hover: '#eceef3',
-              pressed: '#e3e6ed',
-              primary: '#3d4fd1',
-              primaryForeground: '#ffffff',
-            }
-          : options.theme === 'dark'
-            ? {
-                background: '#1a1e26',
-                foreground: '#eef0f5',
-                secondary: '#b2b8c5',
-                border: '#262b35',
-                borderStrong: '#3a4150',
-                hover: '#232832',
-                pressed: '#2c323d',
-                primary: '#8b9dff',
-                primaryForeground: '#10131b',
-              }
-            : undefined;
+      typeof options.theme === 'object' ? options.theme : options.theme ? RECORDER_THEME_PRESETS[options.theme] : undefined;
     for (const [key, value] of Object.entries(theme ?? {})) host.style.setProperty(`--recorder-${key}`, value);
     host.style.zIndex = zIndex;
     const root = host.attachShadow({ mode: 'open' });
@@ -116,6 +92,7 @@ export function createDefaultUi(
     showSurface(floating.shell);
     floating.shell.dataset.phase = phase;
     delete floating.shell.dataset.custom;
+    delete floating.shell.dataset.warning;
     floating.content.querySelectorAll<HTMLElement>('.time').forEach(cleanupText);
     floating.content.replaceChildren();
     floating.live.textContent = announcement;
@@ -166,7 +143,9 @@ export function createDefaultUi(
       box.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') finish(cancelValue);
       });
-      root.append(element('div', { className: 'backdrop' }, [box]));
+      const backdrop = element('div', { className: 'backdrop' }, [box]);
+      root.append(backdrop);
+      enterDialog(backdrop, box);
       trap.release = trapFocus(box);
       focus.focus();
     });
@@ -197,7 +176,10 @@ export function createDefaultUi(
                   limit: format.duration(maxDurationMs),
                 }),
               ]),
-              element('p', {}, [messages.consentPrivacy(privacy ? { mode, privacy } : { mode })]),
+              element('p', { className: 'notice' }, [
+                icon('shield'),
+                element('span', {}, [messages.consentPrivacy(privacy ? { mode, privacy } : { mode })]),
+              ]),
               element('div', { className: 'actions' }, [decline, accept]),
             ],
             // why: declining is the safe default for an accidental Enter.
@@ -217,12 +199,12 @@ export function createDefaultUi(
       updateText(time, format.elapsed(Date.now() - startedAt));
       const dot = element('span', { className: 'dot' });
       dot.setAttribute('aria-hidden', 'true');
-      const icon = element('span', { className: 'stop-icon' });
-      icon.setAttribute('aria-hidden', 'true');
+      const square = element('span', { className: 'stop-icon' });
+      square.setAttribute('aria-hidden', 'true');
       const stopButton = element(
         'button',
         { type: 'button', className: 'icon-button finish-button', title: messages.stop, onclick: stop },
-        [icon],
+        [square],
       );
       stopButton.setAttribute('aria-label', messages.stop);
       stopButton.dataset.recorderAction = 'stop';
@@ -230,13 +212,19 @@ export function createDefaultUi(
       renderCleanup = startRecordingPulse(dot);
       const releaseStop = attestStop?.(stopButton);
       let warning = 'none';
-      timer = setInterval(() => {
-        updateText(time, format.elapsed(Date.now() - startedAt));
+      const tick = (announce: boolean) => {
         const remaining = maxDurationMs - (Date.now() - startedAt);
         const next = remaining <= 10000 ? 'final' : remaining <= 30000 ? 'soon' : 'none';
+        if (floating) floating.shell.dataset.warning = next;
+        if (!announce) return;
         if (next !== warning && next !== 'none' && floating)
           floating.live.textContent = next === 'final' ? messages.warningFinal({ seconds: 10 }) : messages.warningSoon({ seconds: 30 });
         warning = next;
+      };
+      tick(false);
+      timer = setInterval(() => {
+        updateText(time, format.elapsed(Date.now() - startedAt));
+        tick(true);
       }, 1000);
       return () => {
         releaseStop?.();
@@ -311,10 +299,16 @@ export function createDefaultUi(
       const current = surface(receipt ? 'complete' : 'error', text);
       const ownGeneration = generation;
       const feedback = element('span', { className: 'sr-only' });
+      const resting = new Map<HTMLElement, { label: string; timer?: ReturnType<typeof setTimeout> }>();
       const announce = (message: string, control?: HTMLElement) => {
         if (generation !== ownGeneration) return;
         const target = control ?? feedback;
         if (!control) target.className = 'copy-feedback';
+        const rest = resting.get(target) ?? { label: target.textContent ?? '' };
+        clearTimeout(rest.timer);
+        // why: a control reads as an action again once its confirmation has been seen.
+        if (control) rest.timer = setTimeout(() => generation === ownGeneration && (target.textContent = rest.label), 2000);
+        resting.set(target, rest);
         target.textContent = message;
         current.live.textContent = message;
       };
@@ -340,29 +334,27 @@ export function createDefaultUi(
       } else {
         current.label.className = 'message';
         updateText(current.label, text);
-        current.content.append(current.label);
+        current.content.append(icon(receipt ? 'check' : 'alert', 'status-icon'), current.label);
         if (receipt) {
+          const href = receipt.url ? safeHref(receipt.url) : undefined;
           const actions: readonly CompletionAction[] =
             completion?.actions ??
-            (receipt.url && safeHref(receipt.url)
+            (href
               ? [
-                  {
-                    id: 'copy-link',
-                    label: messages.copyLink,
-                    kind: 'copy',
-                    value: safeHref(receipt.url)!,
-                  },
+                  { id: 'open', label: messages.openLink, kind: 'link', href, primary: true },
+                  { id: 'copy-link', label: messages.copyLink, kind: 'copy', value: href },
                 ]
               : []);
           for (const action of actions) {
             let control: HTMLElement | undefined;
-            if (action.kind === 'link') control = link(action.label, resolveValue(action.href));
+            const className = action.primary ? 'primary' : '';
+            if (action.kind === 'link') control = link(action.label, resolveValue(action.href), className);
             else
               control = element(
                 'button',
                 {
                   type: 'button',
-                  className: action.primary ? 'primary' : '',
+                  className,
                   onclick: () => {
                     if (action.kind === 'copy') void copy(action.value === undefined ? undefined : resolveValue(action.value), control);
                     else void action.onAction(context);
@@ -381,7 +373,7 @@ export function createDefaultUi(
             if (control) controls.append(control);
           }
           if (result.status === 'error' && result.retry) {
-            const retry = element('button', { type: 'button', onclick: result.retry }, [messages.retry]);
+            const retry = element('button', { type: 'button', className: 'primary', onclick: result.retry }, [messages.retry]);
             retry.dataset.recorderAction = 'retry';
             controls.append(retry);
           }
@@ -389,7 +381,7 @@ export function createDefaultUi(
         current.content.append(feedback);
       }
       const close = element('button', { type: 'button', className: 'icon-button', title: messages.close, onclick: dismiss }, [
-        element('span', { className: 'close-icon' }),
+        icon('close'),
       ]);
       close.dataset.recorderAction = 'dismiss';
       close.setAttribute('aria-label', messages.close);

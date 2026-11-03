@@ -54,6 +54,7 @@ describe('default recorder surface', () => {
     vi.advanceTimersByTime(1000);
     expect(node('.time').textContent).toBe('10:00');
     expect(node('[role=status]').textContent).toBe('10 seconds left');
+    expect(node('.pill').dataset.warning).toBe('final');
     expect(node('style').textContent).toContain('tabular-nums');
     expect(node('style').textContent).not.toContain('@keyframes');
     ui.dismiss?.();
@@ -102,7 +103,38 @@ describe('default recorder surface', () => {
       receipt: { replayId: 'a', url: 'https://example.com/r/a' },
     });
     expect(node('[data-action=copy-link]').textContent).toBe('Copy link');
+    expect(node<HTMLAnchorElement>('a[data-action=open]').href).toBe('https://example.com/r/a');
+    ui.dismiss?.();
+  });
+  it('opens a safe receipt URL in a new tab as the primary default action', () => {
+    const ui = createDefaultUi();
+    ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'a', url: 'https://example.com/r/a' } });
+    const open = node<HTMLAnchorElement>('[data-action=open]');
+    expect([open.textContent, open.target, open.rel]).toEqual(['Open', '_blank', 'noopener noreferrer']);
+    expect(open.classList.contains('primary')).toBe(true);
+    expect(open.nextElementSibling).toBe(node('[data-action=copy-link]'));
+    ui.dismiss?.();
+  });
+  it('leaves only the actions a host passes, so a host can stay copy-only', () => {
+    const ui = createDefaultUi({ completion: { actions: [{ id: 'copy-link', kind: 'copy', label: 'Copy link' }] } });
+    ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'a', url: 'https://example.com/r/a' } });
     expect(root().querySelector('a')).toBeNull();
+    expect(node('[data-action=copy-link]').textContent).toBe('Copy link');
+    ui.dismiss?.();
+  });
+  it('returns a copy action to its label after confirming the copy', async () => {
+    vi.useFakeTimers();
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: vi.fn<() => Promise<void>>().mockResolvedValue() },
+    });
+    const ui = createDefaultUi();
+    ui.showResult?.({ status: 'uploaded', receipt: { replayId: 'a', url: 'https://example.com/r/a' } });
+    press('Copy link');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(node('[data-action=copy-link]').textContent).toBe('Copied');
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(node('[data-action=copy-link]').textContent).toBe('Copy link');
     ui.dismiss?.();
   });
   it('offers a useful default link copy and no default internal reference action', async () => {

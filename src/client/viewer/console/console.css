@@ -12,9 +12,9 @@
 .cp-row > * { min-width: 0; }
 .cp-head { position: sticky; z-index: 2; top: 0; align-items: center; height: 28px; min-height: 28px; padding-block: 0; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
 .cp-row:not(.cp-head):hover { background: var(--surface-hover); }
-.cp-row[data-level="error"] { background: var(--danger-tint); box-shadow: inset 2px 0 var(--danger); }
-.cp-row[data-level="warn"] { background: color-mix(in srgb, var(--warning) 7%, transparent); box-shadow: inset 2px 0 var(--warning); }
-.cp-row[data-selected], .cp-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
+.cp-row[data-level="error"] { background: var(--danger-tint); }
+.cp-row[data-level="warn"] { background: color-mix(in srgb, var(--warning) 7%, transparent); }
+.cp-row[data-selected], .cp-row[data-selected]:hover { background: var(--accent-soft); }
 .cp-time { padding-top: 0; }
 .cp-time time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .cp-message button { width: 100%; min-height: 32px; display: flex; align-items: center; gap: 6px; margin: 0; padding: 4px 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }

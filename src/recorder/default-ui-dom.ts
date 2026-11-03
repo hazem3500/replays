@@ -1,3 +1,5 @@
+import { icon } from './default-ui-icons.ts';
+
 /** A new element with `props` assigned and `children` appended. */
 export const element = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -20,8 +22,8 @@ export const safeHref = (value: string): string | undefined => {
   }
 };
 
-/** A new-tab link to `href` when it is a safe http(s) URL. */
-export const link = (label: string, href: string): HTMLAnchorElement | undefined => {
+/** A new-tab link to `href` when it is a safe http(s) URL, marked with an outward arrow. */
+export const link = (label: string, href: string, className = ''): HTMLAnchorElement | undefined => {
   const safe = safeHref(href);
-  return safe ? element('a', { href: safe, target: '_blank', rel: 'noopener noreferrer' }, [label]) : undefined;
+  return safe ? element('a', { href: safe, target: '_blank', rel: 'noopener noreferrer', className }, [label, icon('open')]) : undefined;
 };

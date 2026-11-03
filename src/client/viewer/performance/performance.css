@@ -56,7 +56,7 @@
 .pp-row :is(.pp-moment button, .pp-took, .pp-why, time) { transition: color var(--motion) var(--ease-out); }
 .pp-head { position: sticky; z-index: 2; top: 0; height: 28px; min-height: 28px; border-bottom-color: var(--line); background: var(--surface); color: var(--text-tertiary); font-size: var(--text-2xs); font-weight: 500; }
 .pp-row:not(.pp-head):hover { background: var(--surface-hover); }
-.pp-row[data-selected], .pp-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
+.pp-row[data-selected], .pp-row[data-selected]:hover { background: var(--accent-soft); }
 .pp-moment button { width: 100%; min-height: 29px; display: flex; align-items: center; gap: 8px; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .pp-took { font-variant-numeric: tabular-nums; text-align: right; }
 .pp-row[data-verdict="poor"] .pp-took { color: var(--text); font-weight: 600; }

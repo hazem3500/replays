@@ -59,6 +59,16 @@ export function shortNames(labels: readonly string[]) {
   });
 }
 
+/**
+ * One-glyph marks for a slim run switcher: each short name's first letter or digit when those are all different
+ * ("Chrome", "Firefox" read C and F), otherwise every run's position (1, 2, …) so no two marks repeat.
+ */
+export function monograms(names: readonly string[]) {
+  const initials = names.map((name) => (/[\p{L}\p{N}]/u.exec(name)?.[0] ?? '').toLocaleUpperCase());
+  const distinct = initials.every((initial, index) => initial && initials.indexOf(initial) === index);
+  return distinct ? initials : names.map((_, index) => String(index + 1));
+}
+
 export interface TileInput {
   id: string;
   /** A suite run's label; ad-hoc recordings go by their title. */
