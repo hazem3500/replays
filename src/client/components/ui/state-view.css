@@ -62,15 +62,24 @@
 }
 .state-view-details {
   max-width: min(60ch, 100%);
-  display: grid;
-  justify-items: center;
+  color: var(--text-tertiary);
   font-size: var(--text-xs);
 }
-.state-view[data-layout="panel"] .state-view-details {
-  justify-items: start;
+/* The raw error's summary matches Disclosure (disclosure.tsx): a chevron that turns a quarter when open and nudges
+   on hover. why: drawn in CSS, as this view ships in the entry chunk, which does not carry the icon runtime. */
+.state-view-details > summary { display: inline-flex; align-items: center; min-height: 24px; border-radius: var(--radius-sm); list-style: none; cursor: pointer; }
+.state-view-details > summary::-webkit-details-marker { display: none; }
+.state-view-details > summary::before { content: ""; width: 5px; height: 5px; margin: 0 7px 0 3px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; rotate: -45deg; transition: rotate var(--motion) var(--ease-out), translate 220ms var(--ease-out); }
+.state-view-details[open] > summary::before { rotate: 45deg; }
+@media (hover: hover) {
+  .state-view-details > summary:hover { color: var(--text); }
+  .state-view-details:not([open]) > summary:hover::before { translate: 2px 0; }
 }
-.state-view-details pre {
-  margin: 2px 0 0;
+@media (prefers-reduced-motion: reduce) {
+  .state-view-details > summary::before { transition: none; }
+}
+.state-view-details > pre {
+  margin: 8px 0 0;
   padding: 8px 10px;
   overflow-x: auto;
   border: 1px solid var(--line);

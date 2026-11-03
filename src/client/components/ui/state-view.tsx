@@ -2,7 +2,6 @@ import { CircleDashedIcon, FileQuestionIcon, InboxIcon, type LucideIcon, Triangl
 import type { ReactNode } from 'react';
 
 import { Button, buttonVariants } from '@/components/ui/button.tsx';
-import { Disclosure } from '@/components/ui/disclosure.tsx';
 import { cn } from '@/lib/utils.ts';
 
 // oxlint-disable-next-line import/no-unassigned-import -- why: the state views' styles ship with the primitive.
@@ -112,9 +111,10 @@ export function StateView({
       {children}
       <StateActions actions={actions} />
       {details ? (
-        <Disclosure className="state-view-details" summary={STRINGS.details}>
+        <details className="state-view-details">
+          <summary>{STRINGS.details}</summary>
           <pre>{details}</pre>
-        </Disclosure>
+        </details>
       ) : null}
     </section>
   );

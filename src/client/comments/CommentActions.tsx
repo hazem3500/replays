@@ -1,7 +1,6 @@
-import { PencilIcon, ReplyIcon, Trash2Icon } from 'lucide-react';
+import { CheckIcon, EllipsisIcon, LinkIcon, PencilIcon, ReplyIcon, RotateCcwIcon, Trash2Icon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog.tsx';
 import { Drawer, DrawerClose, DrawerContent, DrawerTitle } from '@/components/ui/drawer.tsx';
@@ -39,12 +38,12 @@ export function HoverActions({ actions }: { actions: CommentActionSet }) {
       <DropdownMenu>
         <Hint label={commentStrings.more}>
           <DropdownMenuTrigger className="comment-more" aria-label={commentStrings.more} data-testid="comment-more">
-            <AnimatedIcon name="ellipsis" />
+            <EllipsisIcon aria-hidden="true" />
           </DropdownMenuTrigger>
         </Hint>
         <DropdownMenuContent side="bottom" align="end" className="comment-menu">
           <DropdownMenuItem onClick={actions.onCopyLink} data-testid="comment-copy-link">
-            <AnimatedIcon name="link" />
+            <LinkIcon aria-hidden="true" />
             {commentStrings.copyLink}
           </DropdownMenuItem>
           {actions.onEdit ? (
@@ -120,18 +119,13 @@ export function ActionSheet({
           ) : null}
           {actions.onResolve ? (
             <SheetRow
-              icon={<AnimatedIcon name={actions.resolved ? 'rotate-ccw' : 'check'} />}
+              icon={actions.resolved ? <RotateCcwIcon /> : <CheckIcon />}
               label={actions.resolved ? commentStrings.reopen : commentStrings.resolve}
               onSelect={actions.onResolve}
               testId="comment-sheet-resolve"
             />
           ) : null}
-          <SheetRow
-            icon={<AnimatedIcon name="link" />}
-            label={commentStrings.copyLink}
-            onSelect={actions.onCopyLink}
-            testId="comment-sheet-copy-link"
-          />
+          <SheetRow icon={<LinkIcon />} label={commentStrings.copyLink} onSelect={actions.onCopyLink} testId="comment-sheet-copy-link" />
           {actions.onEdit ? (
             <SheetRow icon={<PencilIcon />} label={commentStrings.edit} onSelect={actions.onEdit} testId="comment-sheet-edit" />
           ) : null}

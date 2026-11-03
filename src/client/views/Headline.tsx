@@ -1,4 +1,4 @@
-import { MessageSquarePlusIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, MessageSquarePlusIcon } from 'lucide-react';
 import { lazy, type ReactNode, Suspense, useContext } from 'react';
 
 import type { ReplayBundle } from '../../shared/replay.ts';
@@ -13,8 +13,6 @@ import { shortcutLabel } from '../shortcuts.ts';
 import { type InspectorTab, useViewer } from '../viewer/context.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the headline's styles load with its own lazy chunk, only for views that show one.
 import './headline.css';
-
-import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 export const HEADLINE_SLOT = 'viewer.headline';
 
@@ -73,12 +71,12 @@ function IssuesTile() {
       {first ? (
         <span className="headline-actions">
           <button type="button" className="headline-button" onClick={goToPreviousError} aria-keyshortcuts="Shift+E">
-            <AnimatedIcon name="chevron-left" />
+            <ChevronLeftIcon aria-hidden="true" />
             {STRINGS.previous}
           </button>
           <button type="button" className="headline-button" onClick={goToNextError} aria-keyshortcuts="E">
             {STRINGS.next}
-            <AnimatedIcon name="chevron-right" />
+            <ChevronRightIcon aria-hidden="true" />
             <kbd>{shortcutLabel('next-error')}</kbd>
           </button>
         </span>
