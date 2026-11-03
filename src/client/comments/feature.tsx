@@ -53,7 +53,6 @@ export function registerCommentsFeature(): Promise<void> {
     },
     ScrubberOverlay: CommentsScrubberOverlay,
   });
-  // why: the provider suspends the whole viewer on this chunk; loading it with the viewer's code keeps a page change from
-  // swapping a second skeleton in mid-flight.
+  // why: the provider suspends the viewer on this chunk; loaded with its code, no second skeleton swaps in mid-flight.
   return commentsEnabled() ? preloadCommentRows() : Promise.resolve();
 }

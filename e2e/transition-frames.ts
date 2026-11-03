@@ -43,23 +43,21 @@ export function recordTransitionFrames() {
   const root = document.documentElement;
   const pictureLayer = /^::view-transition-group\((vt-page-[^)]+)\)$/;
   const scalePattern = /scale\(([^,)]+)/;
-  const scaleOf = (transform: string | undefined) => Number(scalePattern.exec(transform ?? '')?.[1] ?? Number.NaN);
   const opacity = (pseudo: string) => {
     const running = document
       .getAnimations()
       .some((animation) => animation.effect instanceof KeyframeEffect && animation.effect.pseudoElement === pseudo);
     return running ? Number(getComputedStyle(root, pseudo).opacity) : undefined;
   };
-  const layer = (animation: Animation, name: string): LayerFrame => {
-    const pseudo = `::view-transition-group(${name})`;
-    const style = getComputedStyle(root, pseudo);
+  const layer = (animation: Animation, effect: KeyframeEffect, name: string): LayerFrame => {
+    const style = getComputedStyle(root, `::view-transition-group(${name})`);
     const matrix = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform);
-    const effect = animation.effect as KeyframeEffect;
     const progress = effect.getComputedTiming().progress ?? 0;
     const stops = effect
       .getKeyframes()
-      .filter((frame) => typeof frame.transform === 'string')
-      .map((frame) => ({ offset: frame.computedOffset, scale: scaleOf(frame.transform as string) }));
+      .flatMap(({ transform, computedOffset }) =>
+        typeof transform === 'string' ? [{ offset: computedOffset, scale: Number(scalePattern.exec(transform)?.[1] ?? Number.NaN) }] : [],
+      );
     // why: past the last stop a spring extrapolates along the final segment, as the browser does.
     const segment = stops.findIndex((stop, index) => index > 0 && (progress <= stop.offset || index === stops.length - 1));
     const [from, to] = [stops[segment - 1], stops[segment]];
@@ -86,9 +84,10 @@ export function recordTransitionFrames() {
   const layersNow = () => {
     const layers: LayerFrame[] = [];
     for (const animation of document.getAnimations()) {
-      const pseudo = animation.effect instanceof KeyframeEffect ? animation.effect.pseudoElement : null;
-      const name = pictureLayer.exec(pseudo ?? '')?.[1];
-      if (name && animation instanceof CSSAnimation && !layers.some((known) => known.name === name)) layers.push(layer(animation, name));
+      const effect = animation.effect;
+      const name = effect instanceof KeyframeEffect ? pictureLayer.exec(effect.pseudoElement ?? '')?.[1] : undefined;
+      if (!name || !(effect instanceof KeyframeEffect) || !(animation instanceof CSSAnimation)) continue;
+      if (!layers.some((known) => known.name === name)) layers.push(layer(animation, effect, name));
     }
     return layers;
   };

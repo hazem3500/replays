@@ -234,8 +234,7 @@ function geometry(morph: Morph, { lag, returning }: FlightShape) {
     const at = returning ? 1 - lag : lag;
     frames.push({ offset: at, transform: transformAt(morph, at, returning ? morph.after : morph.before) });
   }
-  // why: the spring overshoots past the last keyframe along its final segment; arriving at full size just before it
-  // keeps the bounce in the position alone, so neighbouring pictures never grow into each other as they settle.
+  // why: the spring overshoots along the final segment; full size before it keeps the bounce in the position alone.
   frames.push({ offset: SIZE_SETTLED, transform: transformAt(morph, SIZE_SETTLED, morph.after) });
   return frames.sort((a, b) => (a.offset ?? 0) - (b.offset ?? 0));
 }
@@ -282,7 +281,6 @@ export function createCompositorHero(element: Element | null | undefined, name =
       flying.set(name, read);
       return true;
     },
-    /** The canvas rectangles this hero flies between, once captured. */
     flight() {
       return morph ? { from: morph.before.rect, to: morph.after.rect } : undefined;
     },
