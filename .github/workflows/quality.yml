@@ -1,26 +1,22 @@
 name: Code quality
 
+# Pull requests only: the size ratchet compares against main, so a run on main itself measures nothing.
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
 
 concurrency:
-  group: quality-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: quality-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
+  # One install and one build shared by every audit. Each audit step still runs when an earlier one fails.
   audit:
-    name: Quality / ${{ matrix.tool }}
+    name: Quality audits
     runs-on: ubicloud-standard-2
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        tool: [knip, boundaries, package, size, dedupe, hooks, test]
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
@@ -33,14 +29,35 @@ jobs:
           node-version: 22.23.4
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
-      - if: matrix.tool == 'package' || matrix.tool == 'size'
-        uses: ./.github/actions/task-cache
+      - uses: ./.github/actions/task-cache
         with:
-          namespace: quality-${{ matrix.tool }}
-      - if: matrix.tool == 'package' || matrix.tool == 'size'
+          namespace: quality-audit
+      # Report-only wrappers retain findings/status; invalid JSON, crashes and build errors still fail.
+      # Tightening instructions and the initial inventory live in docs/quality-tooling.md.
+      - name: Quality / knip
+        run: pnpm quality:knip
+      - name: Quality / boundaries
+        if: ${{ !cancelled() }}
+        run: pnpm quality:boundaries
+      - name: Quality / dedupe
+        if: ${{ !cancelled() }}
+        run: pnpm quality:dedupe
+      - name: Quality / hooks
+        if: ${{ !cancelled() }}
+        run: pnpm quality:hooks
+      - name: Quality / test
+        if: ${{ !cancelled() }}
+        run: pnpm quality:test
+      - name: Build library and CLI
+        id: build
+        if: ${{ !cancelled() }}
         run: pnpm build && pnpm build:cli
+      - name: Quality / package
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: pnpm quality:package
       - name: Measure fresh main for the size diff
-        if: matrix.tool == 'size'
+        id: main-size
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
           git fetch origin main
           printf 'Head %s; main %s\n' "$GITHUB_SHA" "$(git rev-parse origin/main)" >> "$GITHUB_STEP_SUMMARY"
@@ -55,29 +72,25 @@ jobs:
           # Same esbuild options and main source; add only the chunk-membership metadata for stable names.
           REPLAYS_BUILD_ROOT="$PWD/../quality-main" node scripts/build-lib.mjs
           node scripts/quality-size.mjs --measure --root ../quality-main --output .review-artifacts/quality/main-bundle-sizes.json
-      - name: Check bundle ratchet and summarize deltas
-        if: matrix.tool == 'size'
+      - name: Quality / size (bundle ratchet and deltas)
+        if: ${{ !cancelled() && steps.main-size.outcome == 'success' }}
         env:
           BUNDLE_PR_URL: ${{ github.event.pull_request.html_url }}
         run: pnpm quality:size --baseline .review-artifacts/quality/main-bundle-sizes.json --baseline-budgets ../quality-main/budgets/bundle.json --check-ratchet
-      # Report-only wrappers retain findings/status; invalid JSON, crashes and build errors still fail.
-      # Tightening instructions and the initial inventory live in docs/quality-tooling.md.
-      - if: matrix.tool != 'size'
-        run: pnpm quality:${{ matrix.tool }}
       - name: Preserve full reports in job logs
-        if: always() && matrix.tool != 'hooks' && matrix.tool != 'test'
+        if: always()
         run: |
           for report in .review-artifacts/quality/*; do
             [ -f "$report" ] || continue
             printf '\nReport: %s\n' "$report"
             cat "$report"
           done
-      - if: always() && matrix.tool != 'hooks' && matrix.tool != 'test'
+      - if: always()
         uses: actions/upload-artifact@v4
         # Storage quota must not turn a successful audit into a failed check; logs above retain the evidence.
         continue-on-error: true
         with:
-          name: quality-${{ matrix.tool }}
+          name: quality-reports
           path: .review-artifacts/quality/
           if-no-files-found: ignore
           retention-days: 3

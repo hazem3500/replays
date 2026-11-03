@@ -4,8 +4,9 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Weekly drift check on unchanged main (dependencies, browsers, runner image).
   schedule:
-    - cron: '23 3 * * *'
+    - cron: '23 3 * * 1'
   workflow_dispatch:
 
 permissions:
@@ -13,7 +14,7 @@ permissions:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: 22.23.4
@@ -22,6 +23,7 @@ jobs:
   scope:
     name: Affected checks
     runs-on: ubicloud-standard-2
+    timeout-minutes: 5
     outputs:
       runtime: ${{ steps.scope.outputs.runtime }}
       storybook: ${{ steps.scope.outputs.storybook }}
@@ -36,9 +38,11 @@ jobs:
   lint:
     name: Lint and format
     runs-on: ubicloud-standard-2
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.3
@@ -51,6 +55,31 @@ jobs:
         run: pnpm exec vp --version
       - run: pnpm lint
       - run: pnpm format:check
+      # Lint debt ratchet: existing violations are baselined, added files must meet the final rules.
+      - run: pnpm build:cli
+      - run: pnpm lint:ratchet:test
+      - run: pnpm lint:ratchet
+      - run: pnpm typecheck:overrides
+      - name: Final rules for added files
+        if: github.event_name == 'pull_request'
+        env:
+          LINT_BASE_REF: ${{ github.event.pull_request.base.sha }}
+        run: pnpm lint:new-files
+      - name: Retain full lint diagnostics in logs
+        if: always()
+        run: |
+          for report in .review-artifacts/code-quality/lint-*.json; do
+            [ -f "$report" ] || continue
+            cat "$report"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        continue-on-error: true
+        with:
+          name: lint-reports
+          path: .review-artifacts/code-quality/lint-*.json
+          if-no-files-found: ignore
+          retention-days: 7
 
   typecheck:
     name: Typecheck
@@ -319,11 +348,60 @@ jobs:
           docker logs rk
           exit 1
 
+  postgres-tests:
+    needs: scope
+    if: needs.scope.outputs.runtime == 'true'
+    name: PostgreSQL tests
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17.6-alpine
+        env:
+          POSTGRES_PASSWORD: replays-test-only
+          POSTGRES_DB: replays_architecture
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm exec vp test run --config vitest.config.ts test/agent-native-runtime.test.ts test/agent-native-postgres.test.ts --maxWorkers=1
+        env:
+          REPLAYS_TEST_DATABASE_URL: postgresql://postgres:replays-test-only@127.0.0.1:55432/replays_architecture
+
+  postgres:
+    name: PostgreSQL identity and credentials
+    if: always()
+    needs: [scope, postgres-tests]
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 2
+    steps:
+      - env:
+          SCOPE: ${{ needs.scope.result }}
+          REQUIRED: ${{ needs.scope.outputs.runtime }}
+          TESTS: ${{ needs.postgres-tests.result }}
+        run: |
+          test "$SCOPE" = success
+          if [ "$REQUIRED" = true ]; then test "$TESTS" = success; else test "$TESTS" = skipped; fi
+
   unit:
     name: Unit tests and build
     if: always()
     needs: [scope, unit-tests, build]
     runs-on: ubicloud-standard-2
+    timeout-minutes: 2
     steps:
       - env:
           SCOPE: ${{ needs.scope.result }}
@@ -343,6 +421,7 @@ jobs:
     if: always()
     needs: [scope, lint, typecheck, unit-tests, build, e2e-shards, e2e-ssr, integration, distro, agent-integrations, docker]
     runs-on: ubicloud-standard-2
+    timeout-minutes: 2
     steps:
       - uses: actions/github-script@v7
         env:
