@@ -615,16 +615,6 @@
   },
   "allowances": [
     {
-      "file": "dist/lib/recorder-ui.mjs",
-      "cap": {
-        "raw": 27915,
-        "gzip": 7836,
-        "brotli": 6831
-      },
-      "reason": "Add cancellable recorder shell entrance/exit animations, reduced-motion handling and bounded exit cleanup. Same-toolchain main/head: raw 26222 to 27915 bytes, gzip 7435 to 7836 bytes, brotli 6487 to 6830 bytes. Headless core is unchanged.",
-      "pr": "https://github.com/hazem3500/replays/pull/202"
-    },
-    {
       "file": "dist/lib/recorder-kit.mjs",
       "cap": {
         "raw": 525,
@@ -685,16 +675,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
-      "file": "dist/lib/capture.mjs",
-      "cap": {
-        "raw": 1703,
-        "gzip": 513,
-        "brotli": 434
-      },
-      "reason": "The shared plugin validation module is bundled into this library entry after unifying plugin contracts.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
       "file": "dist/lib/chunks/icon-url.ts-6f5d8d7d6565.mjs",
       "cap": {
         "raw": 434,
@@ -712,16 +692,6 @@
         "brotli": 4342
       },
       "reason": "A shared library chunk now holds plugin contracts that several entries use after the extension platform unification.",
-      "pr": "https://github.com/hazem3500/replays/pull/96"
-    },
-    {
-      "file": "dist/lib/index.mjs",
-      "cap": {
-        "raw": 1588,
-        "gzip": 515,
-        "brotli": 440
-      },
-      "reason": "The main library entry re-exports the extension platform plugin contracts.",
       "pr": "https://github.com/hazem3500/replays/pull/96"
     },
     {
@@ -785,14 +755,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/104"
     },
     {
-      "file": "dist/lib/plugin.mjs",
-      "cap": {
-        "brotli": 250
-      },
-      "reason": "Brotli drift of one byte in the plugin entry after the source-provider types gained a mark.",
-      "pr": "https://github.com/hazem3500/replays/pull/106"
-    },
-    {
       "file": "dist/lib/chunks/summary-fields.ts-a8479d40f474.mjs",
       "cap": {
         "raw": 3950,
@@ -833,41 +795,11 @@
       "pr": "https://github.com/hazem3500/replays/pull/142"
     },
     {
-      "file": "initial/index.html/js",
-      "cap": {
-        "brotli": 435650,
-        "raw": 1688508,
-        "gzip": 529707
-      },
-      "reason": "The first page carries the editor loading state's top bar actions, transport row, ruler and clip lane (EditorSkeletonParts) and the cursor panel placeholder; measured against main: +8250 B raw, +2071 B gzip, +1374 B brotli. Replaces #78's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/142"
-    },
-    {
       "file": "dist/client/assets/comments-HASH.js",
       "cap": {
         "raw": 764,
         "gzip": 445,
         "brotli": 401
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/queries-HASH.js",
-      "cap": {
-        "raw": 14679,
-        "gzip": 4777,
-        "brotli": 4367
-      },
-      "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
-      "file": "dist/client/assets/sign-in-HASH.js",
-      "cap": {
-        "raw": 16749,
-        "gzip": 5942,
-        "brotli": 5420
       },
       "reason": "Chunk reshuffle under TanStack Router: Rolldown names shared chunks after their first module, so code main kept in its PluginUi, preload-helper and queryOptions chunks lands in these, and the comments feature (feature, comments) now loads with the viewer pages instead of the index entry.",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -905,9 +837,7 @@
     {
       "file": "initial/render.html/js",
       "cap": {
-        "raw": 557837,
-        "gzip": 174500,
-        "brotli": 137465
+        "raw": 557837
       },
       "reason": "The render page shares chunks with the app; with the router and the lazy viewer pages the shared code it preloads regroups (gzip +6 bytes, brotli +583 bytes measured in CI against fresh main).",
       "pr": "https://github.com/hazem3500/replays/pull/113"
@@ -963,16 +893,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/116"
     },
     {
-      "file": "dist/client/assets/ReplayComparePage-HASH.js",
-      "cap": {
-        "raw": 1022,
-        "gzip": 633,
-        "brotli": 585
-      },
-      "reason": "No source change: the compare page glue names lazy chunks by their hashes, and the main chunk's new hash compresses 11 B larger in brotli than main's cap (564 B against 553 B). Replaces #127's allowance, keeping its caps.",
-      "pr": "https://github.com/hazem3500/replays/pull/174"
-    },
-    {
       "file": "dist/client/assets/fetch-HASH.js",
       "cap": {
         "raw": 721,
@@ -980,26 +900,6 @@
         "brotli": 380
       },
       "reason": "api/fetch.ts reads the deployment through page-meta.ts, which a server render answers from the request (gzip 271 to 426). Replaces #113's entry.",
-      "pr": "https://github.com/hazem3500/replays/pull/156"
-    },
-    {
-      "file": "dist/lib/plugins-iap.mjs",
-      "cap": {
-        "raw": 4181,
-        "gzip": 1640,
-        "brotli": 1419
-      },
-      "reason": "The IAP plugin entry re-exports the server barrel, which now names the Start page renderer types (+34 B raw).",
-      "pr": "https://github.com/hazem3500/replays/pull/156"
-    },
-    {
-      "file": "dist/lib/server.mjs",
-      "cap": {
-        "raw": 1907,
-        "gzip": 616,
-        "brotli": 527
-      },
-      "reason": "The server entry reaches the lazily loaded Start page renderer (src/server/pages/start.ts) (+22 B raw). Replaces #131's entry.",
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
@@ -1016,8 +916,7 @@
       "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
       "cap": {
         "raw": 6769,
-        "gzip": 1902,
-        "brotli": 1711
+        "gzip": 1902
       },
       "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks. Measured in CI against fresh main dbc865e9: +158 B raw, +57 B gzip, +52 B brotli. Replaces #69's allowance for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/141"
@@ -1072,18 +971,9 @@
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
-      "file": "dist/lib/config.mjs",
-      "cap": {
-        "brotli": 145
-      },
-      "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
       "file": "initial/render.html/css",
       "cap": {
-        "raw": 6192,
-        "brotli": 2248
+        "raw": 6192
       },
       "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
       "pr": "https://github.com/hazem3500/replays/pull/175"
@@ -1147,19 +1037,8 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
-      "file": "dist/client/assets/Viewer-HASH.js",
-      "cap": {
-        "raw": 72471,
-        "gzip": 25851,
-        "brotli": 22462
-      },
-      "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
-        "raw": 665,
         "brotli": 429
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
@@ -1212,16 +1091,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
-      "file": "dist/client/assets/edits-HASH.js",
-      "cap": {
-        "raw": 27331,
-        "gzip": 9542,
-        "brotli": 8645
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "The edits chunk now holds edit-list, edit-timeline and edit-validation as separate modules; measured on Boat against main 888a8b3 caps: brotli 8552→8562 (+10 B). Replaces #113's allowance for this file."
-    },
-    {
       "file": "dist/client/assets/step-caption-HASH.js",
       "cap": {
         "raw": 887,
@@ -1235,8 +1104,7 @@
       "file": "dist/client/assets/ui-state-HASH.js",
       "cap": {
         "raw": 335,
-        "gzip": 256,
-        "brotli": 236
+        "gzip": 256
       },
       "pr": "https://github.com/hazem3500/replays/pull/176",
       "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 236 B."
@@ -1282,26 +1150,6 @@
       "reason": "Hash drift: its imported chunk names change because capture's human-bundle now imports mask-inputs (raw size unchanged); CI Quality / size against fresh main: brotli 1141. Replaces #78's allowance for this file."
     },
     {
-      "file": "dist/lib/chunks/bundle-io.ts-00964f435833.mjs",
-      "cap": {
-        "raw": 71586,
-        "gzip": 19749,
-        "brotli": 17037
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/192",
-      "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: gzip 19749, brotli 17037. Replaces #190's allowance for this file."
-    },
-    {
-      "file": "dist/lib/chunks/branding-collector.ts-23d124755c82.mjs",
-      "cap": {
-        "raw": 34150,
-        "gzip": 8710,
-        "brotli": 7602
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/192",
-      "reason": "Registry split into registry-types, order, registry-merge, registration-checks and branding-collector; the shared plugin chunk is renamed by its first source and bundle-io drifts by a byte; CI Quality / size against fresh main: raw 34150, gzip 8710, brotli 7602."
-    },
-    {
       "file": "dist/lib/recorder-chunks/attribute-classes.ts-694dbef451df.mjs",
       "cap": {
         "raw": 58729,
@@ -1315,7 +1163,6 @@
       "file": "dist/client/assets/comments-ui-HASH.js",
       "cap": {
         "raw": 32693,
-        "gzip": 11413,
         "brotli": 9909
       },
       "pr": "https://github.com/hazem3500/replays/pull/177",
@@ -1352,30 +1199,9 @@
       "pr": "https://github.com/hazem3500/replays/pull/177"
     },
     {
-      "file": "dist/client/assets/progress-HASH.js",
-      "cap": {
-        "raw": 9890,
-        "gzip": 4446
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/177"
-    },
-    {
-      "file": "dist/client/assets/useOpenInteractionType-HASH.js",
-      "cap": {
-        "raw": 93536,
-        "gzip": 31053,
-        "brotli": 27580
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/177"
-    },
-    {
       "file": "dist/client/assets/write-HASH.js",
       "cap": {
-        "raw": 334228,
-        "gzip": 97026,
-        "brotli": 84059
+        "raw": 334228
       },
       "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
       "pr": "https://github.com/hazem3500/replays/pull/177"
@@ -1389,14 +1215,6 @@
       },
       "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
       "pr": "https://github.com/hazem3500/replays/pull/177"
-    },
-    {
-      "file": "dist/client/assets/progress-HASH.js",
-      "cap": {
-        "brotli": 3919
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/177",
-      "reason": "Retained index chunk splitting and shared chunk compression measured in Linux CI against main."
     },
     {
       "file": "dist/client/assets/dropdown-menu-HASH.css",
@@ -1479,25 +1297,9 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/VitalsTile-HASH.js",
-      "cap": {
-        "gzip": 463
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/sliders-horizontal-HASH.js",
       "cap": {
         "raw": 464
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
-      "file": "dist/client/assets/sliders-horizontal-HASH.js",
-      "cap": {
-        "gzip": 263
       },
       "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
@@ -1559,24 +1361,6 @@
       "reason": "Phone comparison and integrated timeline shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.js",
-      "cap": {
-        "gzip": 14906
-      },
-      "reason": "Steps composition changes shared import references; no new feature code was added to this chunk. Measured main/head: gzip 14868 to 14874 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/200"
-    },
-    {
-      "file": "dist/client/assets/dropdown-menu-HASH.js",
-      "cap": {
-        "raw": 124205,
-        "gzip": 41650,
-        "brotli": 36106
-      },
-      "reason": "Steps composition changes shared import references; no new feature code was added to this chunk. Measured main/head: raw 124084 to 124141 bytes, gzip 41593 to 41618 bytes, brotli 36027 to 36074 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/200"
-    },
-    {
       "file": "dist/client/assets/Viewer-HASH.css",
       "cap": {
         "raw": 6324,
@@ -1587,42 +1371,12 @@
       "pr": "https://github.com/hazem3500/replays/pull/200"
     },
     {
-      "file": "dist/client/assets/ReplayIndex-HASH.js",
-      "cap": {
-        "raw": 214836,
-        "gzip": 71420,
-        "brotli": 60995
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/199",
-      "reason": "Measured stack choreography, delayed rear-layer transitions and leading suite posters: main/head raw 207979/208578, gzip 69089/69339, Brotli 58982/59218 bytes on Node 24.22.1. Three percent feature headroom."
-    },
-    {
       "file": "dist/client/assets/expired-query-HASH.js",
       "cap": {
-        "gzip": 1063,
-        "raw": 2132
+        "gzip": 1063
       },
       "pr": "https://github.com/hazem3500/replays/pull/199",
       "reason": "Touch-search stylesheet changes shared import hashes. Same-toolchain main/head: raw 2132/2132, gzip 1028/1031, Brotli 899/905 bytes. This unchanged source receives only a 32-byte gzip margin; existing raw and Brotli caps remain."
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 116689,
-        "gzip": 38976
-      },
-      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 116582 to 116625 bytes, gzip 38920 to 38944 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/201"
-    },
-    {
-      "file": "dist/client/assets/Headline-HASH.js",
-      "cap": {
-        "raw": 6118,
-        "gzip": 2701,
-        "brotli": 2469
-      },
-      "reason": "The title-motion split changes shared import references; this chunk's feature source is unchanged. Same-toolchain main/head: raw 5987 to 6054 bytes, gzip 2627 to 2669 bytes, brotli 2404 to 2437 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/201"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.css",
@@ -1632,16 +1386,6 @@
         "brotli": 8359
       },
       "reason": "Compact Vitals comparisons reveal peer deltas in an accessible popover rather than repeating every run under every metric. Same-toolchain main/head: raw 48437 to 49061 bytes, gzip 8956 to 9055 bytes, brotli 8029 to 8115 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/201"
-    },
-    {
-      "file": "dist/client/assets/Inspector-HASH.js",
-      "cap": {
-        "raw": 269257,
-        "gzip": 90540,
-        "brotli": 75434
-      },
-      "reason": "Compact Vitals comparisons reveal peer deltas in an accessible popover rather than repeating every run under every metric. Same-toolchain main/head: raw 259393 to 261414 bytes, gzip 87308 to 87902 bytes, brotli 72660 to 73236 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/201"
     },
     {
@@ -1714,16 +1458,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/201"
     },
     {
-      "file": "dist/client/index.html",
-      "cap": {
-        "raw": 13238,
-        "gzip": 4463,
-        "brotli": 3746
-      },
-      "reason": "Generated modulepreload links reflect the lazy title-motion boundary and extracted shared UI chunks. Same-toolchain main/head: raw 12681 to 12852 bytes, gzip 4292 to 4333 bytes, brotli 3586 to 3636 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/201"
-    },
-    {
       "file": "dist/client/assets/Avatar-HASH.js",
       "cap": {
         "raw": 1651,
@@ -1732,6 +1466,768 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/201",
       "reason": "Rebased comparison/title imports change hashes in this unchanged shared chunk. Fresh main/head: raw 1651/1651, gzip 919/919, Brotli 828/829 bytes. Preserve raw/gzip caps; allow a 32-byte Brotli compression margin."
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.js",
+      "cap": {
+        "raw": 91420,
+        "gzip": 29374,
+        "brotli": 26232
+      },
+      "reason": "Comparison tiles glide between grid, spotlight and single layouts with Motion layout projection, now bundled with the compare route. Reviewed and approved by Hazem. CI same-runner main/head: raw 42645 to 91420, gzip 14869 to 29374, brotli 13130 to 26232 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 120135,
+        "gzip": 39984,
+        "brotli": 33920
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 116625 to 120135, gzip 38941 to 39984, brotli 33083 to 33920 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/Headline-HASH.js",
+      "cap": {
+        "raw": 6521,
+        "gzip": 2898,
+        "brotli": 2613
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 6054 to 6521, gzip 2671 to 2898, brotli 2433 to 2613 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/HostSurface-HASH.js",
+      "cap": {
+        "raw": 1229,
+        "gzip": 683,
+        "brotli": 613
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1229, gzip new to 683, brotli new to 613 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/Inspector-HASH.js",
+      "cap": {
+        "raw": 282334,
+        "gzip": 95478,
+        "brotli": 79674
+      },
+      "reason": "Library and inspector surfaces gain bulk trash, individual replay deletion with named confirmation, data storage settings and the merged network timing view. Reviewed and approved by Hazem. CI same-runner main/head: raw 261414 to 282334, gzip 87904 to 95478, brotli 73154 to 79674 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/PluginUi-HASH.js",
+      "cap": {
+        "raw": 7129,
+        "gzip": 2828,
+        "brotli": 2525
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 7129, gzip new to 2828, brotli new to 2525 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/ReplayComparePage-HASH.js",
+      "cap": {
+        "raw": 988,
+        "gzip": 611,
+        "brotli": 562
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 956 to 988, gzip 595 to 611, brotli 548 to 562 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/ReplayIndex-HASH.js",
+      "cap": {
+        "raw": 229742,
+        "gzip": 76568,
+        "brotli": 64813
+      },
+      "reason": "Library and inspector surfaces gain bulk trash, individual replay deletion with named confirmation, data storage settings and the merged network timing view. Reviewed and approved by Hazem. CI same-runner main/head: raw 208643 to 229742, gzip 69348 to 76568, brotli 59218 to 64813 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/Viewer-HASH.js",
+      "cap": {
+        "raw": 72005,
+        "gzip": 25916,
+        "brotli": 22417
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 68430 to 72005, gzip 24572 to 25916, brotli 21335 to 22417 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/VitalsTile-HASH.js",
+      "cap": {
+        "raw": 670,
+        "gzip": 464
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 665 to 670, gzip 461 to 464 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/arrow-up-HASH.js",
+      "cap": {
+        "raw": 202,
+        "gzip": 186,
+        "brotli": 199
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 202, gzip new to 186, brotli new to 199 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/chevron-left-HASH.js",
+      "cap": {
+        "raw": 170,
+        "gzip": 170,
+        "brotli": 158
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 170, gzip new to 170, brotli new to 158 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/clamp-HASH.css",
+      "cap": {
+        "raw": 2421,
+        "gzip": 885,
+        "brotli": 728
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 2421, gzip new to 885, brotli new to 728 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/clamp-HASH.js",
+      "cap": {
+        "raw": 16626,
+        "gzip": 6210,
+        "brotli": 5515
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 16626, gzip new to 6210, brotli new to 5515 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/comments-ui-HASH.js",
+      "cap": {
+        "gzip": 11440
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: gzip 11241 to 11440 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/dialog-HASH.js",
+      "cap": {
+        "raw": 12694,
+        "gzip": 4464,
+        "brotli": 4020
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 12694, gzip new to 4464, brotli new to 4020 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/dropdown-menu-HASH.js",
+      "cap": {
+        "raw": 130263,
+        "gzip": 43338,
+        "brotli": 37419
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 87114 to 130263, gzip 28862 to 43338, brotli 24951 to 37419 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/edits-HASH.js",
+      "cap": {
+        "raw": 35747,
+        "gzip": 12793,
+        "brotli": 11508
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 26926 to 35747, gzip 9542 to 12793, brotli 8645 to 11508 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/elements-HASH.js",
+      "cap": {
+        "raw": 16979,
+        "gzip": 6269,
+        "brotli": 5748
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 16979, gzip new to 6269, brotli new to 5748 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/enabled-HASH.js",
+      "cap": {
+        "raw": 95,
+        "gzip": 112,
+        "brotli": 99
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 95, gzip new to 112, brotli new to 99 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/expired-query-HASH.js",
+      "cap": {
+        "raw": 2133
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 2132 to 2133 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/features-animation-HASH.js",
+      "cap": {
+        "raw": 14886,
+        "gzip": 5875,
+        "brotli": 5349
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 14886, gzip new to 5875, brotli new to 5349 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/index-queries-HASH.js",
+      "cap": {
+        "raw": 6607,
+        "gzip": 2668,
+        "brotli": 2450
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 6607, gzip new to 2668, brotli new to 2450 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/measure-HASH.js",
+      "cap": {
+        "raw": 29331,
+        "gzip": 11399,
+        "brotli": 10511
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 29331, gzip new to 11399, brotli new to 10511 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/microtask-HASH.js",
+      "cap": {
+        "raw": 5171,
+        "gzip": 2405,
+        "brotli": 2241
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 5171, gzip new to 2405, brotli new to 2241 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/motion-features-HASH.js",
+      "cap": {
+        "raw": 64,
+        "gzip": 78,
+        "brotli": 66
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 64, gzip new to 78, brotli new to 66 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/navigate-HASH.js",
+      "cap": {
+        "raw": 3743,
+        "gzip": 1716,
+        "brotli": 1509
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 3743, gzip new to 1716, brotli new to 1509 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/open-hint-HASH.css",
+      "cap": {
+        "raw": 20097,
+        "gzip": 4218,
+        "brotli": 3695
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 20097, gzip new to 4218, brotli new to 3695 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/open-hint-HASH.js",
+      "cap": {
+        "raw": 176887,
+        "gzip": 57593,
+        "brotli": 49370
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 176887, gzip new to 57593, brotli new to 49370 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/player-HASH.css",
+      "cap": {
+        "raw": 2811,
+        "gzip": 1221,
+        "brotli": 1049
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 1865 to 2811, gzip 917 to 1221, brotli 793 to 1049 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/plus-HASH.js",
+      "cap": {
+        "raw": 397,
+        "gzip": 265,
+        "brotli": 236
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 397, gzip new to 265, brotli new to 236 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/progress-HASH.js",
+      "cap": {
+        "raw": 26989,
+        "gzip": 10928,
+        "brotli": 9735
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 9882 to 26989, gzip 4435 to 10928, brotli 3908 to 9735 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/queries-HASH.js",
+      "cap": {
+        "raw": 15760,
+        "gzip": 5220,
+        "brotli": 4750
+      },
+      "reason": "Library and inspector surfaces gain bulk trash, individual replay deletion with named confirmation, data storage settings and the merged network timing view. Reviewed and approved by Hazem. CI same-runner main/head: raw 14179 to 15760, gzip 4615 to 5220, brotli 4216 to 4750 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 9061
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 9060 to 9061 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/sign-in-HASH.js",
+      "cap": {
+        "raw": 42596,
+        "gzip": 13211,
+        "brotli": 11996
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 16198 to 42596, gzip 5737 to 13211, brotli 5237 to 11996 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "gzip": 265
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: gzip 263 to 265 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/tiles-HASH.js",
+      "cap": {
+        "raw": 1262,
+        "gzip": 723,
+        "brotli": 664
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1262, gzip new to 723, brotli new to 664 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/toast-HASH.js",
+      "cap": {
+        "raw": 33776,
+        "gzip": 9445,
+        "brotli": 8373
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 33776, gzip new to 9445, brotli new to 8373 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/ui-state-HASH.js",
+      "cap": {
+        "brotli": 237
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: brotli 236 to 237 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/use-opacity-motion-HASH.js",
+      "cap": {
+        "raw": 566,
+        "gzip": 404,
+        "brotli": 351
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 566, gzip new to 404, brotli new to 351 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/use-replay-deletion-HASH.js",
+      "cap": {
+        "raw": 8683,
+        "gzip": 3870,
+        "brotli": 3404
+      },
+      "reason": "Library and inspector surfaces gain bulk trash, individual replay deletion with named confirmation, data storage settings and the merged network timing view. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 8683, gzip new to 3870, brotli new to 3404 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/useOpenInteractionType-HASH.js",
+      "cap": {
+        "raw": 100419,
+        "gzip": 33161,
+        "brotli": 29454
+      },
+      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 89670 to 100419, gzip 29735 to 33161, brotli 26436 to 29454 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/write-HASH.js",
+      "cap": {
+        "gzip": 97039,
+        "brotli": 84108
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: gzip 97026 to 97039, brotli 84059 to 84108 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/index.html",
+      "cap": {
+        "raw": 13796,
+        "gzip": 4499,
+        "brotli": 3774
+      },
+      "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: raw 12852 to 13796, gzip 4334 to 4499, brotli 3632 to 3774 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/capture.mjs",
+      "cap": {
+        "raw": 1821,
+        "gzip": 533,
+        "brotli": 451
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 1653 to 1821, gzip 497 to 533, brotli 426 to 451 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/branding-collector.ts-23d124755c82.mjs",
+      "cap": {
+        "raw": 34228,
+        "gzip": 8743,
+        "brotli": 7628
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 34150 to 34228, gzip 8710 to 8743, brotli 7602 to 7628 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/bundle-io.ts-00964f435833.mjs",
+      "cap": {
+        "raw": 71703,
+        "gzip": 19785,
+        "brotli": 17066
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 71586 to 71703, gzip 19747 to 19785, brotli 17035 to 17066 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs",
+      "cap": {
+        "raw": 66022,
+        "gzip": 19372,
+        "brotli": 16912
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 66022, gzip new to 19372, brotli new to 16912 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/capture-profile.ts-d4348e7cd2c7.mjs",
+      "cap": {
+        "raw": 19467,
+        "gzip": 5715,
+        "brotli": 5029
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 19467, gzip new to 5715, brotli new to 5029 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/context.schema.json-b408e55ea692.mjs",
+      "cap": {
+        "raw": 305849,
+        "gzip": 81068,
+        "brotli": 66284
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 305849, gzip new to 81068, brotli new to 66284 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/cursor.ts-71756c6087e0.mjs",
+      "cap": {
+        "raw": 6752,
+        "gzip": 2307,
+        "brotli": 2057
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 6752, gzip new to 2307, brotli new to 2057 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/define.ts-bc03e786e6ee.mjs",
+      "cap": {
+        "raw": 20190,
+        "gzip": 6283,
+        "brotli": 5533
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 20190, gzip new to 6283, brotli new to 5533 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/edit-list.ts-6c83b0ee7920.mjs",
+      "cap": {
+        "raw": 19882,
+        "gzip": 5726,
+        "brotli": 5081
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 19882, gzip new to 5726, brotli new to 5081 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/format.ts-3f5b35a2f3fe.mjs",
+      "cap": {
+        "raw": 8425,
+        "gzip": 2751,
+        "brotli": 2434
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 8425, gzip new to 2751, brotli new to 2434 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/har-bodies.ts-c61c0be17389.mjs",
+      "cap": {
+        "raw": 27544,
+        "gzip": 7888,
+        "brotli": 6983
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 27544, gzip new to 7888, brotli new to 6983 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/index.ts-ebea7ef2b856.mjs",
+      "cap": {
+        "raw": 33419,
+        "gzip": 9496,
+        "brotli": 8279
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 33419, gzip new to 9496, brotli new to 8279 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/network-bodies.ts-6ed8b11df7f0.mjs",
+      "cap": {
+        "raw": 4582,
+        "gzip": 1805,
+        "brotli": 1603
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 4582, gzip new to 1805, brotli new to 1603 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/redaction.ts-15d6d14c7f8f.mjs",
+      "cap": {
+        "raw": 7573,
+        "gzip": 2475,
+        "brotli": 2164
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 7573, gzip new to 2475, brotli new to 2164 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/render-variant.ts-7bba1dbd522e.mjs",
+      "cap": {
+        "raw": 1431,
+        "gzip": 683,
+        "brotli": 591
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1431, gzip new to 683, brotli new to 591 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/chunks/replay.ts-525b9ad69e40.mjs",
+      "cap": {
+        "raw": 9943,
+        "gzip": 3154,
+        "brotli": 2782
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 9943, gzip new to 3154, brotli new to 2782 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/config.mjs",
+      "cap": {
+        "raw": 451,
+        "gzip": 193,
+        "brotli": 161
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 337 to 451, gzip 164 to 193, brotli 129 to 161 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/index.mjs",
+      "cap": {
+        "raw": 1709,
+        "gzip": 535,
+        "brotli": 458
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 1541 to 1709, gzip 501 to 535, brotli 430 to 458 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/model.mjs",
+      "cap": {
+        "raw": 1067,
+        "gzip": 371,
+        "brotli": 331
+      },
+      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1067, gzip new to 371, brotli new to 331 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/plugin.mjs",
+      "cap": {
+        "raw": 827,
+        "gzip": 317,
+        "brotli": 268
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 743 to 827, gzip 296 to 317, brotli 248 to 268 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/plugins-gcs.mjs",
+      "cap": {
+        "raw": 13609
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 13343 to 13609 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/plugins-iap.mjs",
+      "cap": {
+        "raw": 4325,
+        "gzip": 1654,
+        "brotli": 1417
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 4059 to 4325, gzip 1591 to 1654, brotli 1374 to 1417 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/attribute-classes.ts-7ce204b477b8.mjs",
+      "cap": {
+        "raw": 63399,
+        "gzip": 17194,
+        "brotli": 15126
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 63399, gzip new to 17194, brotli new to 15126 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
+      "cap": {
+        "brotli": 1713
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: brotli 1711 to 1713 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/recorder-ui.mjs",
+      "cap": {
+        "raw": 30694,
+        "gzip": 8330,
+        "brotli": 7295
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 27915 to 30694, gzip 7836 to 8330, brotli 6830 to 7295 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/server.mjs",
+      "cap": {
+        "raw": 2117,
+        "gzip": 658,
+        "brotli": 551
+      },
+      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 1851 to 2117, gzip 597 to 658, brotli 501 to 551 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/viewer-HASH.css",
+      "cap": {
+        "raw": 3489,
+        "gzip": 1370,
+        "brotli": 1191
+      },
+      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 3489, gzip new to 1370, brotli new to 1191 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/viewer-HASH.mjs",
+      "cap": {
+        "raw": 343,
+        "gzip": 173,
+        "brotli": 138
+      },
+      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 343, gzip new to 173, brotli new to 138 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/viewer-diagnostics.mjs",
+      "cap": {
+        "raw": 359,
+        "gzip": 174,
+        "brotli": 141
+      },
+      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 359, gzip new to 174, brotli new to 141 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/viewer-react.css",
+      "cap": {
+        "raw": 4172,
+        "gzip": 1462,
+        "brotli": 1272
+      },
+      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 4172, gzip new to 1462, brotli new to 1272 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/lib/viewer-react.mjs",
+      "cap": {
+        "raw": 8861,
+        "gzip": 2565,
+        "brotli": 2267
+      },
+      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 8861, gzip new to 2565, brotli new to 2267 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "initial/index.html/js",
+      "cap": {
+        "raw": 971068,
+        "gzip": 321482,
+        "brotli": 282031
+      },
+      "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: raw 884678 to 971068, gzip 288913 to 321482, brotli 250597 to 282031 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "initial/render.html/css",
+      "cap": {
+        "gzip": 2734,
+        "brotli": 2266
+      },
+      "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: gzip 2598 to 2734, brotli 2182 to 2266 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "initial/render.html/js",
+      "cap": {
+        "gzip": 174687,
+        "brotli": 138194
+      },
+      "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: gzip 171202 to 174687, brotli 135115 to 138194 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
     }
   ]
 }
