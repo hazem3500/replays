@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 71
+      "brotli": 67
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -380,7 +380,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1191,
       "gzip": 711,
-      "brotli": 631
+      "brotli": 629
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
@@ -420,7 +420,7 @@
     "dist/client/assets/use-replay-deletion-HASH.js": {
       "raw": 8836,
       "gzip": 3940,
-      "brotli": 3452
+      "brotli": 3450
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
