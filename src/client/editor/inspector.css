@@ -52,11 +52,6 @@
   .editor-inspector[data-kind="replay"] .inspector-header { padding-bottom: 12px; }
   .editor-inspector[data-kind="replay"] .cursor-inspector { padding: 2px 12px; border-radius: 12px; background: color-mix(in srgb, var(--text) 4%, transparent); }
 
-  .cursor-inspector-title { display: grid; gap: 2px; min-width: 0; }
-  .cursor-inspector-title p { margin: 0; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 14px; }
-  .editor-presentation .cursor-inspector-header { align-items: flex-start; margin-bottom: 6px; }
-  .editor-presentation .cursor-inspector-header h2 { font-size: var(--text-sm); line-height: 20px; }
-  .editor-presentation .cursor-inspector-header > [data-slot="button"] { margin-right: -8px; }
 
   @media (prefers-reduced-motion: reduce) {
     .ui-segment { transition: none; }

@@ -24,9 +24,6 @@
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
   .editor-stage .player-stage:focus-visible { box-shadow: none; }
 
-  .editor-presentation-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--line); }
-  .editor-presentation-header h2 { margin: 0; font-size: var(--text-sm); font-weight: 600; }
-  .editor-presentation-header p { margin: 4px 0 0; color: var(--text-tertiary); font-size: var(--text-xs); }
 
   .editor-shell[data-mobile] .editor-dock { border-top: 1px solid var(--line); }
   /*
@@ -229,7 +226,6 @@
   .editor-shell.app-shell[data-mobile] .player-stage { min-height: 0; flex: 1; aspect-ratio: auto; max-height: none; }
   .editor-shell[data-mobile] .editor-export svg { display: none; }
   /* The setting wraps to its own line on a phone: no divider left dangling at the end of the tools. */
-  .editor-shell[data-mobile] .editor-setting-divider { display: none; }
   @media (pointer: coarse) {
     .tl-highlight-marker { --marker-size: 44px; width: 44px; height: 44px; }
     .tl-lane { min-height: 36px; }
@@ -267,13 +263,11 @@
   .editor-object-picker-item > time { flex: none; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 
   .editor-add-more > summary { border-radius: 6px; list-style: none; }
-  .editor-add-more .editor-mobile-menu { top: auto; bottom: calc(100% - 4px); right: 0; }
   /* invariant: the dock is the one scroller (60dvh); a second one here showed a stray scrollbar thumb when squeezed. */
   .editor-context-panel { grid-area: properties; min-width: 0; padding: 8px 4px 4px; border-top: 1px solid var(--line); }
   .editor-context-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
   .editor-context-panel h2 { margin: 0; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
   .editor-context-panel > p { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
-  .editor-shell[data-mobile] .editor-setting-divider { display: none; }
   .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; margin: 4px 10px 0; white-space: normal; font-size: var(--text-xs); }
   .editor-shell.app-shell[data-mobile] .editor-dock:has(.editor-operation-status) { grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; }
   .editor-shell[data-mobile] .editor-operation-status { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
