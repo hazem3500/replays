@@ -1,4 +1,3 @@
-import { Columns2Icon } from 'lucide-react';
 import type { CSSProperties, ReactNode } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
@@ -15,7 +14,6 @@ import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
  */
 const STRINGS = {
   untitled: 'Opening replay',
-  compare: 'Compare',
   shortcuts: 'Keyboard shortcuts',
   steps: 'Steps',
   stepCount: (count: number) => `1 of ${count}`,
@@ -24,8 +22,9 @@ const STRINGS = {
   comments: 'Comments',
 };
 
-/** Desktop's bar icons, in the viewer's order (Edit only where editing is on); phones keep Edit and More. */
-const DESKTOP_ICONS: readonly AnimatedIconName[] = ['info', 'link', 'download'];
+/** Desktop's bar icons, in the viewer's order (Edit only where editing is on); phones keep Edit and More. Details and
+ * the theme live in More (DesktopHeader.tsx), so the bar keeps exactly the places the viewer fills. */
+const DESKTOP_ICONS: readonly AnimatedIconName[] = ['link', 'download'];
 const ICON_BUTTON = cn(
   buttonVariants({ variant: 'ghost', size: 'icon' }),
   'text-[var(--text-tertiary)] [&_svg:not([class*=size-])]:size-4',
@@ -72,12 +71,7 @@ function LoadingActions({ mobile, compare }: { mobile: boolean; compare: boolean
           <span className="sk-layout-switch" />
           <InertButton className={ICON_BUTTON}>{null}</InertButton>
         </>
-      ) : (
-        <InertButton className={cn(buttonVariants({ variant: 'outline', size: 'sm' }), 'text-[var(--text-tertiary)]')}>
-          <Columns2Icon aria-hidden="true" />
-          {STRINGS.compare}
-        </InertButton>
-      )}
+      ) : null}
       {edit}
       {DESKTOP_ICONS.map((name) => (
         <InertIcon key={name} name={name} />
@@ -109,6 +103,7 @@ export function LoadingTopbar({
         compact={mobile}
         actions={<LoadingActions mobile={mobile} compare={compare} />}
         alwaysMenu
+        appearanceInMenu
         menuItems={mobile ? [] : WAITING_ITEMS}
       />
       {progress}

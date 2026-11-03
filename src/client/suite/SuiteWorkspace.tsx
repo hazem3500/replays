@@ -3,6 +3,8 @@ import { SignInError, SignInLink } from '../sign-in.tsx';
 import { readSplitterSize, Splitter } from '../components/ui/splitter.tsx';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
+import { sourceLook } from '../source-looks.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { FilmIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
 import { type KeyboardEvent, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
@@ -63,6 +65,12 @@ function workspaceRuns(suite: SuiteWithRuns | undefined): WorkspaceRun[] {
         ...(recording ? { duration: recording.duration } : {}),
       }));
   return orderedRuns(rows);
+}
+
+/** "GitHub · Faster checkout": the provider as it names itself (an id until a look names it), then the label. */
+function subjectText(subject: NonNullable<SuiteDetails['subject']>) {
+  const provider = sourceLook(subject.provider)?.label ?? subject.provider;
+  return subject.label ? `${provider} · ${subject.label}` : provider;
 }
 
 /** The suite's subject as a link (provider, address, label), when it names one. */
@@ -412,7 +420,7 @@ function SuiteSidebar({
   const list = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
   const subject = subjectLink(suite);
-  const subjectLabel = subject?.label ? `${subject.provider} · ${subject.label}` : subject?.provider;
+  const subjectLabel = subject && subjectText(subject);
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
   const recordedRuns = runs.filter((run) => playableReplayId(run, detailed));
   const names = shortNames(runs.map((run) => run.label));
@@ -462,7 +470,7 @@ function SuiteSidebar({
                 <span className={`status-dot tone-${overall.toLowerCase()}`} aria-hidden="true" />
                 {overall}
               </span>
-              <span className="suite-sidebar-count">{plural(runs.length, 'recording')}</span>
+              <span className="suite-sidebar-count">{plural(runs.length, 'run')}</span>
               <span className="suite-sidebar-duration" title="Total recording duration">
                 {formatClock(duration)} total
               </span>
@@ -477,7 +485,9 @@ function SuiteSidebar({
               <p className="suite-sidebar-meta suite-sidebar-subject" title={subjectLabel}>
                 {isHttps(subject.url) ? (
                   <a href={subject.url} target="_blank" rel="noopener noreferrer">
-                    {subjectLabel} ↗
+                    {subjectLabel}
+                    <span className="visually-hidden"> (opens in a new tab)</span>
+                    <AnimatedIcon name="arrow-up-right" className="suite-subject-arrow" />
                   </a>
                 ) : (
                   <span>{subjectLabel}</span>

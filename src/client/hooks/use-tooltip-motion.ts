@@ -37,6 +37,8 @@ interface GeometryOptions {
   keys: readonly string[];
   previous: Map<string, string>;
   instant: boolean;
+  /** A change may glide only while the tooltip is switching triggers; otherwise it is placed. */
+  hopping: boolean;
   running: Map<Element, ReturnType<typeof animate>>;
   cssVariables?: boolean;
 }
@@ -60,15 +62,25 @@ function geometryFrames(node: HTMLElement, { keys, previous, running, cssVariabl
 }
 
 function tooltipGeometry(node: HTMLElement, options: GeometryOptions) {
-  const { instant, running } = options;
+  const { instant, hopping, running } = options;
   const { frames, targets } = geometryFrames(node, options);
-  if (Object.keys(frames).length === 0 && !instant) return;
+  const moved = Object.keys(frames).length > 0;
+  if (!moved && !instant) return;
   running.get(node)?.stop();
   running.delete(node);
   // invariant: stopping Motion commits its current values; restore Base UI's targets before observing more writes.
   for (const [key, target] of targets) if (node.style.getPropertyValue(key) !== target) node.style.setProperty(key, target);
-  if (instant || typeof node.animate !== 'function' || Object.keys(frames).length === 0) return;
+  if (instant || !hopping || typeof node.animate !== 'function' || !moved) return;
   running.set(node, animate([node], frames, { duration: 0.18, ease: [0.23, 1, 0.32, 1] }));
+}
+
+/**
+ * invariant: an opening tooltip is placed, never flown in. Base UI writes a provisional corner position before it
+ * measures the trigger, at a time that depends on the machine; only a switch between triggers shows an outgoing label,
+ * so only that switch may glide.
+ */
+function switchingTriggers(root: HTMLElement) {
+  return Boolean(root.querySelector('.tip-morph-viewport > [data-previous]'));
 }
 
 /** Neighbouring tooltip geometry and retained labels share a cancellable Motion timeline; keyboard hops remain immediate. */
@@ -93,8 +105,10 @@ export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) 
         Boolean(popup?.hasAttribute('data-instant')) ||
         !root.hasAttribute('data-open') ||
         matchMedia('(prefers-reduced-motion: reduce)').matches;
-      tooltipGeometry(root, { keys: ['top', 'left', 'right', 'bottom'], previous: positions, instant, running });
-      if (popup) tooltipGeometry(popup, { keys: ['width', 'height'], previous: dimensions, instant, running, cssVariables: true });
+      const hopping = switchingTriggers(root);
+      const geometry = { instant, hopping, running };
+      tooltipGeometry(root, { keys: ['top', 'left', 'right', 'bottom'], previous: positions, ...geometry });
+      if (popup) tooltipGeometry(popup, { keys: ['width', 'height'], previous: dimensions, ...geometry, cssVariables: true });
       tooltipLabels(root, instant, labels, running);
     };
     update();

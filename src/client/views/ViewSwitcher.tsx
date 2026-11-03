@@ -114,6 +114,7 @@ export function ViewMenuItems({ showReset = true, ...choice }: ViewChoice & { sh
   return (
     <DropdownMenuSub open={open} onOpenChange={setOpen}>
       <DropdownMenuSubTrigger aria-label={STRINGS.trigger(label)} data-testid="view-submenu-trigger">
+        <AnimatedIcon name="panels-top-left" />
         {STRINGS.group}
         <span className="ml-auto text-[var(--text-tertiary)]" aria-hidden="true">
           {label}

@@ -1,6 +1,7 @@
-import { CheckIcon, CopyIcon, PlusIcon } from 'lucide-react';
+import { PlusIcon } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { EmptyState } from '@/components/ui/empty-state.tsx';
 import { Input } from '@/components/ui/input.tsx';
@@ -239,7 +240,8 @@ export function AgentCredentials() {
                     void copy();
                   }}
                 >
-                  {copied ? <CheckIcon aria-hidden="true" /> : <CopyIcon aria-hidden="true" />}Copy credential
+                  <AnimatedIcon name={copied ? 'check' : 'copy'} />
+                  Copy credential
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setSecret(undefined)}>
                   I’ve saved it

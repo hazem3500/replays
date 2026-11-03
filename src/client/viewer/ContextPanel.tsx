@@ -161,9 +161,10 @@ function SourceRow({ source }: { source: ReplaySourceRef }) {
   );
 }
 
-/** What the source is (the provider's noun, else its id), then its attributes' values; the keys are in the tooltip. */
+/** What the source is (the provider's noun, else its name, else its id), then its attributes' values; the keys are in the tooltip. */
 function SourceMeta({ source }: { source: ReplaySourceRef }) {
-  const what = sourceLook(source.provider)?.noun ?? source.provider;
+  const look = sourceLook(source.provider);
+  const what = look?.noun ?? look?.label ?? source.provider;
   const attrs = Object.entries(source.attrs ?? {});
   const text = [what, ...attrs.map(([, value]) => String(value))].join(' · ');
   return (

@@ -223,7 +223,7 @@ test('context sources, build and test details are listed, and only https URLs ar
   await expect(sources.getByRole('link')).toHaveCount(2);
   await expect(sources.getByRole('link', { name: /^Example ticket/ })).toHaveAttribute('href', 'https://example.com/tickets/DEMO-1');
   await expect(sources.getByRole('link', { name: /^Example ticket/ })).toHaveAttribute('rel', 'noopener noreferrer');
-  await expect(sources).toContainText('github');
+  await expect(sources).toContainText('GitHub');
   await expect(panel.getByRole('region', { name: 'Build' })).toContainText('0.1.0');
   await expect(panel.getByRole('region', { name: 'Test' })).toContainText('rejects an unknown coupon');
 });

@@ -1,7 +1,7 @@
-import { ArrowUpRightIcon, CheckIcon, CopyIcon } from 'lucide-react';
 import { createContext, type CSSProperties, useContext, useState } from 'react';
 
 import { isPersonMe, type PersonIdentity, type ReplayPersonSummary } from '../../shared/people.ts';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
 import { cn } from '@/lib/utils.ts';
 
@@ -78,7 +78,7 @@ function CopyEmail({ email }: { email: string }) {
         })
       }
     >
-      {copied ? <CheckIcon aria-hidden="true" /> : <CopyIcon aria-hidden="true" />}
+      <AnimatedIcon name={copied ? 'check' : 'copy'} />
     </button>
   );
 }
@@ -107,7 +107,7 @@ function PersonDetails({ person, compact = false }: { person: ReplayPersonSummar
             {profile ? (
               <a className="person-link" href={profile} target="_blank" rel="noreferrer">
                 Profile
-                <ArrowUpRightIcon aria-hidden="true" />
+                <AnimatedIcon name="arrow-up-right" />
                 <span className="visually-hidden"> of {personName(person)} (opens in a new tab)</span>
               </a>
             ) : null}

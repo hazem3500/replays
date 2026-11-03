@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { expect, fn, userEvent, within } from 'storybook/test';
+import { Disclosure } from '../../src/client/components/ui/disclosure.tsx';
 import { EmptyState } from '../../src/client/components/ui/empty-state.tsx';
 import { Progress, ProgressLabel, ProgressValue } from '../../src/client/components/ui/progress.tsx';
 
@@ -88,4 +89,19 @@ export const UploadProgress: Story = {
       ))}
     </div>
   ),
+};
+
+export const FoldedDetails: Story = {
+  render: () => (
+    <Disclosure summary="Advanced: agent credentials">
+      <p>Credentials let a coding agent upload replays without signing in.</p>
+    </Disclosure>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = canvas.getByText(/^Credentials let/);
+    await expect(body).not.toBeVisible();
+    await userEvent.click(canvas.getByText('Advanced: agent credentials'));
+    await expect(body).toBeVisible();
+  },
 };

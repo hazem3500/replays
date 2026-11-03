@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 
+import { Disclosure } from '@/components/ui/disclosure.tsx';
+
 import { AgentCredentials } from './AgentCredentials.tsx';
 import { CommandField } from './CommandField.tsx';
 import { configQuery } from '../queries.ts';
@@ -87,11 +89,10 @@ export function CliSection() {
           hint={mode === 'managed' ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther) : UPLOAD_HINTS[mode]}
         />
       </SettingsGroup>
-      <details className="settings-group settings-credentials">
-        <summary className="settings-group-title">{strings.cli.agentsAdvanced}</summary>
+      <Disclosure className="settings-group settings-credentials" summary={strings.cli.agentsAdvanced}>
         <AgentCredentials />
         <p className="settings-group-footer">{strings.cli.agentsHint}</p>
-      </details>
+      </Disclosure>
       <nav className="settings-links" aria-label={strings.sections.cli}>
         <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.cliGuide}</ExternalLink>
         <ExternalLink href={SETTINGS_LINKS.auth}>{strings.cli.authGuide}</ExternalLink>

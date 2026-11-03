@@ -1,0 +1,49 @@
+/* Disclosure (disclosure.tsx): a tertiary-text summary whose chevron turns a quarter, and the panel it reveals. */
+.ui-disclosure-trigger {
+  width: fit-content;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: -2px;
+  padding-right: 4px;
+  border-radius: var(--radius-sm);
+  color: var(--text-tertiary);
+  list-style: none;
+  cursor: pointer;
+  transition: color var(--motion-press) var(--ease-out);
+}
+.ui-disclosure-trigger::-webkit-details-marker {
+  display: none;
+}
+.ui-disclosure-trigger:focus-visible,
+.ui-disclosure[open] > .ui-disclosure-trigger {
+  color: var(--text-secondary);
+}
+@media (hover: hover) {
+  .ui-disclosure-trigger:hover {
+    color: var(--text);
+  }
+}
+.ui-disclosure-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  transition: rotate var(--motion) var(--ease-out);
+}
+.ui-disclosure[open] > .ui-disclosure-trigger > .ui-disclosure-chevron {
+  rotate: 90deg;
+}
+.ui-disclosure-panel {
+  padding-top: 6px;
+}
+@media (pointer: coarse) {
+  .ui-disclosure-trigger {
+    min-height: 40px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-disclosure-chevron {
+    transition: none;
+  }
+}

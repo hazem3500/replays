@@ -124,5 +124,5 @@ export const strings = {
     result: (trashed: number, protectedCount: number, failed: number) =>
       `${plural(trashed, 'replay')} moved to trash.${protectedCount ? ` ${protectedCount} kept.` : ''}${failed ? ` ${failed} could not be deleted. Try again.` : ''}`,
   },
-  external: '↗',
+  newTab: '(opens in a new tab)',
 } as const;

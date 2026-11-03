@@ -1,4 +1,4 @@
-import { ChevronDownIcon, SearchIcon, XIcon } from 'lucide-react';
+import { SearchIcon, XIcon } from 'lucide-react';
 import { type KeyboardEvent as ReactKeyboardEvent, useRef, useState } from 'react';
 
 import { formatClock } from '../../../shared/replay.ts';
@@ -9,6 +9,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
+
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type NetworkFilter, REQUEST_TYPES, type RequestType, type StatusFilter } from './model.ts';
 
 const STATUS_CHIPS: ReadonlyArray<{ id: StatusFilter; label: string }> = [
@@ -196,7 +198,7 @@ function TypeMenu({
         onKeyDown={keepKeys}
       >
         {TYPE_LABELS[value]}
-        <ChevronDownIcon aria-hidden="true" />
+        <AnimatedIcon name="chevron-down" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-auto min-w-44">
         <DropdownMenuRadioGroup value={value} onValueChange={(next: string) => onChange(isTypeFilter(next) ? next : 'all')}>

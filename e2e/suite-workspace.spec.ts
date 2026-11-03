@@ -217,7 +217,7 @@ test('the redesigned sidebar keeps full suite headings and readable run identiti
   const heading = sidebar.getByRole('heading', { name: `Review ${suite}` });
   expect(await heading.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
   await expect(sidebar.locator('.run-label')).toHaveText(['Before', 'After']);
-  await expect(sidebar.locator('.suite-sidebar-overview')).toContainText('2 recordings');
+  await expect(sidebar.locator('.suite-sidebar-overview')).toContainText('2 runs');
   expect(
     await sidebar.locator('.suite-sidebar-overview').evaluate((element) => element.scrollWidth - element.clientWidth),
   ).toBeLessThanOrEqual(1);

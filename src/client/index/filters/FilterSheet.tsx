@@ -1,4 +1,4 @@
-import { CheckIcon, ChevronLeftIcon } from 'lucide-react';
+import { CheckIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
@@ -18,7 +18,7 @@ function ChoicePanel({ choice, onBack }: { choice: Choice; onBack: (chose: boole
     <>
       <SurfaceMotion open kind="pane" className="filter-menu-head filter-panel-head filter-pane">
         <button type="button" className="filter-back" aria-label={filterStrings.back} onClick={() => onBack(false)}>
-          <ChevronLeftIcon aria-hidden="true" />
+          <AnimatedIcon name="chevron-left" />
         </button>
         {/* why: the sheet keeps its name ("Filters"); the panel's own heading says which filter. */}
         <DrawerTitle className="visually-hidden">{filterStrings.filters}</DrawerTitle>

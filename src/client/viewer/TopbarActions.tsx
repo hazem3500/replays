@@ -1,4 +1,4 @@
-import { Clock3Icon, LayersIcon, LinkIcon, ListOrderedIcon } from 'lucide-react';
+import { Clock3Icon, LayersIcon, ListOrderedIcon } from 'lucide-react';
 import { type ReactNode, type RefObject, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
@@ -99,7 +99,7 @@ export function copyLinkItems(player: Playback, steps: readonly ReplayStep[], su
   return [
     {
       label: STRINGS.copyLink,
-      icon: <LinkIcon aria-hidden="true" />,
+      icon: <AnimatedIcon name="link" />,
       onSelect: () => void copy(plainLink(), STRINGS.link),
       testId: 'copy-link',
     },

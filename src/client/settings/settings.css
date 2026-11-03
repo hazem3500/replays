@@ -157,7 +157,7 @@
 
 .settings-link { color: var(--accent); text-decoration: none; text-underline-offset: 3px; }
 .settings-link:hover { text-decoration: underline; }
-.settings-link-arrow { margin-left: 3px; }
+.settings-link-arrow { width: 12px; height: 12px; margin-left: 2px; vertical-align: -1px; }
 .settings-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: 2px; box-shadow: none; }
 .settings-links { display: flex; flex-wrap: wrap; gap: 4px 20px; margin-top: 24px; font-size: var(--settings-label-size); }
 .settings-links .settings-link { display: inline-flex; align-items: center; min-height: 32px; }

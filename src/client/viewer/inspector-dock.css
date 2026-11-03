@@ -55,6 +55,5 @@
 .not-captured-how p { margin: 0; }
 .not-captured-snippet { max-width: 100%; display: inline-flex; align-items: center; gap: 4px; padding: 2px 2px 2px 8px; border-radius: var(--radius-sm); background: var(--surface-raised); }
 .not-captured-snippet code { min-width: 0; overflow-x: auto; color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); white-space: nowrap; }
-.not-captured-cli { display: grid; gap: 6px; }
-.not-captured-cli > summary { width: fit-content; color: var(--text); cursor: pointer; border-radius: var(--radius-sm); }
-.not-captured-cli > summary:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.not-captured-cli .ui-disclosure-trigger { color: var(--text); }
+.not-captured-cli-panel { display: grid; justify-items: start; gap: 6px; }

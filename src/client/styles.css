@@ -516,6 +516,18 @@ svg.lucide.lucide { stroke-width: 2; }
    gutter's, so it reads as one band. */
 .table-scroll, .timeline, .suite-run-list { scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--line-strong) 80%, transparent) transparent; }
 .table-scroll:hover, .timeline:hover, .suite-run-list:hover { scrollbar-color: var(--text-tertiary) transparent; }
+/* Step and run lists fade at an edge with more rows past it, so a row cut by the panel's edge reads as "scroll for
+   more" rather than as a clipped row. A scroll timeline drives it: a list that fits has no timeline and no fade. */
+@property --list-fade-top { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@property --list-fade-bottom { syntax: "<length>"; inherits: false; initial-value: 0px; }
+@keyframes list-fade { 0% { --list-fade-top: 0px; --list-fade-bottom: 24px; } 6% { --list-fade-top: 24px; } 94% { --list-fade-bottom: 24px; } 100% { --list-fade-top: 24px; --list-fade-bottom: 0px; } }
+@supports (animation-timeline: scroll()) {
+  .timeline-wrap > .timeline, .suite-run-list {
+    mask-image: linear-gradient(to bottom, transparent, #000 var(--list-fade-top), #000 calc(100% - var(--list-fade-bottom)), transparent);
+    animation: list-fade linear both;
+    animation-timeline: scroll(self block);
+  }
+}
 .diagnostic-table th:last-child, .diagnostic-table td:last-child { padding-right: 14px; }
 /* Console / Network / Performance: every entry listed; upcoming ones faded (tertiary ink, softened marks) so the
    rows keep their height and hit areas; a "now" divider marks the playhead. Text stays ≥ 4.5:1 (axe). */
@@ -735,6 +747,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .suite-sidebar-duration { margin-left: auto; }
 .suite-sidebar-subject { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suite-sidebar-meta a { color: var(--text-secondary); text-decoration: none; }
+.suite-subject-arrow { width: 11px; height: 11px; margin-left: 2px; vertical-align: -1px; }
 .suite-kept { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
 .suite-kept svg { width: 12px; height: 12px; }
 .sha-button { padding: 0 3px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); cursor: copy; }

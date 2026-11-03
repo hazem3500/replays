@@ -66,25 +66,7 @@
 .first-run-command { min-width: 0; margin: 0; }
 .first-run-command pre { white-space: pre; }
 
-.first-run-more { margin-top: -2px; }
-.first-run-more-trigger {
-  min-height: 28px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin: 0;
-  padding: 0 4px 0 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-tertiary);
-  font: inherit;
-  font-size: var(--text-xs);
-  cursor: pointer;
-  transition: color 100ms ease;
-}
-.first-run-more-trigger svg { width: 14px; height: 14px; }
-.first-run-more-panel { padding-top: 6px; }
+.first-run-more { margin-top: -2px; font-size: var(--text-xs); }
 
 .first-run-link {
   width: fit-content;
@@ -106,15 +88,12 @@
 .first-run-profiles strong { color: var(--text); font-weight: 600; }
 .first-run-profiles span { color: var(--text-tertiary); }
 
-.first-run-more-trigger:focus-visible,
 .first-run-link:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
 @media (hover: hover) and (pointer: fine) {
-  .first-run-more-trigger:hover { color: var(--text); }
   .first-run-link:hover { text-decoration: underline; text-underline-offset: 3px; }
 }
 @media (max-width: 720px) {
   .first-run { margin-top: 24px; }
   .first-run-ways { grid-template-columns: minmax(0, 1fr); }
   .first-run-drop-button.button { min-height: 44px; }
-  .first-run-more-trigger { min-height: 44px; }
 }

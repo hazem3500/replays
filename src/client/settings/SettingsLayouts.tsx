@@ -1,5 +1,6 @@
-import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react';
+import { XIcon } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 
 import { DialogClose, DialogTitle } from '@/components/ui/dialog.tsx';
@@ -132,7 +133,7 @@ export function StackedList({
             >
               <Icon className="settings-nav-icon" aria-hidden="true" />
               <span className="settings-nav-label">{candidate.label}</span>
-              <ChevronRightIcon className="settings-nav-chevron" aria-hidden="true" />
+              <AnimatedIcon name="chevron-right" className="settings-nav-chevron" />
             </button>
           );
         })}
@@ -147,7 +148,7 @@ export function StackedSection({ current, onBack }: { current: SettingsSectionDe
     <>
       <header className="settings-header">
         <button type="button" className="settings-back" aria-label={strings.backLabel} onClick={(event) => onBack(event.detail === 0)}>
-          <ChevronLeftIcon aria-hidden="true" />
+          <AnimatedIcon name="chevron-left" />
           <span>{strings.back}</span>
         </button>
         <DialogTitle className="sr-only">{strings.title}</DialogTitle>

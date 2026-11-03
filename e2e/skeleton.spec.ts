@@ -83,8 +83,9 @@ test('under reduced motion loading is static: the viewer’s parts wait without 
   const block = page.locator('main.skeleton-shell');
   await expect(block).toBeAttached();
   await expect(block.getByRole('status')).toHaveText('Loading replay…');
-  // why: the bar's controls are the viewer's own, disabled until it is there, never live fakes.
-  await expect(block.locator('header button:not(:disabled)')).toHaveCount(2);
+  // why: the bar's controls are the viewer's own, disabled until it is there, never live fakes; More stays live for the theme.
+  await expect(block.locator('header button:not(:disabled)')).toHaveCount(1);
+  await expect(block.getByRole('button', { name: 'More actions' })).toBeEnabled();
   const animations = await block.evaluate(
     (element) => element.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running').length,
   );

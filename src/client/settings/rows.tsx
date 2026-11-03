@@ -1,5 +1,7 @@
 import { type KeyboardEvent, type ReactNode, useId, useRef } from 'react';
 
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+
 import { strings } from './strings.ts';
 
 export function SettingsGroup({ title, children, footer }: { title?: string; children: ReactNode; footer?: ReactNode }) {
@@ -49,9 +51,8 @@ export function ExternalLink({ href, children }: { href: string; children: React
   return (
     <a className="settings-link" href={href} target="_blank" rel="noreferrer">
       {children}
-      <span className="settings-link-arrow" aria-hidden="true">
-        {strings.external}
-      </span>
+      <span className="visually-hidden"> {strings.newTab}</span>
+      <AnimatedIcon name="arrow-up-right" className="settings-link-arrow" />
     </a>
   );
 }
