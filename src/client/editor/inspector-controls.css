@@ -1,0 +1,46 @@
+/*
+ * The controls inside inspector sections (EffectSettings.tsx, InspectorParts.tsx): the zoom slider and its quick
+ * marks and the footer action, then the phone sizes of every inspector control (44 px targets, 16 px
+ * inputs so the page never zooms). Loaded with the editor, not the loading skeleton, which draws none of them.
+ */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
+@layer app {
+  /* The zoom slider: a roomier thumb than the cursor size slider, and its quick marks under the track. */
+  .inspector-slider .ui-slider-control { min-height: 20px; }
+  .inspector-slider .ui-slider-thumb { width: 16px; height: 16px; }
+  .inspector-marks { position: relative; height: 18px; margin-top: -6px; }
+  .inspector-mark { position: absolute; top: 0; translate: -50% 0; padding: 1px 5px; border: 0; border-radius: 4px; background: transparent; color: var(--text-tertiary); font: inherit; font-size: var(--text-2xs); line-height: 16px; font-variant-numeric: tabular-nums; cursor: pointer; transition: color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
+  .inspector-mark::before { content: ''; position: absolute; inset: -4px -2px; }
+  .inspector-mark:hover { background: var(--surface-hover); color: var(--text); }
+  .inspector-mark[aria-pressed="true"] { color: var(--text); font-weight: 600; }
+  .inspector-mark:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
+
+  /* The closing action: a full-width row whose icon and label line up with the labels above (negative inset). */
+  .inspector-footer { display: grid; gap: 4px; padding-top: 10px; border-top: 1px solid var(--line); }
+  .inspector-action.inspector-action { width: calc(100% + 20px); margin-inline: -10px; border-radius: 8px; font-weight: 500; }
+  .inspector-action[data-tone="neutral"] { color: var(--text-secondary); }
+  .inspector-action[data-tone="danger"] { color: var(--danger); }
+  @media (hover: hover) and (pointer: fine) {
+    .inspector-action[data-tone="neutral"]:hover { color: var(--text); }
+    .inspector-action[data-tone="danger"]:hover { background: var(--danger-soft); color: var(--danger); }
+  }
+  .inspector-action[data-tone="primary"].inspector-action { width: 100%; margin-inline: 0; }
+
+  /* Phone: the same panel in the sheet, sized for touch and readable without zooming. */
+  .editor-context-panel .inspector-body { font-size: var(--text-sm); line-height: 20px; }
+  .editor-context-panel .inspector-section:first-child { border-top: 0; padding-top: 4px; }
+  .editor-context-panel .inspector-hint { font-size: var(--text-xs); line-height: 16px; }
+  .editor-context-panel :is(.inspector-time, .inspector-input) { height: 44px; }
+  .editor-context-panel :is(.inspector-time input, .inspector-input, .inspector-textarea) { font-size: 16px; }
+  .editor-context-panel .ui-segment { min-height: 40px; }
+  .editor-context-panel .inspector-slider .ui-slider-control { min-height: 44px; }
+  .editor-context-panel .inspector-slider .ui-slider-thumb { width: 22px; height: 22px; }
+  .editor-context-panel .inspector-marks { height: 28px; margin-top: -10px; }
+  .editor-context-panel .inspector-mark { padding: 4px 8px; font-size: var(--text-xs); }
+  .editor-context-panel .inspector-action.inspector-action { height: 44px; font-size: var(--text-sm); }
+
+  @media (prefers-reduced-motion: reduce) {
+    .inspector-mark { transition: none; }
+  }
+}

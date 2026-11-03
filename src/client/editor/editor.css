@@ -7,6 +7,7 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @import './phone-editor.css';
+@import './inspector-controls.css';
 @layer app {
 
   /* Top bar: a quiet save state by the title, undo/redo, View replay and Export. */
