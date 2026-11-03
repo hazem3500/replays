@@ -85,16 +85,15 @@
   .tl-outside-label { color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
   @container (max-width: 72px) { .tl-outside-label { display: none; } }
   .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
-  .tl-clip:has(.tl-trim:is(:hover, :focus-visible)), .tl-clip[data-selected] { box-shadow: inset 0 0 0 1.5px var(--accent); }
-  .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  .tl-clip[data-selected] { background: color-mix(in srgb, var(--text) 7%, transparent); }
   /* The trim edges: slim tabs with a grip, light at rest and accent while held. */
   .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; transition: background-color var(--motion-fast) var(--ease-out); }
-  .tl-trim:hover, .tl-trim:focus-visible, .tl-clip[data-selected] .tl-trim { background: var(--accent); }
+  .tl-trim:hover, .tl-trim:focus-visible, .tl-clip[data-selected] .tl-trim { background: var(--text-secondary); }
   .tl-trim[data-edge="start"] { left: 0; border-radius: 8px 3px 3px 8px; }
   .tl-trim[data-edge="end"] { right: 0; border-radius: 3px 8px 8px 3px; }
   .tl-trim-grip { width: 2px; height: 12px; border-radius: 1px; background: var(--text-secondary); opacity: 0.8; }
-  .tl-trim:hover .tl-trim-grip, .tl-trim:focus-visible .tl-trim-grip, .tl-clip[data-selected] .tl-trim-grip { background: var(--accent-contrast); }
-  .tl-trim:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
+  .tl-trim:hover .tl-trim-grip, .tl-trim:focus-visible .tl-trim-grip, .tl-clip[data-selected] .tl-trim-grip { background: var(--surface); }
+  .tl-trim:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
   /* With no effects yet, the space under the clip offers them (EditorTools.tsx LaneInvitation). */
   .tl-invite { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0 calc(var(--gutter, 56px) + 4px); padding: 5px 6px 5px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--text-tertiary); font-size: var(--text-xs); }
   .tl-invite-text { margin-right: 6px; }
@@ -116,26 +115,30 @@
   .tl-region-edge { position: absolute; z-index: 1; top: -2px; bottom: -2px; width: 12px; cursor: ew-resize; touch-action: none; }
   .tl-region-edge[data-edge="from"] { left: -6px; }
   .tl-region-edge[data-edge="to"] { right: -6px; }
-  .tl-region-edge-mark { position: absolute; top: 25%; bottom: 25%; left: 5px; width: 2px; border-radius: 1px; background: var(--accent); opacity: 0; }
+  .tl-region-edge-mark { position: absolute; top: 25%; bottom: 25%; left: 5px; width: 2px; border-radius: 1px; background: var(--text-secondary); opacity: 0; }
   .tl-region:focus-within .tl-region-edge-mark, .tl-region[data-selected] .tl-region-edge-mark { opacity: 1; }
   @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge-mark { opacity: 1; } }
   /*
-   * Clips: a neutral soft fill with a thin stripe in their lane's colour along the top (--tint, by kind). Selected, a
-   * clip takes a wash of that colour, the accent ring and a shadow that lifts it over its neighbours, and its Remove
-   * bubble floats above it like the Cut bubble over a dragged range. Captions fade out at their end, not with "...".
+   * Clips say their kind with a quiet tinted fill (--tint at low alpha on the surface) and nothing else: no stripes,
+   * rings or glows. Selected, a clip rises to the neutral raised surface with full-strength text and a lift, and its
+   * Remove bubble floats above it like the Cut bubble over a dragged range. Captions fade at their end, not with "...".
    */
   .timeline { --tint-zoom: var(--accent); --tint-speed: var(--success); --tint-blur: var(--text-tertiary); --tint-caption: var(--warning); }
+  /* Selection rises to a neutral raised surface (lighter in dark, the white raised surface in light) with a lift. */
+  .editor-shell { --clip-raised: color-mix(in srgb, var(--text) 12%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
+  :root[data-theme="light"] .editor-shell { --clip-raised: var(--surface-raised); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
   .tl-region[data-kind="zoom"] { --tint: var(--tint-zoom); }
   .tl-region[data-kind="speed"] { --tint: var(--tint-speed); }
   .tl-region[data-kind="blur"] { --tint: var(--tint-blur); }
   .tl-region[data-kind="caption"] { --tint: var(--tint-caption); top: 7px; bottom: 7px; }
-  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 5px; background: var(--surface-raised); box-shadow: inset 0 2px 0 var(--tint), inset 0 0 0 1px var(--line); color: var(--text-secondary); font-weight: 500; }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 5px; background: color-mix(in srgb, var(--tint) 16%, var(--surface-raised)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
   @media (hover: hover) and (pointer: fine) {
-    .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body:hover { box-shadow: inset 0 2px 0 var(--tint), inset 0 0 0 1px var(--line-strong); color: var(--text); }
+    .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body:hover { background: color-mix(in srgb, var(--tint) 24%, var(--surface-raised)); box-shadow: none; color: var(--text); }
   }
   .tl-region[data-selected] { z-index: 4; }
-  .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: inset 0 0 0 1.5px var(--accent), 0 4px 12px rgb(0 0 0 / 0.22); color: var(--text); }
-  .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: color-mix(in srgb, var(--tint) 14%, var(--surface-raised)); box-shadow: inset 0 2px 0 var(--tint), inset 0 0 0 1.5px var(--accent), 0 4px 12px rgb(0 0 0 / 0.22); }
+  .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: var(--clip-lift); color: var(--text); }
+  .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: var(--clip-raised); }
+  .tl-region[data-kind="cut"][data-selected] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), var(--clip-raised); }
   .tl-region[data-kind="caption"] .tl-region-body { padding: 0 9px; justify-content: flex-start; }
   .tl-region[data-kind="caption"] .tl-region-label { text-overflow: clip; mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
@@ -143,10 +146,10 @@
   .tl-region-remove::before { content: ''; position: absolute; inset: -2px 0; }
   .tl-region-remove svg { display: block; flex: none; }
   .tl-region-remove:hover, .tl-region-remove:focus-visible { background: var(--surface-hover); color: var(--danger); }
-  .tl-region-remove:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .tl-region-remove:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .tl-region[data-selected] .tl-region-remove { opacity: 1; pointer-events: auto; }
   @media (prefers-reduced-motion: reduce) { .tl-region-remove { transition: none; } }
-  .tl-region[data-kind] .tl-region-body:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .tl-region[data-kind] .tl-region-body:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 
   /* The selected effect's setting, in the control row. */
 
@@ -174,31 +177,32 @@
 
   /* A dragged-out range, and its Cut pill. */
   /* Above the playhead, so its head never covers the Cut pill. */
-  .tl-range { position: absolute; z-index: 6; top: -2px; bottom: -2px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 70%, transparent); pointer-events: none; }
+  .tl-range { position: absolute; z-index: 6; top: -2px; bottom: -2px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; }
   .tl-range-cut { position: absolute; bottom: calc(100% + 6px); left: 50%; translate: -50% 0; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); font-weight: 600; white-space: nowrap; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); cursor: pointer; pointer-events: auto; }
   .tl-range-cut svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
   .tl-range-cut kbd { min-width: 0; padding: 0 4px; border: 0; background: var(--surface-hover); font-family: var(--sans); font-size: 10px; color: var(--text-secondary); }
   .tl-range-cut:hover { background: var(--surface-hover); }
 
-  /* "Remove waits" suggestions: dashed, waiting to be applied. */
-  .tl-suggestion { position: absolute; z-index: 2; top: 6px; bottom: 6px; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0 1.5px, transparent 1.5px 6px); box-shadow: inset 0 0 0 1px var(--accent); outline: 1px dashed transparent; opacity: 0.9; pointer-events: none; }
+  /* "Remove waits" suggestions: a hatched accent tint, waiting to be applied. */
+  .tl-suggestion { position: absolute; z-index: 2; top: 6px; bottom: 6px; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.9; pointer-events: none; }
 
   /* Highlight annotations mark the original edit timeline. They are navigation controls and sit above cut shading. */
   .tl-highlight { position: absolute; inset: 0; pointer-events: none; }
-  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); pointer-events: none; }
+  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); pointer-events: none; }
   .tl-highlight-grip { position: absolute; top: -4px; left: 6px; right: 6px; height: 12px; cursor: grab; pointer-events: auto; touch-action: none; }
-  .tl-highlight-grip::after { content: ''; position: absolute; top: 5px; left: 0; right: 0; height: 2px; border-radius: 1px; background: var(--accent); opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
+  .tl-highlight-grip::after { content: ''; position: absolute; top: 4px; left: 50%; width: 24px; height: 3px; translate: -50% 0; border-radius: 2px; background: var(--text-secondary); opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
   .tl-highlight[data-selected] .tl-highlight-grip::after { opacity: 0.6; }
   @media (hover: hover) and (pointer: fine) { .tl-highlight-grip:hover::after { opacity: 1; } }
   @media (prefers-reduced-motion: reduce) { .tl-highlight-grip::after { transition: none; } }
-  .tl-highlight[data-selected] .tl-highlight-band { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .tl-highlight[data-selected] .tl-highlight-band { background: color-mix(in srgb, var(--accent) 26%, transparent); }
   .tl-highlight-marker { position: absolute; z-index: 7; top: 50%; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: ew-resize; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
-  .tl-highlight-glyph { width: 10px; height: 10px; border: 2px solid var(--surface-raised); background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .tl-highlight-glyph { width: 10px; height: 10px; background: var(--accent); box-shadow: 0 1px 2px rgb(0 0 0 / 0.3); transition: scale var(--motion-fast) var(--ease-out); }
   .tl-highlight-marker[data-kind="point"] .tl-highlight-glyph { border-radius: 2px; rotate: 45deg; }
   .tl-highlight-marker[data-kind="period"] .tl-highlight-glyph { width: 9px; height: 9px; border-radius: 50%; }
   .tl-highlight-marker { transform: translate(calc(-50% + var(--target-offset, 0px)), -50%); }
   .tl-highlight-marker .tl-highlight-glyph { translate: calc(var(--target-offset, 0px) * -1) 0; }
-  .tl-highlight-marker[data-selected] .tl-highlight-glyph, .tl-highlight-marker:focus-visible .tl-highlight-glyph { box-shadow: 0 0 0 3px var(--accent-soft), 0 0 0 1px var(--accent); }
+  .tl-highlight-marker[data-selected] .tl-highlight-glyph { scale: 1.3; box-shadow: var(--clip-lift); }
+  @media (prefers-reduced-motion: reduce) { .tl-highlight-glyph { transition: none; } }
   .tl-highlight-marker:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
   .tl-highlight-label { position: absolute; bottom: calc(100% - 2px); left: 50%; max-width: 180px; overflow: hidden; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; transform: translateX(-50%); }
   @media (hover: hover) and (pointer: fine) {
@@ -273,7 +277,7 @@
   .editor-shell[data-mobile] .editor-operation-status { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
   .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
   .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
-  .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
   @media (max-height: 520px) and (min-width: 721px) {
     .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr) minmax(320px, 48%); grid-template-rows: auto minmax(0, 1fr); }

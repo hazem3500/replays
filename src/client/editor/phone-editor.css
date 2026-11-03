@@ -27,20 +27,22 @@
 
   .editor-shell[data-mobile] .phone-lanes button { min-width: 0; min-height: 0; }
   .phone-clip, .phone-cut, .phone-highlight, .phone-region { margin: 0; padding: 0; border: 0; font: inherit; cursor: pointer; }
-  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: var(--surface-raised); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-tertiary); text-align: left; }
-  .phone-clip[data-selected] { box-shadow: inset 0 0 0 2px var(--accent); }
+  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--text) 5%, var(--surface-raised)); box-shadow: inset 0 0 0 1px var(--line); color: var(--text-tertiary); text-align: left; }
+  .phone-clip[data-selected] { background: var(--clip-raised); box-shadow: var(--clip-lift); color: var(--text-secondary); }
   .phone-step { position: absolute; top: 0; bottom: 0; display: block; overflow: hidden; padding: 0 6px; line-height: 52px; border-left: 1px solid var(--line); font-size: 11px; white-space: nowrap; text-overflow: clip; mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
   .phone-step:first-child { border-left: 0; }
   .phone-trimmed { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 30%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.7; }
   .phone-cut { position: absolute; z-index: 2; top: 0; bottom: 0; border-radius: 4px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 55%, transparent) 0 1.5px, transparent 1.5px 6px), color-mix(in srgb, var(--canvas) 80%, transparent); }
-  .phone-cut[data-selected] { box-shadow: inset 0 0 0 2px var(--accent); }
-  .phone-highlight { position: absolute; z-index: 3; top: -5px; width: 10px; height: 10px; translate: -50% 0; rotate: 45deg; border-radius: 2px; background: var(--danger); }
-  .phone-highlight[data-kind="period"] { top: -5px; height: 5px; translate: 0 0; rotate: 0deg; border-radius: 3px; }
-  .phone-highlight[data-selected] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent); }
+  .phone-cut[data-selected] { box-shadow: var(--clip-lift); }
+  /* Highlights match the desktop clip lane: a point is a small accent diamond, a period a quiet accent tint over the clip. */
+  .phone-highlight { position: absolute; z-index: 3; top: -5px; width: 10px; height: 10px; translate: -50% 0; rotate: 45deg; border-radius: 2px; background: var(--accent); box-shadow: 0 1px 2px rgb(0 0 0 / 0.3); }
+  .phone-highlight[data-kind="period"] { top: 0; bottom: 0; height: auto; translate: 0 0; rotate: 0deg; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: none; }
+  .phone-highlight[data-kind="point"][data-selected] { scale: 1.3; box-shadow: var(--clip-lift); }
+  .phone-highlight[data-kind="period"][data-selected] { background: color-mix(in srgb, var(--accent) 26%, transparent); }
 
   .phone-region-slot { position: absolute; top: 0; bottom: 0; }
-  /* Clips match the desktop lanes: a neutral fill with a stripe in the lane's colour; selected, a wash, the ring and a lift. */
-  .phone-region { display: flex; align-items: center; width: 100%; height: 100%; overflow: hidden; padding: 0 7px; border-radius: 5px; background: var(--surface-raised); box-shadow: inset 0 2px 0 var(--lane, var(--text-tertiary)), inset 0 0 0 1px var(--line); color: var(--text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  /* Clips match the desktop lanes: a quiet fill tinted by kind; selected, the neutral raised surface, full text and a lift. */
+  .phone-region { display: flex; align-items: center; width: 100%; height: 100%; overflow: hidden; padding: 0 7px; border-radius: 5px; background: color-mix(in srgb, var(--lane, var(--text-tertiary)) 16%, var(--surface-raised)); color: var(--text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
   .phone-region > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .phone-region[data-kind="caption"] > span { text-overflow: clip; mask-image: linear-gradient(to right, #000 calc(100% - 14px), transparent); }
   .phone-region[data-kind="zoom"] { --lane: var(--accent); }
@@ -48,15 +50,15 @@
   .phone-region[data-kind="caption"] { --lane: var(--warning); font-weight: 500; }
   .phone-region[data-kind="speed"] { --lane: var(--success); }
   .phone-region-slot[data-selected] { z-index: 2; }
-  .phone-region-slot[data-selected] .phone-region { background: color-mix(in srgb, var(--lane, var(--text-tertiary)) 14%, var(--surface-raised)); box-shadow: inset 0 2px 0 var(--lane, var(--text-tertiary)), inset 0 0 0 2px var(--accent), 0 3px 10px rgb(0 0 0 / 0.22); color: var(--text); }
-  .phone-handle { position: absolute; z-index: 4; top: -3px; bottom: -3px; width: 10px; margin-left: -5px; border-radius: 3px; background: var(--accent); touch-action: none; cursor: ew-resize; }
+  .phone-region-slot[data-selected] .phone-region { background: var(--clip-raised); box-shadow: var(--clip-lift); color: var(--text); }
+  .phone-handle { position: absolute; z-index: 4; top: -3px; bottom: -3px; width: 10px; margin-left: -5px; border-radius: 3px; background: var(--text); touch-action: none; cursor: ew-resize; }
   .phone-handle::before { content: ""; position: absolute; inset: -4px -12px; }
-  .phone-handle::after { content: ""; position: absolute; top: 50%; left: 4px; width: 2px; height: 10px; margin-top: -5px; border-radius: 1px; background: var(--accent-contrast); }
+  .phone-handle::after { content: ""; position: absolute; top: 50%; left: 4px; width: 2px; height: 10px; margin-top: -5px; border-radius: 1px; background: var(--surface); }
 
   /* The centre playhead: one line over the lanes; its range input takes the keyboard (Arrow keys seek). */
   .phone-snap-marker { position: absolute; z-index: 5; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); pointer-events: none; }
   .phone-playhead { position: absolute; z-index: 6; top: 0; bottom: 0; left: 50%; width: 24px; margin: 0 0 0 -12px; padding: 0; appearance: none; -webkit-appearance: none; background: transparent; opacity: 0; pointer-events: none; }
-  .phone-playhead:focus-visible { opacity: 1; outline: 2px solid var(--focus); outline-offset: 0; border-radius: 4px; }
+  .phone-playhead:focus-visible { opacity: 1; outline: 2px solid var(--ring); outline-offset: 0; border-radius: 4px; }
   .phone-playhead::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 0; height: 0; }
   .phone-playhead::-moz-range-thumb { width: 0; height: 0; border: 0; }
 
