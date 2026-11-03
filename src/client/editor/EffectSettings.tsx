@@ -82,7 +82,7 @@ function speedHint(length: number | undefined, rate: number) {
  */
 export function SpeedChoice({ value, length, onChange }: { value: number; length: number | undefined; onChange: (rate: number) => void }) {
   return (
-    <InspectorSection label="Speed" labelId="inspector-speed-label" value={`${value}×`} hint={speedHint(length, value)}>
+    <InspectorSection label="Rate" labelId="inspector-speed-label" value={`${value}×`} hint={speedHint(length, value)}>
       <RadioGroup
         className="ui-segmented"
         value={value}

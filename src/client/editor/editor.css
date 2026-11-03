@@ -177,7 +177,12 @@
 
   /* Highlight annotations mark the original edit timeline. They are navigation controls and sit above cut shading. */
   .tl-highlight { position: absolute; inset: 0; pointer-events: none; }
-  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); cursor: grab; pointer-events: auto; touch-action: none; }
+  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); pointer-events: none; }
+  .tl-highlight-grip { position: absolute; top: -4px; left: 6px; right: 6px; height: 12px; cursor: grab; pointer-events: auto; touch-action: none; }
+  .tl-highlight-grip::after { content: ''; position: absolute; top: 5px; left: 0; right: 0; height: 2px; border-radius: 1px; background: var(--accent); opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
+  .tl-highlight[data-selected] .tl-highlight-grip::after { opacity: 0.6; }
+  @media (hover: hover) and (pointer: fine) { .tl-highlight-grip:hover::after { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) { .tl-highlight-grip::after { transition: none; } }
   .tl-highlight[data-selected] .tl-highlight-band { box-shadow: inset 0 0 0 1.5px var(--accent); }
   .tl-highlight-marker { position: absolute; z-index: 7; top: 50%; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: ew-resize; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
   .tl-highlight-glyph { width: 10px; height: 10px; border: 2px solid var(--surface-raised); background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
@@ -190,7 +195,7 @@
   .tl-highlight-label { position: absolute; bottom: calc(100% - 2px); left: 50%; max-width: 180px; overflow: hidden; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; transform: translateX(-50%); }
   @media (hover: hover) and (pointer: fine) {
     .tl-highlight-marker:hover .tl-highlight-glyph { background-color: var(--text); }
-    .tl-highlight:has(.tl-highlight-marker:hover, .tl-highlight-band:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+    .tl-highlight:has(.tl-highlight-marker:hover, .tl-highlight-grip:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
   }
 
   /* The playhead: one accent line through every lane, its head on the ruler. */

@@ -2,6 +2,7 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { cn } from '@/lib/utils.ts';
 
 /**
  * The building blocks every inspector panel shares, so zoom, speed, blur, caption, highlight, cut and trim read as
@@ -63,7 +64,13 @@ export function InspectorAction({
   ...props
 }: Omit<ComponentProps<typeof Button>, 'variant' | 'size'> & { tone?: 'danger' | 'neutral' | 'primary'; icon: AnimatedIconName }) {
   return (
-    <Button variant={tone === 'primary' ? 'secondary' : 'ghost'} size="lg" className="inspector-action" data-tone={tone} {...props}>
+    <Button
+      variant={tone === 'primary' ? 'secondary' : 'ghost'}
+      size="lg"
+      className={cn('inspector-action gap-2 px-2.5', tone === 'primary' ? 'justify-center' : 'justify-start')}
+      data-tone={tone}
+      {...props}
+    >
       <AnimatedIcon name={icon} size={14} />
       {children}
     </Button>

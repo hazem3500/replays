@@ -118,7 +118,11 @@ function HighlightMarker({
   );
 }
 
-/** A period's band between its ends: drag it to move the whole period; a click selects it and seeks to its start. */
+/**
+ * A period's band between its ends. Its top edge is a grip: drag it to move the whole period, or click it to select
+ * the period and seek to its start. invariant: only the grip takes the pointer, so dragging across the middle of the
+ * lane still selects a range to cut, highlighted or not.
+ */
 function HighlightBand({
   highlight,
   dispatch,
@@ -148,10 +152,10 @@ function HighlightBand({
     <span
       className="tl-highlight-band"
       aria-hidden="true"
-      data-testid="timeline-highlight-band"
       style={{ left: `${left}px`, width: `${Math.max(3, scale.x(highlight.to) - left)}px` }}
-      onPointerDown={onPointerDown}
-    />
+    >
+      <span className="tl-highlight-grip" data-testid="timeline-highlight-band" onPointerDown={onPointerDown} />
+    </span>
   );
 }
 

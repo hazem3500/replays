@@ -9,9 +9,6 @@ export interface TimingField {
   onChange: (time: number) => void;
 }
 
-/** Seconds to one decimal, without a trailing ".0" ("2", "2.4"): what the field shows and the panel reads. */
-const seconds = (ms: number) => String(Number((ms / 1000).toFixed(1)));
-
 /**
  * One time as a single field: its name inside on the left, the seconds right-aligned before a quiet unit, the way a
  * native inspector lays out a measurement. The whole box takes focus styling, so it reads as one control.
@@ -48,7 +45,7 @@ function TimeField({ label, value, max, onChange }: TimingField) {
  */
 export function TimingSection({ fields, span, hint }: { fields: readonly TimingField[]; span?: number | undefined; hint?: string }) {
   return (
-    <InspectorSection label="Timing" value={span === undefined ? undefined : `${seconds(span)} s`} hint={hint}>
+    <InspectorSection label="Timing" value={span === undefined ? undefined : `${(span / 1000).toFixed(1)} s`} hint={hint}>
       <div className="inspector-time-row" role="group" aria-label="Timing" data-count={fields.length}>
         {fields.map((field) => (
           <TimeField key={field.label} {...field} />

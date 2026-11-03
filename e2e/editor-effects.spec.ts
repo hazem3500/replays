@@ -47,9 +47,9 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await expect(page.locator('.player-host .replayer-wrapper')).toHaveAttribute('style', /scale\((?!1\))/);
   const inspector = page.getByRole('complementary', { name: 'Inspector' });
   await expect(inspector.getByRole('heading', { name: 'Zoom' })).toBeVisible();
-  await expect(inspector.getByRole('radio', { name: '1.8× zoom' })).toHaveAttribute('aria-checked', 'true');
-  await inspector.getByRole('radio', { name: '2.2× zoom' }).click();
-  await expect(inspector.getByRole('radio', { name: '2.2× zoom' })).toHaveAttribute('aria-checked', 'true');
+  await expect(inspector.getByRole('slider', { name: 'Zoom level' })).toBeVisible();
+  await inspector.getByRole('button', { name: 'Set zoom to 2.2×' }).click();
+  await expect(inspector.getByRole('button', { name: 'Set zoom to 2.2×' })).toHaveAttribute('aria-pressed', 'true');
   await page.keyboard.press('Escape');
   await expect(inspector).toHaveCount(0);
   await expect(page.locator('#cursor-inspector')).toHaveCount(0);
