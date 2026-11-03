@@ -69,7 +69,7 @@ function TabsIndicator({ className, ...props }: TabsPrimitive.Indicator.Props) {
       render={(dom) => <TabIndicatorMotion {...dom} />}
       data-slot="tabs-indicator"
       className={cn(
-        'absolute bottom-0 left-0 h-0.5 w-(--active-tab-width) translate-x-(--active-tab-left) rounded-full bg-primary',
+        'absolute top-1 bottom-1 left-0 w-(--active-tab-width) translate-x-(--active-tab-left) rounded-md bg-[var(--surface-hover)] shadow-[inset_0_0_0_1px_var(--line)]',
         className,
       )}
       {...props}

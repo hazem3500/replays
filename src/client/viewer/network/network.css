@@ -43,8 +43,8 @@
 .np-row { transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
 .np-row :is(.np-path, .np-code, .method, .np-ms, .np-step, time) { transition: color var(--motion) var(--ease-out); }
 .np-row:not(.np-head):hover { background: var(--surface-hover); }
-.np-row[data-failed] { background: var(--danger-tint); box-shadow: inset 2px 0 var(--danger); }
-.np-row[data-selected], .np-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
+.np-row[data-failed] { background: var(--danger-tint); }
+.np-row[data-selected], .np-row[data-selected]:hover { background: var(--accent-soft); }
 .np-time time { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
 .np-request button { width: 100%; min-height: calc(var(--np-row) - 1px); display: flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
 .np-name { min-width: 0; overflow: hidden; font-family: var(--mono); line-height: 16px; text-overflow: ellipsis; white-space: nowrap; }
