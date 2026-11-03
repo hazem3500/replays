@@ -8,17 +8,17 @@ The code inventories and package audits are **report-only**. Bundle budgets are 
 
 Run these after `pnpm install --frozen-lockfile`. Build once with `pnpm build && pnpm build:cli` before the package and size checks. Rebuild the CLI before `pnpm check` on a warm checkout whose existing `dist/cli` may come from an older source revision; otherwise the bin smoke tests can compare current source help with an old binary. On oz-box, all installs, builds and checks must run in the coding session's own Boat box.
 
-| Script | Configuration | CI job | Initial policy |
+| Script | Configuration | CI (Gate task) | Initial policy |
 | --- | --- | --- | --- |
-| `pnpm quality:knip` | `knip.json` | Quality / knip | Report unused files, exports, types, dependencies, binaries and unresolved references |
-| `pnpm quality:boundaries` | `.dependency-cruiser.cjs` | Quality / boundaries | Report resolved layer violations and cycles |
-| `pnpm quality:package` | `.attw.json`; publint `--strict` in `scripts/quality-package.mjs` | Quality / package | Pack once; audit that exact tarball with both validators |
-| `pnpm quality:size` | **`budgets/bundle.json`**, schema alongside it | Quality / size | Block exceeded ceilings and unbudgeted runtime artifacts |
-| `pnpm quality:dedupe` | pnpm's existing workspace/lockfile; `--check --ignore-scripts` | Quality / dedupe | Report deduplication opportunities without editing the lockfile |
-| `pnpm quality:hooks` | `lefthook.yml` | Quality / hooks | Validate the hook configuration |
-| `pnpm quality:test` | `scripts/quality-tooling.test.mjs` | Quality / test | Prove boundaries and budget enforcement with synthetic fixtures |
+| `pnpm quality:knip` | `knip.json` | `quality:knip` | Report unused files, exports, types, dependencies, binaries and unresolved references |
+| `pnpm quality:boundaries` | `.dependency-cruiser.cjs` | `quality:boundaries` | Report resolved layer violations and cycles |
+| `pnpm quality:package` | `.attw.json`; publint `--strict` in `scripts/quality-package.mjs` | `quality:package` | Pack once; audit that exact tarball with both validators |
+| `pnpm quality:size` | **`budgets/bundle.json`**, schema alongside it | `quality:size:ci` (pull requests), `quality:size:base` (main) | Block exceeded ceilings and unbudgeted runtime artifacts |
+| `pnpm quality:dedupe` | pnpm's existing workspace/lockfile; `--check --ignore-scripts` | `quality:dedupe` | Report deduplication opportunities without editing the lockfile |
+| `pnpm quality:hooks` | `lefthook.yml` | `quality:hooks` | Validate the hook configuration |
+| `pnpm quality:test` | `scripts/quality-tooling.test.mjs` | `quality:test` | Prove boundaries and budget enforcement with synthetic fixtures |
 
-`pnpm quality` runs all checks after the build. Reports live in `.review-artifacts/quality/` (gitignored). CI uploads each audit's reports for 14 days on a best-effort basis and always prints the full reports to job logs. The initial CI run hit the account's Actions artifact-storage quota; only archive upload is non-blocking. Audit, build, test and budget steps retain their original gates. JSON, stderr and original exit statuses are retained; the size job also writes a per-file main/head comparison to its job summary. It uses read-only GitHub permissions and posts no comments.
+`pnpm quality` runs all checks after the build. Reports live in `.review-artifacts/quality/` (gitignored). The CI Gate job runs every audit as a Turborepo task (cached, and skipped when its inputs are unaffected), uploads the reports on a best-effort basis and always prints them to the job log. The size ratchet compares against the base commit's sizes, which main's own Gate run measures once (`quality:size:base`) so pull requests replay them from the shared cache instead of building main again. The initial CI run hit the account's Actions artifact-storage quota; only archive upload is non-blocking. Audit, build, test and budget steps retain their original gates. JSON, stderr and original exit statuses are retained; the size job also writes a per-file main/head comparison to its job summary. It uses read-only GitHub permissions and posts no comments.
 
 ## Initial inventory (2026-10-27)
 

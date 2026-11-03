@@ -2,7 +2,8 @@ name: CI
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    # `labeled` only matters for `run-e2e`; other labels start a run whose jobs all skip.
+    types: [opened, synchronize, reopened, ready_for_review, labeled]
     # Documentation-only changes start no run; scripts/ci-scope.mjs mirrors these exclusions per suite.
     paths:
       - '**'
@@ -26,53 +27,47 @@ on:
       - '!.github/pull_request_template.md'
       - '!.github/CODEOWNERS'
       - '!LICENSE'
-  # Weekly drift check on unchanged main (dependencies, browsers, runner image).
   schedule:
+    # Weekly drift check (dependencies, browsers, runner image): every suite runs, earlier passes are not reused.
     - cron: '23 3 * * 1'
+    # Nightly: the browser-backed suites run for any main state that has no pass yet (e.g. a cancelled main run).
+    - cron: '23 3 * * 0,2-6'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # why: an unrelated label gets its own group, so labelling never cancels a run in progress.
+  group: >-
+    ci-${{ github.event.pull_request.number || github.ref }}${{
+    github.event.action == 'labeled' && github.event.label.name != 'run-e2e' && format('-label-{0}', github.run_id) || '' }}
   cancel-in-progress: true
 
 env:
   NODE_VERSION: 22.23.4
 
 jobs:
-  # Each suite is skipped when a pass marker for its exact input hash exists; scheduled and manual runs run everything.
-  scope:
-    name: Affected checks
-    # Draft pull requests run nothing; every other job needs this one.
-    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+  # The pull request gate: lint, format, types, unit tests, builds and the quality audits as Turborepo tasks. Pull
+  # requests run only the tasks whose inputs changed against the base (`--affected`), and every task replays from the
+  # shared remote cache when the same inputs already passed on any branch. It also picks the browser-backed suites.
+  gate:
+    name: Gate
+    # Draft pull requests run nothing; mark the pull request ready (`gh pr ready`) to run it.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.draft == false && (github.event.action != 'labeled' || github.event.label.name == 'run-e2e'))
     runs-on: ubicloud-standard-2
-    timeout-minutes: 5
+    timeout-minutes: 20
     outputs:
-      checks: ${{ steps.scope.outputs.checks }}
       e2e_shards: ${{ steps.scope.outputs.e2e_shards }}
       browser: ${{ steps.scope.outputs.browser }}
       docker: ${{ steps.scope.outputs.docker }}
-      key_checks: ${{ steps.scope.outputs.key_checks }}
       key_e2e_1: ${{ steps.scope.outputs.key_e2e_1 }}
       key_e2e_2: ${{ steps.scope.outputs.key_e2e_2 }}
       key_e2e_3: ${{ steps.scope.outputs.key_e2e_3 }}
       key_browser: ${{ steps.scope.outputs.key_browser }}
       key_docker: ${{ steps.scope.outputs.key_docker }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: scope
-        uses: ./.github/actions/scope
-      - run: node --test scripts/ci-scope.test.mjs
-
-  # One install for every static check, unit suite and build. Each check still runs when an earlier one fails.
-  checks:
-    name: Lint, types, unit tests and build
-    needs: scope
-    if: needs.scope.outputs.checks == 'true'
-    runs-on: ubicloud-standard-2
-    timeout-minutes: 25
     services:
       postgres:
         image: postgres:17.6-alpine
@@ -86,6 +81,16 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_API: ${{ vars.TURBO_API }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      TURBO_TELEMETRY_DISABLED: '1'
+      PR_BASE: ${{ github.event.pull_request.base.sha }}
+      # The capture test drives a real Chrome (preinstalled on the runner image).
+      CHROME_PATH: /usr/bin/google-chrome
+      CHROMIUM_NO_SANDBOX: '1'
+      REPLAYS_TEST_DATABASE_URL: postgresql://postgres:replays-test-only@127.0.0.1:55432/replays_architecture
     steps:
       - uses: actions/checkout@v4
         with:
@@ -97,86 +102,69 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
+      - id: scope
+        uses: ./.github/actions/scope
+      - run: node --test scripts/ci-scope.test.mjs
       - id: install
         run: pnpm install --frozen-lockfile --prefer-offline
-      - uses: ./.github/actions/task-cache
+      - name: Turborepo tasks
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        with:
-          namespace: ci-checks
-      - name: Report pinned Vite+ toolchain
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm exec vp --version
-      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm lint
-      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm format:check
-      # why: types and unit tests run before any build output exists, as they did in their own jobs.
-      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm typecheck
-      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm typecheck:storybook
-      - name: Unit tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm test
         env:
-          # The capture test drives a real Chrome (preinstalled on the runner image).
-          CHROME_PATH: /usr/bin/google-chrome
-          CHROMIUM_NO_SANDBOX: '1'
-      - name: PostgreSQL tests
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm exec vp test run --config vitest.config.ts test/agent-native-runtime.test.ts test/agent-native-postgres.test.ts --maxWorkers=1
-        env:
-          REPLAYS_TEST_DATABASE_URL: postgresql://postgres:replays-test-only@127.0.0.1:55432/replays_architecture
-      # Lint debt ratchet: existing violations are baselined, added files must meet the final rules.
-      - id: build-cli
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm build:cli
-      - if: ${{ !cancelled() && steps.build-cli.outcome == 'success' }}
-        run: pnpm lint:ratchet:test
-      - if: ${{ !cancelled() && steps.build-cli.outcome == 'success' }}
-        run: pnpm lint:ratchet
-      - if: ${{ !cancelled() && steps.build-cli.outcome == 'success' }}
-        run: pnpm typecheck:overrides
-      - name: Final rules for added files
-        if: ${{ !cancelled() && github.event_name == 'pull_request' && steps.build-cli.outcome == 'success' }}
-        env:
+          BUNDLE_PR_URL: ${{ github.event.pull_request.html_url }}
           LINT_BASE_REF: ${{ github.event.pull_request.base.sha }}
-        run: pnpm lint:new-files
-      - name: Retain full lint diagnostics in logs
+          TURBO_SCM_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          tasks=(lint format:check typecheck typecheck:storybook test test:postgres build build:cli lint:ratchet lint:ratchet:test
+            quality:knip quality:boundaries quality:dedupe quality:hooks quality:test quality:package)
+          flags=(--summarize --continue --concurrency=3)
+          if [ -n "$PR_BASE" ]; then
+            export SIZE_BASE_SHA="$PR_BASE"
+            tasks+=(lint:new-files quality:size:ci)
+            flags+=(--affected)
+          else
+            # why: main measures its own bundle sizes, so pull requests on this base replay them instead of building main.
+            export SIZE_BASE_SHA="$GITHUB_SHA"
+            tasks+=(quality:size:base)
+          fi
+          pnpm exec turbo run "${tasks[@]}" "${flags[@]}"
+      - name: Turborepo summary and full reports
         if: always()
         run: |
-          for report in .review-artifacts/code-quality/lint-*.json; do
+          for summary in .turbo/runs/*.json; do
+            [ -f "$summary" ] || continue
+            jq -r '"Turborepo: \(.execution.attempted) tasks, \(.execution.cached) cached, \(.execution.failed) failed, \(.execution.endTime - .execution.startTime) ms"' "$summary" | tee -a "$GITHUB_STEP_SUMMARY"
+            jq -r '.tasks[] | "\(.taskId)\t\(.cache.status)\t\(.execution.exitCode // "-")"' "$summary"
+          done
+          for report in .review-artifacts/code-quality/lint-*.json .review-artifacts/quality/*; do
             [ -f "$report" ] || continue
+            printf '\nReport: %s\n' "$report"
             cat "$report"
           done
       - uses: actions/upload-artifact@v4
         if: always()
+        # Storage quota must not turn a passing gate into a failed check; the logs above retain the evidence.
         continue-on-error: true
         with:
-          name: lint-reports
-          path: .review-artifacts/code-quality/lint-*.json
+          name: gate-reports
+          path: |
+            .turbo/runs/
+            .review-artifacts/code-quality/lint-*.json
+            .review-artifacts/quality/
           if-no-files-found: ignore
           retention-days: 7
-      - name: Viewer and library build
-        id: build
-        if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-        run: pnpm build
-      - name: Host application example
-        if: ${{ !cancelled() && steps.build.outcome == 'success' && steps.build-cli.outcome == 'success' }}
-        run: pnpm --filter @hazem3500/replays-example-host-app check
-      - if: success()
-        uses: ./.github/actions/remember-pass
-        with:
-          key: ${{ needs.scope.outputs.key_checks }}
+          compression-level: 6
 
+  # The browser-backed suites below run on main, nightly, with the `run-e2e` label, and on pull requests that touch
+  # the risky paths listed (with reasons) in scripts/ci-scope.mjs; a suite whose exact inputs already passed is reused.
   e2e:
     name: End-to-end (${{ matrix.shard }}/3)
-    needs: scope
-    if: needs.scope.outputs.e2e_shards != '[]'
+    needs: gate
+    # why: still runs when the gate fails, so a broken main shows every failing suite at once.
+    if: ${{ !cancelled() && needs.gate.outputs.e2e_shards != '' && needs.gate.outputs.e2e_shards != '[]' }}
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.scope.outputs.e2e_shards) }}
+        shard: ${{ fromJSON(needs.gate.outputs.e2e_shards) }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 25
     steps:
@@ -242,13 +230,13 @@ jobs:
       - if: success()
         uses: ./.github/actions/remember-pass
         with:
-          key: ${{ matrix.shard == 1 && needs.scope.outputs.key_e2e_1 || matrix.shard == 2 && needs.scope.outputs.key_e2e_2 || needs.scope.outputs.key_e2e_3 }}
+          key: ${{ matrix.shard == 1 && needs.gate.outputs.key_e2e_1 || matrix.shard == 2 && needs.gate.outputs.key_e2e_2 || needs.gate.outputs.key_e2e_3 }}
 
   # One install and one viewer/package build shared by the browser-backed suites. Independent groups still report.
   browser:
     name: Recorder, render, plugins, distribution and Agent-Native
-    needs: scope
-    if: needs.scope.outputs.browser == 'true'
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.browser == 'true' }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 30
     steps:
@@ -334,7 +322,7 @@ jobs:
         run: pnpm build:storybook
       - name: Native WebMCP, stand-in, framework consumer and inert component stories
         if: ${{ !cancelled() && steps.agent-native.outcome == 'success' && steps.storybook.outcome == 'success' && steps.browser.outcome == 'success' }}
-        run: pnpm --filter @hazem3500/replays-example-agent-native test --max-failures=1
+        run: pnpm --filter @hazem3500/replays-example-agent-native test:browser --max-failures=1
         env:
           CHROMIUM_NO_SANDBOX: '1'
       - if: failure()
@@ -349,11 +337,11 @@ jobs:
       - if: success()
         uses: ./.github/actions/remember-pass
         with:
-          key: ${{ needs.scope.outputs.key_browser }}
+          key: ${{ needs.gate.outputs.key_browser }}
 
   docker:
-    needs: scope
-    if: needs.scope.outputs.docker == 'true'
+    needs: gate
+    if: ${{ !cancelled() && needs.gate.outputs.docker == 'true' }}
     name: Docker build (not pushed)
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
@@ -379,4 +367,36 @@ jobs:
       - if: success()
         uses: ./.github/actions/remember-pass
         with:
-          key: ${{ needs.scope.outputs.key_docker }}
+          key: ${{ needs.gate.outputs.key_docker }}
+
+  # A failing main is loud: the run is red and one tracking issue gets a comment per failing run; green closes it.
+  main-health:
+    name: Main health
+    needs: [gate, e2e, browser, docker]
+    if: ${{ always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RESULTS: ${{ toJSON(needs) }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          title='CI is failing on main'
+          failed="$(jq -r '[to_entries[] | select(.value.result == "failure") | .key] | join(", ")' <<<"$RESULTS")"
+          issue="$(gh issue list --state open --search "\"$title\" in:title" --json number,title --jq "map(select(.title == \"$title\")) | .[0].number // empty")"
+          if [ -n "$failed" ]; then
+            body="$(printf 'Failing jobs: %s\nCommit: %s (%s run)\nRun: %s' "$failed" "$GITHUB_SHA" "$EVENT" "$RUN_URL")"
+            if [ -n "$issue" ]; then gh issue comment "$issue" --body "$body"
+            else gh issue create --title "$title" --body "$body"; fi
+            echo "::error::Main is red: $failed. Tracking issue updated."
+            exit 1
+          fi
+          if [ -n "$issue" ]; then
+            gh issue close "$issue" --comment "$(printf 'Green again at %s: %s' "$GITHUB_SHA" "$RUN_URL")"
+          fi

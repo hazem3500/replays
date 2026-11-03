@@ -65,6 +65,14 @@ Stop that box at handoff. See [toolchain details](docs/tooling.md) for the upstr
 - Write commit messages in the imperative (`fix: ...`, `feat: ...`). One logical change per pull request.
 - Run `pnpm check` before pushing.
 
+## Pull requests and CI
+
+Open a draft with `gh pr create --draft` and push freely; CI skips drafts. Run `gh pr ready` when the change is
+done to start the Gate (lint, format, types, unit tests, builds and quality audits through Turborepo and its shared
+cache). End-to-end and browser suites run on main and nightly; add the `run-e2e` label to run them on your pull
+request. They also start by themselves for recorder, capture, render, server-rendering, packaging and dependency
+changes (the list is `RISKY` in `scripts/ci-scope.mjs`).
+
 ## Reporting bugs and ideas
 
 Use the issue templates. For security issues, follow [SECURITY.md](SECURITY.md) instead.

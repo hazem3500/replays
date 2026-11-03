@@ -45,7 +45,7 @@ On your own Boat, use `pnpm check:quick` for cached lint/format/tsrs types plus 
 
 ## CI
 
-Open pull requests as drafts while iterating: CI and Code quality do not run on drafts, so run checks on your Boat. Mark the PR ready with `gh pr ready` when done and batch fixes into one push. CI reruns only the suites whose inputs changed since any passing run (markers are shared across branches); the weekly schedule and manual runs are full. A skipped job means identical inputs already passed. Bump `CACHE_VERSION` in `scripts/ci-scope.mjs` to force a full rerun everywhere. See [CI timings and tradeoffs](docs/ci-performance.md#round-2-run-only-what-changed-november-2026).
+Open pull requests with `gh pr create --draft` while iterating: CI does not run on drafts, so run checks on your Boat. When done, `gh pr ready` starts CI; batch later fixes into one push. A pull request runs one Gate job: lint, format, types, unit tests, builds and quality audits as Turborepo tasks, only those affected against the base, replayed from the shared remote cache when the same inputs passed anywhere (`pnpm exec turbo run typecheck test` on Boat shares that cache). End-to-end, browser and Docker suites run on main, nightly, with the `run-e2e` label, or when the pull request touches a risky path listed in `scripts/ci-scope.mjs`. A red main opens or updates the "CI is failing on main" issue; fix forward. See [CI timings and tradeoffs](docs/ci-performance.md#round-3-one-gate-job-and-turborepo-november-2026).
 
 ## Invariants
 
