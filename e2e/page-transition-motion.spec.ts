@@ -150,3 +150,20 @@ test('Back pressed while a replay opens starts from where its picture is', async
   expect(Math.abs(resumed.rect.x - left.rect.x)).toBeLessThan(16);
   expect(Math.abs(resumed.rect.width - left.rect.width)).toBeLessThan(left.rect.width * 0.08);
 });
+
+test('an interrupted Back to a card with a looping animation leaves the next open usable', async ({ page }) => {
+  const link = await replayLibrary(page, server().origin);
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  // why: a looping animation (a pulse, a hover preview) cannot be finished; holding the returning card once tried to.
+  await link.evaluate((element) => element.closest('.feed-item')?.animate({ opacity: [1, 0.99] }, { duration: 400, iterations: Infinity }));
+  await link.click();
+  await expect.poll(() => transitionFrames(page).then((records) => heroFrames(records[0]).length)).toBeGreaterThan(3);
+  await page.goBack();
+  await expect(link).toBeVisible();
+  await landed(page);
+  await link.click();
+  await expect(page.locator('.player-host iframe')).toBeAttached();
+  await landed(page);
+  expect(errors).toEqual([]);
+});
