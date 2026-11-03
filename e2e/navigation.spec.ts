@@ -273,7 +273,7 @@ function recordHeroTransitions() {
 
 /** In the page: slows and records comparison cover decodes, and logs the focused tile's phase and size as it changes. */
 function watchCoverDecode(decodeDelay: number) {
-  const decode = HTMLImageElement.prototype.decode;
+  const decode = Reflect.get(HTMLImageElement.prototype, 'decode') as (this: HTMLImageElement) => Promise<void>;
   const decoded = new WeakSet<HTMLImageElement>();
   const decodeState = { fulfilled: 0 };
   HTMLImageElement.prototype.decode = async function (this: HTMLImageElement) {
