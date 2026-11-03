@@ -66,6 +66,7 @@ jobs:
     needs: package
     if: needs.package.outputs.publishable == 'true'
     runs-on: ubicloud-standard-2
+    timeout-minutes: 15
     environment: npm
     permissions:
       contents: read
