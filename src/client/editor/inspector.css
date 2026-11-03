@@ -37,7 +37,9 @@
   .inspector-time, .inspector-input, .inspector-textarea { box-sizing: border-box; min-width: 0; border: 1px solid transparent; border-radius: 8px; background: var(--surface); color: var(--text); }
   .inspector-time { display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; }
   .inspector-time:hover, .inspector-input:hover, .inspector-textarea:hover { border-color: var(--line); }
-  .inspector-time:focus-within, .inspector-input:focus-visible, .inspector-textarea:focus-visible { border-color: var(--focus); box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 24%, transparent); outline: none; }
+  /* invariant: a field is one control: one ring on the whole field at its radius, never a second one on the inner input. */
+  .inspector-time:focus-within, .inspector-input:focus-visible, .inspector-textarea:focus-visible { border-color: transparent; outline: 2px solid var(--ring); outline-offset: 1px; box-shadow: none; }
+  .inspector-time input:focus, .inspector-time input:focus-visible { outline: none; box-shadow: none; }
   .inspector-time-label, .inspector-time-unit { color: var(--text-tertiary); }
   .inspector-time input { flex: 1; width: 100%; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; outline: none; appearance: textfield; -moz-appearance: textfield; }
   .inspector-time input::-webkit-inner-spin-button, .inspector-time input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
