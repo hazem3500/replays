@@ -12,8 +12,6 @@ import {
   type SuiteOverallStatus,
   suiteOverallStatus,
 } from '../shared/review-suite.ts';
-import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { SwitchIconButton } from '@/components/icon-button.tsx';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@/components/ui/select.tsx';
 import { cn } from '@/lib/utils.ts';
 
@@ -23,6 +21,7 @@ import { useAutoRetry } from './hooks/use-auto-retry.ts';
 import { useStickyStack } from './hooks/use-sticky-stack.ts';
 import { usePluginSnapshot } from './plugins/PluginUi.tsx';
 import { Feed, type FeedView, FeedSkeleton } from './index/Feed.tsx';
+import { ViewSwitch } from './index/ViewSwitch.tsx';
 import { tagOptions } from './index/feed.ts';
 import { feedTransition, staggerIn } from './index/feed-transition.ts';
 import { useHydrated } from './hooks/use-hydrated.ts';
@@ -787,17 +786,7 @@ export function ReplayIndex({
           >
             {compact ? <FilterSheet {...filterState} /> : <FilterMenu {...filterState} />}
             <SortMenu sort={sort} onChange={changeSort} />
-            {compact ? null : (
-              // oxlint-disable-next-line jsx-a11y/prefer-tag-over-role -- a group of two flips, not a fieldset.
-              <div className="view-switch" role="group" aria-label="Layout">
-                <SwitchIconButton label="List" pressed={view === 'list'} onPressedChange={() => chooseView('list')}>
-                  <AnimatedIcon name="list" />
-                </SwitchIconButton>
-                <SwitchIconButton label="Grid" pressed={view === 'grid'} onPressedChange={() => chooseView('grid')}>
-                  <AnimatedIcon name="layout-grid" />
-                </SwitchIconButton>
-              </div>
-            )}
+            {compact ? null : <ViewSwitch view={view} onChange={chooseView} />}
           </ScopeBar>
         )}
         <RefreshLine active={refreshing} />

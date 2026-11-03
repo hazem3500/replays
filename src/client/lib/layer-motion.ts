@@ -7,8 +7,7 @@ export function moveLayer(
   element: HTMLElement,
   pose: Record<string, string>,
   instant: boolean,
-  duration = 0.18,
-  ease: 'easeOut' | [number, number, number, number] = 'easeOut',
+  { duration = 0.18, ease = 'easeOut' }: { duration?: number; ease?: 'easeOut' | [number, number, number, number] } = {},
 ) {
   const current = running.get(element);
   if (current) {

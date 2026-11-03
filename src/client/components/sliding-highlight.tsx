@@ -115,8 +115,8 @@ export function useSlidingPill(
         const transform = `translate(${cell.offsetLeft}px, ${cell.offsetTop}px)`;
         if (animate && otherLine) {
           moveLayer(element, { transform, opacity: '0' }, true);
-          moveLayer(element, { opacity: '1' }, false, ROW_GLIDE.duration, ROW_GLIDE.ease);
-        } else moveLayer(element, { opacity: '1', transform }, !animate, ROW_GLIDE.duration, ROW_GLIDE.ease);
+          moveLayer(element, { opacity: '1' }, false, ROW_GLIDE);
+        } else moveLayer(element, { opacity: '1', transform }, !animate, ROW_GLIDE);
         return;
       }
       moveLayer(element, { opacity: '1', width: `${cell.offsetWidth}px`, transform: `translateX(${cell.offsetLeft}px)` }, !animate);
@@ -126,9 +126,8 @@ export function useSlidingPill(
     const now = performance.now();
     place(last.current.placed && now - last.current.at > RAPID_MS);
     last.current = { at: now, placed: true };
-    // Labels and counts change cell widths without resizing the control: watch every cell. A report only moves the pill
-    // when the selected cell's box really changed (including before the first report): at rest it follows at once,
-    // mid-glide it retargets, so a reflow during a switch never snaps the glide.
+    // why: labels and counts resize cells without resizing the control; at rest the pill follows at once, mid-glide it
+    // retargets, so a reflow during a switch never snaps the glide.
     const observer = new ResizeObserver(() => place(layerMoving(element)));
     // Never the pill itself: its own width animates during a glide, and reacting to that would snap it.
     for (const cell of host.children) if (cell !== element) observer.observe(cell);
@@ -139,6 +138,13 @@ export function useSlidingPill(
   }, [container, selector, value, rows]);
 
   return pill;
+}
+
+const SELECTED = '[aria-selected="true"], [aria-current]:not([aria-current="false"]), [aria-pressed="true"]';
+
+/** Whether an item is the container's current selection (a tab, a current row, a pressed flip or a checked radio's label). */
+function isSelected(item: HTMLElement) {
+  return item.matches(SELECTED) || Boolean(item.closest('label')?.querySelector('input:checked'));
 }
 
 /**
@@ -170,7 +176,7 @@ export function HoverGlide({
         if (shown) {
           shown = false;
           element.dataset.visible = 'false';
-          moveLayer(element, { opacity: '0' }, false, 0.12);
+          moveLayer(element, { opacity: '0' }, false, { duration: 0.18 });
         }
         return;
       }
@@ -183,11 +189,11 @@ export function HoverGlide({
         element,
         { transform: `translate(${x}px, ${y}px)`, width: `${box.width}px`, height: `${box.height}px`, ...(shown ? { opacity: '1' } : {}) },
         !shown,
-        0.14,
+        { duration: 0.14 },
       );
       if (!shown) {
         shown = true;
-        moveLayer(element, { opacity: '1' }, false, 0.12);
+        moveLayer(element, { opacity: '1' }, false, { duration: 0.12 });
       }
       element.dataset.visible = 'true';
     };
@@ -206,16 +212,29 @@ export function HoverGlide({
         stopLayer(element);
       };
     }
+    // invariant: hover never sits on the selection; when the hovered item becomes selected it fades as the selected
+    // surface glides in, so the two never stack.
+    let hovered: HTMLElement | null = null;
+    const sync = () => place(hovered && !isSelected(hovered) ? hovered : null);
     const onMove = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') return;
-      place(event.target instanceof Element ? event.target.closest<HTMLElement>(itemSelector) : null);
+      hovered = event.target instanceof Element ? event.target.closest<HTMLElement>(itemSelector) : null;
+      sync();
     };
-    const onLeave = () => place(null);
+    const onLeave = () => {
+      hovered = null;
+      sync();
+    };
+    const selection = new MutationObserver(sync);
+    selection.observe(root, { subtree: true, attributes: true, attributeFilter: ['aria-selected', 'aria-current', 'aria-pressed'] });
     root.addEventListener('pointerover', onMove);
     root.addEventListener('pointerleave', onLeave);
+    root.addEventListener('change', sync);
     return () => {
+      selection.disconnect();
       root.removeEventListener('pointerover', onMove);
       root.removeEventListener('pointerleave', onLeave);
+      root.removeEventListener('change', sync);
       stopLayer(element);
     };
   }, [container, followHighlighted, itemSelector]);

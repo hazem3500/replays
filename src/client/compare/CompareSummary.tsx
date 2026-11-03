@@ -2,7 +2,7 @@ import { useRef } from 'react';
 
 import { formatClock } from '../../shared/replay.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { useSlidingPill } from '@/components/sliding-highlight.tsx';
+import { HoverGlide, useSlidingPill } from '@/components/sliding-highlight.tsx';
 import { plural } from '../plural.ts';
 import type { LoadedTile } from './tiles.ts';
 
@@ -31,6 +31,7 @@ export function CompareSummary({ tiles, focus, onFocus }: { tiles: readonly Load
   const columns = cssVars({ '--segments': tiles.length, '--segments-wrapped': Math.max(2, Math.ceil(tiles.length / 2)) });
   return (
     <div ref={track} className="compare-summary-track">
+      <HoverGlide container={track} itemSelector=".compare-chip" />
       <span ref={pill} className="compare-pill" aria-hidden="true" />
       <ul className="compare-summary" aria-label={STRINGS.list} data-testid="compare-summary" data-segments={tiles.length} style={columns}>
         {tiles.map((tile) => {
