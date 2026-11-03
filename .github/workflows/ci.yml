@@ -152,7 +152,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3]
-    runs-on: ubicloud-standard-4
+    runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -190,7 +190,7 @@ jobs:
     name: End-to-end (single-page app)
     needs: scope
     if: needs.scope.outputs.runtime == 'true'
-    runs-on: ubicloud-standard-4
+    runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -247,7 +247,7 @@ jobs:
     needs: scope
     if: needs.scope.outputs.runtime == 'true'
     name: Custom distribution example
-    runs-on: ubicloud-standard-4
+    runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
