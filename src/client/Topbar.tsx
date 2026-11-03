@@ -293,11 +293,11 @@ export function MoreMenu({
       <DropdownMenuContent side="bottom" align="end" className="w-auto min-w-56">
         {extra}
         {extra && items.length ? <DropdownMenuSeparator /> : null}
-        <MoreItems items={items.filter((item) => item.section !== 'after-settings')} />
+        <MoreItems items={items.filter((item) => item.section !== 'after-settings' && item.variant !== 'destructive')} />
         {settings || theme ? <DropdownMenuSeparator /> : null}
         {settings}
         {theme ? <ThemeMenuItem /> : null}
-        <MoreItems items={items.filter((item) => item.section === 'after-settings')} />
+        <MoreItems items={items.filter((item) => item.section === 'after-settings' && item.variant !== 'destructive')} />
         {footer}
         {tail ? (
           <>
@@ -305,8 +305,20 @@ export function MoreMenu({
             {tail}
           </>
         ) : null}
+        <DestructiveItems items={items.filter((item) => item.variant === 'destructive')} />
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+/** invariant: an irreversible action closes the menu, apart from the rest, so it is never the item a slip lands on. */
+function DestructiveItems({ items }: { items: TopbarMenuItem[] }) {
+  if (items.length === 0) return null;
+  return (
+    <>
+      <DropdownMenuSeparator />
+      <MoreItems items={items} />
+    </>
   );
 }
 

@@ -43,6 +43,14 @@ export const MENU_ICONS = {
       { el: 'path', attrs: { d: 'M12 3v18' }, motion: { kind: 'shift', x: 2 } },
     ],
   },
+  'panels-top-left': {
+    ms: 260,
+    parts: [
+      { el: 'rect', attrs: { width: '18', height: '18', x: '3', y: '3', rx: '2' } },
+      { el: 'path', attrs: { d: 'M3 9h18' }, motion: { kind: 'shift', y: 1.5 } },
+      { el: 'path', attrs: { d: 'M9 21V9' }, motion: { kind: 'shift', x: 1.5, delay: 40 } },
+    ],
+  },
   'trash-2': {
     ms: 280,
     parts: [

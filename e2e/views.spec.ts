@@ -88,7 +88,9 @@ test('the viewer keeps recording details and appearance in More', async ({ page 
   await header.getByRole('button', { name: 'More actions', exact: true }).click();
   await expect(page.getByTestId('theme-menu-item')).toBeVisible();
   await expect(page.getByRole('menuitem').first()).toHaveAttribute('data-testid', 'compare-with');
-  await expect(page.getByRole('menuitem').last()).toHaveAttribute('data-testid', 'view-reset');
+  const items = page.getByRole('menuitem');
+  await expect(items.last()).toHaveAttribute('data-testid', 'delete-replay');
+  await expect(items.nth((await items.count()) - 2)).toHaveAttribute('data-testid', 'view-reset');
   await expect(page.getByTestId('keep-replay')).toHaveCount(0);
   await page.getByRole('menuitem', { name: 'Replay details', exact: true }).click();
   await expect(page.getByTestId('replay-info')).toBeVisible();
