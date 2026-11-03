@@ -227,8 +227,17 @@ describe('index empty states', () => {
   });
 
   it('says a refused list is an access problem, not a passing outage', () => {
-    const state = indexEmptyState({ kind: 'error', product: 'Replays', connection: false, reason: 'Replays failed to load (401)', retry: retrying });
-    expect([state.title, state.body]).toEqual(['You don’t have access to these replays', 'Sign in to this server, or ask its owner for access.']);
+    const refused = indexEmptyState({
+      kind: 'error',
+      product: 'Replays',
+      connection: false,
+      reason: 'Replays failed to load (401)',
+      retry: retrying,
+    });
+    expect([refused.title, refused.body]).toEqual([
+      'You don’t have access to these replays',
+      'Sign in to this server, or ask its owner for access.',
+    ]);
   });
 
   it('keeps saved results while offline, under a banner', () => {
