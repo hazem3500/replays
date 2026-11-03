@@ -9,7 +9,7 @@ export function startRecordingPulse(dot: HTMLElement): () => void {
     animation = undefined;
     dot.style.removeProperty('opacity');
     if (preference?.matches || typeof dot.animate !== 'function') return;
-    animation = animate([dot], { opacity: [1, 0.35, 1] }, { duration: 1.6, ease: 'easeInOut', repeat: Infinity });
+    animation = animate([dot], { opacity: [1, 0.5, 1] }, { duration: 2, ease: 'easeInOut', repeat: Infinity });
   };
   update();
   preference?.addEventListener?.('change', update);

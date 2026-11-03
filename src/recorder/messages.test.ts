@@ -102,7 +102,7 @@ describe('recorder messages', () => {
   });
 
   it('writes the review duration in words in the given locale by default', async () => {
-    expect(await reviewText(createDefaultUi())).toBe('Duration: 1 minute 13 seconds.');
+    expect(await reviewText(createDefaultUi())).toBe('You recorded 1 minute 13 seconds.');
     expect(await reviewText(createDefaultUi({ locale: 'de', messages: { reviewBody: '{duration}' } }))).toBe('1 Minute 13 Sekunden');
   });
 });

@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { createDefaultUi, type DefaultUiOptions } from '../../../src/recorder/ui/index.ts';
 
-export type DefaultUiState = 'consent' | 'recording' | 'uploading' | 'sent' | 'failed';
+export type DefaultUiState = 'consent' | 'recording' | 'final-seconds' | 'review' | 'uploading' | 'sent' | 'failed';
 
 const FIXED_NOW = new Date('2026-10-27T12:00:00.000Z').getTime();
 
@@ -13,10 +13,22 @@ function show(ui: ReturnType<typeof createDefaultUi>, state: DefaultUiState): Sh
     void ui.requestConsent({ trigger: { source: 'user' }, maxDurationMs: 180_000, signal: abort.signal });
     return { abort };
   }
-  if (state === 'recording') {
+  if (state === 'review') {
+    const summary = {
+      durationMs: 73_000,
+      eventCount: 812,
+      consoleErrors: 0,
+      failedRequests: 0,
+      approxBytes: 1_480_000,
+      stopReason: 'user' as const,
+    };
+    void ui.confirmUpload({ summary, signal: abort.signal });
+    return { abort };
+  }
+  if (state === 'recording' || state === 'final-seconds') {
     const shown: Shown = { abort };
     const hideIndicator = ui.showIndicator({
-      startedAt: FIXED_NOW - 73_000,
+      startedAt: FIXED_NOW - (state === 'recording' ? 73_000 : 174_000),
       maxDurationMs: 180_000,
       stop: () => {
         hideIndicator();

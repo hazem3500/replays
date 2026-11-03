@@ -52,6 +52,8 @@ export type RecorderMessages = {
   /** Start failure, as reported by `selectError`. An error's own `userMessage` takes precedence. */
   startFailed: (params: { error: RecorderMessageError }) => string;
   retry: string;
+  /** Default primary completion action: opens the receipt URL in a new tab. */
+  openLink: string;
   copyLink: string;
   copied: string;
   copyFailed: string;
@@ -72,14 +74,24 @@ export type RecorderMessageOverrides = {
   openReplay?: string;
 };
 
-const privacySentence = ({ captures, reviewRequired }: PrivacyFacts) =>
-  [
-    captures.pageText ? 'Visible page text is recorded.' : 'Page text is masked.',
-    captures.inputs ? 'Ordinary inputs are recorded; passwords stay masked.' : 'Inputs are masked.',
-    captures.media ? 'Media may be recorded.' : 'Media is blocked.',
-    ...(captures.networkBodies ? ['Request and response content is recorded with secrets removed.'] : []),
-    reviewRequired ? 'Review before sending.' : 'Sent when you stop.',
-  ].join(' ');
+const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}` : (items[0] ?? ''));
+
+const privacySentence = ({ captures, reviewRequired }: PrivacyFacts) => {
+  const hidden = [!captures.pageText && 'page text', !captures.inputs && 'inputs', !captures.media && 'media'].filter(
+    (item) => item !== false,
+  );
+  const hiddenSentence = hidden.length ? `${listed(hidden)} ${hidden.length > 1 ? 'are' : 'is'} hidden.` : '';
+  return [
+    hiddenSentence.charAt(0).toUpperCase() + hiddenSentence.slice(1),
+    captures.pageText ? 'Visible page text is recorded.' : '',
+    captures.inputs ? 'Typed values are recorded; passwords stay hidden.' : '',
+    captures.media ? 'Media may be recorded.' : '',
+    captures.networkBodies ? 'Request and response content is recorded with secrets removed.' : '',
+    reviewRequired ? 'You review it before it is sent.' : 'It is sent when you stop.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+};
 
 /** English copy, without em or en dashes. */
 export const defaultRecorderMessages: RecorderMessages = {
@@ -88,8 +100,8 @@ export const defaultRecorderMessages: RecorderMessages = {
   consentPrivacy: ({ mode, privacy }) => {
     if (privacy) return privacySentence(privacy);
     return mode === 'visible'
-      ? 'Visible page content and ordinary typed values will be recorded. Passwords and hidden fields stay masked. Nothing is sent until you review it.'
-      : 'Page text and inputs are masked. Review before sending.';
+      ? 'Visible page content and typed values are recorded; passwords and hidden fields stay hidden. Nothing is sent until you review it.'
+      : 'Page text and inputs are hidden. You review it before it is sent.';
   },
   consentAccept: 'Start recording',
   consentDecline: 'Not now',
@@ -98,7 +110,7 @@ export const defaultRecorderMessages: RecorderMessages = {
   warningSoon: ({ seconds }) => `${seconds} seconds left`,
   warningFinal: ({ seconds }) => `${seconds} seconds left`,
   reviewTitle: 'Send recording?',
-  reviewBody: ({ duration }) => `Duration: ${duration}.`,
+  reviewBody: ({ duration }) => `You recorded ${duration}.`,
   noteLabel: 'Add a note (optional)',
   send: 'Send recording',
   discard: 'Discard',
@@ -107,9 +119,10 @@ export const defaultRecorderMessages: RecorderMessages = {
   failed: () => "Couldn't send recording",
   startFailed: () => "Couldn't start recording",
   retry: 'Retry',
+  openLink: 'Open',
   copyLink: 'Copy link',
   copied: 'Copied',
-  copyFailed: 'Could not copy',
+  copyFailed: "Couldn't copy",
   close: 'Close',
 };
 

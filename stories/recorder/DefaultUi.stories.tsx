@@ -7,11 +7,13 @@ import { inRecorderUi, recorderUi, resultCopy } from './flow.ts';
 const meta = {
   title: 'Recorder/Default UI',
   component: DefaultUiStage,
-  render: (args, context) => <DefaultUiStage key={`${context.id}:${args.state}:${args.theme}`} {...args} />,
-  args: { state: 'consent', theme: 'dark' },
+  render: (args, context) => <DefaultUiStage key={`${context.id}:${args.state}:${args.theme}:${args.palette}:${args.actions}`} {...args} />,
+  args: { state: 'consent', theme: 'dark', palette: 'replays', actions: 'default' },
   argTypes: {
-    state: { control: 'select', options: ['consent', 'recording', 'uploading', 'sent', 'failed'] },
+    state: { control: 'select', options: ['consent', 'recording', 'final-seconds', 'review', 'uploading', 'sent', 'failed'] },
     theme: { control: 'inline-radio', options: ['dark', 'light'] },
+    palette: { control: 'inline-radio', options: ['replays', 'host'] },
+    actions: { control: 'inline-radio', options: ['default', 'copy-only'] },
     copy: { control: false },
   },
   parameters: {
@@ -56,10 +58,42 @@ export const Sent: Story = {
   args: { state: 'sent' },
   play: async () => {
     await visible(resultCopy.sent);
-    const link = await inRecorderUi(() => recorderUi.link('Open replay'));
-    await expect(link.href).toBe('https://replays.example/r/demo-42');
+    const open = await inRecorderUi(() => recorderUi.link(defaultRecorderMessages.openLink));
+    await expect(open.href).toBe('https://replays.example/r/demo-42');
+    await expect(open.rel).toBe('noopener noreferrer');
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.copyLink));
   },
 };
+
+/** A customer-facing host that passes its own `completion.actions`: copy only, no Open. */
+export const SentCopyOnly: Story = {
+  args: { state: 'sent', actions: 'copy-only' },
+  play: async () => {
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.copyLink));
+    await expect(recorderUi.text(defaultRecorderMessages.openLink)).toBeUndefined();
+  },
+};
+
+/** The last 10 seconds before the time limit: the timer turns red. */
+export const FinalSeconds: Story = {
+  args: { state: 'final-seconds' },
+  play: async () => {
+    await visible('2:54');
+  },
+};
+
+export const Review: Story = {
+  args: { state: 'review' },
+  play: async () => {
+    await visible(defaultRecorderMessages.reviewTitle);
+    await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.send));
+  },
+};
+
+/** A host design system's palette, font radius and red mapped onto the `--recorder-*` tokens. */
+export const HostThemed: Story = { args: { state: 'recording', palette: 'host' } };
+
+export const HostThemedLight: Story = { args: { state: 'sent', palette: 'host', theme: 'light' }, globals: { theme: 'light' } };
 
 const showsFailure = async () => {
   await visible(resultCopy.failed);
