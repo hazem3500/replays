@@ -53,7 +53,7 @@
   .editor-conflict { display: flex; align-items: center; gap: 6px; padding: 4px 0 8px; font-size: var(--text-xs); color: var(--text-secondary); }
 
   /* ---------- Timeline ---------- */
-  .timeline { --gutter: 56px; --tl-inset: 4px; flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding: var(--tl-inset) var(--tl-inset) 6px; }
+  .timeline { --gutter: 36px; --tl-inset: 4px; flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding: var(--tl-inset) var(--tl-inset) 6px; }
   .tl-ruler-row, .tl-lane { display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr); }
   .tl-gutter-spacer { display: block; }
   .tl-ruler-row { flex: none; }
@@ -69,10 +69,9 @@
    */
   .tl-lane { flex: 0 1 40px; min-height: 30px; margin-top: 6px; }
   .tl-lane[data-tall] { flex: 0 1 52px; min-height: 44px; }
-  .tl-gutter { display: grid; place-items: center; align-content: center; gap: 1px; width: 100%; height: 100%; color: var(--text-tertiary); }
-  .tl-gutter-label { font-size: var(--text-2xs); line-height: 12px; }
-  .editor-shell[data-mobile] .tl-gutter-label { display: none; }
-  .tl-gutter svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  /* Lane headers: one small glyph, centred on the lane, in the lane's kind colour; its tooltip names the lane. */
+  .tl-gutter { display: grid; place-items: center; width: 100%; height: 100%; color: var(--kind, var(--text-tertiary)); }
+  .tl-gutter svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
   .tl-track { position: relative; height: 100%; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); box-shadow: inset 0 0 0 1px var(--line); overflow: visible; cursor: crosshair; }
 
   /* An empty lane names itself and how to add to it, in the quietest text; inert, gone once the lane has a region. */
@@ -95,7 +94,7 @@
   .tl-trim:hover .tl-trim-grip, .tl-trim:focus-visible .tl-trim-grip, .tl-clip[data-selected] .tl-trim-grip { background: var(--surface); }
   .tl-trim:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
   /* With no effects yet, the space under the clip offers them (EditorTools.tsx LaneInvitation). */
-  .tl-invite { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0 calc(var(--gutter, 56px) + 4px); padding: 5px 6px 5px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--text-tertiary); font-size: var(--text-xs); }
+  .tl-invite { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0 calc(var(--gutter, 36px) + 4px); padding: 5px 6px 5px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--text-tertiary); font-size: var(--text-xs); }
   .tl-invite-text { margin-right: 6px; }
   .tl-invite-chip.tl-invite-chip { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
 
@@ -119,27 +118,41 @@
   .tl-region:focus-within .tl-region-edge-mark, .tl-region[data-selected] .tl-region-edge-mark { opacity: 1; }
   @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge-mark { opacity: 1; } }
   /*
-   * Clips are one calm neutral surface whatever their kind (the lane's label and icon already name it): no hues,
-   * stripes, rings or glows. Selected, a clip takes a soft accent tint, full-strength text and a lift, and its Remove
-   * bubble floats above it, outside it and aligned to its start, clamped to the track's end. Captions fade at their end.
+   * Clips sit on one calm surface with a whisper of their kind's tint: no stripes, rings or glows. Selected, a clip
+   * takes a stronger tint, full-strength text and a lift, and its Remove bubble floats over its centre outside the lane
+   * (use-bubble-placement.ts picks the side and clamps it). Captions fade at their end.
    */
   /* One clip surface for every kind; selection is a soft tint of the app's accent with a lift (desktop and phone). */
+  /*
+   * Kind tints: one OKLCH family around the accent (indigo zoom, violet speed, blue blur, sky captions) at equal
+   * lightness and chroma per theme. Full strength on each lane's glyph; at low alpha on its clips and a step stronger
+   * on the selected one. invariant: no stripes, edges or rings; text on every tint stays at AA in both themes.
+   */
+  .editor-shell { --kind-l: 0.76; --kind-c: 0.11; }
+  :root[data-theme="light"] .editor-shell { --kind-l: 0.52; --kind-c: 0.15; }
+  .editor-shell :is(.tl-lane, .phone-region)[data-kind="zoom"] { --kind: oklch(var(--kind-l) var(--kind-c) 275); }
+  .editor-shell :is(.tl-lane, .phone-region)[data-kind="speed"] { --kind: oklch(var(--kind-l) var(--kind-c) 305); }
+  .editor-shell :is(.tl-lane, .phone-region)[data-kind="blur"] { --kind: oklch(var(--kind-l) var(--kind-c) 250); }
+  .editor-shell :is(.tl-lane, .phone-region)[data-kind="caption"] { --kind: oklch(var(--kind-l) var(--kind-c) 222); }
   .editor-shell { --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
   :root[data-theme="light"] .editor-shell { --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
   .tl-region[data-kind="caption"] { top: 7px; bottom: 7px; }
-  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 5px; background: var(--clip-fill); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 5px; background: color-mix(in oklab, var(--kind, transparent) 12%, var(--clip-fill)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
   @media (hover: hover) and (pointer: fine) {
-    .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body:hover { background: var(--clip-fill-hover); box-shadow: none; color: var(--text); }
+    .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body:hover { background: color-mix(in oklab, var(--kind, transparent) 18%, var(--clip-fill-hover)); box-shadow: none; color: var(--text); }
   }
   .tl-region[data-selected] { z-index: 4; }
   .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: var(--clip-lift); color: var(--text); }
-  .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: var(--clip-selected); }
+  .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: color-mix(in oklab, var(--kind, var(--accent)) 26%, var(--surface-raised)); }
   .tl-region[data-kind="cut"][data-selected] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), var(--clip-selected); }
   .tl-region[data-kind="caption"] .tl-region-body { padding: 0 9px; justify-content: flex-start; }
   .tl-region[data-kind="caption"] .tl-region-label { text-overflow: clip; mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
-  .tl-region-remove { position: absolute; z-index: 3; bottom: calc(100% + 4px); left: 6px; translate: min(0px, calc(var(--bubble-room, 100vw) - 6px - 100%)) 0; display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); color: var(--text-secondary); font: inherit; font-size: var(--text-2xs); font-weight: 600; white-space: nowrap; cursor: pointer; opacity: 0; pointer-events: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
+  .tl-region-remove { position: absolute; z-index: 3; bottom: calc(100% + 6px); left: var(--bubble-x, 0px); display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); color: var(--text-secondary); font: inherit; font-size: var(--text-2xs); font-weight: 600; white-space: nowrap; cursor: pointer; opacity: 0; pointer-events: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
   .tl-region-remove::before { content: ''; position: absolute; inset: -2px 0; }
+  .tl-region-remove[data-side="below"] { top: calc(100% + 6px); bottom: auto; }
+  .tl-region-remove[data-compact] { width: 22px; padding: 0; justify-content: center; }
+  .tl-region-remove[data-compact] > span { display: none; }
   .tl-region-remove svg { display: block; flex: none; }
   .tl-region-remove:hover, .tl-region-remove:focus-visible { background: var(--surface-hover); color: var(--danger); }
   .tl-region-remove:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
