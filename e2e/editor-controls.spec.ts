@@ -144,6 +144,15 @@ for (const theme of ['light', 'dark'] as const)
     ];
     for (const target of panels) {
       await target.click();
+      // why: axe must measure the settled panel, not text still fading in after the selection changed.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter((animation) => animation.effect?.getComputedTiming().endTime !== Number.POSITIVE_INFINITY)
+            .map((animation) => animation.finished.catch(() => undefined)),
+        ),
+      );
       const results = await new AxeBuilder({ page }).include('aside.editor-presentation').analyze();
       const blocking = results.violations.filter((violation) => violation.impact === 'serious' || violation.impact === 'critical');
       expect(blocking.map((violation) => `${violation.id}: ${violation.nodes.map((node) => node.target.join(' ')).join(', ')}`)).toEqual(

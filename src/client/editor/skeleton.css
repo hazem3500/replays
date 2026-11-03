@@ -67,11 +67,9 @@
   .sk-phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 6px; background: color-mix(in srgb, var(--text-tertiary) 24%, var(--surface-raised)); color: var(--text-secondary); }
   .sk-phone-clip > span { position: absolute; top: 0; bottom: 0; overflow: hidden; padding: 0 6px; border-left: 1px solid color-mix(in srgb, var(--surface) 70%, transparent); font-size: 11px; line-height: 52px; white-space: nowrap; text-overflow: ellipsis; }
   .sk-phone-clip > span:first-child { border-left: 0; }
-  .sk-phone-region { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 6px; border-radius: 6px; background: color-mix(in srgb, var(--lane, var(--text-tertiary)) 30%, var(--surface-raised)); color: var(--text); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .sk-phone-region { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 6px; border-radius: 5px; background: var(--surface-hover); color: var(--text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
   .sk-phone-region > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-  .sk-phone-region[data-kind="zoom"] { --lane: var(--accent); }
-  .sk-phone-region[data-kind="caption"] { --lane: var(--warning); font-weight: 500; }
-  .sk-phone-region[data-kind="speed"] { --lane: var(--success); }
+  .sk-phone-region[data-kind="caption"] { font-weight: 500; }
   .sk-phone-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 6px 0; border-top: 1px solid var(--line); }
   .sk-phone-tools > span { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; height: 44px; padding: 2px; color: var(--text-secondary); font-size: var(--text-xs); font-weight: 500; opacity: 0.55; }
   .sk-phone-tools svg { width: 18px; height: 18px; }

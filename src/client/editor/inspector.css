@@ -7,22 +7,29 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @layer app {
+  /*
+   * invariant: quiet inspector text (values, hints, time labels and units, quick marks, the subtitle and back link)
+   * keeps at least 5.5:1 on its card in both themes. Dark's tertiary text already does; light's sits at 5.05:1 on the
+   * cards, so it leans 40% toward the secondary text.
+   */
+  .editor-shell { --inspector-muted: var(--text-tertiary); }
+  :root[data-theme="light"] .editor-shell { --inspector-muted: color-mix(in srgb, var(--text-secondary) 40%, var(--text-tertiary)); }
   .editor-inspector { box-sizing: border-box; padding: 10px 12px 16px; color: var(--text); font-size: var(--text-xs); line-height: 16px; }
   .inspector-header { display: grid; gap: 2px; padding: 0 4px 12px; }
   .inspector-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; min-width: 0; }
   .inspector-title { display: grid; gap: 2px; min-width: 0; }
   .inspector-header h2 { margin: 0; font-size: 15px; font-weight: 600; line-height: 20px; }
   .inspector-header-action { flex: none; margin: -2px -6px 0 0; }
-  .inspector-subtitle { min-height: 16px; margin: 0; color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
-  .inspector-back.inspector-back { justify-self: start; gap: 2px; margin: 0 0 4px -8px; padding-left: 4px; color: var(--text-tertiary); }
+  .inspector-subtitle { min-height: 16px; margin: 0; color: var(--inspector-muted); font-variant-numeric: tabular-nums; }
+  .inspector-back.inspector-back { justify-self: start; gap: 2px; margin: 0 0 4px -8px; padding-left: 4px; color: var(--inspector-muted); }
   .inspector-back:hover { color: var(--text); }
 
   .inspector-body { display: grid; gap: 8px; }
   .inspector-section { display: grid; gap: 10px; min-width: 0; padding: 12px; border-radius: 12px; background: color-mix(in srgb, var(--text) 4%, transparent); }
   .inspector-section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; min-width: 0; }
   .inspector-label { min-width: 0; color: var(--text); font-weight: 600; }
-  .inspector-value { flex: none; color: var(--text-tertiary); font-weight: 500; font-variant-numeric: tabular-nums; }
-  .inspector-hint { margin: 0; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 14px; }
+  .inspector-value { flex: none; color: var(--inspector-muted); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .inspector-hint { margin: 0; color: var(--inspector-muted); font-size: var(--text-2xs); line-height: 14px; }
 
   /* Segmented choices (speed, how a blur hides). */
   .ui-segmented { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 2px; padding: 2px; border-radius: 8px; background: var(--surface); }
@@ -40,7 +47,7 @@
   /* invariant: a field is one control: one ring on the whole field at its radius, never a second one on the inner input. */
   .inspector-time:focus-within, .inspector-input:focus-visible, .inspector-textarea:focus-visible { border-color: transparent; outline: 2px solid var(--ring); outline-offset: 1px; box-shadow: none; }
   .inspector-time input:focus, .inspector-time input:focus-visible { outline: none; box-shadow: none; }
-  .inspector-time-label, .inspector-time-unit { color: var(--text-tertiary); }
+  .inspector-time-label, .inspector-time-unit { color: var(--inspector-muted); }
   .inspector-time input { flex: 1; width: 100%; min-width: 0; height: 100%; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; font-variant-numeric: tabular-nums; text-align: right; outline: none; appearance: textfield; -moz-appearance: textfield; }
   .inspector-time input::-webkit-inner-spin-button, .inspector-time input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   .inspector-input { display: block; width: 100%; height: 32px; padding: 0 10px; font: inherit; }
