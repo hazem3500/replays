@@ -139,6 +139,12 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
   return transition.updateCallbackDone;
 }
 
+/** Returning to the index is instant; opening a page waits for its data, at most the prepare budget. */
+function readyFor(direction: Direction, to: Page): Promise<unknown> {
+  if (direction === 'to-index') return Promise.resolve();
+  return Promise.race([preparePage(to).catch(() => {}), delay(PREPARE_BUDGET_MS)]);
+}
+
 /** A hidden index keeps its DOM: stop any hover preview so it doesn't play on behind the viewer. */
 function pauseIndexPreviews() {
   for (const video of document.querySelectorAll<HTMLVideoElement>('.index-shell video, .feed-list video')) video.pause();
@@ -203,7 +209,7 @@ export function installPageMotion(router: AppRouter) {
       if (pageId) writeHint(pageId, to.replayId ?? pageId, match);
       opened = match?.link;
     } else forgetHint();
-    const ready = direction === 'to-index' ? Promise.resolve() : Promise.race([preparePage(to).catch(() => {}), delay(PREPARE_BUDGET_MS)]);
+    const ready = readyFor(direction, to);
     plan = planFor({ direction, from, to, ready, turn, uaAnimated }, cardFor(opensPage(to), link), () => cardFor(opensPage(from), opened));
     commitPlan = plan;
   });

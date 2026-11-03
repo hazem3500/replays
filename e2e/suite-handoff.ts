@@ -129,7 +129,7 @@ export function captureHandoff() {
 export async function expectSuiteHandoff(page: Page, warm: boolean) {
   const capture = (await page.evaluate(() => Reflect.get(window, 'coldSuiteCaptures') as unknown)) as HandoffCapture[];
   const diagnostics = await page.evaluate(() => {
-    const observer = Reflect.get(window, 'coldSuiteObserver');
+    const observer = Reflect.get(window, 'coldSuiteObserver') as unknown;
     if (observer instanceof MutationObserver) observer.disconnect();
     return {
       timeline: Reflect.get(window, 'coldSuiteTimeline') as unknown,

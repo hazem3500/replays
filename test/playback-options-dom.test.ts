@@ -128,7 +128,7 @@ describe('playback menu in fullscreen', () => {
 
   it('normalizes a legacy eight-times rate and caps the slider at four times', async () => {
     const player = await renderTransport();
-    await act(() => {
+    act(() => {
       player.setSpeed(8);
     });
     expect(player.getState().speed).toBe(4);
@@ -136,7 +136,7 @@ describe('playback menu in fullscreen', () => {
     await click(find('.playback-options'));
     const rate = find<HTMLInputElement>('.playback-rate-slider input[type="range"]');
     expect(rate.max).toBe('5');
-    await act(() => {
+    act(() => {
       rate.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true }));
     });
     expect(player.getState().speed).toBe(4);
