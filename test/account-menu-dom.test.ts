@@ -82,4 +82,3 @@ describe('the account menu', () => {
     expect(document.querySelector('[data-testid="sign-out"]')).toBeNull();
   });
 });
-// why: CI cost probe for round 2, reverted before merge.
