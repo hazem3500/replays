@@ -7,10 +7,19 @@
   },
   "tasks": {
     "//#lint": {
-      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!.github/**", "!LICENSE", "!budgets/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!src/client/route-tree.gen.ts"
+      ]
     },
     "//#format:check": {
-      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!LICENSE"]
+      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!LICENSE", "!src/client/route-tree.gen.ts"]
     },
     "//#typecheck": {
       "inputs": [
@@ -22,11 +31,22 @@
         "!LICENSE",
         "!budgets/**",
         "!stories/**",
-        "!.storybook/**"
+        "!.storybook/**",
+        "!src/client/route-tree.gen.ts"
       ]
     },
     "//#typecheck:storybook": {
-      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!docs/**", "!.github/**", "!LICENSE", "!budgets/**", "!e2e/**", "!examples/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!e2e/**",
+        "!examples/**",
+        "!src/client/route-tree.gen.ts"
+      ]
     },
     "//#test": {
       "passThroughEnv": ["CHROME_PATH", "CHROMIUM_NO_SANDBOX"],
@@ -38,7 +58,8 @@
         "!.github/**",
         "!LICENSE",
         "!e2e/**",
-        "!**/playwright.config.ts"
+        "!**/playwright.config.ts",
+        "!src/client/route-tree.gen.ts"
       ]
     },
     "//#test:affected": {
@@ -52,7 +73,8 @@
         "!.github/**",
         "!LICENSE",
         "!e2e/**",
-        "!**/playwright.config.ts"
+        "!**/playwright.config.ts",
+        "!src/client/route-tree.gen.ts"
       ]
     },
     "//#test:postgres": {
@@ -67,7 +89,8 @@
         "!e2e/**",
         "!stories/**",
         "!.storybook/**",
-        "!**/playwright.config.ts"
+        "!**/playwright.config.ts",
+        "!src/client/route-tree.gen.ts"
       ]
     },
     "//#build": {
@@ -101,7 +124,8 @@
         "!.dockerignore",
         "!fixtures/**",
         "!sample/**",
-        "!examples/**"
+        "!examples/**",
+        "!src/client/route-tree.gen.ts"
       ]
     },
     "//#build:cli": {
@@ -134,13 +158,22 @@
         "!docker-compose.yml",
         "!.dockerignore",
         "!fixtures/**",
-        "!examples/**"
+        "!examples/**",
+        "!src/client/route-tree.gen.ts"
       ]
     },
     "//#lint:ratchet": {
       "dependsOn": ["//#build:cli"],
       "outputs": [".review-artifacts/code-quality/lint-*.json"],
-      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!.github/**", "!LICENSE"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!src/client/route-tree.gen.ts"
+      ]
     },
     "//#lint:ratchet:test": {
       "inputs": ["scripts/lint-ratchet*.mjs", "scripts/lib/**", "package.json"]
@@ -149,15 +182,39 @@
       "dependsOn": ["//#build:cli"],
       "outputs": [".review-artifacts/code-quality/lint-*.json"],
       "env": ["LINT_BASE_REF"],
-      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!.github/**", "!LICENSE"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!src/client/route-tree.gen.ts"
+      ]
     },
     "//#quality:knip": {
       "outputs": [".review-artifacts/quality/knip.*"],
-      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!.github/**", "!LICENSE", "!budgets/**"]
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!src/client/route-tree.gen.ts"
+      ]
     },
     "//#quality:boundaries": {
       "outputs": [".review-artifacts/quality/depcruise.*"],
-      "inputs": ["src/**", ".dependency-cruiser.cjs", "tsconfig.json", "package.json", "scripts/quality-report.mjs"]
+      "inputs": [
+        "src/**",
+        ".dependency-cruiser.cjs",
+        "tsconfig.json",
+        "package.json",
+        "scripts/quality-report.mjs",
+        "!src/client/route-tree.gen.ts"
+      ]
     },
     "//#quality:dedupe": {
       "outputs": [".review-artifacts/quality/dedupe.*"],
