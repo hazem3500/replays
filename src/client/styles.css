@@ -854,6 +854,8 @@ svg.lucide.lucide { stroke-width: 2; }
     mask-image: linear-gradient(to right, transparent, #000 var(--command-fade-start), #000 calc(100% - var(--command-fade-end)), transparent);
     animation: command-fade linear both;
     animation-timeline: scroll(self inline);
+    /* why: the fade follows scroll position, not time; the global reduced-motion 0 s duration pinned it to its end state, fading a command's first characters at rest. */
+    animation-duration: auto !important;
   }
 }
 @keyframes command-fade { from { --command-fade-start: 0px; --command-fade-end: 32px; } to { --command-fade-start: 32px; --command-fade-end: 0px; } }
