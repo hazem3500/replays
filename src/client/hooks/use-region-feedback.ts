@@ -16,8 +16,7 @@ export function useRegionFeedback(selected: boolean) {
         document.documentElement.hasAttribute('data-timeline-dragging') || matchMedia('(prefers-reduced-motion: reduce)').matches;
       for (const node of root.querySelectorAll<HTMLElement>('.tl-region-edge-mark, .tl-region-remove')) {
         const from = getComputedStyle(node).opacity;
-        // invariant: never animate or stop an element that is not rendered (a short clip hides its ×); Motion's stop
-        // commits styles and throws on it, which took the whole editor down.
+        // invariant: never animate or stop an unrendered element; Motion's stop commits styles and throws on it.
         const rendered = node.getClientRects().length > 0;
         if (rendered) controls.get(node)?.stop();
         controls.delete(node);
