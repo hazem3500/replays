@@ -24,8 +24,8 @@
     },
     "dist/client/assets/arrow-up-HASH.js": {
       "raw": 209,
-      "gzip": 192,
-      "brotli": 205
+      "gzip": 191,
+      "brotli": 203
     },
     "dist/client/assets/Avatar-HASH.js": {
       "raw": 1651,
@@ -70,7 +70,7 @@
     "dist/client/assets/chevron-left-HASH.js": {
       "raw": 176,
       "gzip": 176,
-      "brotli": 163
+      "brotli": 158
     },
     "dist/client/assets/clamp-HASH.css": {
       "raw": 2494,
@@ -119,7 +119,7 @@
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
-      "gzip": 30273,
+      "gzip": 30268,
       "brotli": 27015
     },
     "dist/client/assets/createLucideIcon-HASH.js": {
@@ -130,7 +130,7 @@
     "dist/client/assets/dialog-HASH.js": {
       "raw": 13075,
       "gzip": 4598,
-      "brotli": 4141
+      "brotli": 4140
     },
     "dist/client/assets/drawer-HASH.js": {
       "raw": 45147,
@@ -144,7 +144,7 @@
     },
     "dist/client/assets/dropdown-menu-HASH.js": {
       "raw": 134171,
-      "gzip": 44639,
+      "gzip": 44637,
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
@@ -153,14 +153,14 @@
       "brotli": 5531
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 126100,
-      "gzip": 42244,
-      "brotli": 35333
+      "raw": 130912,
+      "gzip": 43654,
+      "brotli": 36584
     },
     "dist/client/assets/edits-HASH.js": {
-      "raw": 36820,
-      "gzip": 13177,
-      "brotli": 11854
+      "raw": 37945,
+      "gzip": 13583,
+      "brotli": 12224
     },
     "dist/client/assets/elements-HASH.js": {
       "raw": 17492,
@@ -174,23 +174,23 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2195,
-      "gzip": 1063,
-      "brotli": 939
+      "gzip": 1058,
+      "brotli": 936
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6743,
       "gzip": 3280,
-      "brotli": 2901
+      "brotli": 2894
     },
     "dist/client/assets/features-animation-HASH.js": {
       "raw": 15332,
-      "gzip": 6050,
-      "brotli": 5490
+      "gzip": 6038,
+      "brotli": 5475
     },
     "dist/client/assets/features-HASH.js": {
       "raw": 726,
       "gzip": 453,
-      "brotli": 407
+      "brotli": 406
     },
     "dist/client/assets/fetch-HASH.js": {
       "raw": 721,
@@ -204,18 +204,18 @@
     },
     "dist/client/assets/Headline-HASH.js": {
       "raw": 6742,
-      "gzip": 3003,
-      "brotli": 2711
+      "gzip": 2975,
+      "brotli": 2674
     },
     "dist/client/assets/HostSurface-HASH.js": {
       "raw": 1266,
       "gzip": 704,
-      "brotli": 632
+      "brotli": 630
     },
     "dist/client/assets/index-queries-HASH.js": {
       "raw": 6806,
-      "gzip": 2749,
-      "brotli": 2524
+      "gzip": 2748,
+      "brotli": 2521
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 49796,
@@ -238,14 +238,14 @@
       "brotli": 49708
     },
     "dist/client/assets/main-HASH.css": {
-      "raw": 223671,
+      "raw": 223667,
       "gzip": 39236,
       "brotli": 32841
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 124763,
+      "raw": 124758,
       "gzip": 44031,
-      "brotli": 39501
+      "brotli": 39486
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -259,13 +259,13 @@
     },
     "dist/client/assets/measure-HASH.js": {
       "raw": 30211,
-      "gzip": 11750,
-      "brotli": 10826
+      "gzip": 11747,
+      "brotli": 10819
     },
     "dist/client/assets/microtask-HASH.js": {
       "raw": 5327,
-      "gzip": 2478,
-      "brotli": 2309
+      "gzip": 2474,
+      "brotli": 2302
     },
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
@@ -299,7 +299,7 @@
     },
     "dist/client/assets/PluginUi-HASH.js": {
       "raw": 7343,
-      "gzip": 2913,
+      "gzip": 2912,
       "brotli": 2601
     },
     "dist/client/assets/plural-HASH.js": {
@@ -314,13 +314,13 @@
     },
     "dist/client/assets/progress-HASH.js": {
       "raw": 27681,
-      "gzip": 11219,
+      "gzip": 11217,
       "brotli": 10016
     },
     "dist/client/assets/queries-HASH.js": {
       "raw": 16231,
       "gzip": 5377,
-      "brotli": 4898
+      "brotli": 4893
     },
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
@@ -334,8 +334,8 @@
     },
     "dist/client/assets/render-HASH.js": {
       "raw": 9333,
-      "gzip": 4112,
-      "brotli": 3729
+      "gzip": 4105,
+      "brotli": 3725
     },
     "dist/client/assets/ReplayComparePage-HASH.js": {
       "raw": 1018,
@@ -345,7 +345,7 @@
     "dist/client/assets/ReplayIndex-HASH.js": {
       "raw": 236114,
       "gzip": 78670,
-      "brotli": 66648
+      "brotli": 66629
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 26722,
@@ -359,13 +359,13 @@
     },
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 43874,
-      "gzip": 13608,
+      "gzip": 13606,
       "brotli": 12356
     },
     "dist/client/assets/sliders-horizontal-HASH.js": {
       "raw": 464,
       "gzip": 273,
-      "brotli": 237
+      "brotli": 246
     },
     "dist/client/assets/step-caption-HASH.css": {
       "raw": 2040,
@@ -399,8 +399,8 @@
     },
     "dist/client/assets/toast-HASH.js": {
       "raw": 34790,
-      "gzip": 9729,
-      "brotli": 8625
+      "gzip": 9727,
+      "brotli": 8621
     },
     "dist/client/assets/tools-HASH.js": {
       "raw": 36104,
@@ -410,16 +410,16 @@
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
       "gzip": 256,
-      "brotli": 245
+      "brotli": 234
     },
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 313,
-      "gzip": 255,
-      "brotli": 222
+      "gzip": 254,
+      "brotli": 218
     },
     "dist/client/assets/use-opacity-motion-HASH.js": {
       "raw": 583,
-      "gzip": 417,
+      "gzip": 416,
       "brotli": 362
     },
     "dist/client/assets/use-replay-deletion-HASH.js": {
@@ -430,7 +430,7 @@
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
       "gzip": 34156,
-      "brotli": 30338
+      "brotli": 30315
     },
     "dist/client/assets/useQuery-HASH.js": {
       "raw": 8582,
@@ -443,9 +443,9 @@
       "brotli": 1201
     },
     "dist/client/assets/Viewer-HASH.js": {
-      "raw": 74034,
-      "gzip": 26667,
-      "brotli": 23044
+      "raw": 74027,
+      "gzip": 26665,
+      "brotli": 23031
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 691,
@@ -455,12 +455,12 @@
     "dist/client/assets/write-HASH.js": {
       "raw": 334228,
       "gzip": 99951,
-      "brotli": 86632
+      "brotli": 86550
     },
     "dist/client/index.html": {
       "raw": 14291,
-      "gzip": 4651,
-      "brotli": 3901
+      "gzip": 4650,
+      "brotli": 3898
     },
     "dist/client/render.html": {
       "raw": 1283,
@@ -505,7 +505,7 @@
     "dist/lib/chunks/context.schema.json-b408e55ea692.mjs": {
       "raw": 315018,
       "gzip": 83498,
-      "brotli": 68274
+      "brotli": 68272
     },
     "dist/lib/chunks/credentials.ts-a9744adec9d7.mjs": {
       "raw": 18413,
@@ -522,10 +522,10 @@
       "gzip": 6472,
       "brotli": 5699
     },
-    "dist/lib/chunks/edit-list.ts-6c83b0ee7920.mjs": {
-      "raw": 20479,
-      "gzip": 5898,
-      "brotli": 5234
+    "dist/lib/chunks/edit-list.ts-a6938d76f655.mjs": {
+      "raw": 21103,
+      "gzip": 6065,
+      "brotli": 5384
     },
     "dist/lib/chunks/format.ts-3f5b35a2f3fe.mjs": {
       "raw": 8678,
@@ -635,7 +635,7 @@
     "dist/lib/plugins-gcs.mjs": {
       "raw": 14018,
       "gzip": 4363,
-      "brotli": 3906
+      "brotli": 3867
     },
     "dist/lib/plugins-iap.mjs": {
       "raw": 4455,
@@ -730,7 +730,7 @@
     "dist/lib/viewer-HASH.mjs": {
       "raw": 354,
       "gzip": 179,
-      "brotli": 143
+      "brotli": 137
     },
     "dist/lib/viewer-react.css": {
       "raw": 4298,
@@ -1315,14 +1315,6 @@
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
     },
     {
-      "file": "dist/client/assets/sliders-horizontal-HASH.js",
-      "cap": {
-        "brotli": 237
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/185",
-      "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
-    },
-    {
       "file": "dist/client/assets/CompareViewer-HASH.css",
       "cap": {
         "raw": 10155
@@ -1423,16 +1415,6 @@
         "brotli": 27015
       },
       "reason": "Comparison tiles glide between grid, spotlight and single layouts with Motion layout projection, now bundled with the compare route. Reviewed and approved by Hazem. CI same-runner main/head: raw 42645 to 91453, gzip 14869 to 29391, brotli 13130 to 26228 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 126100,
-        "gzip": 42244,
-        "brotli": 35333
-      },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 116625 to 122427, gzip 38941 to 41013, brotli 33083 to 34303 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -1583,16 +1565,6 @@
         "brotli": 38542
       },
       "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 87114 to 130263, gzip 28862 to 43338, brotli 24951 to 37419 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/edits-HASH.js",
-      "cap": {
-        "raw": 36820,
-        "gzip": 13177,
-        "brotli": 11854
-      },
-      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 26926 to 35747, gzip 9542 to 12793, brotli 8645 to 11508 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -1942,16 +1914,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/chunks/edit-list.ts-6c83b0ee7920.mjs",
-      "cap": {
-        "raw": 20479,
-        "gzip": 5898,
-        "brotli": 5234
-      },
-      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 19882, gzip new to 5726, brotli new to 5081 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/chunks/format.ts-3f5b35a2f3fe.mjs",
       "cap": {
         "raw": 8678,
@@ -2199,6 +2161,44 @@
       },
       "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: gzip 171202 to 174687, brotli 135115 to 138194 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 130912,
+        "gzip": 43654,
+        "brotli": 36584
+      },
+      "reason": "Editor controls polish: one shared inspector layout, a continuous zoom level slider with quick marks, draggable and resizable timeline highlights, and the region remove control. Reviewed and approved by Hazem. CI same-runner main/head: raw 122427 to 127099, gzip 41014 to 42382, brotli 34293 to 35518 bytes; caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/209"
+    },
+    {
+      "file": "dist/client/assets/edits-HASH.js",
+      "cap": {
+        "raw": 37945,
+        "gzip": 13583,
+        "brotli": 12224
+      },
+      "reason": "Shared edit logic for lanes that take turns: zooms, speed-ups and captions stop at their neighbours, and saved overlapping captions are separated by the normalizer. Reviewed and approved by Hazem. CI same-runner main/head: raw 35747 to 36839, gzip 12793 to 13187, brotli 11508 to 11867 bytes; caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/209"
+    },
+    {
+      "file": "dist/lib/chunks/edit-list.ts-a6938d76f655.mjs",
+      "cap": {
+        "raw": 21103,
+        "gzip": 6065,
+        "brotli": 5384
+      },
+      "reason": "Library chunk renamed by content hash because the shared taking-turns rule (effect-room) joined the edit list chunk; it replaces edit-list.ts-6c83b0ee7920.mjs. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 20488, gzip new to 5888, brotli new to 5227 bytes (the old chunk was 20479 raw); caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/209"
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "brotli": 246
+      },
+      "reason": "Brotli output of this unchanged icon chunk shifted by two bytes with the new chunk graph; replaces the earlier brotli-only allowance. Reviewed and approved by Hazem. CI same-runner main/head: brotli 236 to 238 bytes; cap keeps the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/209"
     }
   ]
 }
