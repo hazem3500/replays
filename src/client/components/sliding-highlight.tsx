@@ -72,9 +72,13 @@ export function useSlidingHighlight(
  * The horizontal sibling for segmented controls and tabs: one pill (or underline) that slides to the
  * selected cell (Motion transform and width). It jumps without motion on
  * the first placement (a popover opening), on resizes, and on rapid changes (a held arrow key).
- * `selector` finds the selected cell inside `container`; `value` is what changes when the selection does.
+ * `selector` finds the selected cell inside `container`; `value` is what changes when the selection does. `rows` is for a
+ * control that wraps onto more than one line: the pill then also follows the cell's top and height.
  */
-export function useSlidingPill(container: RefObject<HTMLElement | null>, { selector, value }: { selector: string; value: unknown }) {
+export function useSlidingPill(
+  container: RefObject<HTMLElement | null>,
+  { selector, value, rows = false }: { selector: string; value: unknown; rows?: boolean },
+) {
   const pill = useRef<HTMLSpanElement>(null);
   const last = useRef({ at: 0, placed: false });
 
@@ -88,7 +92,10 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, { selec
         element.style.opacity = '0';
         return;
       }
-      moveLayer(element, { opacity: '1', width: `${cell.offsetWidth}px`, transform: `translateX(${cell.offsetLeft}px)` }, !animate);
+      const pose = rows
+        ? { height: `${cell.offsetHeight}px`, transform: `translate(${cell.offsetLeft}px, ${cell.offsetTop}px)` }
+        : { transform: `translateX(${cell.offsetLeft}px)` };
+      moveLayer(element, { opacity: '1', width: `${cell.offsetWidth}px`, ...pose }, !animate);
     };
     // The selection this placement is for (also handy when inspecting the DOM).
     element.dataset.selected = String(value);
@@ -114,7 +121,7 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, { selec
       observer.disconnect();
       stopLayer(element);
     };
-  }, [container, selector, value]);
+  }, [container, selector, value, rows]);
 
   return pill;
 }
