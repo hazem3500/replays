@@ -1,7 +1,7 @@
 import { animate } from 'motion/mini';
 import { useLayoutEffect, useRef } from 'react';
 
-/** Region handles follow hover, focus and selection without introducing React renders during pointer movement. */
+/** Region edge marks follow hover, focus and selection, and the Remove bubble selection, without React renders during pointer movement. */
 export function useRegionFeedback(selected: boolean) {
   const element = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
@@ -11,10 +11,12 @@ export function useRegionFeedback(selected: boolean) {
     let focused = root.contains(document.activeElement);
     let hovered = matchMedia('(hover: hover) and (pointer: fine)').matches && root.matches(':hover');
     const update = () => {
-      const target = selected || focused || hovered ? 1 : 0;
+      const edges = selected || focused || hovered ? 1 : 0;
       const instant =
         document.documentElement.hasAttribute('data-timeline-dragging') || matchMedia('(prefers-reduced-motion: reduce)').matches;
       for (const node of root.querySelectorAll<HTMLElement>('.tl-region-edge-mark, .tl-region-remove')) {
+        // why: the Remove bubble floats over the lane above, so it shows only for the selected region, never on hover.
+        const target = node.classList.contains('tl-region-remove') ? Number(selected) : edges;
         const from = getComputedStyle(node).opacity;
         // invariant: never animate or stop an unrendered element; Motion's stop commits styles and throws on it.
         const rendered = node.getClientRects().length > 0;

@@ -2,12 +2,11 @@ import type { ComponentProps, ReactNode } from 'react';
 
 import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
-import { cn } from '@/lib/utils.ts';
 
 /**
  * The building blocks every inspector panel shares, so zoom, speed, blur, caption, highlight, cut and trim read as
- * one family: a section is a label with its live value on the right, the control under it and at most one quiet
- * line of help. Sections are separated by hairlines on a 16 px rhythm (inspector.css).
+ * one family: a section is a soft rounded card holding a label with its live value in the corner, the control under it
+ * and at most one quiet line of help (inspector.css).
  */
 export function InspectorSection({
   label,
@@ -48,26 +47,26 @@ export function InspectorSection({
   );
 }
 
-/** The panel's closing actions, after the last section. */
+/** The panel's actions under its cards (a range's cut and highlight). */
 export function InspectorFooter({ children }: { children: ReactNode }) {
   return <div className="inspector-footer">{children}</div>;
 }
 
 /**
- * A footer action: full width, icon first. `danger` removes the object (red, never filled, so it is not the panel's
- * loudest thing); `neutral` resets or restores; `primary` is the one thing the panel is for (cutting a range).
+ * A footer action, icon first, sharing the row with its neighbour. `primary` is the one thing the panel is for (cutting
+ * a range); `neutral` is the quieter alternative. Removing or resetting an object lives in the header instead.
  */
 export function InspectorAction({
   tone = 'neutral',
   icon,
   children,
   ...props
-}: Omit<ComponentProps<typeof Button>, 'variant' | 'size'> & { tone?: 'danger' | 'neutral' | 'primary'; icon: AnimatedIconName }) {
+}: Omit<ComponentProps<typeof Button>, 'variant' | 'size'> & { tone?: 'neutral' | 'primary'; icon: AnimatedIconName }) {
   return (
     <Button
       variant={tone === 'primary' ? 'secondary' : 'ghost'}
       size="lg"
-      className={cn('inspector-action gap-2 px-2.5', tone === 'primary' ? 'justify-center' : 'justify-start')}
+      className="inspector-action justify-center gap-2 px-2.5"
       data-tone={tone}
       {...props}
     >

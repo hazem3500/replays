@@ -14,7 +14,14 @@ import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { useFocusWhen } from '../hooks/use-focus-when.ts';
 import { type ChangeEdits, effectList, type Selection } from './state.ts';
-import { objectTitle, SelectionBody, selectionSpan, type SelectionCommands, type SelectionPanels } from './SelectionInspector.tsx';
+import {
+  ObjectHeaderAction,
+  objectTitle,
+  SelectionBody,
+  selectionSpan,
+  type SelectionCommands,
+  type SelectionPanels,
+} from './SelectionInspector.tsx';
 
 function effectLabel(kind: 'zoom' | 'speed' | 'blur' | 'caption', text: string) {
   if (text) return `Caption · ${text}`;
@@ -172,6 +179,7 @@ export function MobileInspector({
         <h2 ref={heading} tabIndex={-1}>
           {title}
         </h2>
+        {cursorOpen || placingBlur ? null : <ObjectHeaderAction kind={selection?.kind} title={title} onAction={commands.onDelete} />}
         <Button variant="ghost" onClick={commands.onDone} data-testid="mobile-object-done">
           Done
         </Button>
@@ -179,14 +187,7 @@ export function MobileInspector({
       {cursorOpen ? panels.cursorInspector : null}
       {placingBlur && !cursorOpen ? <p>Drag over the area to hide on the preview. Done cancels placement.</p> : null}
       {cursorOpen || placingBlur ? null : (
-        <SelectionBody
-          retime={{ edits, selection, duration, change, commands }}
-          title={title}
-          from={from}
-          to={to}
-          panels={panels}
-          commands={commands}
-        />
+        <SelectionBody retime={{ edits, selection, duration, change, commands }} from={from} to={to} panels={panels} commands={commands} />
       )}
     </section>
   );
