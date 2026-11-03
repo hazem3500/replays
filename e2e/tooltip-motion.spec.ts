@@ -9,11 +9,18 @@ interface Frame {
   y: number;
 }
 
+declare global {
+  interface Window {
+    /** Where the open shared tooltip's positioner was on each sampled frame (null while none was open). */
+    tipFrames?: (Frame | null)[];
+  }
+}
+
 /** Records where the open shared tooltip's positioner is on each of the next `count` animation frames. */
 async function recordFrames(page: Page, count: number) {
   await page.evaluate((frames) => {
     const rects: (Frame | null)[] = [];
-    Object.assign(window, { tipFrames: rects });
+    window.tipFrames = rects;
     const sample = () => {
       const box = document.querySelector('.tip-morph-positioner[data-open]')?.getBoundingClientRect();
       rects.push(box ? { x: Math.round(box.x), y: Math.round(box.y) } : null);
@@ -24,8 +31,8 @@ async function recordFrames(page: Page, count: number) {
 }
 
 async function recordedFrames(page: Page, count: number) {
-  await page.waitForFunction((frames) => (window as unknown as { tipFrames: unknown[] }).tipFrames.length >= frames, count);
-  const frames = await page.evaluate(() => (window as unknown as { tipFrames: (Frame | null)[] }).tipFrames);
+  await page.waitForFunction((frames) => (window.tipFrames?.length ?? 0) >= frames, count);
+  const frames = await page.evaluate(() => window.tipFrames ?? []);
   return frames.filter((frame): frame is Frame => frame !== null);
 }
 
