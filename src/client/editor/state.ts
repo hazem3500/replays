@@ -230,6 +230,11 @@ export function effectList(edits: ReplayEdits, kind: EffectKind): EffectRegion[]
   return (edits[LISTS[kind]] ?? []) as EffectRegion[];
 }
 
+/** Whether any effect lane (zoom, speed, blur, caption) holds a region. */
+export function hasEffectLanes(edits: ReplayEdits) {
+  return EFFECT_KINDS.some((kind) => effectList(edits, kind).length > 0);
+}
+
 /** The edits with one lane's regions replaced (an empty lane leaves no list behind). */
 export function withEffectList(edits: ReplayEdits, kind: EffectKind, list: readonly EffectRegion[]): ReplayEdits {
   const { [LISTS[kind]]: _old, ...rest } = edits;

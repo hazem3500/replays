@@ -36,6 +36,40 @@ export const MENU_ICONS = {
       { el: 'circle', attrs: { cx: '12', cy: '10', r: '3' } },
     ],
   },
+  'zoom-in': {
+    ms: 260,
+    motion: { kind: 'shift', scale: 1.1 },
+    parts: [
+      { el: 'circle', attrs: { cx: '11', cy: '11', r: '8' } },
+      { el: 'path', attrs: { d: 'm21 21-4.35-4.35' } },
+      { el: 'path', attrs: { d: 'M11 8v6' } },
+      { el: 'path', attrs: { d: 'M8 11h6' } },
+    ],
+  },
+  'fast-forward': {
+    ms: 280,
+    parts: [
+      {
+        el: 'path',
+        attrs: { d: 'M12 6a2 2 0 0 1 3.414-1.414l6 6a2 2 0 0 1 0 2.828l-6 6A2 2 0 0 1 12 18z' },
+        motion: { kind: 'shift', x: 2 },
+      },
+      {
+        el: 'path',
+        attrs: { d: 'M2 6a2 2 0 0 1 3.414-1.414l6 6a2 2 0 0 1 0 2.828l-6 6A2 2 0 0 1 2 18z' },
+        motion: { kind: 'shift', x: 1.5, delay: 40 },
+      },
+    ],
+  },
+  'eye-off': {
+    ms: 300,
+    parts: [
+      { el: 'path', attrs: { d: 'M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49' } },
+      { el: 'path', attrs: { d: 'M14.084 14.158a3 3 0 0 1-4.242-4.242' } },
+      { el: 'path', attrs: { d: 'M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143' } },
+      { el: 'path', attrs: { d: 'm2 2 20 20' }, motion: { kind: 'draw' } },
+    ],
+  },
   'columns-2': {
     ms: 260,
     parts: [

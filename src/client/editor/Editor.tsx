@@ -29,7 +29,7 @@ import { EditCaption } from '../edit-caption.tsx';
 import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
-import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
+import { Durations, EditorPlayButton, EditorTime } from './EditorTransport.tsx';
 import { EDITOR_DOCK } from './dock-size.ts';
 import { EditHistory, InspectorAside, PhoneUndo, WaitSuggestion } from './EditorChrome.tsx';
 import { removeSelection } from './remove-selection.ts';
@@ -72,6 +72,7 @@ import {
   noRoomFor,
   type EffectKind,
   effectList,
+  hasEffectLanes,
   NEW_EFFECT_MS,
   withEffectList,
 } from './state.ts';
@@ -81,7 +82,7 @@ import { applyHighlight, periodHighlight, pointHighlight } from './highlight-act
 import { Timeline } from './Timeline.tsx';
 import { useBetaFlag } from '../settings/labs.ts';
 import { CursorInspector } from './CursorInspector.tsx';
-import { AddMenu, BarTools } from './EditorTools.tsx';
+import { AddMenu, BarTools, LaneInvitation } from './EditorTools.tsx';
 import { IS_MAC, MOD } from './editor-tools.ts';
 import { EditorShortcutSheet } from './EditorShortcutSheet.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
@@ -875,24 +876,27 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
               ) : null}
               {mobile ? null : (
                 <div className="editor-bar" role="group" aria-label="Playback and tools">
-                  <EditorPlayButton onSwitch={playPause} />
-                  <EditorClock />
-                  <span className="editor-bar-divider" aria-hidden="true" />
-                  <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
-                    <BarTools
-                      rangeSelected={selection?.kind === 'range'}
-                      suggesting={suggesting}
-                      onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
+                  <div className="editor-bar-start">
+                    <EditorPlayButton onSwitch={playPause} />
+                    <EditorTime total={timeline.originalDuration} />
+                  </div>
+                  <div className="editor-bar-tools">
+                    <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
+                      <BarTools
+                        rangeSelected={selection?.kind === 'range'}
+                        suggesting={suggesting}
+                        onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
+                      />
+                    </EditorPluginTools>
+                    <span className="editor-bar-divider" aria-hidden="true" />
+                    <AddMenu
+                      onAdd={actions.effect}
+                      onPointHighlight={actions.pointHighlight}
+                      onPeriodHighlight={actions.periodHighlight}
+                      showEmptyTracks={showEmptyTracks}
+                      onShowEmptyTracks={setShowEmptyTracks}
                     />
-                  </EditorPluginTools>
-                  <span className="editor-bar-divider" aria-hidden="true" />
-                  <AddMenu
-                    onAdd={actions.effect}
-                    onPointHighlight={actions.pointHighlight}
-                    onPeriodHighlight={actions.periodHighlight}
-                    showEmptyTracks={showEmptyTracks}
-                    onShowEmptyTracks={setShowEmptyTracks}
-                  />
+                  </div>
                   <div className="editor-bar-end">
                     {suggesting && suggestions.length ? (
                       <WaitSuggestion count={suggestions.length} onApply={applySuggestions} onDismiss={() => setSuggesting(false)} />
@@ -960,6 +964,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   />
                 )}
               </div>
+              {mobile || showEmptyTracks || hasEffectLanes(edits) ? null : <LaneInvitation onAdd={actions.effect} />}
               {mobile ? (
                 <>
                   {mobileSelection ? (
