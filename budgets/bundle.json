@@ -384,8 +384,8 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
-      "gzip": 9037,
-      "brotli": 8079
+      "gzip": 9311,
+      "brotli": 8068
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -440,7 +440,7 @@
     "dist/client/assets/Viewer-HASH.js": {
       "raw": 74027,
       "gzip": 26665,
-      "brotli": 23007
+      "brotli": 22998
     },
     "dist/client/assets/VitalsTile-HASH.js": {
       "raw": 691,
@@ -2104,14 +2104,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/213"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "brotli": 8079
-      },
-      "reason": "The collapsed runs rail draws a monogram tile per run with a corner status dot, and names a run without a recording with visually hidden text. Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: brotli 7789 to 7843 bytes; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/213"
-    },
-    {
       "file": "dist/client/assets/tiles-HASH.js",
       "cap": {
         "raw": 1468,
@@ -2139,6 +2131,15 @@
         "brotli": 8986
       },
       "reason": "Recorder default UI redesign: one concentric floating pill with status icons, a red Stop control with hover, focus and press states, soft-tinted Open and Copy link actions, refined consent and review dialogs and their entrance motion. Reviewed and approved by Hazem. Same-runner main to head: raw 30694 to 36944, gzip 8330 to 9948, brotli 7295 to 8724 bytes; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/213"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "gzip": 9311,
+        "brotli": 8068
+      },
+      "reason": "The collapsed runs rail draws a monogram tile per run with a corner status dot, and names a run without a recording with visually hidden text. Small justified growth under Hazem's standing approval (2026-11-03). CI same-runner main to head: gzip 9004 to 9039, brotli 7799 to 7833 bytes; caps are head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/213"
     }
   ]
