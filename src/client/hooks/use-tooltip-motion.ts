@@ -37,6 +37,8 @@ interface GeometryOptions {
   keys: readonly string[];
   previous: Map<string, string>;
   instant: boolean;
+  /** A change may glide only while the tooltip is switching triggers; otherwise it is placed. */
+  hopping: boolean;
   running: Map<Element, ReturnType<typeof animate>>;
   cssVariables?: boolean;
 }
@@ -60,47 +62,16 @@ function geometryFrames(node: HTMLElement, { keys, previous, running, cssVariabl
 }
 
 function tooltipGeometry(node: HTMLElement, options: GeometryOptions) {
-  const { instant, running } = options;
+  const { instant, hopping, running } = options;
   const { frames, targets } = geometryFrames(node, options);
-  if (Object.keys(frames).length === 0 && !instant) return;
+  const moved = Object.keys(frames).length > 0;
+  if (!moved && !instant) return;
   running.get(node)?.stop();
   running.delete(node);
   // invariant: stopping Motion commits its current values; restore Base UI's targets before observing more writes.
   for (const [key, target] of targets) if (node.style.getPropertyValue(key) !== target) node.style.setProperty(key, target);
-  if (instant || typeof node.animate !== 'function' || Object.keys(frames).length === 0) return;
+  if (instant || !hopping || typeof node.animate !== 'function' || !moved) return;
   running.set(node, animate([node], frames, { duration: 0.18, ease: [0.23, 1, 0.32, 1] }));
-}
-
-/**
- * invariant: an opening tooltip is placed, never flown in. Base UI writes a provisional position before it measures
- * the trigger, then the real one; both land inside the first frames after `data-open` appears, so geometry stays
- * instant until two frames have passed and only hops between triggers of an already visible tooltip glide.
- */
-function settleAfterOpen() {
-  let open = false;
-  let settling = false;
-  let frame = 0;
-  const cancel = () => {
-    if (frame) cancelAnimationFrame(frame);
-    frame = 0;
-  };
-  return {
-    cancel,
-    settling(nowOpen: boolean) {
-      if (nowOpen && !open) {
-        settling = true;
-        cancel();
-        frame = requestAnimationFrame(() => {
-          frame = requestAnimationFrame(() => {
-            frame = 0;
-            settling = false;
-          });
-        });
-      }
-      open = nowOpen;
-      return settling;
-    },
-  };
 }
 
 /** Neighbouring tooltip geometry and retained labels share a cancellable Motion timeline; keyboard hops remain immediate. */
@@ -117,18 +88,21 @@ export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) 
     const dimensions = new Map<string, string>();
     const labels = new WeakMap<Element, string>();
     const running = new Map<Element, ReturnType<typeof animate>>();
-    const opening = settleAfterOpen();
     const update = () => {
       const popup = root.querySelector<HTMLElement>('.tip-morph-popup');
       const instant =
-        opening.settling(root.hasAttribute('data-open')) ||
         root.hasAttribute('data-tip-jump') ||
         root.hasAttribute('data-instant') ||
         Boolean(popup?.hasAttribute('data-instant')) ||
         !root.hasAttribute('data-open') ||
         matchMedia('(prefers-reduced-motion: reduce)').matches;
-      tooltipGeometry(root, { keys: ['top', 'left', 'right', 'bottom'], previous: positions, instant, running });
-      if (popup) tooltipGeometry(popup, { keys: ['width', 'height'], previous: dimensions, instant, running, cssVariables: true });
+      // invariant: an opening tooltip is placed, never flown in. Base UI writes a provisional corner position before it
+      // measures the trigger, at a time that depends on the machine; only a switch between triggers shows an outgoing
+      // label, so only that switch may glide.
+      const hopping = Boolean(root.querySelector('.tip-morph-viewport > [data-previous]'));
+      const geometry = { instant, hopping, running };
+      tooltipGeometry(root, { keys: ['top', 'left', 'right', 'bottom'], previous: positions, ...geometry });
+      if (popup) tooltipGeometry(popup, { keys: ['width', 'height'], previous: dimensions, ...geometry, cssVariables: true });
       tooltipLabels(root, instant, labels, running);
     };
     update();
@@ -141,7 +115,6 @@ export function useTooltipMotion(forwardedRef: Ref<HTMLDivElement> | undefined) 
     });
     return () => {
       observer.disconnect();
-      opening.cancel();
       for (const animation of running.values()) animation.stop();
     };
   }, []);

@@ -19,22 +19,21 @@ function place(positioner: HTMLElement, top: number, left: number) {
 /** Lets the hook's MutationObserver see the writes. */
 const observed = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-/** Animation frames run only when a test says a frame has passed, so a slow machine cannot settle the tooltip early. */
-let queued: FrameRequestCallback[] = [];
-function frames(count: number) {
-  for (let frame = 0; frame < count; frame++) {
-    const due = queued;
-    queued = [];
-    for (const callback of due) callback(performance.now());
-  }
-}
-
 function geometryAnimations() {
   return animations.mock.calls.filter(([keyframes]) => keyframes && ['top', 'left'].some((key) => key in keyframes));
 }
 
+/** Base UI's viewport during a switch between triggers: the outgoing label stays over the incoming one. */
+function switchLabels(positioner: HTMLElement) {
+  const outgoing = document.createElement('div');
+  outgoing.setAttribute('data-previous', '');
+  positioner.querySelector('.tip-morph-viewport')?.prepend(outgoing);
+}
+
 async function openPositioner() {
-  await settle(() => root.render(createElement(TooltipPositionMotion)));
+  const label = createElement('div', { 'data-current': '' }, 'Highlight this moment');
+  const viewport = createElement('div', { className: 'tip-morph-viewport' }, label);
+  await settle(() => root.render(createElement(TooltipPositionMotion, null, viewport)));
   const positioner = host.firstElementChild;
   if (!(positioner instanceof HTMLElement)) throw new Error('expected the positioner to mount');
   positioner.setAttribute('data-open', '');
@@ -49,9 +48,6 @@ describe('tooltip position motion', () => {
   beforeEach(() => {
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
     vi.stubGlobal('matchMedia', () => ({ matches: false }));
-    queued = [];
-    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => queued.push(callback));
-    vi.stubGlobal('cancelAnimationFrame', () => undefined);
     animations = vi.spyOn(HTMLElement.prototype, 'animate');
     host = document.createElement('div');
     document.body.append(host);
@@ -72,9 +68,19 @@ describe('tooltip position motion', () => {
     expect(positioner.style.getPropertyValue('left')).toBe('640px');
   });
 
-  it('glides to a neighbouring trigger once the open tooltip has settled', async () => {
+  it('places a reopened tooltip without gliding from where it last closed', async () => {
     const positioner = await openPositioner();
-    frames(3);
+    positioner.removeAttribute('data-open');
+    await observed();
+    positioner.setAttribute('data-open', '');
+    place(positioner, 120, 980);
+    await observed();
+    expect(geometryAnimations()).toHaveLength(0);
+  });
+
+  it('glides when it switches to a neighbouring trigger while showing', async () => {
+    const positioner = await openPositioner();
+    switchLabels(positioner);
     place(positioner, 412, 700);
     await observed();
     expect(geometryAnimations()).toHaveLength(1);
