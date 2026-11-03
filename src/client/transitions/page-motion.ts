@@ -1,11 +1,16 @@
+import { spring } from 'motion';
+
 import type { AppRouter } from '../router.tsx';
 import { type Page, pageOf, pageOfPublicPath } from '../routing/page-key.ts';
 import { preparePage } from '../routing/pages.ts';
 import { settleFocus, stopFocusHandOff } from './focus.ts';
 import { forgetHint, onCardIntent, writeHint } from './open-hint.ts';
-import { cardFor, cardPicture, name, unnameAll, viewerPicture } from './shared-elements.ts';
+import { cardFor, cardPicture, namePicture, unnameAll, viewerPicture } from './shared-elements.ts';
+import { motionView } from './motion-view.ts';
 import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from './state.ts';
-import './page-motion.css';
+import { stopPictureWait, waitForPicture } from './wait-for-picture.ts';
+import { createCompositorHero } from './compositor-hero.ts';
+import { createRecordingTransition } from './recording-transition.ts';
 
 /* why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
  * the Query cache, the loaded viewer code and the index itself (kept mounted but hidden, routing/KeptIndex.tsx)
@@ -30,6 +35,8 @@ interface Plan {
   turn: number;
   before: () => Element | undefined;
   after: () => Element | undefined;
+  waitForStage: boolean;
+  card: HTMLElement | undefined;
 }
 
 function directionFor(from: Page, to: Page): Direction {
@@ -68,25 +75,63 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
   const root = document.documentElement;
   unnameAll();
   delete root.dataset.pageHero;
-  root.dataset.pageTransition = 'page';
+  root.dataset.pageTransition = 'motion-page';
+  // why: the returning snapshot must match the focused card's brightness before focus is restored at handoff.
+  if (plan.direction === 'to-index') plan.card?.setAttribute('data-transition-return', '');
   const before = plan.before();
-  name(before, 'vt-page-hero');
-  const transition = document.startViewTransition(async () => {
-    await plan.ready;
-    await commit();
-    if (!isTurn(plan.turn)) return;
-    unnameAll();
-    const after = plan.after();
-    if (before && after) {
-      name(after, 'vt-page-hero');
-      root.dataset.pageHero = plan.direction;
-    }
-  });
+  const recordings = createRecordingTransition(plan.card, plan.direction === 'to-index');
+  if (!recordings.active) namePicture(before, 'vt-page-hero');
+  const hero = createCompositorHero(recordings.active ? undefined : before);
+  const transition = motionView(
+    async () => {
+      await plan.ready;
+      await commit();
+      if (!isTurn(plan.turn)) return;
+      unnameAll();
+      const after = plan.waitForStage ? await waitForPicture(() => isTurn(plan.turn), 500, recordings.ids) : plan.after();
+      if (!isTurn(plan.turn)) return;
+      if (recordings.active && after) {
+        if (recordings.capture()) root.dataset.pageHero = plan.direction;
+      } else if (!recordings.active && before && after) {
+        namePicture(after, 'vt-page-hero');
+        root.dataset.pageHero = plan.direction;
+        hero.capture(after);
+      }
+    },
+    (view) => {
+      view.old({ opacity: [1, 1] }).new({ opacity: [0, 1] });
+      if (recordings.active) {
+        recordings.configure(view);
+        return;
+      }
+      if (!before) return;
+      const returning = plan.direction === 'to-index';
+      view
+        .add('[style*="view-transition-name: vt-page-hero"]')
+        .group(false)
+        .crop(true)
+        .layout({ type: spring, duration: plan.direction === 'to-index' ? 0.46 : 0.52, bounce: 0.24 })
+        // why: the complete stack stays primary in flight; a flat old snapshot must not fill its transparent gaps on Back.
+        .old({ opacity: returning ? [1, 0] : [1, 1] }, { duration: returning ? 0.08 : 0.52 })
+        .new({ opacity: [0, 1] }, { delay: returning ? 0 : 0.4, duration: returning ? 0.08 : 0.12 })
+        .exit({ opacity: [1, 0] }, { duration: 0.12 })
+        .enter({ opacity: [0, 1] });
+    },
+    () => {
+      if (isTurn(plan.turn)) {
+        hero.prepare();
+        recordings.prepare();
+      }
+    },
+  );
   follow(transition);
   void transition.finished
     .catch(() => {})
     .then(() => {
-      if (currentTransition()) return;
+      hero.clear();
+      recordings.clear();
+      plan.card?.removeAttribute('data-transition-return');
+      if (!isTurn(plan.turn)) return;
       delete root.dataset.pageTransition;
       delete root.dataset.pageHero;
       unnameAll();
@@ -102,20 +147,28 @@ export function installPageMotion(router: AppRouter) {
   let opened: HTMLAnchorElement | undefined;
   // invariant: the page change in flight, set before its loaders run and read when the router commits it.
   let plan: Plan | undefined;
+  let commitPlan: Plan | undefined;
+  let opening: { page: Page; turn: number } | undefined;
 
   router.subscribe('onBeforeNavigate', ({ fromLocation, toLocation }) => {
-    stopFocusHandOff();
     const link = clicked;
     const uaAnimated = swiped;
     clicked = undefined;
     swiped = false;
-    plan = undefined;
     if (!fromLocation) return;
-    const from = pageOf(router, fromLocation.pathname);
+    const from = opening && isTurn(opening.turn) ? opening.page : pageOf(router, fromLocation.pathname);
     const to = pageOf(router, toLocation.pathname);
+    // why: suite loaders canonicalize their address before the opening commit updates fromLocation.
+    if (opening?.page.key === to.key && isTurn(opening.turn)) return;
+    stopFocusHandOff();
+    plan = undefined;
+    commitPlan = undefined;
+    opening = undefined;
     if (from.key === to.key) return;
+    stopPictureWait();
     const direction = directionFor(from, to);
     const turn = nextTurn();
+    if (direction === 'to-viewer') opening = { page: to, turn };
     document.documentElement.dataset.navigated = '';
     if (from.kind === 'index')
       // why: a hidden index keeps its DOM: stop any hover preview so it doesn't play on behind the viewer.
@@ -134,13 +187,22 @@ export function installPageMotion(router: AppRouter) {
       animate: direction !== 'page' && !uaAnimated && supportsTransitions(),
       ready,
       turn,
-      before: () => (direction === 'to-viewer' ? cardPicture(match) : viewerPicture()),
+      before: () => (direction === 'to-viewer' ? cardPicture(match) : viewerPicture(true)),
       after: () => (direction === 'to-index' ? cardPicture(cardFor(opensPage(from), opened)) : viewerPicture()),
+      waitForStage: direction === 'to-viewer' && to.kind === 'suite',
+      card: direction === 'to-viewer' ? match?.card : cardFor(opensPage(from), opened)?.card,
     };
+    commitPlan = plan;
   });
 
   // why: the router wraps each commit in its startViewTransition; this one paces and dresses page changes.
-  Object.assign(router, { startViewTransition: (commit: () => Promise<void>) => dressedCommit(plan, commit) });
+  Object.assign(router, {
+    startViewTransition: (commit: () => Promise<void>) => {
+      const current = commitPlan;
+      commitPlan = undefined;
+      return dressedCommit(current, commit);
+    },
+  });
 
   router.subscribe('onRendered', () => {
     const current = plan;
@@ -151,12 +213,14 @@ export function installPageMotion(router: AppRouter) {
     const match = toIndex ? cardFor(opensPage(current.from), opened) : undefined;
     const transition = current.animate ? currentTransition() : undefined;
     if (!transition) {
+      if (opening?.turn === current.turn) opening = undefined;
       settleFocus(toIndex, match);
       return;
     }
     void transition.finished
       .catch(() => {})
       .then(() => {
+        if (opening?.turn === current.turn) opening = undefined;
         if (isTurn(current.turn)) settleFocus(toIndex, match);
       });
   });

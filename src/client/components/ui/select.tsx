@@ -1,5 +1,7 @@
 'use client';
 
+import { SurfaceMotion } from './surface-motion.tsx';
+
 import * as React from 'react';
 import { Select as SelectPrimitive } from '@base-ui/react/select';
 import { cn } from '@/lib/utils.ts';
@@ -63,6 +65,7 @@ function SelectContent({
         className="isolate z-50"
       >
         <SelectPrimitive.Popup
+          render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="popover" />}
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(

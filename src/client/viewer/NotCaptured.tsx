@@ -45,12 +45,15 @@ export function NotCaptured({
   const help = captureHelp(track, meta.source ?? 'agent', meta.url);
   return (
     <StateView
-      kind="not-captured"
+      kind={
+        track === 'performance'
+          ? { kind: 'not-captured', illustration: <GaugeIcon className="size-5 text-[var(--text-tertiary)]" aria-hidden="true" /> }
+          : 'not-captured'
+      }
       layout="panel"
       title={help.title}
       cause={help.why}
       testId={testId}
-      illustration={track === 'performance' ? <GaugeIcon className="size-5 text-[var(--text-tertiary)]" aria-hidden="true" /> : undefined}
     >
       <div className="not-captured-how">
         <p>{help.how}</p>

@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useRef, useState, useSyncExternalStore } fro
 
 import { cn } from '@/lib/utils.ts';
 
+import { usePosterMotion, usePreviewMotion } from '../hooks/use-poster-motion.ts';
 import { apiUrl } from '../api/fetch.ts';
 import { PosterPlaceholder } from './PosterPlaceholder.tsx';
 import { currentPreviewEnvironment, previewsAllowed } from './preview.ts';
@@ -119,9 +120,11 @@ export function Poster({
   );
   // why: "on its way" breathes only while a poster can still arrive; with posters off it settles on the placeholder.
   const phase = state.phase === 'loading' && off ? 'none' : state.phase;
+  const motion = usePosterMotion(phase);
   return (
-    <span className={cn('poster', `poster-${size}`, className)} data-phase={phase} aria-hidden="true">
+    <span ref={motion} className={cn('poster', `poster-${size}`, className)} data-phase={phase} aria-hidden="true">
       <PosterPlaceholder host={host} thumbhash={thumbhash} fallback={fallback} />
+      {phase === 'loading' && className !== 'back-poster' ? <span className="poster-breath" /> : null}
       {id && state.phase !== 'none' ? (
         <img
           key={state.attempt}
@@ -250,26 +253,7 @@ function PreviewVideo({ id, onEnd, onHalf }: { id: string; onEnd?: () => void; o
     };
   }, [id, info]);
 
-  // The progress hairline follows the clip every frame (timeupdate is too coarse to look smooth).
-  useEffect(() => {
-    if (!shown) return;
-    let frame = 0;
-    let half = false;
-    const tick = () => {
-      const element = video.current;
-      if (element && bar.current && element.duration > 0) {
-        const progress = element.currentTime / element.duration;
-        bar.current.style.transform = `scaleX(${progress})`;
-        if (!half && progress > 0.5) {
-          half = true;
-          callbacks.current.onHalf?.();
-        }
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [shown]);
+  const progress = usePreviewMotion(video, bar, shown, () => callbacks.current.onHalf?.());
 
   if (info?.status !== 'ready') return null;
   return (
@@ -289,7 +273,7 @@ function PreviewVideo({ id, onEnd, onHalf }: { id: string; onEnd?: () => void; o
         onPlaying={() => setShown(true)}
         onEnded={() => callbacks.current.onEnd?.()}
       />
-      <span className="poster-progress" data-shown={shown || undefined}>
+      <span ref={progress} className="poster-progress" data-shown={shown || undefined}>
         <span ref={bar} />
       </span>
     </>

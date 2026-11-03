@@ -50,8 +50,7 @@ async function activate(marker: Locator, page: Page, touch: boolean) {
 }
 
 async function finishEditing(page: Page, touch: boolean) {
-  if (touch) await page.locator('.editor-mobile-header').getByRole('button', { name: 'More actions' }).click();
-  await page.getByRole('link', { name: 'Back to the replay' }).click();
+  await page.getByRole(touch ? 'button' : 'link', { name: 'Back to the replay' }).click();
 }
 
 async function runHighlightFlow(page: Page, width: number, height: number, touch: boolean) {

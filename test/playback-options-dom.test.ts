@@ -126,6 +126,20 @@ describe('playback menu in fullscreen', () => {
     expect(find('.playback-options').getAttribute('aria-expanded')).toBe('true');
   });
 
+  it('normalizes a legacy eight-times rate and caps the slider at four times', async () => {
+    const player = await renderTransport();
+    await act(async () => player.setSpeed(8));
+    expect(player.getState().speed).toBe(4);
+    expect(find('[data-testid="speed-tag"]').textContent).toBe('4×');
+    await click(find('.playback-options'));
+    const rate = find<HTMLInputElement>('.playback-rate-slider input[type="range"]');
+    expect(rate.max).toBe('5');
+    await act(async () => rate.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true, cancelable: true })));
+    expect(player.getState().speed).toBe(4);
+    expect(rate.getAttribute('aria-valuetext')).toBe('4×');
+    expect(document.querySelector('[aria-label="Set playback speed to 8×"]')).toBeNull();
+  });
+
   it('closes an open popup on fullscreen transitions and restores body placement after exit', async () => {
     await renderTransport();
     await click(find('.playback-options'));

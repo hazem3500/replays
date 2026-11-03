@@ -2,7 +2,5 @@
  * ScopeCount.tsx: the toolbar's result count while lists load and refresh. The count keeps feed.css's `.scope-count`
  * type; this adds the refresh dimming and the first-load bar. Imported after feed.css (tailwind.css).
  */
-.scope-count-value { transition: opacity 150ms var(--ease-out); }
 /* A refresh past 300 ms: the count it had stays, quieter, until the new one rolls in. */
-.scope-count[data-state="updating"] .scope-count-value { opacity: 0.55; transition: opacity 200ms var(--ease-out) 300ms; }
 .scope-count-skeleton { --w: 84px; display: inline-block; vertical-align: middle; }

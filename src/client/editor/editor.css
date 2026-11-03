@@ -49,8 +49,6 @@
   .editor-suggest { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
   .editor-suggest kbd { min-width: 0; margin-left: 2px; padding: 0 4px; border: 0; background: none; color: inherit; font-family: var(--sans); opacity: 0.7; }
   .editor-conflict { display: flex; align-items: center; gap: 6px; padding: 4px 0 8px; font-size: var(--text-xs); color: var(--text-secondary); }
-  /* A note (an action that did nothing) reads a step stronger than the standing hint. */
-  .editor-hint[data-note] { color: var(--text-secondary); }
 
   /* ---------- Timeline ---------- */
   .timeline { --gutter: 56px; flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding-bottom: 6px; }
@@ -80,7 +78,7 @@
   .tl-outside { container-type: inline-size; position: absolute; top: 0; bottom: 0; display: grid; place-items: center; overflow: hidden; border-radius: 8px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--canvas) 70%, transparent) 0 6px, color-mix(in srgb, var(--canvas) 55%, transparent) 6px 12px); pointer-events: none; }
   .tl-outside-label { color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
   @container (max-width: 72px) { .tl-outside-label { display: none; } }
-  .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--text-tertiary) 70%, transparent); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
+  .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--text-tertiary) 70%, transparent); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   .tl-clip:has(.tl-trim:is(:hover, :focus-visible)), .tl-clip[data-selected] { box-shadow: inset 0 0 0 2px var(--accent); }
   .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 8%, transparent); }
   /* The trim edges: wide solid tabs with a grip, the obvious thing to grab. */
@@ -95,7 +93,7 @@
   /* Regions (cuts; the effect lanes reuse them). */
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
   .tl-lane[data-tall] .tl-region { top: 6px; bottom: 6px; }
-  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 10px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
+  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 10px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   @media (hover: hover) and (pointer: fine) {
     .tl-track:hover { background-color: var(--surface-raised); }
     .tl-region[data-kind] .tl-region-body:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--text-tertiary); }
@@ -110,9 +108,9 @@
   .tl-region-edge { position: absolute; z-index: 1; top: -2px; bottom: -2px; width: 12px; cursor: ew-resize; touch-action: none; }
   .tl-region-edge[data-edge="from"] { left: -6px; }
   .tl-region-edge[data-edge="to"] { right: -6px; }
-  .tl-region-edge::after { content: ""; position: absolute; top: 25%; bottom: 25%; left: 5px; width: 2px; border-radius: 1px; background: var(--accent); opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
-  .tl-region:focus-within .tl-region-edge::after, .tl-region[data-selected] .tl-region-edge::after { opacity: 1; }
-  @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge::after { opacity: 1; } }
+  .tl-region-edge-mark { position: absolute; top: 25%; bottom: 25%; left: 5px; width: 2px; border-radius: 1px; background: var(--accent); opacity: 0; }
+  .tl-region:focus-within .tl-region-edge-mark, .tl-region[data-selected] .tl-region-edge-mark { opacity: 1; }
+  @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge-mark { opacity: 1; } }
   /* × inside the region's right end (not over the lane above). */
   .tl-region-remove { position: absolute; z-index: 2; top: 50%; right: 4px; margin-top: -9px; width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); cursor: pointer; opacity: 0; pointer-events: none; }
   .tl-region-remove svg { width: 10px; height: 10px; stroke-width: 2.4; }
@@ -196,8 +194,8 @@
   .tl-playhead-knob { position: absolute; top: 0; left: -6px; width: 14px; height: 14px; border-radius: 4px 4px 7px 7px; background: var(--accent); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); cursor: ew-resize; pointer-events: auto; touch-action: none; }
   .timeline:not([data-ready]) .tl-playhead { opacity: 0; }
 
-  .editor-shell :is(.tl-track, .tl-region-body, .tl-region-remove, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer), .editor-shell .tl-region-edge::after { transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, opacity 180ms ease-out; }
-  .editor-shell > .inspector-resizer::after { scale: 1; transition: opacity 180ms ease-out, background-color 180ms ease-out; }
+  .editor-shell :is(.tl-track, .tl-region-body, .tl-region-remove, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer) { transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
+  .editor-shell > .inspector-resizer::after { scale: 1; transition: background-color 180ms ease-out; }
   .editor-shell > .inspector-resizer:is(:hover, :active, :focus-visible)::after { scale: 1; transition-delay: 0ms; }
   [data-timeline-dragging], [data-timeline-dragging] * { cursor: grabbing !important; }
   [data-timeline-dragging] .tl-region, [data-timeline-dragging] .tl-region *, [data-timeline-dragging] .tl-trim { transition: none; animation: none; }
@@ -208,9 +206,6 @@
   .editor-shell.app-shell[data-mobile] .stage-wrap { min-width: 0; flex: 1; }
   .editor-shell.app-shell[data-mobile] .player-stage { min-height: 0; flex: 1; aspect-ratio: auto; max-height: none; }
   .editor-shell[data-mobile] .editor-export svg { display: none; }
-  /* No standing hint on phones (it speaks of keys); a note still shows. */
-  .editor-shell[data-mobile] .editor-hint:not([data-note]) { display: none; }
-  .editor-shell[data-mobile] .editor-hint { padding-left: 28px; }
   /* The setting wraps to its own line on a phone: no divider left dangling at the end of the tools. */
   .editor-shell[data-mobile] .editor-setting-divider { display: none; }
   @media (pointer: coarse) {
@@ -237,7 +232,7 @@
   .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; justify-content: center; padding: 6px 8px; }
   .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc((46dvh - 12px) * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .editor-shell.app-shell[data-mobile] .editor-stage .player-stage { flex: none; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: var(--editor-preview-ratio); background: var(--canvas); }
-  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; min-height: 0; max-height: none; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); }
+  .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'status' 'timeline' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; max-height: none; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); }
   .editor-timeline-content { min-height: 0; display: flex; flex: 1; flex-direction: column; }
   .editor-shell.app-shell[data-mobile] .editor-timeline-content { grid-area: timeline; min-height: 0; overflow: hidden; }
   .editor-add-toolbar { grid-area: tools; position: relative; z-index: 10; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 6px 0; border-top: 1px solid var(--line); }
@@ -272,7 +267,8 @@
   .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) input { box-sizing: border-box; width: 100%; min-width: 0; font-size: 16px; }
   .editor-shell[data-mobile] .editor-setting-divider { display: none; }
   .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; margin: 4px 10px 0; white-space: normal; font-size: var(--text-xs); }
-  .editor-shell[data-mobile] .editor-hint { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
+  .editor-shell.app-shell[data-mobile] .editor-dock:has(.editor-operation-status) { grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; }
+  .editor-shell[data-mobile] .editor-operation-status { grid-area: note; margin: 0; padding: 0 10px 4px; white-space: normal; overflow: visible; font-size: var(--text-xs); line-height: 1.5; }
   .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
   .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
   .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
@@ -293,7 +289,7 @@
 /* Override the shared press-scale utilities only inside the editor. Positioned timeline markers retain their
    transforms; buttons and links stay put while their colours answer hover and press. */
 @layer utilities {
-  .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out, opacity 180ms ease-out; }
+  .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
   .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
   .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
   @media (prefers-reduced-motion: reduce) {

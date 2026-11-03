@@ -59,25 +59,11 @@
   /* Show: fade and move in over 200 ms. Hide (or leave for the other edge): the same caption fades and moves 4 px
      back toward its edge, a little faster (140 ms), whole: useCaptionPresence keeps its text and number so the box
      never collapses before it is gone. */
-  .step-caption-live {
-    --caption-enter: 200ms;
-    --caption-exit: 140ms;
-    --caption-drop: calc(4px * var(--s));
-    transition: opacity var(--caption-enter) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)), translate var(--caption-enter) var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1));
-  }
-  .step-caption-live[data-edge="top"] { --caption-drop: calc(-4px * var(--s)); }
-  .step-caption-live[data-active="false"] { opacity: 0; translate: 0 var(--caption-drop); transition-duration: var(--caption-exit); }
+  .step-caption-live { opacity: 0; }
+  .step-caption-live .step-caption-text { animation: none; }
   .step-caption-live .caption-morph { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  /* A caption change swaps the whole line: the new text fades and rises 2 px (160 ms). Keyed by its text. */
-  .step-caption-live .caption-swap { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; animation: caption-swap-in 160ms var(--ease-out, cubic-bezier(0.23, 1, 0.32, 1)) both; }
-  .step-caption-live[data-active="false"] .caption-swap { animation: none; }
-  @media (prefers-reduced-motion: reduce) {
-    .step-caption-live { transition: opacity var(--caption-exit) linear; translate: none; }
-    .step-caption-live[data-active="false"] { translate: none; }
-    .step-caption-live .step-caption-text, .step-caption-live .caption-swap { animation: none; }
-  }
+  .step-caption-live .caption-swap { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
   /* The step index: a circle 4/3 of the text tall before the label, tabular figures, quieter than the label. */
   .step-caption-number { flex: 0 0 auto; min-width: 1.82em; height: 1.82em; display: inline-grid; place-items: center; padding: 0 0.45em; border-radius: 999px; background: rgb(255 255 255 / 0.16); color: rgb(255 255 255 / 0.82); font-size: 0.733em; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1; }
   @keyframes caption-in { from { opacity: 0; transform: translateY(var(--caption-from)) scale(0.98); } }
-  @keyframes caption-swap-in { from { opacity: 0; transform: translateY(calc(2px * var(--s))); } }
 }

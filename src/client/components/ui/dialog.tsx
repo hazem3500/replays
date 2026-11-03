@@ -1,3 +1,4 @@
+import { SurfaceMotion } from './surface-motion.tsx';
 import * as React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { cn } from '@/lib/utils.ts';
@@ -36,6 +37,7 @@ function DialogClose({ ...props }: DialogPrimitive.Close.Props) {
 function DialogOverlay({ className, ...props }: DialogPrimitive.Backdrop.Props) {
   return (
     <DialogPrimitive.Backdrop
+      render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="backdrop" />}
       data-slot="dialog-overlay"
       className={cn('motion-backdrop fixed inset-0 isolate z-50 bg-(--scrim)', className)}
       {...props}
@@ -55,6 +57,7 @@ function DialogContent({
     <DialogPortal>
       <DialogOverlay />
       <DialogPrimitive.Popup
+        render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="modal" />}
         data-slot="dialog-content"
         className={cn(
           dialogPopupClassName,

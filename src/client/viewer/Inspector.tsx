@@ -1,3 +1,4 @@
+import { useResizerFeedback } from '../hooks/use-resizer-feedback.ts';
 import { memo, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useContext, useMemo, useRef } from 'react';
 
 import type { ReplayBundle } from '../../shared/replay.ts';
@@ -75,6 +76,7 @@ export function InspectorResizer({
   size?: PanelSize;
 }) {
   const drag = useRef<{ startY: number; startHeight: number; current: number } | undefined>(undefined);
+  const ref = useResizerFeedback('horizontal');
   const commit = (next: number) => {
     const value = clampPanelHeight(next, size);
     writeStorage(size.storageKey, String(value));
@@ -93,6 +95,7 @@ export function InspectorResizer({
   return (
     // A tabbable separator is the ARIA pattern for a keyboard-resizable splitter.
     <div
+      ref={ref}
       className="inspector-resizer"
       role="separator"
       aria-orientation="horizontal"
@@ -117,7 +120,10 @@ export function InspectorResizer({
         event.preventDefault();
         event.stopPropagation();
       }}
-    />
+    >
+      <span className="inspector-resizer-line" data-resizer-line="" aria-hidden="true" />
+      <span className="inspector-resizer-grip" data-resizer-grip="" aria-hidden="true" />
+    </div>
   );
 }
 

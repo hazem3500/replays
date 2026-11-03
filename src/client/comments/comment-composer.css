@@ -84,10 +84,7 @@
     color: var(--text);
   }
 }
-.comment-send:active {
-  transform: scale(0.96);
-  transition: transform 100ms var(--ease-out);
-}
+
 
 /* ---------- The line under the box ---------- */
 .comment-composer-note {

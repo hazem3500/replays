@@ -1,21 +1,16 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { hideSurface, showSurface } from './surface-motion.ts';
-import { must } from './testing.ts';
 
 function animatedShell() {
   const shell = document.createElement('div');
   const animations: Array<{ finish: () => void; cancel: ReturnType<typeof vi.fn> }> = [];
   const animate = vi.fn<HTMLElement['animate']>(() => {
-    let finish!: () => void;
-    const finished = new Promise<void>((resolve) => {
-      finish = resolve;
-    });
     const cancel = vi.fn<() => void>();
-    animations.push({ finish, cancel });
     const animation = new Animation();
-    Object.defineProperty(animation, 'finished', { value: finished });
+    Object.defineProperty(animation, 'playState', { configurable: true, value: 'running' });
     animation.cancel = cancel;
+    animations.push({ finish: () => animation.onfinish?.call(animation, new Event('finish') as AnimationPlaybackEvent), cancel });
     return animation;
   });
   shell.animate = animate;
@@ -33,7 +28,8 @@ describe('Recorder surface motion', () => {
     expect(shell.hidden).toBe(false);
     expect(shell.inert).toBe(true);
     expect(shell.getAttribute('aria-hidden')).toBe('true');
-    must(animations[1]).finish();
+    for (const animation of animations.slice(2)) animation.finish();
+    await Promise.resolve();
     await Promise.resolve();
     expect(shell.hidden).toBe(true);
   });
@@ -44,13 +40,14 @@ describe('Recorder surface motion', () => {
     shell.dataset.phase = 'recording';
     hideSurface(shell);
     showSurface(shell);
-    expect(must(animations[1]).cancel).toHaveBeenCalledOnce();
-    must(animations[1]).finish();
+    for (const animation of animations.slice(2)) expect(animation.cancel).toHaveBeenCalledOnce();
+    for (const animation of animations.slice(2)) animation.finish();
+    await Promise.resolve();
     await Promise.resolve();
     expect(shell.hidden).toBe(false);
     expect(shell.inert).toBe(false);
     expect(shell.hasAttribute('aria-hidden')).toBe(false);
-    expect(animations).toHaveLength(2);
+    expect(animations).toHaveLength(4);
   });
 
   it('removes a dismissed surface only after its exit finishes', async () => {
@@ -58,7 +55,8 @@ describe('Recorder surface motion', () => {
     const remove = vi.fn<() => void>();
     hideSurface(shell, remove);
     expect(remove).not.toHaveBeenCalled();
-    must(animations[0]).finish();
+    for (const animation of animations) animation.finish();
+    await Promise.resolve();
     await Promise.resolve();
     expect(remove).toHaveBeenCalledOnce();
   });

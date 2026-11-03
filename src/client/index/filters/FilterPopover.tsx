@@ -1,8 +1,8 @@
-import { ChevronRightIcon } from 'lucide-react';
 import { type KeyboardEvent, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover.tsx';
+import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 
 import { usePluginSnapshot } from '../../plugins/PluginUi.tsx';
 import { ChoiceOptions } from './ChoiceOptions.tsx';
@@ -42,7 +42,7 @@ function ChoiceRow({ choice, onOpen }: { choice: Choice; onOpen: (key: string) =
       <ChoiceIcon name={choice.key} />
       <span className="filter-row-label">{choice.label}</span>
       <span className="filter-row-value">{valueLabel(choice)}</span>
-      <ChevronRightIcon className="filter-chevron" aria-hidden="true" />
+      <AnimatedIcon name="chevron-right" className="filter-chevron" />
     </button>
   );
 }
@@ -147,7 +147,14 @@ export function FilterMenu(state: FilterState) {
           {selected ? (
             <ChoiceOptions key={selected.key} choice={selected} direction={direction} onBack={returnToFilters} />
           ) : (
-            <div key="filters" className="filter-pane" data-panel-direction={direction}>
+            <SurfaceMotion
+              key="filters"
+              open
+              kind="pane"
+              className="filter-pane"
+              data-panel-direction={direction}
+              data-side={direction === 'backward' ? 'left' : 'right'}
+            >
               <div className="filter-menu-head">
                 <span className="filter-menu-title">{filterStrings.filters}</span>
                 {active ? (
@@ -157,7 +164,7 @@ export function FilterMenu(state: FilterState) {
                 ) : null}
               </div>
               <FilterRows rows={rows} state={state} renderChoice={(choice) => <ChoiceRow choice={choice} onOpen={openPanel} />} />
-            </div>
+            </SurfaceMotion>
           )}
         </PopoverContent>
       </Popover>

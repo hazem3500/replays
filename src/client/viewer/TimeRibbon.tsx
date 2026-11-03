@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 
+import { useRibbonHighlightMotion } from '../hooks/use-ribbon-highlight-motion.ts';
 import { usePlayheadProgress } from '../hooks/use-playhead-progress.ts';
 import { useRibbonBrush } from '../hooks/use-ribbon-brush.ts';
 import { usePlayer } from '../player.ts';
@@ -57,6 +58,7 @@ export function TimeRibbon({
   const strip = useRef<HTMLDivElement>(null);
   usePlayheadProgress(strip, span);
   const lit = highlight ? marks.find((mark) => mark.id === highlight) : undefined;
+  const highlightRef = useRibbonHighlightMotion(lit?.id, lit?.at ?? 0, lit?.end ?? 0, span);
   const shown = brush ?? range;
   return (
     <div ref={strip} className="time-ribbon" data-testid={testId} title={STRINGS.hint} aria-hidden="true" {...handlers}>
@@ -83,6 +85,7 @@ export function TimeRibbon({
       ) : null}
       {lit ? (
         <span
+          ref={highlightRef}
           className="ribbon-lit"
           style={{
             left: `${(lit.at / span) * 100}%`,

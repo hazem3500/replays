@@ -1,4 +1,9 @@
+import { useEditorArrival } from '../hooks/use-editor-arrival.ts';
 import { EditorPluginTools } from '../plugins/EditorTools.tsx';
+import { editorSurfaceContext, EditorHostSurface, EditorTopbarActions } from './EditorHostSurface.tsx';
+import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
+import { usePluginSnapshot } from '../plugins/PluginUi.tsx';
+import { resolveSlot } from '../plugins/registry.ts';
 import './editor.css';
 
 import { useQueryClient } from '@tanstack/react-query';
@@ -25,6 +30,7 @@ import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
 import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
+import { EDITOR_DOCK } from './dock-size.ts';
 import { duplicateEffect, splitEffect } from './phone-edits.ts';
 import { type PhoneObjectActions, PhoneObjectToolbar, selectionKey } from './PhoneObjectToolbar.tsx';
 import { PhoneSheet } from './PhoneSheet.tsx';
@@ -72,7 +78,6 @@ import {
 } from './state.ts';
 import { handOff } from './handoff.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { editorHint } from './hint.ts';
 import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
 import { useBetaFlag } from '../settings/labs.ts';
@@ -94,13 +99,12 @@ const RETRY_BASE_MS = 2000;
 const RETRY_MAX_MS = 30_000;
 
 /** The timeline dock: resized from its top edge like the viewer's diagnostics panel, kept under its own key. */
-const DEFAULT_DOCK_HEIGHT = 168;
+const DEFAULT_DOCK_HEIGHT = EDITOR_DOCK.height;
 const DOCK_SIZE: PanelSize = {
-  storageKey: 'replays-editor-dock-height',
+  storageKey: EDITOR_DOCK.storageKey,
   variable: '--dock-height',
-  // Playback, ruler, clip and a quiet hint; effect tracks scroll when the dock is short.
-  min: 148,
-  max: () => Math.max(148, Math.round(window.innerHeight * 0.65)),
+  min: EDITOR_DOCK.min,
+  max: () => Math.max(EDITOR_DOCK.min, Math.round(window.innerHeight * 0.65)),
   label: 'Resize timeline',
 };
 
@@ -138,6 +142,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const [note, say] = useNote();
   const mobile = useMediaQuery(MOBILE_QUERY);
   const shell = useRef<HTMLElement>(null);
+  useEditorArrival(shell);
   const [dockHeight, setDockHeight] = useState(() => initialPanelHeight(DOCK_SIZE, DEFAULT_DOCK_HEIGHT));
   const queryClient = useQueryClient();
   const edits = state.present;
@@ -385,8 +390,9 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         }
         if (!range && kind === 'caption' && !present.captions?.length) {
           const captions = proposeStepCaptions(bundle.steps, duration);
-          if (captions.length) {
-            change(withEffectList(present, 'caption', captions));
+          const first = captions.at(0);
+          if (first) {
+            change(withEffectList(present, 'caption', captions), { kind: 'caption', id: first.id });
             return;
           }
         }
@@ -646,7 +652,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     }
   };
   const sheetKey = selectionKey(mobileSelection);
-  const sheetShown = mobile && (cursorOpen || Boolean(blurPlacement) || (sheetKey !== undefined && sheetFor === sheetKey));
+  const sheetShown =
+    mobile && (sheetFor === 'host' || cursorOpen || Boolean(blurPlacement) || (sheetKey !== undefined && sheetFor === sheetKey));
   const closeSheet = () => {
     setSheetFor(undefined);
     setCursorOpen(false);
@@ -739,370 +746,421 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       }}
     />
   );
-  const empty = isEmptyEdits(edits);
-  const hint = editorHint(selection, suggesting, empty);
+  usePluginSnapshot();
+  const hostInspector =
+    resolveSlot('editor.inspector.sections', [], editorSurfaceContext({ bundle, edits, selection, duration, change, seek: player.seek }))
+      .length > 0;
 
   return (
     <PlayerContext.Provider value={player}>
-      <ViewerContext.Provider value={viewerActions}>
-        <main
-          ref={shell}
-          className="app-shell editor-shell"
-          data-mobile={mobile || undefined}
-          data-testid="editor"
-          style={mobile ? undefined : cssVars({ '--dock-height': `${dockHeight}px` })}
-        >
-          {mobile ? (
-            <header className="editor-mobile-header">
-              <Button variant="ghost" size="icon" aria-label="Back to the replay" onClick={() => void leave(replayHref(id))}>
-                <ArrowLeftIcon aria-hidden="true" />
-              </Button>
-              <div className="editor-mobile-heading">
-                <h1 id="replay-title" title={bundle.meta.title}>
-                  {bundle.meta.title}
-                </h1>
-                {conflict ? (
-                  <span className="editor-save-state" role="status">
-                    Save conflict · choose below
-                  </span>
-                ) : (
-                  <SaveIndicator status={status} dirty={dirty} stored={stored} failure={failure} onRetry={() => void save()} />
-                )}
-              </div>
-              <IconButton label="Undo" disabled={!canUndo(state)} onClick={() => dispatch({ type: 'undo' })} data-testid="undo">
-                <Undo2Icon aria-hidden="true" />
-              </IconButton>
-              <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
-              <MoreMenu
-                theme
-                always
-                items={[
-                  ...menuItems.filter((item) => item.testId !== 'undo'),
-                  ...(cursorCustomization
-                    ? [
-                        {
-                          label: 'Cursor options',
-                          icon: <MousePointer2Icon aria-hidden="true" />,
-                          onSelect: () => {
-                            // why: the menu item leaves with the menu; closing the cursor panel returns to the More trigger.
-                            mobileReturnFocus.current =
-                              shell.current?.querySelector<HTMLElement>('.editor-mobile-header .topbar-more') ?? null;
-                            dispatch({ type: 'select', selection: undefined });
-                            setMobileTrimOpen(false);
-                            setBlurPlacement(undefined);
-                            setCursorOpen(true);
-                          },
-                          testId: 'editor-cursor-options',
-                        },
-                      ]
-                    : []),
-                ]}
-              />
-            </header>
-          ) : (
-            <Topbar
-              title={bundle.meta.title}
-              prefix="Edit"
-              titleId="replay-title"
-              backHref={replayHref(id)}
-              backLabel="Back to the replay"
-              status={<SaveIndicator status={status} dirty={dirty} stored={stored} failure={failure} onRetry={() => void save()} />}
-              menuItems={menuItems}
-              alwaysMenu
-              actions={
-                <>
-                  <div className="editor-history" role="group" aria-label="Edit history">
-                    <IconButton
-                      label="Undo"
-                      shortcut={`${MOD}Z`}
-                      tooltipSide="bottom"
-                      disabled={!canUndo(state)}
-                      onClick={() => dispatch({ type: 'undo' })}
-                      data-testid="undo"
-                    >
-                      <Undo2Icon aria-hidden="true" />
-                    </IconButton>
-                    <IconButton
-                      label="Redo"
-                      shortcut={IS_MAC ? '⇧⌘Z' : 'Ctrl+Y'}
-                      tooltipSide="bottom"
-                      disabled={!canRedo(state)}
-                      onClick={() => dispatch({ type: 'redo' })}
-                      data-testid="redo"
-                    >
-                      <Redo2Icon aria-hidden="true" />
-                    </IconButton>
-                  </div>
-                  <EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />
-                </>
-              }
-            />
-          )}
-          <section className="editor-stage" aria-label="Preview">
-            <EditorPreviewFrame>
-              <PlayerStage />
-              <BlurOverlay
-                edits={edits}
-                selection={selection}
-                dispatch={dispatch}
-                placing={Boolean(blurPlacement)}
-                onCancel={() => setBlurPlacement(undefined)}
-                onPlace={(box) => {
-                  if (!blurPlacement) return;
-                  const added = addEffect(live.current.state.present, 'blur', blurPlacement.from, blurPlacement.to, duration, box);
-                  if (added) change(added.edits, { kind: 'blur', id: added.id });
-                  else say('Choose a position inside the replay to add a blur');
-                  setBlurPlacement(undefined);
-                }}
-              />
-              {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
-            </EditorPreviewFrame>
-            {!mobile && (selection || cursorCustomization) ? (
-              <aside className="editor-presentation" aria-label="Inspector">
-                <EditorInspector
-                  edits={edits}
-                  selection={selection}
-                  duration={duration}
-                  change={change}
-                  commands={selectionCommands}
-                  panels={{
-                    effectControls: <EffectControls edits={edits} selection={selection} change={change} />,
-                    highlightControls: <HighlightControls edits={edits} selection={selection} duration={duration} change={change} />,
-                  }}
-                  replay={cursorInspector}
-                />
-              </aside>
-            ) : null}
-          </section>
-          {mobile ? null : <InspectorResizer shell={shell} height={dockHeight} onCommit={setDockHeight} size={DOCK_SIZE} />}
-          <section className="editor-dock" aria-label={mobile ? 'Editing tools' : 'Timeline'}>
-            {mobile ? <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change} /> : null}
-            {mobile && suggesting && suggestions.length ? (
-              <div className="editor-suggest" role="status" data-testid="wait-suggestions">
-                {suggestions.length} waits found
-                <Button variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
-                  Remove all
+      <EditorHostSurface bundle={bundle} edits={edits} selection={selection} duration={duration} change={change} seek={player.seek}>
+        <ViewerContext.Provider value={viewerActions}>
+          <main
+            ref={shell}
+            className="app-shell editor-shell"
+            data-mobile={mobile || undefined}
+            data-testid="editor"
+            style={mobile ? undefined : cssVars({ '--dock-height': `${dockHeight}px` })}
+          >
+            {mobile ? (
+              <header className="editor-mobile-header">
+                <Button variant="ghost" size="icon" aria-label="Back to the replay" onClick={() => void leave(replayHref(id))}>
+                  <ArrowLeftIcon aria-hidden="true" />
                 </Button>
-                <Button variant="ghost" onClick={() => setSuggesting(false)}>
-                  Dismiss
-                </Button>
-              </div>
-            ) : null}
-            {mobile ? null : (
-              <div className="editor-bar" role="group" aria-label="Playback and tools">
-                <EditorPlayButton onSwitch={playPause} />
-                <EditorClock />
-                <span className="editor-bar-divider" aria-hidden="true" />
-                <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
-                  <BarTools
-                    rangeSelected={selection?.kind === 'range'}
-                    suggesting={suggesting}
-                    onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
-                  />
-                </EditorPluginTools>
-                <span className="editor-bar-divider" aria-hidden="true" />
-                <AddMenu
-                  onAdd={actions.effect}
-                  onPointHighlight={actions.pointHighlight}
-                  onPeriodHighlight={actions.periodHighlight}
-                  showEmptyTracks={showEmptyTracks}
-                  onShowEmptyTracks={setShowEmptyTracks}
-                />
-                <div className="editor-bar-end">
-                  {suggesting && suggestions.length ? (
-                    <span className="editor-suggest" role="status" data-testid="wait-suggestions">
-                      {suggestions.length} {suggestions.length === 1 ? 'wait' : 'waits'} found
-                      <Button size="sm" variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
-                        Remove all <kbd>↵</kbd>
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setSuggesting(false)}>
-                        Dismiss
-                      </Button>
+                <div className="editor-mobile-heading">
+                  <h1 id="replay-title" title={bundle.meta.title}>
+                    {bundle.meta.title}
+                  </h1>
+                  {conflict ? (
+                    <span className="editor-save-state" role="status">
+                      Save conflict · choose below
                     </span>
                   ) : (
-                    <Durations original={timeline.originalDuration} edited={timeline.duration} />
+                    <SaveIndicator status={status} dirty={dirty} stored={stored} failure={failure} onRetry={() => void save()} />
                   )}
                 </div>
-              </div>
-            )}
-            {conflict ? (
-              <div className="editor-conflict" role="status">
-                Newer edits by {conflict.stored.updatedBy ?? 'someone'} · {savedAgo(conflict.stored.updatedAt)}
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    dispatch({ type: 'load', edits: editListOf(conflict.stored) });
-                    setEtag(conflict.etag);
-                    setStored(conflict.stored);
-                    setConflict(undefined);
-                  }}
-                >
-                  Load theirs
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setEtag(conflict.etag);
-                    live.current.etag = conflict.etag;
-                    live.current.conflict = undefined;
-                    setConflict(undefined);
-                  }}
-                >
-                  Keep mine
-                </Button>
-              </div>
-            ) : null}
-            <div id="editor-timeline" className="editor-timeline-content" role="group" aria-label="Editable timeline">
-              {mobile ? (
-                <PhoneTimeline
-                  duration={duration}
-                  edited={timeline.duration}
-                  edits={edits}
-                  steps={bundle.steps}
-                  selection={mobileSelection}
-                  dispatch={timelineDispatch}
-                  onPlayPause={playPause}
+                <EditorTopbarActions
+                  history={
+                    <IconButton label="Undo" disabled={!canUndo(state)} onClick={() => dispatch({ type: 'undo' })} data-testid="undo">
+                      <Undo2Icon aria-hidden="true" />
+                    </IconButton>
+                  }
+                  exports={<EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />}
                 />
-              ) : (
-                <Timeline
-                  duration={duration}
+                <MoreMenu
+                  theme
+                  always
+                  items={[
+                    ...menuItems.filter((item) => item.testId !== 'undo'),
+                    ...(hostInspector
+                      ? [
+                          {
+                            label: 'Replay settings',
+                            icon: <AnimatedIcon name="info" />,
+                            onSelect: () => {
+                              mobileReturnFocus.current =
+                                shell.current?.querySelector<HTMLElement>('.editor-mobile-header .topbar-more') ?? null;
+                              dispatch({ type: 'select', selection: undefined });
+                              setCursorOpen(false);
+                              setBlurPlacement(undefined);
+                              setSheetFor('host');
+                            },
+                          },
+                        ]
+                      : []),
+                    ...(cursorCustomization
+                      ? [
+                          {
+                            label: 'Cursor options',
+                            icon: <MousePointer2Icon aria-hidden="true" />,
+                            onSelect: () => {
+                              // why: the menu item leaves with the menu; closing the cursor panel returns to the More trigger.
+                              mobileReturnFocus.current =
+                                shell.current?.querySelector<HTMLElement>('.editor-mobile-header .topbar-more') ?? null;
+                              dispatch({ type: 'select', selection: undefined });
+                              setMobileTrimOpen(false);
+                              setBlurPlacement(undefined);
+                              setCursorOpen(true);
+                            },
+                            testId: 'editor-cursor-options',
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              </header>
+            ) : (
+              <Topbar
+                title={bundle.meta.title}
+                prefix="Edit"
+                titleId="replay-title"
+                backHref={replayHref(id)}
+                backLabel="Back to the replay"
+                status={<SaveIndicator status={status} dirty={dirty} stored={stored} failure={failure} onRetry={() => void save()} />}
+                menuItems={menuItems}
+                alwaysMenu
+                actions={
+                  <>
+                    <EditorTopbarActions
+                      history={
+                        <div className="editor-history" role="group" aria-label="Edit history">
+                          <IconButton
+                            label="Undo"
+                            shortcut={`${MOD}Z`}
+                            tooltipSide="bottom"
+                            disabled={!canUndo(state)}
+                            onClick={() => dispatch({ type: 'undo' })}
+                            data-testid="undo"
+                          >
+                            <Undo2Icon aria-hidden="true" />
+                          </IconButton>
+                          <IconButton
+                            label="Redo"
+                            shortcut={IS_MAC ? '⇧⌘Z' : 'Ctrl+Y'}
+                            tooltipSide="bottom"
+                            disabled={!canRedo(state)}
+                            onClick={() => dispatch({ type: 'redo' })}
+                            data-testid="redo"
+                          >
+                            <Redo2Icon aria-hidden="true" />
+                          </IconButton>
+                        </div>
+                      }
+                      exports={<EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />}
+                    />
+                  </>
+                }
+              />
+            )}
+            <section className="editor-stage" aria-label="Preview">
+              <EditorPreviewFrame>
+                <PlayerStage />
+                <BlurOverlay
                   edits={edits}
                   selection={selection}
                   dispatch={dispatch}
-                  suggestions={suggestions}
-                  onCutRange={actions.cut}
-                  lanes={<EffectLanes edits={edits} selection={selection} dispatch={dispatch} showEmpty={showEmptyTracks} />}
+                  placing={Boolean(blurPlacement)}
+                  onCancel={() => setBlurPlacement(undefined)}
+                  onPlace={(box) => {
+                    if (!blurPlacement) return;
+                    const added = addEffect(live.current.state.present, 'blur', blurPlacement.from, blurPlacement.to, duration, box);
+                    if (added) change(added.edits, { kind: 'blur', id: added.id });
+                    else say('Choose a position inside the replay to add a blur');
+                    setBlurPlacement(undefined);
+                  }}
                 />
+                {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
+              </EditorPreviewFrame>
+              {!mobile && (selection || cursorCustomization || hostInspector) ? (
+                <aside className="editor-presentation" aria-label="Inspector">
+                  <EditorInspector
+                    edits={edits}
+                    selection={selection}
+                    duration={duration}
+                    change={change}
+                    commands={selectionCommands}
+                    panels={{
+                      effectControls: <EffectControls edits={edits} selection={selection} change={change} />,
+                      highlightControls: <HighlightControls edits={edits} selection={selection} duration={duration} change={change} />,
+                    }}
+                    replay={cursorInspector}
+                  />
+                </aside>
+              ) : null}
+            </section>
+            {mobile ? null : <InspectorResizer shell={shell} height={dockHeight} onCommit={setDockHeight} size={DOCK_SIZE} />}
+            <section className="editor-dock" aria-label={mobile ? 'Editing tools' : 'Timeline'}>
+              {mobile ? (
+                <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change} />
+              ) : null}
+              {mobile && suggesting && suggestions.length ? (
+                <div className="editor-suggest" role="status" data-testid="wait-suggestions">
+                  {suggestions.length} waits found
+                  <Button variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
+                    Remove all
+                  </Button>
+                  <Button variant="ghost" onClick={() => setSuggesting(false)}>
+                    Dismiss
+                  </Button>
+                </div>
+              ) : null}
+              {mobile ? null : (
+                <div className="editor-bar" role="group" aria-label="Playback and tools">
+                  <EditorPlayButton onSwitch={playPause} />
+                  <EditorClock />
+                  <span className="editor-bar-divider" aria-hidden="true" />
+                  <EditorPluginTools context={{ replay: bundle, edits, duration, getTime: player.getTime }} onApply={change}>
+                    <BarTools
+                      rangeSelected={selection?.kind === 'range'}
+                      suggesting={suggesting}
+                      onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
+                    />
+                  </EditorPluginTools>
+                  <span className="editor-bar-divider" aria-hidden="true" />
+                  <AddMenu
+                    onAdd={actions.effect}
+                    onPointHighlight={actions.pointHighlight}
+                    onPeriodHighlight={actions.periodHighlight}
+                    showEmptyTracks={showEmptyTracks}
+                    onShowEmptyTracks={setShowEmptyTracks}
+                  />
+                  <div className="editor-bar-end">
+                    {suggesting && suggestions.length ? (
+                      <span className="editor-suggest" role="status" data-testid="wait-suggestions">
+                        {suggestions.length} {suggestions.length === 1 ? 'wait' : 'waits'} found
+                        <Button size="sm" variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
+                          Remove all <kbd>↵</kbd>
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => setSuggesting(false)}>
+                          Dismiss
+                        </Button>
+                      </span>
+                    ) : (
+                      <Durations original={timeline.originalDuration} edited={timeline.duration} />
+                    )}
+                  </div>
+                </div>
               )}
-            </div>
-            {mobile ? (
-              <>
-                {mobileSelection ? (
-                  <PhoneObjectToolbar selection={mobileSelection} actions={phoneActions} />
+              {conflict ? (
+                <div className="editor-conflict" role="status">
+                  Newer edits by {conflict.stored.updatedBy ?? 'someone'} · {savedAgo(conflict.stored.updatedAt)}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      dispatch({ type: 'load', edits: editListOf(conflict.stored) });
+                      setEtag(conflict.etag);
+                      setStored(conflict.stored);
+                      setConflict(undefined);
+                    }}
+                  >
+                    Load theirs
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEtag(conflict.etag);
+                      live.current.etag = conflict.etag;
+                      live.current.conflict = undefined;
+                      setConflict(undefined);
+                    }}
+                  >
+                    Keep mine
+                  </Button>
+                </div>
+              ) : null}
+              <div id="editor-timeline" className="editor-timeline-content" role="group" aria-label="Editable timeline">
+                {mobile ? (
+                  <PhoneTimeline
+                    duration={duration}
+                    edited={timeline.duration}
+                    edits={edits}
+                    steps={bundle.steps}
+                    selection={mobileSelection}
+                    dispatch={timelineDispatch}
+                    onPlayPause={playPause}
+                  />
                 ) : (
-                  <MobileAddToolbar
-                    objects={mobileTimelineObjects(edits)}
-                    onSelectObject={(object) => {
-                      timelineDispatch({ type: 'select', selection: object.selection });
-                      mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-add-more') ?? null;
-                      player.pause();
-                      player.seek(object.at);
-                      setSheetFor(selectionKey(object.selection));
-                      if (object.selection?.kind === 'caption') focusCaption.current = true;
-                    }}
-                    onTrim={() => {
-                      rememberMobileFocus();
-                      player.pause();
-                      setSheetFor('trim');
-                      setCursorOpen(false);
-                      setMobileTrimOpen(true);
-                      setBlurPlacement(undefined);
-                      dispatch({ type: 'select', selection: { kind: 'trim' } });
-                    }}
-                    onCaption={() => addMobileObject('caption')}
-                    onBlur={() => addMobileObject('blur')}
-                    onZoom={() => addMobileObject('zoom')}
-                    more={[
-                      { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
-                      {
-                        label: selection?.kind === 'range' ? 'Cut selection' : 'Cut at playhead',
-                        action: () => {
-                          rememberMobileFocus();
-                          setCursorOpen(false);
-                          setMobileTrimOpen(false);
-                          setBlurPlacement(undefined);
-                          actions.cut();
-                        },
-                        testId: 'add-cut',
-                      },
-                      { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
-                      {
-                        label: 'Highlight moment',
-                        action: () => {
-                          rememberMobileFocus();
-                          setCursorOpen(false);
-                          setMobileTrimOpen(false);
-                          setBlurPlacement(undefined);
-                          actions.pointHighlight();
-                        },
-                        testId: 'add-point-highlight',
-                      },
-                      ...(cursorCustomization
-                        ? [
-                            {
-                              label: 'Cursor options',
-                              action: () => {
-                                rememberMobileFocus();
-                                setMobileTrimOpen(false);
-                                setBlurPlacement(undefined);
-                                dispatch({ type: 'select', selection: undefined });
-                                setCursorOpen(true);
-                              },
-                            },
-                          ]
-                        : []),
-                      {
-                        label: 'Generate captions from steps',
-                        disabled: Boolean(edits.captions?.length),
-                        action: () => {
-                          const present = live.current.state.present;
-                          if (present.captions?.length) return;
-                          const captions = proposeStepCaptions(bundle.steps, duration);
-                          const first = captions.at(0);
-                          if (first) {
+                  <Timeline
+                    duration={duration}
+                    edits={edits}
+                    selection={selection}
+                    dispatch={dispatch}
+                    suggestions={suggestions}
+                    onCutRange={actions.cut}
+                    lanes={(['zoom', 'speed', 'blur', 'caption'] as const).map((kind, index) => ({
+                      id: `core:${kind}`,
+                      order: (index + 2) * 100,
+                      render: () => (
+                        <EffectLanes only={kind} edits={edits} selection={selection} dispatch={dispatch} showEmpty={showEmptyTracks} />
+                      ),
+                    }))}
+                  />
+                )}
+              </div>
+              {mobile ? (
+                <>
+                  {mobileSelection ? (
+                    <PhoneObjectToolbar selection={mobileSelection} actions={phoneActions} />
+                  ) : (
+                    <MobileAddToolbar
+                      objects={mobileTimelineObjects(edits)}
+                      onSelectObject={(object) => {
+                        timelineDispatch({ type: 'select', selection: object.selection });
+                        mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.editor-add-more') ?? null;
+                        player.pause();
+                        player.seek(object.at);
+                        setSheetFor(selectionKey(object.selection));
+                        if (object.selection?.kind === 'caption') focusCaption.current = true;
+                      }}
+                      onTrim={() => {
+                        rememberMobileFocus();
+                        player.pause();
+                        setSheetFor('trim');
+                        setCursorOpen(false);
+                        setMobileTrimOpen(true);
+                        setBlurPlacement(undefined);
+                        dispatch({ type: 'select', selection: { kind: 'trim' } });
+                      }}
+                      onCaption={() => addMobileObject('caption')}
+                      onBlur={() => addMobileObject('blur')}
+                      onZoom={() => addMobileObject('zoom')}
+                      more={[
+                        { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
+                        {
+                          label: selection?.kind === 'range' ? 'Cut selection' : 'Cut at playhead',
+                          action: () => {
+                            rememberMobileFocus();
                             setCursorOpen(false);
                             setMobileTrimOpen(false);
                             setBlurPlacement(undefined);
-                            change(withEffectList(present, 'caption', captions), { kind: 'caption', id: first.id });
-                          } else say('No recorded steps to caption');
+                            actions.cut();
+                          },
+                          testId: 'add-cut',
                         },
-                        testId: 'generate-step-captions',
-                      },
-                      {
-                        label: 'Zoom on all clicks',
-                        action: () => {
-                          rememberMobileFocus();
-                          setCursorOpen(false);
-                          setMobileTrimOpen(false);
-                          setBlurPlacement(undefined);
-                          const present = live.current.state.present;
-                          const regions = proposeZoomRegions(clicksOf(bundle.events), duration, present.zooms ?? [], undefined, (index) =>
-                            nextEffectId(present, 'zoom', index),
-                          );
-                          const firstRegion = regions.at(0);
-                          if (firstRegion)
-                            change(withEffectList(present, 'zoom', [...(present.zooms ?? []), ...regions]), {
-                              kind: 'zoom',
-                              id: firstRegion.id,
-                            });
-                          else say('No clicks need a zoom');
+                        { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
+                        {
+                          label: 'Highlight moment',
+                          action: () => {
+                            rememberMobileFocus();
+                            setCursorOpen(false);
+                            setMobileTrimOpen(false);
+                            setBlurPlacement(undefined);
+                            actions.pointHighlight();
+                          },
+                          testId: 'add-point-highlight',
                         },
-                      },
-                    ]}
-                  />
-                )}
-                <PhoneSheet
-                  open={sheetShown}
-                  label={objectTitle(mobileSelection?.kind, cursorOpen, Boolean(blurPlacement))}
-                  container={shell}
-                  onClose={closeSheet}
-                >
-                  {phoneInspector}
-                </PhoneSheet>
-              </>
-            ) : null}
-            <p className="editor-hint" data-testid="editor-hint" data-note={note ? '' : undefined}>
-              {note ?? hint}
-            </p>
-            <span className="sr-only" role="status">
-              {note}
-            </span>
-          </section>
-        </main>
-        <EditorShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
-      </ViewerContext.Provider>
+                        ...(cursorCustomization
+                          ? [
+                              {
+                                label: 'Cursor options',
+                                action: () => {
+                                  rememberMobileFocus();
+                                  setMobileTrimOpen(false);
+                                  setBlurPlacement(undefined);
+                                  dispatch({ type: 'select', selection: undefined });
+                                  setCursorOpen(true);
+                                },
+                              },
+                            ]
+                          : []),
+                        {
+                          label: 'Generate captions from steps',
+                          disabled: Boolean(edits.captions?.length),
+                          action: () => {
+                            const present = live.current.state.present;
+                            if (present.captions?.length) return;
+                            const captions = proposeStepCaptions(bundle.steps, duration);
+                            const first = captions.at(0);
+                            if (first) {
+                              setCursorOpen(false);
+                              setMobileTrimOpen(false);
+                              setBlurPlacement(undefined);
+                              change(withEffectList(present, 'caption', captions), { kind: 'caption', id: first.id });
+                            } else say('No recorded steps to caption');
+                          },
+                          testId: 'generate-step-captions',
+                        },
+                        {
+                          label: 'Zoom on all clicks',
+                          action: () => {
+                            rememberMobileFocus();
+                            setCursorOpen(false);
+                            setMobileTrimOpen(false);
+                            setBlurPlacement(undefined);
+                            const present = live.current.state.present;
+                            const regions = proposeZoomRegions(clicksOf(bundle.events), duration, present.zooms ?? [], undefined, (index) =>
+                              nextEffectId(present, 'zoom', index),
+                            );
+                            const firstRegion = regions.at(0);
+                            if (firstRegion)
+                              change(withEffectList(present, 'zoom', [...(present.zooms ?? []), ...regions]), {
+                                kind: 'zoom',
+                                id: firstRegion.id,
+                              });
+                            else say('No clicks need a zoom');
+                          },
+                        },
+                      ]}
+                    />
+                  )}
+                  <PhoneSheet
+                    open={sheetShown}
+                    label={sheetFor === 'host' ? 'Replay settings' : objectTitle(mobileSelection?.kind, cursorOpen, Boolean(blurPlacement))}
+                    container={shell}
+                    onClose={closeSheet}
+                  >
+                    <HostSurfaceSlot
+                      slot="editor.inspector.sections"
+                      builtins={
+                        sheetFor === 'host'
+                          ? []
+                          : [
+                              {
+                                id: cursorOpen ? 'core:replay' : 'core:selection',
+                                order: 100,
+                                render: () => phoneInspector,
+                              },
+                            ]
+                      }
+                    />
+                  </PhoneSheet>
+                </>
+              ) : null}
+              {note ? (
+                <p className="editor-operation-status" data-testid="editor-operation-status" aria-hidden="true">
+                  {note}
+                </p>
+              ) : null}
+              <span className="sr-only" role="status" data-testid="editor-operation-announcement">
+                {note}
+              </span>
+            </section>
+          </main>
+          <EditorShortcutSheet open={shortcutsOpen} onOpenChange={setShortcutsOpen} />
+        </ViewerContext.Provider>
+      </EditorHostSurface>
     </PlayerContext.Provider>
   );
 }
@@ -1145,12 +1203,12 @@ function nextEffectId(edits: ReplayEdits, kind: EffectKind, index: number) {
   }
 }
 
-/** How long a note stays in the hint line. */
+/** How long an operation result remains visible. */
 const NOTE_MS = 3200;
 
 /**
- * Feedback for an action that did nothing ("Nothing to cut here"), shown for a moment in the hint line under the
- * timeline, where the eyes already are, instead of a toast over the lanes. A newer note replaces the last.
+ * Feedback for an action that did nothing ("Nothing to cut here"), shown briefly below the timeline and announced
+ * by its stable live region. There is no standing instruction row; a newer note replaces the last.
  */
 function useNote() {
   const [note, setNote] = useState<string>();

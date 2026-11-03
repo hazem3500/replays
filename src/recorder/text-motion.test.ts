@@ -10,7 +10,9 @@ const target = () => {
 const originalAnimate = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'animate');
 const animations: Animation[] = [];
 const animate = vi.fn<() => Animation>(() => {
-  const animation = Object.assign(new EventTarget(), { cancel: vi.fn<() => void>() }) as unknown as Animation;
+  const animation = new Animation();
+  Object.defineProperty(animation, 'playState', { configurable: true, value: 'running' });
+  animation.cancel = vi.fn<() => void>();
   animations.push(animation);
   return animation;
 });
@@ -31,7 +33,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('native recorder text motion', () => {
+describe('recorder text motion', () => {
   it('renders synchronously, keeps shared glyph identity and animates only changed timer digits', () => {
     const node = target();
     node.style.fontVariantNumeric = 'tabular-nums';
@@ -44,7 +46,7 @@ describe('native recorder text motion', () => {
     expect(node.textContent).toBe('0:10');
     expect(node.querySelectorAll('[aria-hidden=true]')[0]).toBe(zero);
     expect(node.querySelectorAll('[aria-hidden=true]')[1]).toBe(colon);
-    expect(animate).toHaveBeenCalledTimes(2); // why: changed digits stay in their timer columns.
+    expect(animate).toHaveBeenCalledTimes(4); // why: each changed digit owns opacity and transform motion.
     expect(node.querySelectorAll('[aria-hidden=true]')).toHaveLength(4);
     expect(node.getAttribute('aria-label')).toBe('0:10');
     expect([...node.querySelectorAll('[data-recorder-word] > span')].every((glyph) => glyph.getAttribute('aria-hidden') === 'true')).toBe(

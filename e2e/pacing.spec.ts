@@ -8,9 +8,10 @@ test('quarter speed is offered, selected, and reachable by keyboard', async ({ p
   await openReplay(page, `${origin()}/r/demo-shop`);
   const menu = page.getByRole('button', { name: /^Playback: / });
   await menu.click();
-  await page.getByRole('button', { name: 'Set playback speed to 0.25×' }).click();
+  const rate = page.getByRole('slider', { name: 'Playback speed' });
+  await rate.press('Home');
   await expect(page.getByTestId('speed-tag')).toHaveText('0.25×');
-  await expect(page.getByRole('button', { name: 'Set playback speed to 0.25×' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(rate).toHaveAttribute('aria-valuetext', '0.25×');
   await page.keyboard.press('Escape');
   await expect(menu).toBeFocused();
   await expect(page.getByRole('dialog', { name: 'Playback' })).toHaveCount(0);
@@ -20,6 +21,24 @@ test('quarter speed is offered, selected, and reachable by keyboard', async ({ p
   await expect(page.getByTestId('speed-tag')).toHaveText('0.25×');
   await page.keyboard.press('<');
   await expect(page.getByTestId('speed-tag')).toHaveText('0.25×');
+});
+
+test('the speed handle stays centered on its track after changing the value', async ({ page }) => {
+  await openReplay(page, `${origin()}/r/demo-shop`);
+  await page.getByRole('button', { name: /^Playback: / }).click();
+  const rate = page.getByRole('slider', { name: 'Playback speed' });
+  for (const key of ['ArrowRight', 'End']) {
+    await rate.press(key);
+    await expect
+      .poll(async () => {
+        const track = await page.locator('.playback-rate-slider [data-slot="slider-track"]').boundingBox();
+        const thumb = await page.locator('.playback-rate-slider [data-slot="slider-thumb"]').boundingBox();
+        if (!track || !thumb) throw new Error('Playback slider must remain visible');
+        return Math.abs(thumb.y + thumb.height / 2 - track.y - track.height / 2);
+      })
+      .toBeLessThanOrEqual(0.5);
+  }
+  await expect(rate).toHaveAttribute('aria-valuetext', '4×');
 });
 
 test('held captions retain their label while the number follows legacy wait and repeated action steps', async ({ page }) => {

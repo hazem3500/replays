@@ -5,11 +5,16 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { ProductMark } from '@/components/brand-mark.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Kbd } from '@/components/ui/kbd.tsx';
+import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
+import { MotionLabel } from '@/components/entry-motion.tsx';
 import { useSlidingPill } from '@/components/sliding-highlight.tsx';
 
 import type { ProfileInfo } from '../../shared/profiles.ts';
 
+import { useIndexMarkHover } from '../hooks/use-index-mark-hover.ts';
 import { useRestAnchor } from '../hooks/use-rest-anchor.ts';
+import { useListArrival } from '../hooks/use-list-arrival.ts';
+import { useCommandSearchMotion } from '../hooks/use-command-search-motion.ts';
 import { productLogo, productName } from '../config.ts';
 import { navigate } from '../routing/navigate.ts';
 import { formatRelative } from '../format.ts';
@@ -39,6 +44,7 @@ export function MarkButton() {
   const button = useRef<HTMLButtonElement>(null);
   const svg = useRef<SVGSVGElement>(null);
   const motion = useRef<ReturnType<typeof createMarkMotion>>(undefined);
+  useIndexMarkHover(button, svg);
   const streak = useRef(createStreak());
   useEffect(() => {
     if (!svg.current) return;
@@ -241,6 +247,8 @@ export function CommandSearch({
   }, [matches, value, total]);
 
   const expanded = open && options.length > 0;
+  useListArrival(search, '.command-option', expanded, options.map((option) => option.id).join('|'));
+  useCommandSearchMotion(search, compact, typing, Boolean(value));
   const current = Math.min(active, Math.max(0, options.length - 1));
   const onKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -266,6 +274,7 @@ export function CommandSearch({
       <label className="search-field command-field">
         <span className="visually-hidden">Search replays</span>
         <AnimatedIcon name="search" />
+        {compact && value && !typing ? <MotionLabel kind="number" className="command-query-dot" aria-hidden="true" /> : null}
         <input
           ref={input}
           type="search"
@@ -314,7 +323,15 @@ export function CommandSearch({
         )}
       </label>
       {/* The listbox stays in the DOM (aria-controls must resolve); hidden while closed. */}
-      <div id={listId} role="listbox" aria-label="Quick results" className="command-results" hidden={!expanded}>
+      <SurfaceMotion
+        open={expanded}
+        kind="popover"
+        id={listId}
+        role="listbox"
+        aria-label="Quick results"
+        className="command-results"
+        hidden={!expanded}
+      >
         {options.map((option, index) => (
           // oxlint-disable-next-line jsx-a11y/click-events-have-key-events -- keys are handled on the combobox input.
           <div
@@ -334,7 +351,7 @@ export function CommandSearch({
             {index === current ? <AnimatedIcon name="corner-down-left" className="command-enter" trigger="state" play={current} /> : null}
           </div>
         ))}
-      </div>
+      </SurfaceMotion>
     </div>
   );
 }
@@ -358,11 +375,18 @@ export function ScopeBar({
   children?: ReactNode;
 }) {
   return (
-    <div className="scope-bar" data-lead={lead ? '' : undefined} data-entering={entering || undefined}>
+    <SurfaceMotion
+      open
+      kind="pane"
+      instant={!entering}
+      className="scope-bar"
+      data-lead={lead ? '' : undefined}
+      data-entering={entering || undefined}
+    >
       {lead}
       {count}
       {children ? <div className="scope-bar-end">{children}</div> : null}
-    </div>
+    </SurfaceMotion>
   );
 }
 

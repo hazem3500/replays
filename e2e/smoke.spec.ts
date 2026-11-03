@@ -109,8 +109,8 @@ test.describe('viewer', () => {
   test('plays to the end and offers a restart', async ({ page }) => {
     await openReplay(page, viewer());
     await page.getByRole('button', { name: /^Playback: / }).click();
-    await page.getByRole('button', { name: 'Set playback speed to 8×' }).click();
-    await expect(page.getByTestId('speed-tag')).toHaveText('8×');
+    await page.getByRole('button', { name: 'Set playback speed to 4×' }).click();
+    await expect(page.getByTestId('speed-tag')).toHaveText('4×');
     await page.getByRole('button', { name: 'Play', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Replay from start' })).toBeVisible({ timeout: 15_000 });
     await expect(playhead(page)).toHaveText('0:08.8');
@@ -242,9 +242,12 @@ test.describe('viewer', () => {
     await openReplay(page, viewer());
     const html = page.locator('html');
     const before = await html.getAttribute('data-theme');
-    await page.getByRole('button', { name: /^Switch to (dark|light) theme/ }).click();
+    await page.getByRole('button', { name: 'More actions' }).click();
+    await page.getByTestId('theme-menu-item').click();
     await expect(html).not.toHaveAttribute('data-theme', before ?? '');
     const after = await html.getAttribute('data-theme');
+    expect(await page.evaluate(() => localStorage.getItem('replays-theme'))).toBe(after);
+    await page.keyboard.press('Escape');
     await page.reload();
     await expect(html).toHaveAttribute('data-theme', after ?? '');
   });

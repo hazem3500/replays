@@ -11,6 +11,7 @@ import {
 
 import { Button } from '@/components/ui/button.tsx';
 import { StateArt } from '@/components/ui/state-view.tsx';
+import { SurfaceMotion } from './surface-motion.tsx';
 
 const ICONS = {
   alert: CircleAlertIcon,
@@ -77,7 +78,7 @@ export function EmptyState({
   const name = icon === undefined ? DEFAULT_ICON[tone] : icon;
   const Icon = name ? ICONS[name] : undefined;
   return (
-    <div className="empty-state" data-tone={tone} data-variant={variant} role={ROLE[tone]} data-testid={testId}>
+    <SurfaceMotion open kind="pane" className="empty-state" data-tone={tone} data-variant={variant} role={ROLE[tone]} data-testid={testId}>
       {Icon ? <EmptyStateGlyph icon={Icon} tone={tone} region={variant === 'region'} /> : null}
       <div className="empty-state-text">
         <p className="empty-state-title">{title}</p>
@@ -98,7 +99,7 @@ export function EmptyState({
           ))}
         </div>
       ) : null}
-    </div>
+    </SurfaceMotion>
   );
 }
 

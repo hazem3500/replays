@@ -1,8 +1,9 @@
-import { CheckIcon, ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { CheckIcon, ChevronLeftIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
+import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 import { Drawer, DrawerClose, DrawerContent, DrawerFooter, DrawerTitle, DrawerTrigger } from '@/components/ui/drawer.tsx';
 
 import { usePluginSnapshot } from '../../plugins/PluginUi.tsx';
@@ -15,15 +16,15 @@ const SHEET = '.filter-sheet';
 function ChoicePanel({ choice, onBack }: { choice: Choice; onBack: (chose: boolean) => void }) {
   return (
     <>
-      <div className="filter-menu-head filter-panel-head filter-pane">
+      <SurfaceMotion open kind="pane" className="filter-menu-head filter-panel-head filter-pane">
         <button type="button" className="filter-back" aria-label={filterStrings.back} onClick={() => onBack(false)}>
           <ChevronLeftIcon aria-hidden="true" />
         </button>
         {/* why: the sheet keeps its name ("Filters"); the panel's own heading says which filter. */}
         <DrawerTitle className="visually-hidden">{filterStrings.filters}</DrawerTitle>
         <span className="filter-menu-title">{choice.label}</span>
-      </div>
-      <div className="filter-options filter-pane" role="radiogroup" aria-label={choice.label}>
+      </SurfaceMotion>
+      <SurfaceMotion open kind="pane" className="filter-options filter-pane" role="radiogroup" aria-label={choice.label}>
         {choice.options.map((option) => {
           const checked = option.value === choice.value;
           return (
@@ -43,7 +44,7 @@ function ChoicePanel({ choice, onBack }: { choice: Choice; onBack: (chose: boole
             </button>
           );
         })}
-      </div>
+      </SurfaceMotion>
     </>
   );
 }
@@ -114,7 +115,7 @@ export function FilterSheet(state: FilterState) {
                 >
                   <span className="filter-row-label">{choice.label}</span>
                   <span className="filter-row-value">{valueLabel(choice)}</span>
-                  <ChevronRightIcon className="filter-chevron" aria-hidden="true" />
+                  <AnimatedIcon name="chevron-right" className="filter-chevron" />
                 </button>
               )}
             />

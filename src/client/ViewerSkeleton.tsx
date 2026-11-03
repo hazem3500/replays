@@ -9,6 +9,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import type { ReplayEdits } from '../shared/edits.ts';
 import type { ReplayStep } from '../shared/replay.ts';
 import { apiUrl } from './api/fetch.ts';
+import { useLoadingProgressMotion } from './hooks/use-loading-progress-motion.ts';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
 import { readStorage } from './storage.ts';
@@ -18,6 +19,7 @@ import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport
 import { replayHref } from './routing/links.ts';
 import { SuiteSidebarSkeleton, TilesSkeleton } from './SuiteLoadingParts.tsx';
 import { Topbar } from './Topbar.tsx';
+import { EDITOR_DOCK } from './editor/dock-size.ts';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
 
@@ -196,8 +198,11 @@ export function EditorSkeleton({
     ? { ...stored, id, ...(meta.title ? { title: meta.title } : {}), ...(meta.viewport ? { viewport: meta.viewport } : {}) }
     : stored;
   const [height] = useState(() => {
-    const saved = Number(readStorage('replays-editor-dock-height'));
-    return Math.round(Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : 168, 148), Math.max(148, viewportHeight() * 0.65)));
+    const saved = Number(readStorage(EDITOR_DOCK.storageKey));
+    const { height: fallback, min } = EDITOR_DOCK;
+    return Math.round(
+      Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : fallback, min), Math.max(min, viewportHeight() * 0.65)),
+    );
   });
   const style = { '--dock-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties;
   const poster = hint?.poster ?? openStillUrl(id);
@@ -261,22 +266,18 @@ export function EditorSkeleton({
 
 /** The thin line under the top bar after 1.2 s: indeterminate, or the share downloaded when the size is known. */
 function ProgressHint() {
-  // Visibility is loading state, not an animation side effect. It must survive disabled/cancelled animations.
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    const timer = window.setTimeout(() => setVisible(true), 1200);
-    return () => window.clearTimeout(timer);
-  }, []);
   const progress = useLoadProgress();
   const share = progress?.total ? Math.min(1, progress.loaded / progress.total) : undefined;
+  const { track, bar, visible } = useLoadingProgressMotion(share);
   return (
     <span
+      ref={track}
       className="sk-progress"
       data-visible={visible || undefined}
       data-determinate={share === undefined ? undefined : ''}
       aria-hidden="true"
     >
-      <span style={share === undefined ? undefined : { transform: `scaleX(${share})` }} />
+      <span ref={bar} style={share === undefined ? undefined : { transform: `scaleX(${share})` }} />
     </span>
   );
 }

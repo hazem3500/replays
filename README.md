@@ -48,6 +48,12 @@ The default `AUTH_MODE=none` is for local use. Read [Authentication](#authentica
 
 Use the browser-only [`@hazem3500/replays/recorder`](docs/recorder.md) entry for consent, private capture and a minimal customizable floating UI. The host supplies its upload transport; no Node or React code enters the browser bundle.
 
+### Compose your own player
+
+Use the [public model, diagnostics, playback and optional React entries](docs/playback-and-model.md) to build your own
+controls and panels around independent recording instances. The [composed viewer example](examples/composed-viewer/)
+includes both React and native DOM hosts without the application router, API or auth provider.
+
 ### Capture a replay
 
 ```bash
@@ -95,12 +101,15 @@ The CLI is not published to npm yet. If you do not already have a checkout, set 
 ```bash
 git clone https://github.com/hazem3500/replays.git && cd replays
 pnpm install --frozen-lockfile
-pnpm cli connect https://replays.example.com/workspace
-pnpm cli doctor
-pnpm cli upload ./out/replay.json
+pnpm build
+pnpm build:cli
+npm install -g .
+replays connect https://replays.example.com/workspace
+replays doctor
+replays upload ./out/replay.json
 ```
 
-Run these `pnpm cli` commands from the checkout. The commands below use `replays` for environments where the packaged CLI is already installed.
+Build and install from the checkout once. The installed `replays` command then works from any directory; contributors can also run the sources with `pnpm cli` from the checkout.
 
 Save a viewer base URL once, including any deployment base path, then upload recordings by filename:
 

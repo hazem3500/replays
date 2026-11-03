@@ -4,6 +4,7 @@ import type { PluginPageDefinition } from './pages.ts';
 import type { SlotConfiguration, SlotDescriptor } from './slots.ts';
 import type { ReplayBundle, ReplaySummary } from '../../shared/replay.ts';
 import type { EditorToolDefinition, ExportFormatDefinition, ShortcutDefinition } from './contributions.ts';
+export type { HostSurfaceContext, HostSurfaceDefinition } from './surface-contracts.ts';
 export type {
   EditorToolContext,
   EditorToolDefinition,

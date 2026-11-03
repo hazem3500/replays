@@ -114,6 +114,27 @@ describe('EmptyState', () => {
     await render({ title: 'No requests', icon: null, variant: 'compact' });
     expect(host.querySelector('.empty-state-icon')).toBeNull();
   });
+
+  it('shows the error and its recovery action without motion when reduced motion is requested', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    const retry = vi.fn<() => void>();
+    try {
+      await render({ title: 'Could not load replays', tone: 'error', actions: [{ id: 'retry', label: 'Try again', onSelect: retry }] });
+      expect(state().getAttribute('role')).toBe('alert');
+      expect(state().textContent).toContain('Could not load replays');
+      expect(animate).not.toHaveBeenCalled();
+      await settle(() => present(host.querySelector<HTMLButtonElement>('button[data-action-id="retry"]')).click());
+      expect(retry).toHaveBeenCalledOnce();
+    } finally {
+      animate.mockRestore();
+    }
+  });
 });
 
 describe('empty-state.css', () => {
@@ -126,12 +147,6 @@ describe('empty-state.css', () => {
       .map(([, property, value]) => `${property}: ${value?.trim()}`)
       .filter((declaration) => !/var\(--|: (?:none|auto|0)$/.test(declaration));
     expect(literal).toEqual([]);
-  });
-
-  it('runs the entrance only when reduced motion is not requested', () => {
-    const outside = css.replace(/@media \(prefers-reduced-motion: no-preference\)\s*{[^{}]*{[^{}]*}\s*}/, '');
-    expect(outside).not.toMatch(/animation:/);
-    expect(css).toMatch(/@media \(prefers-reduced-motion: no-preference\)\s*{\s*\.empty-state\s*{\s*animation:/);
   });
 });
 

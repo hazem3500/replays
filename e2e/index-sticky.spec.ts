@@ -55,7 +55,7 @@ test.describe('desktop', () => {
       await postBundle(page.request, server().origin, await cloneBundle(page.request, server().origin, 'demo-shop', id, `Grid ${index}`));
     }
     await page.goto(`${server().origin}/`);
-    await page.getByRole('button', { name: 'Grid' }).click();
+    await page.getByRole('button', { name: 'Grid', exact: true }).click();
     await expect(page.locator('.feed-list[data-view="grid"]')).toBeVisible();
     await expect.poll(() => scrollIntoFirstDay(page)).toBe(300);
     await expect.poll(() => gap(page)).toBe(0);

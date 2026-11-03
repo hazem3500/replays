@@ -1,3 +1,6 @@
+import { cancelFrame, frame as motionFrame } from 'motion';
+import { cancelMarkAnimations, markAnimate, type MarkAnimation } from './mark-animation.ts';
+
 /*
  * The product mark (components/brand-mark.tsx ProductMark, IndexHeader.tsx MarkButton): a line of five timeline segments with an accent-coloured
  * playhead. Each click "scrubs" one segment forward; 1.5 s after the last click it drains back to rest. Rapid
@@ -66,9 +69,9 @@ export function createStreak(now: () => number = () => performance.now()) {
 
 export const EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
 /** A spring with a small overshoot (~8 %), for the playhead landing. */
-export const SPRING = 'linear(0, 0.25 7%, 0.6 17%, 0.9 28%, 1.06 40%, 1.08 50%, 1.03 64%, 0.995 80%, 1)';
+export const SPRING = 'spring';
 /** A gentler spring (~2 % overshoot) for the caret's long trip home: ~1 px past at 20 px type, then settled. */
-const DOCK = 'linear(0, 0.3 10%, 0.68 22%, 0.92 35%, 1.02 48%, 1.015 62%, 1.002 80%, 1)';
+const DOCK = 'dock';
 /** The caret's run across the word to its end: eases in and out, so it is seen travelling over the letters. */
 const GLIDE = 'cubic-bezier(0.65, 0, 0.35, 1)';
 /** How long that run takes, and the beat at the end before the first backspace. */
@@ -93,15 +96,15 @@ const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, 
 
 /** Reduced motion's whole burst: the word only crossfades. */
 export function crossfadeTitle(title: HTMLElement) {
-  return title.animate([{ opacity: 1 }, { opacity: 0.35 }, { opacity: 1 }], { duration: 240, easing: 'ease-out' });
+  return markAnimate(title, [{ opacity: 1 }, { opacity: 0.35 }, { opacity: 1 }], { duration: 240, easing: 'ease-out' });
 }
 
 /** Animates `element` to `transform` from what is on screen (cancelling its running transform animation). */
 function tween(element: HTMLElement, transform: string, duration: number, easing: string) {
   const from = getComputedStyle(element).transform;
-  for (const animation of element.getAnimations()) animation.cancel();
+  cancelMarkAnimations(element);
   element.style.transform = transform;
-  return element.animate([{ transform: from === 'none' ? 'none' : from }, { transform }], { duration, easing });
+  return markAnimate(element, [{ transform: from === 'none' ? 'none' : from }, { transform }], { duration, easing });
 }
 
 /** The playhead's on-screen x (user units), read from its live transform so a retarget never jumps. */
@@ -111,7 +114,7 @@ function liveX(element: Element) {
 }
 
 /**
- * Drives one rendered mark (Web Animations on its SVG parts; transform-box: fill-box in feed.css). Mirrors the
+ * Drives one rendered mark (Motion on its SVG parts; transform-box: fill-box in feed.css). Mirrors the
  * filled count on `svg[data-filled]` (tests read it). Every move starts from what is on screen, so rapid clicks
  * never jump or stack; `dispose()` cancels everything (unmount).
  */
@@ -123,7 +126,7 @@ export function createMarkMotion(svg: SVGSVGElement) {
   let idle: number | undefined;
   let busy = false;
   let disposed = false;
-  let move: Animation | undefined;
+  let move: MarkAnimation | undefined;
   let x = playheadX(REST_FILLED - 1);
   // why: under reduced motion (set by the latest step) the same states are reached without movement.
   let still = false;
@@ -159,7 +162,8 @@ export function createMarkMotion(svg: SVGSVGElement) {
     x = to;
     playhead.style.transform = `translateX(${to}px)`;
     if (still) return;
-    move = playhead.animate(
+    move = markAnimate(
+      playhead,
       nod
         ? [
             { transform: `translateX(${from}px) rotate(0deg)` },
@@ -170,13 +174,15 @@ export function createMarkMotion(svg: SVGSVGElement) {
       { duration, easing },
     );
   };
-  const pop = (index: number) =>
-    still
+  const pop = (index: number) => {
+    const segment = segments[index];
+    return still || !segment
       ? undefined
-      : segments[index]?.animate([{ transform: 'scale(1, 1)' }, { transform: 'scale(1.12, 1.7)' }, { transform: 'scale(1, 1)' }], {
+      : markAnimate(segment, [{ transform: 'scale(1, 1)' }, { transform: 'scale(1.12, 1.7)' }, { transform: 'scale(1, 1)' }], {
           duration: 360,
           easing: EASE,
         });
+  };
   /** Streak over: extra segments drain right to left while the playhead glides back to rest. */
   const settle = () => {
     const from = filled;
@@ -272,6 +278,8 @@ export function createMarkMotion(svg: SVGSVGElement) {
         tween(head, tall ? 'translateY(-3.6px) scale(0.7)' : 'translateY(0px) scale(1)', duration, EASE);
       };
       const finish = () => {
+        cancelMarkAnimations(caret, true);
+        cancelMarkAnimations(overlay, true);
         caret.remove();
         overlay.remove();
         delete title.dataset.rewinding;
@@ -293,7 +301,8 @@ export function createMarkMotion(svg: SVGSVGElement) {
         for (let index = letters.length - 1, step = 0; index >= 0; index--, step++) {
           if (disposed) return;
           const letter = letters[index]!;
-          letter.glyph.animate(
+          markAnimate(
+            letter.glyph,
             [
               { opacity: 1, transform: 'scale(1)' },
               { opacity: 0, transform: 'scale(0.55)' },
@@ -303,9 +312,9 @@ export function createMarkMotion(svg: SVGSVGElement) {
           // Back one slot with a hair of overshoot, settling on the slot's edge.
           const gap = BACKSPACE_GAPS_MS[step] ?? 30;
           const from = getComputedStyle(caret).transform;
-          for (const animation of caret.getAnimations()) animation.cancel();
+          cancelMarkAnimations(caret);
           caret.style.transform = at(letter.x + 0.2);
-          caret.animate([{ transform: from }, { transform: at(letter.x - 0.6), offset: 0.7 }, { transform: at(letter.x + 0.2) }], {
+          markAnimate(caret, [{ transform: from }, { transform: at(letter.x - 0.6), offset: 0.7 }, { transform: at(letter.x + 0.2) }], {
             duration: Math.min(60, gap),
             easing: 'ease-out',
           });
@@ -320,7 +329,9 @@ export function createMarkMotion(svg: SVGSVGElement) {
         // 2. Type it back in: the caret rides the end of the text and the segments fill with the word.
         for (const [index, letter] of letters.entries()) {
           if (disposed) return;
-          for (const animation of letter.glyph.getAnimations()) animation.cancel();
+          cancelMarkAnimations(letter.glyph);
+          letter.glyph.style.opacity = '1';
+          letter.glyph.style.transform = 'none';
           caretTo(letter.x + letter.w + 1, 90, EASE);
           const lit = typedFill(index + 1, letters.length);
           for (let segment = filled; segment < lit; segment++) {
@@ -332,22 +343,21 @@ export function createMarkMotion(svg: SVGSVGElement) {
         }
 
         // 3. One blink, then home: shrink back into the playhead and ride over the mark to rest, draining the extras.
-        await caret.animate([{ opacity: 1 }, { opacity: 0, offset: 0.5 }, { opacity: 1 }], { duration: 440, easing: 'step-end' }).finished;
+        await markAnimate(caret, [{ opacity: 1 }, { opacity: 0, offset: 0.5 }, { opacity: 1 }], { duration: 440, easing: 'step-end' })
+          .finished;
         if (disposed) return;
         shape(false, 320);
         const homing = caretTo(playheadX(REST_FILLED - 1), 520, DOCK);
-        let frame = 0;
         const drain = () => {
           const position = new DOMMatrixReadOnly(getComputedStyle(caret).transform).e / unit;
           for (let segment = REST_FILLED; segment < SEGMENTS.length; segment++) {
             const [left, width] = SEGMENTS[segment]!;
             if (position < left + width / 2) paint(segment, false);
           }
-          frame = requestAnimationFrame(drain);
         };
-        frame = requestAnimationFrame(drain);
+        motionFrame.update(drain, true);
         await homing.finished.catch(() => undefined);
-        cancelAnimationFrame(frame);
+        cancelFrame(drain);
         for (let segment = REST_FILLED; segment < SEGMENTS.length; segment++) paint(segment, false);
         setFilled(REST_FILLED);
         x = playheadX(REST_FILLED - 1);
@@ -365,7 +375,7 @@ export function createMarkMotion(svg: SVGSVGElement) {
       window.clearTimeout(idle);
       clearLater();
       cleanup?.();
-      for (const animation of svg.getAnimations({ subtree: true })) animation.cancel();
+      cancelMarkAnimations(svg, true);
     },
   };
 }

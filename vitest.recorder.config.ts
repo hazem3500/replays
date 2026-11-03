@@ -9,5 +9,10 @@ export default defineConfig({
       ]),
     ),
   },
-  test: { include: ['src/recorder/**/*.test.ts', 'src/recorder/**/*.test.tsx'], environment: 'happy-dom', globals: true },
+  test: {
+    setupFiles: ['test/setup/animation-cancellation.ts'],
+    include: ['src/recorder/**/*.test.ts', 'src/recorder/**/*.test.tsx'],
+    environment: 'happy-dom',
+    globals: true,
+  },
 });

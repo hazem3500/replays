@@ -6,7 +6,7 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @layer app {
-  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 168px)); background: var(--canvas); }
+  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 144px)); background: var(--canvas); }
   /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
   .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
   .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }
@@ -18,21 +18,16 @@
   /* PlayerStage supplies the same frame and canvas as the viewer; no extra editor frame. */
   .editor-stage .stage-wrap { flex: 1; min-width: 0; }
   .editor-presentation { flex: 0 0 clamp(264px, 24vw, 320px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
-  /* The dock: one control row, the timeline, one line of hint. */
+  /* why: the timeline uses the dock space without reserving a standing instruction row. */
   .editor-dock { min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
   .editor-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 44px; }
-  .editor-hint { flex: none; margin: 8px 0 0; padding-left: 40px; min-height: 16px; font-size: var(--text-2xs); color: var(--text-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .editor-operation-status { flex: none; margin: 8px 0 0; padding-left: 40px; font-size: var(--text-2xs); color: var(--text-secondary); line-height: 1.5; }
   .editor-history { display: flex; align-items: center; gap: 0; margin-right: 8px; padding: 2px; border-radius: 8px; box-shadow: inset 0 0 0 1px var(--line); }
   .editor-export.editor-export { gap: 6px; padding: 0 10px; }
   .editor-export svg { width: 14px; height: 14px; }
-  /* The real content settles in over its placeholders: a short fade, nothing moves. */
-  @keyframes editor-arrive { from { opacity: 0.55; } }
-  .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline, .phone-timeline, .editor-add-toolbar) { animation: editor-arrive 200ms var(--ease-out) both; }
-  /* why: the parts above arrive on their own; the page-wide fade would dim the whole editor once its loading frame goes. */
+  /* why: the editor fades individual regions through Motion rather than dimming the whole shell. */
   .app-shell.editor-shell:not(.skeleton-shell) { animation: none; }
-  @media (prefers-reduced-motion: reduce) {
-    .editor-shell:not(.editor-loading) :is(.editor-stage .replayer-wrapper, .editor-presentation > *, .editor-dock .timeline, .phone-timeline, .editor-add-toolbar) { animation: none; }
-  }
+
 }
 
 @layer utilities {

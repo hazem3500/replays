@@ -1,3 +1,4 @@
+import { MotionLabel } from '../components/entry-motion.tsx';
 import { type PluginExportOption, usePluginExports } from '../hooks/use-plugin-exports.ts';
 import { Fragment, type ReactNode, useEffect, useRef, useState } from 'react';
 import { FileVideoCameraIcon } from 'lucide-react';
@@ -95,9 +96,9 @@ function DownloadProgress({ download, children }: { download: VideoDownload; chi
         data-testid="video-export-status"
       >
         <div className="flex items-center justify-between gap-2">
-          <span key={state.kind} className={`text-swap ${state.kind === 'error' ? 'text-destructive' : 'tabular-nums'}`}>
+          <MotionLabel key={state.kind} className={`text-swap ${state.kind === 'error' ? 'text-destructive' : 'tabular-nums'}`}>
             {progressLabel(state)}
-          </span>
+          </MotionLabel>
           {state.kind === 'error' ? (
             <span className="flex shrink-0 gap-1">
               <Button variant="ghost" size="xs" onClick={() => void start()}>

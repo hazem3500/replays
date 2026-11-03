@@ -1,13 +1,19 @@
 import { useLayoutEffect, useRef } from 'react';
+import { animate } from 'motion/mini';
 
 import { useMediaQuery } from '../media.ts';
+import { pageTransitionRunning, swappingInPlace } from '../transitions/state.ts';
+
+function initialIdentity(last: { text: string; at: number } | null, from: string | undefined, title: string) {
+  return !last && (!from || from === title);
+}
 
 /** Fades the current title and status together; rapid changes replace an in-flight fade instead of queuing it. */
 export function useTopbarIdentityMotion(from: string | undefined, title: string) {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const previous = useRef<{ text: string; at: number } | undefined>(undefined);
-  const animation = useRef<Animation | undefined>(undefined);
+  const previous = useRef<{ text: string; at: number } | null>(null);
+  const animation = useRef<ReturnType<typeof animate> | null>(null);
 
   useLayoutEffect(() => {
     const element = ref.current;
@@ -20,8 +26,16 @@ export function useTopbarIdentityMotion(from: string | undefined, title: string)
     previous.current = { text, at: now };
     animation.current?.cancel();
     const rapid = last && now - last.at < 120;
-    if (reduced || rapid || (!last && (!from || from === title)) || typeof element.animate !== 'function') return;
-    animation.current = element.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160, easing: 'ease-out' });
+    if (
+      reduced ||
+      rapid ||
+      pageTransitionRunning() ||
+      swappingInPlace() ||
+      initialIdentity(last, from, title) ||
+      typeof element.animate !== 'function'
+    )
+      return;
+    animation.current = animate([element], { opacity: [0, 1] }, { duration: 0.16, ease: 'easeOut' });
   });
 
   useLayoutEffect(() => () => animation.current?.cancel(), []);

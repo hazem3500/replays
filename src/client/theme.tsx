@@ -2,8 +2,10 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 
 import { IconButton } from '@/components/icon-button.tsx';
+import { IconSwap } from '@/components/icon-swap.tsx';
 import { cn } from '@/lib/utils.ts';
 import { switchThemeWithTransition } from '@/lib/theme-transition.ts';
+import { useControlMotion } from './hooks/use-control-motion.ts';
 
 export type Theme = 'light' | 'dark';
 /** A fixed theme once the person flips it; until then, follow the OS. */
@@ -56,6 +58,7 @@ function systemTheme(): Theme {
 }
 
 export function useTheme() {
+  useControlMotion();
   const [preference, setPreferenceState] = useState<ThemePreference>(savedPreference);
   const [system, setSystem] = useState<Theme>(() => {
     // index.html's inline script has already resolved it before first paint.
@@ -122,11 +125,11 @@ export function ThemeSwitch({ className }: { className?: string }) {
       tooltipAlign="end"
       onClick={switchTheme}
     >
-      <span className="icon-swap" data-state={theme === 'dark' ? 'a' : 'b'} aria-hidden="true">
+      <IconSwap state={theme === 'dark' ? 'a' : 'b'}>
         {/* Each plays when it appears and on hover / keyboard navigation (sun: rays turn in; moon: a tilt). */}
         <AnimatedIcon name="sun" className="icon-a" trigger="state" hover play={theme === 'dark' ? 'dark' : false} />
         <AnimatedIcon name="moon" className="icon-b" trigger="state" hover play={theme === 'light' ? 'light' : false} />
-      </span>
+      </IconSwap>
     </IconButton>
   );
 }

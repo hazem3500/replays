@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useViewerPresenceMotion } from '../../hooks/use-viewer-presence-motion.ts';
+import { useRef, useState } from 'react';
 
 import type { ReplayCaptured, ReplayNetworkBody } from '../../../shared/replay.ts';
 import { CopyButton } from '@/components/copy-button.tsx';
@@ -36,9 +37,11 @@ export function BodySection({
   mimeType: string | undefined;
   captured: ReplayCaptured | undefined;
 }) {
+  const section = useRef<HTMLElement>(null);
+  useViewerPresenceMotion(section, 'network');
   const state = bodyState(body, captured);
   return (
-    <section className="np-section np-body-section" data-state={state.kind}>
+    <section ref={section} className="np-section np-body-section" data-state={state.kind}>
       <h3>
         {title}
         {state.kind === 'shown' && state.body.size ? <span className="np-aside">{STRINGS.size(state.body.size)}</span> : null}

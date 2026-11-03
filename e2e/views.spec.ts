@@ -79,6 +79,7 @@ test('comparison keeps its context instead of offering unrelated view presets', 
 });
 
 test('the viewer keeps recording details and appearance in More', async ({ page }) => {
+  await page.route('**/api/replays/demo-shop/render*', (route) => route.fulfill({ json: { status: 'none' } }));
   await openReplay(page, `${origin()}/r/demo-shop`);
   const header = page.locator('.app-topbar');
   await expect(header.getByTestId('copy-link')).toBeVisible();

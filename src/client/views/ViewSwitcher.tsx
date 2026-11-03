@@ -1,7 +1,7 @@
-import { ChevronDownIcon, ChevronLeftIcon, RotateCcwIcon } from 'lucide-react';
 import { useState } from 'react';
 
 import { buttonVariants } from '@/components/ui/button.tsx';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,7 +62,7 @@ function ViewItems({ views, current, onSelect, onReset, showReset = true }: View
 export function ResetViewItem({ onReset }: { onReset: () => void }) {
   return (
     <DropdownMenuItem onClick={onReset} data-testid="view-reset">
-      <RotateCcwIcon aria-hidden="true" />
+      <AnimatedIcon name="rotate-ccw" />
       {STRINGS.reset}
     </DropdownMenuItem>
   );
@@ -97,7 +97,7 @@ export function ViewSwitcher(choice: ViewChoice) {
         }
       >
         {STRINGS.trigger(label)}
-        <ChevronDownIcon aria-hidden="true" />
+        <AnimatedIcon name="chevron-down" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="bottom" align="end" className="w-auto min-w-56">
         <ViewItems {...choice} onSelect={(id) => close(() => choice.onSelect(id))} onReset={() => close(choice.onReset)} />
@@ -123,7 +123,7 @@ export function ViewMenuItems({ showReset = true, ...choice }: ViewChoice & { sh
         {phone ? (
           <>
             <DropdownMenuItem closeOnClick={false} onClick={() => setOpen(false)}>
-              <ChevronLeftIcon aria-hidden="true" />
+              <AnimatedIcon name="chevron-left" />
               Back to actions
             </DropdownMenuItem>
             <DropdownMenuSeparator />

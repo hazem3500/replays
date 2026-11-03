@@ -49,8 +49,11 @@ describe('docs/formats', () => {
     const instance = await ajv();
     const files = (await readdir(dir)).filter((name) => name.endsWith('.schema.json'));
     expect(files.sort()).toEqual([
+      'bulk-trash-request.schema.json',
+      'bulk-trash-result.schema.json',
       'comments.schema.json',
       'context.schema.json',
+      'data-storage.schema.json',
       'edits.schema.json',
       'expired-replay.schema.json',
       'plugin-manifest.schema.json',

@@ -216,3 +216,9 @@ End to end has an inspector beside the page. It shows the live recorder state, t
 | Light Phone | Record And Upload in the light theme at 390 px. |
 
 Two limits: the recorder has no paused or stopping state (`stop()` moves straight to review), and a service worker answers before Chromium emits XHR upload progress events, so End to end shows the indeterminate sending state. The kit stories show the progress surface. The upload endpoint lives in `stories/recorder/upload-endpoint.ts`; add a mode there to try another server response.
+
+## Interaction steps
+
+Browser recordings include clicks on controls, form submissions and same-document navigation alongside recording start and stop. With default masking, labels stay generic, such as “Clicked button” and “Submitted form”. Control text appears only when the existing text privacy policy allows it; masked or blocked descendants and editable values are excluded. Labels pass the recorder's text redactor and length limit. Steps retain neither DOM selectors nor destination URLs, and query strings in readable URL labels are removed.
+
+The recorder excludes its own UI and blocked elements, groups repeated actions on the same control within 350 milliseconds, and keeps at most 500 interaction steps per session. Form steps describe the submission event, not whether the server accepted it. Navigation covers History API route changes, popstate and hashchange while this page remains recording. Stopping, discarding or destroying the recorder removes the listeners and restores its History API hooks. These markers use the recording clock and require no change to privacy defaults or upload permissions.

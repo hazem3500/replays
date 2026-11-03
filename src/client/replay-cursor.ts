@@ -17,6 +17,7 @@ export class ReplayCursor {
   private glyph: CursorGlyph | undefined;
   private glyphKey = '';
   private fitScale = 1;
+  private contextScale = 1;
   /** The fit scale only changes when the stage or the recorded viewport resizes; measure it then, not every frame. */
   private fitDirty = true;
   private lastTime = Number.NaN;
@@ -24,6 +25,7 @@ export class ReplayCursor {
   private lastOpacity = '';
   private lastVisible: boolean | undefined;
   private readonly resizeObserver: ResizeObserver | undefined;
+  private readonly fitObserver: MutationObserver | undefined;
 
   private readonly wrapper: HTMLElement;
   private readonly events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>;
@@ -53,13 +55,15 @@ export class ReplayCursor {
 
     // The fit scale changes when the stage resizes; a transform on an ancestor fires no observer, so watch the stage boxes.
     if (typeof ResizeObserver === 'function') {
-      this.resizeObserver = new ResizeObserver(() => {
-        this.fitDirty = true;
-        if (!Number.isNaN(this.lastTime)) this.update(this.lastTime);
-      });
+      this.resizeObserver = new ResizeObserver(this.invalidateFit);
       for (let node: HTMLElement | null = wrapper.parentElement, depth = 0; node && depth < 3; node = node.parentElement, depth++) {
         this.resizeObserver.observe(node);
       }
+    }
+    const host = wrapper.parentElement;
+    if (host && typeof MutationObserver === 'function') {
+      this.fitObserver = new MutationObserver(this.invalidateFit);
+      this.fitObserver.observe(host, { attributes: true, attributeFilter: ['style'] });
     }
   }
 
@@ -81,7 +85,7 @@ export class ReplayCursor {
       this.element.style.opacity = opacity;
       this.lastOpacity = opacity;
     }
-    const transform = `translate3d(${pose.x.toFixed(2)}px,${pose.y.toFixed(2)}px,0) rotate(${(pose.heading - Math.PI / 4).toFixed(4)}rad) scale(${((pose.scale * (this.settings?.size ?? 1)) / this.fitScale).toFixed(4)})`;
+    const transform = `translate3d(${pose.x.toFixed(2)}px,${pose.y.toFixed(2)}px,0) rotate(${(pose.heading - Math.PI / 4).toFixed(4)}rad) scale(${((pose.scale * (this.settings?.size ?? 1) * this.contextScale) / this.fitScale).toFixed(4)})`;
     if (transform === this.lastTransform) return;
     this.element.style.transform = transform;
     this.lastTransform = transform;
@@ -96,6 +100,7 @@ export class ReplayCursor {
 
   destroy() {
     this.resizeObserver?.disconnect();
+    this.fitObserver?.disconnect();
     this.media?.removeEventListener('change', this.onMotionPreference);
     this.element.remove();
   }
@@ -122,12 +127,26 @@ export class ReplayCursor {
 
   /** The replay's fit scale (the host is CSS-transformed). A layout read, so only after a resize. */
   private measureFit() {
+    const context = Number.parseFloat(this.wrapper.parentElement?.style.getPropertyValue('--player-cursor-size') ?? '');
+    this.contextScale = Number.isFinite(context) && context > 0 ? context : 1;
+    const declared = Number.parseFloat(this.wrapper.parentElement?.style.getPropertyValue('--player-scale') ?? '');
+    if (Number.isFinite(declared) && declared > 0) {
+      // why: ancestor layout projections are transient; the stage publishes its actual replay fit independently.
+      this.fitScale = declared;
+      this.fitDirty = false;
+      return;
+    }
     const width = this.wrapper.offsetWidth;
     const scale = width > 0 ? this.wrapper.getBoundingClientRect().width / width : 1;
     this.fitScale = Number.isFinite(scale) && scale > 0 ? scale : 1;
-    // Not laid out yet (width 0): measure again next time.
+    // why: an unlaid-out standalone host must be measured again when it gains dimensions.
     this.fitDirty = width === 0;
   }
+
+  private readonly invalidateFit = () => {
+    this.fitDirty = true;
+    if (!Number.isNaN(this.lastTime)) this.update(this.lastTime);
+  };
 
   private readonly onMotionPreference = () => {
     this.track = buildCursorTrack(cursorInput(this.events), { reducedMotion: this.media?.matches ?? false, settings: this.settings });

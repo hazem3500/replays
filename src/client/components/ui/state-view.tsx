@@ -60,17 +60,17 @@ function ActionButton({ action, primary }: { action: StateAction; primary: boole
  * compact form at the top of a panel.
  */
 export function StateView({
-  kind,
+  kind: presentation,
   title,
   cause,
   actions,
   details,
   layout = 'page',
   testId,
-  illustration,
   children,
 }: {
-  kind: StateKind;
+  /** A state kind, optionally paired with replacement artwork. */
+  kind: StateKind | { kind: StateKind; illustration: ReactNode };
   title: string;
   cause?: ReactNode;
   /** One primary action, and at most one quiet secondary. */
@@ -79,10 +79,10 @@ export function StateView({
   details?: string | undefined;
   layout?: 'page' | 'panel';
   testId?: string | undefined;
-  /** A restrained glyph or custom illustration in place of the default artwork. */
-  illustration?: ReactNode;
   children?: ReactNode;
 }) {
+  const kind = typeof presentation === 'string' ? presentation : presentation.kind;
+  const illustration = typeof presentation === 'string' ? undefined : presentation.illustration;
   // why: a page that failed replaces what was asked for, so it is announced; empty and not-captured notes are not.
   const alert = layout === 'page' && (kind === 'error' || kind === 'not-found' || kind === 'offline');
   const { primary: action, secondary } = actions ?? {};

@@ -68,9 +68,19 @@ export const Range: Story = {
   ),
   play: async ({ canvasElement }) => {
     const thumb = within(canvasElement).getByRole('slider', { name: 'Playback speed' });
+    await waitFor(() => {
+      const track = canvasElement.querySelector('[data-slot="slider-track"]')!.getBoundingClientRect();
+      const handle = canvasElement.querySelector('[data-slot="slider-thumb"]')!.getBoundingClientRect();
+      expect(Math.abs(handle.y + handle.height / 2 - track.y - track.height / 2)).toBeLessThanOrEqual(0.5);
+    });
     thumb.focus();
     await userEvent.keyboard('{ArrowRight}');
     await expect(thumb).toHaveValue('1.75');
+    await waitFor(() => {
+      const track = canvasElement.querySelector('[data-slot="slider-track"]')!.getBoundingClientRect();
+      const handle = canvasElement.querySelector('[data-slot="slider-thumb"]')!.getBoundingClientRect();
+      expect(Math.abs(handle.y + handle.height / 2 - track.y - track.height / 2)).toBeLessThanOrEqual(0.5);
+    });
   },
 };
 

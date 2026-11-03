@@ -4,6 +4,8 @@ import type { RedactionRules } from '../../shared/redaction.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import type { SignInConfig } from '../../shared/sign-in.ts';
 import type { SourceProviders } from '../../shared/source-providers.ts';
+import type { HookRequests } from '../plugin-runtime.ts';
+import type { Identity } from '../auth/types.ts';
 import type { AuthAdapter } from '../auth/types.ts';
 import type { BetaFlags } from '../beta.ts';
 import type { BrandingConfig } from '../branding.ts';
@@ -27,6 +29,10 @@ export interface ApiDeployment {
 
 /** What the API routes share for the app's lifetime; built once by `createApp`. Framework-free: no request in here. */
 export interface ApiServices {
+  /** Per-replay visibility for trash listings; absent means no trash IDs may be disclosed. */
+  canReadReplay?: (hooks: HookRequests, identity: Identity, id: string, base: string) => Promise<boolean>;
+  /** Per-item DELETE authorization for bulk trash; absent disables bulk deletion and its eligible count. */
+  canDeleteReplay?: (hooks: HookRequests, identity: Identity, id: string, base: string) => Promise<boolean>;
   deployment: ApiDeployment;
   registry: PluginRegistry;
   redaction: RedactionRules;

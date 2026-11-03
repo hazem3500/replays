@@ -92,7 +92,6 @@ export function DockSkeleton({ duration }: { duration: number | undefined }) {
           </span>
         </div>
       </div>
-      <p className="editor-hint" />
     </section>
   );
 }

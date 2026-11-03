@@ -1,9 +1,11 @@
-import type { ReactNode } from 'react';
+import { use, type ReactNode } from 'react';
 
 import { Popover, PopoverContent, PopoverTitle, PopoverTrigger } from '@/components/ui/popover.tsx';
 
 import { formatDuration } from '../network/model.ts';
 import { VERDICT_WORDS, type Vital, type VitalId } from './model.ts';
+import { HostSurfaceSlot } from '../../plugins/HostSurface.tsx';
+import { PluginContexts } from '../../plugins/PluginUi.tsx';
 
 const LABELS: Readonly<Record<VitalId, string>> = {
   fcp: 'First paint',
@@ -59,25 +61,36 @@ export function VitalsBar({
   /** Controls at the bar's end (the list order). */
   children?: ReactNode;
 }) {
+  const viewer = use(PluginContexts)?.('');
+  const context = viewer ? { replay: viewer.replay, seek: viewer.seek } : {};
   return (
     <div className="pp-vitals" data-testid="performance-vitals">
       <ul aria-label="Vitals">
-        {vitals.map((vital) => (
-          <li key={vital.id}>
-            <button
-              type="button"
-              className="pp-vital"
-              title={HINTS[vital.id]}
-              disabled={!vital.moment && vital.at === undefined}
-              onClick={() => onPick(vital)}
-            >
-              <span className="pp-vital-label">{LABELS[vital.id]}</span>
-              <VitalValue vital={vital} />
-              {peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
-            </button>
-            {peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
-          </li>
-        ))}
+        <HostSurfaceSlot
+          slot="performance.vitals"
+          context={context}
+          element="li"
+          builtins={vitals.map((vital, index) => ({
+            id: `core:${vital.id}`,
+            order: (index + 1) * 100,
+            render: () => (
+              <>
+                <button
+                  type="button"
+                  className="pp-vital"
+                  title={HINTS[vital.id]}
+                  disabled={!vital.moment && vital.at === undefined}
+                  onClick={() => onPick(vital)}
+                >
+                  <span className="pp-vital-label">{LABELS[vital.id]}</span>
+                  <VitalValue vital={vital} />
+                  {peers.length === 1 ? peers.map((peer) => <VitalDelta key={peer.id} vital={vital} peer={peer} />) : null}
+                </button>
+                {peers.length > 1 ? <VitalComparisons vital={vital} peers={peers} /> : null}
+              </>
+            ),
+          }))}
+        />
       </ul>
       {children}
     </div>
@@ -107,15 +120,17 @@ function VitalComparisons({ vital, peers }: { vital: Vital; peers: readonly Vita
       >
         {measured.length} other {measured.length === 1 ? 'recording' : 'recordings'}
       </PopoverTrigger>
-      <PopoverContent className="pp-comparisons" align="start">
-        <PopoverTitle>{LABELS[vital.id]} comparison</PopoverTitle>
+      <PopoverContent className="pp-comparisons" align="start" aria-label={`${LABELS[vital.id]} comparison`}>
+        <PopoverTitle className="text-xs" aria-label={`${LABELS[vital.id]} comparison`}>
+          {LABELS[vital.id]}
+        </PopoverTitle>
         <p>Current recording: {formatDuration(currentValue)}</p>
         <table>
           <thead>
             <tr>
               <th scope="col">Recording</th>
               <th scope="col">Value</th>
-              <th scope="col">vs current</th>
+              <th scope="col">Change</th>
             </tr>
           </thead>
           <tbody>
@@ -130,7 +145,7 @@ function VitalComparisons({ vital, peers }: { vital: Vital; peers: readonly Vita
                   <td>{formatDuration(currentValue + difference)}</td>
                   <td className="pp-delta" data-tone={deltaTone(difference)}>
                     {Math.abs(difference) < SAME_WITHIN_MS
-                      ? 'About the same'
+                      ? 'Same'
                       : `${difference > 0 ? '+' : '−'}${formatDuration(Math.abs(difference))}`}
                   </td>
                 </tr>

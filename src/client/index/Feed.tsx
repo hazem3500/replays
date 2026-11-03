@@ -1,5 +1,5 @@
-import { ArrowRightIcon, LayersIcon } from 'lucide-react';
-import { createContext, type CSSProperties, type PointerEvent, type ReactNode, useContext, useRef } from 'react';
+import { LayersIcon } from 'lucide-react';
+import { createContext, type PointerEvent, type ReactNode, useContext, useRef } from 'react';
 
 import { formatClock, type ReplaySummary } from '../../shared/replay.ts';
 import type { ReviewSuiteIndexEntry, ReviewSuiteIndexRun, SuiteOverallStatus } from '../../shared/review-suite.ts';
@@ -24,10 +24,13 @@ import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useSuiteCycle } from './suite-cycle.ts';
+import { useRunStripMotion } from '../hooks/use-feed-control-motion.ts';
 import { useShuffle } from '../hooks/use-suite-shuffle.ts';
 import { useIntentPrefetch } from '../intent-prefetch.ts';
+import { FeedMotion, MotionFeedItem, MotionRearSheet, RunMenuArrow } from './FeedMotion.tsx';
 import { FeedList, type FeedRowPlace } from './FeedList.tsx';
 import { ExpiryHint } from './FeedRowActions.tsx';
+import { ReplayRowMenu } from './ReplayRowMenu.tsx';
 
 /*
  * The replay index as a visual feed: sessions and review suites as rows (list) or cards (grid), each
@@ -122,7 +125,11 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 /** Rows under day headings (Feed, grouped by time): the heading already says the day. */
-const GroupedContext = createContext<{ grouped: boolean; calendar: FeedCalendar }>({ grouped: false, calendar: 'utc' });
+const FEED_CONTEXTS = {
+  utc: { grouped: { grouped: true, calendar: 'utc' }, flat: { grouped: false, calendar: 'utc' } },
+  local: { grouped: { grouped: true, calendar: 'local' }, flat: { grouped: false, calendar: 'local' } },
+} satisfies Record<FeedCalendar, Record<'grouped' | 'flat', { grouped: boolean; calendar: FeedCalendar }>>;
+const GroupedContext = createContext<{ grouped: boolean; calendar: FeedCalendar }>(FEED_CONTEXTS.utc.flat);
 
 /**
  * A row's time. Under day headings it doesn't repeat the heading: the time of day under Today/Yesterday, the date
@@ -190,7 +197,8 @@ function SessionItem({
     .filter(Boolean)
     .join(', ');
   return (
-    <li
+    <MotionFeedItem
+      view={view}
       ref={rowRef}
       className="feed-item feed-session"
       data-view={view}
@@ -210,10 +218,11 @@ function SessionItem({
         priority={place.index < FIRST_ROWS}
       />
       <div className="feed-body">
-        <div className="feed-head">
+        <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
           <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
             {summary.title}
           </a>
+          <ReplayRowMenu id={summary.id} title={summary.title} />
         </div>
         <div className="feed-meta">
           <SourceLead sources={summary.sources} origin={summary.source} />
@@ -235,7 +244,7 @@ function SessionItem({
         <IndexColumns summary={summary} />
       </div>
       {view === 'list' ? <RowColumns at={summary.capturedAt} host={summary.host} /> : null}
-    </li>
+    </MotionFeedItem>
   );
 }
 
@@ -268,12 +277,15 @@ function RunStrip({
   /** Grid cards: at most ~64 px, so the time and commit beside it never truncate. */
   compact?: boolean;
 }) {
+  const strip = useRef<HTMLButtonElement>(null);
+  useRunStripMotion(strip);
   const { segments, more } = runStrip(runs, runLength, compact ? { maxPx: 64, minPx: 8 } : {});
   const failed = runs.filter((run) => run.status === 'failed').length;
   const summary = `${plural(runs.length, 'run')}${failed ? `, ${failed} failed` : ''}`;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        ref={strip}
         className={cn('run-strip', className)}
         aria-label={`Runs of ${suite.title}: ${summary}`}
         data-runs={runs.length}
@@ -327,7 +339,7 @@ function RunStrip({
         <DropdownMenuSeparator />
         <DropdownMenuItem className="run-menu-item run-menu-all" render={<a href={suiteHref(suite.id)} />}>
           Open suite
-          <ArrowRightIcon className="run-menu-arrow" aria-hidden="true" />
+          <RunMenuArrow />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -393,7 +405,8 @@ function SuiteItem({
       <span className={cn('run-strip-note', className)}>No runs yet</span>
     );
   return (
-    <li
+    <MotionFeedItem
+      view={view}
       ref={(node) => {
         card.current = node;
         rowRef?.(node);
@@ -409,7 +422,7 @@ function SuiteItem({
     >
       <div className="suite-sheet">
         {view === 'grid' ? (
-          <span className="shuffle-window">
+          <span className="shuffle-window" data-replay-id={shownId}>
             <CardBacks runs={suite.runDetails} front={poster} />
             {count > 6 ? (
               <span className="stack-more" aria-hidden="true">
@@ -469,7 +482,7 @@ function SuiteItem({
         {/* The same trailing column as replays: the time over a muted host. */}
         {view === 'list' ? <RowColumns at={suite.createdAt} host={host} /> : null}
       </div>
-    </li>
+    </MotionFeedItem>
   );
 }
 
@@ -511,18 +524,23 @@ function PosterStack({
   return (
     <span className="poster-stack" aria-hidden="true">
       {backRuns(runs, front).map(({ layer, run }) => (
-        <span
+        <MotionRearSheet
+          depth={layer}
+          grid={false}
           key={layer}
           className={`stack-layer stack-layer-${layer}`}
           data-run-id={run?.id}
+          data-replay-id={run ? playableReplayId(run, true) : undefined}
           data-stack-depth={layer}
           data-stack-reserve={layer > 5 || undefined}
-          style={{ '--stack-depth': Math.min(layer, 5), '--stack-scale': 1 - layer * 0.035, zIndex: 7 - layer } as CSSProperties}
+          style={{ zIndex: 7 - layer }}
         >
           <BackPoster run={run} />
-        </span>
+        </MotionRearSheet>
       ))}
-      <span className="stack-front">{children}</span>
+      <span className="stack-front" data-replay-id={front ? playableReplayId(front, true) : undefined}>
+        {children}
+      </span>
     </span>
   );
 }
@@ -534,30 +552,29 @@ function CardBacks({ runs, front }: { runs: ReviewSuiteIndexRun[]; front: Review
   return (
     <>
       {backRuns(runs, front).map(({ layer, run }) => (
-        <span
+        <MotionRearSheet
+          depth={layer}
+          grid
           key={layer}
           className={`card-back card-back-${layer}`}
           data-run-id={run?.id}
+          data-replay-id={run ? playableReplayId(run, true) : undefined}
           data-stack-depth={layer}
           data-stack-reserve={layer > 5 || undefined}
-          style={{ '--stack-depth': Math.min(layer, 5), '--stack-scale': 1 - layer * 0.035, zIndex: 7 - layer } as CSSProperties}
+          style={{ zIndex: 7 - layer }}
           aria-hidden="true"
           // The backs are part of the card: a click on the strip above it opens the suite, like the card.
           onClick={(event) => event.currentTarget.closest('li')?.querySelector<HTMLAnchorElement>('.row-target')?.click()}
         >
           <BackPoster run={run} />
-        </span>
+        </MotionRearSheet>
       ))}
     </>
   );
 }
 
-/**
- * A cycling suite card's front poster props: the run on screen, played once (then the stack shuffles to the next),
- * the next one warmed past halfway, and a short "02 · Desktop: login only" label on each change.
- */
+/** Suite previews play once before advancing and warm the next recording past halfway. */
 function cyclePosterProps(cycle: SuiteCycle, capture: () => void) {
-  const run = cycle.current;
   if (!cycle.cycling) return {};
   return {
     onPreviewEnd: () => {
@@ -565,15 +582,6 @@ function cyclePosterProps(cycle: SuiteCycle, capture: () => void) {
       cycle.advance();
     },
     onPreviewHalf: cycle.warmNext,
-    ...(cycle.step > 0 && run
-      ? {
-          caption: (
-            <span key={cycle.step} className="poster-caption">
-              {String(run.sequence).padStart(2, '0')} · {run.label}
-            </span>
-          ),
-        }
-      : {}),
   };
 }
 
@@ -598,21 +606,23 @@ export function Feed({ entries, view, grouped, query }: { entries: FeedEntry[]; 
   // why: the server cannot know this browser's locale or time zone; headings and row clocks switch together after hydration.
   const calendar: FeedCalendar = hydrated ? 'local' : 'utc';
   return (
-    <GroupedContext.Provider value={{ grouped, calendar }}>
-      <FeedList
-        entries={entries}
-        view={view}
-        grouped={grouped}
-        calendar={calendar}
-        renderEntry={(entry, place, rowRef) =>
-          entry.kind === 'session' ? (
-            <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} place={place} rowRef={rowRef} />
-          ) : (
-            <SuiteItem key={`suite:${entry.id}`} entry={entry} view={view} place={place} rowRef={rowRef} />
-          )
-        }
-      />
-    </GroupedContext.Provider>
+    <FeedMotion>
+      <GroupedContext.Provider value={FEED_CONTEXTS[calendar][grouped ? 'grouped' : 'flat']}>
+        <FeedList
+          entries={entries}
+          view={view}
+          grouped={grouped}
+          calendar={calendar}
+          renderEntry={(entry, place, rowRef) =>
+            entry.kind === 'session' ? (
+              <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} place={place} rowRef={rowRef} />
+            ) : (
+              <SuiteItem key={`suite:${entry.id}`} entry={entry} view={view} place={place} rowRef={rowRef} />
+            )
+          }
+        />
+      </GroupedContext.Provider>
+    </FeedMotion>
   );
 }
 

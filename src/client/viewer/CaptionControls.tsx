@@ -54,7 +54,7 @@ export function CaptionControls() {
               <Switch
                 id={numbersId}
                 nativeButton
-                render={<button type="button" />}
+                render={<button type="button" aria-labelledby={`${numbersId}-label`} />}
                 aria-labelledby={`${numbersId}-label`}
                 checked={captionNumbers === true}
                 disabled={!captions}

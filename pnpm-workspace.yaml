@@ -2,6 +2,7 @@ packages:
   - examples/custom-distro
   - examples/host-app
   - examples/agent-native
+  - examples/composed-viewer
 
 # Keep plugins, Storybook and Vitest on the core supplied by Vite+ 1.4.0.
 overrides:

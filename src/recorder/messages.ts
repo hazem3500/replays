@@ -102,7 +102,7 @@ export const defaultRecorderMessages: RecorderMessages = {
   noteLabel: 'Add a note (optional)',
   send: 'Send recording',
   discard: 'Discard',
-  uploading: 'Sending…',
+  uploading: 'Sending',
   sent: () => 'Recording sent',
   failed: () => "Couldn't send recording",
   startFailed: () => "Couldn't start recording",

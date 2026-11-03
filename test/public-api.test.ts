@@ -34,6 +34,56 @@ const pkg = JSON.parse(readFileSync(resolve(import.meta.dirname, '../package.jso
 };
 
 const entries: Record<string, { source: string; values: string[] }> = {
+  './model': {
+    source: '../src/shared/model.ts',
+    values: [
+      'assertReplayBundle',
+      'assertReplayId',
+      'formatClock',
+      'summarizeReplay',
+      'assertReplayContext',
+      'EDITS_VERSION',
+      'EMPTY_EDITS',
+      'applyEdits',
+      'assertReplayEdits',
+      'assertStoredReplayEdits',
+      'editTimeline',
+      'isEmptyEdits',
+      'NO_EFFECTS',
+      'playbackEffects',
+      'assertRedactionRules',
+      'compileRedaction',
+      'mergeRedactionRules',
+      'redactText',
+      'isSecretField',
+      'REDACTED',
+      'assertCaptureProfile',
+    ],
+  },
+  './viewer/playback': {
+    source: '../src/client/playback/index.ts',
+    values: ['ReplayController', 'eventSpan', 'SPEEDS', 'createReplayPlayback'],
+  },
+  './viewer/diagnostics': {
+    source: '../src/client/diagnostics.ts',
+    values: ['buildNetworkRows', 'buildPerformance', 'buildWaterfall', 'collectErrors'],
+  },
+  './viewer/react': {
+    source: '../src/client/compose/index.ts',
+    values: [
+      'ReplayProvider',
+      'useReplay',
+      'useReplayTime',
+      'useReplayState',
+      'useReplayViewport',
+      'ReplayStage',
+      'ReplayTransport',
+      'ReplaySteps',
+      'useReplaySteps',
+      'ReplayInspector',
+      'useReplayInspector',
+    ],
+  },
   './recorder': {
     source: '../src/recorder/index.ts',
     values: [
@@ -344,10 +394,16 @@ describe('public API', () => {
       './recorder/react',
       './recorder/testing',
       './recorder',
+      './model',
+      './viewer/playback',
+      './viewer/diagnostics',
+      './viewer/react',
+      './viewer/playback/style.css',
+      './viewer/react/style.css',
     ]);
     for (const target of Object.values(pkg.exports)) {
       if (typeof target === 'string') continue;
-      expect(target.default).toMatch(/^\.\/dist\/lib\/[a-z-]+\.mjs$/);
+      expect(target.default).toMatch(/^\.\/dist\/lib\/[a-z-]+\.(mjs|css)$/);
       expect(target.types).toMatch(/^\.\/dist\/types\/.+\.d\.ts$/);
     }
   });

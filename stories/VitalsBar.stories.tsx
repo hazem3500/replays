@@ -39,10 +39,12 @@ export const SixRecordings: Story = {
     await userEvent.click(trigger);
     const page = within(canvasElement.ownerDocument.body);
     const popup = await page.findByRole('dialog', { name: 'First paint comparison' });
+    await expect(within(popup).getByRole('heading', { name: /^First paint comparison$/ })).toBeVisible();
+    await expect(within(popup).getByRole('columnheader', { name: 'Change' })).toBeVisible();
     const slowerRun = within(popup).getByRole('row', { name: 'Run 4 1.70 s +1.16 s' });
     await expect(slowerRun).toBeVisible();
     await expect(within(popup).getByRole('row', { name: 'Run 5 340 ms −200 ms' })).toBeVisible();
-    await expect(within(popup).getByRole('row', { name: 'Run 2 540 ms About the same' })).toBeVisible();
+    await expect(within(popup).getByRole('row', { name: 'Run 2 540 ms Same' })).toBeVisible();
     await expect(popup.querySelectorAll('.pp-delta')).toHaveLength(5);
     await userEvent.keyboard('{Escape}');
     await expect(trigger).toHaveFocus();

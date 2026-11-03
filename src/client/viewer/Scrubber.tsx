@@ -3,6 +3,7 @@ import { memo, type RefObject, useLayoutEffect, useMemo, useRef, useState } from
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import type { ProjectedHighlight } from '../../shared/highlights.ts';
 import type { ReplayError } from '../issues.ts';
+import { useScrubberPresenceMotion } from '../hooks/use-scrubber-presence-motion.ts';
 import { usePlayer } from '../player.ts';
 import { positionText } from '../timeline.ts';
 import { FeatureScrubberOverlays } from '../plugins/features.tsx';
@@ -105,6 +106,7 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
   const highlights = tracks.has('core:highlights') ? allHighlights : NO_HIGHLIGHTS;
   const player = usePlayer();
   const root = useRef<HTMLDivElement>(null);
+  useScrubberPresenceMotion(root);
   const input = useRef<HTMLInputElement>(null);
   const bars = useRef<HTMLDivElement>(null);
   const knob = useRef<HTMLSpanElement>(null);
@@ -607,7 +609,9 @@ export function Scrubber({ steps: allSteps, errors: allErrors }: { steps: Replay
         }}
       />
       <div className="scrubber-knob-rail" aria-hidden="true">
-        <span ref={knob} className="scrubber-knob" />
+        <span ref={knob} className="scrubber-knob">
+          <span className="scrubber-knob-visual" />
+        </span>
       </div>
       <FeatureScrubberOverlays width={width} inset={INSET} />
       <PluginTimelineTracks width={width} inset={INSET} />
@@ -734,6 +738,7 @@ const Segments = memo(function Segments({ segments, width }: { segments: Scrubbe
         style={{ left: `${left}px`, width: `${Math.max(1, px(box.left + box.width) - left)}px` }}
       >
         <div className="scrubber-segment-fill" />
+        <div className="scrubber-segment-hover" />
       </div>
     );
   });

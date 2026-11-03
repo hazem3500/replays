@@ -26,5 +26,13 @@
     "typescript/use-unknown-in-catch-callback-variable": "warn",
     "typescript/no-deprecated": "warn",
     "typescript/unbound-method": "warn"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/client/playback/rrweb-wire.ts"],
+      "rules": {
+        "typescript/no-unsafe-type-assertion": "off"
+      }
+    }
+  ]
 }

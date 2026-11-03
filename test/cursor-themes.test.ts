@@ -49,6 +49,29 @@ describe('cursor themes', () => {
     expect(effectOf(cursorTheme('ring').create(document, { effect: 'press' }).nodes)).toBeUndefined();
   });
 
+  it('tints the glyph with the saved color', () => {
+    const path = cursorTheme('arrow').create(document, { color: '#1f7445' }).nodes[0]?.querySelector('path');
+    expect(path?.style.fill).toBe('#1f7445');
+  });
+
+  it('draws the saved theme on the player and swaps it when settings change', () => {
+    const host = document.createElement('div');
+    const cursor = new ReplayCursor(host, events, 1000, { appearance: 'ring' });
+    try {
+      cursor.update(760);
+      const element = host.querySelector<HTMLElement>('.replay-cursor');
+      expect(host.querySelectorAll('.replay-cursor')).toHaveLength(1);
+      expect(element?.querySelectorAll('circle').length).toBeGreaterThan(0);
+      cursor.setSettings(undefined);
+      expect(element?.querySelectorAll('circle')).toHaveLength(0);
+      expect(element?.querySelectorAll('path')).toHaveLength(1);
+    } finally {
+      cursor.destroy();
+    }
+  });
+});
+
+describe('cursor click feedback', () => {
   it('restores the same click frame after seeking and clears feedback when disabled or reduced', () => {
     for (const effect of ['ripple', 'pulse'] as const) {
       const host = document.createElement('div');
@@ -80,27 +103,6 @@ describe('cursor themes', () => {
       } finally {
         cursor.destroy();
       }
-    }
-  });
-
-  it('tints the glyph with the saved color', () => {
-    const path = cursorTheme('arrow').create(document, { color: '#1f7445' }).nodes[0]?.querySelector('path');
-    expect(path?.style.fill).toBe('#1f7445');
-  });
-
-  it('draws the saved theme on the player and swaps it when settings change', () => {
-    const host = document.createElement('div');
-    const cursor = new ReplayCursor(host, events, 1000, { appearance: 'ring' });
-    try {
-      cursor.update(760);
-      const element = host.querySelector<HTMLElement>('.replay-cursor');
-      expect(host.querySelectorAll('.replay-cursor')).toHaveLength(1);
-      expect(element?.querySelectorAll('circle').length).toBeGreaterThan(0);
-      cursor.setSettings(undefined);
-      expect(element?.querySelectorAll('circle')).toHaveLength(0);
-      expect(element?.querySelectorAll('path')).toHaveLength(1);
-    } finally {
-      cursor.destroy();
     }
   });
 });

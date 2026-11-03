@@ -152,7 +152,7 @@ test('a sparse recording gets one tick per request on the ribbon, and the row un
   await expect(ribbon.locator('.ribbon-lit')).toHaveCount(1);
 });
 
-test('the ribbon playhead follows the clock by transform and glides, except under reduced motion', async ({ page }) => {
+test('the ribbon playhead follows the clock by transform without a lagging transition', async ({ page }) => {
   const id = uniqueId('network-motion');
   await seedNetworkFixture(page, id);
   await openReplay(page, `${server().origin}/r/${id}`);
@@ -160,9 +160,8 @@ test('the ribbon playhead follows the clock by transform and glides, except unde
   const ribbon = page.getByTestId('network-ribbon');
   await page.getByRole('slider', { name: 'Seek' }).press('End');
   await expect.poll(() => ribbon.evaluate((element) => Number((element as HTMLElement).style.getPropertyValue('--progress')))).toBe(1);
+  // why: --progress changes on every clock tick, so a transform transition would trail the replay's time.
   const glide = () => ribbon.locator('.ribbon-now').evaluate((element) => getComputedStyle(element).transitionDuration);
-  expect(await glide()).not.toBe('0s');
-  await page.emulateMedia({ reducedMotion: 'reduce' });
   expect(await glide()).toBe('0s');
 });
 

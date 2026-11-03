@@ -42,7 +42,6 @@
 /* Rows change state (reached, selected) with a short fade, never a snap; colour and opacity only, so nothing reflows. */
 .np-row { transition: background-color var(--motion) var(--ease-out), box-shadow var(--motion) var(--ease-out); }
 .np-row :is(.np-path, .np-code, .method, .np-ms, .np-step, time) { transition: color var(--motion) var(--ease-out); }
-.np-bar { transition: opacity var(--motion) var(--ease-out); }
 .np-row:not(.np-head):hover { background: var(--surface-hover); }
 .np-row[data-failed] { background: var(--danger-tint); box-shadow: inset 2px 0 var(--danger); }
 .np-row[data-selected], .np-row[data-selected]:hover { background: var(--accent-soft); box-shadow: inset 2px 0 var(--accent); }
@@ -135,7 +134,7 @@
 .np-peer-label { display: flex; align-items: center; gap: 6px; overflow: hidden; color: var(--text-secondary); text-overflow: ellipsis; white-space: nowrap; }
 .np-peer-result { color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (hover: hover) and (pointer: fine) {
-  .np-section .np-copy { opacity: 0; transition: opacity var(--motion-fast) var(--ease-out); }
+  .np-section .np-copy { opacity: 0; }
   .np-section:hover .np-copy, .np-section:focus-within .np-copy { opacity: 1; }
 }
 .np-pending .np-toolbar .np-pending-chips { width: 220px; }
@@ -148,3 +147,10 @@
 .np-body-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; border-radius: var(--radius-sm); }
 .np-body-note { margin: 6px 0 0; color: var(--warning); font-size: var(--text-2xs); }
 .np-redacted { padding: 0 4px; border-radius: 3px; background: var(--surface-pressed); color: var(--text-tertiary); font-style: italic; }
+
+.np-table[data-custom-columns] { min-width: max-content; }
+.np-table[data-custom-columns] .np-row { grid-template-columns: var(--np-cols); grid-template-areas: none; }
+.np-table[data-custom-columns] .np-row > * { display: block; grid-area: auto; align-self: center; margin: 0; pointer-events: auto; }
+
+.np-table[data-custom-columns] .np-row > .np-duration { display: flex; }
+.np-table[data-custom-columns] .np-request button { align-items: center; padding: 0; }

@@ -69,7 +69,6 @@
   background: transparent;
   cursor: pointer;
   pointer-events: auto;
-  transition: transform 120ms var(--ease-out);
 }
 @media (pointer: coarse) {
   .comment-marker-button::before {
@@ -126,7 +125,7 @@
 }
 @media (hover: hover) and (pointer: fine) {
   .comment-marker-button:hover {
-    transform: scale(1.12);
+    scale: 1.12;
   }
 }
 
@@ -146,31 +145,29 @@
   color: var(--text);
   opacity: 0;
   pointer-events: none;
-  transform: translate(-50%, 4px);
-  transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), visibility 0s linear 120ms;
+  transform: translateX(-50%);
   visibility: hidden;
 }
 .comment-marker[data-side="start"] .comment-card {
   left: -4px;
-  transform: translate(0, 4px);
+  transform: translateX(0);
 }
 .comment-marker[data-side="end"] .comment-card {
   right: -4px;
   left: auto;
-  transform: translate(0, 4px);
+  transform: translateX(0);
 }
 .comment-marker:hover .comment-card,
 .comment-marker:has(:focus-visible) .comment-card {
   opacity: 1;
-  transform: translate(-50%, 0);
-  transition-delay: 0s;
+  transform: translateX(-50%);
   visibility: visible;
 }
 .comment-marker[data-side="start"]:hover .comment-card,
 .comment-marker[data-side="start"]:has(:focus-visible) .comment-card,
 .comment-marker[data-side="end"]:hover .comment-card,
 .comment-marker[data-side="end"]:has(:focus-visible) .comment-card {
-  transform: translate(0, 0);
+  transform: translateX(0);
 }
 .comment-card-row {
   display: flex;

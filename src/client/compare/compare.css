@@ -12,7 +12,6 @@
   --tile-8: #d6c38a;
   --tile-9: #9fb4c8;
   --tile-radius: 10px;
-  --tile-glide: 380ms;
 }
 
 .compare-viewer {
@@ -77,11 +76,6 @@
   outline: none;
 }
 
-/* why: while the stage itself resizes (a window, the steps rail), tiles follow at once; they glide only between layouts. */
-.ct-area[data-resizing] .ct-tile {
-  transition: none;
-}
-
 .ct-tile {
   position: absolute;
   top: 0;
@@ -90,13 +84,6 @@
   border-radius: var(--tile-radius);
   background: var(--surface);
   box-shadow: 0 0 0 1px var(--line);
-  transition:
-    transform var(--tile-glide) var(--ease-out),
-    width var(--tile-glide) var(--ease-out),
-    height var(--tile-glide) var(--ease-out),
-    border-radius var(--tile-glide) var(--ease-out),
-    opacity var(--motion) var(--ease-out),
-    box-shadow var(--motion-fast) var(--ease-out);
 }
 
 /* The single layout is the plain viewer's stage: no card, the recorded page with the same breathing room. */
@@ -107,7 +94,6 @@
 }
 
 .ct-tile[data-role="hidden"] {
-  opacity: 0;
   pointer-events: none;
 }
 
@@ -124,7 +110,22 @@
   position: absolute;
   inset: 0;
   overflow: hidden;
-  transition: opacity var(--motion) var(--ease-out);
+}
+
+.ct-cover {
+  position: absolute;
+  z-index: 1;
+  left: var(--frame-x, 0px);
+  top: var(--frame-y, 0px);
+  width: var(--frame-w, 100%);
+  height: var(--frame-h, 100%);
+  object-fit: contain;
+  pointer-events: none;
+}
+
+/* why: the tile owns frame chrome; a nested shadow leaks as a hairline under fractional layout projection. */
+.ct-picture .ct-host .replayer-wrapper {
+  box-shadow: none;
 }
 
 .ct-tile[data-ended] .ct-picture {
@@ -175,9 +176,6 @@
   font-size: var(--text-xs);
   line-height: 18px;
   pointer-events: none;
-  transition:
-    bottom var(--tile-glide) var(--ease-out),
-    left var(--tile-glide) var(--ease-out);
 }
 
 .ct-tile[data-role="single"] .ct-nametag {
@@ -246,7 +244,6 @@
   display: flex;
   gap: 4px;
   opacity: 0;
-  transition: opacity 150ms var(--ease-out);
 }
 
 /* why: secondary actions stay quiet until wanted: a pointer resting on the tile, or the keyboard inside it. */
@@ -536,7 +533,6 @@
   border-radius: var(--radius-sm);
   background: var(--surface-raised);
   box-shadow: 0 0 0 1px var(--line);
-  transition: transform var(--motion) var(--ease-out);
 }
 
 .layout-switch[data-index="1"] .layout-switch-thumb {
@@ -640,7 +636,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ct-tile,
   .ct-nametag,
   .layout-switch-thumb {
     transition: none;

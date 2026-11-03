@@ -1,8 +1,9 @@
+import { useReplayDeletion } from './hooks/use-replay-deletion.tsx';
+import { usePanelMotion } from './hooks/use-panel-motion.ts';
 import { usePluginShortcuts } from './hooks/use-plugin-shortcuts.ts';
 import { useHasKeyboard } from './hooks/use-has-keyboard.ts';
 
 import { usePluginEvents } from './hooks/use-plugin-events.ts';
-import { ChevronDownIcon, Columns2Icon, FastForwardIcon, PencilIcon, PlusIcon, PuzzleIcon } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { type CSSProperties, lazy, memo, type ReactNode, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -36,7 +37,8 @@ import { openWorkshop } from './malleable/ui-state.ts';
 import { PluginContexts, usePluginContexts, usePluginMenu } from './plugins/PluginUi.tsx';
 import { collectErrors, nextError, previousError, type ReplayError } from './issues.ts';
 import { parsePermalink, stepPermalink, timePermalink } from './permalink.ts';
-import { type Playback, PlayerContext, ReplayController, SPEEDS, usePlayer, usePlayerState } from './player.ts';
+import { APP_PLAYBACK_SPEEDS, appPlaybackSpeed } from './viewer/playback-speeds.ts';
+import { type Playback, PlayerContext, ReplayController, usePlayer } from './player.ts';
 import { shortcutFor, shortcutLabel } from './shortcuts.ts';
 import { nextStepIndex, previousStepIndex } from './timeline.ts';
 import { type InspectorTab, useViewer, type ViewerActions, ViewerContext } from './viewer/context.ts';
@@ -76,6 +78,7 @@ import { SourceChip, topbarSource } from './viewer/SourceChip.tsx';
 import { readStorage, writeStorage } from './storage.ts';
 import { ReplayInfoButton, type SuiteDetails } from './viewer/ReplayInfo.tsx';
 import { DesktopHeader } from './viewer/DesktopHeader.tsx';
+import { SpeedHud, SkipIndicator } from './viewer/PlaybackNotices.tsx';
 import { setPageUrl } from './routing/navigate.ts';
 
 // Beta (beta.malleable): the plugin workshop and prompts. Never requested with the flag off.
@@ -187,8 +190,7 @@ export function Viewer({
     // `openAt: 'first-error'` (a bug reproduction): just before the first error, on the tab that holds it. Permalinks win.
     const firstError = defaults.openAt === 'first-error' && at === undefined ? errors[0] : undefined;
     if (firstError) controller.seek(Math.max(0, firstError.at - defaults.leadMs));
-    const speed = SPEEDS.find((candidate) => candidate === defaults.speed);
-    if (speed) controller.setSpeed(speed);
+    controller.setSpeed(appPlaybackSpeed(defaults.speed ?? 1));
     const step = target.step === undefined ? undefined : { index: target.step, time: controller.getTime() };
     return { controller, step, resume: Boolean(handoff), tab: firstError?.kind };
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- effects only change with the bundle (EditedViewer remounts)
@@ -241,20 +243,14 @@ export function Viewer({
   const collapsed = layout.collapsed || (layout.hidden && stacked);
   /** `persist: false` is a transient change for one action (a shortcut that needs the panel), not a preference. */
   const { setCollapsed: storeCollapsed, setTab: storeTab } = layout;
+  const panelMotion = usePanelMotion();
   const setCollapsed = useCallback(
     (next: boolean, persist = true) => {
-      // Animate the fold only for this change (never while the resizer drags).
       const element = shell.current;
-      if (element && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        if (element.dataset.mobile !== undefined) foldPhonePanel(element, next);
-        else {
-          element.dataset.inspectorAnimating = '';
-          window.setTimeout(() => delete element.dataset.inspectorAnimating, 260);
-        }
-      }
+      if (element) panelMotion(element, 'rows');
       storeCollapsed(next, persist);
     },
-    [storeCollapsed],
+    [panelMotion, storeCollapsed],
   );
   const collapsedRef = useRef(collapsed);
   useEffect(() => {
@@ -293,9 +289,7 @@ export function Viewer({
   useEffect(() => {
     const element = shell.current;
     const animate = () => {
-      if (!element || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      element.dataset.inspectorAnimating = '';
-      window.setTimeout(() => delete element.dataset.inspectorAnimating, 260);
+      if (element) panelMotion(element, 'rows');
     };
     if (roomForRequest) {
       // The player keeps at least MIN_PLAYER_SHARE of the viewer: the panel takes what is left above that.
@@ -316,7 +310,7 @@ export function Viewer({
       animate();
       setInspectorHeight(from);
     }
-  }, [roomForRequest, setInspectorHeight]);
+  }, [panelMotion, roomForRequest, setInspectorHeight]);
 
   const notify = useCallback((message: string) => showToast(message), []);
   // Built-in features (plugins/features.tsx, e.g. comments): opening their tab unfolds the panel when it is folded, and a
@@ -431,24 +425,25 @@ export function Viewer({
   // Memoised so the (memo) header does not re-render on inspector tab switches.
   // why: the recording picker stays in More so the top bar keeps room for the view and layout switches.
   const hasKeyboard = useHasKeyboard();
+  const deletion = useReplayDeletion(bundle.meta.id, bundle.meta.title, true);
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
       sharedPlayer
         ? {
             label: 'Add a recording',
-            icon: <PlusIcon aria-hidden="true" />,
+            icon: <AnimatedIcon name="plus" />,
             onSelect: () => setPickerOpen(true),
             testId: 'compare-with',
           }
         : {
             label: 'Compare with…',
-            icon: <Columns2Icon aria-hidden="true" />,
+            icon: <AnimatedIcon name="columns-2" />,
             onSelect: () => setPickerOpen(true),
             testId: 'compare-with',
           },
       ...pluginMenu.items,
       ...(betaMalleable()
-        ? [{ label: 'Plugin workshop', icon: <PuzzleIcon aria-hidden="true" />, onSelect: openWorkshop, testId: 'malleable-open' }]
+        ? [{ label: 'Plugin workshop', icon: <AnimatedIcon name="puzzle" />, onSelect: openWorkshop, testId: 'malleable-open' }]
         : []),
       // why: only where a keyboard can press them (useHasKeyboard): never on a touch screen without one.
       ...(!hasKeyboard
@@ -463,8 +458,16 @@ export function Viewer({
               section: 'after-settings' as const,
             },
           ]),
+      {
+        label: 'Delete replay',
+        icon: <AnimatedIcon name="trash-2" />,
+        onSelect: deletion.requestDelete,
+        testId: 'delete-replay',
+        variant: 'destructive',
+        section: 'after-settings',
+      },
     ],
-    [actions.openShortcuts, hasKeyboard, pluginMenu.items, sharedPlayer],
+    [actions.openShortcuts, deletion.requestDelete, hasKeyboard, pluginMenu.items, sharedPlayer],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
@@ -555,13 +558,15 @@ export function Viewer({
           return actions.goToNextError();
         case 'previous-error':
           return actions.goToPreviousError();
-        // Step through SPEEDS (clamped, no wrap); keyboard changes flash a HUD on the player.
+        // Step through APP_PLAYBACK_SPEEDS (clamped, no wrap); keyboard changes flash a HUD on the player.
         case 'speed-up':
         case 'speed-down':
         case 'speed-reset': {
-          const current = SPEEDS.indexOf(player.getState().speed);
+          const current = APP_PLAYBACK_SPEEDS.indexOf(appPlaybackSpeed(player.getState().speed));
           const next =
-            action === 'speed-reset' ? 1 : SPEEDS[Math.min(SPEEDS.length - 1, Math.max(0, current + (action === 'speed-up' ? 1 : -1)))]!;
+            action === 'speed-reset'
+              ? 1
+              : APP_PLAYBACK_SPEEDS[Math.min(APP_PLAYBACK_SPEEDS.length - 1, Math.max(0, current + (action === 'speed-up' ? 1 : -1)))]!;
           player.setSpeed(next);
           return setSpeedHud({ speed: next, id: performance.now() });
         }
@@ -602,6 +607,7 @@ export function Viewer({
         data-playing={quietPlaying || undefined}
         style={{ '--inspector-height': inspectorRow(hidden, collapsed && !mobile, inspectorHeight) } as CSSProperties}
       >
+        {deletion.dialog}
         {skipLink ? (
           <a className="skip-link" href="#replay-player">
             Skip to replay
@@ -925,70 +931,6 @@ function PhoneHeader({
   );
 }
 
-/** The phone fold's duration and curve match desktop's (styles.css, `[data-inspector-animating]`). */
-const PHONE_FOLD_MS = 220;
-
-/**
- * Phones (portrait): the panel's row eases between its open height and its tab row, and the player grows into
- * the space (the desktop fold's calm 220 ms). The open layout is content-sized (the player keeps its aspect
- * ratio), which a grid row cannot interpolate to, so the fold runs on explicit pixel rows (`data-panel-sizing`
- * lets the player fill its row meanwhile) and hands back to the content-sized layout when it lands.
- * Landscape phones put the panel beside the player, where there is nothing to fold.
- */
-function foldPhonePanel(shell: HTMLElement, collapse: boolean) {
-  const inspector = shell.querySelector<HTMLElement>('.inspector');
-  const tabs = shell.querySelector<HTMLElement>('.inspector-tabs');
-  const topbar = shell.querySelector<HTMLElement>('.app-topbar');
-  const stage = shell.querySelector<HTMLElement>('.player-stage');
-  const transport = shell.querySelector<HTMLElement>('.transport');
-  if (!inspector || !tabs || !topbar || !stage || !transport) return;
-  if (getComputedStyle(shell).gridTemplateColumns.trim().split(/\s+/).length > 1) return;
-  const from = inspector.offsetHeight;
-  let to = tabs.offsetHeight;
-  if (!collapse) {
-    // The open player: full width at the recording's aspect ratio, at most 45% of the screen (styles.css).
-    const [w = 16, h = 10] = (stage.style.getPropertyValue('--viewport-ratio') || '16 / 10').split('/').map(Number);
-    const player = Math.min((stage.clientWidth * h) / w, window.innerHeight * 0.45);
-    const padding = Number.parseFloat(getComputedStyle(shell).paddingBottom) || 0;
-    to = Math.max(tabs.offsetHeight, shell.clientHeight - padding - topbar.offsetHeight - player - transport.offsetHeight);
-  }
-  window.clearTimeout(Number(shell.dataset.foldTimer ?? 0));
-  delete shell.dataset.inspectorAnimating;
-  shell.dataset.panelSizing = '';
-  shell.style.gridTemplateRows = `auto minmax(0, 1fr) ${from}px`;
-  void shell.offsetHeight;
-  shell.dataset.inspectorAnimating = '';
-  shell.style.gridTemplateRows = `auto minmax(0, 1fr) ${to}px`;
-  shell.dataset.foldTimer = String(
-    window.setTimeout(() => {
-      shell.style.gridTemplateRows = '';
-      delete shell.dataset.panelSizing;
-      delete shell.dataset.inspectorAnimating;
-      delete shell.dataset.foldTimer;
-    }, PHONE_FOLD_MS + 40),
-  );
-}
-
-/**
- * While "skip inactive" fast-forwards an idle gap: a small pill on the player, bottom-left ("Skipping 4.2 s of
- * inactivity"), fading in and out; announced once per skip through a polite region.
- */
-function SkipIndicator() {
-  const { skipping } = usePlayerState();
-  const seconds = skipping ? ((skipping.to - skipping.from) / 1000).toFixed(1) : undefined;
-  return (
-    <>
-      <div className="skip-indicator" data-visible={skipping ? '' : undefined} aria-hidden="true" data-testid="skip-indicator">
-        <FastForwardIcon aria-hidden="true" />
-        {seconds ? `Skipping ${seconds} s of inactivity` : null}
-      </div>
-      <span className="visually-hidden" role="status">
-        {seconds ? `Skipping ${seconds} seconds of inactivity` : ''}
-      </span>
-    </>
-  );
-}
-
 /** The layout two recordings open in: the one of the view the page will be in once it compares. */
 function compareLayoutFor(bundle: ReplayBundle, suiteProfile: string | undefined) {
   return viewDefaults(resolvePageView({ search: location.search, replay: bundle, suiteProfile, recordings: 2 })).layout;
@@ -1006,15 +948,6 @@ function ShowDetails({ onShow }: { onShow: () => void }) {
     <button type="button" className="show-details" onClick={onShow} data-testid="show-details">
       Show details
     </button>
-  );
-}
-
-/** A keyboard speed change flashes the new rate on the player: fade/scale in, hold, fade out (CSS animation). */
-function SpeedHud({ speed }: { speed: number }) {
-  return (
-    <div className="speed-hud" aria-hidden="true" data-testid="speed-hud">
-      {speed}×
-    </div>
   );
 }
 
@@ -1049,7 +982,7 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
       >
         <span className="edited-label">
           {original ? 'Original recording' : stored.updatedAt ? `Edited ${savedAgo(stored.updatedAt)}` : 'Edited'}
-          <ChevronDownIcon aria-hidden="true" />
+          <AnimatedIcon name="chevron-down" />
         </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-56">
@@ -1064,7 +997,7 @@ function EditedChip({ id, edited, fresh = false }: { id: string; edited: EditedS
         </DropdownMenuItem>
         {editingEnabled() ? (
           <DropdownMenuItem render={<a href={editHref(id)} className="menu-link" />} data-testid="open-editor">
-            <PencilIcon aria-hidden="true" />
+            <AnimatedIcon name="pencil" />
             Open editor
           </DropdownMenuItem>
         ) : null}

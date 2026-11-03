@@ -2,6 +2,7 @@ import { CheckIcon, CopyIcon } from 'lucide-react';
 import { useId, useRef, useState } from 'react';
 
 import { strings } from './strings.ts';
+import { IconSwap } from '@/components/icon-swap.tsx';
 
 const COPIED_FOR_MS = 1500;
 
@@ -44,18 +45,16 @@ export function CommandField({ command, label, hint }: { command: string; label:
         />
         <button
           type="button"
-          className="settings-command-copy"
+          className="settings-command-copy press-settle"
           aria-label={strings.command.copy(label)}
           onClick={() => {
             void copy();
           }}
         >
-          <span className="settings-command-icon" data-visible={state !== 'copied' || undefined} aria-hidden="true">
-            <CopyIcon />
-          </span>
-          <span className="settings-command-icon" data-visible={state === 'copied' || undefined} aria-hidden="true">
-            <CheckIcon />
-          </span>
+          <IconSwap state={state === 'copied' ? 'b' : 'a'}>
+            <CopyIcon className="icon-a" />
+            <CheckIcon className="icon-b" />
+          </IconSwap>
         </button>
       </div>
       <p className="sr-only" role="status">

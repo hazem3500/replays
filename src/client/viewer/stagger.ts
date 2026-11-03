@@ -1,3 +1,4 @@
+import { animate } from 'motion/mini';
 import { swappingInPlace } from '../transitions/state.ts';
 
 /**
@@ -43,11 +44,7 @@ export function shouldStagger() {
 
 type RowList = { container: HTMLElement; selector: string };
 
-const KEYFRAMES: Keyframe[] = [
-  { opacity: 0, transform: 'translateY(6px)' },
-  { opacity: 1, transform: 'none' },
-];
-const EASING = 'cubic-bezier(0.23, 1, 0.32, 1)';
+const running = new WeakMap<HTMLElement, { stop: () => void; restore: () => void }>();
 
 /** The first STAGGER_MAX rows of a list that are on screen (windowed rows outside the viewport are never touched). */
 function visibleRows({ container, selector }: RowList) {
@@ -66,18 +63,45 @@ function visibleRows({ container, selector }: RowList) {
  * at the same moment and so does every list's last row, all on one clock. Every row's animation shares one start time, so the lists stay frame-for-frame in step. Returns how many
  * rows it animated.
  */
-function animateLists(lists: RowList[], startTime?: CSSNumberish | null) {
+function animateLists(lists: RowList[], startTime?: number) {
   // Every layout read before any write.
   const columns = lists.map((list) => ({ list, rows: visibleRows(list) }));
-  const start = startTime ?? document.timeline.currentTime;
+  const start = startTime ?? performance.now();
   let count = 0;
   for (const { list, rows } of columns) {
-    // The panel's own one-shot fade (styles.css html[data-landed]) gives way to the rows'.
+    // why: row entrances replace the panel's one-shot loading fade.
     if (rows.length) (list.container.closest('.timeline-wrap') ?? list.container).setAttribute('data-staggered', '');
     const gap = rows.length > 1 ? STAGGER_SPAN_MS / (rows.length - 1) : 0;
     for (const [index, row] of rows.entries()) {
-      const animation = row.animate(KEYFRAMES, { duration: STAGGER_MS, delay: index * gap, easing: EASING, fill: 'backwards' });
-      if (start !== null) animation.startTime = start;
+      if (typeof row.animate !== 'function') continue;
+      const previous = running.get(row);
+      previous?.stop();
+      previous?.restore();
+      const opacity = row.style.opacity;
+      const transform = row.style.transform;
+      const animation = animate(
+        [row],
+        { opacity: [0, 1], transform: ['translateY(6px)', 'translateY(0px)'] },
+        {
+          duration: STAGGER_MS / 1000,
+          delay: (index * gap) / 1000,
+          ease: [0.23, 1, 0.32, 1],
+        },
+      );
+      animation.time = Math.max(0, (performance.now() - start) / 1000);
+      const entry = {
+        stop: () => animation.stop(),
+        restore: () => {
+          row.style.opacity = opacity;
+          row.style.transform = transform;
+        },
+      };
+      running.set(row, entry);
+      void animation.then(() => {
+        if (running.get(row) !== entry) return;
+        entry.restore();
+        running.delete(row);
+      });
       count += 1;
     }
   }
@@ -89,7 +113,7 @@ function animateLists(lists: RowList[], startTime?: CSSNumberish | null) {
 /** A reveal that lands within this long of the previous one joins its clock (the lists filled in separate commits). */
 const SAME_REVEAL_MS = 150;
 let queued: RowList[] = [];
-let lastReveal: { at: number; start: CSSNumberish | null } | undefined;
+let lastReveal: { at: number; start: number } | undefined;
 
 /**
  * Called by each list that fills when the page is revealed (the step rail, the inspector's open panel). Lists queued

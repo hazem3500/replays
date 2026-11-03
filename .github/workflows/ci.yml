@@ -241,6 +241,12 @@ jobs:
         run: pnpm test:pack
       - run: pnpm --filter @hazem3500/replays-example-custom-distro build
       - run: pnpm --filter @hazem3500/replays-example-custom-distro typecheck
+      - name: Standalone playback and React composition consumer
+        run: pnpm --filter @hazem3500/replays-example-composed-viewer check
+      - name: Independent playback lifecycle and custom React controls
+        run: pnpm exec playwright test -c examples/composed-viewer/playwright.config.ts
+        env:
+          CHROMIUM_NO_SANDBOX: '1'
       - name: Extensions are active (auth, context, branding, tab, action, panel, hooks)
         run: pnpm exec playwright test -c examples/custom-distro/playwright.config.ts
         env:
@@ -253,6 +259,7 @@ jobs:
           path: |
             examples/custom-distro/playwright-report/
             examples/custom-distro/test-results/
+            examples/composed-viewer/test-results/
           retention-days: 3
           if-no-files-found: ignore
           compression-level: 0

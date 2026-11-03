@@ -53,33 +53,37 @@ export function CliSection() {
   const deviceLogin = Boolean(config.data.cliDeviceAuth);
   const mode = signInMode(auth, deviceLogin);
   return (
-    <>
-      <p className="settings-intro">{ACCESS[mode]}</p>
-      {anonymous ? <p className="settings-group-footer">{strings.cli.accessOpenHint}</p> : null}
+    <div className="settings-cli">
+      <dl className="cli-access">
+        <dt>{strings.cli.access}</dt>
+        <dd>{ACCESS[mode]}</dd>
+      </dl>
       <SettingsGroup title={strings.cli.install}>
-        <p className="settings-group-footer">{strings.cli.installIntro}</p>
+        <p className="cli-source">
+          {strings.cli.installIntro} <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.source}</ExternalLink>
+        </p>
         <CommandField
           label={strings.cli.installCommand}
-          command="git clone https://github.com/hazem3500/replays.git && cd replays && pnpm install --frozen-lockfile"
+          command="pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g ."
           hint={strings.cli.installHint}
         />
       </SettingsGroup>
       <SettingsGroup title={strings.cli.connect}>
         <CommandField
           label={strings.cli.connectCommand}
-          command={`pnpm cli connect ${shellQuote(serverUrl())} && pnpm cli doctor`}
-          hint={anonymous ? strings.cli.connectHint : strings.cli.connectHintSignIn}
+          command={`replays connect ${shellQuote(serverUrl())} && replays doctor`}
+          hint={strings.cli.connectHint}
         />
       </SettingsGroup>
       {deviceLogin ? (
         <SettingsGroup title={strings.cli.signIn}>
-          <CommandField label={strings.cli.signInCommand} command="pnpm cli login" hint={strings.cli.signInHint} />
+          <CommandField label={strings.cli.signInCommand} command="replays login" hint={strings.cli.signInHint} />
         </SettingsGroup>
       ) : null}
       <SettingsGroup title={strings.cli.upload}>
         <CommandField
           label={strings.cli.uploadCommand}
-          command={`pnpm cli upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
+          command={`replays upload replay.json${anonymous || deviceLogin ? '' : ' --header-file headers.json'}`}
           hint={mode === 'managed' ? (MANAGED_UPLOAD_HINTS[auth] ?? strings.cli.uploadOther) : UPLOAD_HINTS[mode]}
         />
       </SettingsGroup>
@@ -92,6 +96,6 @@ export function CliSection() {
         <ExternalLink href={SETTINGS_LINKS.cli}>{strings.cli.cliGuide}</ExternalLink>
         <ExternalLink href={SETTINGS_LINKS.auth}>{strings.cli.authGuide}</ExternalLink>
       </nav>
-    </>
+    </div>
   );
 }

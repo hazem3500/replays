@@ -19,12 +19,18 @@ describe('default recorder surface', () => {
     expect(node('[role=status]').textContent).toBe('Recording');
     expect(node('.time').textContent).toBe('0:00');
     expect(node('.recording-label').textContent).toBe('Recording');
+    expect(node('[data-recorder-action=stop]').getAttribute('aria-label')).toBe('Stop');
+    expect(node('[data-recorder-action=stop]').textContent).toBe('');
     press('Stop');
     expect(stop).toHaveBeenCalledOnce();
     hide();
     const hideUpload = ui.showUploading?.();
     expect(root().querySelector('button')).toBeNull();
     expect(node('progress').hasAttribute('value')).toBe(false);
+    expect(node('progress').getAttribute('aria-label')).toBe('Sending');
+    expect(node('.message').textContent).toBe('Sending');
+    expect(node('.message').nextElementSibling).toBe(node('.upload-activity'));
+    expect(node('.upload-activity-track').getAttribute('aria-hidden')).toBe('true');
     expect(node('.pill')).toBe(shell);
     expect(shell.getAttribute('data-phase')).toBe('uploading');
     hideUpload?.();
@@ -36,7 +42,7 @@ describe('default recorder surface', () => {
     ui.dismiss?.();
     await vi.waitFor(() => expect(document.querySelector('[data-recorder-ui]')).toBeNull());
   });
-  it('uses tabular fixed-width time and announces the final warning once', () => {
+  it('keeps time readable across the minute boundary and announces the final warning once', () => {
     vi.useFakeTimers();
     const ui = createDefaultUi();
     ui.showIndicator({
@@ -49,7 +55,7 @@ describe('default recorder surface', () => {
     expect(node('.time').textContent).toBe('10:00');
     expect(node('[role=status]').textContent).toBe('10 seconds left');
     expect(node('style').textContent).toContain('tabular-nums');
-    expect(node('style').textContent).toContain('prefers-reduced-motion: no-preference');
+    expect(node('style').textContent).not.toContain('@keyframes');
     ui.dismiss?.();
   });
   it('preserves focus on the keyed shell when the Stop control disappears', () => {

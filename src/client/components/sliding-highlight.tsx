@@ -1,4 +1,5 @@
 import { type RefObject, useLayoutEffect, useRef } from 'react';
+import { moveLayer, stopLayer } from '../lib/layer-motion.ts';
 
 /** Changes faster than this apart (a held key, a scrub) move the highlight instantly. */
 const RAPID_MS = 250;
@@ -7,7 +8,7 @@ const MAX_GLIDE_ROWS = 4;
 
 /**
  * One highlight element for a list's current row, instead of a background per row: it slides to the row
- * (transform + height, CSS transition on `.sliding-highlight`) and jumps when the move is not one to watch:
+ * (Motion transform and height) and jumps when the move is not one to watch:
  * the first placement, a resize, rapid changes, jumps of more than four rows, or when `instant()` says so (a
  * scrub, a key repeat). The list must be the highlight's offset parent (position: relative).
  *
@@ -38,16 +39,14 @@ export function useSlidingHighlight(
       now - previous.at < RAPID_MS ||
       Math.abs(index - previous.index) > MAX_GLIDE_ROWS ||
       Boolean(instant?.());
-    element.style.transition = jump ? 'none' : '';
-    element.style.opacity = '1';
-    element.style.transform = `translateY(${row.offsetTop}px)`;
-    element.style.height = `${row.offsetHeight}px`;
+    moveLayer(element, { opacity: '1', transform: `translateY(${row.offsetTop}px)`, height: `${row.offsetHeight}px` }, jump);
     last.current = { index, at: now, width: container.clientWidth };
   };
 
   // Re-place without motion when the list resizes (a resizer drag, a font swap).
   useLayoutEffect(() => {
     const container = list.current;
+    const element = highlight.current;
     if (!container) return;
     let width = container.clientWidth;
     const observer = new ResizeObserver(() => {
@@ -55,15 +54,15 @@ export function useSlidingHighlight(
       if (container.clientWidth === width) return;
       width = container.clientWidth;
       last.current = { ...last.current, index: -1 };
-      const element = highlight.current;
       const row = container.querySelector<HTMLElement>(selector);
       if (!element || !row) return;
-      element.style.transition = 'none';
-      element.style.transform = `translateY(${row.offsetTop}px)`;
-      element.style.height = `${row.offsetHeight}px`;
+      moveLayer(element, { transform: `translateY(${row.offsetTop}px)`, height: `${row.offsetHeight}px` }, true);
     });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      stopLayer(element);
+    };
   }, [list, selector]);
 
   return { highlight, place };
@@ -71,7 +70,7 @@ export function useSlidingHighlight(
 
 /**
  * The horizontal sibling for segmented controls and tabs: one pill (or underline) that slides to the
- * selected cell (transform + width; the CSS transition lives on the pill). It jumps without motion on
+ * selected cell (Motion transform and width). It jumps without motion on
  * the first placement (a popover opening), on resizes, and on rapid changes (a held arrow key).
  * `selector` finds the selected cell inside `container`; `value` is what changes when the selection does.
  */
@@ -89,12 +88,7 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, { selec
         element.style.opacity = '0';
         return;
       }
-      element.style.transition = animate ? '' : 'none';
-      element.style.opacity = '1';
-      element.style.width = `${cell.offsetWidth}px`;
-      element.style.transform = `translateX(${cell.offsetLeft}px)`;
-      if (!animate) void element.offsetWidth;
-      element.style.transition = '';
+      moveLayer(element, { opacity: '1', width: `${cell.offsetWidth}px`, transform: `translateX(${cell.offsetLeft}px)` }, !animate);
     };
     // The selection this placement is for (also handy when inspecting the DOM).
     element.dataset.selected = String(value);
@@ -116,7 +110,10 @@ export function useSlidingPill(container: RefObject<HTMLElement | null>, { selec
     });
     // Never the pill itself: its own width animates during a glide, and reacting to that would snap it.
     for (const cell of host.children) if (cell !== element) observer.observe(cell);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      stopLayer(element);
+    };
   }, [container, selector, value]);
 
   return pill;
@@ -151,6 +148,7 @@ export function HoverGlide({
         if (shown) {
           shown = false;
           element.dataset.visible = 'false';
+          moveLayer(element, { opacity: '0' }, false, 0.12);
         }
         return;
       }
@@ -159,15 +157,15 @@ export function HoverGlide({
       const x = box.left - frame.left + root.scrollLeft - root.clientLeft;
       const y = box.top - frame.top + root.scrollTop - root.clientTop;
       // First entry: appear in place; afterwards glide.
-      element.style.transition = shown ? '' : 'opacity 120ms var(--ease-out)';
-      element.style.transform = `translate(${x}px, ${y}px)`;
-      element.style.width = `${box.width}px`;
-      element.style.height = `${box.height}px`;
+      moveLayer(
+        element,
+        { transform: `translate(${x}px, ${y}px)`, width: `${box.width}px`, height: `${box.height}px`, ...(shown ? { opacity: '1' } : {}) },
+        !shown,
+        0.14,
+      );
       if (!shown) {
         shown = true;
-        // Commit the position before fading in, so nothing slides from the previous spot.
-        void element.offsetWidth;
-        element.style.transition = '';
+        moveLayer(element, { opacity: '1' }, false, 0.12);
       }
       element.dataset.visible = 'true';
     };
@@ -181,11 +179,14 @@ export function HoverGlide({
       const observer = new MutationObserver(sync);
       observer.observe(root, { subtree: true, attributes: true, attributeFilter: ['data-highlighted'] });
       sync();
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        stopLayer(element);
+      };
     }
     const onMove = (event: PointerEvent) => {
       if (event.pointerType !== 'mouse') return;
-      place((event.target as Element | null)?.closest<HTMLElement>(itemSelector) ?? null);
+      place(event.target instanceof Element ? event.target.closest<HTMLElement>(itemSelector) : null);
     };
     const onLeave = () => place(null);
     root.addEventListener('pointerover', onMove);
@@ -193,6 +194,7 @@ export function HoverGlide({
     return () => {
       root.removeEventListener('pointerover', onMove);
       root.removeEventListener('pointerleave', onLeave);
+      stopLayer(element);
     };
   }, [container, followHighlighted, itemSelector]);
   return <div ref={pill} className="hover-glide" data-visible="false" aria-hidden="true" />;

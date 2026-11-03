@@ -1,4 +1,6 @@
-import type { PointerEvent as ReactPointerEvent, ReactNode } from 'react';
+import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from 'react';
+
+import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
@@ -57,40 +59,65 @@ type EdgeDrag = ReturnType<typeof edgeDrag>;
  * object's edges drag.
  */
 export function PhoneLanes({ duration, scale, edits, steps, selection, dispatch }: PhoneLanesProps) {
+  const stack = useRef<HTMLDivElement>(null);
   const drag = edgeDrag(duration, scale, edits, dispatch);
   const px = (time: number) => time * scale;
   const select = (next: Selection) => dispatch({ type: 'select', selection: next });
   return (
-    <div className="phone-lane-stack">
-      <ClipLane duration={duration} scale={scale} edits={edits} steps={steps} selection={selection} select={select} drag={drag} />
-      {laneRegions(edits).map((lane) => (
-        <div key={lane.kind} className="phone-lane" data-kind={lane.kind}>
-          {lane.regions.map((region) => {
-            const selected = isSelected(selection, lane.kind, region.id);
-            return (
-              <Region
-                key={region.id}
-                kind={lane.kind}
-                selected={selected}
-                left={px(region.from)}
-                width={px(region.to - region.from)}
-                region={region}
-                onSelect={() => select({ kind: lane.kind, id: region.id })}
-              >
-                {selected ? (
-                  <SelectedEdges
-                    from={0}
-                    to={px(region.to - region.from)}
-                    onDrag={(edge, event) =>
-                      drag(event, (current, time) => moveEffect(current, lane.kind, region.id, edge, time, duration))
-                    }
-                  />
-                ) : null}
-              </Region>
-            );
-          })}
-        </div>
-      ))}
+    <div ref={stack} className="phone-lane-stack">
+      <HostSurfaceSlot
+        slot="editor.timeline.lanes"
+        context={{
+          edits,
+          duration,
+          scale: {
+            width: duration * scale,
+            x: px,
+            timeAt: (clientX) => Math.min(duration, Math.max(0, (clientX - (stack.current?.getBoundingClientRect().left ?? 0)) / scale)),
+          },
+        }}
+        builtins={[
+          {
+            id: 'core:clip',
+            order: 100,
+            render: () => (
+              <ClipLane duration={duration} scale={scale} edits={edits} steps={steps} selection={selection} select={select} drag={drag} />
+            ),
+          },
+          ...laneRegions(edits).map((lane, index) => ({
+            id: `core:${lane.kind}`,
+            order: (index + 2) * 100,
+            render: () => (
+              <div key={lane.kind} className="phone-lane" data-kind={lane.kind}>
+                {lane.regions.map((region) => {
+                  const selected = isSelected(selection, lane.kind, region.id);
+                  return (
+                    <Region
+                      key={region.id}
+                      kind={lane.kind}
+                      selected={selected}
+                      left={px(region.from)}
+                      width={px(region.to - region.from)}
+                      region={region}
+                      onSelect={() => select({ kind: lane.kind, id: region.id })}
+                    >
+                      {selected ? (
+                        <SelectedEdges
+                          from={0}
+                          to={px(region.to - region.from)}
+                          onDrag={(edge, event) =>
+                            drag(event, (current, time) => moveEffect(current, lane.kind, region.id, edge, time, duration))
+                          }
+                        />
+                      ) : null}
+                    </Region>
+                  );
+                })}
+              </div>
+            ),
+          })),
+        ]}
+      />
     </div>
   );
 }

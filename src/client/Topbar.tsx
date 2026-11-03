@@ -1,3 +1,4 @@
+import { useViewerPresenceMotion } from './hooks/use-viewer-presence-motion.ts';
 import { type ReactNode, type RefObject, useRef, useState } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { TitleMorph } from '@/components/title-morph.tsx';
@@ -19,6 +20,7 @@ import { cn } from '@/lib/utils.ts';
 
 import { indexReturnHref } from './routing/links.ts';
 import { productName } from './config.ts';
+import { useTransformMotion } from './hooks/use-transform-motion.ts';
 import { useHasKeyboard } from './hooks/use-has-keyboard.ts';
 import { ThemeSwitch, useThemeControls } from './theme.tsx';
 import { SettingsButton } from './settings/Settings.tsx';
@@ -95,9 +97,11 @@ export function Topbar({
   /** Anchors a secondary panel opened from More. */
   menuAnchor?: RefObject<HTMLButtonElement | null>;
 }) {
+  const chrome = useRef<HTMLElement>(null);
+  useViewerPresenceMotion(chrome, 'chrome');
   const account = useSignedIn();
   return (
-    <header className={cn('topbar app-topbar', compact && 'topbar-compact')}>
+    <header ref={chrome} className={cn('topbar app-topbar', compact && 'topbar-compact')}>
       {title === undefined && root ? (
         root
       ) : title === undefined ? (
@@ -181,9 +185,11 @@ function TopbarTitle({ title, prefix, id }: { title: string; prefix?: string; id
  * is in the menu's label, since a phone has no hover tooltip for the cut line.
  */
 function TopbarTitleMenu({ title, prefix, id, menu }: { title: string; prefix?: string; id?: string; menu: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const chevron = useTransformMotion(`rotate(${open ? 180 : 0}deg)`);
   return (
     <h1 id={id} className="topbar-title topbar-title-menu">
-      <DropdownMenu>
+      <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger render={<button type="button" className="topbar-title-trigger" data-testid="title-menu" />}>
           {prefix ? (
             <span className="topbar-prefix">
@@ -195,7 +201,9 @@ function TopbarTitleMenu({ title, prefix, id, menu }: { title: string; prefix?: 
           <span className="topbar-title-text">
             <TitleMorph text={title} />
           </span>
-          <AnimatedIcon name="chevron-down" className="topbar-title-chevron" />
+          <span ref={chevron} className="topbar-title-chevron">
+            <AnimatedIcon name="chevron-down" size={14} />
+          </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent side="bottom" align="start" className="w-auto min-w-64 max-w-[calc(100vw-16px)]">
           {menu}
@@ -220,6 +228,7 @@ export interface TopbarMenuItem {
   /** Muted trailing text (a file size). */
   detail?: string;
   disabled?: boolean;
+  variant?: 'default' | 'destructive';
   testId?: string;
   /** Less frequent utilities follow the view and appearance settings. */
   section?: 'after-settings';
@@ -308,6 +317,7 @@ function MoreItems({ items }: { items: TopbarMenuItem[] }) {
       {items.map((item) => (
         <DropdownMenuItem
           key={item.label}
+          variant={item.variant ?? 'default'}
           onClick={item.onSelect}
           {...(item.disabled ? { disabled: true } : {})}
           {...(item.href

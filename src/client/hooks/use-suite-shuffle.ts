@@ -1,8 +1,9 @@
+import { animate as animateMotion } from 'motion/mini';
 import { useLayoutEffect, useRef } from 'react';
 
 const DROP_MS = 240;
 const RETURN_MS = 300;
-const EASE = 'cubic-bezier(0.22, 0.61, 0.36, 1)';
+const EASE = [0.22, 0.61, 0.36, 1] as const;
 
 interface Snapshot {
   still: HTMLElement;
@@ -11,7 +12,8 @@ interface Snapshot {
   opacities: number[];
 }
 
-type Animate = (target: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions) => Animation;
+type MotionAnimation = ReturnType<typeof animateMotion>;
+type Animate = (target: HTMLElement, frames: Keyframe[], options: { duration: number }) => MotionAnimation;
 
 function stackParts(container: HTMLElement | null, view: string | undefined) {
   const stage = container?.querySelector<HTMLElement>(view === 'grid' ? '.shuffle-window' : '.poster-stack');
@@ -28,7 +30,7 @@ function stackParts(container: HTMLElement | null, view: string | undefined) {
 /** Moves thumbnail planes through their actual stack poses without moving the card's information. */
 export function useShuffle(container: React.RefObject<HTMLElement | null>, step: number, view?: string) {
   const previous = useRef(step);
-  const outgoing = useRef<Snapshot | undefined>(undefined);
+  const outgoing = useRef<Snapshot | null>(null);
   const capture = () => {
     const { front, poster, backs } = stackParts(container.current, view);
     if (!front || !poster) return;
@@ -60,7 +62,7 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
     const was = previous.current;
     previous.current = step;
     const snapshot = outgoing.current;
-    outgoing.current = undefined;
+    outgoing.current = null;
     const { stage, front, backs } = stackParts(container.current, view);
     if (!stage || !front || step <= was || !snapshot) {
       snapshot?.still.remove();
@@ -76,19 +78,40 @@ export function useShuffle(container: React.RefObject<HTMLElement | null>, step:
   return capture;
 }
 
+function restoreShuffleTarget(target: HTMLElement, original: { transform: string; opacity: string } | undefined) {
+  if (!original) return;
+  if (original.transform) target.style.setProperty('transform', original.transform);
+  else target.style.removeProperty('transform');
+  if (original.opacity) target.style.setProperty('opacity', original.opacity);
+  else target.style.removeProperty('opacity');
+}
+
 /** Keeps the return and each rear plane on one cancellable timeline. */
 function animateShuffle(stage: HTMLElement, front: HTMLElement, backs: HTMLElement[], snapshot: Snapshot) {
   const { still, poses, opacities, frontId } = snapshot;
-  const animations: Animation[] = [];
+  const animations: MotionAnimation[] = [];
+  const originals = new Map<HTMLElement, { transform: string; opacity: string }>();
+  const restore = (target: HTMLElement) => restoreShuffleTarget(target, originals.get(target));
   const returned = backs.find((back) => back.dataset.runId === frontId);
   const rear = getComputedStyle(returned ?? backs.at(-1) ?? front);
   const rearPose = rear.transform;
   const rearOpacity = Number(rear.opacity || '1');
   let active = true;
-  const animate = (target: HTMLElement, frames: Keyframe[], options: KeyframeAnimationOptions) => {
-    const animation = target.animate(frames, options);
+  const animate: Animate = (target, frames, options) => {
+    if (!originals.has(target)) originals.set(target, { transform: target.style.transform, opacity: target.style.opacity });
+    const animation = animateMotion(
+      [target],
+      {
+        transform: frames.map((frame) => String(frame.transform ?? 'none')),
+        ...(frames.some((frame) => frame.opacity !== undefined) ? { opacity: frames.map((frame) => Number(frame.opacity ?? 1)) } : {}),
+      },
+      { duration: options.duration / 1000, ease: EASE },
+    );
     animations.push(animation);
-    void animation.finished.catch(() => undefined);
+    if (target !== still)
+      void Promise.resolve(animation).then(() => {
+        if (active) restore(target);
+      });
     return animation;
   };
   stage.append(still);
@@ -97,8 +120,6 @@ function animateShuffle(stage: HTMLElement, front: HTMLElement, backs: HTMLEleme
   const dropped = `translateY(${front.offsetHeight + 24}px)`;
   const down = animate(still, [{ transform: 'none' }, { transform: dropped }], {
     duration: DROP_MS,
-    easing: EASE,
-    fill: 'forwards',
   });
   animate(
     front,
@@ -108,12 +129,10 @@ function animateShuffle(stage: HTMLElement, front: HTMLElement, backs: HTMLEleme
     ],
     {
       duration: DROP_MS + 80,
-      easing: EASE,
-      fill: 'backwards',
     },
   );
   animateBacks(backs, snapshot, returned, animate);
-  void down.finished
+  void Promise.resolve(down)
     .then(async () => {
       if (!active) return;
       // why: the old front changes depth only while it is fully hidden below the information area.
@@ -126,20 +145,18 @@ function animateShuffle(stage: HTMLElement, front: HTMLElement, backs: HTMLEleme
         ],
         {
           duration: RETURN_MS,
-          easing: EASE,
-          fill: 'forwards',
         },
       );
-      down.cancel();
-      await returning.finished;
+      await returning;
       if (!active) return;
       returned?.style.removeProperty('visibility');
       still.remove();
     })
-    .catch(() => undefined);
+    .catch(() => {});
   return () => {
     active = false;
     for (const animation of animations) animation.cancel();
+    for (const target of originals.keys()) restore(target);
     front.style.removeProperty('transform-origin');
     returned?.style.removeProperty('visibility');
     still.remove();
@@ -162,8 +179,6 @@ function animateBacks(backs: HTMLElement[], snapshot: Snapshot, returned: HTMLEl
       ],
       {
         duration: DROP_MS + 80,
-        easing: EASE,
-        fill: 'backwards',
       },
     );
   }

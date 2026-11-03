@@ -1,5 +1,6 @@
 import { BotIcon, CircleAlertIcon, GlobeIcon, LayersIcon, SlidersHorizontalIcon, TagIcon, UserRoundIcon } from 'lucide-react';
 import { Fragment, type KeyboardEvent, type ReactNode, useState } from 'react';
+import { useFilterThumbMotion } from '../../hooks/use-filter-thumb-motion.ts';
 
 import {
   type Choice,
@@ -127,9 +128,16 @@ function SwitchRow({ filter }: { filter: SwitchFilter }) {
     >
       <Icon className="filter-kind-icon" aria-hidden="true" />
       <span className="filter-row-label">{filter.label}</span>
-      <span className="filter-switch" aria-hidden="true" />
+      <span className="filter-switch" aria-hidden="true">
+        <FilterThumb checked={filter.checked} />
+      </span>
     </button>
   );
+}
+
+function FilterThumb({ checked }: { checked: boolean }) {
+  const ref = useFilterThumbMotion(checked);
+  return <span ref={ref} className="filter-switch-thumb" />;
 }
 
 function RowBody({ row, state, renderChoice }: { row: FilterRow; state: FilterState; renderChoice: (choice: Choice) => ReactNode }) {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { IconSwap } from '@/components/icon-swap.tsx';
 
 import { IconButton, type IconButtonProps } from '@/components/icon-button.tsx';
 import { cn } from '@/lib/utils.ts';
@@ -36,10 +37,10 @@ export function CopyButton({
       }
       {...props}
     >
-      <span className="icon-swap" data-state={copied ? 'b' : 'a'} aria-hidden="true">
+      <IconSwap state={copied ? 'b' : 'a'}>
         <AnimatedIcon name="copy" className="icon-a" />
         <AnimatedIcon name="check" className="icon-b" trigger="state" play={copied ? 'copied' : false} />
-      </span>
+      </IconSwap>
     </IconButton>
   );
 }

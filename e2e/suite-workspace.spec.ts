@@ -175,3 +175,53 @@ test('the suite thumbnail and title both open the card in grid view', async ({ p
     await expect(page).toHaveURL(new RegExp(`/s/${suite}/r/`));
   }
 });
+
+test('Motion keeps the original card lift and preserves the entry through list and grid changes', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await page.setViewportSize({ width: 1280, height: 800 });
+  const { suite } = await threeRuns(page.request);
+  await gotoHydrated(page, server().origin);
+  await page.getByRole('button', { name: 'Grid', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute('data-feed-transition'))).toBe(false);
+  const card = page.locator(`[data-entry-id="suite:${suite}"]`);
+  await expect(card).toBeVisible();
+  await card.evaluate((element) => element.setAttribute('data-persistent-entry', ''));
+  const before = await boxOf(card);
+  await card.hover();
+  await expect.poll(async () => Math.abs((await boxOf(card)).y - before.y + 2)).toBeLessThan(0.25);
+  await expect(card.locator('.feed-hover')).toHaveCSS('opacity', '1');
+  await page.mouse.move(0, 0);
+  await expect.poll(async () => Math.abs((await boxOf(card)).y - before.y)).toBeLessThan(0.25);
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute('data-feed-transition'))).toBe(false);
+  await expect(card).toHaveAttribute('data-persistent-entry', '');
+  await page.getByRole('button', { name: 'Grid', exact: true }).click();
+  await expect.poll(() => page.evaluate(() => document.documentElement.hasAttribute('data-feed-transition'))).toBe(false);
+  await expect(card).toHaveAttribute('data-persistent-entry', '');
+});
+
+test('the redesigned sidebar keeps full suite headings and readable run identities when an old narrow width was saved', async ({
+  page,
+}) => {
+  const suite = uniqueId('checkout-design-review-before-after-across-browsers');
+  const before = `${suite}-before`;
+  await createSuite(page.request, server().origin, suite, [
+    { id: 'before', label: 'Checkout design review · Before · fictional demo', status: 'passed', replayId: before },
+    { id: 'after', label: 'Checkout design review · After · fictional demo', status: 'passed', replayId: `${suite}-after` },
+  ]);
+  await page.addInitScript(() => localStorage.setItem('suite-sidebar-width', '201'));
+  await page.setViewportSize({ width: 1000, height: 800 });
+  await openReplay(page, `${server().origin}/s/${suite}/r/${before}`);
+  const sidebar = page.getByRole('complementary', { name: 'Review suite' });
+  expect((await boxOf(sidebar)).width).toBeGreaterThanOrEqual(240);
+  const heading = sidebar.getByRole('heading', { name: `Review ${suite}` });
+  expect(await heading.evaluate((element) => element.scrollHeight - element.clientHeight)).toBeLessThanOrEqual(1);
+  await expect(sidebar.locator('.run-label')).toHaveText(['Before', 'After']);
+  await expect(sidebar.locator('.suite-sidebar-overview')).toContainText('2 recordings');
+  expect(
+    await sidebar.locator('.suite-sidebar-overview').evaluate((element) => element.scrollWidth - element.clientWidth),
+  ).toBeLessThanOrEqual(1);
+  await expect(sidebar.locator('[aria-current="page"]')).toHaveAccessibleName(/Checkout design review · Before · fictional demo/);
+  const selected = sidebar.locator('[aria-current="page"]');
+  expect(await selected.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
+});

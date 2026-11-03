@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/hazem3500/replays/docs/formats/data-storage.schema.json",
+  "title": "Data and storage settings",
+  "description": "Authenticated GET /api/data-storage. Trash IDs require per-replay read authorization. Storage locations and credentials are excluded.",
+  "type": "object",
+  "required": ["backend", "retention", "trash", "replayCount"],
+  "properties": {
+    "backend": {
+      "type": "string"
+    },
+    "retention": {
+      "type": "object",
+      "required": ["days", "profiles", "hasRules", "expiredDays", "trashDays"],
+      "properties": {
+        "days": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "profiles": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "hasRules": {
+          "type": "boolean"
+        },
+        "expiredDays": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "trashDays": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "trash": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "deletedAt", "restorableUntil"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "restorableUntil": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    },
+    "replayCount": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Active readable and delete-authorized upload bundles, including kept uploads. Excludes samples and existing trash."
+    }
+  }
+}

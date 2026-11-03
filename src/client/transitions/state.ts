@@ -4,14 +4,20 @@
 
 type DocumentWithTransition = Document & { activeViewTransition?: ViewTransition | null };
 
-let active: ViewTransition | undefined;
+export interface PageTransition {
+  ready: Promise<unknown>;
+  finished: Promise<unknown>;
+  skipTransition: () => void;
+}
+
+let active: PageTransition | undefined;
 let inPlace = false;
 let sequence = 0;
 
 export const currentTransition = () => active ?? (document as DocumentWithTransition).activeViewTransition ?? undefined;
 
 /** Records the transition this app started, until it has finished. */
-export function follow(transition: ViewTransition) {
+export function follow(transition: PageTransition) {
   active = transition;
   void transition.finished
     .catch(() => {})

@@ -1,12 +1,13 @@
+import { MENU_ICONS } from './animated-menu-icons.ts';
+
 /**
  * Geometry + one-shot gestures for the animated icons (see animated-icon.tsx).
  *
  * Geometry is copied from lucide-react 1.55 (ISC, © Lucide Contributors) so an animated icon is pixel-identical
- * to the lucide icon it replaces when at rest. Gestures are CSS ports of lucide-animated
+ * to the lucide icon it replaces when at rest. Gestures are Motion ports of lucide-animated
  * (https://github.com/pqoqubbw/icons, MIT, © 2024-2026 pqoqubbw) where that library has the icon, cut from its
  * 0.45–1.3 s springs to 220–380 ms ease-out; the rest (mouse-pointer-2, text-cursor-input, globe, arrow-down-up,
- * info, ellipsis, list, pause) are drawn here in the same style. No runtime animation library: each moving part
- * gets CSS custom properties that the shared keyframes in animated-icon.css read.
+ * info, ellipsis, list, pause) are drawn here in the same style. Motion's mini animate drives the moving SVG parts.
  */
 
 /** How a part moves while the icon plays. Every gesture returns to the lucide pose. */
@@ -62,6 +63,7 @@ const SUN_RAYS = [
 ];
 
 const ICONS = {
+  ...MENU_ICONS,
   pencil: {
     ms: 260,
     motion: { kind: 'shift', x: 1, y: -1 },

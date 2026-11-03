@@ -85,6 +85,7 @@ describe('Settings', () => {
     expect([...document.querySelectorAll('[role="tab"]')].map((element) => element.getAttribute('data-slot-item'))).toEqual([
       'core:cli',
       'core:keyboard',
+      'core:data-storage',
       'core:labs',
       'core:about',
     ]);
@@ -119,10 +120,10 @@ describe('Settings', () => {
     await click(tab('CLI & agents'));
     await vi.waitFor(() => expect(panel()?.textContent).toContain('Device sign-in'));
     const commands = [...document.querySelectorAll<HTMLInputElement>('.settings-command-text')].map((input) => input.value);
-    expect(commands[0]).toBe('git clone https://github.com/hazem3500/replays.git && cd replays && pnpm install --frozen-lockfile');
-    expect(commands[1]).toContain('pnpm cli connect');
-    expect(commands).toContain('pnpm cli login');
-    expect(commands.at(-1)).toBe('pnpm cli upload replay.json');
+    expect(commands[0]).toBe('pnpm install --frozen-lockfile && pnpm build && pnpm build:cli && npm install -g .');
+    expect(commands[1]).toContain('replays connect');
+    expect(commands).toContain('replays login');
+    expect(commands.at(-1)).toBe('replays upload replay.json');
   });
 
   it('copies the setup command for the deployment base and announces it', async () => {
@@ -134,16 +135,16 @@ describe('Settings', () => {
     await render();
     await settle(() => openSettings('cli'));
     expect(fetchConfig).toHaveBeenCalledWith('/workspace/api/config', expect.objectContaining({ signal: expect.any(AbortSignal) }));
-    await vi.waitFor(() => expect(panel()?.textContent).toContain('Host-managed sign-in'));
+    await vi.waitFor(() => expect(panel()?.textContent).toContain('Managed by host'));
     expect(panel()?.textContent).toContain('Credential creation isn’t enabled for this deployment.');
     const setup = document.querySelector<HTMLInputElement>('input[aria-label="Server setup command"]');
     expect(setup?.readOnly).toBe(true);
-    expect(setup?.value).toBe("pnpm cli connect 'http://localhost:3000/workspace' && pnpm cli doctor");
+    expect(setup?.value).toBe("replays connect 'http://localhost:3000/workspace' && replays doctor");
     expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toContain('--header-file headers.json');
     const writeText = vi.fn<(value: string) => Promise<void>>().mockResolvedValue();
     Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
     await click(document.querySelector('[aria-label="Copy server setup command"]'));
-    expect(writeText).toHaveBeenCalledWith("pnpm cli connect 'http://localhost:3000/workspace' && pnpm cli doctor");
+    expect(writeText).toHaveBeenCalledWith("replays connect 'http://localhost:3000/workspace' && replays doctor");
     await vi.waitFor(() => expect(announced('Copied')).toBe(true));
   });
 
@@ -151,11 +152,11 @@ describe('Settings', () => {
     mockConfig('none');
     await render();
     await settle(() => openSettings('cli'));
-    await vi.waitFor(() => expect(panel()?.textContent).toContain('App sign-in is disabled. Anyone who can reach this app can use it.'));
-    expect(panel()?.textContent).toContain('These settings do not describe that proxy.');
-    expect(panel()?.textContent).toContain('The CLI is not published to npm yet.');
+    await vi.waitFor(() => expect(panel()?.querySelector('.cli-access dd')?.textContent).toBe('Disabled'));
+    expect(panel()?.textContent).toContain('Install from source until the npm release.');
+    expect(panel()?.querySelector('a[href$="#quickstart"]')?.textContent).toContain('Get the source');
     expect(panel()?.querySelector('.settings-credentials')?.hasAttribute('open')).toBe(false);
-    expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toBe('pnpm cli upload replay.json');
+    expect(document.querySelector<HTMLInputElement>('input[aria-label="Upload command"]')?.value).toBe('replays upload replay.json');
   });
 
   it('says plainly when the server offers no experiments', async () => {

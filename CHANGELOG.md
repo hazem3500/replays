@@ -5,6 +5,20 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Added pure network, performance, waterfall and error builders at `/viewer/diagnostics`, with packed browser-consumer checks for optional React and recorder compositions.
+
+- Added confirmed bulk trash for readable, delete-authorized uploads with protected keeps, read-only sample preservation, bounded concurrency and count-only partial results.
+
+- Added Data & storage settings with authoritative retention/backend information, access-filtered trash, restore and confirmed per-replay deletion through existing protected APIs.
+
+- Adopted Motion for authored application and recorder UI animations; replaced NumberFlow and clarified the React 19 minimum.
+- Added independent React playback providers, hooks, stage, transport, steps and headless diagnostics at `/viewer/react`.
+
+- Wired host DOM contributions into network columns, performance vitals, editor actions, inspector sections, timeline lanes and settings destinations, including phone layouts, shared slot policy and validated editor commands.
+
+- Added browser and server safe portable replay, edit and privacy models at `/model`.
+- Added framework independent playback at `/viewer/playback`, reusing the existing replay engine with independently owned loading, subscriptions, mounts and cleanup.
+
 - Added trusted browser contributions for synchronous editor tools, user-invoked export formats and conflict-checked viewer shortcuts through the shared slot policy.
 
 - Added typed browser activity subscriptions for trusted plugins (`api.on`), with automatic reload cleanup and metadata-only payloads. No telemetry is sent by default.
@@ -12,6 +26,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 - Added the v2 public theme token catalogue for motion, spacing, type, elevation and component styling through config and trusted plugin branding. Existing tokens and default appearance are retained.
 
 ### Security
+
+- Apply canonical Node request hooks and web middleware to per-replay data-storage authorization checks, preserving individual read/delete restrictions during trash listing and bulk operations.
 
 - Error responses no longer pass on what the server didn't decide itself. A storage provider's status
   (`GcsError`/`S3Error` 403/404/429) and a corrupt stored file are now a generic `500 internal error`, not a 4xx

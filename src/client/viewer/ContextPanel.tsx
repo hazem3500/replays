@@ -11,8 +11,9 @@ import {
   XIcon,
 } from 'lucide-react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { type ReactElement, type ReactNode, useContext, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type ReactElement, type ReactNode, useContext, useId, useRef } from 'react';
 
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 import type { ReplayContext, ReplaySourceRef } from '../../shared/context.ts';
 import type { ReplayBundle } from '../../shared/replay.ts';
 import type { FieldSchema } from '../config.ts';
@@ -59,6 +60,8 @@ export function ContextPanel({
   /** Blocks client plugins add to the tab (registerContextSection), drawn after the built-in groups. */
   sections?: ReactNode;
 }) {
+  const scope = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(scope, 'context', Boolean(bundle.context));
   const context = bundle.context;
   if (!context) {
     return (
@@ -71,7 +74,7 @@ export function ContextPanel({
     );
   }
   return (
-    <div data-testid="context-panel" className="table-scroll ctx">
+    <div ref={scope} data-testid="context-panel" className="table-scroll ctx">
       <div className="ctx-inner" data-slot={CONTEXT_SECTIONS_SLOT}>
         {contextSections(CORE_SECTIONS, { context, schema }, sections)}
       </div>
@@ -408,22 +411,11 @@ function Signals({ items }: { items: Signal[] }) {
   );
 }
 
-/** A value that truncates to one line; the tooltip (with the full value) only exists while it is cut off. */
+/** Values wrap in place; abbreviated identifiers keep their full value available in a tooltip. */
 function Text({ value, full = value, mono = false }: { value: string; full?: string; mono?: boolean }) {
-  const ref = useRef<HTMLSpanElement>(null);
-  const [cut, setCut] = useState(false);
-  useLayoutEffect(() => {
-    const element = ref.current;
-    if (!element || typeof ResizeObserver === 'undefined') return;
-    const measure = () => setCut(element.scrollWidth > element.clientWidth + 1);
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    measure();
-    return () => observer.disconnect();
-  }, []);
   return (
-    <Hint label={full} disabled={!cut && full === value} side="top" align="start">
-      <span ref={ref} className="ctx-value" data-mono={mono || undefined}>
+    <Hint label={full} disabled={full === value} side="top" align="start">
+      <span className="ctx-value" data-mono={mono || undefined}>
         {value}
       </span>
     </Hint>

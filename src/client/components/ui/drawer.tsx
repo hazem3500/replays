@@ -1,3 +1,4 @@
+import { SurfaceMotion } from './surface-motion.tsx';
 import * as React from 'react';
 import { Drawer as DrawerPrimitive } from '@base-ui/react/drawer';
 import { cn } from '@/lib/utils.ts';
@@ -5,7 +6,7 @@ import { cn } from '@/lib/utils.ts';
 /**
  * A bottom sheet (Base UI Drawer): slides up from the bottom edge, swipes down to dismiss,
  * keeps the keyboard inside while open and returns it to the trigger. Motion is transform/opacity only,
- * 200 ms ease-out, and none under reduced motion (styles.css zeroes transition durations).
+ * owned by Motion; reduced motion changes state immediately. Swipe geometry remains controlled by Base UI.
  */
 function Drawer({ ...props }: DrawerPrimitive.Root.Props) {
   return <DrawerPrimitive.Root data-slot="drawer" {...props} />;
@@ -34,8 +35,9 @@ function DrawerContent({
     <DrawerPrimitive.Portal container={container}>
       {scrim ? (
         <DrawerPrimitive.Backdrop
+          render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="drawer-backdrop" />}
           data-slot="drawer-overlay"
-          className="fixed inset-0 z-50 min-h-dvh bg-(--scrim) opacity-[calc(1-var(--drawer-swipe-progress,0))] transition-opacity duration-200 ease-(--ease-out) data-ending-style:opacity-0 data-starting-style:opacity-0 data-swiping:duration-0"
+          className="fixed inset-0 z-50 min-h-dvh bg-(--scrim) opacity-[calc(1-var(--drawer-swipe-progress,0))]"
         />
       ) : null}
       <DrawerPrimitive.Viewport
@@ -43,10 +45,11 @@ function DrawerContent({
         className={cn('fixed inset-0 z-50 flex items-end justify-center', !scrim && 'pointer-events-none [&>*]:pointer-events-auto')}
       >
         <DrawerPrimitive.Popup
+          render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="drawer" />}
           data-slot="drawer-content"
           className={cn(
-            // The 48 px bleed below the screen edge keeps the sheet's surface under the finger while it overshoots upward.
-            '[--bleed:48px] -mb-(--bleed) box-border flex max-h-[calc(85dvh+var(--bleed))] w-full max-w-[520px] flex-col overflow-y-auto overscroll-contain rounded-t-xl border-t border-(--line-strong) bg-(--surface-raised) px-[16px] pt-[8px] pb-[calc(16px+env(safe-area-inset-bottom,0px)+var(--bleed))] text-(--text) outline-none [transform:translateY(var(--drawer-swipe-movement-y,0px))] transition-transform duration-200 ease-(--ease-out) data-ending-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-starting-style:[transform:translateY(calc(100%-var(--bleed)+2px))] data-swiping:select-none',
+            // why: the bleed keeps the surface under a finger when the sheet overshoots upward.
+            '[--bleed:48px] -mb-(--bleed) box-border flex max-h-[calc(85dvh+var(--bleed))] w-full max-w-[520px] flex-col overflow-y-auto overscroll-contain rounded-t-xl border-t border-(--line-strong) bg-(--surface-raised) px-[16px] pt-[8px] pb-[calc(16px+env(safe-area-inset-bottom,0px)+var(--bleed))] text-(--text) outline-none [transform:translateY(var(--drawer-swipe-movement-y,0px))] data-swiping:select-none',
             className,
           )}
           {...props}

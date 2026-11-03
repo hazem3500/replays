@@ -2,6 +2,7 @@ import { Clock3Icon, LayersIcon, LinkIcon, ListOrderedIcon } from 'lucide-react'
 import { type ReactNode, type RefObject, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { IconSwap } from '@/components/icon-swap.tsx';
 import { AnimatedText } from '@/components/animated-text.tsx';
 import { Hint, IconButton } from '@/components/icon-button.tsx';
 import { buttonVariants } from '@/components/ui/button.tsx';
@@ -225,10 +226,10 @@ export function CopyLinkButton({ suiteHref }: { suiteHref?: string | undefined }
         }}
         {...press.handlers}
       >
-        <span className="icon-swap" data-state={copied ? 'b' : 'a'} aria-hidden="true">
+        <IconSwap state={copied ? 'b' : 'a'}>
           <AnimatedIcon name="link" className="icon-a" />
           <AnimatedIcon name="check" className="icon-b" trigger="state" play={copied ? 'copied' : false} />
-        </span>
+        </IconSwap>
       </IconButton>
       <CopyLinkMenu
         anchor={button}

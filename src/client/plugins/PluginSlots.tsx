@@ -2,6 +2,7 @@ import { type CSSProperties, type KeyboardEvent, memo, useContext, useEffect, us
 
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 import { ContextSection } from '../viewer/ContextPanel.tsx';
 import type { TimelineTrackDefinition, ViewerPluginContext } from './api.ts';
 import { PluginContexts, PluginMount, usePluginSnapshot } from './PluginUi.tsx';
@@ -54,6 +55,7 @@ function TrackRow({
   const duration = player.duration;
   const [markers, setMarkers] = useState<PlacedMarker[]>([]);
   const element = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(element, 'plugin', markers.length > 0 && duration > 0);
   // Asked once per replay (the context is per replay); a late answer for a replay no longer open is ignored.
   useEffect(() => {
     let live = true;

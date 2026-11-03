@@ -29,7 +29,7 @@
 .panel-pending-frame { display: flex; flex: 1; flex-direction: column; min-height: 0; overflow: hidden; pointer-events: none; user-select: none; }
 .pending-scroll { overflow: hidden; }
 .pending-bar { max-width: 100%; }
-.pending-rows .skeleton, .pending-list .skeleton, .pending-context .skeleton, .pending-toolbar .skeleton { animation: pending-in 180ms var(--ease-out) 150ms both, skeleton-pulse 1.2s var(--ease-out) 330ms infinite alternate; }
+.panel-pending .skeleton { animation: none; }
 .pending-toolbar { justify-content: flex-start; }
 .pending-control { width: 28px; height: 20px; }
 .pending-control-wide { width: 72px; }
@@ -42,7 +42,6 @@
 .pending-columns { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 0 32px; padding-top: 16px; }
 .pending-column { display: grid; align-content: start; }
 .pending-heading { width: 56px; margin: 4px 0 8px; }
-@keyframes pending-in { from { opacity: 0; } }
 @media (pointer: coarse) {
   .pending-line { height: 44px; }
 }

@@ -1,10 +1,12 @@
 import { flushSync } from 'react-dom';
 
 import type { Theme } from '../theme.tsx';
+import { motionView } from '../transitions/motion-view.ts';
 
 interface ThemeChange {
   target: Theme;
-  transition?: ViewTransition;
+  stop?: () => void;
+  commit?: () => void;
   finish: () => void;
 }
 
@@ -27,7 +29,7 @@ export function switchThemeWithTransition(apply: (theme: Theme) => void) {
   const root = document.documentElement;
   const previous = active;
   const target = (previous?.target ?? root.dataset.theme) === 'light' ? 'dark' : 'light';
-  previous?.transition?.skipTransition();
+  previous?.stop?.();
   previous?.finish();
 
   const release = holdTransitions();
@@ -44,6 +46,7 @@ export function switchThemeWithTransition(apply: (theme: Theme) => void) {
   const commit = () => {
     if (active === change) flushSync(() => apply(target));
   };
+  change.commit = commit;
 
   if (previous || !document.startViewTransition || matchMedia('(prefers-reduced-motion: reduce)').matches) {
     commit();
@@ -53,11 +56,20 @@ export function switchThemeWithTransition(apply: (theme: Theme) => void) {
 
   root.dataset.themeSwitching = 'fade';
   try {
-    change.transition = document.startViewTransition(commit);
-    void change.transition.ready.catch(() => {});
-    void change.transition.finished.then(change.finish, change.finish);
+    const transition = motionView(commit, (view) => {
+      view.old({ opacity: 1 }, { duration: 0.18 }).new({ opacity: [0, 1] }, { duration: 0.18 });
+    });
+    change.stop = () => transition.skipTransition();
+    void transition.finished.then(change.finish, change.finish);
+    void transition.updateCallbackDone.catch(() => {});
   } catch {
     commit();
     change.finish();
   }
+}
+
+export function settleThemeTransition() {
+  active?.commit?.();
+  active?.stop?.();
+  active?.finish();
 }

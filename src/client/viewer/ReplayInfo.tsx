@@ -25,6 +25,7 @@ import { formatClock, type ReplayBundle } from '../../shared/replay.ts';
 import { formatRelative } from '../format.ts';
 import { useViewer } from './context.ts';
 import { retentionLabel, retentionQuery } from './keep.ts';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 
 /** The review suite a run belongs to, for the details popover. */
 export interface SuiteDetails {
@@ -71,8 +72,10 @@ function Detail({
   action?: ReactNode;
   testId?: string;
 }) {
+  const presence = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(presence, 'info', Boolean(action));
   return (
-    <div className="info-detail">
+    <div ref={presence} className="info-detail">
       <dt>
         <Icon aria-hidden="true" />
         {label}

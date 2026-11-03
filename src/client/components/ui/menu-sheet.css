@@ -1,19 +1,9 @@
-/*
- * A menu on phones (dropdown-menu.tsx, MOBILE_QUERY): the same Base UI menu, drawn in the bottom sheet's geometry
- * (drawer.tsx): the --scrim behind it, a 520 px sheet with a 12 px top radius and a 36 x 4 handle, the raised surface,
- * 48 px rows, the bottom safe area, and a Cancel row at the end. Destructive items move after the others. It rises
- * in 200 ms ease-out and leaves faster; reduced motion keeps the fade only.
- */
+/* why: the phone menu keeps Base UI's focus and dismissal behavior with drawer geometry; Motion owns its timeline. */
 .menu-sheet-scrim {
   position: fixed;
   z-index: 50;
   inset: 0;
   background: var(--scrim);
-  transition: opacity 200ms var(--ease-out);
-}
-.menu-sheet-scrim[data-starting-style],
-.menu-sheet-scrim[data-ending-style] {
-  opacity: 0;
 }
 .menu-sheet-positioner.menu-sheet-positioner {
   position: fixed !important;
@@ -37,14 +27,6 @@
   background: var(--surface-raised);
   color: var(--text);
   outline: none;
-  transition: transform 200ms var(--ease-out);
-}
-.menu-sheet[data-starting-style] {
-  transform: translateY(100%);
-}
-.menu-sheet[data-ending-style] {
-  transform: translateY(100%);
-  transition-duration: 160ms;
 }
 .menu-sheet-handle {
   flex: none;
@@ -98,16 +80,4 @@
 }
 .menu-sheet > .menu-sheet-cancel[data-highlighted] {
   box-shadow: inset 0 0 0 2px var(--ring);
-}
-@media (prefers-reduced-motion: reduce) {
-  .menu-sheet,
-  .menu-sheet[data-starting-style],
-  .menu-sheet[data-ending-style] {
-    transform: none;
-    transition: opacity 120ms linear;
-  }
-  .menu-sheet[data-starting-style],
-  .menu-sheet[data-ending-style] {
-    opacity: 0;
-  }
 }

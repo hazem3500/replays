@@ -1,5 +1,6 @@
 import { ChevronLeftIcon, ChevronRightIcon, XIcon } from 'lucide-react';
 import type { KeyboardEvent } from 'react';
+import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 
 import { DialogClose, DialogTitle } from '@/components/ui/dialog.tsx';
 
@@ -89,9 +90,16 @@ export function SplitLayout({
           <h2 className="settings-pane-title">{current.label}</h2>
           <CloseButton />
         </header>
-        <div key={current.id} className="settings-pane-body" data-instant={instant || undefined}>
+        <SurfaceMotion
+          key={current.id}
+          open
+          kind="pane"
+          instant={instant}
+          className="settings-pane-body"
+          data-instant={instant || undefined}
+        >
           {current.render({ stacked: false })}
-        </div>
+        </SurfaceMotion>
       </div>
     </>
   );
@@ -147,9 +155,9 @@ export function StackedSection({ current, onBack }: { current: SettingsSectionDe
       </header>
       <div className="settings-pane" data-section={current.id}>
         <h2 className="settings-pane-title">{current.label}</h2>
-        <div key={current.id} className="settings-pane-body">
+        <SurfaceMotion key={current.id} open kind="pane" className="settings-pane-body">
           {current.render({ stacked: true })}
-        </div>
+        </SurfaceMotion>
       </div>
     </>
   );

@@ -1,0 +1,22 @@
+body { margin: 0; background: #f6f7f9; color: #1e2530; font: 14px/1.5 system-ui, sans-serif; }
+main { max-width: 1400px; margin: auto; padding: 24px; }
+h1 { font-size: 24px; }
+h2 { margin-top: 0; font-size: 18px; }
+h3 { font-size: 14px; }
+.panes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.pane { min-width: 0; padding: 16px; border: 1px solid #d6dbe2; border-radius: 12px; background: white; }
+.stage { width: 100%; min-height: 160px; border-radius: 8px; background: #171a21; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-block: 12px; }
+.controls input[type="range"] { min-width: 80px; flex: 1; }
+.controls output { font-variant-numeric: tabular-nums; }
+button { padding: 6px 10px; border: 1px solid #c6cdd7; border-radius: 6px; background: white; color: inherit; cursor: pointer; }
+button:disabled { cursor: default; opacity: 0.5; }
+button:focus-visible, input:focus-visible { outline: 2px solid #4958cf; outline-offset: 2px; }
+.details { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+.details ol { margin: 0; padding-left: 20px; }
+.details button { width: 100%; margin-block: 3px; text-align: left; }
+.details button[aria-current="step"] { background: #e8ebff; border-color: #8996ed; }
+@media (max-width: 800px) { .panes { grid-template-columns: minmax(0, 1fr); } }
+
+.headless-stage { position: relative; overflow: hidden; }
+#frame { position: absolute; top: 0; left: 0; transform-origin: 0 0; }

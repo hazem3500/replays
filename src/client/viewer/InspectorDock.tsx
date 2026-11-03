@@ -1,3 +1,4 @@
+import { IconSwap } from '../components/icon-swap.tsx';
 import { createContext, type ReactNode, Suspense, use, useRef } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
@@ -120,10 +121,10 @@ function FoldControl({ fold, compact }: { fold: DockFold; compact: boolean }) {
         data-testid="inspector-collapse"
         onClick={toggle}
       >
-        <span className="icon-swap" data-state={fold.collapsed ? 'a' : 'b'} aria-hidden="true">
+        <IconSwap state={fold.collapsed ? 'a' : 'b'}>
           <AnimatedIcon name="chevron-up" className="icon-a" trigger="state" play={fold.collapsed ? 'up' : false} />
           <AnimatedIcon name="chevron-down" className="icon-b" trigger="state" play={fold.collapsed ? false : 'down'} />
-        </span>
+        </IconSwap>
       </button>
     );
   return (
