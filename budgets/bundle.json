@@ -115,7 +115,7 @@
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
       "gzip": 30268,
-      "brotli": 27007
+      "brotli": 26985
     },
     "dist/client/assets/createLucideIcon-HASH.js": {
       "raw": 3209,
@@ -380,7 +380,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1191,
       "gzip": 711,
-      "brotli": 632
+      "brotli": 631
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
@@ -390,7 +390,7 @@
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1300,
       "gzip": 742,
-      "brotli": 683
+      "brotli": 681
     },
     "dist/client/assets/toast-HASH.js": {
       "raw": 34790,
