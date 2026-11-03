@@ -62,7 +62,7 @@ export function VitalsBar({
   children?: ReactNode;
 }) {
   const viewer = use(PluginContexts)?.('');
-  const context = viewer ? { replay: viewer.replay, seek: viewer.seek } : {};
+  const context = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
   return (
     <div className="pp-vitals" data-testid="performance-vitals">
       <ul aria-label="Vitals">

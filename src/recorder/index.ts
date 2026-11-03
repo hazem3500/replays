@@ -1,7 +1,7 @@
 // invariant: browser-only in-page recording; no server, Node or React imports.
 export { buildReplayBundle } from './bundle.ts';
 export type * from './bundle-types.ts';
-export * from './compat.ts';
+export { createDefaultUi } from './compat.ts';
 export { DEFAULT_MESSAGES, defaultRecorderMessages, resolveRecorderMessages } from './messages.ts';
 export type { RecorderMessageError, RecorderMessageOverrides, RecorderMessages } from './messages.ts';
 export { createRecorderFormat, formatDuration, formatDurationLong, type RecorderFormat } from './format.ts';

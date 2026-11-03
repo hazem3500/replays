@@ -53,6 +53,25 @@ function ActionButton({ action, primary }: { action: StateAction; primary: boole
   );
 }
 
+function presentationOf(presentation: StateKind | { kind: StateKind; illustration: ReactNode }, layout: 'page' | 'panel') {
+  const kind = typeof presentation === 'string' ? presentation : presentation.kind;
+  const illustration = typeof presentation === 'string' ? undefined : presentation.illustration;
+  // why: a page that failed replaces what was asked for, so it is announced; empty and not-captured notes are not.
+  const alert = layout === 'page' && (kind === 'error' || kind === 'not-found' || kind === 'offline');
+  return { kind, illustration, alert };
+}
+
+function StateActions({ actions }: { actions?: { primary?: StateAction | undefined; secondary?: StateAction | undefined } | undefined }) {
+  const { primary, secondary } = actions ?? {};
+  if (!primary && !secondary) return null;
+  return (
+    <div className="state-view-actions">
+      {primary ? <ActionButton action={primary} primary /> : null}
+      {secondary ? <ActionButton action={secondary} primary={false} /> : null}
+    </div>
+  );
+}
+
 /**
  * One look for every empty, error, not-found, offline and not-captured state: the kind's illustration, a plain
  * headline, the cause, one primary action (and at most one quiet secondary), collapsible details for the raw error,
@@ -81,11 +100,7 @@ export function StateView({
   testId?: string | undefined;
   children?: ReactNode;
 }) {
-  const kind = typeof presentation === 'string' ? presentation : presentation.kind;
-  const illustration = typeof presentation === 'string' ? undefined : presentation.illustration;
-  // why: a page that failed replaces what was asked for, so it is announced; empty and not-captured notes are not.
-  const alert = layout === 'page' && (kind === 'error' || kind === 'not-found' || kind === 'offline');
-  const { primary: action, secondary } = actions ?? {};
+  const { kind, illustration, alert } = presentationOf(presentation, layout);
   return (
     <section className="state-view" data-kind={kind} data-layout={layout} role={alert ? 'alert' : undefined} data-testid={testId}>
       {illustration ?? <StateArt kind={kind} />}
@@ -94,12 +109,7 @@ export function StateView({
         {cause ? <p className="state-view-cause">{cause}</p> : null}
       </div>
       {children}
-      {action || secondary ? (
-        <div className="state-view-actions">
-          {action ? <ActionButton action={action} primary /> : null}
-          {secondary ? <ActionButton action={secondary} primary={false} /> : null}
-        </div>
-      ) : null}
+      <StateActions actions={actions} />
       {details ? (
         <details className="state-view-details">
           <summary>{STRINGS.details}</summary>

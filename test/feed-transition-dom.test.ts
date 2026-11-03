@@ -3,13 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { feedTransition } from '../src/client/index/feed-transition.ts';
 
-afterEach(() => {
+function cleanUp() {
   document.body.replaceChildren();
   Reflect.deleteProperty(document, 'startViewTransition');
   vi.unstubAllGlobals();
-});
+}
 
 describe('Feed transition fallbacks', () => {
+  afterEach(cleanUp);
+
   it('applies every rapid layout change in order when the browser has no view transitions', () => {
     const layouts: string[] = [];
     feedTransition(() => layouts.push('grid'), 'poster');

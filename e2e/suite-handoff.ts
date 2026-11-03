@@ -54,7 +54,7 @@ export async function hoverSuiteCard(page: Page, origin: string, warm: boolean) 
 
 /** In the page: slows and records comparison cover decodes, and logs the focused tile's phase and size as it changes. */
 export function watchCoverDecode(decodeDelay: number) {
-  const decode = HTMLImageElement.prototype.decode;
+  const decode = Reflect.get(HTMLImageElement.prototype, 'decode') as (this: HTMLImageElement) => Promise<void>;
   const decoded = new WeakSet<HTMLImageElement>();
   const decodeState = { fulfilled: 0 };
   HTMLImageElement.prototype.decode = async function (this: HTMLImageElement) {
@@ -127,14 +127,17 @@ export function captureHandoff() {
 
 /** The one view transition captured a decoded, laid out cover at the comparison tile's final rect, or a cold suite fell back. */
 export async function expectSuiteHandoff(page: Page, warm: boolean) {
-  const capture = (await page.evaluate(() => Reflect.get(window, 'coldSuiteCaptures'))) as HandoffCapture[];
+  const capture = (await page.evaluate(() => Reflect.get(window, 'coldSuiteCaptures') as unknown)) as HandoffCapture[];
   const diagnostics = await page.evaluate(() => {
     const observer = Reflect.get(window, 'coldSuiteObserver');
     if (observer instanceof MutationObserver) observer.disconnect();
-    return { timeline: Reflect.get(window, 'coldSuiteTimeline'), decode: Reflect.get(window, 'coldSuiteDecodeState') };
+    return {
+      timeline: Reflect.get(window, 'coldSuiteTimeline') as unknown,
+      decode: Reflect.get(window, 'coldSuiteDecodeState') as { fulfilled: number },
+    };
   });
   expect(capture).toHaveLength(1);
-  expect(await page.evaluate(() => Reflect.get(window, 'coldSuiteHandoffPlayers'))).toBe(0);
+  expect(await page.evaluate(() => Reflect.get(window, 'coldSuiteHandoffPlayers') as unknown)).toBe(0);
   const [first] = capture;
   if (!first) throw new Error('Expected one captured page transition');
   expect(first.source).toMatch(/^(IMG|VIDEO|SPAN)$/);

@@ -146,7 +146,7 @@ export function createApp(options: AppOptions) {
       authorizationProbe: true,
       routeContext: { base: gate.base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) },
     };
-    if (await beforeAuth(dispatch, csrfAllowed)) return undefined;
+    if (await beforeAuth(dispatch, csrfAllowed)) return;
     return identify(dispatch, csrfAllowed);
   };
   const routes = new RouteTable([

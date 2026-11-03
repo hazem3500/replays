@@ -34,7 +34,7 @@ const FALLBACK_ROW_HEIGHT = 30;
 function useNetworkSurface() {
   usePluginSnapshot();
   const viewer = use(PluginContexts)?.('');
-  const context: HostSurfaceContext = viewer ? { replay: viewer.replay, seek: viewer.seek } : {};
+  const context: HostSurfaceContext = viewer ? { replay: viewer.replay, seek: viewer.seek.bind(viewer) } : {};
   const columns = networkColumns(context);
   const custom = !defaultNetworkColumns(columns);
   const columnStyle: CSSProperties | undefined = custom

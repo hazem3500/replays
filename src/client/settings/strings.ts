@@ -1,3 +1,5 @@
+import { plural } from '../plural.ts';
+
 /** Sign-in mode names by auth adapter; an adapter not listed shows its own name. */
 const AUTH_LABELS: Partial<Record<string, string>> = {
   none: 'App sign-in disabled',
@@ -120,7 +122,7 @@ export const strings = {
     manageHint: 'Uploads move to trash. Kept replays stay.',
     emptyUploads: 'No uploads available to delete.',
     result: (trashed: number, protectedCount: number, failed: number) =>
-      `${trashed} ${trashed === 1 ? 'replay' : 'replays'} moved to trash.${protectedCount ? ` ${protectedCount} kept.` : ''}${failed ? ` ${failed} could not be deleted. Try again.` : ''}`,
+      `${plural(trashed, 'replay')} moved to trash.${protectedCount ? ` ${protectedCount} kept.` : ''}${failed ? ` ${failed} could not be deleted. Try again.` : ''}`,
   },
   external: '↗',
 } as const;

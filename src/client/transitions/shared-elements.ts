@@ -78,20 +78,23 @@ export function cardPictures(card: HTMLElement | undefined, visible = true) {
   );
   for (const sheet of [front, ...rears]) {
     const id = sheet?.dataset.replayId;
-    if (!sheet || !id || pictures.has(id) || (visible && (!onScreen(sheet) || getComputedStyle(sheet).opacity === '0'))) continue;
-    let picture: Element = sheet;
-    if (sheet === front) {
-      const video = sheet.querySelector<HTMLVideoElement>(':scope > .poster:not(.poster-outgoing) > .poster-video[data-shown]');
-      if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) picture = video;
-      else {
-        const image = sheet.querySelector<HTMLImageElement>(':scope > .poster:not(.poster-outgoing) > img');
-        if (!image?.complete || image.naturalWidth === 0) continue;
-        picture = image;
-      }
-    }
-    pictures.set(id, picture);
+    if (!sheet || !id || pictures.has(id) || (visible && !sheetShown(sheet))) continue;
+    const picture = sheet === front ? frontPicture(sheet) : sheet;
+    if (picture) pictures.set(id, picture);
   }
   return pictures;
+}
+
+function sheetShown(sheet: HTMLElement) {
+  return onScreen(sheet) && getComputedStyle(sheet).opacity !== '0';
+}
+
+/** The front sheet's playing preview, else its loaded poster; nothing while the poster is still loading. */
+function frontPicture(sheet: HTMLElement): Element | undefined {
+  const video = sheet.querySelector<HTMLVideoElement>(':scope > .poster:not(.poster-outgoing) > .poster-video[data-shown]');
+  if (video && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return video;
+  const image = sheet.querySelector<HTMLImageElement>(':scope > .poster:not(.poster-outgoing) > img');
+  return image?.complete && image.naturalWidth > 0 ? image : undefined;
 }
 
 export function viewerPictures(ids: readonly string[]) {

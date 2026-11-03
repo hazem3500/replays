@@ -245,7 +245,7 @@ export async function changeReplayStorage(id: string, action: 'trash' | 'restore
   const response = await fetchPage(apiUrl(path), { method: action === 'restore' ? 'POST' : 'DELETE' });
   if (response.ok) return;
   if (response.status === 409) {
-    const body: unknown = await response.json().catch(() => undefined);
+    const body: unknown = await response.json().catch(() => null);
     if (body && typeof body === 'object' && 'error' in body && body.error === 'committed samples are read-only')
       throw new Error('Bundled sample recordings cannot be deleted.');
     throw new Error('This replay is kept. Release its keep before deleting it.');

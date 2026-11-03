@@ -258,14 +258,20 @@ const CORE_ACTIONS: readonly (readonly [CoreAction, number])[] = [
   ['core:download', 400],
 ];
 
-/** Secondary actions keep their slot's host visibility and ordering when rendered in More. */
-export function actionMenuItems(actions: Partial<Record<CoreAction, TopbarMenuItem[]>>): TopbarMenuItem[] {
-  const builtins: SlotDescriptor<undefined, TopbarMenuItem[]>[] = CORE_ACTIONS.flatMap(([id, order]) =>
-    actions[id] ? [{ id, order, render: () => actions[id]! }] : [],
-  );
+/** The built-in actions a host left visible, in its order, each rendered once. */
+function coreActions<R>(actions: Partial<Record<CoreAction, R>>) {
+  const builtins: SlotDescriptor<undefined, R>[] = CORE_ACTIONS.flatMap(([id, order]) => {
+    const action = actions[id];
+    return action ? [{ id, order, render: () => action }] : [];
+  });
   return resolveSlot(ACTIONS_SLOT, builtins, undefined)
     .filter((descriptor) => descriptor.id.startsWith('core:'))
-    .flatMap((descriptor) => descriptor.render(undefined));
+    .map((descriptor) => ({ id: descriptor.id, rendered: descriptor.render(undefined) }));
+}
+
+/** Secondary actions keep their slot's host visibility and ordering when rendered in More. */
+export function actionMenuItems(actions: Partial<Record<CoreAction, TopbarMenuItem[]>>): TopbarMenuItem[] {
+  return coreActions(actions).flatMap((action) => action.rendered);
 }
 
 /**
@@ -273,18 +279,13 @@ export function actionMenuItems(actions: Partial<Record<CoreAction, TopbarMenuIt
  * actions keep their own renderer and follow the built-ins.
  */
 export function ActionsBar({ actions, plugins }: { actions: Partial<Record<CoreAction, ReactNode>>; plugins?: ReactNode }) {
-  const builtins: SlotDescriptor<undefined, ReactNode>[] = CORE_ACTIONS.flatMap(([id, order]) =>
-    actions[id] ? [{ id, order, render: () => actions[id] }] : [],
-  );
   return (
     <span className="viewer-actions" data-slot={ACTIONS_SLOT}>
-      {resolveSlot(ACTIONS_SLOT, builtins, undefined)
-        .filter((descriptor) => descriptor.id.startsWith('core:'))
-        .map((descriptor) => (
-          <span key={descriptor.id} className="viewer-action" data-slot-item={descriptor.id}>
-            {descriptor.render(undefined)}
-          </span>
-        ))}
+      {coreActions(actions).map((action) => (
+        <span key={action.id} className="viewer-action" data-slot-item={action.id}>
+          {action.rendered}
+        </span>
+      ))}
       {plugins}
     </span>
   );

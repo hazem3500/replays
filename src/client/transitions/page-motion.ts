@@ -139,6 +139,32 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
   return transition.updateCallbackDone;
 }
 
+/** A hidden index keeps its DOM: stop any hover preview so it doesn't play on behind the viewer. */
+function pauseIndexPreviews() {
+  for (const video of document.querySelectorAll<HTMLVideoElement>('.index-shell video, .feed-list video')) video.pause();
+}
+
+/** How a page change morphs: which picture leaves, which arrives, and the card it returns to. */
+function planFor(
+  change: { direction: Direction; from: Page; to: Page; ready: Promise<unknown>; turn: number; uaAnimated: boolean },
+  opening: ReturnType<typeof cardFor>,
+  returning: () => ReturnType<typeof cardFor>,
+): Plan {
+  const { direction, from, to, ready, turn, uaAnimated } = change;
+  const match = direction === 'to-viewer' ? opening : undefined;
+  return {
+    direction,
+    from,
+    animate: direction !== 'page' && !uaAnimated && supportsTransitions(),
+    ready,
+    turn,
+    before: () => (direction === 'to-viewer' ? cardPicture(match) : viewerPicture(true)),
+    after: () => (direction === 'to-index' ? cardPicture(returning()) : viewerPicture()),
+    waitForStage: direction === 'to-viewer' && to.kind === 'suite',
+    card: direction === 'to-viewer' ? match?.card : returning()?.card,
+  };
+}
+
 export function installPageMotion(router: AppRouter) {
   const { base } = router.options.context.deployment;
   const opensPage = (page: Page) => (link: HTMLAnchorElement) =>
@@ -170,9 +196,7 @@ export function installPageMotion(router: AppRouter) {
     const turn = nextTurn();
     if (direction === 'to-viewer') opening = { page: to, turn };
     document.documentElement.dataset.navigated = '';
-    if (from.kind === 'index')
-      // why: a hidden index keeps its DOM: stop any hover preview so it doesn't play on behind the viewer.
-      for (const video of document.querySelectorAll<HTMLVideoElement>('.index-shell video, .feed-list video')) video.pause();
+    if (from.kind === 'index') pauseIndexPreviews();
     if (direction === 'to-viewer') {
       const match = cardFor(opensPage(to), link);
       const pageId = to.suiteId ?? to.replayId;
@@ -180,18 +204,7 @@ export function installPageMotion(router: AppRouter) {
       opened = match?.link;
     } else forgetHint();
     const ready = direction === 'to-index' ? Promise.resolve() : Promise.race([preparePage(to).catch(() => {}), delay(PREPARE_BUDGET_MS)]);
-    const match = direction === 'to-viewer' ? cardFor(opensPage(to), link) : undefined;
-    plan = {
-      direction,
-      from,
-      animate: direction !== 'page' && !uaAnimated && supportsTransitions(),
-      ready,
-      turn,
-      before: () => (direction === 'to-viewer' ? cardPicture(match) : viewerPicture(true)),
-      after: () => (direction === 'to-index' ? cardPicture(cardFor(opensPage(from), opened)) : viewerPicture()),
-      waitForStage: direction === 'to-viewer' && to.kind === 'suite',
-      card: direction === 'to-viewer' ? match?.card : cardFor(opensPage(from), opened)?.card,
-    };
+    plan = planFor({ direction, from, to, ready, turn, uaAnimated }, cardFor(opensPage(to), link), () => cardFor(opensPage(from), opened));
     commitPlan = plan;
   });
 

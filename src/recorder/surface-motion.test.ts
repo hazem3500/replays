@@ -10,7 +10,12 @@ function animatedShell() {
     const animation = new Animation();
     Object.defineProperty(animation, 'playState', { configurable: true, value: 'running' });
     animation.cancel = cancel;
-    animations.push({ finish: () => animation.onfinish?.call(animation, new Event('finish') as AnimationPlaybackEvent), cancel });
+    animations.push({
+      finish: () => {
+        animation.onfinish?.call(animation, new Event('finish') as AnimationPlaybackEvent);
+      },
+      cancel,
+    });
     return animation;
   });
   shell.animate = animate;

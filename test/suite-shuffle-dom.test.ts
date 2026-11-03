@@ -125,6 +125,18 @@ function present<T>(value: T | null | undefined): T {
   return value;
 }
 
+function animates(frames: Motion['frames'], key: 'transform' | 'opacity') {
+  return frames.some((frame) => frame[key] !== undefined);
+}
+
+/** The old front's return phase ends exactly on the rear sheet's resting transform and opacity. */
+function expectReturnToStack(returns: readonly Motion[], sheet: HTMLElement) {
+  const returning = present(returns.find(({ frames }) => animates(frames, 'transform')));
+  expect(returning.frames.at(-1)?.transform).toBe(sheet.style.transform);
+  const opacity = present(returns.find(({ frames }) => animates(frames, 'opacity')));
+  expect(Number(opacity.frames.at(-1)?.opacity)).toBe(Number(sheet.style.opacity));
+}
+
 describe('Suite shuffle', () => {
   beforeEach(setUp);
   afterEach(tearDown);
@@ -146,14 +158,12 @@ describe('Suite shuffle', () => {
       const frontMotion = present(
         motions.find(
           ({ element, frames }) =>
-            element.classList.contains('poster') &&
-            !element.classList.contains('poster-outgoing') &&
-            frames.some((frame) => frame.transform !== undefined),
+            element.classList.contains('poster') && !element.classList.contains('poster-outgoing') && animates(frames, 'transform'),
         ),
       );
       expect(frontMotion.frames[0]?.transform).toBe(rearPose);
       for (const motion of motions.filter(
-        ({ element, frames }) => element.classList.contains('card-back') && frames.some((frame) => frame.transform !== undefined),
+        ({ element, frames }) => element.classList.contains('card-back') && animates(frames, 'transform'),
       )) {
         const depth = Number(motion.element.dataset.stackDepth);
         expect(motion.frames[0]?.transform).toBe(poses[depth]);
@@ -171,14 +181,7 @@ describe('Suite shuffle', () => {
       });
       expect(outgoing.style.zIndex).toBe('0');
       const returns = motions.filter(({ element }) => element === outgoing).slice(1);
-      const returning = present(returns.find(({ frames }) => frames.some((frame) => frame.transform !== undefined)));
-      expect(returning.frames.at(-1)?.transform).toBe(
-        present(returningSheet ?? host.querySelector<HTMLElement>('.card-back-6')).style.transform,
-      );
-      const opacity = present(returns.find(({ frames }) => frames.some((frame) => frame.opacity !== undefined)));
-      expect(Number(opacity.frames.at(-1)?.opacity)).toBe(
-        Number(present(returningSheet ?? host.querySelector<HTMLElement>('.card-back-6')).style.opacity),
-      );
+      expectReturnToStack(returns, present(returningSheet ?? host.querySelector<HTMLElement>('.card-back-6')));
       await act(async () => {
         for (const motion of returns) motion.finish();
         await Promise.resolve();

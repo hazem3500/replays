@@ -208,7 +208,7 @@ describe('compositor hero front registration', () => {
   it('registers a scaled letterboxed player using fractional CSS dimensions rather than rounded client dimensions', () => {
     const { stack, viewer } = scene();
     viewer.style.cssText = 'width:400.25px;height:240.125px;--frame-x:0px;--frame-y:20.0125px;--frame-w:400.25px;--frame-h:200.1px';
-    vi.mocked(viewer.getBoundingClientRect).mockReturnValue(new DOMRect(600, 20, 800.5, 480.25));
+    vi.spyOn(viewer, 'getBoundingClientRect').mockReturnValue(new DOMRect(600, 20, 800.5, 480.25));
     const hero = createCompositorHero(stack);
     expect(hero.capture(viewer)).toBe(true);
     expect(variable('old', 'width')).toBeCloseTo(800.5);

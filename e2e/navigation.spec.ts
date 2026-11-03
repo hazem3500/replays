@@ -130,10 +130,10 @@ test('a thumbnail morphs into the loading frame and returns to the same card on 
   await expect(page).toHaveURL(`${origin()}/r/demo-shop`);
   await expect(page.locator('main.skeleton-shell')).toBeVisible();
   await expect
-    .poll(() => page.evaluate(() => Reflect.get(window, 'navigationSnapshots')))
+    .poll(() => page.evaluate(() => Reflect.get(window, 'navigationSnapshots') as unknown))
     .toEqual([{ hero: 'to-viewer', before: ['IMG'], after: ['DIV'] }]);
   await expect
-    .poll(() => page.evaluate(() => Reflect.get(window, 'navigationCaptures')))
+    .poll(() => page.evaluate(() => Reflect.get(window, 'navigationCaptures') as unknown))
     .toMatchObject([{ geometry: true, corners: true, finishedBeforeSetup: false, unfinishedAtFinish: 0 }]);
   await expect(page.locator('.skeleton-overlay')).toHaveCount(0);
   release();
@@ -142,7 +142,7 @@ test('a thumbnail morphs into the loading frame and returns to the same card on 
   await page.goBack();
   await expect(link).toBeVisible();
   await expect
-    .poll(() => page.evaluate(() => Reflect.get(window, 'navigationSnapshots')))
+    .poll(() => page.evaluate(() => Reflect.get(window, 'navigationSnapshots') as unknown))
     .toEqual([
       { hero: 'to-viewer', before: ['IMG'], after: ['DIV'] },
       { hero: 'to-index', before: ['DIV'], after: ['IMG'] },

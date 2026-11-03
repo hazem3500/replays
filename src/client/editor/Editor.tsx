@@ -20,7 +20,7 @@ import {
 import { type ReactNode, useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { Hint, IconButton } from '@/components/icon-button.tsx';
+import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 
 import { EMPTY_EDITS, editListOf, editTimeline, isEmptyEdits, type ReplayEdits, type StoredReplayEdits } from '../../shared/edits.ts';
@@ -31,6 +31,7 @@ import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
 import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
 import { EDITOR_DOCK } from './dock-size.ts';
+import { EditHistory, InspectorAside, PhoneUndo, WaitSuggestion } from './EditorChrome.tsx';
 import { removeSelection } from './remove-selection.ts';
 import { duplicateEffect, splitEffect } from './phone-edits.ts';
 import { type PhoneObjectActions, PhoneObjectToolbar, selectionKey } from './PhoneObjectToolbar.tsx';
@@ -79,7 +80,6 @@ import { applyHighlight, periodHighlight, pointHighlight } from './highlight-act
 import { Timeline } from './Timeline.tsx';
 import { useBetaFlag } from '../settings/labs.ts';
 import { CursorInspector } from './CursorInspector.tsx';
-import { EditorInspector } from './EditorInspector.tsx';
 import { AddMenu, BarTools } from './EditorTools.tsx';
 import { IS_MAC, MOD } from './editor-tools.ts';
 import { EditorShortcutSheet } from './EditorShortcutSheet.tsx';
@@ -774,11 +774,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   )}
                 </div>
                 <EditorTopbarActions
-                  history={
-                    <IconButton label="Undo" disabled={!canUndo(state)} onClick={() => dispatch({ type: 'undo' })} data-testid="undo">
-                      <Undo2Icon aria-hidden="true" />
-                    </IconButton>
-                  }
+                  history={<PhoneUndo state={state} dispatch={dispatch} />}
                   exports={<EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />}
                 />
                 <MoreMenu
@@ -834,35 +830,10 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 menuItems={menuItems}
                 alwaysMenu
                 actions={
-                  <>
-                    <EditorTopbarActions
-                      history={
-                        <div className="editor-history" role="group" aria-label="Edit history">
-                          <IconButton
-                            label="Undo"
-                            shortcut={`${MOD}Z`}
-                            tooltipSide="bottom"
-                            disabled={!canUndo(state)}
-                            onClick={() => dispatch({ type: 'undo' })}
-                            data-testid="undo"
-                          >
-                            <Undo2Icon aria-hidden="true" />
-                          </IconButton>
-                          <IconButton
-                            label="Redo"
-                            shortcut={IS_MAC ? '⇧⌘Z' : 'Ctrl+Y'}
-                            tooltipSide="bottom"
-                            disabled={!canRedo(state)}
-                            onClick={() => dispatch({ type: 'redo' })}
-                            data-testid="redo"
-                          >
-                            <Redo2Icon aria-hidden="true" />
-                          </IconButton>
-                        </div>
-                      }
-                      exports={<EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />}
-                    />
-                  </>
+                  <EditorTopbarActions
+                    history={<EditHistory state={state} dispatch={dispatch} />}
+                    exports={<EditorExport meta={bundle.meta} stored={stored} dirty={dirty} saving={status === 'saving'} />}
+                  />
                 }
               />
             )}
@@ -886,20 +857,14 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 {previewEffects.captions.length ? <EditCaption captions={previewEffects.captions} /> : null}
               </EditorPreviewFrame>
               {!mobile && (selection || cursorCustomization || hostInspector) ? (
-                <aside className="editor-presentation" aria-label="Inspector">
-                  <EditorInspector
-                    edits={edits}
-                    selection={selection}
-                    duration={duration}
-                    change={change}
-                    commands={selectionCommands}
-                    panels={{
-                      effectControls: <EffectControls edits={edits} selection={selection} change={change} />,
-                      highlightControls: <HighlightControls edits={edits} selection={selection} duration={duration} change={change} />,
-                    }}
-                    replay={cursorInspector}
-                  />
-                </aside>
+                <InspectorAside
+                  edits={edits}
+                  selection={selection}
+                  duration={duration}
+                  change={change}
+                  commands={selectionCommands}
+                  replay={cursorInspector}
+                />
               ) : null}
             </section>
             {mobile ? null : <InspectorResizer shell={shell} height={dockHeight} onCommit={setDockHeight} size={DOCK_SIZE} />}
@@ -940,15 +905,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   />
                   <div className="editor-bar-end">
                     {suggesting && suggestions.length ? (
-                      <span className="editor-suggest" role="status" data-testid="wait-suggestions">
-                        {suggestions.length} {suggestions.length === 1 ? 'wait' : 'waits'} found
-                        <Button size="sm" variant="secondary" onClick={applySuggestions} data-testid="apply-waits">
-                          Remove all <kbd>↵</kbd>
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setSuggesting(false)}>
-                          Dismiss
-                        </Button>
-                      </span>
+                      <WaitSuggestion count={suggestions.length} onApply={applySuggestions} onDismiss={() => setSuggesting(false)} />
                     ) : (
                       <Durations original={timeline.originalDuration} edited={timeline.duration} />
                     )}

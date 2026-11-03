@@ -33,7 +33,7 @@ async function baselineEntries() {
   const targets = new Set();
   function visit(value) {
     if (typeof value === 'string') targets.add(value);
-    else if (value && typeof value === 'object') Object.values(value).forEach(visit);
+    else if (value && typeof value === 'object') for (const item of Object.values(value)) visit(item);
   }
   visit(manifest.exports);
   const entries = {};
