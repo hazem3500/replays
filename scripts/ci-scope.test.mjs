@@ -13,6 +13,7 @@ const FILES = [
   'budgets/bundle.json',
   'e2e/foo.spec.ts',
   'test/x.test.ts',
+  'test/render.integration.test.ts',
   'src/client/a.ts',
   'src/client/render/frames.ts',
   'src/server/a.ts',
@@ -93,8 +94,12 @@ describe('suite keys', () => {
     assert.deepEqual(changedSuites('e2e/foo.spec.ts'), ['checks', 'e2e']);
   });
 
-  it('rerun checks and browser suites for a unit test', () => {
-    assert.deepEqual(changedSuites('test/x.test.ts'), ['checks', 'browser']);
+  it('rerun only the checks suite for an ordinary unit test', () => {
+    assert.deepEqual(changedSuites('test/x.test.ts'), ['checks']);
+  });
+
+  it('rerun checks and browser suites for a unit test the browser job runs', () => {
+    assert.deepEqual(changedSuites('test/render.integration.test.ts'), ['checks', 'browser']);
   });
 
   it('leave the Docker suite out of client changes except the file the image copies', () => {

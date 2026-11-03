@@ -64,8 +64,9 @@ export const SUITES = {
     ],
   },
   browser: {
-    exclude: [...COMMON, ...TOOLING, 'budgets/**', 'e2e/**', 'playwright.config.ts', 'site/**', 'scripts/*.test.mjs'],
-    include: ['docs/tokens.md'],
+    exclude: [...COMMON, ...TOOLING, 'budgets/**', 'e2e/**', 'playwright.config.ts', 'site/**', 'scripts/*.test.mjs', 'test/**/*.test.ts'],
+    // why: the browser job runs these two unit tests; non-test helpers under test/ are never excluded.
+    include: ['docs/tokens.md', 'test/render.integration.test.ts', 'test/plugin-check-browser.test.ts'],
   },
   docker: {
     exclude: [
