@@ -112,13 +112,12 @@
    * as part of the region rather than a form control. 18 px visible, 24 px to hit. It takes the region's text colour,
    * so it follows the selected accent ring without a colour of its own.
    */
-  .tl-region-remove { --remove-size: 18px; position: absolute; z-index: 2; top: 50%; right: 9px; width: var(--remove-size); height: var(--remove-size); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: color-mix(in srgb, currentColor 72%, transparent); cursor: pointer; opacity: 0; pointer-events: none; translate: 0 -50%; outline: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), scale var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
+  .tl-region-remove { --remove-size: 18px; position: absolute; z-index: 2; top: 50%; right: 9px; width: var(--remove-size); height: var(--remove-size); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: color-mix(in srgb, currentColor 72%, transparent); cursor: pointer; opacity: 0; pointer-events: none; translate: 0 -50%; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), scale var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
   .tl-region-remove::before { content: ''; position: absolute; inset: calc((var(--remove-size) - 24px) / 2); border-radius: 50%; }
   .tl-region-remove svg { display: block; width: 12px; height: 12px; }
   .tl-region { color: var(--text-secondary); }
   .tl-region[data-selected] { color: var(--text); }
-  .tl-region-remove:hover, .tl-region-remove:focus-visible { background: color-mix(in srgb, currentColor 14%, transparent); color: currentColor; }
-  .tl-region-remove:focus-visible { box-shadow: 0 0 0 2px var(--focus); }
+  .tl-region-remove:hover { background: color-mix(in srgb, currentColor 14%, transparent); color: currentColor; }
   .tl-region-remove:active { background: color-mix(in srgb, currentColor 22%, transparent); scale: 0.88; }
   @media (prefers-reduced-motion: reduce) { .tl-region-remove { transition: none; } .tl-region-remove:active { scale: none; } }
   .tl-region:focus-within .tl-region-remove, .tl-region[data-selected] .tl-region-remove { opacity: 1; pointer-events: auto; }

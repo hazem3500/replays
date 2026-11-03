@@ -48,7 +48,7 @@ export function RegionBlock({
   const feedback = useRegionFeedback(selected);
   const left = scale.x(from);
   const naturalWidth = scale.x(to) - left;
-  // Captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
+  // why: captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
   const width = kind === 'caption' ? Math.max(1, naturalWidth - 2) : Math.max(6, naturalWidth);
   const showLabel = kind !== 'caption' || width >= 56;
   const length = to - from;

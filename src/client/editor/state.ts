@@ -287,7 +287,7 @@ export function moveEffect(
   const list = effectList(edits, kind);
   const region = list.find((item) => item.id === id);
   if (!region) return edits;
-  const { from, to } = retimeSpan(list, region, edge, time, duration, TAKES_TURNS.has(kind));
+  const { from, to } = retimeSpan(list, region, { edge, time, duration, exclusive: TAKES_TURNS.has(kind) });
   return withEffectList(
     edits,
     kind,
@@ -296,9 +296,9 @@ export function moveEffect(
 }
 
 const NO_ROOM: Partial<Record<EffectKind, string>> = {
-  zoom: 'Already zoomed here. Move the playhead or shorten that zoom',
+  zoom: 'Already zoomed here',
   speed: 'Already sped up here',
-  caption: 'A caption already shows here. Move the playhead or shorten that caption',
+  caption: 'A caption already shows here',
 };
 
 /** The status line when `addEffect` found no room: what is in the way and what to do. */

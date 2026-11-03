@@ -7,8 +7,6 @@
 @layer properties, theme, base, app, components, utilities;
 @layer app {
   /* The zoom slider: a roomier thumb than the cursor size slider, and its quick marks under the track. */
-  .inspector-slider .ui-slider-control { min-height: 20px; }
-  .inspector-slider .ui-slider-thumb { width: 16px; height: 16px; }
   .inspector-marks { position: relative; height: 18px; margin-top: -6px; }
   .inspector-mark { position: absolute; top: 0; translate: -50% 0; padding: 1px 5px; border: 0; border-radius: 4px; background: transparent; color: var(--text-tertiary); font: inherit; font-size: var(--text-2xs); line-height: 16px; font-variant-numeric: tabular-nums; cursor: pointer; transition: color var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   .inspector-mark::before { content: ''; position: absolute; inset: -4px -2px; }

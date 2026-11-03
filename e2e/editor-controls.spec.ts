@@ -1,10 +1,8 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, type Page, test } from '@playwright/test';
 
+import { assertStoredReplayEdits } from '../src/shared/edits.ts';
 import { boxOf, cloneBundle, postBundle, serveApp, useTheme } from './support.ts';
-
-// The editor's controls: the zoom level slider, the playhead lining up with what it is parked on, captions that
-// stop at their neighbour, and the region remove control's touch target.
 
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
 const base = () => server().origin;
@@ -24,7 +22,11 @@ async function seed(page: Page, edits: Record<string, unknown>) {
   return id;
 }
 
-const stored = async (page: Page, id: string) => (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
+async function stored(page: Page, id: string) {
+  const body: unknown = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();
+  assertStoredReplayEdits(body);
+  return body;
+}
 
 test('zoom level: a stored quick level loads, arrows step it, Shift steps further, and each step saves and undoes', async ({ page }) => {
   const id = await seed(page, { zooms: [{ id: 'zoom-1', from: 400, to: 2400, scale: 1.4 }] });
@@ -39,7 +41,7 @@ test('zoom level: a stored quick level loads, arrows step it, Shift steps furthe
   await expect(readout).toHaveText('1.5×');
   await page.keyboard.press('Shift+ArrowRight');
   await expect(readout).toHaveText('2×');
-  await expect.poll(async () => (await stored(page, id)).zooms[0].scale).toBe(2);
+  await expect.poll(async () => (await stored(page, id)).zooms?.[0]?.scale).toBe(2);
   await page.keyboard.press('ControlOrMeta+z');
   await expect(readout).toHaveText('1.5×');
 });
@@ -88,8 +90,8 @@ test('a caption’s end edge dragged into its neighbour stops at the neighbour�
   await page.mouse.down();
   await page.mouse.move(neighbour.x + neighbour.width * 0.7, edge.y + edge.height / 2, { steps: 8 });
   await page.mouse.up();
-  await expect.poll(async () => (await stored(page, id)).captions[0].to).toBe(2000);
-  expect((await stored(page, id)).captions[1]).toMatchObject({ from: 2000, to: 3500 });
+  await expect.poll(async () => (await stored(page, id)).captions?.[0]?.to).toBe(2000);
+  expect((await stored(page, id)).captions?.[1]).toMatchObject({ from: 2000, to: 3500 });
 });
 
 test('a selected region’s remove control has a 24 px target clear of its edge handle and keeps the label still', async ({ page }) => {

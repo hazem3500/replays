@@ -1,12 +1,11 @@
-/**
- * Lanes whose regions take turns: two zooms, two speed-ups or two captions never cover the same moment, because
- * playback shows only one of each at a time. Every way a region's time changes (adding, dragging an edge, moving it,
- * typing a time) asks these helpers for the free room between its neighbours and stops at their edges, so an
- * overlap cannot be made. Original timeline, ms. Pure and identical in Node and the browser.
- */
-
 import { MIN_EDIT_MS } from './edit-list.ts';
 
+/**
+ * A stretch of a lane whose regions take turns: two zooms, two speed-ups or two captions never cover the same moment,
+ * because playback shows only one of each at a time. Every way a region's time changes (adding, dragging an edge,
+ * moving it, typing a time) asks these helpers for the free room between its neighbours and stops at their edges, so
+ * an overlap cannot be made. Original timeline, ms; pure and identical in Node and the browser.
+ */
 export interface Span {
   id: string;
   from: number;
@@ -68,10 +67,7 @@ export function placeSpan(spans: readonly Span[], from: number, to: number, dura
 export function retimeSpan(
   spans: readonly Span[],
   own: Span,
-  edge: 'from' | 'to' | 'move',
-  time: number,
-  duration: number,
-  exclusive = true,
+  { edge, time, duration, exclusive = true }: { edge: 'from' | 'to' | 'move'; time: number; duration: number; exclusive?: boolean },
 ): { from: number; to: number } {
   const { low, high } = exclusive ? roomOf(spans, own, duration) : { low: 0, high: duration };
   let { from, to } = own;

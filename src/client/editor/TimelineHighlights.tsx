@@ -87,7 +87,6 @@ function HighlightMarker({
       data-highlight-id={highlight.id}
       aria-label={`${title} at ${formatClock(at)}`}
       aria-pressed={selected}
-      aria-keyshortcuts="ArrowLeft ArrowRight Shift+ArrowLeft Shift+ArrowRight"
       title={`${title} · ${formatClock(at)}`}
       style={cssVars({ '--target-offset': `${offset}px` }, { left: `${scale.x(at)}px` })}
       onFocus={select}

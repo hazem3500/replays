@@ -250,7 +250,7 @@ export function Timeline({
                     pad={PAD}
                     dispatch={dispatch}
                     onMove={(id, edge, time, first) =>
-                      change(moveHighlight(latest.current, id, edge, time, duration), first, { kind: 'highlight', id })
+                      change(moveHighlight(latest.current, { id, edge, time, duration }), first, { kind: 'highlight', id })
                     }
                   />
                   {range ? (

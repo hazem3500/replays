@@ -58,10 +58,7 @@ export function updateHighlight(edits: ReplayEdits, id: string, patch: Partial<R
  */
 export function moveHighlight(
   edits: ReplayEdits,
-  id: string,
-  edge: 'at' | 'from' | 'to' | 'move',
-  time: number,
-  duration: number,
+  { id, edge, time, duration }: { id: string; edge: 'at' | 'from' | 'to' | 'move'; time: number; duration: number },
 ): ReplayEdits {
   const highlight = edits.highlights?.find((item) => item.id === id);
   if (!highlight) return edits;

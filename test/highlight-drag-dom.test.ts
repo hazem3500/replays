@@ -46,6 +46,13 @@ async function mount(highlights: ReplayHighlight[]) {
   return { player, state: () => state, highlight: () => must(state.present.highlights?.[0]) };
 }
 
+/** One time of a highlight: a point's `at`, or a period's `from` or `to`. */
+function timeOf(highlight: ReplayHighlight, field: 'at' | 'from' | 'to') {
+  if (highlight.kind === 'point') return field === 'at' ? highlight.at : Number.NaN;
+  if (field === 'from') return highlight.from;
+  return field === 'to' ? highlight.to : Number.NaN;
+}
+
 const markers = () => [...host.querySelectorAll<HTMLButtonElement>('[data-testid="timeline-highlight"]')];
 const pointer = (type: string, clientX: number) => new MouseEvent(type, { bubbles: true, cancelable: true, button: 0, clientX });
 
@@ -93,7 +100,7 @@ describe('dragging highlights on the timeline', () => {
   it('moves a point highlight to where its marker is dropped, as one undo step', async () => {
     const editor = await mount([{ id: 'point', kind: 'point', at: 2000 }]);
     await drag(must(markers()[0]), 2000, 3000, 4000);
-    expect(editor.highlight()).toMatchObject({ kind: 'point', at: expect.closeTo(4000, -2) });
+    expect(timeOf(editor.highlight(), 'at')).toBeCloseTo(4000, -2);
     expect(editor.state().past).toHaveLength(1);
     expect(editor.state().selection).toEqual({ kind: 'highlight', id: 'point' });
   });
@@ -101,7 +108,8 @@ describe('dragging highlights on the timeline', () => {
   it('resizes a period from its end marker and leaves its start in place', async () => {
     const editor = await mount([{ id: 'period', kind: 'period', from: 1000, to: 3000 }]);
     await drag(must(markers()[1]), 3000, 6000);
-    expect(editor.highlight()).toMatchObject({ from: 1000, to: expect.closeTo(6000, -2) });
+    expect(timeOf(editor.highlight(), 'from')).toBe(1000);
+    expect(timeOf(editor.highlight(), 'to')).toBeCloseTo(6000, -2);
   });
 
   it('stops a period’s start marker the minimum length short of its end', async () => {
@@ -113,9 +121,8 @@ describe('dragging highlights on the timeline', () => {
   it('moves a whole period by its band and keeps its length', async () => {
     const editor = await mount([{ id: 'period', kind: 'period', from: 1000, to: 3000 }]);
     await drag(must(host.querySelector('[data-testid="timeline-highlight-band"]')), 2000, 5000);
-    const moved = editor.highlight();
-    expect(moved.kind === 'period' && moved.to - moved.from).toBe(2000);
-    expect(moved).toMatchObject({ from: expect.closeTo(4000, -2) });
+    expect(timeOf(editor.highlight(), 'to') - timeOf(editor.highlight(), 'from')).toBe(2000);
+    expect(timeOf(editor.highlight(), 'from')).toBeCloseTo(4000, -2);
   });
 
   it('nudges a focused marker with the arrows, a second at a time with Shift', async () => {
