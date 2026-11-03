@@ -48,3 +48,6 @@ storybook-static/
 demo-seed-output/
 animation-plans/
 design-plans/
+
+# Turborepo local cache and logs
+.turbo/

@@ -11,7 +11,7 @@
     "typecheck": "tsrs --fast false --noEmit",
     "start": "node --experimental-strip-types --no-warnings src/server.ts",
     "check": "pnpm build && pnpm typecheck",
-    "test": "playwright test -c playwright.config.ts"
+    "test:browser": "playwright test -c playwright.config.ts"
   },
   "dependencies": {
     "@agent-native/core": "0.220.0",

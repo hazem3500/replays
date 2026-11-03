@@ -24,7 +24,7 @@ To exercise the actual client against native WebMCP and the local stand-in, and 
 pnpm build:storybook
 pnpm exec playwright install chromium
 env -u CHROME_PATH -u PLAYWRIGHT_CHROMIUM_EXECUTABLE CHROMIUM_NO_SANDBOX=1 \
-  pnpm --filter @hazem3500/replays-example-agent-native test
+  pnpm --filter @hazem3500/replays-example-agent-native test:browser
 ```
 
 The test enables `--enable-features=WebMCP` and **fails** if the native API is missing; it never relabels the stand-in as native support. Use the browser pinned by the committed Playwright version, as CI does; an older system Chrome can hide native API incompatibilities. The stand-in case shadows the browser API in a separate page context. Both cases check draft installation and that requesting Keep leaves the saved plugin list empty. Additional cases delay configuration until the tab opens and switch permission stories within one preview document. All servers started by this spec are closed on teardown. Storybook must already be built.

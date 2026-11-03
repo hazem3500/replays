@@ -36,6 +36,7 @@
       "@hazem3500/replays/viewer/react": ["./src/client/compose/index.ts"]
     },
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false
   },

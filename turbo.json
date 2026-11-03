@@ -1,0 +1,262 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "envMode": "loose",
+  "futureFlags": {
+    "affectedUsingTaskInputs": true
+  },
+  "tasks": {
+    "//#lint": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#format:check": {
+      "inputs": ["$TURBO_DEFAULT$", "examples/**", "!**/*.md", "!docs/screenshots/**", "!LICENSE", "!src/client/route-tree.gen.ts"]
+    },
+    "//#typecheck": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!stories/**",
+        "!.storybook/**",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#typecheck:storybook": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!e2e/**",
+        "!examples/**",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#test": {
+      "passThroughEnv": ["CHROME_PATH", "CHROMIUM_NO_SANDBOX"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!e2e/**",
+        "!**/playwright.config.ts",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#test:affected": {
+      "env": ["TEST_CHANGED_SINCE"],
+      "passThroughEnv": ["CHROME_PATH", "CHROMIUM_NO_SANDBOX"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!e2e/**",
+        "!**/playwright.config.ts",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#test:postgres": {
+      "env": ["REPLAYS_TEST_DATABASE_URL"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/**",
+        "!.github/**",
+        "!LICENSE",
+        "!e2e/**",
+        "!stories/**",
+        "!.storybook/**",
+        "!**/playwright.config.ts",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#build": {
+      "env": ["NODE_ENV", "BASE_PATH", "REPLAYS_BETA_EDITOR", "REPLAYS_DEV_PLUGINS"],
+      "outputs": ["dist/client/**", "dist/start/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!test/**",
+        "!e2e/**",
+        "!stories/**",
+        "!.storybook/**",
+        "!site/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!scripts/*.test.mjs",
+        "!**/playwright.config.ts",
+        "!vitest*.config.*",
+        "!stryker.config.mjs",
+        "!knip.json",
+        "!lefthook.yml",
+        "!.oxlintrc*.json",
+        "!.oxfmtrc.json",
+        "!.dependency-cruiser.cjs",
+        "!Dockerfile",
+        "!docker-compose.yml",
+        "!.dockerignore",
+        "!fixtures/**",
+        "!sample/**",
+        "!examples/**",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#build:cli": {
+      "env": ["NODE_ENV", "REPLAYS_BUILD_ROOT"],
+      "outputs": ["dist/cli/**", "dist/lib/**", "dist/types/**"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "!**/*.md",
+        "!docs/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!test/**",
+        "!e2e/**",
+        "!stories/**",
+        "!.storybook/**",
+        "!site/**",
+        "!**/*.test.ts",
+        "!**/*.test.tsx",
+        "!scripts/*.test.mjs",
+        "!**/playwright.config.ts",
+        "!vitest*.config.*",
+        "!stryker.config.mjs",
+        "!knip.json",
+        "!lefthook.yml",
+        "!.oxlintrc*.json",
+        "!.oxfmtrc.json",
+        "!.dependency-cruiser.cjs",
+        "!Dockerfile",
+        "!docker-compose.yml",
+        "!.dockerignore",
+        "!fixtures/**",
+        "!examples/**",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#lint:ratchet": {
+      "dependsOn": ["//#build:cli"],
+      "outputs": [".review-artifacts/code-quality/lint-*.json"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#lint:ratchet:test": {
+      "inputs": ["scripts/lint-ratchet*.mjs", "scripts/lib/**", "package.json"]
+    },
+    "//#lint:new-files": {
+      "dependsOn": ["//#build:cli"],
+      "outputs": [".review-artifacts/code-quality/lint-*.json"],
+      "env": ["LINT_BASE_REF"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#quality:knip": {
+      "outputs": [".review-artifacts/quality/knip.*"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!budgets/**",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#quality:boundaries": {
+      "outputs": [".review-artifacts/quality/depcruise.*"],
+      "inputs": [
+        "src/**",
+        ".dependency-cruiser.cjs",
+        "tsconfig.json",
+        "package.json",
+        "scripts/quality-report.mjs",
+        "!src/client/route-tree.gen.ts"
+      ]
+    },
+    "//#quality:dedupe": {
+      "outputs": [".review-artifacts/quality/dedupe.*"],
+      "inputs": ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "examples/*/package.json", "scripts/quality-report.mjs"]
+    },
+    "//#quality:package": {
+      "dependsOn": ["//#build", "//#build:cli"],
+      "outputs": [".review-artifacts/quality/attw.*", ".review-artifacts/quality/publint.*"],
+      "inputs": ["package.json", "scripts/quality-package.mjs", "bin/**", "README.md", "LICENSE", "CHANGELOG.md"]
+    },
+    "//#quality:test": {
+      "inputs": ["scripts/**", "budgets/**", ".dependency-cruiser.cjs", "package.json"]
+    },
+    "//#quality:hooks": {
+      "inputs": ["lefthook.yml", "package.json"]
+    },
+    "//#quality:size:base": {
+      "env": ["SIZE_BASE_SHA"],
+      "outputs": [".review-artifacts/quality/main-bundle-sizes.json", ".review-artifacts/quality/main-budgets.json"],
+      "inputs": [
+        "scripts/ci-size-base.sh",
+        "scripts/build-lib.mjs",
+        "scripts/quality-size.mjs",
+        "scripts/bundle-budgets.mjs",
+        "scripts/lib/**"
+      ]
+    },
+    "//#quality:size:ci": {
+      "dependsOn": ["//#build", "//#build:cli", "//#quality:size:base"],
+      "env": ["BUNDLE_PR_URL"],
+      "outputs": [".review-artifacts/quality/bundle-sizes.*"],
+      "inputs": ["budgets/**", "scripts/quality-size.mjs", "scripts/bundle-budgets.mjs", "scripts/lib/**", "bin/**", "package.json"]
+    },
+    "build": {
+      "dependsOn": ["//#build", "//#build:cli"],
+      "outputs": ["dist/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["build"]
+    },
+    "test": {
+      "dependsOn": ["build"]
+    }
+  }
+}
