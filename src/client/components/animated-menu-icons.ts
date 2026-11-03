@@ -10,6 +10,32 @@ export const MENU_ICONS = {
       { el: 'path', attrs: { d: 'M5 12h14' } },
     ],
   },
+  x: {
+    ms: 240,
+    motion: { kind: 'shift', rotate: 90, scale: 0.86 },
+    parts: [
+      { el: 'path', attrs: { d: 'M18 6 6 18' } },
+      { el: 'path', attrs: { d: 'm6 6 12 12' } },
+    ],
+  },
+  scissors: {
+    ms: 280,
+    parts: [
+      { el: 'circle', attrs: { cx: '6', cy: '6', r: '3' } },
+      { el: 'path', attrs: { d: 'M8.12 8.12 12 12' } },
+      { el: 'path', attrs: { d: 'M20 4 8.12 15.88' }, motion: { kind: 'shift', rotate: -10, origin: 'left bottom' } },
+      { el: 'circle', attrs: { cx: '6', cy: '18', r: '3' } },
+      { el: 'path', attrs: { d: 'M14.8 14.8 20 20' }, motion: { kind: 'shift', rotate: 10, origin: 'left top' } },
+    ],
+  },
+  'map-pin': {
+    ms: 280,
+    motion: { kind: 'shift', y: -2 },
+    parts: [
+      { el: 'path', attrs: { d: 'M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0' } },
+      { el: 'circle', attrs: { cx: '12', cy: '10', r: '3' } },
+    ],
+  },
   'columns-2': {
     ms: 260,
     parts: [

@@ -173,7 +173,7 @@ describe('phone editor captions', () => {
     });
     await click('[data-testid="add-caption"]');
     expect(host.querySelectorAll('[data-testid="region-caption"]')).toHaveLength(1);
-    expect(node<HTMLInputElement>('[data-testid="phone-sheet"] .editor-object-time input').value).toBe('3');
+    expect(node<HTMLInputElement>('[data-testid="phone-sheet"] .inspector-time input').value).toBe('3');
     const field = node<HTMLTextAreaElement>('[data-testid="caption-text"]');
     expect(document.activeElement).toBe(field);
     await input(field, 'Show the checkout');
@@ -194,7 +194,7 @@ describe('phone editor captions', () => {
     await tool('[data-testid="generate-step-captions"]');
     expect(host.querySelectorAll('[data-testid="region-caption"]')).toHaveLength(1);
     await click('[data-testid="phone-adjust"]');
-    expect(node<HTMLInputElement>('.editor-object-time input').value).toBe('1.5');
+    expect(node<HTMLInputElement>('.inspector-time input').value).toBe('1.5');
     expect(node<HTMLTextAreaElement>('[data-testid="caption-text"]').value).toBe('Open projects');
   });
 });
@@ -231,7 +231,7 @@ describe('phone editor objects', () => {
     await click('[data-testid="mobile-trim"]');
     expect(node('[data-testid="phone-sheet"] h2').textContent).toBe('Trim clip');
     expect(node('[data-testid="save-state"]').textContent).toBe('Not edited yet');
-    await input(node<HTMLInputElement>('.editor-object-time input'), '1');
+    await input(node<HTMLInputElement>('.inspector-time input'), '1');
     expect(node('[data-testid="phone-clip"]').getAttribute('aria-label')).toMatch(/^Recording, 0:01\.0 to /);
     await click('[data-testid="mobile-remove-object"]');
     expect(node('[data-testid="phone-clip"]').getAttribute('aria-label')).toMatch(/^Recording, 0:00\.0 to /);
@@ -311,7 +311,8 @@ describe('phone editor chrome', () => {
         revision: 1,
         captions: [
           { id: 'tiny-a', from: 2000, to: 2100, text: 'First short caption' },
-          { id: 'tiny-b', from: 2000, to: 2200, text: 'Second short caption' },
+          // why: captions take turns, so the second short one starts where the first ends; both stay a sliver apart.
+          { id: 'tiny-b', from: 2100, to: 2200, text: 'Second short caption' },
         ],
         highlights: [{ id: 'same-moment', kind: 'point', at: 2000, label: 'Same moment' }],
       },
@@ -326,9 +327,9 @@ describe('phone editor chrome', () => {
     });
     expect(more.isConnected).toBe(false);
     expect(document.querySelector('[aria-label="On timeline"]')).toBeNull();
-    expect(stage().getTime()).toBe(2000);
+    expect(stage().getTime()).toBe(2100);
     expect(node<HTMLTextAreaElement>('[data-testid="caption-text"]').value).toBe('Second short caption');
-    expect(node<HTMLInputElement>('.editor-object-time input').value).toBe('2');
+    expect(node<HTMLInputElement>('.inspector-time input').value).toBe('2.1');
     await click('[data-testid="mobile-object-done"]');
     expect(document.activeElement).toBe(node('[data-region-id="tiny-b"]'));
   });

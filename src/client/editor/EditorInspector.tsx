@@ -1,11 +1,12 @@
 import type { ReactNode } from 'react';
-import { ChevronLeftIcon } from 'lucide-react';
 
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { InspectorSkeleton } from './InspectorSkeleton.tsx';
+import { spanText } from './TimingFields.tsx';
 import { objectTitle, SelectionBody, selectionSpan, type SelectionCommands, type SelectionPanels } from './SelectionInspector.tsx';
-import type { Selection } from './state.ts';
+import type { ChangeEdits, Selection } from './state.ts';
 import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 
 /**
@@ -26,14 +27,19 @@ export function EditorInspector({
   edits: ReplayEdits;
   selection: Selection;
   duration: number;
-  change: (edits: ReplayEdits, selection?: Selection) => void;
+  change: ChangeEdits;
   commands: SelectionCommands;
   panels: Omit<SelectionPanels, 'cursorInspector'>;
   replay: ReactNode;
 }) {
   if (loading) return <InspectorSkeleton />;
   if (!selection)
-    return <HostSurfaceSlot slot="editor.inspector.sections" builtins={[{ id: 'core:replay', order: 100, render: () => replay }]} />;
+    return (
+      <HostSurfaceSlot
+        slot="editor.inspector.sections"
+        builtins={[{ id: 'core:replay', order: 100, render: () => <ReplayPanel>{replay}</ReplayPanel> }]}
+      />
+    );
   const { from, to } = selectionSpan(edits, selection, duration);
   const title = objectTitle(selection.kind, false, false);
   return (
@@ -60,10 +66,11 @@ export function EditorInspector({
             >
               <header className="inspector-header">
                 <Button variant="ghost" size="sm" className="inspector-back" onClick={commands.onDone} data-testid="inspector-back">
-                  <ChevronLeftIcon aria-hidden="true" />
+                  <AnimatedIcon name="chevron-left" size={14} />
                   Replay
                 </Button>
                 <h2 id="inspector-heading">{title}</h2>
+                <p className="inspector-subtitle">{spanText(from, to)}</p>
               </header>
               <SelectionBody
                 retime={{ edits, selection, duration, change, commands }}
@@ -78,5 +85,18 @@ export function EditorInspector({
         },
       ]}
     />
+  );
+}
+
+/** With nothing selected: what the panel holds now (settings for the whole replay) and how to inspect an object. */
+function ReplayPanel({ children }: { children: ReactNode }) {
+  return (
+    <div className="editor-inspector" data-kind="replay">
+      <header className="inspector-header">
+        <h2>Replay</h2>
+        <p className="inspector-subtitle">Select a zoom, caption or other edit on the timeline to change it.</p>
+      </header>
+      {children}
+    </div>
   );
 }

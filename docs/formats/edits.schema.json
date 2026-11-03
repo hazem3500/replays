@@ -40,6 +40,7 @@
     },
     "zooms": {
       "type": "array",
+      "description": "The editor keeps zooms from overlapping; scale is any value in range, not only the quick marks 1.4, 1.8 and 2.2.",
       "maxItems": 100,
       "items": {
         "allOf": [
@@ -78,7 +79,8 @@
         ],
         "properties": {
           "rate": {
-            "enum": [2, 4, 8]
+            "description": "Playback rate of the stretch. 1.5 was added later; older edit lists hold only 2, 4 or 8.",
+            "enum": [1.5, 2, 4, 8]
           }
         },
         "required": ["rate"]
@@ -125,6 +127,7 @@
     "captions": {
       "type": "array",
       "maxItems": 100,
+      "description": "Captions take turns: no two cover the same moment. Saving a list where they overlap ends the earlier caption where the later one starts.",
       "items": {
         "allOf": [
           {

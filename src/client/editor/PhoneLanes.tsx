@@ -6,7 +6,7 @@ import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
-import { startDrag, type TimelineScale } from './Timeline.tsx';
+import { startDrag, type TimelineScale } from './timeline-drag.ts';
 
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
 /** A step segment or region narrower than this shows no label (a truncated word reads worse than none). */

@@ -21,10 +21,11 @@ import {
   type ReplaySpeedRange,
   type ReplayZoomRegion,
 } from '../../shared/effects.ts';
+import { placeSpan, retimeSpan } from '../../shared/effect-room.ts';
 import type { ReplayStep } from '../../shared/replay.ts';
 import { isTypingTarget, type KeyLike, type TargetLike } from '../shortcuts.ts';
 
-export { addPeriodHighlight, addPointHighlight, removeHighlight, updateHighlight } from './highlight-edits.ts';
+export { addPeriodHighlight, addPointHighlight, moveHighlight, removeHighlight, updateHighlight } from './highlight-edits.ts';
 
 /**
  * What is selected: the trim, a cut by id, or a range dragged out on the track (not an edit yet: C or S cuts it).
@@ -65,6 +66,9 @@ export type EditorAction =
   | { type: 'saved'; edits: ReplayEdits }
   /** Replace everything (someone else's newer list): history starts over. */
   | { type: 'load'; edits: ReplayEdits };
+
+/** Applies an edit; `merge` folds it into the last undo step (every value after the first of one slider drag). */
+export type ChangeEdits = (edits: ReplayEdits, select?: Selection, merge?: boolean) => void;
 
 export function initialEditorState(edits: ReplayEdits = EMPTY_EDITS): EditorState {
   const present = normalizeEdits(edits);
@@ -243,22 +247,12 @@ const DEFAULTS: { [K in EffectKind]: Record<string, unknown> } = {
 /** Default length of a region added at the playhead. */
 export const NEW_EFFECT_MS = 3000;
 
-/** Speed-ups may not overlap: the free stretch around `time` between the other ranges (`except` one). */
-function speedRoom(edits: ReplayEdits, time: number, duration: number, except?: string) {
-  let low = 0;
-  let high = duration;
-  for (const range of edits.speeds ?? []) {
-    if (range.id === except) continue;
-    if (range.to <= time) low = Math.max(low, range.to);
-    else if (range.from >= time) high = Math.min(high, range.from);
-    else return undefined;
-  }
-  return { low, high };
-}
+/** Lanes whose regions take turns (src/shared/effect-room.ts): playback shows one zoom, speed or caption at a time. */
+const TAKES_TURNS: ReadonlySet<EffectKind> = new Set(['zoom', 'speed', 'caption']);
 
 /**
- * A new region of `kind` over [from, to) (clamped to the replay; speed-ups to the free stretch around `from`), with
- * `extra` fields over the kind's defaults. Undefined when it would be shorter than MIN_EDIT_MS.
+ * A new region of `kind` over [from, to) (clamped to the replay; zooms, speed-ups and captions to the free stretch
+ * around `from`), with `extra` fields over the kind's defaults. Undefined when it would be shorter than MIN_EDIT_MS.
  */
 export function addEffect(
   edits: ReplayEdits,
@@ -268,22 +262,20 @@ export function addEffect(
   duration: number,
   extra: Record<string, unknown> = {},
 ): { edits: ReplayEdits; id: string } | undefined {
-  let start = clamp(Math.min(from, to), 0, duration);
-  let end = clamp(Math.max(from, to), 0, duration);
-  if (kind === 'speed') {
-    const room = speedRoom(edits, start, duration);
-    if (!room) return undefined;
-    start = Math.max(start, room.low);
-    end = Math.min(end, room.high);
-  }
-  if (end - start < MIN_EDIT_MS) return undefined;
   const list = effectList(edits, kind);
+  const placed = TAKES_TURNS.has(kind)
+    ? placeSpan(list, from, to, duration)
+    : { from: clamp(Math.min(from, to), 0, duration), to: clamp(Math.max(from, to), 0, duration) };
+  if (!placed || placed.to - placed.from < MIN_EDIT_MS) return undefined;
   const id = nextCutId({ ...edits, cuts: list as ReplayCut[] }, kind);
-  const region = { id, from: start, to: end, ...DEFAULTS[kind], ...extra } as EffectRegion;
+  const region = { id, ...placed, ...DEFAULTS[kind], ...extra } as EffectRegion;
   return { edits: withEffectList(edits, kind, [...list, region]), id };
 }
 
-/** Moves one edge of a region (or the whole region, `move`, with `time` as its new start), clamped like cuts. */
+/**
+ * Moves one edge of a region (or the whole region, `move`, with `time` as its new start), clamped like cuts; a zoom,
+ * speed-up or caption also stops at its neighbours' edges.
+ */
 export function moveEffect(
   edits: ReplayEdits,
   kind: EffectKind,
@@ -295,26 +287,23 @@ export function moveEffect(
   const list = effectList(edits, kind);
   const region = list.find((item) => item.id === id);
   if (!region) return edits;
-  let low = 0;
-  let high = duration;
-  if (kind === 'speed') {
-    const room = speedRoom(edits, region.from, duration, id) ?? { low: region.from, high: region.to };
-    low = room.low;
-    high = room.high;
-  }
-  let { from, to } = region;
-  if (edge === 'from') from = clamp(time, low, to - MIN_EDIT_MS);
-  else if (edge === 'to') to = clamp(time, from + MIN_EDIT_MS, high);
-  else {
-    const length = to - from;
-    from = clamp(time, low, high - length);
-    to = from + length;
-  }
+  const { from, to } = retimeSpan(list, region, { edge, time, duration, exclusive: TAKES_TURNS.has(kind) });
   return withEffectList(
     edits,
     kind,
     list.map((item) => (item.id === id ? { ...item, from, to } : item)),
   );
+}
+
+const NO_ROOM: Partial<Record<EffectKind, string>> = {
+  zoom: 'Already zoomed here',
+  speed: 'Already sped up here',
+  caption: 'A caption already shows here',
+};
+
+/** The status line when `addEffect` found no room: what is in the way and what to do. */
+export function noRoomFor(kind: EffectKind) {
+  return NO_ROOM[kind] ?? 'No room here for another one';
 }
 
 export function removeEffect(edits: ReplayEdits, kind: EffectKind, id: string): ReplayEdits {

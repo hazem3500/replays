@@ -51,6 +51,25 @@ export function updateHighlight(edits: ReplayEdits, id: string, patch: Partial<R
   };
 }
 
+/**
+ * A highlight dragged or nudged on the timeline: a point's marker (`at`), one end of a period, or a whole period
+ * (`move`, with `time` as its new start, keeping its length). Clamped to the replay like the other regions, and a
+ * period never shorter than MIN_EDIT_MS.
+ */
+export function moveHighlight(
+  edits: ReplayEdits,
+  { id, edge, time, duration }: { id: string; edge: 'at' | 'from' | 'to' | 'move'; time: number; duration: number },
+): ReplayEdits {
+  const highlight = edits.highlights?.find((item) => item.id === id);
+  if (!highlight) return edits;
+  if (highlight.kind === 'point') return updateHighlight(edits, id, { kind: 'point', at: time }, duration);
+  if (edge === 'from') return updateHighlight(edits, id, { kind: 'period', from: clamp(time, 0, highlight.to - MIN_EDIT_MS) }, duration);
+  if (edge !== 'move') return updateHighlight(edits, id, { kind: 'period', to: time }, duration);
+  const length = highlight.to - highlight.from;
+  const from = clamp(time, 0, Math.max(0, duration - length));
+  return updateHighlight(edits, id, { kind: 'period', from, to: from + length }, duration);
+}
+
 export function removeHighlight(edits: ReplayEdits, id: string): ReplayEdits {
   const highlights = (edits.highlights ?? []).filter((highlight) => highlight.id !== id);
   const { highlights: _old, ...rest } = edits;
