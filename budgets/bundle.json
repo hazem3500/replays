@@ -108,7 +108,7 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 12170,
+      "raw": 12166,
       "gzip": 2951,
       "brotli": 2568
     },
@@ -205,7 +205,7 @@
     "dist/client/assets/HostSurface-HASH.js": {
       "raw": 1266,
       "gzip": 704,
-      "brotli": 626
+      "brotli": 623
     },
     "dist/client/assets/index-queries-HASH.js": {
       "raw": 6806,
@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 66
+      "brotli": 71
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -420,7 +420,7 @@
     "dist/client/assets/use-replay-deletion-HASH.js": {
       "raw": 8836,
       "gzip": 3940,
-      "brotli": 3457
+      "brotli": 3452
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
@@ -2074,16 +2074,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/221"
     },
     {
-      "file": "dist/client/assets/motion-features-HASH.js",
-      "cap": {
-        "raw": 66,
-        "gzip": 81,
-        "brotli": 71
-      },
-      "reason": "Small justified growth under Hazem's standing approval (2026-11-03): this unchanged 64-byte chunk's brotli output shifts by two bytes as neighbouring chunk names change. CI same-runner main/head: raw 64 to 64, gzip 78 to 78, brotli 66 to 68 bytes; raw and gzip keep their current caps. Replaces the #208 entry for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/221"
-    },
-    {
       "file": "dist/client/assets/CompareViewer-HASH.css",
       "cap": {
         "raw": 12170,
@@ -2171,6 +2161,14 @@
       },
       "reason": "Small justified growth under Hazem's standing approval (2026-11-03). New lazy chunk, loaded only when the options step opens; absent on main. Head 17534/5267/4597 B raw/gzip/brotli: the options button, its Profile and Privacy menu, their styles and the viewer's shared sliders and close gestures (4.1 KB raw).",
       "pr": "https://github.com/hazem3500/replays/pull/219"
+    },
+    {
+      "file": "dist/client/assets/motion-features-HASH.js",
+      "cap": {
+        "brotli": 71
+      },
+      "reason": "Compression drift in a 64-byte re-export chunk (same raw bytes; the hashed import names it carries changed). Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: brotli 64 to 68 bytes; cap is head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/229"
     }
   ]
 }
