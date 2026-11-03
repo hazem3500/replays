@@ -83,8 +83,8 @@ describe('compositor hero depth opacity', () => {
     });
     chrome.prepare();
     firefox.prepare();
-    expect(chromeEffect.frames.map((frame) => frame.opacity)).toEqual([1, 0.55]);
-    expect(firefoxEffect.frames.map((frame) => frame.opacity)).toEqual([1, 0]);
+    expect([chromeEffect.frames[0]?.opacity, chromeEffect.frames.at(-1)?.opacity]).toEqual([1, 0.55]);
+    expect([firefoxEffect.frames[0]?.opacity, firefoxEffect.frames.at(-1)?.opacity]).toEqual([1, 0]);
     restorePictureClips();
     chrome.clear();
     firefox.clear();
@@ -153,7 +153,7 @@ describe('compositor hero crop and corners', () => {
     hero.prepare();
     expect(effect.frames[0]?.borderTopLeftRadius).toBe('24px 24px');
     expect(effect.frames[0]?.borderTopRightRadius).toBe('16px 16px');
-    expect(effect.frames[1]?.borderTopLeftRadius).toBe('0px 0px');
+    expect(effect.frames.at(-1)?.borderTopLeftRadius).toBe('0px 0px');
     restorePictureClips();
     expect(poster.style.borderRadius).toBe('12px 8px 0px 0px');
     expect(poster.style.clipPath).toBe('inset(0 round 12px)');

@@ -202,17 +202,49 @@ function cornerValue(picture: Picture, property: (typeof CORNERS)[number], morph
   return `${(radius.x * morph.width) / picture.rect.width}px ${(radius.y * morph.height) / picture.rect.height}px`;
 }
 
-function retarget(effect: KeyframeEffect, morph: Morph) {
+/** The fixed canvas's transform with its position `progress` of the way along and its size from `size`. */
+function transformAt(morph: Morph, progress: number, size: Picture) {
+  const x = morph.before.rect.left + (morph.after.rect.left - morph.before.rect.left) * progress;
+  const y = morph.before.rect.top + (morph.after.rect.top - morph.before.rect.top) * progress;
+  return `translate(${x}px, ${y}px) scale(${size.rect.width / morph.width}, ${size.rect.height / morph.height})`;
+}
+
+const SIZE_SETTLED = 0.99;
+
+/** How a flight is shaped: `lag` holds the stacked size while sheets spread out (fan-out.ts). */
+export interface FlightShape {
+  lag: number;
+  returning: boolean;
+}
+
+function geometry(morph: Morph, { lag, returning }: FlightShape) {
+  const start: Keyframe = { offset: 0, transform: transform(morph.before, morph), opacity: morph.before.opacity };
+  const end: Keyframe = { offset: 1, transform: transform(morph.after, morph), opacity: morph.after.opacity };
+  for (const property of CORNERS) {
+    start[property] = cornerValue(morph.before, property, morph);
+    end[property] = cornerValue(morph.after, property, morph);
+  }
+  // why: a dimmed rear sheet turns opaque as it leaves its stack and dims again only as it lands back in it.
+  const frames: Keyframe[] = [
+    start,
+    end,
+    { offset: returning ? 0.8 : 0.2, opacity: returning ? morph.before.opacity : morph.after.opacity },
+  ];
+  if (lag > 0) {
+    const at = returning ? 1 - lag : lag;
+    frames.push({ offset: at, transform: transformAt(morph, at, returning ? morph.after : morph.before) });
+  }
+  // why: the spring overshoots past the last keyframe along its final segment; arriving at full size just before it
+  // keeps the bounce in the position alone, so neighbouring pictures never grow into each other as they settle.
+  frames.push({ offset: SIZE_SETTLED, transform: transformAt(morph, SIZE_SETTLED, morph.after) });
+  return frames.sort((a, b) => (a.offset ?? 0) - (b.offset ?? 0));
+}
+
+function retarget(effect: KeyframeEffect, morph: Morph, shape: FlightShape) {
   const frames = effect.getKeyframes();
   if (frames.some((frame) => 'width' in frame || 'height' in frame || 'transform' in frame)) {
     // why: fixed-size snapshots move on the compositor while Motion retains its authored spring timing.
-    const before: Keyframe = { transform: transform(morph.before, morph), opacity: morph.before.opacity };
-    const after: Keyframe = { transform: transform(morph.after, morph), opacity: morph.after.opacity };
-    for (const property of CORNERS) {
-      before[property] = cornerValue(morph.before, property, morph);
-      after[property] = cornerValue(morph.after, property, morph);
-    }
-    effect.setKeyframes([before, after]);
+    effect.setKeyframes(geometry(morph, shape));
     return;
   }
   const shorthand = frames.some((frame) => 'borderRadius' in frame);
@@ -250,13 +282,17 @@ export function createCompositorHero(element: Element | null | undefined, name =
       flying.set(name, read);
       return true;
     },
-    prepare() {
+    /** The canvas rectangles this hero flies between, once captured. */
+    flight() {
+      return morph ? { from: morph.before.rect, to: morph.after.rect } : undefined;
+    },
+    prepare(shape: FlightShape = { lag: 0, returning: false }) {
       if (!morph || owners.get(name)?.token !== token) return;
       for (const animation of document.getAnimations()) {
         if (animation.playState === 'finished' || animation.playState === 'idle') continue;
         const { effect } = animation;
         if (!(effect instanceof KeyframeEffect) || effect.pseudoElement !== `::view-transition-group(${name})`) continue;
-        retarget(effect, morph);
+        retarget(effect, morph, shape);
       }
     },
     clear() {

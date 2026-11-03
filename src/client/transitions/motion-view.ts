@@ -31,17 +31,17 @@ function layerAnimations(controls: ViewPlayback) {
   );
 }
 
-/** Completes the controls of a transition the browser has already ended, so their finished promise can settle. */
+/**
+ * Lets Motion's controls settle once the browser has ended their transition, without reviving any layer.
+ * invariant: finishing a layer the browser cancelled brings it back under its pseudo-element's name; there it styles,
+ * or stops the browser from restarting, the next transition's layer of that name (an interrupted Back stood still).
+ */
 function settle(controls: ViewPlayback) {
-  const layers = layerAnimations(controls);
-  try {
-    controls.complete();
-  } catch {
-    // why: a layer removed with its pseudo-element may refuse to finish; the browser has already dropped it.
+  for (const animation of layerAnimations(controls)) {
+    if (animation.playState === 'finished') continue;
+    animation.cancel();
+    animation.onfinish?.call(animation, new AnimationPlaybackEvent('finish'));
   }
-  // invariant: completing revives the layers the browser cancelled; left filling, they would style the next
-  // transition's layers of the same name (an interrupted Back stayed pinned where the skipped open would have landed).
-  for (const animation of layers) animation.cancel();
 }
 
 /**
@@ -57,6 +57,7 @@ export function motionView(
   const finished = deferred();
   const committed = deferred();
   let playback: ViewPlayback | undefined;
+  let native: ViewTransition | null | undefined;
   let skipped = false;
   let updating: Promise<void> | undefined;
   const run = () => {
@@ -85,15 +86,17 @@ export function motionView(
         return;
       }
       playback = controls;
-      const native = (document as Document & { activeViewTransition?: ViewTransition | null }).activeViewTransition;
+      native = (document as Document & { activeViewTransition?: ViewTransition | null }).activeViewTransition;
       prepare?.();
-      if (skipped) controls.complete();
-      else controls.play();
+      if (!skipped) controls.play();
+      else if (native) native.skipTransition();
+      else controls.complete();
       ready.resolve();
       // why: constructing players before the browser removes its snapshot layers stalls the final compositor handoff.
-      void Promise.allSettled([native ? native.finished : controls.finished]).then(() => {
-        // invariant: an aborted transition cancels its layers' animations; Motion's queue waits on them before the next one.
-        if (native) settle(controls);
+      const browser = native;
+      void Promise.allSettled([browser ? browser.finished : controls.finished]).then(() => {
+        // invariant: an ended or aborted transition drops its layers; Motion's queue waits on them before the next one.
+        if (browser) settle(controls);
         finished.resolve();
       });
     }, failed)
@@ -104,7 +107,9 @@ export function motionView(
     updateCallbackDone: committed.promise,
     skipTransition: () => {
       skipped = true;
-      playback?.complete();
+      // why: the browser ends its own transition; completing Motion's layers would revive them for the next one.
+      if (native) native.skipTransition();
+      else playback?.complete();
     },
   };
 }

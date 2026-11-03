@@ -43,7 +43,3 @@ html[data-page-hero]::view-transition-new(.page-hero) {
   width: var(--page-hero-new-width, 100%);
   height: var(--page-hero-new-height, 100%);
 }
-/* invariant: Chrome tracks a transition's live destination every frame; while the returning card still eases out of
- * its press, the hero's spring is held back and then jumps once that animation ends.
- */
-.feed-item[data-transition-return] { transform: none !important; }

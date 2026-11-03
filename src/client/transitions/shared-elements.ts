@@ -35,6 +35,37 @@ export function namePicture(element: Element | null | undefined, value: string) 
   name(element, value);
 }
 
+let releaseHold: (() => void) | undefined;
+
+/**
+ * Holds a returning card still until the transition lands: `pause` stops its own animations (a press or hover easing
+ * out, its stack fanning) once its new state is captured, at the pose the capture saw. A newer hold releases the
+ * previous one.
+ * invariant: Chrome tracks a transition's live destination every frame; while it moves, the picture's spring is held
+ * back and then jumps once the card's own animation ends.
+ */
+export function holdStill(card: HTMLElement | undefined) {
+  releaseHold?.();
+  const paused: Animation[] = [];
+  const release = () => {
+    // why: the card lands at rest; resuming would leave it easing a fraction of a pixel after the picture has landed.
+    for (const animation of paused.splice(0)) if (animation.playState === 'paused') animation.finish();
+    if (releaseHold === release) releaseHold = undefined;
+  };
+  releaseHold = release;
+  return {
+    release,
+    pause() {
+      if (releaseHold !== release) return;
+      for (const animation of card?.getAnimations({ subtree: true }) ?? []) {
+        if (animation.playState !== 'running') continue;
+        animation.pause();
+        paused.push(animation);
+      }
+    },
+  };
+}
+
 export function onScreen(element: Element) {
   const box = element.getBoundingClientRect();
   return box.width > 0 && box.bottom > 0 && box.top < innerHeight && box.right > 0 && box.left < innerWidth;
