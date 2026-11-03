@@ -3,6 +3,18 @@ name: Code quality
 # Pull requests only: the size ratchet compares against main, so a run on main itself measures nothing.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    # Documentation-only changes start no run (same filter as CI).
+    paths:
+      - '**'
+      - '!*.md'
+      - '!docs/**/*.md'
+      - 'docs/tokens.md'
+      - '!docs/screenshots/**'
+      - '!.github/ISSUE_TEMPLATE/**'
+      - '!.github/pull_request_template.md'
+      - '!.github/CODEOWNERS'
+      - '!LICENSE'
 
 permissions:
   contents: read
@@ -15,6 +27,8 @@ jobs:
   # One install and one build shared by every audit. Each audit step still runs when an earlier one fails.
   audit:
     name: Quality audits
+    # Draft pull requests run nothing; mark the pull request ready to audit it.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
     steps:

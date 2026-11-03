@@ -1,61 +1,136 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { test } from 'node:test';
-import { selectChecks } from './ci-scope.mjs';
+import { dirname, join, resolve } from 'node:path';
+import { after, before, describe, it } from 'node:test';
+import { CACHE_VERSION, SUITES, suiteKey } from './ci-scope.mjs';
 
-test('only documentation can skip every runtime job', () => {
-  assert.deepEqual(selectChecks(['README.md', 'docs/tooling.md'], 'pull_request'), { runtime: false, storybook: false });
-  for (const file of ['docs/formats/replay.schema.json', '.github/workflows/ci.yml', 'pnpm-lock.yaml', 'src/fixture.md']) {
-    assert.deepEqual(selectChecks(['README.md', file], 'pull_request'), { runtime: true, storybook: true });
-  }
+const FILES = [
+  'README.md',
+  'docs/guide.md',
+  'docs/tokens.md',
+  'budgets/bundle.json',
+  'e2e/foo.spec.ts',
+  'test/x.test.ts',
+  'src/client/a.ts',
+  'src/client/render/frames.ts',
+  'src/server/a.ts',
+  'stories/x.stories.tsx',
+  'pnpm-lock.yaml',
+  'package.json',
+  '.github/workflows/ci.yml',
+];
+
+let directory;
+let outputs;
+let baseline;
+const git = (...args) => execFileSync('git', ['-c', 'core.hooksPath=/dev/null', ...args], { cwd: directory, encoding: 'utf8' });
+const write = (path, content) => {
+  mkdirSync(dirname(join(directory, path)), { recursive: true });
+  writeFileSync(join(directory, path), content);
+};
+const key = (suite, nodeVersion = '22') => suiteKey(suite, { cwd: directory, nodeVersion });
+const keys = () => Object.fromEntries(Object.keys(SUITES).map((suite) => [suite, key(suite)]));
+
+/** Suites whose key moves when `path` gets new content, relative to the committed fixture. */
+function changedSuites(path) {
+  write(path, `changed ${path}\n`);
+  git('add', '-A');
+  const changed = keys();
+  git('reset', '-q', '--hard', 'HEAD');
+  return Object.keys(SUITES).filter((suite) => changed[suite] !== baseline[suite]);
+}
+
+before(() => {
+  directory = mkdtempSync(join(tmpdir(), 'replays-ci-scope-'));
+  git('init', '-q');
+  git('config', 'user.email', 'fixture@example.invalid');
+  git('config', 'user.name', 'Fixture');
+  git('config', 'commit.gpgsign', 'false');
+  for (const path of FILES) write(path, `original ${path}\n`);
+  git('add', '-A');
+  git('commit', '-qm', 'fixture');
+  baseline = keys();
+  outputs = mkdtempSync(join(tmpdir(), 'replays-ci-scope-output-'));
 });
 
-test('stories retain integration and type checks but do not trigger runtime checks', () => {
-  assert.deepEqual(selectChecks(['stories/Button.stories.tsx', '.storybook/main.ts', 'docs/tooling.md'], 'pull_request'), {
-    runtime: false,
-    storybook: true,
+after(() => {
+  rmSync(directory, { recursive: true, force: true });
+  rmSync(outputs, { recursive: true, force: true });
+});
+
+describe('suite keys', () => {
+  it('ignore root and docs Markdown', () => {
+    assert.deepEqual(changedSuites('README.md'), []);
+    assert.deepEqual(changedSuites('docs/guide.md'), []);
   });
-  assert.deepEqual(selectChecks(['stories/Button.stories.tsx', 'src/client/main.tsx'], 'pull_request'), {
-    runtime: true,
-    storybook: true,
+
+  it('rerun checks and browser suites for the generated theme token contract', () => {
+    assert.deepEqual(changedSuites('docs/tokens.md'), ['checks', 'browser']);
+  });
+
+  it('rerun only the checks suite for bundle budgets, which format check reads', () => {
+    assert.deepEqual(changedSuites('budgets/bundle.json'), ['checks']);
+  });
+
+  it('rerun checks and end-to-end suites for an end-to-end spec', () => {
+    assert.deepEqual(changedSuites('e2e/foo.spec.ts'), ['checks', 'e2e']);
+  });
+
+  it('rerun checks and browser suites for a unit test', () => {
+    assert.deepEqual(changedSuites('test/x.test.ts'), ['checks', 'browser']);
+  });
+
+  it('leave the Docker suite out of client changes except the file the image copies', () => {
+    assert.deepEqual(changedSuites('src/client/a.ts'), ['checks', 'e2e', 'browser']);
+    assert.deepEqual(changedSuites('src/client/render/frames.ts'), ['checks', 'e2e', 'browser', 'docker']);
+  });
+
+  it('rerun every suite for server code, the lockfile and the CI workflow', () => {
+    for (const path of ['src/server/a.ts', 'pnpm-lock.yaml', '.github/workflows/ci.yml']) {
+      assert.deepEqual(changedSuites(path), Object.keys(SUITES), path);
+    }
+  });
+
+  it('rerun checks and browser suites for a story', () => {
+    assert.deepEqual(changedSuites('stories/x.stories.tsx'), ['checks', 'browser']);
+  });
+
+  it('change with the Node version', () => {
+    for (const suite of Object.keys(SUITES)) {
+      assert.notEqual(key(suite, '22'), key(suite, '24'));
+    }
   });
 });
 
-test('main, nightly and unknown or empty changes run everything', () => {
-  for (const event of ['push', 'schedule', 'workflow_dispatch', 'pull_request']) {
-    assert.deepEqual(selectChecks([], event), { runtime: true, storybook: true });
-  }
-  assert.deepEqual(selectChecks(['README.md'], 'push'), { runtime: true, storybook: true });
-});
-
-test('renaming runtime code into documentation still checks the removed code', () => {
-  const directory = mkdtempSync(join(tmpdir(), 'replays-ci-scope-'));
-  const git = (...args) =>
-    execFileSync(
-      'git',
-      ['-c', 'core.hooksPath=/dev/null', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', ...args],
-      { cwd: directory, encoding: 'utf8' },
-    ).trim();
-  try {
-    git('init', '-q');
-    git('config', 'diff.renames', 'true');
-    writeFileSync(join(directory, 'runtime.ts'), 'export const runtime = 1;\n');
-    git('add', '.');
-    git('commit', '-qm', 'source');
-    const base = git('rev-parse', 'HEAD');
-    renameSync(join(directory, 'runtime.ts'), join(directory, 'README.md'));
-    git('add', '-A');
-    git('commit', '-qm', 'rename');
-    const output = join(directory, 'scope-output');
+describe('command line', () => {
+  const run = (event) => {
+    const output = join(outputs, `${event}-output`);
+    const summary = join(outputs, `${event}-summary`);
+    writeFileSync(output, '');
+    writeFileSync(summary, '');
     execFileSync(process.execPath, [resolve(import.meta.dirname, 'ci-scope.mjs')], {
       cwd: directory,
-      env: { ...process.env, CI_EVENT: 'pull_request', PR_BASE: base, PR_HEAD: git('rev-parse', 'HEAD'), GITHUB_OUTPUT: output },
+      env: { ...process.env, CI_EVENT: event, NODE_VERSION: '22', GITHUB_OUTPUT: output, GITHUB_STEP_SUMMARY: summary },
     });
-    assert.match(readFileSync(output, 'utf8'), /runtime=true/);
-  } finally {
-    rmSync(directory, { recursive: true, force: true });
-  }
+    const lines = readFileSync(output, 'utf8').trim().split('\n');
+    const values = Object.fromEntries(lines.map((line) => line.split('=')));
+    return { values, summary: readFileSync(summary, 'utf8') };
+  };
+
+  it('forces a full run for scheduled and manual events only', () => {
+    assert.equal(run('schedule').values.force, 'true');
+    assert.equal(run('workflow_dispatch').values.force, 'true');
+    assert.equal(run('push').values.force, 'false');
+  });
+
+  it('writes one content-addressed key per marker, shared by the end-to-end shards', () => {
+    const { values, summary } = run('pull_request');
+    assert.deepEqual(Object.keys(values).sort(), ['browser', 'checks', 'docker', 'e2e-1', 'e2e-2', 'e2e-3', 'force']);
+    for (const shard of [1, 2, 3]) assert.equal(values[`e2e-${shard}`], `ci-pass-${CACHE_VERSION}-e2e-${shard}-${key('e2e')}`);
+    assert.equal(values.checks, `ci-pass-${CACHE_VERSION}-checks-${key('checks')}`);
+    assert.match(values.docker, new RegExp(`^ci-pass-${CACHE_VERSION}-docker-[0-9a-f]{64}$`));
+    assert.match(summary, /\| e2e-2 \| e2e \|/);
+  });
 });
