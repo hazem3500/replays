@@ -145,7 +145,7 @@
     "dist/client/assets/Editor-HASH.css": {
       "raw": 33455,
       "gzip": 6480,
-      "brotli": 5776
+      "brotli": 5775
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 130902,
@@ -175,7 +175,7 @@
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
       "gzip": 3274,
-      "brotli": 2860
+      "brotli": 2859
     },
     "dist/client/assets/features-animation-HASH.js": {
       "raw": 15332,
@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 71
+      "brotli": 66
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
