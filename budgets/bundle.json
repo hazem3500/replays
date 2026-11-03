@@ -835,14 +835,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/113"
     },
     {
-      "file": "initial/render.html/js",
-      "cap": {
-        "raw": 557837
-      },
-      "reason": "The render page shares chunks with the app; with the router and the lazy viewer pages the shared code it preloads regroups (gzip +6 bytes, brotli +583 bytes measured in CI against fresh main).",
-      "pr": "https://github.com/hazem3500/replays/pull/113"
-    },
-    {
       "file": "dist/lib/server-testing.mjs",
       "cap": {
         "raw": 12273,
@@ -913,15 +905,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/156"
     },
     {
-      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
-      "cap": {
-        "raw": 6769,
-        "gzip": 1902
-      },
-      "reason": "Deferred default-UI loader chunk shared by the recorder entries; selectError and the timer now read their wording and labels from recorder messages and format hooks. Measured in CI against fresh main dbc865e9: +158 B raw, +57 B gzip, +52 B brotli. Replaces #69's allowance for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/141"
-    },
-    {
       "file": "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs",
       "cap": {
         "raw": 10646,
@@ -968,14 +951,6 @@
         "brotli": 11946
       },
       "reason": "The additive theme token contract extends shared branding code and changes its library chunk identity and import fingerprints.",
-      "pr": "https://github.com/hazem3500/replays/pull/175"
-    },
-    {
-      "file": "initial/render.html/css",
-      "cap": {
-        "raw": 6192
-      },
-      "reason": "Public component token defaults and CSS consumers add styles and update CSS dependency fingerprints.",
       "pr": "https://github.com/hazem3500/replays/pull/175"
     },
     {
@@ -1037,14 +1012,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
-      "file": "dist/client/assets/VitalsTile-HASH.js",
-      "cap": {
-        "brotli": 429
-      },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/185"
-    },
-    {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 996774,
@@ -1101,15 +1068,6 @@
       "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
     },
     {
-      "file": "dist/client/assets/ui-state-HASH.js",
-      "cap": {
-        "raw": 335,
-        "gzip": 256
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "Hash and compression drift from the shared edits module split: chunk names it imports change; CI Quality / size against fresh main: brotli 236 B."
-    },
-    {
       "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
       "cap": {
         "raw": 4058,
@@ -1160,15 +1118,6 @@
       "reason": "Comment pass: the unminified recorder chunk keeps comments, and tagging reasons adds a few bytes; CI Quality / size against fresh main: raw 58729. Replaces #189's allowance for this file."
     },
     {
-      "file": "dist/client/assets/comments-ui-HASH.js",
-      "cap": {
-        "raw": 32693,
-        "brotli": 9909
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/177",
-      "reason": "Lazy route state extraction and preloads change shared chunk fingerprints; measured against current main."
-    },
-    {
       "file": "dist/client/assets/arrow-up-right-HASH.js",
       "cap": {
         "raw": 207,
@@ -1194,14 +1143,6 @@
         "raw": 7448,
         "gzip": 3135,
         "brotli": 2847
-      },
-      "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
-      "pr": "https://github.com/hazem3500/replays/pull/177"
-    },
-    {
-      "file": "dist/client/assets/write-HASH.js",
-      "cap": {
-        "raw": 334228
       },
       "reason": "Lazy retained index and server preload extraction create separately measured chunks.",
       "pr": "https://github.com/hazem3500/replays/pull/177"
@@ -1361,14 +1302,6 @@
       },
       "reason": "In-viewport collapsed Steps handles, shared narrow-screen Steps tabs and vertically centred console rows. Measured main/head: raw 5969 to 6139 bytes, gzip 1562 to 1586 bytes, brotli 1344 to 1368 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/200"
-    },
-    {
-      "file": "dist/client/assets/expired-query-HASH.js",
-      "cap": {
-        "gzip": 1063
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/199",
-      "reason": "Touch-search stylesheet changes shared import hashes. Same-toolchain main/head: raw 2132/2132, gzip 1028/1031, Brotli 899/905 bytes. This unchanged source receives only a 32-byte gzip margin; existing raw and Brotli caps remain."
     },
     {
       "file": "dist/client/assets/Inspector-HASH.css",
@@ -1553,7 +1486,8 @@
       "file": "dist/client/assets/VitalsTile-HASH.js",
       "cap": {
         "raw": 691,
-        "gzip": 477
+        "gzip": 477,
+        "brotli": 429
       },
       "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 665 to 670, gzip 461 to 463 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
@@ -1601,7 +1535,9 @@
     {
       "file": "dist/client/assets/comments-ui-HASH.js",
       "cap": {
-        "gzip": 11783
+        "raw": 32693,
+        "gzip": 11783,
+        "brotli": 9909
       },
       "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: gzip 11241 to 11439 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
@@ -1660,6 +1596,7 @@
       "file": "dist/client/assets/expired-query-HASH.js",
       "cap": {
         "raw": 2195,
+        "gzip": 1063,
         "brotli": 939
       },
       "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 2132 to 2131, brotli 900 to 911 bytes; caps keep the budget's 3% headroom.",
@@ -1844,6 +1781,8 @@
     {
       "file": "dist/client/assets/ui-state-HASH.js",
       "cap": {
+        "raw": 335,
+        "gzip": 256,
         "brotli": 245
       },
       "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: brotli 236 to 237 bytes; caps keep the budget's 3% headroom.",
@@ -1882,6 +1821,7 @@
     {
       "file": "dist/client/assets/write-HASH.js",
       "cap": {
+        "raw": 334228,
         "gzip": 99951,
         "brotli": 86632
       },
@@ -2130,6 +2070,8 @@
     {
       "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
       "cap": {
+        "raw": 6769,
+        "gzip": 1902,
         "brotli": 1765
       },
       "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: brotli 1711 to 1713 bytes; caps keep the budget's 3% headroom.",
@@ -2218,6 +2160,7 @@
     {
       "file": "initial/render.html/css",
       "cap": {
+        "raw": 6192,
         "gzip": 2817,
         "brotli": 2334
       },
@@ -2227,6 +2170,7 @@
     {
       "file": "initial/render.html/js",
       "cap": {
+        "raw": 557837,
         "gzip": 179928,
         "brotli": 142340
       },

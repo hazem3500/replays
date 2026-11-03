@@ -4,7 +4,6 @@ import type { Recorder, RecorderOptions, RecorderUi } from '../types.ts';
 export {
   createDefaultUi,
   createRecorderFormat,
-  // oxlint-disable-next-line typescript/no-deprecated -- why: the ui entry keeps exporting the deprecated alias it always exported.
   DEFAULT_MESSAGES,
   defaultRecorderMessages,
   formatDuration,

@@ -162,8 +162,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         },
         replayId
           ? Promise.all([
-              queryClient.fetchQuery(replayQuery(replayId)),
-              queryClient.fetchQuery(editsQuery(replayId)).catch(() => undefined),
+              queryClient.query(replayQuery(replayId)),
+              queryClient.query(editsQuery(replayId)).catch(() => undefined),
             ])
           : Promise.resolve(),
         { instant },

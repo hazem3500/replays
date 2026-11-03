@@ -1,7 +1,6 @@
 // invariant: browser-only in-page recording; no server, Node or React imports.
 export { buildReplayBundle } from './bundle.ts';
 export type * from './bundle-types.ts';
-// oxlint-disable-next-line typescript/no-deprecated -- why: the root entry keeps re-exporting the deprecated factory for compatibility.
 export { createDefaultUi } from './compat.ts';
 export { DEFAULT_MESSAGES, defaultRecorderMessages, resolveRecorderMessages } from './messages.ts';
 export type { RecorderMessageError, RecorderMessageOverrides, RecorderMessages } from './messages.ts';
