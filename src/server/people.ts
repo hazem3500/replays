@@ -26,11 +26,9 @@ const httpError = (status: number, message: string) => Object.assign(new Error(m
 const log = (plugin: string, what: string, error: unknown) =>
   console.error(`plugin ${plugin}: ${what} failed:`, error instanceof Error ? error.message : error);
 
-const maxUrlLength = 2048;
-
 /** An absolute https URL without credentials, at most 2048 characters; anything else is undefined. */
 export function httpsUrl(value: unknown) {
-  if (typeof value !== 'string' || value.length > maxUrlLength) return undefined;
+  if (typeof value !== 'string' || value.length > 2048) return undefined;
   try {
     const url = new URL(value);
     return url.protocol === 'https:' && !url.username && !url.password ? url.href : undefined;
