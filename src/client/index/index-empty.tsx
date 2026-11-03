@@ -9,6 +9,8 @@ export const indexEmptyStrings = {
   unreachableBody: 'Check your connection or VPN. The list loads as soon as the server answers.',
   failedTitle: 'The list didn’t load',
   failedBody: (reason: string) => `${reason}. This is usually temporary.`,
+  deniedTitle: 'You don’t have access to these replays',
+  deniedBody: 'Sign in to this server, or ask its owner for access.',
   offlineTitle: 'Offline',
   offlineBody: 'Showing saved results from your last visit.',
   staleTitle: 'Couldn’t refresh',
@@ -93,10 +95,13 @@ function errorState(input: ErrorInput): EmptyStateProps {
       actions: [retry],
       testId: 'index-error',
     };
+  const reason = input.reason.replace(/\.$/, '');
+  // why: a refused request is not a passing outage; telling someone to wait would never get them in.
+  const denied = /\((401|403)\)$/.test(reason);
   return {
     tone: 'error',
-    title: S.failedTitle,
-    body: S.failedBody(input.reason.replace(/\.$/, '')),
+    title: denied ? S.deniedTitle : S.failedTitle,
+    body: denied ? S.deniedBody : S.failedBody(reason),
     details: retryStatus(input.retry),
     actions: [retry],
     testId: 'index-error',
