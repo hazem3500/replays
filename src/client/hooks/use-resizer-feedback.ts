@@ -12,7 +12,21 @@ function feedbackDelay(active: boolean, hovering: boolean, held: boolean, focuse
   return active && hovering && !held && !focused ? 0.12 : 0;
 }
 
-/** Motion owns resizer affordance feedback; drag geometry and keyboard resizing stay direct. */
+/** Writes the grip's spot along the seam for a pointer, keeping the whole grip on it, 4 px clear of either end. */
+function placeGrip(root: HTMLElement, grip: HTMLElement, orientation: 'horizontal' | 'vertical', event: PointerEvent) {
+  const box = root.getBoundingClientRect();
+  const horizontal = orientation === 'horizontal';
+  const along = horizontal ? event.clientX - box.left : event.clientY - box.top;
+  const length = horizontal ? box.width : box.height;
+  const edge = (horizontal ? grip.offsetWidth : grip.offsetHeight) / 2 + 4;
+  root.style.setProperty('--grip-at', `${Math.min(Math.max(along, edge), length - edge)}px`);
+}
+
+/**
+ * Motion owns resizer affordance feedback; drag geometry and keyboard resizing stay direct. The grip sits where the
+ * pointer meets the seam (`--grip-at`, written straight to the resizer's style on each move, never through React):
+ * along it while a mouse hovers, under the pointer while held, and centred (or at the last pointer spot) on focus.
+ */
 export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
   const ref = useRef<HTMLDivElement>(null);
   const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
@@ -42,8 +56,12 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
         animate([grip], { opacity: active ? 1 : 0, scale: active ? 1 : 0.6 }, transition),
       ];
     };
+    const follow = (event: PointerEvent) => {
+      if (held || event.pointerType === 'mouse') placeGrip(root, grip, orientation, event);
+    };
     const enter = (event: PointerEvent) => {
       hovering = event.pointerType === 'mouse';
+      follow(event);
       update();
     };
     const leave = () => {
@@ -53,15 +71,19 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
     const down = (event: PointerEvent) => {
       if (event.button === 0) {
         held = true;
+        follow(event);
+        window.addEventListener('pointermove', follow);
         update();
       }
     };
     const up = () => {
       held = false;
+      window.removeEventListener('pointermove', follow);
       update();
     };
     root.addEventListener('pointerenter', enter);
     root.addEventListener('pointerleave', leave);
+    root.addEventListener('pointermove', follow);
     root.addEventListener('pointerdown', down);
     root.addEventListener('focus', update);
     root.addEventListener('blur', update);
@@ -72,6 +94,8 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
       for (const motion of running) motion.cancel();
       root.removeEventListener('pointerenter', enter);
       root.removeEventListener('pointerleave', leave);
+      root.removeEventListener('pointermove', follow);
+      window.removeEventListener('pointermove', follow);
       root.removeEventListener('pointerdown', down);
       root.removeEventListener('focus', update);
       root.removeEventListener('blur', update);

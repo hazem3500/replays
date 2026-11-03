@@ -31,8 +31,8 @@
 .splitter[data-orientation="vertical"] .splitter-line { inset: 0 auto 0 0; width: 1px; }
 
 .splitter-grip { position: absolute; top: 50%; left: 50%; border-radius: 999px; background: var(--splitter-active); opacity: 0; pointer-events: none; translate: -50% -50%; scale: 0.6; }
-.splitter[data-orientation="horizontal"] .splitter-grip { width: var(--splitter-grip-length); height: var(--splitter-grip-width); }
-.splitter[data-orientation="vertical"] .splitter-grip { width: var(--splitter-grip-width); height: var(--splitter-grip-length); }
+.splitter[data-orientation="horizontal"] .splitter-grip { left: var(--grip-at, 50%); width: var(--splitter-grip-length); height: var(--splitter-grip-width); }
+.splitter[data-orientation="vertical"] .splitter-grip { top: var(--grip-at, 50%); width: var(--splitter-grip-width); height: var(--splitter-grip-length); }
 
 .splitter:focus-visible .splitter-grip { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--ring); }
 
