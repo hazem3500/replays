@@ -30,6 +30,58 @@ const ROW_SELECTOR = '.np-row:not(.np-head)';
 
 const FALLBACK_ROW_HEIGHT = 30;
 
+/** The network columns for this viewer, with plugins' columns, and the grid template they need when customised. */
+function useNetworkSurface() {
+  usePluginSnapshot();
+  const viewer = use(PluginContexts)?.('');
+  const context: HostSurfaceContext = viewer ? { replay: viewer.replay, seek: viewer.seek } : {};
+  const columns = networkColumns(context);
+  const custom = !defaultNetworkColumns(columns);
+  const columnStyle: CSSProperties | undefined = custom
+    ? cssVars({ '--np-cols': columns.map((column) => column.width).join(' ') })
+    : undefined;
+  return { context, columns, custom, columnStyle };
+}
+
+/** Moves keyboard focus to the next request, selecting it too when one is already open or the move jumps to an end. */
+function stepRequest(
+  rows: readonly NetworkRow[],
+  id: string,
+  move: StepMove,
+  { selected, onSelect }: { selected: string | undefined; onSelect: (id?: string) => void },
+) {
+  const index = rows.findIndex((row) => row.id === id);
+  const next = rows[moveIndex(move, index, rows.length)];
+  if (!next || next.id === id) return;
+  // why: an end may be far outside the rendered window; selecting it scrolls it in (useRevealRow) before focus lands.
+  const far = move === 'first' || move === 'last';
+  if (selected || far) onSelect(next.id);
+  const focus = () => document.getElementById(`request-switch-${next.id}`)?.focus();
+  requestAnimationFrame(() => requestAnimationFrame(focus));
+}
+
+/** A request button's keys: arrows and Home/End step through requests, Escape closes the open one. */
+function requestKey(
+  event: ReactKeyboardEvent<HTMLButtonElement>,
+  {
+    id,
+    selected,
+    onStep,
+    onSelect,
+  }: { id: string; selected: boolean; onStep: (id: string, move: StepMove) => void; onSelect: (id?: string) => void },
+) {
+  if (event.altKey || event.metaKey || event.ctrlKey) return;
+  const move = KEY_MOVES[event.key];
+  if (move) {
+    event.preventDefault();
+    event.stopPropagation();
+    onStep(id, move);
+  } else if (event.key === 'Escape' && selected) {
+    event.stopPropagation();
+    onSelect();
+  } else if (event.key === ' ') event.stopPropagation();
+}
+
 /**
  * Every request in start order on the shared list frame (TrackList: the now divider, follow and Back to now). Rows are
  * one line on a panel wide enough, two lines on a phone (CSS container query); the request's step is the "why".
@@ -53,14 +105,7 @@ export function NetworkList({
   onHover?: ((id?: string) => void) | undefined;
   empty: ReactNode;
 }) {
-  usePluginSnapshot();
-  const viewer = use(PluginContexts)?.('');
-  const context: HostSurfaceContext = viewer ? { replay: viewer.replay, seek: viewer.seek } : {};
-  const columns = networkColumns(context);
-  const custom = !defaultNetworkColumns(columns);
-  const columnStyle: CSSProperties | undefined = custom
-    ? cssVars({ '--np-cols': columns.map((column) => column.width).join(' ') })
-    : undefined;
+  const { context, columns, custom, columnStyle } = useNetworkSurface();
   const player = usePlayer();
   const scroller = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
@@ -71,16 +116,7 @@ export function NetworkList({
   const { start, end, padTop, padBottom } = useWindowedRows(scroller, { count: rows.length, rowHeight, headerHeight: HEADER_HEIGHT });
   const selectedIndex = selected ? rows.findIndex((row) => row.id === selected) : -1;
   useRevealRow(scroller, selectedIndex, rowHeight, HEADER_HEIGHT);
-  const step = (id: string, move: StepMove) => {
-    const index = rows.findIndex((row) => row.id === id);
-    const next = rows[moveIndex(move, index, rows.length)];
-    if (!next || next.id === id) return;
-    // why: an end may be far outside the rendered window; selecting it scrolls it in (useRevealRow) before focus lands.
-    const far = move === 'first' || move === 'last';
-    if (selected || far) onSelect(next.id);
-    const focus = () => document.getElementById(`request-switch-${next.id}`)?.focus();
-    requestAnimationFrame(() => requestAnimationFrame(focus));
-  };
+  const step = (id: string, move: StepMove) => stepRequest(rows, id, move, { selected, onSelect });
   return (
     <TrackList
       testId="network-list"
@@ -170,18 +206,7 @@ function RequestRow({
 }) {
   const { rowIndex, future, selected } = position;
   const { columns, context } = surface;
-  const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (event.altKey || event.metaKey || event.ctrlKey) return;
-    const move = KEY_MOVES[event.key];
-    if (move) {
-      event.preventDefault();
-      event.stopPropagation();
-      onStep(row.id, move);
-    } else if (event.key === 'Escape' && selected) {
-      event.stopPropagation();
-      onSelect();
-    } else if (event.key === ' ') event.stopPropagation();
-  };
+  const onKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => requestKey(event, { id: row.id, selected, onStep, onSelect });
   const cells: Record<string, ReactNode> = {
     time: <SeekTime at={row.at} future={future} />,
     status: <StatusText row={row} />,

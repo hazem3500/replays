@@ -164,6 +164,25 @@ function RowColumns({ at, host }: { at: string; host: string }) {
 /** Rows whose posters load at once with high priority: what a phone or a desktop shows above the fold. */
 const FIRST_ROWS = 6;
 
+/** The row link's accessible name: error counts are details on screen, but still named for screen readers. */
+function sessionName(summary: ReplaySummary, showId: boolean) {
+  const errors = errorTotal(summary);
+  const origin = summary.source === 'human' ? 'rrweb import' : 'Agent capture';
+  return [
+    summary.title,
+    'Replay',
+    formatBadgeDuration(summary.duration),
+    summary.sources?.[0] ? `from ${sourceText(summary.sources[0])}` : origin,
+    errors ? plural(errors, 'error') : '',
+    formatRelative(summary.capturedAt),
+    summary.host,
+    summary.steps ? plural(summary.steps, 'step') : '',
+    showId ? `id ${summary.id}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
 function SessionItem({
   summary,
   view,
@@ -177,25 +196,10 @@ function SessionItem({
   place: FeedRowPlace;
   rowRef: ((element: HTMLElement | null) => void) | undefined;
 }) {
-  const errors = errorTotal(summary);
-  const imported = summary.source === 'human';
   const showId = Boolean(query) && summary.id.toLowerCase().includes(query.toLowerCase());
   const href = replayHref(summary.id);
   const playing = usePreviewActive(`session:${summary.id}`);
-  // Error counts are details on screen, but still named for screen readers.
-  const name = [
-    summary.title,
-    'Replay',
-    formatBadgeDuration(summary.duration),
-    summary.sources?.[0] ? `from ${sourceText(summary.sources[0])}` : imported ? 'rrweb import' : 'Agent capture',
-    errors ? plural(errors, 'error') : '',
-    formatRelative(summary.capturedAt),
-    summary.host,
-    summary.steps ? plural(summary.steps, 'step') : '',
-    showId ? `id ${summary.id}` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const name = sessionName(summary, showId);
   return (
     <MotionFeedItem
       view={view}

@@ -172,6 +172,15 @@ export function ViewerSkeleton({
   );
 }
 
+/** The editor dock's saved height, clamped the way the loaded editor clamps it. */
+function savedDockHeight() {
+  const saved = Number(readStorage(EDITOR_DOCK.storageKey));
+  const { height: fallback, min } = EDITOR_DOCK;
+  return Math.round(
+    Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : fallback, min), Math.max(min, viewportHeight() * 0.65)),
+  );
+}
+
 /**
  * Edit loads draw the loaded editor's own shell (editor-layout.css): the real top bar, the stage frame at its final
  * rect beside the inspector column, the 1 px resizer row and the dock at its saved height, so nothing moves when the
@@ -197,13 +206,7 @@ export function EditorSkeleton({
   const hint = meta
     ? { ...stored, id, ...(meta.title ? { title: meta.title } : {}), ...(meta.viewport ? { viewport: meta.viewport } : {}) }
     : stored;
-  const [height] = useState(() => {
-    const saved = Number(readStorage(EDITOR_DOCK.storageKey));
-    const { height: fallback, min } = EDITOR_DOCK;
-    return Math.round(
-      Math.min(Math.max(Number.isFinite(saved) && saved > 0 ? saved : fallback, min), Math.max(min, viewportHeight() * 0.65)),
-    );
-  });
+  const [height] = useState(savedDockHeight);
   const style = { '--dock-height': `${height}px`, '--sk-ratio': String(layout(hint).ratio) } as CSSProperties;
   const poster = hint?.poster ?? openStillUrl(id);
   if (mobile) {

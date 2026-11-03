@@ -274,6 +274,37 @@ export function Lane({
   );
 }
 
+/** The clip's trimmed-away ends, dimmed and labelled outside the kept clip. */
+function TrimmedOutside({ trim, duration, scale }: { trim: { start: number; end: number }; duration: number; scale: TimelineScale }) {
+  return (
+    <>
+      {trim.start > 0 ? (
+        <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }}>
+          <span className="tl-outside-label">Trimmed</span>
+        </span>
+      ) : null}
+      {trim.end < duration ? (
+        <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }}>
+          <span className="tl-outside-label">Trimmed</span>
+        </span>
+      ) : null}
+    </>
+  );
+}
+
+/** The waits "Remove waits" would cut, shown before they are applied. */
+function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayCut[]; scale: TimelineScale }) {
+  return suggestions.map((cut) => (
+    <span
+      key={cut.id}
+      className="tl-suggestion"
+      data-testid="wait-suggestion"
+      title={cut.label ? `Wait: ${cut.label}` : 'Wait'}
+      style={{ left: `${scale.x(cut.from)}px`, width: `${Math.max(4, scale.x(cut.to) - scale.x(cut.from))}px` }}
+    />
+  ));
+}
+
 /**
  * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, the
  * the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
@@ -434,16 +465,7 @@ export function Timeline({
                     });
                   }}
                 >
-                  {trim.start > 0 ? (
-                    <span className="tl-outside" style={{ left: 0, width: `${scale.x(trim.start)}px` }}>
-                      <span className="tl-outside-label">Trimmed</span>
-                    </span>
-                  ) : null}
-                  {trim.end < duration ? (
-                    <span className="tl-outside" style={{ left: `${scale.x(trim.end)}px`, right: 0 }}>
-                      <span className="tl-outside-label">Trimmed</span>
-                    </span>
-                  ) : null}
+                  <TrimmedOutside trim={trim} duration={duration} scale={scale} />
                   <div
                     className="tl-clip"
                     data-selected={selection?.kind === 'trim' || undefined}
@@ -452,15 +474,7 @@ export function Timeline({
                     {trimEdge('start')}
                     {trimEdge('end')}
                   </div>
-                  {suggestions.map((cut) => (
-                    <span
-                      key={cut.id}
-                      className="tl-suggestion"
-                      data-testid="wait-suggestion"
-                      title={cut.label ? `Wait: ${cut.label}` : 'Wait'}
-                      style={{ left: `${scale.x(cut.from)}px`, width: `${Math.max(4, scale.x(cut.to) - scale.x(cut.from))}px` }}
-                    />
-                  ))}
+                  <WaitSuggestions suggestions={suggestions} scale={scale} />
                   {edits.cuts.map((cut) => (
                     <RegionBlock
                       key={cut.id}

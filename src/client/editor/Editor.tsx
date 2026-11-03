@@ -31,6 +31,7 @@ import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
 import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
 import { EDITOR_DOCK } from './dock-size.ts';
+import { removeSelection } from './remove-selection.ts';
 import { duplicateEffect, splitEffect } from './phone-edits.ts';
 import { type PhoneObjectActions, PhoneObjectToolbar, selectionKey } from './PhoneObjectToolbar.tsx';
 import { PhoneSheet } from './PhoneSheet.tsx';
@@ -60,20 +61,16 @@ import {
   initialEditorState,
   isDirty,
   leavesSomething,
-  removeCut,
   savedAgo,
   type Selection,
   type EditorAction,
   setTrimEdge,
   trimOf,
-  clearTrim,
   waitSuggestions,
   addEffect,
   type EffectKind,
   effectList,
   NEW_EFFECT_MS,
-  removeEffect,
-  removeHighlight,
   withEffectList,
 } from './state.ts';
 import { handOff } from './handoff.ts';
@@ -343,11 +340,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         setSuggesting(true);
       },
       deleteSelection: () => {
-        const { present, selection } = live.current.state;
-        if (selection?.kind === 'trim') change(clearTrim(present));
-        else if (selection?.kind === 'cut') change(removeCut(present, selection.id));
-        else if (selection?.kind === 'highlight') change(removeHighlight(present, selection.id));
-        else if (selection && selection.kind !== 'range') change(removeEffect(present, selection.kind, selection.id));
+        const removed = removeSelection(live.current.state.present, live.current.state.selection);
+        if (removed) change(removed);
       },
       pointHighlight: () => {
         const { state: current, timeline: kept } = live.current;
