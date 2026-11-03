@@ -9,6 +9,7 @@ import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 import type { ReplayEdits } from '../shared/edits.ts';
 import type { ReplayStep } from '../shared/replay.ts';
 import { apiUrl } from './api/fetch.ts';
+import { useLandedContent } from './hooks/use-landed-content.ts';
 import { useLoadingProgressMotion } from './hooks/use-loading-progress-motion.ts';
 import { useLoadProgress } from './load-progress.ts';
 import { MOBILE_QUERY, useMediaQuery } from './media.ts';
@@ -375,7 +376,10 @@ function PhoneSkeleton({ hint }: { hint: OpenHint | undefined }) {
   );
 }
 
-/** Loading is a single layout, replaced as soon as content is ready. CSS delays its entrance for fast loads. */
+/**
+ * Loading is a single layout, replaced as soon as content is ready, or once the page transition flying to it lands.
+ * CSS delays its entrance for fast loads.
+ */
 export function LoadingSwap({ ready, skeleton, children }: { ready: boolean; skeleton: ReactNode; children: ReactNode }) {
-  return <>{ready ? children : skeleton}</>;
+  return <>{useLandedContent(ready) ? children : skeleton}</>;
 }

@@ -11,20 +11,49 @@ export interface PageTransition {
 }
 
 let active: PageTransition | undefined;
+let animating: PageTransition | undefined;
 let inPlace = false;
 let sequence = 0;
+const listeners = new Set<() => void>();
+
+function setAnimating(transition: PageTransition | undefined) {
+  if (animating === transition) return;
+  animating = transition;
+  for (const listener of listeners) listener();
+}
 
 export const currentTransition = () => active ?? (document as DocumentWithTransition).activeViewTransition ?? undefined;
 
 /** Records the transition this app started, until it has finished. */
 export function follow(transition: PageTransition) {
   active = transition;
+  void transition.ready.then(
+    () => {
+      if (active === transition) setAnimating(transition);
+    },
+    () => {},
+  );
   void transition.finished
     .catch(() => {})
     .then(() => {
       if (active === transition) active = undefined;
+      if (animating === transition) setAnimating(undefined);
     });
 }
+
+/** Subscribes to the captured page transition starting and landing. */
+export function subscribeAnimating(listener: () => void) {
+  listeners.add(listener);
+  return () => {
+    listeners.delete(listener);
+  };
+}
+
+/**
+ * True between a page transition's capture and its landing.
+ * invariant: Chrome aborts a transition whose captured destination element leaves the document, so pages keep it until then.
+ */
+export const pageTransitionAnimating = () => animating !== undefined;
 
 /** Skips the running transition (a newer change lands at once) and returns this change's turn. */
 export function nextTurn() {

@@ -2,9 +2,8 @@ import { MessageSquareIcon } from 'lucide-react';
 import { lazy, Suspense } from 'react';
 
 import { registerViewerFeature } from '../plugins/features.tsx';
-import { CommentsBridge, CommentsProvider, useComments } from './CommentsProvider.tsx';
+import { CommentsBridge, CommentsProvider, preloadCommentRows, useComments } from './CommentsProvider.tsx';
 import { commentsEnabled } from './enabled.ts';
-import { prefetchCommentRows } from './rows.ts';
 
 let loadingUi: Promise<typeof import('./comments-ui.tsx')> | undefined;
 const loadUi = () => (loadingUi ??= import('./comments-ui.tsx'));
@@ -32,10 +31,10 @@ function CommentsScrubberOverlay(props: { width: number; inset: number }) {
 /**
  * Comments as a viewer feature (the client half of the built-in `comments` plugin, src/server/comments-plugin.ts):
  * the provider around the viewer (in the main chunk: it owns `M` and the tab's count), and the Comments tab and seek-bar
- * markers (a lazy chunk with their styles). Active when the page says the server loaded the plugin.
+ * markers (a lazy chunk with their styles). Active when the page says the server loaded the plugin. Resolves once the
+ * rows chunk the provider renders from is loaded (at once when comments are off); it never rejects.
  */
-export function registerCommentsFeature() {
-  if (commentsEnabled()) prefetchCommentRows();
+export function registerCommentsFeature(): Promise<void> {
   registerViewerFeature({
     id: 'comments',
     enabled: commentsEnabled,
@@ -54,4 +53,7 @@ export function registerCommentsFeature() {
     },
     ScrubberOverlay: CommentsScrubberOverlay,
   });
+  // why: the provider suspends the whole viewer on this chunk; loading it with the viewer's code keeps a page change from
+  // swapping a second skeleton in mid-flight.
+  return commentsEnabled() ? preloadCommentRows() : Promise.resolve();
 }

@@ -22,6 +22,15 @@ function isPlayback(value: unknown): value is ViewPlayback {
   );
 }
 
+/** Completes the controls of a transition the browser has already ended, so their finished promise can settle. */
+function settle(controls: ViewPlayback) {
+  try {
+    controls.complete();
+  } catch {
+    // why: a layer removed with its pseudo-element may refuse to finish; the browser has already dropped it.
+  }
+}
+
 /**
  * Motion owns the spring, layout, crop and snapshot animations. The browser only captures the live recorded page,
  * so React never clones or reparents its iframe. This bridge preserves the router's commit and player-ready gates.
@@ -69,7 +78,11 @@ export function motionView(
       else controls.play();
       ready.resolve();
       // why: constructing players before the browser removes its snapshot layers stalls the final compositor handoff.
-      void Promise.allSettled([controls.finished, native?.finished]).then(() => finished.resolve());
+      void Promise.allSettled([native ? native.finished : controls.finished]).then(() => {
+        // invariant: an aborted transition cancels its layers' animations; Motion's queue waits on them before the next one.
+        if (native) settle(controls);
+        finished.resolve();
+      });
     }, failed)
     .catch(failed);
   return {
