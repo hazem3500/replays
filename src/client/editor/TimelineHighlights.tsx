@@ -1,12 +1,20 @@
-import type { ReplayHighlight } from '../../shared/edits.ts';
+import type { PointerEvent as ReactPointerEvent } from 'react';
+
+import { MIN_EDIT_MS, type ReplayHighlight } from '../../shared/edits.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { highlightEdge, highlightTargetOffsets } from '../highlights-layout.ts';
 import { useHighlightTargetSize } from '../hooks/use-highlight-target-size.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { usePlayer } from '../player.ts';
 import type { EditorAction } from './state.ts';
+import { startDrag, timeKeys, useTimelineScale } from './timeline-drag.ts';
 
 const NO_HIGHLIGHTS: readonly ReplayHighlight[] = [];
+
+/** Which part of a highlight moves: a point's marker, one end of a period, or the whole period. */
+export type HighlightEdge = 'at' | 'from' | 'to' | 'move';
+/** `first`: the first move of a drag (a new undo step); later moves of the same drag merge into it. */
+type OnMove = (id: string, edge: HighlightEdge, time: number, first: boolean) => void;
 
 function markerAts(highlight: ReplayHighlight) {
   return highlight.kind === 'point' ? [highlight.at] : [highlight.from, highlight.to];
@@ -36,7 +44,121 @@ function useMarkerOffsets(highlights: readonly ReplayHighlight[], x: (time: numb
   return offsets;
 }
 
-/** Playback navigation marks drawn over the clip lane: a point is one marker, a period is a band with two edge markers. */
+/** The keyboard range of one marker: a period's ends stay MIN_EDIT_MS apart. */
+function markerBounds(highlight: ReplayHighlight, edge: HighlightEdge, duration: number) {
+  if (highlight.kind === 'point') return { min: 0, max: duration };
+  if (edge === 'from') return { min: 0, max: highlight.to - MIN_EDIT_MS };
+  return { min: highlight.from + MIN_EDIT_MS, max: duration };
+}
+
+/**
+ * One marker: a point highlight's diamond or one end of a period. Drag it to move that time (it seeks as it goes),
+ * arrows nudge it (Shift by a second), and a click without movement selects the highlight and seeks to it.
+ */
+function HighlightMarker({
+  highlight,
+  index,
+  offset,
+  selected,
+  dispatch,
+  onMove,
+}: {
+  highlight: ReplayHighlight;
+  index: number;
+  offset: number;
+  selected: boolean;
+  dispatch: (action: EditorAction) => void;
+  onMove: OnMove;
+}) {
+  const scale = useTimelineScale();
+  const player = usePlayer();
+  const at = markerAts(highlight)[index] ?? 0;
+  const edge: HighlightEdge = highlightEdge(highlight.kind, index) ?? 'at';
+  const title = highlightTitle(highlight);
+  const select = () => dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
+  const { min, max } = markerBounds(highlight, edge, scale.duration);
+  return (
+    <button
+      type="button"
+      className="tl-highlight-marker"
+      data-kind={highlight.kind}
+      data-edge={highlightEdge(highlight.kind, index)}
+      data-testid="timeline-highlight"
+      data-highlight-id={highlight.id}
+      aria-label={`${title} at ${formatClock(at)}`}
+      aria-pressed={selected}
+      aria-keyshortcuts="ArrowLeft ArrowRight Shift+ArrowLeft Shift+ArrowRight"
+      title={`${title} · ${formatClock(at)}`}
+      style={cssVars({ '--target-offset': `${offset}px` }, { left: `${scale.x(at)}px` })}
+      onFocus={select}
+      onPointerDown={(event) =>
+        startDrag(event, scale, {
+          move: (time, first) => {
+            onMove(highlight.id, edge, time, first);
+            player.seek(time);
+          },
+        })
+      }
+      onClick={() => {
+        select();
+        player.seek(at);
+      }}
+      onKeyDown={(event) =>
+        timeKeys(event, at, min, max, (time) => {
+          onMove(highlight.id, edge, time, true);
+          player.seek(time);
+        })
+      }
+    >
+      <span className="tl-highlight-glyph" aria-hidden="true" />
+      {selected && highlight.label && (highlight.kind === 'point' || index === 0) ? (
+        <span className="tl-highlight-label">{highlight.label}</span>
+      ) : null}
+    </button>
+  );
+}
+
+/** A period's band between its ends: drag it to move the whole period; a click selects it and seeks to its start. */
+function HighlightBand({
+  highlight,
+  dispatch,
+  onMove,
+}: {
+  highlight: ReplayHighlight & { kind: 'period' };
+  dispatch: (action: EditorAction) => void;
+  onMove: OnMove;
+}) {
+  const scale = useTimelineScale();
+  const player = usePlayer();
+  const left = scale.x(highlight.from);
+  const onPointerDown = (event: ReactPointerEvent) => {
+    const offset = scale.timeAt(event.clientX) - highlight.from;
+    startDrag(event, scale, {
+      move: (time, first) => {
+        onMove(highlight.id, 'move', time - offset, first);
+        player.seek(Math.max(0, time - offset));
+      },
+      end: (moved) => {
+        dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
+        if (!moved) player.seek(highlight.from);
+      },
+    });
+  };
+  return (
+    <span
+      className="tl-highlight-band"
+      aria-hidden="true"
+      data-testid="timeline-highlight-band"
+      style={{ left: `${left}px`, width: `${Math.max(3, scale.x(highlight.to) - left)}px` }}
+      onPointerDown={onPointerDown}
+    />
+  );
+}
+
+/**
+ * Playback navigation marks drawn over the clip lane: a point is one marker, a period is a band with two edge
+ * markers. They move like the other regions: drag a marker or the band, or nudge a focused marker with the arrows.
+ */
 export function TimelineHighlights({
   highlights,
   selectedId,
@@ -44,6 +166,7 @@ export function TimelineHighlights({
   width,
   pad,
   dispatch,
+  onMove,
 }: {
   highlights?: readonly ReplayHighlight[] | undefined;
   selectedId: string | undefined;
@@ -51,56 +174,26 @@ export function TimelineHighlights({
   width: number;
   pad: number;
   dispatch: (action: EditorAction) => void;
+  onMove: OnMove;
 }) {
-  const player = usePlayer();
   const list = highlights ?? NO_HIGHLIGHTS;
   const offsets = useMarkerOffsets(list, x, width, pad);
   return list.map((highlight) => {
     const selected = selectedId === highlight.id;
-    const ats = markerAts(highlight);
-    const start = ats[0] ?? 0;
-    const end = ats.at(-1) ?? start;
-    const title = highlightTitle(highlight);
     return (
       <span key={highlight.id} className="tl-highlight" data-kind={highlight.kind} data-selected={selected || undefined}>
-        {highlight.kind === 'period' ? (
-          <span
-            className="tl-highlight-band"
-            aria-hidden="true"
-            style={{ left: `${x(start)}px`, width: `${Math.max(3, x(end) - x(start))}px` }}
+        {highlight.kind === 'period' ? <HighlightBand highlight={highlight} dispatch={dispatch} onMove={onMove} /> : null}
+        {markerAts(highlight).map((_, index) => (
+          <HighlightMarker
+            key={`${highlight.id}-${highlightEdge(highlight.kind, index) ?? 'point'}`}
+            highlight={highlight}
+            index={index}
+            offset={offsets.get(highlight.id)?.[index] ?? 0}
+            selected={selected}
+            dispatch={dispatch}
+            onMove={onMove}
           />
-        ) : null}
-        {ats.map((at, index) => {
-          const edge = highlightEdge(highlight.kind, index);
-          return (
-            <button
-              key={`${highlight.id}-${edge ?? 'point'}`}
-              type="button"
-              className="tl-highlight-marker"
-              data-kind={highlight.kind}
-              data-edge={edge}
-              data-testid="timeline-highlight"
-              data-highlight-id={highlight.id}
-              aria-label={`${title} at ${formatClock(at)}`}
-              aria-pressed={selected}
-              title={`${title} · ${formatClock(at)}`}
-              style={cssVars({ '--target-offset': `${offsets.get(highlight.id)?.[index] ?? 0}px` }, { left: `${x(at)}px` })}
-              onFocus={() => {
-                dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
-              }}
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={() => {
-                dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
-                player.seek(at);
-              }}
-            >
-              <span className="tl-highlight-glyph" aria-hidden="true" />
-              {selected && highlight.label && (highlight.kind === 'point' || index === 0) ? (
-                <span className="tl-highlight-label">{highlight.label}</span>
-              ) : null}
-            </button>
-          );
-        })}
+        ))}
       </span>
     );
   });

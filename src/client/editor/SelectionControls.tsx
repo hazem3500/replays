@@ -1,64 +1,30 @@
 import { useState } from 'react';
-import { ChevronDownIcon } from 'lucide-react';
 
-import { Button } from '@/components/ui/button.tsx';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu.tsx';
 import { RadioCard, RadioGroup } from '@/components/ui/radio-group.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
-import { BLUR_STYLES, type BlurStyle, SPEED_RATES, ZOOM_SCALES } from '../../shared/effects.ts';
-import { effectList, type EffectKind, removeHighlight, type Selection, updateEffect, updateHighlight } from './state.ts';
+import { BLUR_STYLES, type BlurStyle, MAX_CAPTION } from '../../shared/effects.ts';
+import { SpeedChoice, ZoomLevel } from './EffectSettings.tsx';
+import { InspectorSection } from './InspectorParts.tsx';
+import { type ChangeEdits, effectList, type EffectKind, type Selection, updateEffect, updateHighlight } from './state.ts';
+import { TimingSection } from './TimingFields.tsx';
 
 type EffectSelection = { kind: EffectKind; id: string };
 
 const EFFECT_KINDS: readonly string[] = ['zoom', 'speed', 'blur', 'caption'];
 const isEffectSelection = (selection: Selection): selection is EffectSelection => !!selection && EFFECT_KINDS.includes(selection.kind);
 
-/** A zoom's scale or a speed-up's rate: the one number its inspector edits. */
-function settingOf(region: object) {
-  if ('scale' in region && typeof region.scale === 'number') return region.scale;
-  if ('rate' in region && typeof region.rate === 'number') return region.rate;
-  return;
-}
-
-export function EffectControls({
-  edits,
-  selection,
-  change,
-  mobile = false,
-}: {
-  mobile?: boolean;
-  edits: ReplayEdits;
-  selection: Selection;
-  change: (edits: ReplayEdits, select?: Selection) => void;
-}) {
+/** The selected effect's own setting: zoom level, speed, how a blur hides, or a caption's text. */
+export function EffectControls({ edits, selection, change }: { edits: ReplayEdits; selection: Selection; change: ChangeEdits }) {
   if (!isEffectSelection(selection)) return null;
   const { kind, id } = selection;
   const region = effectList(edits, kind).find((item) => item.id === id);
   if (!region) return null;
-  if (kind === 'caption') {
-    if (!('text' in region)) return null;
-    const onText = (text: string) => change(updateEffect(edits, kind, id, { text }), selection);
-    return <CaptionField key={id} id="selection-caption-text" text={region.text} onChange={onText} />;
-  }
-  if (kind === 'blur') {
-    const style = 'style' in region && region.style === 'redact' ? 'redact' : 'blur';
-    return <BlurStyleChoice current={style} onPick={(next) => change(updateEffect(edits, kind, id, { style: next }), selection)} />;
-  }
-  const current = settingOf(region);
-  if (current === undefined) return null;
-  const field = kind === 'zoom' ? 'scale' : 'rate';
-  const onPick = (value: number) => change(updateEffect(edits, kind, id, { [field]: value }), selection);
-  return mobile ? (
-    <EffectSettingMenu kind={kind} current={current} onPick={onPick} />
-  ) : (
-    <EffectSettingChoice kind={kind} current={current} onPick={onPick} />
-  );
+  const update = (patch: Record<string, unknown>, merge = false) => change(updateEffect(edits, kind, id, patch), selection, merge);
+  if ('text' in region) return <CaptionField key={id} text={region.text} onChange={(text) => update({ text })} />;
+  if ('scale' in region) return <ZoomLevel value={region.scale} onChange={(scale, merge) => update({ scale }, merge)} />;
+  if ('rate' in region) return <SpeedChoice value={region.rate} length={region.to - region.from} onChange={(rate) => update({ rate })} />;
+  const style = 'style' in region && region.style === 'redact' ? 'redact' : 'blur';
+  return <BlurStyleChoice current={style} onPick={(next) => update({ style: next })} />;
 }
 
 const BLUR_STYLE_COPY: Record<BlurStyle, { label: string; hint: string }> = {
@@ -69,10 +35,7 @@ const BLUR_STYLE_COPY: Record<BlurStyle, { label: string; hint: string }> = {
 /** How the box hides what is under it, with the choice's effect spelled out under the control. */
 function BlurStyleChoice({ current, onPick }: { current: BlurStyle; onPick: (style: BlurStyle) => void }) {
   return (
-    <div className="inspector-field">
-      <span className="inspector-field-label" id="inspector-blur-label">
-        Hide with
-      </span>
+    <InspectorSection label="Hide with" labelId="inspector-blur-label" hint={BLUR_STYLE_COPY[current].hint} hintId="inspector-blur-hint">
       <RadioGroup
         className="ui-segmented"
         value={current}
@@ -89,143 +52,73 @@ function BlurStyleChoice({ current, onPick }: { current: BlurStyle; onPick: (sty
           </RadioCard>
         ))}
       </RadioGroup>
-      <small className="inspector-field-hint" id="inspector-blur-hint">
-        {BLUR_STYLE_COPY[current].hint}
-      </small>
-    </div>
-  );
-}
-
-function settingOptions(kind: 'zoom' | 'speed') {
-  return kind === 'zoom'
-    ? ZOOM_SCALES.map((value) => ({ value, label: `${value}× zoom` }))
-    : SPEED_RATES.map((value) => ({ value, label: `${value}× faster` }));
-}
-
-/** The phone's compact setting: a menu from the property panel. */
-function EffectSettingMenu({ kind, current, onPick }: { kind: 'zoom' | 'speed'; current: number; onPick: (value: number) => void }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-effect-trigger" data-testid={`${kind}-setting`} />}>
-        {kind === 'zoom' ? `Zoom ${current}×` : `Speed ${current}×`}
-        <ChevronDownIcon aria-hidden="true" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="editor-mobile-effect-menu w-auto min-w-36">
-        <DropdownMenuRadioGroup value={String(current)} onValueChange={(value) => onPick(Number(value))}>
-          {settingOptions(kind).map((option) => (
-            <DropdownMenuRadioItem key={option.value} value={String(option.value)}>
-              {option.label}
-            </DropdownMenuRadioItem>
-          ))}
-        </DropdownMenuRadioGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
-
-/** The inspector's setting: every choice visible at once, the current one pressed. */
-function EffectSettingChoice({ kind, current, onPick }: { kind: 'zoom' | 'speed'; current: number; onPick: (value: number) => void }) {
-  const label = kind === 'zoom' ? 'Zoom level' : 'Speed';
-  return (
-    <div className="inspector-field">
-      <span className="inspector-field-label" id={`inspector-${kind}-label`}>
-        {label}
-      </span>
-      <RadioGroup
-        className="ui-segmented"
-        value={current}
-        aria-labelledby={`inspector-${kind}-label`}
-        data-testid={`${kind}-setting`}
-        onValueChange={(value) => onPick(Number(value))}
-      >
-        {settingOptions(kind).map((option) => (
-          <RadioCard key={option.value} value={option.value} className="ui-segment" aria-label={option.label}>
-            {option.value}×
-          </RadioCard>
-        ))}
-      </RadioGroup>
-    </div>
+    </InspectorSection>
   );
 }
 
 /** Keep an unfinished empty draft local; undo/redo still replace the visible saved text. */
-function CaptionField({ id, text, onChange }: { id: string; text: string; onChange: (text: string) => void }) {
+function CaptionField({ text, onChange }: { text: string; onChange: (text: string) => void }) {
   const [draft, setDraft] = useState({ saved: text, value: text });
   if (draft.saved !== text) setDraft({ saved: text, value: text });
+  const value = draft.saved === text ? draft.value : text;
   return (
-    <textarea
-      id={id}
-      className="editor-caption-field"
-      rows={3}
-      value={draft.saved === text ? draft.value : text}
-      maxLength={160}
-      aria-label="Caption text"
-      data-testid="caption-text"
-      onChange={(event) => {
-        const value = event.currentTarget.value;
-        setDraft({ saved: text, value });
-        if (value.trim()) onChange(value);
-      }}
-      onBlur={() => {
-        if (!draft.value.trim()) setDraft({ saved: text, value: text });
-      }}
-    />
-  );
-}
-
-function HighlightTimeInput({
-  label,
-  value,
-  onChange,
-  max,
-}: {
-  label: string;
-  value: number;
-  onChange: (time: number) => void;
-  max: number;
-}) {
-  return (
-    <label className="editor-highlight-time">
-      <span>{label} (s)</span>
-      <input
-        type="number"
-        min="0"
-        max={(max / 1000).toFixed(1)}
-        step="0.1"
-        value={(value / 1000).toFixed(1)}
-        aria-label={`${label} in seconds`}
+    <InspectorSection label={<label htmlFor="selection-caption-text">Text</label>} value={`${value.length} of ${MAX_CAPTION}`}>
+      <textarea
+        id="selection-caption-text"
+        className="inspector-textarea"
+        rows={3}
+        value={value}
+        maxLength={MAX_CAPTION}
+        aria-label="Caption text"
+        data-testid="caption-text"
         onChange={(event) => {
-          const seconds = event.currentTarget.valueAsNumber;
-          if (Number.isFinite(seconds)) onChange(Math.round(seconds * 1000));
+          const next = event.currentTarget.value;
+          setDraft({ saved: text, value: next });
+          if (next.trim()) onChange(next);
+        }}
+        onBlur={() => {
+          if (!draft.value.trim()) setDraft({ saved: text, value: text });
         }}
       />
-    </label>
+    </InspectorSection>
   );
 }
 
+/** A highlight's label and when it is: the same sections as every other object; removing it is the footer's job. */
 export function HighlightControls({
   edits,
   selection,
   duration,
   change,
-  afterRemove,
 }: {
-  afterRemove?: () => void;
   edits: ReplayEdits;
   selection: Selection;
   duration: number;
-  change: (edits: ReplayEdits, select?: Selection) => void;
+  change: ChangeEdits;
 }) {
   if (selection?.kind !== 'highlight') return null;
   const highlight = edits.highlights?.find((item) => item.id === selection.id);
   if (!highlight) return null;
   const update = (patch: Parameters<typeof updateHighlight>[2]) => change(updateHighlight(edits, highlight.id, patch, duration), selection);
+  const fields =
+    highlight.kind === 'point'
+      ? [{ label: 'Time', value: highlight.at, max: duration, onChange: (at: number) => update({ kind: 'point', at }) }]
+      : [
+          {
+            label: 'From',
+            value: highlight.from,
+            max: Math.max(0, highlight.to - 100),
+            onChange: (from: number) => update({ kind: 'period', from }),
+          },
+          { label: 'To', value: highlight.to, max: duration, onChange: (to: number) => update({ kind: 'period', to }) },
+        ];
   return (
-    <div className="editor-highlight-controls" role="group" aria-label="Selected highlight">
-      <label className="editor-highlight-label">
-        <span>Label</span>
+    <>
+      <InspectorSection label={<label htmlFor="inspector-highlight-label">Label</label>}>
         <input
+          id="inspector-highlight-label"
           key={highlight.id}
+          className="inspector-input"
           type="text"
           maxLength={120}
           value={highlight.label ?? ''}
@@ -233,31 +126,12 @@ export function HighlightControls({
           placeholder="Add a label"
           onChange={(event) => update({ label: event.currentTarget.value })}
         />
-      </label>
-      {highlight.kind === 'point' ? (
-        <HighlightTimeInput label="Time" value={highlight.at} onChange={(at) => update({ kind: 'point', at })} max={duration} />
-      ) : (
-        <>
-          <HighlightTimeInput
-            label="From"
-            value={highlight.from}
-            onChange={(from) => update({ kind: 'period', from })}
-            max={Math.max(0, highlight.to - 100)}
-          />
-          <HighlightTimeInput label="To" value={highlight.to} onChange={(to) => update({ kind: 'period', to })} max={duration} />
-        </>
-      )}
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => {
-          change(removeHighlight(edits, highlight.id));
-          afterRemove?.();
-        }}
-        data-testid="remove-highlight"
-      >
-        Remove
-      </Button>
-    </div>
+      </InspectorSection>
+      <TimingSection
+        fields={fields}
+        span={highlight.kind === 'period' ? highlight.to - highlight.from : undefined}
+        hint="Or drag it on the timeline"
+      />
+    </>
   );
 }

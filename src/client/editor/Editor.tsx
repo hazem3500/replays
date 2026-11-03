@@ -69,6 +69,7 @@ import {
   trimOf,
   waitSuggestions,
   addEffect,
+  noRoomFor,
   type EffectKind,
   effectList,
   NEW_EFFECT_MS,
@@ -201,8 +202,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
     player.playPause();
   }, [player]);
 
-  const change = useCallback((next: ReplayEdits, select?: Selection) => {
-    dispatch({ type: 'change', edits: next, ...(select ? { select } : {}) });
+  const change = useCallback((next: ReplayEdits, select?: Selection, merge = false) => {
+    dispatch({ type: 'change', edits: next, ...(select ? { select } : {}), ...(merge ? { merge } : {}) });
   }, []);
 
   /* ---------- Saving: automatic, quiet ---------- */
@@ -395,7 +396,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
           ? addEffect(present, kind, range.from, range.to, duration)
           : addEffect(present, kind, time, time + NEW_EFFECT_MS, duration);
         if (added) change(added.edits, { kind, id: added.id });
-        else say(kind === 'speed' ? 'Already sped up here' : 'No room here for another one');
+        else say(noRoomFor(kind));
       },
     }),
     // oxlint-disable-next-line react-hooks/exhaustive-deps -- applySuggestions reads only refs
@@ -724,19 +725,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       placingBlur={Boolean(blurPlacement)}
       panels={{
         cursorInspector,
-        effectControls: <EffectControls mobile edits={edits} selection={selection} change={change} />,
-        highlightControls: (
-          <HighlightControls
-            edits={edits}
-            selection={selection}
-            duration={duration}
-            change={change}
-            afterRemove={() => {
-              mobileReturnFocus.current = shell.current?.querySelector<HTMLElement>('.phone-playhead') ?? null;
-              finishMobileObject();
-            }}
-          />
-        ),
+        effectControls: <EffectControls edits={edits} selection={selection} change={change} />,
+        highlightControls: <HighlightControls edits={edits} selection={selection} duration={duration} change={change} />,
       }}
     />
   );

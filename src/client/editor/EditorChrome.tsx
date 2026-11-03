@@ -9,7 +9,7 @@ import { IS_MAC, MOD } from './editor-tools.ts';
 import { EditorInspector } from './EditorInspector.tsx';
 import type { SelectionCommands } from './SelectionInspector.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
-import { canRedo, canUndo, type EditorAction, type EditorState, type Selection } from './state.ts';
+import { canRedo, canUndo, type EditorAction, type ChangeEdits, type EditorState, type Selection } from './state.ts';
 
 /** Desktop undo and redo, with their shortcuts in the tooltips. */
 export function EditHistory({ state, dispatch }: { state: EditorState; dispatch: (action: EditorAction) => void }) {
@@ -60,7 +60,7 @@ export function InspectorAside({
   edits: ReplayEdits;
   selection: Selection;
   duration: number;
-  change: (edits: ReplayEdits, selection?: Selection) => void;
+  change: ChangeEdits;
   commands: SelectionCommands;
   replay: ReactNode;
 }) {

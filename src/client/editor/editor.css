@@ -18,11 +18,6 @@
   .editor-add-effect.editor-add-effect { gap: 5px; padding: 0 8px; color: var(--text-secondary); }
   .editor-add-effect svg { width: 14px; height: 14px; }
   .editor-add-effect svg:last-child { width: 11px; }
-  .editor-highlight-controls { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; padding: 0; border: 0; }
-  .editor-highlight-label, .editor-highlight-time { display: grid; gap: 2px; color: var(--text-tertiary); font-size: 9px; line-height: 1.1; }
-  .editor-highlight-label input, .editor-highlight-time input { height: 28px; min-width: 64px; padding: 0 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); outline: none; }
-  .editor-highlight-label input { width: 112px; }
-  .editor-highlight-label input:focus-visible, .editor-highlight-time input:focus-visible { border-color: var(--focus); box-shadow: 0 0 0 2px color-mix(in srgb, var(--focus) 30%, transparent); }
 
   .editor-stage .player-stage { cursor: default; }
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
@@ -51,7 +46,7 @@
   .editor-conflict { display: flex; align-items: center; gap: 6px; padding: 4px 0 8px; font-size: var(--text-xs); color: var(--text-secondary); }
 
   /* ---------- Timeline ---------- */
-  .timeline { --gutter: 56px; flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding-bottom: 6px; }
+  .timeline { --gutter: 56px; --tl-inset: 4px; flex: 1; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding: var(--tl-inset) var(--tl-inset) 6px; }
   .tl-ruler-row, .tl-lane { display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr); }
   .tl-gutter-spacer { display: block; }
   .tl-ruler-row { flex: none; }
@@ -111,16 +106,29 @@
   .tl-region-edge-mark { position: absolute; top: 25%; bottom: 25%; left: 5px; width: 2px; border-radius: 1px; background: var(--accent); opacity: 0; }
   .tl-region:focus-within .tl-region-edge-mark, .tl-region[data-selected] .tl-region-edge-mark { opacity: 1; }
   @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge-mark { opacity: 1; } }
-  /* × inside the region's right end (not over the lane above). */
-  .tl-region-remove { position: absolute; z-index: 2; top: 50%; right: 4px; margin-top: -9px; width: 18px; height: 18px; display: grid; place-items: center; padding: 0; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); cursor: pointer; opacity: 0; pointer-events: none; }
-  .tl-region-remove svg { width: 10px; height: 10px; stroke-width: 2.4; }
-  .tl-region-remove:hover { color: var(--text); background: var(--surface-hover); }
+  /*
+   * Remove: a borderless round ghost inside the region's right end, clear of the 6 px edge grab zone, so it reads
+   * as part of the region rather than a form control. 18 px visible, 24 px to hit. It takes the region's text colour,
+   * so it follows the selected accent ring without a colour of its own.
+   */
+  .tl-region-remove { --remove-size: 18px; position: absolute; z-index: 2; top: 50%; right: 9px; width: var(--remove-size); height: var(--remove-size); display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: color-mix(in srgb, currentColor 72%, transparent); cursor: pointer; opacity: 0; pointer-events: none; translate: 0 -50%; outline: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), scale var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
+  .tl-region-remove::before { content: ''; position: absolute; inset: calc((var(--remove-size) - 24px) / 2); border-radius: 50%; }
+  .tl-region-remove svg { display: block; width: 12px; height: 12px; }
+  .tl-region { color: var(--text-secondary); }
+  .tl-region[data-selected] { color: var(--text); }
+  .tl-region-remove:hover, .tl-region-remove:focus-visible { background: color-mix(in srgb, currentColor 14%, transparent); color: currentColor; }
+  .tl-region-remove:focus-visible { box-shadow: 0 0 0 2px var(--focus); }
+  .tl-region-remove:active { background: color-mix(in srgb, currentColor 22%, transparent); scale: 0.88; }
+  @media (prefers-reduced-motion: reduce) { .tl-region-remove { transition: none; } .tl-region-remove:active { scale: none; } }
   .tl-region:focus-within .tl-region-remove, .tl-region[data-selected] .tl-region-remove { opacity: 1; pointer-events: auto; }
   @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-remove { opacity: 1; pointer-events: auto; } }
   /* Short regions keep their label and leave removing to Backspace (the × would crowd the label out). */
   .tl-region[data-compact] .tl-region-remove { display: none; }
-  /* Reserve the remove affordance's space at rest too, so labels never shift on hover or selection. */
-  .tl-region[data-kind]:not([data-compact]) .tl-region-body { padding-right: 26px; }
+  /* invariant: equal room on both sides, reserved at rest, so a centred label never shifts when × appears. */
+  .tl-region[data-kind]:not([data-compact]) .tl-region-body { padding-inline: 30px; }
+  /* Captions read left to right in a thinner block: a smaller ×, and room reserved only on its side. */
+  .tl-region[data-kind="caption"] .tl-region-remove { --remove-size: 14px; right: 7px; }
+  .tl-region[data-kind="caption"]:not([data-compact]) .tl-region-body { padding-inline: 8px 26px; }
 
   /* Effect regions: calm fills that tell the lanes apart without colour noise; the selected one takes the accent. */
   .tl-region[data-kind="zoom"] .tl-region-body { background: color-mix(in srgb, var(--accent) 16%, var(--surface-raised)); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, var(--line-strong)); }
@@ -133,10 +141,6 @@
   .tl-region[data-kind] .tl-region-body:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 
   /* The selected effect's setting, in the control row. */
-  .editor-effect-trigger.editor-effect-trigger { gap: 4px; margin-right: 6px; color: var(--text); font-variant-numeric: tabular-nums; }
-  .editor-effect-trigger svg { width: 12px; height: 12px; opacity: 0.7; }
-  .editor-caption-field { flex: 1 1 160px; min-width: 120px; max-width: 360px; height: 26px; margin-right: 10px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); outline: none; }
-  .editor-caption-field:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--focus); }
 
   /* Blur boxes on the preview, over the recorded frame (PlayerStage sets --frame-*). The blur is drawn underneath. */
   .blur-overlay { position: absolute; z-index: 4; left: var(--frame-x, 0); top: calc(100% - var(--frame-bottom, 0px) - var(--frame-h, 100%)); width: var(--frame-w, 100%); height: var(--frame-h, 100%); pointer-events: none; }
@@ -173,8 +177,9 @@
 
   /* Highlight annotations mark the original edit timeline. They are navigation controls and sit above cut shading. */
   .tl-highlight { position: absolute; inset: 0; pointer-events: none; }
-  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); pointer-events: none; }
-  .tl-highlight-marker { position: absolute; z-index: 7; top: 50%; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: pointer; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
+  .tl-highlight-band { position: absolute; z-index: 4; top: 4px; bottom: 4px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 50%, transparent); cursor: grab; pointer-events: auto; touch-action: none; }
+  .tl-highlight[data-selected] .tl-highlight-band { box-shadow: inset 0 0 0 1.5px var(--accent); }
+  .tl-highlight-marker { position: absolute; z-index: 7; top: 50%; display: grid; place-items: center; width: 24px; height: 32px; padding: 0; border: 0; border-radius: 6px; background: transparent; color: var(--accent); cursor: ew-resize; touch-action: none; pointer-events: auto; transform: translate(-50%, -50%); -webkit-tap-highlight-color: transparent; }
   .tl-highlight-glyph { width: 10px; height: 10px; border: 2px solid var(--surface-raised); background: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .tl-highlight-marker[data-kind="point"] .tl-highlight-glyph { border-radius: 2px; rotate: 45deg; }
   .tl-highlight-marker[data-kind="period"] .tl-highlight-glyph { width: 9px; height: 9px; border-radius: 50%; }
@@ -185,16 +190,17 @@
   .tl-highlight-label { position: absolute; bottom: calc(100% - 2px); left: 50%; max-width: 180px; overflow: hidden; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; transform: translateX(-50%); }
   @media (hover: hover) and (pointer: fine) {
     .tl-highlight-marker:hover .tl-highlight-glyph { background-color: var(--text); }
-    .tl-highlight:has(.tl-highlight-marker:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
+    .tl-highlight:has(.tl-highlight-marker:hover, .tl-highlight-band:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
   }
 
   /* The playhead: one accent line through every lane, its head on the ruler. */
-  .tl-playhead-layer { position: absolute; top: 0; bottom: 0; left: var(--gutter); right: 0; pointer-events: none; }
+  /* invariant: the layer starts where the track column does (inset plus gutter), or the line drifts off every tick and marker. */
+  .tl-playhead-layer { position: absolute; top: 0; bottom: 0; left: calc(var(--tl-inset) + var(--gutter)); right: var(--tl-inset); pointer-events: none; }
   .tl-playhead { position: absolute; z-index: 5; top: 0; bottom: -4px; left: -1px; width: 2px; background: var(--accent); will-change: transform; }
   .tl-playhead-knob { position: absolute; top: 0; left: -6px; width: 14px; height: 14px; border-radius: 4px 4px 7px 7px; background: var(--accent); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); cursor: ew-resize; pointer-events: auto; touch-action: none; }
   .timeline:not([data-ready]) .tl-playhead { opacity: 0; }
 
-  .editor-shell :is(.tl-track, .tl-region-body, .tl-region-remove, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer) { transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
+  .editor-shell :is(.tl-track, .tl-region-body, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer) { transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
   .editor-shell > .inspector-resizer::after { scale: 1; transition: background-color 180ms ease-out; }
   .editor-shell > .inspector-resizer:is(:hover, :active, :focus-visible)::after { scale: 1; transition-delay: 0ms; }
   [data-timeline-dragging], [data-timeline-dragging] * { cursor: grabbing !important; }
@@ -250,21 +256,7 @@
   .editor-context-panel { grid-area: properties; min-width: 0; padding: 8px 4px 4px; border-top: 1px solid var(--line); }
   .editor-context-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
   .editor-context-panel h2 { margin: 0; color: var(--text); font-size: var(--text-sm); font-weight: 600; }
-  .editor-context-panel p, .editor-object-actions small { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
-  .editor-caption-label { display: block; margin-bottom: 6px; color: var(--text-secondary); font-size: var(--text-xs); }
-  .editor-shell[data-mobile] .editor-caption-field { box-sizing: border-box; width: 100%; min-width: 0; max-width: none; height: 80px; min-height: 80px; margin: 0; padding: 8px 10px; resize: vertical; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface-raised); color: var(--text); font: inherit; font-size: 16px; line-height: 1.5; }
-  .editor-object-timing { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 8px 0; }
-  .editor-object-time { display: grid; gap: 3px; min-width: 0; color: var(--text-secondary); font-size: var(--text-xs); }
-  .editor-object-time-value { position: relative; display: flex; align-items: center; min-width: 0; }
-  .editor-object-time-unit { position: absolute; right: 12px; color: var(--text-secondary); font-size: var(--text-xs); pointer-events: none; }
-  .editor-object-time input { box-sizing: border-box; width: 100%; min-width: 0; height: 44px; padding: 8px 28px 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface-raised); color: var(--text); font-size: 16px; line-height: 1.25; font-variant-numeric: tabular-nums; }
-  .editor-object-time input { appearance: textfield; -moz-appearance: textfield; }
-  .editor-object-time input::-webkit-inner-spin-button, .editor-object-time input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  .editor-object-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
-  .editor-shell[data-mobile] .editor-highlight-controls { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; margin: 0; }
-  .editor-shell[data-mobile] .editor-highlight-label { grid-column: 1 / -1; }
-  .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) { min-width: 0; font-size: var(--text-xs); line-height: 1.5; }
-  .editor-shell[data-mobile] :is(.editor-highlight-label, .editor-highlight-time) input { box-sizing: border-box; width: 100%; min-width: 0; font-size: 16px; }
+  .editor-context-panel > p { margin: 0; color: var(--text-secondary); font-size: var(--text-xs); line-height: 1.5; }
   .editor-shell[data-mobile] .editor-setting-divider { display: none; }
   .editor-shell[data-mobile] .editor-conflict, .editor-shell[data-mobile] .editor-suggest { grid-area: status; flex-wrap: wrap; margin: 4px 10px 0; white-space: normal; font-size: var(--text-xs); }
   .editor-shell.app-shell[data-mobile] .editor-dock:has(.editor-operation-status) { grid-template-areas: 'status' 'timeline' 'note' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto auto; }
@@ -272,7 +264,7 @@
   .editor-shell[data-mobile] :is(button, summary, input:not([type="checkbox"]), [role="switch"], [role="slider"]) { min-height: 44px; }
   .editor-shell[data-mobile] :is(button, summary, [role="switch"]) { min-width: 44px; }
   .editor-shell[data-mobile] :is(button, summary, input, textarea, [role="slider"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-  .editor-mobile-effect-menu [role="menuitemradio"], body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
+  body:has(.editor-shell[data-mobile]) [data-testid="editor-export-status"] button { min-height: 44px; min-width: 44px; }
   @media (max-height: 520px) and (min-width: 721px) {
     .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr) minmax(320px, 48%); grid-template-rows: auto minmax(0, 1fr); }
     .editor-shell[data-mobile] > .editor-mobile-header { grid-column: 1 / -1; }

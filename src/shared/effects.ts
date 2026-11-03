@@ -12,8 +12,11 @@
 
 import { normalizeCursor, type ReplayCursorSettings } from './cursor.ts';
 
-/** Speed-up rates a range can play at. */
-export const SPEED_RATES = [2, 4, 8] as const;
+/**
+ * Speed-up rates a range can play at. invariant: each is also a player speed (render-variant.ts PLAYBACK_SPEEDS),
+ * because the editor previews a range by playing it at its rate. 1.5 joined later; older lists hold only 2, 4 and 8.
+ */
+export const SPEED_RATES = [1.5, 2, 4, 8] as const;
 export type SpeedRate = (typeof SPEED_RATES)[number];
 
 /** A stretch of the original replay played faster. */
@@ -64,6 +67,7 @@ export interface ReplayZoomRegion {
   y?: number;
 }
 
+/** Quick marks on the zoom slider; any scale from MIN_ZOOM_SCALE to MAX_ZOOM_SCALE is valid. */
 export const ZOOM_SCALES = [1.4, 1.8, 2.2] as const;
 export const DEFAULT_ZOOM_SCALE = 1.8;
 export const MIN_ZOOM_SCALE = 1.1;

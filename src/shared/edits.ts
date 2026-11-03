@@ -1,6 +1,7 @@
 import { normalizeCursor } from './cursor.ts';
 import { type EditTimeline, editTimeline } from './edit-timeline.ts';
 import { NO_EFFECTS, type PlaybackEffects, playbackEffects } from './effects.ts';
+import { separateSpans } from './effect-room.ts';
 import type { ReplayBundle, ReplayConsoleEntry, ReplayNetworkEntry, ReplayPerformanceEntry, ReplayStep } from './replay.ts';
 import {
   changesTime,
@@ -114,9 +115,10 @@ function effectLists(edits: ReplayEdits): Pick<ReplayEdits, 'zooms' | 'speeds' |
       }))
       .sort(byTime);
   if (edits.captions?.length)
-    lists.captions = edits.captions
-      .map((caption) => ({ id: caption.id, from: round(caption.from), to: round(caption.to), text: caption.text }))
-      .sort(byTime);
+    // invariant: captions take turns; a list saved before that rule is separated here, on load and on every save.
+    lists.captions = separateSpans(
+      edits.captions.map((caption) => ({ id: caption.id, from: round(caption.from), to: round(caption.to), text: caption.text })),
+    );
   return lists;
 }
 

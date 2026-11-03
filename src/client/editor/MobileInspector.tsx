@@ -13,7 +13,7 @@ import {
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock } from '../../shared/replay.ts';
 import { useFocusWhen } from '../hooks/use-focus-when.ts';
-import { effectList, type Selection } from './state.ts';
+import { type ChangeEdits, effectList, type Selection } from './state.ts';
 import { objectTitle, SelectionBody, selectionSpan, type SelectionCommands, type SelectionPanels } from './SelectionInspector.tsx';
 
 function effectLabel(kind: 'zoom' | 'speed' | 'blur' | 'caption', text: string) {
@@ -144,7 +144,7 @@ export function MobileInspector({
   edits: ReplayEdits;
   selection: Selection;
   duration: number;
-  change: (edits: ReplayEdits, selection?: Selection) => void;
+  change: ChangeEdits;
   commands: SelectionCommands;
   panels: SelectionPanels;
   cursorOpen: boolean;

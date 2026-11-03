@@ -6,7 +6,8 @@ import { formatClock } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { addEffect, type EditorAction, type EffectKind, effectList, moveEffect, removeEffect, type Selection } from './state.ts';
 import { LANE_GLYPHS } from './lanes.tsx';
-import { Lane, RegionBlock, startDrag, useTimelineScale } from './Timeline.tsx';
+import { startDrag, useTimelineScale } from './timeline-drag.ts';
+import { Lane, RegionBlock } from './TimelineRegion.tsx';
 
 /** Each lane's name (the gutter's tooltip) and the hint an empty lane shows. */
 const LANE_TEXT: Record<EffectKind, { name: string; empty: string }> = {

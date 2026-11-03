@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Edits: speed-ups can also play at 1.5×, and captions no longer overlap (an overlapping saved list is separated on save). Older edit lists still load unchanged. The editor sets zoom with a continuous slider and its inspectors share one layout.
+
 - Added pure network, performance, waterfall and error builders at `/viewer/diagnostics`, with packed browser-consumer checks for optional React and recorder compositions.
 
 - Added confirmed bulk trash for readable, delete-authorized uploads with protected keeps, read-only sample preservation, bounded concurrency and count-only partial results.
