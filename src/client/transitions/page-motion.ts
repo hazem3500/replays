@@ -1,5 +1,3 @@
-import { spring } from 'motion';
-
 import type { AppRouter } from '../router.tsx';
 import { type Page, pageOf, pageOfPublicPath } from '../routing/page-key.ts';
 import { preparePage } from '../routing/pages.ts';
@@ -11,6 +9,7 @@ import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from
 import { stopPictureWait, waitForPicture } from './wait-for-picture.ts';
 import { createCompositorHero } from './compositor-hero.ts';
 import { createRecordingTransition } from './recording-transition.ts';
+import { heroCrossfade, heroSpring } from './hero-spring.ts';
 
 /* why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
  * the Query cache, the loaded viewer code and the index itself (kept mounted but hidden, routing/KeptIndex.tsx)
@@ -110,10 +109,10 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
         .add('[style*="view-transition-name: vt-page-hero"]')
         .group(false)
         .crop(true)
-        .layout({ type: spring, duration: plan.direction === 'to-index' ? 0.46 : 0.52, bounce: 0.24 })
-        // why: the complete stack stays primary in flight; a flat old snapshot must not fill its transparent gaps on Back.
-        .old({ opacity: returning ? [1, 0] : [1, 1] }, { duration: returning ? 0.08 : 0.52 })
-        .new({ opacity: [0, 1] }, { delay: returning ? 0 : 0.4, duration: returning ? 0.08 : 0.12 })
+        .layout(heroSpring(returning))
+        // why: the source stays opaque under the destination's fade, so the picture never dips or shows the page behind it.
+        .old({ opacity: returning ? [1, 0] : [1, 1] }, heroCrossfade(returning))
+        .new({ opacity: [0, 1] }, heroCrossfade(returning))
         .exit({ opacity: [1, 0] }, { duration: 0.12 })
         .enter({ opacity: [0, 1] });
     },

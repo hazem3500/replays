@@ -1,6 +1,7 @@
-import { spring, type animateView } from 'motion';
+import type { animateView } from 'motion';
 
 import { createCompositorHero } from './compositor-hero.ts';
+import { heroCrossfade, heroSpring } from './hero-spring.ts';
 import { cardPictures, namePicture, viewerPictures } from './shared-elements.ts';
 
 function recordingName(id: string) {
@@ -47,9 +48,9 @@ export function createRecordingTransition(card: HTMLElement | undefined, returni
         .add('[style*="view-transition-name: vt-page-sheet-"]')
         .group(false)
         .crop(true)
-        .layout({ type: spring, duration: returning ? 0.46 : 0.52, bounce: 0.24 })
-        .old({ opacity: [1, 0] }, { duration: 0.28 })
-        .new({ opacity: [0, 1] }, { duration: 0.28 })
+        .layout(heroSpring(returning))
+        .old({ opacity: [1, 0] }, heroCrossfade(returning))
+        .new({ opacity: [0, 1] }, heroCrossfade(returning))
         .exit({ opacity: [1, 0] }, { duration: 0.12 });
     },
     prepare() {
