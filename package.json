@@ -51,6 +51,7 @@
     "quality:test": "node --test scripts/build-lib.test.mjs scripts/quality-tooling.test.mjs scripts/bundle-budgets.test.mjs scripts/mutation-report.test.mjs scripts/quality-report.test.mjs",
     "check:quick": "vp run cached:lint && vp run cached:format && vp run cached:types && pnpm test:changed",
     "test:changed": "vp test run --config vitest.config.ts --changed=origin/main --passWithNoTests",
+    "test:affected": "vp test run --config vitest.config.ts --changed=${TEST_CHANGED_SINCE:?set TEST_CHANGED_SINCE to the base commit} --passWithNoTests",
     "test:watch": "vp test --config vitest.config.ts",
     "typecheck:watch": "tsrs --fast false --noEmit --watch",
     "lint:ratchet": "node scripts/lint-ratchet.mjs",

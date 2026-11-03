@@ -41,6 +41,20 @@
         "!**/playwright.config.ts"
       ]
     },
+    "//#test:affected": {
+      "env": ["TEST_CHANGED_SINCE"],
+      "passThroughEnv": ["CHROME_PATH", "CHROMIUM_NO_SANDBOX"],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "examples/**",
+        "!**/*.md",
+        "!docs/screenshots/**",
+        "!.github/**",
+        "!LICENSE",
+        "!e2e/**",
+        "!**/playwright.config.ts"
+      ]
+    },
     "//#test:postgres": {
       "env": ["REPLAYS_TEST_DATABASE_URL"],
       "inputs": [

@@ -117,10 +117,15 @@ jobs:
           tasks=(lint format:check typecheck typecheck:storybook build build:cli lint:ratchet lint:ratchet:test
             quality:knip quality:boundaries quality:dedupe quality:hooks quality:test quality:package)
           flags=(--summarize --continue)
+          units=(test test:postgres)
           if [ -n "$PR_BASE" ]; then
             export SIZE_BASE_SHA="$PR_BASE"
             tasks+=(lint:new-files quality:size:ci)
             flags+=(--affected)
+            # why: pull requests run only the unit tests whose module graph reaches a changed file (Vitest --changed);
+            # main, nightly and the weekly run keep the full suite, and a red main opens the main-health issue.
+            export TEST_CHANGED_SINCE="$PR_BASE"
+            units=(test:affected test:postgres)
           else
             # why: main measures its own bundle sizes, so pull requests on this base replay them instead of building main.
             export SIZE_BASE_SHA="$GITHUB_SHA"
@@ -129,7 +134,11 @@ jobs:
           status=0
           pnpm exec turbo run "${tasks[@]}" "${flags[@]}" --concurrency=2 || status=1
           # why: the unit suites have 5 second timeouts tuned for a quiet runner; sharing two cores with builds timed them out.
-          pnpm exec turbo run test test:postgres "${flags[@]}" --concurrency=1 || status=1
+          pnpm exec turbo run "${units[@]}" "${flags[@]}" --concurrency=1 || status=1
+          if [ -n "$PR_BASE" ]; then
+            # why: the example packages' own tests; turbo replays them unless their inputs changed.
+            pnpm exec turbo run test --filter='./examples/*' --summarize --continue --concurrency=1 || status=1
+          fi
           exit "$status"
       - name: Turborepo summary and full reports
         if: always()
