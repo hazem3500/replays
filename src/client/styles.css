@@ -735,6 +735,7 @@ svg.lucide.lucide { stroke-width: 2; }
 .suite-sidebar-duration { margin-left: auto; }
 .suite-sidebar-subject { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .suite-sidebar-meta a { color: var(--text-secondary); text-decoration: none; }
+.suite-subject-arrow { width: 11px; height: 11px; margin-left: 2px; vertical-align: -1px; }
 .suite-kept { display: inline-flex; align-items: center; gap: 4px; color: var(--text-secondary); }
 .suite-kept svg { width: 12px; height: 12px; }
 .sha-button { padding: 0 3px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-family: var(--mono); font-size: var(--text-xs); cursor: copy; }
