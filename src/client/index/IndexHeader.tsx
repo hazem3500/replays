@@ -7,7 +7,7 @@ import { Hint } from '@/components/icon-button.tsx';
 import { Kbd } from '@/components/ui/kbd.tsx';
 import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 import { MotionLabel } from '@/components/entry-motion.tsx';
-import { useSlidingPill } from '@/components/sliding-highlight.tsx';
+import { HoverGlide, useSlidingPill } from '@/components/sliding-highlight.tsx';
 
 import type { ProfileInfo } from '../../shared/profiles.ts';
 
@@ -416,6 +416,7 @@ export function ProfileSegments({
   return (
     <div className="profile-bar">
       <div ref={group} className="profile-segments" role="radiogroup" aria-label="Profile" data-testid="profile-segments">
+        <HoverGlide container={group} itemSelector=".profile-segment-label" />
         <span ref={indicator} className="profile-indicator" aria-hidden="true" />
         {segments.map((segment) => {
           const count = counts?.[segment.id ?? 'all'];

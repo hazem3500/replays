@@ -79,9 +79,10 @@ async function openStrip(page: Page) {
 
 const switchTo = (page: Page, name: string) => page.locator('.compare-chip', { hasText: name }).click();
 
-test('switching runs in the comparison strip glides the selection along its row without remounting or overshooting', async ({ page }) => {
+test('a run change from the keyboard glides the selection along its row without remounting or overshooting', async ({ page }) => {
   await openStrip(page);
-  const frames = await trace(page, 30, () => switchTo(page, 'Safari'));
+  await page.mouse.move(640, 790);
+  const frames = await trace(page, 30, () => page.keyboard.press('Shift+J'));
   expect(new Set(frames.map((frame) => frame.strip)).size).toBe(1);
   // invariant: in each frame the surface sits on the segments' shared row, between Edge and Safari, and only advances.
   let progress = 0;
@@ -97,6 +98,19 @@ test('switching runs in the comparison strip glides the selection along its row 
     progress = step;
   }
   expect(progress).toBeCloseTo(1, 2);
+  expect(frames.some(({ pill, cells }) => pill.x !== cells.Edge?.x && pill.x !== cells.Safari?.x)).toBe(true);
+});
+
+test('a click on the segment under the pointer glides the selection over, and the hover gives way to it', async ({ page }) => {
+  await openStrip(page);
+  const safari = page.locator('.compare-chip', { hasText: 'Safari' });
+  const hover = page.locator('.compare-summary-track > .hover-glide');
+  await safari.hover();
+  await expect(hover).toHaveAttribute('data-visible', 'true');
+  const frames = await trace(page, 30, () => safari.click());
+  expect(frames.some(({ pill, cells }) => pill.x !== cells.Edge?.x && pill.x !== cells.Safari?.x)).toBe(true);
+  expect(frames.at(-1)?.pill.x).toBe(frames.at(-1)?.cells.Safari?.x);
+  await expect(hover).toHaveAttribute('data-visible', 'false');
 });
 
 test('a switch to the other row of the folded strip fades the selection in place instead of crossing the grid', async ({ page }) => {

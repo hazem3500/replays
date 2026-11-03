@@ -408,7 +408,8 @@ svg.lucide.lucide { stroke-width: 2; }
 .hover-glide { position: absolute; z-index: 0; top: 0; left: 0; width: 0; height: 0; border-radius: var(--radius); background: var(--surface-hover); opacity: 0; pointer-events: none; }
 .hover-glide[data-visible="true"] { opacity: 1; }
 .inspector-tabs { position: relative; }
-.inspector-tabs > .hover-glide { border-radius: var(--radius-sm); }
+.inspector-tabs > .hover-glide { background: transparent; }
+.inspector-tabs > .hover-glide::before { content: ""; position: absolute; inset: 4px 0; border-radius: var(--radius); background: color-mix(in srgb, var(--surface-hover) 30%, transparent); }
 .inspector-tab.inspector-tab { position: relative; z-index: 1; }
 @media (pointer: coarse) { .hover-glide:not([data-slot]) { display: none; } }
 .sliding-highlight { position: absolute; z-index: 0; top: 0; right: 4px; left: 4px; height: 32px; border-radius: var(--radius); background: var(--accent-soft); opacity: 0; pointer-events: none; }

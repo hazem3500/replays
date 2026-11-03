@@ -661,7 +661,8 @@
 .compare-chip[aria-current] .compare-chip-clock { color: var(--text); }
 .compare-chip-delta { justify-self: end; color: var(--text-tertiary); text-align: right; animation: compare-delta-in var(--strip-move) both; }
 @keyframes compare-delta-in { from { opacity: 0; } }
-@media (hover: hover) and (pointer: fine) { .compare-chip:not([aria-current]):hover { background: color-mix(in srgb, var(--surface-hover) 50%, transparent); } .compare-chip:not([aria-current]):hover .compare-chip-name { color: var(--text); } }
+@media (hover: hover) and (pointer: fine) { .compare-chip:not([aria-current]):hover .compare-chip-name { color: var(--text); } }
+.compare-summary-track > .hover-glide { background: color-mix(in srgb, var(--surface-hover) 30%, transparent); }
 /* why: a segment needs about 240 px for its name and three figures; below that the strip folds into even rows. */
 @container (max-width: 959px) { .compare-summary:is([data-segments="3"], [data-segments="4"]) { grid-template-columns: repeat(var(--segments-wrapped), minmax(0, 1fr)); } }
 @container (max-width: 1439px) { .compare-summary:not([data-segments="2"], [data-segments="3"], [data-segments="4"]) { grid-template-columns: repeat(var(--segments-wrapped), minmax(0, 1fr)); } }

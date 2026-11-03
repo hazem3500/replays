@@ -28,13 +28,16 @@ export function useTabIndicatorMotion(forwardedRef: Ref<HTMLSpanElement> | undef
       const fromTranslate = moving ? current.translate : `${previous.left} 0`;
       const fromWidth = moving ? current.width : previous.width;
       controls?.stop();
+      const place = () => {
+        node.style.setProperty('translate', `${next.left} 0`);
+        node.style.setProperty('width', next.width);
+      };
       if (
         typeof node.animate !== 'function' ||
         node.closest('[data-instant-switch]') ||
         matchMedia('(prefers-reduced-motion: reduce)').matches
       ) {
-        node.style.setProperty('translate', `${next.left} 0`);
-        node.style.setProperty('width', next.width);
+        place();
       } else {
         controls = animate(
           [node],
