@@ -32,7 +32,7 @@ export function InspectorSection({
         <span className="inspector-label" id={labelId}>
           {label}
         </span>
-        {value === undefined ? null : (
+        {value === undefined || value === null ? null : (
           <span className="inspector-value" aria-hidden="true">
             {value}
           </span>

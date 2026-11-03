@@ -88,19 +88,22 @@ export function EffectLanes({
             return (
               <RegionBlock
                 key={region.id}
-                id={region.id}
-                kind={kind}
-                from={region.from}
-                to={region.to}
-                label={text}
-                title={`${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`}
+                region={{
+                  id: region.id,
+                  kind,
+                  from: region.from,
+                  to: region.to,
+                  label: text,
+                  title: `${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`,
+                  seekTo: kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined,
+                }}
                 selected={selection?.kind === kind && selection.id === region.id}
-                seekTo={kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined}
-                onSelect={() => dispatch({ type: 'select', selection: { kind, id: region.id } })}
-                onEdit={(edge, time, first) =>
-                  change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id })
-                }
-                onRemove={() => change(removeEffect(latest.current, kind, region.id), true)}
+                actions={{
+                  onSelect: () => dispatch({ type: 'select', selection: { kind, id: region.id } }),
+                  onEdit: (edge, time, first) =>
+                    change(moveEffect(latest.current, kind, region.id, edge, time, scale.duration), first, { kind, id: region.id }),
+                  onRemove: () => change(removeEffect(latest.current, kind, region.id), true),
+                }}
               />
             );
           })}

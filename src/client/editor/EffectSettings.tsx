@@ -72,7 +72,7 @@ export function ZoomLevel({ value, onChange }: { value: number; onChange: (value
 
 /** "3.0 s plays in 0.8 s": what a rate does to this stretch, in the reader's terms. */
 function speedHint(length: number | undefined, rate: number) {
-  if (length === undefined || length <= 0) return undefined;
+  if (length === undefined || length <= 0) return;
   return `${(length / 1000).toFixed(1)} s plays in ${(length / rate / 1000).toFixed(1)} s`;
 }
 

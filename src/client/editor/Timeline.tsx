@@ -162,11 +162,15 @@ export function Timeline({
         });
       }}
       onKeyDown={(event) =>
-        timeKeys(event, trim[edge], edge === 'start' ? 0 : trim.start, edge === 'start' ? trim.end : duration, (time) => {
-          const next = setTrimEdge(latest.current, edge, time, duration);
-          change(next, true, trimSelection(next.trim));
-          player.seek(trimOf(next, duration)[edge]);
-        })
+        timeKeys(
+          event,
+          { value: trim[edge], min: edge === 'start' ? 0 : trim.start, max: edge === 'start' ? trim.end : duration },
+          (time) => {
+            const next = setTrimEdge(latest.current, edge, time, duration);
+            change(next, true, trimSelection(next.trim));
+            player.seek(trimOf(next, duration)[edge]);
+          },
+        )
       }
     >
       <span className="tl-trim-grip" aria-hidden="true" />
@@ -229,17 +233,20 @@ export function Timeline({
                   {edits.cuts.map((cut) => (
                     <RegionBlock
                       key={cut.id}
-                      id={cut.id}
-                      kind="cut"
-                      from={cut.from}
-                      to={cut.to}
-                      title={`Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`}
+                      region={{
+                        id: cut.id,
+                        kind: 'cut',
+                        from: cut.from,
+                        to: cut.to,
+                        title: `Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`,
+                      }}
                       selected={selection?.kind === 'cut' && selection.id === cut.id}
-                      onSelect={() => dispatch({ type: 'select', selection: { kind: 'cut', id: cut.id } })}
-                      onEdit={(edge, time, first) =>
-                        change(moveCut(latest.current, cut.id, edge, time, duration), first, { kind: 'cut', id: cut.id })
-                      }
-                      onRemove={() => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true)}
+                      actions={{
+                        onSelect: () => dispatch({ type: 'select', selection: { kind: 'cut', id: cut.id } }),
+                        onEdit: (edge, time, first) =>
+                          change(moveCut(latest.current, cut.id, edge, time, duration), first, { kind: 'cut', id: cut.id }),
+                        onRemove: () => change({ ...latest.current, cuts: latest.current.cuts.filter((item) => item.id !== cut.id) }, true),
+                      }}
                     />
                   ))}
                   <TimelineHighlights

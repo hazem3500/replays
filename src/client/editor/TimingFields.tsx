@@ -45,7 +45,7 @@ function TimeField({ label, value, max, onChange }: TimingField) {
  */
 export function TimingSection({ fields, span, hint }: { fields: readonly TimingField[]; span?: number | undefined; hint?: string }) {
   return (
-    <InspectorSection label="Timing" value={span === undefined ? undefined : `${(span / 1000).toFixed(1)} s`} hint={hint}>
+    <InspectorSection label="Timing" value={span === undefined ? null : `${(span / 1000).toFixed(1)} s`} hint={hint}>
       <div className="inspector-time-row" role="group" aria-label="Timing" data-count={fields.length}>
         {fields.map((field) => (
           <TimeField key={field.label} {...field} />
@@ -57,7 +57,7 @@ export function TimingSection({ fields, span, hint }: { fields: readonly TimingF
 
 /** The header's quiet description of where an object sits: "0:00.4 to 0:02.4", or "At 0:02.0". */
 export function spanText(from: number | undefined, to: number | undefined) {
-  if (from === undefined) return undefined;
+  if (from === undefined) return;
   if (to === undefined || to === from) return `At ${formatClock(from)}`;
   return `${formatClock(from)} to ${formatClock(to)}`;
 }

@@ -57,7 +57,11 @@ export function startDrag(
 }
 
 /** Arrow keys (Shift: longer), Home and End on a time control; `set` gets the new time. */
-export function timeKeys(event: ReactKeyboardEvent, value: number, min: number, max: number, set: (time: number) => void) {
+export function timeKeys(
+  event: ReactKeyboardEvent,
+  { value, min, max }: { value: number; min: number; max: number },
+  set: (time: number) => void,
+) {
   const step = event.shiftKey ? NUDGE_LONG_MS : NUDGE_MS;
   let next: number | undefined;
   if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') next = value - step;

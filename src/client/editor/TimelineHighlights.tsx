@@ -103,7 +103,7 @@ function HighlightMarker({
         player.seek(at);
       }}
       onKeyDown={(event) =>
-        timeKeys(event, at, min, max, (time) => {
+        timeKeys(event, { value: at, min, max }, (time) => {
           onMove(highlight.id, edge, time, true);
           player.seek(time);
         })
