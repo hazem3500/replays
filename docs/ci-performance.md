@@ -82,7 +82,7 @@ These are individual after runs against a historical median, with changing sourc
 - Playwright runs all tests across three independent shards, retaining two workers per runner, retries, timeouts, FFmpeg and browser dependencies. Cache the exact lockfile's browser binaries; still run `install --with-deps` to provision/check host libraries. Keep shard-specific failure reports. Browser caches do not cache test results.
 - Vite+ 1.4's `vp run` tracks file reads, directory listings, missing files and writes. Successful lint/format/type/build tasks can replay only when inputs match. Build-affecting environment variables are explicit. Package generation runs as one task that rebuilds and repairs all declarations; its output directories are excluded from inputs because repair intentionally reads and rewrites that same task's output. Repair is never independently cached, so a new source declaration cannot be overwritten by a stale repair result. Raw `pnpm check` still runs the complete lint/format/types/tests gates; tasks that call external services are not result-cached.
 - Root, Storybook, example typechecks and library/recorder declaration emission use pinned tsrs reference defaults. Storybook includes the existing CSS ambient declaration; Agent-Native explicitly includes installed Node types. All compiler error codes in the negative parity probe match tsc and tsgo; no diagnostics are suppressed. See [compiler parity and fallback scope](quality-tooling.md#tsrs-compiler-adoption).
-- Which suites run is decided by content-addressed input hashes, not by a diff; see [round 2](#round-2-run-only-what-changed-november-2026). Scheduled and manual CI always run everything.
+- Which checks run is decided by Turborepo task inputs and, for the browser-backed suites, by event, label, risky paths and content-addressed input hashes; see [round 3](#round-3-one-gate-job-and-turborepo-november-2026) and [round 2](#round-2-run-only-what-changed-november-2026). The weekly scheduled run and manual CI always run everything.
 - No required status checks are configured: the repository is private on the free plan, where the branch protection and rulesets APIs return 403. The former aggregate jobs `Unit tests and build`, `End-to-end smoke` and `PostgreSQL identity and credentials` therefore only cost minutes and were removed in round 2. A failing step fails its work job, and that job's red check is the gate. Matrix jobs use `fail-fast:false`. Workflow concurrency cancels superseded PR runs.
 - All seven Quality jobs, package smoke, host/custom-distro integrations, PostgreSQL coverage and performance/report-only workflows remain intact.
 
@@ -126,6 +126,50 @@ Measured on #207 (billed minutes = sum over jobs of whole started minutes; CI pl
 
 Six of the 29–35 minutes of a full run are setup; the floor is the three end-to-end shards (16–19 minutes).
 
+## Round 3: one Gate job and Turborepo (November 2026)
+
+Round 3 targets a typical pull request push under 5 billed minutes. Round 2's floor was the end-to-end shards, so they leave the per-PR gate, and the remaining checks become one cached job.
+
+**One Gate job.** The `checks` job and the separate Code quality workflow become one `Gate` job on `ubicloud-standard-2`. It runs every check as a root Turborepo task (`turbo.json`): lint, format, root and Storybook typecheck, unit tests, PostgreSQL tests, viewer and package builds, the lint ratchet and its tests, final rules for added files, and the knip, boundaries, dedupe, hooks, test-quality, package and size audits. Each task declares its inputs and outputs. Pull requests add `--affected` against the base commit (`TURBO_SCM_BASE`, with `affectedUsingTaskInputs`), so a task whose inputs did not change is not scheduled at all. Every task result is stored in the shared remote cache (`TURBO_API`, `TURBO_TEAM`, secret `TURBO_TOKEN`), so a task whose exact inputs passed anywhere (another branch, main or a Boat) replays its logs and outputs instead of running. The job summary lists each task's cache status; `.turbo/runs/` is uploaded as `gate-reports`.
+
+**Browser suites move off the per-PR gate.** End-to-end shards, the browser job (recorder, real render, plugin browser check, packed tarball, distro, composed viewer, Agent-Native, Storybook build) and Docker run:
+
+- on every push to main, nightly, and in the weekly full run (which ignores pass markers);
+- on pull requests with the `run-e2e` label;
+- on pull requests that touch a path in `RISKY` in `scripts/ci-scope.mjs`: the recorder and capture code, server-side rendering and frame code, the server-rendered start pages, and packaging and dependency files. Each group has its reason next to it. These are the areas where unit tests cannot see a break: real browsers, FFmpeg, the packed tarball and the Docker image.
+
+The round 2 pass markers still apply to these suites, so main reuses a pull request's pass when inputs are identical. Turborepo replaces the `checks` marker.
+
+**A red main is loud.** The `Main health` job runs after every main or scheduled run. If any job failed, it fails too and opens, or comments on, the `CI is failing on main` issue; the next green run comments and closes it. Fix forward on a new pull request.
+
+**Removed or moved checks.**
+
+| Check | Now | Reason |
+| --- | --- | --- |
+| End-to-end shards 1 to 3 and the single-page-app subset | main, nightly, `run-e2e`, risky paths | 16 to 19 billed minutes per run; changes outside the risky paths are covered by units, types and builds |
+| Browser job (recorder, render, plugin, tarball, distro, composed viewer, Agent-Native, Storybook build) | same | 6 to 7 billed minutes of browser and packaging work |
+| Docker build and health check | same | The image only changes with server, Dockerfile or dependency changes, all risky paths |
+| `typecheck:overrides` (compiler API pass, 21 seconds) | `pnpm typecheck` | Its baseline was empty; `noImplicitOverride` in `tsconfig.json` makes tsrs report the same TS4114 error |
+| Code quality workflow and its fresh main build | Gate tasks | Same audits, one install; main's bundle sizes are a cached `quality:size:base` task |
+
+**Unit tests for affected code.** On pull requests the unit suite runs as `test:affected`: Vitest `--changed` against the base commit runs only the test files whose module graph reaches a changed file, and Vitest reruns everything when `package.json` or a Vite or Vitest config changes. Main, nightly and the weekly run keep the full `test` task. The [deferred risk](#costs-and-further-options) still applies: a test that reaches code only through a spawned CLI process or a filesystem fixture can be skipped on a pull request. Main's full suite then catches it, and the main-health issue makes that failure visible. The unit suites run after the other tasks, alone on the runner: on the first cold run five tests with 5 second timeouts timed out while builds shared the two cores.
+
+`src/client/route-tree.gen.ts` is left out of every task's inputs. The viewer and start builds both regenerate it, with different content, so a build in the same run used to change the hash of every later task; it is derived from `src/client/routes/`, the Vite configs and the lockfile, which stay inputs.
+
+No tool was swapped: lint (Oxlint), format (Oxfmt), types (tsrs) and tests (Vitest) were already the fast native tools, and Turborepo adds caching around them.
+
+Measured on #212 (billed minutes = sum over jobs of whole started minutes, all on `ubicloud-standard-2`):
+
+| Push | Jobs (billed) | Billed | Wall |
+| --- | --- | ---: | ---: |
+| Round 2 viewer-only change, for comparison | scope, checks, three shards, browser, Code quality | 32 | about 7 min |
+| Draft | none | 0 | 0 |
+| Cold cache, every task runs (`turbo.json` changed) | Gate 5; suites reused their pass markers | 5 | 4 min 23 s |
+| Cold cache plus the browser suites (dependency files are risky paths) | Gate 7, end-to-end 8, 6, 7, browser 5, Docker 5 | 38 | 14 min |
+| Same inputs again (empty commit) | Gate 1: 34 of 34 tasks `cache hit, replaying logs` | 1 | 56 s |
+
+In the cold Gate run, the 25 non-unit tasks took 87 seconds at concurrency 2 (build 55, size baseline 41, lint ratchet 16, dedupe 12). The full unit suite took 113 seconds alone, and PostgreSQL 7. Setup, install and reports add about 50 seconds. Typical pushes (runtime change, unit-test-only change, documentation) were probed on a separate pull request after the merge, because every push to #212 changed the dependency files and so ran the browser suites.
+
 ## Local loop
 
 Run these on your session's Boat. `pnpm check:quick` caches lint/format/types and runs `test:changed` against fetched `origin/main`; it is a feedback loop, not a replacement for `pnpm check` before handoff. `pnpm test:watch` watches units; `pnpm typecheck:watch` watches tsrs; `pnpm dev` serves API + Vite HMR. Lefthook from #57 already checks only staged paths, in parallel, without rewriting or restaging: opt in with `pnpm hooks:install`.
@@ -140,6 +184,6 @@ Evidence uploads are best-effort, ignore missing files and retain reports for th
 
 This repository is private (verified through the repository API). Standard GitHub-hosted Linux runners provide two cores for private repositories and consume the account allowance, then list $0.006/min; they are not a free four-core upgrade ([GitHub runner reference](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/choose-the-runner-for-a-job), [pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing)). GitHub's larger 8-core Linux runner lists $0.022/min and is always paid ([pricing](https://docs.github.com/en/billing/reference/actions-runner-pricing)). Ubicloud's current page lists standard 4-core at $0.0025/min, premium 4-core at $0.004/min and standard 8-core at $0.005/min; verify account/region pricing before a switch ([Ubicloud](https://www.ubicloud.com/use-cases/github-actions)). No paid runner switch was made.
 
-Three E2E shards trade repeated setup and additional runner minutes for lower elapsed time. Keep the existing Ubicloud runner sizes. Extra unit shards, larger paid runners and a maintained browser/FFmpeg container should be reconsidered only against measured post-change bottlenecks. A prebuilt container saves apt work but adds image transfer, registry/storage and update maintenance; do not substitute system Chrome for the locked Playwright revision. PR-only `--changed`/`--only-changed` selection is deferred because dynamic imports, spawned CLI processes and filesystem fixtures are not a proven complete dependency graph here. Full PR coverage is preserved.
+Three E2E shards trade repeated setup and additional runner minutes for lower elapsed time. Keep the existing Ubicloud runner sizes. Extra unit shards, larger paid runners and a maintained browser/FFmpeg container should be reconsidered only against measured post-change bottlenecks. A prebuilt container saves apt work but adds image transfer, registry/storage and update maintenance; do not substitute system Chrome for the locked Playwright revision. Dynamic imports, spawned CLI processes and filesystem fixtures are not a proven complete dependency graph here, so `--changed` selection can miss a test. Round 2 kept the full suite on pull requests for that reason; round 3 accepts the risk on pull requests only, with the full suite on main, nightly and weekly.
 
 Upstream: [Vite task caching](https://viteplus.dev/guide/cache), [Vite Actions cache](https://viteplus.dev/guide/github-actions-cache), [Vitest worker isolation](https://vitest.dev/guide/improving-performance), [native TypeScript preview](https://github.com/microsoft/typescript-go/tree/main/_packages/native-preview).
