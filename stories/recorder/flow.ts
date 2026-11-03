@@ -27,6 +27,7 @@ export const recorderUi = {
         .at(-1),
     ),
   note: () => shown(all<HTMLTextAreaElement>('textarea')[0]),
+  item: (label: string) => shown(all('[role=menuitemradio]').find((item) => item.querySelector('.options-label')?.textContent === label)),
 };
 
 /** Waits until the recorder UI shows `find`'s element and returns it. */

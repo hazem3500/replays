@@ -1,12 +1,14 @@
 import { buildReplayBundle } from './bundle.ts';
 import type { ReplayBundle } from './bundle-types.ts';
-import { capturedRecord, resolveCapture } from './capture-options.ts';
+import { capturedRecord } from './capture-options.ts';
 import { activationCheck, createWarner } from './recorder-checks.ts';
 import { BLOCK_ATTRIBUTE, UI_ATTRIBUTE } from './privacy.ts';
 import { recorderLimits } from './recorder-limits.ts';
-import { recorderPrivacy } from './recorder-privacy.ts';
+import type { RecordingSettings } from './recorder-choices.ts';
+import type { RecorderPrivacy } from './recorder-privacy.ts';
+import { recordingSettings } from './recorder-settings.ts';
 import { newSession, recordingSummary, type Session, visible, wireSession } from './recorder-session.ts';
-import type { Recorder, RecorderOptions, RecorderState, RecordingSummary, RrwebModule } from './types.ts';
+import type { Recorder, RecorderOptions, RecorderState, RecordingChoice, RecordingSummary, RrwebModule } from './types.ts';
 import type { IssueReport, IssueReportReceipt } from './upload.ts';
 import { createUploadProgress } from './upload-progress.ts';
 import { toUpload } from './http-upload.ts';
@@ -38,8 +40,9 @@ export function createRecorder(options: RecorderOptions): Recorder {
   const askForConsent = options.prompts?.consent !== false;
   const askToReview = options.prompts?.review !== false;
   const { maxDurationMs, maxBytes } = recorderLimits(options);
-  const capture = resolveCapture(options);
-  const privacy = recorderPrivacy(options.privacy ?? {}, capture);
+  const settings = recordingSettings(options);
+  // invariant: replaced at each start() by that recording's own choice; nothing carries over.
+  let active = settings.base;
   const loadRrweb = options.loadRrweb ?? (() => import('rrweb'));
   const title = options.title ?? (options.app ? `Issue report from ${options.app.name}` : 'Issue report from Replays');
 
@@ -111,7 +114,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
       if (destroyed) throw new Error('The recorder was destroyed');
       checkActivation();
-      privacy.checkSelectors();
+      settings.base.privacy.checkSelectors();
       if (
         state.status !== 'idle' &&
         state.status !== 'consent' &&
@@ -127,10 +130,11 @@ export function createRecorder(options: RecorderOptions): Recorder {
       setState({ status: 'starting', trigger });
 
       // why: a failed body module only narrows the capture to headers; meta.captured says so.
-      const bodyModule = capture.network === 'bodies' ? import('./body-capture.ts').catch(() => null) : undefined;
+      const bodyModule = settings.base.capture.network === 'bodies' ? import('./body-capture.ts').catch(() => null) : undefined;
       let rrweb: RrwebModule;
+      let chosen: RecordingSettings;
       try {
-        rrweb = await loadRrweb();
+        [chosen, rrweb] = await Promise.all([settings.resolve(startOptions.choice), loadRrweb()]);
       } catch (error) {
         if (generation !== lifecycleGeneration) return;
         setState({
@@ -143,6 +147,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const bodies = await bodyModule;
       // why: discard() or destroy() may have run while rrweb was loading.
       if (generation !== lifecycleGeneration || currentState().status !== 'starting') return;
+      active = chosen;
+      const { capture, privacy } = chosen;
 
       const startedAt = Date.now();
       const current = newSession(trigger, capturedRecord(capture, Boolean(bodies)), startedAt);
@@ -218,6 +224,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
           network: current.network,
           steps: current.steps,
           captured: current.captured,
+          ...(active.profile ? { profile: active.profile } : {}),
         });
         const summary = recordingSummary(bundle, current.bytes, reason);
         recording = { bundle, summary };
@@ -338,13 +345,29 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
       const generation = ++requestGeneration;
       const ownsRequest = () => generation === requestGeneration;
-      if (askForConsent) {
+      const facts = (privacy: RecorderPrivacy) => privacy.facts(maxDurationMs, askToReview);
+      // why: hosts without `choices` keep a synchronous move to the consent state.
+      const choices = options.choices ? await settings.choices() : undefined;
+      if (!ownsRequest()) return;
+      const offer = ui.chooseOptions && choices?.offer(facts);
+      let choice: RecordingChoice | undefined;
+      if (offer && ui.chooseOptions) {
         setState({ status: 'consent', trigger });
+        const picked = await ui.chooseOptions({ trigger, offer, signal: openPrompt() }).catch(() => undefined);
+        if (!ownsRequest() || currentState().status !== 'consent') return;
+        if (!picked) {
+          setState({ status: 'idle' });
+          return;
+        }
+        choice = choices?.accept(picked);
+      }
+      if (askForConsent) {
+        if (currentState().status !== 'consent') setState({ status: 'consent', trigger });
         const agreed = await ui
           .requestConsent({
             trigger,
             maxDurationMs,
-            privacy: privacy.facts(maxDurationMs, askToReview),
+            privacy: facts((choices?.settings(choice) ?? settings.base).privacy),
             signal: openPrompt(),
           })
           .catch(() => false);
@@ -357,7 +380,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
 
       const stopped = new Promise<void>((resolve) => stopWaiters.push(resolve));
       try {
-        await recorder.start({ consent: true, trigger });
+        await recorder.start({ consent: true, trigger, ...(choice ? { choice } : {}) });
       } catch (error) {
         if (!ownsRequest()) return;
         resolveStopWaiters();

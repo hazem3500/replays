@@ -20,6 +20,7 @@ import type {
   RequestPolicy,
   UploadEndpoint,
 } from '../src/plugin/index.ts';
+import type { RecorderChoices, RecorderOptions, RecorderUi, RecordingChoice, RecordingChoiceOffer } from '../src/recorder/index.ts';
 import { readFileSync } from 'node:fs';
 
 import { describe, expect, expectTypeOf, it } from 'vitest';
@@ -294,6 +295,12 @@ describe('public API', () => {
     expectTypeOf<ViewerPluginApi['registerEditorTool']>().parameter(0).toEqualTypeOf<EditorToolDefinition>();
     expectTypeOf<ViewerPluginApi['registerExportFormat']>().parameter(0).toEqualTypeOf<ExportFormatDefinition>();
     expectTypeOf<ViewerPluginApi['registerShortcut']>().parameter(0).toEqualTypeOf<ShortcutDefinition>();
+  });
+
+  it('lets a recorder host offer per-recording choices through the UI contract', () => {
+    expectTypeOf<RecorderOptions['choices']>().toEqualTypeOf<RecorderChoices | undefined>();
+    expectTypeOf<NonNullable<RecorderUi['chooseOptions']>>().returns.resolves.toEqualTypeOf<RecordingChoice | undefined>();
+    expectTypeOf<NonNullable<RecorderUi['chooseOptions']>>().parameter(0).toHaveProperty('offer').toEqualTypeOf<RecordingChoiceOffer>();
   });
 
   it('publishes typed content-free event subscriptions', () => {

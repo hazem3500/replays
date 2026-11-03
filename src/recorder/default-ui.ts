@@ -24,7 +24,7 @@ export type { CompletionAction, CompletionContext, CompletionOptions, DefaultUiO
  */
 export function createDefaultUi(
   options: DefaultUiOptions = {},
-): RecorderUi & Required<Pick<RecorderUi, 'showUploading' | 'showResult' | 'dismiss'>> {
+): RecorderUi & Required<Pick<RecorderUi, 'chooseOptions' | 'showUploading' | 'showResult' | 'dismiss'>> {
   const messages = resolveRecorderMessages(options.messages);
   const format = createRecorderFormat(options.locale, options.format);
   const mode = options.privacyMode ?? 'masked';
@@ -77,7 +77,6 @@ export function createDefaultUi(
       live.setAttribute('aria-atomic', 'true');
       const content = element('div', { className: 'surface-content' });
       const shell = element('div', { className: 'pill', tabIndex: -1 }, [content]);
-      shell.setAttribute('aria-label', messages.recording);
       mounted.root.append(shell, live);
       floating = {
         ...mounted,
@@ -90,6 +89,7 @@ export function createDefaultUi(
     const focused = floating.root.activeElement;
     const keepFocus = focused instanceof HTMLElement && floating.shell.contains(focused);
     showSurface(floating.shell);
+    floating.shell.setAttribute('aria-label', messages.recording);
     floating.shell.dataset.phase = phase;
     delete floating.shell.dataset.custom;
     delete floating.shell.dataset.warning;
@@ -191,6 +191,15 @@ export function createDefaultUi(
       ),
 
     dismiss,
+    // why: a separate chunk, so hosts without `choices` (every customer page) never download the options step.
+    chooseOptions: async (context) =>
+      (await import('./default-ui-options.ts')).chooseOptions(context, {
+        messages,
+        dom: { element, icon },
+        surface,
+        hide: hideSurface,
+        onCleanup: (cleanup) => (renderCleanup = cleanup),
+      }),
     showIndicator: ({ startedAt, maxDurationMs, stop, attestStop }) => {
       const { content, label } = surface('recording', messages.recording);
       label.className = 'message recording-label';

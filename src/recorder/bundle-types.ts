@@ -1,7 +1,8 @@
 /**
  * Recorder-limited version 1 replay output schema. Keep browser types independent
  * of server-owned tracks and metadata: this recorder writes no performance,
- * context, suiteRun, retention, profile or people fields. The ingest endpoint
+ * context, suiteRun, retention or people fields, and `profile` only from the
+ * host's options step. The ingest endpoint
  * validates and enriches recordings for its audience. Compatibility is checked
  * against src/shared/replay.ts assertReplayBundle by the recorder bundle tests;
  * that runtime validator is never imported by the browser entry.
@@ -85,8 +86,9 @@ export type ReplayMeta = {
   /** End-user recordings are always `human`. */
   source: 'human';
   captured?: ReplayCaptured;
-  /* why: no `profile` or `people`: the ingest endpoint sets the profile itself
-     (see the README), and `people` is staff only, never customers. */
+  /** Only when the host offers profiles in its options step; the ingest endpoint checks it and may infer one otherwise. */
+  profile?: string;
+  /* why: no `people`: it is staff only, never customers. */
 };
 
 export type ReplayBundle = {

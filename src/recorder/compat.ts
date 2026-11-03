@@ -7,6 +7,7 @@ export function createDefaultUi(options?: DefaultUiOptions): RecorderUi {
   const get = () => (pending ??= import('./ui/index.ts').then((module) => module.createDefaultUi(options)));
   return {
     requestConsent: async (context) => (await get()).requestConsent(context),
+    chooseOptions: async (context) => (await get()).chooseOptions?.(context),
     confirmUpload: async (context) => (await get()).confirmUpload(context),
     showIndicator(context) {
       let hide: (() => void) | undefined;

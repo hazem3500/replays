@@ -1,4 +1,4 @@
-import type { PrivacyFacts, RecordingSummary } from './types.ts';
+import type { PrivacyFacts, RecorderPrivacyMode, RecordingSummary } from './types.ts';
 import type { IssueReportReceipt, IssueUploadErrorDetails } from './upload.ts';
 
 /** A failed start or upload, as handed to the `failed` and `startFailed` messages. */
@@ -59,6 +59,24 @@ export type RecorderMessages = {
   copyFailed: string;
   /** Accessible name and tooltip of the dismiss control. */
   close: string;
+  /** Options step: the pill's and the options button's accessible name, and the step's announcement. */
+  optionsTitle: string;
+  /** Options step: the current choice, as the options button's tooltip. Params are display names. */
+  optionsSummary: (params: { privacy?: string; profile?: string }) => string;
+  /** Options step: heading of the masking group in the options menu. */
+  privacyLabel: string;
+  /** Options step: heading of the profile group in the options menu. */
+  profileLabel: string;
+  /** Options step: why a masking mode is unavailable (the host's privacy does not allow it). */
+  privacyUnavailable: string;
+  /** Options step: a masking mode's name. */
+  privacyMode: (params: { mode: RecorderPrivacyMode }) => string;
+  /** Options step: one quiet line under a masking mode, from what a recording in that mode captures. */
+  privacyHint: (params: { mode: RecorderPrivacyMode; privacy: PrivacyFacts }) => string;
+  /** Options step: the note at the end of the masking group. */
+  privacyAlways: string;
+  /** Options step: the button that starts the recording. */
+  record: string;
 };
 
 /**
@@ -93,6 +111,15 @@ const privacySentence = ({ captures, reviewRequired }: PrivacyFacts) => {
     .join(' ');
 };
 
+const MODE_NAMES: Record<RecorderPrivacyMode, string> = { visible: 'Visible', 'text-masked': 'Text masked', masked: 'Masked' };
+
+/** One short line per mode, from what it actually records once the host's cap applies. */
+const modeHint = ({ captures }: PrivacyFacts) => {
+  const recorded = [captures.pageText && 'text', captures.inputs && 'inputs'].filter((item) => item !== false);
+  if (recorded.length) return `Records ${listed(recorded)}`;
+  return captures.media ? 'Hides text and inputs' : 'Hides text, inputs and media';
+};
+
 /** English copy, without em or en dashes. */
 export const defaultRecorderMessages: RecorderMessages = {
   consentTitle: 'Record this tab?',
@@ -124,6 +151,15 @@ export const defaultRecorderMessages: RecorderMessages = {
   copied: 'Copied',
   copyFailed: "Couldn't copy",
   close: 'Close',
+  optionsTitle: 'Recording options',
+  optionsSummary: ({ privacy, profile }) => [privacy, profile].filter(Boolean).join(' · '),
+  privacyLabel: 'Privacy',
+  profileLabel: 'Profile',
+  privacyUnavailable: 'Not allowed here',
+  privacyMode: ({ mode }) => MODE_NAMES[mode],
+  privacyHint: ({ privacy }) => modeHint(privacy),
+  privacyAlways: 'Passwords always stay hidden',
+  record: 'Record',
 };
 
 /** @deprecated Use `defaultRecorderMessages`. */

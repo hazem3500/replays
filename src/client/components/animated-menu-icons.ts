@@ -1,3 +1,4 @@
+import { SHARED_ICON_GESTURES } from '../../recorder/icon-gestures.ts';
 import type { AnimatedIconDefinition } from './animated-icon-data.ts';
 
 /** One-shot gestures retain the familiar lucide geometry and return to rest before the next menu action. */
@@ -10,14 +11,7 @@ export const MENU_ICONS = {
       { el: 'path', attrs: { d: 'M5 12h14' } },
     ],
   },
-  x: {
-    ms: 240,
-    motion: { kind: 'shift', rotate: 90, scale: 0.86 },
-    parts: [
-      { el: 'path', attrs: { d: 'M18 6 6 18' } },
-      { el: 'path', attrs: { d: 'm6 6 12 12' } },
-    ],
-  },
+  x: SHARED_ICON_GESTURES.x,
   scissors: {
     ms: 280,
     parts: [
