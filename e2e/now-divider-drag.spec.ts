@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
-import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
+import { boxOf, cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
 
 const server = serveApp();
 test.use({ viewport: { width: 1280, height: 720 } });
@@ -52,23 +52,23 @@ test('dragging the now grip moves the line 1:1 with the pointer and holds it at 
   const line = list.locator('.now-divider');
   const grip = line.locator('.now-grip');
   await expect(list.locator('xpath=..')).not.toHaveAttribute('data-fits', '');
-  const box = (await list.boundingBox())!;
-  const header = (await list.locator('.cp-head').boundingBox())!;
+  const box = await boxOf(list);
+  const header = await boxOf(list.locator('.cp-head'));
   const x = box.x + 200;
 
-  // Hover intent: the grip comes up once the pointer rests on the line after moving along it.
+  // why: hover intent shows the grip only once the pointer rests on the line after moving along it.
   await expect(async () => {
     const at = await top(line);
     await page.mouse.move(x - 40, at);
     await page.mouse.move(x, at, { steps: 4 });
     await expect(grip).toHaveCSS('opacity', '1', { timeout: 1000 });
   }).toPass();
-  const handle = (await grip.boundingBox())!;
+  const handle = await boxOf(grip);
   await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2);
   await page.mouse.down();
   const grab = handle.y + handle.height / 2 - (await top(line));
 
-  // Away from the auto-scroll edges the line is the pointer on the next frames: no spring lag, no snap.
+  // invariant: away from the auto-scroll edges the line is the pointer on the next frames, with no spring lag.
   const calm = { from: header.y + header.height + 52, to: box.y + box.height - 52 };
   for (let step = 0; step <= 4; step++) {
     const y = calm.from + ((calm.to - calm.from) * step) / 4;
@@ -77,10 +77,9 @@ test('dragging the now grip moves the line 1:1 with the pointer and holds it at 
     expect(Math.abs((await top(line)) - (y - grab))).toBeLessThanOrEqual(1);
   }
 
-  // Far past the bottom: the list scrolls to its end and the line rests on the last row's boundary, still.
+  // invariant: past the bottom the line stays inside the list on every frame, then rests still on the last row.
   const travel = sampleFrames(line, 40);
   await page.mouse.move(x, box.y + box.height + 200, { steps: 4 });
-  // Every frame on the way, while the list auto-scrolls, keeps the line inside the list.
   for (const y of await travel) {
     expect(y).toBeGreaterThanOrEqual(header.y + header.height - 1);
     expect(y).toBeLessThanOrEqual(box.y + box.height);
@@ -93,7 +92,7 @@ test('dragging the now grip moves the line 1:1 with the pointer and holds it at 
   expect(Math.max(...bottom)).toBeLessThanOrEqual(box.y + box.height);
   expect(Math.min(...bottom)).toBeGreaterThanOrEqual(box.y + box.height - 30);
 
-  // Far past the top: back to the first row's boundary, under the header, still.
+  // invariant: past the top the line rests still on the first row's boundary, under the header.
   await page.mouse.move(x, box.y - 200, { steps: 4 });
   await expect.poll(() => list.evaluate((element) => element.scrollTop)).toBe(0);
   const first = await sampleFrames(line, 20);
