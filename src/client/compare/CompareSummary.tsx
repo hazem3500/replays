@@ -2,7 +2,6 @@ import { useRef } from 'react';
 
 import { formatClock } from '../../shared/replay.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { AnimatedText } from '@/components/animated-text.tsx';
 import { useSlidingPill } from '@/components/sliding-highlight.tsx';
 import { plural } from '../plural.ts';
 import type { LoadedTile } from './tiles.ts';
@@ -21,7 +20,8 @@ const SAME_WITHIN_MS = 100;
  * The Compare view's headline: one segment per recording in a single strip, every segment the same width with its
  * facts in fixed right-hand columns (errors, duration, and how much longer or shorter it ran than the one in focus),
  * so the figures line up down a wrapped strip. The segment in focus sits on one raised surface that glides between
- * segments (the shared sliding pill), and its deltas crossfade when the focus moves. A segment moves the focus.
+ * segments (the shared sliding pill); text emphasis and the deltas fade in on the same 200 ms curve, the deltas once
+ * each (keyed by the focus, never two stacked layers). A segment moves the focus.
  */
 export function CompareSummary({ tiles, focus, onFocus }: { tiles: readonly LoadedTile[]; focus: string; onFocus: (id: string) => void }) {
   const focused = tiles.find((tile) => tile.id === focus) ?? tiles[0];
@@ -63,7 +63,9 @@ export function CompareSummary({ tiles, focus, onFocus }: { tiles: readonly Load
                 <span className="compare-chip-clock" aria-hidden="true">
                   {formatClock(duration)}
                 </span>
-                <AnimatedText className="compare-chip-delta" aria-hidden="true" text={delta ?? ''} />
+                <span key={focused?.id} className="compare-chip-delta" aria-hidden="true">
+                  {delta}
+                </span>
               </button>
             </li>
           );
