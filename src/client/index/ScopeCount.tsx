@@ -1,5 +1,8 @@
+import { useRef } from 'react';
+import { useOpacityMotion } from '../hooks/use-opacity-motion.ts';
 import { cn } from '@/lib/utils.ts';
 
+import { useRefreshLineMotion } from '../hooks/use-refresh-line-motion.ts';
 import { plural } from '../plural.ts';
 
 export type ScopeCountState = 'loading' | 'updating' | 'ready' | 'error';
@@ -35,10 +38,12 @@ export function ScopeCount({
   shown: boolean;
   state: ScopeCountState;
 }) {
+  const count = useRef<HTMLSpanElement>(null);
+  useOpacityMotion(count, state === 'updating' ? 0.55 : 1, state === 'updating' ? 0.3 : 0);
   const known = replays !== undefined && state !== 'error';
   const status = state === 'ready' ? readyText(replays, suites) : STATUS[state];
   return (
-    <span className={cn('scope-count', !shown && 'sr-only')} data-state={state}>
+    <span ref={count} className={cn('scope-count', !shown && 'sr-only')} data-state={state}>
       <CountValue replays={known ? replays : undefined} suites={suites} loading={state === 'loading'} />
       <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
         {status}
@@ -63,8 +68,9 @@ function CountValue({ replays, suites, loading }: { replays: number | undefined;
 
 /** The index header's refresh activity: an accent hairline along its bottom edge, only for refreshes past 300 ms. */
 export function RefreshLine({ active }: { active: boolean }) {
+  const ref = useRefreshLineMotion(active);
   return (
-    <span className="load-line" data-active={active || undefined} aria-hidden="true">
+    <span ref={ref} className="load-line" data-active={active || undefined} aria-hidden="true">
       <span />
     </span>
   );

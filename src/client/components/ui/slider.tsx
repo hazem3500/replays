@@ -1,3 +1,4 @@
+import { SliderMotion } from './control-motion.tsx';
 import { Slider as SliderPrimitive } from '@base-ui/react/slider';
 import { cn } from '@/lib/utils.ts';
 
@@ -14,11 +15,25 @@ function SliderTrack({ className, ...props }: SliderPrimitive.Track.Props) {
 }
 
 function SliderIndicator({ className, ...props }: SliderPrimitive.Indicator.Props) {
-  return <SliderPrimitive.Indicator data-slot="slider-indicator" className={cn('ui-slider-indicator', className)} {...props} />;
+  return (
+    <SliderPrimitive.Indicator
+      render={(dom) => <SliderMotion {...dom} kind="indicator" />}
+      data-slot="slider-indicator"
+      className={cn('ui-slider-indicator', className)}
+      {...props}
+    />
+  );
 }
 
 function SliderThumb({ className, ...props }: SliderPrimitive.Thumb.Props) {
-  return <SliderPrimitive.Thumb data-slot="slider-thumb" className={cn('ui-slider-thumb', className)} {...props} />;
+  return (
+    <SliderPrimitive.Thumb
+      render={(dom) => <SliderMotion {...dom} kind="thumb" />}
+      data-slot="slider-thumb"
+      className={cn('ui-slider-thumb', className)}
+      {...props}
+    />
+  );
 }
 
 export { Slider, SliderControl, SliderTrack, SliderIndicator, SliderThumb };

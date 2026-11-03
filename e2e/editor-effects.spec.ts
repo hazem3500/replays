@@ -51,7 +51,8 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await inspector.getByRole('radio', { name: '2.2× zoom' }).click();
   await expect(inspector.getByRole('radio', { name: '2.2× zoom' })).toHaveAttribute('aria-checked', 'true');
   await page.keyboard.press('Escape');
-  await expect(inspector.getByRole('group', { name: 'Cursor', exact: true })).toBeVisible();
+  await expect(inspector).toHaveCount(0);
+  await expect(page.locator('#cursor-inspector')).toHaveCount(0);
   // Back to 0:00 from the ruler's start.
   const rulerTrack = page.getByTestId('timeline-ruler');
   await rulerTrack.scrollIntoViewIfNeeded();
@@ -116,7 +117,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   expect(stored.blurs[0].y).toBeLessThan(0.38);
 
   // The viewer: captions replace the step captions, the blur box is drawn over the page, the zoom moves the page.
-  await page.getByTestId('editor-done').click();
+  await page.getByRole('link', { name: 'Back to the replay' }).click();
   await expect(page.getByTestId('edited-chip')).toContainText('Edited');
   await page.keyboard.press('Space');
   await page.goto(`${base()}/r/${id}?t=0.2`);

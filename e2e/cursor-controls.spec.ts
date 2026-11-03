@@ -1,7 +1,11 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { cloneBundle, postBundle, serveApp } from './support.ts';
 
-const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
+const server = serveApp({ REPLAYS_BETA_EDITOR: 'true', REPLAYS_BETA_CURSOR_CUSTOMIZATION: 'true' });
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem('replays-labs-cursor-customization', 'on'));
+});
+
 test.use({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, reducedMotion: 'reduce' });
 
 async function seedReplayWithBlur(page: Page, base: string, id: string, blur: Record<string, unknown>) {
@@ -20,9 +24,14 @@ function cursorLocators(page: Page, mobile: boolean) {
     ? page.getByRole('region', { name: 'Cursor properties', exact: true })
     : page.getByRole('complementary', { name: 'Inspector' }).getByRole('group', { name: 'Cursor', exact: true });
   const openCursor = async () => {
-    if (!mobile) return;
-    await trigger.click();
-    await page.getByRole('menuitem', { name: 'Cursor options', exact: true }).click();
+    if (mobile) {
+      await trigger.click();
+      await page.getByRole('menuitem', { name: 'Cursor options', exact: true }).click();
+    }
+    await expect(inspector.getByRole('switch', { name: 'Show cursor', exact: true })).toBeHidden();
+    await inspector.locator('.cursor-disclosure').click();
+    await expect(inspector.getByRole('radiogroup', { name: 'Motion' })).toBeHidden();
+    await inspector.locator('.cursor-advanced > summary').click();
   };
   return { trigger, inspector, openCursor };
 }
@@ -52,7 +61,7 @@ for (const width of [1280, 390]) {
     const { trigger, inspector, openCursor } = cursorLocators(page, mobile);
     await openCursor();
     await expect(inspector).toBeVisible();
-    if (mobile) await expect(inspector.getByRole('heading')).toBeFocused();
+    if (mobile) await expect(inspector.locator('.cursor-advanced > summary')).toBeFocused();
     else {
       await expect(page.locator('.topbar').getByRole('button', { name: 'Cursor', exact: true })).toHaveCount(0);
       await expect(page.getByRole('dialog', { name: 'Cursor', exact: true })).toHaveCount(0);
@@ -60,10 +69,6 @@ for (const width of [1280, 390]) {
     const bounds = (await inspector.boundingBox())!;
     expect(bounds.x).toBeGreaterThanOrEqual(0);
     expect(bounds.x + bounds.width).toBeLessThanOrEqual(width);
-    if (mobile) {
-      await page.keyboard.press('Tab');
-      await expect(inspector.getByTestId('mobile-object-done')).toBeFocused();
-    }
     const visible = inspector.getByRole('switch', { name: 'Show cursor', exact: true });
     await visible.focus();
     await page.keyboard.press('Space');
@@ -101,9 +106,8 @@ for (const width of [1280, 390]) {
     await expect(inspector.getByRole('radio', { name: 'Spring settle' })).toHaveAttribute('aria-checked', 'true');
     if (mobile) {
       await inspector.getByTestId('mobile-object-done').click();
-      await trigger.click();
     }
-    await page.getByTestId('editor-done').click();
+    await page.getByRole(mobile ? 'button' : 'link', { name: 'Back to the replay' }).click();
     await expect(page.getByTestId('edited-chip')).toContainText('Edited');
     await page.goto(`${base}/r/${id}?t=2`);
     const cursor = page.locator('.player-host .replay-cursor');
@@ -127,16 +131,18 @@ test('cursor styles: the chosen style is saved and is the only cursor drawn in t
   await postBundle(page.request, base, await cloneBundle(page.request, base, 'human-demo', id));
   await page.goto(`${base}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  const { inspector } = cursorLocators(page, false);
+  const { inspector, openCursor } = cursorLocators(page, false);
+  await openCursor();
   await inspector.getByRole('radio', { name: 'Ring', exact: true }).click();
   await expect(inspector.getByText('A halo around the point, for touch-style demos')).toBeVisible();
   await inspector.getByRole('radio', { name: 'Green', exact: true }).click();
   await inspector.getByRole('radiogroup', { name: 'Click' }).getByRole('radio', { name: 'Ripple' }).click();
-  await expect(inspector.getByTestId('cursor-recipe')).toHaveText('Ring · Green · Signature arc · Ripple on click');
+  await expect(inspector.getByTestId('cursor-recipe')).toHaveCount(0);
   await expect(page.getByTestId('save-state')).toHaveText('Saved');
   const stored = await (await page.request.get(`${base}/api/replays/${id}/edits`)).json();
   expect(stored.cursor).toEqual({ appearance: 'ring', color: 'green', clickEffect: 'ripple' });
-  await page.getByTestId('editor-done').click();
+  await page.getByRole('link', { name: 'Back to the replay' }).click();
+  await page.evaluate(() => localStorage.setItem('replays-labs-cursor-customization', 'off'));
   await page.goto(`${base}/r/${id}?t=2`);
   const cursor = page.locator('.player-host .replay-cursor');
   await expect(cursor).toHaveCount(1);

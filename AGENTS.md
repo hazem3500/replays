@@ -59,6 +59,10 @@ Open pull requests as drafts while iterating: CI and Code quality do not run on 
 
 ## React and composition
 
+### Icons and motion
+
+Use the shared `AnimatedIcon` component for UI icons. Every interactive icon must have a purposeful animation on hover, keyboard focus, or a relevant state change, driven by Motion and the same control state for pointer and keyboard input. Extend the shared icon definitions when an icon is missing instead of adding a static icon directly to a control. Respect `prefers-reduced-motion`, keep icon geometry and spacing stable, and avoid continuous loops. Decorative and status icons remain still until a meaningful state change calls for motion. Apply this rule to new and modified controls, including menus, toolbars, dialogs, settings and recorder UI; use a browser-safe equivalent at the recorder boundary.
+
 New code imports/calls effect hooks only in `src/client/hooks/`, the browser-only recorder adapter boundary `src/recorder/react/hooks/`, and story-local `stories/**/hooks/` fixtures; derive values during render, handle actions in event handlers, and subscribe through `useSyncExternalStore`. Use a named hook for imperative setup. Do not move browser-recorder code into the client to satisfy this rule.
 
 React Compiler is enabled in the app build. Run `pnpm quality:compiler` on Boat for the [bailout report and build-parity status](docs/compiler-health.md). Do not add `useMemo`, `useCallback` or `memo`; an exception needs profiling evidence and a scoped `oxlint-disable-next-line ... -- why:`. Prefer `use(Context)`, ref props and small composable components; avoid `forwardRef`, `React.FC`, `defaultProps` and nested component definitions.

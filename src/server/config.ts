@@ -81,7 +81,7 @@ export interface FileConfig {
   githubHost?: string;
   gitlabHost?: string;
   sourceProviders?: TemplateProviderConfig[];
-  beta?: { editor?: boolean; malleable?: boolean };
+  beta?: { editor?: boolean; cursorCustomization?: boolean; malleable?: boolean };
   /** The host's policy for sandboxed user plugins; `malleable.enabled` is the same switch as `beta.malleable`. */
   malleable?: MalleableConfig;
   /** The deployment built on this package (`name@version`), shown in `/api/config` and recorded by kept user plugins. */

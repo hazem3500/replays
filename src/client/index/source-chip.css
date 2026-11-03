@@ -37,13 +37,13 @@
   font-variant-numeric: tabular-nums;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--motion-press) var(--ease-out), background-color var(--motion-fast) ease;
+  transition: background-color var(--motion-fast) ease;
 }
 /* WCAG 2.5.8: a 32 px target around a 24 px chip, never overlapping the row's other controls. */
 .source-chip::before { content: ""; position: absolute; inset: calc((var(--source-chip-size) - var(--source-chip-hit)) / 2) -4px; }
 .source-chip .source-mark { width: 13px; height: 13px; flex-basis: 13px; color: currentColor; }
 .source-chip:active, .source-chip[data-popup-open] { background: var(--source-chip-bg-pressed); color: var(--text); }
-.source-chip:active { transform: scale(0.96); }
+
 .source-chip:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
 @media (prefers-reduced-motion: reduce) { .source-chip { transition: background-color var(--motion-fast) ease; } .source-chip:active { transform: none; } }
 @media (forced-colors: active) { .source-chip { border: 1px solid CanvasText; } }

@@ -1,11 +1,13 @@
 import { type ReactNode, useId, useRef } from 'react';
 
+import { useFeedHighlight } from '../hooks/use-feed-highlight.ts';
 import { useFeedVirtualizer } from '../hooks/use-feed-virtualizer.ts';
 import { useGridColumns } from '../hooks/use-grid-columns.ts';
 import { useScrollReveal } from '../hooks/use-scroll-reveal.ts';
 import type { FeedEntry, FeedView } from './Feed.tsx';
+import type { FeedCalendar } from './feed.ts';
 import { entryKey, type FeedGroup, type FeedRow, feedLayout, groupSegments } from './feed-layout.ts';
-import { EASE, ENTER_KEYFRAMES, ENTER_MS, reducedMotion, staggerDelay } from './list-motion.ts';
+import { revealFeedItems } from './feed-transition.ts';
 
 /**
  * An item's place in the virtual feed: its row (`data-row`, which keeps a focused row rendered), whether that row is
@@ -28,13 +30,6 @@ const VIRTUALIZE_AFTER = 60;
 const ESTIMATE = { head: 56, list: 86, grid: 360 } as const;
 /** About one viewport of rows past each edge. */
 const OVERSCAN = { list: 10, grid: 3 } as const;
-
-/** Items scrolled into view rise in like arriving ones (list-motion.ts), those arriving together one after another. */
-function revealItems(items: HTMLElement[]) {
-  if (reducedMotion()) return;
-  for (const [index, item] of items.entries())
-    item.animate(ENTER_KEYFRAMES, { duration: ENTER_MS, delay: staggerDelay(index), easing: EASE, fill: 'backwards' });
-}
 
 /** A group's list: its rendered rows, with spacers standing in for the rows outside the window. */
 function GroupList({
@@ -76,24 +71,27 @@ export function FeedList({
   entries,
   view,
   grouped,
+  calendar,
   renderEntry,
 }: {
   entries: readonly FeedEntry[];
   view: FeedView;
   grouped: boolean;
+  calendar: FeedCalendar;
   renderEntry: RenderEntry;
 }) {
   const id = useId();
   const root = useRef<HTMLDivElement>(null);
+  useFeedHighlight(root);
   const columns = useGridColumns(root, view === 'grid');
-  const { rows, groups } = feedLayout(entries, { grouped, columns });
+  const { rows, groups } = feedLayout(entries, { grouped, columns, calendar });
   const specs = rows.map((row) => ({
     key: row.key,
     estimate: row.kind === 'head' ? ESTIMATE.head : ESTIMATE[view],
     pinned: row.kind === 'head',
   }));
   const virtual = useFeedVirtualizer(root, specs, { enabled: entries.length > VIRTUALIZE_AFTER, overscan: OVERSCAN[view] });
-  useScrollReveal(root, '[data-entry-id]', `${view}|${entries.map(entryKey).join(',')}`, revealItems);
+  useScrollReveal(root, '[data-entry-id]', `${view}|${entries.map(entryKey).join(',')}`, revealFeedItems);
   return (
     <div ref={root} className={grouped ? 'feed-groups' : 'feed-flat'}>
       {groups.map((group, index) => {

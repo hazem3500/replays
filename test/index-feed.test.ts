@@ -107,6 +107,17 @@ describe('feed grouping', () => {
     ]);
   });
 
+  it('groups the initial render by UTC dates even when a timestamp crosses local midnight and New Year', () => {
+    const clock = Date.parse('2027-01-02T12:00:00Z');
+    const items = ['2027-01-01T23:30:00-05:00', '2026-12-31T23:30:00-05:00', '2026-12-31T12:00:00Z'];
+    expect(groupByDay(items, (item) => item, clock, 'utc').map((group) => group.label)).toEqual([
+      'Today',
+      'Yesterday',
+      'Earlier this week',
+    ]);
+    expect(dayLabel('2026-12-31T12:00:00Z', Date.parse('2027-01-11T12:00:00Z'), 'utc')).toBe('December 2026');
+  });
+
   it('offers the tags the list has, most used first, and keeps them in the URL', () => {
     const summaries = [{ tags: ['smoke', 'checkout'] }, { tags: ['smoke'] }, {}, { tags: ['checkout', 'alpha'] }];
     expect(tagOptions(summaries)).toEqual(['checkout', 'smoke', 'alpha']);
@@ -329,5 +340,10 @@ describe('feedTime', () => {
   it('shows the date and time under older headings, with the year when it is not this one', () => {
     expect(feedTime('2026-10-03T16:55:00', clock)).toMatch(/^Oct 3, 4:55\s?PM$/);
     expect(feedTime('2025-12-24T08:00:00', clock)).toMatch(/Dec 24, 2025/);
+  });
+  it('uses the same UTC clock and English spacing for the server and its first hydration render', () => {
+    const utcClock = Date.parse('2027-01-02T12:00:00Z');
+    expect(feedTime('2026-12-31T23:30:00-05:00', utcClock, 'utc')).toBe('4:30 AM');
+    expect(feedTime('2026-12-20T23:30:00-05:00', utcClock, 'utc')).toBe('Dec 21, 2026, 4:30 AM');
   });
 });

@@ -63,7 +63,7 @@ export const COMPARE_VIEW = 'compare';
 
 /** The views core ships, in switcher order. */
 export const BUILT_IN_VIEWS: readonly ViewPreset[] = [
-  { id: 'standard', label: 'Standard', order: 0 },
+  { id: 'standard', label: 'Standard', order: 0, inspector: { tabs: ['console', 'network', 'performance'] } },
   {
     id: 'compare',
     label: 'Compare',

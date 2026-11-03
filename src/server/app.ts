@@ -1,3 +1,4 @@
+import { replayDeleteGate, replayReadGate, type ReplayAuthorizer } from './api/data-storage-auth.ts';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 
 import { sanitizeReplayBundle } from '../capture/sanitize.ts';
@@ -9,8 +10,9 @@ import { normalizeSignIn, type SignInConfig } from '../shared/sign-in.ts';
 import type { SourceProviders } from '../shared/source-providers.ts';
 import type { ApplicationRuntime } from './agent-native/runtime.ts';
 import { coreRoutes } from './api/index.ts';
-import { authenticatedPluginRoutes, publicPluginRoutes, runWebMiddleware } from './api/plugin-routes.ts';
+import { authenticatedPluginRoutes, publicPluginRoutes } from './api/plugin-routes.ts';
 import { confineToEndpoint, routeAllowed, uploadEndpointAt } from './api/upload-endpoints.ts';
+import { runRequestPhase } from './app/request-phase.ts';
 import { handleReplayFiles } from './app/replay-files.ts';
 import { serveShell } from './app/shell.ts';
 import { type GateRequest, refuseAnonymous, returnFromSignIn, sendCliCapabilities } from './app/sign-in.ts';
@@ -38,7 +40,7 @@ import { coreVersion } from './package-info.ts';
 import type { PageRenderer } from './pages/start.ts';
 import { identityResolver } from './people.ts';
 import { handlePosterApi } from './media/poster-routes.ts';
-import { clientAsset, runRequestHooks, watchResponse } from './plugin-runtime.ts';
+import { clientAsset, watchResponse } from './plugin-runtime.ts';
 import { createRenderHooks } from './render-hooks.ts';
 import { handleInternalRender, handleRenderApi, type RenderService } from './render-routes.ts';
 import { applyRequestPolicy } from './request-policy.ts';
@@ -138,8 +140,19 @@ export function createApp(options: AppOptions) {
   const sanitize = (bundle: ReplayBundle) =>
     withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle, redaction));
   const answerPublicRoute = publicPluginRoutes(registry);
+  const authorizeReplay: ReplayAuthorizer = async (gate, csrfAllowed) => {
+    const dispatch: DispatchRequest = {
+      ...gate,
+      authorizationProbe: true,
+      routeContext: { base: gate.base, ...(options.publicOrigin ? { publicOrigin: options.publicOrigin } : {}) },
+    };
+    if (await beforeAuth(dispatch, csrfAllowed)) return;
+    return identify(dispatch, csrfAllowed);
+  };
   const routes = new RouteTable([
     ...coreRoutes({
+      canReadReplay: replayReadGate(registry, authorizeReplay),
+      canDeleteReplay: replayDeleteGate(registry, authorizeReplay),
       deployment: {
         store: options.store,
         auth,
@@ -193,12 +206,11 @@ export function createApp(options: AppOptions) {
   /* invariant: request policy → pre-auth hooks → adapter auth routes → public plugin routes; answers what needs no identity. */
   async function beforeAuth(gate: DispatchRequest, csrfAllowed: boolean) {
     const { request, response, raw, path, base, webRequest } = gate;
-    if (registry.hooks.preAuth.length && (await runRequestHooks(registry, 'pre-auth', { request, response, path }))) return true;
-    if (
-      registry.hooks.webPreAuth.length &&
-      (await answer(gate, await runWebMiddleware(registry, 'pre-auth', { request: webRequest(), url: raw, path, base })))
-    )
+    const hookAnswer = await runRequestPhase(registry, 'pre-auth', gate);
+    if (hookAnswer) {
+      if (hookAnswer !== true) await answer(gate, hookAnswer);
       return true;
+    }
     // why: the adapter's own routes (sign-in, callback) run without an identity.
     if (auth.handle && auth.routes?.includes(path) && (await auth.handle(request, response, gate.routeContext))) return true;
     if (
@@ -247,13 +259,11 @@ export function createApp(options: AppOptions) {
   /** invariant: post-auth hooks → the sign-in return → core and plugin routes → feature APIs → replay files → shell. */
   async function afterAuth(gate: DispatchRequest, user: Identity, csrfAllowed: boolean) {
     const { request, response, raw, path, base, webRequest } = gate;
-    if (registry.hooks.postAuth.length && (await runRequestHooks(registry, 'post-auth', { request, response, path, identity: user })))
+    const hookAnswer = await runRequestPhase(registry, 'post-auth', gate, user);
+    if (hookAnswer) {
+      if (hookAnswer !== true) await answer(gate, hookAnswer);
       return;
-    if (
-      registry.hooks.webPostAuth.length &&
-      (await answer(gate, await runWebMiddleware(registry, 'post-auth', { request: webRequest(), url: raw, path, base, identity: user })))
-    )
-      return;
+    }
     if (signIn && path === signIn.path) {
       returnFromSignIn(gate, signIn, vary);
       return;
@@ -348,12 +358,14 @@ export function createApp(options: AppOptions) {
 
 /** One request through the dispatch: its parsed URL, app path, public base and lazily built web `Request`. */
 interface DispatchRequest extends GateRequest {
+  authorizationProbe?: true;
   routeContext: AuthRouteContext;
   webRequest: () => Request;
 }
 
 /** Sends a web `Response` a hook or plugin route answered with; false when it passed. */
 async function answer(gate: DispatchRequest, page: Response | undefined): Promise<boolean> {
-  if (page) await sendWebResponse(gate.response, page, gate.request.method);
+  if (page && gate.authorizationProbe) await page.body?.cancel();
+  else if (page) await sendWebResponse(gate.response, page, gate.request.method);
   return Boolean(page);
 }

@@ -29,10 +29,28 @@ export default defineConfig({
   await writeFile(
     join(app, 'check.mjs'),
     `import assert from 'node:assert/strict';
+import { access, readFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { dirname, resolve } from 'node:path';
 import { MemoryStorage, startServer, verifyJwt } from '@hazem3500/replays/server';
 import { describeObjectStorage } from '@hazem3500/replays/server/testing';
 import { defineViewerPlugin, VIEWER_API_VERSION } from '@hazem3500/replays/viewer';
 import { RecorderSession } from '@hazem3500/replays/capture';
+import { assertReplayBundle } from '@hazem3500/replays/model';
+import { buildNetworkRows, buildPerformance, collectErrors } from '@hazem3500/replays/viewer/diagnostics';
+assert.equal(typeof assertReplayBundle, 'function');
+const diagnostics = { meta: { duration: 100, url: 'https://example.com' }, events: [], steps: [], network: [], console: [] };
+assert.deepEqual(buildNetworkRows(diagnostics), []);
+assert.deepEqual(buildPerformance(diagnostics).moments, []);
+assert.deepEqual(collectErrors(diagnostics), []);
+const require = createRequire(import.meta.url);
+const packageFile = require.resolve('@hazem3500/replays/package.json');
+const manifest = JSON.parse(await readFile(packageFile, 'utf8'));
+for (const target of Object.values(manifest.exports)) {
+  for (const file of typeof target === 'string' ? [target] : Object.values(target)) {
+    await access(resolve(dirname(packageFile), file));
+  }
+}
 assert.equal(typeof defineViewerPlugin, 'function');
 assert.equal(defineViewerPlugin(() => {}).apiVersion, VIEWER_API_VERSION);
 assert.equal(typeof RecorderSession, 'function');
@@ -60,6 +78,7 @@ console.log('pack smoke ok');
   );
   run('npm', ['install', '--no-audit', '--no-fund', '--silent', join(out, tarball)], app);
   console.log(run(process.execPath, ['check.mjs'], app).trim());
+  console.log(run(process.execPath, [resolve(root, 'scripts/pack-browser-smoke.mjs')], app).trim());
 } finally {
   await rm(work, { recursive: true, force: true });
 }

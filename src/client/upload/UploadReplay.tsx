@@ -1,3 +1,4 @@
+import { MotionError, MotionLabel } from '../components/entry-motion.tsx';
 import { CheckIcon } from 'lucide-react';
 import { plural } from '../plural.ts';
 import { type FormEvent, type Ref, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -397,10 +398,10 @@ export function UploadReplay({
                   <Progress value={progress} aria-label="Upload progress" className="flex-1" />
                   <span className="upload-progress-label mono">
                     {phase.name === 'opening' ? (
-                      <span className="text-swap inline-flex items-center gap-1">
+                      <MotionLabel kind="success" className="text-swap inline-flex items-center gap-1">
                         <CheckIcon className="success-check size-3.5 text-[var(--success)]" aria-hidden="true" />
                         Opening…
-                      </span>
+                      </MotionLabel>
                     ) : (
                       `${progress}%`
                     )}
@@ -411,7 +412,7 @@ export function UploadReplay({
           )}
 
           {error ? (
-            <p key={error.message} className="upload-error shake" role="alert">
+            <MotionError key={error.message} className="upload-error shake" role="alert">
               {error.message}
               {error.existingId ? (
                 <>
@@ -419,7 +420,7 @@ export function UploadReplay({
                   <a href={replayHref(error.existingId)}>Open the stored replay</a>
                 </>
               ) : null}
-            </p>
+            </MotionError>
           ) : null}
           <p className="sr-only" role="status" aria-live="polite" aria-atomic="true">
             {status}

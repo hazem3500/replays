@@ -4,8 +4,20 @@ import { buildWaterfall, performanceHasDuration, validDuration, type WaterfallRo
 
 export type PerformanceSignal = Extract<WaterfallRow, { kind: 'performance' }>;
 
+/** Public diagnostic model on the playback timeline; captured metric values retain their original meaning. */
+export interface PerformanceModel {
+  rows: WaterfallRow[];
+  invalidTimes: number;
+  signals: PerformanceSignal[];
+  moments: PerformanceSignal[];
+  longestTask: PerformanceSignal | undefined;
+  slowestInteraction: PerformanceSignal | undefined;
+  largestPaint: PerformanceSignal | undefined;
+  track: ReplayBundle['performance'];
+}
+
 /** Reuse the source → edited span mapping; metric values always retain their captured meaning. */
-export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline) {
+export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline): PerformanceModel {
   const model = buildWaterfall(bundle, timeline);
   const signals = model.rows.filter((row): row is PerformanceSignal => row.kind === 'performance');
   const moments = signals
@@ -19,8 +31,6 @@ export function buildPerformance(bundle: ReplayBundle, timeline?: EditTimeline) 
     .reduce<PerformanceSignal | undefined>((latest, row) => (!latest || row.sourceAt >= latest.sourceAt ? row : latest), undefined);
   return { ...model, signals, moments, longestTask, slowestInteraction, largestPaint, track: bundle.performance };
 }
-
-export type PerformanceModel = ReturnType<typeof buildPerformance>;
 
 export function missingPerformanceLabel(model: PerformanceModel, api: string, kind: ReplayPerformanceKind) {
   if (!model.track) return 'Not recorded';

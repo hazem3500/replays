@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Framework-free replay example</title>
+    <link rel="stylesheet" href="./headless.css" />
+  </head>
+  <body>
+    <main>
+      <h1>A player without React or the application</h1>
+      <p>Own the markup and subscribe to the public playback service. <a href="./">React example</a></p>
+      <label for="recording">Choose replay JSON</label>
+      <input id="recording" type="file" accept="application/json,.json" />
+      <p id="error" role="alert"></p>
+      <div id="stage" class="stage headless-stage" aria-label="Recorded page" inert><div id="frame"></div></div>
+      <output id="diagnostics" aria-label="Recording diagnostics"></output>
+      <div class="controls" role="group" aria-label="Playback">
+        <button id="play" type="button" disabled>Play</button>
+        <input id="seek" type="range" aria-label="Position" min="0" max="1" step="1" value="0" disabled />
+        <output id="time">0:00.0 / 0:00.0</output>
+      </div>
+    </main>
+    <script type="module" src="./headless.js"></script>
+  </body>
+</html>

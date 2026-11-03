@@ -1,13 +1,13 @@
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from 'react';
 
 import { readStorage, writeStorage } from '../storage.ts';
+import { usePanelMotion } from './use-panel-motion.ts';
+import { cancelPanelMotion } from '../lib/panel-motion.ts';
 
 /** Within this many px of a snap point a drag lands on it. */
 const SNAP_PX = 8;
 /** Dragging this far past `min` folds a collapsible panel. */
 const COLLAPSE_PX = 48;
-/** How long the target keeps `data-splitter-settling` (its CSS spring) after a snap, reset or fold. */
-const SETTLE_MS = 360;
 
 export interface SplitterConfig {
   /** The separator line's orientation: `horizontal` sits between a top and a bottom panel (row-resize). */
@@ -30,7 +30,7 @@ export interface SplitterConfig {
   onPreview?: (size: number, collapsed: boolean) => void;
   /** Committed sizes are kept here, per browser. */
   storageKey?: string;
-  /** The element whose size changes animate: it gets `data-splitter-settling` while a snap, reset or fold settles. */
+  /** The grid whose committed row or column changes settle through Motion; pointer previews remain direct. */
   settleTarget?: { current: HTMLElement | null };
   label: string;
   /** Arrow-key step, px (Shift: four times). */
@@ -87,17 +87,13 @@ function keyCommit(event: KeyboardEvent<HTMLElement>, config: SplitterConfig): K
   return;
 }
 
-/** Commits a size (clamped, persisted) or a fold; snaps, resets and folds settle with the target's spring. */
+/** Commits and persists sizes; Motion settles explicit snaps and folds while pointer previews remain direct. */
 function useCommit(config: SplitterConfig) {
   const { min, max, collapsed = false } = config;
-  const settle = () => {
-    const target = config.settleTarget?.current;
-    if (!target || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    target.setAttribute('data-splitter-settling', '');
-    window.setTimeout(() => target.removeAttribute('data-splitter-settling'), SETTLE_MS);
-  };
+  const settle = usePanelMotion();
   return (size: number, fold = false, animate = false) => {
-    if (animate) settle();
+    if (animate && config.settleTarget?.current)
+      settle(config.settleTarget.current, config.orientation === 'horizontal' ? 'rows' : 'columns');
     if (fold !== collapsed) config.onCollapsedChange?.(fold);
     if (fold) return;
     const next = clamp(size, min, max);
@@ -128,6 +124,7 @@ function useDrag(config: SplitterConfig, commit: ReturnType<typeof useCommit>) {
   const handlers = {
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       if (event.button !== 0) return;
+      if (config.settleTarget?.current) cancelPanelMotion(config.settleTarget.current);
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);
       drag.current = { start: coordinate(event), from: collapsed ? min - COLLAPSE_PX : value, size: value, folded: collapsed, frame: 0 };

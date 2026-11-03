@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 
 import { activeThread } from '../../shared/comments.ts';
 import { EmptyState } from '@/components/ui/empty-state.tsx';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 import { useThreadFollow } from '../hooks/use-thread-follow.ts';
 import { usePlayhead } from '../player.ts';
 import { Composer } from './Composer.tsx';
@@ -29,6 +30,7 @@ export function CommentsPanel() {
  */
 export function CommentsPanelView({ comments }: { comments: CommentsApi }) {
   const list = useRef<HTMLDivElement>(null);
+  useViewerPresenceMotion(list, 'comments');
   const [filter, setFilter] = useState<ThreadFilter>('all');
   const { threads, pins, selectedId } = comments;
   const activeId = usePlayhead((time) =>

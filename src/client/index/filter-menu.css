@@ -38,15 +38,6 @@
   overscroll-behavior: contain;
 }
 
-/* Base UI supplies the transform origin and starting/ending attributes. */
-.filter-menu.motion-pop {
-  transform-origin: var(--transform-origin);
-  transition: opacity 150ms var(--filter-ease), transform 150ms var(--filter-ease);
-}
-.filter-menu.motion-pop[data-starting-style],
-.filter-menu.motion-pop[data-ending-style] { opacity: 0; transform: scale(0.96); }
-.filter-menu.motion-pop[data-ending-style] { transition-duration: 100ms; }
-
 /* ---------- Head ---------- */
 .filter-menu .filter-menu-head,
 .filter-menu .filter-choice-head {
@@ -128,8 +119,7 @@
   background: var(--switch-track);
   transition: background-color var(--switch-duration) ease;
 }
-.filter-switch::after {
-  content: "";
+.filter-switch > .filter-switch-thumb {
   position: absolute;
   top: var(--switch-inset);
   left: var(--switch-inset);
@@ -138,17 +128,8 @@
   border-radius: calc(var(--switch-height) / 2);
   background: var(--switch-thumb);
   box-shadow: var(--switch-thumb-shadow);
-  transition: transform var(--switch-duration) var(--ease-out), width 140ms var(--ease-out);
 }
 .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch { background: var(--switch-track-on); }
-.filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after {
-  transform: translateX(calc(var(--switch-width) - var(--switch-height)));
-}
-/* Pressing stretches the thumb toward the far side (iOS), so the toggle feels like it was pulled, not snapped. */
-.filter-switch-row:active .filter-switch::after { width: calc(var(--switch-height) - 2 * var(--switch-inset) + 4px); }
-.filter-switch-row:is([data-checked], [aria-checked="true"]):active .filter-switch::after {
-  transform: translateX(calc(var(--switch-width) - var(--switch-height) - 4px));
-}
 .filter-sheet { --switch-width: 44px; --switch-height: 26px; --switch-inset: 3px; }
 
 /* ---------- Choice pane: a command list ---------- */
@@ -258,27 +239,14 @@
   .filter-menu .filter-row:hover .filter-kind-icon { color: var(--text-secondary); }
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .filter-menu .filter-pane { animation: filter-menu-pane-forward 160ms var(--filter-ease) both; }
-  .filter-menu .filter-pane[data-panel-direction="backward"] { animation-name: filter-menu-pane-backward; }
-  @keyframes filter-menu-pane-forward {
-    from { opacity: 0; transform: translateX(8px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-  @keyframes filter-menu-pane-backward {
-    from { opacity: 0; transform: translateX(-8px); }
-    to { opacity: 1; transform: translateX(0); }
-  }
-}
-
 @media (pointer: coarse) {
   .filter-menu { --filter-row-height: 40px; }
   .filter-menu .filter-search { height: 44px; }
 }
 
 @media (forced-colors: active) {
-  .filter-switch, .filter-switch::after { forced-color-adjust: none; border: 1px solid CanvasText; background: Canvas; }
-  .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch::after { background: Highlight; }
+  .filter-switch, .filter-switch > .filter-switch-thumb { forced-color-adjust: none; border: 1px solid CanvasText; background: Canvas; }
+  .filter-switch-row:is([data-checked], [aria-checked="true"]) .filter-switch > .filter-switch-thumb { background: Highlight; }
 }
 
 /* Phone sheet: same list, larger rows (feed.css); hairlines between groups, labels aligned without row icons. */

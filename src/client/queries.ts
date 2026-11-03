@@ -1,6 +1,8 @@
 import { fetchPage } from './sign-in.tsx';
 import { QueryClient, type QueryCache, queryOptions } from '@tanstack/react-query';
 
+import { assertReplayId } from '../shared/replay.ts';
+import { bulkTrashResultSchema, dataStorageSchema } from '../shared/data-storage.ts';
 import type { ReplayBundle } from '../shared/replay.ts';
 import type { ClientConfig } from './config.ts';
 import type { ReviewSuite, ReviewSuiteIndexRun } from '../shared/review-suite.ts';
@@ -223,3 +225,46 @@ export function createQueryClient() {
 }
 
 export const queryClient = createQueryClient();
+
+/** Live storage policy and visible trash; unlike branding this can change while Settings stays open. */
+export const dataStorageQuery = queryOptions({
+  queryKey: ['data-storage'] as const,
+  queryFn: async ({ signal }) => {
+    const response = await fetchPage(apiUrl('data-storage'), { signal });
+    if (!response.ok) throw new Error(`Storage settings failed to load (${response.status})`);
+    return dataStorageSchema.parse(await response.json());
+  },
+  staleTime: 0,
+  retry: false,
+});
+
+/** Existing per-replay endpoints retain their authorization, keep protection and server restore window. */
+export async function changeReplayStorage(id: string, action: 'trash' | 'restore'): Promise<void> {
+  assertReplayId(id);
+  const path = `replays/${encodeURIComponent(id)}${action === 'restore' ? '/restore' : ''}`;
+  const response = await fetchPage(apiUrl(path), { method: action === 'restore' ? 'POST' : 'DELETE' });
+  if (response.ok) return;
+  if (response.status === 409) {
+    const body: unknown = await response.json().catch(() => null);
+    if (body && typeof body === 'object' && 'error' in body && body.error === 'committed samples are read-only')
+      throw new Error('Bundled sample recordings cannot be deleted.');
+    throw new Error('This replay is kept. Release its keep before deleting it.');
+  }
+  if (response.status === 401 || response.status === 403) throw new Error('You do not have access to change this replay.');
+  if (response.status === 404) throw new Error('This replay could not be found in the requested state.');
+  throw new Error('The replay could not be changed. Try again.');
+}
+
+/** Moves authorized uploads to trash while the server preserves kept replays. */
+export async function deleteAllReplays() {
+  const response = await fetchPage(apiUrl('data-storage/trash'), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ confirm: 'trash-all' }),
+  });
+  if (!response.ok)
+    throw new Error(
+      response.status === 403 ? 'You do not have access to delete these replays.' : 'Replays could not be deleted. Try again.',
+    );
+  return bulkTrashResultSchema.parse(await response.json());
+}

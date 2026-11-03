@@ -1,12 +1,14 @@
+import { spring } from 'motion';
 import { flushSync } from 'react-dom';
 
+import { motionView } from './motion-view.ts';
 import { forgetHint } from './open-hint.ts';
-import { name, unnameAll } from './shared-elements.ts';
+import { namePicture, unnameAll, viewerPicture } from './shared-elements.ts';
 import { currentTransition, follow, isTurn, nextTurn, setSwappingInPlace, supportsTransitions } from './state.ts';
 
 /* why: in-place swaps (a suite's runs). The runs sidebar stays perfectly still (its live layer, so only its selection
  * glides), the frame crossfades between the two runs at its rect (resizing smoothly if the aspect differs), the top
- * bar and transport crossfade in place, and the step rail and panel crossfade with a 4 px rise (styles.css, "run").
+ * bar and transport crossfade in place, and Motion brings the step rail and panel in with a 4 px rise.
  * The new run renders complete inside the update (rrweb included: a crossfade has nothing to stall), and the old one
  * stays on screen while its data loads, up to a short wait. A switch while one runs (a held J) lands at once.
  */
@@ -32,23 +34,49 @@ export function swapInPlace(update: () => void, ready: Promise<unknown>, { insta
       return;
     }
     unnameAll();
-    name(document.querySelector('.app-shell .player-frame'), 'vt-hero');
-    root.dataset.pageTransition = 'run';
-    const transition = document.startViewTransition(() => {
-      unnameAll();
-      setSwappingInPlace(true);
-      try {
-        flushSync(update);
-      } finally {
-        setSwappingInPlace(false);
-      }
-      name(document.querySelector('.app-shell .player-frame, .app-shell .sk-frame'), 'vt-hero');
-    });
+    namePicture(viewerPicture(), 'vt-run-hero');
+    root.dataset.pageTransition = 'motion-run';
+    const transition = motionView(
+      () => {
+        if (!isTurn(turn)) return;
+        unnameAll();
+        setSwappingInPlace(true);
+        try {
+          flushSync(update);
+        } finally {
+          setSwappingInPlace(false);
+        }
+        namePicture(viewerPicture(), 'vt-run-hero');
+      },
+      (view) => {
+        view.old({ opacity: [1, 1] }).new({ opacity: [0, 1] }, { duration: 0.2 });
+        view
+          .add('[style*="view-transition-name: vt-run-hero"]')
+          .group(false)
+          .crop(true)
+          .layout({ type: spring, duration: 0.28, bounce: 0.06 })
+          .old({ opacity: [1, 1] }, { duration: 0.2 })
+          .new({ opacity: [0, 1] }, { duration: 0.2 });
+        for (const panel of ['.app-shell .timeline-panel', '.app-shell .inspector']) {
+          view
+            .add(panel, panel)
+            .layout({ duration: 0 })
+            .old({ opacity: [1, 1] })
+            .new({ opacity: [0, 1], transform: ['translateY(4px)', 'translateY(0px)'] }, { duration: 0.22 });
+        }
+        const sidebar = '.suite-sidebar';
+        view
+          .add(sidebar, sidebar)
+          .layout({ duration: 0 })
+          .old({ opacity: [0, 0] })
+          .new({ opacity: [1, 1] });
+      },
+    );
     follow(transition);
     void transition.finished
       .catch(() => {})
       .then(() => {
-        if (currentTransition()) return;
+        if (!isTurn(turn)) return;
         delete root.dataset.pageTransition;
         unnameAll();
       });

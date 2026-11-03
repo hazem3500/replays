@@ -10,6 +10,7 @@
     "types": ["node"]
   },
   "include": [
+    "src/client/env.d.ts",
     "src/server/json-schema.d.ts",
     "src/index.ts",
     "src/capture/index.ts",
@@ -19,7 +20,11 @@
     "src/config/index.ts",
     "src/client/plugins/api.ts",
     "src/first-party/iap.ts",
-    "src/first-party/gcs.ts"
+    "src/first-party/gcs.ts",
+    "src/shared/model.ts",
+    "src/client/playback/index.ts",
+    "src/client/compose/index.ts",
+    "src/client/diagnostics.ts"
   ],
   "exclude": ["src/capture/injected-recorder.ts", "src/server/storage/traced.ts"]
 }

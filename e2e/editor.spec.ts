@@ -47,7 +47,10 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
   const id = await uploadCopy(page, 'editor-layout');
   await openEditor(page, id);
   const panel = page.getByRole('complementary', { name: 'Inspector' });
+  await expect(panel).toHaveCount(0);
+  await page.locator('body').press('t');
   await expect(panel).toBeVisible();
+  await expect(panel.getByRole('heading', { name: 'Caption', exact: true })).toBeVisible();
   const frame = page.locator('.editor-stage > .stage-wrap');
   await expect(frame).toHaveCSS('box-shadow', 'none');
   await expect(frame).toHaveCSS('border-radius', '0px');
@@ -63,7 +66,6 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
   await splitter.focus();
   await page.keyboard.press('ArrowUp');
   await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(dockBox.height + 24, 0);
-  await page.locator('body').press('t');
   const region = page.getByTestId('region-caption').first();
   const body = region.locator('.tl-region-body');
   await body.scrollIntoViewIfNeeded();
@@ -83,7 +85,8 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
   const play = page.getByTestId('editor-play');
   await play.hover();
   await page.mouse.down();
-  await expect(play).toHaveCSS('scale', '1');
+  // why: an unset scale (none) and scale 1 both mean the press leaves the button at its size.
+  expect(['1', 'none']).toContain(await play.evaluate((element) => getComputedStyle(element).scale));
   await expect(play).toHaveCSS('transform', 'none');
   await page.mouse.up();
   await play.click();
@@ -104,7 +107,8 @@ test('edit mode: remove waits, cut a range, undo, trim; Done plays the edits wit
   await page.keyboard.press('Escape');
   await openEditor(page, id);
   await expect(page.getByTestId('save-state')).toHaveText('Not edited yet');
-  await expect(page.getByTestId('editor-hint')).toContainText('Drag the clip’s edges to trim');
+  await expect(page.getByTestId('editor-hint')).toHaveCount(0);
+  await expect(page.getByTestId('editor-operation-status')).toHaveCount(0);
   await expect(page.getByRole('link', { name: 'Back to the replay' })).toHaveAttribute('href', new RegExp(`/r/${id}$`));
 
   // Remove waits: suggested first, applied with Enter (the demo recording has more than one wait to cut).
@@ -149,7 +153,7 @@ test('edit mode: remove waits, cut a range, undo, trim; Done plays the edits wit
   expect(stored.trim.start).toBe(0);
 
   // Done: back to the viewer, which shows (and plays) the edited replay with its quiet label.
-  await page.getByTestId('editor-done').click();
+  await page.getByRole('link', { name: 'Back to the replay' }).click();
   await expect(page).toHaveURL(new RegExp(`/r/${id}$`));
   await expect(page.getByTestId('editor')).toHaveCount(0);
   await expect(page.locator('.editor-dock')).toHaveCount(0);
@@ -210,7 +214,7 @@ test('a save over newer edits is refused with the current list', async ({ page }
   expect(await stale.json()).toMatchObject({ current: { revision: 1, cuts: [{ id: 'cut-1' }] } });
 });
 
-test('on a phone the preview shows, nothing scrolls sideways, and a no-op says so in the hint line, not a toast', async ({ page }) => {
+test('on a phone the preview fits and a no-op shows a temporary accessible operation result', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   const id = await uploadCopy(page, 'editor-phone');
   await page.goto(`${base()}/r/${id}/edit`);
@@ -219,22 +223,25 @@ test('on a phone the preview shows, nothing scrolls sideways, and a no-op says s
   expect(frame.width).toBeGreaterThan(300);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 
-  // Every wait cut, W again has nothing to do: a note under the timeline, which then goes.
+  // why: removing the standing hint must preserve feedback when an operation has nothing left to change.
   await page.locator('body').press('w');
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('region-cut').first()).toBeVisible();
   await page.keyboard.press('w');
-  await expect(page.getByTestId('editor-hint')).toHaveText('No waits left to cut');
-  await expect(page.getByTestId('editor-hint')).toBeVisible();
+  await expect(page.getByTestId('editor-operation-status')).toHaveText('No waits left to cut');
+  await expect(page.getByTestId('editor-operation-status')).toBeVisible();
+  await expect(page.getByTestId('editor-operation-announcement')).toHaveText('No waits left to cut');
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
-  await expect(page.getByTestId('editor-hint')).toBeHidden({ timeout: 5000 });
-  await page.locator('.editor-mobile-header').getByRole('button', { name: 'More actions' }).click();
-  await expect(page.getByTestId('editor-done')).toBeInViewport();
+  await expect(page.getByTestId('editor-operation-status')).toHaveCount(0, { timeout: 5000 });
+  await expect(page.getByRole('button', { name: 'Back to the replay' })).toBeInViewport();
 });
 
 test('with the flag on, the server says so and the viewer offers the editor', async ({ page }) => {
   const config = await (await page.request.get(`${base()}/api/config`)).json();
-  expect(config.beta).toEqual({ editor: true, malleable: false });
+  expect(config.beta).toEqual({ editor: true, cursorCustomization: false, malleable: false });
+  await page.goto(`${base()}/r/demo-shop/edit`);
+  await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
+  await expect(page.locator('#cursor-inspector')).toHaveCount(0);
   await page.goto(`${base()}/r/demo-shop`);
   await expect(page.locator('meta[name="app-beta"]')).toHaveAttribute('content', 'editor');
   await expect(page.getByTestId('edit-replay')).toBeVisible();
@@ -262,7 +269,7 @@ test('editor entry has a stable stage and timeline skeleton, without a viewer in
   const skeleton = page.getByTestId('editor-skeleton');
   await expect(skeleton).toBeVisible();
   await expect(skeleton.getByRole('heading', { level: 1 })).toContainText(meta.title);
-  await expect(skeleton.getByTestId('inspector-skeleton')).toContainText('Motion');
+  await expect(skeleton.getByTestId('inspector-skeleton')).toHaveCount(0);
   await expect(skeleton.locator('.editor-loading-gutter')).toHaveText('Clip');
   await expect(skeleton.locator('.loading-notice')).toHaveCount(0);
   await expect(skeleton.locator('.sk-steps, .sk-table-head, .sk-tabs')).toHaveCount(0);
@@ -273,7 +280,7 @@ test('editor entry has a stable stage and timeline skeleton, without a viewer in
   const loaded = await editorRects(page, '.player-host .replayer-wrapper');
   for (const part of Object.keys(loaded) as Array<keyof typeof loaded>) {
     for (const edge of ['x', 'y', 'width', 'height'] as const)
-      expect(Math.abs(loading[part][edge] - loaded[part][edge])).toBeLessThanOrEqual(2);
+      expect(Math.abs(loading[part][edge] - loaded[part][edge]), `${part} ${edge}`).toBeLessThanOrEqual(2);
   }
 });
 
@@ -285,7 +292,6 @@ async function editorRects(page: Page, frame: string) {
   };
   return {
     stage: await rect('.editor-stage'),
-    inspector: await rect('.editor-presentation'),
     dock: await rect('.editor-dock'),
     frame: await rect(frame),
   };
@@ -329,7 +335,7 @@ test('export uses the saved edit revision; viewing original preserves edits', as
   });
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await expect(page.getByTestId('editor-done')).toHaveText('View replay');
+  await expect(page.getByRole('link', { name: 'Back to the replay' })).toBeVisible();
   await page.locator('body').press('c');
   await expect(page.getByTestId('save-state')).toHaveText('Saved');
   const saved = await (await page.request.get(`${base()}/api/replays/${id}/edits`)).json();

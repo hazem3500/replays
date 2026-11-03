@@ -1,4 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
+import { usePanelPendingMotion } from '../hooks/use-panel-pending-motion.ts';
 
 const STRINGS = {
   steps: 'Loading steps',
@@ -116,8 +117,13 @@ const FRAMES: Record<Pending, ReactNode> = {
  */
 export function PanelPending({ panel }: { panel: string }) {
   const kind = isPending(panel) ? panel : 'fallback';
+  return <PendingFrame key={kind} kind={kind} />;
+}
+
+function PendingFrame({ kind }: { kind: Pending }) {
+  const ref = usePanelPendingMotion();
   return (
-    <div className="panel-pending" data-panel={kind} aria-busy="true" data-testid="panel-pending">
+    <div ref={ref} className="panel-pending" data-panel={kind} aria-busy="true" data-testid="panel-pending">
       <span className="visually-hidden" role="status">
         {STRINGS[kind]}
       </span>

@@ -1,4 +1,4 @@
-import { ArrowRightIcon, LayersIcon } from 'lucide-react';
+import { LayersIcon } from 'lucide-react';
 import { createContext, type PointerEvent, type ReactNode, useContext, useRef } from 'react';
 
 import { formatClock, type ReplaySummary } from '../../shared/replay.ts';
@@ -16,16 +16,21 @@ import { cn } from '@/lib/utils.ts';
 import { formatRelative } from '../format.ts';
 import { replayHref, replayInSuiteHref, suiteHref } from '../routing/links.ts';
 import { playableReplayId } from '../suite/runs.ts';
-import { errorTotal, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
+import { errorTotal, type FeedCalendar, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
+import { useHydrated } from '../hooks/use-hydrated.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
-import { type SuiteCycle, useShuffle, useSuiteCycle } from './suite-cycle.ts';
+import { type SuiteCycle, useSuiteCycle } from './suite-cycle.ts';
+import { useRunStripMotion } from '../hooks/use-feed-control-motion.ts';
+import { useShuffle } from '../hooks/use-suite-shuffle.ts';
 import { useIntentPrefetch } from '../intent-prefetch.ts';
+import { FeedMotion, MotionFeedItem, MotionRearSheet, RunMenuArrow } from './FeedMotion.tsx';
 import { FeedList, type FeedRowPlace } from './FeedList.tsx';
 import { ExpiryHint } from './FeedRowActions.tsx';
+import { ReplayRowMenu } from './ReplayRowMenu.tsx';
 
 /*
  * The replay index as a visual feed: sessions and review suites as rows (list) or cards (grid), each
@@ -120,7 +125,11 @@ function Highlight({ text, query }: { text: string; query: string }) {
 }
 
 /** Rows under day headings (Feed, grouped by time): the heading already says the day. */
-const GroupedContext = createContext(false);
+const FEED_CONTEXTS = {
+  utc: { grouped: { grouped: true, calendar: 'utc' }, flat: { grouped: false, calendar: 'utc' } },
+  local: { grouped: { grouped: true, calendar: 'local' }, flat: { grouped: false, calendar: 'local' } },
+} satisfies Record<FeedCalendar, Record<'grouped' | 'flat', { grouped: boolean; calendar: FeedCalendar }>>;
+const GroupedContext = createContext<{ grouped: boolean; calendar: FeedCalendar }>(FEED_CONTEXTS.utc.flat);
 
 /**
  * A row's time. Under day headings it doesn't repeat the heading: the time of day under Today/Yesterday, the date
@@ -128,11 +137,11 @@ const GroupedContext = createContext(false);
  * headings (other sorts) it stays relative.
  */
 function Relative({ at, narrow }: { at: string; narrow?: boolean }) {
-  const grouped = useContext(GroupedContext);
+  const { grouped, calendar } = useContext(GroupedContext);
   const relative = formatRelative(at, undefined, 'long');
   return (
     <time dateTime={at} {...(grouped ? { title: relative } : {})}>
-      {grouped ? feedTime(at) : formatRelative(at, undefined, narrow ? 'narrow' : 'long')}
+      {grouped ? feedTime(at, undefined, calendar) : formatRelative(at, undefined, narrow ? 'narrow' : 'long')}
     </time>
   );
 }
@@ -155,6 +164,25 @@ function RowColumns({ at, host }: { at: string; host: string }) {
 /** Rows whose posters load at once with high priority: what a phone or a desktop shows above the fold. */
 const FIRST_ROWS = 6;
 
+/** The row link's accessible name: error counts are details on screen, but still named for screen readers. */
+function sessionName(summary: ReplaySummary, showId: boolean) {
+  const errors = errorTotal(summary);
+  const origin = summary.source === 'human' ? 'rrweb import' : 'Agent capture';
+  return [
+    summary.title,
+    'Replay',
+    formatBadgeDuration(summary.duration),
+    summary.sources?.[0] ? `from ${sourceText(summary.sources[0])}` : origin,
+    errors ? plural(errors, 'error') : '',
+    formatRelative(summary.capturedAt),
+    summary.host,
+    summary.steps ? plural(summary.steps, 'step') : '',
+    showId ? `id ${summary.id}` : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+}
+
 function SessionItem({
   summary,
   view,
@@ -168,27 +196,13 @@ function SessionItem({
   place: FeedRowPlace;
   rowRef: ((element: HTMLElement | null) => void) | undefined;
 }) {
-  const errors = errorTotal(summary);
-  const imported = summary.source === 'human';
   const showId = Boolean(query) && summary.id.toLowerCase().includes(query.toLowerCase());
   const href = replayHref(summary.id);
   const playing = usePreviewActive(`session:${summary.id}`);
-  // Error counts are details on screen, but still named for screen readers.
-  const name = [
-    summary.title,
-    'Replay',
-    formatBadgeDuration(summary.duration),
-    summary.sources?.[0] ? `from ${sourceText(summary.sources[0])}` : imported ? 'rrweb import' : 'Agent capture',
-    errors ? plural(errors, 'error') : '',
-    formatRelative(summary.capturedAt),
-    summary.host,
-    summary.steps ? plural(summary.steps, 'step') : '',
-    showId ? `id ${summary.id}` : '',
-  ]
-    .filter(Boolean)
-    .join(', ');
+  const name = sessionName(summary, showId);
   return (
-    <li
+    <MotionFeedItem
+      view={view}
       ref={rowRef}
       className="feed-item feed-session"
       data-view={view}
@@ -208,10 +222,11 @@ function SessionItem({
         priority={place.index < FIRST_ROWS}
       />
       <div className="feed-body">
-        <div className="feed-head">
+        <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
           <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
             {summary.title}
           </a>
+          <ReplayRowMenu id={summary.id} title={summary.title} />
         </div>
         <div className="feed-meta">
           <SourceLead sources={summary.sources} origin={summary.source} />
@@ -233,7 +248,7 @@ function SessionItem({
         <IndexColumns summary={summary} />
       </div>
       {view === 'list' ? <RowColumns at={summary.capturedAt} host={summary.host} /> : null}
-    </li>
+    </MotionFeedItem>
   );
 }
 
@@ -266,12 +281,15 @@ function RunStrip({
   /** Grid cards: at most ~64 px, so the time and commit beside it never truncate. */
   compact?: boolean;
 }) {
+  const strip = useRef<HTMLButtonElement>(null);
+  useRunStripMotion(strip);
   const { segments, more } = runStrip(runs, runLength, compact ? { maxPx: 64, minPx: 8 } : {});
   const failed = runs.filter((run) => run.status === 'failed').length;
   const summary = `${plural(runs.length, 'run')}${failed ? `, ${failed} failed` : ''}`;
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
+        ref={strip}
         className={cn('run-strip', className)}
         aria-label={`Runs of ${suite.title}: ${summary}`}
         data-runs={runs.length}
@@ -325,7 +343,7 @@ function RunStrip({
         <DropdownMenuSeparator />
         <DropdownMenuItem className="run-menu-item run-menu-all" render={<a href={suiteHref(suite.id)} />}>
           Open suite
-          <ArrowRightIcon className="run-menu-arrow" aria-hidden="true" />
+          <RunMenuArrow />
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
@@ -391,7 +409,8 @@ function SuiteItem({
       <span className={cn('run-strip-note', className)}>No runs yet</span>
     );
   return (
-    <li
+    <MotionFeedItem
+      view={view}
       ref={(node) => {
         card.current = node;
         rowRef?.(node);
@@ -399,15 +418,21 @@ function SuiteItem({
       className="feed-item feed-suite"
       data-view={view}
       data-entry-id={`suite:${suite.id}`}
+      data-stack-front={poster?.id}
       data-row={place.index}
       data-index={place.measured ? place.index : undefined}
       data-last={place.last || undefined}
       {...previewHandlers(`suite:${suite.id}`)}
     >
-      {view === 'grid' ? <CardBacks runs={suite.runDetails} front={poster} /> : null}
       <div className="suite-sheet">
         {view === 'grid' ? (
-          <span className="shuffle-window">
+          <span className="shuffle-window" data-replay-id={shownId}>
+            <CardBacks runs={suite.runDetails} front={poster} />
+            {count > 6 ? (
+              <span className="stack-more" aria-hidden="true">
+                +{count - 6} more
+              </span>
+            ) : null}
             <Poster
               id={shownId}
               host={host}
@@ -461,13 +486,13 @@ function SuiteItem({
         {/* The same trailing column as replays: the time over a muted host. */}
         {view === 'list' ? <RowColumns at={suite.createdAt} host={host} /> : null}
       </div>
-    </li>
+    </MotionFeedItem>
   );
 }
 
-/** Sheets behind a suite's front card, back to front: one per other run, at most two. */
+/** Up to five exposed rear sheets and one buried reserve keep large suites bounded. */
 function stackLayers(runCount: number): number[] {
-  return runCount >= 3 ? [2, 1] : runCount === 2 ? [1] : [];
+  return Array.from({ length: Math.min(6, Math.max(0, runCount - 1)) }, (_, index) => Math.min(6, runCount - 1) - index);
 }
 
 /** The runs drawn on the sheets behind the front poster (nearest first): recorded runs before the rest. */
@@ -488,7 +513,7 @@ function BackPoster({ run }: { run: ReviewSuiteIndexRun | undefined }) {
 }
 
 /**
- * A suite's thumbnail as a pile: the front poster plus one plain sheet per other run (at most two) behind it.
+ * A suite's thumbnail as a pile: the front poster plus up to five exposed sheets behind it.
  * While the row is hovered or reached by keyboard the sheets fan out a little (feed.css); the hover preview starts later, after its intent delay.
  */
 function PosterStack({
@@ -503,43 +528,57 @@ function PosterStack({
   return (
     <span className="poster-stack" aria-hidden="true">
       {backRuns(runs, front).map(({ layer, run }) => (
-        <span key={layer} className={`stack-layer stack-layer-${layer}`}>
+        <MotionRearSheet
+          depth={layer}
+          grid={false}
+          key={layer}
+          className={`stack-layer stack-layer-${layer}`}
+          data-run-id={run?.id}
+          data-replay-id={run ? playableReplayId(run, true) : undefined}
+          data-stack-depth={layer}
+          data-stack-reserve={layer > 5 || undefined}
+          style={{ zIndex: 7 - layer }}
+        >
           <BackPoster run={run} />
-        </span>
+        </MotionRearSheet>
       ))}
-      <span className="stack-front">{children}</span>
+      <span className="stack-front" data-replay-id={front ? playableReplayId(front, true) : undefined}>
+        {children}
+      </span>
     </span>
   );
 }
 
 /**
- * Grid suites as an album stack (Apple Photos style): card-shaped plain sheets behind the whole card, centred,
- * peeking above its top edge; one per other run (at most two). Per-run status lives in the run pills.
+ * Grid suites keep the other runs as thumbnail sheets, independent of the stationary information below.
  */
 function CardBacks({ runs, front }: { runs: ReviewSuiteIndexRun[]; front: ReviewSuiteIndexRun | undefined }) {
   return (
     <>
       {backRuns(runs, front).map(({ layer, run }) => (
-        <span
+        <MotionRearSheet
+          depth={layer}
+          grid
           key={layer}
           className={`card-back card-back-${layer}`}
+          data-run-id={run?.id}
+          data-replay-id={run ? playableReplayId(run, true) : undefined}
+          data-stack-depth={layer}
+          data-stack-reserve={layer > 5 || undefined}
+          style={{ zIndex: 7 - layer }}
           aria-hidden="true"
           // The backs are part of the card: a click on the strip above it opens the suite, like the card.
           onClick={(event) => event.currentTarget.closest('li')?.querySelector<HTMLAnchorElement>('.row-target')?.click()}
         >
           <BackPoster run={run} />
-        </span>
+        </MotionRearSheet>
       ))}
     </>
   );
 }
 
-/**
- * A cycling suite card's front poster props: the run on screen, played once (then the stack shuffles to the next),
- * the next one warmed past halfway, and a short "02 · Desktop: login only" label on each change.
- */
+/** Suite previews play once before advancing and warm the next recording past halfway. */
 function cyclePosterProps(cycle: SuiteCycle, capture: () => void) {
-  const run = cycle.current;
   if (!cycle.cycling) return {};
   return {
     onPreviewEnd: () => {
@@ -547,15 +586,6 @@ function cyclePosterProps(cycle: SuiteCycle, capture: () => void) {
       cycle.advance();
     },
     onPreviewHalf: cycle.warmNext,
-    ...(cycle.step > 0 && run
-      ? {
-          caption: (
-            <span key={cycle.step} className="poster-caption">
-              {String(run.sequence).padStart(2, '0')} · {run.label}
-            </span>
-          ),
-        }
-      : {}),
   };
 }
 
@@ -576,21 +606,27 @@ export { entryTime } from './feed-layout.ts';
 /** The feed: day groups with sticky headings when sorted by time, else one flat list (FeedList.tsx lays it out). */
 export function Feed({ entries, view, grouped, query }: { entries: FeedEntry[]; view: FeedView; grouped: boolean; query: string }) {
   useIntentPrefetch(entries);
+  const hydrated = useHydrated();
+  // why: the server cannot know this browser's locale or time zone; headings and row clocks switch together after hydration.
+  const calendar: FeedCalendar = hydrated ? 'local' : 'utc';
   return (
-    <GroupedContext.Provider value={grouped}>
-      <FeedList
-        entries={entries}
-        view={view}
-        grouped={grouped}
-        renderEntry={(entry, place, rowRef) =>
-          entry.kind === 'session' ? (
-            <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} place={place} rowRef={rowRef} />
-          ) : (
-            <SuiteItem key={`suite:${entry.id}`} entry={entry} view={view} place={place} rowRef={rowRef} />
-          )
-        }
-      />
-    </GroupedContext.Provider>
+    <FeedMotion>
+      <GroupedContext.Provider value={FEED_CONTEXTS[calendar][grouped ? 'grouped' : 'flat']}>
+        <FeedList
+          entries={entries}
+          view={view}
+          grouped={grouped}
+          calendar={calendar}
+          renderEntry={(entry, place, rowRef) =>
+            entry.kind === 'session' ? (
+              <SessionItem key={`session:${entry.id}`} summary={entry.summary} view={view} query={query} place={place} rowRef={rowRef} />
+            ) : (
+              <SuiteItem key={`suite:${entry.id}`} entry={entry} view={view} place={place} rowRef={rowRef} />
+            )
+          }
+        />
+      </GroupedContext.Provider>
+    </FeedMotion>
   );
 }
 

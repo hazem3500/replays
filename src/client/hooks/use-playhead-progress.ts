@@ -4,7 +4,7 @@ import { usePlayer } from '../player.ts';
 
 /**
  * Writes the playhead's position over `span` ms (0 to 1) to `--progress` on the element, outside React, so a strip can
- * move its playhead with a transform and a CSS transition instead of re-rendering on every tick of the clock.
+ * move its playhead directly with replay time instead of re-rendering on every tick of the clock.
  */
 export function usePlayheadProgress(target: RefObject<HTMLElement | null>, span: number) {
   const player = usePlayer();

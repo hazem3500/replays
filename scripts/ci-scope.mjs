@@ -55,6 +55,7 @@ export const SUITES = {
       'stories/**',
       '.storybook/**',
       'examples/custom-distro/**',
+      'examples/composed-viewer/**',
       'examples/agent-native/**',
       'examples/host-app/**',
       'site/**',

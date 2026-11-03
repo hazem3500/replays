@@ -1,5 +1,6 @@
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { IconButton } from '@/components/icon-button.tsx';
+import { IconSwap } from '@/components/icon-swap.tsx';
 
 import { formatClock } from '../../shared/replay.ts';
 import { usePlayerState, usePlayhead } from '../player.ts';
@@ -17,10 +18,10 @@ export function EditorPlayButton({ onSwitch }: { onSwitch: () => void }) {
       onClick={onSwitch}
       data-testid="editor-play"
     >
-      <span className="icon-swap" data-state={status === 'playing' ? 'b' : 'a'} aria-hidden="true">
+      <IconSwap state={status === 'playing' ? 'b' : 'a'}>
         <AnimatedIcon name="play" className="icon-a filled-icon" />
         <AnimatedIcon name="pause" className="icon-b filled-icon" />
-      </span>
+      </IconSwap>
     </IconButton>
   );
 }

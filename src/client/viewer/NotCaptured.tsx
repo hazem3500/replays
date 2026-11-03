@@ -1,3 +1,5 @@
+import { GaugeIcon } from 'lucide-react';
+
 import { CopyButton } from '@/components/copy-button.tsx';
 import { StateView } from '@/components/ui/state-view.tsx';
 
@@ -42,7 +44,17 @@ export function NotCaptured({
 }) {
   const help = captureHelp(track, meta.source ?? 'agent', meta.url);
   return (
-    <StateView kind="not-captured" layout="panel" title={help.title} cause={help.why} testId={testId}>
+    <StateView
+      kind={
+        track === 'performance'
+          ? { kind: 'not-captured', illustration: <GaugeIcon className="size-5 text-[var(--text-tertiary)]" aria-hidden="true" /> }
+          : 'not-captured'
+      }
+      layout="panel"
+      title={help.title}
+      cause={help.why}
+      testId={testId}
+    >
       <div className="not-captured-how">
         <p>{help.how}</p>
         <Snippet value={help.snippet} />

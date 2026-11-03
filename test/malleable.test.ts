@@ -47,7 +47,7 @@ describe('with beta.malleable off (the default)', () => {
     const call = await fetch(`${server.origin}/api/malleable/bridge/call`, { method: 'POST', headers: asUser('ada'), body: '{}' });
     expect(call.status).toBe(404);
     const config = await (await fetch(`${server.origin}/api/config`, { headers: asUser('ada') })).json();
-    expect(config.beta).toEqual({ editor: false, malleable: false });
+    expect(config.beta).toEqual({ editor: false, cursorCustomization: false, malleable: false });
     expect(config.plugins).not.toContain('malleable');
     const home = await fetch(`${server.origin}/`, { headers: { ...asUser('ada'), accept: 'text/html' } });
     expect(home.headers.get('content-security-policy')).toBeNull();

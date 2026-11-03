@@ -1,5 +1,6 @@
 import { CheckIcon, ChevronLeftIcon, SearchIcon } from 'lucide-react';
 import { type Ref, useRef, useState } from 'react';
+import { SurfaceMotion } from '@/components/ui/surface-motion.tsx';
 
 import { moveFocusWithKeys } from './focus.ts';
 import { type Choice, filterStrings } from './model.ts';
@@ -51,7 +52,13 @@ export function ChoiceOptions({ choice, onBack, direction }: { choice: Choice; o
     onBack();
   };
   return (
-    <div className="filter-pane" data-panel-direction={direction}>
+    <SurfaceMotion
+      open
+      kind="pane"
+      className="filter-pane"
+      data-panel-direction={direction}
+      data-side={direction === 'backward' ? 'left' : 'right'}
+    >
       <div className="filter-choice-head">
         <button type="button" className="filter-back" onClick={onBack} aria-label={filterStrings.back}>
           <ChevronLeftIcon aria-hidden="true" />
@@ -110,6 +117,6 @@ export function ChoiceOptions({ choice, onBack, direction }: { choice: Choice; o
           </button>
         </div>
       )}
-    </div>
+    </SurfaceMotion>
   );
 }

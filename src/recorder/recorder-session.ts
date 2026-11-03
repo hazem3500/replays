@@ -1,3 +1,4 @@
+import { captureInteractionSteps } from './interaction-steps.ts';
 import type * as BodyCapture from './body-capture.ts';
 import type { RawStep } from './bundle.ts';
 import type { ReplayBundle, ReplayCaptured, ReplayRrwebEvent } from './bundle-types.ts';
@@ -166,5 +167,12 @@ export function wireSession(current: Session, wiring: SessionWiring): void {
   }
   if (wiring.capture.network !== 'off') wireNetwork(current, wiring, grow);
   wireRrweb(current, wiring, grow);
+  current.cleanups.push(
+    captureInteractionSteps(wiring.privacy, (step) => {
+      if (!wiring.isCurrent()) return;
+      current.steps.push(step);
+      grow(JSON.stringify(step).length);
+    }),
+  );
   wireEnds(current, wiring);
 }

@@ -28,6 +28,10 @@ export const suitePage = lazyPage(
   withFeatures(() => import('../suite/SuiteWorkspace.tsx')),
   (module) => module.SuiteWorkspace,
 );
+export const suiteComparePage = lazyPage(
+  () => import('../suite/SuiteCompare.tsx'),
+  (module) => module.SuiteCompare,
+);
 export const comparePage = lazyPage(
   withFeatures(() => import('../compare/ReplayComparePage.tsx')),
   (module) => module.ReplayComparePage,
@@ -53,6 +57,7 @@ export function preparePage(page: Page): Promise<unknown> {
   if (page.kind === 'suite')
     return Promise.all([
       suitePage.preload(),
+      suiteComparePage.preload(),
       page.suiteId ? inCache(suiteQuery(page.suiteId).queryKey) : undefined,
       page.replayId ? inCache(replayQuery(page.replayId).queryKey) : undefined,
     ]);

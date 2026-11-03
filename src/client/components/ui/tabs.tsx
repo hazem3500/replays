@@ -1,3 +1,4 @@
+import { SurfaceMotion, TabIndicatorMotion } from './surface-motion.tsx';
 import { Tabs as TabsPrimitive } from '@base-ui/react/tabs';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils.ts';
@@ -51,16 +52,24 @@ function TabsTrigger({ className, ...props }: TabsPrimitive.Tab.Props) {
 }
 
 function TabsContent({ className, ...props }: TabsPrimitive.Panel.Props) {
-  return <TabsPrimitive.Panel data-slot="tabs-content" className={cn('flex-1 text-xs/relaxed outline-none', className)} {...props} />;
+  return (
+    <TabsPrimitive.Panel
+      render={(dom, state) => <SurfaceMotion {...dom} open={!state.hidden && state.transitionStatus !== 'ending'} kind="pane" />}
+      data-slot="tabs-content"
+      className={cn('flex-1 text-xs/relaxed outline-none', className)}
+      {...props}
+    />
+  );
 }
 
 /** Sliding active-tab marker; position comes from Base UI's --active-tab-* variables. */
 function TabsIndicator({ className, ...props }: TabsPrimitive.Indicator.Props) {
   return (
     <TabsPrimitive.Indicator
+      render={(dom) => <TabIndicatorMotion {...dom} />}
       data-slot="tabs-indicator"
       className={cn(
-        'absolute bottom-0 left-0 h-0.5 w-(--active-tab-width) translate-x-(--active-tab-left) rounded-full bg-primary transition-[translate,width] duration-180 ease-out',
+        'absolute bottom-0 left-0 h-0.5 w-(--active-tab-width) translate-x-(--active-tab-left) rounded-full bg-primary',
         className,
       )}
       {...props}

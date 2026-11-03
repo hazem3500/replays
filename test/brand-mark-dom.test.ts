@@ -128,7 +128,12 @@ describe('index header identity', () => {
 
   it('under reduced motion, fills a segment per click without animating and only crossfades the title on the fifth', async () => {
     vi.useFakeTimers();
-    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce') }));
+    vi.stubGlobal('matchMedia', (query: string) => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      addEventListener() {},
+      removeEventListener() {},
+    }));
     vi.stubGlobal('scrollTo', () => {});
     const animate = vi.spyOn(Element.prototype, 'animate');
     try {

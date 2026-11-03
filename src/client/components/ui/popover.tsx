@@ -1,3 +1,4 @@
+import { SurfaceMotion } from './surface-motion.tsx';
 import * as React from 'react';
 import { Popover as PopoverPrimitive } from '@base-ui/react/popover';
 import { cn } from '@/lib/utils.ts';
@@ -34,6 +35,7 @@ function PopoverContent({
         className="isolate z-50"
       >
         <PopoverPrimitive.Popup
+          render={(dom, state) => <SurfaceMotion {...dom} open={state.open} kind="popover" />}
           data-slot="popover-content"
           className={cn(
             'motion-pop z-50 flex w-72 origin-(--transform-origin) flex-col gap-4 rounded-lg bg-popover p-2.5 text-xs text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden',

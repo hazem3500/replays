@@ -83,8 +83,7 @@
   cursor: pointer;
   transition: color 100ms ease;
 }
-.first-run-more-trigger svg { width: 14px; height: 14px; transition: rotate 160ms var(--ease-out); }
-.first-run-more-trigger[data-panel-open] svg { rotate: 90deg; }
+.first-run-more-trigger svg { width: 14px; height: 14px; }
 .first-run-more-panel { padding-top: 6px; }
 
 .first-run-link {

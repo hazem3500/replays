@@ -4,6 +4,8 @@ import { DEFAULT_UI_STYLES } from './default-ui-styles.ts';
 import { createRecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
 import { resolveRecorderMessages } from './messages.ts';
+import { createUploadActivity } from './upload-activity.ts';
+import { startRecordingPulse } from './recording-pulse.ts';
 import { cleanupText, updateText } from './text-motion.ts';
 import { hideSurface as exitSurface, showSurface, type FloatingSurface } from './surface-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
@@ -217,12 +219,15 @@ export function createDefaultUi(
       dot.setAttribute('aria-hidden', 'true');
       const icon = element('span', { className: 'stop-icon' });
       icon.setAttribute('aria-hidden', 'true');
-      const stopButton = element('button', { type: 'button', className: 'finish-button', title: messages.stop, onclick: stop }, [
-        icon,
-        element('span', {}, [messages.stop]),
-      ]);
+      const stopButton = element(
+        'button',
+        { type: 'button', className: 'icon-button finish-button', title: messages.stop, onclick: stop },
+        [icon],
+      );
+      stopButton.setAttribute('aria-label', messages.stop);
       stopButton.dataset.recorderAction = 'stop';
       content.append(dot, label, time, stopButton);
+      renderCleanup = startRecordingPulse(dot);
       const releaseStop = attestStop?.(stopButton);
       let warning = 'none';
       timer = setInterval(() => {
@@ -284,9 +289,9 @@ export function createDefaultUi(
       const { content, label } = surface('uploading', messages.uploading);
       label.className = 'message';
       updateText(label, messages.uploading);
-      const progress = element('progress', { className: 'upload-progress' });
-      progress.setAttribute('aria-label', messages.uploading);
-      content.append(progress, label);
+      const activity = createUploadActivity(messages.uploading);
+      renderCleanup = activity.stop;
+      content.append(label, activity.node);
       return hideSurface;
     },
 

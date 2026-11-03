@@ -1,9 +1,12 @@
 import { XIcon } from 'lucide-react';
+import { useEntryMotion } from '../hooks/use-entry-motion.ts';
 
 /** Phones: the expanded search's way out. Clearing and leaving the field is one tap, since there is no Esc key. */
 export function CommandCancel({ onClose }: { onClose: () => void }) {
+  const ref = useEntryMotion<HTMLButtonElement>('number');
   return (
     <button
+      ref={ref}
       type="button"
       className="command-cancel"
       aria-label="Close search"

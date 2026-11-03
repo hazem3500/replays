@@ -1,21 +1,21 @@
+import { animate } from 'motion/mini';
 import { type RefObject, useLayoutEffect, useRef } from 'react';
 
-const GLIDE = { duration: 200, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' } as const;
+import { useMediaQuery } from '../media.ts';
 
-/**
- * FLIP for a row of items: after every render, children of `container` matching `selector` that moved
- * horizontally glide from their old place (transform only, additive so it composes with enter/exit transitions).
- * Items are keyed by `attribute`. Reduced motion: they jump.
- */
+/** Motion glides keyed horizontal changes with an independent translate, preserving each item's enter/exit transform. */
 export function useGlide(container: RefObject<HTMLElement | null>, selector: string, attribute: string) {
   const positions = useRef(new Map<string, number>());
+  const animations = useRef(new Map<HTMLElement, ReturnType<typeof animate>>());
+  const reduced = useMediaQuery('(prefers-reduced-motion: reduce)');
   useLayoutEffect(() => {
     const root = container.current;
     if (!root) {
-      positions.current = new Map();
+      positions.current.clear();
       return;
     }
-    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    for (const animation of animations.current.values()) animation.cancel();
+    animations.current.clear();
     const next = new Map<string, number>();
     for (const element of root.querySelectorAll<HTMLElement>(selector)) {
       const id = element.getAttribute(attribute);
@@ -23,9 +23,19 @@ export function useGlide(container: RefObject<HTMLElement | null>, selector: str
       const left = element.getBoundingClientRect().left;
       next.set(id, left);
       const before = positions.current.get(id);
-      if (reduce || before === undefined || Math.abs(before - left) < 0.5) continue;
-      element.animate([{ transform: `translateX(${before - left}px)` }, { transform: 'translateX(0)' }], { ...GLIDE, composite: 'add' });
+      if (reduced || before === undefined || Math.abs(before - left) < 0.5) continue;
+      animations.current.set(
+        element,
+        animate([element], { translate: [`${before - left}px 0px`, '0px 0px'] }, { duration: 0.2, ease: [0.23, 1, 0.32, 1] }),
+      );
     }
     positions.current = next;
   });
+  useLayoutEffect(() => {
+    const running = animations.current;
+    return () => {
+      for (const animation of running.values()) animation.cancel();
+      running.clear();
+    };
+  }, []);
 }

@@ -1,0 +1,18 @@
+.settings-cli { display: grid; gap: 16px; }
+.settings-cli .settings-group { margin: 0; }
+.settings-cli .settings-group-title { color: var(--text); }
+.cli-access { display: flex; align-items: baseline; gap: 12px; margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 12px; }
+.cli-access dt { color: var(--text-tertiary); }
+.cli-access dd { margin: 0; color: var(--text-secondary); }
+.cli-source { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 4px; color: var(--text-secondary); font-size: 12px; }
+.cli-source .settings-link { font-size: inherit; }
+.settings-cli .settings-command { gap: 4px; padding-top: 2px; }
+.settings-cli .settings-command-field { height: 34px; background: var(--surface); }
+.settings-cli .settings-command-hint { font-size: 11px; }
+.settings-cli .settings-credentials { padding-top: 12px; border-top: 1px solid var(--line); }
+.settings-cli .settings-credentials > summary { margin: 0; color: var(--text-secondary); font-size: 12px; cursor: pointer; }
+.settings-cli .settings-credentials[open] > summary { margin-bottom: 8px; }
+.settings-cli .settings-links { margin: 0; }
+@media (pointer: coarse) {
+  .settings-cli .settings-command-field { height: 44px; }
+}

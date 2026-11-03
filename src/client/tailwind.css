@@ -18,6 +18,7 @@
 @import "./styles.css" layer(app);
 @import "./theme-tokens.css" layer(app);
 @import "./index/feed.css" layer(app);
+@import "./transitions/page-motion.css";
 @import "./index/card-motion.css" layer(app);
 @import "./loading.css" layer(app);
 @import "./index/poster.css" layer(app);
@@ -37,6 +38,8 @@
 /* why: Settings and EmptyState restyle DialogContent and Button, whose utility classes sit in the utilities layer. */
 @import "./components/ui/empty-state.css";
 @import "./settings/settings.css";
+@import "./settings/cli.css";
+@import "./settings/data-storage.css";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -135,131 +138,51 @@
   .topbar-compact .topbar-back, .topbar-compact .topbar-actions button { min-width: 40px; height: 40px; }
 }
 
-/*
- * Motion, adapted from transitions.dev's free recipes (menu dropdown, tooltip open/close, modal open/close,
- * toast open/close, icon swap, text states swap, error state shake, success check, number pop-in; their
- * licence allows use and modification in products) and fitted to CLAUDE.md's rules: transform, opacity and
- * filter only, ease-out, ≤ 200 ms in and ≤ 120 ms out, nothing on keyboard-repeat actions, and nothing under
- * reduced motion (styles.css zeroes every duration with !important, which beats these utilities).
- * Base UI marks the first and last frame of every popup with data-starting-style / data-ending-style.
- */
+/* why: Motion owns popup timelines; CSS retains layout and transform origins. */
 @layer utilities {
-  /* Menus, selects, popovers: grow from the trigger (origin-aware), settle; leave quicker and smaller. */
-  /* Popovers, menus, selects (one shared motion): open from the trigger (Base UI's --transform-origin) with a fade,
-     a 0.96 scale and a 4 px drift toward the trigger's side, 160 ms ease-out; close faster (120 ms, 0.98). Under
-     reduced motion: the fade only (below, after styles.css's global zeroing). */
-  .motion-pop {
-    transform-origin: var(--transform-origin);
-    transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
-  }
-  .motion-pop[data-starting-style] { opacity: 0; transform: translateY(-4px) scale(0.96); }
-  .motion-pop[data-side="top"][data-starting-style] { transform: translateY(4px) scale(0.96); }
-  .motion-pop[data-side="left"][data-starting-style], .motion-pop[data-side="right"][data-starting-style] { transform: scale(0.96); }
-  .motion-pop[data-ending-style] { opacity: 0; transform: scale(0.98); transition-duration: 120ms; }
-  @media (prefers-reduced-motion: reduce) {
-    .motion-pop { transition: opacity 120ms linear !important; }
-    .motion-pop[data-starting-style], .motion-pop[data-ending-style] { transform: none !important; }
-  }
+  .motion-pop { transform-origin: var(--transform-origin); }
 
-  /* Tooltips: the provider delays the first one; it fades in short and leaves instantly. Neighbours
-     opened while one is showing (data-instant) appear without a transition. */
-  .motion-tip {
-    transform-origin: var(--transform-origin);
-    transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
-  }
-  .motion-tip[data-starting-style] { opacity: 0; transform: scale(0.98); }
-  .motion-tip[data-ending-style] { opacity: 0; transition-duration: 0ms; }
-  .motion-tip[data-instant] { transition-duration: 0ms; }
+  .motion-tip { transform-origin: var(--transform-origin); }
 
-  /* Tooltip morph (Stripe-style): every Hint shares the provider's one popup (Base UI handle), so moving the
-     pointer to a neighbouring trigger glides the open tooltip there instead of swapping popups. The positioner
-     slides 180 ms ease-out, the popup resizes from the old label's box to the new one (Base UI writes
-     --positioner-* and --popup-* for this), and the labels crossfade inside it. The first open keeps the
-     motion-tip fade; keyboard navigation and dismissals jump; reduced motion zeroes all of it
-     (styles.css). Position and size are animated here, not transform: a ~24 px tooltip on its own fixed layer
-     is cheap to lay out, and a scale would distort the text mid-morph. */
+  /* why: Base UI measures these boxes while Motion interpolates their geometry and retained labels. */
   .tip-morph-positioner {
     width: var(--positioner-width);
     height: var(--positioner-height);
-    transition-property: top, left, right, bottom;
-    transition-duration: 180ms;
-    transition-timing-function: var(--ease-out);
-  }
-  .tip-morph-positioner:not([data-open]), .tip-morph-positioner[data-instant], .tip-morph-positioner[data-tip-jump] {
-    transition-duration: 0ms;
   }
   .tip-morph-popup {
     position: relative;
     width: var(--popup-width, auto);
     height: var(--popup-height, auto);
-    transition-property: opacity, transform, width, height;
-    transition-duration: 150ms, 150ms, 180ms, 180ms;
   }
-  /* Labels crossfade without muddling: the old one is gone in 80 ms, the new one fades in over 120 ms from 30 ms. */
-  .tip-morph-viewport > [data-previous] { transition: opacity 80ms var(--ease-out); }
-  .tip-morph-viewport > [data-current] { transition: opacity 120ms var(--ease-out) 30ms; }
-  [data-tip-jump] > .tip-morph-popup { transition-property: opacity, transform; }
-  /* Both labels stay centred in the resizing box (flex centring overflows evenly), so a growing box uncovers
-     the new label from its middle instead of clipping one end. */
+  /* why: centring lets a growing tooltip uncover the new label evenly instead of clipping an end. */
   .tip-morph-viewport { display: flex; justify-content: center; }
   .tip-morph-viewport > * { flex-shrink: 0; }
   .tip-morph-viewport > [data-previous] { inset-block-start: 0; inset-inline-start: 50%; translate: -50% 0; }
-  .tip-morph-viewport > [data-previous][data-ending-style],
-  .tip-morph-viewport > [data-current][data-starting-style] { opacity: 0; }
-  /* Swaps without a crossfade (keyboard navigation, a hop between strips, reduced motion) show the new label at
-     once: Base UI holds the incoming layer at its starting style for a frame, which would blink an empty box. */
+  /* why: keyboard jumps discard the outgoing label immediately rather than mixing labels. */
   .tip-morph-popup[data-instant] .tip-morph-viewport > [data-previous],
   [data-tip-jump] .tip-morph-viewport > [data-previous] { display: none; }
   .tip-morph-popup[data-instant] .tip-morph-viewport > [data-current][data-starting-style],
   [data-tip-jump] .tip-morph-viewport > [data-current][data-starting-style] { opacity: 1; }
-  .tip-morph-popup[data-instant] .tip-morph-viewport > *,
-  [data-tip-jump] .tip-morph-viewport > * { transition: none; }
   @media (prefers-reduced-motion: reduce) {
     .tip-morph-viewport > [data-previous] { display: none; }
     .tip-morph-viewport > [data-current][data-starting-style] { opacity: 1; }
-    .tip-morph-viewport > * { transition: none; }
   }
 
-  /* Modals (the popover language, centred): scale up from 0.96 with a fade over a fading backdrop, 200 ms ease-out;
-     close faster (120 ms). The scale origin stays the centre: a modal belongs to the viewport, not its trigger
-     (the centring uses `translate`, so `transform` is free for the scale). Reduced motion: the fade only. */
-  .motion-modal {
-    transform-origin: center;
-    transition-property: opacity, transform;
-    transition-duration: var(--motion-enter);
+  .motion-modal { transform-origin: center; }
+
+  /* why: color feedback stays in CSS; delegated Motion press gestures own transforms without React renders. */
+  .press-settle {
+    transition-property: color, background-color, border-color, box-shadow;
+    transition-duration: 100ms;
     transition-timing-function: var(--ease-out);
   }
-  .motion-modal[data-starting-style] { opacity: 0; transform: scale(0.96); }
-  .motion-modal[data-ending-style] { opacity: 0; transform: scale(0.96); transition-duration: var(--motion-exit); }
-  .motion-backdrop { transition: opacity var(--motion-enter) var(--ease-out); }
-  .motion-backdrop[data-starting-style], .motion-backdrop[data-ending-style] { opacity: 0; }
-  .motion-backdrop[data-ending-style] { transition-duration: var(--motion-exit); }
-  @media (prefers-reduced-motion: reduce) {
-    .motion-modal, .motion-backdrop { transition: opacity var(--motion-exit) linear !important; }
-    .motion-modal[data-starting-style], .motion-modal[data-ending-style] { transform: none !important; }
-  }
-
-  /* Physical press (buttons, flips): colours follow in 100 ms ease-out; the scale goes in at 0.97 over 100 ms
-     ease-out and, on release, settles back over 160 ms with a hair of overshoot (≈ 1.002) so the button feels
-     like it springs back. The scale itself is a motion-safe utility, so reduced motion gets no movement. */
-  .press-settle {
-    transition-property: color, background-color, border-color, box-shadow, scale, transform;
-    transition-duration: 100ms, 100ms, 100ms, 100ms, 160ms, 160ms;
-    transition-timing-function: var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-settle), var(--ease-settle);
-  }
-  .press-settle:active { transition-duration: 100ms; transition-timing-function: var(--ease-out); }
 }
 
 /*
- * Sonner injects its own unlayered stylesheet; these unlayered rules (more specific) re-time its motion to our
- * ceiling: enter and exit 240 ms, ease-out. Width up to 420 px. Reduced motion: opacity only (stacking still positions).
+ * Sonner owns toast presence, stacking and reduced-motion behavior; these rules only size the surface.
  */
 [data-sonner-toaster][data-sonner-toaster] { --width: min(420px, calc(100vw - 32px)); }
 /* Above Sonner's phone breakpoint a toast hugs its message, centred (up to the 420 px width); phones keep the full row. */
 @media (min-width: 601px) {
   [data-sonner-toaster] [data-sonner-toast].app-toast { right: 0; left: 0; width: fit-content; max-width: var(--width); margin-inline: auto; }
-}
-[data-sonner-toaster] [data-sonner-toast][data-sonner-toast] { transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms cubic-bezier(0.22, 1, 0.36, 1), height 240ms cubic-bezier(0.22, 1, 0.36, 1); }
-@media (prefers-reduced-motion: reduce) {
-  [data-sonner-toaster] [data-sonner-toast][data-sonner-toast] { transition: opacity 120ms linear; }
 }

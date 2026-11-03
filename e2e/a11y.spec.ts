@@ -93,7 +93,8 @@ for (const theme of THEMES) {
       await audit(page, 'viewer, playback options');
       await page.keyboard.press('Escape');
 
-      await page.getByRole('button', { name: 'Replay details' }).click();
+      await page.getByRole('button', { name: 'More actions' }).click();
+      await page.getByRole('menuitem', { name: 'Replay details', exact: true }).click();
       await expect(page.getByTestId('replay-info')).toBeVisible();
       await audit(page, 'viewer, details popover');
       await page.keyboard.press('Escape');
@@ -151,7 +152,8 @@ for (const theme of THEMES) {
       ]);
       await openReplay(page, `${server().origin}/s/${suite}`);
       await audit(page, 'suite workspace');
-      await page.getByRole('button', { name: 'Replay details' }).click();
+      await page.getByRole('button', { name: 'More actions' }).click();
+      await page.getByRole('menuitem', { name: 'Replay details', exact: true }).click();
       await expect(page.getByTestId('replay-info')).toBeVisible();
       await audit(page, 'suite workspace, details popover');
       await page.keyboard.press('Escape');
@@ -249,6 +251,8 @@ test("Tab skips the recorded page: header, the player's fullscreen button, then 
   await expect(page.getByRole('link', { name: 'Skip to replay' })).toBeFocused();
   await page.keyboard.press('Enter');
   await expect(page.getByTestId('replay-player')).toBeFocused();
+  await expect(page.getByRole('button', { name: 'Fullscreen' })).toHaveCSS('opacity', '1');
+  await expect(page.getByRole('button', { name: 'Fullscreen' })).toHaveCSS('pointer-events', 'auto');
 });
 
 test('the scrubber is not re-announced on every frame while playing', async ({ page }) => {

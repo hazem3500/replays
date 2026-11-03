@@ -102,10 +102,7 @@
   overflow-y: auto;
   overscroll-behavior: contain;
   padding: 4px var(--settings-pane-padding-x) 28px;
-  transition: opacity var(--settings-pane-fade) var(--ease-out);
-  @starting-style { opacity: 0; }
 }
-.settings-pane-body[data-instant] { transition: none; }
 
 .settings-close {
   position: relative;
@@ -261,24 +258,14 @@
   color: var(--text-tertiary);
   cursor: pointer;
   box-shadow: -16px 0 12px -4px var(--surface);
-  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out), transform 100ms var(--ease-out);
+  transition: background-color 100ms var(--ease-out), color 100ms var(--ease-out);
 }
 .settings-command-copy::after { content: ""; position: absolute; inset: -6px -3px; }
 @media (hover: hover) and (pointer: fine) {
   .settings-command-copy:hover { background: var(--surface-hover); color: var(--text); }
 }
-.settings-command-copy:active { transform: scale(0.94); }
 .settings-command-copy:focus-visible { box-shadow: -16px 0 12px -4px var(--surface), inset 0 0 0 2px var(--ring); }
-.settings-command-icon {
-  grid-area: 1 / 1;
-  display: grid;
-  place-items: center;
-  opacity: 0;
-  transform: scale(0.8);
-  transition: opacity var(--settings-copy-swap) var(--ease-out), transform var(--settings-copy-swap) var(--ease-out);
-}
-.settings-command-icon[data-visible] { opacity: 1; transform: scale(1); }
-.settings-command-icon svg { width: 14px; height: 14px; }
+.settings-command-copy .icon-swap { width: 14px; height: 14px; }
 .settings-command-field[data-state="copied"] .settings-command-copy { color: var(--success); }
 .settings-command-hint { margin: 0; font-size: var(--settings-description-size); color: var(--text-tertiary); text-wrap: pretty; }
 .settings-command-hint[role="alert"] { color: var(--text-secondary); }
@@ -383,6 +370,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .settings-command-icon { transform: none; transition: opacity var(--settings-copy-swap) var(--ease-out); }
   .settings-command-copy:active { transform: none; }
 }
+
+.settings-storage-form { display: grid; gap: 8px; padding: 10px 12px; }
+.settings-storage-form > button { justify-self: start; }

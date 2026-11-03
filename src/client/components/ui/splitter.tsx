@@ -2,6 +2,7 @@ import { PanelRightOpenIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils.ts';
 
+import { useResizerFeedback } from '../../hooks/use-resizer-feedback.ts';
 import { useSplitter, type SplitterConfig } from '../../hooks/use-splitter.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the seam's styles travel with the primitive into whichever chunk uses it.
 import './splitter.css';
@@ -15,10 +16,11 @@ export { readSplitterSize, useSplitter, type SplitterConfig } from '../../hooks/
  */
 export function Splitter({ className, testId, ...config }: SplitterConfig & { className?: string; testId?: string }) {
   const { separatorProps } = useSplitter(config);
+  const ref = useResizerFeedback(config.orientation);
   return (
-    <div {...separatorProps} className={cn('splitter', className)} data-slot="splitter" data-testid={testId}>
-      <span className="splitter-line" aria-hidden="true" />
-      <span className="splitter-grip" aria-hidden="true" />
+    <div ref={ref} {...separatorProps} className={cn('splitter', className)} data-slot="splitter" data-testid={testId}>
+      <span className="splitter-line" data-resizer-line="" aria-hidden="true" />
+      <span className="splitter-grip" data-resizer-grip="" aria-hidden="true" />
     </div>
   );
 }

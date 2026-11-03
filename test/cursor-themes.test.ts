@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { CURSOR_APPEARANCES } from '../src/shared/cursor.ts';
 import { CURSOR_THEMES, cursorTheme } from '../src/client/cursor-themes.ts';
@@ -67,6 +67,42 @@ describe('cursor themes', () => {
       expect(element?.querySelectorAll('path')).toHaveLength(1);
     } finally {
       cursor.destroy();
+    }
+  });
+});
+
+describe('cursor click feedback', () => {
+  it('restores the same click frame after seeking and clears feedback when disabled or reduced', () => {
+    for (const effect of ['ripple', 'pulse'] as const) {
+      const host = document.createElement('div');
+      const cursor = new ReplayCursor(host, events, 1000, { clickEffect: effect, hideWhenIdle: false });
+      try {
+        cursor.update(760);
+        const element = host.querySelector<HTMLElement>('.replay-cursor')!;
+        const feedback = element.querySelector<SVGElement>('svg[style*="position"]')!;
+        const frame = feedback.outerHTML;
+        const geometry = [element.style.width, element.style.height, element.style.marginLeft, element.style.marginTop];
+        cursor.update(0);
+        expect(feedback.style.display).toBe('none');
+        cursor.update(3000);
+        expect(feedback.style.display).toBe('none');
+        cursor.update(760);
+        expect(feedback.outerHTML).toBe(frame);
+        expect([element.style.width, element.style.height, element.style.marginLeft, element.style.marginTop]).toEqual(geometry);
+        cursor.setSettings({ clickEffect: effect, clickFeedback: false });
+        expect(feedback.style.display).toBe('none');
+        vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+        const reduced = new ReplayCursor(host, events, 1000, { clickEffect: effect });
+        try {
+          reduced.update(760);
+          expect(host.lastElementChild?.querySelector<SVGElement>('svg[style*="position"]')?.style.display).toBe('none');
+        } finally {
+          reduced.destroy();
+          vi.unstubAllGlobals();
+        }
+      } finally {
+        cursor.destroy();
+      }
     }
   });
 });

@@ -1,6 +1,7 @@
 import type { CaptionEdge } from './caption-placement.ts';
 import { CaptionMorph } from './CaptionMorph.tsx';
 import { useCaptionPresence } from './hooks/use-caption-presence.ts';
+import { useCaptionMotion } from './hooks/use-caption-motion.ts';
 
 /**
  * The caption host on the recorded frame, shared by step captions (viewer) and edit captions. One stable element at
@@ -20,8 +21,10 @@ export function LiveCaption({
   testId: string;
 }) {
   const caption = useCaptionPresence(text, number, edge);
+  const ref = useCaptionMotion(caption, caption.completeMove);
   return (
     <div
+      ref={ref}
       className="step-caption step-caption-live"
       data-active={caption.active ? 'true' : 'false'}
       data-edge={caption.edge}

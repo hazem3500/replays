@@ -1,0 +1,45 @@
+/* why: navigation snapshots must capture the loading frame already painted; Motion owns the transition itself. */
+html[data-navigated] .skeleton-shell,
+html[data-navigated] .skeleton-suite { animation: none; }
+/* why: keep UA geometry alive at time zero until Motion has retimed it and starts all captured layers together. */
+html[data-page-transition^="motion-"]::view-transition-group(*) { animation-play-state: paused; }
+/* why: even an unchanged root size creates a layout animation; only the thumbnail needs to move. */
+html[data-page-transition^="motion-"]::view-transition-group(root) { animation: none; }
+/* why: tile chrome belongs to the landed frame, otherwise the root snapshot reveals an empty outline ahead of its flying picture. */
+html[data-page-transition="motion-page"] .ct-tile {
+  box-shadow: none;
+  outline: none;
+}
+html[data-page-transition^="motion-"]:not([data-page-hero])::view-transition-group(.page-hero) { animation: none; }
+/* why: a fixed snapshot canvas lets Motion's spring move the hero through compositor transforms alone. */
+html[data-page-hero]::view-transition-group(.page-hero) {
+  z-index: 2;
+  width: var(--page-hero-width) !important;
+  height: var(--page-hero-height) !important;
+  transform-origin: 0 0;
+}
+html[data-page-transition^="motion-"]::view-transition-old(*),
+html[data-page-transition^="motion-"]::view-transition-new(*) { mix-blend-mode: normal !important; }
+html[data-page-hero]::view-transition-old(.page-hero),
+html[data-page-hero]::view-transition-new(.page-hero) {
+  /* why: the fixed canvas is scaled back to each captured rectangle; cover would crop taller suite stacks. */
+  object-fit: fill !important;
+  object-position: top left;
+}
+/* why: registered front images share a canvas while the stack's extra headroom stays transparent. */
+html[data-page-hero]::view-transition-old(.page-hero) {
+  position: absolute;
+  inset: auto;
+  left: var(--page-hero-old-x, 0px);
+  top: var(--page-hero-old-y, 0px);
+  width: var(--page-hero-old-width, 100%);
+  height: var(--page-hero-old-height, 100%);
+}
+html[data-page-hero]::view-transition-new(.page-hero) {
+  position: absolute;
+  inset: auto;
+  left: var(--page-hero-new-x, 0px);
+  top: var(--page-hero-new-y, 0px);
+  width: var(--page-hero-new-width, 100%);
+  height: var(--page-hero-new-height, 100%);
+}

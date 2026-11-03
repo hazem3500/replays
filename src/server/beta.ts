@@ -20,6 +20,7 @@ export function parseFlag(name: string, value: string | undefined): boolean | un
  * routes or code paths. The flags themselves are listed once, in src/shared/beta-flags.ts.
  *
  *   REPLAYS_BETA_EDITOR=true     or    { "beta": { "editor": true } } in the config file
+ *   REPLAYS_BETA_CURSOR_CUSTOMIZATION=true or { "beta": { "cursorCustomization": true } }
  *   REPLAYS_BETA_MALLEABLE=true  or    { "beta": { "malleable": true } }
  *
  * What this returns is the server's *ceiling*: the flags this deployment allows. Routes gated by a flag exist only when it

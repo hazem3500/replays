@@ -48,6 +48,12 @@ The default `AUTH_MODE=none` is for local use. Read [Authentication](#authentica
 
 Use the browser-only [`@hazem3500/replays/recorder`](docs/recorder.md) entry for consent, private capture and a minimal customizable floating UI. The host supplies its upload transport; no Node or React code enters the browser bundle.
 
+### Compose your own player
+
+Use the [public model, diagnostics, playback and optional React entries](docs/playback-and-model.md) to build your own
+controls and panels around independent recording instances. The [composed viewer example](examples/composed-viewer/)
+includes both React and native DOM hosts without the application router, API or auth provider.
+
 ### Capture a replay
 
 ```bash
@@ -89,6 +95,21 @@ Other commands: `replays import --rrweb events.json --title "…"` (a plain rrwe
 `replays upload replay.json`, `replays login|status|logout`, and `replays serve`.
 
 ### Connect the CLI to a server
+
+The CLI is not published to npm yet. If you do not already have a checkout, set it up first with a supported Node.js version and pnpm 10:
+
+```bash
+git clone https://github.com/hazem3500/replays.git && cd replays
+pnpm install --frozen-lockfile
+pnpm build
+pnpm build:cli
+npm install -g .
+replays connect https://replays.example.com/workspace
+replays doctor
+replays upload ./out/replay.json
+```
+
+Build and install from the checkout once. The installed `replays` command then works from any directory; contributors can also run the sources with `pnpm cli` from the checkout.
 
 Save a viewer base URL once, including any deployment base path, then upload recordings by filename:
 
@@ -237,6 +258,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | – | Turns tracing on; standard `OTEL_*` variables apply. Off (and not even loaded) when unset |
 | `REPLAYS_BETA_EDITOR` | `false` | Turns on the beta replay editor (below). Also `beta.editor` in the config file; the variable wins |
 | `EDITING_ENABLED` | `true` | Host edit write policy within `beta.editor`; `false` hides editing and rejects saves while saved edits still play and export. Also `editing.enabled` in config |
+| `REPLAYS_BETA_CURSOR_CUSTOMIZATION` | `false` | Allows cursor customization in Settings > Labs; opt in there to show the collapsed editor controls. Also `beta.cursorCustomization` in config. Saved cursor edits still play and export when off |
 | `REPLAYS_BETA_MALLEABLE` | `false` | Turns on the beta plugin workshop and agent bridge ([Malleable viewer](#malleable-viewer-beta-off-by-default)). Also `beta.malleable` in the config file; the variable wins |
 | `REPLAYS_COMMENTS` | `true` | Comments on replays (below). `false` removes the UI and makes the API answer `404`. Also `comments.enabled` in the config file; the variable wins |
 | `RENDER_DISABLED=1`, `POSTERS_DISABLED=1` | – | Turn off video export / list posters even when Chromium and ffmpeg exist |
@@ -433,6 +455,7 @@ Beta features are decided in two places, listed once in [`src/shared/beta-flags.
    | Flag | Variable | Config file | In Settings › Labs |
    | --- | --- | --- | --- |
    | Replay editor | `REPLAYS_BETA_EDITOR` | `beta.editor` | On by default; turning it off hides editing (saved edits still play) |
+   | Cursor customization | `REPLAYS_BETA_CURSOR_CUSTOMIZATION` | `beta.cursorCustomization` | Off by default; opt in to the collapsed editor controls. Saved cursor settings still play and export |
    | Plugin workshop | `REPLAYS_BETA_MALLEABLE` | `beta.malleable` | On by default; turning it off loads no plugin code or agent bridge (applies after a reload) |
 
    A flag the server does not allow does not exist for anyone: no UI, its routes answer `404`, its code is never loaded.

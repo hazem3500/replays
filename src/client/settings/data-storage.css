@@ -1,0 +1,16 @@
+.storage-settings { display: grid; gap: 24px; container-type: inline-size; }
+.storage-settings .settings-group { margin: 0; }
+.storage-settings .settings-row { min-height: 42px; padding: 8px 0; gap: 16px; }
+.storage-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.storage-section-head h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 13px; font-weight: 600; }
+.storage-count { color: var(--text-tertiary); font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; }
+.storage-empty { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 72px; border: 1px solid var(--line); border-radius: 8px; color: var(--text-tertiary); font-size: 12px; }
+.storage-empty svg { width: 15px; height: 15px; }
+.storage-trash-list { border-block: 1px solid var(--line); }
+.storage-replay-name { overflow-wrap: anywhere; }
+.storage-delete-section { border-top: 1px solid var(--line); padding-top: 12px; }
+.storage-delete-section .settings-row-control { max-width: none; }
+.storage-feedback { margin: 0; font-size: 12px; color: var(--text-secondary); }
+@container (max-width: 420px) {
+  .storage-delete-section .settings-row { align-items: flex-start; flex-direction: column; }
+}

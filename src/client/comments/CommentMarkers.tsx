@@ -1,7 +1,8 @@
-import { memo, useMemo } from 'react';
+import { memo, useMemo, useRef } from 'react';
 
 import { activeThread, type PublicComment } from '../../shared/comments.ts';
 import { formatClock } from '../../shared/replay.ts';
+import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts';
 import { usePlayer, usePlayhead } from '../player.ts';
 import { clusterMarkers } from '../timeline.ts';
 import { Avatar } from './Avatar.tsx';
@@ -26,6 +27,7 @@ function snippet(comment: PublicComment) {
  * count, whose card lists the first few and whose click goes to the first.
  */
 export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { width: number; inset: number }) {
+  const scope = useRef<HTMLDivElement>(null);
   const comments = useComments();
   const player = usePlayer();
   const duration = player.duration;
@@ -42,6 +44,7 @@ export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { w
         : [],
     [duration, pins, width],
   );
+  useViewerPresenceMotion(scope, 'comments', clusters.length > 0);
   const active = usePlayhead((time) =>
     pins
       ? activeThread(
@@ -52,7 +55,7 @@ export const CommentMarkers = memo(function CommentMarkers({ width, inset }: { w
   );
   if (!comments || clusters.length === 0) return null;
   return (
-    <div className="comment-markers" data-testid="comment-markers">
+    <div ref={scope} className="comment-markers" data-testid="comment-markers">
       {clusters.map((cluster) => {
         const first = cluster.members[0]!;
         const root = first.thread.root;

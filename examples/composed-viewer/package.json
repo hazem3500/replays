@@ -1,0 +1,25 @@
+{
+  "name": "@hazem3500/replays-example-composed-viewer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Independent React replay panes and a framework-free player using public package entries.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsrs --fast false --noEmit",
+    "check": "pnpm build && pnpm typecheck",
+    "start": "node scripts/serve.mjs"
+  },
+  "dependencies": {
+    "@hazem3500/replays": "workspace:*",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.18.10",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "esbuild": "0.28.2",
+    "tsrs": "0.20.0-ts7.1.0-beta"
+  }
+}

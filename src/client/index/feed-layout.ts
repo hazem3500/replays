@@ -1,5 +1,5 @@
 import type { FeedEntry } from './Feed.tsx';
-import { groupByDay } from './feed.ts';
+import { type FeedCalendar, groupByDay } from './feed.ts';
 
 /**
  * The feed as one flat run of virtual items: a heading per day group (when grouped by time), then the group's
@@ -25,9 +25,11 @@ export function entryTime(entry: FeedEntry) {
   return entry.kind === 'session' ? entry.summary.capturedAt : entry.suite.createdAt;
 }
 
-export function feedLayout(entries: readonly FeedEntry[], options: { grouped: boolean; columns: number }) {
+export function feedLayout(entries: readonly FeedEntry[], options: { grouped: boolean; columns: number; calendar?: FeedCalendar }) {
   const columns = Math.max(1, Math.floor(options.columns));
-  const sections = options.grouped ? groupByDay([...entries], entryTime) : [{ label: undefined, items: [...entries] }];
+  const sections = options.grouped
+    ? groupByDay([...entries], entryTime, undefined, options.calendar)
+    : [{ label: undefined, items: [...entries] }];
   const rows: FeedRow[] = [];
   const groups: FeedGroup[] = [];
   for (const section of sections) {

@@ -1,11 +1,15 @@
 # Naming
 
-**Decision (2026-10-15): the product is called "replays".** The GitHub repository is `hazem3500/replays` (private
-until the owner decides otherwise), the CLI binary is `replays`, the npm package is **`@hazem3500/replays`** (scoped;
-`npm view @hazem3500/replays` → 404 on 2026-10-15) and the container image name is `ghcr.io/hazem3500/replays` (nothing is
-pushed). The unscoped name `replays` was rejected by npm as too similar to the existing package `re-plays`. Publishing
-a scoped public package needs `npm publish --access=public` (the release workflow passes it). The name lives in one
-constant (`src/shared/brand.ts`) plus `package.json`, the README and the Dockerfile image label.
+**Decision (2026-11-03): the product and CLI binary remain `replays`; the public npm name is `replays-cli`.** npm
+again rejected `replays` as too similar to `re-plays`. Hazem selected `replays-cli` as the fallback, and npm now lists
+`hazem3500` as its maintainer. The public registry currently exposes npm's `0.0.0-stage` holding version. A functional
+`0.1.0-alpha.0` build was submitted with the `next` tag, but is not yet publicly available. Do not recommend installing
+the holding version as a working CLI. See [releasing](releasing.md) before changing installation instructions.
+
+The GitHub repository is `hazem3500/replays` (private until the owner decides otherwise), and the container image name
+is `ghcr.io/hazem3500/replays`. The source manifest still uses the earlier internal name `@hazem3500/replays`; public
+release packaging must use the approved `replays-cli` name. The product name lives in `src/shared/brand.ts` and must not
+change with the npm package name.
 
 ## History: the earlier candidates
 

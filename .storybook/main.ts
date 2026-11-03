@@ -20,6 +20,11 @@ const config: StorybookConfig = {
     builder: { name: '@storybook/builder-vite', options: { viteConfigPath: fileURLToPath(new URL('./vite.config.ts', import.meta.url)) } },
   },
   async viteFinal(viteConfig) {
+    // why: prebundle all authored motion entry points before stories load, avoiding first-navigation dependency reloads.
+    viteConfig.optimizeDeps = {
+      ...viteConfig.optimizeDeps,
+      include: [...(viteConfig.optimizeDeps?.include ?? []), 'motion', 'motion/mini', 'motion/react', 'motion/react-m'],
+    };
     // why: the app's HTML transforms, multi-page inputs and dev proxy don't apply to an isolated story canvas.
     // why: worker-only serves mockServiceWorker.js in dev and emits it into storybook-static without a committed copy.
     viteConfig.plugins = [...(viteConfig.plugins ?? []), tailwindcss(), msw({ mode: 'worker-only' })];

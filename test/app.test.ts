@@ -111,7 +111,7 @@ describe('replay server', () => {
       profiles: [],
       purposes: [],
       views: new ViewCatalog().list,
-      beta: { editor: false, malleable: false },
+      beta: { editor: false, malleable: false, cursorCustomization: false },
       editing: { enabled: false },
       comments: false,
       core: coreVersion(),

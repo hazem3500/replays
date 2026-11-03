@@ -18,8 +18,15 @@ your-distro/
 
 ## Entry points
 
+For a standalone player instead of a full distribution, use the [independent playback and models guide](playback-and-model.md).
+Its renderer CSS is explicitly imported from `/viewer/playback/style.css` or `/viewer/react/style.css`.
+
 | Import | For | Runs in |
 | --- | --- | --- |
+| `@hazem3500/replays/model` | Portable replay/edit/privacy contracts, validation and transformations | browser, worker, Node |
+| `@hazem3500/replays/viewer/diagnostics` | Pure network, performance, waterfall and error models | browser, worker, Node |
+| `@hazem3500/replays/viewer/playback` | Independently owned renderer, clock, settings and subscriptions | browser |
+| `@hazem3500/replays/viewer/react` | Optional unstyled provider, hooks, stage, controls and diagnostics | browser, React 19 or newer |
 | `@hazem3500/replays/config` | `defineConfig`, `loadConfig` | Node |
 | `@hazem3500/replays/plugin` | `definePlugin`, `rejectUpload`, `PluginError`, plugin types | Node |
 | `@hazem3500/replays/viewer` | `defineViewerPlugin`, viewer plugin types (no Node, no React) | browser |
@@ -896,6 +903,56 @@ snapshots continue to expose the original metadata. Slot containers use `data-sl
 items use `data-slot-item="<namespaced id>"`; these two attributes are public hooks for host CSS.
 Other DOM structure and classes remain private.
 
+### Host diagnostic, editor and settings surfaces
+
+Trusted host browser plugins can contribute DOM content through `HostSurfaceContext` and
+`HostSurfaceDefinition`, exported as types from `@hazem3500/replays/viewer`. These contracts
+keep the plugin independent of React. Return a cleanup function from the DOM renderer to release
+listeners and subscriptions when the surface changes or the plugin unloads.
+
+| Slot | Core item ids | Additional context |
+| --- | --- | --- |
+| `inspector.network.columns` | `core:time`, `core:request`, `core:status`, `core:duration`, `core:during` | Each cell renderer receives `request`; the factory describes the whole column. Optional `width` is a CSS grid track, defaulting to `120px`. Custom column layouts scroll horizontally on narrow screens. |
+| `performance.vitals` | `core:fcp`, `core:lcp`, `core:interaction`, `core:task`, `core:tbt`, when provided by the active panel | Replay and seek when mounted in the viewer. Contributions render inside a metric list item. |
+| `editor.topbar.actions` | `core:history`, `core:export` | Replay, current edits, selection, duration, `seek` and validated `changeEdits`. Both desktop and phone bars mount this slot. |
+| `editor.inspector.sections` | `core:replay` with no selection; `core:selection` with a selection | The same editor context. Phone users open host-only sections through **Replay settings** in More. |
+| `editor.timeline.lanes` | `core:clip`, `core:zoom`, `core:speed`, `core:blur`, `core:caption`; effect lanes depend on available edits and controls | The editor context plus `scale.width`, `scale.x(time)` and `scale.timeAt(clientX)` in timeline pixels. Both timeline layouts mount this slot. |
+| `settings.sections` | `core:cli`, `core:keyboard`, `core:data-storage`, `core:labs`, `core:plugins` (when preferences exist), `core:about` | `stacked` identifies the compact layout. The contribution label becomes a settings navigation destination. |
+
+Hide a core id and register your own namespaced id to replace a surface; reusing the core id
+is rejected as a duplicate. `configureSlot` applies the same order, hiding and locking policy
+as other slots. Hiding controls changes presentation, not server permissions. Host plugins are
+trusted code; DOM renderers are not a security sandbox.
+
+```ts
+import type { HostSurfaceContext, HostSurfaceDefinition } from '@hazem3500/replays/viewer';
+
+api.registerSlotItem<HostSurfaceContext, HostSurfaceDefinition>('inspector.network.columns', {
+  id: 'plugin:acme:origin',
+  order: 250,
+  render: () => ({
+    label: 'Origin',
+    width: '180px',
+    render(container, context) {
+      container.textContent = context.request ? new URL(context.request.url).origin : '';
+    },
+  }),
+});
+api.configureSlot('inspector.network.columns', {
+  order: ['core:request', 'plugin:acme:origin', 'core:status'],
+  hide: ['core:during'],
+});
+```
+
+Editor `changeEdits(next)` validates a cloned edits document before entering the normal
+undo/save flow; invalid edits throw and leave the current state intact. A host lane must use
+that command rather than mutate `context.edits`. Optional context fields only exist on the
+surfaces described above, so contributions should handle their absence.
+
+A settings contribution must use its `plugin:<owner>:<id>` id as its section destination.
+Existing `registerSetting` preferences continue to appear inside the Plugins section;
+they do not become navigation destinations.
+
 Sandboxed plugin manifests now accept the same boolean/choice setting definition as
 `registerSetting`. Their `ctx.settings.get(id)` / `set(id, value)` are asynchronous and persisted
 per person and plugin through the malleable API. Host `ViewerPluginContext.settings` retains its
@@ -1170,3 +1227,48 @@ replays.track('errors', (context) => context.replay.console
 The manifest needs `replay:read` to receive recording data. Clicking a sandbox marker always goes through `playback:seek` declaration, current host policy and any required consent. `TimelineTrackDefinition.onSelect(timeMs, context)` lets host adapters supply that activation boundary; without it, trusted host tracks keep the default seek behavior. No plugin can use these surfaces to weaken redaction, authentication or approval. Frames keep the same CSP, watchdog, frame count and unload lifecycle as tabs. Server rendering does not start frames.
 
 See `examples/custom-distro/sandbox-surfaces.replays-plugin.json` for an importable example. Index surfaces remain host-only until a summary-only sandbox data contract is defined. Component overrides, editor transforms, shortcuts and host downloads remain outside sandbox authority.
+
+## Data and storage settings
+
+`GET /api/data-storage` is authenticated and read-only. It reports the configured storage driver
+name, default and profile retention windows, whether host rules can shorten those windows,
+expired-summary history retention and the trash restore window. It never includes local paths,
+bucket names, credentials, uploader claims or replay bodies. See
+[the response schema](formats/data-storage.schema.json).
+
+Trash entries contain only replay IDs and deletion/restore-window timestamps. The Node host
+checks each replay's canonical read route against endpoint scopes, request policy and application
+authorization before including it. `ApiServices.canReadReplay` supplies the equivalent gate for
+direct core-route hosts; omitting it suppresses all trash IDs. An unexpected authorization failure
+fails the request rather than widening visibility.
+
+Settings exposes the existing `DELETE /api/replays/:id` and `POST /api/replays/:id/restore`
+operations. Deletion requires an explicit UI confirmation. Existing keep protection, same-origin
+checks and application authorization remain authoritative. A restore succeeds while the bundle
+and trash marker still exist; scheduled retention cleanup removes trash after its restore window.
+`replayCount` counts active uploaded bundles for which this caller passes both canonical GET and
+DELETE authorization, including kept uploads. Committed samples and existing trash are excluded.
+It is zero when either per-item authorization gate is absent.
+
+`POST /api/data-storage/trash` requires JSON `{ "confirm": "trash-all" }`, the usual authentication,
+endpoint scope, same-origin and application checks, and both per-item `canReadReplay` and
+`canDeleteReplay` gates. Direct core-route hosts without those gates receive 403. The Node host
+checks fresh bodyless canonical GET/DELETE requests for each upload, retaining request policy and
+application authorization without changing the incoming bulk request. Denied uploads are omitted
+from mutation and all result counts. Authorization completes for the initial storage snapshot before
+any writes; an unexpected authorization failure aborts without starting deletions.
+
+The response is `{ trashed, protected, unavailable, failed }`. Each number counts only authorized
+uploads: successful trash markers, keep-protected uploads (including kept suite runs), uploads that
+became unavailable, and other failed writes. At most four operations run concurrently. Errors in
+individual writes produce accurate partial-result counts without IDs or provider messages. New
+uploads arriving after the initial snapshot are outside that operation. Bundled samples are read-only
+and are never enumerated as deletion candidates. The operation uses the existing reversible
+`ReplayStore.trash`; restoration and automatic cleanup use the same window as individual deletion.
+See the [confirmation](formats/bulk-trash-request.schema.json) and
+[result](formats/bulk-trash-result.schema.json) schemas.
+
+There is no permanent-delete, retention-change or storage-migration HTTP API. Uploads do not yet
+carry verified ownership, so personal cleanup cannot safely be inferred from people, mentions or
+the current sign-in identity. Bulk cleanup covers the caller's readable and delete-authorized uploads,
+not an unrestricted administrator operation over the whole deployment.
