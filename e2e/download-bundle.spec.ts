@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 
 import { expect, type Page, test } from '@playwright/test';
 
+import { isRecord } from '../src/shared/validate.ts';
 import { openReplay, origin } from './support.ts';
 
 const REPLAY = 'demo-shop';
@@ -15,7 +16,8 @@ test.beforeEach(async ({ page }) => {
 async function withStoredVideo(page: Page) {
   await page.route(`**/api/replays/${REPLAY}`, async (route) => {
     const response = await route.fetch();
-    const bundle = (await response.json()) as { meta: object };
+    const bundle: unknown = await response.json();
+    if (!isRecord(bundle) || !isRecord(bundle.meta)) throw new Error('the stored replay has no meta');
     await route.fulfill({ response, json: { ...bundle, meta: { ...bundle.meta, videoFile: 'video.mp4' } } });
   });
   await page.route(`**/api/replays/${REPLAY}/video`, (route) => route.fulfill({ contentType: 'video/mp4', body: 'mp4' }));
@@ -23,7 +25,9 @@ async function withStoredVideo(page: Page) {
 
 async function savedBundle(download: { suggestedFilename(): string; path(): Promise<string> }) {
   expect(download.suggestedFilename()).toBe(`${REPLAY}.json`);
-  return JSON.parse(await readFile(await download.path(), 'utf8')) as { meta: { id: string }; events: unknown[] };
+  const saved: unknown = JSON.parse(await readFile(await download.path(), 'utf8'));
+  if (!isRecord(saved) || !isRecord(saved.meta) || !Array.isArray(saved.events)) throw new Error('the download is not a replay bundle');
+  return { meta: { id: saved.meta.id }, events: saved.events };
 }
 
 test.describe('the download button saves the replay bundle as JSON with Shift', () => {
