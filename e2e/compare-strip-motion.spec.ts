@@ -58,8 +58,9 @@ async function openStrip(page: Page) {
   // why: a hard load of three or more recordings answers the router's own 307 to itself; adding them in the app does not.
   await page.evaluate(
     (search) => {
-      history.pushState(history.state, '', `${location.pathname}${search}`);
-      dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+      const state: unknown = history.state;
+      history.pushState(state, '', `${location.pathname}${search}`);
+      dispatchEvent(new PopStateEvent('popstate', { state }));
     },
     `?with=${[second, ...rest].join(',')}&layout=grid&focus=${runs[3]?.id ?? ''}`,
   );

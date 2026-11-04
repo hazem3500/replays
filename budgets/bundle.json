@@ -158,9 +158,9 @@
       "brotli": 12224
     },
     "dist/client/assets/elements-HASH.js": {
-      "raw": 17285,
-      "gzip": 6332,
-      "brotli": 5791
+      "raw": 17251,
+      "gzip": 6321,
+      "brotli": 5785
     },
     "dist/client/assets/enabled-HASH.js": {
       "raw": 98,
@@ -254,8 +254,8 @@
     },
     "dist/client/assets/measure-HASH.js": {
       "raw": 30211,
-      "gzip": 11746,
-      "brotli": 10819
+      "gzip": 11744,
+      "brotli": 10803
     },
     "dist/client/assets/microtask-HASH.js": {
       "raw": 5327,
@@ -420,7 +420,7 @@
     "dist/client/assets/use-replay-deletion-HASH.js": {
       "raw": 8836,
       "gzip": 3940,
-      "brotli": 3450
+      "brotli": 3447
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,

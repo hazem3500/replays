@@ -514,19 +514,13 @@ function SuiteSidebar({
               <span className={`status-dot tone-${tone}`} />
             </span>
           ) : (
-            <>
-              <span className="run-swatch" aria-hidden="true" />
-              <span className="run-copy">
-                <span className="run-label" title={run.label}>
-                  {names[index] ?? run.label}
-                </span>
-                {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
-                <span className="run-meta">
-                  <span className={`run-status tone-${tone}`}>{playable ? tone : expired ? 'Expired' : 'No recording'}</span>
-                  {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
-                </span>
-              </span>
-            </>
+            <RunCopy
+              run={run}
+              name={names[index] ?? run.label}
+              status={playable ? tone : expired ? 'Expired' : 'No recording'}
+              tone={tone}
+              errors={errors}
+            />
           );
           const label = `Run ${sequenceLabel(run)}: ${run.label}, ${tone}${errors ? `, ${plural(errors, 'error')}` : ''}${playable ? '' : expired ? ', recording expired' : ', no recording'}`;
           return (
@@ -569,6 +563,25 @@ function SuiteSidebar({
         })}
       </div>
     </aside>
+  );
+}
+
+/** One expanded sidebar row: the run's colour swatch, name, duration, status and error count. */
+function RunCopy({ run, name, status, tone, errors }: { run: WorkspaceRun; name: string; status: string; tone: string; errors: number }) {
+  return (
+    <>
+      <span className="run-swatch" aria-hidden="true" />
+      <span className="run-copy">
+        <span className="run-label" title={run.label}>
+          {name}
+        </span>
+        {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
+        <span className="run-meta">
+          <span className={`run-status tone-${tone}`}>{status}</span>
+          {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
+        </span>
+      </span>
+    </>
   );
 }
 
