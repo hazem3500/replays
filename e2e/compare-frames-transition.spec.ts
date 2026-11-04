@@ -1,4 +1,4 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
 import { gotoHydrated, serveApp } from './support.ts';
 import { landed, suiteLibrary } from './transition-frames.ts';
@@ -64,6 +64,15 @@ const tileColours = (page: Page) =>
 
 const frames = (page: Page) => page.evaluate(() => window.frameProbe?.read() ?? []);
 
+const frameOpacities = async (page: Page) => (await frames(page)).map((tile) => tile.opacity);
+
+/** The keyboard ring's box lives on the tile's `::after`; `evaluate` serializes this, so it reads the tile itself. */
+const ringOf = (ring: Locator) =>
+  ring.evaluate((tile) => ({
+    opacity: getComputedStyle(tile, '::after').opacity,
+    shadow: getComputedStyle(tile, '::after').boxShadow,
+  }));
+
 const server = serveApp({ REPLAYS_SSR: '1' });
 
 test.describe('comparison tile frames during page transitions', () => {
@@ -77,7 +86,7 @@ test.describe('comparison tile frames during page transitions', () => {
     const flying = samples.filter((sample) => sample.phase === 'motion-page' && sample.tiles.length === 4);
     expect(flying.length).toBeGreaterThan(0);
     for (const sample of flying) for (const tile of sample.tiles) expect(tile.opacity).toBe(0);
-    await expect.poll(async () => (await frames(page)).map((tile) => tile.opacity)).toEqual([1, 1, 1, 1]);
+    await expect.poll(() => frameOpacities(page)).toEqual([1, 1, 1, 1]);
     const [colours, landedFrames] = [await tileColours(page), await frames(page)];
     for (const [index, tile] of landedFrames.entries()) expect(tile.shadow).toContain(colours[index] ?? 'missing');
     expect(landedFrames.filter((tile) => tile.focused)).toHaveLength(1);
@@ -95,14 +104,7 @@ test.describe('comparison tile frames during page transitions', () => {
     await page.locator('.ct-tile[data-current] .ct-hit').focus();
     const ring = page.locator('.ct-tile:has(> .ct-hit:focus-visible)');
     await expect(ring).toHaveCount(1);
-    await expect
-      .poll(() =>
-        ring.evaluate((tile) => ({
-          opacity: getComputedStyle(tile, '::after').opacity,
-          shadow: getComputedStyle(tile, '::after').boxShadow,
-        })),
-      )
-      .toMatchObject({ opacity: '1', shadow: expect.stringMatching(/(inset.*){3}/) });
+    await expect.poll(() => ringOf(ring)).toMatchObject({ opacity: '1', shadow: expect.stringMatching(/(inset.*){3}/) });
   });
 
   test('fade out before the sheets fly back to the index', async ({ page }) => {
@@ -111,7 +113,7 @@ test.describe('comparison tile frames during page transitions', () => {
     await expect(page.locator('.ct-tile iframe')).toHaveCount(4);
     await landed(page);
     await page.evaluate(installFrameProbe);
-    await expect.poll(async () => (await frames(page)).map((tile) => tile.opacity)).toEqual([1, 1, 1, 1]);
+    await expect.poll(() => frameOpacities(page)).toEqual([1, 1, 1, 1]);
     await page.mouse.move(0, 0);
     await page.goBack();
     await expect(link).toBeVisible();
@@ -130,7 +132,7 @@ test.describe('comparison tile frames during page transitions', () => {
     await page.evaluate(installFrameProbe);
     await link.click();
     await expect(page.locator('.ct-tile iframe')).toHaveCount(4);
-    await expect.poll(async () => (await frames(page)).map((tile) => tile.opacity)).toEqual([1, 1, 1, 1]);
+    await expect.poll(() => frameOpacities(page)).toEqual([1, 1, 1, 1]);
     const { samples } = await probed(page);
     for (const sample of samples) for (const tile of sample.tiles) expect(tile.opacity).toBe(1);
   });
@@ -142,6 +144,6 @@ test.describe('comparison tile frames during page transitions', () => {
     await gotoHydrated(page, new URL(href, server().origin).href);
     await page.evaluate(installFrameProbe);
     await expect(page.locator('.ct-tile iframe')).toHaveCount(4);
-    await expect.poll(async () => (await frames(page)).map((tile) => tile.opacity)).toEqual([1, 1, 1, 1]);
+    await expect.poll(() => frameOpacities(page)).toEqual([1, 1, 1, 1]);
   });
 });

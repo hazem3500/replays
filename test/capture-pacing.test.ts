@@ -78,11 +78,18 @@ describe('capture labels', () => {
     }
     expect(labelFor({ kind: 'click', selector: '#save', label: 'Save changes' })).toBe('Save changes');
     expect(labelFor({ kind: 'fill', selector: 'input[placeholder^="Search developer"]', text: 'private query' })).toBe(
-      'Fill “Search developer…”',
+      'Fill “Search developer”',
     );
     expect(
       labelFor({ kind: 'type', selector: 'input[placeholder^="Search developer"]', text: 'private query', label: 'Search developers' }),
     ).toBe('Search developers');
+  });
+
+  it('caps a long selector name at a word boundary and never ends a caption in an ellipsis', () => {
+    const name = 'Review the quarterly budget forecast for the whole platform team before Friday';
+    const label = labelFor({ kind: 'click', selector: `button[aria-label="${name}"]` });
+    expect(label).toBe('Click “Review the quarterly budget forecast for the”');
+    expect(labelFor({ kind: 'click', selector: 'button[aria-label^="Add a time entry"]' })).toBe('Click “Add a time entry”');
   });
 
   it('keeps technical selectors out of fallback captions', () => {

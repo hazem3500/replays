@@ -2,6 +2,7 @@ import { subscribeInteractionNavigation } from './interaction-navigation.ts';
 import type { RawStep } from './bundle.ts';
 import type { RecorderPrivacy } from './recorder-privacy.ts';
 import { redactText } from './redact.ts';
+import { capAtWord } from './step-label.ts';
 
 const MAX_STEPS = 500;
 const REPEAT_MS = 350;
@@ -12,18 +13,45 @@ function eventElement(event: Event): Element | undefined {
   return event.composedPath().find((node): node is Element => node instanceof Element);
 }
 
-function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
-  if (control.matches('input, select, textarea, [contenteditable]') || privacy.textMasked(control)) return '';
-  const walker = control.ownerDocument.createTreeWalker(control, NodeFilter.SHOW_TEXT);
-  let text = '';
-  for (let count = 0, node = walker.nextNode(); node && count < 100 && text.length < 120; count++, node = walker.nextNode()) {
+const FIELD = 'input, select, textarea, [contenteditable]';
+
+function readable(element: Element, privacy: RecorderPrivacy, blocked: string): boolean {
+  return !element.closest(blocked) && !element.closest(FIELD) && !privacy.textMasked(element);
+}
+
+/** The first line of the first readable text node under `root`: what a person sees first, not all of it joined. */
+function firstText(root: Element, privacy: RecorderPrivacy, blocked: string): string {
+  const walker = root.ownerDocument.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  for (let count = 0, node = walker.nextNode(); node && count < 100; count++, node = walker.nextNode()) {
     const parent = node.parentElement;
-    if (!parent || parent.closest(blocked) || parent.closest('input, select, textarea, [contenteditable]') || privacy.textMasked(parent))
-      continue;
-    text += ` ${node.textContent ?? ''}`;
+    if (!parent || !readable(parent, privacy, blocked)) continue;
+    const line = (node.textContent ?? '').split('\n').find((part) => part.trim() !== '');
+    if (line) return line;
   }
-  const label = text.replace(/(?:https?:\/\/|\/)[^\s]*[?#][^\s]*/g, (url) => url.split(/[?#]/)[0] ?? '');
-  return redactText(label.replace(/\s+/g, ' ').trim(), 80);
+  return '';
+}
+
+function labelledBy(control: Element, privacy: RecorderPrivacy, blocked: string): string {
+  const root = control.getRootNode() as Partial<Pick<Document, 'getElementById'>>;
+  const names = (control.getAttribute('aria-labelledby') ?? '').split(/\s+/).filter(Boolean);
+  return names
+    .map((id) => root.getElementById?.(id))
+    .map((target) => (target && readable(target, privacy, blocked) ? firstText(target, privacy, blocked) : ''))
+    .join(' ');
+}
+
+/**
+ * invariant: a masked, blocked or field control names nothing, whichever source it would come from; the accessible name
+ * (aria-label, aria-labelledby, title) comes before the first line of text.
+ */
+function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
+  if (control.matches(FIELD) || privacy.textMasked(control)) return '';
+  const accessible = [control.getAttribute('aria-label'), labelledBy(control, privacy, blocked), control.getAttribute('title')]
+    .map((name) => name?.trim() ?? '')
+    .find(Boolean);
+  const label = accessible ?? firstText(control, privacy, blocked);
+  const withoutQueries = label.replace(/(?:https?:\/\/|\/)[^\s]*[?#][^\s]*/g, (url) => url.split(/[?#]/)[0] ?? '');
+  return capAtWord(redactText(withoutQueries, Number.MAX_SAFE_INTEGER));
 }
 
 function controlType(control: Element): string {
