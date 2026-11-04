@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Visible inputs for staff recordings ([docs/extending.md](docs/extending.md#visible-inputs-for-staff-recordings)): a new `privacy.keepVisibleInputs` config key (off by default, file only) lets the server keep the ordinary input values of a recording the browser recorder made with `privacy.sanitize: false`, which now says so in `meta.captured.inputs: 'visible'`. Values are kept only for a signed-in staff upload on `POST /api/replays`: plugin upload endpoints (app-key, customer or support ingest), scoped upload tokens, confined identities and `auth: none` are always fully masked, and the claim is dropped. Password and hidden inputs stay masked on the server in every case. `sanitizeReplayBundle` takes an optional third argument, `{ keepVisibleInputs }`. Without the key nothing changes.
+
 - Viewer: the replay cursor no longer sets off before the recorded pointer did. A sweep the recording sampled now starts when the pointer left its rest and lands when it arrived, instead of starting up to a second early on the cursor's own travel time.
 
 - Viewer: Shift and click on the download button saves the replay bundle as `<replay-id>.json` instead of rendering the video; Shift+Enter and Shift+Space do the same on the focused button, and its hint says so. A plain click is unchanged. The recorder's options menu no longer shows the "Passwords always stay hidden" note (passwords stay masked in every mode).

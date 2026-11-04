@@ -114,7 +114,7 @@ With `network: 'bodies'` the recorder loads a separate chunk at `start()` and wr
 - Each body is cut on a character boundary with `truncated: true`, then redacted before it leaves the page: secret fields at any depth, secret form fields, `Bearer`/`Basic` credentials, JWTs, Luhn-valid card numbers and, while page text is masked, e-mail addresses. The ingest endpoint redacts it again with the deployment's `redaction` rules.
 - Kept text counts toward `maxBytes`, so a recording with large bodies stops with `max-size` like one with many events. A failed read leaves `{ omitted: 'unavailable' }`; it never reaches the page.
 
-Every bundle carries `meta.captured` (`{ console, network, performance: false, video: false }`), so the viewer says "Not captured" instead of showing an empty body. If the body chunk cannot load, recording continues with headers only and `meta.captured.network` says `'headers'`.
+Every bundle carries `meta.captured` (`{ console, network, performance: false, video: false }`), so the viewer says "Not captured" instead of showing an empty body. A recording made with `privacy.sanitize: false` adds `inputs: 'visible'`. That is only a claim: the server masks every input again unless the host sets `privacy.keepVisibleInputs` and a signed-in staff session uploads it to `POST /api/replays` ([visible inputs for staff recordings](extending.md#visible-inputs-for-staff-recordings)); passwords and hidden inputs stay masked either way. If the body chunk cannot load, recording continues with headers only and `meta.captured.network` says `'headers'`.
 
 ## Options step for internal hosts
 

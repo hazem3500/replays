@@ -50,7 +50,11 @@
             "console": { "type": "boolean" },
             "network": { "enum": ["off", "headers", "bodies"] },
             "performance": { "type": "boolean" },
-            "video": { "type": "boolean" }
+            "video": { "type": "boolean" },
+            "inputs": {
+              "description": "`visible` when the recorder kept ordinary input values (`privacy.sanitize: false`); absent means masked. Password and hidden inputs are always masked. A claim the server honours only for a host with `privacy.keepVisibleInputs` and a signed-in staff upload on `POST /api/replays`; otherwise it masks every input and drops the claim. Source of truth: src/shared/network-bodies.ts.",
+              "enum": ["masked", "visible"]
+            }
           }
         },
         "people": {

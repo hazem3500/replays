@@ -9,7 +9,7 @@ export { playwrightDriver, type PlaywrightDriverOptions } from './drivers/playwr
 export { agentBrowserDriver } from './drivers/agent-browser.ts';
 export type { CaptureDriver, LaunchOptions, RawStep } from './drivers/types.ts';
 export { buildReplayContext } from './context.ts';
-export { networkEntries, sanitizeReplayBundle, sanitizeUrl, sanitizeHar } from './sanitize.ts';
+export { networkEntries, sanitizeReplayBundle, sanitizeUrl, sanitizeHar, type SanitizeReplayOptions } from './sanitize.ts';
 export { assertRedactionRules, type RedactionPattern, type RedactionRules, type RedactionTextRule } from '../shared/redaction.ts';
 export { buildHumanBundle } from './human-bundle.ts';
 export type {

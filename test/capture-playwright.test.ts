@@ -56,10 +56,10 @@ describe.skipIf(!CHROME)(
           writeHead(status, { ...headers, 'set-cookie': `sid=${COOKIE_VALUE}; Path=/; HttpOnly` })) as typeof response.writeHead;
       });
 
-      // A replay server the capture uploads to at the end.
+      // A replay server the capture uploads to at the end, opted in to visible staff inputs: a CLI capture never claims them.
       const dir = await mkdtemp(join(tmpdir(), 'replays-capture-app-'));
       store = new ReplayStore(new MemoryStorage(), join(dir, 'sample'));
-      const handle = createApp({ ...appDefaults(), store, clientDir: dir });
+      const handle = createApp({ ...appDefaults(), store, clientDir: dir, privacy: { keepVisibleInputs: true } });
       app = createServer((request, response) => void handle(request, response));
       await new Promise<void>((resolveListen) => app.listen(0, '127.0.0.1', resolveListen));
       appOrigin = `http://127.0.0.1:${(app.address() as AddressInfo).port}`;
@@ -165,6 +165,7 @@ describe.skipIf(!CHROME)(
       }
       // The step that typed it names the field, never the value.
       expect(JSON.stringify(bundle.steps)).not.toContain('shopper');
+      expect(bundle.meta.captured).not.toHaveProperty('inputs');
     });
 
     it('never stores the session cookie the server set, nor any cookie header', () => {
