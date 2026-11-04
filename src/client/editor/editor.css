@@ -18,8 +18,6 @@
   @media (hover: hover) and (pointer: fine) { .editor-retry:hover { color: var(--text); } }
   /* The Add menu: short names with their keys, and one line saying what the item under the pointer or focus does. */
   .editor-add-menu .editor-key { margin-left: auto; padding-left: 20px; }
-  /* The menu's rows are 40 px presses, as the bar's tools are. */
-  .editor-add-menu [data-slot="dropdown-menu-item"] { min-height: 40px; }
   /* invariant: the hint box holds two lines whatever it says, inside a menu of fixed width, so hovering an item never resizes the menu. */
   .editor-add-hint { box-sizing: content-box; height: 2.7em; margin: 0; padding: 3px 8px 4px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
 

@@ -119,18 +119,18 @@
   /*
    * Kind hues: each effect lane takes one of the theme's own colours, so the four tell apart at a glance in both
    * themes while staying quiet: zoom the accent, speed the warning amber, blur the danger rose, captions the success
-   * green. Full strength on the lane's glyph and a short block's top accent; a whisper of it in each block's fill,
+   * green. Full strength on the lane's glyph and a short block's softer top accent (60%, so blank blocks never outshine labelled ones); a whisper of it in each block's fill,
    * a step stronger when selected. invariant: labels stay neutral ink, so text keeps AA on every tint.
    */
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="zoom"] { --kind: var(--accent); }
-  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind: var(--warning); --kind-fill: 30%; }
-  /* why: amber at the others' strength greys out over the neutral fill; a stronger mix keeps it reading as warm. */
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind: var(--warning); }
+  /* why: in light, amber at the others' strength greys out over the neutral fill; a stronger mix keeps it warm with labels at AA. */
   :root[data-theme="light"] :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind-fill: 22%; }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="blur"] { --kind: var(--danger); }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="caption"] { --kind: var(--success); }
   :is(.editor-shell, .editor-loading) { --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
   :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 4px; background: color-mix(in oklab, var(--kind, transparent) var(--kind-fill), var(--clip-fill)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
-  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid var(--kind, var(--line-strong)); }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid color-mix(in oklab, var(--kind, var(--line-strong)) 60%, transparent); }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }

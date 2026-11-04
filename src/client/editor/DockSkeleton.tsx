@@ -149,7 +149,8 @@ function ClipSkeleton({
       <span className="tl-clip" style={{ left: at(trim.start / duration), width: span(length / duration) }}>
         {segments.map((segment, index) => {
           const room = labelRoom(segment, trim.start, cuts);
-          const pad = index === 0 || index === segments.length - 1 ? EDGE_STEP_PAD : STEP_PAD;
+          const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
+          const roomPx = room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD);
           return (
             <span
               key={segment.at}
@@ -159,7 +160,7 @@ function ClipSkeleton({
             >
               <span className="tl-clip-step-label" style={{ marginLeft: `${(room.skip / Math.max(1, segment.length)) * 100}%` }}>
                 <ClipStepLabel
-                  {...segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px, { pad, measure: measureLabel })}
+                  {...segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, { pad: STEP_PAD, measure: measureLabel })}
                 />
               </span>
             </span>

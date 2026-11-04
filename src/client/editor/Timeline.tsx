@@ -70,7 +70,9 @@ function ClipSteps({
   const segments = stepSegments(steps, trim);
   return segments.map((segment, index) => {
     const room = labelRoom(segment, trim.start, cuts);
-    const pad = index === 0 || index === segments.length - 1 ? CLIP_STEP_PAD_PX : CLIP_STEP_INNER_PAD_PX;
+    // why: only the side under a trim tab needs its wider pad, so an end step fits words as wide as the blocks below it.
+    const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
+    const roomPx = room.length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
     return (
       <span
         key={segment.at}
@@ -82,7 +84,7 @@ function ClipSteps({
       >
         <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
           <ClipStepLabel
-            {...segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px, { pad, measure: measureLabel })}
+            {...segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
           />
         </span>
       </span>
