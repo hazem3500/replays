@@ -1363,11 +1363,11 @@
     {
       "file": "dist/client/assets/ReplayIndex-HASH.js",
       "cap": {
-        "raw": 235180,
+        "raw": 235179,
         "gzip": 78607,
         "brotli": 66252
       },
-      "reason": "Index rows gain a right-click menu at the pointer and a menu button on suite rows, both drawn from one action list per row type (Open, Open in new tab, Copy link, Delete replay or Compare runs). CI same-runner main/head: raw 222788 to 228329, gzip 74084 to 76317, brotli 62683 to 64322 bytes; caps keep the budget's 3% headroom.",
+      "reason": "Index rows gain a right-click menu at the pointer and a menu button on suite rows, both drawn from one action list per row type (Open, Open in new tab, Copy link, Delete replay or Compare runs). Modules that entered the index chunk, as rendered bytes before minifying: index/RowMenu.tsx 5545, hooks/use-row-menu.ts 1980, index/row-actions.ts 809; index/Feed.tsx grows 34819 to 38714 for the per-row menu and deletion state; index/ReplayRowMenu.tsx (1921) is removed. No other module moved in: clipboard, toast (sonner), shortcuts, routing/links, the dropdown menu primitives and the deletion chunk are the same shared chunks main already loads, and the static import closure of the index chunk is unchanged apart from the deletion chunk rename. Measured on Boat, main to head: raw 222788 to 228329, gzip 74084 to 76317, brotli 62683 to 64322 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/248"
     },
     {
@@ -2168,7 +2168,7 @@
         "gzip": 3953,
         "brotli": 3478
       },
-      "reason": "The shared replay deletion and keep chunk is regrouped under a new name because the index rows now import the deletion hook through the row menu; its size is about 260 raw bytes smaller than the use-replay-deletion chunk it replaces. Measured on Boat: raw 8578, gzip 3837, brotli 3376 bytes; caps keep the budget's 3% headroom.",
+      "reason": "The shared replay deletion and keep chunk is renamed from use-replay-deletion to keep: Rolldown names it after a different member module. Its membership is unchanged (hooks/use-replay-deletion.tsx, viewer/ReplayDeleteDialog.tsx, viewer/keep.ts, data/retention.ts and the bot, layers and upload icons) and main already imported it statically from the index chunk through ReplayRowMenu. Measured on Boat, main to head: raw 8578 to 8578, gzip 3825 to 3837, brotli 3346 to 3376 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/248"
     }
   ]
