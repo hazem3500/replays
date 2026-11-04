@@ -122,7 +122,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await page.keyboard.press('Space');
   await page.goto(`${base()}/r/${id}?t=0.2`);
   await expect(page.getByTestId('edit-caption')).toHaveText('Open the page');
-  await expect(page.getByTestId('captions-switch')).toHaveCount(0);
+  await expect(page.getByTestId('captions-switch')).toHaveAccessibleName('Hide captions');
   await expect(page.locator('.player-host .replay-blur')).toBeVisible();
   await page.goto(`${base()}/r/${id}?t=2.1`);
   await expect(page.getByTestId('edit-caption')).toHaveText('Click the email field');

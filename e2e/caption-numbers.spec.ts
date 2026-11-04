@@ -142,7 +142,8 @@ test('saved editor captions stay unnumbered even with the viewer preference on',
   const caption = page.getByTestId('edit-caption');
   await expect(caption).toHaveText('My own caption');
   await expect(caption.locator('.step-caption-number')).toHaveCount(0);
-  await expect(page.getByTestId('captions-switch')).toHaveCount(0);
+  await expect(page.getByTestId('captions-switch')).toHaveAccessibleName('Hide captions');
+  await expect(page.getByRole('button', { name: 'Caption settings', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: /^Playback: / }).click();
   await expect(page.getByRole('switch', { name: 'Show step numbers' })).toHaveCount(0);
 });
