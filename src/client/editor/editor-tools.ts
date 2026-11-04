@@ -18,25 +18,25 @@ export interface EditorTool {
 export const BAR_TOOLS: readonly EditorTool[] = [
   { id: 'cut', label: 'Cut', action: 'Cut a second at the playhead', key: 'C', icon: 'scissors' },
   { id: 'waits', label: 'Waits', action: 'Find waits to remove', key: 'W', icon: 'hourglass' },
-  { id: 'highlight', label: 'Highlight', action: 'Highlight this moment', key: 'M', icon: 'map-pin' },
+  { id: 'highlight', label: 'Highlight', action: 'Highlight the selection, or this moment', key: 'M', icon: 'map-pin' },
 ];
 
 /** What the Add menu adds at the playhead, each with its key. */
 export interface AddItem {
   kind: EffectKind;
-  /** What it does in one short line: the menu item, the shortcut sheet row and the chip's tooltip. */
+  /** The menu item's name, one or two words. */
   label: string;
-  /** The chip's own name under an empty timeline. */
-  short: string;
+  /** What it does in one short line: the menu's hint line for the item and the shortcut sheet row. */
+  action: string;
   key: string;
   icon: AnimatedIconName;
 }
 
 export const ADD_ITEMS: readonly AddItem[] = [
-  { kind: 'zoom', label: 'Zoom in on every click', short: 'Zoom', key: 'Z', icon: 'zoom-in' },
-  { kind: 'speed', label: 'Speed up from the playhead', short: 'Speed up', key: 'F', icon: 'fast-forward' },
-  { kind: 'blur', label: 'Blur part of the page', short: 'Blur', key: 'B', icon: 'eye-off' },
-  { kind: 'caption', label: 'Write captions from the steps', short: 'Captions', key: 'T', icon: 'captions' },
+  { kind: 'zoom', label: 'Zoom', action: 'Zoom in on every click', key: 'Z', icon: 'zoom-in' },
+  { kind: 'speed', label: 'Speed up', action: 'Speed up from the playhead', key: 'F', icon: 'fast-forward' },
+  { kind: 'blur', label: 'Blur', action: 'Blur part of the page', key: 'B', icon: 'eye-off' },
+  { kind: 'caption', label: 'Captions', action: 'Write captions from the steps', key: 'T', icon: 'captions' },
 ];
 
 export interface ShortcutRow {
@@ -68,7 +68,7 @@ export const EDITOR_SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutRow[]
   },
   {
     title: 'Add',
-    items: ADD_ITEMS.map((item) => ({ keys: [item.key], label: item.label })),
+    items: ADD_ITEMS.map((item) => ({ keys: [item.key], label: item.action })),
   },
   {
     title: 'History',

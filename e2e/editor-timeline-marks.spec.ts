@@ -14,10 +14,10 @@ const STEPS = [
 ];
 
 /** demo-shop with three steps far enough apart to stay three dots, and `edits` saved before the editor opens. */
-async function openEditor(page: Page, edits: Record<string, unknown> = {}) {
+async function openEditor(page: Page, { steps = STEPS, ...edits }: Record<string, unknown> & { steps?: unknown[] } = {}) {
   const id = uniqueId('marks');
   const bundle = await cloneBundle(page.request, base(), 'demo-shop', id);
-  await postBundle(page.request, base(), { ...bundle, steps: STEPS });
+  await postBundle(page.request, base(), { ...bundle, steps });
   const saved = await page.request.put(`${base()}/api/replays/${id}/edits`, {
     headers: { origin: base(), 'if-match': '"e.none"' },
     data: { version: 1, cuts: [], ...edits },
@@ -29,11 +29,13 @@ async function openEditor(page: Page, edits: Record<string, unknown> = {}) {
 
 const tooltip = (page: Page) => page.locator('[data-slot="tooltip-content"]');
 
-test.describe('editor timeline marks', () => {
+test.describe('editor timeline step dots', () => {
   test('a step dot names its step on hover and seeks there on click', async ({ page }) => {
     await openEditor(page);
     const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
     await expect(dots).toHaveCount(3);
+    const target = await dots.nth(2).boundingBox();
+    expect(Math.min(target?.width ?? 0, target?.height ?? 0)).toBeGreaterThanOrEqual(24);
     await dots.nth(2).hover();
     await expect(tooltip(page)).toContainText('Place the order');
     await dots.nth(2).click();
@@ -53,28 +55,37 @@ test.describe('editor timeline marks', () => {
     await expect(page.getByTestId('editor-clock')).toHaveText('0:04.0');
   });
 
-  test('the tools and the add row say what they do with their key', async ({ page }) => {
-    await openEditor(page);
-    await page.getByTestId('remove-waits').hover();
-    await expect(tooltip(page)).toContainText('Find waits to remove');
-    await expect(tooltip(page).locator('kbd')).toHaveText('W');
-    await page.getByTestId('invite-zoom').hover();
-    await expect(tooltip(page)).toContainText('Zoom in on every click');
-    await expect(tooltip(page).locator('kbd')).toHaveText('Z');
-    await expect(page.getByTestId('invite-caption').locator('.tl-invite-key')).toHaveText('T');
-    await expect(page.getByTestId('invite-caption')).toHaveAccessibleName('Captions');
+  test('a filled dot names its action and time, and a hollow one its pause', async ({ page }) => {
+    await openEditor(page, { steps: [...STEPS, { at: 8_000, kind: 'wait', label: 'Wait for the receipt' }] });
+    const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
+    await dots.nth(0).hover();
+    await expect(tooltip(page)).toContainText('Click · 0:02.0');
+    await dots.nth(3).hover();
+    await expect(tooltip(page)).toContainText(/Wait · \d+\.\d s/);
+    await expect(dots.nth(3)).toHaveAccessibleName(/^Wait for the receipt, Wait of \d+\.\d seconds at 0:08\.0$/);
   });
 
-  test('the clip shows its activity and a cut dims the bars it removes', async ({ page }) => {
+  test('a step dot under a cut dims, and the clip itself stays plain', async ({ page }) => {
     await openEditor(page, { cuts: [{ id: 'cut-1', from: 1_000, to: 5_000 }] });
-    const activity = page.getByTestId('clip-activity');
-    await expect(activity).toHaveAttribute('aria-hidden', 'true');
-    const bars = activity.locator('rect');
-    const dimmed = activity.locator('rect[data-removed]');
-    await expect(dimmed.first()).toBeVisible();
-    expect(await dimmed.count()).toBeLessThan(await bars.count());
-    const opacity = (locator: typeof bars) => locator.evaluate((element) => Number(getComputedStyle(element).opacity));
-    expect(await opacity(dimmed.first())).toBeLessThan(await opacity(activity.locator('rect:not([data-removed])').first()));
-    await expect(page.getByRole('group', { name: 'Steps' }).getByRole('button').nth(1)).toHaveAttribute('data-removed', 'true');
+    const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
+    await expect(dots.nth(1)).toHaveAttribute('data-removed', 'true');
+    await expect(dots.nth(2)).not.toHaveAttribute('data-removed');
+    await expect(page.locator('.tl-clip svg')).toHaveCount(0);
+  });
+});
+
+test.describe('editor tools and Add menu', () => {
+  test('the tools show their keys, and the Add menu names each item briefly and says what it does on its last line', async ({ page }) => {
+    await openEditor(page);
+    await expect(page.getByTestId('add-cut').locator('.editor-key')).toHaveText('C');
+    await expect(page.getByTestId('add-point-highlight').locator('.editor-key')).toHaveText('M');
+    await page.getByTestId('add-effect').click();
+    const menu = page.getByRole('menu', { name: 'Add to timeline' });
+    await expect(menu.getByRole('menuitem')).toHaveText(['ZoomZ', 'Speed upF', 'BlurB', 'CaptionsT', 'HighlightM']);
+    await expect(menu.getByRole('separator')).toHaveCount(1);
+    await menu.getByRole('menuitem', { name: 'Zoom' }).hover();
+    await expect(page.getByTestId('add-hint')).toHaveText('Zoom in on every click');
+    await expect(menu.getByRole('menuitem', { name: 'Zoom' })).toHaveAccessibleDescription('Zoom in on every click');
+    await expect(page.getByTestId('lane-invitation')).toHaveCount(0);
   });
 });

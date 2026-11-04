@@ -301,10 +301,11 @@ test('tools carry their names and keys, and ? opens the editor shortcuts', async
   const id = await uploadCopy(page, 'editor-shortcuts');
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await expect(page.getByTestId('add-cut')).toHaveText('Cut');
-  await expect(page.getByTestId('remove-waits')).toHaveText('Waits');
+  await expect(page.getByTestId('add-cut')).toContainText('Cut');
+  await expect(page.getByTestId('add-cut').locator('.editor-key')).toHaveText('C');
+  await expect(page.getByTestId('remove-waits').locator('.editor-key')).toHaveText('W');
   await page.getByTestId('add-effect').click();
-  await expect(page.getByRole('menuitem', { name: /Highlight this moment/ })).toContainText('M');
+  await expect(page.getByRole('menuitem', { name: 'Highlight' })).toContainText('M');
   await page.keyboard.press('Escape');
   await page.locator('body').press('?');
   const sheet = page.getByTestId('shortcut-sheet');

@@ -3,9 +3,8 @@ import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, use
 
 import { editTimeline } from '../../shared/edit-timeline.ts';
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
-import { formatClock, type ReplayBundle } from '../../shared/replay.ts';
+import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
-import { TimelineActivity } from './TimelineActivity.tsx';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
@@ -62,12 +61,12 @@ function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayC
 /**
  * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, a dot
  * per recorded step, the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
- * lanes. The recording track shows its activity; its accent edges are the trim, dragged directly;
+ * lanes. The recording track stays plain; its accent edges are the trim, dragged directly;
  * cuts are hatched regions. Dragging on the clip selects a range (C cuts it), a click seeks. "Remove waits"
  * suggestions show as dashed regions until applied. `lanes` (the effects) go under it, on the same scale.
  */
 export function Timeline({
-  recording,
+  steps,
   duration,
   edits,
   selection,
@@ -76,8 +75,8 @@ export function Timeline({
   onCutRange,
   lanes,
 }: {
-  /** The recording's events (its activity) and steps (the ruler's dots). */
-  recording: Pick<ReplayBundle, 'events' | 'steps'>;
+  /** The recording's steps: the ruler's dots. */
+  steps: readonly ReplayStep[];
   duration: number;
   edits: ReplayEdits;
   selection: Selection;
@@ -195,7 +194,7 @@ export function Timeline({
                 <span className="tl-tick-label">{tickLabel(at, tick)}</span>
               </span>
             ))}
-            <TimelineStepDots steps={recording.steps} isRemoved={(time) => edited.isRemoved(time)} />
+            <TimelineStepDots steps={steps} isRemoved={(time) => edited.isRemoved(time)} />
           </div>
         </div>
 
@@ -228,7 +227,6 @@ export function Timeline({
                     });
                   }}
                 >
-                  <TimelineActivity events={recording.events} duration={duration} edits={edits} />
                   <TrimmedOutside trim={trim} duration={duration} scale={scale} />
                   <div
                     className="tl-clip"

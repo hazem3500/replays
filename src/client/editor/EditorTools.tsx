@@ -1,6 +1,6 @@
-import { HighlighterIcon } from 'lucide-react';
+import { useId, useState } from 'react';
 
-import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import {
@@ -9,7 +9,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
 import { ADD_ITEMS, BAR_TOOLS, type EditorTool } from './editor-tools.ts';
@@ -18,14 +17,29 @@ import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 
 const TEST_IDS: Record<EditorTool['id'], string> = { cut: 'add-cut', waits: 'remove-waits', highlight: 'add-point-highlight' };
 
-/** What a tool does now: cutting a selection or applying waits found reads differently. */
+/** What a tool does now: cutting or highlighting a selection, or applying waits found, reads differently. */
 function actionFor(tool: EditorTool, rangeSelected: boolean, suggesting: boolean) {
   if (tool.id === 'cut' && rangeSelected) return 'Cut the selection';
+  if (tool.id === 'highlight') return highlightAction(rangeSelected);
   if (tool.id === 'waits' && suggesting) return 'Remove the waits found';
   return tool.action;
 }
 
-/** The bar's editing tools, each with its name on the button and its key in the tooltip. */
+/** why: one Highlight covers both kinds, as Cut does: the selection when there is one, else the playhead's moment. */
+function highlightAction(rangeSelected: boolean) {
+  return rangeSelected ? 'Highlight the selection' : 'Highlight this moment';
+}
+
+/** A control's key after its name, quieter than the name; hidden from assistive technology, which reads aria-keyshortcuts. */
+function KeySuffix({ shortcut }: { shortcut: string }) {
+  return (
+    <kbd className="editor-key" data-slot="key-suffix" aria-hidden="true">
+      {shortcut}
+    </kbd>
+  );
+}
+
+/** The bar's editing tools, each with its name and key on the button and what it does in the tooltip. */
 export function BarTools({
   rangeSelected,
   suggesting,
@@ -35,6 +49,7 @@ export function BarTools({
   suggesting: boolean;
   onTool: (id: EditorTool['id']) => void;
 }) {
+  const hasKeyboard = useHasKeyboard();
   return (
     <>
       {BAR_TOOLS.map((tool) => {
@@ -53,6 +68,7 @@ export function BarTools({
             >
               <AnimatedIcon name={tool.icon} />
               {tool.label}
+              {hasKeyboard ? <KeySuffix shortcut={tool.key} /> : null}
             </Button>
           </Hint>
         );
@@ -61,82 +77,76 @@ export function BarTools({
   );
 }
 
-/** Everything that can be added at the playhead, with its key, plus the empty-track toggle. */
+interface MenuEntry {
+  id: string;
+  label: string;
+  action: string;
+  key: string;
+  icon: AnimatedIconName;
+  onSelect: () => void;
+}
+
+const MENU_HINT = 'Adds at the playhead, or over the selection';
+
+/**
+ * What can be added, by short name and key. What the item under the pointer or focus does shows once, on the menu's
+ * last line, instead of in every row.
+ */
 export function AddMenu({
+  rangeSelected,
   onAdd,
-  onPointHighlight,
-  onPeriodHighlight,
-  showEmptyTracks,
-  onShowEmptyTracks,
+  onHighlight,
 }: {
+  rangeSelected: boolean;
   onAdd: (kind: EffectKind) => void;
-  onPointHighlight: () => void;
-  onPeriodHighlight: () => void;
-  showEmptyTracks: boolean;
-  onShowEmptyTracks: (show: boolean) => void;
+  onHighlight: () => void;
 }) {
   const hasKeyboard = useHasKeyboard();
+  const [hinted, setHinted] = useState<string>();
+  const ids = useId();
+  const entries: MenuEntry[] = [
+    ...ADD_ITEMS.map((item) => ({ ...item, id: item.kind, onSelect: () => onAdd(item.kind) })),
+    { id: 'highlight', label: 'Highlight', action: highlightAction(rangeSelected), key: 'M', icon: 'map-pin', onSelect: onHighlight },
+  ];
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={() => setHinted(undefined)}>
       <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-add-effect" data-testid="add-effect" />}>
         <AnimatedIcon name="plus" /> Add <AnimatedIcon name="chevron-down" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" className="w-auto min-w-56" aria-label="Add to timeline">
-        {ADD_ITEMS.map((item) => (
-          <DropdownMenuItem key={item.kind} onClick={() => onAdd(item.kind)} data-testid={`add-${item.kind}`}>
-            <AnimatedIcon name={item.icon} /> {item.label} {hasKeyboard ? <DropdownMenuShortcut>{item.key}</DropdownMenuShortcut> : null}
+      <DropdownMenuContent side="top" className="editor-add-menu w-auto min-w-52" aria-label="Add to timeline">
+        {entries.map((entry) => (
+          <DropdownMenuItem
+            key={entry.id}
+            onClick={entry.onSelect}
+            onFocus={() => setHinted(entry.id)}
+            onPointerEnter={() => setHinted(entry.id)}
+            aria-describedby={`${ids}-${entry.id}`}
+            aria-keyshortcuts={entry.key}
+            data-testid={`add-${entry.id}`}
+          >
+            <AnimatedIcon name={entry.icon} /> {entry.label}
+            {hasKeyboard ? <KeySuffix shortcut={entry.key} /> : null}
           </DropdownMenuItem>
         ))}
+        {entries.map((entry) => (
+          <span key={entry.id} id={`${ids}-${entry.id}`} hidden>
+            {entry.action}
+          </span>
+        ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={onPointHighlight} data-testid="add-point-highlight-menu">
-          <AnimatedIcon name="map-pin" /> Highlight this moment {hasKeyboard ? <DropdownMenuShortcut>M</DropdownMenuShortcut> : null}
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={onPeriodHighlight} data-testid="add-period-highlight">
-          <HighlighterIcon aria-hidden="true" /> Highlight the selection
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem
-          checked={showEmptyTracks}
-          onCheckedChange={onShowEmptyTracks}
-          closeOnClick
-          data-testid="show-empty-tracks"
-        >
-          Show empty tracks
-        </DropdownMenuCheckboxItem>
+        <p className="editor-add-hint" aria-hidden="true" data-testid="add-hint">
+          {entries.find((entry) => entry.id === hinted)?.action ?? MENU_HINT}
+        </p>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 }
 
-/**
- * Under a timeline with no effects yet: what can be added at the playhead, as quiet chips. Each chip's tooltip says
- * what it does with its key, and the key also follows its name as a quiet suffix where the row has room.
- */
-export function LaneInvitation({ onAdd }: { onAdd: (kind: EffectKind) => void }) {
-  const hasKeyboard = useHasKeyboard();
+/** The editor's More menu view setting: an empty lane per effect kind, to draw a range on directly. */
+export function EmptyTracksItem({ checked, onChange }: { checked: boolean; onChange: (show: boolean) => void }) {
   return (
-    <div className="tl-invite" role="group" aria-label="Add at the playhead" data-testid="lane-invitation">
-      <span className="tl-invite-text">Add at the playhead</span>
-      {ADD_ITEMS.map((item) => (
-        <Hint key={item.kind} label={item.label} shortcut={item.key}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="tl-invite-chip"
-            aria-keyshortcuts={item.key}
-            onClick={() => onAdd(item.kind)}
-            data-testid={`invite-${item.kind}`}
-          >
-            <AnimatedIcon name={item.icon} size={14} />
-            {item.short}
-            {hasKeyboard ? (
-              <kbd className="tl-invite-key" data-slot="key-suffix" aria-hidden="true">
-                {item.key}
-              </kbd>
-            ) : null}
-          </Button>
-        </Hint>
-      ))}
-    </div>
+    <DropdownMenuCheckboxItem checked={checked} onCheckedChange={onChange} closeOnClick data-testid="show-empty-tracks">
+      Show empty tracks
+    </DropdownMenuCheckboxItem>
   );
 }

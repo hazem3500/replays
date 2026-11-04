@@ -5,13 +5,11 @@ import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
+import { wordsThatFit } from './phone-timeline.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
 
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
-/** A step segment or region narrower than this shows no label (a truncated word reads worse than none). */
-const LABEL_PX = 44;
-
 interface PhoneLanesProps {
   duration: number;
   /** Pixels per ms. */
@@ -172,7 +170,7 @@ function Region({
         onClick={onSelect}
         data-testid={`region-${kind}`}
       >
-        {width >= LABEL_PX ? <span>{region.label}</span> : null}
+        <span>{wordsThatFit(region.label, width)}</span>
       </button>
       {children}
     </span>
@@ -196,7 +194,10 @@ function stepSegments(steps: readonly ReplayStep[], trim: { start: number; end: 
   });
 }
 
-/** The recording: its step segments, trimmed-off ends, cuts and highlights; selected, its trim edges drag. */
+/**
+ * The recording: its step segments (each named in whole words, up to two lines), trimmed-off ends, cuts and
+ * highlights; selected, its trim edges drag.
+ */
 function ClipLane({ duration, scale, edits, steps, selection, select, drag }: ClipLaneProps) {
   const px = (time: number) => time * scale;
   const trim = trimOf(edits, duration);
@@ -217,7 +218,7 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
       >
         {stepSegments(steps, trim).map((segment) => (
           <span key={segment.at} className="phone-step" style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}>
-            {px(segment.length) >= LABEL_PX ? segment.label : null}
+            <span className="phone-step-label">{wordsThatFit(segment.label, px(segment.length), 2)}</span>
           </span>
         ))}
       </button>

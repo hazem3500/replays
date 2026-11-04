@@ -2,6 +2,7 @@ import { ScanIcon } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, useState } from 'react';
 
 import { IconButton } from '@/components/icon-button.tsx';
+import { editTimeline } from '../../shared/edit-timeline.ts';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { useLanesWidth, usePhoneTimeline } from '../hooks/use-phone-timeline.ts';
@@ -9,10 +10,14 @@ import { cssVars } from '../lib/css-vars.ts';
 import { usePlayer } from '../player.ts';
 import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
 import { PhoneLanes } from './PhoneLanes.tsx';
-import { clampScale, fitScale, stepBoundaries } from './phone-timeline.ts';
+import { clampScale, fitScale, stepBoundaries, trackScale } from './phone-timeline.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
-import type { EditorAction, Selection } from './state.ts';
+import { type EditorAction, hasEffectLanes, type Selection } from './state.ts';
+import { ScaleContext } from './timeline-drag.ts';
+import { TimelineStepDots } from './TimelineStepDots.tsx';
 
+/** A step dot's target on a phone, for a finger (phone-editor.css sizes the same). */
+const PHONE_DOT_PX = 32;
 /** A mouse drag past this many px scrolls the lanes instead of tapping what it started on. */
 const DRAG_PX = 4;
 
@@ -38,10 +43,36 @@ function dragToScroll(event: ReactPointerEvent<HTMLDivElement>) {
   window.addEventListener('pointerup', onUp);
 }
 
+/** The scale over the lanes: tick labels, then a dot per step (the desktop ruler's) on the row under them. */
+function PhoneScale({
+  duration,
+  scale,
+  edits,
+  steps,
+}: {
+  duration: number;
+  scale: number;
+  edits: ReplayEdits;
+  steps: readonly ReplayStep[];
+}) {
+  const { tick, ticks } = rulerTicks(duration * scale, duration);
+  const kept = editTimeline(edits, duration);
+  return (
+    <div className="phone-scale">
+      {ticks.map((at) => (
+        <span key={at} className="phone-tick" style={{ left: `${at * scale}px` }} aria-hidden="true">
+          {tickLabel(at, tick)}
+        </span>
+      ))}
+      <TimelineStepDots steps={steps} isRemoved={(time) => kept.isRemoved(time)} target={PHONE_DOT_PX} />
+    </div>
+  );
+}
+
 /**
  * The phone timeline (the mobile video-editor pattern): a fixed centre playhead the full-width lanes scroll under,
  * so dragging the clips scrubs and the platform's momentum carries it; pinch zooms. Play and the time sit in its
- * slim bar; there is no separate ruler or scrub row.
+ * slim bar; the scale over the lanes carries the step dots, as on the desktop ruler (a tap seeks and names the step).
  */
 export function PhoneTimeline({
   duration,
@@ -57,6 +88,7 @@ export function PhoneTimeline({
   /** What the edits leave. */
   edited: number;
   edits: ReplayEdits;
+  /** The recording's steps: the scale's dots and the clip's segments. */
   steps: readonly ReplayStep[];
   selection: Selection;
   dispatch: (action: EditorAction) => void;
@@ -66,11 +98,12 @@ export function PhoneTimeline({
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const [seek, setSeek] = useState<HTMLInputElement | null>(null);
   const [zoom, setZoom] = useState<number>();
+  const [track, setTrack] = useState<HTMLDivElement | null>(null);
   const width = useLanesWidth(scroller);
   const fit = fitScale(width || 390, duration);
   const scale = zoom === undefined ? fit : clampScale(zoom, fit);
   usePhoneTimeline(scroller, { player, seek, scale, fit, snaps: stepBoundaries(steps, duration), onScale: setZoom });
-  const { tick, ticks } = rulerTicks(duration * scale, duration);
+  const timeline = trackScale(duration, scale, track);
   return (
     <div className="phone-timeline" data-testid="timeline" data-ready={width > 0 || undefined}>
       <div className="phone-timeline-bar">
@@ -94,16 +127,12 @@ export function PhoneTimeline({
         <span className="phone-snap-marker" aria-hidden="true" />
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
           <div className="phone-lanes-content">
-            <div className="phone-track" style={cssVars({ '--span': `${duration * scale}px` })}>
-              <div className="phone-scale" aria-hidden="true">
-                {ticks.map((at) => (
-                  <span key={at} style={{ left: `${at * scale}px` }}>
-                    {tickLabel(at, tick)}
-                  </span>
-                ))}
+            <ScaleContext.Provider value={timeline}>
+              <div ref={setTrack} className="phone-track" style={cssVars({ '--span': `${duration * scale}px` })}>
+                <PhoneScale duration={duration} scale={scale} edits={edits} steps={steps} />
+                <PhoneLanes duration={duration} scale={scale} edits={edits} steps={steps} selection={selection} dispatch={dispatch} />
               </div>
-              <PhoneLanes duration={duration} scale={scale} edits={edits} steps={steps} selection={selection} dispatch={dispatch} />
-            </div>
+            </ScaleContext.Provider>
           </div>
         </div>
         <input
@@ -123,6 +152,11 @@ export function PhoneTimeline({
           data-testid="phone-playhead"
         />
       </div>
+      {hasEffectLanes(edits) ? null : (
+        <p className="phone-lanes-hint" data-testid="phone-lanes-hint">
+          The tools below add at the playhead
+        </p>
+      )}
     </div>
   );
 }

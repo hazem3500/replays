@@ -64,9 +64,8 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await expect(page.getByTestId('region-caption')).toHaveCount(4);
 
   // Empty tracks remain available for precise range drawing, without crowding the default editor.
-  await page.getByTestId('add-effect').click();
+  await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByTestId('show-empty-tracks').click();
-  await expect(page.getByTestId('add-effect')).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(page.getByTestId('lane-speed')).toContainText('Speed · drag');
   // A speed-up dragged out on its lane, then set to 8× from the control row.

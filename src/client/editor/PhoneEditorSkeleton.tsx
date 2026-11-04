@@ -16,13 +16,11 @@ import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { laneRegions } from './lanes.tsx';
-import { fitScale } from './phone-timeline.ts';
+import { fitScale, wordsThatFit } from './phone-timeline.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 
 /** The timeline's width before the page has laid out (a phone's), for a frame rendered outside a browser. */
 const FALLBACK_WIDTH = 390;
-/** A step segment or region narrower than this shows no label, as on the loaded timeline (PhoneLanes.tsx). */
-const LABEL_PX = 44;
 
 const TOOLS: Array<{ label: string; icon: ReactNode }> = [
   { label: 'Trim', icon: <ScissorsIcon aria-hidden="true" /> },
@@ -58,7 +56,7 @@ function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: Re
                 key={`${step.at}-${index}`}
                 style={{ left: `${px(Math.max(step.at, trim.start) - trim.start)}px`, width: `${width}px` }}
               >
-                {width >= LABEL_PX ? step.label : null}
+                <span>{wordsThatFit(step.label, width, 2)}</span>
               </span>
             );
           })}
@@ -74,7 +72,7 @@ function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: Re
                   data-kind={lane.kind}
                   style={{ left: `${px(region.from)}px`, width: `${Math.max(4, px(region.to - region.from))}px` }}
                 >
-                  {px(region.to - region.from) >= LABEL_PX ? <span>{region.label}</span> : null}
+                  <span>{wordsThatFit(region.label, Math.max(4, px(region.to - region.from)))}</span>
                 </span>
               ))}
             </div>

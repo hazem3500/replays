@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { EDITS_VERSION, type ReplayEdits } from '../src/shared/edits.ts';
 import { duplicateEffect, splitEffect } from '../src/client/editor/phone-edits.ts';
-import { clampScale, fitScale, MAX_SCALE, stepBoundaries, timeAtScroll } from '../src/client/editor/phone-timeline.ts';
+import { clampScale, fitScale, MAX_SCALE, stepBoundaries, timeAtScroll, wordsThatFit } from '../src/client/editor/phone-timeline.ts';
 
 const DURATION = 10_000;
 const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VERSION, cuts: [], ...extra });
@@ -69,5 +69,25 @@ describe('the phone timeline scale', () => {
 
   it('snaps to each step start inside the recording once', () => {
     expect(stepBoundaries([{ at: 0 }, { at: 1200 }, { at: 1200.4 }, { at: 800 }, { at: 12_000 }], DURATION)).toEqual([800, 1200]);
+  });
+
+  it('shortens a label at a word boundary, never inside a word', () => {
+    expect(wordsThatFit('Open checkout page now', 80)).toBe('Open');
+  });
+
+  it('wraps a label onto a second line before shortening it', () => {
+    expect(wordsThatFit('Open checkout page now', 80, 2)).toBe('Open checkout');
+  });
+
+  it('ends a shortened label before a small joining word', () => {
+    expect(wordsThatFit('Look at the product grid', 80, 2)).toBe('Look');
+  });
+
+  it('keeps a whole label that fits, small words included', () => {
+    expect(wordsThatFit('Look at the shop', 200)).toBe('Look at the shop');
+  });
+
+  it('shows nothing when even the first word does not fit', () => {
+    expect(wordsThatFit('Checkout', 40)).toBe('');
   });
 });

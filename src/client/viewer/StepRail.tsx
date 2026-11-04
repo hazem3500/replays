@@ -32,6 +32,11 @@ const STEP_ICONS: Record<string, { icon: AnimatedIconName; label: string }> = {
   wait: { icon: 'hourglass', label: 'Wait' },
 };
 
+/** A step kind's name ("Click", "Wait"), or the kind itself for one this app has no glyph for. */
+export function stepKindName(kind: string) {
+  return STEP_ICONS[kind]?.label ?? (kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : 'Step');
+}
+
 /** The step's kind glyph; it plays its gesture once when its row becomes the current step (never on hover). */
 export function StepIcon({ kind, active = false, index }: { kind: string; active?: boolean; index?: number }) {
   const entry = STEP_ICONS[kind];

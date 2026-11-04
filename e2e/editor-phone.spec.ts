@@ -59,6 +59,16 @@ test('scrolling the lanes scrubs under the centre playhead, and a scrub ending n
     .toBeLessThanOrEqual(1);
 });
 
+test('a step dot on the scale seeks when tapped and names its step while the label is up', async ({ page }) => {
+  await openEdited(page, 'phone-dots');
+  const dot = page.getByTestId('ruler-step').nth(1);
+  const name = (await dot.getAttribute('aria-label')) ?? '';
+  const [label = '', at = ''] = [name.split(',')[0], /at (\d+:\d\d\.\d)$/.exec(name)?.[1]];
+  await dot.tap();
+  await expect(page.getByTestId('step-bubble')).toContainText(label);
+  await expect(page.getByTestId('editor-clock')).toHaveText(at);
+});
+
 test('a tapped region swaps the toolbar to its actions; Split, Duplicate and Delete edit it and Done brings the tools back', async ({
   page,
 }) => {

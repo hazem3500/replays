@@ -1,72 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { editTimeline } from '../src/shared/edit-timeline.ts';
-import { activityBars, activityBinsFor, placeStepDots, removedSlices, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
+import { formatClock } from '../src/shared/replay.ts';
+import { placeStepDots, stepDotDetail, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
 
-const START = 50_000;
-const move = (at: number) => ({ type: 3, timestamp: START + at, data: { source: 1, positions: [] } });
-const click = (at: number) => ({ type: 3, timestamp: START + at, data: { source: 2, type: 2, x: 1, y: 1 } });
-const press = (at: number) => ({ type: 3, timestamp: START + at, data: { source: 2, type: 1, x: 1, y: 1 } });
-const typing = (at: number) => ({ type: 3, timestamp: START + at, data: { source: 5, text: 'a' } });
-const scroll = (at: number) => ({ type: 3, timestamp: START + at, data: { source: 3, x: 0, y: 40 } });
-const mutation = (at: number) => ({ type: 3, timestamp: START + at, data: { source: 0, adds: [] } });
-const snapshot = { type: 2, timestamp: START, data: {} };
 const step = (at: number, label = `Step at ${at}`, kind = 'click') => ({ at, label, kind });
-
-describe('activityBars', () => {
-  it('peaks in the slice of the recording each event happened in, counted from the first event', () => {
-    const bars = activityBars([snapshot, move(100), move(9_950)], 10_000, 10);
-    expect(bars.map((bar) => bar.level === 1)).toEqual([true, false, false, false, false, false, false, false, false, true]);
-  });
-
-  it('spreads a fading share of each event into the two slices either side and no further', () => {
-    const levels = activityBars([snapshot, click(5_000)], 10_000, 11).map((bar) => bar.level);
-    expect(levels[5]).toBe(1);
-    expect([levels[4], levels[6]]).toEqual([levels[4], levels[4]]);
-    expect(levels[3]).toBeGreaterThan(0);
-    expect(levels[3]).toBeLessThan(levels[4] ?? 0);
-    expect([levels[2], levels[8]]).toEqual([0, 0]);
-  });
-
-  it('lets one click outweigh a pointer move', () => {
-    const bars = activityBars([snapshot, move(500), click(9_500)], 10_000, 10);
-    expect(bars[9]?.level).toBe(1);
-    expect(bars[0]?.level).toBeLessThan(0.5);
-  });
-
-  it('marks the slices where someone clicked or typed as strong, and only those', () => {
-    const bars = activityBars([snapshot, move(100), scroll(1_100), typing(2_100), click(3_100)], 4_000, 4);
-    expect(bars.map((bar) => bar.strong)).toEqual([false, false, true, true]);
-  });
-
-  it('counts a click once, not its press and release', () => {
-    const lone = activityBars([snapshot, click(100), move(1_100)], 2_000, 2);
-    const pressed = activityBars([snapshot, press(90), click(100), press(110), move(1_100)], 2_000, 2);
-    expect(pressed).toEqual(lone);
-  });
-
-  it('keeps a quiet slice visible beside a very busy one', () => {
-    const busy = Array.from({ length: 200 }, (_, index) => click(9_000 + index));
-    const bars = activityBars([snapshot, move(100), ...busy], 10_000, 10);
-    expect(bars[0]?.level).toBeGreaterThan(0.05);
-  });
-
-  it('uses one slice per twentieth of a second, within its fewest and finest', () => {
-    expect([activityBinsFor(1_000), activityBinsFor(6_000), activityBinsFor(600_000)]).toEqual([60, 120, 160]);
-  });
-
-  it('ignores DOM changes and snapshots, and has nothing to draw without activity', () => {
-    expect(activityBars([snapshot, mutation(100), mutation(900)], 1_000, 4)).toEqual([]);
-  });
-});
-
-describe('removedSlices', () => {
-  it('marks the slices a cut and a trim take out', () => {
-    const timeline = editTimeline({ trim: { start: 1_000, end: 10_000 }, cuts: [{ from: 4_000, to: 6_000 }] }, 10_000);
-    const removed = removedSlices(10, 10_000, (time) => timeline.isRemoved(time));
-    expect(removed.flatMap((gone, index) => (gone ? [index] : []))).toEqual([0, 4, 5]);
-  });
-});
 
 describe('placeStepDots', () => {
   it('places one dot per step in time order, each seeking to its own step', () => {
@@ -116,5 +53,22 @@ describe('stepDotLabel', () => {
   it('counts the other waits on a dot made only of waits', () => {
     const [dot] = placeStepDots([step(1_000, 'Look around', 'wait'), step(1_010, 'Wait', 'wait')], 10_000, 1_000);
     expect(dot && stepDotLabel(dot)).toBe('Look around and 1 more step');
+  });
+});
+
+describe('stepDotDetail', () => {
+  it('gives an action its kind and time, so a filled dot reads as something done', () => {
+    const [dot] = placeStepDots([step(3_200, 'Pay')], 10_000, 1_000);
+    expect(dot && stepDotDetail(dot, 'Click', formatClock)).toEqual({ visible: 'Click · 0:03.2', spoken: 'Click at 0:03.2' });
+  });
+
+  it('gives a wait how long it lasts, up to the next dot', () => {
+    const [wait] = placeStepDots([step(1_000, 'Look around', 'wait'), step(3_100, 'Pay')], 10_000, 1_000);
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).visible).toBe('Wait · 2.1 s');
+  });
+
+  it('runs a last wait to the end of the recording', () => {
+    const [wait] = placeStepDots([step(8_500, 'Read the receipt', 'wait')], 10_000, 1_000);
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).spoken).toBe('Wait of 1.5 seconds at 0:08.5');
   });
 });
