@@ -12,6 +12,8 @@
   --tile-8: #d6c38a;
   --tile-9: #9fb4c8;
   --tile-radius: 10px;
+  /* why: text on a recording's colour; the dark theme's colours are light, the light theme's are deep. */
+  --tile-ink: #11141a;
 }
 
 .compare-viewer {
@@ -28,6 +30,7 @@
   --tile-7: #b03c82;
   --tile-8: #7a6420;
   --tile-9: #4d6275;
+  --tile-ink: #ffffff;
 }
 
 [data-tile="1"] {
@@ -187,25 +190,8 @@
   box-shadow: inset 0 0 0 2px var(--ring);
 }
 
-/* A run with issues: one quiet dot in the tile's top-right corner; the count is in the tile's accessible names. */
-.ct-issues {
-  position: absolute;
-  z-index: 2;
-  top: 10px;
-  right: 10px;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--danger);
-  box-shadow: 0 0 0 2px var(--surface);
-  pointer-events: none;
-}
-
-.ct-tile[data-role="single"] .ct-issues {
-  display: none;
-}
-
-/* The name, only where nothing beside the stage names the runs: a small solid tag flush in the bottom-left corner. */
+/* The name, only where nothing beside the stage names the runs: a small tab in the frame's own colour, flush in the
+   bottom-left corner, so it reads as part of the frame rather than a chip laid over the recording. */
 .ct-label {
   position: absolute;
   z-index: 2;
@@ -213,40 +199,26 @@
   left: 0;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
   max-width: calc(100% - 24px);
-  padding: 1px 8px 1px 7px;
+  padding: 1px 8px;
   border-radius: 0 6px 0 0;
-  background: var(--surface-raised);
-  color: var(--text);
+  background: var(--tile);
+  color: var(--tile-ink);
   font-size: var(--text-2xs);
+  font-weight: 500;
   line-height: 16px;
   pointer-events: none;
 }
 
-.ct-label .ct-identity {
-  gap: 5px;
-}
-
+/* why: the tab is the colour, so the identity's swatch would repeat it. */
 .ct-label .ct-swatch {
-  width: 6px;
-  height: 6px;
-  border-radius: 1.5px;
-}
-
-.ct-label-issues {
-  flex: none;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--danger);
+  display: none;
 }
 
 .ct-tile[data-role="single"] .ct-label {
   bottom: 20px;
   left: 20px;
   border-radius: 4px;
-  box-shadow: 0 0 0 1px var(--line);
 }
 
 /* why: an expanded runs sidebar already names every run beside its colour, so the tiles carry the colour alone. */
@@ -313,11 +285,6 @@
   opacity: 1;
 }
 
-/* why: the actions open beside the issue dot rather than over it. */
-.ct-tile[data-issues] .ct-actions {
-  right: 26px;
-}
-
 .ct-action {
   display: grid;
   place-items: center;
@@ -379,7 +346,7 @@
 }
 
 /* why: on a phone the switch above the stage names the recording; nothing sits on the recorded page itself. */
-.ct-area[data-layout="carousel"] :is(.ct-label, .ct-issues, .ct-ended, .ct-actions) {
+.ct-area[data-layout="carousel"] :is(.ct-label, .ct-ended, .ct-actions) {
   display: none;
 }
 

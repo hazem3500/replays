@@ -109,7 +109,6 @@ export function CompareTileView({
       data-focused={ringed(focused, single, alone)}
       data-current={focused || undefined}
       data-ended={ended || undefined}
-      data-issues={flagged(tile, single)}
       data-tile-id={tile.id}
       aria-label={tileName(tile, ended)}
       aria-hidden={hidden || undefined}
@@ -147,14 +146,9 @@ function ringed(focused: boolean, single: boolean, alone: boolean) {
   return (focused && !single && !alone) || undefined;
 }
 
-/** A dot in the corner marks a tile with issues wherever there is more than one tile on the stage. */
-function flagged(tile: CompareTile, single: boolean) {
-  return (tile.errors > 0 && !single) || undefined;
-}
-
 /**
  * The tile's frame carries its colour, so its name only shows where nothing else names it (compare.css hides the tag
- * beside an expanded suite sidebar). The count of issues lives in the tile's accessible names; the dot only marks them.
+ * beside an expanded suite sidebar). The count of issues lives in the tile's accessible names and the runs list.
  */
 function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
   return (
@@ -164,10 +158,8 @@ function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
           {TILE_STRINGS.ended}
         </span>
       ) : null}
-      {tile.errors ? <span className="ct-issues" aria-hidden="true" /> : null}
       <footer className="ct-label" aria-hidden="true">
         <Identity tile={tile} />
-        {tile.errors ? <span className="ct-label-issues" /> : null}
       </footer>
     </>
   );
