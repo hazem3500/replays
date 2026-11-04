@@ -109,7 +109,7 @@ export function CompareTileView({
       data-focused={ringed(focused, single, alone)}
       data-current={focused || undefined}
       data-ended={ended || undefined}
-      data-issues={(tile.errors > 0 && !single) || undefined}
+      data-issues={flagged(tile, single)}
       data-tile-id={tile.id}
       aria-label={tileName(tile, ended)}
       aria-hidden={hidden || undefined}
@@ -145,6 +145,11 @@ export function CompareTileView({
 /** A heavier frame in the tile's colour marks the focus wherever there is more than one tile on the stage. */
 function ringed(focused: boolean, single: boolean, alone: boolean) {
   return (focused && !single && !alone) || undefined;
+}
+
+/** A dot in the corner marks a tile with issues wherever there is more than one tile on the stage. */
+function flagged(tile: CompareTile, single: boolean) {
+  return (tile.errors > 0 && !single) || undefined;
 }
 
 /**

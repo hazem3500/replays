@@ -2164,9 +2164,20 @@
       "file": "dist/client/assets/SuiteCompare-HASH.js",
       "cap": {
         "raw": 1240,
-        "gzip": 738
+        "gzip": 738,
+        "brotli": 668
       },
-      "reason": "The suite passes each run's colour to the Compare stage so tile frames match sidebar swatches. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 1203, gzip 716 bytes against main caps 1191, 711; cap is head times 1.03.",
+      "reason": "The suite passes each run's colour to the Compare stage so tile frames match sidebar swatches. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 1203, gzip 716 bytes against main caps 1191, 711; cap is head times 1.03. CI same-runner brotli 611 to 649; brotli cap is head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 22890,
+        "gzip": 9640,
+        "brotli": 8357
+      },
+      "reason": "Runs sidebar redesign: thumbnails replaced by a colour swatch row (RunCopy), each run's colour taken from recordedRuns so the sidebar and the Compare stage agree. CI same-runner main to head: raw 21439 to 22223, gzip 9031 to 9359, brotli 7830 to 8113; caps are head times 1.03. Small justified growth under Hazem's standing approval.",
       "pr": "https://github.com/hazem3500/replays/pull/239"
     }
   ]
