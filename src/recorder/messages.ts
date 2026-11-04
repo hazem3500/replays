@@ -18,7 +18,9 @@ export type RecorderMessages = {
     /** `maxDurationMs` through `format.duration`. */
     limit: string;
   }) => string;
-  /** `privacy` is absent when a host calls the UI without capture facts. */
+  /**
+   * `privacy` is absent when a host calls the UI without capture facts; its `product` is the host's `app.name`.
+   */
   consentPrivacy: (params: { mode: 'masked' | 'visible'; privacy?: PrivacyFacts }) => string;
   consentAccept: string;
   consentDecline: string;
@@ -38,6 +40,8 @@ export type RecorderMessages = {
     /** `summary.approxBytes` through `format.bytes`. */
     size: string;
   }) => string;
+  /** Review: what the reviewed recording captured, from the same facts as the consent notice. */
+  reviewPrivacy: (params: { privacy: PrivacyFacts }) => string;
   noteLabel: string;
   send: string;
   discard: string;
@@ -73,6 +77,10 @@ export type RecorderMessages = {
   privacyMode: (params: { mode: RecorderPrivacyMode }) => string;
   /** Options step: one quiet line under a masking mode, from what a recording in that mode captures. */
   privacyHint: (params: { mode: RecorderPrivacyMode; privacy: PrivacyFacts }) => string;
+  /** Options step: heading of the network group in the options menu. */
+  networkLabel: string;
+  /** Options step: the option that adds request and response content to the recording. */
+  networkBodies: string;
   /** Options step: the button that starts the recording. */
   record: string;
 };
@@ -92,30 +100,52 @@ export type RecorderMessageOverrides = {
 
 const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}` : (items[0] ?? ''));
 
-const privacySentence = ({ captures, reviewRequired }: PrivacyFacts) => {
-  const hidden = [!captures.pageText && 'page text', !captures.inputs && 'inputs', !captures.media && 'media'].filter(
-    (item) => item !== false,
-  );
-  const hiddenSentence = hidden.length ? `${listed(hidden)} ${hidden.length > 1 ? 'are' : 'is'} hidden.` : '';
+/** What stays hidden, as one sentence; the interface mode words page text and inputs on its own. */
+function hiddenSentence(captures: PrivacyFacts['captures'], interfaceOnly: boolean): string {
+  const hidden = [
+    !captures.pageText && !interfaceOnly && 'page text',
+    !captures.inputs && !interfaceOnly && 'inputs',
+    !captures.media && 'media',
+  ].filter((item) => item !== false);
+  if (!hidden.length) return '';
+  const sentence = `${listed(hidden)} ${hidden.length > 1 ? 'are' : 'is'} hidden.`;
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
+const interfaceSentence = (product: string | undefined) =>
+  `Your entries, names and typed text are hidden; ${product ? `${product}'s` : "the app's"} menus and labels stay visible.`;
+
+/** What a recording captures, from its facts, without the review sentence. */
+const recordedSentence = ({ captures, product }: PrivacyFacts) => {
+  const interfaceOnly = captures.interfaceText === true && !captures.pageText;
   return [
-    hiddenSentence.charAt(0).toUpperCase() + hiddenSentence.slice(1),
+    interfaceOnly ? interfaceSentence(product) : '',
+    hiddenSentence(captures, interfaceOnly),
     captures.pageText ? 'Visible page text is recorded.' : '',
-    captures.inputs ? 'Typed values are recorded; passwords stay hidden.' : '',
+    captures.inputs ? 'Typed values are recorded; passwords and hidden fields stay hidden.' : '',
     captures.media ? 'Media may be recorded.' : '',
     captures.networkBodies ? 'Request and response content is recorded with secrets removed.' : '',
-    reviewRequired ? 'You review it before it is sent.' : 'It is sent when you stop.',
   ]
     .filter(Boolean)
     .join(' ');
 };
 
-const MODE_NAMES: Record<RecorderPrivacyMode, string> = { visible: 'Visible', 'text-masked': 'Text masked', masked: 'Masked' };
+const privacySentence = (facts: PrivacyFacts) =>
+  `${recordedSentence(facts)} ${facts.reviewRequired ? 'You review it before it is sent.' : 'It is sent when you stop.'}`;
+
+const MODE_NAMES: Record<RecorderPrivacyMode, string> = {
+  visible: 'Visible',
+  'text-masked': 'Text masked',
+  'interface-visible': 'Your data hidden',
+  masked: 'Fully masked',
+};
 
 /** One short line per mode, from what it actually records once the host's cap applies. */
 const modeHint = ({ captures }: PrivacyFacts) => {
   const recorded = [captures.pageText && 'text', captures.inputs && 'inputs'].filter((item) => item !== false);
   if (recorded.length) return `Records ${listed(recorded)}`;
-  return captures.media ? 'Hides text and inputs' : 'Hides text, inputs and media';
+  if (captures.interfaceText) return "Shows only the app's menus and labels";
+  return captures.media ? 'Hides text and inputs' : 'Hides everything';
 };
 
 /** English copy, without em or en dashes. */
@@ -136,6 +166,7 @@ export const defaultRecorderMessages: RecorderMessages = {
   warningFinal: ({ seconds }) => `${seconds} seconds left`,
   reviewTitle: 'Send recording?',
   reviewBody: ({ duration }) => `You recorded ${duration}.`,
+  reviewPrivacy: ({ privacy }) => recordedSentence(privacy),
   noteLabel: 'Add a note (optional)',
   send: 'Send recording',
   discard: 'Discard',
@@ -156,6 +187,8 @@ export const defaultRecorderMessages: RecorderMessages = {
   privacyUnavailable: 'Not allowed here',
   privacyMode: ({ mode }) => MODE_NAMES[mode],
   privacyHint: ({ privacy }) => modeHint(privacy),
+  networkLabel: 'Network',
+  networkBodies: 'Include network request and response content',
   record: 'Record',
 };
 

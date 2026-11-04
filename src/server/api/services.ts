@@ -38,6 +38,7 @@ export interface ApiServices {
   /**
    * The server's privacy pass over an upload (defaults plus the host's rules), in its own span. `upload.staff` (see
    * `isStaffUpload`) lets a host that opted in keep a bundle's declared visible inputs; without it every input is masked.
+   * Any `upload` lets a host with `privacy.keepCustomerChoices` keep a customer's matching choice; an import passes none.
    */
   sanitize: (bundle: ReplayBundle, upload?: { staff: boolean }) => ReplayBundle;
   signIn: SignInConfig | undefined;

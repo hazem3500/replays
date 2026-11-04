@@ -54,6 +54,19 @@
             "inputs": {
               "description": "`visible` when the recorder kept ordinary input values (`privacy.sanitize: false`); absent means masked. Password and hidden inputs are always masked. A claim the server honours only for a host with `privacy.keepVisibleInputs` and a signed-in staff upload on `POST /api/replays`; otherwise it masks every input and drops the claim. Source of truth: src/shared/network-bodies.ts.",
               "enum": ["masked", "visible"]
+            },
+            "choice": {
+              "description": "What a customer picked in the recorder's options step: the `mode` (so the server knows which text rules applied; `interface-visible` masks every text but the product interface marked `data-replay-public`), whether it shows typed values (`inputs`) and page text (`text`), and whether they asked for request and response content (`bodies`). A claim the server honours only for a host with `privacy.keepCustomerChoices`, and only when it matches `inputs` and `network` and the mode allows typed values; otherwise it masks every input, drops every body and rewrites the claim to what it kept. Passwords, hidden inputs, credential URLs and auth headers are redacted either way. Source of truth: src/shared/capture-profile.ts.",
+              "type": "object",
+              "required": ["by", "mode", "inputs", "text", "bodies"],
+              "additionalProperties": false,
+              "properties": {
+                "by": { "const": "customer" },
+                "mode": { "enum": ["masked", "interface-visible", "text-masked", "visible"] },
+                "inputs": { "enum": ["masked", "visible"] },
+                "text": { "enum": ["masked", "visible"] },
+                "bodies": { "type": "boolean" }
+              }
             }
           }
         },

@@ -140,11 +140,16 @@ export function createApp(options: AppOptions) {
   const inferable = profiles.list.some((profile) => profile.inferable);
   const redaction = mergeRedactionRules(options.redaction, registry.redaction);
   // why: the privacy pass walks every event, so it gets its own span.
-  // invariant: visible inputs need the host's opt-in here and the upload route's staff check; neither alone keeps them.
+  /* invariant: visible inputs need the host's opt-in here and the upload route's staff check; a customer's choice needs
+     the host's opt-in here and its claim in the bundle. Neither half alone keeps anything. */
   const keepVisibleInputs = options.privacy?.keepVisibleInputs === true;
+  const keepCustomerChoices = options.privacy?.keepCustomerChoices === true;
   const sanitize = (bundle: ReplayBundle, upload?: { staff: boolean }) =>
     withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () =>
-      sanitizeReplayBundle(bundle, redaction, { keepVisibleInputs: keepVisibleInputs && upload?.staff === true }),
+      sanitizeReplayBundle(bundle, redaction, {
+        keepVisibleInputs: keepVisibleInputs && upload?.staff === true,
+        keepCustomerChoices: keepCustomerChoices && upload !== undefined,
+      }),
     );
   const answerPublicRoute = publicPluginRoutes(registry);
   const authorizeReplay: ReplayAuthorizer = async (gate, csrfAllowed) => {

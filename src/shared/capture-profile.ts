@@ -13,6 +13,27 @@ export const CAPTURE_NETWORK: readonly CaptureNetwork[] = ['off', 'headers', 'bo
 export type CapturedInputs = 'masked' | 'visible';
 export const CAPTURED_INPUTS: readonly CapturedInputs[] = ['masked', 'visible'];
 
+/**
+ * A recorder masking mode. `interface-visible` masks every text but the product interface marked `data-replay-public`
+ * (never form fields); `text-masked` masks text and inputs but shows media; `masked` hides all three.
+ */
+export type CapturedMode = 'masked' | 'interface-visible' | 'text-masked' | 'visible';
+export const CAPTURED_MODES: readonly CapturedMode[] = ['masked', 'interface-visible', 'text-masked', 'visible'];
+
+/**
+ * What a customer picked in a recording's options step (`meta.captured.choice`): the `mode`, so the server knows which
+ * text rules applied; whether it shows typed values and page text once the host's cap applied (`inputs`, `text`); and
+ * whether they asked for request and response content (`bodies`). Only a claim: the server keeps what it allows for a
+ * host with `privacy.keepCustomerChoices`, and masks the rest.
+ */
+export interface CapturedChoice {
+  by: 'customer';
+  mode: CapturedMode;
+  inputs: CapturedInputs;
+  text: CapturedInputs;
+  bodies: boolean;
+}
+
 /** rrweb sampling: every mouse move and scroll (`full`), the recorder's defaults (`balanced`), or fewer (`light`). */
 export type CaptureSampling = 'full' | 'balanced' | 'light';
 export const CAPTURE_SAMPLING: readonly CaptureSampling[] = ['full', 'balanced', 'light'];
@@ -116,12 +137,25 @@ const CAPTURED_CHECKS: Checks = {
   performance: [isBoolean, 'must be a boolean'],
   video: [isBoolean, 'must be a boolean'],
   inputs: [oneOf(CAPTURED_INPUTS), `must be one of ${CAPTURED_INPUTS.join(', ')}`],
+  choice: [isRecord, 'must be an object'],
 };
-const OPTIONAL_CAPTURED = new Set(['inputs']);
+const OPTIONAL_CAPTURED = new Set(['inputs', 'choice']);
+const CHOICE_CHECKS: Checks = {
+  by: [oneOf(['customer']), 'must be customer'],
+  mode: [oneOf(CAPTURED_MODES), `must be one of ${CAPTURED_MODES.join(', ')}`],
+  inputs: [oneOf(CAPTURED_INPUTS), `must be one of ${CAPTURED_INPUTS.join(', ')}`],
+  text: [oneOf(CAPTURED_INPUTS), `must be one of ${CAPTURED_INPUTS.join(', ')}`],
+  bodies: [isBoolean, 'must be a boolean'],
+};
 
 /** Throws unless `value` is a complete `meta.captured` record. */
 export function assertCaptured(value: unknown, where = 'captured'): asserts value is ReplayCaptured {
   assertShape(value, CAPTURED_CHECKS, where);
   const missing = Object.keys(CAPTURED_CHECKS).filter((key) => !OPTIONAL_CAPTURED.has(key) && value[key] === undefined);
   if (missing.length) throw new Error(`${where} is missing ${missing.join(', ')}`);
+  if (value.choice === undefined) return;
+  const choice = value.choice;
+  assertShape(choice, CHOICE_CHECKS, `${where}.choice`);
+  const unset = Object.keys(CHOICE_CHECKS).filter((key) => choice[key] === undefined);
+  if (unset.length) throw new Error(`${where}.choice is missing ${unset.join(', ')}`);
 }

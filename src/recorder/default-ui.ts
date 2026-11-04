@@ -241,7 +241,7 @@ export function createDefaultUi(
       };
     },
 
-    confirmUpload: ({ summary, signal }) =>
+    confirmUpload: ({ summary, privacy, signal }) =>
       dialog<UploadDecision>(
         (finish) => {
           const note = element('textarea', {
@@ -271,6 +271,9 @@ export function createDefaultUi(
                   size: format.bytes(summary.approxBytes),
                 }),
               ]),
+              ...(privacy
+                ? [element('p', { className: 'notice' }, [icon('shield'), element('span', {}, [messages.reviewPrivacy({ privacy })])])]
+                : []),
               element('label', { htmlFor: 'recorder-note' }, [messages.noteLabel]),
               note,
               element('div', { className: 'actions' }, [discard, send]),

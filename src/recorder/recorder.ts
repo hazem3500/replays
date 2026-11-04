@@ -151,7 +151,11 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const { capture, privacy } = chosen;
 
       const startedAt = Date.now();
-      const current = newSession(trigger, capturedRecord(capture, Boolean(bodies), !privacy.sanitize), startedAt);
+      const current = newSession(
+        trigger,
+        capturedRecord(capture, Boolean(bodies), !privacy.sanitize, chosen.by === 'customer' ? chosen.mode : undefined),
+        startedAt,
+      );
       session = current;
       try {
         wireSession(current, {
@@ -345,7 +349,8 @@ export function createRecorder(options: RecorderOptions): Recorder {
       }
       const generation = ++requestGeneration;
       const ownsRequest = () => generation === requestGeneration;
-      const facts = (privacy: RecorderPrivacy) => privacy.facts(maxDurationMs, askToReview);
+      const product = options.app?.name;
+      const facts = (privacy: RecorderPrivacy) => ({ ...privacy.facts(maxDurationMs, askToReview), ...(product ? { product } : {}) });
       // why: hosts without `choices` keep a synchronous move to the consent state.
       const choices = options.choices ? await settings.choices() : undefined;
       if (!ownsRequest()) return;
@@ -437,7 +442,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const current = currentState();
       if (!ownsRequest() || current.status !== 'review') return;
       const decision = await ui
-        .confirmUpload({ summary: current.summary, signal: openPrompt() })
+        .confirmUpload({ summary: current.summary, privacy: facts(active.privacy), signal: openPrompt() })
         .catch(() => ({ confirmed: false }) as const);
       if (!ownsRequest()) return;
       if (!decision.confirmed) {

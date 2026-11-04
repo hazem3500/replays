@@ -5,6 +5,7 @@ import type { ReplayBundle, ReplayNetworkEntry } from '../shared/replay.ts';
 import { isRecord } from '../shared/validate.ts';
 import { harEntryBodies } from './har-bodies.ts';
 import { maskCapturedInputs } from './mask-inputs.ts';
+import { choiceKept, inputsMasked, type Kept, keptFields, type SanitizeReplayOptions } from './privacy-claims.ts';
 import { compileMaskSelectors, compoundMatches } from './mask-selectors.ts';
 
 /* why: exact auth headers plus any `*-token` / `*-secret` / `*-jwt` / `*-assertion` (X-CSRF-Token, X-Amz-Security-Token,
@@ -19,6 +20,8 @@ const EMBEDDED_URL = /\b(?:https?|wss?):\/\/[^\s"'`()<>\\]+/gi;
 const CSS_URL = /url\(\s*(['"]?)([^'"()\s]+)\1\s*\)/gi;
 const SRCSET_FIELD = /^(imagesrcset|srcset)$/i;
 const BODY_FIELDS = new Set(['requestBody', 'responseBody']);
+export type { SanitizeReplayOptions } from './privacy-claims.ts';
+
 const NETWORK_FIELDS = new Set([
   'id',
   'at',
@@ -356,14 +359,6 @@ function textRulesWith(bundle: ReplayBundle, rules: CompiledRedaction): ReplayBu
   };
 }
 
-export interface SanitizeReplayOptions {
-  /**
-   * Keep ordinary input values when the bundle declares `meta.captured.inputs: 'visible'`. Password and hidden inputs
-   * stay masked. The server sets it only for a host that opted in and a signed-in staff upload; off by default.
-   */
-  keepVisibleInputs?: boolean;
-}
-
 /**
  * Server-side privacy pass for any bundle a client uploads: every URL field (meta, events,
  * steps, network, context) goes through `sanitizeUrl`, URLs inside other strings (console
@@ -371,40 +366,35 @@ export interface SanitizeReplayOptions {
  * network entries keep only the viewer's fields, and sensitive network headers are dropped.
  * `redaction` (the host's rules) adds to all of that; it cannot turn any of it off.
  * `options.keepVisibleInputs` keeps ordinary input values of a bundle that declares them visible; without it a
- * `visible` claim is dropped and every value is masked.
+ * `visible` claim is dropped and every value is masked. A bundle with a customer's choice instead keeps values and
+ * bodies only with `options.keepCustomerChoices` and a claim that matches the bundle; page text is never masked here
+ * beyond the host's rules, so it stays as the recorder sent it.
  * Idempotent: a second pass changes nothing, so a bundle from the capture or import CLI is
  * stored unchanged and a suite re-upload of the same bundle still compares equal.
  */
 export function sanitizeReplayBundle(bundle: ReplayBundle, redaction?: RedactionRules, options: SanitizeReplayOptions = {}): ReplayBundle {
   const rules = compileRedaction(redaction);
-  const keepVisible = options.keepVisibleInputs === true && bundle.meta.captured?.inputs === 'visible';
+  const kept = keptFields(bundle.meta.captured, options);
   /* invariant: the default pass runs again after the text rules, so nothing a rule writes can bring back what it removes;
      the result is always a bundle the default pass leaves unchanged. */
   const apply = (value: ReplayBundle) => {
-    const clean = defaultPass(value, rules, keepVisible);
-    return rules.empty ? clean : defaultPass(textRulesWith(clean, rules), rules, keepVisible);
+    const clean = defaultPass(value, rules, kept);
+    return rules.empty ? clean : defaultPass(textRulesWith(clean, rules), rules, kept);
   };
   return rules.text.length ? settleRedaction(bundle, apply, JSON.stringify) : apply(bundle);
 }
 
-/** `meta.captured` without a `visible` inputs claim, once every input has been masked. */
-function inputsMasked(meta: ReplayBundle['meta']): ReplayBundle['meta'] {
-  if (meta.captured?.inputs !== 'visible') return meta;
-  const captured = { ...meta.captured };
-  delete captured.inputs;
-  return { ...meta, captured };
-}
-
-function defaultPass(bundle: ReplayBundle, rules: CompiledRedaction, keepVisible: boolean): ReplayBundle {
+function defaultPass(bundle: ReplayBundle, rules: CompiledRedaction, kept: Kept): ReplayBundle {
   const sanitized = urlFieldsWith(bundle, rules);
-  sanitized.events = maskCapturedInputs(sanitized.events, { keepVisible });
-  if (!keepVisible) sanitized.meta = inputsMasked(sanitized.meta);
+  sanitized.events = maskCapturedInputs(sanitized.events, { keepVisible: kept.inputs });
+  if (!kept.inputs) sanitized.meta = inputsMasked(sanitized.meta);
+  sanitized.meta = choiceKept(sanitized.meta, kept);
   // invariant: only the viewer's fields survive; raw HAR leftovers (request.postData, cookies, content) are dropped.
   sanitized.network = sanitized.network.map((entry) => ({
     ...(Object.fromEntries(Object.entries(entry).filter(([key]) => NETWORK_FIELDS.has(key) && !BODY_FIELDS.has(key))) as typeof entry),
     ...(Array.isArray(entry.requestHeaders) ? { requestHeaders: headersWith(entry.requestHeaders, rules) } : {}),
     ...(Array.isArray(entry.responseHeaders) ? { responseHeaders: headersWith(entry.responseHeaders, rules) } : {}),
-    ...bodiesWith(entry, rules),
+    ...(kept.bodies ? bodiesWith(entry, rules) : {}),
   }));
   return sanitized;
 }
