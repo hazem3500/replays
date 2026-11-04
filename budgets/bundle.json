@@ -460,7 +460,7 @@
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 542,
-      "brotli": 402
+      "brotli": 401
     },
     "dist/lib/capture.mjs": {
       "raw": 1876,
@@ -740,7 +740,7 @@
     "dist/lib/viewer-react.mjs": {
       "raw": 9127,
       "gzip": 2642,
-      "brotli": 2336
+      "brotli": 2334
     },
     "dist/lib/viewer.mjs": {
       "raw": 26293,
