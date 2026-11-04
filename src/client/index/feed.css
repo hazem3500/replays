@@ -204,14 +204,14 @@
 /* Suites are playlists: two darker sheets offset behind the main poster. */
 /*
  * Suites as stacks (Apple Photos album style).
- * List rows: one or two plain sheets above the 96 × 60 thumbnail, each the thumbnail's own box scaled about its
- * top centre and lifted so the edges sit 4 / 8 px above; on hover they fan out to 7 / 13 px. Grid cards: see
- * "Grid suites" below — whole card-shaped backs behind the card.
+ * List rows: up to three plain sheets above the 96 × 60 thumbnail, each the thumbnail's own box scaled about its
+ * top centre and lifted 3 px per sheet (3.5 px fanned on hover), so the pile stays inside the row's 12 px top
+ * padding. Grid cards: see "Grid suites" below — whole card-shaped backs behind the card. Lifts: suite-stack.ts.
  * Motion (rest and hover poses, the fan, timings): card-motion.css.
  */
-.poster-stack { position: relative; isolation: isolate; display: block; align-self: start; padding-top: 15px; clip-path: inset(-30px 0 0); }
+.poster-stack { position: relative; isolation: isolate; display: block; align-self: start; padding-top: 12px; clip-path: inset(-30px 0 0); }
 .stack-front { position: relative; z-index: 2; display: block; border-radius: var(--radius-sm); }
-.stack-layer { position: absolute; top: 15px; right: 0; bottom: 0; left: 0; overflow: hidden; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 70%, var(--text-tertiary)); transform-origin: 50% 0; }
+.stack-layer { position: absolute; top: 12px; right: 0; bottom: 0; left: 0; overflow: hidden; border-radius: var(--radius-sm); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--line-strong) 70%, var(--text-tertiary)); transform-origin: 50% 0; }
 .stack-layer-1 { z-index: 2; background: color-mix(in srgb, var(--surface-hover) 85%, var(--text-tertiary)); }
 .stack-layer-2 { z-index: 1; background: color-mix(in srgb, var(--surface-hover) 92%, var(--text-tertiary)); }
 /* The sheets carry the other runs' screenshots (Feed.tsx BackPoster): filling the sheet, cropped below the
@@ -325,7 +325,7 @@
 /* Suites are plain rows like replays: the stacked thumbnail is the only difference, and the trailing column
    lines up with every other row; the run strip sits next to "N runs". */
 /* The pile's sheets peek above the thumbnail: pull it up by that strip so its front aligns with other rows'. */
-.feed-list[data-view="list"] .feed-suite > .suite-sheet > .poster-stack { margin-top: -15px; }
+.feed-list[data-view="list"] .feed-suite > .suite-sheet > .poster-stack { margin-top: -12px; }
 /* Grid: the run strip shares the facts line, right-aligned after the time and commit (one line, never wrapping). */
 .feed-list[data-view="grid"] .feed-meta.feed-meta-end { margin-top: 0; flex-wrap: nowrap; }
 .feed-list[data-view="grid"] .feed-meta-end > :is(.run-strip, .run-strip-note) { margin-left: auto; }
@@ -357,7 +357,10 @@
  * press): card-motion.css.
  */
 .feed-list[data-view="grid"] { --peek: 0px; row-gap: 28px; }
-.feed-list[data-view="grid"] .feed-suite { isolation: isolate; padding-top: var(--peek); background: none; box-shadow: none; }
+/* The card's own box holds its backs' fanned peek (3 × 5 px) above the front sheet; the negative margin keeps the
+   front aligned with its neighbours and the line's height unchanged (use-feed-virtualizer counts the margin). */
+.feed-list[data-view="grid"] .feed-suite { --peek: 15px; isolation: isolate; margin-top: calc(var(--peek) * -1); padding-top: var(--peek); background: none; box-shadow: none; }
+.feed-list[data-view="grid"] .feed-suite > :is(.feed-hover, .feed-highlight) { inset: var(--peek) 0 0; }
 :root:not([data-theme="light"]) .feed-list[data-view="grid"] .feed-suite { background: none; box-shadow: none; }
 .feed-list[data-view="grid"] .feed-suite::before,
 .feed-list[data-view="grid"] .feed-suite::after { content: ""; position: absolute; z-index: -1; inset: var(--peek) 0 0; border-radius: var(--card-radius); pointer-events: none; }

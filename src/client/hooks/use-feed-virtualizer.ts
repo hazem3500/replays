@@ -29,10 +29,12 @@ function measureRow(element: HTMLElement) {
     const list = element.nextElementSibling;
     return element.offsetHeight + (list ? px(getComputedStyle(list).paddingTop) : 0);
   }
+  // why: a grid suite's box reaches up into the gap above it by a negative top margin (feed.css --peek).
+  const height = element.offsetHeight + px(getComputedStyle(element).marginTop);
   const list = element.closest('ul');
-  if (!list) return element.offsetHeight;
+  if (!list) return height;
   const style = getComputedStyle(list);
-  return element.offsetHeight + px(element.dataset.last === undefined ? style.rowGap : style.paddingBottom);
+  return height + px(element.dataset.last === undefined ? style.rowGap : style.paddingBottom);
 }
 
 function sameSpacing(a: ReadonlyMap<string, ListSpacing>, b: ReadonlyMap<string, ListSpacing>) {

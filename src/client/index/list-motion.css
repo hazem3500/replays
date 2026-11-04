@@ -3,15 +3,18 @@
 @layer app {
   /* why: hold UA geometry until Motion has installed and started its own projection tracks. */
   html[data-feed-transition]::view-transition-group(*) { animation-play-state: paused; }
-  html[data-feed-transition]::view-transition-group(.feed-back-2) { z-index: 1; }
-  html[data-feed-transition]::view-transition-group(.feed-back-1) { z-index: 2; }
+  /* invariant: a suite's rear sheets keep their depth order (suite-stack.ts), the deepest lowest. */
+  html[data-feed-transition]::view-transition-group(.feed-back-4) { z-index: 1; }
+  html[data-feed-transition]::view-transition-group(.feed-back-3) { z-index: 2; }
+  html[data-feed-transition]::view-transition-group(.feed-back-2) { z-index: 3; }
+  html[data-feed-transition]::view-transition-group(.feed-back-1) { z-index: 4; }
   html[data-feed-transition]::view-transition-group(.feed-card),
-  html[data-feed-transition]::view-transition-group(.feed-day) { z-index: 3; }
-  html[data-feed-transition]::view-transition-group(.feed-poster) { z-index: 4; }
+  html[data-feed-transition]::view-transition-group(.feed-day) { z-index: 5; }
+  html[data-feed-transition]::view-transition-group(.feed-poster) { z-index: 6; }
   html[data-feed-transition]::view-transition-group(.feed-title),
   html[data-feed-transition]::view-transition-group(.feed-meta),
   html[data-feed-transition]::view-transition-group(.feed-src),
-  html[data-feed-transition]::view-transition-group(.feed-aside) { z-index: 5; }
+  html[data-feed-transition]::view-transition-group(.feed-aside) { z-index: 7; }
   html[data-feed-transition]::view-transition-old(.feed-title),
   html[data-feed-transition]::view-transition-new(.feed-title),
   html[data-feed-transition]::view-transition-old(.feed-meta),
