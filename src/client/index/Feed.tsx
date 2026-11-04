@@ -26,6 +26,7 @@ import { IndexColumns } from './PluginSlots.tsx';
 import { Poster } from './Poster.tsx';
 import { previewHandlers, usePreviewActive } from './preview.ts';
 import { type SuiteCycle, useSuiteCycle } from './suite-cycle.ts';
+import { SHOWN_SHEETS, stackLayers } from './suite-stack.ts';
 import { useRunStripMotion } from '../hooks/use-feed-control-motion.ts';
 import { useShuffle } from '../hooks/use-suite-shuffle.ts';
 import { useIntentPrefetch } from '../intent-prefetch.ts';
@@ -503,11 +504,6 @@ function SuiteItem({
   );
 }
 
-/** Up to five exposed rear sheets and one buried reserve keep large suites bounded. */
-function stackLayers(runCount: number): number[] {
-  return Array.from({ length: Math.min(6, Math.max(0, runCount - 1)) }, (_, index) => Math.min(6, runCount - 1) - index);
-}
-
 /** The runs drawn on the sheets behind the front poster (nearest first): recorded runs before the rest. */
 function backRuns(runs: readonly ReviewSuiteIndexRun[], front: ReviewSuiteIndexRun | undefined) {
   const start = front ? runs.indexOf(front) : -1;
@@ -526,7 +522,7 @@ function BackPoster({ run }: { run: ReviewSuiteIndexRun | undefined }) {
 }
 
 /**
- * A suite's thumbnail as a pile: the front poster plus up to five exposed sheets behind it.
+ * A suite's thumbnail as a pile: the front poster plus up to SHOWN_SHEETS exposed sheets behind it.
  * While the row is hovered or reached by keyboard the sheets fan out a little (feed.css); the hover preview starts later, after its intent delay.
  */
 function PosterStack({
@@ -549,7 +545,7 @@ function PosterStack({
           data-run-id={run?.id}
           data-replay-id={run ? playableReplayId(run, true) : undefined}
           data-stack-depth={layer}
-          data-stack-reserve={layer > 5 || undefined}
+          data-stack-reserve={layer > SHOWN_SHEETS || undefined}
           style={{ zIndex: 7 - layer }}
         >
           <BackPoster run={run} />
@@ -577,7 +573,7 @@ function CardBacks({ runs, front }: { runs: ReviewSuiteIndexRun[]; front: Review
           data-run-id={run?.id}
           data-replay-id={run ? playableReplayId(run, true) : undefined}
           data-stack-depth={layer}
-          data-stack-reserve={layer > 5 || undefined}
+          data-stack-reserve={layer > SHOWN_SHEETS || undefined}
           style={{ zIndex: 7 - layer }}
           aria-hidden="true"
           // The backs are part of the card: a click on the strip above it opens the suite, like the card.
