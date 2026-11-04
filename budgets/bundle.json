@@ -159,7 +159,7 @@
     },
     "dist/client/assets/elements-HASH.js": {
       "raw": 17251,
-      "gzip": 6321,
+      "gzip": 6316,
       "brotli": 5785
     },
     "dist/client/assets/enabled-HASH.js": {
@@ -254,7 +254,7 @@
     },
     "dist/client/assets/measure-HASH.js": {
       "raw": 30211,
-      "gzip": 11744,
+      "gzip": 11742,
       "brotli": 10803
     },
     "dist/client/assets/microtask-HASH.js": {
@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 70
+      "brotli": 67
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -380,7 +380,7 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
       "gzip": 738,
-      "brotli": 668
+      "brotli": 644
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22890,
@@ -740,7 +740,7 @@
     "dist/lib/viewer-react.mjs": {
       "raw": 9127,
       "gzip": 2642,
-      "brotli": 2334
+      "brotli": 2331
     },
     "dist/lib/viewer.mjs": {
       "raw": 26293,
