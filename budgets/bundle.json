@@ -143,7 +143,7 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 29824,
+      "raw": 29790,
       "gzip": 5865,
       "brotli": 5228
     },
@@ -244,7 +244,7 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 126200,
-      "gzip": 44520,
+      "gzip": 44560,
       "brotli": 39880
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -390,7 +390,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22872,
       "gzip": 9628,
-      "brotli": 8298
+      "brotli": 8292
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -2085,10 +2085,10 @@
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
         "raw": 126200,
-        "gzip": 44520,
+        "gzip": 44560,
         "brotli": 39880
       },
-      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 126183 (+0), gzip +16, brotli 39834 to 39856 (+22). Replaces the #251 entry for this file.",
+      "reason": "Hash-name drift only: no source change in the main entry; its gzip and brotli move with the chunk names this PR gives the build while raw shrinks. CI main to head: raw 126183 to 126179 (-4), gzip 44506 to 44527 (+21), brotli 39818 to 39859 (+41). Replaces the #251 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {

@@ -87,7 +87,9 @@ test.describe('editor timeline step dots', () => {
     await expect(tooltip(page)).toContainText(/Wait, \d+\.\d\s+s, after Place the order/);
     await expect(dots.nth(3)).toHaveAccessibleName(/^Wait of \d+\.\d seconds after Place the order, from 0:08\.0$/);
   });
+});
 
+test.describe('editor timeline dot targets and clip steps', () => {
   test('each dot takes a press anywhere on its 24 px target, never the ruler under it', async ({ page }) => {
     await openEditor(page);
     const dot = page.getByRole('group', { name: 'Steps' }).getByRole('button').nth(1);
