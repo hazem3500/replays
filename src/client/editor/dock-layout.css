@@ -1,6 +1,6 @@
 /*
- * The desktop dock's bar and timeline, shared by the loaded editor (editor.css, in the lazy Editor chunk) and its
- * loading frame (skeleton.css, eager; DockSkeleton.tsx draws the same classes), so the tool group, the ruler, the
+ * The desktop dock's bar and timeline, loaded once with the eager loading frame (skeleton.css, as editor-layout.css
+ * is) and used by both it (DockSkeleton.tsx draws the same classes) and the loaded editor, so the tool group, the ruler, the
  * clip and every lane sit at the same rects in both and nothing moves when the editor arrives. Interactive states
  * that only the loaded editor has stay in editor.css.
  */
@@ -21,9 +21,9 @@
   .editor-bar svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
   .editor-bar svg.filled-icon { fill: currentColor; }
   .editor-bar [aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
-  /* why: the bar's 24 px buttons answer a 40 px tall press (the checklist's minimum) without growing; neighbours never overlap sideways. */
+  /* why: the bar's 24 px buttons answer a 40 px tall press without growing; neighbours never overlap sideways. */
   .editor-bar [data-slot="button"] { position: relative; }
-  .editor-bar [data-slot="button"]::after { content: ""; position: absolute; inset: -8px 0; }
+  .editor-bar [data-slot="button"]::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }
   .editor-bar-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--line); }
   .editor-tool.editor-tool { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
   .editor-tool svg { width: 15px; height: 15px; }
@@ -97,6 +97,12 @@
   .tl-trim[data-edge="end"] { right: 0; border-radius: 3px 8px 8px 3px; }
   .tl-trim-grip { width: 2px; height: 12px; border-radius: 1px; background: var(--text-secondary); opacity: 0.8; }
 
+  /* The playhead: one accent line through every lane, its head in the ruler's dots band. */
+  /* invariant: the layer starts where the track column does (inset plus gutter), or the line drifts off every tick and marker. */
+  .tl-playhead-layer { position: absolute; top: 0; bottom: 0; left: calc(var(--tl-inset) + var(--gutter)); right: var(--tl-inset); pointer-events: none; }
+  .tl-playhead { position: absolute; z-index: 5; top: 18px; bottom: -4px; left: -1px; width: 2px; background: var(--accent); will-change: transform; }
+  .tl-playhead-knob { position: absolute; top: 0; left: -5px; width: 12px; height: 12px; border-radius: 3px 3px 6px 6px; background: var(--accent); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); cursor: ew-resize; pointer-events: auto; touch-action: none; }
+
   /* Regions (cuts; the effect lanes reuse them): 4 px inside the track, so an 8 px track holds a 4 px block radius. */
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
   .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 8px; border: 0; border-radius: 4px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; }
@@ -117,7 +123,9 @@
    * a step stronger when selected. invariant: labels stay neutral ink, so text keeps AA on every tint.
    */
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="zoom"] { --kind: var(--accent); }
-  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind: var(--warning); }
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind: var(--warning); --kind-fill: 30%; }
+  /* why: amber at the others' strength greys out over the neutral fill; a stronger mix keeps it reading as warm. */
+  :root[data-theme="light"] :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind-fill: 22%; }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="blur"] { --kind: var(--danger); }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="caption"] { --kind: var(--success); }
   :is(.editor-shell, .editor-loading) { --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }

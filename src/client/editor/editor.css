@@ -6,7 +6,6 @@
  */
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
-@import './dock-layout.css';
 @import './phone-editor.css';
 @import './inspector-controls.css';
 @layer app {
@@ -19,6 +18,8 @@
   @media (hover: hover) and (pointer: fine) { .editor-retry:hover { color: var(--text); } }
   /* The Add menu: short names with their keys, and one line saying what the item under the pointer or focus does. */
   .editor-add-menu .editor-key { margin-left: auto; padding-left: 20px; }
+  /* The menu's rows are 40 px presses, as the bar's tools are. */
+  .editor-add-menu [data-slot="dropdown-menu-item"] { min-height: 40px; }
   /* invariant: the hint box holds two lines whatever it says, inside a menu of fixed width, so hovering an item never resizes the menu. */
   .editor-add-hint { box-sizing: content-box; height: 2.7em; margin: 0; padding: 3px 8px 4px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
 
@@ -159,11 +160,6 @@
     .tl-highlight:has(.tl-highlight-marker:hover, .tl-highlight-grip:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
   }
 
-  /* The playhead: one accent line through every lane, its head on the ruler. */
-  /* invariant: the layer starts where the track column does (inset plus gutter), or the line drifts off every tick and marker. */
-  .tl-playhead-layer { position: absolute; top: 0; bottom: 0; left: calc(var(--tl-inset) + var(--gutter)); right: var(--tl-inset); pointer-events: none; }
-  .tl-playhead { position: absolute; z-index: 5; top: 18px; bottom: -4px; left: -1px; width: 2px; background: var(--accent); will-change: transform; }
-  .tl-playhead-knob { position: absolute; top: 0; left: -5px; width: 12px; height: 12px; border-radius: 3px 3px 6px 6px; background: var(--accent); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); cursor: ew-resize; pointer-events: auto; touch-action: none; }
   .timeline:not([data-ready]) .tl-playhead { opacity: 0; }
 
   .editor-shell :is(.tl-track, .tl-region-body, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer) { transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out); }

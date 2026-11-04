@@ -195,6 +195,9 @@ export function PhoneEditorSkeleton({
         <div className="sk-phone-lanes">
           {duration !== undefined && duration > 0 ? <SkeletonLanes duration={duration} edits={edits} steps={steps} /> : null}
         </div>
+        <p className="sk-phone-hint">
+          {edits && laneRegions(edits).length > 0 ? null : 'Captions, blur and zoom from the tools below go here'}
+        </p>
         <div className="sk-phone-tools">
           {TOOLS.map((tool) => (
             <span key={tool.label}>

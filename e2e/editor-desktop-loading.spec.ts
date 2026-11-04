@@ -20,6 +20,7 @@ const PARTS: Array<[string, string]> = [
   ['clip', '.tl-clip'],
   ['clip steps', '.tl-clip-step'],
   ['blocks', '.tl-region'],
+  ['playhead', '.tl-playhead'],
 ];
 
 async function seedEditedReplay(page: Page, id: string) {

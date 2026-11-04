@@ -29,8 +29,9 @@
   .phone-lanes-content { justify-self: start; width: max-content; padding-inline: 16px; }
   .phone-track { position: relative; display: grid; gap: 8px; width: var(--span); }
   /* The scale in two bands: tick labels (0 to 14 px), then the step dots (TimelineStepDots.tsx) in their own band, 9 px clear of them. */
+  /* why: above the playhead line (z-index 5), so a pressed dot's label is never struck through. */
   /* A press on the scale seeks and a drag scrubs (phone-scrub.ts), so it takes the finger instead of panning. */
-  .phone-scale { position: relative; height: 40px; touch-action: none; cursor: ew-resize; }
+  .phone-scale { position: relative; z-index: 6; height: 40px; touch-action: none; cursor: ew-resize; }
   /* why: the phone's 44 px minimum would stack the dots onto the labels; 32 px targets that never overlap stay above WCAG's 24. */
   .editor-shell[data-mobile] .phone-scale .tl-step { top: 13px; left: -16px; width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
   /* why: the centre playhead passes behind the labels instead of striking through them. */

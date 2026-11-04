@@ -188,11 +188,10 @@ const WAIT_GLYPH_PX = 13;
 /**
  * What a clip segment shows in `width` px: a step's leading whole words (at least two, or its whole name, so a lone
  * first word never reads as something else); a wait the Waits tool's hourglass and its kept length ("1.5 s"), the
- * hourglass alone when only it fits, else nothing, so every wait reads the same way on the desktop and the phone.
+ * else nothing (never the hourglass alone, which reads as an icon stub), so every wait reads the same on both.
  */
 export function segmentText(segment: StepSegment, kept: number, width: number, room: LabelRoom) {
   if (!segment.wait) return { glyph: false, text: wordsThatFit(segment.label, width, { minWords: 2, ...room }) };
-  const pad = room.pad ?? 0;
   const text = wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width - WAIT_GLYPH_PX, { ...room, lines: 1 });
-  return { glyph: text !== '' || width >= WAIT_GLYPH_PX + pad * 2, text };
+  return { glyph: text !== '', text };
 }

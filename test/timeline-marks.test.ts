@@ -156,9 +156,8 @@ describe('segmentText', () => {
     expect(segmentText(wait, kept, 200, { measure })).toEqual({ glyph: true, text: '1.0\u00a0s' });
   });
 
-  it('keeps only the hourglass where the length does not fit, and nothing where neither does', () => {
-    expect(segmentText(wait, 1_500, 30, { measure, pad: 4 })).toEqual({ glyph: true, text: '' });
-    expect(segmentText(wait, 1_500, 12, { measure, pad: 4 })).toEqual({ glyph: false, text: '' });
+  it('shows a plain block, never the hourglass alone, where the length does not fit', () => {
+    expect(segmentText(wait, 1_500, 30, { measure, pad: 4 })).toEqual({ glyph: false, text: '' });
   });
 
   it('names a step by at least two of its leading words, or none', () => {

@@ -240,7 +240,8 @@ export function DockSkeleton({
     <section className="editor-dock" aria-hidden="true" data-testid="dock-skeleton">
       <BarSkeleton total={duration} edited={known && edits ? editTimeline(edits, duration).duration : undefined} />
       <div className="editor-timeline-content">
-        <div className="timeline">
+        {/* why: data-ready, so the playhead shows at 0:00 as it will once loaded (editor.css hides it on an unmeasured timeline). */}
+        <div className="timeline" data-ready={known ? '' : undefined}>
           <div className="tl-ruler-row">
             <span className="tl-gutter-spacer" />
             {known ? <RulerSkeleton duration={duration} width={width} steps={steps} edits={edits} /> : <div className="tl-ruler" />}
@@ -271,6 +272,13 @@ export function DockSkeleton({
                 </div>
               ))
             : null}
+          {known ? (
+            <div className="tl-playhead-layer">
+              <div className="tl-playhead" style={{ transform: `translateX(${PAD}px)` }}>
+                <span className="tl-playhead-knob" />
+              </div>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
