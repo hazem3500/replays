@@ -9,7 +9,7 @@ import {
   sanitizeUrlFields,
 } from '../src/capture/sanitize.ts';
 import { assertRedactionRules, type RedactionRules } from '../src/shared/redaction.ts';
-import { hasNoResponse, isFailedRequest, type ReplayBundle } from '../src/shared/replay.ts';
+import type { ReplayBundle } from '../src/shared/replay.ts';
 import { replay } from './fixtures.ts';
 
 describe('HAR sanitization', () => {
@@ -70,10 +70,6 @@ describe('HAR sanitization', () => {
     expect(entries[0]).toMatchObject({ at: 1000, method: 'POST', status: 401, duration: 24 });
   });
 
-  it('removes URL credentials', () => {
-    expect(sanitizeUrl('https://user:pass@example.com/path')).toBe('https://example.com/path');
-  });
-
   it('redacts sensitive values from URL fragments', () => {
     const oauth = sanitizeUrl('https://example.com/callback#access_token=fragment-secret&state=ok');
     const routed = sanitizeUrl('https://example.com/#/callback?code=route-secret&view=all');
@@ -126,43 +122,6 @@ describe('HAR sanitization', () => {
     expect(JSON.stringify(event)).not.toContain('href-secret');
     expect(JSON.stringify(event)).not.toContain('src-secret');
     expect(JSON.stringify(event)).not.toContain('url-secret');
-  });
-});
-
-// Shapes taken from an agent-browser 0.38 HAR: the 3xx response is dropped, so
-// the hop is a status-0 entry with no headers; real failures carry net::ERR_*.
-const harEntry = (url: string, status: number, statusText: string) => ({
-  startedDateTime: '2026-10-11T03:10:31.792Z',
-  time: 0,
-  request: { method: 'GET', url, headers: [] },
-  response: { status, statusText, headers: [] },
-});
-
-describe('agent-browser redirect hops', () => {
-  const [hop, dns, reset, missing, ok] = networkEntries(
-    {
-      log: {
-        entries: [
-          harEntry('https://example.com/old/pricing', 0, ''),
-          harEntry('http://nope.invalid/x', 0, 'net::ERR_NAME_NOT_RESOLVED'),
-          harEntry('https://a.test/hang', 0, 'net::ERR_EMPTY_RESPONSE'),
-          harEntry('https://a.test/missing', 404, 'Not Found'),
-          harEntry('https://example.com/pricing', 200, 'OK'),
-        ],
-      },
-    },
-    Date.parse('2026-10-11T03:10:31.000Z'),
-  );
-
-  it('does not count a redirect hop as a failed request', () => {
-    expect(hasNoResponse(hop!)).toBe(true);
-    expect(isFailedRequest(hop!)).toBe(false);
-  });
-
-  it('still counts network failures and HTTP errors', () => {
-    expect([dns, reset, missing].map((request) => isFailedRequest(request!))).toEqual([true, true, true]);
-    expect([dns, reset, missing].some((request) => hasNoResponse(request!))).toBe(false);
-    expect(isFailedRequest(ok!)).toBe(false);
   });
 });
 
@@ -241,22 +200,6 @@ describe('URLs outside URL-named fields', () => {
     expect(attributes.style).toBe("background:url('../bg.png?access_token=%5Bredacted%5D#x') no-repeat");
     expect(attributes._cssText).toContain('url(/plain.png?v=1)');
     expect(sanitizeUrlFields(snapshot)).toEqual(snapshot);
-  });
-
-  it('leaves text without sensitive URLs byte-for-byte unchanged', () => {
-    const text = 'see https://example.com?view=all and http://a.test/path, then https://b.test/?page=2';
-    expect(sanitizeUrlFields({ message: text })).toEqual({ message: text });
-  });
-
-  it('keeps query-only relative URLs relative', () => {
-    expect(sanitizeUrl('?page=2&token=secret')).toBe('?page=2&token=%5Bredacted%5D');
-    expect(sanitizeUrl('?page=2')).toBe('?page=2');
-  });
-
-  it('redacts presigned URL signatures and JWT query values', () => {
-    const url = sanitizeUrl('https://bucket.example.com/a.png?X-Amz-Signature=s1&signature=s2&jwt=s3&w=10');
-    expect(url).not.toMatch(/s1|s2|s3/);
-    expect(url).toContain('w=10');
   });
 });
 

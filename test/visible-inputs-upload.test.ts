@@ -8,6 +8,7 @@ import type { AuthAdapter, Identity } from '../src/server/auth/types.ts';
 import { MemoryStorage } from '../src/server/storage/index.ts';
 import { ReplayStore } from '../src/server/store.ts';
 import type { ReplayBundle } from '../src/shared/replay.ts';
+import { isRecord } from '../src/shared/validate.ts';
 import { appDefaults, replay } from './fixtures.ts';
 
 const OPTED_IN = { privacy: { keepVisibleInputs: true } } satisfies Partial<AppOptions>;
@@ -63,7 +64,8 @@ async function start(options: Partial<AppOptions>, setup?: (api: PluginApi) => v
 /** The stored bundle, serialized, after the upload answered 201. */
 async function stored(store: ReplayStore, response: Response) {
   expect(response.status).toBe(201);
-  const { id } = (await response.json()) as { id: string };
+  const receipt: unknown = await response.json();
+  const id = isRecord(receipt) && typeof receipt.id === 'string' ? receipt.id : '';
   const bundle = await store.load(id);
   if (!bundle) throw new Error(`nothing stored for ${id}`);
   return { bundle, serialized: JSON.stringify(bundle) };

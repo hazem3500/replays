@@ -93,6 +93,15 @@ function maskInputText(child: unknown, ids: MaskedIds): void {
   child.textContent = maskedInput(child.textContent);
 }
 
+function maskAttributeChange(change: Record<string, unknown>, ids: MaskedIds): void {
+  const attributes = attributesOf(change);
+  if (typeof change.id !== 'number') return;
+  // invariant: a visible field that becomes a masked type (text to password) stays masked from then on.
+  if (ids.visible.has(change.id) && attributes && Object.hasOwn(attributes, 'type') && masksInput('input', attributes, ids.all))
+    ids.inputs.add(change.id);
+  if (ids.inputs.has(change.id) && typeof attributes?.value === 'string') attributes.value = maskedInput(attributes.value);
+}
+
 function maskMutation(data: Record<string, unknown>, ids: MaskedIds): void {
   for (const add of records(data.adds)) maskElementTree(add.node, ids);
   for (const removal of records(data.removes)) {
@@ -101,14 +110,7 @@ function maskMutation(data: Record<string, unknown>, ids: MaskedIds): void {
     ids.texts.delete(removal.id);
     ids.visible.delete(removal.id);
   }
-  for (const change of records(data.attributes)) {
-    const attributes = attributesOf(change);
-    if (typeof change.id !== 'number') continue;
-    // invariant: a visible field that becomes a masked type (text to password) stays masked from then on.
-    if (ids.visible.has(change.id) && attributes && Object.hasOwn(attributes, 'type') && masksInput('input', attributes, ids.all))
-      ids.inputs.add(change.id);
-    if (ids.inputs.has(change.id) && typeof attributes?.value === 'string') attributes.value = maskedInput(attributes.value);
-  }
+  for (const change of records(data.attributes)) maskAttributeChange(change, ids);
   for (const change of records(data.texts)) {
     if (typeof change.id === 'number' && ids.texts.has(change.id) && typeof change.value === 'string')
       change.value = maskedInput(change.value);
