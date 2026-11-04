@@ -217,12 +217,12 @@ for (const [from, to] of [
       expect(progress, `${ms} ms`).toBeGreaterThan(0.2);
       expect(progress, `${ms} ms`).toBeLessThan(1);
       for (const [depth, offset] of frame.offsets.entries()) {
-        const from = before.offsets[depth];
-        const to = after.offsets[depth];
-        if (!from || !to) throw new Error(`sheet ${depth + 1} is missing before or after the switch`);
+        const resting = before.offsets[depth];
+        const landed = after.offsets[depth];
+        if (!resting || !landed) throw new Error(`sheet ${depth + 1} is missing before or after the switch`);
         for (const edge of ['left', 'top', 'right', 'bottom'] as const) {
-          const start = from[edge];
-          const expected = start + (to[edge] - start) * progress;
+          const start = resting[edge];
+          const expected = start + (landed[edge] - start) * progress;
           expect.soft(Math.abs(offset[edge] - expected), `sheet ${depth + 1} ${edge} at ${ms} ms`).toBeLessThanOrEqual(2);
         }
       }
