@@ -114,6 +114,31 @@ test('a selected clip lifts a labelled Remove bubble above it, next in Tab order
   await expect(page.getByTestId('region-zoom')).toHaveCount(0);
 });
 
+test('the Remove bubble centres on its clip and moves below its lane when a label above is in the way', async ({ page }) => {
+  await seed(page, {
+    zooms: [{ id: 'zoom-1', from: 400, to: 2400, scale: 1.8 }],
+    speeds: [{ id: 'speed-1', from: 400, to: 2400, rate: 4 }],
+    blurs: [{ id: 'blur-1', from: 3000, to: 3600, x: 0.1, y: 0.1, width: 0.3, height: 0.2 }],
+  });
+  const speed = page.getByTestId('region-speed');
+  await speed.locator('.tl-region-body').click();
+  const bubble = speed.getByTestId('remove-speed');
+  await expect(bubble).toHaveAttribute('data-side', 'below');
+  const [own, clip] = await Promise.all([boxOf(bubble), boxOf(speed)]);
+  expect(own.y).toBeGreaterThanOrEqual(clip.y + clip.height);
+  expect(Math.abs(own.x + own.width / 2 - (clip.x + clip.width / 2))).toBeLessThanOrEqual(1);
+});
+
+test('a short clip gets an icon-only Remove bubble that keeps its name', async ({ page }) => {
+  await seed(page, { speeds: [{ id: 'speed-1', from: 1000, to: 1150, rate: 4 }] });
+  const speed = page.getByTestId('region-speed');
+  await speed.locator('.tl-region-body').click();
+  const bubble = speed.getByTestId('remove-speed');
+  await expect(bubble).toHaveAttribute('data-compact', '');
+  await expect(bubble).toHaveAccessibleName(/^Remove /);
+  expect((await boxOf(bubble)).width).toBeLessThanOrEqual(24);
+});
+
 test('the inspector header names its remove action, follows the back link in Tab order and removes the object', async ({ page }) => {
   await seed(page, { captions: [{ id: 'caption-1', from: 500, to: 2500, text: 'Fill in the form' }] });
   await page.getByTestId('region-caption').locator('.tl-region-body').click();

@@ -21,11 +21,11 @@
   .editor-loading-add { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 8px; font-size: var(--text-xs); opacity: 0.6; }
   .editor-loading-add svg { width: 12px; height: 12px; }
   .editor-loading-timeline { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 4px 14px 6px 4px; }
-  .editor-loading-ruler { position: relative; flex: none; height: 24px; margin: 0 14px 0 70px; }
+  .editor-loading-ruler { position: relative; flex: none; height: 24px; margin: 0 14px 0 50px; }
   .editor-loading-ruler > span { position: absolute; top: 0; bottom: 0; padding: 2px 0 0 4px; background: linear-gradient(to bottom, transparent 62%, var(--line-strong) 62%) no-repeat 0 0 / 1px 100%; color: var(--text-tertiary); font-size: 10px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
-  .editor-loading-lane { display: grid; grid-template-columns: 56px minmax(0, 1fr); flex: 1 1 44px; min-height: 44px; max-height: 64px; margin-top: 6px; }
-  .editor-loading-gutter { display: grid; place-items: center; align-content: center; gap: 1px; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 12px; }
-  .editor-loading-gutter svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.7; }
+  .editor-loading-lane { display: grid; grid-template-columns: 36px minmax(0, 1fr); flex: 1 1 44px; min-height: 44px; max-height: 64px; margin-top: 6px; }
+  .editor-loading-gutter { display: grid; place-items: center; color: var(--text-tertiary); }
+  .editor-loading-gutter svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; }
   .editor-loading-track { display: flex; padding: 0 14px; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); box-shadow: inset 0 0 0 1px var(--line); }
   .editor-loading-clip { flex: 1; border-radius: 8px; box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--text-tertiary) 45%, transparent); }
   .inspector-skeleton .cursor-motion-description .skeleton { width: 46%; height: 10px; margin: 4px 0; }

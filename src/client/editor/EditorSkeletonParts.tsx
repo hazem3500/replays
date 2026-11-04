@@ -85,7 +85,6 @@ export function DockSkeleton({ duration }: { duration: number | undefined }) {
         <div className="editor-loading-lane">
           <span className="editor-loading-gutter">
             <FilmIcon />
-            <span>Clip</span>
           </span>
           <span className="editor-loading-track">
             <span className="editor-loading-clip" />

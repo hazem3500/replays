@@ -1,10 +1,10 @@
 import { useRegionFeedback } from '../hooks/use-region-feedback.ts';
 import { useRevealWhen } from '../hooks/use-reveal-when.ts';
+import { useBubblePlacement } from '../hooks/use-bubble-placement.ts';
 import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
-import { cssVars } from '../lib/css-vars.ts';
 import { usePlayer } from '../player.ts';
 import { startDrag, timeKeys, useTimelineScale } from './timeline-drag.ts';
 
@@ -102,7 +102,8 @@ function RegionEdge({ side, actions }: { side: 'from' | 'to'; actions: RegionAct
 
 /**
  * One region on a lane (a cut here; zoom, speed, blur and caption regions use it too): drag the body to move it, its
- * edges to resize. Selected, it lifts and a Remove bubble floats above it (next in Tab order). A click selects it and
+ * edges to resize. Selected, it lifts and a Remove bubble floats over its centre, on whichever side of the lane leaves the
+ * neighbouring labels clear (next in Tab order; just × on a short region). A click selects it and
  * shows where it starts. It is a button for the keyboard: arrows move it (Shift: by a second), Delete or Backspace
  * removes it.
  */
@@ -114,6 +115,7 @@ export function RegionBlock({ region, selected, actions }: { region: RegionSpec;
   const naturalWidth = scale.x(region.to) - left;
   // why: captions share a dense lane: preserve timing and a visible gap rather than growing over neighbours.
   const width = kind === 'caption' ? Math.max(1, naturalWidth - 2) : Math.max(6, naturalWidth);
+  useBubblePlacement(feedback, selected, left, width);
   return (
     <div
       ref={feedback}
@@ -124,33 +126,34 @@ export function RegionBlock({ region, selected, actions }: { region: RegionSpec;
       data-compact={width < 88 || undefined}
       data-region-id={id}
       data-testid={`region-${kind}`}
-      style={cssVars({ '--bubble-room': `${scale.x(scale.duration) + 10 - left}px` }, { left: `${left}px`, width: `${width}px` })}
+      style={{ left: `${left}px`, width: `${width}px` }}
     >
       <RegionBody region={region} selected={selected} actions={actions} showLabel={kind !== 'caption' || width >= 56} />
       <RegionEdge side="from" actions={actions} />
       <RegionEdge side="to" actions={actions} />
-      <button
-        type="button"
-        className="tl-region-remove"
-        aria-label={`Remove ${title}`}
-        aria-keyshortcuts="Delete"
-        tabIndex={selected ? 0 : -1}
-        data-testid={`remove-${kind}`}
-        onPointerDown={(event) => event.stopPropagation()}
-        onClick={actions.onRemove}
-      >
-        <AnimatedIcon name="x" size={11} strokeWidth={2.25} />
-        <span aria-hidden="true">Remove</span>
-      </button>
+      <Hint label={`Remove ${title}`} shortcut="Delete">
+        <button
+          type="button"
+          className="tl-region-remove"
+          aria-label={`Remove ${title}`}
+          aria-keyshortcuts="Delete"
+          tabIndex={selected ? 0 : -1}
+          data-testid={`remove-${kind}`}
+          onPointerDown={(event) => event.stopPropagation()}
+          onClick={actions.onRemove}
+        >
+          <AnimatedIcon name="x" size={11} strokeWidth={2.25} />
+          <span aria-hidden="true">Remove</span>
+        </button>
+      </Hint>
     </div>
   );
 }
 
 /**
- * A lane: its glyph in the gutter (named by a tooltip) and its regions on the track. An empty lane says in place what
- * it is and how to add to it (`empty`), in the quietest text, so it explains itself without hover.
+ * A lane: its glyph in the gutter, in the lane's kind colour and named by a tooltip, and its regions on the track. An
+ * empty lane says in place what it is and how to add to it (`empty`), in the quietest text, so it explains itself.
  */
-const LANE_LABELS: Record<string, string> = { clip: 'Clip', zoom: 'Zoom', speed: 'Speed', blur: 'Blur', caption: 'Captions' };
 
 export function Lane({
   name,
@@ -179,7 +182,6 @@ export function Lane({
       <Hint label={name} side="left">
         <span className="tl-gutter" aria-hidden="true">
           {icon}
-          {LANE_LABELS[kind] ? <span className="tl-gutter-label">{LANE_LABELS[kind]}</span> : null}
         </span>
       </Hint>
       <div className="tl-track" data-testid={`lane-${kind}`} onPointerDown={onTrackPointerDown}>

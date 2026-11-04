@@ -270,7 +270,7 @@ test('editor entry has a stable stage and timeline skeleton, without a viewer in
   await expect(skeleton).toBeVisible();
   await expect(skeleton.getByRole('heading', { level: 1 })).toContainText(meta.title);
   await expect(skeleton.getByTestId('inspector-skeleton')).toHaveCount(0);
-  await expect(skeleton.locator('.editor-loading-gutter')).toHaveText('Clip');
+  await expect(skeleton.locator('.editor-loading-gutter svg')).toHaveCount(1);
   await expect(skeleton.locator('.loading-notice')).toHaveCount(0);
   await expect(skeleton.locator('.sk-steps, .sk-table-head, .sk-tabs')).toHaveCount(0);
   const loading = await editorRects(page, '.sk-frame');
