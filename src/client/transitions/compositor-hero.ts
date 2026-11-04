@@ -298,10 +298,7 @@ export function createCompositorHero(element: Element | null | undefined, name =
     flight() {
       return morph ? { from: morph.before.rect, to: morph.after.rect } : undefined;
     },
-    /**
-     * Retimes the browser's flight for this picture. A picture in only one snapshot has none, so with `timing` (a
-     * sibling's spring) it gets its own flight on that spring.
-     */
+    // why: a picture in only one snapshot gets no browser flight; given a sibling's spring timing, it flies on its own.
     prepare(shape: FlightShape = { lag: 0, returning: false }, timing?: EffectTiming) {
       if (!morph || owners.get(name)?.token !== token) return;
       const pseudoElement = `::view-transition-group(${name})`;
