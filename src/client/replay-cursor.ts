@@ -1,4 +1,5 @@
 import { clickEffectOf, type ReplayCursorSettings } from '../shared/cursor.ts';
+import type { ReplaySource } from '../shared/replay.ts';
 
 import { buildCursorTrack, type CursorTrack, cursorInput, cursorPose, type Pose } from './cursor-motion.ts';
 import { type CursorGlyph, cursorColorValue, cursorTheme } from './cursor-themes.ts';
@@ -30,19 +31,22 @@ export class ReplayCursor {
   private readonly wrapper: HTMLElement;
   private readonly events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>;
   private readonly base: number;
+  private readonly source: ReplaySource | undefined;
 
   constructor(
     wrapper: HTMLElement,
     events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>,
     base: number,
     settings?: ReplayCursorSettings,
+    source?: ReplaySource,
   ) {
     this.wrapper = wrapper;
+    this.source = source;
     this.events = events;
     this.base = base;
     this.settings = settings;
     this.media = typeof matchMedia === 'function' ? matchMedia('(prefers-reduced-motion: reduce)') : undefined;
-    this.track = buildCursorTrack(cursorInput(events), { reducedMotion: this.media?.matches ?? false, settings: this.settings });
+    this.track = this.planTrack();
     this.media?.addEventListener('change', this.onMotionPreference);
 
     const element = document.createElement('div');
@@ -125,6 +129,14 @@ export class ReplayCursor {
     this.lastTransform = '';
   }
 
+  private planTrack() {
+    return buildCursorTrack(cursorInput(this.events), {
+      reducedMotion: this.media?.matches ?? false,
+      settings: this.settings,
+      source: this.source,
+    });
+  }
+
   /** The replay's fit scale (the host is CSS-transformed). A layout read, so only after a resize. */
   private measureFit() {
     const context = Number.parseFloat(this.wrapper.parentElement?.style.getPropertyValue('--player-cursor-size') ?? '');
@@ -149,7 +161,7 @@ export class ReplayCursor {
   };
 
   private readonly onMotionPreference = () => {
-    this.track = buildCursorTrack(cursorInput(this.events), { reducedMotion: this.media?.matches ?? false, settings: this.settings });
+    this.track = this.planTrack();
     if (!Number.isNaN(this.lastTime)) this.update(this.lastTime);
   };
 }

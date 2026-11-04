@@ -13,6 +13,18 @@ The cursor's look is a separate choice, `cursor.appearance` (`src/client/cursor-
 
 The arrow stays upright in every style, and Cua's glow, trail, magnet and ripple effects are not drawn. Replays never knows the target element, so every move aims at Cua's default 24 pt target. As a result `adaptive` only chooses between its near-straight reach and its long-move swoop, never its small-target generator. Its swoop is seeded from the move's coordinates, so a replay always plans the same path.
 
+### Person or agent: whose path the cursor draws
+
+A person's recording is replayed on its exact recorded path. The cursor moves in a straight line between consecutive recorded pointer positions, on their own timestamps, with no arc, easing or motion style on top (`src/client/cursor-recorded-path.ts`). Where the pointer sat still for 150 ms or more between two positions, the cursor holds and spends only the last 50 ms (one sampling interval) moving into the next one, so it sets off when the pointer did. Positions are clamped to the recorded viewport, and a sweep that starts near the top left corner is kept, because a person's pointer can start there for real. An agent recording keeps the styled glide described above, because its pointer mostly jumps from spot to spot.
+
+The rule uses data the bundle already has:
+
+1. `meta.source` decides when present: `human` (the browser recorder and rrweb imports) follows the recorded path, `agent` (the capture CLI) glides.
+2. When `meta.source` is absent (older producers), sample density decides: at least 60 pointer positions with 70% of them within 100 ms of the one before is a person's. Anything sparser, or a short sweep, glides.
+3. Reduced motion keeps its short straight glide for everyone.
+
+Clicks and presses (squish, ripple, pulse), the idle fade and seeking do not change: the pose is a pure function of the playhead time for both kinds. The saved motion style, the only setting that shapes a path, has no effect on a person's recording. The appearance, tint, size and click effect still apply, and the Motion picker says so. Styles remain the choice for agent runs.
+
 The inspector's **Motion** picker is a radio group of the six styles. Each card draws the path its style plans for the same sample move, using the same planner as playback. The selected, hovered or focused card plays the move as an SVG `animateMotion`; under reduced motion every card shows the still path and the arrow at rest. Sounds, looping, motion blur and custom motion specs are outside this change.
 
 ## Saved settings and rendering

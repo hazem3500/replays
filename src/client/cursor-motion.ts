@@ -1,4 +1,6 @@
 import type { CursorMotionStyle, ReplayCursorSettings } from '../shared/cursor.ts';
+import type { ReplaySource } from '../shared/replay.ts';
+import { followsRecordedPath, recordedSegments } from './cursor-recorded-path.ts';
 import { DT_MS, minJerk, sampleTimed, type Pt, type Raw } from './cursor-path.ts';
 import { planStyle } from './cursor-styles.ts';
 
@@ -34,6 +36,11 @@ import { planStyle } from './cursor-styles.ts';
  * clicks, and waypoints in long continuous runs), and each move is scheduled so
  * the tip arrives when the recording arrived. Everything is planned once per
  * bundle; `cursorPose(track, t)` only looks things up, so seeking is exact.
+ *
+ * A person's recording is not planned that way: the cursor rides the recorded
+ * path itself, straight between consecutive positions on their timestamps, with
+ * no arc, easing or motion style (`cursor-recorded-path.ts`). Only agent
+ * recordings, whose pointer jumps, get the styled glide above.
  */
 
 // ---------- Cua Cursor Motion (ported) ----------
@@ -276,12 +283,17 @@ const SWEEP_GAP_MS = 2 * REST_MS;
  * agent-browser's mouse starts at 0,0 and sweeps to its first destination. When the
  * recording opens at the origin, that whole opening sweep is dropped and the cursor
  * starts where it ends, so it never glides in from the corner. The rest is clamped
- * to the recorded viewport so the cursor never leaves the page.
+ * to the recorded viewport so the cursor never leaves the page. A person's pointer can
+ * start in the corner for real, so `keepOpening` keeps that sweep and only clamps.
  */
-export function onPage(points: readonly CursorPoint[], viewport?: { width: number; height: number }): CursorPoint[] {
+export function onPage(
+  points: readonly CursorPoint[],
+  viewport?: { width: number; height: number },
+  { keepOpening = false }: { keepOpening?: boolean } = {},
+): CursorPoint[] {
   let start = 0;
   const opening = points[0];
-  if (opening && opening.x <= ORIGIN_PT && opening.y <= ORIGIN_PT) {
+  if (!keepOpening && opening && opening.x <= ORIGIN_PT && opening.y <= ORIGIN_PT) {
     while (start < points.length - 1 && (points[start + 1] as CursorPoint).t - (points[start] as CursorPoint).t < SWEEP_GAP_MS) start++;
   }
   const kept = points.slice(start);
@@ -399,10 +411,11 @@ function mergeSpans(spans: Array<[number, number]>) {
  */
 export function buildCursorTrack(
   input: CursorInput,
-  options: { reducedMotion?: boolean; settings?: ReplayCursorSettings | undefined } = {},
+  options: { reducedMotion?: boolean; settings?: ReplayCursorSettings | undefined; source?: ReplaySource | undefined } = {},
 ): CursorTrack {
   const reducedMotion = options.reducedMotion ?? false;
   const motion = options.settings?.motion;
+  if (!reducedMotion && followsRecordedPath(options.source, input.points)) return recordedTrack(input, options.settings);
   const targets = cursorTargets(onPage(input.points, input.viewport));
   const moves: Move[] = [];
   const pose: Pose = { visible: true, x: 0, y: 0, heading: REST_HEADING, scale: 1, opacity: 1 };
@@ -425,19 +438,40 @@ export function buildCursorTrack(
     const scale = available >= 1 ? (followed ? fit : Math.min(1, fit)) : 0;
     moves.push({ start, end: scale > 0 ? start + traj.durationMs * scale : start, scale, traj });
   }
-  const first = targets[0];
+  return assemble(targets[0], moves, input.presses, reducedMotion, options.settings);
+}
+
+/** A person's recording: the cursor follows the recorded path itself, whatever motion style is saved. */
+function recordedTrack(input: CursorInput, settings: ReplayCursorSettings | undefined) {
+  const points = onPage(input.points, input.viewport, { keepOpening: true });
+  const moves: Move[] = recordedSegments(points, REST_HEADING, REST_MS).map((segment) => ({
+    start: segment.start,
+    end: segment.start + segment.durationMs,
+    scale: 1,
+    traj: { samples: segment.samples, arrivalMs: segment.durationMs, durationMs: segment.durationMs },
+  }));
+  return assemble(points[0], moves, input.presses, false, settings);
+}
+
+function assemble(
+  first: CursorPoint | undefined,
+  moves: Move[],
+  presses: number[],
+  reducedMotion: boolean,
+  settings: ReplayCursorSettings | undefined,
+): CursorTrack {
   const spans: Array<[number, number]> = moves.map((move) => [move.start, move.start + move.traj.durationMs * move.scale]);
-  for (const press of input.presses) spans.push([press, press + CLICK_FX_MS]);
+  for (const press of presses) spans.push([press, press + CLICK_FX_MS]);
   return {
     // Shown from the start of the replay, resting where it first lands; never hidden, never sliding in from a corner.
     appearsAt: first ? Number.NEGATIVE_INFINITY : Number.POSITIVE_INFINITY,
     first,
     moves,
     starts: Float64Array.from(moves, (move) => move.start),
-    presses: input.presses,
+    presses,
     ...mergeSpans(spans),
     reducedMotion,
-    settings: options.settings,
+    settings,
   };
 }
 

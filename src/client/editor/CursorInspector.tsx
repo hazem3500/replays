@@ -19,8 +19,10 @@ export function CursorInspector({
   onChange,
   onClose,
   embedded = false,
+  recordedPath = false,
 }: {
   settings: ReplayCursorSettings | undefined;
+  recordedPath?: boolean;
   onChange: (settings: ReplayCursorSettings | undefined) => void;
   onClose: () => void;
   embedded?: boolean;
@@ -79,7 +81,12 @@ export function CursorInspector({
         <details className="cursor-advanced">
           <summary>Advanced</summary>
           <section className="cursor-section">
-            <CursorMotionPicker value={settings?.motion ?? 'signature_arc'} disabled={!visible} onChange={(motion) => update({ motion })} />
+            <CursorMotionPicker
+              value={settings?.motion ?? 'signature_arc'}
+              disabled={!visible}
+              recordedPath={recordedPath}
+              onChange={(motion) => update({ motion })}
+            />
           </section>
           <CursorSizeControl
             size={size}

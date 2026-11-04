@@ -34,6 +34,7 @@ export function eventSpan(events: ReplayBundle['events'], fallback: number) {
 export class ReplayController {
   readonly duration: number;
   private readonly events: ReplayBundle['events'];
+  private readonly source: ReplayBundle['meta']['source'];
   /** Documents on the timeline; every seek renders the one on screen at the target time. */
   private readonly groups: SnapshotGroup[];
   /** Stretches without interaction that "skip inactive" fast-forwards (src/shared/skip.ts). */
@@ -64,6 +65,7 @@ export class ReplayController {
   constructor(bundle: ReplayBundle, options: { effects?: PlaybackEffects } = {}) {
     this.effects = options.effects ?? NO_EFFECTS;
     this.events = bundle.events;
+    this.source = bundle.meta.source;
     this.duration = eventSpan(bundle.events, bundle.meta.duration);
     this.groups = snapshotGroups(bundle.events, bundle.network);
     this.idleGaps = idleGaps(
@@ -101,7 +103,7 @@ export class ReplayController {
     });
     this.replayer = replayer;
     replayer.pause(this.offsetFor(this.time));
-    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, this.effects.cursor);
+    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, this.effects.cursor, this.source);
     this.cursor = cursor;
     cursor.update(this.time);
     const unsubscribeCursor = this.subscribeTime(() => cursor.update(this.time));
