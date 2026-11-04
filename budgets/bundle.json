@@ -477,6 +477,11 @@
       "gzip": 9006,
       "brotli": 7857
     },
+    "dist/lib/chunks/bundle-io.ts-bd629dd42de8.mjs": {
+      "raw": 74502,
+      "gzip": 20687,
+      "brotli": 17840
+    },
     "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs": {
       "raw": 68003,
       "gzip": 19954,
@@ -632,6 +637,11 @@
       "gzip": 1704,
       "brotli": 1459
     },
+    "dist/lib/recorder-chunks/attribute-classes.ts-e5b119bffc36.mjs": {
+      "raw": 68574,
+      "gzip": 18616,
+      "brotli": 16386
+    },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
       "gzip": 3358,
@@ -761,16 +771,6 @@
       "raw": 557837,
       "gzip": 179928,
       "brotli": 142340
-    },
-    "dist/lib/chunks/bundle-io.ts-bd629dd42de8.mjs": {
-      "raw": 74502,
-      "gzip": 20687,
-      "brotli": 17840
-    },
-    "dist/lib/recorder-chunks/attribute-classes.ts-e5b119bffc36.mjs": {
-      "raw": 68574,
-      "gzip": 18616,
-      "brotli": 16386
     }
   },
   "allowances": [
