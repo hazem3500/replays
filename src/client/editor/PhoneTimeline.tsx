@@ -78,11 +78,13 @@ function PhoneScale({
   scale,
   edits,
   steps,
+  bubbleHost,
 }: {
   duration: number;
   scale: number;
   edits: ReplayEdits;
   steps: readonly ReplayStep[];
+  bubbleHost: HTMLElement | null;
 }) {
   const { tick, ticks } = rulerTicks(duration * scale, duration);
   const kept = editTimeline(edits, duration);
@@ -93,7 +95,7 @@ function PhoneScale({
           {tickLabel(at, tick)}
         </span>
       ))}
-      <TimelineStepDots steps={steps} isRemoved={(time) => kept.isRemoved(time)} target={PHONE_DOT_PX} />
+      <TimelineStepDots steps={steps} isRemoved={(time) => kept.isRemoved(time)} target={PHONE_DOT_PX} bubbleHost={bubbleHost} />
     </div>
   );
 }
@@ -101,7 +103,8 @@ function PhoneScale({
 /**
  * The phone timeline (the mobile video-editor pattern): a fixed centre playhead the full-width lanes scroll under,
  * so dragging the clips scrubs and the platform's momentum carries it; pinch zooms. Play and the time sit in its
- * slim bar; the scale over the lanes carries the step dots, as on the desktop ruler (a tap seeks and names the step).
+ * slim bar; the scale over the lanes carries the step dots, as on the desktop ruler (a tap seeks and names the step
+ * over the bar, clear of the track).
  */
 export function PhoneTimeline({
   duration,
@@ -128,6 +131,7 @@ export function PhoneTimeline({
   const [seek, setSeek] = useState<HTMLInputElement | null>(null);
   const [zoom, setZoom] = useState<number>();
   const [track, setTrack] = useState<HTMLDivElement | null>(null);
+  const [bubbleHost, setBubbleHost] = useState<HTMLDivElement | null>(null);
   const width = useLanesWidth(scroller);
   const fit = fitScale(width || 390, duration);
   const scale = zoom === undefined ? fit : clampScale(zoom, fit);
@@ -142,13 +146,14 @@ export function PhoneTimeline({
         onFit={() => setZoom(undefined)}
         onPlayPause={onPlayPause}
       />
+      <div ref={setBubbleHost} className="phone-step-bubble-host" />
       <div className="phone-lanes-frame">
         <span className="phone-snap-marker" aria-hidden="true" />
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
           <div className="phone-lanes-content">
             <ScaleContext.Provider value={timeline}>
               <div ref={setTrack} className="phone-track" style={cssVars({ '--span': `${duration * scale}px` })}>
-                <PhoneScale duration={duration} scale={scale} edits={edits} steps={steps} />
+                <PhoneScale duration={duration} scale={scale} edits={edits} steps={steps} bubbleHost={bubbleHost} />
                 <PhoneLanes duration={duration} scale={scale} edits={edits} steps={steps} selection={selection} dispatch={dispatch} />
               </div>
             </ScaleContext.Provider>
@@ -173,7 +178,7 @@ export function PhoneTimeline({
       </div>
       {hasEffectLanes(edits) ? null : (
         <p className="phone-lanes-hint" data-testid="phone-lanes-hint">
-          The tools below add at the playhead
+          Captions, blur and zoom from the tools below go here
         </p>
       )}
     </div>

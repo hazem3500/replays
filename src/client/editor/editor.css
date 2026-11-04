@@ -73,19 +73,22 @@
   .tl-tick { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: linear-gradient(to bottom, transparent 72%, var(--line-strong) 72%); pointer-events: none; }
   .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-tertiary); font-size: 10px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   /*
-   * Step dots (TimelineStepDots.tsx): a 6 px dot per step under the labels, filled for an action and hollow for a wait.
+   * Step dots (TimelineStepDots.tsx): a 10 px dot per step under the labels, filled for an action and hollow for a wait,
+   * right over the clip's divider where that step starts.
    * Each is a 24 px target (dots closer than that merge, so targets never overlap) reaching into the gap under the
    * ruler; hovered or focused, the dot grows a little. Removed steps fade.
    */
   .tl-steps { position: absolute; inset: 0; pointer-events: none; }
   .tl-step { position: absolute; bottom: -5px; left: -12px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--text-tertiary); cursor: pointer; pointer-events: auto; outline: none; transition: color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
-  .tl-step svg { width: 12px; height: 12px; transition: scale var(--motion-fast) var(--ease-out); }
+  .tl-step svg { width: 20px; height: 20px; transition: scale var(--motion-fast) var(--ease-out); }
   .tl-step:hover, .tl-step:focus-visible { color: var(--text); }
-  .tl-step:hover svg, .tl-step:focus-visible svg { scale: 1.34; }
+  .tl-step:hover svg, .tl-step:focus-visible svg { scale: 1.2; }
   .tl-step:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
   .tl-step[data-removed] { opacity: 0.5; }
   .tl-step-tip { display: grid; gap: 1px; }
   .tl-step-tip-detail { color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
+  .tl-step-tip-meaning { display: flex; align-items: center; gap: 4px; margin-top: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); }
+  .tl-step-tip-meaning svg { flex: none; }
 
 
   /*
@@ -110,6 +113,9 @@
   @container (max-width: 72px) { .tl-outside-label { display: none; } }
   .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  /* The clip's steps (Timeline.tsx ClipSteps): a faint divider at each start and whole words where they fit, in the quietest text. */
+  .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 1px solid var(--line); color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
+  .tl-clip-step:first-child { padding-left: 14px; border-left: 0; }
   /* The trim edges: slim tabs with a grip, light at rest and accent while held. */
   .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; transition: background-color var(--motion-fast) var(--ease-out); }
   .tl-trim:hover, .tl-trim:focus-visible, .tl-clip[data-selected] .tl-trim { background: var(--text-secondary); }
@@ -126,16 +132,21 @@
   /* Regions (cuts; the effect lanes reuse them). */
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
   .tl-lane[data-tall] .tl-region { top: 6px; bottom: 6px; }
-  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 10px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
+  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 8px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   @media (hover: hover) and (pointer: fine) {
     .tl-track:hover { background-color: var(--surface-raised); }
     .tl-region[data-kind] .tl-region-body:hover { color: var(--text); box-shadow: inset 0 0 0 1px var(--text-tertiary); }
   }
   .tl-region-body:active { cursor: grabbing; opacity: 0.9; }
   @media (prefers-reduced-motion: reduce) { .tl-region-body { transition: none; } }
-  .tl-region-label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; pointer-events: none; }
-  .tl-region[data-narrow] .tl-region-label { display: none; }
-  .tl-region[data-kind="cut"] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), color-mix(in srgb, var(--canvas) 72%, transparent); }
+  /*
+   * invariant: a block's label is whole words that fit (block-label.ts), never clipped, faded or ellipsed; a block too
+   * short for its first word shows its lane's still glyph, centred, and its tooltip and name keep the full text.
+   */
+  .tl-region-label { min-width: 0; white-space: nowrap; pointer-events: none; }
+  :is(.tl-region-body, .phone-region) > .block-glyph { position: absolute; inset: 0; width: 10px; height: 10px; margin: auto; color: var(--kind, var(--text-tertiary)); pointer-events: none; }
+  .tl-region[data-kind="cut"] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), color-mix(in srgb, var(--canvas) 72%, var(--surface-raised)); }
+  /* why: opaque, so the clip's step words under a cut never show through as faint, half-hidden text. */
   .tl-region-edge { position: absolute; z-index: 1; top: -2px; bottom: -2px; width: 12px; cursor: ew-resize; touch-action: none; }
   .tl-region-edge[data-edge="from"] { left: -6px; }
   .tl-region-edge[data-edge="to"] { right: -6px; }
@@ -145,7 +156,7 @@
   /*
    * Clips sit on one calm surface with a whisper of their kind's tint: no stripes, rings or glows. Selected, a clip
    * takes a stronger tint, full-strength text and a lift, and its Remove bubble floats over its centre outside the lane
-   * (use-bubble-placement.ts picks the side and clamps it). Captions fade at their end.
+   * (use-bubble-placement.ts picks the side and clamps it).
    */
   /* One clip surface for every kind; selection is a soft tint of the app's accent with a lift (desktop and phone). */
   /*
@@ -170,8 +181,7 @@
   .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: var(--clip-lift); color: var(--text); }
   .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: color-mix(in oklab, var(--kind, var(--accent)) 26%, var(--surface-raised)); }
   .tl-region[data-kind="cut"][data-selected] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), var(--clip-selected); }
-  .tl-region[data-kind="caption"] .tl-region-body { padding: 0 9px; justify-content: flex-start; }
-  .tl-region[data-kind="caption"] .tl-region-label { text-overflow: clip; mask-image: linear-gradient(to right, #000 calc(100% - 18px), transparent); }
+  .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
   .tl-region-remove { position: absolute; z-index: 3; bottom: calc(100% + 6px); left: var(--bubble-x, 0px); display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); color: var(--text-secondary); font: inherit; font-size: var(--text-2xs); font-weight: 600; white-space: nowrap; cursor: pointer; opacity: 0; pointer-events: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
   .tl-region-remove::before { content: ''; position: absolute; inset: -2px 0; }
@@ -238,7 +248,7 @@
   .tl-highlight-marker[data-selected] .tl-highlight-glyph { scale: 1.3; box-shadow: var(--clip-lift); }
   @media (prefers-reduced-motion: reduce) { .tl-highlight-glyph { transition: none; } }
   .tl-highlight-marker:focus-visible { outline: 2px solid var(--ring); outline-offset: 1px; }
-  .tl-highlight-label { position: absolute; bottom: calc(100% - 2px); left: 50%; max-width: 180px; overflow: hidden; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; transform: translateX(-50%); }
+  .tl-highlight-label { position: absolute; bottom: calc(100% - 2px); left: 50%; max-width: 180px; padding: 3px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--surface-raised); color: var(--text); font-size: 10px; white-space: nowrap; transform: translateX(-50%); }
   @media (hover: hover) and (pointer: fine) {
     .tl-highlight-marker:hover .tl-highlight-glyph { background-color: var(--text); }
     .tl-highlight:has(.tl-highlight-marker:hover, .tl-highlight-grip:hover) .tl-highlight-band { background: color-mix(in srgb, var(--accent) 24%, transparent); }
@@ -276,8 +286,12 @@
 }
 
 @layer app {
-  /* Phones: the header, the picture at the screen's width, then the timeline and its toolbar (phone-editor.css). */
-  .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto minmax(0, 1fr); }
+  /*
+   * Phones: the header, the picture at the screen's width, then the timeline and its toolbar (phone-editor.css). The
+   * timeline sits on the tools and the picture centres in the room left above it; when lanes fill the screen, the
+   * timeline gives way first and the picture keeps its size.
+   */
+  .editor-shell.app-shell[data-mobile] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(auto, 1fr) minmax(0, auto); }
   .editor-mobile-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .editor-mobile-heading { min-width: 0; padding: 0 4px; }
   .editor-mobile-heading h1 { margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
@@ -285,7 +299,7 @@
   .editor-mobile-header .editor-export { padding: 0 10px; }
   .editor-mobile-header .editor-export svg { display: block; }
   .editor-mobile-header .topbar-more { width: 44px; height: 44px; }
-  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; justify-content: center; padding: 6px 8px; }
+  .editor-shell.app-shell[data-mobile] .editor-stage { display: flex; align-items: center; justify-content: center; padding: 6px 8px; }
   .editor-shell.app-shell[data-mobile] .editor-stage .stage-wrap { flex: none; width: 100%; max-width: calc((46dvh - 12px) * var(--editor-preview-ratio)); aspect-ratio: var(--editor-preview-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .editor-shell.app-shell[data-mobile] .editor-stage .player-stage { flex: none; width: 100%; height: 100%; min-height: 0; max-height: none; aspect-ratio: var(--editor-preview-ratio); background: var(--canvas); }
   .editor-shell.app-shell[data-mobile] .editor-dock { display: grid; grid-template-areas: 'status' 'timeline' 'tools'; grid-template-rows: auto minmax(0, 1fr) auto; min-height: 0; max-height: none; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); }
@@ -332,6 +346,8 @@
   .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
   .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
   .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
+  /* why: a dimmed primary fill read as a pale, low-contrast enabled button; disabled Export is a quiet outlined one whose tooltip says why. */
+  .editor-shell .editor-export:disabled { opacity: 1; background-color: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); }
   @media (prefers-reduced-motion: reduce) {
     .editor-shell :is([data-slot="button"], .topbar-back) { transition: none; }
   }

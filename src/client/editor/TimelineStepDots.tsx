@@ -1,4 +1,5 @@
 import { type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
@@ -38,23 +39,37 @@ function labelOf(dot: StepDot) {
   return { label: stepDotLabel(dot), detail: stepDotDetail(dot, stepKindName(dot.kind), formatClock) };
 }
 
-/** A dot's name, then a quieter line that says why it is filled or hollow. */
-function DotLabel({ label, detail }: { label: string; detail: string }) {
+/** A dot's name, its kind and time or pause, then what its shape means, beside a small copy of the dot. */
+function DotLabel({ label, detail, wait }: { label: string; detail: { visible: string; meaning: string }; wait: boolean }) {
   return (
     <span className="tl-step-tip">
       {label}
-      <span className="tl-step-tip-detail">{detail}</span>
+      <span className="tl-step-tip-detail">{detail.visible}</span>
+      <span className="tl-step-tip-meaning">
+        <AnimatedIcon name="dot" size={12} strokeWidth={wait ? 3 : 0} fill={wait ? 'none' : 'currentColor'} aria-hidden="true" />
+        {detail.meaning}
+      </span>
     </span>
   );
 }
 
-/** The pressed dot's label on a touch screen, under its dot; decorative, as the dot's own name says the same. */
-function PressedLabel({ x, label, detail }: { x: number; label: string; detail: { visible: string } }) {
-  return (
-    <span className="tl-step-bubble" aria-hidden="true" data-testid="step-bubble" style={{ transform: `translateX(${x}px)` }}>
-      <DotLabel label={label} detail={detail.visible} />
+/**
+ * The pressed dot's label on a touch screen; decorative, as the dot's own name says the same. In `host` when given
+ * (the phone shows it over its timeline bar, clear of the track), else under its dot.
+ */
+function PressedLabel({ x, dot, host }: { x: number; dot: StepDot; host: HTMLElement | null | undefined }) {
+  const { label, detail } = labelOf(dot);
+  const bubble = (
+    <span
+      className="tl-step-bubble"
+      aria-hidden="true"
+      data-testid="step-bubble"
+      style={host ? undefined : { transform: `translateX(${x}px)` }}
+    >
+      <DotLabel label={label} detail={detail} wait={dot.kind === 'wait'} />
     </span>
   );
+  return host ? createPortal(bubble, host) : bubble;
 }
 
 /**
@@ -100,7 +115,7 @@ function StepDotButton({
   const { label, detail } = labelOf(dot);
   const wait = dot.kind === 'wait';
   return (
-    <Hint label={<DotLabel label={label} detail={detail.visible} />}>
+    <Hint label={<DotLabel label={label} detail={detail} wait={wait} />}>
       <button
         type="button"
         className="tl-step"
@@ -115,25 +130,28 @@ function StepDotButton({
         onPointerCancel={onRelease}
         {...handlers}
       >
-        <AnimatedIcon name="dot" size={12} strokeWidth={wait ? 2.5 : 0} fill={wait ? 'none' : 'currentColor'} />
+        <AnimatedIcon name="dot" size={20} strokeWidth={wait ? 2.5 : 0} fill={wait ? 'none' : 'currentColor'} />
       </button>
     </Hint>
   );
 }
 
 /**
- * The recording's steps as small dots on the ruler, filled for an action and hollow for a wait. Hovering or focusing
- * one names its step and, on a second line, its kind and time or its pause; on a touch screen a press shows the same
- * label beside it. A click, tap, Enter or Space seeks there. The dots are one tab stop: arrows, Home and End move
+ * The recording's steps as dots on the ruler, filled for an action and hollow for a wait. Hovering or focusing one
+ * names its step, its kind and time or its pause, and what its shape means; on a touch screen a press shows the same
+ * label. A click, tap, Enter or Space seeks there. The dots are one tab stop: arrows, Home and End move
  * along them. Steps the trim or a cut removes dim.
  */
 export function TimelineStepDots({
   steps,
   isRemoved,
   target = MIN_DOT_GAP_PX,
+  bubbleHost,
 }: {
   steps: readonly ReplayStep[];
   isRemoved: (time: number) => boolean;
+  /** Where a touch screen's pressed label shows, when not under its dot (the phone's timeline bar). */
+  bubbleHost?: HTMLElement | null;
   /** Each dot's target in px (the phone's is larger, for a finger); closer dots merge, so no two targets overlap. */
   target?: number;
 }) {
@@ -168,7 +186,7 @@ export function TimelineStepDots({
           onKeyDown={(event) => moveFocus(event, position, dots.length, setCurrent)}
         />
       ))}
-      {bubble ? <PressedLabel x={scale.x(bubble.at)} {...labelOf(bubble)} /> : null}
+      {bubble ? <PressedLabel x={scale.x(bubble.at)} dot={bubble} host={bubbleHost} /> : null}
     </div>
   );
 }

@@ -7,6 +7,9 @@ import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
+import { wordsThatFit } from './block-label.ts';
+import { measureLabel } from './label-measure.ts';
+import { stepSegments } from './timeline-marks.ts';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { ScaleContext, startDrag, timeKeys, type TimelineScale } from './timeline-drag.ts';
@@ -45,6 +48,25 @@ function TrimmedOutside({ trim, duration, scale }: { trim: { start: number; end:
   );
 }
 
+/** why: the trim edges sit over the clip's ends, so a step's words keep this much room on each side. */
+const CLIP_STEP_PAD_PX = 14;
+
+/** The clip's steps: a faint divider where each starts and its leading whole words where they fit, in the quietest text. */
+function ClipSteps({ steps, trim, scale }: { steps: readonly ReplayStep[]; trim: { start: number; end: number }; scale: TimelineScale }) {
+  const px = scale.duration > 0 ? scale.width / scale.duration : 0;
+  return stepSegments(steps, trim).map((segment) => (
+    <span
+      key={segment.at}
+      className="tl-clip-step"
+      data-testid="clip-step"
+      aria-hidden="true"
+      style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
+    >
+      {wordsThatFit(segment.label, segment.length * px, { pad: CLIP_STEP_PAD_PX, measure: measureLabel })}
+    </span>
+  ));
+}
+
 /** The waits "Remove waits" would cut, shown before they are applied. */
 function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayCut[]; scale: TimelineScale }) {
   return suggestions.map((cut) => (
@@ -61,7 +83,7 @@ function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayC
 /**
  * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, a dot
  * per recorded step, the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
- * lanes. The recording track stays plain; its accent edges are the trim, dragged directly;
+ * lanes. The recording track shows its steps quietly (a divider and their first words); its edges are the trim, dragged directly;
  * cuts are hatched regions. Dragging on the clip selects a range (C cuts it), a click seeks. "Remove waits"
  * suggestions show as dashed regions until applied. `lanes` (the effects) go under it, on the same scale.
  */
@@ -233,6 +255,7 @@ export function Timeline({
                     data-selected={selection?.kind === 'trim' || undefined}
                     style={{ left: `${scale.x(trim.start)}px`, width: `${Math.max(0, scale.x(trim.end) - scale.x(trim.start))}px` }}
                   >
+                    <ClipSteps steps={steps} trim={trim} scale={scale} />
                     {trimEdge('start')}
                     {trimEdge('end')}
                   </div>

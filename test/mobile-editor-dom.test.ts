@@ -122,11 +122,11 @@ describe('mobile add toolbar', () => {
     await settle(() => {
       root.render(
         createElement(MobileAddToolbar, {
-          onTrim: command,
+          onCut: command,
           onCaption: command,
           onBlur: command,
           onZoom: command,
-          more: [{ label: 'Highlight moment', action: command }],
+          more: [{ label: 'Highlight this moment', action: command }],
         }),
       );
     });

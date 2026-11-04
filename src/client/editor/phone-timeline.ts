@@ -35,35 +35,3 @@ export function timeAtScroll(scrollLeft: number, scale: number, duration: number
 export function stepBoundaries(steps: readonly Pick<ReplayStep, 'at'>[], duration: number) {
   return [...new Set(steps.map((step) => Math.round(step.at)).filter((at) => at > 0 && at < duration))].sort((a, b) => a - b);
 }
-
-/** why: a conservative average for the 11 px label font, so a word judged to fit does fit. */
-const LABEL_CHAR_PX = 6.6;
-/** A label's inline padding on each side. */
-const LABEL_PAD_PX = 6;
-
-/** why: a shortened label ending on one of these ("Look at the") reads as cut off, so it ends before them. */
-const DANGLING = new Set(['a', 'an', 'and', 'at', 'for', 'from', 'in', 'into', 'of', 'on', 'or', 'the', 'to', 'with']);
-
-/**
- * As much of `label` as fits `width` px in up to `lines` lines, ending at a word boundary: never part of a word,
- * never an ellipsis, and a shortened label never ends on a small joining word. Empty when not even the first word fits.
- */
-export function wordsThatFit(label: string, width: number, lines = 1) {
-  const room = Math.floor((width - LABEL_PAD_PX * 2) / LABEL_CHAR_PX);
-  const words = label.trim().split(/\s+/);
-  const kept: string[] = [];
-  let line = 1;
-  let used = 0;
-  for (const word of words) {
-    const need = used ? used + 1 + word.length : word.length;
-    if (need <= room) {
-      used = need;
-    } else if (line < lines && word.length <= room) {
-      line += 1;
-      used = word.length;
-    } else break;
-    kept.push(word);
-  }
-  if (kept.length < words.length) while (DANGLING.has(kept.at(-1)?.toLowerCase() ?? '')) kept.pop();
-  return kept.join(' ');
-}

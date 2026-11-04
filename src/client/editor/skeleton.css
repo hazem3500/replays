@@ -35,7 +35,7 @@
    * repeated for its loading frame; e2e/editor-phone-loading.spec.ts holds the two to the same rects. The bar, lanes
    * and tools sit at the editor's arriving opacity (editor-layout.css), so the loaded ones fade up from there.
    */
-  .app-shell.editor-loading[data-mobile] { grid-template-rows: auto auto minmax(0, 1fr); background: var(--canvas); }
+  .app-shell.editor-loading[data-mobile] { grid-template-rows: auto minmax(auto, 1fr) minmax(0, auto); background: var(--canvas); }
   .sk-phone-header { position: relative; z-index: 12; display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px auto 44px; align-items: center; gap: 2px; padding: 4px 6px; border-bottom: 1px solid var(--line); background: var(--surface); }
   .sk-phone-heading { min-width: 0; padding: 0 4px; }
   .sk-phone-heading > h1 { margin: 0; overflow: hidden; font-size: var(--text-sm); font-weight: 600; line-height: 20px; text-overflow: ellipsis; white-space: nowrap; }
@@ -46,7 +46,7 @@
   .sk-phone-icon[data-disabled] svg { width: 16px; height: 16px; }
   .sk-phone-more { color: var(--text-secondary); }
   .sk-phone-more svg { width: 20px; height: 20px; }
-  .sk-phone-stage { display: flex; justify-content: center; min-width: 0; padding: 6px 8px; }
+  .sk-phone-stage { display: flex; align-items: center; justify-content: center; min-width: 0; padding: 6px 8px; }
   .sk-phone-stage .stage-wrap { flex: none; width: 100%; max-width: calc((46dvh - 12px) * var(--sk-ratio)); aspect-ratio: var(--sk-ratio); min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: var(--canvas); }
   .app-shell.editor-loading[data-mobile] .player-stage { flex: 1; min-height: 0; max-height: none; aspect-ratio: auto; }
   .sk-phone-dock { display: grid; grid-template-rows: 44px minmax(0, 1fr) auto; min-width: 0; min-height: 0; padding: 0 0 max(4px, env(safe-area-inset-bottom)); overflow: hidden; border-top: 1px solid var(--line); background: var(--surface); }
@@ -57,7 +57,7 @@
   .sk-phone-fit svg { width: 14px; height: 14px; }
   .sk-phone-clock { color: var(--text); font-size: var(--text-sm); font-weight: 600; font-variant-numeric: tabular-nums; }
   .sk-phone-duration { margin-left: -2px; color: var(--text-secondary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
-  .sk-phone-lanes { position: relative; display: grid; align-content: start; align-self: start; max-height: 100%; padding: 6px 0 4px; min-height: 0; overflow: hidden; }
+  .sk-phone-lanes { position: relative; display: grid; align-content: start; align-self: start; max-height: 100%; padding: 6px 0 10px; min-height: 0; overflow: hidden; }
   .sk-phone-lanes::after { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; border-radius: 1px; background: var(--accent); }
   .sk-phone-track { position: relative; display: grid; gap: 8px; width: var(--span); margin-left: 50%; opacity: 0.55; }
   .sk-phone-scale { position: relative; height: 36px; }

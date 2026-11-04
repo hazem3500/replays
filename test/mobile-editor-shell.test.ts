@@ -228,7 +228,7 @@ describe('phone editor objects', () => {
 
   it('opens the untouched clip without creating an edit and retimes it through the existing trim reducer', async () => {
     await renderEditor();
-    await click('[data-testid="mobile-trim"]');
+    await tool('[data-testid="mobile-trim"]');
     expect(node('[data-testid="phone-sheet"] h2').textContent).toBe('Trim clip');
     expect(node('[data-testid="save-state"]').textContent).toBe('Not edited yet');
     await input(node<HTMLInputElement>('.inspector-time input'), '1');

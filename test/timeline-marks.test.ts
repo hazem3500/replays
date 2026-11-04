@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatClock } from '../src/shared/replay.ts';
-import { placeStepDots, stepDotDetail, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
+import { placeStepDots, stepDotDetail, stepDotLabel, stepSegments } from '../src/client/editor/timeline-marks.ts';
 
 const step = (at: number, label = `Step at ${at}`, kind = 'click') => ({ at, label, kind });
 
@@ -59,16 +59,31 @@ describe('stepDotLabel', () => {
 describe('stepDotDetail', () => {
   it('gives an action its kind and time, so a filled dot reads as something done', () => {
     const [dot] = placeStepDots([step(3_200, 'Pay')], 10_000, 1_000);
-    expect(dot && stepDotDetail(dot, 'Click', formatClock)).toEqual({ visible: 'Click · 0:03.2', spoken: 'Click at 0:03.2' });
+    expect(dot && stepDotDetail(dot, 'Click', formatClock)).toMatchObject({ visible: 'Click, 0:03.2', spoken: 'Click at 0:03.2' });
   });
 
   it('gives a wait how long it lasts, up to the next dot', () => {
     const [wait] = placeStepDots([step(1_000, 'Look around', 'wait'), step(3_100, 'Pay')], 10_000, 1_000);
-    expect(wait && stepDotDetail(wait, 'Wait', formatClock).visible).toBe('Wait · 2.1 s');
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).visible).toBe('Wait, 2.1 s');
+  });
+
+  it('says in plain words that a hollow dot is a pause', () => {
+    const [wait] = placeStepDots([step(1_000, 'Look around', 'wait')], 10_000, 1_000);
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).meaning).toBe('Hollow dots are pauses, when nothing happens');
   });
 
   it('runs a last wait to the end of the recording', () => {
     const [wait] = placeStepDots([step(8_500, 'Read the receipt', 'wait')], 10_000, 1_000);
     expect(wait && stepDotDetail(wait, 'Wait', formatClock).spoken).toBe('Wait of 1.5 seconds at 0:08.5');
+  });
+});
+
+describe('stepSegments', () => {
+  it('runs each kept step from its start to the next one, measured from the trim start', () => {
+    const segments = stepSegments([step(1_000, 'Open'), step(4_000, 'Pay'), step(9_000, 'Done')], { start: 2_000, end: 8_000 });
+    expect(segments.map(({ label, offset, length }) => [label, offset, length])).toEqual([
+      ['Open', 0, 2_000],
+      ['Pay', 2_000, 4_000],
+    ]);
   });
 });

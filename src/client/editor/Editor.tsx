@@ -964,34 +964,36 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         setSheetFor(selectionKey(object.selection));
                         if (object.selection?.kind === 'caption') focusCaption.current = true;
                       }}
-                      onTrim={() => {
+                      onCut={() => {
                         rememberMobileFocus();
-                        player.pause();
-                        setSheetFor('trim');
                         setCursorOpen(false);
-                        setMobileTrimOpen(true);
+                        setMobileTrimOpen(false);
                         setBlurPlacement(undefined);
-                        dispatch({ type: 'select', selection: { kind: 'trim' } });
+                        actions.cut();
                       }}
                       onCaption={() => addMobileObject('caption')}
                       onBlur={() => addMobileObject('blur')}
                       onZoom={() => addMobileObject('zoom')}
                       more={[
+                        // why: the desktop bar's names, so a tool is called the same on both.
+                        { label: 'Find waits to remove', action: actions.removeWaits, testId: 'remove-waits' },
                         { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
                         {
-                          label: selection?.kind === 'range' ? 'Cut selection' : 'Cut at playhead',
+                          label: 'Trim the clip',
                           action: () => {
                             rememberMobileFocus();
+                            player.pause();
+                            setSheetFor('trim');
                             setCursorOpen(false);
-                            setMobileTrimOpen(false);
+                            setMobileTrimOpen(true);
                             setBlurPlacement(undefined);
-                            actions.cut();
+                            dispatch({ type: 'select', selection: { kind: 'trim' } });
                           },
-                          testId: 'add-cut',
+                          testId: 'mobile-trim',
                         },
                         { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
                         {
-                          label: 'Highlight moment',
+                          label: 'Highlight this moment',
                           action: () => {
                             rememberMobileFocus();
                             setCursorOpen(false);
@@ -1016,7 +1018,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                             ]
                           : []),
                         {
-                          label: 'Generate captions from steps',
+                          label: 'Write captions from the steps',
                           disabled: Boolean(edits.captions?.length),
                           action: () => {
                             const present = live.current.state.present;
@@ -1033,7 +1035,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           testId: 'generate-step-captions',
                         },
                         {
-                          label: 'Zoom on all clicks',
+                          label: 'Zoom in on every click',
                           action: () => {
                             rememberMobileFocus();
                             setCursorOpen(false);

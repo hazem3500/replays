@@ -36,7 +36,7 @@ export function EditorExport({
   const label = waiting
     ? 'Changes are saving before export'
     : render.availability === 'unavailable'
-      ? 'Video export is unavailable on this server'
+      ? 'Video export is turned off on this server'
       : render.availability === 'unknown'
         ? 'Checking video export availability'
         : 'Export the edited replay as MP4';

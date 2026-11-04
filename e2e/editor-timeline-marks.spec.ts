@@ -59,13 +59,24 @@ test.describe('editor timeline step dots', () => {
     await openEditor(page, { steps: [...STEPS, { at: 8_000, kind: 'wait', label: 'Wait for the receipt' }] });
     const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
     await dots.nth(0).hover();
-    await expect(tooltip(page)).toContainText('Click · 0:02.0');
+    await expect(tooltip(page)).toContainText('Click, 0:02.0');
     await dots.nth(3).hover();
-    await expect(tooltip(page)).toContainText(/Wait · \d+\.\d s/);
+    await expect(tooltip(page)).toContainText(/Wait, \d+\.\d s/);
     await expect(dots.nth(3)).toHaveAccessibleName(/^Wait for the receipt, Wait of \d+\.\d seconds at 0:08\.0$/);
   });
 
-  test('a step dot under a cut dims, and the clip itself stays plain', async ({ page }) => {
+  test('the clip names each step quietly in whole words, never part of one', async ({ page }) => {
+    await openEditor(page);
+    const labels = await page.getByTestId('clip-step').allTextContents();
+    expect(labels).toHaveLength(STEPS.length);
+    for (const [index, step] of STEPS.entries()) {
+      const shown = labels[index] ?? '';
+      expect(shown).not.toBe('');
+      expect(`${step.label} `.startsWith(`${shown} `)).toBe(true);
+    }
+  });
+
+  test('a step dot under a cut dims, and the clip draws no icons', async ({ page }) => {
     await openEditor(page, { cuts: [{ id: 'cut-1', from: 1_000, to: 5_000 }] });
     const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
     await expect(dots.nth(1)).toHaveAttribute('data-removed', 'true');

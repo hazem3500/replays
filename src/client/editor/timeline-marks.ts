@@ -56,13 +56,30 @@ export function stepDotLabel(dot: StepDot) {
 }
 
 /**
- * The second line of a dot's tooltip, which says why it is filled or hollow: an action names its kind and time
- * ("Click · 0:03.2"), a wait how long it pauses ("Wait · 2.1 s"). `spoken` is the same for a screen reader.
+ * The rest of a dot's tooltip, which says why it is filled or hollow: an action names its kind and time
+ * ("Click, 0:03.2"), a wait how long it pauses ("Wait, 2.1 s"), and `meaning` says in plain words what that dot's
+ * shape stands for. `spoken` is the kind and time for a screen reader.
  */
 export function stepDotDetail(dot: Pick<StepDot, 'kind' | 'at' | 'until'>, kindName: string, clock: (ms: number) => string) {
   if (dot.kind === 'wait') {
     const seconds = (Math.max(0, dot.until - dot.at) / 1000).toFixed(1);
-    return { visible: `${kindName} · ${seconds} s`, spoken: `${kindName} of ${seconds} seconds at ${clock(dot.at)}` };
+    return {
+      visible: `${kindName}, ${seconds} s`,
+      meaning: 'Hollow dots are pauses, when nothing happens',
+      spoken: `${kindName} of ${seconds} seconds at ${clock(dot.at)}`,
+    };
   }
-  return { visible: `${kindName} · ${clock(dot.at)}`, spoken: `${kindName} at ${clock(dot.at)}` };
+  return { visible: `${kindName}, ${clock(dot.at)}`, meaning: 'Filled dots are actions', spoken: `${kindName} at ${clock(dot.at)}` };
+}
+
+/**
+ * The kept part of each step (from its start to the next step's), in ms from the trim start: the clip's labelled
+ * segments on the desktop and the phone. Empty and trimmed-off segments are left out, so the starts that remain are distinct.
+ */
+export function stepSegments(steps: readonly Pick<ReplayStep, 'at' | 'label'>[], trim: { start: number; end: number }) {
+  return steps.flatMap((step, index) => {
+    const from = Math.max(step.at, trim.start);
+    const to = Math.min(steps[index + 1]?.at ?? trim.end, trim.end);
+    return to > from ? [{ at: step.at, offset: from - trim.start, length: to - from, label: step.label }] : [];
+  });
 }

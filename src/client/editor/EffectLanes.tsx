@@ -94,7 +94,7 @@ export function EffectLanes({
                   from: region.from,
                   to: region.to,
                   label: text,
-                  title: `${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${kind === 'caption' ? `: ${text}` : ''}`,
+                  title: `${KIND_NAMES[kind]} ${formatClock(region.from)} to ${formatClock(region.to)}${text && text !== KIND_NAMES[kind] ? `: ${text}` : ''}`,
                   seekTo: kind === 'zoom' ? region.from + Math.min(ZOOM_IN_MS, (region.to - region.from) / 2) : undefined,
                 }}
                 selected={selection?.kind === kind && selection.id === region.id}

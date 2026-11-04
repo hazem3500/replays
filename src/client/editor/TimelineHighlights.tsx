@@ -6,10 +6,14 @@ import { highlightEdge, highlightTargetOffsets } from '../highlights-layout.ts';
 import { useHighlightTargetSize } from '../hooks/use-highlight-target-size.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { usePlayer } from '../player.ts';
+import { wordsThatFit } from './block-label.ts';
+import { measureLabel } from './label-measure.ts';
 import type { EditorAction } from './state.ts';
 import { startDrag, timeKeys, useTimelineScale } from './timeline-drag.ts';
 
 const NO_HIGHLIGHTS: readonly ReplayHighlight[] = [];
+/** The widest a selected highlight's label grows (editor.css .tl-highlight-label); longer labels end at a word. */
+const LABEL_MAX_PX = 180;
 
 /** Which part of a highlight moves: a point's marker, one end of a period, or the whole period. */
 export type HighlightEdge = 'at' | 'from' | 'to' | 'move';
@@ -75,6 +79,7 @@ function HighlightMarker({
   const at = markerAts(highlight)[index] ?? 0;
   const edge: HighlightEdge = highlightEdge(highlight.kind, index) ?? 'at';
   const title = highlightTitle(highlight);
+  const label = wordsThatFit(highlight.label ?? '', LABEL_MAX_PX, { measure: measureLabel });
   const select = () => dispatch({ type: 'select', selection: { kind: 'highlight', id: highlight.id } });
   const { min, max } = markerBounds(highlight, edge, scale.duration);
   return (
@@ -110,8 +115,10 @@ function HighlightMarker({
       }
     >
       <span className="tl-highlight-glyph" aria-hidden="true" />
-      {selected && highlight.label && (highlight.kind === 'point' || index === 0) ? (
-        <span className="tl-highlight-label">{highlight.label}</span>
+      {selected && label && (highlight.kind === 'point' || index === 0) ? (
+        <span className="tl-highlight-label" aria-hidden="true">
+          {label}
+        </span>
       ) : null}
     </button>
   );

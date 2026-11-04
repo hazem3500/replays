@@ -131,7 +131,7 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   expect(total).not.toMatch(/of 0:04\.\d/);
 });
 
-test('dense captions keep every edit without overlapping labels or truncating the selected text', async ({ page }) => {
+test('dense captions keep every edit without overlapping labels, part words or blank blocks', async ({ page }) => {
   const id = await uploadHuman(page, true);
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
@@ -140,7 +140,10 @@ test('dense captions keep every edit without overlapping labels or truncating th
   await expect(captions).toHaveCount(30);
   const first = captions.first();
   await first.scrollIntoViewIfNeeded();
+  // why: a block too short for its first word shows its lane's glyph, never part of a word; its name keeps the text.
   await expect(first.locator('.tl-region-label')).toHaveCount(0);
+  await expect(first.getByTestId('block-glyph')).toHaveCount(1);
+  await expect(first.locator('.tl-region-body')).toHaveAccessibleName(/Caption 1: complete text remains available for editing$/);
   const boxes = await captions.evaluateAll((nodes) =>
     nodes.map((node) => {
       const box = node.getBoundingClientRect();

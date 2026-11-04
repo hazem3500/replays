@@ -5,10 +5,15 @@ import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
-import { wordsThatFit } from './phone-timeline.ts';
+import { wordsThatFit } from './block-label.ts';
+import { BlockLabel } from './BlockLabel.tsx';
+import { measureLabel } from './label-measure.ts';
+import { stepSegments } from './timeline-marks.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
 
+/** A phone region's inline padding (phone-editor.css .phone-region), which its label's words fit inside. */
+const PHONE_REGION_PAD_PX = 7;
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
 interface PhoneLanesProps {
   duration: number;
@@ -170,7 +175,7 @@ function Region({
         onClick={onSelect}
         data-testid={`region-${kind}`}
       >
-        <span>{wordsThatFit(region.label, width)}</span>
+        <BlockLabel label={region.label} width={width} kind={kind} pad={PHONE_REGION_PAD_PX} />
       </button>
       {children}
     </span>
@@ -180,18 +185,6 @@ function Region({
 interface ClipLaneProps extends Omit<PhoneLanesProps, 'dispatch'> {
   select: (next: Selection) => void;
   drag: EdgeDrag;
-}
-
-/**
- * The kept part of each step (from its start to the next step's), in ms from the trim start. Empty and trimmed-off
- * segments are left out, so the starts that remain are distinct.
- */
-function stepSegments(steps: readonly ReplayStep[], trim: { start: number; end: number }) {
-  return steps.flatMap((step, index) => {
-    const from = Math.max(step.at, trim.start);
-    const to = Math.min(steps[index + 1]?.at ?? trim.end, trim.end);
-    return to > from ? [{ at: step.at, offset: from - trim.start, length: to - from, label: step.label }] : [];
-  });
 }
 
 /**
@@ -218,7 +211,7 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
       >
         {stepSegments(steps, trim).map((segment) => (
           <span key={segment.at} className="phone-step" style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}>
-            <span className="phone-step-label">{wordsThatFit(segment.label, px(segment.length), 2)}</span>
+            <span className="phone-step-label">{wordsThatFit(segment.label, px(segment.length), { lines: 2, measure: measureLabel })}</span>
           </span>
         ))}
       </button>

@@ -6,6 +6,7 @@ import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from '
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { usePlayer } from '../player.ts';
+import { BlockLabel } from './BlockLabel.tsx';
 import { startDrag, timeKeys, useTimelineScale } from './timeline-drag.ts';
 
 /** What a region shows and where it sits (original ms). */
@@ -30,17 +31,21 @@ export interface RegionActions {
   onRemove: () => void;
 }
 
+/** A region block's inline padding (editor.css .tl-region-body), which its label's words fit inside. */
+const REGION_PAD_PX = 8;
+
 /** The block itself, a button: drag it to move the region, click to select and seek, arrows nudge, Delete removes. */
 function RegionBody({
   region,
   selected,
   actions,
-  showLabel,
+  width,
 }: {
   region: RegionSpec;
   selected: boolean;
   actions: RegionActions;
-  showLabel: boolean;
+  /** The block's width in px: how much of its label shows. */
+  width: number;
 }) {
   const scale = useTimelineScale();
   const player = usePlayer();
@@ -75,7 +80,7 @@ function RegionBody({
         timeKeys(event, { value: from, min: 0, max: scale.duration - (to - from) }, (time) => actions.onEdit('move', time, true));
       }}
     >
-      {label && showLabel ? <span className="tl-region-label">{label}</span> : null}
+      {label ? <BlockLabel label={label} width={width} kind={region.kind} pad={REGION_PAD_PX} className="tl-region-label" /> : null}
     </button>
   );
 }
@@ -122,13 +127,12 @@ export function RegionBlock({ region, selected, actions }: { region: RegionSpec;
       className="tl-region"
       data-kind={kind}
       data-selected={selected || undefined}
-      data-narrow={width < 44 || undefined}
       data-compact={width < 88 || undefined}
       data-region-id={id}
       data-testid={`region-${kind}`}
       style={{ left: `${left}px`, width: `${width}px` }}
     >
-      <RegionBody region={region} selected={selected} actions={actions} showLabel={kind !== 'caption' || width >= 56} />
+      <RegionBody region={region} selected={selected} actions={actions} width={width} />
       <RegionEdge side="from" actions={actions} />
       <RegionEdge side="to" actions={actions} />
       <Hint label={`Remove ${title}`} shortcut="Delete">

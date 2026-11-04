@@ -63,7 +63,7 @@ const NO_OBJECTS: ReturnType<typeof mobileTimelineObjects> = [];
 
 /** Adding an object is a command, never a permanent inspector destination. */
 export function MobileAddToolbar({
-  onTrim,
+  onCut,
   onCaption,
   onBlur,
   onZoom,
@@ -71,7 +71,8 @@ export function MobileAddToolbar({
   objects = NO_OBJECTS,
   onSelectObject,
 }: {
-  onTrim: () => void;
+  /** Cuts a second at the playhead, as the desktop bar's Cut does. */
+  onCut: () => void;
   onCaption: () => void;
   onBlur: () => void;
   onZoom: () => void;
@@ -81,9 +82,9 @@ export function MobileAddToolbar({
 }) {
   return (
     <div className="editor-add-toolbar" role="group" aria-label="Add or edit">
-      <Button variant="ghost" onClick={onTrim} data-testid="mobile-trim">
+      <Button variant="ghost" onClick={onCut} aria-label="Cut a second at the playhead" data-testid="add-cut">
         <ScissorsIcon aria-hidden="true" />
-        Trim
+        Cut
       </Button>
       <Button variant="ghost" onClick={onCaption} data-testid="add-caption">
         <CaptionsIcon aria-hidden="true" />
