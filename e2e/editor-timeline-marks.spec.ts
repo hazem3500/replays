@@ -29,6 +29,11 @@ async function openEditor(page: Page, { steps = STEPS, ...edits }: Record<string
 
 const tooltip = (page: Page) => page.locator('[data-slot="tooltip-content"]');
 
+/** Resolves once every animation on `element` and inside it has finished. */
+async function animationsDone(element: Element) {
+  await Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished));
+}
+
 /** Whether a press just inside each edge of `element` lands on it rather than on something over or under it. */
 function edgesHit(element: Element) {
   const { left, top, width, height } = element.getBoundingClientRect();
@@ -150,7 +155,7 @@ test.describe('editor tools and Add menu', () => {
     const menu = page.getByRole('menu', { name: 'Add to timeline' });
     const hint = page.getByTestId('add-hint');
     // why: the menu scales in as it opens; its resting size is the one after that.
-    await menu.evaluate((element) => Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished)));
+    await menu.evaluate(animationsDone);
     const resting = await boxOf(menu);
     const fits = () => hint.evaluate((element) => element.scrollHeight <= element.clientHeight);
     expect(await fits()).toBe(true);

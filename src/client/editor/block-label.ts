@@ -50,9 +50,15 @@ export function wordsThatFit(
     } else break;
     kept.push(word);
   }
-  if (kept.length < words.length) while (DANGLING.has(kept.at(-1)?.toLowerCase() ?? '')) kept.pop();
-  if (kept.length < words.length && kept.length < minWords) return '';
-  return kept.join(' ');
+  return shortened(kept, words.length, minWords);
+}
+
+/** `kept` words of a label `total` words long, as shown: a shortened one ends before a joining word and keeps `minWords`, or shows none. */
+function shortened(kept: readonly string[], total: number, minWords: number) {
+  if (kept.length === total) return kept.join(' ');
+  let end = kept.length;
+  while (end > 0 && DANGLING.has(kept[end - 1]?.toLowerCase() ?? '')) end -= 1;
+  return end < minWords ? '' : kept.slice(0, end).join(' ');
 }
 
 /**

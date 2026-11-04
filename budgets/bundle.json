@@ -143,14 +143,14 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 35840,
-      "gzip": 6820,
-      "brotli": 6090
+      "raw": 36900,
+      "gzip": 6990,
+      "brotli": 6250
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 140400,
-      "gzip": 46900,
-      "brotli": 39400
+      "raw": 142300,
+      "gzip": 47500,
+      "brotli": 39800
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 37945,
@@ -205,12 +205,12 @@
     "dist/client/assets/HostSurface-HASH.js": {
       "raw": 1266,
       "gzip": 704,
-      "brotli": 623
+      "brotli": 640
     },
     "dist/client/assets/index-queries-HASH.js": {
       "raw": 6806,
       "gzip": 2748,
-      "brotli": 2521
+      "brotli": 2509
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 49680,
@@ -245,7 +245,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 126200,
       "gzip": 44520,
-      "brotli": 39850
+      "brotli": 39880
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -270,7 +270,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 66
+      "brotli": 70
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -360,7 +360,7 @@
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 43874,
       "gzip": 13606,
-      "brotli": 12356
+      "brotli": 12345
     },
     "dist/client/assets/sliders-horizontal-HASH.js": {
       "raw": 464,
@@ -410,7 +410,7 @@
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
       "gzip": 256,
-      "brotli": 233
+      "brotli": 247
     },
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 547,
@@ -1150,6 +1150,14 @@
       "pr": "https://github.com/hazem3500/replays/pull/159"
     },
     {
+      "file": "dist/client/assets/render-HASH.js",
+      "cap": {
+        "raw": 9333
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 9060 to 9061 bytes; caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
       "file": "dist/client/assets/shortcuts-HASH.js",
       "cap": {
         "raw": 3371,
@@ -1220,6 +1228,22 @@
       },
       "pr": "https://github.com/hazem3500/replays/pull/185",
       "reason": "Sandbox panel tools, public runtime contracts and shared chunks measured in Linux CI against main."
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "gzip": 273
+      },
+      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: gzip 263 to 265 bytes; caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/203"
+    },
+    {
+      "file": "dist/client/assets/sliders-horizontal-HASH.js",
+      "cap": {
+        "brotli": 246
+      },
+      "reason": "Brotli output of this unchanged icon chunk shifted by two bytes with the new chunk graph; replaces the earlier brotli-only allowance. Reviewed and approved by Hazem. CI same-runner main/head: brotli 236 to 238 bytes; cap keeps the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/209"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.css",
@@ -1296,10 +1320,10 @@
       "cap": {
         "raw": 1266,
         "gzip": 704,
-        "brotli": 632
+        "brotli": 640
       },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1229, gzip new to 683, brotli new to 613 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 1229 (+0), gzip 683 (+0), brotli 609 to 626 (+17). Replaces the #203 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "dist/client/assets/Inspector-HASH.js",
@@ -1532,14 +1556,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/client/assets/render-HASH.js",
-      "cap": {
-        "raw": 9333
-      },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 9060 to 9061 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/client/assets/sign-in-HASH.js",
       "cap": {
         "raw": 43874,
@@ -1547,14 +1563,6 @@
         "brotli": 12356
       },
       "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw 16198 to 42596, gzip 5737 to 13211, brotli 5237 to 11996 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/sliders-horizontal-HASH.js",
-      "cap": {
-        "gzip": 273
-      },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: gzip 263 to 265 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -1572,10 +1580,10 @@
       "cap": {
         "raw": 335,
         "gzip": 256,
-        "brotli": 245
+        "brotli": 250
       },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: brotli 236 to 237 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 328 (+0), gzip 250 to 253 (+3), brotli 226 to 239 (+13). Replaces the #203 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "dist/client/assets/use-opacity-motion-HASH.js",
@@ -1877,14 +1885,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/209"
     },
     {
-      "file": "dist/client/assets/sliders-horizontal-HASH.js",
-      "cap": {
-        "brotli": 246
-      },
-      "reason": "Brotli output of this unchanged icon chunk shifted by two bytes with the new chunk graph; replaces the earlier brotli-only allowance. Reviewed and approved by Hazem. CI same-runner main/head: brotli 236 to 238 bytes; cap keeps the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/209"
-    },
-    {
       "file": "dist/client/assets/clamp-HASH.css",
       "cap": {
         "raw": 3070,
@@ -2095,10 +2095,10 @@
       "cap": {
         "raw": 126200,
         "gzip": 44520,
-        "brotli": 39850
+        "brotli": 39880
       },
-      "reason": "Suite runs past the stack's shown sheets fly to their comparison tiles from under the deepest sheet and back (transitions/recording-transition.ts, compositor-hero.ts), about 1267 raw, 382 gzip and 369 brotli bytes in the entry chunk. Measured against main 5428e078 on the same Boat, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/251"
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 126183 (+0), gzip +16, brotli 39834 to 39856 (+22). Replaces the #251 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "dist/lib/chunks/caption-placement.ts-e820e720ce40.mjs",
@@ -2139,21 +2139,31 @@
     {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
-        "raw": 35840,
-        "gzip": 6820,
-        "brotli": 6090
+        "raw": 36900,
+        "gzip": 6990,
+        "brotli": 6250
       },
-      "reason": "The editor's step dots on the ruler (10 px dots in 24 px targets, the hover swell, the tooltip that says what a filled or hollow dot means) and their pressed label under the dot on the phone, the desktop clip's quiet step dividers, whole-word step labels and dim waits, every lane block's centred glyph when no word fits, the tools' quiet key suffix, the Add menu's hint line, the phone More menu's two-line tools, the outlined disabled Export, the phone timeline's flush track and moving playhead, and a dock that grows to hold its lanes. Same-Boat main 888b6e2a to head: raw 32955 to 35485 (+2530), gzip 6365 to 6751 (+386), brotli 5658 to 6023 (+365). Replaces the #221 entry for this file.",
+      "reason": "The editor's step dots on the ruler (10 px dots in 24 px targets on a surface disc, the hover swell, the tooltip that says what a filled or hollow dot means) and their pressed label under the dot on the phone, the desktop clip's quiet step dividers, whole-word step labels and dim wait blocks with the hourglass and their length kept above the waits found, cut lengths on a plate, every lane block's centred glyph when no word fits, the tools' quiet key suffix, the Add menu's fixed-size hint box, the phone More menu's icons and two-line tools, the outlined disabled Export, the phone timeline's flush track, moving playhead, lane glyphs and cut labels, and a dock that grows to hold its lanes. Same-Boat main 888b6e2a to head: raw 32955 to 36566 (+3611), gzip 6365 to 6919 (+554), brotli 5658 to 6182 (+524). Replaces the #221 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 140400,
-        "gzip": 46900,
-        "brotli": 39400
+        "raw": 142300,
+        "gzip": 47500,
+        "brotli": 39800
       },
-      "reason": "The step dots on the desktop ruler and the phone scale (merging close steps and waits back to back, one roving tab stop, a tooltip naming the kind and time or the wait's length and the action it follows, a pressed label on touch, seek), the desktop clip's whole-word step labels with waits joined and named by their length, kept clear of cuts, one shared whole-word label helper measured in the real font for every lane block with a glyph when no word fits, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names with hint lines, its scale that seeks and scrubs under a playhead moving along a flush track, and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 139632 (+8441), gzip 43822 to 46526 (+2704), brotli 36747 to 39015 (+2268). Replaces the #247 entry for this file.",
+      "reason": "The step dots on the desktop ruler and the phone scale drawn from the clip's own blocks (actions at their start, each wait block once mid-block, a wait too close to show apart named in its action's tooltip, one roving tab stop, a pressed label on touch, seek), the clip's step labels of at least two whole words, load waits folded into their step and waits joined and named by their kept length, kept clear of cuts, cut lengths, one shared whole-word label helper measured in the real font for every lane block, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names with icons and hint lines, its scale that seeks and scrubs under a playhead moving along a flush track, and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 141763 (+10572), gzip 43822 to 47220 (+3398), brotli 36747 to 39545 (+2798). Replaces the #247 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/motion-features-HASH.js",
+      "cap": {
+        "raw": 66,
+        "gzip": 81,
+        "brotli": 70
+      },
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 64 (+0), gzip 78 (+0), brotli 65 to 67 (+2).",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     }
   ]

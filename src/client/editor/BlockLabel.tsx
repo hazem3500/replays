@@ -11,6 +11,9 @@ export const LANE_GLYPHS: Record<EffectKind, AnimatedIconName> = {
   caption: 'captions',
 };
 
+/** The same glyphs looked up by a block's kind name, which may not be an effect (a cut or a highlight). */
+const GLYPHS_BY_NAME: Readonly<Record<string, AnimatedIconName | undefined>> = LANE_GLYPHS;
+
 /**
  * A lane block's label, on the desktop and the phone: its leading whole words, or its lane's still glyph when no word
  * fits. Decorative: the block's own name and tooltip carry the full label.
@@ -29,7 +32,7 @@ export function BlockLabel({
         {fit.text}
       </span>
     );
-  const glyph = LANE_GLYPHS[kind as EffectKind] as AnimatedIconName | undefined;
+  const glyph = GLYPHS_BY_NAME[kind];
   if (!fit.glyph || !glyph) return null;
   return <AnimatedIcon name={glyph} size={10} strokeWidth={2.25} className="block-glyph" aria-hidden="true" data-testid="block-glyph" />;
 }

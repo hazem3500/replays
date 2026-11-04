@@ -73,24 +73,29 @@ export function placeStepDots(steps: readonly DotMark[], duration: number, width
       dots[dots.length - 1] = joined(last, step);
     else {
       if (last && !last.span) last.until = step.at;
-      const { span } = step;
-      const dot: StepDot = {
-        index,
-        at: step.at,
-        label: step.label,
-        kind: step.kind,
-        count: 1,
-        actions: wait ? 0 : 1,
-        seek: span?.from ?? step.at,
-        until: span?.to ?? duration,
-        span,
-      };
-      if (wait && action) dot.after = action;
-      dots.push(dot);
+      dots.push(newDot(step, index, duration, wait ? action : undefined));
     }
     if (!wait) action = step.label;
   }
   return dots;
+}
+
+/** A dot for `step` alone, lasting to the end of the recording until the next dot says otherwise. */
+function newDot(step: DotMark, index: number, duration: number, after: string | undefined): StepDot {
+  const { span } = step;
+  const wait = step.kind === 'wait';
+  return {
+    index,
+    at: step.at,
+    label: step.label,
+    kind: step.kind,
+    count: 1,
+    actions: wait ? 0 : 1,
+    seek: span?.from ?? step.at,
+    until: span?.to ?? duration,
+    span,
+    ...(after ? { after } : {}),
+  };
 }
 
 /** `dot` once `step` joins it (too close to tell apart, or a wait right after its wait); an action names a wait dot. */
