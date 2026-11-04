@@ -29,7 +29,7 @@ export function SuiteSidebarSkeleton({ title, runs }: { title: string | undefine
       <div className="suite-run-list">
         {SLOTS.slice(0, Math.min(runs ?? DEFAULT_RUNS, MAX_ROWS)).map((slot, index) => (
           <div key={slot} className="suite-run-item sk-run">
-            <span className="run-seq">{String(index + 1).padStart(2, '0')}</span>
+            <span className="run-swatch" />
             <span className="run-copy">
               <span className="skeleton" style={{ width: `${LABEL_WIDTHS[index % LABEL_WIDTHS.length]}%` }} />
               <span className="skeleton skeleton-thin sk-run-meta" />

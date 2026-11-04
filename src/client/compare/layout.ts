@@ -11,6 +11,13 @@ export interface Rect {
 export type Placement = Rect & { role: 'grid' | 'spotlight' | 'strip' | 'single' | 'hidden' };
 
 export const GAP = 8;
+
+/**
+ * Phones swipe through full-width tiles under a swatch switcher, the one place to switch recordings there; the
+ * headline strip stands down wherever this is true.
+ */
+export const showsPhoneSwitch = ({ mobile, layout, count }: { mobile: boolean; layout: 'single' | 'grid' | 'spotlight'; count: number }) =>
+  mobile && layout !== 'single' && count > 1;
 const STRIP_SHARE = 0.2;
 const STRIP_MIN = 132;
 const STRIP_MAX = 220;

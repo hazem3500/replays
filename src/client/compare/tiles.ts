@@ -2,6 +2,9 @@ import type { ReplayBundle } from '../../shared/replay.ts';
 import { collectErrors } from '../issues.ts';
 
 export const TILE_COLOURS = 9;
+
+/** The colour (1 to 9) of the recording at `index` on the stage; colours repeat after nine. */
+export const tileColour = (index: number) => (index % TILE_COLOURS) + 1;
 const FALLBACK_ASPECT = 16 / 10;
 
 /** One recording on the stage: who it is (letter, colour, label) and, once loaded, its bundle. */
@@ -76,6 +79,8 @@ export interface TileInput {
   bundle: ReplayBundle | undefined;
   failure?: string | undefined;
   removable?: boolean;
+  /** A colour the page already gave this recording (a suite run's sidebar row); else its position picks one. */
+  colour?: number | undefined;
 }
 
 function labelOf(id: string, label: string | undefined, bundle: ReplayBundle | undefined) {
@@ -94,10 +99,10 @@ function aspectOf(bundle: ReplayBundle | undefined) {
 export function compareTiles(inputs: readonly TileInput[]): CompareTile[] {
   const labels = inputs.map(({ id, label, bundle }) => labelOf(id, label, bundle));
   const names = shortNames(labels);
-  return inputs.map(({ id, bundle, failure = '', removable = false }, index) => ({
+  return inputs.map(({ id, bundle, failure = '', removable = false, colour }, index) => ({
     id,
     name: names[index] ?? id,
-    colour: (index % TILE_COLOURS) + 1,
+    colour: colour ?? tileColour(index),
     label: labels[index] ?? id,
     bundle,
     failure,
