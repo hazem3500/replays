@@ -2151,14 +2151,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/241"
     },
     {
-      "file": "dist/client/assets/motion-features-HASH.js",
-      "cap": {
-        "brotli": 70
-      },
-      "reason": "Brotli-only drift in a 64-byte re-export chunk: raw +0, brotli 65 to 68.",
-      "pr": "https://github.com/hazem3500/replays/pull/241"
-    },
-    {
       "file": "dist/lib/chunks/index.ts-84184fb3a414.mjs",
       "cap": {
         "raw": 34071,
