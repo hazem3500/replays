@@ -33,8 +33,22 @@ async function savedBundle(download: { suggestedFilename(): string; path(): Prom
 test.describe('the download button saves the replay bundle as JSON with Shift', () => {
   for (const [name, press] of [
     ['Shift+click', (page: Page) => page.getByTestId('download-video').click({ modifiers: ['Shift'] })],
-    ['Shift+Enter', (page: Page) => page.getByTestId('download-video').focus().then(() => page.keyboard.press('Shift+Enter'))],
-    ['Shift+Space', (page: Page) => page.getByTestId('download-video').focus().then(() => page.keyboard.press('Shift+Space'))],
+    [
+      'Shift+Enter',
+      (page: Page) =>
+        page
+          .getByTestId('download-video')
+          .focus()
+          .then(() => page.keyboard.press('Shift+Enter')),
+    ],
+    [
+      'Shift+Space',
+      (page: Page) =>
+        page
+          .getByTestId('download-video')
+          .focus()
+          .then(() => page.keyboard.press('Shift+Space')),
+    ],
   ] as const) {
     test(`${name} downloads the bundle instead of rendering the video`, async ({ page }) => {
       let renders = 0;
@@ -54,7 +68,9 @@ test.describe('the download button saves the replay bundle as JSON with Shift', 
 
   test('a plain click still starts the video render', async ({ page }) => {
     await openReplay(page, `${origin()}/r/${REPLAY}`);
-    const started = page.waitForRequest((request) => request.method() === 'POST' && request.url().includes(`/api/replays/${REPLAY}/render`));
+    const started = page.waitForRequest(
+      (request) => request.method() === 'POST' && request.url().includes(`/api/replays/${REPLAY}/render`),
+    );
     await page.getByTestId('download-video').click();
     await started;
   });
