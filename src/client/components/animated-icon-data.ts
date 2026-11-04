@@ -39,6 +39,10 @@ const ICONS = {
     ],
   },
   // Step kinds -------------------------------------------------------------------------------------------
+  dot: {
+    ms: 240,
+    parts: [{ el: 'circle', attrs: { cx: '12', cy: '12', r: '6' }, motion: { kind: 'shift', scale: 1.5 } }],
+  },
   'mouse-pointer-click': {
     ms: 300,
     parts: [

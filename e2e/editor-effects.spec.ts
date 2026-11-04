@@ -136,7 +136,6 @@ test('dense captions keep every edit without overlapping labels or truncating th
   const id = await uploadHuman(page, true);
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await expect(page.locator('.tl-activity, .tl-step')).toHaveCount(0);
   await page.locator('body').press('t');
   const captions = page.getByTestId('region-caption');
   await expect(captions).toHaveCount(30);

@@ -61,6 +61,14 @@
   .tl-ruler { position: relative; height: 26px; cursor: ew-resize; }
   .tl-tick { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: linear-gradient(to bottom, transparent 72%, var(--line-strong) 72%); pointer-events: none; }
   .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-tertiary); font-size: 10px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* Step dots (TimelineStepDots.tsx): a 6 px dot per step under the labels, each an 18 px target; removed steps fade. */
+  .tl-steps { position: absolute; inset: 0; pointer-events: none; }
+  .tl-step { position: absolute; bottom: 1px; left: -9px; display: grid; place-items: center; width: 18px; height: 14px; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--text-tertiary); cursor: pointer; pointer-events: auto; outline: none; transition: color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
+  .tl-step svg { width: 12px; height: 12px; }
+  .tl-step:hover, .tl-step:focus-visible { color: var(--text); }
+  .tl-step:focus-visible { box-shadow: 0 0 0 2px var(--ring); }
+  .tl-step[data-kind="wait"] { color: color-mix(in srgb, var(--text-tertiary) 70%, transparent); }
+  .tl-step[data-removed] { opacity: 0.45; }
 
 
   /*
@@ -85,6 +93,11 @@
   @container (max-width: 72px) { .tl-outside-label { display: none; } }
   .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+  /* The clip's activity (TimelineActivity.tsx): quiet ink bars, a step firmer where someone clicked or typed; the trim and cuts fade what they remove. */
+  .tl-activity { position: absolute; top: 7px; bottom: 7px; height: calc(100% - 14px); overflow: visible; pointer-events: none; }
+  .tl-activity rect { fill: var(--text-tertiary); opacity: 0.38; transition: opacity var(--motion-fast) var(--ease-out); }
+  .tl-activity rect[data-strong] { fill: var(--text-secondary); opacity: 0.5; }
+  .tl-activity rect[data-removed] { opacity: 0.14; }
   /* The trim edges: slim tabs with a grip, light at rest and accent while held. */
   .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; transition: background-color var(--motion-fast) var(--ease-out); }
   .tl-trim:hover, .tl-trim:focus-visible, .tl-clip[data-selected] .tl-trim { background: var(--text-secondary); }
@@ -96,7 +109,12 @@
   /* With no effects yet, the space under the clip offers them (EditorTools.tsx LaneInvitation). */
   .tl-invite { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 10px 0 0 calc(var(--gutter, 36px) + 4px); padding: 5px 6px 5px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; color: var(--text-tertiary); font-size: var(--text-xs); }
   .tl-invite-text { margin-right: 6px; }
+  .tl-invite { container-type: inline-size; }
   .tl-invite-chip.tl-invite-chip { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
+  /* Each chip's key as a quiet suffix, dropped when the row is too narrow for one line. Its data-slot keeps the page-wide keycap (styles.css) off it. */
+  .tl-invite-key { margin-left: -1px; color: var(--text-tertiary); font-family: var(--sans); font-size: var(--text-2xs); font-weight: 500; }
+  @container (max-width: 600px) { .tl-invite-key { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .tl-step, .tl-activity rect { transition: none; } }
 
   /* Regions (cuts; the effect lanes reuse them). */
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }

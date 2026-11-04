@@ -950,6 +950,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   />
                 ) : (
                   <Timeline
+                    recording={bundle}
                     duration={duration}
                     edits={edits}
                     selection={selection}

@@ -1,10 +1,13 @@
 import { FilmIcon, ScissorsIcon } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { editTimeline } from '../../shared/edit-timeline.ts';
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
-import { formatClock } from '../../shared/replay.ts';
+import { formatClock, type ReplayBundle } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
+import { TimelineActivity } from './TimelineActivity.tsx';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
+import { TimelineStepDots } from './TimelineStepDots.tsx';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { ScaleContext, startDrag, timeKeys, type TimelineScale } from './timeline-drag.ts';
@@ -57,13 +60,14 @@ function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayC
 }
 
 /**
- * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, the
- * the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
- * lanes. The recording track stays plain; its accent edges are the trim, dragged directly;
+ * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, a dot
+ * per recorded step, the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
+ * lanes. The recording track shows its activity; its accent edges are the trim, dragged directly;
  * cuts are hatched regions. Dragging on the clip selects a range (C cuts it), a click seeks. "Remove waits"
  * suggestions show as dashed regions until applied. `lanes` (the effects) go under it, on the same scale.
  */
 export function Timeline({
+  recording,
   duration,
   edits,
   selection,
@@ -72,6 +76,8 @@ export function Timeline({
   onCutRange,
   lanes,
 }: {
+  /** The recording's events (its activity) and steps (the ruler's dots). */
+  recording: Pick<ReplayBundle, 'events' | 'steps'>;
   duration: number;
   edits: ReplayEdits;
   selection: Selection;
@@ -134,6 +140,7 @@ export function Timeline({
   };
 
   const trim = trimOf(edits, duration);
+  const edited = editTimeline(edits, duration);
   const range = selection?.kind === 'range' ? selection : undefined;
   const { tick, ticks } = rulerTicks(scale.width, duration);
   const trimEdge = (edge: 'start' | 'end') => (
@@ -188,6 +195,7 @@ export function Timeline({
                 <span className="tl-tick-label">{tickLabel(at, tick)}</span>
               </span>
             ))}
+            <TimelineStepDots steps={recording.steps} isRemoved={(time) => edited.isRemoved(time)} />
           </div>
         </div>
 
@@ -220,6 +228,7 @@ export function Timeline({
                     });
                   }}
                 >
+                  <TimelineActivity events={recording.events} duration={duration} edits={edits} />
                   <TrimmedOutside trim={trim} duration={duration} scale={scale} />
                   <div
                     className="tl-clip"

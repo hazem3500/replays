@@ -5,6 +5,8 @@ and the project aims to follow [Semantic Versioning](https://semver.org/) once i
 
 ## [Unreleased]
 
+- Editor timeline: the clip shows where the action is as a quiet activity histogram (clicks and typing in a firmer tone than pointer moves and scrolls, faded where the trim or a cut removes it); each recorded step is a small dot on the ruler that names its step on hover or keyboard focus and seeks there on click (one tab stop, arrows move along the dots); and the tools, the Add menu and the "Add at the playhead" row say what each does in one short line with its key.
+
 - Visible inputs for staff recordings ([docs/extending.md](docs/extending.md#visible-inputs-for-staff-recordings)): a new `privacy.keepVisibleInputs` config key (off by default, file only) lets the server keep the ordinary input values of a recording the browser recorder made with `privacy.sanitize: false`, which now says so in `meta.captured.inputs: 'visible'`. Values are kept only for a signed-in staff upload on `POST /api/replays`: plugin upload endpoints (app-key, customer or support ingest), scoped upload tokens, confined identities and `auth: none` are always fully masked, and the claim is dropped. Password and hidden inputs stay masked on the server in every case. `sanitizeReplayBundle` takes an optional third argument, `{ keepVisibleInputs }`. Without the key nothing changes.
 
 - Viewer: the replay cursor no longer sets off before the recorded pointer did. A sweep the recording sampled now starts when the pointer left its rest and lands when it arrived, instead of starting up to a second early on the cursor's own travel time.

@@ -309,7 +309,7 @@ test('tools carry their names and keys, and ? opens the editor shortcuts', async
   await page.locator('body').press('?');
   const sheet = page.getByTestId('shortcut-sheet');
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByText('Zoom on clicks')).toBeVisible();
+  await expect(sheet.getByText('Zoom in on every click')).toBeVisible();
   await expect(sheet.getByText('Trim start / end to the playhead')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);

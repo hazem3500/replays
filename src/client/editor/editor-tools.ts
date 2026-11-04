@@ -1,14 +1,4 @@
-import {
-  CaptionsIcon,
-  EyeOffIcon,
-  FastForwardIcon,
-  HourglassIcon,
-  type LucideIcon,
-  MapPinIcon,
-  ScissorsIcon,
-  ZoomInIcon,
-} from 'lucide-react';
-
+import type { AnimatedIconName } from '@/components/animated-icon.tsx';
 import type { EffectKind } from './state.ts';
 
 /** The platform's modifier as key caps show it. */
@@ -19,31 +9,34 @@ export const MOD = IS_MAC ? '⌘' : 'Ctrl+';
 export interface EditorTool {
   id: 'cut' | 'waits' | 'highlight';
   label: string;
-  /** The full action, for the tooltip and the accessible name (it contains the label). */
+  /** The full action in one short line, for the tooltip and the accessible name (it contains the label). */
   action: string;
   key: string;
-  icon: LucideIcon;
+  icon: AnimatedIconName;
 }
 
 export const BAR_TOOLS: readonly EditorTool[] = [
-  { id: 'cut', label: 'Cut', action: 'Cut a second at the playhead', key: 'C', icon: ScissorsIcon },
-  { id: 'waits', label: 'Waits', action: 'Find waits to remove', key: 'W', icon: HourglassIcon },
-  { id: 'highlight', label: 'Highlight', action: 'Highlight this moment', key: 'M', icon: MapPinIcon },
+  { id: 'cut', label: 'Cut', action: 'Cut a second at the playhead', key: 'C', icon: 'scissors' },
+  { id: 'waits', label: 'Waits', action: 'Find waits to remove', key: 'W', icon: 'hourglass' },
+  { id: 'highlight', label: 'Highlight', action: 'Highlight this moment', key: 'M', icon: 'map-pin' },
 ];
 
 /** What the Add menu adds at the playhead, each with its key. */
 export interface AddItem {
   kind: EffectKind;
+  /** What it does in one short line: the menu item, the shortcut sheet row and the chip's tooltip. */
   label: string;
+  /** The chip's own name under an empty timeline. */
+  short: string;
   key: string;
-  icon: LucideIcon;
+  icon: AnimatedIconName;
 }
 
 export const ADD_ITEMS: readonly AddItem[] = [
-  { kind: 'zoom', label: 'Zoom on clicks', key: 'Z', icon: ZoomInIcon },
-  { kind: 'speed', label: 'Speed up', key: 'F', icon: FastForwardIcon },
-  { kind: 'blur', label: 'Blur an area', key: 'B', icon: EyeOffIcon },
-  { kind: 'caption', label: 'Captions', key: 'T', icon: CaptionsIcon },
+  { kind: 'zoom', label: 'Zoom in on every click', short: 'Zoom', key: 'Z', icon: 'zoom-in' },
+  { kind: 'speed', label: 'Speed up from the playhead', short: 'Speed up', key: 'F', icon: 'fast-forward' },
+  { kind: 'blur', label: 'Blur part of the page', short: 'Blur', key: 'B', icon: 'eye-off' },
+  { kind: 'caption', label: 'Write captions from the steps', short: 'Captions', key: 'T', icon: 'captions' },
 ];
 
 export interface ShortcutRow {

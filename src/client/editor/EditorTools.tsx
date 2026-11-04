@@ -1,6 +1,6 @@
-import { ChevronDownIcon, HighlighterIcon, MapPinIcon, PlusIcon } from 'lucide-react';
+import { HighlighterIcon } from 'lucide-react';
 
-import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import {
@@ -39,7 +39,6 @@ export function BarTools({
     <>
       {BAR_TOOLS.map((tool) => {
         const action = actionFor(tool, rangeSelected, suggesting);
-        const Icon = tool.icon;
         return (
           <Hint key={tool.id} label={action} shortcut={tool.key}>
             <Button
@@ -48,10 +47,11 @@ export function BarTools({
               className="editor-tool"
               aria-label={action}
               aria-pressed={tool.id === 'waits' ? suggesting : undefined}
+              aria-keyshortcuts={tool.key}
               onClick={() => onTool(tool.id)}
               data-testid={TEST_IDS[tool.id]}
             >
-              <Icon aria-hidden="true" />
+              <AnimatedIcon name={tool.icon} />
               {tool.label}
             </Button>
           </Hint>
@@ -79,20 +79,17 @@ export function AddMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-add-effect" data-testid="add-effect" />}>
-        <PlusIcon aria-hidden="true" /> Add <ChevronDownIcon aria-hidden="true" />
+        <AnimatedIcon name="plus" /> Add <AnimatedIcon name="chevron-down" />
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" className="w-auto min-w-56" aria-label="Add to timeline">
-        {ADD_ITEMS.map((item) => {
-          const Icon = item.icon;
-          return (
-            <DropdownMenuItem key={item.kind} onClick={() => onAdd(item.kind)} data-testid={`add-${item.kind}`}>
-              <Icon aria-hidden="true" /> {item.label} {hasKeyboard ? <DropdownMenuShortcut>{item.key}</DropdownMenuShortcut> : null}
-            </DropdownMenuItem>
-          );
-        })}
+        {ADD_ITEMS.map((item) => (
+          <DropdownMenuItem key={item.kind} onClick={() => onAdd(item.kind)} data-testid={`add-${item.kind}`}>
+            <AnimatedIcon name={item.icon} /> {item.label} {hasKeyboard ? <DropdownMenuShortcut>{item.key}</DropdownMenuShortcut> : null}
+          </DropdownMenuItem>
+        ))}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onPointHighlight} data-testid="add-point-highlight-menu">
-          <MapPinIcon aria-hidden="true" /> Highlight this moment {hasKeyboard ? <DropdownMenuShortcut>M</DropdownMenuShortcut> : null}
+          <AnimatedIcon name="map-pin" /> Highlight this moment {hasKeyboard ? <DropdownMenuShortcut>M</DropdownMenuShortcut> : null}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={onPeriodHighlight} data-testid="add-period-highlight">
           <HighlighterIcon aria-hidden="true" /> Highlight the selection
@@ -111,22 +108,32 @@ export function AddMenu({
   );
 }
 
-const INVITE_ICONS: Record<EffectKind, AnimatedIconName> = { zoom: 'zoom-in', speed: 'fast-forward', blur: 'eye-off', caption: 'captions' };
-const INVITE_LABELS: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed up', blur: 'Blur', caption: 'Captions' };
-
 /**
- * Under a timeline with no effects yet: what can be added at the playhead, as quiet chips (each names its key in its
- * tooltip), so the space under the clip invites the next step instead of sitting empty.
+ * Under a timeline with no effects yet: what can be added at the playhead, as quiet chips. Each chip's tooltip says
+ * what it does with its key, and the key also follows its name as a quiet suffix where the row has room.
  */
 export function LaneInvitation({ onAdd }: { onAdd: (kind: EffectKind) => void }) {
+  const hasKeyboard = useHasKeyboard();
   return (
-    <div className="tl-invite" role="group" aria-label="Add to the timeline" data-testid="lane-invitation">
+    <div className="tl-invite" role="group" aria-label="Add at the playhead" data-testid="lane-invitation">
       <span className="tl-invite-text">Add at the playhead</span>
       {ADD_ITEMS.map((item) => (
         <Hint key={item.kind} label={item.label} shortcut={item.key}>
-          <Button variant="ghost" size="sm" className="tl-invite-chip" onClick={() => onAdd(item.kind)} data-testid={`invite-${item.kind}`}>
-            <AnimatedIcon name={INVITE_ICONS[item.kind]} size={14} />
-            {INVITE_LABELS[item.kind]}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="tl-invite-chip"
+            aria-keyshortcuts={item.key}
+            onClick={() => onAdd(item.kind)}
+            data-testid={`invite-${item.kind}`}
+          >
+            <AnimatedIcon name={item.icon} size={14} />
+            {item.short}
+            {hasKeyboard ? (
+              <kbd className="tl-invite-key" data-slot="key-suffix" aria-hidden="true">
+                {item.key}
+              </kbd>
+            ) : null}
           </Button>
         </Hint>
       ))}

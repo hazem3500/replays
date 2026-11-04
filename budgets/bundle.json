@@ -143,14 +143,14 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 33130,
-      "gzip": 6441,
-      "brotli": 5740
+      "raw": 35275,
+      "gzip": 6769,
+      "brotli": 6017
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 135127,
-      "gzip": 45137,
-      "brotli": 37809
+      "raw": 140290,
+      "gzip": 47019,
+      "brotli": 39385
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 37945,
@@ -170,11 +170,11 @@
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2377,
       "gzip": 1138,
-      "brotli": 1011
+      "brotli": 1009
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
-      "gzip": 3268,
+      "gzip": 3267,
       "brotli": 2859
     },
     "dist/client/assets/features-animation-HASH.js": {
@@ -245,7 +245,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 126200,
       "gzip": 44520,
-      "brotli": 39850
+      "brotli": 40000
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -385,11 +385,11 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
       "gzip": 737,
-      "brotli": 644
+      "brotli": 640
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22875,
-      "gzip": 9632,
+      "gzip": 9631,
       "brotli": 8310
     },
     "dist/client/assets/tiles-HASH.js": {
@@ -1915,16 +1915,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/208"
     },
     {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "raw": 33455,
-        "gzip": 6480,
-        "brotli": 5776
-      },
-      "reason": "Small justified growth under Hazem's standing approval (2026-11-03): the editor's inspector cards, lifted timeline clips (#217) and the calmer dock, three-zone toolbar and lane invitation (#221), after removing about 460 bytes of dead rules. CI same-runner main/head: raw 31772 to 32480, gzip 6198 to 6291, brotli 5518 to 5607 bytes; caps keep the budget's 3% headroom. Replaces the #178 entries for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/221"
-    },
-    {
       "file": "dist/client/assets/tiles-HASH.js",
       "cap": {
         "raw": 1468,
@@ -2101,26 +2091,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/243"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 126200,
-        "gzip": 44520,
-        "brotli": 39850
-      },
-      "reason": "Suite runs past the stack's shown sheets fly to their comparison tiles from under the deepest sheet and back (transitions/recording-transition.ts, compositor-hero.ts), about 1267 raw, 382 gzip and 369 brotli bytes in the entry chunk. Measured against main 5428e078 on the same Boat, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/251"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 135127,
-        "gzip": 45138,
-        "brotli": 37809
-      },
-      "reason": "The cursor inspector reads whether a recording is a person's to say its path is the recorded one, which pulls the pointer parsing and the path rule into the editor chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/247"
-    },
-    {
       "file": "dist/lib/chunks/caption-placement.ts-e820e720ce40.mjs",
       "cap": {
         "raw": 70319,
@@ -2155,6 +2125,36 @@
       },
       "reason": "Exported video renders human recordings along their exact recorded pointer path (cursor-recorded-path in the shared cursor chunk). CI same-runner main to head: raw 556966 to 558082 (+1116), gzip 175472 to 175842, brotli 138855 to 139185; gzip and brotli stay under their existing caps, which carry over from the earlier allowance.",
       "pr": "https://github.com/hazem3500/replays/pull/247"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.css",
+      "cap": {
+        "raw": 35275,
+        "gzip": 6769,
+        "brotli": 6017
+      },
+      "reason": "The editor timeline's activity histogram in the clip, the step dots on the ruler with their focus ring, and the quiet key suffix on the Add at the playhead row. Same-Boat main 888b6e2a to head: raw 32955 to 34247 (+1292), gzip 6365 to 6571 (+206), brotli 5658 to 5841 (+183); caps keep the budget's 3% headroom. Replaces the #221 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 140290,
+        "gzip": 47019,
+        "brotli": 39385
+      },
+      "reason": "The editor timeline's activity histogram (weighted rrweb event density, computed once per recording, dimmed under the trim and cuts), the step dots on the ruler (merging close steps, one roving tab stop, tooltip and seek) and the tools' animated icons and key hints. Same-Boat main 888b6e2a to head: raw 131191 to 136203 (+5012), gzip 43822 to 45649 (+1827), brotli 36747 to 38237 (+1490); caps keep the budget's 3% headroom. Replaces the #247 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 126200,
+        "gzip": 44520,
+        "brotli": 40000
+      },
+      "reason": "Brotli-only hash-name drift in the entry chunk: same-Boat main 888b6e2a to head raw 126183 (+0) and gzip 44506 (+4) are unchanged, brotli 39834 to 39888 (+54) because the chunk names the editor chunk whose hash changes. Raw and gzip keep the caps from #251's entry (suite runs flying to their compare tiles), which this replaces whole; brotli gets about 110 bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
     }
   ]
 }
