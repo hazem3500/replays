@@ -61,12 +61,12 @@ function holdNextTransition() {
   document.startViewTransition = (update) => {
     document.startViewTransition = start;
     const transition = start(update);
-    const layers = () =>
-      document
-        .getAnimations()
-        .filter((animation) => animation.effect instanceof KeyframeEffect && animation.effect.pseudoElement?.startsWith('::view-transition'));
     const wait = () => {
-      const all = layers();
+      const all = document
+        .getAnimations()
+        .filter(
+          (animation) => animation.effect instanceof KeyframeEffect && animation.effect.pseudoElement?.startsWith('::view-transition'),
+        );
       if (!all.some((animation) => animation.playState === 'running')) {
         requestAnimationFrame(wait);
         return;
@@ -90,11 +90,14 @@ function holdNextTransition() {
 /** The front poster and rear sheets of one suite as laid out right now (the page's live, final geometry). */
 function restStack(entryId: string): StackSample {
   const item = document.querySelector<HTMLElement>(`[data-entry-id="${entryId}"]`)!;
-  const front = item.querySelector<HTMLElement>(':is(.stack-front, .shuffle-window) > .poster:not(.poster-outgoing)')!.getBoundingClientRect();
+  const front = item
+    .querySelector<HTMLElement>(':is(.stack-front, .shuffle-window) > .poster:not(.poster-outgoing)')!
+    .getBoundingClientRect();
   const sheets = [...item.querySelectorAll<HTMLElement>(':is(.card-back, .stack-layer):not([data-stack-reserve])')]
     .filter((sheet) => !sheet.closest('.suite-sheet-outgoing'))
     .sort((a, b) => Number(a.dataset.stackDepth) - Number(b.dataset.stackDepth));
   // why: subpixel layout differs in the last float digits between otherwise identical stacks.
+  // oxlint-disable-next-line unicorn/consistent-function-scoping -- why: page.evaluate runs this alone, without the module scope.
   const round = (value: number) => Math.round(value * 10) / 10;
   return {
     width: front.width,
@@ -121,7 +124,8 @@ function drawnStack(entryId: string): StackSample {
     const style = getComputedStyle(root, `::view-transition-group(${name})`);
     const matrix = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform);
     const [originX = 0, originY = 0] = style.transformOrigin.split(' ').map(Number.parseFloat);
-    const at = (x: number, y: number) => new DOMMatrixReadOnly().translate(originX, originY).multiply(matrix).translate(-originX, -originY).transformPoint({ x, y });
+    const at = (x: number, y: number) =>
+      new DOMMatrixReadOnly().translate(originX, originY).multiply(matrix).translate(-originX, -originY).transformPoint({ x, y });
     const [start, end] = [at(0, 0), at(Number.parseFloat(style.width), Number.parseFloat(style.height))];
     return { left: start.x, top: start.y, right: end.x, bottom: end.y };
   };
