@@ -7,6 +7,8 @@
 @layer properties, theme, base, app, components, utilities;
 @layer app {
   .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 188px)); background: var(--canvas); }
+  /* invariant: the loaded dock is at least its resized height and grows to hold every lane (up to its max-height), so a lane is never clipped. */
+  .editor-shell.app-shell:not(.skeleton-shell) { grid-template-rows: auto minmax(0, 1fr) 1px minmax(var(--dock-height, 188px), max-content); }
   /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
   .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
   .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }
@@ -19,7 +21,7 @@
   .editor-stage .stage-wrap { flex: 1; min-width: 0; }
   .editor-presentation { flex: 0 0 clamp(264px, 24vw, 320px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
   /* why: the timeline uses the dock space without reserving a standing instruction row. */
-  .editor-dock { min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
+  .editor-dock { min-width: 0; min-height: 0; max-height: 65dvh; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
   .editor-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 44px; }
   .editor-operation-status { flex: none; margin: 8px 0 0; padding-left: 40px; font-size: var(--text-2xs); color: var(--text-secondary); line-height: 1.5; }
   .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; }

@@ -30,7 +30,11 @@ export function wordsThatFit(
   { lines = 1, pad = LABEL_PAD_PX, measure = estimateLabelWidth }: LabelRoom = {},
 ) {
   const room = width - pad * 2;
-  const words = label.trim().split(/\s+/).filter(Boolean);
+  // why: a no-break space keeps a value and its unit ("1.5 s") one word, so a label never ends on a bare number.
+  const words = label
+    .trim()
+    .split(/[ \t\n\r]+/)
+    .filter(Boolean);
   const kept: string[] = [];
   let line = 1;
   let current = '';

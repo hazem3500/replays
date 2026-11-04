@@ -975,11 +975,17 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                       onBlur={() => addMobileObject('blur')}
                       onZoom={() => addMobileObject('zoom')}
                       more={[
-                        // why: the desktop bar's names, so a tool is called the same on both.
-                        { label: 'Find waits to remove', action: actions.removeWaits, testId: 'remove-waits' },
-                        { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
+                        // why: the desktop bar's and Add menu's names, so a tool is called the same on both.
+                        { label: 'Waits', hint: 'Find waits to remove', action: actions.removeWaits, testId: 'remove-waits' },
                         {
-                          label: 'Trim the clip',
+                          label: 'Speed up',
+                          hint: 'Speed up from the playhead',
+                          action: () => addMobileObject('speed'),
+                          testId: 'add-speed',
+                        },
+                        {
+                          label: 'Trim',
+                          hint: 'Set where the clip starts and ends',
                           action: () => {
                             rememberMobileFocus();
                             player.pause();
@@ -991,9 +997,15 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           },
                           testId: 'mobile-trim',
                         },
-                        { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
                         {
-                          label: 'Highlight this moment',
+                          label: 'Select a range',
+                          hint: 'To cut or highlight a stretch',
+                          action: selectMobileRange,
+                          testId: 'select-range',
+                        },
+                        {
+                          label: 'Highlight',
+                          hint: 'Highlight this moment',
                           action: () => {
                             rememberMobileFocus();
                             setCursorOpen(false);
@@ -1007,6 +1019,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           ? [
                               {
                                 label: 'Cursor options',
+                                hint: 'How the pointer looks and moves',
                                 action: () => {
                                   rememberMobileFocus();
                                   setMobileTrimOpen(false);
@@ -1018,7 +1031,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                             ]
                           : []),
                         {
-                          label: 'Write captions from the steps',
+                          label: 'Captions',
+                          hint: edits.captions?.length ? 'Already on the timeline' : 'Write captions from the steps',
                           disabled: Boolean(edits.captions?.length),
                           action: () => {
                             const present = live.current.state.present;
@@ -1035,7 +1049,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           testId: 'generate-step-captions',
                         },
                         {
-                          label: 'Zoom in on every click',
+                          label: 'Zoom',
+                          hint: 'Zoom in on every click',
                           action: () => {
                             rememberMobileFocus();
                             setCursorOpen(false);

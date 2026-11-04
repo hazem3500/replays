@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { EDITS_VERSION, type ReplayEdits } from '../src/shared/edits.ts';
 import { duplicateEffect, splitEffect } from '../src/client/editor/phone-edits.ts';
-import { clampScale, fitScale, MAX_SCALE, stepBoundaries, timeAtScroll } from '../src/client/editor/phone-timeline.ts';
+import { scrollForPlayhead, snapTarget } from '../src/client/editor/phone-scrub.ts';
+import { clampScale, fitScale, MAX_SCALE, stepBoundaries } from '../src/client/editor/phone-timeline.ts';
 
 const DURATION = 10_000;
 const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VERSION, cuts: [], ...extra });
@@ -51,20 +52,34 @@ describe('duplicating a region on the phone timeline', () => {
 });
 
 describe('the phone timeline scale', () => {
-  it('fits the whole recording inside the screen with room on both sides', () => {
-    expect(fitScale(390, DURATION) * DURATION).toBe(390 - 48);
+  it('fits the whole recording inside the screen between its 16 px margins', () => {
+    expect(fitScale(390, DURATION) * DURATION).toBe(390 - 32);
   });
 
-  it('zooms out no further than half the fit and in no further than 400 px a second', () => {
+  it('zooms out no further than the whole recording and in no further than 400 px a second', () => {
     const fit = fitScale(390, DURATION);
-    expect(clampScale(fit / 10, fit)).toBe(fit / 2);
+    expect(clampScale(fit / 10, fit)).toBe(fit);
     expect(clampScale(5, fit)).toBe(MAX_SCALE);
   });
 
-  it('reads the time under the playhead from the scroll offset, inside the recording', () => {
-    expect(timeAtScroll(170, 0.034, DURATION)).toBe(5000);
-    expect(timeAtScroll(-20, 0.034, DURATION)).toBe(0);
-    expect(timeAtScroll(10_000, 0.034, DURATION)).toBe(DURATION);
+  it('leaves the lanes where they are while the playhead shows, and centres it once it leaves the screen', () => {
+    const view = { viewport: 390, max: 1_000, follow: false };
+    expect(scrollForPlayhead({ ...view, x: 200, scrollLeft: 100 })).toBe(100);
+    expect(scrollForPlayhead({ ...view, x: 900, scrollLeft: 100 })).toBe(900 + 16 - 195);
+    expect(scrollForPlayhead({ ...view, x: 10, scrollLeft: 300 })).toBe(0);
+  });
+
+  it('keeps a playing playhead in the middle once it passes it, within the scroll range', () => {
+    const view = { viewport: 390, max: 1_000, follow: true };
+    expect(scrollForPlayhead({ ...view, x: 100, scrollLeft: 0 })).toBe(0);
+    expect(scrollForPlayhead({ ...view, x: 400, scrollLeft: 0 })).toBe(400 + 16 - 195);
+    expect(scrollForPlayhead({ ...view, x: 1_500, scrollLeft: 1_000 })).toBe(1_000);
+  });
+
+  it('settles a scrub on a step start within reach, and not on one it already sits on', () => {
+    expect(snapTarget(1_150, [800, 1_200], 0.1, 14)).toBe(1_200);
+    expect(snapTarget(1_000, [800, 1_200], 0.1, 14)).toBeUndefined();
+    expect(snapTarget(1_200, [1_200], 0.1, 14)).toBeUndefined();
   });
 
   it('snaps to each step start inside the recording once', () => {

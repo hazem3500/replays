@@ -6,12 +6,12 @@ const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
 const base = () => server().origin;
 test.use({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true, reducedMotion: 'reduce' });
 
-async function openEdited(page: Page, name: string) {
+async function openEdited(page: Page, name: string, extra: Record<string, unknown> = {}) {
   const id = `${name}-${Date.now().toString(36)}`;
   await postBundle(page.request, base(), await cloneBundle(page.request, base(), 'demo-shop', id, 'Phone timeline check'));
   const saved = await page.request.put(`${base()}/api/replays/${id}/edits`, {
     headers: { origin: base(), 'if-match': '"e.none"' },
-    data: { version: 1, cuts: [], zooms: [{ id: 'zoom-1', from: 1000, to: 5000, scale: 1.8 }] },
+    data: { version: 1, cuts: [], zooms: [{ id: 'zoom-1', from: 1000, to: 5000, scale: 1.8 }], ...extra },
   });
   expect(saved.ok()).toBe(true);
   await page.goto(`${base()}/r/${id}/edit`);
@@ -34,39 +34,73 @@ async function pinch(page: Page, from: number, to: number) {
   await session.detach();
 }
 
-test('scrolling the lanes scrubs under the centre playhead, and a scrub ending near a step settles on it', async ({ page }) => {
+test('the whole recording opens across the screen from 0:00 at its left margin, under the playhead', async ({ page }) => {
+  await openEdited(page, 'phone-flush');
+  const lanes = await boxOf(page.getByTestId('timeline-lanes'));
+  const clip = await boxOf(page.getByTestId('phone-clip'));
+  const playhead = await boxOf(page.locator('.phone-snap-marker'));
+  expect(clip.x - lanes.x).toBeCloseTo(16, 0);
+  expect(clip.x + clip.width).toBeLessThanOrEqual(lanes.x + lanes.width - 15);
+  expect(playhead.x + playhead.width / 2).toBeCloseTo(clip.x, 0);
+});
+
+test('the timeline bar reads what the edits leave as the desktop does, after the time', async ({ page }) => {
+  await openEdited(page, 'phone-durations', { cuts: [{ id: 'cut-1', from: 2000, to: 5000 }] });
+  const durations = page.getByTestId('durations');
+  await expect(durations).toHaveText(/^\d:\d\d\.\d\s*after edits$/, { useInnerText: true });
+  await expect(page.locator('.phone-time')).toContainText('/ 0:');
+});
+
+test('dragging along the scale scrubs, and a scrub ending near a step settles on it', async ({ page }) => {
   await openEdited(page, 'phone-scrub');
   const clock = page.getByTestId('editor-clock');
   await expect(clock).toHaveText('0:00.0');
-  const lanes = await boxOf(page.getByTestId('timeline-lanes'));
-  await page.mouse.move(lanes.x + lanes.width / 2, lanes.y + lanes.height / 2);
-  await page.mouse.wheel(120, 0);
-  await expect(clock).not.toHaveText('0:00.0');
+  const scale = await boxOf(page.getByTestId('phone-scale'));
+  const segment = await boxOf(page.locator('.phone-step').nth(2));
+  const y = scale.y + 6;
+  await page.mouse.move(scale.x + 20, y);
+  await page.mouse.down();
+  await page.mouse.move(segment.x + 40, y, { steps: 4 });
+  await page.mouse.move(segment.x + 1, y, { steps: 4 });
   await expect(page.getByTestId('phone-playhead')).not.toHaveValue('0');
-
-  const step = await page.evaluate(() => {
-    const track = document.querySelector('.phone-track');
-    const scroller = document.querySelector('.phone-lanes');
-    const segment = document.querySelectorAll('.phone-step')[2];
-    if (!track || !scroller || !segment) return null;
-    const left = segment.getBoundingClientRect().left - track.getBoundingClientRect().left;
-    scroller.scrollLeft = left + 6;
-    return left;
+  await page.mouse.up();
+  const start = await page.evaluate(() => {
+    const track = document.querySelector('.phone-track')?.getBoundingClientRect();
+    const step = document.querySelectorAll('.phone-step')[2]?.getBoundingClientRect();
+    return track && step ? step.left - track.left : -1;
   });
-  expect(step).not.toBeNull();
   await expect
-    .poll(async () => Math.abs((await page.evaluate(() => document.querySelector('.phone-lanes')?.scrollLeft ?? -1)) - (step ?? 0)))
-    .toBeLessThanOrEqual(1);
+    .poll(async () => {
+      const at = await page.evaluate(() => getComputedStyle(document.querySelector('.phone-track')!).getPropertyValue('--playhead'));
+      return Math.abs(Number.parseFloat(at) - start);
+    })
+    .toBeLessThanOrEqual(1.5);
 });
 
-test('a step dot on the scale seeks when tapped and names its step while the label is up', async ({ page }) => {
+test('a step dot on the scale seeks when tapped and names its step under it, clear of the time', async ({ page }) => {
   await openEdited(page, 'phone-dots');
-  const dot = page.getByTestId('ruler-step').nth(1);
+  const dot = page.locator('[data-testid="ruler-step"]:not([data-kind="wait"])').nth(1);
   const name = (await dot.getAttribute('aria-label')) ?? '';
   const [label = '', at = ''] = [name.split(',')[0], /at (\d+:\d\d\.\d)$/.exec(name)?.[1]];
+  const target = await boxOf(dot);
+  expect(Math.min(target.width, target.height)).toBeGreaterThanOrEqual(24);
+  const hit = await page.evaluate(
+    ({ x, y, w, h }) =>
+      [
+        [x + 2, y + h / 2],
+        [x + w - 2, y + h / 2],
+        [x + w / 2, y + 2],
+        [x + w / 2, y + h - 2],
+      ].every(([px, py]) => document.elementFromPoint(px ?? 0, py ?? 0)?.closest('[data-testid="ruler-step"]') !== null),
+    { x: target.x, y: target.y, w: target.width, h: target.height },
+  );
+  expect(hit).toBe(true);
   await dot.tap();
-  await expect(page.getByTestId('step-bubble')).toContainText(label);
+  const bubble = page.getByTestId('step-bubble');
+  await expect(bubble).toContainText(label);
   await expect(page.getByTestId('editor-clock')).toHaveText(at);
+  const [shown, time] = [await boxOf(bubble), await boxOf(page.locator('.phone-time'))];
+  expect(shown.y).toBeGreaterThanOrEqual(time.y + time.height);
 });
 
 test('a tapped region swaps the toolbar to its actions; Split, Duplicate and Delete edit it and Done brings the tools back', async ({

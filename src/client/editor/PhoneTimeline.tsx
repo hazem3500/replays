@@ -11,9 +11,10 @@ import { usePlayer } from '../player.ts';
 import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
 import { PhoneLanes } from './PhoneLanes.tsx';
 import { clampScale, fitScale, stepBoundaries, trackScale } from './phone-timeline.ts';
+import { startPhoneScrub } from './phone-scrub.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { type EditorAction, hasEffectLanes, type Selection } from './state.ts';
-import { ScaleContext } from './timeline-drag.ts';
+import { ScaleContext, type TimelineScale } from './timeline-drag.ts';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
 
 /** A step dot's target on a phone, for a finger (phone-editor.css sizes the same). */
@@ -72,39 +73,68 @@ function PhoneTimelineBar({
   );
 }
 
-/** The scale over the lanes: tick labels, then a dot per step (the desktop ruler's) on the row under them. */
+/**
+ * The scale over the lanes: tick labels, then a dot per step (the desktop ruler's) on the row under them. A press on
+ * it seeks there and a drag scrubs, settling on a step start it ends near.
+ */
 function PhoneScale({
-  duration,
+  timeline,
   scale,
   edits,
   steps,
-  bubbleHost,
 }: {
-  duration: number;
+  timeline: TimelineScale;
   scale: number;
   edits: ReplayEdits;
   steps: readonly ReplayStep[];
-  bubbleHost: HTMLElement | null;
 }) {
+  const player = usePlayer();
+  const { duration } = timeline;
   const { tick, ticks } = rulerTicks(duration * scale, duration);
   const kept = editTimeline(edits, duration);
   return (
-    <div className="phone-scale">
+    <div
+      className="phone-scale"
+      data-testid="phone-scale"
+      onPointerDown={(event) => startPhoneScrub(event, { player, timeline, snaps: stepBoundaries(steps, duration), scale })}
+    >
       {ticks.map((at) => (
         <span key={at} className="phone-tick" style={{ left: `${at * scale}px` }} aria-hidden="true">
           {tickLabel(at, tick)}
         </span>
       ))}
-      <TimelineStepDots steps={steps} isRemoved={(time) => kept.isRemoved(time)} target={PHONE_DOT_PX} bubbleHost={bubbleHost} />
+      <TimelineStepDots steps={steps} isRemoved={(time) => kept.isRemoved(time)} target={PHONE_DOT_PX} />
     </div>
   );
 }
 
+/** The playhead for the keyboard and screen readers: a range input over the playhead line (its arrows seek). */
+function PlayheadInput({ duration, inputRef }: { duration: number; inputRef: (input: HTMLInputElement | null) => void }) {
+  const player = usePlayer();
+  return (
+    <input
+      ref={inputRef}
+      type="range"
+      className="phone-playhead"
+      min={0}
+      max={Math.round(duration)}
+      step={100}
+      defaultValue={0}
+      aria-label="Playhead"
+      onChange={(event) => player.seek(Number(event.currentTarget.value))}
+      onKeyDown={(event) => {
+        // why: the input seeks with its own keys; the editor's shortcuts would seek a second time.
+        if (!event.ctrlKey && !event.metaKey && !event.altKey) event.stopPropagation();
+      }}
+      data-testid="phone-playhead"
+    />
+  );
+}
+
 /**
- * The phone timeline (the mobile video-editor pattern): a fixed centre playhead the full-width lanes scroll under,
- * so dragging the clips scrubs and the platform's momentum carries it; pinch zooms. Play and the time sit in its
- * slim bar; the scale over the lanes carries the step dots, as on the desktop ruler (a tap seeks and names the step
- * over the bar, clear of the track).
+ * The phone timeline: the whole recording across the screen from 0:00 at its left edge, with a playhead line that
+ * moves along it as on the desktop; the scale over the lanes seeks and scrubs and carries the step dots (a tap names
+ * the step over the picture, clear of the time). A pinch zooms in, and the lanes then scroll to follow the playhead.
  */
 export function PhoneTimeline({
   duration,
@@ -131,11 +161,10 @@ export function PhoneTimeline({
   const [seek, setSeek] = useState<HTMLInputElement | null>(null);
   const [zoom, setZoom] = useState<number>();
   const [track, setTrack] = useState<HTMLDivElement | null>(null);
-  const [bubbleHost, setBubbleHost] = useState<HTMLDivElement | null>(null);
   const width = useLanesWidth(scroller);
   const fit = fitScale(width || 390, duration);
   const scale = zoom === undefined ? fit : clampScale(zoom, fit);
-  usePhoneTimeline(scroller, { player, seek, scale, fit, snaps: stepBoundaries(steps, duration), onScale: setZoom });
+  usePhoneTimeline(scroller, { player, seek, scale, fit, track, onScale: setZoom });
   const timeline = trackScale(duration, scale, track);
   return (
     <div className="phone-timeline" data-testid="timeline" data-ready={width > 0 || undefined}>
@@ -146,35 +175,19 @@ export function PhoneTimeline({
         onFit={() => setZoom(undefined)}
         onPlayPause={onPlayPause}
       />
-      <div ref={setBubbleHost} className="phone-step-bubble-host" />
       <div className="phone-lanes-frame">
-        <span className="phone-snap-marker" aria-hidden="true" />
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
           <div className="phone-lanes-content">
             <ScaleContext.Provider value={timeline}>
               <div ref={setTrack} className="phone-track" style={cssVars({ '--span': `${duration * scale}px` })}>
-                <PhoneScale duration={duration} scale={scale} edits={edits} steps={steps} bubbleHost={bubbleHost} />
+                <PhoneScale timeline={timeline} scale={scale} edits={edits} steps={steps} />
                 <PhoneLanes duration={duration} scale={scale} edits={edits} steps={steps} selection={selection} dispatch={dispatch} />
+                <span className="phone-snap-marker" aria-hidden="true" />
+                <PlayheadInput duration={duration} inputRef={setSeek} />
               </div>
             </ScaleContext.Provider>
           </div>
         </div>
-        <input
-          ref={setSeek}
-          type="range"
-          className="phone-playhead"
-          min={0}
-          max={Math.round(duration)}
-          step={100}
-          defaultValue={0}
-          aria-label="Playhead"
-          onChange={(event) => player.seek(Number(event.currentTarget.value))}
-          onKeyDown={(event) => {
-            // why: the input seeks with its own keys; the editor's shortcuts would seek a second time.
-            if (!event.ctrlKey && !event.metaKey && !event.altKey) event.stopPropagation();
-          }}
-          data-testid="phone-playhead"
-        />
       </div>
       {hasEffectLanes(edits) ? null : (
         <p className="phone-lanes-hint" data-testid="phone-lanes-hint">

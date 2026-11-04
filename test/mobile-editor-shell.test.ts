@@ -263,21 +263,23 @@ describe('phone editor highlights and scrubbing', () => {
     expect(document.activeElement).toBe(node('[aria-label="Playhead"]'));
   });
 
-  it('scrubs while the lanes scroll and ends the scrub once they settle', async () => {
+  it('seeks where the scale is pressed, scrubs while the press drags and ends the scrub when it lifts', async () => {
     await renderEditor();
-    const lanes = node<HTMLElement>('[data-testid="timeline-lanes"]');
+    const scale = node<HTMLElement>('[data-testid="phone-scale"]');
     await settle(() => {
-      lanes.scrollLeft = 100;
-      lanes.dispatchEvent(new Event('scroll'));
+      scale.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientX: 60 }));
     });
     expect(stage().isScrubbing()).toBe(true);
-    expect(stage().getTime()).toBeGreaterThan(0);
-    const scrubbed = stage().getTime();
+    const pressed = stage().getTime();
+    expect(pressed).toBeGreaterThan(0);
     await settle(() => {
-      vi.advanceTimersByTime(400);
+      window.dispatchEvent(new MouseEvent('pointermove', { clientX: 160 }));
+    });
+    expect(stage().getTime()).toBeGreaterThan(pressed);
+    await settle(() => {
+      window.dispatchEvent(new MouseEvent('pointerup', { clientX: 160 }));
     });
     expect(stage().isScrubbing()).toBe(false);
-    expect(stage().getTime()).toBe(scrubbed);
   });
 });
 

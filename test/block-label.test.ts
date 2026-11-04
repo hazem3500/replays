@@ -24,6 +24,11 @@ describe('wordsThatFit', () => {
     expect(wordsThatFit('Pick a product', 110, { pad: 12 })).toBe('Pick');
   });
 
+  it('keeps a value and its unit joined by a no-break space together, never ending on the bare number', () => {
+    expect(wordsThatFit('Wait 1.5\u00a0s', 70)).toBe('Wait');
+    expect(wordsThatFit('Wait 1.5\u00a0s', 90)).toBe('Wait 1.5\u00a0s');
+  });
+
   it('fits words by the measure it is given instead of the estimate', () => {
     expect(wordsThatFit('Pick a product', 60, { measure: (text) => text.length * 3 })).toBe('Pick a product');
   });

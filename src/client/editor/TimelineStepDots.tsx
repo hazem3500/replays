@@ -1,5 +1,4 @@
 import { type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
@@ -12,6 +11,8 @@ import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabe
 
 /** How long a touch screen keeps a pressed dot's label up after the finger lifts. */
 const PRESSED_LABEL_MS = 2_400;
+/** Half the pressed label's widest (phone-editor.css .tl-step-bubble), so a label under an end dot stays on the track. */
+const BUBBLE_HALF_PX = 120;
 
 /** The dot a roving key moves to from `position`, or undefined for any other key. */
 function rovingTarget(key: string, position: number, count: number) {
@@ -36,7 +37,11 @@ function moveFocus(event: ReactKeyboardEvent<HTMLButtonElement>, position: numbe
 
 /** A dot's name and the line under it, from its step's words, kind and time. */
 function labelOf(dot: StepDot) {
-  return { label: stepDotLabel(dot), detail: stepDotDetail(dot, stepKindName(dot.kind), formatClock) };
+  return {
+    label: stepDotLabel(dot),
+    spoken: stepDotLabel(dot, { spoken: true }),
+    detail: stepDotDetail(dot, stepKindName(dot.kind), formatClock),
+  };
 }
 
 /** A dot's name, its kind and time or pause, then what its shape means, beside a small copy of the dot. */
@@ -54,22 +59,22 @@ function DotLabel({ label, detail, wait }: { label: string; detail: { visible: s
 }
 
 /**
- * The pressed dot's label on a touch screen; decorative, as the dot's own name says the same. In `host` when given
- * (the phone shows it over its timeline bar, clear of the track), else under its dot.
+ * The pressed dot's label on a touch screen, under its dot and kept on the track `width` px wide; decorative, as the
+ * dot's own name says the same.
  */
-function PressedLabel({ x, dot, host }: { x: number; dot: StepDot; host: HTMLElement | null | undefined }) {
+function PressedLabel({ x, width, dot }: { x: number; width: number; dot: StepDot }) {
   const { label, detail } = labelOf(dot);
-  const bubble = (
+  const half = Math.min(BUBBLE_HALF_PX, width / 2);
+  return (
     <span
       className="tl-step-bubble"
       aria-hidden="true"
       data-testid="step-bubble"
-      style={host ? undefined : { transform: `translateX(${x}px)` }}
+      style={{ transform: `translateX(${Math.min(Math.max(x, half), width - half)}px)` }}
     >
       <DotLabel label={label} detail={detail} wait={dot.kind === 'wait'} />
     </span>
   );
-  return host ? createPortal(bubble, host) : bubble;
 }
 
 /**
@@ -112,7 +117,7 @@ function StepDotButton({
   onClick: () => void;
   onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
 }) {
-  const { label, detail } = labelOf(dot);
+  const { label, spoken, detail } = labelOf(dot);
   const wait = dot.kind === 'wait';
   return (
     <Hint label={<DotLabel label={label} detail={detail} wait={wait} />}>
@@ -124,7 +129,7 @@ function StepDotButton({
         data-pressed={pressed || undefined}
         data-testid="ruler-step"
         tabIndex={tabStop ? 0 : -1}
-        aria-label={`${label}, ${detail.spoken}`}
+        aria-label={`${spoken}, ${detail.spoken}`}
         style={{ transform: `translateX(${x}px)` }}
         onPointerUp={onRelease}
         onPointerCancel={onRelease}
@@ -146,12 +151,9 @@ export function TimelineStepDots({
   steps,
   isRemoved,
   target = MIN_DOT_GAP_PX,
-  bubbleHost,
 }: {
   steps: readonly ReplayStep[];
   isRemoved: (time: number) => boolean;
-  /** Where a touch screen's pressed label shows, when not under its dot (the phone's timeline bar). */
-  bubbleHost?: HTMLElement | null;
   /** Each dot's target in px (the phone's is larger, for a finger); closer dots merge, so no two targets overlap. */
   target?: number;
 }) {
@@ -186,7 +188,7 @@ export function TimelineStepDots({
           onKeyDown={(event) => moveFocus(event, position, dots.length, setCurrent)}
         />
       ))}
-      {bubble ? <PressedLabel x={scale.x(bubble.at)} dot={bubble} host={bubbleHost} /> : null}
+      {bubble ? <PressedLabel x={scale.x(bubble.at)} width={scale.width} dot={bubble} /> : null}
     </div>
   );
 }

@@ -19,19 +19,20 @@ import { laneRegions } from './lanes.tsx';
 import { wordsThatFit } from './block-label.ts';
 import { fitScale } from './phone-timeline.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
+import { stepSegments } from './clip-segments.ts';
 
 /** The timeline's width before the page has laid out (a phone's), for a frame rendered outside a browser. */
 const FALLBACK_WIDTH = 390;
 
 const TOOLS: Array<{ label: string; icon: ReactNode }> = [
   { label: 'Cut', icon: <ScissorsIcon aria-hidden="true" /> },
-  { label: 'Caption', icon: <CaptionsIcon aria-hidden="true" /> },
+  { label: 'Captions', icon: <CaptionsIcon aria-hidden="true" /> },
   { label: 'Blur', icon: <EyeOffIcon aria-hidden="true" /> },
   { label: 'Zoom', icon: <ZoomInIcon aria-hidden="true" /> },
   { label: 'More', icon: <EllipsisIcon aria-hidden="true" /> },
 ];
 
-/** The phone timeline as it opens: fitted to the screen, 0:00 under the centre playhead. */
+/** The phone timeline as it opens: the whole recording across the screen, 0:00 and the playhead at its left margin. */
 function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: ReplayEdits | undefined; steps: readonly ReplayStep[] }) {
   const scale = fitScale(typeof window === 'undefined' ? FALLBACK_WIDTH : window.innerWidth, duration);
   const px = (time: number) => time * scale;
@@ -48,19 +49,15 @@ function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: Re
       </div>
       <div className="sk-phone-lane" data-kind="clip">
         <span className="sk-phone-clip" style={{ left: `${px(trim.start)}px`, width: `${px(trim.end - trim.start)}px` }}>
-          {steps.map((step, index) => {
-            const next = steps[index + 1]?.at ?? trim.end;
-            const width = px(Math.min(next, trim.end) - Math.max(step.at, trim.start));
-            if (step.at >= trim.end || next <= trim.start || width <= 0) return null;
-            return (
-              <span
-                key={`${step.at}-${index}`}
-                style={{ left: `${px(Math.max(step.at, trim.start) - trim.start)}px`, width: `${width}px` }}
-              >
-                <span>{wordsThatFit(step.label, width, { lines: 2 })}</span>
-              </span>
-            );
-          })}
+          {stepSegments(steps, trim).map((segment) => (
+            <span
+              key={segment.at}
+              data-wait={segment.wait || undefined}
+              style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
+            >
+              <span>{wordsThatFit(segment.label, px(segment.length), { lines: 2, pad: 4 })}</span>
+            </span>
+          ))}
         </span>
       </div>
       {edits
@@ -88,7 +85,7 @@ const NO_STEPS: readonly ReplayStep[] = [];
 /**
  * The phone editor while it loads, at the loaded layout's geometry (editor.css's and phone-editor.css's phone rules,
  * repeated in skeleton.css): its header with the title, the recording's frame at the screen's width, the timeline's
- * bar and its lanes as they open under the centre playhead, and the tools, drawn still and disabled so the editor
+ * bar and its lanes as they open with the playhead at 0:00, and the tools, drawn still and disabled so the editor
  * arrives without anything moving.
  */
 export function PhoneEditorSkeleton({

@@ -143,14 +143,14 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 35435,
-      "gzip": 6814,
-      "brotli": 6067
+      "raw": 35840,
+      "gzip": 6820,
+      "brotli": 6090
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 139958,
-      "gzip": 46513,
-      "brotli": 39136
+      "raw": 140400,
+      "gzip": 46900,
+      "brotli": 39400
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 37945,
@@ -169,7 +169,7 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2377,
-      "gzip": 1138,
+      "gzip": 1137,
       "brotli": 1009
     },
     "dist/client/assets/feature-HASH.js": {
@@ -2139,21 +2139,21 @@
     {
       "file": "dist/client/assets/Editor-HASH.css",
       "cap": {
-        "raw": 35435,
-        "gzip": 6814,
-        "brotli": 6067
+        "raw": 35840,
+        "gzip": 6820,
+        "brotli": 6090
       },
-      "reason": "The editor's step dots on the ruler (10 px dots in 24 px targets, the hover swell, the tooltip that says what a filled or hollow dot means) and their pressed label over the phone's timeline bar, the desktop clip's quiet step dividers and whole-word step labels, every lane block's centred glyph when no word fits, the tools' quiet key suffix, the Add menu's hint line, the outlined disabled Export, and the phone clip's whole-word labels and fitted lanes. Same-Boat main 888b6e2a to head: raw 32955 to 35139 (+2184), gzip 6365 to 6718 (+353), brotli 5658 to 6005 (+347); the caps set earlier in this PR still hold them. Replaces the #221 entry for this file.",
+      "reason": "The editor's step dots on the ruler (10 px dots in 24 px targets, the hover swell, the tooltip that says what a filled or hollow dot means) and their pressed label under the dot on the phone, the desktop clip's quiet step dividers, whole-word step labels and dim waits, every lane block's centred glyph when no word fits, the tools' quiet key suffix, the Add menu's hint line, the phone More menu's two-line tools, the outlined disabled Export, the phone timeline's flush track and moving playhead, and a dock that grows to hold its lanes. Same-Boat main 888b6e2a to head: raw 32955 to 35485 (+2530), gzip 6365 to 6751 (+386), brotli 5658 to 6023 (+365). Replaces the #221 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 139958,
-        "gzip": 46513,
-        "brotli": 39136
+        "raw": 140400,
+        "gzip": 46900,
+        "brotli": 39400
       },
-      "reason": "The step dots on the desktop ruler and the phone scale (merging close steps, one roving tab stop, a tooltip naming the kind and time or the wait and what the dot's shape means, a pressed label on touch, seek), the desktop clip's whole-word step labels, one shared whole-word label helper measured in the real font for every lane block with a glyph when no word fits, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 138379 (+7188), gzip 43822 to 46053 (+2231), brotli 36747 to 38662 (+1915); the caps set earlier in this PR still hold them. Replaces the #247 entry for this file.",
+      "reason": "The step dots on the desktop ruler and the phone scale (merging close steps and waits back to back, one roving tab stop, a tooltip naming the kind and time or the wait's length and the action it follows, a pressed label on touch, seek), the desktop clip's whole-word step labels with waits joined and named by their length, kept clear of cuts, one shared whole-word label helper measured in the real font for every lane block with a glyph when no word fits, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names with hint lines, its scale that seeks and scrubs under a playhead moving along a flush track, and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 139632 (+8441), gzip 43822 to 46526 (+2704), brotli 36747 to 39015 (+2268). Replaces the #247 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     }
   ]

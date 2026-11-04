@@ -8,10 +8,13 @@ import { laneRegions } from './lanes.tsx';
 import { wordsThatFit } from './block-label.ts';
 import { BlockLabel } from './BlockLabel.tsx';
 import { measureLabel } from './label-measure.ts';
-import { stepSegments } from './timeline-marks.ts';
+import { stepSegments } from './clip-segments.ts';
+import { labelRoom } from './timeline-marks.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
 
+/** A clip step's inline padding (phone-editor.css .phone-step), which its name's words fit inside. */
+const PHONE_STEP_PAD_PX = 4;
 /** A phone region's inline padding (phone-editor.css .phone-region), which its label's words fit inside. */
 const PHONE_REGION_PAD_PX = 7;
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
@@ -209,11 +212,21 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
         onClick={() => select(clipSelected ? undefined : { kind: 'trim' })}
         data-testid="phone-clip"
       >
-        {stepSegments(steps, trim).map((segment) => (
-          <span key={segment.at} className="phone-step" style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}>
-            <span className="phone-step-label">{wordsThatFit(segment.label, px(segment.length), { lines: 2, measure: measureLabel })}</span>
-          </span>
-        ))}
+        {stepSegments(steps, trim).map((segment) => {
+          const room = labelRoom(segment, trim.start, edits.cuts);
+          return (
+            <span
+              key={segment.at}
+              className="phone-step"
+              data-wait={segment.wait || undefined}
+              style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
+            >
+              <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
+                {wordsThatFit(segment.label, px(room.length), { lines: 2, pad: PHONE_STEP_PAD_PX, measure: measureLabel })}
+              </span>
+            </span>
+          );
+        })}
       </button>
       <ClipMarks edits={edits} scale={scale} selection={selection} select={select} />
       {clipSelected ? (

@@ -1,6 +1,6 @@
 import { expect, type Page, test } from '@playwright/test';
 
-import { cloneBundle, postBundle, serveApp, uniqueId } from './support.ts';
+import { boxOf, cloneBundle, postBundle, serveApp, uniqueId } from './support.ts';
 
 const server = serveApp({ REPLAYS_BETA_EDITOR: 'true' });
 const base = () => server().origin;
@@ -28,6 +28,18 @@ async function openEditor(page: Page, { steps = STEPS, ...edits }: Record<string
 }
 
 const tooltip = (page: Page) => page.locator('[data-slot="tooltip-content"]');
+
+/** Whether a press just inside each edge of `element` lands on it rather than on something over or under it. */
+function edgesHit(element: Element) {
+  const { left, top, width, height } = element.getBoundingClientRect();
+  const points = [
+    [left + 1, top + height / 2],
+    [left + width - 1, top + height / 2],
+    [left + width / 2, top + 1],
+    [left + width / 2, top + height - 1],
+  ] as const;
+  return points.map(([x, y]) => element.contains(document.elementFromPoint(x, y)));
+}
 
 test.describe('editor timeline step dots', () => {
   test('a step dot names its step on hover and seeks there on click', async ({ page }) => {
@@ -61,8 +73,17 @@ test.describe('editor timeline step dots', () => {
     await dots.nth(0).hover();
     await expect(tooltip(page)).toContainText('Click, 0:02.0');
     await dots.nth(3).hover();
-    await expect(tooltip(page)).toContainText(/Wait, \d+\.\d s/);
-    await expect(dots.nth(3)).toHaveAccessibleName(/^Wait for the receipt, Wait of \d+\.\d seconds at 0:08\.0$/);
+    await expect(tooltip(page)).toContainText(/Wait, \d+\.\d\s+s, after Place the order/);
+    await expect(dots.nth(3)).toHaveAccessibleName(/^Wait of \d+\.\d seconds after Place the order, Wait for the receipt, at 0:08\.0$/);
+  });
+
+  test('each dot takes a press anywhere on its 24 px target, never the ruler under it', async ({ page }) => {
+    await openEditor(page);
+    const dot = page.getByRole('group', { name: 'Steps' }).getByRole('button').nth(1);
+    const box = await dot.boundingBox();
+    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(24);
+    const hits = await dot.evaluate(edgesHit);
+    expect(hits).toEqual([true, true, true, true]);
   });
 
   test('the clip names each step quietly in whole words, never part of one', async ({ page }) => {
@@ -82,6 +103,24 @@ test.describe('editor timeline step dots', () => {
     await expect(dots.nth(1)).toHaveAttribute('data-removed', 'true');
     await expect(dots.nth(2)).not.toHaveAttribute('data-removed');
     await expect(page.locator('.tl-clip svg')).toHaveCount(0);
+  });
+});
+
+test.describe('editor timeline lanes', () => {
+  test('the dock grows to hold every effect lane at 1280 by 800, so none is clipped', async ({ page }) => {
+    await openEditor(page, {
+      zooms: [{ id: 'zoom-1', from: 500, to: 2_000, scale: 1.8 }],
+      speeds: [{ id: 'speed-1', from: 2_500, to: 4_000, rate: 4 }],
+      blurs: [{ id: 'blur-1', from: 1_000, to: 3_000, x: 0.3, y: 0.3, width: 0.2, height: 0.2 }],
+      captions: [{ id: 'caption-1', from: 4_500, to: 6_000, text: 'Pay' }],
+    });
+    const timeline = await boxOf(page.getByTestId('timeline'));
+    for (const kind of ['zoom', 'speed', 'blur', 'caption']) {
+      const lane = await boxOf(page.getByTestId(`lane-${kind}`));
+      // why: 40 px is a lane's resting height; a dock that did not grow would squash the lanes towards 30 or clip them.
+      expect(lane.height, kind).toBeGreaterThanOrEqual(38);
+      expect(lane.y + lane.height, kind).toBeLessThanOrEqual(timeline.y + timeline.height);
+    }
   });
 });
 

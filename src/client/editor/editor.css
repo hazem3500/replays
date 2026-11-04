@@ -71,7 +71,7 @@
   /* Ruler: labels centred over short ticks on its lower edge; the playhead's knob sits below the labels, never on one. */
   .tl-ruler { position: relative; height: 26px; cursor: ew-resize; }
   .tl-tick { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: linear-gradient(to bottom, transparent 72%, var(--line-strong) 72%); pointer-events: none; }
-  .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-tertiary); font-size: 10px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-tertiary); font-size: 11px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   /*
    * Step dots (TimelineStepDots.tsx): a 10 px dot per step under the labels, filled for an action and hollow for a wait,
    * right over the clip's divider where that step starts.
@@ -84,7 +84,8 @@
   .tl-step:hover, .tl-step:focus-visible { color: var(--text); }
   .tl-step:hover svg, .tl-step:focus-visible svg { scale: 1.2; }
   .tl-step:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
-  .tl-step[data-removed] { opacity: 0.5; }
+  /* why: 0.7 keeps a removed dot at 3:1 against the dock in both themes while it still reads as faded. */
+  .tl-step[data-removed] { opacity: 0.7; }
   .tl-step-tip { display: grid; gap: 1px; }
   .tl-step-tip-detail { color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
   .tl-step-tip-meaning { display: flex; align-items: center; gap: 4px; margin-top: 2px; color: var(--text-tertiary); font-size: var(--text-2xs); }
@@ -114,7 +115,9 @@
   .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); pointer-events: none; transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, transparent); }
   /* The clip's steps (Timeline.tsx ClipSteps): a faint divider at each start and whole words where they fit, in the quietest text. */
-  .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 1px solid var(--line); color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
+  .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 1px solid var(--line); color: var(--text-secondary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
+  /* A wait: dimmer than the steps around it and named by its length, so a run of nothing reads as one quiet stretch. */
+  .tl-clip-step[data-wait] { background: color-mix(in srgb, var(--canvas) 40%, transparent); color: var(--text-tertiary); }
   .tl-clip-step:first-child { padding-left: 14px; border-left: 0; }
   /* The trim edges: slim tabs with a grip, light at rest and accent while held. */
   .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; transition: background-color var(--motion-fast) var(--ease-out); }
@@ -311,7 +314,10 @@
   .editor-object-picker { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
   .editor-object-picker > p { display: flex; justify-content: space-between; margin: 4px 8px; color: var(--text-tertiary); font-size: var(--text-xs); }
   .editor-object-picker-item { display: flex; justify-content: space-between; gap: 8px; width: 100%; min-height: 44px; text-align: left; }
-  .editor-object-picker-item > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* why: a long name wraps onto a second line instead of ending in an ellipsis. */
+  .editor-object-picker-item > span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+  /* The phone's More tools: the desktop's name, then one quiet line saying what it does or why it is unavailable. */
+  .editor-more-hint { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.35; }
   .editor-object-picker-item > time { flex: none; color: var(--text-tertiary); font-size: var(--text-xs); font-variant-numeric: tabular-nums; }
 
   .editor-add-more > summary { border-radius: 6px; list-style: none; }
@@ -352,3 +358,6 @@
     .editor-shell :is([data-slot="button"], .topbar-back) { transition: none; }
   }
 }
+
+/* why: menu-sheet.css (unlayered) spaces a sheet item's parts 12 px apart; a tool's hint sits right under its name. */
+.menu-sheet .editor-more-item { gap: 2px; padding-block: 10px; line-height: 1.25; }

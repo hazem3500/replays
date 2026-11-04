@@ -64,8 +64,13 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
 
   const splitter = page.getByRole('separator', { name: 'Resize timeline' });
   await splitter.focus();
+  // why: the dock already grows to hold its lanes, so the first presses may only catch up with that height.
   await page.keyboard.press('ArrowUp');
-  await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(dockBox.height + 24, 0);
+  await page.keyboard.press('ArrowUp');
+  await expect.poll(async () => (await boxOf(dock)).height).toBeGreaterThan(dockBox.height);
+  const grown = (await boxOf(dock)).height;
+  await page.keyboard.press('ArrowUp');
+  await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(grown + 24, 0);
   const region = page.getByTestId('region-caption').first();
   const body = region.locator('.tl-region-body');
   await body.scrollIntoViewIfNeeded();

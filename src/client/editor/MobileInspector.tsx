@@ -61,6 +61,17 @@ export function mobileTimelineObjects(edits: ReplayEdits) {
 
 const NO_OBJECTS: ReturnType<typeof mobileTimelineObjects> = [];
 
+/** A tool in the phone's More menu. */
+export interface MoreTool {
+  /** The tool's name, as the desktop bar and Add menu call it. */
+  label: string;
+  /** One short line under the name: what it does, or why it is unavailable. */
+  hint?: string;
+  action: () => void;
+  disabled?: boolean;
+  testId?: string;
+}
+
 /** Adding an object is a command, never a permanent inspector destination. */
 export function MobileAddToolbar({
   onCut,
@@ -76,7 +87,8 @@ export function MobileAddToolbar({
   onCaption: () => void;
   onBlur: () => void;
   onZoom: () => void;
-  more: Array<{ label: string; action: () => void; disabled?: boolean; testId?: string }>;
+  /** The other tools, by the desktop's names; `hint` says what one does, or why it is unavailable when `disabled`. */
+  more: MoreTool[];
   objects?: ReturnType<typeof mobileTimelineObjects>;
   onSelectObject?: (object: ReturnType<typeof mobileTimelineObjects>[number]) => void;
 }) {
@@ -88,7 +100,7 @@ export function MobileAddToolbar({
       </Button>
       <Button variant="ghost" onClick={onCaption} data-testid="add-caption">
         <CaptionsIcon aria-hidden="true" />
-        Caption
+        Captions
       </Button>
       <Button variant="ghost" onClick={onBlur} data-testid="add-blur">
         <EyeOffIcon aria-hidden="true" />
@@ -112,12 +124,13 @@ export function MobileAddToolbar({
           {more.map((item) => (
             <DropdownMenuItem
               key={item.label}
-              className="min-h-11"
+              className="editor-more-item min-h-11 flex-col items-start justify-center gap-0.5 whitespace-normal text-left"
               disabled={item.disabled}
               data-testid={item.testId}
               onClick={item.action}
             >
-              {item.label}
+              <span className="editor-more-name">{item.label}</span>
+              {item.hint ? <span className="editor-more-hint">{item.hint}</span> : null}
             </DropdownMenuItem>
           ))}
           {objects.length > 0 ? (

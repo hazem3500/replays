@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatClock } from '../src/shared/replay.ts';
-import { placeStepDots, stepDotDetail, stepDotLabel, stepSegments } from '../src/client/editor/timeline-marks.ts';
+import { stepSegments } from '../src/client/editor/clip-segments.ts';
+import { labelRoom, placeStepDots, stepDotDetail, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
 
 const step = (at: number, label = `Step at ${at}`, kind = 'click') => ({ at, label, kind });
 
@@ -50,9 +51,20 @@ describe('stepDotLabel', () => {
     expect(dot && stepDotLabel(dot)).toBe('Pay');
   });
 
-  it('counts the other waits on a dot made only of waits', () => {
-    const [dot] = placeStepDots([step(1_000, 'Look around', 'wait'), step(1_010, 'Wait', 'wait')], 10_000, 1_000);
-    expect(dot && stepDotLabel(dot)).toBe('Look around and 1 more step');
+  it('names a wait by its length and the action it follows', () => {
+    const [, wait] = placeStepDots([step(1_000, 'Open the cart'), step(2_000, 'Look around', 'wait'), step(3_500, 'Pay')], 10_000, 1_000);
+    expect(wait && stepDotLabel(wait)).toBe('Wait, 1.5\u00a0s, after Open the cart');
+    expect(wait && stepDotLabel(wait, { spoken: true })).toBe('Wait of 1.5 seconds after Open the cart');
+  });
+});
+
+describe('placeStepDots with waits', () => {
+  it('makes waits back to back one hollow dot that lasts until the next action', () => {
+    const dots = placeStepDots([step(1_000, 'Look', 'wait'), step(4_000, 'Wait for the page', 'wait'), step(6_000, 'Pay')], 10_000, 1_000);
+    expect(dots.map((dot) => [dot.kind, dot.at, dot.until])).toEqual([
+      ['wait', 1_000, 6_000],
+      ['click', 6_000, 10_000],
+    ]);
   });
 });
 
@@ -62,19 +74,19 @@ describe('stepDotDetail', () => {
     expect(dot && stepDotDetail(dot, 'Click', formatClock)).toMatchObject({ visible: 'Click, 0:03.2', spoken: 'Click at 0:03.2' });
   });
 
-  it('gives a wait how long it lasts, up to the next dot', () => {
+  it('gives a wait its own words and where it starts', () => {
     const [wait] = placeStepDots([step(1_000, 'Look around', 'wait'), step(3_100, 'Pay')], 10_000, 1_000);
-    expect(wait && stepDotDetail(wait, 'Wait', formatClock).visible).toBe('Wait, 2.1 s');
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).visible).toBe('Look around, 0:01.0');
   });
 
-  it('says in plain words that a hollow dot is a pause', () => {
+  it('says in plain words that a hollow dot is a wait', () => {
     const [wait] = placeStepDots([step(1_000, 'Look around', 'wait')], 10_000, 1_000);
-    expect(wait && stepDotDetail(wait, 'Wait', formatClock).meaning).toBe('Hollow dots are pauses, when nothing happens');
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).meaning).toBe('Hollow dots are waits, when nothing happens');
   });
 
   it('runs a last wait to the end of the recording', () => {
     const [wait] = placeStepDots([step(8_500, 'Read the receipt', 'wait')], 10_000, 1_000);
-    expect(wait && stepDotDetail(wait, 'Wait', formatClock).spoken).toBe('Wait of 1.5 seconds at 0:08.5');
+    expect(wait && stepDotLabel(wait, { spoken: true })).toBe('Wait of 1.5 seconds');
   });
 });
 
@@ -85,5 +97,42 @@ describe('stepSegments', () => {
       ['Open', 0, 2_000],
       ['Pay', 2_000, 4_000],
     ]);
+  });
+
+  it("folds a wait named only as a wait into the step before it, as that step's load", () => {
+    const segments = stepSegments([step(1_000, 'Add the tea'), step(1_050, 'Wait for the page', 'wait'), step(2_000, 'Pay')], {
+      start: 0,
+      end: 3_000,
+    });
+    expect(segments.map(({ label, offset, length, wait }) => [label, offset, length, wait])).toEqual([
+      ['Add the tea', 1_000, 1_000, false],
+      ['Pay', 2_000, 1_000, false],
+    ]);
+  });
+
+  it('joins waits back to back into one dim segment named by its length', () => {
+    const segments = stepSegments([step(0, 'Open'), step(500, 'Look', 'wait'), step(1_200, 'Read', 'wait'), step(2_000, 'Pay')], {
+      start: 0,
+      end: 3_000,
+    });
+    expect(segments.map(({ label, length, wait }) => [label, length, wait])).toEqual([
+      ['Open', 500, false],
+      ['Wait 1.5\u00a0s', 1_500, true],
+      ['Pay', 1_000, false],
+    ]);
+  });
+});
+
+describe('labelRoom', () => {
+  it("stops a segment's words at the first cut inside it", () => {
+    expect(labelRoom({ offset: 1_000, length: 2_000 }, 500, [{ from: 2_100, to: 2_600 }])).toEqual({ skip: 0, length: 600 });
+  });
+
+  it("starts a segment's words after a cut over its start", () => {
+    expect(labelRoom({ offset: 1_000, length: 2_000 }, 500, [{ from: 1_000, to: 1_800 }])).toEqual({ skip: 300, length: 1_700 });
+  });
+
+  it('leaves no room in a segment a cut covers whole', () => {
+    expect(labelRoom({ offset: 1_000, length: 2_000 }, 500, [{ from: 1_000, to: 4_000 }]).length).toBe(0);
   });
 });
