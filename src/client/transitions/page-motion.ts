@@ -9,6 +9,7 @@ import { currentTransition, follow, isTurn, nextTurn, supportsTransitions } from
 import { stopPictureWait, waitForPicture } from './wait-for-picture.ts';
 import { createCompositorHero, rememberInFlight } from './compositor-hero.ts';
 import { createRecordingTransition } from './recording-transition.ts';
+import { hideTileFrames, showTileFrames } from './frames.ts';
 import { heroLayers, heroSpring } from './hero-spring.ts';
 
 /* why: page changes between the index and the viewer pages (a replay, its edit mode, a suite) stay in this document, so
@@ -69,8 +70,15 @@ function listenForInput() {
 
 /** The router alone commits navigation; naming snapshots never mounts another player or changes its history. */
 function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
+  showTileFrames(document.documentElement);
   if (!plan) return commit();
   if (!plan.animate) return plan.ready.then(commit);
+  // why: the frames fade out first, so the snapshot of the tiles that fly back to the index carries none.
+  if (plan.direction !== 'to-index') return dressedFlight(plan, commit);
+  return hideTileFrames(document.documentElement).then(() => (isTurn(plan.turn) ? dressedFlight(plan, commit) : commit()));
+}
+
+function dressedFlight(plan: Plan, commit: () => Promise<void>) {
   const root = document.documentElement;
   unnameAll();
   delete root.dataset.pageHero;
@@ -139,6 +147,7 @@ function dressedCommit(plan: Plan | undefined, commit: () => Promise<void>) {
       plan.card?.removeAttribute('data-transition-return');
       delete root.dataset.pageTransition;
       delete root.dataset.pageHero;
+      showTileFrames(root);
       unnameAll();
     });
   return transition.updateCallbackDone;
