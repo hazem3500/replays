@@ -6,6 +6,8 @@ import * as m from 'motion/react-m';
 import { useRunMenuArrowMotion } from '../hooks/use-feed-control-motion.ts';
 import { useMediaQuery } from '../media.ts';
 
+import { SHEET_LIFT, SHOWN_SHEETS } from './suite-stack.ts';
+
 const HOVER_MODES = {
   fine: { full: { hover: true, reduced: false }, reduced: { hover: true, reduced: true } },
   touch: { full: { hover: false, reduced: false }, reduced: { hover: false, reduced: true } },
@@ -76,14 +78,15 @@ export function MotionRearSheet({
 }: Omit<HTMLMotionProps<'span'>, 'children'> & { children?: ReactNode; depth: number; grid: boolean }) {
   const { reduced } = useContext(HoverContext);
   const scale = 1 - depth * 0.035;
-  const opacity = depth > 5 ? 0 : 1 - depth * 0.15;
-  const y = Math.min(depth, 5);
+  const opacity = depth > SHOWN_SHEETS ? 0 : 1 - depth * 0.15;
+  const y = Math.min(depth, SHOWN_SHEETS);
+  const lift = SHEET_LIFT[grid ? 'grid' : 'list'];
   return (
     <m.span
       {...props}
       variants={{
-        rest: { y: -4 * y, scaleX: scale, scaleY: grid ? scale : 1, opacity },
-        hover: { y: (reduced ? -4 : -5) * y, scaleX: scale, scaleY: grid ? scale : 1, opacity },
+        rest: { y: -lift.rest * y, scaleX: scale, scaleY: grid ? scale : 1, opacity },
+        hover: { y: -(reduced ? lift.rest : lift.hover) * y, scaleX: scale, scaleY: grid ? scale : 1, opacity },
       }}
       transition={{ duration: reduced ? 0 : 0.2, ease: EASE }}
     >
