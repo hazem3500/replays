@@ -88,7 +88,7 @@ export function AddMenu({ onAdd }: { onAdd: (kind: EffectKind) => void }) {
       <DropdownMenuTrigger render={<Button size="sm" variant="ghost" className="editor-add-effect" data-testid="add-effect" />}>
         <AnimatedIcon name="plus" /> Add <AnimatedIcon name="chevron-down" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" className="editor-add-menu w-auto min-w-52" aria-label="Add to timeline">
+      <DropdownMenuContent side="top" className="editor-add-menu w-56" aria-label="Add to timeline">
         {ADD_ITEMS.map((item) => (
           <DropdownMenuItem
             key={item.kind}

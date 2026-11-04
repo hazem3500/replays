@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { CaptionsIcon, EllipsisIcon, EyeOffIcon, ScissorsIcon, ZoomInIcon } from 'lucide-react';
+import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import {
   DropdownMenu,
@@ -70,6 +71,8 @@ export interface MoreTool {
   label: string;
   /** One short line under the name: what it does, or why it is unavailable. */
   hint?: string;
+  /** The same animated icon as the desktop's tool or Add item. */
+  icon?: AnimatedIconName;
   action: () => void;
   disabled?: boolean;
   testId?: string;
@@ -127,13 +130,16 @@ export function MobileAddToolbar({
           {more.map((item) => (
             <DropdownMenuItem
               key={item.label}
-              className="editor-more-item min-h-11 flex-col items-start justify-center gap-0.5 whitespace-normal text-left data-disabled:opacity-100"
+              className="editor-more-item min-h-11 shrink-0 items-start whitespace-normal text-left data-disabled:opacity-100"
               disabled={item.disabled}
               data-testid={item.testId}
               onClick={item.action}
             >
-              <span className="editor-more-name">{item.label}</span>
-              {item.hint ? <span className="editor-more-hint">{item.hint}</span> : null}
+              {item.icon ? <AnimatedIcon name={item.icon} className="editor-more-icon" /> : null}
+              <span className="editor-more-text">
+                <span className="editor-more-name">{item.label}</span>
+                {item.hint ? <span className="editor-more-hint">{item.hint}</span> : null}
+              </span>
             </DropdownMenuItem>
           ))}
           {objects.length > 0 ? (
@@ -141,7 +147,11 @@ export function MobileAddToolbar({
               <DropdownMenuSeparator />
               <DropdownMenuLabel>On timeline · {objects.length}</DropdownMenuLabel>
               {objects.map((object) => (
-                <DropdownMenuItem key={object.key} className="editor-object-picker-item min-h-11" onClick={() => onSelectObject?.(object)}>
+                <DropdownMenuItem
+                  key={object.key}
+                  className="editor-object-picker-item min-h-11 shrink-0"
+                  onClick={() => onSelectObject?.(object)}
+                >
                   <span>{object.label}</span>
                   <time>{formatClock(object.at)}</time>
                 </DropdownMenuItem>

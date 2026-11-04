@@ -22,7 +22,7 @@ export function BlockLabel({
   className,
   ...room
 }: { label: string; width: number; kind: string; className?: string } & LabelRoom) {
-  const fit = blockLabel(label, width, { measure: measureLabel, ...room });
+  const fit = blockLabel(label, width, { measure: measureLabel, minWords: 2, ...room });
   if (fit.text)
     return (
       <span className={className} aria-hidden="true">
@@ -32,4 +32,14 @@ export function BlockLabel({
   const glyph = LANE_GLYPHS[kind as EffectKind] as AnimatedIconName | undefined;
   if (!fit.glyph || !glyph) return null;
   return <AnimatedIcon name={glyph} size={10} strokeWidth={2.25} className="block-glyph" aria-hidden="true" data-testid="block-glyph" />;
+}
+
+/** A clip step's words, or a wait's hourglass (the Waits tool's) and its length; decorative, as the dots name the steps. */
+export function ClipStepLabel({ glyph, text }: { glyph: boolean; text: string }) {
+  return (
+    <>
+      {glyph ? <AnimatedIcon name="hourglass" size={10} strokeWidth={2.25} className="clip-wait-glyph" aria-hidden="true" /> : null}
+      {text}
+    </>
+  );
 }

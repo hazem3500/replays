@@ -21,7 +21,8 @@
   .editor-add-effect svg:last-child { width: 11px; }
   /* The Add menu: short names with their keys, and one line saying what the item under the pointer or focus does. */
   .editor-add-menu .editor-key { margin-left: auto; padding-left: 20px; }
-  .editor-add-hint { margin: 0; padding: 3px 8px 4px; max-width: 13.5rem; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
+  /* invariant: the hint box holds two lines whatever it says, inside a menu of fixed width, so hovering an item never resizes the menu. */
+  .editor-add-hint { box-sizing: content-box; height: 2.7em; margin: 0; padding: 3px 8px 4px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
   /*
    * A control's key after its name (EditorTools.tsx KeySuffix): smaller and in the tertiary ink, which clears 4.5:1 on
    * every surface it sits on (styles.css); its data-slot keeps the page-wide keycap off it.
@@ -57,7 +58,7 @@
   @container (max-width: 760px) { .editor-tool .editor-key { display: none; } }
   .editor-clock { color: var(--text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
   .editor-durations { display: inline-flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--text-tertiary); white-space: nowrap; }
-  .editor-durations-note { color: var(--text-tertiary); font-size: var(--text-2xs); }
+  .editor-durations-note { color: var(--text-secondary); font-size: var(--text-2xs); }
   .editor-durations strong { color: var(--text); font-weight: 600; }
   .editor-suggest { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: var(--text-xs); color: var(--text-secondary); white-space: nowrap; }
   .editor-suggest kbd { min-width: 0; margin-left: 2px; padding: 0 4px; border: 0; background: none; color: inherit; font-family: var(--sans); opacity: 0.7; }
@@ -71,7 +72,7 @@
   /* Ruler: labels centred over short ticks on its lower edge; the playhead's knob sits below the labels, never on one. */
   .tl-ruler { position: relative; height: 26px; cursor: ew-resize; }
   .tl-tick { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: linear-gradient(to bottom, transparent 72%, var(--line-strong) 72%); pointer-events: none; }
-  .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-tertiary); font-size: 11px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-secondary); font-size: 11px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   /*
    * Step dots (TimelineStepDots.tsx): a 10 px dot per step under the labels, filled for an action and hollow for a wait,
    * right over the clip's divider where that step starts.
@@ -119,9 +120,11 @@
   /* The clip's steps (Timeline.tsx ClipSteps): a faint divider at each start and whole words where they fit, in the quietest text. */
   .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 1px solid var(--line); color: var(--text-secondary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
   /* A wait: dimmer than the steps around it and named by its length, so a run of nothing reads as one quiet stretch. */
-  .tl-clip-step[data-wait] { background: color-mix(in srgb, var(--canvas) 70%, transparent); color: var(--text-tertiary); }
+  .tl-clip-step[data-wait] { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
   /* why: the waits found are a tint over the clip; the step names stay readable over them. */
   .tl-clip-step > span { position: relative; z-index: 3; }
+  .tl-clip-step-label, .phone-step-label { display: inline-flex; align-items: center; gap: 3px; }
+  .clip-wait-glyph { flex: none; }
   .tl-clip-step:first-child { padding-left: 14px; border-left: 0; }
   /* The trim edges: slim tabs with a grip, light at rest and accent while held. */
   .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; transition: background-color var(--motion-fast) var(--ease-out); }
@@ -323,6 +326,8 @@
   /* why: a long name wraps onto a second line instead of ending in an ellipsis. */
   .editor-object-picker-item > span { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
   /* The phone's More tools: the desktop's name, then one quiet line saying what it does or why it is unavailable. */
+  .editor-more-text { display: flex; min-width: 0; flex-direction: column; gap: 2px; }
+  .editor-more-icon { margin-top: 3px; }
   .editor-more-hint { color: var(--text-tertiary); font-size: var(--text-xs); line-height: 1.35; }
   /* why: an unavailable tool dims its name only; the line saying why stays readable. */
   .editor-more-item[data-disabled] .editor-more-name { color: var(--text-tertiary); }
@@ -368,5 +373,5 @@
   }
 }
 
-/* why: menu-sheet.css (unlayered) spaces a sheet item's parts 12 px apart; a tool's hint sits right under its name. */
-.menu-sheet .editor-more-item { gap: 2px; padding-block: 10px; line-height: 1.25; }
+/* why: menu-sheet.css (unlayered) gives a sheet item no room above and below; a tool's name and hint need it. */
+.menu-sheet .editor-more-item { padding-block: 10px; line-height: 1.25; }

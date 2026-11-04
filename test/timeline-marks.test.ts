@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 
 import { formatClock } from '../src/shared/replay.ts';
 import { stepSegments } from '../src/client/editor/clip-segments.ts';
-import { keptLength, labelRoom, placeStepDots, segmentText, stepDotDetail, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
+import {
+  keptLength,
+  labelRoom,
+  placeStepDots,
+  segmentText,
+  stepDotDetail,
+  stepDotLabel,
+  stepMarks,
+} from '../src/client/editor/timeline-marks.ts';
 
 const step = (at: number, label = `Step at ${at}`, kind = 'click') => ({ at, label, kind });
 
@@ -81,7 +89,7 @@ describe('stepDotDetail', () => {
 
   it('says in plain words that a hollow dot is a wait', () => {
     const [wait] = placeStepDots([step(1_000, 'Look around', 'wait')], 10_000, 1_000);
-    expect(wait && stepDotDetail(wait, 'Wait', formatClock).meaning).toBe('Hollow dots are waits, when nothing happens');
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock).meaning).toBe('Hollow dots are waits');
   });
 
   it('runs a last wait to the end of the recording', () => {
@@ -143,17 +151,37 @@ const measure = (text: string) => text.length * 6;
 describe('segmentText', () => {
   const wait = { at: 0, offset: 0, length: 1_500, label: 'Wait 1.5\u00a0s', wait: true };
 
-  it('names a wait by its kept length, less the cuts over it', () => {
+  it('gives a wait the hourglass and its kept length, less the cuts over it', () => {
     const kept = keptLength(wait, 0, [{ from: 1_000, to: 3_000 }]);
-    expect(segmentText(wait, kept, 200, { measure })).toBe('Wait 1.0\u00a0s');
+    expect(segmentText(wait, kept, 200, { measure })).toEqual({ glyph: true, text: '1.0\u00a0s' });
   });
 
-  it('shortens a wait to its length alone on one line, and to nothing when even that does not fit', () => {
-    expect(segmentText(wait, 1_500, 50, { measure, lines: 2 })).toBe('1.5\u00a0s');
-    expect(segmentText(wait, 1_500, 20, { measure, lines: 2 })).toBe('');
+  it('keeps only the hourglass where the length does not fit, and nothing where neither does', () => {
+    expect(segmentText(wait, 1_500, 30, { measure, pad: 4 })).toEqual({ glyph: true, text: '' });
+    expect(segmentText(wait, 1_500, 12, { measure, pad: 4 })).toEqual({ glyph: false, text: '' });
   });
 
-  it('names a step by its leading whole words', () => {
-    expect(segmentText({ ...wait, label: 'Add the mug to the cart', wait: false }, 1_500, 80, { measure })).toBe('Add the mug');
+  it('names a step by at least two of its leading words, or none', () => {
+    const action = { ...wait, label: 'Type a coupon code', wait: false };
+    expect(segmentText(action, 1_500, 100, { measure }).text).toBe('Type a coupon');
+    expect(segmentText(action, 1_500, 50, { measure }).text).toBe('');
+  });
+});
+
+describe('stepMarks', () => {
+  it('names a wait too close to show apart in the tooltip of the action it follows', () => {
+    const marks = stepMarks([step(0, 'Open'), step(100, 'Look', 'wait'), step(900, 'Pay')], 1_000);
+    const [open] = placeStepDots(marks, 1_000, 30);
+    expect(open && stepDotDetail(open, 'Click', formatClock).visible).toBe('Click, 0:00.0, then a 0.8\u00a0s wait');
+  });
+
+  it('marks each wait block once, at its middle, seeking to where the wait begins', () => {
+    const marks = stepMarks(
+      [step(0, 'Open'), step(1_000, 'Look', 'wait'), step(1_400, 'Wait for the page', 'wait'), step(3_000, 'Pay')],
+      4_000,
+    );
+    const [, wait] = placeStepDots(marks, 4_000, 400);
+    expect(marks.map((mark) => mark.kind)).toEqual(['click', 'click', 'wait']);
+    expect(wait && [wait.at, wait.seek, wait.until]).toEqual([2_000, 1_000, 3_000]);
   });
 });

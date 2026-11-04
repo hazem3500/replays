@@ -1,6 +1,6 @@
 import type { ReplayStep } from '../../shared/replay.ts';
 import { wordsThatFit, type LabelRoom } from './block-label.ts';
-import { lengthLabel, type StepSegment, waitSeconds } from './clip-segments.ts';
+import { type StepSegment, stepSegments, waitSeconds } from './clip-segments.ts';
 
 /** One dot on the ruler: the step it seeks to and how many neighbours too close to tell apart it stands for. */
 export interface StepDot {
@@ -12,6 +12,12 @@ export interface StepDot {
   count: number;
   /** How many of them are actions rather than waits. */
   actions: number;
+  /** Where a click seeks: the step's start (a wait dot sits mid-block, but seeks to where its wait begins). */
+  seek: number;
+  /** A wait's own span, when its block gave one. */
+  span?: { from: number; to: number } | undefined;
+  /** How long the waits merged into an action dot last, so its tooltip still names them. */
+  pause?: number | undefined;
   /** When the next dot's step starts, or the recording ends: where a wait dot's pause stops. */
   until: number;
   /** The action a wait dot follows, when there is one before it. */
@@ -21,12 +27,37 @@ export interface StepDot {
 /** Dots closer than this many px merge, so every dot keeps a 24 px target that no other overlaps. */
 export const MIN_DOT_GAP_PX = 24;
 
+/** What the ruler marks: an action step, or a wait drawn at the middle of its clip block, with the span it covers. */
+export interface DotMark {
+  at: number;
+  label: string;
+  kind: string;
+  span?: { from: number; to: number } | undefined;
+}
+
+/**
+ * The ruler's marks from the same blocks the clip draws: each action at its start, and each wait block (load waits
+ * folded into their step, waits back to back joined) once, at its middle, so a hollow dot always sits over a wait
+ * block and clears the action dot where the wait begins.
+ */
+export function stepMarks(steps: readonly ReplayStep[], duration: number): DotMark[] {
+  const waits = stepSegments(steps, { start: 0, end: duration })
+    .filter((segment) => segment.wait)
+    .map((segment) => ({
+      at: segment.at + segment.length / 2,
+      kind: 'wait',
+      label: steps.find((step) => step.at === segment.at && step.kind === 'wait')?.label ?? '',
+      span: { from: segment.at, to: segment.at + segment.length },
+    }));
+  return [...steps.filter((step) => step.kind !== 'wait'), ...waits];
+}
+
 /**
  * The recording's steps as ruler dots, in time order, for a ruler `width` px wide over `duration`. Steps closer than
  * `gap` px join the dot before them, which seeks to the first, is named by the first action among them (a wait only
  * when all are waits) and counts the rest. Steps outside the recording are left out.
  */
-export function placeStepDots(steps: readonly ReplayStep[], duration: number, width: number, gap = MIN_DOT_GAP_PX): StepDot[] {
+export function placeStepDots(steps: readonly DotMark[], duration: number, width: number, gap = MIN_DOT_GAP_PX): StepDot[] {
   if (duration <= 0 || width <= 0) return [];
   const order = steps
     .map((step, index) => ({ step, index }))
@@ -41,8 +72,19 @@ export function placeStepDots(steps: readonly ReplayStep[], duration: number, wi
     if (last && ((wait && last.kind === 'wait') || ((step.at - last.at) / duration) * width < gap))
       dots[dots.length - 1] = joined(last, step);
     else {
-      if (last) last.until = step.at;
-      const dot: StepDot = { index, at: step.at, label: step.label, kind: step.kind, count: 1, actions: wait ? 0 : 1, until: duration };
+      if (last && !last.span) last.until = step.at;
+      const { span } = step;
+      const dot: StepDot = {
+        index,
+        at: step.at,
+        label: step.label,
+        kind: step.kind,
+        count: 1,
+        actions: wait ? 0 : 1,
+        seek: span?.from ?? step.at,
+        until: span?.to ?? duration,
+        span,
+      };
       if (wait && action) dot.after = action;
       dots.push(dot);
     }
@@ -52,9 +94,14 @@ export function placeStepDots(steps: readonly ReplayStep[], duration: number, wi
 }
 
 /** `dot` once `step` joins it (too close to tell apart, or a wait right after its wait); an action names a wait dot. */
-function joined(dot: StepDot, step: ReplayStep): StepDot {
-  if (step.kind === 'wait') return { ...dot, count: dot.count + 1 };
-  const named = dot.kind === 'wait' ? { kind: step.kind, label: step.label, after: undefined } : {};
+function joined(dot: StepDot, step: DotMark): StepDot {
+  const length = (span: DotMark['span']) => (span ? span.to - span.from : 0);
+  if (step.kind === 'wait')
+    return { ...dot, count: dot.count + 1, ...(dot.kind === 'wait' ? {} : { pause: (dot.pause ?? 0) + length(step.span) }) };
+  const named =
+    dot.kind === 'wait'
+      ? { kind: step.kind, label: step.label, after: undefined, span: undefined, seek: step.at, pause: length(dot.span) }
+      : {};
   return { ...dot, ...named, count: dot.count + 1, actions: dot.actions + 1 };
 }
 
@@ -65,7 +112,8 @@ function joined(dot: StepDot, step: ReplayStep): StepDot {
  */
 export function stepDotLabel(dot: StepDot, { spoken = false } = {}) {
   if (dot.kind === 'wait') {
-    const pause = spoken ? `Wait of ${waitSeconds(dot.until - dot.at)} seconds` : `Wait, ${waitSeconds(dot.until - dot.at)} s`;
+    const length = waitSeconds(dot.until - dot.seek);
+    const pause = spoken ? `Wait of ${length} seconds` : `Wait, ${length}\u00a0s`;
     if (!dot.after) return pause;
     return spoken ? `${pause} after ${dot.after.trim()}` : `${pause}, after ${dot.after.trim()}`;
   }
@@ -80,14 +128,16 @@ export function stepDotLabel(dot: StepDot, { spoken = false } = {}) {
  * ("Click, 0:03.2"), a wait where it starts and ends, and `meaning` says in plain words what that dot's
  * shape stands for. `spoken` is the kind and time for a screen reader.
  */
-export function stepDotDetail(dot: Pick<StepDot, 'kind' | 'at' | 'until'>, kindName: string, clock: (ms: number) => string) {
+export function stepDotDetail(dot: Pick<StepDot, 'kind' | 'seek' | 'until' | 'pause'>, kindName: string, clock: (ms: number) => string) {
   if (dot.kind === 'wait')
-    return {
-      visible: `${clock(dot.at)} to ${clock(dot.until)}`,
-      meaning: 'Hollow dots are waits, when nothing happens',
-      spoken: `from ${clock(dot.at)}`,
-    };
-  return { visible: `${kindName}, ${clock(dot.at)}`, meaning: 'Filled dots are actions', spoken: `${kindName} at ${clock(dot.at)}` };
+    return { visible: `${clock(dot.seek)} to ${clock(dot.until)}`, meaning: 'Hollow dots are waits', spoken: `from ${clock(dot.seek)}` };
+  const then = dot.pause ? `, then a ${waitSeconds(dot.pause)}\u00a0s wait` : '';
+  const spokenThen = dot.pause ? `, then a wait of ${waitSeconds(dot.pause)} seconds` : '';
+  return {
+    visible: `${kindName}, ${clock(dot.seek)}${then}`,
+    meaning: 'Filled dots are actions',
+    spoken: `${kindName} at ${clock(dot.seek)}${spokenThen}`,
+  };
 }
 
 /**
@@ -120,13 +170,17 @@ export function keptLength(
   return Math.max(0, segment.length - cut);
 }
 
+/** Room the hourglass before a wait's length takes: the 10 px glyph and the gap after it. */
+const WAIT_GLYPH_PX = 13;
+
 /**
- * What a clip segment shows in `width` px: a step's leading whole words; a wait its kept length on one line, "Wait 1.5 s",
- * else just "1.5 s", else nothing, so every wait reads the same way.
+ * What a clip segment shows in `width` px: a step's leading whole words (at least two, or its whole name, so a lone
+ * first word never reads as something else); a wait the Waits tool's hourglass and its kept length ("1.5 s"), the
+ * hourglass alone when only it fits, else nothing, so every wait reads the same way on the desktop and the phone.
  */
 export function segmentText(segment: StepSegment, kept: number, width: number, room: LabelRoom) {
-  if (!segment.wait) return wordsThatFit(segment.label, width, room);
-  const named = lengthLabel('Wait', kept);
-  if (wordsThatFit(named, width, { ...room, lines: 1 }) === named) return named;
-  return wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width, { ...room, lines: 1 });
+  if (!segment.wait) return { glyph: false, text: wordsThatFit(segment.label, width, { minWords: 2, ...room }) };
+  const pad = room.pad ?? 0;
+  const text = wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width - WAIT_GLYPH_PX, { ...room, lines: 1 });
+  return { glyph: text !== '' || width >= WAIT_GLYPH_PX + pad * 2, text };
 }

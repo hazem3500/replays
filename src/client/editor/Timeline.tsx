@@ -7,6 +7,7 @@ import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
+import { ClipStepLabel } from './BlockLabel.tsx';
 import { measureLabel } from './label-measure.ts';
 import { lengthLabel, stepSegments } from './clip-segments.ts';
 import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
@@ -79,8 +80,10 @@ function ClipSteps({
         aria-hidden="true"
         style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
       >
-        <span style={{ marginLeft: `${room.skip * px}px` }}>
-          {segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px, { pad, measure: measureLabel })}
+        <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
+          <ClipStepLabel
+            {...segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px, { pad, measure: measureLabel })}
+          />
         </span>
       </span>
     );

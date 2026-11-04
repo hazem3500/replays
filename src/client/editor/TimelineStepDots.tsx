@@ -6,9 +6,8 @@ import { useCanHover } from '@/components/ui/tooltip.tsx';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { stepKindName } from '../viewer/StepRail.tsx';
-import { isLoadWait } from './clip-segments.ts';
 import { useTimelineScale } from './timeline-drag.ts';
-import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabel } from './timeline-marks.ts';
+import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabel, stepMarks } from './timeline-marks.ts';
 
 /** How long a touch screen keeps a pressed dot's label up after the finger lifts. */
 const PRESSED_LABEL_MS = 2_400;
@@ -163,13 +162,7 @@ export function TimelineStepDots({
   const canHover = useCanHover();
   const pressed = usePressedLabel(canHover);
   const [current, setCurrent] = useState(0);
-  // why: a load wait is part of the step before it on the clip, so it gets no hollow dot of its own either.
-  const dots = placeStepDots(
-    steps.filter((step) => !isLoadWait(step)),
-    scale.duration,
-    scale.width,
-    target,
-  );
+  const dots = placeStepDots(stepMarks(steps, scale.duration), scale.duration, scale.width, target);
   if (!dots.length) return null;
   const stop = Math.min(current, dots.length - 1);
   const bubble = pressed.shown === undefined ? undefined : dots[pressed.shown];
@@ -180,7 +173,7 @@ export function TimelineStepDots({
           key={`${dot.index}-${dot.at}`}
           dot={dot}
           x={scale.x(dot.at)}
-          removed={isRemoved(dot.at)}
+          removed={isRemoved(dot.seek)}
           pressed={pressed.shown === position}
           tabStop={position === stop}
           onPointerDown={(event) => {
@@ -190,7 +183,7 @@ export function TimelineStepDots({
           onRelease={pressed.release}
           onClick={() => {
             setCurrent(position);
-            player.seek(dot.at);
+            player.seek(dot.seek);
           }}
           onKeyDown={(event) => moveFocus(event, position, dots.length, setCurrent)}
         />

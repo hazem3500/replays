@@ -976,15 +976,23 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                       onZoom={() => addMobileObject('zoom')}
                       more={[
                         // why: the desktop bar's and Add menu's names, so a tool is called the same on both.
-                        { label: 'Waits', hint: 'Find waits to remove', action: actions.removeWaits, testId: 'remove-waits' },
+                        {
+                          label: 'Waits',
+                          icon: 'hourglass',
+                          hint: 'Find waits to remove',
+                          action: actions.removeWaits,
+                          testId: 'remove-waits',
+                        },
                         {
                           label: 'Speed up',
+                          icon: 'fast-forward',
                           hint: 'Speed up from the playhead',
                           action: () => addMobileObject('speed'),
                           testId: 'add-speed',
                         },
                         {
                           label: 'Trim',
+                          icon: 'columns-2',
                           hint: 'Set where the clip starts and ends',
                           action: () => {
                             rememberMobileFocus();
@@ -999,12 +1007,14 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         },
                         {
                           label: 'Select a range',
+                          icon: 'text-cursor-input',
                           hint: 'To cut or highlight a stretch',
                           action: selectMobileRange,
                           testId: 'select-range',
                         },
                         {
                           label: 'Highlight',
+                          icon: 'map-pin',
                           hint: 'Highlight this moment',
                           action: () => {
                             rememberMobileFocus();
@@ -1019,6 +1029,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           ? [
                               {
                                 label: 'Cursor options',
+                                icon: 'mouse-pointer-2' as const,
                                 hint: 'How the pointer looks and moves',
                                 action: () => {
                                   rememberMobileFocus();
@@ -1032,6 +1043,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           : []),
                         {
                           label: 'Captions',
+                          icon: 'captions',
                           hint: edits.captions?.length ? 'Already on the timeline' : 'Write captions from the steps',
                           disabled: Boolean(edits.captions?.length),
                           action: () => {
@@ -1050,6 +1062,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         },
                         {
                           label: 'Zoom',
+                          icon: 'zoom-in',
                           hint: 'Zoom in on every click',
                           action: () => {
                             rememberMobileFocus();

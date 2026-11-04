@@ -29,6 +29,11 @@ describe('wordsThatFit', () => {
     expect(wordsThatFit('Wait 1.5\u00a0s', 90)).toBe('Wait 1.5\u00a0s');
   });
 
+  it('shows nothing rather than fewer leading words than asked for', () => {
+    expect(wordsThatFit('Type a coupon code', 60, { minWords: 2 })).toBe('');
+    expect(wordsThatFit('Pay', 60, { minWords: 2 })).toBe('Pay');
+  });
+
   it('fits words by the measure it is given instead of the estimate', () => {
     expect(wordsThatFit('Pick a product', 60, { measure: (text) => text.length * 3 })).toBe('Pick a product');
   });

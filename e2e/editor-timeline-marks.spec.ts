@@ -142,6 +142,24 @@ test.describe('editor tools and Add menu', () => {
     await menu.getByRole('menuitem', { name: 'Zoom' }).hover();
     await expect(page.getByTestId('add-hint')).toHaveText('Zoom in on every click');
     await expect(menu.getByRole('menuitem', { name: 'Zoom' })).toHaveAccessibleDescription('Zoom in on every click');
+  });
+
+  test('the Add menu keeps its size while its hint line changes with the item under the pointer', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('add-effect').click();
+    const menu = page.getByRole('menu', { name: 'Add to timeline' });
+    const hint = page.getByTestId('add-hint');
+    // why: the menu scales in as it opens; its resting size is the one after that.
+    await menu.evaluate((element) => Promise.all(element.getAnimations({ subtree: true }).map((animation) => animation.finished)));
+    const resting = await boxOf(menu);
+    const fits = () => hint.evaluate((element) => element.scrollHeight <= element.clientHeight);
+    expect(await fits()).toBe(true);
+    for (const item of await menu.getByRole('menuitem').all()) {
+      await item.hover();
+      await expect(hint).not.toHaveText('Adds at the playhead, or over the selection');
+      expect(await boxOf(menu)).toEqual(resting);
+      expect(await fits()).toBe(true);
+    }
     await expect(page.getByTestId('lane-invitation')).toHaveCount(0);
   });
 });

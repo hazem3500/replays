@@ -15,6 +15,8 @@ export interface LabelRoom {
   pad?: number;
   /** A line's width in px (label-measure.ts measures the real font); a conservative per-character estimate by default. */
   measure?: (text: string) => number;
+  /** The fewest words a shortened label keeps; fewer show nothing, as a lone first word can read as another word. */
+  minWords?: number;
 }
 
 /** A label line's width by the conservative per-character estimate. */
@@ -27,7 +29,7 @@ export const estimateLabelWidth = (text: string) => text.length * LABEL_CHAR_PX;
 export function wordsThatFit(
   label: string,
   width: number,
-  { lines = 1, pad = LABEL_PAD_PX, measure = estimateLabelWidth }: LabelRoom = {},
+  { lines = 1, pad = LABEL_PAD_PX, measure = estimateLabelWidth, minWords = 1 }: LabelRoom = {},
 ) {
   const room = width - pad * 2;
   // why: a no-break space keeps a value and its unit ("1.5 s") one word, so a label never ends on a bare number.
@@ -49,6 +51,7 @@ export function wordsThatFit(
     kept.push(word);
   }
   if (kept.length < words.length) while (DANGLING.has(kept.at(-1)?.toLowerCase() ?? '')) kept.pop();
+  if (kept.length < words.length && kept.length < minWords) return '';
   return kept.join(' ');
 }
 

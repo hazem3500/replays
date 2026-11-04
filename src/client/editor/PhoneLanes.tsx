@@ -7,7 +7,7 @@ import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { GLYPH_MIN_PX, wordsThatFit } from './block-label.ts';
-import { LANE_GLYPHS } from './BlockLabel.tsx';
+import { ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
 import { measureLabel } from './label-measure.ts';
 import { lengthLabel, stepSegments } from './clip-segments.ts';
 import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
@@ -185,7 +185,7 @@ function Region({
           <AnimatedIcon name={LANE_GLYPHS[kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" aria-hidden="true" />
         ) : null}
         <span aria-hidden="true">
-          {wordsThatFit(region.label, width - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX, measure: measureLabel })}
+          {wordsThatFit(region.label, width - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX, measure: measureLabel, minWords: 2 })}
         </span>
       </button>
       {children}
@@ -230,11 +230,13 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
               style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
             >
               <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
-                {segmentText(segment, keptLength(segment, trim.start, edits.cuts), px(room.length), {
-                  lines: 2,
-                  pad: PHONE_STEP_PAD_PX,
-                  measure: measureLabel,
-                })}
+                <ClipStepLabel
+                  {...segmentText(segment, keptLength(segment, trim.start, edits.cuts), px(room.length), {
+                    lines: 2,
+                    pad: PHONE_STEP_PAD_PX,
+                    measure: measureLabel,
+                  })}
+                />
               </span>
             </span>
           );
