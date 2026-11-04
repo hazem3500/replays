@@ -240,7 +240,7 @@
   .tl-range-cut:hover { background: var(--surface-hover); }
 
   /* "Remove waits" suggestions: a hatched accent tint, waiting to be applied. */
-  .tl-suggestion { position: absolute; z-index: 2; top: 6px; bottom: 6px; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 30%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.9; pointer-events: none; }
+  .tl-suggestion { position: absolute; z-index: 2; top: 6px; bottom: 6px; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.9; pointer-events: none; }
 
   /* Highlight annotations mark the original edit timeline. They are navigation controls and sit above cut shading. */
   .tl-highlight { position: absolute; inset: 0; pointer-events: none; }

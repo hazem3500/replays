@@ -35,9 +35,9 @@ describe('placeStepDots', () => {
     expect(placeStepDots([step(1_000), step(1_050)], 10_000, 4_000, 12)).toHaveLength(2);
   });
 
-  it('names a merged dot by its action rather than a wait, and still seeks to its first step', () => {
+  it('names a merged dot by its action rather than a wait, at the action and seeking there', () => {
     const [dot] = placeStepDots([step(1_000, 'Wait', 'wait'), step(1_010, 'Click Pay', 'click')], 10_000, 1_000);
-    expect([dot?.kind, dot?.label, dot?.at]).toEqual(['click', 'Click Pay', 1_000]);
+    expect([dot?.kind, dot?.label, dot?.at, dot?.seek]).toEqual(['click', 'Click Pay', 1_010, 1_010]);
   });
 
   it('leaves out steps outside the recording and draws nothing on an unmeasured ruler', () => {
@@ -169,6 +169,13 @@ describe('segmentText', () => {
 });
 
 describe('stepMarks', () => {
+  it('moves a wait dot an action joins to that action and says the wait came first', () => {
+    const marks = stepMarks([step(0, 'Open'), step(200, 'Look', 'wait'), step(1_100, 'Scroll'), step(2_000, 'Pay')], 2_000);
+    const [, scroll] = placeStepDots(marks, 2_000, 100);
+    expect(scroll && [scroll.at, scroll.seek]).toEqual([1_100, 1_100]);
+    expect(scroll && stepDotDetail(scroll, 'Scroll', formatClock).visible).toBe('Scroll, 0:01.1, after a 0.9\u00a0s wait');
+  });
+
   it('names a wait too close to show apart in the tooltip of the action it follows', () => {
     const marks = stepMarks([step(0, 'Open'), step(100, 'Look', 'wait'), step(900, 'Pay')], 1_000);
     const [open] = placeStepDots(marks, 1_000, 30);

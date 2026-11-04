@@ -18,6 +18,8 @@ export interface StepDot {
   span?: { from: number; to: number } | undefined;
   /** How long the waits merged into an action dot last, so its tooltip still names them. */
   pause?: number | undefined;
+  /** How long the wait merged into an action dot from before it lasts: the dot moves to the action, which follows it. */
+  waitBefore?: number | undefined;
   /** When the next dot's step starts, or the recording ends: where a wait dot's pause stops. */
   until: number;
   /** The action a wait dot follows, when there is one before it. */
@@ -105,7 +107,7 @@ function joined(dot: StepDot, step: DotMark): StepDot {
     return { ...dot, count: dot.count + 1, ...(dot.kind === 'wait' ? {} : { pause: (dot.pause ?? 0) + length(step.span) }) };
   const named =
     dot.kind === 'wait'
-      ? { kind: step.kind, label: step.label, after: undefined, span: undefined, seek: step.at, pause: length(dot.span) }
+      ? { kind: step.kind, label: step.label, after: undefined, span: undefined, at: step.at, seek: step.at, waitBefore: length(dot.span) }
       : {};
   return { ...dot, ...named, count: dot.count + 1, actions: dot.actions + 1 };
 }
@@ -133,13 +135,18 @@ export function stepDotLabel(dot: StepDot, { spoken = false } = {}) {
  * ("Click, 0:03.2"), a wait where it starts and ends, and `meaning` says in plain words what that dot's
  * shape stands for. `spoken` is the kind and time for a screen reader.
  */
-export function stepDotDetail(dot: Pick<StepDot, 'kind' | 'seek' | 'until' | 'pause'>, kindName: string, clock: (ms: number) => string) {
+export function stepDotDetail(
+  dot: Pick<StepDot, 'kind' | 'seek' | 'until' | 'pause' | 'waitBefore'>,
+  kindName: string,
+  clock: (ms: number) => string,
+) {
   if (dot.kind === 'wait')
     return { visible: `${clock(dot.seek)} to ${clock(dot.until)}`, meaning: 'Hollow dots are waits', spoken: `from ${clock(dot.seek)}` };
+  const before = dot.waitBefore ? `, after a ${waitSeconds(dot.waitBefore)}\u00a0s wait` : '';
   const then = dot.pause ? `, then a ${waitSeconds(dot.pause)}\u00a0s wait` : '';
-  const spokenThen = dot.pause ? `, then a wait of ${waitSeconds(dot.pause)} seconds` : '';
+  const spokenThen = `${dot.waitBefore ? `, after a wait of ${waitSeconds(dot.waitBefore)} seconds` : ''}${dot.pause ? `, then a wait of ${waitSeconds(dot.pause)} seconds` : ''}`;
   return {
-    visible: `${kindName}, ${clock(dot.seek)}${then}`,
+    visible: `${kindName}, ${clock(dot.seek)}${before}${then}`,
     meaning: 'Filled dots are actions',
     spoken: `${kindName} at ${clock(dot.seek)}${spokenThen}`,
   };
