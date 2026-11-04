@@ -426,24 +426,30 @@ export function Viewer({
   usePluginShortcuts(pluginContexts);
   const pluginMenu = usePluginMenu(pluginContexts, mobile);
   // Memoised so the (memo) header does not re-render on inspector tab switches.
-  // why: the recording picker stays in More so the top bar keeps room for the view and layout switches.
+  // why: the recording picker stays in More so the top bar keeps room for the view and layout switches. A suite already
+  // says which runs belong together, so it offers no way to add another recording.
+  const inSuite = Boolean(suite);
   const hasKeyboard = useHasKeyboard();
   const deletion = useReplayDeletion(bundle.meta.id, bundle.meta.title, true);
   const headerMenuItems = useMemo<TopbarMenuItem[]>(
     () => [
-      sharedPlayer
-        ? {
-            label: 'Add a recording',
-            icon: <AnimatedIcon name="plus" />,
-            onSelect: () => setPickerOpen(true),
-            testId: 'compare-with',
-          }
-        : {
-            label: 'Compare with…',
-            icon: <AnimatedIcon name="columns-2" />,
-            onSelect: () => setPickerOpen(true),
-            testId: 'compare-with',
-          },
+      ...(inSuite
+        ? []
+        : [
+            sharedPlayer
+              ? {
+                  label: 'Add a recording',
+                  icon: <AnimatedIcon name="plus" />,
+                  onSelect: () => setPickerOpen(true),
+                  testId: 'compare-with',
+                }
+              : {
+                  label: 'Compare with…',
+                  icon: <AnimatedIcon name="columns-2" />,
+                  onSelect: () => setPickerOpen(true),
+                  testId: 'compare-with',
+                },
+          ]),
       ...pluginMenu.items,
       ...(betaMalleable()
         ? [{ label: 'Plugin workshop', icon: <AnimatedIcon name="puzzle" />, onSelect: openWorkshop, testId: 'malleable-open' }]
@@ -470,7 +476,7 @@ export function Viewer({
         section: 'after-settings',
       },
     ],
-    [actions.openShortcuts, deletion.requestDelete, hasKeyboard, pluginMenu.items, sharedPlayer],
+    [actions.openShortcuts, deletion.requestDelete, hasKeyboard, inSuite, pluginMenu.items, sharedPlayer],
   );
   // The run's own first source wins; a run opened in a suite without one shows the suite's subject, so every run
   // of a review carries the same chip.
