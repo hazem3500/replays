@@ -190,9 +190,7 @@ test.describe('suite recording navigation', () => {
       const focused = page.locator('.ct-tile[data-current]');
       // why: the focused tile is marked by the heavier run-colour frame its ::after draws, not an outline.
       await expect(focused).toHaveAttribute('data-focused', 'true');
-      await expect
-        .poll(() => focused.evaluate((tile) => getComputedStyle(tile, '::after').boxShadow))
-        .toMatch(/0px 0px 0px 2\.5px inset/);
+      await expect.poll(() => focused.evaluate((tile) => getComputedStyle(tile, '::after').boxShadow)).toMatch(/0px 0px 0px 2\.5px inset/);
       await page.keyboard.press('Tab');
       await focused.locator('.ct-hit').focus();
       await expect(focused.locator('.ct-hit')).toHaveCSS('box-shadow', /0px 0px 0px 4px/);
