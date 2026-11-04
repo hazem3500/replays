@@ -154,8 +154,8 @@ function remember(choice: RecordingChoice): void {
 /**
  * The host's `choices`, capped by its `privacy` and `capture`. invariant: a host whose own privacy hides text, inputs
  * and media and reads no body offers nothing, and every choice, whatever its source, is reduced to what is offered. For
- * `by: 'customer'` a recording is Masked without bodies unless the choice came from that recording's options step
- * (`accept`), and nothing is remembered.
+ * `by: 'customer'` a recording is `interface-visible` (or `masked`) without bodies unless the choice came from that
+ * recording's options step (`accept`), and nothing is remembered.
  */
 export function recorderChoices(host: Host, build: SettingsBuilder) {
   const customer = host.choices?.by === 'customer';
@@ -192,13 +192,15 @@ export function recorderChoices(host: Host, build: SettingsBuilder) {
 
   /** Settings for a choice that is already settled. */
   const settled = (choice: RecordingChoice): RecordingSettings => {
-    const privacy = choice.privacy ? modePrivacy(host, choice.privacy, cap) : (host.privacy ?? {});
+    // invariant: a customer recording never falls back to the host's own privacy, which is only the cap.
+    const mode = choice.privacy ?? (customer ? 'masked' : undefined);
+    const privacy = mode ? modePrivacy(host, mode, cap) : (host.privacy ?? {});
     // why: an offered body option, and every customer recording, reads bodies only when they were chosen.
     const built = build(privacy, !(bodiesOffered || customer) || choice.networkBodies === true);
     return {
       ...built,
       ...(choice.profile ? { profile: choice.profile } : {}),
-      ...(customer ? { by: 'customer' as const, mode: choice.privacy ?? 'masked' } : {}),
+      ...(customer && mode ? { by: 'customer' as const, mode } : {}),
     };
   };
 
