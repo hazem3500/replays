@@ -27,6 +27,7 @@ const sentinels: RecorderMessages = {
   warningFinal: () => mark('warningFinal'),
   reviewTitle: mark('reviewTitle'),
   reviewBody: () => mark('reviewBody'),
+  reviewPrivacy: () => mark('reviewPrivacy'),
   noteLabel: mark('noteLabel'),
   send: mark('send'),
   discard: mark('discard'),
@@ -47,6 +48,8 @@ const sentinels: RecorderMessages = {
   privacyUnavailable: mark('privacyUnavailable'),
   privacyMode: () => mark('privacyMode'),
   privacyHint: () => mark('privacyHint'),
+  networkLabel: mark('networkLabel'),
+  networkBodies: mark('networkBodies'),
   record: mark('record'),
 };
 const options: DefaultUiOptions = {
@@ -96,11 +99,13 @@ const surfaceAction = (selector: string) =>
 const flush = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 
 const offer: RecordingChoiceOffer = {
+  by: 'staff',
   privacy: [
     { mode: 'visible', facts: { ...privacy, mode: 'visible', captures: { ...privacy.captures, pageText: true, inputs: true } } },
     { mode: 'masked', facts: privacy },
   ],
   profiles: [{ id: 'triage', label: mark('profile.label'), description: mark('profile.description') }],
+  networkBodies: { allowed: true },
   initial: { privacy: 'masked', profile: 'triage' },
   defaults: { privacy: 'masked', profile: 'triage' },
 };
@@ -127,7 +132,7 @@ async function prompts(ui: RecorderUi, check: () => void) {
     await answer;
   }
   const abort = new AbortController();
-  const decision = ui.confirmUpload({ summary, signal: abort.signal });
+  const decision = ui.confirmUpload({ summary, privacy, signal: abort.signal });
   check();
   abort.abort();
   await decision;
@@ -183,6 +188,8 @@ const OPTIONS_KEYS = new Set([
   'privacyUnavailable',
   'privacyMode',
   'privacyHint',
+  'networkLabel',
+  'networkBodies',
   'record',
 ]);
 const rendered = [

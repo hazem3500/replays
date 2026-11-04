@@ -1,6 +1,6 @@
 import { contentTypeAllowed, DEFAULT_BODY_LIMITS, type RecorderBodyLimits } from './body-limits.ts';
 import type { ReplayCaptured, ReplayConsoleLevel } from './bundle-types.ts';
-import type { RecorderCapture, RecorderCaptureNetwork, RecorderOptions } from './types.ts';
+import type { RecorderCapture, RecorderCaptureNetwork, RecorderOptions, RecorderPrivacyMode } from './types.ts';
 
 const NETWORK: readonly RecorderCaptureNetwork[] = ['off', 'headers', 'bodies'];
 
@@ -45,8 +45,18 @@ export function resolveCapture(options: Pick<RecorderOptions, 'capture' | 'priva
   };
 }
 
-/** `meta.captured`: the recorder never records performance entries or video. */
-export function capturedRecord(capture: ResolvedCapture, bodiesRead: boolean, inputsVisible: boolean): ReplayCaptured {
+const shown = (visible: boolean) => (visible ? ('visible' as const) : ('masked' as const));
+
+/**
+ * `meta.captured`: the recorder never records performance entries or video. `customerMode` adds the customer's pick,
+ * read from what this recording actually captures so the claim never says more than the bundle holds.
+ */
+export function capturedRecord(
+  capture: ResolvedCapture,
+  bodiesRead: boolean,
+  inputsVisible: boolean,
+  customerMode?: RecorderPrivacyMode,
+): ReplayCaptured {
   const network = capture.network === 'bodies' && !bodiesRead ? 'headers' : capture.network;
   return {
     console: capture.consoleLevels.length > 0,
@@ -54,5 +64,16 @@ export function capturedRecord(capture: ResolvedCapture, bodiesRead: boolean, in
     performance: false,
     video: false,
     ...(inputsVisible ? { inputs: 'visible' as const } : {}),
+    ...(customerMode
+      ? {
+          choice: {
+            by: 'customer' as const,
+            mode: customerMode,
+            inputs: shown(inputsVisible),
+            text: shown(!capture.maskAllText),
+            bodies: network === 'bodies',
+          },
+        }
+      : {}),
   };
 }

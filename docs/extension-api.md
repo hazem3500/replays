@@ -764,6 +764,10 @@ Upload endpoints registered with `api.uploadEndpoint` (with or without their own
 store typed values. Password and hidden inputs are always masked. The switch is off by default, file only, and cannot be set
 by a plugin. Details: [extending.md](extending.md#visible-inputs-for-staff-recordings).
 
+`defineConfig({ privacy: { keepCustomerChoices: true } })` lets any upload keep the typed values and bodies a customer chose in
+the recorder's options step, only when the bundle carries a matching `meta.captured.choice` claim. Without the switch, or
+without the claim, nothing more is kept. Details: [extending.md](extending.md#customer-choices-on-upload).
+
 ## Host editing write policy
 
 Use `defineConfig({ beta: { editor: true }, editing: { enabled: false } })` for a host that plays saved edits

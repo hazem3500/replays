@@ -279,6 +279,39 @@ Password and hidden inputs are masked on the server in every case, and typing in
 masked too. URL, header, credential and body redaction and the host's `redaction` rules (text rules and mask selectors
 included) apply unchanged. The import route, `replays migrate` and the capture CLI never keep visible inputs.
 
+## Customer choices on upload
+
+A customer recording made through the recorder's [customer options step](recorder.md#options-step-for-customers) carries
+`meta.captured.choice: { by: 'customer', mode, inputs, text, bodies }`. By default the server treats it like any other
+customer upload: every input value is masked, every request and response body is dropped, `meta.captured.network` becomes
+`'headers'`, and the claim is rewritten to say so. A host that trusts its customers' picks can keep them:
+
+```json
+{ "privacy": { "keepCustomerChoices": true } }
+```
+
+The server keeps what the customer chose only when all of these hold:
+
+1. The config sets `privacy.keepCustomerChoices: true` (`defineConfig({ privacy: { keepCustomerChoices: true } })`). It is
+   off by default, file only (no environment variable), and not a redaction rule, so no plugin can turn it on.
+2. The bundle carries the claim `meta.captured.choice` (validated: `by: 'customer'`, `mode`, `inputs`, `text`, `bodies`). Without
+   it the switch keeps nothing: a bundle with no claim follows the staff rules above, so a customer ingest still masks every
+   input.
+3. The claim matches what the bundle declares it captured: `choice.inputs` is `'visible'` exactly when `meta.captured.inputs`
+   is, `choice.bodies` is `true` exactly when `meta.captured.network` is `'bodies'`, and visible inputs come only with the
+   `visible` mode. A claim that asks for more, or less, than the recorder could have produced keeps nothing at all.
+
+The rule applies on every upload route (`POST /api/replays` and plugin upload endpoints such as support or app-key
+ingest) and adds no auth exemption: who may upload, and the request order, are unchanged. A bundle with a customer
+claim ignores `keepVisibleInputs`. Kept bodies still pass the body redaction (secret JSON and form fields, credentials,
+tokens, card numbers, the host's `redaction` rules), and passwords, hidden inputs, credential URLs and auth headers are
+redacted in every case.
+
+Page text is masked by the recorder, not the server. The server never restores text the recorder masked, and adds no
+text masking of its own beyond the host's `redaction` text rules and mask selectors, which apply as usual; with or
+without the switch, page text stays as the recorder sent it. `choice.mode` and `choice.text` record which text rules the
+recorder applied (`interface-visible` keeps only text marked `data-replay-public`).
+
 ## Theming and branding
 
 Every colour is a CSS custom property. A deployment overrides the documented subset per colour scheme, without a

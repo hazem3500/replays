@@ -8,7 +8,7 @@ export { createRecorderFormat, formatDuration, formatDurationLong, type Recorder
 export * from './timer.ts';
 export * from './store.ts';
 export * from './deferred-ui.ts';
-export { blockSelector, blockProps, recorderUiProps, CHAT_WIDGET_PRESETS } from './privacy.ts';
+export { blockSelector, blockProps, publicProps, PUBLIC_ATTRIBUTE, recorderUiProps, CHAT_WIDGET_PRESETS } from './privacy.ts';
 export type { DefaultUiOptions, RecorderTheme, CompletionOptions, CompletionAction, CompletionContext } from './default-ui.ts';
 export {
   BLOCK_ATTRIBUTE,

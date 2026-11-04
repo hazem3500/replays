@@ -1,4 +1,10 @@
-import { type CapturedInputs, contentTypeAllowed, DEFAULT_BODY_LIMITS, type NetworkBodyLimits } from './capture-profile.ts';
+import {
+  type CapturedChoice,
+  type CapturedInputs,
+  contentTypeAllowed,
+  DEFAULT_BODY_LIMITS,
+  type NetworkBodyLimits,
+} from './capture-profile.ts';
 import { type CompiledRedaction, redactJsonKeys, redactText } from './redaction.ts';
 import { isRecord } from './validate.ts';
 
@@ -32,6 +38,8 @@ export interface ReplayCaptured {
    * (`privacy.keepVisibleInputs`) and a signed-in staff upload, and drops the claim otherwise.
    */
   inputs?: CapturedInputs;
+  /** Present when a customer chose the masking in the recorder's options step; see `CapturedChoice`. */
+  choice?: CapturedChoice;
 }
 
 /** What a captured body is replaced with, wherever a secret was found. */

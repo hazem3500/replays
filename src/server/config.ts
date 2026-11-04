@@ -55,6 +55,7 @@ import { createViewCatalog, type ViewCatalog } from './views.ts';
  *     "plugins": ["./plugin.mjs", ["pkg", {}]]     plugins to load (src/plugin/, docs/extension-api.md)
  *     "redaction": { "jsonKeys": ["ssn", "/card_?number/i"] }   added to the sanitiser's defaults (src/shared/redaction.ts)
  *     "privacy": { "keepVisibleInputs": false }    staff uploads keep visible inputs (file only; src/server/privacy-config.ts)
+ *     "privacy": { "keepCustomerChoices": false }  uploads keep a customer's chosen inputs and bodies (file only)
  *   }
  *
  * The same keys, typed, make up `defineConfig()` in a `replays.config.ts|js|json` (src/config/).

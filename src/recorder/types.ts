@@ -47,9 +47,22 @@ export type UploadProgress = { loaded: number; total?: number; fraction?: number
 export type PrivacyFacts = {
   mode: 'masked' | 'visible';
   maxDurationMs: number;
-  /** `networkBodies`: request and response content is kept, redacted. */
-  captures: { pageText: boolean; inputs: boolean; media: boolean; console: boolean; network: boolean; networkBodies?: boolean };
+  /**
+   * `networkBodies`: request and response content is kept, redacted. `interfaceText`: page text is masked except the
+   * product interface marked `data-replay-public`.
+   */
+  captures: {
+    pageText: boolean;
+    inputs: boolean;
+    media: boolean;
+    console: boolean;
+    network: boolean;
+    networkBodies?: boolean;
+    interfaceText?: boolean;
+  };
   reviewRequired: boolean;
+  /** The host's `app.name`, for copy such as "Acme's menus and labels stay visible". */
+  product?: string;
 };
 export type RecorderDecision = { consent: boolean } | { upload: boolean; note?: string };
 
@@ -90,8 +103,8 @@ export type RecorderUi = {
     offer: RecordingChoiceOffer;
     signal: AbortSignal;
   }): Promise<RecordingChoice | undefined>;
-  /** `signal` works as in `requestConsent`. */
-  confirmUpload(context: { summary: RecordingSummary; signal: AbortSignal }): Promise<UploadDecision>;
+  /** `signal` works as in `requestConsent`; `privacy` is what the reviewed recording captured. */
+  confirmUpload(context: { summary: RecordingSummary; privacy?: PrivacyFacts; signal: AbortSignal }): Promise<UploadDecision>;
   /**
    * Shown while a confirmed recording uploads; returns a function that hides
    * it.
@@ -147,8 +160,11 @@ export type RecorderPrivacyOptions = {
 
 export type { RecorderBodyLimits } from './body-limits.ts';
 
-/** How much of the page one recording shows, loosest first. The host's `privacy` caps every mode. */
-export type RecorderPrivacyMode = 'visible' | 'text-masked' | 'masked';
+/**
+ * How much of the page one recording shows. The host's `privacy` caps every mode. `interface-visible` masks like
+ * `masked` but keeps the text of the product interface marked `data-replay-public`; it is the customer default.
+ */
+export type RecorderPrivacyMode = 'visible' | 'text-masked' | 'interface-visible' | 'masked';
 
 /**
  * A profile the deployment defines (`meta.profile`), as the options step shows it. Shaped like the server's
@@ -162,31 +178,54 @@ export type RecorderProfileOption = {
   description?: string;
 };
 
-/** What the user picked for one recording. */
-export type RecordingChoice = { privacy?: RecorderPrivacyMode; profile?: string };
+/** What the user picked for one recording. `networkBodies`: include request and response content. */
+export type RecordingChoice = { privacy?: RecorderPrivacyMode; profile?: string; networkBodies?: boolean };
 
 /**
- * Opt-in options step for internal hosts: staff choose masking and profile right before each recording.
- * invariant: a mode relaxes masking only as far as the host's own `privacy` allows; a host whose `privacy` hides
- * text, inputs and media (the default, and so every support or customer host) never offers a choice.
+ * Opt-in options step: staff, or customers with `by: 'customer'`, choose masking, profile and network content right
+ * before each recording. invariant: a mode relaxes masking only as far as the host's own `privacy` allows, and the body
+ * option only as far as its `capture` allows; a host whose `privacy` hides text, inputs and media and whose `capture`
+ * reads no body (the defaults) never offers a choice.
  */
 export type RecorderChoices = {
+  /**
+   * Who picks. `'customer'`: every recording starts in `interface-visible` without bodies, with `masked` (Fully masked)
+   * always offered; `defaults` cannot loosen that, nothing is remembered, a looser mode or bodies need a pick in that
+   * recording's options step (a `start()` choice is reduced to the default, or `masked`), only the public marker may
+   * unmask text, and the bundle records the pick in `meta.captured.choice`. Default `'staff'`.
+   */
+  by?: 'staff' | 'customer';
+  /**
+   * Offer "Include network request and response content", off until picked. Only with `capture.network: 'bodies'`;
+   * otherwise the option is shown disabled. With it, a recording reads bodies only when the option is on.
+   */
+  networkBodies?: boolean;
   /** Modes to offer. Each is capped by `privacy`; modes the cap makes identical are offered once. */
   privacy?: readonly RecorderPrivacyMode[];
   /** Profiles to offer; the chosen id becomes the bundle's `meta.profile`. */
   profiles?: readonly (string | RecorderProfileOption)[];
-  /** The first choice until the user makes one. Default: the most masked mode offered and the first profile. */
+  /**
+   * The first choice until the user makes one. Default: the most masked mode offered, the first profile and no bodies.
+   * `by: 'customer'` uses only its `profile`.
+   */
   defaults?: RecordingChoice;
-  /** Remember the last choice for this origin in `localStorage`. Default `true`. */
+  /** Remember the last choice for this origin in `localStorage`. Default `true`; always off for `by: 'customer'`. */
   remember?: boolean;
 };
 
 /** What `chooseOptions` may offer, already capped by the host's `privacy`. */
 export type RecordingChoiceOffer = {
-  /** Loosest first; `facts` is what a recording in that mode captures. */
+  /** Who picks (`choices.by`). A customer offer lists only allowed modes, in display order. */
+  by: 'staff' | 'customer';
+  /**
+   * In display order: loosest first for staff; for a customer the default, then Fully masked, then any looser mode.
+   * `facts` is what a recording in that mode captures.
+   */
   privacy: readonly { mode: RecorderPrivacyMode; facts: PrivacyFacts }[];
   profiles: readonly { id: string; label: string; description?: string }[];
-  /** The remembered choice when it is still offered, else the defaults. */
+  /** Present when the host offers the body option; `allowed` is false when its `capture` reads no body. */
+  networkBodies?: { allowed: boolean };
+  /** The remembered choice when it is still offered, else the defaults. Always the defaults for `by: 'customer'`. */
   initial: RecordingChoice;
   /** The host's defaults, reduced to the offer; a UI can mark a choice that differs. */
   defaults: RecordingChoice;
@@ -253,7 +292,7 @@ export type RecorderOptions = {
   privacy?: RecorderPrivacyOptions;
   /** Network detail, console levels and stricter masking; bodies stay off unless asked for. */
   capture?: RecorderCapture;
-  /** Let staff choose masking and profile before each recording. Off unless set; see `RecorderChoices`. */
+  /** Let staff or customers choose masking, profile and network content before each recording. Off unless set; see `RecorderChoices`. */
   choices?: RecorderChoices;
   /**
    * URLs the network capture skips. Uploads run after capture stops, so the
@@ -285,7 +324,10 @@ export type Recorder = {
    * discarded, or the recorder was busy.
    */
   request(trigger?: RecorderTrigger): Promise<IssueReportReceipt | undefined>;
-  /** Starts recording. Only call after the user agreed in your own UI. `choice` is capped like `chooseOptions` answers. */
+  /**
+   * Starts recording. Only call after the user agreed in your own UI. `choice` is capped like `chooseOptions` answers;
+   * with `choices.by: 'customer'` it is reduced to Masked without bodies.
+   */
   start(options: { consent: true; trigger?: RecorderTrigger; choice?: RecordingChoice }): Promise<void>;
   /** Stops recording and keeps the result in memory for review. */
   stop(reason?: StopReason): RecordingSummary | undefined;
