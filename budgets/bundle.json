@@ -2074,15 +2074,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/213"
     },
     {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "gzip": 9311,
-        "brotli": 8068
-      },
-      "reason": "The collapsed runs rail draws a monogram tile per run with a corner status dot, and names a run without a recording with visually hidden text. Small justified growth under Hazem's standing approval (2026-11-03). CI same-runner main to head: gzip 9004 to 9039, brotli 7799 to 7833 bytes; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/213"
-    },
-    {
       "file": "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs",
       "cap": {
         "raw": 5454,
