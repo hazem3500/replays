@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { networkEntries, sanitizeUrl, sanitizeUrlFields } from '../src/capture/sanitize.ts';
 import { hasNoResponse, isFailedRequest } from '../src/shared/replay.ts';
 
-// Shapes taken from an agent-browser 0.38 HAR: the 3xx response is dropped, so
-// the hop is a status-0 entry with no headers; real failures carry net::ERR_*.
+/** Entries shaped like an agent-browser 0.38 HAR: a redirect hop is a status-0 entry with no headers (its 3xx response
+ * is dropped), while a real failure carries net::ERR_*. */
 const harEntry = (url: string, status: number, statusText: string) => ({
   startedDateTime: '2026-10-11T03:10:31.792Z',
   time: 0,
