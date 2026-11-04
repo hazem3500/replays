@@ -137,9 +137,9 @@ await recorder.request(); // From the host's Record click.
 `request()` then shows the pill where the recording pill sits, before the consent dialog (or instead of it with `prompts.consent: false`). It has the recording pill's controls and nothing else: **Record**, a quiet options button and close. The options and close icons are the viewer's own animated icons (the sliders' knobs slide, the cross turns once) and stay still under reduced motion. The options button's tooltip names the current choice ("Masked · Triage"), and a small dot marks a choice that differs from `defaults`. It opens one small menu above the pill (a full-width sheet on phones) that scrolls when long:
 
 - **Profile**: the profiles the host passes, each with its optional description as a quiet line under it.
-- **Privacy**: Visible, Text masked and Masked, each with one quiet line from what that mode actually records once the host's cap applies ("Records text and inputs", "Hides text and inputs", "Hides text, inputs and media"), and a note at the end: "Passwords always stay hidden". A mode the host's privacy does not allow is disabled, its line saying "Not allowed here".
+- **Privacy**: Visible, Text masked and Masked, each with one quiet line from what that mode actually records once the host's cap applies ("Records text and inputs", "Hides text and inputs", "Hides text, inputs and media"). A mode the host's privacy does not allow is disabled, its line saying "Not allowed here".
 
-Each line is tied to its item with `aria-describedby`, and the note to the Privacy group. Check marks show the current choices. It is a menu button with radio items: arrow keys, Home and End move across both groups and skip disabled modes, Enter, Space or a click chooses and closes, Escape and Tab close it, and a press outside closes it. Escape with the menu closed, or close, records nothing. The consent prompt describes the chosen mode.
+Each line is tied to its item with `aria-describedby`. Check marks show the current choices. It is a menu button with radio items: arrow keys, Home and End move across both groups and skip disabled modes, Enter, Space or a click chooses and closes, Escape and Tab close it, and a press outside closes it. Escape with the menu closed, or close, records nothing. The consent prompt describes the chosen mode.
 
 Profiles belong to the deployment (the config's `profiles`, or plugins), and the ingest endpoint refuses an id it does not define. `GET /api/config` lists them as `profiles: [{ id, label, ... }]`, which `choices.profiles` takes as is; add a `description` where a one-line hint helps:
 
@@ -231,7 +231,6 @@ Static keys are strings. Data-bearing keys are functions of typed params, so you
 | `privacyUnavailable` | | Beside a mode the host's privacy does not allow | Not allowed here |
 | `privacyMode` | `mode: RecorderPrivacyMode` | A mode's name | Visible, Text masked, Masked |
 | `privacyHint` | `mode: RecorderPrivacyMode`, `privacy: PrivacyFacts` | One quiet line under a mode, from what it records | Records text and inputs; Hides text and inputs; Hides text, inputs and media |
-| `privacyAlways` | | Note at the end of the Privacy group | Passwords always stay hidden |
 | `record` | | Options step button that starts the recording | Record |
 
 Labels you pass yourself (completion `message` and `actions`, an error's `userMessage` and `link.label`) are already yours and are shown as given.
