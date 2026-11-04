@@ -49,15 +49,12 @@ function itemNode(item: Item): HTMLElement {
   return node;
 }
 
-function groupNode(group: Group, name: string, items: HTMLElement[], note?: string): HTMLElement {
+function groupNode(group: Group, name: string, items: HTMLElement[]): HTMLElement {
   const heading = element('div', { className: 'options-heading', id: `${MENU_ID}-${group}` }, [name]);
   heading.setAttribute('role', 'presentation');
-  const noteNode = note ? element('p', { className: 'options-note', id: `${MENU_ID}-${group}-note` }, [note]) : undefined;
-  noteNode?.setAttribute('role', 'none');
-  const node = element('div', { className: 'options-group' }, [heading, ...items, ...(noteNode ? [noteNode] : [])]);
+  const node = element('div', { className: 'options-group' }, [heading, ...items]);
   node.setAttribute('role', 'group');
   node.setAttribute('aria-labelledby', heading.id);
-  if (noteNode) node.setAttribute('aria-describedby', noteNode.id);
   return node;
 }
 
@@ -83,7 +80,7 @@ function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
   );
   const groups = [
     ...(profiles.length ? [groupNode('profile', messages.profileLabel, profiles)] : []),
-    ...(privacy.length ? [groupNode('privacy', messages.privacyLabel, privacy, messages.privacyAlways)] : []),
+    ...(privacy.length ? [groupNode('privacy', messages.privacyLabel, privacy)] : []),
   ];
   const node = element('div', { className: 'options-menu', id: MENU_ID, hidden: true }, groups);
   node.setAttribute('role', 'menu');
