@@ -14,6 +14,9 @@ import {
 import { CURSOR_MOTION_STYLES, type CursorMotionStyle } from '../src/shared/cursor.ts';
 import type { ReplaySource } from '../src/shared/replay.ts';
 
+const SWEEP_END: CursorPoint = { t: 1300, x: 585, y: 345 };
+const SECOND_START: CursorPoint = { t: 5000, x: 600, y: 360 };
+
 /** A hand-drawn sweep sampled every 50 ms, bending twice and speeding up and slowing down. */
 const SWEEP: CursorPoint[] = [
   { t: 1000, x: 100, y: 100 },
@@ -22,14 +25,10 @@ const SWEEP: CursorPoint[] = [
   { t: 1150, x: 380, y: 250 },
   { t: 1200, x: 520, y: 240 },
   { t: 1250, x: 560, y: 330 },
-  { t: 1300, x: 585, y: 345 },
+  SWEEP_END,
 ];
 /** A second sweep after a long still, so the first one rests for 3.7 s. */
-const SECOND: CursorPoint[] = [
-  { t: 5000, x: 600, y: 360 },
-  { t: 5050, x: 640, y: 420 },
-  { t: 5100, x: 700, y: 470 },
-];
+const SECOND: CursorPoint[] = [SECOND_START, { t: 5050, x: 640, y: 420 }, { t: 5100, x: 700, y: 470 }];
 const HUMAN: CursorInput = { points: [...SWEEP, ...SECOND], presses: [1300] };
 
 const distance = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
@@ -67,58 +66,60 @@ function recordedAt(line: readonly CursorPoint[], t: number) {
   return { x: before.x + (after.x - before.x) * f, y: before.y + (after.y - before.y) * f };
 }
 
-describe('a human recording', () => {
-  const track = buildCursorTrack(HUMAN, { source: 'human' });
+const HUMAN_TRACK = buildCursorTrack(HUMAN, { source: 'human' });
 
+describe('a human recording path', () => {
   it('rides the recorded polyline through a sweep, within a pixel', () => {
     for (let t = 1000; t <= 1300; t += 7) {
-      const at = cursorPose(track, t);
+      const at = cursorPose(HUMAN_TRACK, t);
       expect(toPolyline(at, SWEEP), `at ${t} ms the cursor was at (${at.x.toFixed(1)}, ${at.y.toFixed(1)})`).toBeLessThan(1);
     }
   });
 
   it('is where the pointer was at every moment, interpolating by the samples timestamps', () => {
     for (let t = 1001; t < 1300; t += 11) {
-      const at = cursorPose(track, t);
+      const at = cursorPose(HUMAN_TRACK, t);
       expect(distance(at, recordedAt(SWEEP, t)), `at ${t} ms`).toBeLessThan(1);
     }
   });
 
   it('is exactly on every recorded sample at its timestamp', () => {
     for (const sample of [...SWEEP, ...SECOND].filter((p) => p.t > 1000)) {
-      expect(distance(cursorPose(track, sample.t), sample), `at ${sample.t} ms`).toBeLessThan(1e-6);
+      expect(distance(cursorPose(HUMAN_TRACK, sample.t), sample), `at ${sample.t} ms`).toBeLessThan(1e-6);
     }
   });
+});
 
+describe('a human recording pose', () => {
   it('keeps the arrow upright and unscaled while it moves', () => {
-    const at = cursorPose(track, 1120);
+    const at = cursorPose(HUMAN_TRACK, 1120);
     expect(at.heading).toBeCloseTo(Math.PI / 4);
     expect(at.scale).toBe(1);
     expect(at.opacity).toBe(1);
   });
 
   it('holds still through a long rest, then follows the line into the next sample', () => {
-    for (const t of [1400, 3000, 4800]) expect(distance(cursorPose(track, t), SWEEP[6] as CursorPoint), `at ${t} ms`).toBeLessThan(1e-6);
-    const arriving = cursorPose(track, 4975);
-    expect(toSegment(arriving, SWEEP[6] as CursorPoint, SECOND[0] as CursorPoint)).toBeLessThan(1);
-    expect(distance(arriving, SWEEP[6] as CursorPoint)).toBeGreaterThan(1);
+    for (const t of [1400, 3000, 4800]) expect(distance(cursorPose(HUMAN_TRACK, t), SWEEP_END), `at ${t} ms`).toBeLessThan(1e-6);
+    const arriving = cursorPose(HUMAN_TRACK, 4975);
+    expect(toSegment(arriving, SWEEP_END, SECOND_START)).toBeLessThan(1);
+    expect(distance(arriving, SWEEP_END)).toBeGreaterThan(1);
   });
 
   it('gives the same pose playing forward as seeking straight there', () => {
     const times = Array.from({ length: 60 }, (_, i) => 900 + i * 90);
-    const forward = times.map((t) => ({ ...cursorPose(track, t) }));
+    const forward = times.map((t) => ({ ...cursorPose(HUMAN_TRACK, t) }));
     const seeking = times.toReversed().map((t) => ({ ...cursorPose(buildCursorTrack(HUMAN, { source: 'human' }), t) }));
     expect(seeking.toReversed()).toEqual(forward);
   });
 
   it('keeps the click squish at the press and the idle fade through the rest', () => {
-    const pressed = cursorPose(track, 1300 + 60);
+    const pressed = cursorPose(HUMAN_TRACK, 1300 + 60);
     expect(pressed.scale).toBeLessThan(1);
     expect(pressed.press).toBe(60);
-    expect(cursorPose(track, 1300 + CLICK_FX_MS + 200).press).toBe(-1);
-    expect(cursorPose(track, 1300 + CLICK_FX_MS + 200).opacity).toBe(1);
-    expect(cursorPose(track, 1300 + CLICK_FX_MS + IDLE_MS + IDLE_FADE_OUT_MS + 100).opacity).toBe(0);
-    expect(cursorPose(track, 4960).opacity).toBe(1);
+    expect(cursorPose(HUMAN_TRACK, 1300 + CLICK_FX_MS + 200).press).toBe(-1);
+    expect(cursorPose(HUMAN_TRACK, 1300 + CLICK_FX_MS + 200).opacity).toBe(1);
+    expect(cursorPose(HUMAN_TRACK, 1300 + CLICK_FX_MS + IDLE_MS + IDLE_FADE_OUT_MS + 100).opacity).toBe(0);
+    expect(cursorPose(HUMAN_TRACK, 4960).opacity).toBe(1);
   });
 
   it('ignores the motion style, which only shapes an arc it no longer draws', () => {
@@ -130,9 +131,11 @@ describe('a human recording', () => {
     const settings = { appearance: 'ring', clickEffect: 'ripple', size: 1.5, clickFeedback: true } as const;
     const themed = buildCursorTrack(HUMAN, { source: 'human', settings });
     expect(cursorPose(themed, 1300 + 60).press).toBe(60);
-    expect(cursorPose(themed, 1170)).toEqual(cursorPose(track, 1170));
+    expect(cursorPose(themed, 1170)).toEqual(cursorPose(HUMAN_TRACK, 1170));
   });
+});
 
+describe('a human recording at the page edges', () => {
   it('stays inside the recorded viewport', () => {
     const edge = buildCursorTrack(
       {
@@ -167,7 +170,6 @@ describe('a human recording', () => {
 });
 
 describe('an agent recording', () => {
-  /** The agent's pointer jumps: one landing sample per move, seconds apart. */
   const JUMPS: CursorInput = {
     points: [
       { t: 0, x: 100, y: 100 },
@@ -197,7 +199,6 @@ describe('an agent recording', () => {
 });
 
 describe('a recording that does not say who made it', () => {
-  /** A person's pointer: a sample every 50 ms for several seconds, drifting along a curve. */
   const dense = Array.from({ length: 120 }, (_, i) => ({ t: i * 50, x: 100 + i * 8, y: 300 + Math.sin(i / 6) * 90 }));
 
   it('follows the exact path when the pointer is sampled densely, like a hand', () => {

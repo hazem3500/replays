@@ -37,8 +37,7 @@ export class ReplayCursor {
     wrapper: HTMLElement,
     events: ReadonlyArray<{ timestamp: number; type?: unknown; data?: unknown }>,
     base: number,
-    settings?: ReplayCursorSettings,
-    source?: ReplaySource,
+    { settings, source }: { settings?: ReplayCursorSettings | undefined; source?: ReplaySource | undefined } = {},
   ) {
     this.wrapper = wrapper;
     this.source = source;

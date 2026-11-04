@@ -103,7 +103,10 @@ export class ReplayController {
     });
     this.replayer = replayer;
     replayer.pause(this.offsetFor(this.time));
-    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, this.effects.cursor, this.source);
+    const cursor = new ReplayCursor(replayer.wrapper, this.events, this.events[0]?.timestamp ?? 0, {
+      settings: this.effects.cursor,
+      source: this.source,
+    });
     this.cursor = cursor;
     cursor.update(this.time);
     const unsubscribeCursor = this.subscribeTime(() => cursor.update(this.time));

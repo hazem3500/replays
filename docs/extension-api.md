@@ -755,6 +755,15 @@ adds its files with `COPY` and sets nothing else.
 - Test behaviour with `startServer({ port: 0, config: { dir, file: {}, plugins: [plugin] } , env: { DATA_DIR, POSTERS_DISABLED: '1', RENDER_DISABLED: '1' } })`.
 - `examples/custom-distro/e2e/smoke.spec.ts` shows a browser-level check of each extension point.
 
+## Visible inputs for staff recordings
+
+`defineConfig({ privacy: { keepVisibleInputs: true } })` lets the privacy pass keep ordinary input values of a bundle that
+declares `meta.captured.inputs: 'visible'`, but only on `POST /api/replays` from a real auth adapter's unrestricted identity.
+Upload endpoints registered with `api.uploadEndpoint` (with or without their own `authenticate`), scoped upload tokens
+(`authScopes`) and identities with `capabilities` always get every input masked, so an app-key or customer ingest can never
+store typed values. Password and hidden inputs are always masked. The switch is off by default, file only, and cannot be set
+by a plugin. Details: [extending.md](extending.md#visible-inputs-for-staff-recordings).
+
 ## Host editing write policy
 
 Use `defineConfig({ beta: { editor: true }, editing: { enabled: false } })` for a host that plays saved edits

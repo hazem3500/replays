@@ -56,7 +56,7 @@ describe('cursor themes', () => {
 
   it('draws the saved theme on the player and swaps it when settings change', () => {
     const host = document.createElement('div');
-    const cursor = new ReplayCursor(host, events, 1000, { appearance: 'ring' });
+    const cursor = new ReplayCursor(host, events, 1000, { settings: { appearance: 'ring' } });
     try {
       cursor.update(760);
       const element = host.querySelector<HTMLElement>('.replay-cursor');
@@ -75,7 +75,7 @@ describe('cursor click feedback', () => {
   it('restores the same click frame after seeking and clears feedback when disabled or reduced', () => {
     for (const effect of ['ripple', 'pulse'] as const) {
       const host = document.createElement('div');
-      const cursor = new ReplayCursor(host, events, 1000, { clickEffect: effect, hideWhenIdle: false });
+      const cursor = new ReplayCursor(host, events, 1000, { settings: { clickEffect: effect, hideWhenIdle: false } });
       try {
         cursor.update(760);
         const element = host.querySelector<HTMLElement>('.replay-cursor')!;
@@ -92,7 +92,7 @@ describe('cursor click feedback', () => {
         cursor.setSettings({ clickEffect: effect, clickFeedback: false });
         expect(feedback.style.display).toBe('none');
         vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
-        const reduced = new ReplayCursor(host, events, 1000, { clickEffect: effect });
+        const reduced = new ReplayCursor(host, events, 1000, { settings: { clickEffect: effect } });
         try {
           reduced.update(760);
           expect(host.lastElementChild?.querySelector<SVGElement>('svg[style*="position"]')?.style.display).toBe('none');

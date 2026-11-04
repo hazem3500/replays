@@ -438,7 +438,7 @@ export function buildCursorTrack(
     const scale = available >= 1 ? (followed ? fit : Math.min(1, fit)) : 0;
     moves.push({ start, end: scale > 0 ? start + traj.durationMs * scale : start, scale, traj });
   }
-  return assemble(targets[0], moves, input.presses, reducedMotion, options.settings);
+  return assemble({ first: targets[0], moves, presses: input.presses, reducedMotion, settings: options.settings });
 }
 
 /** A person's recording: the cursor follows the recorded path itself, whatever motion style is saved. */
@@ -450,16 +450,16 @@ function recordedTrack(input: CursorInput, settings: ReplayCursorSettings | unde
     scale: 1,
     traj: { samples: segment.samples, arrivalMs: segment.durationMs, durationMs: segment.durationMs },
   }));
-  return assemble(points[0], moves, input.presses, false, settings);
+  return assemble({ first: points[0], moves, presses: input.presses, reducedMotion: false, settings });
 }
 
-function assemble(
-  first: CursorPoint | undefined,
-  moves: Move[],
-  presses: number[],
-  reducedMotion: boolean,
-  settings: ReplayCursorSettings | undefined,
-): CursorTrack {
+function assemble({
+  first,
+  moves,
+  presses,
+  reducedMotion,
+  settings,
+}: Pick<CursorTrack, 'first' | 'moves' | 'presses' | 'reducedMotion' | 'settings'>): CursorTrack {
   const spans: Array<[number, number]> = moves.map((move) => [move.start, move.start + move.traj.durationMs * move.scale]);
   for (const press of presses) spans.push([press, press + CLICK_FX_MS]);
   return {

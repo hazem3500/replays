@@ -23,7 +23,7 @@ function fittedHost(fit: string | undefined, measuredWidth: number) {
 describe('cursor fit in animated replay layouts', () => {
   it('ignores ancestor projection scale while preserving the saved cursor size', () => {
     const { host, wrapper } = fittedHost('0.5', 15);
-    const cursor = new ReplayCursor(wrapper, events, 1000, { size: 1.5, hideWhenIdle: false, clickFeedback: false });
+    const cursor = new ReplayCursor(wrapper, events, 1000, { settings: { size: 1.5, hideWhenIdle: false, clickFeedback: false } });
     try {
       cursor.update(200);
       expect(wrapper.querySelector<HTMLElement>('.replay-cursor')?.style.transform).toContain('scale(3.0000)');
@@ -36,7 +36,7 @@ describe('cursor fit in animated replay layouts', () => {
 
   it('updates a paused cursor when its host fit changes without a replay time change', async () => {
     const { host, wrapper } = fittedHost('0.5', 50);
-    const cursor = new ReplayCursor(wrapper, events, 1000, { hideWhenIdle: false, clickFeedback: false });
+    const cursor = new ReplayCursor(wrapper, events, 1000, { settings: { hideWhenIdle: false, clickFeedback: false } });
     try {
       cursor.update(200);
       expect(wrapper.querySelector<HTMLElement>('.replay-cursor')?.style.transform).toContain('scale(2.0000)');
@@ -52,7 +52,7 @@ describe('cursor fit in animated replay layouts', () => {
   it('uses a compact comparison cursor while retaining the saved size multiplier', () => {
     const { host, wrapper } = fittedHost('0.25', 25);
     host.style.setProperty('--player-cursor-size', '0.5625');
-    const cursor = new ReplayCursor(wrapper, events, 1000, { hideWhenIdle: false, clickFeedback: false });
+    const cursor = new ReplayCursor(wrapper, events, 1000, { settings: { hideWhenIdle: false, clickFeedback: false } });
     try {
       cursor.update(200);
       const glyph = wrapper.querySelector<HTMLElement>('.replay-cursor');
@@ -69,7 +69,7 @@ describe('cursor fit in animated replay layouts', () => {
 
   it('retains measured fit for standalone hosts without a published stage scale', () => {
     const { host, wrapper } = fittedHost(undefined, 50);
-    const cursor = new ReplayCursor(wrapper, events, 1000, { hideWhenIdle: false, clickFeedback: false });
+    const cursor = new ReplayCursor(wrapper, events, 1000, { settings: { hideWhenIdle: false, clickFeedback: false } });
     try {
       cursor.update(200);
       expect(wrapper.querySelector<HTMLElement>('.replay-cursor')?.style.transform).toContain('scale(2.0000)');
