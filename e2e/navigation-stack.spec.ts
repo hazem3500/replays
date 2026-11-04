@@ -188,10 +188,11 @@ test.describe('suite recording navigation', () => {
       if (!opening) throw new Error('Expected the opening capture');
       expectIdentityPairs(opening, ids);
       const focused = page.locator('.ct-tile[data-current]');
-      await expect(focused).toHaveCSS('outline-width', '2px');
+      const frame = () => focused.evaluate((tile) => getComputedStyle(tile, '::after').boxShadow);
+      await expect.poll(frame).toContain('2.5px');
       await page.keyboard.press('Tab');
       await focused.locator('.ct-hit').focus();
-      await expect(focused.locator('.ct-hit')).toHaveCSS('box-shadow', /inset/);
+      await expect.poll(frame).toMatch(/(inset.*){3}/);
       await page.goBack();
       await expect(link).toBeVisible();
       await expect(page.locator('html')).not.toHaveAttribute('data-page-transition', /.+/);
