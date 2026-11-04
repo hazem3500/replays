@@ -130,7 +130,7 @@
     "dist/client/assets/drawer-HASH.js": {
       "raw": 45147,
       "gzip": 16048,
-      "brotli": 14511
+      "brotli": 14530
     },
     "dist/client/assets/dropdown-menu-HASH.css": {
       "raw": 1753,
@@ -265,7 +265,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 67
+      "brotli": 70
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -528,9 +528,9 @@
       "brotli": 2508
     },
     "dist/lib/chunks/har-bodies.ts-c61c0be17389.mjs": {
-      "raw": 28371,
-      "gzip": 8125,
-      "brotli": 7193
+      "raw": 28800,
+      "gzip": 8210,
+      "brotli": 7290
     },
     "dist/lib/chunks/header.ts-63279855abdb.mjs": {
       "raw": 36193,
@@ -620,7 +620,7 @@
     "dist/lib/model.mjs": {
       "raw": 1100,
       "gzip": 381,
-      "brotli": 341
+      "brotli": 352
     },
     "dist/lib/plugin.mjs": {
       "raw": 852,
