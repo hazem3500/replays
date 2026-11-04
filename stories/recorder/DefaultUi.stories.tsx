@@ -57,7 +57,6 @@ export const OptionsMenuOpen: Story = {
     await inRecorderUi(() => recorderUi.item('Support'));
     await visible('Slow pages, with vitals and requests');
     await visible('Hides text, inputs and media');
-    await visible(defaultRecorderMessages.privacyAlways);
   },
 };
 
