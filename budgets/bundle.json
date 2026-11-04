@@ -659,7 +659,7 @@
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
-      "gzip": 1902,
+      "gzip": 1963,
       "brotli": 1759
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
@@ -678,9 +678,9 @@
       "brotli": 721
     },
     "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs": {
-      "raw": 6937,
-      "gzip": 2331,
-      "brotli": 2045
+      "raw": 7507,
+      "gzip": 2443,
+      "brotli": 2138
     },
     "dist/lib/recorder-kit.mjs": {
       "raw": 525,
@@ -1727,16 +1727,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
-      "cap": {
-        "raw": 6769,
-        "gzip": 1902,
-        "brotli": 1765
-      },
-      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: brotli 1711 to 1713 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/server.mjs",
       "cap": {
         "raw": 2181,
@@ -2134,21 +2124,29 @@
       "pr": "https://github.com/hazem3500/replays/pull/253"
     },
     {
-      "file": "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs",
-      "cap": {
-        "raw": 6937,
-        "gzip": 2331,
-        "brotli": 2045
-      },
-      "reason": "Lazy chunk loaded only for hosts that pass choices: the customer rules (interface-visible default, mode order, no memory, pick tracking, unmask allowlist) and the network body option capped by capture. CI same-runner main/head (raw/gzip/brotli): 4197/1525/1336 to 6734/2263/1985 B; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/253"
-    },
-    {
       "file": "dist/lib/recorder-kit.mjs",
       "cap": {
         "brotli": 215
       },
       "reason": "No source change in the kit entry: its re-export of the recorder privacy chunk changed as publicProps and PUBLIC_ATTRIBUTE joined that chunk. CI same-runner main/head (raw/gzip/brotli): 509/231/196 to 509/228/208 B; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/253"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs",
+      "cap": {
+        "raw": 7507,
+        "gzip": 2443,
+        "brotli": 2138
+      },
+      "reason": "Customer privacy choices: the interface-visible default, Fully masked, the network-content option and the per-mode consent sentence in the options step, split into small settling helpers. CI same-runner head raw 7288, gzip 2371, brotli 2075; caps are head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/253"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs",
+      "cap": {
+        "gzip": 1963
+      },
+      "reason": "Gzip-only drift: the deferred UI chunk names the recorder-choices chunk, whose hash changed; CI head gzip 1905 (+4). Cap is head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/253"
     }
   ]
