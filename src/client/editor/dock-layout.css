@@ -1,0 +1,127 @@
+/*
+ * The desktop dock's bar and timeline, shared by the loaded editor (editor.css, in the lazy Editor chunk) and its
+ * loading frame (skeleton.css, eager; DockSkeleton.tsx draws the same classes), so the tool group, the ruler, the
+ * clip and every lane sit at the same rects in both and nothing moves when the editor arrives. Interactive states
+ * that only the loaded editor has stay in editor.css.
+ */
+/* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
+@layer properties, theme, base, app, components, utilities;
+@layer app {
+  /*
+   * The dock's bar in three zones: transport on the left (play, then "0:04.0 / 0:13.5" as one timecode), the editing
+   * tools centred in one quiet group, and what the edits leave on the right once they remove time.
+   */
+  .editor-bar { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; min-height: 48px; }
+  .editor-bar-start { display: flex; align-items: center; gap: 4px; min-width: 0; }
+  .editor-bar-tools { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 10px; background: color-mix(in srgb, var(--text) 4%, transparent); }
+  .editor-bar-end { justify-self: end; min-width: 0; min-height: 36px; display: flex; align-items: center; gap: 2px; }
+  .editor-time { display: inline-flex; align-items: baseline; gap: 5px; margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .editor-time-total { color: var(--text-tertiary); font-size: var(--text-xs); }
+  .editor-bar-end :is(.editor-durations-original, .editor-durations-original + span) { display: none; }
+  .editor-bar svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
+  .editor-bar svg.filled-icon { fill: currentColor; }
+  .editor-bar [aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
+  .editor-bar-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--line); }
+  .editor-tool.editor-tool { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
+  .editor-tool svg { width: 15px; height: 15px; }
+  .editor-tool .editor-key { margin-left: -1px; }
+  /* why: on a narrow bar the tools keep their names; the keys stay in each tooltip and the shortcut sheet. */
+  @container (max-width: 760px) { .editor-tool .editor-key { display: none; } }
+  .editor-add-effect.editor-add-effect { gap: 5px; padding: 0 8px; color: var(--text-secondary); }
+  .editor-add-effect svg { width: 14px; height: 14px; }
+  .editor-add-effect svg:last-child { width: 11px; }
+  /*
+   * A control's key after its name (EditorTools.tsx KeySuffix): smaller and in the tertiary ink, which clears 4.5:1 on
+   * every surface it sits on (styles.css); its data-slot keeps the page-wide keycap off it.
+   */
+  .editor-key { min-width: 0; padding: 0; border: 0; background: none; color: var(--text-tertiary); font-family: var(--sans); font-size: var(--text-2xs); font-weight: 500; line-height: 1; }
+  .editor-clock { color: var(--text); font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .editor-durations { display: inline-flex; align-items: baseline; gap: 6px; font-size: var(--text-xs); font-variant-numeric: tabular-nums; color: var(--text-tertiary); white-space: nowrap; }
+  .editor-durations-note { color: var(--text-secondary); font-size: var(--text-2xs); }
+  .editor-durations strong { color: var(--text); font-weight: 600; }
+
+  /* ---------- Timeline ---------- */
+  .timeline { --gutter: 36px; --tl-inset: 4px; flex: 0 1 auto; min-height: 0; display: flex; flex-direction: column; position: relative; user-select: none; -webkit-user-select: none; touch-action: pan-y; overflow-y: auto; scrollbar-width: thin; padding: var(--tl-inset) var(--tl-inset) 6px; }
+  .tl-ruler-row, .tl-lane { display: grid; grid-template-columns: var(--gutter) minmax(0, 1fr); }
+  .tl-gutter-spacer { display: block; }
+  .tl-ruler-row { flex: none; }
+  /*
+   * Ruler: two bands. The time labels with a short tick under each (0 to 18 px), then the step dots in a band of their
+   * own (18 to 32 px), so a dot never sits beside a label or across a tick.
+   */
+  .tl-ruler { position: relative; height: 32px; cursor: ew-resize; }
+  .tl-tick { position: absolute; top: 0; bottom: 0; left: 0; width: 1px; background: linear-gradient(to bottom, transparent 14px, var(--line-strong) 14px 18px, transparent 18px); pointer-events: none; }
+  .tl-tick-label { position: absolute; top: 1px; left: 0; translate: -50% 0; color: var(--text-secondary); font-size: 11px; line-height: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /*
+   * Step dots (TimelineStepDots.tsx): a 10 px dot per step, centred 6 px below the ticks, filled for an action and
+   * hollow for a wait, right over the clip's divider where that step starts. Each is a 24 px target (dots closer than
+   * that merge, so targets never overlap) reaching into the gap under the ruler.
+   */
+  .tl-steps { position: absolute; inset: 0; pointer-events: none; }
+  .tl-step { position: absolute; top: 13px; left: -12px; display: grid; place-items: center; width: 24px; height: 24px; padding: 0; border: 0; border-radius: 999px; background: none; color: var(--text-tertiary); cursor: pointer; pointer-events: auto; outline: none; transition: color var(--motion-fast) var(--ease-out), opacity var(--motion-fast) var(--ease-out); }
+  .tl-step svg { position: relative; width: 20px; height: 20px; transition: scale var(--motion-fast) var(--ease-out); }
+  /* why: 0.7 keeps a removed dot at 3:1 against the dock in both themes while it still reads as faded. */
+  .tl-step[data-removed] { opacity: 0.7; }
+
+  /*
+   * invariant: lanes keep a comfortable height instead of stretching to the dock, so the timeline (and the playhead
+   * line) ends at the last lane; a short dock shrinks them to their minimum and then scrolls.
+   */
+  .tl-lane { flex: 0 1 40px; min-height: 30px; margin-top: 6px; }
+  .tl-lane[data-tall] { flex: 0 1 52px; min-height: 44px; }
+  /* Lane headers: one small glyph, centred on the lane, in the lane's kind colour; its tooltip names the lane. */
+  .tl-gutter { display: grid; place-items: center; width: 100%; height: 100%; color: var(--kind, var(--text-tertiary)); }
+  .tl-gutter svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+  .tl-track { position: relative; height: 100%; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); box-shadow: inset 0 0 0 1px var(--line); overflow: visible; cursor: crosshair; }
+
+  /* Clip lane: the clip (its edges are the trim), trimmed-off ends dimmed. */
+  .tl-outside { container-type: inline-size; position: absolute; top: 0; bottom: 0; display: grid; place-items: center; overflow: hidden; border-radius: 8px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--canvas) 70%, transparent) 0 6px, color-mix(in srgb, var(--canvas) 55%, transparent) 6px 12px); pointer-events: none; }
+  .tl-outside-label { color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
+  @container (max-width: 72px) { .tl-outside-label { display: none; } }
+  .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); pointer-events: none; }
+  /* The clip's steps (ClipSteps): a faint divider at each start and whole words where they fit, in the quietest text. */
+  .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 1px solid var(--line); color: var(--text-secondary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
+  /* A wait: dimmer than the steps around it and named by its length, so a run of nothing reads as one quiet stretch. */
+  .tl-clip-step[data-wait] { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+  /* why: the waits found are a tint over the clip; the step names stay readable over them. */
+  .tl-clip-step > span { position: relative; z-index: 3; }
+  .tl-clip-step-label, .phone-step-label { display: inline-flex; align-items: center; gap: 3px; }
+  .clip-wait-glyph { flex: none; }
+  .tl-clip-step:first-child { padding-left: 14px; border-left: 0; }
+  /* The trim edges: slim tabs with a grip. */
+  .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; }
+  .tl-trim[data-edge="start"] { left: 0; border-radius: 8px 3px 3px 8px; }
+  .tl-trim[data-edge="end"] { right: 0; border-radius: 3px 8px 8px 3px; }
+  .tl-trim-grip { width: 2px; height: 12px; border-radius: 1px; background: var(--text-secondary); opacity: 0.8; }
+
+  /* Regions (cuts; the effect lanes reuse them). */
+  .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
+  .tl-lane[data-tall] .tl-region { top: 6px; bottom: 6px; }
+  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 8px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; }
+  /*
+   * invariant: a block's label is whole words that fit (block-label.ts), never clipped, faded or ellipsed. A block too
+   * short for two words is a plain block with a 3 px top accent in its lane's colour (data-short), never an icon stub;
+   * its tooltip and name keep the full text.
+   */
+  .tl-region-label { min-width: 0; white-space: nowrap; pointer-events: none; }
+  /* A cut names its length on a small plate, so the words read over its hatching. */
+  .tl-region[data-kind="cut"] .tl-region-label { padding: 1px 5px; border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); }
+  /* why: opaque, so the clip's step words under a cut never show through as faint, half-hidden text. */
+  .tl-region[data-kind="cut"] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), color-mix(in srgb, var(--canvas) 72%, var(--surface-raised)); }
+  /*
+   * Kind hues: each effect lane takes one of the theme's own colours, so the four tell apart at a glance in both
+   * themes while staying quiet: zoom the accent, speed the warning amber, blur the danger rose, captions the success
+   * green. Full strength on the lane's glyph and a short block's top accent; a whisper of it in each block's fill,
+   * a step stronger when selected. invariant: labels stay neutral ink, so text keeps AA on every tint.
+   */
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="zoom"] { --kind: var(--accent); }
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind: var(--warning); }
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="blur"] { --kind: var(--danger); }
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="caption"] { --kind: var(--success); }
+  :is(.editor-shell, .editor-loading) { --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
+  :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
+  .tl-region[data-kind="caption"] { top: 7px; bottom: 7px; }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 5px; background: color-mix(in oklab, var(--kind, transparent) var(--kind-fill), var(--clip-fill)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid var(--kind, var(--line-strong)); }
+  .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
+}

@@ -14,6 +14,7 @@ const PARTS: Array<[string, string, string]> = [
   ['timeline bar', '.sk-phone-bar', '.phone-timeline-bar'],
   ['play', '.sk-phone-play', '[data-testid="editor-play"]'],
   ['clock', '.sk-phone-clock', '.phone-timeline-bar .editor-clock'],
+  ['step line', '.sk-phone-step-line', '.phone-step-line'],
   ['lanes area', '.sk-phone-lanes', '.phone-lanes-frame'],
   ['scale labels', '.sk-phone-scale > span', '.phone-scale > span'],
   ['lanes', '.sk-phone-lane', '.phone-lane'],

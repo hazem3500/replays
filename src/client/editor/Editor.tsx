@@ -29,7 +29,7 @@ import { EditCaption } from '../edit-caption.tsx';
 import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
-import { Durations } from './EditorTransport.tsx';
+import { Durations } from './Durations.tsx';
 import { EDITOR_DOCK } from './dock-size.ts';
 import { EditHistory, EditorDockBar, InspectorAside, PhoneUndo, WaitSuggestion } from './EditorChrome.tsx';
 import { removeSelection } from './remove-selection.ts';

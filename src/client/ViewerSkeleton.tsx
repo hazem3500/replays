@@ -1,5 +1,6 @@
 import './editor/skeleton.css';
-import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
+import { DockSkeleton } from './editor/DockSkeleton.tsx';
+import { TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
 import { useBetaFlag } from './settings/labs.ts';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 import { PhoneEditorSkeleton } from './editor/PhoneEditorSkeleton.tsx';
@@ -263,7 +264,7 @@ export function EditorSkeleton({
         ) : null}
       </section>
       <div className="inspector-resizer" aria-hidden="true" />
-      <DockSkeleton duration={meta?.duration} />
+      <DockSkeleton duration={meta?.duration} edits={edits} steps={steps} />
     </main>
   );
 }

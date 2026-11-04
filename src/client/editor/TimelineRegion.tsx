@@ -6,7 +6,7 @@ import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from '
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { usePlayer } from '../player.ts';
-import { BlockLabel } from './BlockLabel.tsx';
+import { blockText } from './BlockLabel.tsx';
 import { startDrag, timeKeys, useTimelineScale } from './timeline-drag.ts';
 
 /** What a region shows and where it sits (original ms). */
@@ -50,10 +50,12 @@ function RegionBody({
   const scale = useTimelineScale();
   const player = usePlayer();
   const { from, to, title, label } = region;
+  const text = label ? blockText(label, width, { pad: REGION_PAD_PX }) : '';
   return (
     <button
       type="button"
       className="tl-region-body"
+      data-short={(label && !text) || undefined}
       aria-label={title}
       aria-pressed={selected}
       title={title}
@@ -80,7 +82,11 @@ function RegionBody({
         timeKeys(event, { value: from, min: 0, max: scale.duration - (to - from) }, (time) => actions.onEdit('move', time, true));
       }}
     >
-      {label ? <BlockLabel label={label} width={width} kind={region.kind} pad={REGION_PAD_PX} className="tl-region-label" /> : null}
+      {text ? (
+        <span className="tl-region-label" aria-hidden="true">
+          {text}
+        </span>
+      ) : null}
     </button>
   );
 }

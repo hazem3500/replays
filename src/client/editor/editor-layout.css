@@ -6,9 +6,8 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @layer app {
-  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 188px)); background: var(--canvas); }
-  /* invariant: the loaded dock is at least its resized height and grows to hold every lane (up to its max-height), so a lane is never clipped. */
-  .editor-shell.app-shell:not(.skeleton-shell) { grid-template-rows: auto minmax(0, 1fr) 1px minmax(var(--dock-height, 188px), max-content); }
+  /* invariant: the dock, loaded or loading, is at least its resized height and grows to hold every lane (up to its max-height), so a lane is never clipped and the loading frame holds the lanes the editor arrives with. */
+  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(var(--dock-height, 188px), max-content); background: var(--canvas); }
   /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
   .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
   .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }

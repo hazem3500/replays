@@ -6,14 +6,16 @@ import { editTimeline } from '../../shared/edit-timeline.ts';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { useLanesWidth, usePhoneTimeline } from '../hooks/use-phone-timeline.ts';
+import { useThrottledValue } from '../hooks/use-throttled-value.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { usePlayer } from '../player.ts';
-import { Durations, EditorClock, EditorPlayButton } from './EditorTransport.tsx';
+import { usePlayer, usePlayhead } from '../player.ts';
+import { Durations } from './Durations.tsx';
+import { EditorClock, EditorPlayButton } from './EditorTransport.tsx';
 import { PhoneLanes } from './PhoneLanes.tsx';
-import { clampScale, fitScale, stepBoundaries, trackScale } from './phone-timeline.ts';
+import { clampScale, fitScale, stepBoundaries, stepLineLabel, stepLineText, trackScale } from './phone-timeline.ts';
 import { startPhoneScrub } from './phone-scrub.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
-import { type EditorAction, hasEffectLanes, type Selection } from './state.ts';
+import { type EditorAction, hasEffectLanes, type Selection, trimOf } from './state.ts';
 import { ScaleContext, type TimelineScale } from './timeline-drag.ts';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
 
@@ -108,6 +110,35 @@ function PhoneScale({
   );
 }
 
+/** why: a scrub passes many steps; the live region names the one it settles on, at most this often. */
+const STEP_ANNOUNCE_MS = 700;
+
+/**
+ * One quiet line over the lanes naming the step under the playhead ("Add the mug"), so the fitted clip reads at a
+ * glance while its narrow blocks stay label-free. It follows a scrub; the live region announces where it settles.
+ */
+function PhoneStepLine({
+  steps,
+  edits,
+  duration,
+  width,
+}: {
+  steps: readonly ReplayStep[];
+  edits: ReplayEdits;
+  duration: number;
+  width: number;
+}) {
+  const trim = trimOf(edits, duration);
+  const label = usePlayhead((time) => stepLineLabel(steps, trim, time));
+  const spoken = useThrottledValue(label, STEP_ANNOUNCE_MS);
+  return (
+    <p className="phone-step-line" aria-live="polite" data-testid="phone-step-line">
+      <span aria-hidden="true">{stepLineText(label, width)}</span>
+      <span className="visually-hidden">{spoken}</span>
+    </p>
+  );
+}
+
 /** The playhead for the keyboard and screen readers: a range input over the playhead line (its arrows seek). */
 function PlayheadInput({ duration, inputRef }: { duration: number; inputRef: (input: HTMLInputElement | null) => void }) {
   const player = usePlayer();
@@ -175,6 +206,7 @@ export function PhoneTimeline({
         onFit={() => setZoom(undefined)}
         onPlayPause={onPlayPause}
       />
+      <PhoneStepLine steps={steps} edits={edits} duration={duration} width={width || 390} />
       <div className="phone-lanes-frame">
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
           <div className="phone-lanes-content">

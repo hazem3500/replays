@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { blockLabel, GLYPH_MIN_PX, wordsThatFit } from '../src/client/editor/block-label.ts';
+import { wordsThatFit } from '../src/client/editor/block-label.ts';
 
 describe('wordsThatFit', () => {
   it('shortens a label at a word boundary, never inside a word', () => {
@@ -36,23 +36,5 @@ describe('wordsThatFit', () => {
 
   it('fits words by the measure it is given instead of the estimate', () => {
     expect(wordsThatFit('Pick a product', 60, { measure: (text) => text.length * 3 })).toBe('Pick a product');
-  });
-});
-
-describe('blockLabel', () => {
-  it('shows the leading whole words when one fits', () => {
-    expect(blockLabel('Review the cart', 70)).toEqual({ text: 'Review', glyph: false });
-  });
-
-  it('shows the lane glyph when not even the first word fits', () => {
-    expect(blockLabel('Checkout', 40)).toEqual({ text: '', glyph: true });
-  });
-
-  it('shows nothing in a block too narrow for the glyph', () => {
-    expect(blockLabel('Checkout', GLYPH_MIN_PX - 1)).toEqual({ text: '', glyph: false });
-  });
-
-  it('shows no glyph for a block with no label', () => {
-    expect(blockLabel('  ', 200)).toEqual({ text: '', glyph: false });
   });
 });

@@ -46,3 +46,10 @@ export function stepSegments(steps: readonly Pick<ReplayStep, 'at' | 'label' | '
   for (const segment of segments) if (segment.wait) segment.label = lengthLabel('Wait', segment.length);
   return segments;
 }
+
+/** The segment playing `offset` ms after the trim start: the last one starting by then, or the first before it. */
+export function segmentAt<T extends Pick<StepSegment, 'offset'>>(segments: readonly T[], offset: number): T | undefined {
+  let found = 0;
+  for (const [index, segment] of segments.entries()) if (segment.offset <= offset) found = index;
+  return segments[found];
+}

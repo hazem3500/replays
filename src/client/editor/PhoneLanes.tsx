@@ -6,8 +6,8 @@ import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { GLYPH_MIN_PX, wordsThatFit } from './block-label.ts';
-import { ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
+import { wordsThatFit } from './block-label.ts';
+import { blockText, ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
 import { measureLabel } from './label-measure.ts';
 import { lengthLabel, stepSegments } from './clip-segments.ts';
 import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
@@ -165,6 +165,7 @@ function Region({
   onSelect: () => void;
   children: ReactNode;
 }) {
+  const text = blockText(region.label, width - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX });
   return (
     <span
       className="phone-region-slot"
@@ -176,17 +177,18 @@ function Region({
         className="phone-region"
         data-kind={kind}
         data-region-id={region.id}
+        data-short={(region.label && !text) || undefined}
         aria-pressed={selected}
         aria-label={`${KIND_NAMES[kind]}${region.label ? ` ${region.label}` : ''}, ${formatClock(region.from)} to ${formatClock(region.to)}`}
         onClick={onSelect}
         data-testid={`region-${kind}`}
       >
-        {width >= GLYPH_MIN_PX ? (
-          <AnimatedIcon name={LANE_GLYPHS[kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" aria-hidden="true" />
+        {text ? (
+          <>
+            <AnimatedIcon name={LANE_GLYPHS[kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" aria-hidden="true" />
+            <span aria-hidden="true">{text}</span>
+          </>
         ) : null}
-        <span aria-hidden="true">
-          {wordsThatFit(region.label, width - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX, measure: measureLabel, minWords: 2 })}
-        </span>
       </button>
       {children}
     </span>

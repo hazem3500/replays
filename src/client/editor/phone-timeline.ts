@@ -1,5 +1,8 @@
 import type { ReplayStep } from '../../shared/replay.ts';
 import type { TimelineScale } from './timeline-drag.ts';
+import { wordsThatFit } from './block-label.ts';
+import { segmentAt, stepSegments } from './clip-segments.ts';
+import { measureLabel } from './label-measure.ts';
 
 /** The closest the phone timeline zooms in: 400 px per second. */
 export const MAX_SCALE = 0.4;
@@ -29,4 +32,21 @@ export function trackScale(duration: number, scale: number, track: Element | nul
 /** Where each recorded step starts on the timeline (inside the recording, once each): the snap points. */
 export function stepBoundaries(steps: readonly Pick<ReplayStep, 'at'>[], duration: number) {
   return [...new Set(steps.map((step) => Math.round(step.at)).filter((at) => at > 0 && at < duration))].sort((a, b) => a - b);
+}
+
+/** The step line's inline padding (phone-editor.css .phone-step-line), which its words fit inside. */
+const STEP_LINE_PAD_PX = 16;
+
+/** The name of the clip step playing at `time` (original ms): its segment's label, a wait named by its length. */
+export function stepLineLabel(
+  steps: readonly Pick<ReplayStep, 'at' | 'label' | 'kind'>[],
+  trim: { start: number; end: number },
+  time: number,
+) {
+  return segmentAt(stepSegments(steps, trim), time - trim.start)?.label ?? '';
+}
+
+/** The phone step line's words: whole words that fit a line `width` px wide, never cut or ellipsed. */
+export function stepLineText(label: string, width: number) {
+  return wordsThatFit(label, width, { pad: STEP_LINE_PAD_PX, measure: measureLabel });
 }

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { EDITS_VERSION, type ReplayEdits } from '../src/shared/edits.ts';
 import { duplicateEffect, splitEffect } from '../src/client/editor/phone-edits.ts';
 import { scrollForPlayhead, snapTarget } from '../src/client/editor/phone-scrub.ts';
-import { clampScale, fitScale, MAX_SCALE, stepBoundaries } from '../src/client/editor/phone-timeline.ts';
+import { clampScale, fitScale, MAX_SCALE, stepBoundaries, stepLineLabel, stepLineText } from '../src/client/editor/phone-timeline.ts';
 
 const DURATION = 10_000;
 const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VERSION, cuts: [], ...extra });
@@ -84,5 +84,27 @@ describe('the phone timeline scale', () => {
 
   it('snaps to each step start inside the recording once', () => {
     expect(stepBoundaries([{ at: 0 }, { at: 1200 }, { at: 1200.4 }, { at: 800 }, { at: 12_000 }], DURATION)).toEqual([800, 1200]);
+  });
+});
+
+describe('the phone step line', () => {
+  const steps = [
+    { at: 0, label: 'Open the shop', kind: 'navigate' },
+    { at: 2000, label: 'Add the mug to the cart', kind: 'click' },
+    { at: 5000, label: 'Wait', kind: 'wait' },
+    { at: 7000, label: 'Check out', kind: 'click' },
+  ];
+  const whole = { start: 0, end: DURATION };
+
+  it('names the step playing at the playhead', () => {
+    expect(stepLineLabel(steps, whole, 3500)).toBe('Add the mug to the cart');
+  });
+
+  it('names the first kept step while the playhead is in a trimmed-off start', () => {
+    expect(stepLineLabel(steps, { start: 2500, end: DURATION }, 1000)).toBe('Add the mug to the cart');
+  });
+
+  it('keeps whole words that fit and never ends on a joining word', () => {
+    expect(stepLineText('Add the mug to the cart', 32 + 6.6 * 14 + 1)).toBe('Add the mug');
   });
 });

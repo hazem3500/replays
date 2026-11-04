@@ -2,8 +2,6 @@
 const LABEL_CHAR_PX = 6.6;
 /** A label's inline padding on each side, unless its block says otherwise. */
 const LABEL_PAD_PX = 6;
-/** The narrowest block that still holds its lane's 10 px glyph with a little room around it. */
-export const GLYPH_MIN_PX = 14;
 
 /** why: a shortened label ending on one of these ("Look at the") reads as cut off, so it ends before them. */
 const DANGLING = new Set(['a', 'an', 'and', 'at', 'for', 'from', 'in', 'into', 'of', 'on', 'or', 'the', 'to', 'with']);
@@ -59,13 +57,4 @@ function shortened(kept: readonly string[], total: number, minWords: number) {
   let end = kept.length;
   while (end > 0 && DANGLING.has(kept[end - 1]?.toLowerCase() ?? '')) end -= 1;
   return end < minWords ? '' : kept.slice(0, end).join(' ');
-}
-
-/**
- * What a labelled block on a lane shows: its leading whole words when at least one fits, else its lane's glyph when
- * the block has room for it, so a labelled block never looks empty. The full label stays in its tooltip and name.
- */
-export function blockLabel(label: string, width: number, room: LabelRoom = {}) {
-  const text = wordsThatFit(label, width, room);
-  return { text, glyph: !text && label.trim() !== '' && width >= GLYPH_MIN_PX };
 }
