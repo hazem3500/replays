@@ -67,14 +67,20 @@ test.describe('editor timeline step dots', () => {
     await expect(page.getByTestId('editor-clock')).toHaveText('0:04.0');
   });
 
-  test('a filled dot names its action and time, and a hollow one its pause', async ({ page }) => {
-    await openEditor(page, { steps: [...STEPS, { at: 8_000, kind: 'wait', label: 'Wait for the receipt' }] });
+  test('a filled dot names its action and time, a hollow one its wait and what it follows, and a load wait has none', async ({ page }) => {
+    const steps = [
+      ...STEPS,
+      { at: 7_400, kind: 'wait', label: 'Wait for the page' },
+      { at: 8_000, kind: 'wait', label: 'Read the receipt' },
+    ];
+    await openEditor(page, { steps });
     const dots = page.getByRole('group', { name: 'Steps' }).getByRole('button');
+    await expect(dots).toHaveCount(4);
     await dots.nth(0).hover();
     await expect(tooltip(page)).toContainText('Click, 0:02.0');
     await dots.nth(3).hover();
     await expect(tooltip(page)).toContainText(/Wait, \d+\.\d\s+s, after Place the order/);
-    await expect(dots.nth(3)).toHaveAccessibleName(/^Wait of \d+\.\d seconds after Place the order, Wait for the receipt, at 0:08\.0$/);
+    await expect(dots.nth(3)).toHaveAccessibleName(/^Wait of \d+\.\d seconds after Place the order, from 0:08\.0$/);
   });
 
   test('each dot takes a press anywhere on its 24 px target, never the ruler under it', async ({ page }) => {

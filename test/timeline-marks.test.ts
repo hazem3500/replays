@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { formatClock } from '../src/shared/replay.ts';
 import { stepSegments } from '../src/client/editor/clip-segments.ts';
-import { labelRoom, placeStepDots, stepDotDetail, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
+import { keptLength, labelRoom, placeStepDots, segmentText, stepDotDetail, stepDotLabel } from '../src/client/editor/timeline-marks.ts';
 
 const step = (at: number, label = `Step at ${at}`, kind = 'click') => ({ at, label, kind });
 
@@ -74,9 +74,9 @@ describe('stepDotDetail', () => {
     expect(dot && stepDotDetail(dot, 'Click', formatClock)).toMatchObject({ visible: 'Click, 0:03.2', spoken: 'Click at 0:03.2' });
   });
 
-  it('gives a wait its own words and where it starts', () => {
+  it('gives a wait where it starts and ends', () => {
     const [wait] = placeStepDots([step(1_000, 'Look around', 'wait'), step(3_100, 'Pay')], 10_000, 1_000);
-    expect(wait && stepDotDetail(wait, 'Wait', formatClock).visible).toBe('Look around, 0:01.0');
+    expect(wait && stepDotDetail(wait, 'Wait', formatClock)).toMatchObject({ visible: '0:01.0 to 0:03.1', spoken: 'from 0:01.0' });
   });
 
   it('says in plain words that a hollow dot is a wait', () => {
@@ -134,5 +134,26 @@ describe('labelRoom', () => {
 
   it('leaves no room in a segment a cut covers whole', () => {
     expect(labelRoom({ offset: 1_000, length: 2_000 }, 500, [{ from: 1_000, to: 4_000 }]).length).toBe(0);
+  });
+});
+
+/** A label line's width at 6 px a character, so the tests read in whole characters. */
+const measure = (text: string) => text.length * 6;
+
+describe('segmentText', () => {
+  const wait = { at: 0, offset: 0, length: 1_500, label: 'Wait 1.5\u00a0s', wait: true };
+
+  it('names a wait by its kept length, less the cuts over it', () => {
+    const kept = keptLength(wait, 0, [{ from: 1_000, to: 3_000 }]);
+    expect(segmentText(wait, kept, 200, { measure })).toBe('Wait 1.0\u00a0s');
+  });
+
+  it('shortens a wait to its length alone on one line, and to nothing when even that does not fit', () => {
+    expect(segmentText(wait, 1_500, 50, { measure, lines: 2 })).toBe('1.5\u00a0s');
+    expect(segmentText(wait, 1_500, 20, { measure, lines: 2 })).toBe('');
+  });
+
+  it('names a step by its leading whole words', () => {
+    expect(segmentText({ ...wait, label: 'Add the mug to the cart', wait: false }, 1_500, 80, { measure })).toBe('Add the mug');
   });
 });

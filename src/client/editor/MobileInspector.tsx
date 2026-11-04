@@ -23,9 +23,12 @@ import {
   type SelectionPanels,
 } from './SelectionInspector.tsx';
 
+/** Each effect's name in the timeline list, as the Add menu calls it. */
+const EFFECT_NAMES = { zoom: 'Zoom', speed: 'Speed up', blur: 'Blur', caption: 'Caption' } as const;
+
 function effectLabel(kind: 'zoom' | 'speed' | 'blur' | 'caption', text: string) {
   if (text) return `Caption · ${text}`;
-  return kind.charAt(0).toUpperCase() + kind.slice(1);
+  return EFFECT_NAMES[kind];
 }
 
 /** Named access to short/coincident objects without distorting their timeline widths. */
@@ -124,7 +127,7 @@ export function MobileAddToolbar({
           {more.map((item) => (
             <DropdownMenuItem
               key={item.label}
-              className="editor-more-item min-h-11 flex-col items-start justify-center gap-0.5 whitespace-normal text-left"
+              className="editor-more-item min-h-11 flex-col items-start justify-center gap-0.5 whitespace-normal text-left data-disabled:opacity-100"
               disabled={item.disabled}
               data-testid={item.testId}
               onClick={item.action}

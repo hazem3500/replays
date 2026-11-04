@@ -6,6 +6,12 @@ export const waitSeconds = (ms: number) => (Math.max(0, ms) / 1000).toFixed(1);
 /** A wait step the recorder named only as a wait ("Wait for the page"): the load after the step before it. */
 const LOAD_WAIT = /^wait\b/i;
 
+/** Whether `step` is a load wait: it joins the step before it on the clip and gets no dot of its own. */
+export const isLoadWait = (step: Pick<ReplayStep, 'kind' | 'label'>) => step.kind === 'wait' && LOAD_WAIT.test(step.label.trim());
+
+/** A length as a clip block names it, "Wait 1.5 s" or "Cut 2.0 s": the value and its unit joined by a no-break space. */
+export const lengthLabel = (name: string, ms: number) => `${name} ${waitSeconds(ms)}\u00a0s`;
+
 export interface StepSegment {
   at: number;
   /** ms from the trim start. */
@@ -30,13 +36,13 @@ export function stepSegments(steps: readonly Pick<ReplayStep, 'at' | 'label' | '
     if (to <= from) continue;
     const wait = step.kind === 'wait';
     const last = segments.at(-1);
-    const joins = last && last.offset + last.length >= from - trim.start && wait && (last.wait || LOAD_WAIT.test(step.label.trim()));
+    const joins = last && last.offset + last.length >= from - trim.start && wait && (last.wait || isLoadWait(step));
     if (last && joins) {
       last.length = to - trim.start - last.offset;
       continue;
     }
     segments.push({ at: step.at, offset: from - trim.start, length: to - from, label: step.label, wait });
   }
-  for (const segment of segments) if (segment.wait) segment.label = `Wait ${waitSeconds(segment.length)}\u00a0s`;
+  for (const segment of segments) if (segment.wait) segment.label = lengthLabel('Wait', segment.length);
   return segments;
 }

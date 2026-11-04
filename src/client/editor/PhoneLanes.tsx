@@ -5,16 +5,19 @@ import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
-import { wordsThatFit } from './block-label.ts';
-import { BlockLabel } from './BlockLabel.tsx';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { GLYPH_MIN_PX, wordsThatFit } from './block-label.ts';
+import { LANE_GLYPHS } from './BlockLabel.tsx';
 import { measureLabel } from './label-measure.ts';
-import { stepSegments } from './clip-segments.ts';
-import { labelRoom } from './timeline-marks.ts';
+import { lengthLabel, stepSegments } from './clip-segments.ts';
+import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
 
 /** A clip step's inline padding (phone-editor.css .phone-step), which its name's words fit inside. */
 const PHONE_STEP_PAD_PX = 4;
+/** Room a phone region's lane glyph and the gap after it take from its label. */
+const PHONE_GLYPH_PX = 14;
 /** A phone region's inline padding (phone-editor.css .phone-region), which its label's words fit inside. */
 const PHONE_REGION_PAD_PX = 7;
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
@@ -178,7 +181,12 @@ function Region({
         onClick={onSelect}
         data-testid={`region-${kind}`}
       >
-        <BlockLabel label={region.label} width={width} kind={kind} pad={PHONE_REGION_PAD_PX} />
+        {width >= GLYPH_MIN_PX ? (
+          <AnimatedIcon name={LANE_GLYPHS[kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" aria-hidden="true" />
+        ) : null}
+        <span aria-hidden="true">
+          {wordsThatFit(region.label, width - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX, measure: measureLabel })}
+        </span>
       </button>
       {children}
     </span>
@@ -222,7 +230,11 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
               style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
             >
               <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
-                {wordsThatFit(segment.label, px(room.length), { lines: 2, pad: PHONE_STEP_PAD_PX, measure: measureLabel })}
+                {segmentText(segment, keptLength(segment, trim.start, edits.cuts), px(room.length), {
+                  lines: 2,
+                  pad: PHONE_STEP_PAD_PX,
+                  measure: measureLabel,
+                })}
               </span>
             </span>
           );
@@ -267,7 +279,11 @@ function ClipMarks({ edits, scale, selection, select }: Pick<ClipLaneProps, 'edi
           style={{ left: `${px(cut.from)}px`, width: `${Math.max(4, px(cut.to - cut.from))}px` }}
           onClick={() => select({ kind: 'cut', id: cut.id })}
           data-testid="region-cut"
-        />
+        >
+          <span className="phone-cut-label" aria-hidden="true">
+            {wordsThatFit(lengthLabel('Cut', cut.to - cut.from), px(cut.to - cut.from), { pad: PHONE_STEP_PAD_PX, measure: measureLabel })}
+          </span>
+        </button>
       ))}
       {(edits.highlights ?? []).map((highlight) => {
         const from = highlight.kind === 'point' ? highlight.at : highlight.from;

@@ -215,6 +215,18 @@ describe('blur boxes and captions', () => {
       { id: 'caption-3', from: 3000, to: 8000, text: 'Click B' },
     ]);
   });
+
+  it("keeps a step's caption up through a wait named only as a wait, which gets none of its own", () => {
+    const steps = [
+      { at: 0, kind: 'click', label: 'Add the tea' },
+      { at: 400, kind: 'wait', label: 'Wait for the page' },
+      { at: 1200, kind: 'wait', label: 'Look at the cart' },
+    ];
+    expect(proposeStepCaptions(steps, 2000).map(({ from, to, text }) => [text, from, to])).toEqual([
+      ['Add the tea', 0, 1200],
+      ['Look at the cart', 1200, 2000],
+    ]);
+  });
 });
 
 describe('editor effect operations', () => {

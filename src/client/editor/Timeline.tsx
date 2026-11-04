@@ -7,10 +7,9 @@ import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
-import { wordsThatFit } from './block-label.ts';
 import { measureLabel } from './label-measure.ts';
-import { stepSegments } from './clip-segments.ts';
-import { labelRoom } from './timeline-marks.ts';
+import { lengthLabel, stepSegments } from './clip-segments.ts';
+import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { ScaleContext, startDrag, timeKeys, type TimelineScale } from './timeline-drag.ts';
@@ -81,7 +80,7 @@ function ClipSteps({
         style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
       >
         <span style={{ marginLeft: `${room.skip * px}px` }}>
-          {wordsThatFit(segment.label, room.length * px, { pad, measure: measureLabel })}
+          {segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px, { pad, measure: measureLabel })}
         </span>
       </span>
     );
@@ -290,6 +289,7 @@ export function Timeline({
                         from: cut.from,
                         to: cut.to,
                         title: `Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`,
+                        label: lengthLabel('Cut', cut.to - cut.from),
                       }}
                       selected={selection?.kind === 'cut' && selection.id === cut.id}
                       actions={{

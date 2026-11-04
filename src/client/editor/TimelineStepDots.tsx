@@ -6,6 +6,7 @@ import { useCanHover } from '@/components/ui/tooltip.tsx';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { stepKindName } from '../viewer/StepRail.tsx';
+import { isLoadWait } from './clip-segments.ts';
 import { useTimelineScale } from './timeline-drag.ts';
 import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabel } from './timeline-marks.ts';
 
@@ -162,7 +163,13 @@ export function TimelineStepDots({
   const canHover = useCanHover();
   const pressed = usePressedLabel(canHover);
   const [current, setCurrent] = useState(0);
-  const dots = placeStepDots(steps, scale.duration, scale.width, target);
+  // why: a load wait is part of the step before it on the clip, so it gets no hollow dot of its own either.
+  const dots = placeStepDots(
+    steps.filter((step) => !isLoadWait(step)),
+    scale.duration,
+    scale.width,
+    target,
+  );
   if (!dots.length) return null;
   const stop = Math.min(current, dots.length - 1);
   const bubble = pressed.shown === undefined ? undefined : dots[pressed.shown];

@@ -1,5 +1,6 @@
 import type { ReplayStep } from '../../shared/replay.ts';
-import { type StepSegment, waitSeconds } from './clip-segments.ts';
+import { wordsThatFit, type LabelRoom } from './block-label.ts';
+import { lengthLabel, type StepSegment, waitSeconds } from './clip-segments.ts';
 
 /** One dot on the ruler: the step it seeks to and how many neighbours too close to tell apart it stands for. */
 export interface StepDot {
@@ -76,18 +77,16 @@ export function stepDotLabel(dot: StepDot, { spoken = false } = {}) {
 
 /**
  * The rest of a dot's tooltip, which says why it is filled or hollow: an action names its kind and time
- * ("Click, 0:03.2"), a wait its own words and where it starts, and `meaning` says in plain words what that dot's
+ * ("Click, 0:03.2"), a wait where it starts and ends, and `meaning` says in plain words what that dot's
  * shape stands for. `spoken` is the kind and time for a screen reader.
  */
-export function stepDotDetail(dot: Pick<StepDot, 'kind' | 'at' | 'label'>, kindName: string, clock: (ms: number) => string) {
-  if (dot.kind === 'wait') {
-    const words = dot.label.trim();
+export function stepDotDetail(dot: Pick<StepDot, 'kind' | 'at' | 'until'>, kindName: string, clock: (ms: number) => string) {
+  if (dot.kind === 'wait')
     return {
-      visible: words ? `${words}, ${clock(dot.at)}` : clock(dot.at),
+      visible: `${clock(dot.at)} to ${clock(dot.until)}`,
       meaning: 'Hollow dots are waits, when nothing happens',
-      spoken: `${words ? `${words}, ` : ''}at ${clock(dot.at)}`,
+      spoken: `from ${clock(dot.at)}`,
     };
-  }
   return { visible: `${kindName}, ${clock(dot.at)}`, meaning: 'Filled dots are actions', spoken: `${kindName} at ${clock(dot.at)}` };
 }
 
@@ -107,4 +106,27 @@ export function labelRoom(
   let to = end;
   for (const cut of cuts) if (cut.from > from) to = Math.min(to, cut.from);
   return { skip: from - start, length: Math.max(0, to - from) };
+}
+
+/** A segment's kept length: its own, less the cuts over it. */
+export function keptLength(
+  segment: Pick<StepSegment, 'offset' | 'length'>,
+  trimStart: number,
+  cuts: readonly { from: number; to: number }[],
+) {
+  const start = trimStart + segment.offset;
+  const end = start + segment.length;
+  const cut = cuts.reduce((sum, { from, to }) => sum + Math.max(0, Math.min(end, to) - Math.max(start, from)), 0);
+  return Math.max(0, segment.length - cut);
+}
+
+/**
+ * What a clip segment shows in `width` px: a step's leading whole words; a wait its kept length on one line, "Wait 1.5 s",
+ * else just "1.5 s", else nothing, so every wait reads the same way.
+ */
+export function segmentText(segment: StepSegment, kept: number, width: number, room: LabelRoom) {
+  if (!segment.wait) return wordsThatFit(segment.label, width, room);
+  const named = lengthLabel('Wait', kept);
+  if (wordsThatFit(named, width, { ...room, lines: 1 }) === named) return named;
+  return wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width, { ...room, lines: 1 });
 }
