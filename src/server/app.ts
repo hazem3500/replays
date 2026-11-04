@@ -38,6 +38,7 @@ import { handleKeepApi } from './keep-routes.ts';
 import { malleablePlugin } from './malleable-plugin.ts';
 import { coreVersion } from './package-info.ts';
 import type { PageRenderer } from './pages/start.ts';
+import type { PrivacySettings } from './privacy-config.ts';
 import { identityResolver } from './people.ts';
 import { handlePosterApi } from './media/poster-routes.ts';
 import { clientAsset, watchResponse } from './plugin-runtime.ts';
@@ -97,6 +98,8 @@ export interface AppOptions {
   plugins?: PluginRegistry;
   /** Redaction rules from the config file; the plugins' `api.redaction` rules are added to them. */
   redaction?: RedactionRules;
+  /** Switches that relax a privacy default (`privacy` in the config, src/server/privacy-config.ts); absent means all off. */
+  privacy?: PrivacySettings;
 }
 
 /** `AppOptions.hosts` as routing: already checked (`loadSettings`), or a plain record checked here. */
@@ -137,8 +140,12 @@ export function createApp(options: AppOptions) {
   const inferable = profiles.list.some((profile) => profile.inferable);
   const redaction = mergeRedactionRules(options.redaction, registry.redaction);
   // why: the privacy pass walks every event, so it gets its own span.
-  const sanitize = (bundle: ReplayBundle) =>
-    withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () => sanitizeReplayBundle(bundle, redaction));
+  // invariant: visible inputs need the host's opt-in here and the upload route's staff check; neither alone keeps them.
+  const keepVisibleInputs = options.privacy?.keepVisibleInputs === true;
+  const sanitize = (bundle: ReplayBundle, upload?: { staff: boolean }) =>
+    withSpan('replay.sanitize', { 'replay.event_count': bundle.events.length }, () =>
+      sanitizeReplayBundle(bundle, redaction, { keepVisibleInputs: keepVisibleInputs && upload?.staff === true }),
+    );
   const answerPublicRoute = publicPluginRoutes(registry);
   const authorizeReplay: ReplayAuthorizer = async (gate, csrfAllowed) => {
     const dispatch: DispatchRequest = {

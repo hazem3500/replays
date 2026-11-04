@@ -63,6 +63,22 @@ describe('loadSettings defaults', () => {
   });
 });
 
+describe('loadSettings: privacy', () => {
+  it('keeps visible inputs off unless the config file turns them on', async () => {
+    expect((await loadSettings({})).privacy).toEqual({ keepVisibleInputs: false });
+    expect((await loadSettings({}, { privacy: { keepVisibleInputs: true } })).privacy).toEqual({ keepVisibleInputs: true });
+  });
+
+  it('refuses a privacy switch that is not true or false, and unknown privacy keys', async () => {
+    await expect(loadSettings({}, { privacy: { keepVisibleInputs: 'yes' as unknown as boolean } })).rejects.toThrow(
+      "the config file's privacy.keepVisibleInputs must be true or false",
+    );
+    await expect(loadSettings({}, { privacy: { maskPasswords: false } as never })).rejects.toThrow(
+      /privacy has unknown keys: maskPasswords/,
+    );
+  });
+});
+
 describe('loadSettings precedence', () => {
   it('uses the file when the environment says nothing', async () => {
     const settings = await loadSettings(
