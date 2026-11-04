@@ -49,12 +49,12 @@ const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Pointer fi
 <style>body{margin:0;font:16px system-ui;background:#f4f6f5}main{height:1200px;padding:40px}</style></head>
 <body><main><h1>Staging page</h1><p>Move the pointer around.</p></main></body></html>`;
 
-/** Glides the real pointer with ~60 Hz events and an ease in and out, like a hand. */
+/** Flicks the real pointer with ~60 Hz events, fast at first and settling gently onto the spot, like a hand. */
 async function glide(page: Page, from: Point, to: Point, ms: number) {
   const frames = Math.max(1, Math.round(ms / 16));
   for (let i = 1; i <= frames; i++) {
     const u = i / frames;
-    const eased = u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+    const eased = 1 - (1 - u) ** 4;
     await page.mouse.move(from.x + (to.x - from.x) * eased, from.y + (to.y - from.y) * eased);
     await page.waitForTimeout(16);
   }
