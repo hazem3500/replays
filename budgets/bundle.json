@@ -384,13 +384,13 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
-      "gzip": 738,
-      "brotli": 670
+      "gzip": 737,
+      "brotli": 641
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22875,
       "gzip": 9632,
-      "brotli": 8318
+      "brotli": 8310
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -768,7 +768,7 @@
       "brotli": 2322
     },
     "initial/render.html/js": {
-      "raw": 557837,
+      "raw": 558700,
       "gzip": 179928,
       "brotli": 142340
     }
@@ -1867,16 +1867,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "initial/render.html/js",
-      "cap": {
-        "raw": 557837,
-        "gzip": 179928,
-        "brotli": 142340
-      },
-      "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: gzip 171202 to 174687, brotli 135115 to 138194 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/client/assets/edits-HASH.js",
       "cap": {
         "raw": 37945,
@@ -2154,6 +2144,16 @@
         "brotli": 670
       },
       "reason": "Brotli-only hash-name drift in an unchanged chunk: raw 1203 and gzip 717 match main, but brotli swings between about 610 and 650 bytes from build to build because the chunk names other chunks whose hashes change. CI same-runner head 650 (+25) against a 641 cap ratcheted from a low reading; cap is head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/247"
+    },
+    {
+      "file": "initial/render.html/js",
+      "cap": {
+        "raw": 558700,
+        "gzip": 179928,
+        "brotli": 142340
+      },
+      "reason": "Exported video renders human recordings along their exact recorded pointer path (cursor-recorded-path in the shared cursor chunk). CI same-runner main to head: raw 556966 to 558082 (+1116), gzip 175472 to 175842, brotli 138855 to 139185; gzip and brotli stay under their existing caps, which carry over from the earlier allowance.",
       "pr": "https://github.com/hazem3500/replays/pull/247"
     }
   ]
