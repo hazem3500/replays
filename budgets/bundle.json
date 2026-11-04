@@ -240,7 +240,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 124708,
       "gzip": 44015,
-      "brotli": 39451
+      "brotli": 39520
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -380,12 +380,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1191,
       "gzip": 711,
-      "brotli": 629
+      "brotli": 626
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 21793,
-      "gzip": 9307,
-      "brotli": 8068
+      "gzip": 9297,
+      "brotli": 8059
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -653,9 +653,9 @@
       "brotli": 334
     },
     "dist/lib/recorder-chunks/default-ui-gesture-icon.ts-610fd4f3974e.mjs": {
-      "raw": 18061,
-      "gzip": 5426,
-      "brotli": 4735
+      "raw": 17613,
+      "gzip": 5323,
+      "brotli": 4644
     },
     "dist/lib/recorder-chunks/deferred-ui.ts-f6f6f5029cd3.mjs": {
       "raw": 6769,
@@ -663,9 +663,9 @@
       "brotli": 1763
     },
     "dist/lib/recorder-chunks/format.ts-5c14bd6c0964.mjs": {
-      "raw": 5454,
-      "gzip": 2038,
-      "brotli": 1730
+      "raw": 5404,
+      "gzip": 2022,
+      "brotli": 1722
     },
     "dist/lib/recorder-chunks/index.ts-dacd014793bf.mjs": {
       "raw": 2889,
@@ -709,8 +709,8 @@
     },
     "dist/lib/recorder.mjs": {
       "raw": 3137,
-      "gzip": 901,
-      "brotli": 780
+      "gzip": 899,
+      "brotli": 778
     },
     "dist/lib/server-testing.mjs": {
       "raw": 12273,
@@ -1144,12 +1144,12 @@
     {
       "file": "dist/client/assets/main-HASH.js",
       "cap": {
-        "raw": 996774,
-        "gzip": 311814,
-        "brotli": 257642
+        "raw": 124708,
+        "gzip": 44015,
+        "brotli": 39520
       },
-      "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/159"
+      "reason": "Brotli-only drift: CI measured raw +0 and gzip -1 against main c458b620 but brotli +70 (39493), because the entry chunk names the Viewer chunk whose hash changes with the Shift download. Raw and gzip caps stay at main's.",
+      "pr": "https://github.com/hazem3500/replays/pull/240"
     },
     {
       "file": "dist/client/assets/render-HASH.js",

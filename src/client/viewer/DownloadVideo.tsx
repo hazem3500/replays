@@ -19,7 +19,16 @@ import { Progress } from '@/components/ui/progress.tsx';
 import type { ReplayMeta } from '../../shared/replay.ts';
 import { apiUrl } from '../api/fetch.ts';
 import { usePlayerState } from '../player.ts';
-import { exportLabel, formatBytes, isActive, progressAnnouncement, progressLabel, useVideoRender, videoFilename } from '../video-export.ts';
+import {
+  downloadUrl,
+  exportLabel,
+  formatBytes,
+  isActive,
+  progressAnnouncement,
+  progressLabel,
+  useVideoRender,
+  videoFilename,
+} from '../video-export.ts';
 import { useViewer } from './context.ts';
 import type { TopbarMenuItem } from '../Topbar.tsx';
 
@@ -69,6 +78,25 @@ function useVideoDownload(meta: ReplayMeta) {
 }
 
 type VideoDownload = ReturnType<typeof useVideoDownload>;
+
+const BUNDLE_HINT = 'Shift and click saves the replay as JSON';
+
+const keepShiftFromMenu = (event: { shiftKey: boolean; preventBaseUIHandler: () => void }) => {
+  if (event.shiftKey) event.preventBaseUIHandler();
+};
+
+/**
+ * Shift with a click saves the replay bundle as `<replay-id>.json` instead of the video. A keyboard press on the focused
+ * button arrives as a click that keeps Shift, so Shift+Enter and Shift+Space work the same way.
+ */
+function useBundleDownload(meta: ReplayMeta) {
+  const { notify } = useViewer();
+  return () => {
+    const filename = `${meta.id}.json`;
+    downloadUrl(apiUrl(`replays/${encodeURIComponent(meta.id)}`), filename);
+    notify(`Saved ${filename}`);
+  };
+}
 
 /**
  * Render progress in a small popover anchored under `children` ("Rendering video… 40% · Cancel"), plus an
@@ -175,6 +203,7 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
   const formats = usePluginExports();
   const download = useVideoDownload(meta);
   const { stored, canRender, active, variant, start } = download;
+  const saveBundle = useBundleDownload(meta);
 
   const hasPlugins = formats.some((format) => format !== 'core');
   const showCore = formats.includes('core');
@@ -186,12 +215,27 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
   const exportText = exportLabel('Export video', variant);
   const idleLabel = !stored && !canRender ? 'Download replay' : exportLabel('Download video', variant);
   const label = active ? 'Rendering video…' : idleLabel;
+  const hint = (
+    <>
+      {label}
+      <span className="block opacity-70">{BUNDLE_HINT}</span>
+    </>
+  );
   const trigger =
     stored || hasPlugins ? (
       <DropdownMenu>
-        <Hint label={label} side="bottom" align="end">
+        <Hint label={hint} side="bottom" align="end">
           <DropdownMenuTrigger
             disabled={active}
+            // why: the menu opens on press, ahead of the click, so a Shift press must not reach it.
+            onPointerDown={keepShiftFromMenu}
+            onMouseDown={keepShiftFromMenu}
+            onKeyDown={keepShiftFromMenu}
+            onClick={(event) => {
+              if (!event.shiftKey) return;
+              event.preventBaseUIHandler();
+              saveBundle();
+            }}
             render={
               <Button
                 variant="ghost"
@@ -212,10 +256,12 @@ export function DownloadVideoButton({ meta }: { meta: ReplayMeta }) {
     ) : (
       <IconButton
         label={label}
+        hint={hint}
         tooltipAlign="end"
         aria-disabled={active || pending}
-        onClick={() => {
-          if (!pending) void start();
+        onClick={(event) => {
+          if (event.shiftKey) saveBundle();
+          else if (!pending) void start();
         }}
         data-testid="download-video"
       >
