@@ -78,6 +78,24 @@ export interface MoreTool {
   testId?: string;
 }
 
+/** One of the More menu's tools: its icon, the desktop's name and one line saying what it does or why it is unavailable. */
+function MoreToolItem({ item }: { item: MoreTool }) {
+  return (
+    <DropdownMenuItem
+      className="editor-more-item min-h-11 shrink-0 items-start whitespace-normal text-left data-disabled:opacity-100"
+      disabled={item.disabled}
+      data-testid={item.testId}
+      onClick={item.action}
+    >
+      {item.icon ? <AnimatedIcon name={item.icon} className="editor-more-icon" /> : null}
+      <span className="editor-more-text">
+        <span className="editor-more-name">{item.label}</span>
+        {item.hint ? <span className="editor-more-hint">{item.hint}</span> : null}
+      </span>
+    </DropdownMenuItem>
+  );
+}
+
 /** Adding an object is a command, never a permanent inspector destination. */
 export function MobileAddToolbar({
   onCut,
@@ -128,19 +146,7 @@ export function MobileAddToolbar({
           aria-label="More editing tools"
         >
           {more.map((item) => (
-            <DropdownMenuItem
-              key={item.label}
-              className="editor-more-item min-h-11 shrink-0 items-start whitespace-normal text-left data-disabled:opacity-100"
-              disabled={item.disabled}
-              data-testid={item.testId}
-              onClick={item.action}
-            >
-              {item.icon ? <AnimatedIcon name={item.icon} className="editor-more-icon" /> : null}
-              <span className="editor-more-text">
-                <span className="editor-more-name">{item.label}</span>
-                {item.hint ? <span className="editor-more-hint">{item.hint}</span> : null}
-              </span>
-            </DropdownMenuItem>
+            <MoreToolItem key={item.label} item={item} />
           ))}
           {objects.length > 0 ? (
             <DropdownMenuGroup aria-label="On timeline">
