@@ -18,6 +18,11 @@
   @media (hover: hover) and (pointer: fine) { .editor-retry:hover { color: var(--text); } }
   /* The Add menu: short names with their keys, and one line saying what the item under the pointer or focus does. */
   .editor-add-menu .editor-key { margin-left: auto; padding-left: 20px; }
+  /* Each item's icon in its lane's hue, so the menu points at the lane it fills. */
+  .editor-add-menu [data-kind="zoom"] > svg { color: var(--accent); }
+  .editor-add-menu [data-kind="speed"] > svg { color: var(--warning); }
+  .editor-add-menu [data-kind="blur"] > svg { color: var(--danger); }
+  .editor-add-menu [data-kind="caption"] > svg { color: var(--success); }
   /* invariant: the hint box holds two lines whatever it says, inside a menu of fixed width, so hovering an item never resizes the menu. */
   .editor-add-hint { box-sizing: content-box; display: flex; align-items: center; height: 2.7em; margin: 0; padding: 4px 8px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
 
@@ -35,8 +40,9 @@
   @media (hover: hover) and (pointer: fine) { .editor-tool.editor-tool:hover { color: var(--text); } }
   /* why: a disc of the dock's surface under each dot, so the playhead line never shows through it. */
   .tl-step::before { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 999px; background: var(--surface); }
-  .tl-step:focus-visible { color: var(--text); }
-  .tl-step:focus-visible svg { scale: 1.2; }
+  /* The dot whose label is open (hovered, focused or pressed) reads as the one it names, whatever the pointer. */
+  .tl-step:focus-visible, .tl-step[data-popup-open], .tl-step[data-pressed] { color: var(--text); }
+  .tl-step:focus-visible svg, .tl-step[data-popup-open] svg, .tl-step[data-pressed] svg { scale: 1.2; }
   @media (hover: hover) and (pointer: fine) {
     .tl-step:hover { color: var(--text); }
     .tl-step:hover svg { scale: 1.2; }
@@ -62,7 +68,7 @@
   .tl-region-body { transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   @media (prefers-reduced-motion: reduce) {
     .tl-step, .tl-step svg { transition: none; }
-    .tl-step:hover svg, .tl-step:focus-visible svg { scale: 1; }
+    .tl-step:hover svg, .tl-step:focus-visible svg, .tl-step[data-popup-open] svg, .tl-step[data-pressed] svg { scale: 1; }
   }
 
   @media (hover: hover) and (pointer: fine) {

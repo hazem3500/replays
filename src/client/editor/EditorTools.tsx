@@ -93,6 +93,7 @@ export function AddMenu({ onAdd }: { onAdd: (kind: EffectKind) => void }) {
           <DropdownMenuItem
             key={item.kind}
             className="min-h-10"
+            data-kind={item.kind}
             onClick={() => onAdd(item.kind)}
             onFocus={() => setHinted(item.kind)}
             onPointerEnter={() => setHinted(item.kind)}

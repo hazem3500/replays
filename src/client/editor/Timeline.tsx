@@ -50,7 +50,7 @@ function TrimmedOutside({ trim, duration, scale }: { trim: { start: number; end:
 }
 
 /** why: the trim edges sit over the clip's ends, so the first and last step's words keep this much room on each side. */
-const CLIP_STEP_PAD_PX = 14;
+const CLIP_STEP_PAD_PX = 12;
 /** A step's inline padding inside the clip (editor.css .tl-clip-step). */
 const CLIP_STEP_INNER_PAD_PX = 8;
 
@@ -73,19 +73,22 @@ function ClipSteps({
     // why: only the side under a trim tab needs its wider pad, so an end step fits words as wide as the blocks below it.
     const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
     const roomPx = room.length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
+    const label = segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, {
+      pad: CLIP_STEP_INNER_PAD_PX,
+      measure: measureLabel,
+    });
     return (
       <span
         key={segment.at}
         className="tl-clip-step"
         data-testid="clip-step"
         data-wait={segment.wait || undefined}
+        data-short={!segment.wait && !label.text ? '' : undefined}
         aria-hidden="true"
         style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
       >
         <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
-          <ClipStepLabel
-            {...segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
-          />
+          <ClipStepLabel {...label} />
         </span>
       </span>
     );

@@ -26,7 +26,7 @@ const PAD = 14;
  */
 const TRACK_INSET = 20 * 2 + 4 * 2 + 36 + PAD * 2;
 /** Padding the clip's first and last step and every other step keep inside the clip (Timeline.tsx ClipSteps). */
-const EDGE_STEP_PAD = 14;
+const EDGE_STEP_PAD = 12;
 const STEP_PAD = 8;
 /** A region block's inline padding (TimelineRegion.tsx). */
 const REGION_PAD = 8;
@@ -143,17 +143,17 @@ function ClipStepsSkeleton({
     const room = labelRoom(segment, trimStart, cuts);
     const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
     const roomPx = room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD);
+    const label = segmentText(segment, keptLength(segment, trimStart, cuts), roomPx, { pad: STEP_PAD, measure: measureLabel });
     return (
       <span
         key={segment.at}
         className="tl-clip-step"
         data-wait={segment.wait || undefined}
+        data-short={!segment.wait && !label.text ? '' : undefined}
         style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
       >
         <span className="tl-clip-step-label" style={{ marginLeft: `${(room.skip / Math.max(1, segment.length)) * 100}%` }}>
-          <ClipStepLabel
-            {...segmentText(segment, keptLength(segment, trimStart, cuts), roomPx, { pad: STEP_PAD, measure: measureLabel })}
-          />
+          <ClipStepLabel {...label} />
         </span>
       </span>
     );

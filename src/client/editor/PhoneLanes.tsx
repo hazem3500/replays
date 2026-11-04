@@ -106,7 +106,7 @@ export function PhoneLanes({ duration, scale, edits, steps, selection, dispatch 
                       kind={lane.kind}
                       selected={selected}
                       left={px(region.from)}
-                      width={px(region.to - region.from)}
+                      width={lane.kind === 'caption' ? Math.max(1, px(region.to - region.from) - 2) : px(region.to - region.from)}
                       region={region}
                       onSelect={() => select({ kind: lane.kind, id: region.id })}
                     >
@@ -215,21 +215,21 @@ function PhoneClipSteps({
   const px = (time: number) => time * scale;
   return stepSegments(steps, trim).map((segment) => {
     const room = labelRoom(segment, trim.start, cuts);
+    const label = segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
+      lines: 2,
+      pad: PHONE_STEP_PAD_PX,
+      measure: measureLabel,
+    });
     return (
       <span
         key={segment.at}
         className="phone-step"
         data-wait={segment.wait || undefined}
+        data-short={!segment.wait && !label.text ? '' : undefined}
         style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
       >
         <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
-          <ClipStepLabel
-            {...segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
-              lines: 2,
-              pad: PHONE_STEP_PAD_PX,
-              measure: measureLabel,
-            })}
-          />
+          <ClipStepLabel {...label} />
         </span>
       </span>
     );
