@@ -9,6 +9,10 @@ import { assertShape, type Check, type Checks, isBoolean, isRecord, listOf, numb
 export type CaptureNetwork = 'off' | 'headers' | 'bodies';
 export const CAPTURE_NETWORK: readonly CaptureNetwork[] = ['off', 'headers', 'bodies'];
 
+/** How a recording captured input values (`meta.captured.inputs`); absent means masked. */
+export type CapturedInputs = 'masked' | 'visible';
+export const CAPTURED_INPUTS: readonly CapturedInputs[] = ['masked', 'visible'];
+
 /** rrweb sampling: every mouse move and scroll (`full`), the recorder's defaults (`balanced`), or fewer (`light`). */
 export type CaptureSampling = 'full' | 'balanced' | 'light';
 export const CAPTURE_SAMPLING: readonly CaptureSampling[] = ['full', 'balanced', 'light'];
@@ -111,11 +115,13 @@ const CAPTURED_CHECKS: Checks = {
   network: [oneOf(CAPTURE_NETWORK), `must be one of ${CAPTURE_NETWORK.join(', ')}`],
   performance: [isBoolean, 'must be a boolean'],
   video: [isBoolean, 'must be a boolean'],
+  inputs: [oneOf(CAPTURED_INPUTS), `must be one of ${CAPTURED_INPUTS.join(', ')}`],
 };
+const OPTIONAL_CAPTURED = new Set(['inputs']);
 
 /** Throws unless `value` is a complete `meta.captured` record. */
 export function assertCaptured(value: unknown, where = 'captured'): asserts value is ReplayCaptured {
   assertShape(value, CAPTURED_CHECKS, where);
-  const missing = Object.keys(CAPTURED_CHECKS).filter((key) => value[key] === undefined);
+  const missing = Object.keys(CAPTURED_CHECKS).filter((key) => !OPTIONAL_CAPTURED.has(key) && value[key] === undefined);
   if (missing.length) throw new Error(`${where} is missing ${missing.join(', ')}`);
 }

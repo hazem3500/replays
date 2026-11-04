@@ -41,6 +41,14 @@ const JSON_RULES = {
   maskSelectors: ['[data-private]'],
 };
 
+const field = (id: number, tagName: string, attributes: Record<string, string>, childNodes: unknown[] = []) => ({
+  type: 2,
+  id,
+  tagName,
+  attributes,
+  childNodes,
+});
+
 const snapshot = (privateText: string, publicText: string) => ({
   type: 2,
   timestamp: 1001,
@@ -193,6 +201,19 @@ describe('server privacy pass with rules', () => {
   it('is idempotent with rules, and JSON-config rules do the same as RegExp rules', () => {
     expect(sanitizeReplayBundle(structuredClone(clean), RULES)).toEqual(clean);
     expect(sanitizeReplayBundle(leaky(), JSON_RULES as RedactionRules)).toEqual(clean);
+  });
+
+  it('applies text rules and mask selectors to input values kept visible', () => {
+    const bundle = replay();
+    bundle.meta.captured = { console: false, network: 'off', performance: false, video: false, inputs: 'visible' };
+    const node = field(1, 'form', {}, [
+      field(2, 'input', { type: 'text', value: 'order ACME-123456' }),
+      field(3, 'textarea', { 'data-private': '' }, [{ type: 3, id: 4, textContent: 'private note' }]),
+    ]);
+    bundle.events = [{ type: 2, timestamp: 1, data: { node } }] as ReplayBundle['events'];
+    const serialized = JSON.stringify(sanitizeReplayBundle(bundle, RULES, { keepVisibleInputs: true }));
+    expect(serialized).toContain('order [ticket]');
+    expect(serialized).toContain('"textContent":"******* ****"');
   });
 
   it('checks only the last compound of a complex selector, so it masks as much or more', () => {
@@ -349,6 +370,10 @@ describe('api.redaction and the config key', () => {
     expect(error).toBeInstanceOf(PluginError);
     expect(error).toMatchObject({ code: 'invalid-registration', plugin: 'bad' });
     expect((error as Error).message).toMatch(/must not match the empty string/);
+  });
+
+  it('has no key that keeps visible inputs, so a plugin cannot turn masking off', () => {
+    expect(() => assertRedactionRules({ keepVisibleInputs: true })).toThrow(/unknown keys: keepVisibleInputs/);
   });
 
   it('is a config key, checked when the settings load', async () => {

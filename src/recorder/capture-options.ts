@@ -46,7 +46,13 @@ export function resolveCapture(options: Pick<RecorderOptions, 'capture' | 'priva
 }
 
 /** `meta.captured`: the recorder never records performance entries or video. */
-export function capturedRecord(capture: ResolvedCapture, bodiesRead: boolean): ReplayCaptured {
+export function capturedRecord(capture: ResolvedCapture, bodiesRead: boolean, inputsVisible: boolean): ReplayCaptured {
   const network = capture.network === 'bodies' && !bodiesRead ? 'headers' : capture.network;
-  return { console: capture.consoleLevels.length > 0, network, performance: false, video: false };
+  return {
+    console: capture.consoleLevels.length > 0,
+    network,
+    performance: false,
+    video: false,
+    ...(inputsVisible ? { inputs: 'visible' as const } : {}),
+  };
 }

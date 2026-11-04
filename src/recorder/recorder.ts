@@ -151,7 +151,7 @@ export function createRecorder(options: RecorderOptions): Recorder {
       const { capture, privacy } = chosen;
 
       const startedAt = Date.now();
-      const current = newSession(trigger, capturedRecord(capture, Boolean(bodies)), startedAt);
+      const current = newSession(trigger, capturedRecord(capture, Boolean(bodies), !privacy.sanitize), startedAt);
       session = current;
       try {
         wireSession(current, {
