@@ -4,11 +4,11 @@ import type { CSSProperties } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { editTimeline } from '../../shared/edit-timeline.ts';
-import type { ReplayEdits } from '../../shared/edits.ts';
+import type { ReplayCut, ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 import { blockText, ClipStepLabel } from './BlockLabel.tsx';
-import { lengthLabel, stepSegments } from './clip-segments.ts';
+import { lengthLabel, type StepSegment, stepSegments } from './clip-segments.ts';
 import { Durations } from './Durations.tsx';
 import { BAR_TOOLS } from './editor-tools.ts';
 import { measureLabel } from './label-measure.ts';
@@ -125,6 +125,41 @@ function RulerSkeleton({
   );
 }
 
+/** The clip's steps: a divider where each starts and the words the loaded clip shows (Timeline.tsx ClipSteps). */
+function ClipStepsSkeleton({
+  segments,
+  trimStart,
+  cuts,
+  length,
+  px,
+}: {
+  segments: readonly StepSegment[];
+  trimStart: number;
+  cuts: readonly ReplayCut[];
+  length: number;
+  px: number;
+}) {
+  return segments.map((segment, index) => {
+    const room = labelRoom(segment, trimStart, cuts);
+    const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
+    const roomPx = room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD);
+    return (
+      <span
+        key={segment.at}
+        className="tl-clip-step"
+        data-wait={segment.wait || undefined}
+        style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
+      >
+        <span className="tl-clip-step-label" style={{ marginLeft: `${(room.skip / Math.max(1, segment.length)) * 100}%` }}>
+          <ClipStepLabel
+            {...segmentText(segment, keptLength(segment, trimStart, cuts), roomPx, { pad: STEP_PAD, measure: measureLabel })}
+          />
+        </span>
+      </span>
+    );
+  });
+}
+
 /** The clip lane: the kept clip with its steps' dividers and words, its trim tabs and its cuts (Timeline.tsx). */
 function ClipSkeleton({
   duration,
@@ -147,25 +182,7 @@ function ClipSkeleton({
       {trim.start > 0 ? <span className="tl-outside" style={{ left: 0, width: at(trim.start / duration) }} /> : null}
       {trim.end < duration ? <span className="tl-outside" style={{ left: at(trim.end / duration), right: 0 }} /> : null}
       <span className="tl-clip" style={{ left: at(trim.start / duration), width: span(length / duration) }}>
-        {segments.map((segment, index) => {
-          const room = labelRoom(segment, trim.start, cuts);
-          const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
-          const roomPx = room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD);
-          return (
-            <span
-              key={segment.at}
-              className="tl-clip-step"
-              data-wait={segment.wait || undefined}
-              style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
-            >
-              <span className="tl-clip-step-label" style={{ marginLeft: `${(room.skip / Math.max(1, segment.length)) * 100}%` }}>
-                <ClipStepLabel
-                  {...segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, { pad: STEP_PAD, measure: measureLabel })}
-                />
-              </span>
-            </span>
-          );
-        })}
+        <ClipStepsSkeleton segments={segments} trimStart={trim.start} cuts={cuts} length={length} px={px} />
         <span className="tl-trim" data-edge="start">
           <span className="tl-trim-grip" />
         </span>
@@ -220,6 +237,39 @@ function RegionSkeleton({
   );
 }
 
+/** A lane for each effect the cached edits hold, with its blocks where the loaded lanes put them. */
+function EffectLanesSkeleton({ edits, duration, px }: { edits: ReplayEdits; duration: number; px: number }) {
+  return laneRegions(edits).map((lane) => (
+    <div key={lane.kind} className="tl-lane" data-kind={lane.kind}>
+      <span className="tl-gutter">{lane.icon}</span>
+      <div className="tl-track">
+        {lane.regions.map((region) => (
+          <RegionSkeleton
+            key={region.id}
+            kind={lane.kind}
+            label={region.label}
+            from={region.from}
+            to={region.to}
+            duration={duration}
+            px={px}
+          />
+        ))}
+      </div>
+    </div>
+  ));
+}
+
+/** The playhead at 0:00, where the loaded timeline starts it. */
+function PlayheadSkeleton() {
+  return (
+    <div className="tl-playhead-layer">
+      <div className="tl-playhead" style={{ transform: `translateX(${PAD}px)` }}>
+        <span className="tl-playhead-knob" />
+      </div>
+    </div>
+  );
+}
+
 /**
  * The desktop dock while the editor loads, drawn with the loaded dock's own classes (dock-layout.css) so nothing moves
  * when it arrives: the bar with its labelled tool group and Add, "0:00.0 / total" and what the cached edits leave; the
@@ -253,33 +303,8 @@ export function DockSkeleton({
             </span>
             <div className="tl-track">{known ? <ClipSkeleton duration={duration} width={width} steps={steps} edits={edits} /> : null}</div>
           </div>
-          {known && edits
-            ? laneRegions(edits).map((lane) => (
-                <div key={lane.kind} className="tl-lane" data-kind={lane.kind}>
-                  <span className="tl-gutter">{lane.icon}</span>
-                  <div className="tl-track">
-                    {lane.regions.map((region) => (
-                      <RegionSkeleton
-                        key={region.id}
-                        kind={lane.kind}
-                        label={region.label}
-                        from={region.from}
-                        to={region.to}
-                        duration={duration}
-                        px={px}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))
-            : null}
-          {known ? (
-            <div className="tl-playhead-layer">
-              <div className="tl-playhead" style={{ transform: `translateX(${PAD}px)` }}>
-                <span className="tl-playhead-knob" />
-              </div>
-            </div>
-          ) : null}
+          {known && edits ? <EffectLanesSkeleton edits={edits} duration={duration} px={px} /> : null}
+          {known ? <PlayheadSkeleton /> : null}
         </div>
       </div>
     </section>

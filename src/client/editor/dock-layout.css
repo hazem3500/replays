@@ -81,11 +81,14 @@
   .tl-outside { container-type: inline-size; position: absolute; top: 0; bottom: 0; display: grid; place-items: center; overflow: hidden; border-radius: 8px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--canvas) 70%, transparent) 0 6px, color-mix(in srgb, var(--canvas) 55%, transparent) 6px 12px); pointer-events: none; }
   .tl-outside-label { color: var(--text-tertiary); font-size: var(--text-2xs); white-space: nowrap; }
   @container (max-width: 72px) { .tl-outside-label { display: none; } }
-  .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; background: color-mix(in srgb, var(--text) 3%, transparent); box-shadow: inset 0 0 0 1px var(--line-strong); pointer-events: none; }
-  /* The clip's steps (ClipSteps): a faint divider at each start and whole words where they fit, in the quietest text. */
-  .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 1px solid var(--line); color: var(--text-secondary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
-  /* A wait: dimmer than the steps around it and named by its length, so a run of nothing reads as one quiet stretch. */
-  .tl-clip-step[data-wait] { background: color-mix(in srgb, var(--canvas) 70%, transparent); }
+  .tl-clip { position: absolute; top: 0; bottom: 0; border-radius: 8px; pointer-events: none; }
+  /*
+   * The clip's steps (ClipSteps): one depth cue, a tint. A step is raised a touch above the track and a wait is the
+   * track itself, in both themes; a 2 px gap (not a divider) marks where each starts. Whole words where they fit.
+   */
+  .tl-clip-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-left: 2px solid transparent; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; color: var(--text-secondary); font-size: var(--text-2xs); line-height: 1; white-space: nowrap; }
+  /* A wait: the track showing through, named by its length, so a run of nothing reads as one quiet stretch. */
+  .tl-clip-step[data-wait] { background: none; }
   /* why: the waits found are a tint over the clip; the step names stay readable over them. */
   .tl-clip-step > span { position: relative; z-index: 3; }
   .tl-clip-step-label, .phone-step-label { display: inline-flex; align-items: center; gap: 3px; }
@@ -119,7 +122,7 @@
   /*
    * Kind hues: each effect lane takes one of the theme's own colours, so the four tell apart at a glance in both
    * themes while staying quiet: zoom the accent, speed the warning amber, blur the danger rose, captions the success
-   * green. Full strength on the lane's glyph and a short block's softer top accent (60%, so blank blocks never outshine labelled ones); a whisper of it in each block's fill,
+   * green. Full strength on the lane's glyph and a short block's top accent (80%: 3:1 as a mark, without outshining labelled blocks); a whisper of it in each block's fill,
    * a step stronger when selected. invariant: labels stay neutral ink, so text keeps AA on every tint.
    */
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="zoom"] { --kind: var(--accent); }
@@ -128,9 +131,28 @@
   :root[data-theme="light"] :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind-fill: 22%; }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="blur"] { --kind: var(--danger); }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="caption"] { --kind: var(--success); }
+  /*
+   * Block fills: each lane's own hue at one lightness per theme (oklch relative colour), so the four read as distinct
+   * hues of equal weight, amber never greys to taupe nor rose to brown, and neutral labels clear AA on every one.
+   * Without relative colour, a mix of the token into the neutral clip fill stands in.
+   */
+  :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind] {
+    --block: color-mix(in oklab, var(--kind, transparent) var(--kind-fill), var(--clip-fill));
+    --block-hover: color-mix(in oklab, var(--kind, transparent) calc(var(--kind-fill) + 6%), var(--clip-fill-hover));
+    --block-selected: color-mix(in oklab, var(--kind, var(--accent)) 26%, var(--surface-raised));
+  }
+  @supports (color: oklch(from red l c h)) {
+    :is(.editor-shell, .editor-loading) { --block-l: 0.32; --block-step: 0.03; --block-c: 0.32; }
+    :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --block-l: 0.935; --block-step: -0.03; --block-c: 0.26; }
+    :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind] {
+      --block: oklch(from var(--kind) var(--block-l) calc(c * var(--block-c)) h);
+      --block-hover: oklch(from var(--kind) calc(var(--block-l) + var(--block-step)) calc(c * var(--block-c)) h);
+      --block-selected: oklch(from var(--kind) calc(var(--block-l) + var(--block-step) * 2.5) calc(c * var(--block-c) * 1.3) h);
+    }
+  }
   :is(.editor-shell, .editor-loading) { --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
   :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
-  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 4px; background: color-mix(in oklab, var(--kind, transparent) var(--kind-fill), var(--clip-fill)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
-  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid color-mix(in oklab, var(--kind, var(--line-strong)) 60%, transparent); }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 4px; background: var(--block); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid color-mix(in oklab, var(--kind, var(--line-strong)) 80%, transparent); }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }

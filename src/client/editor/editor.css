@@ -19,7 +19,7 @@
   /* The Add menu: short names with their keys, and one line saying what the item under the pointer or focus does. */
   .editor-add-menu .editor-key { margin-left: auto; padding-left: 20px; }
   /* invariant: the hint box holds two lines whatever it says, inside a menu of fixed width, so hovering an item never resizes the menu. */
-  .editor-add-hint { box-sizing: content-box; height: 2.7em; margin: 0; padding: 3px 8px 4px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
+  .editor-add-hint { box-sizing: content-box; display: flex; align-items: center; height: 2.7em; margin: 0; padding: 4px 8px; overflow: hidden; color: var(--text-tertiary); font-size: var(--text-2xs); line-height: 1.35; }
 
   .editor-stage .player-stage { cursor: default; }
   /* The preview is not a control here (the page's keyboard target after navigating): no ring once keys are used. */
@@ -79,11 +79,11 @@
   .tl-region:focus-within .tl-region-edge-mark, .tl-region[data-selected] .tl-region-edge-mark { opacity: 1; }
   @media (hover: hover) and (pointer: fine) { .tl-region:hover .tl-region-edge-mark { opacity: 1; } }
   @media (hover: hover) and (pointer: fine) {
-    .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body:hover { background: color-mix(in oklab, var(--kind, transparent) 18%, var(--clip-fill-hover)); box-shadow: none; color: var(--text); }
+    .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body:hover { background: var(--block-hover); box-shadow: none; color: var(--text); }
   }
   .tl-region[data-selected] { z-index: 4; }
   .tl-region[data-kind][data-selected] .tl-region-body { box-shadow: var(--clip-lift); color: var(--text); }
-  .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: color-mix(in oklab, var(--kind, var(--accent)) 26%, var(--surface-raised)); }
+  .tl-region[data-kind][data-selected]:not([data-kind="cut"]) .tl-region-body { background: var(--block-selected); }
   .tl-region[data-kind="cut"][data-selected] .tl-region-body { background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 45%, transparent) 0 1.5px, transparent 1.5px 6px), var(--clip-selected); }
   .tl-region[data-kind="caption"]:not([data-selected]) .tl-region-edge { pointer-events: none; }
   .tl-region-remove { position: absolute; z-index: 3; bottom: calc(100% + 6px); left: var(--bubble-x, 0px); display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 8px 0 6px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); color: var(--text-secondary); font: inherit; font-size: var(--text-2xs); font-weight: 600; white-space: nowrap; cursor: pointer; opacity: 0; pointer-events: none; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); -webkit-tap-highlight-color: transparent; }
@@ -250,6 +250,8 @@
 /* Override the shared press-scale utilities only inside the editor. Positioned timeline markers retain their
    transforms; buttons and links stay put while their colours answer hover and press. */
 @layer utilities {
+  /* why: the menu primitive's open fill (bg-muted) is all but invisible on the light bar; the open Add reads pressed in both themes. */
+  .editor-bar .editor-add-effect[aria-expanded="true"] { background-color: var(--surface-pressed); color: var(--text); }
   .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out); }
   .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
   .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
