@@ -75,7 +75,6 @@ test.describe('index row menus: opening', () => {
       await expect(page.getByRole('menu')).toHaveCount(0);
     }
   });
-
 });
 
 test.describe('index row menus: actions', () => {
@@ -112,7 +111,6 @@ test.describe('index row menus: actions', () => {
     await page.getByRole('menuitem', { name: 'Copy link' }).click();
     await expect.poll(() => clipboardText(page)).toBe(`${base}/r/${id}`);
   });
-
 });
 
 test.describe('index row menus: keyboard and browser menu', () => {

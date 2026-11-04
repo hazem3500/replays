@@ -388,9 +388,9 @@
       "brotli": 670
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 22890,
-      "gzip": 9639,
-      "brotli": 8357
+      "raw": 22875,
+      "gzip": 9633,
+      "brotli": 8346
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
