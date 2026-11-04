@@ -547,6 +547,11 @@
       "gzip": 21,
       "brotli": 2
     },
+    "dist/lib/chunks/index.ts-84184fb3a414.mjs": {
+      "raw": 34071,
+      "gzip": 9700,
+      "brotli": 8430
+    },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
       "gzip": 4951,
@@ -766,11 +771,6 @@
       "raw": 557837,
       "gzip": 179928,
       "brotli": 142340
-    },
-    "dist/lib/chunks/index.ts-84184fb3a414.mjs": {
-      "raw": 34071,
-      "gzip": 9700,
-      "brotli": 8430
     }
   },
   "allowances": [
