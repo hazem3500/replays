@@ -1,4 +1,5 @@
 import type { ReviewSuiteIndexRun } from '../../shared/review-suite.ts';
+import { tileColour } from '../compare/tiles.ts';
 
 type RunRecording = Pick<ReviewSuiteIndexRun, 'replayId' | 'replay'>;
 
@@ -39,4 +40,26 @@ export function neighbourReplayId(
   const playable = orderedRuns(runs).filter((run) => playableReplayId(run, detailed));
   const index = playable.findIndex((run) => run.replayId === replayId);
   return playable[index + step]?.replayId;
+}
+
+/** A run that opens as a recording, with the colour its sidebar row and its Compare tile both show. */
+export interface RecordedRun {
+  replayId: string;
+  label: string;
+  colour: number;
+}
+
+/**
+ * The runs that open as recordings, in sequence order, each with its colour. The runs sidebar and the suite's Compare
+ * stage both read colours from this one list, so a run's swatch and its tile frame can never disagree.
+ */
+export function recordedRuns(
+  runs: ReadonlyArray<RunRecording & Pick<ReviewSuiteIndexRun, 'sequence' | 'label'>>,
+  detailed: boolean,
+): RecordedRun[] {
+  const recorded = orderedRuns(runs).flatMap((run) => {
+    const replayId = playableReplayId(run, detailed);
+    return replayId ? [{ replayId, label: run.label }] : [];
+  });
+  return recorded.map((run, index) => ({ ...run, colour: tileColour(index) }));
 }

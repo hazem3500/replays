@@ -47,7 +47,6 @@ const sentinels: RecorderMessages = {
   privacyUnavailable: mark('privacyUnavailable'),
   privacyMode: () => mark('privacyMode'),
   privacyHint: () => mark('privacyHint'),
-  privacyAlways: mark('privacyAlways'),
   record: mark('record'),
 };
 const options: DefaultUiOptions = {
@@ -184,7 +183,6 @@ const OPTIONS_KEYS = new Set([
   'privacyUnavailable',
   'privacyMode',
   'privacyHint',
-  'privacyAlways',
   'record',
 ]);
 const rendered = [

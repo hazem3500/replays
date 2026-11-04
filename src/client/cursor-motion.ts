@@ -200,6 +200,8 @@ export interface CursorInput {
 const REST_MS = 150;
 /** Continuous motion longer than this is broken into waypoints so the path keeps its shape. */
 const WAYPOINT_MS = 600;
+/** A move this long between leaving a rest and arriving was recorded as a sweep (the stream samples every ~50 ms). */
+const SWEEP_MIN_MS = 100;
 /** A Click with no MouseDown this close before it is a press of its own. */
 const CLICK_PAIR_MS = 500;
 
@@ -289,24 +291,33 @@ export function onPage(points: readonly CursorPoint[], viewport?: { width: numbe
   return kept.map((p) => ({ t: p.t, x: Math.min(Math.max(0, p.x), maxX), y: Math.min(Math.max(0, p.y), maxY) }));
 }
 
+/** A place the cursor comes to rest, and when the recorded pointer set off from it again. */
+export interface CursorTarget extends CursorPoint {
+  leftAt: number;
+}
+
 /** Where the cursor comes to rest: rests, the ends, and waypoints inside long continuous runs. */
-export function cursorTargets(points: readonly CursorPoint[]): CursorPoint[] {
-  const targets: CursorPoint[] = [];
+export function cursorTargets(points: readonly CursorPoint[]): CursorTarget[] {
+  const targets: CursorTarget[] = [];
   let runStart: number | undefined;
   for (let i = 0; i < points.length; i++) {
     const p = points[i] as CursorPoint;
     const next = points[i + 1];
     const last = targets.at(-1);
+    const leftAt = next?.t ?? p.t;
     if (!last) {
-      targets.push(p);
+      targets.push({ ...p, leftAt });
       continue;
     }
     runStart ??= p.t;
     const rest = !next || next.t - p.t >= REST_MS;
     if (!rest && p.t - runStart < WAYPOINT_MS) continue;
     runStart = undefined;
-    if (Math.hypot(p.x - last.x, p.y - last.y) < 0.5) continue;
-    targets.push(p);
+    if (Math.hypot(p.x - last.x, p.y - last.y) < 0.5) {
+      last.leftAt = leftAt;
+      continue;
+    }
+    targets.push({ ...p, leftAt });
   }
   return targets;
 }
@@ -396,10 +407,13 @@ export function buildCursorTrack(
   const moves: Move[] = [];
   const pose: Pose = { visible: true, x: 0, y: 0, heading: REST_HEADING, scale: 1, opacity: 1 };
   for (let i = 1; i < targets.length; i++) {
-    const from = targets[i - 1] as CursorPoint;
-    const to = targets[i] as CursorPoint;
+    const from = targets[i - 1] as CursorTarget;
+    const to = targets[i] as CursorTarget;
     let traj = planMove(from, to, { reducedMotion, style: motion });
-    const start = Math.max(from.t, to.t - traj.arrivalMs);
+    /* why: a sweep the recording saw (several samples) runs on the pointer's own clock, setting off when the pointer did and
+       landing when it did. A lone jump has no sweep to follow, so it glides in ahead of its landing. */
+    const followed = to.t - from.leftAt >= SWEEP_MIN_MS;
+    const start = followed ? from.leftAt : Math.max(from.t, to.t - traj.arrivalMs);
     const previous = moves.at(-1);
     if (previous && start < previous.end) {
       sampleTrajectory(previous.traj, (start - previous.start) / previous.scale, pose);
@@ -407,7 +421,8 @@ export function buildCursorTrack(
       traj = planMove({ x: pose.x, y: pose.y }, to, { fromHeading: pose.heading, reducedMotion, style: motion });
     }
     const available = to.t - start;
-    const scale = available >= 1 ? Math.min(1, available / Math.max(traj.arrivalMs, 1)) : 0;
+    const fit = available / Math.max(traj.arrivalMs, 1);
+    const scale = available >= 1 ? (followed ? fit : Math.min(1, fit)) : 0;
     moves.push({ start, end: scale > 0 ? start + traj.durationMs * scale : start, scale, traj });
   }
   const first = targets[0];

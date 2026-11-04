@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { createSuite, openReplay, serveApp, uniqueId } from './support.ts';
+import { cloneBundle, openReplay, postBundle, serveApp, uniqueId } from './support.ts';
 
 const server = serveApp();
-// why: only a phone shows the strip in a suite; wider screens switch runs from the sidebar.
-test.use({ viewport: { width: 720, height: 800 } });
+// why: only a wide standalone Compare shows the strip; suites have their sidebar and phones their swatch switcher.
+test.use({ viewport: { width: 900, height: 800 } });
 
 type Point = { x: number; y: number };
 type Frame = { strip: string; pill: Point; opacity: number; cells: Record<string, Point> };
@@ -49,20 +49,27 @@ async function trace(page: Page, count: number, act: () => Promise<void>) {
 }
 
 async function openStrip(page: Page) {
-  const suite = uniqueId('strip');
-  const runs = ['Chrome', 'Firefox', 'Safari', 'Edge'].map((label, index) => ({
-    id: `run-${index}`,
-    label,
-    status: 'passed' as const,
-    replayId: `${suite}-${label.toLowerCase()}`,
-  }));
-  await createSuite(page.request, server().origin, suite, runs);
-  await openReplay(page, `${server().origin}/s/${suite}/r/${runs[3]?.replayId ?? ''}`);
+  const prefix = uniqueId('strip');
+  const runs = ['Chrome', 'Firefox', 'Safari', 'Edge'].map((label) => ({ label, id: `${prefix}-${label.toLowerCase()}` }));
+  for (const run of runs)
+    await postBundle(page.request, server().origin, await cloneBundle(page.request, server().origin, 'demo-shop', run.id, run.label));
+  const [first, second, ...rest] = runs.map((run) => run.id);
+  await openReplay(page, `${server().origin}/r/${first}?with=${second}&layout=grid`);
+  // why: a hard load of three or more recordings answers the router's own 307 to itself; adding them in the app does not.
+  await page.evaluate(
+    (search) => {
+      const state: unknown = history.state;
+      history.pushState(state, '', `${location.pathname}${search}`);
+      dispatchEvent(new PopStateEvent('popstate', { state }));
+    },
+    `?with=${[second, ...rest].join(',')}&layout=grid&focus=${runs[3]?.id ?? ''}`,
+  );
   await expect(page.locator('.compare-pill')).toHaveCSS('opacity', '1');
   // why: a first visit to a run reflows the viewer while it loads; visit each once so the trace measures the strip alone.
   for (const run of [...runs.slice(0, 3), runs[3]]) {
-    await page.locator('.compare-chip', { hasText: run?.label ?? '' }).click();
-    await expect(page).toHaveURL(new RegExp(`/r/${run?.replayId ?? ''}$`));
+    const chip = page.locator('.compare-chip', { hasText: run?.label ?? '' });
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-current', 'true');
     await expect(page.locator('[data-testid="compare-stage"] iframe').first()).toBeAttached();
   }
   // why: the first layout settles over several frames; trace a switch only once the strip has stopped reflowing.

@@ -3,6 +3,7 @@ import { type CompareLayout, parseCompareSearch, writeCompareSearch } from '../c
 import { useLocationSearch } from '../hooks/use-location-search.ts';
 import { navigate, setSearch } from '../routing/navigate.ts';
 import { replayHref } from '../routing/links.ts';
+import type { RecordedRun } from './runs.ts';
 
 /**
  * A suite with two or more recordings opens as the viewer comparing its runs: the runs sidebar picks the focus,
@@ -17,7 +18,7 @@ export function SuiteCompare({
   page,
   hideCompareSummary,
 }: {
-  runs: ReadonlyArray<{ replayId: string; label: string }>;
+  runs: readonly RecordedRun[];
   /** The layout a URL without `layout` means (compare/defaults.ts). */
   fallback: CompareLayout;
   focus: string;
@@ -28,7 +29,7 @@ export function SuiteCompare({
   const { layout, t } = parseCompareSearch(useLocationSearch(), '', fallback);
   return (
     <CompareViewer
-      recordings={runs.map((run) => ({ id: run.replayId, label: run.label }))}
+      recordings={runs.map((run) => ({ id: run.replayId, label: run.label, colour: run.colour }))}
       focus={focus}
       layout={layout}
       time={t}

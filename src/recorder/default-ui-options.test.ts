@@ -100,9 +100,11 @@ describe('default UI options menu content', () => {
     expect(trigger().getAttribute('aria-expanded')).toBe('true');
   });
 
-  it('notes once, for the whole privacy group, that passwords stay hidden', async () => {
+  it('adds no note under the privacy group', async () => {
     await open();
-    expect(describedBy(node('[role=group][aria-labelledby=recorder-options-menu-privacy]'))).toBe('Passwords always stay hidden');
+    const group = node('[role=group][aria-labelledby=recorder-options-menu-privacy]');
+    expect(group.hasAttribute('aria-describedby')).toBe(false);
+    expect(group.textContent).not.toContain('Passwords');
   });
 
   it("shows a profile's description under it and leaves one without a description plain", async () => {

@@ -73,8 +73,6 @@ export type RecorderMessages = {
   privacyMode: (params: { mode: RecorderPrivacyMode }) => string;
   /** Options step: one quiet line under a masking mode, from what a recording in that mode captures. */
   privacyHint: (params: { mode: RecorderPrivacyMode; privacy: PrivacyFacts }) => string;
-  /** Options step: the note at the end of the masking group. */
-  privacyAlways: string;
   /** Options step: the button that starts the recording. */
   record: string;
 };
@@ -158,7 +156,6 @@ export const defaultRecorderMessages: RecorderMessages = {
   privacyUnavailable: 'Not allowed here',
   privacyMode: ({ mode }) => MODE_NAMES[mode],
   privacyHint: ({ privacy }) => modeHint(privacy),
-  privacyAlways: 'Passwords always stay hidden',
   record: 'Record',
 };
 

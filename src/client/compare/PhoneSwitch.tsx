@@ -25,8 +25,8 @@ interface SwitchStyle extends CSSProperties {
 }
 
 /**
- * Phones show one recording at a time: this row above the stage names each one (colour, name, error count) and says
- * which is on show. Its thumb slides with the swipe, a tap slides the stage, and arrow keys move it, so touch,
+ * Phones show one recording at a time: this row above the stage, their one run switcher, names each one (colour, name,
+ * a dot for issues, the count in its accessible name) and says which is on show. Its thumb slides with the swipe, a tap slides the stage, and arrow keys move it, so touch,
  * keyboard and screen readers share one control. Fullscreen, the stage's one control, sits at its end, off the page.
  */
 export function PhoneSwitch({
@@ -74,17 +74,14 @@ export function PhoneSwitch({
             data-scope={tile.id}
             aria-checked={tile.id === focus}
             aria-label={PHONE_STRINGS.option(tile.name, tile.errors)}
+            title={named ? undefined : PHONE_STRINGS.option(tile.name, tile.errors)}
             tabIndex={tile.id === focus ? 0 : -1}
             disabled={!tile.bundle}
             onClick={() => onFocus(tile.id)}
             onKeyDown={onKeyDown}
           >
             {named ? <Identity tile={tile} /> : <span className="ct-swatch" data-tile={tile.colour} aria-hidden="true" />}
-            {named && tile.errors ? (
-              <span className="ct-phone-errors" aria-hidden="true">
-                {tile.errors}
-              </span>
-            ) : null}
+            {tile.errors ? <span className="ct-phone-issues" aria-hidden="true" /> : null}
           </button>
         ))}
       </div>
