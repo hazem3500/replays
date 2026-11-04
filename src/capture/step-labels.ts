@@ -1,3 +1,4 @@
+import { capAtWord } from '../shared/step-label.ts';
 import type { RawStep } from './drivers/types.ts';
 
 const NAMING_ATTRIBUTES = ['aria-label', 'title', 'alt', 'name', 'placeholder', 'data-tracking-id', 'data-testid'];
@@ -62,7 +63,8 @@ function controlDescription(selector: string, field: boolean): string {
 /** The step's caption: its own label, else one made from what it does and the control it names. */
 export function labelFor(step: RawStep): string {
   if (step.label) return step.label;
-  const name = 'selector' in step ? selectorName(step.selector) : undefined;
+  const named = 'selector' in step ? selectorName(step.selector) : undefined;
+  const name = named ? capAtWord(named) : undefined;
   const target = (field: boolean) => {
     if (name) return `“${name}”`;
     return 'selector' in step ? controlDescription(step.selector, field) : '';

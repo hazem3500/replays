@@ -2,6 +2,7 @@ import { RRWEB_EVENT, type ReplayBundle, type ReplayCaptured, type ReplayRrwebEv
 import type { RawConsoleEntry, RawNetworkEntry } from './capture.ts';
 import { redactText, redactUrl } from './redact.ts';
 import { redactEventUrls } from './sanitize-events.ts';
+import { capAtWord } from './step-label.ts';
 
 /** A step before it is placed on the replay timeline (`at` is epoch ms). */
 export type RawStep = {
@@ -102,7 +103,7 @@ export function buildReplayBundle(input: BuildBundleInput): ReplayBundle {
     steps: input.steps
       .map((step) => ({
         ...step,
-        label: redactText(step.label, 200),
+        label: capAtWord(redactText(step.label, Number.MAX_SAFE_INTEGER), 200),
         ...(step.url ? { url: redactUrl(step.url) } : {}),
         at: relative(step.at),
       }))

@@ -6,6 +6,7 @@
  */
 import './step-caption.css';
 
+import { capAtWord } from '../shared/step-label.ts';
 import { activeStepIndex } from './timeline.ts';
 
 /** Length of the caption's entrance, `caption-in` in step-caption.css (keep in sync). */
@@ -101,4 +102,25 @@ const EXPORT_CAPTION_SCALE = 1.6;
 export function exportCaptionScale(viewportWidth: number) {
   if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) return 1;
   return Math.round(Math.min(2.4, Math.max(1, (EXPORT_CAPTION_SCALE * viewportWidth) / EXPORT_CAPTION_WIDTH)) * 1000) / 1000;
+}
+
+/**
+ * Longest step caption the viewer draws: two lines at the phone caption width. Captions recorded before labels were
+ * shortened at record time can run to 200 characters.
+ */
+export const CAPTION_DISPLAY_MAX = 72;
+
+const QUOTED = /^([^“”]*“)(.+)(”)$/su;
+
+/**
+ * The step label as drawn: on one line, shortened at a word boundary when it is longer than the caption can wrap, and
+ * never ending in an ellipsis, so recordings that stored one show without it. The quotes round a clicked name stay closed.
+ */
+export function captionDisplayText(label: string): string {
+  const quoted = QUOTED.exec(label.trim());
+  if (!quoted) return capAtWord(label, CAPTION_DISPLAY_MAX);
+  const [, open = '', name = '', close = ''] = quoted;
+  const room = CAPTION_DISPLAY_MAX - open.length - close.length;
+  const inner = capAtWord(name, room);
+  return inner ? `${open}${inner}${close}` : capAtWord(label, CAPTION_DISPLAY_MAX);
 }

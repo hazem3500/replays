@@ -368,14 +368,14 @@
       "brotli": 245
     },
     "dist/client/assets/step-caption-HASH.css": {
-      "raw": 2040,
-      "gzip": 919,
-      "brotli": 754
+      "raw": 1918,
+      "gzip": 907,
+      "brotli": 742
     },
     "dist/client/assets/step-caption-HASH.js": {
-      "raw": 887,
-      "gzip": 541,
-      "brotli": 505
+      "raw": 1388,
+      "gzip": 824,
+      "brotli": 754
     },
     "dist/client/assets/storage-HASH.js": {
       "raw": 461,
@@ -384,8 +384,8 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
-      "gzip": 738,
-      "brotli": 648
+      "gzip": 737,
+      "brotli": 643
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22875,
@@ -455,7 +455,7 @@
     "dist/client/index.html": {
       "raw": 14204,
       "gzip": 4629,
-      "brotli": 3878
+      "brotli": 3876
     },
     "dist/client/render.html": {
       "raw": 1283,
@@ -477,10 +477,10 @@
       "gzip": 9005,
       "brotli": 7850
     },
-    "dist/lib/chunks/bundle-io.ts-00964f435833.mjs": {
-      "raw": 73855,
-      "gzip": 20379,
-      "brotli": 17577
+    "dist/lib/chunks/bundle-io.ts-bd629dd42de8.mjs": {
+      "raw": 74502,
+      "gzip": 20687,
+      "brotli": 17838
     },
     "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs": {
       "raw": 68003,
@@ -637,10 +637,10 @@
       "gzip": 1704,
       "brotli": 1457
     },
-    "dist/lib/recorder-chunks/attribute-classes.ts-1cc4ef463b88.mjs": {
-      "raw": 67186,
-      "gzip": 18144,
-      "brotli": 15967
+    "dist/lib/recorder-chunks/attribute-classes.ts-e5b119bffc36.mjs": {
+      "raw": 68574,
+      "gzip": 18616,
+      "brotli": 16386
     },
     "dist/lib/recorder-chunks/body-capture.ts-21be696bf511.mjs": {
       "raw": 10646,
@@ -763,9 +763,9 @@
       "brotli": 290690
     },
     "initial/render.html/css": {
-      "raw": 6192,
-      "gzip": 2817,
-      "brotli": 2334
+      "raw": 6162,
+      "gzip": 2804,
+      "brotli": 2322
     },
     "initial/render.html/js": {
       "raw": 557837,
@@ -1168,16 +1168,6 @@
       },
       "reason": "View presets, per-view state and lazy headlines integrate with main’s plugin contribution controls and shortcuts; measured merged output against clean main 92061f03 on the same Boat.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/step-caption-HASH.js",
-      "cap": {
-        "raw": 887,
-        "gzip": 541,
-        "brotli": 505
-      },
-      "pr": "https://github.com/hazem3500/replays/pull/176",
-      "reason": "Compression drift from the shared edits module split (no new code in this chunk); measured on Boat and in CI: gzip 541 B. Replaces #155's allowance for this file."
     },
     {
       "file": "dist/client/assets/CommentRowsSource-HASH.js",
@@ -1658,16 +1648,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/chunks/bundle-io.ts-00964f435833.mjs",
-      "cap": {
-        "raw": 73855,
-        "gzip": 20379,
-        "brotli": 17578
-      },
-      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw 71586 to 71703, gzip 19747 to 19785, brotli 17035 to 17066 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs",
       "cap": {
         "raw": 68003,
@@ -2035,16 +2015,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/219"
     },
     {
-      "file": "dist/lib/recorder-chunks/attribute-classes.ts-1cc4ef463b88.mjs",
-      "cap": {
-        "raw": 67186,
-        "gzip": 18144,
-        "brotli": 15967
-      },
-      "reason": "Small justified growth under Hazem's standing approval (2026-11-03). The recorder core chunk under a new source membership (adds recorder-settings.ts), replacing attribute-classes.ts-7ce204b477b8. Main 63399/17194/15126 B, head 65229/17615/15501 B raw/gzip/brotli: per-recording settings, start({ choice }) and meta.profile; the choices logic itself is a lazy chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/219"
-    },
-    {
       "file": "dist/lib/recorder-chunks/recorder-choices.ts-2a4486b25e6e.mjs",
       "cap": {
         "raw": 4323,
@@ -2157,6 +2127,36 @@
       },
       "reason": "Brotli-only hash-name drift in an unchanged chunk: raw 1203 matches main, but brotli swings between about 610 and 650 bytes from build to build because the chunk names other chunks whose hashes change. Boat merged-tree head 646 against a 641 cap ratcheted from a low reading; cap is the observed high times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/248"
+    },
+    {
+      "file": "dist/lib/chunks/bundle-io.ts-bd629dd42de8.mjs",
+      "cap": {
+        "raw": 74502,
+        "gzip": 20687,
+        "brotli": 17840
+      },
+      "reason": "Library chunk under a new source membership (adds shared/step-label.ts, imported by the capture step labels), replacing bundle-io.ts-00964f435833. Main 71703/19785/17066 B, head 72332/20084/17320 B raw/gzip/brotli: the capture path caps selector names at a word boundary.",
+      "pr": "https://github.com/hazem3500/replays/pull/243"
+    },
+    {
+      "file": "dist/lib/recorder-chunks/attribute-classes.ts-e5b119bffc36.mjs",
+      "cap": {
+        "raw": 68574,
+        "gzip": 18616,
+        "brotli": 16386
+      },
+      "reason": "The recorder core chunk under a new source membership (adds step-label.ts), replacing attribute-classes.ts-1cc4ef463b88. Main 65229/17615/15501 B, head 66576/18073/15908 B raw/gzip/brotli: click labels read the accessible name or first line and cap at a word boundary, with no ellipsis.",
+      "pr": "https://github.com/hazem3500/replays/pull/243"
+    },
+    {
+      "file": "dist/client/assets/step-caption-HASH.js",
+      "cap": {
+        "raw": 1388,
+        "gzip": 824,
+        "brotli": 754
+      },
+      "reason": "captionDisplayText shortens long and old step labels at a word boundary for the viewer and the exported video, with the shared capAtWord. Main caps 887/541/505 B, head 1347/800/732 B raw/gzip/brotli.",
+      "pr": "https://github.com/hazem3500/replays/pull/243"
     }
   ]
 }
