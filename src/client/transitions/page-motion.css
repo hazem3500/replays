@@ -5,11 +5,10 @@ html[data-navigated] .skeleton-suite { animation: none; }
 html[data-page-transition^="motion-"]::view-transition-group(*) { animation-play-state: paused; }
 /* why: even an unchanged root size creates a layout animation; only the thumbnail needs to move. */
 html[data-page-transition^="motion-"]::view-transition-group(root) { animation: none; }
-/* why: tile chrome belongs to the landed frame, otherwise the root snapshot reveals an empty outline ahead of its flying picture. */
-html[data-page-transition="motion-page"] .ct-tile {
-  box-shadow: none;
-  outline: none;
-}
+/* why: a tile's run-colour frame and keyboard ring belong to the landed tile, otherwise the root snapshot shows empty
+ * outlines ahead of their flying pictures. They fade in when the page transition ends and out before one begins (frames.ts). */
+html[data-page-transition="motion-page"] .ct-tile::after,
+html[data-frames-leaving] .ct-tile::after { opacity: 0; }
 html[data-page-transition^="motion-"]:not([data-page-hero])::view-transition-group(.page-hero) { animation: none; }
 /* why: a fixed snapshot canvas lets Motion's spring move the hero through compositor transforms alone. */
 html[data-page-hero]::view-transition-group(.page-hero) {

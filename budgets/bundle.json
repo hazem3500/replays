@@ -108,9 +108,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 12834,
-      "gzip": 3107,
-      "brotli": 2710
+      "raw": 12820,
+      "gzip": 3083,
+      "brotli": 2677
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
@@ -243,8 +243,8 @@
       "brotli": 32841
     },
     "dist/client/assets/main-HASH.js": {
-      "raw": 124708,
-      "gzip": 44015,
+      "raw": 124930,
+      "gzip": 44140,
       "brotli": 39520
     },
     "dist/client/assets/MalleableHost-HASH.css": {
@@ -1140,16 +1140,6 @@
       },
       "reason": "Viewer views: view resolution, the View switcher, per-view settings and tab ordering in the viewer chunk; the lazy headline, its vitals tile and their styles as new chunks; compare summary chips; the suite profile check in the shared suite contract; hash drift in chunks that name them. Measured against main 888a8b32, with a few bytes of room for runner variance.",
       "pr": "https://github.com/hazem3500/replays/pull/159"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 124708,
-        "gzip": 44015,
-        "brotli": 39520
-      },
-      "reason": "Brotli-only drift: CI measured raw +0 and gzip -1 against main c458b620 but brotli +70 (39493), because the entry chunk names the Viewer chunk whose hash changes with the Shift download. Raw and gzip caps stay at main's.",
-      "pr": "https://github.com/hazem3500/replays/pull/240"
     },
     {
       "file": "dist/client/assets/render-HASH.js",
@@ -2157,6 +2147,15 @@
       },
       "reason": "captionDisplayText shortens long and old step labels at a word boundary for the viewer and the exported video, with the shared capAtWord. Main caps 887/541/505 B, head 1347/800/732 B raw/gzip/brotli.",
       "pr": "https://github.com/hazem3500/replays/pull/243"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 124930,
+        "gzip": 44140
+      },
+      "reason": "Page transitions fade the comparison tile frames out before sheets fly back to the index (transitions/frames.ts), about 205 raw and 116 gzip bytes in the entry chunk. Measured against main ba23133c on the same Boat, with a few bytes of room for runner variance.",
+      "pr": "https://github.com/hazem3500/replays/pull/250"
     }
   ]
 }
