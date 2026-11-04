@@ -97,6 +97,8 @@ const entries: Record<string, { source: string; values: string[] }> = {
       'UI_ATTRIBUTE',
       'CHAT_WIDGET_PRESETS',
       'blockProps',
+      'publicProps',
+      'PUBLIC_ATTRIBUTE',
       'createHttpUpload',
       'blockSelector',
       'recorderUiProps',

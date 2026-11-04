@@ -45,7 +45,7 @@ export const Options: Story = {
   play: async () => {
     await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.record));
     const options = await inRecorderUi(() => recorderUi.button(defaultRecorderMessages.optionsTitle));
-    await expect(options).toHaveAttribute('title', 'Masked · Triage');
+    await expect(options).toHaveAttribute('title', 'Fully masked · Triage');
   },
 };
 
@@ -56,7 +56,7 @@ export const OptionsMenuOpen: Story = {
     await openMenu();
     await inRecorderUi(() => recorderUi.item('Support'));
     await visible('Slow pages, with vitals and requests');
-    await visible('Hides text, inputs and media');
+    await visible('Hides everything');
   },
 };
 

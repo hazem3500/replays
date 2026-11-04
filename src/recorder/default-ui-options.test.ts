@@ -14,6 +14,7 @@ const masked: PrivacyFacts = {
 };
 /** A host that keeps media blocked: Text masked collapses into Masked, so it is not offered. */
 const offer: RecordingChoiceOffer = {
+  by: 'staff',
   privacy: [
     { mode: 'visible', facts: { ...masked, mode: 'visible', captures: { ...masked.captures, pageText: true, inputs: true } } },
     { mode: 'masked', facts: masked },
@@ -64,7 +65,7 @@ describe('default UI options pill', () => {
 
   it('summarizes the current choice in the options tooltip and marks a non-default one', async () => {
     await open();
-    expect(trigger().title).toBe('Masked · Triage');
+    expect(trigger().title).toBe('Fully masked · Triage');
     expect(trigger().hasAttribute('data-changed')).toBe(false);
     trigger().click();
     item('privacy', 'visible').click();
@@ -88,7 +89,7 @@ describe('default UI options menu content', () => {
     expect(MODES.map((mode) => describedBy(item('privacy', mode)))).toEqual([
       'Records text and inputs',
       'Not allowed here',
-      'Hides text, inputs and media',
+      'Hides everything',
     ]);
   });
 
@@ -164,5 +165,56 @@ describe('default UI options menu', () => {
     const { abort, choice } = await open();
     abort.abort();
     await expect(choice).resolves.toBeUndefined();
+  });
+});
+
+const customerOffer: RecordingChoiceOffer = {
+  by: 'customer',
+  privacy: [
+    { mode: 'interface-visible', facts: { ...masked, captures: { ...masked.captures, interfaceText: true } } },
+    { mode: 'masked', facts: masked },
+    { mode: 'visible', facts: { ...masked, mode: 'visible', captures: { ...masked.captures, pageText: true, inputs: true } } },
+  ],
+  profiles: [],
+  networkBodies: { allowed: true },
+  initial: { privacy: 'interface-visible', networkBodies: false },
+  defaults: { privacy: 'interface-visible', networkBodies: false },
+};
+
+const openCustomer = async () => {
+  const choice = createDefaultUi().chooseOptions({
+    trigger: { source: 'user' },
+    offer: customerOffer,
+    signal: new AbortController().signal,
+  });
+  await vi.waitFor(() => node('[data-recorder-action=record]'));
+  return { choice };
+};
+
+describe('default UI options for a customer', () => {
+  afterEach(clearPage);
+
+  it('lists the offered modes in the offer order, the default first, with no disabled mode', async () => {
+    await openCustomer();
+    const modes = [...root().querySelectorAll<HTMLElement>('[data-group=privacy]')];
+    expect(modes.map((mode) => mode.textContent)).toEqual([
+      "Your data hiddenShows only the app's menus and labels",
+      'Fully maskedHides everything',
+      'VisibleRecords text and inputs',
+    ]);
+    expect(modes.filter((mode) => mode.hasAttribute('aria-disabled'))).toEqual([]);
+    expect(item('privacy', 'interface-visible').getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('offers network content unchecked and resolves Record with it once picked', async () => {
+    const { choice } = await openCustomer();
+    const bodies = node('[role=menuitemcheckbox][data-group=network]');
+    expect(bodies.textContent).toBe('Include network request and response content');
+    expect(bodies.getAttribute('aria-checked')).toBe('false');
+    trigger().click();
+    bodies.click();
+    expect(bodies.getAttribute('aria-checked')).toBe('true');
+    node('[data-recorder-action=record]').click();
+    expect(await choice).toEqual({ privacy: 'interface-visible', networkBodies: true });
   });
 });

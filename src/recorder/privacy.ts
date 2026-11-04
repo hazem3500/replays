@@ -1,5 +1,14 @@
 export const UI_ATTRIBUTE = 'data-recorder-ui';
 export const BLOCK_ATTRIBUTE = 'data-recorder-block';
+/**
+ * Marks static product interface (navigation, labels, buttons) whose text stays readable in the `interface-visible`
+ * mode. invariant: never put it on user content; it never unmasks form fields, even inside a marked subtree.
+ */
+export const PUBLIC_ATTRIBUTE = 'data-replay-public';
+export const PUBLIC_SELECTOR = `[${PUBLIC_ATTRIBUTE}]`;
+/** Elements whose text is user-entered: an unmask selector never reaches inside them. */
+export const NEVER_UNMASKED = 'input, textarea, select, datalist, [contenteditable]';
+export const publicProps = { [PUBLIC_ATTRIBUTE]: '' } as const;
 export const blockProps = { [BLOCK_ATTRIBUTE]: '' } as const;
 export const recorderUiProps = { [UI_ATTRIBUTE]: '' } as const;
 export const CHAT_WIDGET_PRESETS = {

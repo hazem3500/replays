@@ -5,8 +5,9 @@ import type { RecorderOptions, RecordingChoice } from './types.ts';
 
 /** A recording's capture and masking from `privacy`, with the host's `capture`. */
 export function settingsBuilder(options: Pick<RecorderOptions, 'choices' | 'privacy' | 'capture'>): SettingsBuilder {
-  return (privacy) => {
-    const capture = resolveCapture({ ...options, privacy });
+  return (privacy, bodies = true) => {
+    const resolved = resolveCapture({ ...options, privacy });
+    const capture = bodies || resolved.network !== 'bodies' ? resolved : { ...resolved, network: 'headers' as const };
     return { capture, privacy: recorderPrivacy(privacy, capture) };
   };
 }

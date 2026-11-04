@@ -41,6 +41,18 @@ export type ReplayCaptured = {
   video: boolean;
   /** `visible` only when `privacy.sanitize` was false; the ingest endpoint decides whether it keeps the values. */
   inputs?: 'visible';
+  /**
+   * A customer's pick in the options step (`choices.by: 'customer'`): whether that mode shows typed values and page
+   * text, and whether they asked for request and response content. The ingest endpoint keeps what it allows.
+   */
+  choice?: {
+    by: 'customer';
+    /** The picked mode, so the server knows which text rules applied. */
+    mode: 'masked' | 'interface-visible' | 'text-masked' | 'visible';
+    inputs: 'masked' | 'visible';
+    text: 'masked' | 'visible';
+    bodies: boolean;
+  };
 };
 
 export type ReplayNetworkEntry = {

@@ -65,8 +65,21 @@ describe('loadSettings defaults', () => {
 
 describe('loadSettings: privacy', () => {
   it('keeps visible inputs off unless the config file turns them on', async () => {
-    expect((await loadSettings({})).privacy).toEqual({ keepVisibleInputs: false });
-    expect((await loadSettings({}, { privacy: { keepVisibleInputs: true } })).privacy).toEqual({ keepVisibleInputs: true });
+    expect((await loadSettings({})).privacy).toEqual({ keepVisibleInputs: false, keepCustomerChoices: false });
+    expect((await loadSettings({}, { privacy: { keepVisibleInputs: true } })).privacy).toEqual({
+      keepVisibleInputs: true,
+      keepCustomerChoices: false,
+    });
+  });
+
+  it('keeps customer choices off unless the config file turns them on', async () => {
+    expect((await loadSettings({}, { privacy: { keepCustomerChoices: true } })).privacy).toEqual({
+      keepVisibleInputs: false,
+      keepCustomerChoices: true,
+    });
+    await expect(loadSettings({}, { privacy: { keepCustomerChoices: 1 as unknown as boolean } })).rejects.toThrow(
+      "the config file's privacy.keepCustomerChoices must be true or false",
+    );
   });
 
   it('refuses a privacy switch that is not true or false, and unknown privacy keys', async () => {

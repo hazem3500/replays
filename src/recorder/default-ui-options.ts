@@ -7,7 +7,7 @@ import type { FloatingSurface } from './surface-motion.ts';
 import type { RecorderPrivacyMode, RecorderUi, RecordingChoice, RecordingChoiceOffer } from './types.ts';
 
 type ChooseContext = Parameters<NonNullable<RecorderUi['chooseOptions']>>[0];
-type Group = 'privacy' | 'profile';
+type Group = 'privacy' | 'profile' | 'network';
 type Item = { group: Group; value: string; label: string; detail?: string; disabled?: boolean };
 
 /** What the options step borrows from the default UI's floating surface. */
@@ -24,7 +24,9 @@ export type OptionsStepDeps = {
 let element: typeof createElement;
 let icon: typeof createIcon;
 
-const MODES: readonly RecorderPrivacyMode[] = ['visible', 'text-masked', 'masked'];
+const MODES: readonly RecorderPrivacyMode[] = ['visible', 'text-masked', 'interface-visible', 'masked'];
+/** Modes a staff menu lists even when the host does not allow them, disabled with a reason. */
+const STAFF_MODES: readonly RecorderPrivacyMode[] = ['visible', 'text-masked', 'masked'];
 const MENU_ID = 'recorder-options-menu';
 const STEPS: Record<string, (index: number, count: number) => number> = {
   ArrowDown: (index, count) => (index + 1) % count,
@@ -41,7 +43,7 @@ function itemNode(item: Item): HTMLElement {
     icon('check', 'options-check'),
     element('span', { className: 'options-text' }, [element('span', { className: 'options-label' }, [item.label]), ...detail]),
   ]);
-  node.setAttribute('role', 'menuitemradio');
+  node.setAttribute('role', item.group === 'network' ? 'menuitemcheckbox' : 'menuitemradio');
   if (item.detail) node.setAttribute('aria-describedby', `${id}-detail`);
   if (item.disabled) node.setAttribute('aria-disabled', 'true');
   node.dataset.group = item.group;
@@ -58,10 +60,15 @@ function groupNode(group: Group, name: string, items: HTMLElement[]): HTMLElemen
   return node;
 }
 
-/** Every mode, each with what it records; one the host's privacy does not allow is disabled and says why. */
+/**
+ * Each mode with what it records. A customer sees only the allowed modes, in the offer's order; staff see every mode,
+ * one the host's privacy does not allow disabled with the reason.
+ */
 function privacyItems(offer: RecordingChoiceOffer, messages: RecorderMessages) {
   if (!offer.privacy.length) return [];
-  return MODES.map((mode) => {
+  const offeredModes = offer.privacy.map((entry) => entry.mode);
+  const order = offer.by === 'customer' ? offeredModes : MODES.filter((mode) => STAFF_MODES.includes(mode) || offeredModes.includes(mode));
+  return order.map((mode) => {
     const offered = offer.privacy.find((entry) => entry.mode === mode);
     return itemNode({
       group: 'privacy',
@@ -73,19 +80,35 @@ function privacyItems(offer: RecordingChoiceOffer, messages: RecorderMessages) {
   });
 }
 
+/** The body option, disabled with the reason when the host's capture reads no body. */
+function networkItems(offer: RecordingChoiceOffer, messages: RecorderMessages) {
+  if (!offer.networkBodies) return [];
+  const { allowed } = offer.networkBodies;
+  return [
+    itemNode({
+      group: 'network',
+      value: 'bodies',
+      label: messages.networkBodies,
+      ...(allowed ? {} : { detail: messages.privacyUnavailable, disabled: true }),
+    }),
+  ];
+}
+
 function menuNode(offer: RecordingChoiceOffer, messages: RecorderMessages) {
   const privacy = privacyItems(offer, messages);
+  const network = networkItems(offer, messages);
   const profiles = offer.profiles.map(({ id, label, description }) =>
     itemNode({ group: 'profile', value: id, label, ...(description ? { detail: description } : {}) }),
   );
   const groups = [
     ...(profiles.length ? [groupNode('profile', messages.profileLabel, profiles)] : []),
     ...(privacy.length ? [groupNode('privacy', messages.privacyLabel, privacy)] : []),
+    ...(network.length ? [groupNode('network', messages.networkLabel, network)] : []),
   ];
   const node = element('div', { className: 'options-menu', id: MENU_ID, hidden: true }, groups);
   node.setAttribute('role', 'menu');
   node.setAttribute('aria-label', messages.optionsTitle);
-  return { node, items: [...profiles, ...privacy] };
+  return { node, items: [...profiles, ...privacy, ...network] };
 }
 
 function iconButton(className: string, label: string, name: 'sliders-horizontal' | 'x') {
@@ -123,12 +146,15 @@ type Parts = {
   controls: ReturnType<typeof buttons>;
 };
 
-const checked = (item: HTMLElement, choice: RecordingChoice) =>
-  item.dataset.value === (item.dataset.group === 'privacy' ? choice.privacy : choice.profile);
+function checked(item: HTMLElement, choice: RecordingChoice): boolean {
+  if (item.dataset.group === 'network') return choice.networkBodies === true;
+  return item.dataset.value === (item.dataset.group === 'privacy' ? choice.privacy : choice.profile);
+}
 
-/** `choice` with `item`'s value; a value outside the offer changes nothing. */
+/** `choice` with `item`'s value, or the body option toggled; a value outside the offer changes nothing. */
 function picked(choice: RecordingChoice, item: HTMLElement): RecordingChoice {
   const value = item.dataset.value;
+  if (item.dataset.group === 'network') return { ...choice, networkBodies: choice.networkBodies !== true };
   if (item.dataset.group !== 'privacy') return value ? { ...choice, profile: value } : choice;
   const mode = MODES.find((candidate) => candidate === value);
   return mode ? { ...choice, privacy: mode } : choice;
@@ -146,7 +172,12 @@ function render({ offer, messages, menu, controls }: Parts, choice: RecordingCho
       ...(profile ? { profile: profile.label } : {}),
     }),
   );
-  controls.options.toggleAttribute('data-changed', choice.privacy !== offer.defaults.privacy || choice.profile !== offer.defaults.profile);
+  controls.options.toggleAttribute(
+    'data-changed',
+    choice.privacy !== offer.defaults.privacy ||
+      choice.profile !== offer.defaults.profile ||
+      (choice.networkBodies === true) !== (offer.defaults.networkBodies === true),
+  );
 }
 
 /** A menu button with radio items in two groups, keyboard-operable like a Base UI menu. */

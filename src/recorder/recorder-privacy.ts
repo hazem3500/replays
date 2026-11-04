@@ -1,5 +1,5 @@
 import type { ResolvedCapture } from './capture-options.ts';
-import { BLOCK_ATTRIBUTE, UI_ATTRIBUTE } from './privacy.ts';
+import { BLOCK_ATTRIBUTE, NEVER_UNMASKED, PUBLIC_SELECTOR, UI_ATTRIBUTE } from './privacy.ts';
 import { maskText } from './redact.ts';
 import type { PrivacyFacts, RecorderPrivacyOptions } from './types.ts';
 
@@ -50,11 +50,15 @@ export interface RecorderPrivacy {
   facts: (maxDurationMs: number, reviewRequired: boolean) => PrivacyFacts;
 }
 
+/** Whether `unmask` frees `element`'s text. invariant: never inside a form field or editable region. */
+const unmasked = (unmask: string | undefined, element: Element | null | undefined) =>
+  Boolean(unmask && element && element.closest(unmask) !== null && element.closest(NEVER_UNMASKED) === null);
+
 function textMasker(privacy: RecorderPrivacyOptions, maskAllText: boolean): (element: Element | undefined) => boolean {
   const unmask = privacy.unmaskTextSelector;
   const maskSelector = privacy.maskTextSelector;
   return (element) => {
-    if (maskAllText) return !unmask || !element || element.closest(unmask) === null;
+    if (maskAllText) return !unmasked(unmask, element);
     if (!maskSelector) return false;
     return element?.closest(maskSelector) !== null;
   };
@@ -88,7 +92,7 @@ function rrwebMasking(privacy: RecorderPrivacyOptions, capture: ResolvedCapture)
     // why: every character, spaces included, the same as Replays' server pass.
     maskInputFn: (text: string) => '*'.repeat(text.length),
     ...(maskTextSelector ? { maskTextSelector } : {}),
-    maskTextFn: (text: string, element: HTMLElement | null) => (unmask && element?.closest(unmask) ? text : maskText(text)),
+    maskTextFn: (text: string, element: HTMLElement | null) => (unmasked(unmask, element) ? text : maskText(text)),
     blockSelector,
   };
 }
@@ -97,6 +101,7 @@ function rrwebMasking(privacy: RecorderPrivacyOptions, capture: ResolvedCapture)
 export function recorderPrivacy(privacy: RecorderPrivacyOptions, capture: ResolvedCapture): RecorderPrivacy {
   const sanitize = privacy.sanitize !== false;
   const maskAllText = capture.maskAllText;
+  const interfaceOnly = maskAllText && privacy.unmaskTextSelector === PUBLIC_SELECTOR;
   const checkSelectors = selectorChecker(privacy);
   checkSelectors();
   return {
@@ -110,7 +115,8 @@ export function recorderPrivacy(privacy: RecorderPrivacyOptions, capture: Resolv
       maxDurationMs,
       reviewRequired,
       captures: {
-        pageText: !maskAllText || Boolean(privacy.unmaskTextSelector),
+        pageText: !maskAllText || (Boolean(privacy.unmaskTextSelector) && !interfaceOnly),
+        ...(interfaceOnly ? { interfaceText: true } : {}),
         inputs: !sanitize,
         media: !capture.blockMedia,
         console: capture.consoleLevels.length > 0,
