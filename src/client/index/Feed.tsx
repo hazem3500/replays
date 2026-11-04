@@ -18,6 +18,8 @@ import { replayHref, replayInSuiteHref, suiteHref } from '../routing/links.ts';
 import { playableReplayId } from '../suite/runs.ts';
 import { errorTotal, type FeedCalendar, feedTime, formatBadgeDuration, runStrip } from './feed.ts';
 import { useHydrated } from '../hooks/use-hydrated.ts';
+import { useReplayDeletion } from '../hooks/use-replay-deletion.tsx';
+import { useRowMenu } from '../hooks/use-row-menu.ts';
 import { PeopleStack } from './People.tsx';
 import { SourceLead, sourceText } from './SourceLine.tsx';
 import { IndexColumns } from './PluginSlots.tsx';
@@ -30,7 +32,8 @@ import { useIntentPrefetch } from '../intent-prefetch.ts';
 import { FeedMotion, MotionFeedItem, MotionRearSheet, RunMenuArrow } from './FeedMotion.tsx';
 import { FeedList, type FeedRowPlace } from './FeedList.tsx';
 import { ExpiryHint } from './FeedRowActions.tsx';
-import { ReplayRowMenu } from './ReplayRowMenu.tsx';
+import { RowMenu } from './RowMenu.tsx';
+import { replayRowActions, suiteRowActions } from './row-actions.ts';
 
 /*
  * The replay index as a visual feed: sessions and review suites as rows (list) or cards (grid), each
@@ -200,10 +203,14 @@ function SessionItem({
   const href = replayHref(summary.id);
   const playing = usePreviewActive(`session:${summary.id}`);
   const name = sessionName(summary, showId);
+  const menu = useRowMenu();
+  const deletion = useReplayDeletion(summary.id, summary.title);
   return (
     <MotionFeedItem
       view={view}
       ref={rowRef}
+      onContextMenu={menu.onContextMenu}
+      onKeyDown={menu.onKeyDown}
       className="feed-item feed-session"
       data-view={view}
       data-entry-id={`session:${summary.id}`}
@@ -226,7 +233,8 @@ function SessionItem({
           <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
             {summary.title}
           </a>
-          <ReplayRowMenu id={summary.id} title={summary.title} />
+          <RowMenu title={summary.title} actions={replayRowActions(summary.id)} menu={menu} onDelete={deletion.requestDelete} />
+          {deletion.dialog}
         </div>
         <div className="feed-meta">
           <SourceLead sources={summary.sources} origin={summary.source} />
@@ -377,6 +385,8 @@ function SuiteItem({
   // Opening a card mid-cycle opens the suite at the run on screen.
   const href = cycle.cycling && cycle.step > 0 && shownId ? replayInSuiteHref(shownId, suite.id) : suiteHref(suite.id);
   const failed = suite.runDetails.filter((run) => run.status === 'failed').length;
+  const menu = useRowMenu();
+  const recordings = suite.runDetails.filter((run) => playableReplayId(run, true)).length;
   const name = [
     suite.title,
     'Review suite',
@@ -415,6 +425,8 @@ function SuiteItem({
         card.current = node;
         rowRef?.(node);
       }}
+      onContextMenu={menu.onContextMenu}
+      onKeyDown={menu.onKeyDown}
       className="feed-item feed-suite"
       data-view={view}
       data-entry-id={`suite:${suite.id}`}
@@ -459,10 +471,11 @@ function SuiteItem({
           </PosterStack>
         )}
         <div className="feed-body">
-          <div className="feed-head">
+          <div className="feed-head" style={{ flexWrap: 'nowrap' }}>
             <a className="row-target feed-title" href={href} aria-label={name} onPointerEnter={titleIfClamped}>
               {suite.title}
             </a>
+            <RowMenu title={suite.title} actions={suiteRowActions(href, suite.id, recordings)} menu={menu} />
           </div>
           <div className="feed-meta">
             <span className="source-lead source-lead-plain suite-kind">
