@@ -12,7 +12,7 @@ import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabe
 /** How long a touch screen keeps a pressed dot's label up after the finger lifts. */
 const PRESSED_LABEL_MS = 2_400;
 /** Half the pressed label's widest (phone-editor.css .tl-step-bubble), so a label under an end dot stays on the track. */
-const BUBBLE_HALF_PX = 120;
+const BUBBLE_HALF_PX = 150;
 
 /** The dot a roving key moves to from `position`, or undefined for any other key. */
 function rovingTarget(key: string, position: number, count: number) {

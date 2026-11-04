@@ -45,82 +45,112 @@ const TOOLS: Array<{ label: string; icon: ReactNode }> = [
   { label: 'More', icon: <EllipsisIcon aria-hidden="true" /> },
 ];
 
+/** The phone scale as it opens: its time labels and, once the steps are known, their dots in the band under them. */
+function SkeletonScale({ duration, steps, scale }: { duration: number; steps: readonly ReplayStep[]; scale: number }) {
+  const px = (time: number) => time * scale;
+  const { tick, ticks } = rulerTicks(px(duration), duration);
+  return (
+    <div className="sk-phone-scale">
+      {ticks.map((at) => (
+        <span key={at} style={{ left: `${px(at)}px` }}>
+          {tickLabel(at, tick)}
+        </span>
+      ))}
+      {placeStepDots(stepMarks(steps, duration), duration, px(duration), DOT_PX).map((dot) => (
+        <i key={`${dot.index}-${dot.at}`} className="sk-phone-dot" style={{ left: `${px(dot.at)}px` }}>
+          <AnimatedIcon
+            name="dot"
+            size={20}
+            strokeWidth={dot.kind === 'wait' ? 2.5 : 0}
+            fill={dot.kind === 'wait' ? 'none' : 'currentColor'}
+          />
+        </i>
+      ))}
+    </div>
+  );
+}
+
+/** The clip lane as it opens: the kept clip with each step's words where the loaded clip shows them (PhoneLanes.tsx). */
+function SkeletonClip({
+  duration,
+  edits,
+  steps,
+  scale,
+}: {
+  duration: number;
+  edits: ReplayEdits | undefined;
+  steps: readonly ReplayStep[];
+  scale: number;
+}) {
+  const px = (time: number) => time * scale;
+  const trim = edits?.trim ?? { start: 0, end: duration };
+  const cuts = edits?.cuts ?? [];
+  return (
+    <div className="sk-phone-lane" data-kind="clip">
+      <span className="sk-phone-clip" style={{ left: `${px(trim.start)}px`, width: `${px(trim.end - trim.start)}px` }}>
+        {stepSegments(steps, trim).map((segment) => {
+          const room = labelRoom(segment, trim.start, cuts);
+          return (
+            <span
+              key={segment.at}
+              data-wait={segment.wait || undefined}
+              style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
+            >
+              <span style={{ marginLeft: `${px(room.skip)}px` }}>
+                <ClipStepLabel
+                  {...segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
+                    lines: 2,
+                    pad: STEP_PAD_PX,
+                    measure: measureLabel,
+                  })}
+                />
+              </span>
+            </span>
+          );
+        })}
+      </span>
+    </div>
+  );
+}
+
+/** A lane per effect the cached edits hold, its blocks with the words and glyph the loaded lanes show. */
+function SkeletonRegions({ edits, scale }: { edits: ReplayEdits; scale: number }) {
+  const px = (time: number) => time * scale;
+  return laneRegions(edits).map((lane) => (
+    <div key={lane.kind} className="sk-phone-lane">
+      {lane.regions.map((region) => {
+        const width = Math.max(4, px(region.to - region.from));
+        const text = blockText(region.label, width - REGION_GLYPH_PX, { pad: REGION_PAD_PX });
+        return (
+          <span
+            key={region.id}
+            className="sk-phone-region"
+            data-kind={lane.kind}
+            data-short={region.label !== '' && !text ? '' : undefined}
+            style={{ left: `${px(region.from)}px`, width: `${width}px` }}
+          >
+            {text ? (
+              <>
+                <AnimatedIcon name={LANE_GLYPHS[lane.kind]} size={10} strokeWidth={2.25} className="sk-phone-glyph" />
+                <span>{text}</span>
+              </>
+            ) : null}
+          </span>
+        );
+      })}
+    </div>
+  ));
+}
+
 /** The phone timeline as it opens: the whole recording across the screen, 0:00 and the playhead at its left margin. */
 function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: ReplayEdits | undefined; steps: readonly ReplayStep[] }) {
   const scale = fitScale(screenWidth(), duration);
   const px = (time: number) => time * scale;
-  const { tick, ticks } = rulerTicks(px(duration), duration);
-  const trim = edits?.trim ?? { start: 0, end: duration };
-  const cuts = edits?.cuts ?? [];
   return (
     <div className="sk-phone-track" style={cssVars({ '--span': `${px(duration)}px` })}>
-      <div className="sk-phone-scale">
-        {ticks.map((at) => (
-          <span key={at} style={{ left: `${px(at)}px` }}>
-            {tickLabel(at, tick)}
-          </span>
-        ))}
-        {placeStepDots(stepMarks(steps, duration), duration, px(duration), DOT_PX).map((dot) => (
-          <i key={`${dot.index}-${dot.at}`} className="sk-phone-dot" style={{ left: `${px(dot.at)}px` }}>
-            <AnimatedIcon
-              name="dot"
-              size={20}
-              strokeWidth={dot.kind === 'wait' ? 2.5 : 0}
-              fill={dot.kind === 'wait' ? 'none' : 'currentColor'}
-            />
-          </i>
-        ))}
-      </div>
-      <div className="sk-phone-lane" data-kind="clip">
-        <span className="sk-phone-clip" style={{ left: `${px(trim.start)}px`, width: `${px(trim.end - trim.start)}px` }}>
-          {stepSegments(steps, trim).map((segment) => {
-            const room = labelRoom(segment, trim.start, cuts);
-            return (
-              <span
-                key={segment.at}
-                data-wait={segment.wait || undefined}
-                style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
-              >
-                <span style={{ marginLeft: `${px(room.skip)}px` }}>
-                  <ClipStepLabel
-                    {...segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
-                      lines: 2,
-                      pad: STEP_PAD_PX,
-                      measure: measureLabel,
-                    })}
-                  />
-                </span>
-              </span>
-            );
-          })}
-        </span>
-      </div>
-      {edits
-        ? laneRegions(edits).map((lane) => (
-            <div key={lane.kind} className="sk-phone-lane">
-              {lane.regions.map((region) => {
-                const width = Math.max(4, px(region.to - region.from));
-                const text = blockText(region.label, width - REGION_GLYPH_PX, { pad: REGION_PAD_PX });
-                return (
-                  <span
-                    key={region.id}
-                    className="sk-phone-region"
-                    data-kind={lane.kind}
-                    data-short={region.label !== '' && !text ? '' : undefined}
-                    style={{ left: `${px(region.from)}px`, width: `${width}px` }}
-                  >
-                    {text ? (
-                      <>
-                        <AnimatedIcon name={LANE_GLYPHS[lane.kind]} size={10} strokeWidth={2.25} className="sk-phone-glyph" />
-                        <span>{text}</span>
-                      </>
-                    ) : null}
-                  </span>
-                );
-              })}
-            </div>
-          ))
-        : null}
+      <SkeletonScale duration={duration} steps={steps} scale={scale} />
+      <SkeletonClip duration={duration} edits={edits} steps={steps} scale={scale} />
+      {edits ? <SkeletonRegions edits={edits} scale={scale} /> : null}
     </div>
   );
 }

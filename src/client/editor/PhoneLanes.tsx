@@ -200,6 +200,42 @@ interface ClipLaneProps extends Omit<PhoneLanesProps, 'dispatch'> {
   drag: EdgeDrag;
 }
 
+/** The clip's step segments, each named in whole words (up to two lines) where they fit, a wait by its length. */
+function PhoneClipSteps({
+  steps,
+  trim,
+  cuts,
+  scale,
+}: {
+  steps: readonly ReplayStep[];
+  trim: { start: number; end: number };
+  cuts: ReplayEdits['cuts'];
+  scale: number;
+}) {
+  const px = (time: number) => time * scale;
+  return stepSegments(steps, trim).map((segment) => {
+    const room = labelRoom(segment, trim.start, cuts);
+    return (
+      <span
+        key={segment.at}
+        className="phone-step"
+        data-wait={segment.wait || undefined}
+        style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
+      >
+        <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
+          <ClipStepLabel
+            {...segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
+              lines: 2,
+              pad: PHONE_STEP_PAD_PX,
+              measure: measureLabel,
+            })}
+          />
+        </span>
+      </span>
+    );
+  });
+}
+
 /**
  * The recording: its step segments (each named in whole words, up to two lines), trimmed-off ends, cuts and
  * highlights; selected, its trim edges drag.
@@ -222,27 +258,7 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
         onClick={() => select(clipSelected ? undefined : { kind: 'trim' })}
         data-testid="phone-clip"
       >
-        {stepSegments(steps, trim).map((segment) => {
-          const room = labelRoom(segment, trim.start, edits.cuts);
-          return (
-            <span
-              key={segment.at}
-              className="phone-step"
-              data-wait={segment.wait || undefined}
-              style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
-            >
-              <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
-                <ClipStepLabel
-                  {...segmentText(segment, keptLength(segment, trim.start, edits.cuts), px(room.length), {
-                    lines: 2,
-                    pad: PHONE_STEP_PAD_PX,
-                    measure: measureLabel,
-                  })}
-                />
-              </span>
-            </span>
-          );
-        })}
+        <PhoneClipSteps steps={steps} trim={trim} cuts={edits.cuts} scale={scale} />
       </button>
       <ClipMarks edits={edits} scale={scale} selection={selection} select={select} />
       {clipSelected ? (

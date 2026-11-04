@@ -270,7 +270,9 @@ export function EditorSkeleton({
           </aside>
         ) : null}
       </section>
-      <div className="inspector-resizer" aria-hidden="true" />
+      <div className="inspector-resizer" aria-hidden="true">
+        <span className="inspector-resizer-line" />
+      </div>
       <DockSkeleton duration={meta?.duration} edits={edits} steps={steps} />
     </main>
   );

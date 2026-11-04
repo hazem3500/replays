@@ -1,7 +1,7 @@
 import { useRegionFeedback } from '../hooks/use-region-feedback.ts';
 import { useRevealWhen } from '../hooks/use-reveal-when.ts';
 import { useBubblePlacement } from '../hooks/use-bubble-placement.ts';
-import { type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode, useRef } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
@@ -33,6 +33,21 @@ export interface RegionActions {
 
 /** A region block's inline padding (editor.css .tl-region-body), which its label's words fit inside. */
 const REGION_PAD_PX = 8;
+
+/** A focused block's keys: Delete or Backspace removes it, and the time keys move it. */
+function regionKeys(
+  event: ReactKeyboardEvent,
+  actions: RegionActions,
+  { from, to, duration }: { from: number; to: number; duration: number },
+) {
+  if (event.key === 'Delete' || event.key === 'Backspace') {
+    event.preventDefault();
+    event.stopPropagation();
+    actions.onRemove();
+    return;
+  }
+  timeKeys(event, { value: from, min: 0, max: duration - (to - from) }, (time) => actions.onEdit('move', time, true));
+}
 
 /** The block itself, a button: drag it to move the region, click to select and seek, arrows nudge, Delete removes. */
 function RegionBody({
@@ -72,15 +87,7 @@ function RegionBody({
       onFocus={() => {
         if (!selected) actions.onSelect();
       }}
-      onKeyDown={(event) => {
-        if (event.key === 'Delete' || event.key === 'Backspace') {
-          event.preventDefault();
-          event.stopPropagation();
-          actions.onRemove();
-          return;
-        }
-        timeKeys(event, { value: from, min: 0, max: scale.duration - (to - from) }, (time) => actions.onEdit('move', time, true));
-      }}
+      onKeyDown={(event) => regionKeys(event, actions, { from, to, duration: scale.duration })}
     >
       {text ? (
         <span className="tl-region-label" aria-hidden="true">

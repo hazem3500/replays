@@ -278,9 +278,9 @@
       "brotli": 1555
     },
     "dist/client/assets/open-hint-HASH.css": {
-      "raw": 30558,
-      "gzip": 6173,
-      "brotli": 5487
+      "raw": 31785,
+      "gzip": 6427,
+      "brotli": 5707
     },
     "dist/client/assets/open-hint-HASH.js": {
       "raw": 201209,
@@ -2114,11 +2114,11 @@
     {
       "file": "dist/client/assets/open-hint-HASH.css",
       "cap": {
-        "raw": 30558,
-        "gzip": 6173,
-        "brotli": 5487
+        "raw": 31785,
+        "gzip": 6427,
+        "brotli": 5707
       },
-      "reason": "The editor loading frame now draws the loaded dock itself: dock-layout.css (the labelled tool bar, the ruler with its own dots band, the clip, lane tracks and tinted blocks, the playhead) moved out of the lazy Editor CSS into the eager loading stylesheet, which the loaded editor reuses, so nothing moves when it arrives; the phone frame gains its step line, dots and short-block accents. Editor-HASH.css drops by the same rules (to 28982 raw). Same-Boat head: raw 29667, gzip 5993, brotli 5327, against main caps raw 21975, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
+      "reason": "The editor loading frame now draws the loaded dock itself: dock-layout.css (the labelled tool bar, the ruler with its own dots band, the clip, lane tracks and tinted blocks, the playhead) moved out of the lazy Editor CSS into the eager loading stylesheet, which the loaded editor reuses, so nothing moves when it arrives; the phone frame gains its step line, dots and short-block accents. Editor-HASH.css drops by the same rules (to 28982 raw). CI head before the lane-hue block edges: raw 30609, gzip 6179, brotli 5490 (the edges add about 250 raw), against main caps raw 21975, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {

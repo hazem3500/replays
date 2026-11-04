@@ -153,6 +153,9 @@
   :is(.editor-shell, .editor-loading) { --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
   :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 4px; background: var(--block); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
+  /* A block's edge in its lane's hue, 3:1 against the track, so its extent reads as a mark and not only as a tint. */
+  /* why: element weight only, to beat styles.css's button reset while every focus ring still wins. */
+  :is(button, span):where(.tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body, .phone-region, .sk-phone-region) { outline: 1px solid color-mix(in oklab, var(--kind, var(--line-strong)) 70%, transparent); outline-offset: -1px; }
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid color-mix(in oklab, var(--kind, var(--line-strong)) 80%, transparent); }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }
