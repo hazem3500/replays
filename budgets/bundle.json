@@ -108,9 +108,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 12834,
-      "gzip": 3107,
-      "brotli": 2710
+      "raw": 12789,
+      "gzip": 3074,
+      "brotli": 2667
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
@@ -232,6 +232,11 @@
       "gzip": 49702,
       "brotli": 49708
     },
+    "dist/client/assets/keep-HASH.js": {
+      "raw": 8836,
+      "gzip": 3953,
+      "brotli": 3478
+    },
     "dist/client/assets/main-HASH.css": {
       "raw": 223667,
       "gzip": 39236,
@@ -338,9 +343,9 @@
       "brotli": 567
     },
     "dist/client/assets/ReplayIndex-HASH.js": {
-      "raw": 228026,
-      "gzip": 75899,
-      "brotli": 64138
+      "raw": 235179,
+      "gzip": 78607,
+      "brotli": 66252
     },
     "dist/client/assets/settings-HASH.js": {
       "raw": 26722,
@@ -379,13 +384,13 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
-      "gzip": 738,
-      "brotli": 668
+      "gzip": 735,
+      "brotli": 640
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 22890,
-      "gzip": 9640,
-      "brotli": 8357
+      "raw": 22875,
+      "gzip": 9631,
+      "brotli": 8325
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -416,11 +421,6 @@
       "raw": 583,
       "gzip": 416,
       "brotli": 362
-    },
-    "dist/client/assets/use-replay-deletion-HASH.js": {
-      "raw": 8836,
-      "gzip": 3940,
-      "brotli": 3447
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
@@ -1363,12 +1363,12 @@
     {
       "file": "dist/client/assets/ReplayIndex-HASH.js",
       "cap": {
-        "raw": 236114,
-        "gzip": 78670,
-        "brotli": 66648
+        "raw": 235180,
+        "gzip": 78607,
+        "brotli": 66252
       },
-      "reason": "Library and inspector surfaces gain bulk trash, individual replay deletion with named confirmation, data storage settings and the merged network timing view. Reviewed and approved by Hazem. CI same-runner main/head: raw 208643 to 229236, gzip 69348 to 76378, brotli 59218 to 64706 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
+      "reason": "Index rows gain a right-click menu at the pointer and a menu button on suite rows, both drawn from one action list per row type (Open, Open in new tab, Copy link, Delete replay or Compare runs). CI same-runner main/head: raw 222788 to 228329, gzip 74084 to 76317, brotli 62683 to 64322 bytes; caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/248"
     },
     {
       "file": "dist/client/assets/Viewer-HASH.js",
@@ -1624,16 +1624,6 @@
         "brotli": 362
       },
       "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 566, gzip new to 404, brotli new to 351 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/use-replay-deletion-HASH.js",
-      "cap": {
-        "raw": 8944,
-        "gzip": 3987,
-        "brotli": 3499
-      },
-      "reason": "Library and inspector surfaces gain bulk trash, individual replay deletion with named confirmation, data storage settings and the merged network timing view. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 8683, gzip new to 3870, brotli new to 3397 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -2170,6 +2160,16 @@
       },
       "reason": "Runs sidebar redesign: thumbnails replaced by a colour swatch row (RunCopy), each run's colour taken from recordedRuns so the sidebar and the Compare stage agree. CI same-runner main to head: raw 21439 to 22223, gzip 9031 to 9359, brotli 7830 to 8113; caps are head times 1.03. Small justified growth under Hazem's standing approval.",
       "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/keep-HASH.js",
+      "cap": {
+        "raw": 8836,
+        "gzip": 3953,
+        "brotli": 3478
+      },
+      "reason": "The shared replay deletion and keep chunk is regrouped under a new name because the index rows now import the deletion hook through the row menu; its size is about 260 raw bytes smaller than the use-replay-deletion chunk it replaces. Measured on Boat: raw 8578, gzip 3837, brotli 3376 bytes; caps keep the budget's 3% headroom.",
+      "pr": "https://github.com/hazem3500/replays/pull/248"
     }
   ]
 }
