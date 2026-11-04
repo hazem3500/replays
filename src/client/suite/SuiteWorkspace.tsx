@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { plural } from '../plural.ts';
 import { sourceLook } from '../source-looks.ts';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
-import { FilmIcon, PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
+import { PanelLeftCloseIcon, PanelLeftOpenIcon, PinIcon } from 'lucide-react';
 import { type KeyboardEvent, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { Hint, IconButton } from '@/components/icon-button.tsx';
@@ -30,11 +30,10 @@ import { ViewerSkeleton } from '../ViewerSkeleton.tsx';
 import { useKeepSuite } from '../viewer/keep.ts';
 import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
-import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId } from './runs.ts';
+import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
 import { compareDefaults } from '../compare/defaults.ts';
-import { monograms, shortNames, TILE_COLOURS } from '../compare/tiles.ts';
-import { apiUrl } from '../api/fetch.ts';
+import { monograms, shortNames } from '../compare/tiles.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
 import { viewDefaults } from '../views/resolve.ts';
@@ -141,10 +140,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   const runs = useMemo(() => workspaceRuns(suite), [suite]);
   const detailed = Boolean(suite?.runDetails);
   // why: with two or more recordings the viewer compares them all, and picking a run only moves its focus.
-  const playable = runs.flatMap((run) => {
-    const replayId = playableReplayId(run, detailed);
-    return replayId ? [{ replayId, label: run.label }] : [];
-  });
+  const playable = recordedRuns(runs, detailed);
   const [namedRun] = useState(() => Boolean(initialReplayId));
   const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: playable.length });
   const defaults = compareDefaults({
@@ -297,6 +293,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         <SuiteSidebar
           suite={suite}
           runs={runs}
+          recorded={playable}
           detailed={detailed}
           selected={target}
           collapsed={collapsed}
@@ -399,6 +396,7 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
 function SuiteSidebar({
   suite,
   runs,
+  recorded,
   detailed,
   selected,
   collapsed,
@@ -408,6 +406,7 @@ function SuiteSidebar({
 }: {
   suite: SuiteWithRuns;
   runs: WorkspaceRun[];
+  recorded: RecordedRun[];
   detailed: boolean;
   selected: string | undefined;
   collapsed: boolean;
@@ -423,7 +422,7 @@ function SuiteSidebar({
   const subject = subjectLink(suite);
   const subjectLabel = subject && subjectText(subject);
   const selectedIndex = runs.findIndex((run) => playableReplayId(run, detailed) === selected);
-  const recordedRuns = runs.filter((run) => playableReplayId(run, detailed));
+  const colours = new Map(recorded.map((run) => [run.replayId, run.colour]));
   const names = shortNames(runs.map((run) => run.label));
   const marks = monograms(names);
   const { highlight, place } = useSlidingHighlight(list, { selector: '[aria-current="page"]', index: selectedIndex });
@@ -508,7 +507,7 @@ function SuiteSidebar({
           const expired = isExpired(run, detailed);
           const tone = statusTone(run, detailed);
           const current = playable !== undefined && playable === selected;
-          const colour = playable ? (recordedRuns.indexOf(run) % TILE_COLOURS) + 1 : undefined;
+          const colour = playable ? colours.get(playable) : undefined;
           const content = collapsed ? (
             <span className="run-monogram" aria-hidden="true">
               {marks[index]}
@@ -516,29 +515,16 @@ function SuiteSidebar({
             </span>
           ) : (
             <>
-              <span className="suite-run-thumbnail" aria-hidden="true">
-                <FilmIcon />
-                {playable ? (
-                  <img
-                    src={apiUrl(`replays/${encodeURIComponent(playable)}/poster`)}
-                    alt=""
-                    loading="lazy"
-                    onError={(event) => {
-                      event.currentTarget.hidden = true;
-                    }}
-                  />
-                ) : null}
-              </span>
+              <span className="run-swatch" aria-hidden="true" />
               <span className="run-copy">
                 <span className="run-label" title={run.label}>
                   {names[index] ?? run.label}
                 </span>
+                {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
                 <span className="run-meta">
-                  <span className={`status-dot tone-${tone}`} aria-hidden="true" />
-                  <span className="run-status">{playable ? tone : expired ? 'Expired' : 'No recording'}</span>
+                  <span className={`run-status tone-${tone}`}>{playable ? tone : expired ? 'Expired' : 'No recording'}</span>
                   {errors > 0 ? <span className="run-errors">{plural(errors, 'error')}</span> : null}
                 </span>
-                {run.duration !== undefined ? <span className="run-duration">{formatClock(run.duration)}</span> : null}
               </span>
             </>
           );

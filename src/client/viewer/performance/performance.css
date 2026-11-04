@@ -43,10 +43,13 @@
 .pp-comparisons tbody th { color: var(--text-secondary); font-weight: 500; }
 .pp-comparisons .ct-swatch { display: inline-block; margin-right: 6px; }
 .pp-comparisons td.pp-delta { display: table-cell; }
-.pp-order { flex: none; display: flex; align-items: center; gap: 2px; margin: 0 8px 0 auto; padding-left: 8px; }
-.pp-order button { height: 26px; padding: 0 9px; border: 0; border-radius: 13px; background: transparent; color: var(--text-secondary); font-size: var(--text-xs); white-space: nowrap; cursor: pointer; }
-.pp-order button:hover { background: var(--surface-hover); color: var(--text); }
-.pp-order button[aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
+.pp-order { flex: none; display: inline-flex; align-items: center; align-self: center; gap: 0; margin: 0 6px 0 auto; padding: 2px; border-radius: var(--radius); background: var(--surface-hover); }
+.pp-order button { height: 22px; padding: 0 7px; border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 500; white-space: nowrap; cursor: pointer; transition: background-color var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out); }
+.pp-order button:hover { color: var(--text); }
+.pp-order button[aria-pressed="true"] { background: var(--surface-raised); box-shadow: 0 0 0 1px var(--line); color: var(--text); }
+@media (prefers-reduced-motion: reduce) {
+  .pp-order button { transition: none; }
+}
 
 .pp-scroll { min-height: 0; flex: 1; }
 .pp-table { --pp-cols: minmax(120px, 180px) 60px 64px 120px minmax(0, 1fr); font-size: var(--text-xs); }
@@ -86,7 +89,7 @@
   .pp-head > :is(:nth-child(2), .pp-budget, .pp-why) { display: none; }
   .pp-vital { min-width: 0; padding-inline: 12px; }
   /* why: on a phone the switch shows only the current order; pressing it flips to the other. */
-  .pp-order { margin-right: 6px; padding-left: 4px; }
+  .pp-order { margin-right: 4px; }
   .pp-order button:not([aria-pressed="true"]) { display: none; }
 }
 @media (pointer: coarse) {

@@ -32,7 +32,7 @@ const TILE_STRINGS = {
   grid: 'Back to grid',
   open: 'Open on its own',
   remove: 'Remove from comparison',
-  inspect: (name: string) => `Show ${name} in the panels`,
+  inspect: (name: string, errors: number) => `Show ${name} in the panels${errors ? `, ${plural(errors, 'error')}` : ''}`,
   playPause: 'Play or pause',
 } as const;
 
@@ -109,6 +109,7 @@ export function CompareTileView({
       data-focused={ringed(focused, single, alone)}
       data-current={focused || undefined}
       data-ended={ended || undefined}
+      data-issues={(tile.errors > 0 && !single) || undefined}
       data-tile-id={tile.id}
       aria-label={tileName(tile, ended)}
       aria-hidden={hidden || undefined}
@@ -130,23 +131,27 @@ export function CompareTileView({
       <button
         type="button"
         className="ct-hit"
-        aria-label={single ? TILE_STRINGS.playPause : TILE_STRINGS.inspect(tile.name)}
+        aria-label={single ? TILE_STRINGS.playPause : TILE_STRINGS.inspect(tile.name, tile.errors)}
         aria-pressed={single ? undefined : focused}
         onClick={onHit}
         onDoubleClick={onSpotlight}
       />
-      <TileLabel tile={tile} ended={ended && !single} single={single} instant={motion.instant} />
+      <TileLabel tile={tile} ended={ended && !single} />
       {single ? null : <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />}
     </m.section>
   );
 }
 
-/** A ring in the tile's colour marks the focus wherever there is more than one tile on the stage. */
+/** A heavier frame in the tile's colour marks the focus wherever there is more than one tile on the stage. */
 function ringed(focused: boolean, single: boolean, alone: boolean) {
   return (focused && !single && !alone) || undefined;
 }
 
-function TileLabel({ tile, ended, single, instant }: { tile: CompareTile; ended: boolean; single: boolean; instant: boolean }) {
+/**
+ * The tile's frame carries its colour, so its name only shows where nothing else names it (compare.css hides the tag
+ * beside an expanded suite sidebar). The count of issues lives in the tile's accessible names; the dot only marks them.
+ */
+function TileLabel({ tile, ended }: { tile: CompareTile; ended: boolean }) {
   return (
     <>
       {ended ? (
@@ -154,16 +159,11 @@ function TileLabel({ tile, ended, single, instant }: { tile: CompareTile; ended:
           {TILE_STRINGS.ended}
         </span>
       ) : null}
-      <m.footer
-        className="ct-nametag"
-        aria-hidden="true"
-        initial={false}
-        animate={{ bottom: single ? 20 : 8, left: single ? 20 : 8 }}
-        transition={{ duration: instant ? 0 : 0.18, ease: 'easeOut' }}
-      >
+      {tile.errors ? <span className="ct-issues" aria-hidden="true" /> : null}
+      <footer className="ct-label" aria-hidden="true">
         <Identity tile={tile} />
-        {tile.errors ? <span className="ct-errors">{tile.errors}</span> : null}
-      </m.footer>
+        {tile.errors ? <span className="ct-label-issues" /> : null}
+      </footer>
     </>
   );
 }

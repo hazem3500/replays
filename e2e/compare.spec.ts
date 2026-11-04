@@ -227,11 +227,16 @@ test('on a phone the switch above the stage and the swipe always agree, and noth
   const options = page.getByTestId('phone-switch').getByRole('radio');
   await expect(options).toHaveCount(2);
   await expect(options.first()).toHaveAttribute('aria-checked', 'true');
-  // why: the switch names the recording, so the page carries no name pill, error badge, floating button or frame.
-  await expect(stage.locator('.ct-nametag').first()).toBeHidden();
+  // why: the switch names the recording, so the page carries no name tag, issue dot, floating button or frame.
+  await expect(stage.locator('.ct-label').first()).toBeHidden();
   await expect(stage.locator('.ct-actions').first()).toBeHidden();
   await expect(page.locator('.stage-wrap .fullscreen-button')).toBeHidden();
-  await expect(stage.locator('.ct-tile').first()).toHaveCSS('outline-style', 'none');
+  expect(
+    await stage
+      .locator('.ct-tile')
+      .first()
+      .evaluate((tile) => getComputedStyle(tile, '::after').content),
+  ).toBe('none');
 
   await stage.evaluate((element) => element.scrollTo({ left: element.clientWidth, behavior: 'instant' }));
   await expect(options.nth(1)).toHaveAttribute('aria-checked', 'true');
