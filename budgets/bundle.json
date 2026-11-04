@@ -389,7 +389,7 @@
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22875,
-      "gzip": 9633,
+      "gzip": 9632,
       "brotli": 8318
     },
     "dist/client/assets/tiles-HASH.js": {
@@ -454,7 +454,7 @@
     },
     "dist/client/index.html": {
       "raw": 14204,
-      "gzip": 4629,
+      "gzip": 4628,
       "brotli": 3878
     },
     "dist/client/render.html": {
