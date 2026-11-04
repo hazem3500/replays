@@ -10,6 +10,7 @@ import { type HostConfig, type HostRouting, normalizeBasePath, normalizeHosts } 
 import { type BetaFlags, betaFromEnv, parseFlag } from './beta.ts';
 import { type CommentsSettings, commentsFromEnv } from './comments-config.ts';
 import { type EditingSettings, editingFromEnv } from './editing-config.ts';
+import { type PrivacyConfig, privacyFromConfig, type PrivacySettings } from './privacy-config.ts';
 import type { PluginSpec } from '../plugin/types.ts';
 import { assertRedactionRules, type RedactionRules } from '../shared/redaction.ts';
 import {
@@ -53,6 +54,7 @@ import { createViewCatalog, type ViewCatalog } from './views.ts';
  *     "storage": "gcs",                            STORAGE (fs, s3 or a storage backend a plugin registered)
  *     "plugins": ["./plugin.mjs", ["pkg", {}]]     plugins to load (src/plugin/, docs/extension-api.md)
  *     "redaction": { "jsonKeys": ["ssn", "/card_?number/i"] }   added to the sanitiser's defaults (src/shared/redaction.ts)
+ *     "privacy": { "keepVisibleInputs": false }    staff uploads keep visible inputs (file only; src/server/privacy-config.ts)
  *   }
  *
  * The same keys, typed, make up `defineConfig()` in a `replays.config.ts|js|json` (src/config/).
@@ -93,6 +95,8 @@ export interface FileConfig {
   plugins?: readonly PluginSpec[];
   /** Redaction rules added to the defaults; JSON configs write regular expressions as `"/.../flags"` strings. */
   redaction?: RedactionRules;
+  /** Switches that relax a server privacy default, all off unless set (src/server/privacy-config.ts). */
+  privacy?: PrivacyConfig;
 }
 
 export interface AppSettings {
@@ -117,6 +121,8 @@ export interface AppSettings {
   comments: CommentsSettings;
   /** The config file's `redaction` rules, checked (plugins' rules are merged in by the app). */
   redaction?: RedactionRules;
+  /** The config file's `privacy` switches, checked; absent means all off. */
+  privacy?: PrivacySettings;
   editing: EditingSettings;
 }
 
@@ -146,6 +152,7 @@ export const CONFIG_KEYS = new Set([
   'storage',
   'plugins',
   'redaction',
+  'privacy',
 ]);
 
 export async function readConfigFile(path: string | undefined): Promise<FileConfig> {
@@ -194,6 +201,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
   const schemaFile = pick('CONTEXT_SCHEMA_FILE') ?? file.contextSchemaFile;
   const contextSchema = schemaFile ? await loadContextSchema(resolve(cwd, schemaFile)) : undefined;
   if (file.redaction !== undefined) assertRedactionRules(file.redaction, 'config redaction');
+  const privacy = privacyFromConfig(file.privacy);
   const malleable = parseMalleablePolicy(file.malleable);
   const distribution = parseDistribution(file.distribution);
   // why: `malleable.enabled` and `beta.malleable` are one switch; the environment variable still wins over both.
@@ -217,6 +225,7 @@ export async function loadSettings(env: NodeJS.ProcessEnv, file: FileConfig = {}
     ...(distribution ? { distribution } : {}),
     comments: commentsFromEnv(env, file.comments),
     editing: editingFromEnv(env, file.editing),
+    privacy,
     ...(contextSchema ? { contextSchema } : {}),
     ...(file.redaction ? { redaction: file.redaction } : {}),
   };

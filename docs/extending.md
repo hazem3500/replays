@@ -256,6 +256,29 @@ file and plugins, never from an upload, a request or a sandboxed user plugin. Ea
 100 entries, and every rule is validated at start (`PluginError` `invalid-registration`, or a config error naming the key). The cap
 does not make a pathological pattern safe: avoid nested quantifiers such as `(a+)+`.
 
+## Visible inputs for staff recordings
+
+By default the server masks every input, textarea and select value in every upload, whatever the recorder did. An internal
+host whose staff record with the browser recorder's `privacy: { sanitize: false }` (or the `visible` mode of the
+[options step](recorder.md#options-step-for-internal-hosts)) can keep those values:
+
+```json
+{ "privacy": { "keepVisibleInputs": true } }
+```
+
+The server keeps ordinary input values only when all of these hold; otherwise it masks every value and drops the claim:
+
+1. The config sets `privacy.keepVisibleInputs: true` (`defineConfig({ privacy: { keepVisibleInputs: true } })`). It is off by
+   default, file only (no environment variable), and not a redaction rule, so no plugin can turn it on.
+2. The bundle says `meta.captured.inputs: 'visible'`, which the recorder writes only when `privacy.sanitize` is `false`.
+3. The upload is a signed-in staff upload: `POST /api/replays` itself, not a plugin upload endpoint (an app-key ingest, a
+   customer or support alias); a real auth adapter, not `none`; and an identity without route `capabilities` or `authScopes`
+   (no endpoint credential, no scoped upload token).
+
+Password and hidden inputs are masked on the server in every case, and typing into a field the recording never showed is
+masked too. URL, header, credential and body redaction and the host's `redaction` rules (text rules and mask selectors
+included) apply unchanged. The import route, `replays migrate` and the capture CLI never keep visible inputs.
+
 ## Theming and branding
 
 Every colour is a CSS custom property. A deployment overrides the documented subset per colour scheme, without a

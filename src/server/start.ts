@@ -282,6 +282,7 @@ async function startOwnedServer(options: StartOptions, resources: ServerResource
     comments: settings.comments,
     plugins: registry,
     ...(settings.redaction ? { redaction: settings.redaction } : {}),
+    ...(settings.privacy ? { privacy: settings.privacy } : {}),
     ...(settings.contextSchema ? { contextSchema: settings.contextSchema } : {}),
     ...(env.PUBLIC_ORIGIN ? { publicOrigin: env.PUBLIC_ORIGIN.replace(/\/+$/, '') } : {}),
     store,

@@ -40,6 +40,11 @@ describe('recorder capture option', () => {
     });
   });
 
+  it('declares visible inputs in meta.captured only when privacy.sanitize is false', async () => {
+    expect((await recordOneRequest({ privacy: { sanitize: false } })).meta.captured?.inputs).toBe('visible');
+    expect(await recordOneRequest({})).not.toHaveProperty('meta.captured.inputs');
+  });
+
   it('reads no body by default and marks the network as headers only', async () => {
     const bundle = await recordOneRequest({});
     expect(bundle.meta.captured?.network).toBe('headers');

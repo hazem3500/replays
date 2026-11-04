@@ -267,7 +267,7 @@ Settings come from environment variables. Non-secret settings can also live in a
 | `CHROMIUM_PATH`, `FFMPEG_PATH`, `CHROMIUM_NO_SANDBOX=1` | autodetected | Server-side video export and list posters (optional) |
 
 The config file takes `name`, `logoUrl`, `theme`, `basePath`, `hosts`, `trustForwardedHost`, `retentionDays`, `contextSchemaFile`, `githubHost`,
-`gitlabHost`, `sourceProviders`, `beta`, `editing`, `comments`, `auth`, `storage` and `plugins`:
+`gitlabHost`, `sourceProviders`, `beta`, `editing`, `comments`, `auth`, `storage`, `plugins`, `redaction` and `privacy`:
 
 ```json
 {
@@ -393,7 +393,7 @@ A replay contains what was on the screen, so the defaults are conservative and t
 
 | Data | What happens | Where |
 | --- | --- | --- |
-| Typed input | rrweb `maskAllInputs` (plus `hidden` inputs): values never leave the page. Uploads and imports are re-masked on the server | `src/capture/injected-recorder.ts`, `sanitize.ts` |
+| Typed input | rrweb `maskAllInputs` (plus `hidden` inputs): values never leave the page. Uploads and imports are re-masked on the server. A host can keep the values of signed-in staff recordings made with visible inputs (`privacy.keepVisibleInputs`, off by default); passwords and hidden inputs stay masked ([docs/extending.md](docs/extending.md#visible-inputs-for-staff-recordings)) | `src/capture/injected-recorder.ts`, `sanitize.ts`, `src/server/privacy-config.ts` |
 | Cookies | Not stored: no `Cookie` / `Set-Cookie` headers, no HAR `cookies` arrays | `sanitize.ts` |
 | Credential headers | `Authorization`, `Proxy-Authorization`, `X-Api-Key`, `X-Auth-Token`, anything ending in `-token`, `-secret`, `-jwt`, `-assertion` are dropped | `sanitize.ts` |
 | URL credentials | `user:pass@` removed everywhere (events, steps, network, console, context) | `sanitize.ts` |

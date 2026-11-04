@@ -35,8 +35,11 @@ export interface ApiServices {
   deployment: ApiDeployment;
   registry: PluginRegistry;
   redaction: RedactionRules;
-  /** The server's privacy pass over an upload (defaults plus the host's rules), in its own span. */
-  sanitize: (bundle: ReplayBundle) => ReplayBundle;
+  /**
+   * The server's privacy pass over an upload (defaults plus the host's rules), in its own span. `upload.staff` (see
+   * `isStaffUpload`) lets a host that opted in keep a bundle's declared visible inputs; without it every input is masked.
+   */
+  sanitize: (bundle: ReplayBundle, upload?: { staff: boolean }) => ReplayBundle;
   signIn: SignInConfig | undefined;
   editing: { enabled: boolean };
   commentsOn: boolean;

@@ -361,6 +361,69 @@ const leakyEverywhere = (): ReplayBundle => {
   return bundle;
 };
 
+const field = (id: number, tagName: string, attributes: Record<string, string>, childNodes: unknown[] = []) => ({
+  type: 2,
+  id,
+  tagName,
+  attributes,
+  childNodes,
+});
+
+/** `leakyEverywhere` from a recorder with `privacy.sanitize: false`: typed values beside its password and a CSRF token. */
+const staffForm = (): ReplayBundle => {
+  const bundle = leakyEverywhere();
+  bundle.meta.captured = { console: true, network: 'headers', performance: false, video: false, inputs: 'visible' };
+  const adds = [
+    field(3, 'input', { type: 'text', value: 'typed-name' }),
+    field(4, 'input', { type: 'hidden', value: 'csrf-secret' }),
+    field(5, 'textarea', {}, [{ type: 3, id: 6, textContent: 'typed-note' }]),
+  ].map((node) => ({ parentId: 1, node }));
+  bundle.events.push(
+    { type: 3, timestamp: 1002, data: { source: 0, adds, removes: [], texts: [], attributes: [] } },
+    { type: 3, timestamp: 1003, data: { source: 5, id: 3, text: 'typed-more' } },
+    { type: 3, timestamp: 1004, data: { source: 5, id: 2, text: 'typed-password-secret' } },
+  );
+  return bundle;
+};
+const KEEP = { keepVisibleInputs: true };
+/** Everything but the inputs: the events and the `meta.captured` record. */
+const withoutInputs = ({ events: _events, meta: { captured: _captured, ...meta }, ...rest }: ReplayBundle) => ({ ...rest, meta });
+const unclaimed = () => {
+  const bundle = staffForm();
+  delete bundle.meta.captured?.inputs;
+  return bundle;
+};
+
+describe('visible inputs', () => {
+  it('keeps the ordinary input values of a bundle that declares them visible, when asked to', () => {
+    const clean = sanitizeReplayBundle(staffForm(), undefined, KEEP);
+    const serialized = JSON.stringify(clean);
+    for (const typed of ['typed-name', 'typed-note', 'typed-more']) expect(serialized).toContain(typed);
+    expect(clean.meta.captured?.inputs).toBe('visible');
+    expect(sanitizeReplayBundle(structuredClone(clean), undefined, KEEP)).toEqual(clean);
+  });
+
+  it('masks password and hidden inputs while keeping visible inputs', () => {
+    const serialized = JSON.stringify(sanitizeReplayBundle(staffForm(), undefined, KEEP));
+    for (const secret of ['input-secret', 'csrf-secret', 'typed-password-secret']) expect(serialized).not.toContain(secret);
+  });
+
+  it('masks everything and drops the claim by default, exactly as for a bundle that makes no claim', () => {
+    const clean = sanitizeReplayBundle(staffForm());
+    expect(JSON.stringify(clean)).not.toMatch(/typed-/);
+    expect(clean.meta.captured).not.toHaveProperty('inputs');
+    expect(clean).toEqual(sanitizeReplayBundle(unclaimed()));
+  });
+
+  it('masks everything when asked to keep visible inputs but the bundle makes no claim', () => {
+    expect(sanitizeReplayBundle(unclaimed(), undefined, KEEP)).toEqual(sanitizeReplayBundle(unclaimed()));
+  });
+
+  it('redacts URLs, headers and credentials exactly as without visible inputs', () => {
+    expect(withoutInputs(sanitizeReplayBundle(staffForm(), undefined, KEEP))).toEqual(withoutInputs(sanitizeReplayBundle(staffForm())));
+  });
+});
+
 describe('redaction rules never weaken the defaults', () => {
   const secrets = ['header-secret', 'query-secret', 'hash-secret', 'userinfo-secret', 'input-secret', 'console-secret', 'body-secret'];
 
@@ -393,6 +456,16 @@ describe('redaction rules never weaken the defaults', () => {
     // The result is always a fixed point of the default pass: nothing is left for the defaults to remove.
     expect(sanitizeReplayBundle(structuredClone(clean))).toEqual(clean);
   });
+
+  it.each(ruleSets.map((rules, index) => [index, rules] as const))(
+    'rule set %i still removes every default secret with visible inputs kept',
+    (_index, rules) => {
+      const clean = sanitizeReplayBundle(staffForm(), rules, KEEP);
+      const serialized = JSON.stringify(clean);
+      for (const secret of [...secrets, 'csrf-secret', 'typed-password-secret']) expect(serialized).not.toContain(secret);
+      expect(sanitizeReplayBundle(structuredClone(clean), undefined, KEEP)).toEqual(clean);
+    },
+  );
 
   it('cannot switch a default off: there is no such key, and unknown keys are refused', () => {
     for (const attempt of [{ defaults: false }, { headers: { allow: ['authorization'] } }, { allowHeaders: ['cookie'] }, { text: 'off' }])

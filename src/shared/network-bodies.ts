@@ -1,4 +1,4 @@
-import { contentTypeAllowed, DEFAULT_BODY_LIMITS, type NetworkBodyLimits } from './capture-profile.ts';
+import { type CapturedInputs, contentTypeAllowed, DEFAULT_BODY_LIMITS, type NetworkBodyLimits } from './capture-profile.ts';
 import { type CompiledRedaction, redactJsonKeys, redactText } from './redaction.ts';
 import { isRecord } from './validate.ts';
 
@@ -26,6 +26,12 @@ export interface ReplayCaptured {
   network: 'off' | 'headers' | 'bodies';
   performance: boolean;
   video: boolean;
+  /**
+   * `visible` when the recorder kept ordinary input values (`privacy.sanitize: false`; passwords and hidden inputs are
+   * always masked). Absent means masked. Only a claim: the server keeps the values for a host that opted in
+   * (`privacy.keepVisibleInputs`) and a signed-in staff upload, and drops the claim otherwise.
+   */
+  inputs?: CapturedInputs;
 }
 
 /** What a captured body is replaced with, wherever a secret was found. */
