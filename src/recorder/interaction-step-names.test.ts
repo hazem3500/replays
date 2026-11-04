@@ -1,5 +1,5 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it, onTestFinished } from 'vitest';
 
 import type { RawStep } from './bundle.ts';
 import { resolveCapture } from './capture-options.ts';
@@ -8,12 +8,10 @@ import { recorderPrivacy } from './recorder-privacy.ts';
 import { STEP_LABEL_MAX } from './step-label.ts';
 import type { RecorderPrivacyOptions } from './types.ts';
 
-const cleanups: Array<() => void> = [];
-
 function capture(options: RecorderPrivacyOptions = { maskAllText: false }) {
   const steps: RawStep[] = [];
   const privacy = recorderPrivacy(options, resolveCapture({ privacy: options }));
-  cleanups.push(captureInteractionSteps(privacy, (step) => steps.push(step)));
+  onTestFinished(captureInteractionSteps(privacy, (step) => steps.push(step)));
   return steps;
 }
 
@@ -21,13 +19,9 @@ function control(html: string, tag = 'button') {
   const element = document.createElement(tag);
   element.innerHTML = html;
   document.body.append(element);
+  onTestFinished(() => element.remove());
   return element;
 }
-
-afterEach(() => {
-  for (const stop of cleanups.splice(0)) stop();
-  document.body.replaceChildren();
-});
 
 describe('click labels name the control, briefly', () => {
   it('prefers aria-label over aria-labelledby, title and text', () => {
@@ -56,7 +50,7 @@ describe('click labels name the control, briefly', () => {
 
   it('names a control without an accessible name by its first line, not all of its text', () => {
     const steps = capture();
-    control('<span>asdadasd</span><span>10:00 AM–1:15 PM</span><span>3h 15m asdadasd asdasd</span>').click();
+    control('<span>asdadasd</span><span>10:00 AM to 1:15 PM</span><span>3h 15m asdadasd asdasd</span>').click();
     control('Save draft\nLast saved a minute ago').click();
     expect(steps.map((step) => step.label)).toEqual(['Clicked “asdadasd”', 'Clicked “Save draft”']);
   });

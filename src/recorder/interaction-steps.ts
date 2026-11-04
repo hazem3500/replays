@@ -46,11 +46,10 @@ function labelledBy(control: Element, privacy: RecorderPrivacy, blocked: string)
  */
 function controlName(control: Element, privacy: RecorderPrivacy, blocked: string): string {
   if (control.matches(FIELD) || privacy.textMasked(control)) return '';
-  const label =
-    control.getAttribute('aria-label')?.trim() ||
-    labelledBy(control, privacy, blocked).trim() ||
-    control.getAttribute('title')?.trim() ||
-    firstText(control, privacy, blocked);
+  const accessible = [control.getAttribute('aria-label'), labelledBy(control, privacy, blocked), control.getAttribute('title')]
+    .map((name) => name?.trim() ?? '')
+    .find(Boolean);
+  const label = accessible ?? firstText(control, privacy, blocked);
   const withoutQueries = label.replace(/(?:https?:\/\/|\/)[^\s]*[?#][^\s]*/g, (url) => url.split(/[?#]/)[0] ?? '');
   return capAtWord(redactText(withoutQueries, Number.MAX_SAFE_INTEGER));
 }

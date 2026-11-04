@@ -1,5 +1,6 @@
-import { expect, type Page, test } from '@playwright/test';
+import { expect, type Locator, type Page, test } from '@playwright/test';
 
+import { isRecord } from '../src/shared/validate.ts';
 import { boxOf, openReplay, origin } from './support.ts';
 
 const LONG_LABEL = `Clicked “asdadasd, 10:00 AM–1:15 PM, 3h 15m ${'asdadasd asdasd '.repeat(10)}…”`;
@@ -7,9 +8,9 @@ const LONG_LABEL = `Clicked “asdadasd, 10:00 AM–1:15 PM, 3h 15m ${'asdadasd 
 async function openLongCaption(page: Page) {
   await page.route('**/api/replays/demo-shop', async (route) => {
     const response = await route.fetch();
-    const bundle = await response.json();
-    bundle.steps = [{ at: 0, kind: 'click', label: LONG_LABEL }];
-    await route.fulfill({ response, json: bundle });
+    const bundle: unknown = await response.json();
+    if (!isRecord(bundle)) throw new Error('the demo replay is not a bundle');
+    await route.fulfill({ response, json: { ...bundle, steps: [{ at: 0, kind: 'click', label: LONG_LABEL }] } });
   });
   await page.addInitScript(() => localStorage.setItem('replays-view:standard:captions', '1'));
   await openReplay(page, `${origin()}/r/demo-shop`);
@@ -17,6 +18,16 @@ async function openLongCaption(page: Page) {
   const caption = page.getByTestId('step-caption');
   await expect(caption).toHaveAttribute('data-active', 'true');
   return caption;
+}
+
+/** The text-overflow of the caption pill and each of its text layers ('missing' for a layer not rendered). */
+async function captionOverflow(caption: Locator) {
+  return caption.evaluate((host) =>
+    ['.step-caption-text', '.step-caption-label', '.caption-morph', '.caption-swap'].map((name) => {
+      const element = host.querySelector(name);
+      return element ? getComputedStyle(element).textOverflow : 'missing';
+    }),
+  );
 }
 
 for (const [width, height, mobile] of [
@@ -30,12 +41,7 @@ for (const [width, height, mobile] of [
       const caption = await openLongCaption(page);
       const label = caption.locator('.step-caption-label');
       await expect(label).not.toContainText('…');
-      const styles = await caption.evaluate((host) =>
-        [
-          host.querySelector('.step-caption-text'),
-          ...['.step-caption-label', '.caption-morph', '.caption-swap'].map((name) => host.querySelector(name)),
-        ].map((element) => (element ? getComputedStyle(element).textOverflow : 'missing')),
-      );
+      const styles = await captionOverflow(caption);
       expect(styles).not.toContain('ellipsis');
       expect(styles).not.toContain('missing');
       const lineHeight = await label.evaluate((element) => Number.parseFloat(getComputedStyle(element).lineHeight));
