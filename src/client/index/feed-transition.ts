@@ -19,14 +19,6 @@ const PARTS = {
     selector:
       ':scope > .poster, :scope > .poster-stack .stack-front > .poster, :scope > .shuffle-window > .poster, :scope > .suite-sheet .shuffle-window > .poster, :scope > .suite-sheet .stack-front > .poster',
   },
-  back1: {
-    className: 'feed-back-1',
-    selector: '.card-back-1, .stack-layer-1',
-  },
-  back2: {
-    className: 'feed-back-2',
-    selector: '.card-back-2, .stack-layer-2',
-  },
   title: { className: 'feed-title', selector: '.feed-title' },
   meta: { className: 'feed-meta', selector: '.feed-meta' },
   src: { className: 'feed-src', selector: '.feed-meta .source-lead' },
@@ -55,10 +47,25 @@ function itemLayerName(part: ItemPart, entryId: string) {
 }
 
 function name(element: Element | null, part: ItemPart, entryId: string) {
-  if (!(element instanceof HTMLElement)) return;
-  element.style.setProperty('view-transition-name', itemLayerName(part, entryId));
-  element.style.setProperty('view-transition-class', PARTS[part].className);
+  if (element instanceof HTMLElement) layer(element, itemLayerName(part, entryId), PARTS[part].className, part);
+}
+
+function layer(element: HTMLElement, layerName: string, className: string, part: string) {
+  element.style.setProperty('view-transition-name', layerName);
+  element.style.setProperty('view-transition-class', className);
   element.dataset.feedLayer = part;
+}
+
+/**
+ * invariant: every rear sheet of a suite stack is a layer of its own, on the front poster's timing. A sheet left
+ * unnamed is painted into the card's snapshot and stretches with the whole card, detached from the stack.
+ */
+function nameSheets(item: HTMLElement, entryId: string) {
+  for (const sheet of item.querySelectorAll<HTMLElement>(':is(.card-back, .stack-layer)[data-stack-depth]')) {
+    if (sheet.closest('.suite-sheet-outgoing, .poster-outgoing')) continue;
+    const depth = sheet.dataset.stackDepth!;
+    layer(sheet, `back${depth}-${ident(entryId)}`, `feed-back-${depth}`, 'back');
+  }
 }
 
 /** The feed items on or near the screen (at most MAX_NAMED, in document order, which is also visual order). */
@@ -94,6 +101,7 @@ function nameBefore(): string[] {
   for (const item of items) {
     const id = item.dataset.entryId!;
     for (const part of PART_NAMES) name(partElement(item, part), part, id);
+    nameSheets(item, id);
   }
   return items.map((item) => item.dataset.entryId!);
 }
