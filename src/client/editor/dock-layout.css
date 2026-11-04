@@ -22,8 +22,8 @@
   .editor-bar svg.filled-icon { fill: currentColor; }
   .editor-bar [aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
   /* why: the bar's 24 px buttons answer a 40 px tall press without growing; neighbours never overlap sideways. */
-  .editor-bar [data-slot="button"] { position: relative; }
-  .editor-bar [data-slot="button"]::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }
+  .editor-bar button { position: relative; }
+  .editor-bar button::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }
   .editor-bar-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--line); }
   .editor-tool.editor-tool { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
   .editor-tool svg { width: 15px; height: 15px; }

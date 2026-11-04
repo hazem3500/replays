@@ -33,9 +33,10 @@
 
 @layer utilities {
   /* why: the top bar's 28 and 32 px buttons answer a 40 px tall press without growing (their neighbours sit beside them). */
-  .editor-shell:not([data-mobile]) .topbar [data-slot="button"] { position: relative; }
-  .editor-shell:not([data-mobile]) .topbar [data-slot="button"]::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }
+  .editor-shell:not([data-mobile]) .topbar button { position: relative; }
+  .editor-shell:not([data-mobile]) .topbar button::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }
   .editor-shell:not([data-mobile]) .topbar :is([data-slot="button"], .topbar-back) { height: 32px; }
   .editor-shell:not([data-mobile]) .topbar .topbar-back { width: 32px; }
-  .editor-shell:not([data-mobile]) .topbar .editor-history [data-slot="button"] { width: 28px; height: 28px; border-radius: 6px; }
+  /* why: by element, as a tooltip trigger renames a wrapped button's data-slot; the loading frame's plain buttons match. */
+  .editor-shell:not([data-mobile]) .topbar .editor-history button { width: 28px; height: 28px; border-radius: 6px; }
 }

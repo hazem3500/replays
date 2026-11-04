@@ -11,7 +11,7 @@ const PARTS: Array<[string, string]> = [
   ['bar', '.editor-bar'],
   ['timecode', '.editor-time'],
   ['tool group', '.editor-bar-tools'],
-  ['tools', '.editor-bar-tools > [data-slot="button"]'],
+  ['tools', '.editor-bar-tools > button'],
   ['after edits', '.editor-bar-end .editor-durations-note'],
   ['ruler', '.tl-ruler'],
   ['tick labels', '.tl-tick-label'],
@@ -88,7 +88,7 @@ test('the desktop dock loads at the rects it arrives in: tools, ruler, clip and 
   const skeleton = page.getByTestId('editor-skeleton');
   await expect(skeleton).toBeVisible();
   await expect(skeleton.locator('.tl-lane')).toHaveCount(4);
-  await expect(skeleton.locator('.editor-bar-tools > [data-slot="button"]')).toHaveText([/Cut/, /Waits/, /Highlight/, /Add/]);
+  await expect(skeleton.locator('.editor-bar-tools > button')).toHaveText([/Cut/, /Waits/, /Highlight/, /Add/]);
   await expect(skeleton.locator('.editor-time')).toHaveText(/^0:00\.0 \/ \d+:\d\d\.\d$/);
   await expect(skeleton.locator('.editor-durations-note')).toHaveText('after edits');
   const loading = await rectsOf(page, '[data-testid="editor-skeleton"]');
