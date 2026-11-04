@@ -89,10 +89,11 @@ function holdNextTransition() {
 
 /** The front poster and rear sheets of one suite as laid out right now (the page's live, final geometry). */
 function restStack(entryId: string): StackSample {
-  const item = document.querySelector<HTMLElement>(`[data-entry-id="${entryId}"]`)!;
-  const front = item
-    .querySelector<HTMLElement>(':is(.stack-front, .shuffle-window) > .poster:not(.poster-outgoing)')!
-    .getBoundingClientRect();
+  const item = document.querySelector<HTMLElement>(`[data-entry-id="${entryId}"]`);
+  if (!item) throw new Error(`no feed entry ${entryId}`);
+  const poster = item.querySelector<HTMLElement>(':is(.stack-front, .shuffle-window) > .poster:not(.poster-outgoing)');
+  if (!poster) throw new Error(`no front poster in ${entryId}`);
+  const front = poster.getBoundingClientRect();
   const sheets = [...item.querySelectorAll<HTMLElement>(':is(.card-back, .stack-layer):not([data-stack-reserve])')]
     .filter((sheet) => !sheet.closest('.suite-sheet-outgoing'))
     .sort((a, b) => Number(a.dataset.stackDepth) - Number(b.dataset.stackDepth));
@@ -119,7 +120,8 @@ function restStack(entryId: string): StackSample {
  */
 function drawnStack(entryId: string): StackSample {
   const root = document.documentElement;
-  const item = document.querySelector<HTMLElement>(`[data-entry-id="${entryId}"]`)!;
+  const item = document.querySelector<HTMLElement>(`[data-entry-id="${entryId}"]`);
+  if (!item) throw new Error(`no feed entry ${entryId}`);
   const layerBox = (name: string) => {
     const style = getComputedStyle(root, `::view-transition-group(${name})`);
     const matrix = new DOMMatrixReadOnly(style.transform === 'none' ? undefined : style.transform);
@@ -144,7 +146,9 @@ function drawnStack(entryId: string): StackSample {
       bottom: (box.bottom - laid.top) * scale,
     };
   };
-  const front = drawn(item.querySelector<HTMLElement>(':is(.stack-front, .shuffle-window) > .poster:not(.poster-outgoing)')!);
+  const poster = item.querySelector<HTMLElement>(':is(.stack-front, .shuffle-window) > .poster:not(.poster-outgoing)');
+  if (!poster) throw new Error(`no front poster in ${entryId}`);
+  const front = drawn(poster);
   const sheets = [...item.querySelectorAll<HTMLElement>(':is(.card-back, .stack-layer):not([data-stack-reserve])')]
     .filter((sheet) => !sheet.closest('.suite-sheet-outgoing'))
     .sort((a, b) => Number(a.dataset.stackDepth) - Number(b.dataset.stackDepth));
@@ -213,9 +217,12 @@ for (const [from, to] of [
       expect(progress, `${ms} ms`).toBeGreaterThan(0.2);
       expect(progress, `${ms} ms`).toBeLessThan(1);
       for (const [depth, offset] of frame.offsets.entries()) {
+        const from = before.offsets[depth];
+        const to = after.offsets[depth];
+        if (!from || !to) throw new Error(`sheet ${depth + 1} is missing before or after the switch`);
         for (const edge of ['left', 'top', 'right', 'bottom'] as const) {
-          const start = before.offsets[depth]![edge];
-          const expected = start + (after.offsets[depth]![edge] - start) * progress;
+          const start = from[edge];
+          const expected = start + (to[edge] - start) * progress;
           expect.soft(Math.abs(offset[edge] - expected), `sheet ${depth + 1} ${edge} at ${ms} ms`).toBeLessThanOrEqual(2);
         }
       }
