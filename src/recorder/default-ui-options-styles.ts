@@ -27,7 +27,6 @@ export const OPTIONS_STYLES = `
 .options-detail { color: var(--r-secondary); font-size: 12px; font-weight: 400; line-height: 16px; }
 .options-check { position: absolute; inset-inline-start: 9px; inset-block-start: 8px; width: 14px; height: 14px; color: var(--r-primary); opacity: 0; transition: opacity 120ms var(--r-ease), transform 160ms var(--r-ease); }
 .options-item[aria-checked=true] .options-check { opacity: 1; }
-.options-note { margin: 2px 0 0; padding: 4px 8px 6px 30px; color: var(--r-secondary); font-size: 12px; font-weight: 400; line-height: 16px; }
 @media (max-width: 480px) { .options-menu { inset-inline: 12px; transform: none; inline-size: auto; max-inline-size: none; } }
 @media (pointer: coarse) { .options-item { min-block-size: 44px; align-items: center; } .options-check { inset-block-start: calc(50% - 7px); } }
 @media (prefers-reduced-motion: no-preference) {
