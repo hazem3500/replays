@@ -48,10 +48,13 @@ function MotionPreview({ preview }: { preview: CursorMotionPreview }) {
 export function CursorMotionPicker({
   value,
   disabled,
+  recordedPath = false,
   onChange,
 }: {
   value: CursorMotionStyle;
   disabled: boolean;
+  /** A person's recording: the cursor follows the recorded path, so the style does not apply. */
+  recordedPath?: boolean;
   onChange: (style: CursorMotionStyle) => void;
 }) {
   const selected = CURSOR_MOTION_PREVIEWS.find((preview) => preview.style === value);
@@ -65,7 +68,7 @@ export function CursorMotionPicker({
         value={value}
         disabled={disabled}
         aria-labelledby="cursor-motion-label"
-        aria-describedby="cursor-motion-description"
+        aria-describedby={recordedPath ? 'cursor-motion-description cursor-motion-recorded' : 'cursor-motion-description'}
         onValueChange={(next) => {
           if (isCursorMotionStyle(next)) onChange(next);
         }}
@@ -80,6 +83,11 @@ export function CursorMotionPicker({
       <p className="cursor-motion-description" id="cursor-motion-description">
         {selected?.description}
       </p>
+      {recordedPath ? (
+        <p className="cursor-motion-description" id="cursor-motion-recorded">
+          This recording was made by a person, so the cursor follows the path it recorded. Styles shape agent runs.
+        </p>
+      ) : null}
     </div>
   );
 }
