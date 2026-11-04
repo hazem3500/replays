@@ -358,3 +358,32 @@ describe('idle fade', () => {
     expect(backward).toEqual(forward);
   });
 });
+
+describe('a hand resting from 900 ms to 2500 ms, then flicking to (900, 500) in 50 ms samples', () => {
+  const points = [
+    { t: 900, x: 100, y: 100 },
+    { t: 1000, x: 100, y: 100 },
+    ...Array.from({ length: 5 }, (_, i) => ({ t: 2500 + i * 50, x: 100 + (i + 1) * 160, y: 100 + (i + 1) * 80 })),
+  ];
+  const track = buildCursorTrack({ points, presses: [] });
+
+  it('keeps the cursor at its rest until the pointer sets off', () => {
+    for (const t of [1200, 2000, 2400, 2500]) expect(distance(cursorPose(track, t), { x: 100, y: 100 })).toBeLessThan(1);
+  });
+
+  it('lands with the pointer', () => {
+    expect(distance(cursorPose(track, 2700), { x: 900, y: 500 })).toBeLessThan(1);
+  });
+
+  it('still glides in ahead of a lone jump, which has no sweep to follow', () => {
+    const jump = buildCursorTrack({
+      points: [
+        { t: 900, x: 100, y: 100 },
+        { t: 3000, x: 900, y: 500 },
+      ],
+      presses: [],
+    });
+    expect(distance(cursorPose(jump, 2800), { x: 100, y: 100 })).toBeGreaterThan(10);
+    expect(distance(cursorPose(jump, 3000), { x: 900, y: 500 })).toBeLessThan(1);
+  });
+});
