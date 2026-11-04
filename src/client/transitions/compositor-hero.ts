@@ -10,7 +10,8 @@ interface Corner {
   y: number;
 }
 
-interface Picture {
+/** A picture as one end of a flight: where it is, where its front sits in it, its corners and its depth opacity. */
+export interface Picture {
   opacity: number;
   rect: DOMRect;
   front: DOMRect;
@@ -145,6 +146,15 @@ function measure(element: Element | null | undefined): Picture | undefined {
   };
 }
 
+/**
+ * The spot a run with no sheet of its own leaves from and returns to: this sheet's box, unseen.
+ * why: it is measured while the stack shows, since the index is hidden by the time the comparison is captured.
+ */
+export function standIn(element: Element | null | undefined): Picture | undefined {
+  const picture = measure(element);
+  return picture && { ...picture, opacity: 0 };
+}
+
 /** The front picture's rectangle on screen right now, from its group's animated canvas. */
 function frontInFlight(name: string, morph: Morph) {
   const style = getComputedStyle(document.documentElement, `::view-transition-group(${name})`);
@@ -257,21 +267,25 @@ function retarget(effect: KeyframeEffect, morph: Morph, shape: FlightShape) {
   effect.updateTiming({ easing: CORNER_EASE });
 }
 
-/** Adapts Motion's captured hero geometry to fixed-size compositor transforms without replacing its controls. */
-export function createCompositorHero(element: Element | null | undefined, name = 'vt-page-hero', zIndex = 2) {
+/**
+ * Adapts Motion's captured hero geometry to fixed-size compositor transforms without replacing its controls.
+ * `from` stands in for a source the old page never showed (standIn); `capture` takes one for a missing destination.
+ */
+export function createCompositorHero(element: Element | null | undefined, name = 'vt-page-hero', zIndex = 2, from?: Picture) {
   if (!/^[a-zA-Z_][a-zA-Z0-9_-]*$/.test(name)) throw new Error('Invalid compositor hero name');
   if (!Number.isFinite(zIndex)) throw new Error('Invalid compositor hero depth');
-  const measured = measure(element);
+  const measured = from ?? measure(element);
   const start = interrupted.get(name);
   interrupted.delete(name);
-  const before = measured && start ? startAt(element, measured, start) : measured;
+  const before = measured && start && !from ? startAt(element, measured, start) : measured;
   const token = {};
   let morph: Morph | undefined;
   let sheet: HTMLStyleElement | undefined;
+  let created: Animation | undefined;
   const read = () => (morph ? frontInFlight(name, morph) : undefined);
   return {
-    capture(afterElement: Element | null | undefined) {
-      const after = measure(afterElement);
+    capture(afterElement: Element | null | undefined, to?: Picture) {
+      const after = to ?? measure(afterElement);
       if (!before || !after) return false;
       morph = register(before, after);
       sheet?.remove();
@@ -284,16 +298,25 @@ export function createCompositorHero(element: Element | null | undefined, name =
     flight() {
       return morph ? { from: morph.before.rect, to: morph.after.rect } : undefined;
     },
-    prepare(shape: FlightShape = { lag: 0, returning: false }) {
+    // why: a picture in only one snapshot gets no browser flight; given a sibling's spring timing, it flies on its own.
+    prepare(shape: FlightShape = { lag: 0, returning: false }, timing?: EffectTiming) {
       if (!morph || owners.get(name)?.token !== token) return;
+      const pseudoElement = `::view-transition-group(${name})`;
+      let retargeted = false;
       for (const animation of document.getAnimations()) {
         if (animation.playState === 'finished' || animation.playState === 'idle') continue;
         const { effect } = animation;
-        if (!(effect instanceof KeyframeEffect) || effect.pseudoElement !== `::view-transition-group(${name})`) continue;
+        if (!(effect instanceof KeyframeEffect) || effect.pseudoElement !== pseudoElement) continue;
         retarget(effect, morph, shape);
+        retargeted = true;
       }
+      if (retargeted || !timing) return;
+      created?.cancel();
+      created = document.documentElement.animate(geometry(morph, shape), { ...timing, pseudoElement, fill: 'both' });
     },
     clear() {
+      created?.cancel();
+      created = undefined;
       if (flying.get(name) === read) flying.delete(name);
       morph = undefined;
       sheet?.remove();

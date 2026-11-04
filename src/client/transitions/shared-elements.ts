@@ -129,12 +129,13 @@ function frontPicture(sheet: HTMLElement): Element | undefined {
   return image?.complete && image.naturalWidth > 0 ? image : undefined;
 }
 
-export function viewerPictures(ids: readonly string[]) {
+/** The comparison pictures on screen, by recording: only those of `ids` when given. */
+export function viewerPictures(ids?: readonly string[]) {
   const pictures = new Map<string, Element>();
   for (const tile of document.querySelectorAll<HTMLElement>('.app-shell:not(.skeleton-shell) .ct-tile[data-tile-id]')) {
     const id = tile.dataset.tileId;
     const picture = tile.querySelector('.ct-picture');
-    if (id && ids.includes(id) && picture && tile.dataset.role !== 'hidden' && onScreen(picture)) pictures.set(id, picture);
+    if (id && (!ids || ids.includes(id)) && picture && tile.dataset.role !== 'hidden' && onScreen(picture)) pictures.set(id, picture);
   }
   return pictures;
 }

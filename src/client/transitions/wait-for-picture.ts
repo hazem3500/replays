@@ -75,6 +75,12 @@ function capturePictures(focus: Element, ids: readonly string[]) {
     if (!picture) return;
     pictures.push(picture);
   }
+  // why: a run past the stack's shown sheets flies in from under it too, so its cover must be painted before capture.
+  for (const tile of tiles) {
+    const picture = tile.querySelector('.ct-picture');
+    if (ids.includes(tile.dataset.tileId ?? '') || tile.dataset.role === 'hidden' || !onScreen(tile) || !picture) continue;
+    pictures.push(picture);
+  }
   return pictures.length ? pictures : undefined;
 }
 
