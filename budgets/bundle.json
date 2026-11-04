@@ -480,7 +480,7 @@
     "dist/lib/chunks/bundle-io.ts-bd629dd42de8.mjs": {
       "raw": 74502,
       "gzip": 20687,
-      "brotli": 17840
+      "brotli": 17838
     },
     "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs": {
       "raw": 68003,
