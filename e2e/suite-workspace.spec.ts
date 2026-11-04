@@ -125,7 +125,7 @@ test('a suite with two recordings opens comparing its runs; the sidebar moves th
   await expect(page.locator('.ct-tile iframe[data-marked]')).toHaveCount(2);
 });
 
-test('each tile is framed in its sidebar swatch colour, and names itself only once the sidebar folds', async ({ page }) => {
+test('each tile is framed in its sidebar swatch colour, and names itself only while a pointer rests on it', async ({ page }) => {
   const { suite, one, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/s/${suite}`);
@@ -141,9 +141,11 @@ test('each tile is framed in its sidebar swatch colour, and names itself only on
   }
   const label = stage.locator(`[data-tile-id="${two}"] .ct-label`);
   await expect(label).toBeHidden();
-  await sidebar.getByRole('button', { name: 'Collapse runs sidebar' }).click();
+  await stage.locator(`[data-tile-id="${two}"]`).hover();
   await expect(label).toBeVisible();
   await expect(label).toHaveText('Run 2');
+  await page.mouse.move(0, 0);
+  await expect(label).toBeHidden();
 });
 
 test('a suite link that names a run opens comparing, that run in the spotlight', async ({ page }) => {
