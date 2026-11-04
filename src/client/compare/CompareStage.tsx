@@ -6,7 +6,7 @@ import { useCompareLayoutMotion } from '../hooks/use-compare-layout-motion.ts';
 import { useStageBox } from '../hooks/use-stage-box.ts';
 import { useMediaQuery } from '../media.ts';
 import type { Fidelity } from './clock.ts';
-import { type Placement, placementsFor } from './layout.ts';
+import { type Placement, placementsFor, showsPhoneSwitch } from './layout.ts';
 import type { CompareLayout } from './compare-search.ts';
 import type { CompareSession } from './session.ts';
 import { CompareTileView, type TileCommands } from './CompareTile.tsx';
@@ -54,7 +54,7 @@ export function CompareStage({
   const box = useStageBox(area);
   const layoutReady = useCompareLayoutMotion(box.width > 0 && box.height > 0);
   const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)');
-  const carousel = mobile && layout !== 'single' && tiles.length > 1;
+  const carousel = showsPhoneSwitch({ mobile, layout, count: tiles.length });
   const focusIndex = Math.max(
     0,
     tiles.findIndex((tile) => tile.id === focus),

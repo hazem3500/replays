@@ -141,7 +141,7 @@ test('a folded panel is remembered in the view it was folded in only', async ({ 
   await expect(shell(page)).toHaveAttribute('data-inspector-collapsed', 'true');
 });
 
-test('a suite leaves run switching to its sidebar and shows comparison chips only on a phone', async ({ page }) => {
+test('a suite never shows the comparison strip: its sidebar switches runs, and on a phone the swatch switcher does', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 800 });
   const suite = uniqueId('views-suite');
   await createSuite(page.request, origin(), suite, [
@@ -154,7 +154,8 @@ test('a suite leaves run switching to its sidebar and shows comparison chips onl
   await expect(page.locator('.suite-workspace')).toHaveAttribute('data-rail', 'true');
   await expect(page.getByTestId('compare-summary')).toHaveCount(0);
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.getByTestId('compare-summary').getByRole('button')).toHaveCount(2);
+  await expect(page.getByTestId('phone-switch').getByRole('radio')).toHaveCount(2);
+  await expect(page.getByTestId('compare-summary')).toHaveCount(0);
 });
 
 test('switching suite runs keeps the export action while the next run is checked', async ({ page }) => {
