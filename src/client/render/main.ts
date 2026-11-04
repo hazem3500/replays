@@ -129,7 +129,7 @@ async function start() {
   const snapshotTimes = eventTimes.filter((_, index) => bundle.events[index]?.type === FULL_SNAPSHOT);
   // The same pure track ReplayCursor draws from, so "cursor changed" matches what lands on screen.
   const pointer = cursorInput(bundle.events);
-  const track = buildCursorTrack(pointer, { settings: effects.cursor });
+  const track = buildCursorTrack(pointer, { settings: effects.cursor, source: bundle.meta.source });
   const cursorKey = (time: number) => poseKey(cursorPose(track, first + time));
   let captions = false;
   // The edit list's own captions, when it has any, are always drawn (they are part of the edit).

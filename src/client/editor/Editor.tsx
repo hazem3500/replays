@@ -81,6 +81,8 @@ import { cssVars } from '../lib/css-vars.ts';
 import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
 import { useBetaFlag } from '../settings/labs.ts';
+import { cursorInput } from '../cursor-motion.ts';
+import { followsRecordedPath } from '../cursor-recorded-path.ts';
 import { CursorInspector } from './CursorInspector.tsx';
 import { AddMenu, BarTools, LaneInvitation } from './EditorTools.tsx';
 import { IS_MAC, MOD } from './editor-tools.ts';
@@ -674,6 +676,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
   const cursorInspector = cursorCustomization ? (
     <CursorInspector
       embedded={!mobile}
+      recordedPath={followsRecordedPath(bundle.meta.source, cursorInput(bundle.events).points)}
       settings={edits.cursor}
       onChange={(cursor) => {
         const { cursor: _previous, ...rest } = live.current.state.present;
