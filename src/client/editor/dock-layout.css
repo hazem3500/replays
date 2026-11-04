@@ -13,7 +13,7 @@
    */
   .editor-bar { container-type: inline-size; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 12px; min-height: 48px; }
   .editor-bar-start { display: flex; align-items: center; gap: 4px; min-width: 0; }
-  .editor-bar-tools { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 10px; background: color-mix(in srgb, var(--text) 4%, transparent); }
+  .editor-bar-tools { display: flex; align-items: center; gap: 2px; padding: 2px; border-radius: 8px; background: color-mix(in srgb, var(--text) 4%, transparent); }
   .editor-bar-end { justify-self: end; min-width: 0; min-height: 36px; display: flex; align-items: center; gap: 2px; }
   .editor-time { display: inline-flex; align-items: baseline; gap: 5px; margin-left: 2px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .editor-time-total { color: var(--text-tertiary); font-size: var(--text-xs); }
@@ -21,6 +21,9 @@
   .editor-bar svg { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; stroke-width: 1.7; }
   .editor-bar svg.filled-icon { fill: currentColor; }
   .editor-bar [aria-pressed="true"] { background: var(--accent-soft); color: var(--text); }
+  /* why: the bar's 24 px buttons answer a 40 px tall press (the checklist's minimum) without growing; neighbours never overlap sideways. */
+  .editor-bar [data-slot="button"] { position: relative; }
+  .editor-bar [data-slot="button"]::after { content: ""; position: absolute; inset: -8px 0; }
   .editor-bar-divider { width: 1px; height: 16px; margin: 0 4px; background: var(--line); }
   .editor-tool.editor-tool { gap: 6px; padding: 0 8px; color: var(--text-secondary); font-weight: 500; }
   .editor-tool svg { width: 15px; height: 15px; }
@@ -94,10 +97,9 @@
   .tl-trim[data-edge="end"] { right: 0; border-radius: 3px 8px 8px 3px; }
   .tl-trim-grip { width: 2px; height: 12px; border-radius: 1px; background: var(--text-secondary); opacity: 0.8; }
 
-  /* Regions (cuts; the effect lanes reuse them). */
+  /* Regions (cuts; the effect lanes reuse them): 4 px inside the track, so an 8 px track holds a 4 px block radius. */
   .tl-region { position: absolute; z-index: 2; top: 4px; bottom: 4px; }
-  .tl-lane[data-tall] .tl-region { top: 6px; bottom: 6px; }
-  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 8px; border: 0; border-radius: 6px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; }
+  .tl-region-body { position: absolute; inset: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 8px; border: 0; border-radius: 4px; background: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 600; cursor: grab; touch-action: none; }
   /*
    * invariant: a block's label is whole words that fit (block-label.ts), never clipped, faded or ellipsed. A block too
    * short for two words is a plain block with a 3 px top accent in its lane's colour (data-short), never an icon stub;
@@ -120,8 +122,7 @@
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="caption"] { --kind: var(--success); }
   :is(.editor-shell, .editor-loading) { --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
   :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
-  .tl-region[data-kind="caption"] { top: 7px; bottom: 7px; }
-  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 5px; background: color-mix(in oklab, var(--kind, transparent) var(--kind-fill), var(--clip-fill)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
+  .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { border-radius: 4px; background: color-mix(in oklab, var(--kind, transparent) var(--kind-fill), var(--clip-fill)); box-shadow: none; color: var(--text-secondary); font-weight: 500; }
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { border-top: 3px solid var(--kind, var(--line-strong)); }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }

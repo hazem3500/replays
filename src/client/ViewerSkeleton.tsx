@@ -20,7 +20,8 @@ import { currentSearchParam } from './routing/navigate.ts';
 import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
 import { replayHref } from './routing/links.ts';
 import { SuiteSidebarSkeleton, TilesSkeleton } from './SuiteLoadingParts.tsx';
-import { Topbar } from './Topbar.tsx';
+import { KeyboardIcon } from 'lucide-react';
+import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 import { EDITOR_DOCK } from './editor/dock-size.ts';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
@@ -183,6 +184,11 @@ function savedDockHeight() {
   );
 }
 
+/** why: the loaded editor's More menu holds at least this item, so the loading top bar draws the same button in place. */
+const LOADING_EDITOR_MENU: TopbarMenuItem[] = [
+  { label: 'Keyboard shortcuts', icon: <KeyboardIcon aria-hidden="true" />, onSelect: () => undefined, shortcut: '?', disabled: true },
+];
+
 /**
  * Edit loads draw the loaded editor's own shell (editor-layout.css): the real top bar, the stage frame at its final
  * rect beside the inspector column, the 1 px resizer row and the dock at its saved height, so nothing moves when the
@@ -253,6 +259,7 @@ export function EditorSkeleton({
         backLabel="Back to the replay"
         status={<ProgressHint />}
         actions={<TopbarActionsSkeleton />}
+        menuItems={LOADING_EDITOR_MENU}
         alwaysMenu
       />
       <section className="editor-stage" aria-hidden="true">

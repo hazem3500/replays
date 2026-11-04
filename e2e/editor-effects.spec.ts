@@ -143,7 +143,7 @@ test('dense captions keep every edit without overlapping labels, part words or b
   // why: a block too short for two words is a plain block with its lane's top accent, never an icon stub; its name keeps the text.
   await expect(first.locator('.tl-region-label')).toHaveCount(0);
   await expect(first.locator('.tl-region-body svg')).toHaveCount(0);
-  await expect(first.locator('.tl-region-body')).toHaveAttribute('data-short', 'true');
+  await expect(first.locator('.tl-region-body')).toHaveAttribute('data-short', '');
   await expect(first.locator('.tl-region-body')).toHaveCSS('border-top-width', '3px');
   await expect(first.locator('.tl-region-body')).toHaveAccessibleName(/Caption 1: complete text remains available for editing$/);
   const boxes = await captions.evaluateAll((nodes) =>

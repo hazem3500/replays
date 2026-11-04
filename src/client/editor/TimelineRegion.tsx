@@ -55,7 +55,7 @@ function RegionBody({
     <button
       type="button"
       className="tl-region-body"
-      data-short={(label && !text) || undefined}
+      data-short={label && !text ? '' : undefined}
       aria-label={title}
       aria-pressed={selected}
       title={title}

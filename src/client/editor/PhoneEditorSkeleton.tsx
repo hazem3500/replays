@@ -106,7 +106,7 @@ function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: Re
                     key={region.id}
                     className="sk-phone-region"
                     data-kind={lane.kind}
-                    data-short={(region.label && !text) || undefined}
+                    data-short={region.label !== '' && !text ? '' : undefined}
                     style={{ left: `${px(region.from)}px`, width: `${width}px` }}
                   >
                     {text ? (

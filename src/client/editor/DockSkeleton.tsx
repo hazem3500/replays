@@ -16,6 +16,8 @@ import { laneRegions } from './lanes.tsx';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { keptLength, labelRoom, placeStepDots, segmentText, stepMarks } from './timeline-marks.ts';
 
+const NO_STEPS: readonly ReplayStep[] = [];
+
 /** invariant: Timeline.tsx's PAD, the room left and right of the track that keeps the trim edges easy to grab. */
 const PAD = 14;
 /**
@@ -210,7 +212,7 @@ function RegionSkeleton({
   };
   return (
     <span className="tl-region" data-kind={kind} style={style}>
-      <span className="tl-region-body" data-short={(label && !text) || undefined}>
+      <span className="tl-region-body" data-short={label !== '' && !text ? '' : undefined}>
         {text ? <span className="tl-region-label">{text}</span> : null}
       </span>
     </span>
@@ -225,7 +227,7 @@ function RegionSkeleton({
 export function DockSkeleton({
   duration,
   edits,
-  steps = [],
+  steps = NO_STEPS,
 }: {
   duration: number | undefined;
   edits: ReplayEdits | undefined;

@@ -177,7 +177,7 @@ function Region({
         className="phone-region"
         data-kind={kind}
         data-region-id={region.id}
-        data-short={(region.label && !text) || undefined}
+        data-short={region.label !== '' && !text ? '' : undefined}
         aria-pressed={selected}
         aria-label={`${KIND_NAMES[kind]}${region.label ? ` ${region.label}` : ''}, ${formatClock(region.from)} to ${formatClock(region.to)}`}
         onClick={onSelect}

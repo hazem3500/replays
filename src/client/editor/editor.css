@@ -16,7 +16,7 @@
   .editor-save-state svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; }
   .editor-save-state[data-state="saved"] svg { color: var(--text-tertiary); }
   .editor-retry { padding: 0; border: 0; background: none; color: var(--text-secondary); font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 2px; cursor: pointer; }
-  .editor-retry:hover { color: var(--text); }
+  @media (hover: hover) and (pointer: fine) { .editor-retry:hover { color: var(--text); } }
   /* The Add menu: short names with their keys, and one line saying what the item under the pointer or focus does. */
   .editor-add-menu .editor-key { margin-left: auto; padding-left: 20px; }
   /* invariant: the hint box holds two lines whatever it says, inside a menu of fixed width, so hovering an item never resizes the menu. */
@@ -36,8 +36,12 @@
   @media (hover: hover) and (pointer: fine) { .editor-tool.editor-tool:hover { color: var(--text); } }
   /* why: a disc of the dock's surface under each dot, so the playhead line never shows through it. */
   .tl-step::before { content: ""; position: absolute; width: 14px; height: 14px; border-radius: 999px; background: var(--surface); }
-  .tl-step:hover, .tl-step:focus-visible { color: var(--text); }
-  .tl-step:hover svg, .tl-step:focus-visible svg { scale: 1.2; }
+  .tl-step:focus-visible { color: var(--text); }
+  .tl-step:focus-visible svg { scale: 1.2; }
+  @media (hover: hover) and (pointer: fine) {
+    .tl-step:hover { color: var(--text); }
+    .tl-step:hover svg { scale: 1.2; }
+  }
   .tl-step:focus-visible { box-shadow: inset 0 0 0 2px var(--ring); }
   .tl-step-tip { display: grid; gap: 1px; }
   .tl-step-tip-detail { color: var(--text-tertiary); font-size: var(--text-2xs); font-variant-numeric: tabular-nums; }
@@ -49,8 +53,12 @@
   .tl-clip { transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   .tl-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, transparent); }
   .tl-trim { transition: background-color var(--motion-fast) var(--ease-out); }
-  .tl-trim:hover, .tl-trim:focus-visible, .tl-clip[data-selected] .tl-trim { background: var(--text-secondary); }
-  .tl-trim:hover .tl-trim-grip, .tl-trim:focus-visible .tl-trim-grip, .tl-clip[data-selected] .tl-trim-grip { background: var(--surface); }
+  .tl-trim:focus-visible, .tl-clip[data-selected] .tl-trim { background: var(--text-secondary); }
+  .tl-trim:focus-visible .tl-trim-grip, .tl-clip[data-selected] .tl-trim-grip { background: var(--surface); }
+  @media (hover: hover) and (pointer: fine) {
+    .tl-trim:hover { background: var(--text-secondary); }
+    .tl-trim:hover .tl-trim-grip { background: var(--surface); }
+  }
   .tl-trim:focus-visible { box-shadow: 0 0 0 2px var(--page), 0 0 0 4px var(--ring); }
   .tl-region-body { transition: box-shadow var(--motion-fast) var(--ease-out), background-color var(--motion-fast) var(--ease-out); }
   @media (prefers-reduced-motion: reduce) {
@@ -85,7 +93,8 @@
   .tl-region-remove[data-compact] { width: 22px; padding: 0; justify-content: center; }
   .tl-region-remove[data-compact] > span { display: none; }
   .tl-region-remove svg { display: block; flex: none; }
-  .tl-region-remove:hover, .tl-region-remove:focus-visible { background: var(--surface-hover); color: var(--danger); }
+  .tl-region-remove:focus-visible { background: var(--surface-hover); color: var(--danger); }
+  @media (hover: hover) and (pointer: fine) { .tl-region-remove:hover { background: var(--surface-hover); color: var(--danger); } }
   .tl-region-remove:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
   .tl-region[data-selected] .tl-region-remove { opacity: 1; pointer-events: auto; }
   @media (prefers-reduced-motion: reduce) { .tl-region-remove { transition: none; } }
@@ -121,7 +130,7 @@
   .tl-range-cut { position: absolute; bottom: calc(100% + 6px); left: 50%; translate: -50% 0; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-raised); color: var(--text); font-size: var(--text-xs); font-weight: 600; white-space: nowrap; box-shadow: 0 4px 14px rgb(0 0 0 / 0.18); cursor: pointer; pointer-events: auto; }
   .tl-range-cut svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2; }
   .tl-range-cut kbd { min-width: 0; padding: 0 4px; border: 0; background: var(--surface-hover); font-family: var(--sans); font-size: 10px; color: var(--text-secondary); }
-  .tl-range-cut:hover { background: var(--surface-hover); }
+  @media (hover: hover) and (pointer: fine) { .tl-range-cut:hover { background: var(--surface-hover); } }
 
   /* "Remove waits" suggestions: a hatched accent tint, waiting to be applied. */
   .tl-suggestion { position: absolute; z-index: 2; top: 6px; bottom: 6px; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--accent) 55%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.9; pointer-events: none; }
@@ -157,8 +166,8 @@
   .tl-playhead-knob { position: absolute; top: 0; left: -5px; width: 12px; height: 12px; border-radius: 3px 3px 6px 6px; background: var(--accent); box-shadow: 0 1px 3px rgb(0 0 0 / 0.25); cursor: ew-resize; pointer-events: auto; touch-action: none; }
   .timeline:not([data-ready]) .tl-playhead { opacity: 0; }
 
-  .editor-shell :is(.tl-track, .tl-region-body, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer) { transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
-  .editor-shell > .inspector-resizer::after { scale: 1; transition: background-color 180ms ease-out; }
+  .editor-shell :is(.tl-track, .tl-region-body, .tl-trim, .tl-trim-grip, .tl-highlight-glyph, .tl-highlight-band, .tl-range-cut, .inspector-resizer) { transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out); }
+  .editor-shell > .inspector-resizer::after { scale: 1; transition: background-color 180ms var(--ease-out); }
   .editor-shell > .inspector-resizer:is(:hover, :active, :focus-visible)::after { scale: 1; transition-delay: 0ms; }
   [data-timeline-dragging], [data-timeline-dragging] * { cursor: grabbing !important; }
   [data-timeline-dragging] .tl-region, [data-timeline-dragging] .tl-region *, [data-timeline-dragging] .tl-trim { transition: none; animation: none; }
@@ -247,7 +256,7 @@
 /* Override the shared press-scale utilities only inside the editor. Positioned timeline markers retain their
    transforms; buttons and links stay put while their colours answer hover and press. */
 @layer utilities {
-  .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms ease-out, color 180ms ease-out, border-color 180ms ease-out, box-shadow 180ms ease-out; }
+  .editor-shell :is([data-slot="button"], .topbar-back), .editor-shell :is([data-slot="button"], .topbar-back):active { scale: 1; transform: none; transition: background-color 180ms var(--ease-out), color 180ms var(--ease-out), border-color 180ms var(--ease-out), box-shadow 180ms var(--ease-out); }
   .editor-shell :is([data-slot="button"], .topbar-back):active:not(:disabled) { scale: 1; }
   .editor-shell [data-slot="button"]:not(.editor-export):active:not(:disabled) { background-color: var(--surface-pressed); }
   /* why: a dimmed primary fill read as a pale, low-contrast enabled button; disabled Export is a quiet outlined one whose tooltip says why. */
