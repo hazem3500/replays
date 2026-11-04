@@ -81,7 +81,7 @@ test.describe('editor tools and Add menu', () => {
     await expect(page.getByTestId('add-point-highlight').locator('.editor-key')).toHaveText('M');
     await page.getByTestId('add-effect').click();
     const menu = page.getByRole('menu', { name: 'Add to timeline' });
-    await expect(menu.getByRole('menuitem')).toHaveText(['ZoomZ', 'Speed upF', 'BlurB', 'CaptionsT', 'HighlightM']);
+    await expect(menu.getByRole('menuitem')).toHaveText(['ZoomZ', 'Speed upF', 'BlurB', 'CaptionsT']);
     await expect(menu.getByRole('separator')).toHaveCount(1);
     await menu.getByRole('menuitem', { name: 'Zoom' }).hover();
     await expect(page.getByTestId('add-hint')).toHaveText('Zoom in on every click');

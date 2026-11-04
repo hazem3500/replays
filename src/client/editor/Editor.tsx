@@ -77,7 +77,7 @@ import {
 } from './state.ts';
 import { handOff } from './handoff.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
+import { applyHighlight, highlightHere } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
 import { useBetaFlag } from '../settings/labs.ts';
 import { cursorInput } from '../cursor-motion.ts';
@@ -346,28 +346,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         const removed = removeSelection(live.current.state.present, live.current.state.selection);
         if (removed) change(removed);
       },
-      pointHighlight: () => {
-        const { state: current, timeline: kept } = live.current;
-        applyHighlight(
-          openingSheet(change, setSheetFor),
-          say,
-          pointHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
-        );
-      },
-      /** M and the Highlight tool: the selected range when there is one, else the playhead's moment. */
+      /** M, the Highlight tool and the phone's highlight actions: the selected range when there is one, else the moment. */
       highlight: () => {
         const { state: current, timeline: kept } = live.current;
         const request = { present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration };
-        const outcome = current.selection?.kind === 'range' ? periodHighlight(request) : pointHighlight(request);
-        applyHighlight(openingSheet(change, setSheetFor), say, outcome);
-      },
-      periodHighlight: () => {
-        const { state: current, timeline: kept } = live.current;
-        applyHighlight(
-          openingSheet(change, setSheetFor),
-          say,
-          periodHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
-        );
+        applyHighlight(openingSheet(change, setSheetFor), say, highlightHere(request));
       },
       /**
        * Z / F / B / T: an effect over the selected range, else at the playhead. Zoom with nothing selected zooms in on
@@ -701,7 +684,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       finishMobileObject();
     },
     onCut: actions.cut,
-    onPeriodHighlight: actions.periodHighlight,
+    onPeriodHighlight: actions.highlight,
   };
   const phoneActions: PhoneObjectActions = {
     adjust: () => {
@@ -897,7 +880,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                       />
                     </EditorPluginTools>
                   }
-                  add={<AddMenu rangeSelected={selection?.kind === 'range'} onAdd={actions.effect} onHighlight={actions.highlight} />}
+                  add={<AddMenu onAdd={actions.effect} />}
                   end={
                     suggesting && suggestions.length ? (
                       <WaitSuggestion count={suggestions.length} onApply={applySuggestions} onDismiss={() => setSuggesting(false)} />
@@ -1014,7 +997,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                             setCursorOpen(false);
                             setMobileTrimOpen(false);
                             setBlurPlacement(undefined);
-                            actions.pointHighlight();
+                            actions.highlight();
                           },
                           testId: 'add-point-highlight',
                         },

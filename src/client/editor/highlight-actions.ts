@@ -31,6 +31,11 @@ export function periodHighlight({ present, selection, timeline, duration }: High
   return { edits: added.edits, select: { kind: 'highlight', id: added.id } };
 }
 
+/** The one Highlight action: over the selected range when there is one, else at the playhead's moment. */
+export function highlightHere(request: HighlightRequest): HighlightOutcome {
+  return request.selection?.kind === 'range' ? periodHighlight(request) : pointHighlight(request);
+}
+
 /** Applies an outcome: the edit with its selection, or the explaining note. */
 export function applyHighlight(
   change: (edits: ReplayEdits, select?: Selection) => void,

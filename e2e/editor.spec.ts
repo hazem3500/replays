@@ -304,9 +304,7 @@ test('tools carry their names and keys, and ? opens the editor shortcuts', async
   await expect(page.getByTestId('add-cut')).toContainText('Cut');
   await expect(page.getByTestId('add-cut').locator('.editor-key')).toHaveText('C');
   await expect(page.getByTestId('remove-waits').locator('.editor-key')).toHaveText('W');
-  await page.getByTestId('add-effect').click();
-  await expect(page.getByRole('menuitem', { name: 'Highlight' })).toContainText('M');
-  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('add-point-highlight').locator('.editor-key')).toHaveText('M');
   await page.locator('body').press('?');
   const sheet = page.getByTestId('shortcut-sheet');
   await expect(sheet).toBeVisible();

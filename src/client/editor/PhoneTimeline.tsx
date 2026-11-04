@@ -43,6 +43,35 @@ function dragToScroll(event: ReactPointerEvent<HTMLDivElement>) {
   window.addEventListener('pointerup', onUp);
 }
 
+/** The timeline's slim bar: play, the time over the recording's length, what the edits leave, and Fit after a pinch. */
+function PhoneTimelineBar({
+  duration,
+  edited,
+  zoomed,
+  onFit,
+  onPlayPause,
+}: {
+  duration: number;
+  edited: number;
+  zoomed: boolean;
+  onFit: () => void;
+  onPlayPause: () => void;
+}) {
+  return (
+    <div className="phone-timeline-bar">
+      <EditorPlayButton onSwitch={onPlayPause} />
+      <span className="phone-time">
+        <EditorClock />
+        <span className="phone-duration">/ {formatClock(duration)}</span>
+      </span>
+      {Math.round(edited) === Math.round(duration) ? null : <Durations original={duration} edited={edited} />}
+      <IconButton label="Fit the whole recording" className="phone-fit" disabled={!zoomed} onClick={onFit} data-testid="timeline-fit">
+        <ScanIcon aria-hidden="true" />
+      </IconButton>
+    </div>
+  );
+}
+
 /** The scale over the lanes: tick labels, then a dot per step (the desktop ruler's) on the row under them. */
 function PhoneScale({
   duration,
@@ -106,23 +135,13 @@ export function PhoneTimeline({
   const timeline = trackScale(duration, scale, track);
   return (
     <div className="phone-timeline" data-testid="timeline" data-ready={width > 0 || undefined}>
-      <div className="phone-timeline-bar">
-        <EditorPlayButton onSwitch={onPlayPause} />
-        <span className="phone-time">
-          <EditorClock />
-          <span className="phone-duration">/ {formatClock(duration)}</span>
-        </span>
-        {Math.round(edited) === Math.round(duration) ? null : <Durations original={duration} edited={edited} />}
-        <IconButton
-          label="Fit the whole recording"
-          className="phone-fit"
-          disabled={zoom === undefined}
-          onClick={() => setZoom(undefined)}
-          data-testid="timeline-fit"
-        >
-          <ScanIcon aria-hidden="true" />
-        </IconButton>
-      </div>
+      <PhoneTimelineBar
+        duration={duration}
+        edited={edited}
+        zoomed={zoom !== undefined}
+        onFit={() => setZoom(undefined)}
+        onPlayPause={onPlayPause}
+      />
       <div className="phone-lanes-frame">
         <span className="phone-snap-marker" aria-hidden="true" />
         <div ref={setScroller} className="phone-lanes" onPointerDown={dragToScroll} data-testid="timeline-lanes">
