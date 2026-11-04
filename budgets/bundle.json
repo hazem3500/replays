@@ -380,12 +380,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
       "gzip": 738,
-      "brotli": 640
+      "brotli": 668
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22890,
       "gzip": 9639,
-      "brotli": 8318
+      "brotli": 8313
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -455,12 +455,12 @@
     "dist/client/index.html": {
       "raw": 14204,
       "gzip": 4629,
-      "brotli": 3878
+      "brotli": 3876
     },
     "dist/client/render.html": {
       "raw": 1283,
       "gzip": 542,
-      "brotli": 403
+      "brotli": 401
     },
     "dist/lib/capture.mjs": {
       "raw": 1876,
@@ -735,7 +735,7 @@
     "dist/lib/viewer-react.mjs": {
       "raw": 9127,
       "gzip": 2642,
-      "brotli": 2336
+      "brotli": 2334
     },
     "dist/lib/viewer.mjs": {
       "raw": 26293,
