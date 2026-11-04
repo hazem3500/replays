@@ -248,3 +248,36 @@ test('the redesigned sidebar keeps full suite headings and readable run identiti
   const selected = sidebar.locator('[aria-current="page"]');
   expect(await selected.evaluate((element) => getComputedStyle(element).backgroundColor)).toBe('rgba(0, 0, 0, 0)');
 });
+
+test.describe('Add a recording', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+  });
+
+  test('is offered on a single replay and in no part of a suite', async ({ page }) => {
+    const more = page.getByRole('button', { name: 'More actions', exact: true });
+
+    await openReplay(page, `${server().origin}/r/demo-shop`);
+    await more.click();
+    await expect(page.getByTestId('compare-with')).toHaveText('Compare with…');
+    await page.keyboard.press('Escape');
+
+    const { suite } = await threeRuns(page.request);
+    await openReplay(page, `${server().origin}/s/${suite}`);
+    await expect(page.getByTestId('compare-stage')).toBeVisible();
+    await more.click();
+    await expect(page.getByTestId('delete-replay')).toBeVisible();
+    await expect(page.getByTestId('compare-with')).toHaveCount(0);
+    await expect(page.getByRole('menuitem', { name: 'Add a recording' })).toHaveCount(0);
+    await page.keyboard.press('Escape');
+
+    const solo = uniqueId('solo');
+    const run = `${solo}-run`;
+    await createSuite(page.request, server().origin, solo, [{ id: 'only', label: 'Only run', status: 'passed', replayId: run }]);
+    await openReplay(page, `${server().origin}/s/${solo}/r/${run}`);
+    await expect(page.getByTestId('compare-stage')).toHaveCount(0);
+    await more.click();
+    await expect(page.getByTestId('delete-replay')).toBeVisible();
+    await expect(page.getByTestId('compare-with')).toHaveCount(0);
+  });
+});
