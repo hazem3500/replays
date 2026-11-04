@@ -23,9 +23,9 @@ function placeGrip(root: HTMLElement, grip: HTMLElement, orientation: 'horizonta
 }
 
 /**
- * Motion owns resizer affordance feedback; drag geometry and keyboard resizing stay direct. The grip sits where the
- * pointer meets the seam (`--grip-at`, written straight to the resizer's style on each move, never through React):
- * along it while a mouse hovers, under the pointer while held, and centred (or at the last pointer spot) on focus.
+ * Motion owns resizer affordance feedback; drag geometry and keyboard resizing stay direct. The grip appears where the
+ * pointer meets the seam (`--grip-at`, written straight to the resizer's style, never through React) and stays anchored
+ * there until it hides, like the network list's now-divider grip; on focus it is centred (or at the last pointer spot).
  */
 export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
   const ref = useRef<HTMLDivElement>(null);
@@ -38,10 +38,14 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
     let hovering = false;
     let held = false;
     let running: Array<ReturnType<typeof animate>> = [];
+    // why: the grip tracks the pointer only until it has appeared, then anchors; hidden, it tracks again.
+    let anchoredFrom = Number.POSITIVE_INFINITY;
     const update = () => {
       const focused = root.matches(':focus-visible');
       const active = held || root.dataset.dragging !== undefined || focused || hovering;
       const delay = feedbackDelay(active, hovering, held, focused);
+      if (!active) anchoredFrom = Number.POSITIVE_INFINITY;
+      else if (anchoredFrom === Number.POSITIVE_INFINITY) anchoredFrom = performance.now() + delay * 1000;
       const colour = active ? 'var(--splitter-active, var(--accent))' : 'var(--splitter-line, var(--line))';
       const scale = feedbackScale(active, orientation);
       for (const motion of running) motion.cancel();
@@ -57,7 +61,7 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
       ];
     };
     const follow = (event: PointerEvent) => {
-      if (held || event.pointerType === 'mouse') placeGrip(root, grip, orientation, event);
+      if ((held || event.pointerType === 'mouse') && performance.now() < anchoredFrom) placeGrip(root, grip, orientation, event);
     };
     const enter = (event: PointerEvent) => {
       hovering = event.pointerType === 'mouse';
