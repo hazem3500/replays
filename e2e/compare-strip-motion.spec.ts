@@ -3,7 +3,8 @@ import { expect, test, type Page } from '@playwright/test';
 import { createSuite, openReplay, serveApp, uniqueId } from './support.ts';
 
 const server = serveApp();
-test.use({ viewport: { width: 1280, height: 800 } });
+// why: only a phone shows the strip in a suite; wider screens switch runs from the sidebar.
+test.use({ viewport: { width: 720, height: 800 } });
 
 type Point = { x: number; y: number };
 type Frame = { strip: string; pill: Point; opacity: number; cells: Record<string, Point> };
@@ -57,8 +58,6 @@ async function openStrip(page: Page) {
   }));
   await createSuite(page.request, server().origin, suite, runs);
   await openReplay(page, `${server().origin}/s/${suite}/r/${runs[3]?.replayId ?? ''}`);
-  await page.getByRole('button', { name: 'Collapse runs sidebar' }).click();
-  await expect(page.locator('.suite-workspace')).toHaveAttribute('data-rail', 'true');
   await expect(page.locator('.compare-pill')).toHaveCSS('opacity', '1');
   // why: a first visit to a run reflows the viewer while it loads; visit each once so the trace measures the strip alone.
   for (const run of [...runs.slice(0, 3), runs[3]]) {
@@ -66,7 +65,7 @@ async function openStrip(page: Page) {
     await expect(page).toHaveURL(new RegExp(`/r/${run?.replayId ?? ''}$`));
     await expect(page.locator('[data-testid="compare-stage"] iframe').first()).toBeAttached();
   }
-  // why: the collapse widens the viewer over several frames; trace a switch only once the strip has stopped reflowing.
+  // why: the first layout settles over several frames; trace a switch only once the strip has stopped reflowing.
   const width = () => page.locator('.compare-summary-track').evaluate((track) => track.getBoundingClientRect().width);
   await expect
     .poll(async () => {
