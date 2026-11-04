@@ -108,9 +108,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 12834,
-      "gzip": 3107,
-      "brotli": 2710
+      "raw": 12789,
+      "gzip": 3074,
+      "brotli": 2667
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
@@ -148,9 +148,9 @@
       "brotli": 5740
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 130902,
-      "gzip": 43653,
-      "brotli": 36584
+      "raw": 135127,
+      "gzip": 45138,
+      "brotli": 37809
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 37945,
@@ -385,7 +385,7 @@
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22890,
       "gzip": 9640,
-      "brotli": 8357
+      "brotli": 8316
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -482,10 +482,10 @@
       "gzip": 20379,
       "brotli": 17578
     },
-    "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs": {
-      "raw": 68003,
-      "gzip": 19954,
-      "brotli": 17420
+    "dist/lib/chunks/caption-placement.ts-e820e720ce40.mjs": {
+      "raw": 70319,
+      "gzip": 20660,
+      "brotli": 18032
     },
     "dist/lib/chunks/capture-profile.ts-d4348e7cd2c7.mjs": {
       "raw": 20052,
@@ -735,7 +735,7 @@
     "dist/lib/viewer-HASH.mjs": {
       "raw": 354,
       "gzip": 179,
-      "brotli": 137
+      "brotli": 148
     },
     "dist/lib/viewer-react.css": {
       "raw": 4298,
@@ -745,7 +745,7 @@
     "dist/lib/viewer-react.mjs": {
       "raw": 9127,
       "gzip": 2642,
-      "brotli": 2334
+      "brotli": 2333
     },
     "dist/lib/viewer.mjs": {
       "raw": 26293,
@@ -1697,16 +1697,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/chunks/caption-placement.ts-1da45904a6b1.mjs",
-      "cap": {
-        "raw": 68003,
-        "gzip": 19954,
-        "brotli": 17420
-      },
-      "reason": "Library chunk regrouped by the composable viewer split; its content and hash changed with the shared viewer modules. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 66022, gzip new to 19372, brotli new to 16912 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/chunks/capture-profile.ts-d4348e7cd2c7.mjs",
       "cap": {
         "raw": 20052,
@@ -1906,16 +1896,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/lib/viewer-HASH.mjs",
-      "cap": {
-        "raw": 354,
-        "gzip": 179,
-        "brotli": 143
-      },
-      "reason": "New published composable viewer subpath export (headless model, diagnostics and React composition) used by examples/composed-viewer. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 343, gzip new to 173, brotli new to 138 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/lib/viewer-diagnostics.mjs",
       "cap": {
         "raw": 370,
@@ -1974,16 +1954,6 @@
       },
       "reason": "Initial viewer payload carries the Motion page transitions, shared-element thumbnail handoff and surface motion. Reviewed and approved by Hazem. CI same-runner main/head: gzip 171202 to 174687, brotli 135115 to 138194 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 130912,
-        "gzip": 43654,
-        "brotli": 36584
-      },
-      "reason": "Editor controls polish: one shared inspector layout, a continuous zoom level slider with quick marks, draggable and resizable timeline highlights, and the region remove control. Reviewed and approved by Hazem. CI same-runner main/head: raw 122427 to 127099, gzip 41014 to 42382, brotli 34293 to 35518 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/209"
     },
     {
       "file": "dist/client/assets/edits-HASH.js",
@@ -2170,6 +2140,34 @@
       },
       "reason": "Runs sidebar redesign: thumbnails replaced by a colour swatch row (RunCopy), each run's colour taken from recordedRuns so the sidebar and the Compare stage agree. CI same-runner main to head: raw 21439 to 22223, gzip 9031 to 9359, brotli 7830 to 8113; caps are head times 1.03. Small justified growth under Hazem's standing approval.",
       "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 135127,
+        "gzip": 45138,
+        "brotli": 37809
+      },
+      "reason": "The cursor inspector reads whether a recording is a person's to say its path is the recorded one, which pulls the pointer parsing and the path rule into the editor chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/247"
+    },
+    {
+      "file": "dist/lib/chunks/caption-placement.ts-e820e720ce40.mjs",
+      "cap": {
+        "raw": 70319,
+        "gzip": 20660,
+        "brotli": 18032
+      },
+      "reason": "The shared cursor chunk gains the recorded path module: the exact path track for a person's recording and the rule that picks it. Its new module set renames the chunk.",
+      "pr": "https://github.com/hazem3500/replays/pull/247"
+    },
+    {
+      "file": "dist/lib/viewer-HASH.mjs",
+      "cap": {
+        "brotli": 148
+      },
+      "reason": "The viewer entry passes the bundle source to the replay cursor.",
+      "pr": "https://github.com/hazem3500/replays/pull/247"
     }
   ]
 }
