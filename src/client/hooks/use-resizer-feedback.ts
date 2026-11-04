@@ -22,6 +22,36 @@ function placeGrip(root: HTMLElement, grip: HTMLElement, orientation: 'horizonta
   root.style.setProperty('--grip-at', `${Math.min(Math.max(along, edge), length - edge)}px`);
 }
 
+/** Paints the seam's resting or active state, returning the running animations so the next change can cancel them. */
+function paintFeedback(
+  { line, grip }: { line: HTMLElement; grip: HTMLElement },
+  { active, scale, delay, reduced }: { active: boolean; scale: string; delay: number; reduced: boolean },
+) {
+  const colour = active ? 'var(--splitter-active, var(--accent))' : 'var(--splitter-line, var(--line))';
+  if (reduced) {
+    Object.assign(line.style, { backgroundColor: colour, scale });
+    Object.assign(grip.style, { opacity: active ? '1' : '0', scale: active ? '1' : '0.6' });
+    return [];
+  }
+  const transition = { duration: 0.15, delay, ease: 'easeOut' } as const;
+  return [
+    animate([line], { backgroundColor: colour, scale }, transition),
+    animate([grip], { opacity: active ? 1 : 0, scale: active ? 1 : 0.6 }, transition),
+  ];
+}
+
+/** The grip tracks the pointer only until it has appeared, then anchors there; once hidden it tracks again. */
+function gripAnchor() {
+  let from = Number.POSITIVE_INFINITY;
+  return {
+    settle(active: boolean, delay: number) {
+      if (!active) from = Number.POSITIVE_INFINITY;
+      else if (from === Number.POSITIVE_INFINITY) from = performance.now() + delay * 1000;
+    },
+    tracking: () => performance.now() < from,
+  };
+}
+
 /**
  * Motion owns resizer affordance feedback; drag geometry and keyboard resizing stay direct. The grip appears where the
  * pointer meets the seam (`--grip-at`, written straight to the resizer's style, never through React) and stays anchored
@@ -38,30 +68,17 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
     let hovering = false;
     let held = false;
     let running: Array<ReturnType<typeof animate>> = [];
-    // why: the grip tracks the pointer only until it has appeared, then anchors; hidden, it tracks again.
-    let anchoredFrom = Number.POSITIVE_INFINITY;
+    const anchor = gripAnchor();
     const update = () => {
       const focused = root.matches(':focus-visible');
       const active = held || root.dataset.dragging !== undefined || focused || hovering;
       const delay = feedbackDelay(active, hovering, held, focused);
-      if (!active) anchoredFrom = Number.POSITIVE_INFINITY;
-      else if (anchoredFrom === Number.POSITIVE_INFINITY) anchoredFrom = performance.now() + delay * 1000;
-      const colour = active ? 'var(--splitter-active, var(--accent))' : 'var(--splitter-line, var(--line))';
-      const scale = feedbackScale(active, orientation);
+      anchor.settle(active, delay);
       for (const motion of running) motion.cancel();
-      if (reduced) {
-        Object.assign(line.style, { backgroundColor: colour, scale });
-        Object.assign(grip.style, { opacity: active ? '1' : '0', scale: active ? '1' : '0.6' });
-        return;
-      }
-      const transition = { duration: 0.15, delay, ease: 'easeOut' } as const;
-      running = [
-        animate([line], { backgroundColor: colour, scale }, transition),
-        animate([grip], { opacity: active ? 1 : 0, scale: active ? 1 : 0.6 }, transition),
-      ];
+      running = paintFeedback({ line, grip }, { active, scale: feedbackScale(active, orientation), delay, reduced });
     };
     const follow = (event: PointerEvent) => {
-      if ((held || event.pointerType === 'mouse') && performance.now() < anchoredFrom) placeGrip(root, grip, orientation, event);
+      if ((held || event.pointerType === 'mouse') && anchor.tracking()) placeGrip(root, grip, orientation, event);
     };
     const enter = (event: PointerEvent) => {
       hovering = event.pointerType === 'mouse';
