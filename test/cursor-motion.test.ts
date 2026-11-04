@@ -359,8 +359,7 @@ describe('idle fade', () => {
   });
 });
 
-describe('a sweep the recording saw', () => {
-  /** A hand at rest from 900 ms to 2500 ms, then a quick flick to (900, 500) sampled every 50 ms. */
+describe('a hand resting from 900 ms to 2500 ms, then flicking to (900, 500) in 50 ms samples', () => {
   const points = [
     { t: 900, x: 100, y: 100 },
     { t: 1000, x: 100, y: 100 },

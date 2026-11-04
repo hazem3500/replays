@@ -410,8 +410,8 @@ export function buildCursorTrack(
     const from = targets[i - 1] as CursorTarget;
     const to = targets[i] as CursorTarget;
     let traj = planMove(from, to, { reducedMotion, style: motion });
-    // why: a sweep the recording saw (several samples) runs on the pointer's own clock, setting off when the pointer did and
-    // landing when it did. A lone jump has no sweep to follow, so it glides in ahead of its landing.
+    /* why: a sweep the recording saw (several samples) runs on the pointer's own clock, setting off when the pointer did and
+       landing when it did. A lone jump has no sweep to follow, so it glides in ahead of its landing. */
     const followed = to.t - from.leftAt >= SWEEP_MIN_MS;
     const start = followed ? from.leftAt : Math.max(from.t, to.t - traj.arrivalMs);
     const previous = moves.at(-1);

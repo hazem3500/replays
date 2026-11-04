@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import { expect, test, type Page } from '@playwright/test';
 
+import { isRecord } from '../src/shared/validate.ts';
 import { openReplay, postBundle, serveApp, type Bundle } from './support.ts';
 
 const server = serveApp();
@@ -42,7 +43,9 @@ async function recorderScript() {
     platform: 'browser',
     target: 'es2022',
   });
-  return result.outputFiles[0]!.text;
+  const [output] = result.outputFiles;
+  if (!output) throw new Error('esbuild produced no recorder script');
+  return output.text;
 }
 
 const PAGE = `<!doctype html><html><head><meta charset="utf-8"><title>Pointer fidelity</title>
@@ -99,7 +102,10 @@ async function recordPointer(page: Page, spots: Point[], start: Point) {
   if (last) last.leaves = end;
   await page.evaluate(() => window.__recorder.stop());
   await page.evaluate(() => window.__recorder.upload({ confirmed: true }));
-  const bundle = await page.evaluate(() => window.__report!.bundle);
+  const bundle = await page.evaluate(() => {
+    if (!window.__report) throw new Error('the recorder uploaded nothing');
+    return window.__report.bundle;
+  });
   return { bundle, rests };
 }
 
@@ -108,7 +114,7 @@ async function drawnTip(page: Page) {
   return page.evaluate(() => {
     const cursor = document.querySelector<HTMLElement>('.replay-cursor');
     const frame = document.querySelector<HTMLIFrameElement>('.player-host iframe');
-    if (!cursor || !frame || cursor.hidden) return undefined;
+    if (!cursor || !frame || cursor.hidden) return null;
     const marker = document.createElement('i');
     marker.style.cssText = `position:absolute;left:${-Number.parseFloat(cursor.style.marginLeft)}px;top:${-Number.parseFloat(cursor.style.marginTop)}px;width:0;height:0`;
     cursor.append(marker);
@@ -122,9 +128,11 @@ async function drawnTip(page: Page) {
 
 async function tipAt(page: Page, id: string, milliseconds: number) {
   await openReplay(page, `${server().origin}/r/${id}?t=${milliseconds / 1000}`);
-  await expect.poll(() => drawnTip(page)).toBeDefined();
+  await expect.poll(() => drawnTip(page)).not.toBeNull();
   await page.waitForTimeout(150);
-  return (await drawnTip(page))!;
+  const tip = await drawnTip(page);
+  if (!tip) throw new Error(`no cursor drawn at ${milliseconds} ms`);
+  return tip;
 }
 
 /** why: rrweb drops the last sample of a move (its throttle has no trailing call), so a rest can read a few pixels short. */
@@ -142,7 +150,9 @@ test('the drawn cursor stays where the pointer rests until the pointer sets off'
   ];
   const { bundle, rests } = await recordPointer(page, spots, { x: 100, y: 120 });
   await postBundle(page.request, server().origin, bundle);
-  const first = (bundle.events[0] as { timestamp: number }).timestamp;
+  const opening: unknown = bundle.events[0];
+  if (!isRecord(opening) || typeof opening.timestamp !== 'number') throw new Error('the recording has no first event');
+  const first = opening.timestamp;
   for (const rest of rests) {
     for (const at of [(rest.arrived + rest.leaves) / 2, rest.leaves - BEFORE_SETTING_OFF_MS]) {
       const tip = await tipAt(page, bundle.meta.id, Math.round(at - first));
