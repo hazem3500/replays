@@ -151,6 +151,36 @@ function remember(choice: RecordingChoice): void {
   }
 }
 
+/** What a choice settles against: the offered modes, who picks, the host's defaults and whether bodies are allowed. */
+type Rules = { modes: readonly RecorderPrivacyMode[]; customer: boolean; defaults?: RecordingChoice; bodiesAllowed: boolean };
+type LooseChoice = Partial<Record<keyof RecordingChoice, unknown>>;
+
+/** The mode a choice settles on. invariant: without a pick a customer recording is the default or stricter, never looser. */
+function settledMode({ modes, customer, defaults }: Rules, choice: LooseChoice, explicit: boolean) {
+  const fallback = customer ? CUSTOMER_DEFAULT : modes.at(-1);
+  if (customer && !explicit) return firstOffered(modes, [choice.privacy === 'masked' ? 'masked' : undefined, fallback]);
+  return firstOffered(modes, [choice.privacy, customer ? undefined : defaults?.privacy, fallback]);
+}
+
+/** Whether a choice reads bodies. invariant: a customer reads them only after picking them. */
+function settledBodies({ customer, defaults, bodiesAllowed }: Rules, choice: LooseChoice, explicit: boolean): boolean {
+  if (!bodiesAllowed || (customer && !explicit)) return false;
+  return (choice.networkBodies ?? (customer ? false : defaults?.networkBodies)) === true;
+}
+
+/** invariant: a customer recorder unmasks no text but the public marker, whatever its host passes. */
+function assertCustomerUnmask(host: Host): void {
+  const unmask = host.privacy?.unmaskTextSelector;
+  if (host.choices?.by !== 'customer' || unmask === undefined || unmask === PUBLIC_SELECTOR) return;
+  throw new Error(`choices.by "customer" allows only privacy.unmaskTextSelector "${PUBLIC_SELECTOR}"; mark product text with it`);
+}
+
+/** Whether the host offers anything at all: a cap above fully masked, allowed bodies, or the interface mode. */
+function offersAnything(host: Host, cap: Cap, bodiesAllowed: boolean): boolean {
+  const interfaceListed = host.choices?.by === 'customer' || (host.choices?.privacy ?? []).includes('interface-visible');
+  return Boolean(host.choices) && (cap.text || cap.inputs || cap.media || bodiesAllowed || interfaceListed);
+}
+
 /**
  * The host's `choices`, capped by its `privacy` and `capture`. invariant: a host whose own privacy hides text, inputs
  * and media and reads no body offers nothing, and every choice, whatever its source, is reduced to what is offered. For
@@ -158,39 +188,29 @@ function remember(choice: RecordingChoice): void {
  * recording's options step (`accept`), and nothing is remembered.
  */
 export function recorderChoices(host: Host, build: SettingsBuilder) {
+  assertCustomerUnmask(host);
   const customer = host.choices?.by === 'customer';
-  const unmask = host.privacy?.unmaskTextSelector;
-  if (customer && unmask !== undefined && unmask !== PUBLIC_SELECTOR)
-    throw new Error(`choices.by "customer" allows only privacy.unmaskTextSelector "${PUBLIC_SELECTOR}"; mark product text with it`);
   const cap = hostCap(host, build);
   const bodiesOffered = host.choices?.networkBodies === true;
   const bodiesAllowed = bodiesOffered && cap.bodies;
-  const interfaceListed = customer || (host.choices?.privacy ?? []).includes('interface-visible');
-  const open = Boolean(host.choices) && (cap.text || cap.inputs || cap.media || bodiesAllowed || interfaceListed);
+  const open = offersAnything(host, cap, bodiesAllowed);
   const modes = open ? offeredModes(host, cap) : [];
   const profiles = open ? offeredProfiles(host) : [];
   const profileIds = profiles.map((profile) => profile.id);
   const active = modes.length > 1 || profiles.length > 1 || bodiesAllowed;
   const defaults = host.choices?.defaults;
+  const rules: Rules = { modes, customer, ...(defaults ? { defaults } : {}), bodiesAllowed };
   // invariant: only `accept` adds to it, so a customer's looser choice must come from the options step.
   const picked = new WeakSet<RecordingChoice>();
 
-  const settle = (choice: Partial<Record<keyof RecordingChoice, unknown>> = {}, explicit = false): RecordingChoice => {
+  const settle = (choice: LooseChoice = {}, explicit = false): RecordingChoice => {
     if (!active && !customer) return {};
-    const loosen = !customer || explicit;
-    const fallback = customer ? CUSTOMER_DEFAULT : modes.at(-1);
-    // why: without a pick a customer recording may still be stricter than the default, never looser.
-    const unpicked = choice.privacy === 'masked' ? 'masked' : undefined;
-    const privacy = firstOffered(
-      modes,
-      loosen ? [choice.privacy, customer ? undefined : defaults?.privacy, fallback] : [unpicked, fallback],
-    );
+    const privacy = settledMode(rules, choice, explicit);
     const profile = firstOffered(profileIds, [choice.profile, defaults?.profile, profileIds[0]]);
-    const bodies = bodiesAllowed && loosen && (choice.networkBodies ?? (customer ? false : defaults?.networkBodies)) === true;
+    const bodies = settledBodies(rules, choice, explicit);
     return { ...(privacy ? { privacy } : {}), ...(profile ? { profile } : {}), ...(bodiesOffered ? { networkBodies: bodies } : {}) };
   };
 
-  /** Settings for a choice that is already settled. */
   const settled = (choice: RecordingChoice): RecordingSettings => {
     // invariant: a customer recording never falls back to the host's own privacy, which is only the cap.
     const mode = choice.privacy ?? (customer ? 'masked' : undefined);

@@ -100,20 +100,27 @@ export type RecorderMessageOverrides = {
 
 const listed = (items: string[]) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} and ${items.at(-1)}` : (items[0] ?? ''));
 
-/** What a recording captures, from its facts, without the review sentence. */
-const recordedSentence = ({ captures, product }: PrivacyFacts) => {
-  const interfaceOnly = captures.interfaceText === true && !captures.pageText;
+/** What stays hidden, as one sentence; the interface mode words page text and inputs on its own. */
+function hiddenSentence(captures: PrivacyFacts['captures'], interfaceOnly: boolean): string {
   const hidden = [
     !captures.pageText && !interfaceOnly && 'page text',
     !captures.inputs && !interfaceOnly && 'inputs',
     !captures.media && 'media',
   ].filter((item) => item !== false);
-  const hiddenSentence = hidden.length ? `${listed(hidden)} ${hidden.length > 1 ? 'are' : 'is'} hidden.` : '';
+  if (!hidden.length) return '';
+  const sentence = `${listed(hidden)} ${hidden.length > 1 ? 'are' : 'is'} hidden.`;
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+}
+
+const interfaceSentence = (product: string | undefined) =>
+  `Your entries, names and typed text are hidden; ${product ? `${product}'s` : "the app's"} menus and labels stay visible.`;
+
+/** What a recording captures, from its facts, without the review sentence. */
+const recordedSentence = ({ captures, product }: PrivacyFacts) => {
+  const interfaceOnly = captures.interfaceText === true && !captures.pageText;
   return [
-    interfaceOnly
-      ? `Your entries, names and typed text are hidden; ${product ? `${product}'s` : "the app's"} menus and labels stay visible.`
-      : '',
-    hiddenSentence.charAt(0).toUpperCase() + hiddenSentence.slice(1),
+    interfaceOnly ? interfaceSentence(product) : '',
+    hiddenSentence(captures, interfaceOnly),
     captures.pageText ? 'Visible page text is recorded.' : '',
     captures.inputs ? 'Typed values are recorded; passwords and hidden fields stay hidden.' : '',
     captures.media ? 'Media may be recorded.' : '',
