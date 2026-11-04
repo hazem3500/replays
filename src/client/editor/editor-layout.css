@@ -32,6 +32,8 @@
 }
 
 @layer utilities {
+  /* why: a dimmed primary fill read as a pale, low-contrast enabled button; disabled Export is a quiet outlined one whose tooltip says why. */
+  .editor-shell .editor-export:disabled { opacity: 1; background-color: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); }
   /* why: the top bar's 28 and 32 px buttons answer a 40 px tall press without growing (their neighbours sit beside them). */
   .editor-shell:not([data-mobile]) .topbar button { position: relative; }
   .editor-shell:not([data-mobile]) .topbar button::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }

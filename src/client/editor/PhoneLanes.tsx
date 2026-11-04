@@ -225,7 +225,6 @@ function PhoneClipSteps({
         key={segment.at}
         className="phone-step"
         data-wait={segment.wait || undefined}
-        data-short={!segment.wait && !label.text ? '' : undefined}
         style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
       >
         <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>

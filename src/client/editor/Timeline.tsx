@@ -83,7 +83,6 @@ function ClipSteps({
         className="tl-clip-step"
         data-testid="clip-step"
         data-wait={segment.wait || undefined}
-        data-short={!segment.wait && !label.text ? '' : undefined}
         aria-hidden="true"
         style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
       >

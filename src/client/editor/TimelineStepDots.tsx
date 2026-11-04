@@ -45,15 +45,28 @@ function labelOf(dot: StepDot) {
 }
 
 /** A dot's name, its kind and time or pause, then what its shape means, beside a small copy of the dot. */
-function DotLabel({ label, detail, wait }: { label: string; detail: { visible: string; meaning: string }; wait: boolean }) {
+function DotLabel({
+  label,
+  detail,
+  wait,
+  legend = true,
+}: {
+  label: string;
+  detail: { visible: string; meaning: string };
+  wait: boolean;
+  /** The line saying what the dot's shape means; the phone's pressed label leaves it out, as its merged dots are filled. */
+  legend?: boolean;
+}) {
   return (
     <span className="tl-step-tip">
       {label}
       <span className="tl-step-tip-detail">{detail.visible}</span>
-      <span className="tl-step-tip-meaning">
-        <AnimatedIcon name="dot" size={12} strokeWidth={wait ? 3 : 0} fill={wait ? 'none' : 'currentColor'} aria-hidden="true" />
-        {detail.meaning}
-      </span>
+      {legend ? (
+        <span className="tl-step-tip-meaning">
+          <AnimatedIcon name="dot" size={12} strokeWidth={wait ? 3 : 0} fill={wait ? 'none' : 'currentColor'} aria-hidden="true" />
+          {detail.meaning}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -72,7 +85,7 @@ function PressedLabel({ x, width, dot }: { x: number; width: number; dot: StepDo
       data-testid="step-bubble"
       style={{ transform: `translateX(${Math.min(Math.max(x, half), width - half)}px)` }}
     >
-      <DotLabel label={label} detail={detail} wait={dot.kind === 'wait'} />
+      <DotLabel label={label} detail={detail} wait={dot.kind === 'wait'} legend={false} />
     </span>
   );
 }

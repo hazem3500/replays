@@ -149,7 +149,6 @@ function ClipStepsSkeleton({
         key={segment.at}
         className="tl-clip-step"
         data-wait={segment.wait || undefined}
-        data-short={!segment.wait && !label.text ? '' : undefined}
         style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
       >
         <span className="tl-clip-step-label" style={{ marginLeft: `${(room.skip / Math.max(1, segment.length)) * 100}%` }}>

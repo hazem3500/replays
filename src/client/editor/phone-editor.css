@@ -52,7 +52,6 @@
   .phone-step { color: var(--text-secondary); }
   /* As on the desktop: a step raised a touch, a wait the clip's own ground, a 2 px gap between. */
   .phone-step[data-wait] { background: none; }
-  .phone-step[data-short] { border-top: 3px solid var(--line-strong); }
   .phone-cut { display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .phone-cut-label { padding: 1px 4px; border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); font-size: 11px; line-height: 13px; white-space: nowrap; }
   .phone-cut-label:empty { display: none; }

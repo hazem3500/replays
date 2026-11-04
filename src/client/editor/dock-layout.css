@@ -94,8 +94,6 @@
   .tl-clip-step-label, .phone-step-label { display: inline-flex; align-items: center; gap: 3px; }
   .clip-wait-glyph { flex: none; }
   .tl-clip-step:first-child { padding-left: 12px; border-left: 0; }
-  /* A step too short for its words: the short-block accent every lane uses, in the clip's neutral ink. */
-  .tl-clip-step[data-short] { border-top: 3px solid var(--line-strong); }
   /* The trim edges: slim tabs with a grip. */
   .tl-trim { position: absolute; z-index: 3; top: 0; bottom: 0; width: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--text) 26%, var(--surface-raised)); cursor: ew-resize; pointer-events: auto; touch-action: none; outline: none; }
   .tl-trim[data-edge="start"] { left: 0; border-radius: 8px 3px 3px 8px; }
