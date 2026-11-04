@@ -552,11 +552,6 @@
       "gzip": 9700,
       "brotli": 8430
     },
-    "dist/lib/chunks/index.ts-ebea7ef2b856.mjs": {
-      "raw": 34422,
-      "gzip": 9781,
-      "brotli": 8528
-    },
     "dist/lib/chunks/malleable-policy.ts-449e608c0a38.mjs": {
       "raw": 18258,
       "gzip": 4951,
