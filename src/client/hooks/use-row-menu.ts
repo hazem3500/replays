@@ -11,9 +11,9 @@ interface Opened {
 }
 
 export interface RowMenuState extends Opened {
-  onOpenChange(open: boolean): void;
-  onContextMenu(event: MouseEvent<HTMLElement>): void;
-  onKeyDown(event: KeyboardEvent<HTMLElement>): void;
+  onOpenChange: (open: boolean) => void;
+  onContextMenu: (event: MouseEvent<HTMLElement>) => void;
+  onKeyDown: (event: KeyboardEvent<HTMLElement>) => void;
 }
 
 const point = (x: number, y: number): Anchor => ({ getBoundingClientRect: () => DOMRect.fromRect({ x, y, width: 0, height: 0 }) });

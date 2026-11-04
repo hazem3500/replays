@@ -23,6 +23,16 @@ async function seed(page: Page) {
 
 const itemNames = (page: Page) => page.getByRole('menu').getByRole('menuitem').allTextContents();
 
+const clipboardText = (page: Page) => page.evaluate(() => navigator.clipboard.readText());
+
+async function recordContextMenuPrevention(page: Page) {
+  await page.evaluate(() => {
+    document.addEventListener('contextmenu', (event) => {
+      document.documentElement.dataset['contextPrevented'] = String(event.defaultPrevented);
+    });
+  });
+}
+
 async function rightClick(row: Locator) {
   const box = await row.boundingBox();
   if (!box) throw new Error('row is not laid out');
@@ -31,7 +41,7 @@ async function rightClick(row: Locator) {
   return { x: box.x + position.x, y: box.y + position.y };
 }
 
-test.describe('index row menus', () => {
+test.describe('index row menus: opening', () => {
   test('right click on a replay row opens its menu at the pointer, with Delete last', async ({ page }) => {
     const { single } = await seed(page);
     const at = await rightClick(single);
@@ -66,6 +76,9 @@ test.describe('index row menus', () => {
     }
   });
 
+});
+
+test.describe('index row menus: actions', () => {
   test('Compare runs opens the suite comparing its runs', async ({ page }) => {
     const { group, suite } = await seed(page);
     await rightClick(group);
@@ -97,9 +110,12 @@ test.describe('index row menus', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write'], { origin: base });
     await rightClick(single);
     await page.getByRole('menuitem', { name: 'Copy link' }).click();
-    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe(`${base}/r/${id}`);
+    await expect.poll(() => clipboardText(page)).toBe(`${base}/r/${id}`);
   });
 
+});
+
+test.describe('index row menus: keyboard and browser menu', () => {
   test('Shift+F10 opens the menu on the focused row and Escape returns focus to it', async ({ page }) => {
     const { single, title } = await seed(page);
     const link = single.getByRole('link', { name: new RegExp(`^${title},`) });
@@ -117,11 +133,7 @@ test.describe('index row menus', () => {
 
   test('Shift+right click leaves the browser menu alone', async ({ page }) => {
     const { single } = await seed(page);
-    await page.evaluate(() => {
-      document.addEventListener('contextmenu', (event) => {
-        document.documentElement.dataset['contextPrevented'] = String(event.defaultPrevented);
-      });
-    });
+    await recordContextMenuPrevention(page);
     const box = await single.boundingBox();
     if (!box) throw new Error('row is not laid out');
     await single.click({ button: 'right', modifiers: ['Shift'], position: { x: Math.min(box.width - 4, 420), y: 30 } });

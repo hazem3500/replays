@@ -235,7 +235,7 @@
     "dist/client/assets/keep-HASH.js": {
       "raw": 8836,
       "gzip": 3953,
-      "brotli": 3478
+      "brotli": 3461
     },
     "dist/client/assets/main-HASH.css": {
       "raw": 223667,
@@ -2155,7 +2155,7 @@
       "cap": {
         "raw": 8836,
         "gzip": 3953,
-        "brotli": 3478
+        "brotli": 3461
       },
       "reason": "The shared replay deletion and keep chunk is renamed from use-replay-deletion to keep: Rolldown names it after a different member module. Its membership is unchanged (hooks/use-replay-deletion.tsx, viewer/ReplayDeleteDialog.tsx, viewer/keep.ts, data/retention.ts and the bot, layers and upload icons) and main already imported it statically from the index chunk through ReplayRowMenu. Measured on Boat, main to head: raw 8578 to 8578, gzip 3825 to 3837, brotli 3346 to 3376 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/248"
