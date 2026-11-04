@@ -18,6 +18,7 @@ import type { TileCommands } from './CompareTile.tsx';
 import { LayoutMenuItems, LayoutSwitch } from './LayoutSwitch.tsx';
 import { ScopeSwitch } from './ScopeSwitch.tsx';
 import { CompareSummary } from './CompareSummary.tsx';
+import { showsPhoneSwitch } from './layout.ts';
 import type { CompareLayout } from './compare-search.ts';
 import { type CompareTile, compareTiles, isLoaded, type LoadedTile } from './tiles.ts';
 // oxlint-disable-next-line import/no-unassigned-import -- why: the comparison's styles load with its lazy chunk, not with every page.
@@ -28,6 +29,8 @@ export interface CompareRecording {
   /** A suite run's label; else the recording's title. */
   label?: string | undefined;
   removable?: boolean;
+  /** The colour a suite run already shows in its sidebar row. */
+  colour?: number | undefined;
 }
 
 type ViewerProps = ComponentProps<typeof Viewer>;
@@ -114,6 +117,7 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
   const session = useCompareSession(tiles, focused.id, initialTime);
   const mobile = useMediaQuery(MOBILE_QUERY);
   const ready = tiles.filter(isLoaded);
+  const summary = !compare.hideCompareSummary && !showsPhoneSwitch({ mobile, layout, count: tiles.length });
 
   useWindowKeydown((event) => {
     if (document.querySelector('[role="dialog"]')) return;
@@ -167,7 +171,7 @@ function CompareSessionView({ compare, tiles, focused }: { compare: CompareViewe
         inspectorPeers={peers}
         comparing={tiles.map((tile) => tile.id)}
         onCompareWith={compare.onAdd}
-        compareSummary={compare.hideCompareSummary ? undefined : <CompareSummary tiles={ready} focus={focused.id} onFocus={onFocus} />}
+        compareSummary={summary ? <CompareSummary tiles={ready} focus={focused.id} onFocus={onFocus} /> : undefined}
       />
     </div>
   );

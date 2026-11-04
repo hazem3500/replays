@@ -108,9 +108,9 @@
       "brotli": 2118
     },
     "dist/client/assets/CompareViewer-HASH.css": {
-      "raw": 12166,
-      "gzip": 2951,
-      "brotli": 2568
+      "raw": 12834,
+      "gzip": 3107,
+      "brotli": 2710
     },
     "dist/client/assets/CompareViewer-HASH.js": {
       "raw": 94197,
@@ -158,9 +158,9 @@
       "brotli": 12224
     },
     "dist/client/assets/elements-HASH.js": {
-      "raw": 17285,
-      "gzip": 6332,
-      "brotli": 5791
+      "raw": 17251,
+      "gzip": 6321,
+      "brotli": 5785
     },
     "dist/client/assets/enabled-HASH.js": {
       "raw": 98,
@@ -168,9 +168,9 @@
       "brotli": 102
     },
     "dist/client/assets/expired-query-HASH.js": {
-      "raw": 2195,
-      "gzip": 1058,
-      "brotli": 936
+      "raw": 2377,
+      "gzip": 1138,
+      "brotli": 1011
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
@@ -254,8 +254,8 @@
     },
     "dist/client/assets/measure-HASH.js": {
       "raw": 30211,
-      "gzip": 11746,
-      "brotli": 10819
+      "gzip": 11744,
+      "brotli": 10803
     },
     "dist/client/assets/microtask-HASH.js": {
       "raw": 5327,
@@ -378,14 +378,14 @@
       "brotli": 158
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
-      "raw": 1191,
-      "gzip": 711,
-      "brotli": 626
+      "raw": 1240,
+      "gzip": 738,
+      "brotli": 668
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 21793,
-      "gzip": 9297,
-      "brotli": 8059
+      "raw": 22890,
+      "gzip": 9640,
+      "brotli": 8357
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -420,7 +420,7 @@
     "dist/client/assets/use-replay-deletion-HASH.js": {
       "raw": 8836,
       "gzip": 3940,
-      "brotli": 3450
+      "brotli": 3447
     },
     "dist/client/assets/useOpenInteractionType-HASH.js": {
       "raw": 103432,
@@ -1262,16 +1262,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/201"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "raw": 1191,
-        "gzip": 711,
-        "brotli": 650
-      },
-      "reason": "The expanded run sidebar replaces duplicated comparison-summary chips; collapsing the sidebar restores the summary. Same-toolchain main/head: raw 1095 to 1156 bytes, gzip 666 to 690 bytes, brotli 624 to 631 bytes.",
-      "pr": "https://github.com/hazem3500/replays/pull/201"
-    },
-    {
       "file": "dist/client/assets/drawer-HASH.js",
       "cap": {
         "raw": 45147,
@@ -1468,16 +1458,6 @@
         "brotli": 102
       },
       "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 95, gzip new to 112, brotli new to 99 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/expired-query-HASH.js",
-      "cap": {
-        "raw": 2195,
-        "gzip": 1063,
-        "brotli": 939
-      },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 2132 to 2131, brotli 900 to 911 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -2074,16 +2054,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/221"
     },
     {
-      "file": "dist/client/assets/CompareViewer-HASH.css",
-      "cap": {
-        "raw": 12170,
-        "gzip": 2951,
-        "brotli": 2568
-      },
-      "reason": "The comparison headline becomes one aligned strip of equal segments with fixed figure columns, a raised neutral selection surface that glides between segments on one curve with its text and deltas, and container-query folding into even rows. Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: raw 9885 to 11815, gzip 2481 to 2865, brotli 2136 to 2493 bytes; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/213"
-    },
-    {
       "file": "dist/client/assets/tiles-HASH.js",
       "cap": {
         "raw": 1468,
@@ -2101,15 +2071,6 @@
         "brotli": 8986
       },
       "reason": "Recorder default UI redesign: one concentric floating pill with status icons, a red Stop control with hover, focus and press states, soft-tinted Open and Copy link actions, refined consent and review dialogs and their entrance motion. Reviewed and approved by Hazem. Same-runner main to head: raw 30694 to 36944, gzip 8330 to 9948, brotli 7295 to 8724 bytes; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/213"
-    },
-    {
-      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
-      "cap": {
-        "gzip": 9311,
-        "brotli": 8068
-      },
-      "reason": "The collapsed runs rail draws a monogram tile per run with a corner status dot, and names a run without a recording with visually hidden text. Small justified growth under Hazem's standing approval (2026-11-03). CI same-runner main to head: gzip 9004 to 9039, brotli 7799 to 7833 bytes; caps are head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/213"
     },
     {
@@ -2169,6 +2130,46 @@
       },
       "reason": "Compression drift in a 64-byte re-export chunk (same raw bytes; the hashed import names it carries changed). Small justified growth under Hazem's standing approval (2026-11-03). Same-runner main to head: brotli 64 to 68 bytes; cap is head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/229"
+    },
+    {
+      "file": "dist/client/assets/CompareViewer-HASH.css",
+      "cap": {
+        "raw": 12834,
+        "gzip": 3107,
+        "brotli": 2710
+      },
+      "reason": "Run colour frames on compare tiles: frame, focus and keyboard rings, issue dot, corner name tag and its sidebar-aware hiding replace the name pill. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 12460, gzip 3016, brotli 2631 bytes against main caps 12166, 2951, 2568; cap is head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/expired-query-HASH.js",
+      "cap": {
+        "raw": 2377,
+        "gzip": 1138,
+        "brotli": 1011
+      },
+      "reason": "recordedRuns and tileColour in suite/runs.ts: one source for a run's colour shared by the runs sidebar and the Compare stage. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 2307, gzip 1104, brotli 981 bytes against main caps 2195, 1058, 936; cap is head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "raw": 1240,
+        "gzip": 738,
+        "brotli": 668
+      },
+      "reason": "The suite passes each run's colour to the Compare stage so tile frames match sidebar swatches. Small justified growth under Hazem's standing approval. Boat measurement, head: raw 1203, gzip 716 bytes against main caps 1191, 711; cap is head times 1.03. CI same-runner brotli 611 to 649; brotli cap is head times 1.03.",
+      "pr": "https://github.com/hazem3500/replays/pull/239"
+    },
+    {
+      "file": "dist/client/assets/SuiteWorkspace-HASH.js",
+      "cap": {
+        "raw": 22890,
+        "gzip": 9640,
+        "brotli": 8357
+      },
+      "reason": "Runs sidebar redesign: thumbnails replaced by a colour swatch row (RunCopy), each run's colour taken from recordedRuns so the sidebar and the Compare stage agree. CI same-runner main to head: raw 21439 to 22223, gzip 9031 to 9359, brotli 7830 to 8113; caps are head times 1.03. Small justified growth under Hazem's standing approval.",
+      "pr": "https://github.com/hazem3500/replays/pull/239"
     }
   ]
 }
