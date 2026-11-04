@@ -7,6 +7,7 @@ import { defineRoute, type RouteContext } from '../http/route.ts';
 import { HttpError } from '../http/errors.ts';
 import { assertUploadBundle, assertUploadEnvelope } from '../upload-validation.ts';
 import { applyContextAdapters, runAfterUpload, runBeforeUpload, runPrepareUpload } from '../plugin-runtime.ts';
+import { isStaffUpload } from '../privacy-config.ts';
 import { importRoute } from './import.ts';
 import type { ApiServices } from './services.ts';
 import { acceptUpload, replayReceipt, requestListMedia, resolveContext, uploadAttributes } from './upload-checks.ts';
@@ -72,8 +73,10 @@ function uploadHandler(services: ApiServices) {
     resolveContext(replay, deployment);
     const normalization = await normalizeUpload(registry, endpoint, replay, endpointContext);
     const normalized = normalization.changed ? revalidate(services, normalization.bundle) : replay;
+    const staff = isStaffUpload({ path, endpoint, authName: deployment.auth.name, identity: user });
     // invariant: stored data never depends on the uploader or a normalization hook having sanitized it.
-    const bundle = acceptUpload(await runBeforeUpload(registry, services.sanitize(normalized), user, hooks), store.profiles, registry);
+    const sanitized = services.sanitize(normalized, { staff });
+    const bundle = acceptUpload(await runBeforeUpload(registry, sanitized, user, hooks), store.profiles, registry);
     trace(uploadAttributes(bundle));
     const receipt = (stored: typeof bundle) =>
       uploadReceipt(

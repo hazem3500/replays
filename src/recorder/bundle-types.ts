@@ -39,6 +39,8 @@ export type ReplayCaptured = {
   network: 'off' | 'headers' | 'bodies';
   performance: boolean;
   video: boolean;
+  /** `visible` only when `privacy.sanitize` was false; the ingest endpoint decides whether it keeps the values. */
+  inputs?: 'visible';
 };
 
 export type ReplayNetworkEntry = {
