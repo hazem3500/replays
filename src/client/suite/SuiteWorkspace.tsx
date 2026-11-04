@@ -325,7 +325,8 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
         {comparing && selected ? (
           <Suspense fallback={<ViewerSkeleton label="Loading runs" comparing={defaults.layout === 'grid' ? playable.length : 0} />}>
             <SuiteCompare
-              hideCompareSummary={!narrow && !collapsed}
+              // why: on wider screens the runs sidebar, open or folded to its rail, already lists and switches the runs.
+              hideCompareSummary={!narrow}
               runs={playable}
               fallback={defaults.layout}
               focus={selected}
