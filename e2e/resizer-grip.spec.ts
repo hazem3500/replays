@@ -51,3 +51,31 @@ test('keyboard focus shows the dock resizer grip without moving it', async ({ pa
   const seam = await boxOf(resizer);
   expect(Math.abs((await centreX(grip)) - (seam.x + seam.width / 2))).toBeLessThanOrEqual(1);
 });
+
+test('under reduced motion the dock resizer grip anchors as soon as it shows', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await openReplay(page, `${origin()}/r/demo-shop`);
+  const resizer = page.getByTestId('inspector-resizer');
+  const grip = resizer.locator('.splitter-grip');
+  const seam = await boxOf(resizer);
+  const y = seam.y + seam.height / 2;
+  await page.mouse.move(300, y - 80);
+  await page.mouse.move(300, y);
+  await page.mouse.move(700, y, { steps: 3 });
+  await expect(grip).toHaveCSS('opacity', '1');
+  expect(Math.abs((await centreX(grip)) - 300)).toBeLessThanOrEqual(1);
+});
+
+test('a press straight after reaching the seam anchors the dock resizer grip at the press', async ({ page }) => {
+  await openReplay(page, `${origin()}/r/demo-shop`);
+  const resizer = page.getByTestId('inspector-resizer');
+  const grip = resizer.locator('.splitter-grip');
+  const seam = await boxOf(resizer);
+  const y = seam.y + seam.height / 2;
+  await page.mouse.move(400, y - 80);
+  await page.mouse.move(400, y);
+  await page.mouse.down();
+  await page.mouse.move(800, y - 60, { steps: 3 });
+  expect(Math.abs((await centreX(grip)) - 400)).toBeLessThanOrEqual(1);
+  await page.mouse.up();
+});

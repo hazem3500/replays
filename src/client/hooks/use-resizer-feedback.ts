@@ -40,13 +40,15 @@ function paintFeedback(
   ];
 }
 
-/** The grip tracks the pointer only until it has appeared, then anchors there; once hidden it tracks again. */
+/**
+ * The grip tracks the pointer only until it has appeared, then anchors there; once hidden it tracks again. The anchor
+ * time follows the delay actually painted, so a press or reduced motion, which show the grip at once, anchor it at once.
+ */
 function gripAnchor() {
   let from = Number.POSITIVE_INFINITY;
   return {
-    settle(active: boolean, delay: number) {
-      if (!active) from = Number.POSITIVE_INFINITY;
-      else if (from === Number.POSITIVE_INFINITY) from = performance.now() + delay * 1000;
+    settle(active: boolean, paintDelay: number) {
+      from = active ? Math.min(from, performance.now() + paintDelay * 1000) : Number.POSITIVE_INFINITY;
     },
     tracking: () => performance.now() < from,
   };
@@ -73,7 +75,7 @@ export function useResizerFeedback(orientation: 'horizontal' | 'vertical') {
       const focused = root.matches(':focus-visible');
       const active = held || root.dataset.dragging !== undefined || focused || hovering;
       const delay = feedbackDelay(active, hovering, held, focused);
-      anchor.settle(active, delay);
+      anchor.settle(active, reduced ? 0 : delay);
       for (const motion of running) motion.cancel();
       running = paintFeedback({ line, grip }, { active, scale: feedbackScale(active, orientation), delay, reduced });
     };
