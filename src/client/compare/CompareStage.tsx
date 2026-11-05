@@ -101,9 +101,9 @@ export function CompareStage({
                 placement={placement}
                 focused={focused}
                 alone={tiles.length === 1}
-                showIdentity={layout !== 'single'}
                 fidelity={fidelityFor(placement, tiles.length, focused, carousel)}
                 motion={{
+                  showIdentity: layout !== 'single',
                   enabled: layoutReady && !mobile && !box.resizing && !reducedMotion,
                   dependency: `${layout}:${focus}:${box.width}:${box.height}`,
                   instant: !layoutReady || mobile || box.resizing || reducedMotion,

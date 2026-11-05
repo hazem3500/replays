@@ -70,7 +70,6 @@ export function CompareTileView({
   placement,
   focused,
   alone,
-  showIdentity,
   fidelity,
   motion,
   commands,
@@ -80,9 +79,8 @@ export function CompareTileView({
   placement: Placement | undefined;
   focused: boolean;
   alone: boolean;
-  showIdentity: boolean;
   fidelity: Fidelity;
-  motion: { enabled: boolean; dependency: string; instant: boolean };
+  motion: { enabled: boolean; dependency: string; instant: boolean; showIdentity: boolean };
   commands: TileCommands;
 }) {
   const ended = useClockState(session.clock, (snapshot) => snapshot.ended.has(tile.id));
@@ -137,7 +135,7 @@ export function CompareTileView({
         onClick={onHit}
         onDoubleClick={onSpotlight}
       />
-      {showIdentity ? <TileLabel tile={tile} ended={ended && !single} /> : null}
+      {motion.showIdentity ? <TileLabel tile={tile} ended={ended && !single} /> : null}
       {single ? null : <TileActions session={session} tile={tile} spotlit={role === 'spotlight'} alone={alone} commands={commands} />}
     </m.section>
   );

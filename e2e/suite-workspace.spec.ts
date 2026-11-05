@@ -176,7 +176,9 @@ for (const search of ['?layout=grid', '?layout=spotlight', '?view=compare', '?vi
   test(`a suite honors explicit layout intent ${search}`, async ({ page }) => {
     const { suite, two } = await threeRuns(page.request);
     await openReplay(page, `${server().origin}/s/${suite}/r/${two}${search}`);
-    const expected = search.includes('single') ? 'single' : search.includes('spotlight') ? 'spotlight' : 'grid';
+    let expected = 'grid';
+    if (search.includes('spotlight')) expected = 'spotlight';
+    if (search.includes('single')) expected = 'single';
     await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', expected);
     await expect(page.locator('.ct-label')).toHaveCount(expected === 'single' ? 0 : 2);
   });

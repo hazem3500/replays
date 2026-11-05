@@ -76,7 +76,9 @@ describe('the phone timeline scale', () => {
     expect(scrollForPlayhead({ ...view, x: 400, scrollLeft: 0 })).toBe(400 + 16 - 195);
     expect(scrollForPlayhead({ ...view, x: 1_500, scrollLeft: 1_000 })).toBe(1_000);
   });
+});
 
+describe('phone scrub snapping', () => {
   it('chooses the later step when it is nearer than an earlier candidate', () => {
     expect(snapTarget(2_250, [2_000, 2_300], 0.0358, 14)).toBe(2_300);
   });
