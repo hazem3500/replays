@@ -385,12 +385,12 @@
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
       "gzip": 735,
-      "brotli": 639
+      "brotli": 646
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
       "raw": 22869,
       "gzip": 9627,
-      "brotli": 8292
+      "brotli": 8291
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
