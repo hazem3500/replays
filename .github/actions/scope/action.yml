@@ -32,9 +32,7 @@ runs:
       shell: bash
       env:
         CI_EVENT: ${{ github.event_name }}
-        CI_SCHEDULE: ${{ github.event.schedule }}
-        CI_BASE: ${{ github.event.pull_request.base.sha }}
-        CI_LABELS: ${{ toJSON(github.event.pull_request.labels.*.name) }}
+        CI_REF: ${{ github.ref }}
         NODE_VERSION: ${{ env.NODE_VERSION }}
       run: node scripts/ci-scope.mjs
     - id: e2e-1

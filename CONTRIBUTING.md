@@ -69,9 +69,8 @@ Stop that box at handoff. See [toolchain details](docs/tooling.md) for the upstr
 
 Open a draft with `gh pr create --draft` and push freely; CI skips drafts. Run `gh pr ready` when the change is
 done to start the Gate (lint, format, types, unit tests, builds and quality audits through Turborepo and its shared
-cache). End-to-end and browser suites run on main and nightly; add the `run-e2e` label to run them on your pull
-request. They also start by themselves for recorder, capture, render, server-rendering, packaging and dependency
-changes (the list is `RISKY` in `scripts/ci-scope.mjs`).
+cache). End-to-end, browser and Docker suites run only on main and nightly. Each nightly run executes every
+suite, even when its source inputs have passed before. Pull request labels do not enable smoke suites.
 
 ## Reporting bugs and ideas
 

@@ -2,8 +2,7 @@ name: CI
 
 on:
   pull_request:
-    # `labeled` only matters for `run-e2e`; other labels start a run whose jobs all skip.
-    types: [opened, synchronize, reopened, ready_for_review, labeled]
+    types: [opened, synchronize, reopened, ready_for_review]
     # Documentation-only changes start no run; scripts/ci-scope.mjs mirrors these exclusions per suite.
     paths:
       - '**'
@@ -28,20 +27,14 @@ on:
       - '!.github/CODEOWNERS'
       - '!LICENSE'
   schedule:
-    # Weekly drift check (dependencies, browsers, runner image): every suite runs, earlier passes are not reused.
-    - cron: '23 3 * * 1'
-    # Nightly: the browser-backed suites run for any main state that has no pass yet (e.g. a cancelled main run).
-    - cron: '23 3 * * 0,2-6'
+    - cron: '23 3 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # why: an unrelated label gets its own group, so labelling never cancels a run in progress.
-  group: >-
-    ci-${{ github.event.pull_request.number || github.ref }}${{
-    github.event.action == 'labeled' && github.event.label.name != 'run-e2e' && format('-label-{0}', github.run_id) || '' }}
+  group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:
@@ -50,24 +43,13 @@ env:
 jobs:
   # The pull request gate: lint, format, types, unit tests, builds and the quality audits as Turborepo tasks. Pull
   # requests run only the tasks whose inputs changed against the base (`--affected`), and every task replays from the
-  # shared remote cache when the same inputs already passed on any branch. It also picks the browser-backed suites.
+  # shared remote cache when the same inputs already passed on any branch.
   gate:
     name: Gate
     # Draft pull requests run nothing; mark the pull request ready (`gh pr ready`) to run it.
-    if: >-
-      github.event_name != 'pull_request' ||
-      (github.event.pull_request.draft == false && (github.event.action != 'labeled' || github.event.label.name == 'run-e2e'))
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
-    outputs:
-      e2e_shards: ${{ steps.scope.outputs.e2e_shards }}
-      browser: ${{ steps.scope.outputs.browser }}
-      docker: ${{ steps.scope.outputs.docker }}
-      key_e2e_1: ${{ steps.scope.outputs.key_e2e_1 }}
-      key_e2e_2: ${{ steps.scope.outputs.key_e2e_2 }}
-      key_e2e_3: ${{ steps.scope.outputs.key_e2e_3 }}
-      key_browser: ${{ steps.scope.outputs.key_browser }}
-      key_docker: ${{ steps.scope.outputs.key_docker }}
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_API: ${{ vars.TURBO_API }}
@@ -95,8 +77,6 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-      - id: scope
-        uses: ./.github/actions/scope
       # why: the suite selector's own tests only need to run when the selector or the workflows change.
       - name: Suite selector tests
         run: |
@@ -173,17 +153,33 @@ jobs:
           retention-days: 7
           compression-level: 6
 
-  # The browser-backed suites below run on main, nightly, with the `run-e2e` label, and on pull requests that touch
-  # the risky paths listed (with reasons) in scripts/ci-scope.mjs; a suite whose exact inputs already passed is reused.
+  smoke-scope:
+    name: Select main smoke suites
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 5
+    outputs:
+      e2e_shards: ${{ steps.scope.outputs.e2e_shards }}
+      browser: ${{ steps.scope.outputs.browser }}
+      docker: ${{ steps.scope.outputs.docker }}
+      key_e2e_1: ${{ steps.scope.outputs.key_e2e_1 }}
+      key_e2e_2: ${{ steps.scope.outputs.key_e2e_2 }}
+      key_e2e_3: ${{ steps.scope.outputs.key_e2e_3 }}
+      key_browser: ${{ steps.scope.outputs.key_browser }}
+      key_docker: ${{ steps.scope.outputs.key_docker }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: scope
+        uses: ./.github/actions/scope
+
   e2e:
     name: End-to-end (${{ matrix.shard }}/3)
-    needs: gate
-    # why: still runs when the gate fails, so a broken main shows every failing suite at once.
-    if: ${{ !cancelled() && needs.gate.outputs.e2e_shards != '' && needs.gate.outputs.e2e_shards != '[]' }}
+    needs: smoke-scope
+    if: ${{ !cancelled() && needs.smoke-scope.outputs.e2e_shards != '' && needs.smoke-scope.outputs.e2e_shards != '[]' }}
     strategy:
       fail-fast: false
       matrix:
-        shard: ${{ fromJSON(needs.gate.outputs.e2e_shards) }}
+        shard: ${{ fromJSON(needs.smoke-scope.outputs.e2e_shards) }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 25
     steps:
@@ -249,13 +245,13 @@ jobs:
       - if: success()
         uses: ./.github/actions/remember-pass
         with:
-          key: ${{ matrix.shard == 1 && needs.gate.outputs.key_e2e_1 || matrix.shard == 2 && needs.gate.outputs.key_e2e_2 || needs.gate.outputs.key_e2e_3 }}
+          key: ${{ matrix.shard == 1 && needs.smoke-scope.outputs.key_e2e_1 || matrix.shard == 2 && needs.smoke-scope.outputs.key_e2e_2 || needs.smoke-scope.outputs.key_e2e_3 }}
 
   # One install and one viewer/package build shared by the browser-backed suites. Independent groups still report.
   browser:
     name: Recorder, render, plugins, distribution and Agent-Native
-    needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.browser == 'true' }}
+    needs: smoke-scope
+    if: ${{ !cancelled() && needs.smoke-scope.outputs.browser == 'true' }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 30
     steps:
@@ -356,11 +352,11 @@ jobs:
       - if: success()
         uses: ./.github/actions/remember-pass
         with:
-          key: ${{ needs.gate.outputs.key_browser }}
+          key: ${{ needs.smoke-scope.outputs.key_browser }}
 
   docker:
-    needs: gate
-    if: ${{ !cancelled() && needs.gate.outputs.docker == 'true' }}
+    needs: smoke-scope
+    if: ${{ !cancelled() && needs.smoke-scope.outputs.docker == 'true' }}
     name: Docker build (not pushed)
     runs-on: ubicloud-standard-2
     timeout-minutes: 20
@@ -386,12 +382,12 @@ jobs:
       - if: success()
         uses: ./.github/actions/remember-pass
         with:
-          key: ${{ needs.gate.outputs.key_docker }}
+          key: ${{ needs.smoke-scope.outputs.key_docker }}
 
   # A failing main is loud: the run is red and one tracking issue gets a comment per failing run; green closes it.
   main-health:
     name: Main health
-    needs: [gate, e2e, browser, docker]
+    needs: [gate, smoke-scope, e2e, browser, docker]
     if: ${{ always() && github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
     runs-on: ubicloud-standard-2
     timeout-minutes: 5

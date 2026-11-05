@@ -59,6 +59,10 @@
         "!LICENSE",
         "!e2e/**",
         "!**/playwright.config.ts",
+        "!budgets/**",
+        "!stories/**",
+        "!.storybook/**",
+        "!site/**",
         "!src/client/route-tree.gen.ts"
       ]
     },
@@ -74,6 +78,10 @@
         "!LICENSE",
         "!e2e/**",
         "!**/playwright.config.ts",
+        "!budgets/**",
+        "!stories/**",
+        "!.storybook/**",
+        "!site/**",
         "!src/client/route-tree.gen.ts"
       ]
     },
@@ -90,6 +98,8 @@
         "!stories/**",
         "!.storybook/**",
         "!**/playwright.config.ts",
+        "!budgets/**",
+        "!site/**",
         "!src/client/route-tree.gen.ts"
       ]
     },

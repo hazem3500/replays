@@ -132,13 +132,9 @@ Round 3 targets a typical pull request push under 5 billed minutes. Round 2's fl
 
 **One Gate job.** The `checks` job and the separate Code quality workflow become one `Gate` job on `ubicloud-standard-2`. It runs every check as a root Turborepo task (`turbo.json`): lint, format, root and Storybook typecheck, unit tests, PostgreSQL tests, viewer and package builds, the lint ratchet and its tests, final rules for added files, and the knip, boundaries, dedupe, hooks, test-quality, package and size audits. Each task declares its inputs and outputs. Pull requests add `--affected` against the base commit (`TURBO_SCM_BASE`, with `affectedUsingTaskInputs`), so a task whose inputs did not change is not scheduled at all. Every task result is stored in the shared remote cache (`TURBO_API`, `TURBO_TEAM`, secret `TURBO_TOKEN`), so a task whose exact inputs passed anywhere (another branch, main or a Boat) replays its logs and outputs instead of running. The job summary lists each task's cache status; `.turbo/runs/` is uploaded as `gate-reports`.
 
-**Browser suites move off the per-PR gate.** End-to-end shards, the browser job (recorder, real render, plugin browser check, packed tarball, distro, composed viewer, Agent-Native, Storybook build) and Docker run:
+**Browser suites run on main and nightly only.** End-to-end shards, the browser job (recorder, real render, plugin browser check, packed tarball, distro, composed viewer, Agent-Native, Storybook build) and Docker run on main pushes and the daily schedule. Manual smoke runs must also target main. Pull request paths and labels never start these jobs. Smoke selection runs independently from Gate, so browser coverage can start while main's unit and quality checks run.
 
-- on every push to main, nightly, and in the weekly full run (which ignores pass markers);
-- on pull requests with the `run-e2e` label;
-- on pull requests that touch a path in `RISKY` in `scripts/ci-scope.mjs`: the recorder and capture code, server-side rendering and frame code, the server-rendered start pages, and packaging and dependency files. Each group has its reason next to it. These are the areas where unit tests cannot see a break: real browsers, FFmpeg, the packed tarball and the Docker image.
-
-The round 2 pass markers still apply to these suites, so main reuses a pull request's pass when inputs are identical. Turborepo replaces the `checks` marker.
+Main pushes reuse exact-input pass markers. Every nightly run ignores markers and executes all suites to catch runner, browser and dependency drift. The blocking PR Gate retains its lint, types, affected units, builds and quality audits. Unit task hashes exclude bundle budgets, stories and landing-page inputs: the separate quality, Storybook and site checks own those inputs. Unit source, configuration, helpers, scripts and dependencies still invalidate them.
 
 **A red main is loud.** The `Main health` job runs after every main or scheduled run. If any job failed, it fails too and opens, or comments on, the `CI is failing on main` issue; the next green run comments and closes it. Fix forward on a new pull request.
 
@@ -146,9 +142,9 @@ The round 2 pass markers still apply to these suites, so main reuses a pull requ
 
 | Check | Now | Reason |
 | --- | --- | --- |
-| End-to-end shards 1 to 3 and the single-page-app subset | main, nightly, `run-e2e`, risky paths | 16 to 19 billed minutes per run; changes outside the risky paths are covered by units, types and builds |
+| End-to-end shards 1 to 3 and the single-page-app subset | main and nightly | Browser coverage runs after integration; the PR Gate keeps units, types and builds |
 | Browser job (recorder, render, plugin, tarball, distro, composed viewer, Agent-Native, Storybook build) | same | 6 to 7 billed minutes of browser and packaging work |
-| Docker build and health check | same | The image only changes with server, Dockerfile or dependency changes, all risky paths |
+| Docker build and health check | same | Main checks the runtime image; nightly also catches environment drift |
 | `typecheck:overrides` (compiler API pass, 21 seconds) | `pnpm typecheck` | Its baseline was empty; `noImplicitOverride` in `tsconfig.json` makes tsrs report the same TS4114 error |
 | Code quality workflow and its fresh main build | Gate tasks | Same audits, one install; main's bundle sizes are a cached `quality:size:base` task |
 

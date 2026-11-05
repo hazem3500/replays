@@ -6,45 +6,6 @@ import { pathToFileURL } from 'node:url';
 /** Bump to rerun every suite everywhere: markers saved under an older version never match again. */
 export const CACHE_VERSION = 'v1';
 
-/** The weekly schedule entry that never reuses an earlier pass; the other nightly entries reuse them. */
-export const FULL_SCHEDULE = '23 3 * * 1';
-
-/** Label that runs the end-to-end and browser suites on any pull request. */
-export const E2E_LABEL = 'run-e2e';
-
-/**
- * Pull requests run the end-to-end, browser and Docker suites only when they touch one of these paths (or carry
- * `run-e2e`). Each entry is code whose failures only a real browser, FFmpeg, the packed tarball or the image shows;
- * everything else is covered by the PR gate's unit tests and still runs these suites on main and nightly.
- */
-export const RISKY = [
-  // why: the injected recorder and the Node/CDP capture path run inside real pages; unit tests use happy-dom.
-  'src/recorder/**',
-  'src/capture/**',
-  // why: server-side video render drives Chromium and FFmpeg; only the real render test and e2e exports exercise it.
-  'src/server/renderer.ts',
-  'src/server/render-*.ts',
-  'src/server/media/**',
-  'src/client/render/**',
-  // why: server rendering (the start entry and its build) is only exercised by the e2e server, SSR on and off.
-  'src/client/start/**',
-  'src/server/start.ts',
-  'src/server/index-page.ts',
-  'vite.start.config.ts',
-  // why: packaging and dependencies change what the tarball, the examples, Playwright and the image install.
-  'package.json',
-  'pnpm-lock.yaml',
-  'pnpm-workspace.yaml',
-  'bin/**',
-  'vite.config.ts',
-  'scripts/build-lib.mjs',
-  'scripts/pack-smoke.mjs',
-  'Dockerfile',
-  '.dockerignore',
-  'playwright.config.ts',
-  '.github/actions/browser/**',
-];
-
 /** Never read by any suite here: prose, screenshots, GitHub forms and the workflows outside ci.yml. */
 const COMMON = [
   '*.md',
@@ -167,37 +128,20 @@ function passKeys(options) {
   return Object.fromEntries(Object.entries(MARKERS).map(([marker, suite]) => [marker, key(marker, suite)]));
 }
 
-/** Files changed since `base` that match a risky path. */
-export function riskyChanges(base, { cwd = process.cwd() } = {}) {
-  const pathspecs = RISKY.map((pattern) => `:(glob)${pattern}`);
-  const output = execFileSync('git', ['diff', '--name-only', base, 'HEAD', '--', ...pathspecs], {
-    cwd,
-    encoding: 'utf8',
-  });
-  return output.split('\n').filter(Boolean);
+/** Main owns browser coverage; pull requests keep the blocking Gate. */
+export function suitesReason({ event, ref } = {}) {
+  return ref === 'refs/heads/main' && ['push', 'schedule', 'workflow_dispatch'].includes(event) ? `${event} on main` : '';
 }
 
-/** Why the browser-backed suites run for this event, or an empty string when the PR gate alone covers it. */
-export function suitesReason({ event, labels = [], base = '', cwd } = {}) {
-  if (event !== 'pull_request') return `${event} run`;
-  if (labels.includes(E2E_LABEL)) return `labelled ${E2E_LABEL}`;
-  // invariant: without a known base every path counts as changed, so a missing base never skips coverage.
-  if (!base) return 'no base commit to compare';
-  const files = riskyChanges(base, { cwd });
-  return files.length > 0 ? `touches ${files.slice(0, 5).join(', ')}${files.length > 5 ? ` and ${files.length - 5} more` : ''}` : '';
-}
-
-/** The weekly schedule and manual runs are the full drift check: they never reuse an earlier pass. */
-export const forcesFullRun = (event, schedule = '') =>
-  event === 'workflow_dispatch' || (event === 'schedule' && schedule === FULL_SCHEDULE);
+/** Nightly coverage catches dependency and runner drift even when source inputs are unchanged. */
+export const forcesFullRun = (event) => event === 'schedule' || event === 'workflow_dispatch';
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const event = process.env.CI_EVENT ?? '';
-  const force = forcesFullRun(event, process.env.CI_SCHEDULE);
+  const force = forcesFullRun(event);
   const reason = suitesReason({
     event,
-    labels: JSON.parse(process.env.CI_LABELS || '[]'),
-    base: process.env.CI_BASE ?? '',
+    ref: process.env.CI_REF ?? '',
   });
   const keys = passKeys();
   console.log(JSON.stringify({ force, wanted: reason !== '', reason, keys }, null, 2));
@@ -209,7 +153,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     const rows = Object.entries(keys).map(([marker, key]) => `| ${marker} | ${MARKERS[marker]} | \`${key}\` |`);
     const why = reason
       ? `End-to-end, browser and Docker suites: wanted (${reason}).`
-      : `End-to-end, browser and Docker suites: not wanted; no risky path changed. Add the \`${E2E_LABEL}\` label to run them.`;
+      : 'End-to-end, browser and Docker suites run only on main and nightly.';
     const mode = force ? 'Full run: earlier passes are not reused.' : 'Suites whose inputs already passed are reused.';
     const table = ['| Marker | Suite | Key |', '| --- | --- | --- |', ...rows].join('\n');
     appendFileSync(process.env.GITHUB_STEP_SUMMARY, `### Browser-backed suites\n\n${why} ${mode}\n\n${table}\n\n`);
