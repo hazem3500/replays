@@ -1,25 +1,10 @@
 import type { AnimatedIconName } from '@/components/animated-icon.tsx';
 import type { EffectKind } from './state.ts';
+import { BAR_TOOLS } from './bar-tools.ts';
 
 /** The platform's modifier as key caps show it. */
 export const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? '⌘' : 'Ctrl+';
-
-/** A tool on the bar: what it does, its visible label, its key and its icon. */
-export interface EditorTool {
-  id: 'cut' | 'waits' | 'highlight';
-  label: string;
-  /** The full action in one short line, for the tooltip and the accessible name (it contains the label). */
-  action: string;
-  key: string;
-  icon: AnimatedIconName;
-}
-
-export const BAR_TOOLS: readonly EditorTool[] = [
-  { id: 'cut', label: 'Cut', action: 'Cut a second at the playhead', key: 'C', icon: 'scissors' },
-  { id: 'waits', label: 'Waits', action: 'Find waits to remove', key: 'W', icon: 'hourglass' },
-  { id: 'highlight', label: 'Highlight', action: 'Highlight the selection, or this moment', key: 'M', icon: 'map-pin' },
-];
 
 /** What the Add menu adds at the playhead, each with its key. */
 export interface AddItem {

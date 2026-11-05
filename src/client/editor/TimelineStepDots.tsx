@@ -1,18 +1,15 @@
-import { type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, useRef, useState } from 'react';
+import { type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, useState } from 'react';
 
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
-import { useCanHover } from '@/components/ui/tooltip.tsx';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { stepKindName } from '../viewer/StepRail.tsx';
 import { useTimelineScale } from './timeline-drag.ts';
 import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabel, stepMarks } from './timeline-marks.ts';
 
-/** How long a touch screen keeps a pressed dot's label up after the finger lifts. */
-const PRESSED_LABEL_MS = 2_400;
-/** Half the pressed label's widest (phone-editor.css .tl-step-bubble), so a label under an end dot stays on the track. */
-const BUBBLE_HALF_PX = 150;
+/** why: the dot's label rises clear of the ruler's time labels, which sit above the dots band. */
+const LABEL_OFFSET_PX = 16;
 
 /** The dot a roving key moves to from `position`, or undefined for any other key. */
 function rovingTarget(key: string, position: number, count: number) {
@@ -45,87 +42,31 @@ function labelOf(dot: StepDot) {
 }
 
 /** A dot's name, its kind and time or pause, then what its shape means, beside a small copy of the dot. */
-function DotLabel({
-  label,
-  detail,
-  wait,
-  legend = true,
-}: {
-  label: string;
-  detail: { visible: string; meaning: string };
-  wait: boolean;
-  /** The line saying what the dot's shape means; the phone's pressed label leaves it out, as its merged dots are filled. */
-  legend?: boolean;
-}) {
+function DotLabel({ label, detail, wait }: { label: string; detail: { visible: string; meaning: string }; wait: boolean }) {
   return (
     <span className="tl-step-tip">
       {label}
       <span className="tl-step-tip-detail">{detail.visible}</span>
-      {legend ? (
-        <span className="tl-step-tip-meaning">
-          <AnimatedIcon name="dot" size={12} strokeWidth={wait ? 3 : 0} fill={wait ? 'none' : 'currentColor'} aria-hidden="true" />
-          {detail.meaning}
-        </span>
-      ) : null}
+      <span className="tl-step-tip-meaning">
+        <AnimatedIcon name="dot" size={12} strokeWidth={wait ? 3 : 0} fill={wait ? 'none' : 'currentColor'} aria-hidden="true" />
+        {detail.meaning}
+      </span>
     </span>
   );
 }
 
-/**
- * The pressed dot's label on a touch screen, under its dot and kept on the track `width` px wide; decorative, as the
- * dot's own name says the same.
- */
-function PressedLabel({ x, width, dot }: { x: number; width: number; dot: StepDot }) {
-  const { label, detail } = labelOf(dot);
-  const half = Math.min(BUBBLE_HALF_PX, width / 2);
-  return (
-    <span
-      className="tl-step-bubble"
-      aria-hidden="true"
-      data-testid="step-bubble"
-      style={{ transform: `translateX(${Math.min(Math.max(x, half), width - half)}px)` }}
-    >
-      <DotLabel label={label} detail={detail} wait={dot.kind === 'wait'} legend={false} />
-    </span>
-  );
-}
-
-/**
- * Where a touch screen shows the pressed dot's label, since it has no hover: on press, and for a moment after the
- * finger lifts (or turns the press into a scroll).
- */
-function usePressedLabel(canHover: boolean) {
-  const [shown, setShown] = useState<number>();
-  const hide = useRef<number>(undefined);
-  return {
-    shown: canHover ? undefined : shown,
-    press: (position: number) => {
-      window.clearTimeout(hide.current);
-      setShown(position);
-    },
-    release: () => {
-      window.clearTimeout(hide.current);
-      hide.current = window.setTimeout(() => setShown(undefined), PRESSED_LABEL_MS);
-    },
-  };
-}
-
-/** One step's dot: filled for an action, hollow for a wait, named by its tooltip (or its pressed label on a touch screen). */
+/** One step's dot: filled for an action, hollow for a wait, named by its tooltip; a tap on a touch screen seeks, and the step line names it. */
 function StepDotButton({
   dot,
   x,
   removed,
-  pressed,
   tabStop,
-  onRelease,
   ...handlers
 }: {
   dot: StepDot;
   x: number;
   removed: boolean;
-  pressed: boolean;
   tabStop: boolean;
-  onRelease: () => void;
   onPointerDown: (event: ReactPointerEvent<HTMLButtonElement>) => void;
   onClick: () => void;
   onKeyDown: (event: ReactKeyboardEvent<HTMLButtonElement>) => void;
@@ -133,22 +74,19 @@ function StepDotButton({
   const { label, spoken, detail } = labelOf(dot);
   const wait = dot.kind === 'wait';
   return (
-    <Hint label={<DotLabel label={label} detail={detail} wait={wait} />}>
+    <Hint label={<DotLabel label={label} detail={detail} wait={wait} />} sideOffset={LABEL_OFFSET_PX}>
       <button
         type="button"
         className="tl-step"
         data-kind={dot.kind}
         data-removed={removed || undefined}
-        data-pressed={pressed || undefined}
         data-testid="ruler-step"
         tabIndex={tabStop ? 0 : -1}
         aria-label={`${spoken}, ${detail.spoken}`}
         style={{ transform: `translateX(${x}px)` }}
-        onPointerUp={onRelease}
-        onPointerCancel={onRelease}
         {...handlers}
       >
-        <AnimatedIcon name="dot" size={20} strokeWidth={wait ? 2.5 : 0} fill={wait ? 'none' : 'currentColor'} />
+        <AnimatedIcon name="dot" size={20} strokeWidth={wait ? 3 : 0} fill={wait ? 'none' : 'currentColor'} />
       </button>
     </Hint>
   );
@@ -156,8 +94,8 @@ function StepDotButton({
 
 /**
  * The recording's steps as dots on the ruler, filled for an action and hollow for a wait. Hovering or focusing one
- * names its step, its kind and time or its pause, and what its shape means; on a touch screen a press shows the same
- * label. A click, tap, Enter or Space seeks there. The dots are one tab stop: arrows, Home and End move
+ * names its step, its kind and time or its pause, and what its shape means. A click, tap, Enter or Space seeks there
+ * (on a phone the step line over the lanes then names it). The dots are one tab stop: arrows, Home and End move
  * along them. Steps the trim or a cut removes dim.
  */
 export function TimelineStepDots({
@@ -172,13 +110,10 @@ export function TimelineStepDots({
 }) {
   const scale = useTimelineScale();
   const player = usePlayer();
-  const canHover = useCanHover();
-  const pressed = usePressedLabel(canHover);
   const [current, setCurrent] = useState(0);
   const dots = placeStepDots(stepMarks(steps, scale.duration), scale.duration, scale.width, target);
   if (!dots.length) return null;
   const stop = Math.min(current, dots.length - 1);
-  const bubble = pressed.shown === undefined ? undefined : dots[pressed.shown];
   return (
     <div className="tl-steps" role="group" aria-label="Steps" data-testid="ruler-steps">
       {dots.map((dot, position) => (
@@ -187,13 +122,8 @@ export function TimelineStepDots({
           dot={dot}
           x={scale.x(dot.at)}
           removed={isRemoved(dot.seek)}
-          pressed={pressed.shown === position}
           tabStop={position === stop}
-          onPointerDown={(event) => {
-            event.stopPropagation();
-            if (event.pointerType === 'touch') pressed.press(position);
-          }}
-          onRelease={pressed.release}
+          onPointerDown={(event) => event.stopPropagation()}
           onClick={() => {
             setCurrent(position);
             player.seek(dot.seek);
@@ -201,7 +131,6 @@ export function TimelineStepDots({
           onKeyDown={(event) => moveFocus(event, position, dots.length, setCurrent)}
         />
       ))}
-      {bubble ? <PressedLabel x={scale.x(bubble.at)} width={scale.width} dot={bubble} /> : null}
     </div>
   );
 }

@@ -11,6 +11,8 @@ export interface SharedTooltipPayload {
   content: ReactNode;
   side: TooltipSide;
   align: TooltipAlign;
+  /** Distance from the trigger in px, when it must clear something drawn beside it (a ruler's labels). */
+  sideOffset?: number | undefined;
 }
 
 export type SharedTooltipHandle = TooltipPrimitive.Handle<SharedTooltipPayload>;
@@ -62,7 +64,7 @@ function TooltipProvider({ delay = 0, children, ...props }: TooltipPrimitive.Pro
         >
           {({ payload }) =>
             payload ? (
-              <TooltipContent side={payload.side} align={payload.align} morph={glide}>
+              <TooltipContent side={payload.side} align={payload.align} sideOffset={payload.sideOffset ?? 6} morph={glide}>
                 {payload.content}
               </TooltipContent>
             ) : null

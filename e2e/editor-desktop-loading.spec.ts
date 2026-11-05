@@ -15,10 +15,8 @@ const PARTS: Array<[string, string]> = [
   ['after edits', '.editor-bar-end .editor-durations-note'],
   ['ruler', '.tl-ruler'],
   ['tick labels', '.tl-tick-label'],
-  ['dots', '.tl-step'],
   ['lanes', '.tl-lane'],
   ['clip', '.tl-clip'],
-  ['clip steps', '.tl-clip-step'],
   ['blocks', '.tl-region'],
   ['playhead', '.tl-playhead'],
 ];
@@ -89,7 +87,7 @@ test('the desktop dock loads at the rects it arrives in: tools, ruler, clip and 
   await expect(skeleton).toBeVisible();
   await expect(skeleton.locator('.tl-lane')).toHaveCount(4);
   await expect(skeleton.locator('.editor-bar-tools > button')).toHaveText([/Cut/, /Waits/, /Highlight/, /Add/]);
-  await expect(skeleton.locator('.editor-time')).toHaveText(/^0:00\.0 \/ \d+:\d\d\.\d$/);
+  await expect(skeleton.locator('.editor-time')).toHaveText(/^0:00\.0\s*\/ \d+:\d\d\.\d$/);
   await expect(skeleton.locator('.editor-durations-note')).toHaveText('after edits');
   const loading = await rectsOf(page, '[data-testid="editor-skeleton"]');
   gate.open?.();

@@ -115,8 +115,9 @@ test('a selected clip lifts a labelled Remove bubble above it, next in Tab order
 });
 
 test('the Remove bubble centres on its clip and moves below its lane when a label above is in the way', async ({ page }) => {
+  // why: labels sit at a block's start, so the zoom starts where the speed's centred bubble would cover its label.
   await seed(page, {
-    zooms: [{ id: 'zoom-1', from: 400, to: 2400, scale: 1.8 }],
+    zooms: [{ id: 'zoom-1', from: 1_300, to: 3_300, scale: 1.8 }],
     speeds: [{ id: 'speed-1', from: 400, to: 2400, rate: 4 }],
     blurs: [{ id: 'blur-1', from: 3000, to: 3600, x: 0.1, y: 0.1, width: 0.3, height: 0.2 }],
   });

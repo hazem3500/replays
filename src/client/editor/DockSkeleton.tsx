@@ -4,19 +4,15 @@ import type { CSSProperties } from 'react';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import { editTimeline } from '../../shared/edit-timeline.ts';
-import type { ReplayCut, ReplayEdits } from '../../shared/edits.ts';
-import { formatClock, type ReplayStep } from '../../shared/replay.ts';
+import type { ReplayEdits } from '../../shared/edits.ts';
+import { formatClock } from '../../shared/replay.ts';
 import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
-import { blockText, ClipStepLabel } from './BlockLabel.tsx';
-import { lengthLabel, type StepSegment, stepSegments } from './clip-segments.ts';
+import { blockText } from './BlockLabel.tsx';
+import { lengthLabel } from './clip-segments.ts';
 import { Durations } from './Durations.tsx';
-import { BAR_TOOLS } from './editor-tools.ts';
-import { measureLabel } from './label-measure.ts';
+import { BAR_TOOLS } from './bar-tools.ts';
 import { laneRegions } from './lanes.tsx';
 import { rulerTicks, tickLabel } from './ruler.ts';
-import { keptLength, labelRoom, placeStepDots, segmentText, stepMarks } from './timeline-marks.ts';
-
-const NO_STEPS: readonly ReplayStep[] = [];
 
 /** invariant: Timeline.tsx's PAD, the room left and right of the track that keeps the trim edges easy to grab. */
 const PAD = 14;
@@ -25,9 +21,6 @@ const PAD = 14;
  * editor-layout.css): the dock's 20 px padding, the timeline's 4 px inset and, on the left, the 36 px lane gutter.
  */
 const TRACK_INSET = 20 * 2 + 4 * 2 + 36 + PAD * 2;
-/** Padding the clip's first and last step and every other step keep inside the clip (Timeline.tsx ClipSteps). */
-const EDGE_STEP_PAD = 12;
-const STEP_PAD = 8;
 /** A region block's inline padding (TimelineRegion.tsx). */
 const REGION_PAD = 8;
 /** The recording before its length is known: an invisible stand-in that holds the readout's width. */
@@ -83,20 +76,9 @@ function BarSkeleton({ total, edited }: { total: number | undefined; edited: num
   );
 }
 
-/** The ruler's time labels and, once the steps are known, their dots in the band under them. */
-function RulerSkeleton({
-  duration,
-  width,
-  steps,
-  edits,
-}: {
-  duration: number;
-  width: number;
-  steps: readonly ReplayStep[];
-  edits: ReplayEdits | undefined;
-}) {
+/** The ruler's time labels over the empty dots band; the dots arrive with the editor. */
+function RulerSkeleton({ duration, width }: { duration: number; width: number }) {
   const { tick, ticks } = rulerTicks(width, duration);
-  const kept = editTimeline(edits, duration);
   return (
     <div className="tl-ruler">
       {ticks.map((time) => (
@@ -104,84 +86,19 @@ function RulerSkeleton({
           <span className="tl-tick-label">{tickLabel(time, tick)}</span>
         </span>
       ))}
-      <span className="tl-steps">
-        {placeStepDots(stepMarks(steps, duration), duration, width).map((dot) => (
-          <span
-            key={`${dot.index}-${dot.at}`}
-            className="tl-step"
-            data-removed={kept.isRemoved(dot.seek) || undefined}
-            style={{ left: `calc(${at(dot.at / duration)} - 12px)` }}
-          >
-            <AnimatedIcon
-              name="dot"
-              size={20}
-              strokeWidth={dot.kind === 'wait' ? 2.5 : 0}
-              fill={dot.kind === 'wait' ? 'none' : 'currentColor'}
-            />
-          </span>
-        ))}
-      </span>
     </div>
   );
 }
 
-/** The clip's steps: a divider where each starts and the words the loaded clip shows (Timeline.tsx ClipSteps). */
-function ClipStepsSkeleton({
-  segments,
-  trimStart,
-  cuts,
-  length,
-  px,
-}: {
-  segments: readonly StepSegment[];
-  trimStart: number;
-  cuts: readonly ReplayCut[];
-  length: number;
-  px: number;
-}) {
-  return segments.map((segment, index) => {
-    const room = labelRoom(segment, trimStart, cuts);
-    const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
-    const roomPx = room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD);
-    const label = segmentText(segment, keptLength(segment, trimStart, cuts), roomPx, { pad: STEP_PAD, measure: measureLabel });
-    return (
-      <span
-        key={segment.at}
-        className="tl-clip-step"
-        data-wait={segment.wait || undefined}
-        style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
-      >
-        <span className="tl-clip-step-label" style={{ marginLeft: `${(room.skip / Math.max(1, segment.length)) * 100}%` }}>
-          <ClipStepLabel {...label} />
-        </span>
-      </span>
-    );
-  });
-}
-
-/** The clip lane: the kept clip with its steps' dividers and words, its trim tabs and its cuts (Timeline.tsx). */
-function ClipSkeleton({
-  duration,
-  width,
-  steps,
-  edits,
-}: {
-  duration: number;
-  width: number;
-  steps: readonly ReplayStep[];
-  edits: ReplayEdits | undefined;
-}) {
+/** The clip lane: the kept clip, its trim tabs and its cuts (Timeline.tsx); its step words arrive with the editor. */
+function ClipSkeleton({ duration, width, edits }: { duration: number; width: number; edits: ReplayEdits | undefined }) {
   const trim = edits?.trim ?? { start: 0, end: duration };
-  const cuts = edits?.cuts ?? [];
-  const length = Math.max(1, trim.end - trim.start);
   const px = width / duration;
-  const segments = stepSegments(steps, trim);
   return (
     <>
       {trim.start > 0 ? <span className="tl-outside" style={{ left: 0, width: at(trim.start / duration) }} /> : null}
       {trim.end < duration ? <span className="tl-outside" style={{ left: at(trim.end / duration), right: 0 }} /> : null}
-      <span className="tl-clip" style={{ left: at(trim.start / duration), width: span(length / duration) }}>
-        <ClipStepsSkeleton segments={segments} trimStart={trim.start} cuts={cuts} length={length} px={px} />
+      <span className="tl-clip" style={{ left: at(trim.start / duration), width: span((trim.end - trim.start) / duration) }}>
         <span className="tl-trim" data-edge="start">
           <span className="tl-trim-grip" />
         </span>
@@ -189,7 +106,7 @@ function ClipSkeleton({
           <span className="tl-trim-grip" />
         </span>
       </span>
-      {cuts.map((cut) => (
+      {(edits?.cuts ?? []).map((cut) => (
         <RegionSkeleton
           key={cut.id}
           kind="cut"
@@ -270,19 +187,12 @@ function PlayheadSkeleton() {
 }
 
 /**
- * The desktop dock while the editor loads, drawn with the loaded dock's own classes (dock-layout.css) so nothing moves
- * when it arrives: the bar with its labelled tool group and Add, "0:00.0 / total" and what the cached edits leave; the
- * ruler with its dots band; the clip at its height; and a lane for each effect the cached edits hold.
+ * The desktop dock while the editor loads: layout and markup only, drawn with the loaded dock's own classes
+ * (dock-layout.css) so nothing moves when it arrives. The bar with its labelled tool group and Add, "0:00.0 / total"
+ * and what the cached edits leave; the ruler's labels; the clip at its height; a lane for each effect the cached edits
+ * hold; the playhead at 0:00. The step dots and the clip's step words arrive with the editor.
  */
-export function DockSkeleton({
-  duration,
-  edits,
-  steps = NO_STEPS,
-}: {
-  duration: number | undefined;
-  edits: ReplayEdits | undefined;
-  steps?: readonly ReplayStep[] | undefined;
-}) {
+export function DockSkeleton({ duration, edits }: { duration: number | undefined; edits: ReplayEdits | undefined }) {
   const known = duration !== undefined && duration > 0;
   const width = Math.max(0, (typeof window === 'undefined' ? 1280 : window.innerWidth) - TRACK_INSET);
   const px = known ? width / duration : 0;
@@ -294,13 +204,13 @@ export function DockSkeleton({
         <div className="timeline" data-ready={known ? '' : undefined}>
           <div className="tl-ruler-row">
             <span className="tl-gutter-spacer" />
-            {known ? <RulerSkeleton duration={duration} width={width} steps={steps} edits={edits} /> : <div className="tl-ruler" />}
+            {known ? <RulerSkeleton duration={duration} width={width} /> : <div className="tl-ruler" />}
           </div>
           <div className="tl-lane" data-kind="clip" data-tall="">
             <span className="tl-gutter">
               <FilmIcon />
             </span>
-            <div className="tl-track">{known ? <ClipSkeleton duration={duration} width={width} steps={steps} edits={edits} /> : null}</div>
+            <div className="tl-track">{known ? <ClipSkeleton duration={duration} width={width} edits={edits} /> : null}</div>
           </div>
           {known && edits ? <EffectLanesSkeleton edits={edits} duration={duration} px={px} /> : null}
           {known ? <PlayheadSkeleton /> : null}

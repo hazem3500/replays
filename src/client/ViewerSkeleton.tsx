@@ -8,7 +8,6 @@ import { PhoneEditorSkeleton } from './editor/PhoneEditorSkeleton.tsx';
 import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 import type { ReplayEdits } from '../shared/edits.ts';
-import type { ReplayStep } from '../shared/replay.ts';
 import { apiUrl } from './api/fetch.ts';
 import { useLandedContent } from './hooks/use-landed-content.ts';
 import { useLoadingProgressMotion } from './hooks/use-loading-progress-motion.ts';
@@ -198,14 +197,11 @@ export function EditorSkeleton({
   id,
   meta,
   edits,
-  steps,
 }: {
   id: string;
   meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
   /** The last edits seen for this replay, while the fresh copy loads: their lanes are drawn where they will be. */
   edits?: ReplayEdits | undefined;
-  /** The recording's steps once its bundle is in (the phone clip's segments). */
-  steps?: readonly ReplayStep[] | undefined;
 }) {
   const { enabled: cursorCustomization } = useBetaFlag('cursorCustomization');
   const mobile = useMediaQuery(MOBILE_QUERY);
@@ -235,7 +231,6 @@ export function EditorSkeleton({
           frame={<PlayerSkeleton poster={poster} />}
           duration={meta?.duration}
           edits={edits}
-          steps={steps}
           progress={<ProgressHint />}
         />
       </main>
@@ -273,7 +268,7 @@ export function EditorSkeleton({
       <div className="inspector-resizer" aria-hidden="true">
         <span className="inspector-resizer-line" />
       </div>
-      <DockSkeleton duration={meta?.duration} edits={edits} steps={steps} />
+      <DockSkeleton duration={meta?.duration} edits={edits} />
     </main>
   );
 }

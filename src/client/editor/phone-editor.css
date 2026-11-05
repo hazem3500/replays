@@ -29,7 +29,7 @@
   .phone-lanes-content { justify-self: start; width: max-content; padding-inline: 16px; }
   .phone-track { position: relative; display: grid; gap: 8px; width: var(--span); }
   /* The scale in two bands: tick labels (0 to 14 px), then the step dots (TimelineStepDots.tsx) in their own band, 9 px clear of them. */
-  /* why: above the playhead line (z-index 5), so a pressed dot's label is never struck through. */
+  /* why: above the playhead line (z-index 5), so its tick labels and dots are never struck through. */
   /* A press on the scale seeks and a drag scrubs (phone-scrub.ts), so it takes the finger instead of panning. */
   .phone-scale { position: relative; z-index: 6; height: 40px; touch-action: none; cursor: ew-resize; }
   /* why: the phone's 44 px minimum would stack the dots onto the labels; 32 px targets that never overlap stay above WCAG's 24. */
@@ -44,7 +44,7 @@
   /* why: the phone's 44 px control minimum (editor.css) ties the rule above and wins; an effect block keeps its lane's height. */
   .editor-shell[data-mobile] .phone-lanes .phone-region { min-height: 0; }
   .phone-clip, .phone-cut, .phone-highlight, .phone-region { margin: 0; padding: 0; border: 0; font: inherit; cursor: pointer; }
-  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); box-shadow: inset 0 0 0 1px var(--line); color: var(--text-tertiary); text-align: left; }
+  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); color: var(--text-tertiary); text-align: left; }
   .phone-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised)); box-shadow: var(--clip-lift); color: var(--text-secondary); }
   /* A step's name in whole words (block-label.ts wordsThatFit), up to two lines, centred in the clip. */
   .phone-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 4px; border-left: 2px solid transparent; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; font-size: 11px; line-height: 13px; }
@@ -52,15 +52,12 @@
   .phone-step { color: var(--text-secondary); }
   /* As on the desktop: a step raised a touch, a wait the clip's own ground, a 2 px gap between. */
   .phone-step[data-wait] { background: none; }
+  .phone-step[data-blank] { background: none; border-left-color: var(--line-strong); }
   .phone-cut { display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .phone-cut-label { padding: 1px 4px; border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); font-size: 11px; line-height: 13px; white-space: nowrap; }
   .phone-cut-label:empty { display: none; }
-  /* A block too short for two words: plain, with its lane's colour as a 3 px top accent (its name keeps the text). */
-  .phone-region[data-short] { border-top: 3px solid color-mix(in oklab, var(--kind, var(--line-strong)) 80%, transparent); }
+  .phone-region-slot:not([data-selected]) .phone-region[data-short] { background: none; }
   .phone-region > .phone-region-glyph { flex: none; margin-right: 4px; color: var(--kind, var(--text-tertiary)); }
-  /* The pressed dot's label (a touch screen has no hover): under its dot, over the clip, clear of the time readout. */
-  .tl-step-bubble { position: absolute; z-index: 7; top: calc(100% + 4px); left: 0; translate: -50% 0; width: max-content; max-width: min(300px, 100vw - 32px); padding: 4px 8px; border-radius: var(--radius-sm); background: var(--surface-raised); box-shadow: var(--shadow-pop); color: var(--text); font-size: var(--text-xs); line-height: 1.3; pointer-events: none; }
-  .tl-step-bubble .tl-step-tip-detail { display: block; }
   .phone-step:first-child { border-left: 0; }
   .phone-trimmed { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 30%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.7; }
   .phone-cut { position: absolute; z-index: 2; top: 0; bottom: 0; border-radius: 4px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 55%, transparent) 0 1.5px, transparent 1.5px 6px), color-mix(in srgb, var(--canvas) 80%, var(--surface-raised)); }
@@ -73,7 +70,7 @@
 
   .phone-region-slot { position: absolute; top: 0; bottom: 0; }
   /* Clips match the desktop lanes: a whisper of their kind's tint; selected, a stronger tint, full text and a lift. */
-  .phone-region { position: relative; display: flex; align-items: center; width: 100%; height: 100%; overflow: hidden; justify-content: flex-start; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--text-secondary); font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .phone-region { position: relative; display: flex; align-items: center; width: 100%; height: 100%; overflow: hidden; justify-content: flex-start; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--block-ink); font-size: 11px; font-weight: 500; white-space: nowrap; }
   .phone-region > span { min-width: 0; }
   .phone-region-slot[data-selected] { z-index: 2; }
   .phone-region-slot[data-selected] .phone-region { background: var(--block-selected); box-shadow: var(--clip-lift); color: var(--text); }

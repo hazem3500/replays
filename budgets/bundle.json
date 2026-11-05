@@ -143,9 +143,9 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 29790,
-      "gzip": 5865,
-      "brotli": 5228
+      "raw": 30725,
+      "gzip": 6005,
+      "brotli": 5339
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 142300,
@@ -245,7 +245,7 @@
     "dist/client/assets/main-HASH.js": {
       "raw": 126200,
       "gzip": 44560,
-      "brotli": 39880
+      "brotli": 39960
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -278,14 +278,14 @@
       "brotli": 1555
     },
     "dist/client/assets/open-hint-HASH.css": {
-      "raw": 31785,
-      "gzip": 6427,
-      "brotli": 5707
+      "raw": 30081,
+      "gzip": 6161,
+      "brotli": 5472
     },
     "dist/client/assets/open-hint-HASH.js": {
-      "raw": 201209,
-      "gzip": 65992,
-      "brotli": 56039
+      "raw": 195425,
+      "gzip": 63537,
+      "brotli": 54073
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 2896,
@@ -753,9 +753,9 @@
       "brotli": 6256
     },
     "initial/index.html/css": {
-      "raw": 262845,
-      "gzip": 47751,
-      "brotli": 40243
+      "raw": 262417,
+      "gzip": 47743,
+      "brotli": 40241
     },
     "initial/index.html/js": {
       "raw": 1000963,
@@ -2086,9 +2086,9 @@
       "cap": {
         "raw": 126200,
         "gzip": 44560,
-        "brotli": 39880
+        "brotli": 39960
       },
-      "reason": "Hash-name drift only: no source change in the main entry; its gzip and brotli move with the chunk names this PR gives the build while raw shrinks. CI main to head: raw 126183 to 126179 (-4), gzip 44506 to 44527 (+21), brotli 39818 to 39859 (+41). Replaces the #251 entry for this file.",
+      "reason": "Hash-name drift only: no source change in the main entry; its gzip and brotli move a few bytes with the chunk names this PR gives the build while raw shrinks. CI main to head: raw 126183 to 126179 (-4), gzip 44506 to 44527 (+21), brotli 39818 to 39859 (+41), and 39883 on a later head of this PR; the brotli cap holds that drift. Replaces the #251 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
@@ -2114,31 +2114,31 @@
     {
       "file": "dist/client/assets/open-hint-HASH.css",
       "cap": {
-        "raw": 31785,
-        "gzip": 6427,
-        "brotli": 5707
+        "raw": 30081,
+        "gzip": 6161,
+        "brotli": 5472
       },
-      "reason": "The editor loading frame now draws the loaded dock itself: dock-layout.css (the labelled tool bar, the ruler with its own dots band, the clip, lane tracks and tinted blocks, the playhead) moved out of the lazy Editor CSS into the eager loading stylesheet, which the loaded editor reuses, so nothing moves when it arrives; the phone frame gains its step line, dots and short-block accents. Editor-HASH.css drops by the same rules (to 28982 raw). CI head before the lane-hue block edges: raw 30609, gzip 6179, brotli 5490 (the edges add about 250 raw), against main caps raw 21975, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
+      "reason": "The editor loading frame draws the loaded dock with its own classes: dock-layout.css (the bar, ruler, lanes, clip, tinted blocks and playhead geometry) loads once with the eager loading stylesheet, as editor-layout.css does, and the loaded editor reuses it; dot and clip-step styles stay in the Editor CSS. Same-Boat head: raw 29204, gzip 5981, brotli 5312, against main caps raw 21746, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "dist/client/assets/open-hint-HASH.js",
       "cap": {
-        "raw": 201209,
-        "gzip": 65992,
-        "brotli": 56039
+        "raw": 195425,
+        "gzip": 63537,
+        "brotli": 54073
       },
-      "reason": "The editor loading frame draws the loaded dock at its real geometry: DockSkeleton (the labelled tools with keys, 0:00.0 and the total, what the edits leave, ruler ticks, step dots, the clip with its step words and trim tabs, cached effect lanes and the playhead) and the phone frame's step line, dots and clip words, which bring the shared timeline-marks, clip-segments, block-label and edit-timeline helpers into the eager chunk. Same-Boat head: raw 195348, gzip 64069, brotli 54406, against main caps raw 182222, gzip 59322, brotli 50721. Replaces the #203 entry for this file.",
+      "reason": "The editor loading frame draws the loaded dock with markup only: DockSkeleton (the labelled tools with their keys, 0:00.0 and the total, what the cached edits leave, ruler labels, the clip and its trim tabs, cached effect blocks with their words, the playhead) and the phone frame (scale labels, clip, cached blocks, step line row), so nothing moves when the editor arrives. The step dots, the clip step words and the shortcut sheet stay in the Editor chunk. Same-Boat head: raw 189733, gzip 61686, brotli 52498 (main build 180373 raw), against main caps raw 182222, gzip 59322, brotli 50721. Replaces the #203 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
       "file": "initial/index.html/css",
       "cap": {
-        "raw": 262845,
-        "gzip": 47751,
-        "brotli": 40243
+        "raw": 262417,
+        "gzip": 47743,
+        "brotli": 40241
       },
-      "reason": "The initial CSS closure gains the eager loading frame's dock-layout.css, moved from the lazy Editor CSS so the editor loading frame matches the loaded dock exactly. Same-Boat head: raw 255189, gzip 46360, brotli 39070, against main caps raw 274727, gzip 47181, brotli undefined. Replaces the #184 entry for this file.",
+      "reason": "The initial CSS closure gains the eager loading frame dock-layout.css (bar, ruler, lanes, clip, blocks and playhead geometry), shared with the loaded editor so the loading frame matches the loaded dock. Same-Boat head: raw 254773, gzip 46352, brotli 39068, against main caps raw 248617, gzip 45192, brotli 37952. Replaces the #184 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {

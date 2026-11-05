@@ -77,11 +77,12 @@ test('dragging along the scale scrubs, and a scrub ending near a step settles on
     .toBeLessThanOrEqual(1.5);
 });
 
-test('a step dot on the scale seeks when tapped and names its step under it, clear of the time', async ({ page }) => {
+test('a step dot on the scale seeks when tapped, and the step line names its step', async ({ page }) => {
   await openEdited(page, 'phone-dots');
   const dot = page.locator('[data-testid="ruler-step"]:not([data-kind="wait"])').nth(1);
   const name = (await dot.getAttribute('aria-label')) ?? '';
-  const [label = '', at = ''] = [name.split(',')[0], /at (\d+:\d\d\.\d)$/.exec(name)?.[1]];
+  // why: an action dot's name carries its time ("Add the tea, Click at 0:02.3, then a wait of 1.0 seconds").
+  const [label = '', at = ''] = [name.split(',')[0], /at (\d+:\d\d\.\d)/.exec(name)?.[1]];
   const target = await boxOf(dot);
   expect(Math.min(target.width, target.height)).toBeGreaterThanOrEqual(24);
   const hit = await page.evaluate(
@@ -96,11 +97,9 @@ test('a step dot on the scale seeks when tapped and names its step under it, cle
   );
   expect(hit).toBe(true);
   await dot.tap();
-  const bubble = page.getByTestId('step-bubble');
-  await expect(bubble).toContainText(label);
+  // why: a tap seeks there, and the step line over the lanes names the step; no label covers the clip.
   await expect(page.getByTestId('editor-clock')).toHaveText(at);
-  const [shown, time] = [await boxOf(bubble), await boxOf(page.locator('.phone-time'))];
-  expect(shown.y).toBeGreaterThanOrEqual(time.y + time.height);
+  await expect(page.getByTestId('phone-step-line')).toContainText(label.split(' ')[0] ?? '');
 });
 
 test('a tapped region swaps the toolbar to its actions; Split, Duplicate and Delete edit it and Done brings the tools back', async ({

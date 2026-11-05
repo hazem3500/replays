@@ -11,7 +11,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu.tsx';
-import { ADD_ITEMS, BAR_TOOLS, type EditorTool } from './editor-tools.ts';
+import { BAR_TOOLS, type EditorTool } from './bar-tools.ts';
+import { ADD_ITEMS } from './editor-tools.ts';
 import type { EffectKind } from './state.ts';
 import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 

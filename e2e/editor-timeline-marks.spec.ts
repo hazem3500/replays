@@ -130,8 +130,8 @@ test.describe('editor timeline lanes', () => {
     const timeline = await boxOf(page.getByTestId('timeline'));
     for (const kind of ['zoom', 'speed', 'blur', 'caption']) {
       const lane = await boxOf(page.getByTestId(`lane-${kind}`));
-      // why: 40 px is a lane's resting height; a dock that did not grow would squash the lanes towards 30 or clip them.
-      expect(lane.height, kind).toBeGreaterThanOrEqual(38);
+      // why: 28 px is a lane's one height; a dock that did not grow would squash or clip them.
+      expect(lane.height, kind).toBeGreaterThanOrEqual(27);
       expect(lane.y + lane.height, kind).toBeLessThanOrEqual(timeline.y + timeline.height);
     }
   });

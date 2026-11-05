@@ -15,25 +15,19 @@ import { Button } from '@/components/ui/button.tsx';
 import { editTimeline } from '../../shared/edit-timeline.ts';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { Durations } from './Durations.tsx';
-import { formatClock, type ReplayStep } from '../../shared/replay.ts';
+import { formatClock } from '../../shared/replay.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { laneRegions } from './lanes.tsx';
-import { fitScale, stepLineLabel, stepLineText } from './phone-timeline.ts';
-import { blockText, ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
-import { measureLabel } from './label-measure.ts';
-import { keptLength, labelRoom, placeStepDots, segmentText, stepMarks } from './timeline-marks.ts';
+import { fitScale } from './phone-timeline.ts';
+import { blockText, LANE_GLYPHS } from './BlockLabel.tsx';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { rulerTicks, tickLabel } from './ruler.ts';
-import { stepSegments } from './clip-segments.ts';
 
 /** The timeline's width before the page has laid out (a phone's), for a frame rendered outside a browser. */
 const FALLBACK_WIDTH = 390;
 /** Room a region's lane glyph and the gap after it take from its label, and its inline padding (PhoneLanes.tsx). */
 const REGION_GLYPH_PX = 14;
 const REGION_PAD_PX = 7;
-/** A clip step's inline padding and a step dot's finger target (PhoneLanes.tsx, PhoneTimeline.tsx). */
-const STEP_PAD_PX = 4;
-const DOT_PX = 32;
 
 const screenWidth = () => (typeof window === 'undefined' ? FALLBACK_WIDTH : window.innerWidth);
 
@@ -45,8 +39,8 @@ const TOOLS: Array<{ label: string; icon: ReactNode }> = [
   { label: 'More', icon: <EllipsisIcon aria-hidden="true" /> },
 ];
 
-/** The phone scale as it opens: its time labels and, once the steps are known, their dots in the band under them. */
-function SkeletonScale({ duration, steps, scale }: { duration: number; steps: readonly ReplayStep[]; scale: number }) {
+/** The phone scale as it opens: its time labels over the empty dots band; the dots arrive with the editor. */
+function SkeletonScale({ duration, scale }: { duration: number; scale: number }) {
   const px = (time: number) => time * scale;
   const { tick, ticks } = rulerTicks(px(duration), duration);
   return (
@@ -56,59 +50,16 @@ function SkeletonScale({ duration, steps, scale }: { duration: number; steps: re
           {tickLabel(at, tick)}
         </span>
       ))}
-      {placeStepDots(stepMarks(steps, duration), duration, px(duration), DOT_PX).map((dot) => (
-        <i key={`${dot.index}-${dot.at}`} className="sk-phone-dot" style={{ left: `${px(dot.at)}px` }}>
-          <AnimatedIcon
-            name="dot"
-            size={20}
-            strokeWidth={dot.kind === 'wait' ? 2.5 : 0}
-            fill={dot.kind === 'wait' ? 'none' : 'currentColor'}
-          />
-        </i>
-      ))}
     </div>
   );
 }
 
-/** The clip lane as it opens: the kept clip with each step's words where the loaded clip shows them (PhoneLanes.tsx). */
-function SkeletonClip({
-  duration,
-  edits,
-  steps,
-  scale,
-}: {
-  duration: number;
-  edits: ReplayEdits | undefined;
-  steps: readonly ReplayStep[];
-  scale: number;
-}) {
-  const px = (time: number) => time * scale;
+/** The clip lane as it opens: the kept clip at its rect (PhoneLanes.tsx); its step words arrive with the editor. */
+function SkeletonClip({ duration, edits, scale }: { duration: number; edits: ReplayEdits | undefined; scale: number }) {
   const trim = edits?.trim ?? { start: 0, end: duration };
-  const cuts = edits?.cuts ?? [];
   return (
     <div className="sk-phone-lane" data-kind="clip">
-      <span className="sk-phone-clip" style={{ left: `${px(trim.start)}px`, width: `${px(trim.end - trim.start)}px` }}>
-        {stepSegments(steps, trim).map((segment) => {
-          const room = labelRoom(segment, trim.start, cuts);
-          return (
-            <span
-              key={segment.at}
-              data-wait={segment.wait || undefined}
-              style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
-            >
-              <span style={{ marginLeft: `${px(room.skip)}px` }}>
-                <ClipStepLabel
-                  {...segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
-                    lines: 2,
-                    pad: STEP_PAD_PX,
-                    measure: measureLabel,
-                  })}
-                />
-              </span>
-            </span>
-          );
-        })}
-      </span>
+      <span className="sk-phone-clip" style={{ left: `${trim.start * scale}px`, width: `${(trim.end - trim.start) * scale}px` }} />
     </div>
   );
 }
@@ -143,19 +94,17 @@ function SkeletonRegions({ edits, scale }: { edits: ReplayEdits; scale: number }
 }
 
 /** The phone timeline as it opens: the whole recording across the screen, 0:00 and the playhead at its left margin. */
-function SkeletonLanes({ duration, edits, steps }: { duration: number; edits: ReplayEdits | undefined; steps: readonly ReplayStep[] }) {
+function SkeletonLanes({ duration, edits }: { duration: number; edits: ReplayEdits | undefined }) {
   const scale = fitScale(screenWidth(), duration);
   const px = (time: number) => time * scale;
   return (
     <div className="sk-phone-track" style={cssVars({ '--span': `${px(duration)}px` })}>
-      <SkeletonScale duration={duration} steps={steps} scale={scale} />
-      <SkeletonClip duration={duration} edits={edits} steps={steps} scale={scale} />
+      <SkeletonScale duration={duration} scale={scale} />
+      <SkeletonClip duration={duration} edits={edits} scale={scale} />
       {edits ? <SkeletonRegions edits={edits} scale={scale} /> : null}
     </div>
   );
 }
-
-const NO_STEPS: readonly ReplayStep[] = [];
 
 /**
  * The phone editor while it loads, at the loaded layout's geometry (editor.css's and phone-editor.css's phone rules,
@@ -168,7 +117,6 @@ export function PhoneEditorSkeleton({
   frame,
   duration,
   edits,
-  steps = NO_STEPS,
   progress,
 }: {
   title: string;
@@ -176,8 +124,6 @@ export function PhoneEditorSkeleton({
   frame: ReactNode;
   duration: number | undefined;
   edits: ReplayEdits | undefined;
-  /** The recording's steps once its bundle is in: the clip's segments. */
-  steps?: readonly ReplayStep[] | undefined;
   progress: ReactNode;
 }) {
   const edited = duration !== undefined && edits ? editTimeline(edits, duration).duration : undefined;
@@ -219,11 +165,9 @@ export function PhoneEditorSkeleton({
             <ScanIcon aria-hidden="true" />
           </span>
         </div>
-        <p className="sk-phone-step-line">
-          {duration ? stepLineText(stepLineLabel(steps, edits?.trim ?? { start: 0, end: duration }, 0), screenWidth()) : null}
-        </p>
+        <p className="sk-phone-step-line" />
         <div className="sk-phone-lanes">
-          {duration !== undefined && duration > 0 ? <SkeletonLanes duration={duration} edits={edits} steps={steps} /> : null}
+          {duration !== undefined && duration > 0 ? <SkeletonLanes duration={duration} edits={edits} /> : null}
         </div>
         <p className="sk-phone-hint">
           {edits && laneRegions(edits).length > 0 ? null : 'Captions, blur and zoom from the tools below go here'}
