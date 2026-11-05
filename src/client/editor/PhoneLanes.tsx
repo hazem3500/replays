@@ -216,12 +216,12 @@ function PhoneClipSteps({
   const px = (time: number) => time * scale;
   return stepSegments(steps, trim).map((segment) => {
     const room = labelRoom(segment, trim.start, cuts);
-    const label = segmentText(
-      segment,
-      keptLength(segment, trim.start, cuts),
-      px(room.length),
-      { lines: 2, pad: PHONE_STEP_PAD_PX, measure: measureLabel, fallback: stepKindName(segment.kind) },
-    );
+    const label = segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
+      lines: 2,
+      pad: PHONE_STEP_PAD_PX,
+      measure: measureLabel,
+      fallback: stepKindName(segment.kind),
+    });
     return (
       <span
         key={segment.at}

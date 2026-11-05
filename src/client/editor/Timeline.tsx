@@ -74,12 +74,11 @@ function ClipSteps({
     // why: only the side under a trim tab needs its wider pad, so an end step fits words as wide as the blocks below it.
     const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
     const roomPx = room.length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
-    const label = segmentText(
-      segment,
-      keptLength(segment, trim.start, cuts),
-      roomPx,
-      { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel, fallback: stepKindName(segment.kind) },
-    );
+    const label = segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, {
+      pad: CLIP_STEP_INNER_PAD_PX,
+      measure: measureLabel,
+      fallback: stepKindName(segment.kind),
+    });
     return (
       <span
         key={segment.at}
