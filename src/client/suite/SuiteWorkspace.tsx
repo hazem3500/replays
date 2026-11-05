@@ -36,6 +36,8 @@ import { compareDefaults } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
+import { useLocationSearch } from '../hooks/use-location-search.ts';
+import { COMPARE_VIEW } from '../../shared/views.ts';
 import { viewDefaults } from '../views/resolve.ts';
 import { suiteComparePage } from '../routing/pages.ts';
 
@@ -139,15 +141,14 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
 
   const runs = useMemo(() => workspaceRuns(suite), [suite]);
   const detailed = Boolean(suite?.runDetails);
-  // why: with two or more recordings the viewer compares them all, and picking a run only moves its focus.
+  // why: retain every playable run for layout switching even when entry shows only the selected run.
   const playable = recordedRuns(runs, detailed);
-  const [namedRun] = useState(() => Boolean(initialReplayId));
-  const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: playable.length });
+  const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: 1 });
+  const search = new URLSearchParams(useLocationSearch());
   const defaults = compareDefaults({
     page: 'suite',
     recordings: playable.length,
-    namedRecording: namedRun,
-    viewLayout: viewDefaults(view).layout,
+    viewLayout: search.get('view') === COMPARE_VIEW ? viewDefaults(view).layout : 'single',
   });
   const comparing = defaults.compare;
 

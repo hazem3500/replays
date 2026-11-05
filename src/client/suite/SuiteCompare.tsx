@@ -6,9 +6,8 @@ import { replayHref } from '../routing/links.ts';
 import type { RecordedRun } from './runs.ts';
 
 /**
- * A suite with two or more recordings opens as the viewer comparing its runs: the runs sidebar picks the focus,
- * the layout lives in `?layout=` (else compare/defaults.ts: Grid, or Spotlight on a run the link names). "Compare"
- * leaves the suite for an ad-hoc comparison of these runs and the pick.
+ * Keeps suite runs available in every layout. Entry defaults to Single; explicit layout or Compare view intent
+ * can show them together. The sidebar selects the focus without removing the URL's layout preferences.
  */
 export function SuiteCompare({
   runs,
