@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { compareDefaults } from '../src/client/compare/defaults.ts';
+import { compareDefaults, suiteViewLayout } from '../src/client/compare/defaults.ts';
 import { parseCompareSearch, writeCompareSearch } from '../src/client/compare/compare-search.ts';
 
 describe('compare defaults', () => {
@@ -8,8 +8,22 @@ describe('compare defaults', () => {
     expect(compareDefaults({ page: 'suite', recordings: 4 })).toEqual({ compare: true, layout: 'single' });
   });
 
-  it('does not escalate a named run to spotlight', () => {
-    expect(compareDefaults({ page: 'suite', recordings: 4, namedRecording: true })).toEqual({ compare: true, layout: 'single' });
+  it('does not use an implicit grid preset to escalate ordinary entry', () => {
+    expect(suiteViewLayout({ source: 'recordings', view: { id: 'standard', label: 'Standard', order: 0, layout: 'grid' } })).toBe('single');
+  });
+
+  for (const source of ['url', 'suite', 'replay'] as const) {
+    for (const layout of ['grid', 'spotlight'] as const) {
+      it(`retains a custom ${source} view's explicit ${layout} layout`, () => {
+        const fallback = suiteViewLayout({ source, view: { id: 'custom', label: 'Custom', order: 0, layout } });
+        expect(compareDefaults({ page: 'suite', recordings: 4, viewLayout: fallback }).layout).toBe(layout);
+        expect(parseCompareSearch('?layout=single', '', fallback).layout).toBe('single');
+      });
+    }
+  }
+
+  it('keeps profile views without comparison layout in single', () => {
+    expect(suiteViewLayout({ source: 'suite', view: { id: 'triage', label: 'Triage', order: 0 } })).toBe('single');
   });
 
   it('uses an intentionally requested comparison view', () => {
@@ -36,7 +50,7 @@ describe('compare defaults', () => {
   });
 
   it('keeps a one-recording suite in the plain viewer', () => {
-    expect(compareDefaults({ page: 'suite', recordings: 1, namedRecording: true })).toEqual({ compare: false, layout: 'single' });
+    expect(compareDefaults({ page: 'suite', recordings: 1 })).toEqual({ compare: false, layout: 'single' });
   });
 
   it('keeps a replay on its own in the plain viewer', () => {

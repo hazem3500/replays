@@ -1,11 +1,15 @@
+import type { ResolvedView } from '../views/resolve.ts';
 import type { CompareLayout } from './compare-search.ts';
+
+/** Explicit URL and profile views retain their layout; the implicit Standard view opens Single. */
+export function suiteViewLayout({ view, source }: Pick<ResolvedView, 'view' | 'source'>): CompareLayout {
+  return source === 'recordings' ? 'single' : view.layout ?? 'single';
+}
 
 /** Entry intent and the recordings available to the layout switcher. */
 export interface CompareEntry {
   page: 'replay' | 'suite';
   recordings: number;
-  /** A named run selects the focus without changing the layout. */
-  namedRecording?: boolean;
   /** An intentionally requested view's layout; ordinary suite entry passes Single. */
   viewLayout?: CompareLayout;
 }

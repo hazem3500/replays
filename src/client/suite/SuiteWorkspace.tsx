@@ -32,13 +32,10 @@ import type { SuiteDetails } from '../viewer/ReplayInfo.tsx';
 import type { InspectorTab } from '../viewer/context.ts';
 import { initialRunReplayId, isExpired, neighbourReplayId, orderedRuns, playableReplayId, type RecordedRun, recordedRuns } from './runs.ts';
 import { SuiteExpired } from './SuiteExpired.tsx';
-import { compareDefaults } from '../compare/defaults.ts';
+import { compareDefaults, suiteViewLayout } from '../compare/defaults.ts';
 import { monograms, shortNames } from '../compare/tiles.ts';
 import { usePanelMotion } from '../hooks/use-panel-motion.ts';
 import { usePageView } from '../hooks/use-page-view.ts';
-import { useLocationSearch } from '../hooks/use-location-search.ts';
-import { COMPARE_VIEW } from '../../shared/views.ts';
-import { viewDefaults } from '../views/resolve.ts';
 import { suiteComparePage } from '../routing/pages.ts';
 
 // why: intent and route preparation share this cache so a warmed comparison does not suspend for another frame.
@@ -144,11 +141,10 @@ export function SuiteWorkspace({ id, replayId: initialReplayId }: { id: string; 
   // why: retain every playable run for layout switching even when entry shows only the selected run.
   const playable = recordedRuns(runs, detailed);
   const view = usePageView({ replay: bundle, suiteProfile: suite?.profile, recordings: 1 });
-  const search = new URLSearchParams(useLocationSearch());
   const defaults = compareDefaults({
     page: 'suite',
     recordings: playable.length,
-    viewLayout: search.get('view') === COMPARE_VIEW ? viewDefaults(view).layout : 'single',
+    viewLayout: suiteViewLayout(view),
   });
   const comparing = defaults.compare;
 
