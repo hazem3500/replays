@@ -83,7 +83,9 @@
   .tl-clip-step[data-wait] { background: none; }
   /* A step too short for any words is no box: it merges into the track around it, and its dot above names it. */
   .tl-clip-step[data-blank] { background: none; }
-  .tl-clip-step:first-child { padding-left: 12px; border-left: 0; }
+  /* why: the clip's end steps start 2 px clear of their trim tab, as steps sit 2 px apart, so both tabs stand alone alike. */
+  .tl-clip-step:first-child { padding-left: 0; border-left: 12px solid transparent; }
+  .tl-clip-step[data-last] { padding-right: 0; border-right: 12px solid transparent; }
   /* A run of wordless neighbours (Timeline.tsx ClipSteps): one raised span naming how many steps it holds. */
   .tl-clip-run { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 8px; border-radius: 4px; background: color-mix(in srgb, var(--text) calc(var(--step-tint, 6%) + 2%), transparent); color: var(--text-secondary); font-size: var(--text-2xs); font-weight: 500; line-height: 1; white-space: nowrap; pointer-events: none; }
   /* The trim edges: slim tabs with a grip. */
@@ -143,10 +145,10 @@
     }
   }
   :is(.editor-shell, .editor-loading) { --step-tint: 9%; --block-ink: var(--text); --kind-fill: 20%; --clip-fill: var(--surface-hover); --clip-fill-hover: color-mix(in srgb, var(--text) 6%, var(--surface-hover)); --clip-selected: color-mix(in srgb, var(--accent) 20%, var(--surface-raised)); --clip-lift: 0 4px 12px rgb(0 0 0 / 0.24); }
-  :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --step-tint: 6%; --block-ink: var(--text-secondary); --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
+  :root[data-theme="light"] :is(.editor-shell, .editor-loading) { --step-tint: 8%; --block-ink: var(--text-secondary); --kind-fill: 14%; --clip-selected: color-mix(in srgb, var(--accent) 12%, var(--surface-raised)); --clip-lift: 0 3px 10px rgb(0 0 0 / 0.14), 0 0 0 0.5px rgb(0 0 0 / 0.08); }
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { justify-content: flex-start; border-radius: 4px; background: var(--block); box-shadow: none; color: var(--block-ink); font-weight: 500; }
   /* A block too short for two words is no box: a thin bar in its lane's hue across its span (one tint, no edge). */
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { background: none; }
-  :is(.tl-region-body, .phone-region, .sk-phone-region, .phone-run)[data-short]::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: var(--block-selected); pointer-events: none; }
+  :is(.tl-region-body, .phone-region, .sk-phone-region, .phone-run)[data-short]::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: color-mix(in oklab, var(--kind, var(--line-strong)) 50%, var(--surface)); pointer-events: none; }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }

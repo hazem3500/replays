@@ -135,6 +135,7 @@ function ClipStepsSkeleton({
           className="tl-clip-step"
           data-wait={segment.wait || undefined}
           data-blank={!segment.wait && !labels[index]?.text ? '' : undefined}
+          data-last={index === segments.length - 1 ? '' : undefined}
           style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
         />
       ))}

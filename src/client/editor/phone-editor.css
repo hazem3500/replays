@@ -36,6 +36,8 @@
   .editor-shell[data-mobile] .phone-scale .tl-step { top: 13px; left: -16px; width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
   /* why: the centre playhead passes behind the labels instead of striking through them. */
   .phone-scale > .phone-tick { position: absolute; z-index: 6; top: 0; translate: -50% 0; border-radius: 2px; background: var(--surface); box-shadow: 0 0 0 3px var(--surface); color: var(--text-secondary); font-size: 11px; line-height: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
+  /* why: 0:00 starts at the track's 16 px margin instead of centring past the screen's edge. */
+  .phone-scale > .phone-tick:first-child { translate: 0 0; }
   .phone-lane-stack { display: grid; gap: 8px; }
   .phone-lane { position: relative; height: 30px; }
   .phone-lane[data-kind="clip"] { height: 52px; }

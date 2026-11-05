@@ -95,6 +95,7 @@ function ClipSteps({
             data-testid="clip-step"
             data-wait={segment.wait || undefined}
             data-blank={!segment.wait && !label.text ? '' : undefined}
+            data-last={index === segments.length - 1 ? '' : undefined}
             aria-hidden="true"
             style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
           >
