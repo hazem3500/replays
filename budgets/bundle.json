@@ -169,7 +169,7 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2377,
-      "gzip": 1137,
+      "gzip": 1136,
       "brotli": 1009
     },
     "dist/client/assets/feature-HASH.js": {
