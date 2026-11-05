@@ -1,14 +1,9 @@
-import { animate } from 'motion/mini';
 import { useEffect, useRef, useState } from 'react';
 
 import { formatClock } from '../../shared/replay.ts';
-import { clampScale, timeAtScroll } from '../editor/phone-timeline.ts';
+import { scrollForPlayhead } from '../editor/phone-scrub.ts';
+import { clampScale, PHONE_GUTTER_PX } from '../editor/phone-timeline.ts';
 import type { Playback } from '../player.ts';
-
-/** Quiet time after the last scroll event before a scrub (with its momentum) counts as finished. */
-const SETTLE_MS = 140;
-/** How close (px) a finished scrub must land to a step start to settle on it. */
-const SNAP_PX = 14;
 
 interface PhoneTimelineOptions {
   player: Playback;
@@ -16,10 +11,10 @@ interface PhoneTimelineOptions {
   seek: HTMLInputElement | null;
   /** Pixels per ms. */
   scale: number;
-  /** The scale that fits the whole recording; zoom stays within half of it and MAX_SCALE. */
+  /** The scale that fits the whole recording; zoom stays between it and MAX_SCALE. */
   fit: number;
-  /** Step starts (ms) a scrub settles on when it ends close to one. */
-  snaps: readonly number[];
+  /** The track the playhead line rides on (its --playhead is the clock's x). */
+  track: HTMLElement | null;
   onScale: (scale: number) => void;
 }
 
@@ -37,7 +32,6 @@ function pinchZoom(latest: Latest) {
   let pinch: { distance: number; scale: number } | undefined;
   const zoom = (next: number) => latest.current.onScale(clampScale(next, latest.current.fit));
   return {
-    active: () => pinch !== undefined,
     start: (event: TouchEvent) => {
       if (event.touches.length === 2) pinch = { distance: distance(event.touches), scale: latest.current.scale };
     },
@@ -57,82 +51,31 @@ function pinchZoom(latest: Latest) {
   };
 }
 
-/** The snap pulse is UI feedback, independent of the deterministic replay clock. */
-function snapFeedback(scroller: HTMLElement) {
-  let animation: ReturnType<typeof animate> | undefined;
-  return {
-    flash: () => {
-      animation?.stop();
-      const marker = scroller.parentElement?.querySelector<HTMLElement>('.phone-snap-marker');
-      if (!marker || typeof marker.animate !== 'function' || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-      animation = animate([marker], { transform: ['scaleX(1)', 'scaleX(2.5)', 'scaleX(1)'] }, { duration: 0.24, ease: [0.23, 1, 0.32, 1] });
-    },
-    dispose: () => animation?.stop(),
-  };
-}
-
 /**
- * The lanes' scroll position and the clock as one: `follow` scrolls to the clock, and a scroll it did not make is a
- * scrub that pauses, seeks and, once quiet, settles on a step start it lands near.
+ * The playhead on the track and the lanes' scroll as one: the clock places the playhead line and keeps it in view
+ * (centred while playback runs past the middle), but never moves the lanes under a scrub. `recentre` centres it.
  */
-function scrubber(scroller: HTMLElement, latest: Latest, pinching: () => boolean) {
+function follower(scroller: HTMLElement, latest: Latest) {
   const { player } = latest.current;
-  let expected = -1;
-  let scrubbing = false;
-  let settle = 0;
-  const snap = snapFeedback(scroller);
-  const place = (left: number) => {
-    expected = left;
-    scroller.scrollTo({ left, behavior: 'instant' });
-  };
-  const announce = () => {
+  const announce = (time: number) => {
     const { seek } = latest.current;
     if (!seek) return;
-    const time = player.getTime();
     seek.value = String(Math.round(time));
     seek.setAttribute('aria-valuetext', formatClock(time));
   };
-  const finish = () => {
-    const { scale, snaps } = latest.current;
-    const time = timeAtScroll(scroller.scrollLeft, scale, player.duration);
-    const near = snaps.find((at) => Math.abs(at - time) * scale <= SNAP_PX && Math.abs(at - time) * scale > 0.5);
-    if (near !== undefined) {
-      player.seek(near);
-      scroller.scrollTo({ left: near * scale, behavior: 'smooth' });
-      scroller.toggleAttribute('data-snapped', true);
-      snap.flash();
-      if ('vibrate' in navigator) navigator.vibrate(8);
-      return;
-    }
-    scrubbing = false;
-    expected = scroller.scrollLeft;
-    scroller.removeAttribute('data-snapped');
-    player.endScrub();
-  };
-  return {
-    place,
-    follow: () => {
-      announce();
-      if (scrubbing || pinching()) return;
-      const left = player.getTime() * latest.current.scale;
-      if (Math.abs(scroller.scrollLeft - left) >= 0.5) place(left);
-    },
-    scroll: () => {
-      if ((!scrubbing && Math.abs(scroller.scrollLeft - expected) <= 1) || pinching()) return;
-      if (!scrubbing) {
-        scrubbing = true;
-        player.pause();
-        player.beginScrub();
-      }
-      player.seek(timeAtScroll(scroller.scrollLeft, latest.current.scale, player.duration));
-      window.clearTimeout(settle);
-      settle = window.setTimeout(finish, SETTLE_MS);
-    },
-    dispose: () => {
-      snap.dispose();
-      window.clearTimeout(settle);
-      if (scrubbing) player.endScrub();
-    },
+  return (recentre: boolean) => {
+    const { scale, track } = latest.current;
+    const time = player.getTime();
+    const x = time * scale;
+    track?.style.setProperty('--playhead', `${x}px`);
+    announce(time);
+    if (player.isScrubbing() && !recentre) return;
+    const viewport = scroller.clientWidth;
+    const max = scroller.scrollWidth - viewport;
+    const left = recentre
+      ? Math.min(Math.max(x + PHONE_GUTTER_PX - viewport / 2, 0), Math.max(0, max))
+      : scrollForPlayhead({ x, scrollLeft: scroller.scrollLeft, viewport, max, follow: player.getState().status === 'playing' });
+    if (Math.abs(scroller.scrollLeft - left) >= 0.5) scroller.scrollTo({ left, behavior: 'instant' });
   };
 }
 
@@ -147,14 +90,13 @@ function listen<K extends keyof HTMLElementEventMap>(
 }
 
 /**
- * One position for the phone timeline and the playhead: the clock scrolls the lanes under the centre line, and a
- * finger (with the platform's momentum), a wheel or a mouse drag scrolling them scrubs, settling on a step start it
- * lands near. Two fingers or Ctrl + wheel zoom around the playhead.
+ * The phone timeline's playhead and zoom: the clock moves the playhead line along the track and scrolls the lanes to
+ * keep it in view; two fingers or Ctrl + wheel zoom, keeping the playhead in the middle once the recording overflows.
  */
 export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTimelineOptions) {
   const latest = useRef(options);
-  const control = useRef<ReturnType<typeof scrubber>>(null);
-  const { player, scale } = options;
+  const place = useRef<ReturnType<typeof follower>>(null);
+  const { player, scale, track } = options;
 
   useEffect(() => {
     latest.current = options;
@@ -163,12 +105,11 @@ export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTim
   useEffect(() => {
     if (!scroller) return;
     const pinch = pinchZoom(latest);
-    const scrub = scrubber(scroller, latest, pinch.active);
-    control.current = scrub;
-    scrub.follow();
+    const follow = follower(scroller, latest);
+    place.current = follow;
+    follow(false);
     const stops = [
-      player.subscribeTime(scrub.follow),
-      listen(scroller, 'scroll', scrub.scroll, true),
+      player.subscribeTime(() => follow(false)),
       listen(scroller, 'touchstart', pinch.start, true),
       listen(scroller, 'touchmove', pinch.move, false),
       listen(scroller, 'touchend', pinch.end, true),
@@ -176,15 +117,16 @@ export function usePhoneTimeline(scroller: HTMLElement | null, options: PhoneTim
       listen(scroller, 'wheel', pinch.wheel, false),
     ];
     return () => {
-      control.current = null;
-      scrub.dispose();
+      place.current = null;
       for (const stop of stops) stop();
     };
   }, [scroller, player]);
 
   useEffect(() => {
-    control.current?.place(player.getTime() * scale);
-  }, [player, scale]);
+    // why: a new scale or track moves the playhead's x before the clock next ticks.
+    track?.style.setProperty('--playhead', `${player.getTime() * scale}px`);
+    place.current?.(true);
+  }, [player, scale, track]);
 }
 
 /** The lanes' width as they resize (0 until measured): what the whole recording is fitted to. */

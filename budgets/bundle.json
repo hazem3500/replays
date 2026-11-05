@@ -19,13 +19,13 @@
     },
     "dist/client/assets/api-HASH.js": {
       "raw": 1998,
-      "gzip": 966,
+      "gzip": 965,
       "brotli": 831
     },
     "dist/client/assets/arrow-up-HASH.js": {
       "raw": 209,
       "gzip": 191,
-      "brotli": 170
+      "brotli": 210
     },
     "dist/client/assets/Avatar-HASH.js": {
       "raw": 1651,
@@ -74,7 +74,7 @@
     },
     "dist/client/assets/clamp-HASH.js": {
       "raw": 17321,
-      "gzip": 6445,
+      "gzip": 6444,
       "brotli": 5719
     },
     "dist/client/assets/clipboard-HASH.js": {
@@ -143,14 +143,14 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 33130,
-      "gzip": 6441,
-      "brotli": 5740
+      "raw": 30617,
+      "gzip": 5996,
+      "brotli": 5336
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 135127,
-      "gzip": 45137,
-      "brotli": 37809
+      "raw": 147756,
+      "gzip": 49156,
+      "brotli": 41134
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 37945,
@@ -159,7 +159,7 @@
     },
     "dist/client/assets/elements-HASH.js": {
       "raw": 17251,
-      "gzip": 6316,
+      "gzip": 6315,
       "brotli": 5785
     },
     "dist/client/assets/enabled-HASH.js": {
@@ -169,12 +169,12 @@
     },
     "dist/client/assets/expired-query-HASH.js": {
       "raw": 2377,
-      "gzip": 1138,
-      "brotli": 1011
+      "gzip": 1136,
+      "brotli": 1009
     },
     "dist/client/assets/feature-HASH.js": {
       "raw": 6722,
-      "gzip": 3268,
+      "gzip": 3267,
       "brotli": 2859
     },
     "dist/client/assets/features-animation-HASH.js": {
@@ -205,12 +205,12 @@
     "dist/client/assets/HostSurface-HASH.js": {
       "raw": 1266,
       "gzip": 704,
-      "brotli": 623
+      "brotli": 631
     },
     "dist/client/assets/index-queries-HASH.js": {
       "raw": 6806,
       "gzip": 2748,
-      "brotli": 2521
+      "brotli": 2509
     },
     "dist/client/assets/Inspector-HASH.css": {
       "raw": 49680,
@@ -235,7 +235,7 @@
     "dist/client/assets/keep-HASH.js": {
       "raw": 8836,
       "gzip": 3953,
-      "brotli": 3461
+      "brotli": 3458
     },
     "dist/client/assets/main-HASH.css": {
       "raw": 223667,
@@ -244,8 +244,8 @@
     },
     "dist/client/assets/main-HASH.js": {
       "raw": 126200,
-      "gzip": 44520,
-      "brotli": 39850
+      "gzip": 44560,
+      "brotli": 39960
     },
     "dist/client/assets/MalleableHost-HASH.css": {
       "raw": 8084,
@@ -259,7 +259,7 @@
     },
     "dist/client/assets/measure-HASH.js": {
       "raw": 30211,
-      "gzip": 11742,
+      "gzip": 11741,
       "brotli": 10803
     },
     "dist/client/assets/microtask-HASH.js": {
@@ -270,7 +270,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 67
+      "brotli": 70
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -278,14 +278,14 @@
       "brotli": 1555
     },
     "dist/client/assets/open-hint-HASH.css": {
-      "raw": 21746,
-      "gzip": 4642,
-      "brotli": 4077
+      "raw": 31230,
+      "gzip": 6322,
+      "brotli": 5616
     },
     "dist/client/assets/open-hint-HASH.js": {
-      "raw": 182222,
-      "gzip": 59322,
-      "brotli": 50721
+      "raw": 195425,
+      "gzip": 63537,
+      "brotli": 54073
     },
     "dist/client/assets/player-HASH.css": {
       "raw": 2896,
@@ -325,7 +325,7 @@
     "dist/client/assets/react-HASH.js": {
       "raw": 225473,
       "gzip": 69476,
-      "brotli": 59828
+      "brotli": 59819
     },
     "dist/client/assets/render-HASH.css": {
       "raw": 1349,
@@ -360,7 +360,7 @@
     "dist/client/assets/sign-in-HASH.js": {
       "raw": 43874,
       "gzip": 13606,
-      "brotli": 12356
+      "brotli": 12345
     },
     "dist/client/assets/sliders-horizontal-HASH.js": {
       "raw": 464,
@@ -384,13 +384,13 @@
     },
     "dist/client/assets/SuiteCompare-HASH.js": {
       "raw": 1240,
-      "gzip": 737,
-      "brotli": 644
+      "gzip": 735,
+      "brotli": 670
     },
     "dist/client/assets/SuiteWorkspace-HASH.js": {
-      "raw": 22875,
-      "gzip": 9632,
-      "brotli": 8310
+      "raw": 22869,
+      "gzip": 9627,
+      "brotli": 8291
     },
     "dist/client/assets/tiles-HASH.js": {
       "raw": 1468,
@@ -409,8 +409,8 @@
     },
     "dist/client/assets/ui-state-HASH.js": {
       "raw": 335,
-      "gzip": 265,
-      "brotli": 248
+      "gzip": 256,
+      "brotli": 233
     },
     "dist/client/assets/use-focus-when-HASH.js": {
       "raw": 547,
@@ -454,7 +454,7 @@
     },
     "dist/client/index.html": {
       "raw": 14204,
-      "gzip": 4628,
+      "gzip": 4627,
       "brotli": 3876
     },
     "dist/client/render.html": {
@@ -753,9 +753,9 @@
       "brotli": 6256
     },
     "initial/index.html/css": {
-      "raw": 248617,
-      "gzip": 45192,
-      "brotli": 37952
+      "raw": 262417,
+      "gzip": 47743,
+      "brotli": 40241
     },
     "initial/index.html/js": {
       "raw": 1000963,
@@ -1103,15 +1103,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/184"
     },
     {
-      "file": "initial/index.html/css",
-      "cap": {
-        "raw": 274727,
-        "gzip": 47181
-      },
-      "reason": "Typed editor transforms, export-menu contributions and safe shortcut registrations add owned registry code, UI and shared dependency fingerprints. Measured against fresh main on the same Boat.",
-      "pr": "https://github.com/hazem3500/replays/pull/184"
-    },
-    {
       "file": "dist/client/assets/Headline-HASH.css",
       "cap": {
         "raw": 1089,
@@ -1272,16 +1263,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
-      "file": "dist/client/assets/HostSurface-HASH.js",
-      "cap": {
-        "raw": 1266,
-        "gzip": 704,
-        "brotli": 632
-      },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 1229, gzip new to 683, brotli new to 613 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
       "file": "dist/client/assets/Inspector-HASH.js",
       "cap": {
         "raw": 291541,
@@ -1329,16 +1310,6 @@
         "brotli": 429
       },
       "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw 665 to 670, gzip 461 to 463 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/arrow-up-HASH.js",
-      "cap": {
-        "raw": 209,
-        "gzip": 192,
-        "brotli": 205
-      },
-      "reason": "Viewer surface updated for Motion driven transitions and the simplified viewer controls in this PR. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 202, gzip new to 186, brotli new to 199 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -1449,16 +1420,6 @@
         "brotli": 1555
       },
       "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 3743, gzip new to 1716, brotli new to 1509 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/203"
-    },
-    {
-      "file": "dist/client/assets/open-hint-HASH.js",
-      "cap": {
-        "raw": 182222,
-        "gzip": 59322,
-        "brotli": 50721
-      },
-      "reason": "Shared viewer chunk regrouped by the Motion migration: menus, dialogs, sheets and toasts animate through Motion, and route, page and tile transitions share its helpers. Reviewed and approved by Hazem. CI same-runner main/head: raw new to 176914, gzip new to 57594, brotli new to 49243 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/203"
     },
     {
@@ -1835,16 +1796,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/208"
     },
     {
-      "file": "dist/client/assets/open-hint-HASH.css",
-      "cap": {
-        "raw": 21975,
-        "gzip": 4642,
-        "brotli": 4077
-      },
-      "reason": "The shared disclosure styles (animated chevron, folded panel) and the settings link arrow. Reviewed and approved by Hazem. CI same-runner main/head: raw 20451 to 21334, gzip 4321 to 4506, brotli 3790 to 3958 bytes; caps keep the budget's 3% headroom.",
-      "pr": "https://github.com/hazem3500/replays/pull/208"
-    },
-    {
       "file": "dist/client/assets/use-focus-when-HASH.js",
       "cap": {
         "raw": 547,
@@ -1853,16 +1804,6 @@
       },
       "reason": "The transform motion hook moved into this shared chunk once first run dropped its own chevron code for the shared disclosure. Reviewed and approved by Hazem. CI same-runner main/head: raw 303 to 531, gzip 246 to 391, brotli 211 to 349 bytes; caps keep the budget's 3% headroom.",
       "pr": "https://github.com/hazem3500/replays/pull/208"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.css",
-      "cap": {
-        "raw": 33455,
-        "gzip": 6480,
-        "brotli": 5776
-      },
-      "reason": "Small justified growth under Hazem's standing approval (2026-11-03): the editor's inspector cards, lifted timeline clips (#217) and the calmer dock, three-zone toolbar and lane invitation (#221), after removing about 460 bytes of dead rules. CI same-runner main/head: raw 31772 to 32480, gzip 6198 to 6291, brotli 5518 to 5607 bytes; caps keep the budget's 3% headroom. Replaces the #178 entries for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/221"
     },
     {
       "file": "dist/client/assets/tiles-HASH.js",
@@ -1991,26 +1932,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/243"
     },
     {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 126200,
-        "gzip": 44520,
-        "brotli": 39850
-      },
-      "reason": "Suite runs past the stack's shown sheets fly to their comparison tiles from under the deepest sheet and back (transitions/recording-transition.ts, compositor-hero.ts), about 1267 raw, 382 gzip and 369 brotli bytes in the entry chunk. Measured against main 5428e078 on the same Boat, with a few bytes of room for runner variance.",
-      "pr": "https://github.com/hazem3500/replays/pull/251"
-    },
-    {
-      "file": "dist/client/assets/Editor-HASH.js",
-      "cap": {
-        "raw": 135127,
-        "gzip": 45138,
-        "brotli": 37809
-      },
-      "reason": "The cursor inspector reads whether a recording is a person's to say its path is the recorded one, which pulls the pointer parsing and the path rule into the editor chunk.",
-      "pr": "https://github.com/hazem3500/replays/pull/247"
-    },
-    {
       "file": "dist/lib/chunks/caption-placement.ts-e820e720ce40.mjs",
       "cap": {
         "raw": 70319,
@@ -2029,14 +1950,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/247"
     },
     {
-      "file": "dist/client/assets/SuiteCompare-HASH.js",
-      "cap": {
-        "brotli": 670
-      },
-      "reason": "Brotli-only hash-name drift in an unchanged chunk: raw 1203 and gzip 717 match main, but brotli swings between about 610 and 650 bytes from build to build because the chunk names other chunks whose hashes change. CI same-runner head 650 (+25) against a 641 cap ratcheted from a low reading; cap is head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/247"
-    },
-    {
       "file": "initial/render.html/js",
       "cap": {
         "raw": 558700,
@@ -2045,15 +1958,6 @@
       },
       "reason": "Exported video renders human recordings along their exact recorded pointer path (cursor-recorded-path in the shared cursor chunk). CI same-runner main to head: raw 556966 to 558082 (+1116), gzip 175472 to 175842, brotli 138855 to 139185; gzip and brotli stay under their existing caps, which carry over from the earlier allowance.",
       "pr": "https://github.com/hazem3500/replays/pull/247"
-    },
-    {
-      "file": "dist/client/assets/ui-state-HASH.js",
-      "cap": {
-        "gzip": 265,
-        "brotli": 248
-      },
-      "reason": "No source change in this client chunk: its compressed size moved with the renamed shared recorder and capture imports this PR changes. CI same-runner main/head (raw/gzip/brotli): 328/250/226 to 328/257/240 B; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/253"
     },
     {
       "file": "dist/lib/chunks/capture-profile.ts-d4348e7cd2c7.mjs",
@@ -2148,6 +2052,104 @@
       },
       "reason": "Gzip-only drift: the deferred UI chunk names the recorder-choices chunk, whose hash changed; CI head gzip 1905 (+4). Cap is head times 1.03.",
       "pr": "https://github.com/hazem3500/replays/pull/253"
+    },
+    {
+      "file": "dist/client/assets/HostSurface-HASH.js",
+      "cap": {
+        "raw": 1266,
+        "gzip": 704,
+        "brotli": 640
+      },
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 1229 (+0), gzip 683 (+0), brotli 609 to 626 (+17). Replaces the #203 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/ui-state-HASH.js",
+      "cap": {
+        "raw": 335,
+        "gzip": 256,
+        "brotli": 250
+      },
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 328 (+0), gzip 250 to 253 (+3), brotli 226 to 239 (+13). Replaces the #203 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": {
+        "raw": 126200,
+        "gzip": 44560,
+        "brotli": 39960
+      },
+      "reason": "Hash-name drift only: no source change in the main entry; its gzip and brotli move a few bytes with the chunk names this PR gives the build while raw shrinks. CI main to head: raw 126183 to 126179 (-4), gzip 44506 to 44527 (+21), brotli 39818 to 39859 (+41), and 39883 on a later head of this PR; the brotli cap holds that drift. Replaces the #251 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/Editor-HASH.js",
+      "cap": {
+        "raw": 147756,
+        "gzip": 49156,
+        "brotli": 41134
+      },
+      "reason": "The step dots on the desktop ruler and the phone scale drawn from the clip's own blocks (actions at their start, each wait block once mid-block, a wait too close to show apart named in its action's tooltip, one roving tab stop, a pressed label on touch, seek), the clip's step labels of at least two whole words, load waits folded into their step and waits joined and named by their kept length, kept clear of cuts, cut lengths, one shared whole-word label helper measured in the real font for every lane block, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names with icons and hint lines, its scale that seeks and scrubs under a playhead moving along a flush track, and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 141763 (+10572), gzip 43822 to 47220 (+3398), brotli 36747 to 39545 (+2798). Replaces the #247 entry for this file. Later heads add the clip and phone lane runs (a run of wordless neighbours named once: \"4 steps\", \"11 captions\") and the kind-name fallback: Same-Boat head raw 143452, gzip 47724, brotli 39935.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/motion-features-HASH.js",
+      "cap": {
+        "raw": 66,
+        "gzip": 81,
+        "brotli": 70
+      },
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 64 (+0), gzip 78 (+0), brotli 65 to 67 (+2). CI main to head: brotli 65 to 68, raw and gzip unchanged.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/open-hint-HASH.css",
+      "cap": {
+        "raw": 31230,
+        "gzip": 6322,
+        "brotli": 5616
+      },
+      "reason": "The editor loading frame draws the loaded dock with its own classes: dock-layout.css (the bar, ruler, lanes, clip, tinted blocks and playhead geometry) loads once with the eager loading stylesheet, as editor-layout.css does, and the loaded editor reuses it; dot and clip-step styles stay in the Editor CSS. Same-Boat head: raw 30320, gzip 6137, brotli 5452 (with the clip step and run tints the loading frame draws), against main caps raw 21746, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/open-hint-HASH.js",
+      "cap": {
+        "raw": 195425,
+        "gzip": 63537,
+        "brotli": 54073
+      },
+      "reason": "The editor loading frame draws the loaded dock with markup only: DockSkeleton (the labelled tools with their keys, 0:00.0 and the total, what the cached edits leave, ruler labels, the clip and its trim tabs, cached effect blocks with their words, the playhead) and the phone frame (scale labels, clip, cached blocks, step line row), so nothing moves when the editor arrives. The step dots, the clip step words and the shortcut sheet stay in the Editor chunk. Same-Boat head: raw 189733, gzip 61686, brotli 52498 (main build 180373 raw), against main caps raw 182222, gzip 59322, brotli 50721. Replaces the #203 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "initial/index.html/css",
+      "cap": {
+        "raw": 262417,
+        "gzip": 47743,
+        "brotli": 40241
+      },
+      "reason": "The initial CSS closure gains the eager loading frame dock-layout.css (bar, ruler, lanes, clip, blocks and playhead geometry), shared with the loaded editor so the loading frame matches the loaded dock. Same-Boat head: raw 254773, gzip 46352, brotli 39068, against main caps raw 248617, gzip 45192, brotli 37952. Replaces the #184 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/arrow-up-HASH.js",
+      "cap": {
+        "raw": 209,
+        "gzip": 191,
+        "brotli": 210
+      },
+      "reason": "Hash-name drift only: no source change in the arrow-up icon chunk; its import names changed as the loading frame took new shared chunks, and brotli on this 202-byte file moved from 170 to 203. Same-Boat head: raw 202, gzip 187, brotli 203. Replaces the #203 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
+    },
+    {
+      "file": "dist/client/assets/SuiteCompare-HASH.js",
+      "cap": {
+        "brotli": 670
+      },
+      "reason": "Hash-name drift only: no source change in the suite compare chunk; its brotli moves with the chunk names this PR gives the build. CI main to head: raw 1203 (+0), gzip 716 to 715, brotli 630 to 650. Replaces the #247 entry for this file.",
+      "pr": "https://github.com/hazem3500/replays/pull/252"
     }
   ]
 }

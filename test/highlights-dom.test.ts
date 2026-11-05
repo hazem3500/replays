@@ -60,6 +60,7 @@ describe('highlight timeline DOM', () => {
           PlayerContext,
           { value: player },
           createElement(Timeline, {
+            steps: [],
             duration: 10_000,
             edits,
             selection: { kind: 'highlight', id: 'period' },

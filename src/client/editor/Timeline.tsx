@@ -1,10 +1,17 @@
 import { FilmIcon, ScissorsIcon } from 'lucide-react';
 import { type PointerEvent as ReactPointerEvent, useEffect, useMemo, useRef, useState } from 'react';
 
+import { editTimeline } from '../../shared/edit-timeline.ts';
 import { type ReplayCut, type ReplayEdits } from '../../shared/edits.ts';
-import { formatClock } from '../../shared/replay.ts';
+import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
 import { TimelineHighlights } from './TimelineHighlights.tsx';
+import { TimelineStepDots } from './TimelineStepDots.tsx';
+import { ClipStepLabel } from './BlockLabel.tsx';
+import { stepKindName } from '../viewer/step-kinds.ts';
+import { wordsThatFit } from './block-label.ts';
+import { measureLabel } from './label-measure.ts';
+import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { ScaleContext, startDrag, timeKeys, type TimelineScale } from './timeline-drag.ts';
@@ -43,6 +50,75 @@ function TrimmedOutside({ trim, duration, scale }: { trim: { start: number; end:
   );
 }
 
+/** why: the trim edges sit over the clip's ends, so the first and last step's words keep this much room on each side. */
+const CLIP_STEP_PAD_PX = 12;
+/** A step's inline padding inside the clip (editor.css .tl-clip-step). */
+const CLIP_STEP_INNER_PAD_PX = 8;
+
+/** The clip's steps: a faint divider where each starts and its leading whole words where they fit; waits dim, by their length. */
+function ClipSteps({
+  steps,
+  trim,
+  cuts,
+  scale,
+}: {
+  steps: readonly ReplayStep[];
+  trim: { start: number; end: number };
+  cuts: readonly ReplayCut[];
+  scale: TimelineScale;
+}) {
+  const px = scale.duration > 0 ? scale.width / scale.duration : 0;
+  const segments = stepSegments(steps, trim);
+  const labels = segments.map((segment, index) => {
+    // why: only the side under a trim tab needs its wider pad, so an end step fits words as wide as the blocks below it.
+    const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
+    const roomPx = labelRoom(segment, trim.start, cuts).length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
+    return segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, {
+      pad: CLIP_STEP_INNER_PAD_PX,
+      measure: measureLabel,
+      fallback: stepKindName(segment.kind),
+    });
+  });
+  const runs = clipRuns(
+    segments,
+    labels.map((label) => !label.text),
+  );
+  return (
+    <>
+      {segments.map((segment, index) => {
+        const room = labelRoom(segment, trim.start, cuts);
+        const label = labels[index] ?? { glyph: false, text: '' };
+        return (
+          <span
+            key={segment.at}
+            className="tl-clip-step"
+            data-testid="clip-step"
+            data-wait={segment.wait || undefined}
+            data-blank={!segment.wait && !label.text ? '' : undefined}
+            data-last={index === segments.length - 1 ? '' : undefined}
+            aria-hidden="true"
+            style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
+          >
+            <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
+              <ClipStepLabel {...label} />
+            </span>
+          </span>
+        );
+      })}
+      {runs.map((run) => (
+        <span
+          key={run.from}
+          className="tl-clip-run"
+          aria-hidden="true"
+          style={{ left: `${run.from * px}px`, width: `${(run.to - run.from) * px}px` }}
+        >
+          {wordsThatFit(`${run.steps} steps`, (run.to - run.from) * px, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
+        </span>
+      ))}
+    </>
+  );
+}
+
 /** The waits "Remove waits" would cut, shown before they are applied. */
 function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayCut[]; scale: TimelineScale }) {
   return suggestions.map((cut) => (
@@ -57,13 +133,14 @@ function WaitSuggestions({ suggestions, scale }: { suggestions: readonly ReplayC
 }
 
 /**
- * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, the
- * the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
- * lanes. The recording track stays plain; its accent edges are the trim, dragged directly;
+ * The editor's timeline: one wide strip holding every edit, on the original replay's scale. The ruler (ticks, a dot
+ * per recorded step, the draggable playhead's head; press anywhere on it to seek and drag to scrub), then
+ * lanes. The recording track shows its steps quietly (a divider and their first words); its edges are the trim, dragged directly;
  * cuts are hatched regions. Dragging on the clip selects a range (C cuts it), a click seeks. "Remove waits"
  * suggestions show as dashed regions until applied. `lanes` (the effects) go under it, on the same scale.
  */
 export function Timeline({
+  steps,
   duration,
   edits,
   selection,
@@ -72,6 +149,8 @@ export function Timeline({
   onCutRange,
   lanes,
 }: {
+  /** The recording's steps: the ruler's dots. */
+  steps: readonly ReplayStep[];
   duration: number;
   edits: ReplayEdits;
   selection: Selection;
@@ -134,6 +213,7 @@ export function Timeline({
   };
 
   const trim = trimOf(edits, duration);
+  const edited = editTimeline(edits, duration);
   const range = selection?.kind === 'range' ? selection : undefined;
   const { tick, ticks } = rulerTicks(scale.width, duration);
   const trimEdge = (edge: 'start' | 'end') => (
@@ -188,6 +268,7 @@ export function Timeline({
                 <span className="tl-tick-label">{tickLabel(at, tick)}</span>
               </span>
             ))}
+            <TimelineStepDots steps={steps} isRemoved={(time) => edited.isRemoved(time)} />
           </div>
         </div>
 
@@ -226,6 +307,7 @@ export function Timeline({
                     data-selected={selection?.kind === 'trim' || undefined}
                     style={{ left: `${scale.x(trim.start)}px`, width: `${Math.max(0, scale.x(trim.end) - scale.x(trim.start))}px` }}
                   >
+                    <ClipSteps steps={steps} trim={trim} cuts={edits.cuts} scale={scale} />
                     {trimEdge('start')}
                     {trimEdge('end')}
                   </div>
@@ -239,6 +321,7 @@ export function Timeline({
                         from: cut.from,
                         to: cut.to,
                         title: `Cut ${formatClock(cut.from)} to ${formatClock(cut.to)}${cut.label ? `, ${cut.label}` : ''}`,
+                        label: lengthLabel('Cut', cut.to - cut.from),
                       }}
                       selected={selection?.kind === 'cut' && selection.id === cut.id}
                       actions={{

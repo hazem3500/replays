@@ -29,6 +29,7 @@ async function mount(highlights: ReplayHighlight[]) {
         PlayerContext,
         { value: player },
         createElement(Timeline, {
+          steps: [],
           duration: DURATION,
           edits: state.present,
           selection: state.selection,

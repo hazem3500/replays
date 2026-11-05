@@ -1,5 +1,6 @@
 import './editor/skeleton.css';
-import { DockSkeleton, TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
+import { DockSkeleton } from './editor/DockSkeleton.tsx';
+import { TopbarActionsSkeleton } from './editor/EditorSkeletonParts.tsx';
 import { useBetaFlag } from './settings/labs.ts';
 import { InspectorSkeleton } from './editor/InspectorSkeleton.tsx';
 import { PhoneEditorSkeleton } from './editor/PhoneEditorSkeleton.tsx';
@@ -19,7 +20,8 @@ import { currentSearchParam } from './routing/navigate.ts';
 import { LoadingPanel, LoadingRail, LoadingTabs, LoadingTopbar, LoadingTransport } from './ViewerLoadingParts.tsx';
 import { replayHref } from './routing/links.ts';
 import { SuiteSidebarSkeleton, TilesSkeleton } from './SuiteLoadingParts.tsx';
-import { Topbar } from './Topbar.tsx';
+import { KeyboardIcon } from 'lucide-react';
+import { Topbar, type TopbarMenuItem } from './Topbar.tsx';
 import { EDITOR_DOCK } from './editor/dock-size.ts';
 
 /** Loading retains the destination's geometry and known poster, without drawing pretend controls or data. */
@@ -182,6 +184,11 @@ function savedDockHeight() {
   );
 }
 
+/** why: the loaded editor's More menu holds at least this item, so the loading top bar draws the same button in place. */
+const LOADING_EDITOR_MENU: TopbarMenuItem[] = [
+  { label: 'Keyboard shortcuts', icon: <KeyboardIcon aria-hidden="true" />, onSelect: () => undefined, shortcut: '?', disabled: true },
+];
+
 /**
  * Edit loads draw the loaded editor's own shell (editor-layout.css): the real top bar, the stage frame at its final
  * rect beside the inspector column, the 1 px resizer row and the dock at its saved height, so nothing moves when the
@@ -197,7 +204,7 @@ export function EditorSkeleton({
   meta?: { title?: string; viewport?: { width: number; height: number }; duration?: number } | undefined;
   /** The last edits seen for this replay, while the fresh copy loads: their lanes are drawn where they will be. */
   edits?: ReplayEdits | undefined;
-  /** The recording's steps once its bundle is in (the phone clip's segments). */
+  /** The recording's steps once its bundle is in: the clip's step tints. */
   steps?: readonly ReplayStep[] | undefined;
 }) {
   const { enabled: cursorCustomization } = useBetaFlag('cursorCustomization');
@@ -252,6 +259,7 @@ export function EditorSkeleton({
         backLabel="Back to the replay"
         status={<ProgressHint />}
         actions={<TopbarActionsSkeleton />}
+        menuItems={LOADING_EDITOR_MENU}
         alwaysMenu
       />
       <section className="editor-stage" aria-hidden="true">
@@ -262,8 +270,10 @@ export function EditorSkeleton({
           </aside>
         ) : null}
       </section>
-      <div className="inspector-resizer" aria-hidden="true" />
-      <DockSkeleton duration={meta?.duration} />
+      <div className="inspector-resizer" aria-hidden="true">
+        <span className="inspector-resizer-line" />
+      </div>
+      <DockSkeleton duration={meta?.duration} edits={edits} steps={steps} />
     </main>
   );
 }

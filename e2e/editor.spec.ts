@@ -64,8 +64,13 @@ test('desktop editor fills the viewport and keeps timeline regions still across 
 
   const splitter = page.getByRole('separator', { name: 'Resize timeline' });
   await splitter.focus();
+  // why: the dock already grows to hold its lanes, so the first presses may only catch up with that height.
   await page.keyboard.press('ArrowUp');
-  await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(dockBox.height + 24, 0);
+  await page.keyboard.press('ArrowUp');
+  await expect.poll(async () => (await boxOf(dock)).height).toBeGreaterThan(dockBox.height);
+  const grown = (await boxOf(dock)).height;
+  await page.keyboard.press('ArrowUp');
+  await expect.poll(async () => (await boxOf(dock)).height).toBeCloseTo(grown + 24, 0);
   const region = page.getByTestId('region-caption').first();
   const body = region.locator('.tl-region-body');
   await body.scrollIntoViewIfNeeded();
@@ -270,7 +275,7 @@ test('editor entry has a stable stage and timeline skeleton, without a viewer in
   await expect(skeleton).toBeVisible();
   await expect(skeleton.getByRole('heading', { level: 1 })).toContainText(meta.title);
   await expect(skeleton.getByTestId('inspector-skeleton')).toHaveCount(0);
-  await expect(skeleton.locator('.editor-loading-gutter svg')).toHaveCount(1);
+  await expect(skeleton.locator('.tl-gutter svg')).toHaveCount(1);
   await expect(skeleton.locator('.loading-notice')).toHaveCount(0);
   await expect(skeleton.locator('.sk-steps, .sk-table-head, .sk-tabs')).toHaveCount(0);
   const loading = await editorRects(page, '.sk-frame');
@@ -301,15 +306,14 @@ test('tools carry their names and keys, and ? opens the editor shortcuts', async
   const id = await uploadCopy(page, 'editor-shortcuts');
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await expect(page.getByTestId('add-cut')).toHaveText('Cut');
-  await expect(page.getByTestId('remove-waits')).toHaveText('Waits');
-  await page.getByTestId('add-effect').click();
-  await expect(page.getByRole('menuitem', { name: /Highlight this moment/ })).toContainText('M');
-  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('add-cut')).toContainText('Cut');
+  await expect(page.getByTestId('add-cut').locator('.editor-key')).toHaveText('C');
+  await expect(page.getByTestId('remove-waits').locator('.editor-key')).toHaveText('W');
+  await expect(page.getByTestId('add-point-highlight').locator('.editor-key')).toHaveText('M');
   await page.locator('body').press('?');
   const sheet = page.getByTestId('shortcut-sheet');
   await expect(sheet).toBeVisible();
-  await expect(sheet.getByText('Zoom on clicks')).toBeVisible();
+  await expect(sheet.getByText('Zoom in on every click')).toBeVisible();
   await expect(sheet.getByText('Trim start / end to the playhead')).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);

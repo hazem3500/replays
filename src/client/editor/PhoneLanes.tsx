@@ -5,13 +5,22 @@ import { HostSurfaceSlot } from '../plugins/HostSurface.tsx';
 import type { ReplayEdits } from '../../shared/edits.ts';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { laneRegions } from './lanes.tsx';
+import { AnimatedIcon } from '@/components/animated-icon.tsx';
+import { wordsThatFit } from './block-label.ts';
+import { blockText, ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
+import { stepKindName } from '../viewer/step-kinds.ts';
+import { measureLabel } from './label-measure.ts';
+import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, shortRuns, stepSegments } from './clip-segments.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
 
+/** A clip step's inline padding (phone-editor.css .phone-step), which its name's words fit inside. */
+const PHONE_STEP_PAD_PX = 4;
+/** Room a phone region's lane glyph and the gap after it take from its label. */
+const PHONE_GLYPH_PX = 14;
+/** A phone region's inline padding (phone-editor.css .phone-region), which its label's words fit inside. */
+const PHONE_REGION_PAD_PX = 7;
 const KIND_NAMES: Record<EffectKind, string> = { zoom: 'Zoom', speed: 'Speed-up', blur: 'Blur', caption: 'Caption' };
-/** A step segment or region narrower than this shows no label (a truncated word reads worse than none). */
-const LABEL_PX = 44;
-
 interface PhoneLanesProps {
   duration: number;
   /** Pixels per ms. */
@@ -53,6 +62,89 @@ function edgeDrag(duration: number, scale: number, edits: ReplayEdits, dispatch:
 
 type EdgeDrag = ReturnType<typeof edgeDrag>;
 
+/** How a run of short blocks names its lane and count ("9 captions"). */
+const RUN_NAMES: Record<EffectKind, string> = { zoom: 'zooms', speed: 'speed-ups', blur: 'blurs', caption: 'captions' };
+
+/** A block's drawn width on the fitted phone scale: captions keep a 2 px gap from their neighbours, as on the desktop. */
+const blockWidth = (kind: EffectKind, span: number) => (kind === 'caption' ? Math.max(1, span - 2) : span);
+
+/**
+ * One effect lane on the phone: its blocks, each a button, and over a run of neighbours too short for words one quiet
+ * span with the lane's glyph and their count, so the lane reads as one stretch and names its kind.
+ */
+function EffectLane({
+  lane,
+  scale,
+  duration,
+  selection,
+  select,
+  drag,
+}: {
+  lane: ReturnType<typeof laneRegions>[number];
+  scale: number;
+  duration: number;
+  selection: Selection;
+  select: (next: Selection) => void;
+  drag: EdgeDrag;
+}) {
+  const px = (time: number) => time * scale;
+  const short = lane.regions.map(
+    (region) => !blockText(region.label, blockWidth(lane.kind, px(region.to - region.from)) - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX }),
+  );
+  const runs = shortRuns(lane.regions, short);
+  const inRun = new Set(runs.flatMap((run) => run.members));
+  return (
+    <div className="phone-lane" data-kind={lane.kind}>
+      {runs.map((run) => {
+        const width = px(run.to - run.from);
+        const text = wordsThatFit(`${run.members.length} ${RUN_NAMES[lane.kind]}`, width - PHONE_GLYPH_PX, {
+          pad: PHONE_REGION_PAD_PX,
+          measure: measureLabel,
+        });
+        return (
+          <span
+            key={run.from}
+            className="phone-run"
+            data-short={text ? undefined : ''}
+            style={{ left: `${px(run.from)}px`, width: `${width}px` }}
+            aria-hidden="true"
+          >
+            {text ? (
+              <>
+                <AnimatedIcon name={LANE_GLYPHS[lane.kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" />
+                <span>{text}</span>
+              </>
+            ) : null}
+          </span>
+        );
+      })}
+      {lane.regions.map((region, index) => {
+        const selected = isSelected(selection, lane.kind, region.id);
+        return (
+          <Region
+            key={region.id}
+            kind={lane.kind}
+            selected={selected}
+            inRun={inRun.has(index)}
+            left={px(region.from)}
+            width={blockWidth(lane.kind, px(region.to - region.from))}
+            region={region}
+            onSelect={() => select({ kind: lane.kind, id: region.id })}
+          >
+            {selected ? (
+              <SelectedEdges
+                from={0}
+                to={px(region.to - region.from)}
+                onDrag={(edge, event) => drag(event, (current, time) => moveEffect(current, lane.kind, region.id, edge, time, duration))}
+              />
+            ) : null}
+          </Region>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * The phone timeline's lanes on the original replay's scale: the clip (its step segments, trimmed ends, cuts and
  * highlights) and one slim strip per effect kind that has regions, each region labelled. Tapping selects; a selected
@@ -87,34 +179,7 @@ export function PhoneLanes({ duration, scale, edits, steps, selection, dispatch 
           ...laneRegions(edits).map((lane, index) => ({
             id: `core:${lane.kind}`,
             order: (index + 2) * 100,
-            render: () => (
-              <div key={lane.kind} className="phone-lane" data-kind={lane.kind}>
-                {lane.regions.map((region) => {
-                  const selected = isSelected(selection, lane.kind, region.id);
-                  return (
-                    <Region
-                      key={region.id}
-                      kind={lane.kind}
-                      selected={selected}
-                      left={px(region.from)}
-                      width={px(region.to - region.from)}
-                      region={region}
-                      onSelect={() => select({ kind: lane.kind, id: region.id })}
-                    >
-                      {selected ? (
-                        <SelectedEdges
-                          from={0}
-                          to={px(region.to - region.from)}
-                          onDrag={(edge, event) =>
-                            drag(event, (current, time) => moveEffect(current, lane.kind, region.id, edge, time, duration))
-                          }
-                        />
-                      ) : null}
-                    </Region>
-                  );
-                })}
-              </div>
-            ),
+            render: () => <EffectLane lane={lane} scale={scale} duration={duration} selection={selection} select={select} drag={drag} />,
           })),
         ]}
       />
@@ -142,6 +207,7 @@ function SelectedEdges({
 function Region({
   kind,
   selected,
+  inRun = false,
   left,
   width,
   region,
@@ -150,16 +216,19 @@ function Region({
 }: {
   kind: EffectKind;
   selected: boolean;
+  /** Part of a run of short neighbours that one span names: drawn as no box of its own, still its own button. */
+  inRun?: boolean;
   left: number;
   width: number;
   region: { id: string; from: number; to: number; label: string };
   onSelect: () => void;
   children: ReactNode;
 }) {
+  const text = blockText(region.label, width - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX });
   return (
     <span
       className="phone-region-slot"
-      style={{ left: `${left}px`, width: `${Math.max(4, width)}px` }}
+      style={{ left: `${left}px`, width: `${Math.max(kind === 'caption' ? 1 : 4, width)}px` }}
       data-selected={selected || undefined}
     >
       <button
@@ -167,12 +236,19 @@ function Region({
         className="phone-region"
         data-kind={kind}
         data-region-id={region.id}
+        data-short={region.label !== '' && !text ? '' : undefined}
+        data-in-run={inRun ? '' : undefined}
         aria-pressed={selected}
         aria-label={`${KIND_NAMES[kind]}${region.label ? ` ${region.label}` : ''}, ${formatClock(region.from)} to ${formatClock(region.to)}`}
         onClick={onSelect}
         data-testid={`region-${kind}`}
       >
-        {width >= LABEL_PX ? <span>{region.label}</span> : null}
+        {text ? (
+          <>
+            <AnimatedIcon name={LANE_GLYPHS[kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" aria-hidden="true" />
+            <span aria-hidden="true">{text}</span>
+          </>
+        ) : null}
       </button>
       {children}
     </span>
@@ -184,19 +260,64 @@ interface ClipLaneProps extends Omit<PhoneLanesProps, 'dispatch'> {
   drag: EdgeDrag;
 }
 
-/**
- * The kept part of each step (from its start to the next step's), in ms from the trim start. Empty and trimmed-off
- * segments are left out, so the starts that remain are distinct.
- */
-function stepSegments(steps: readonly ReplayStep[], trim: { start: number; end: number }) {
-  return steps.flatMap((step, index) => {
-    const from = Math.max(step.at, trim.start);
-    const to = Math.min(steps[index + 1]?.at ?? trim.end, trim.end);
-    return to > from ? [{ at: step.at, offset: from - trim.start, length: to - from, label: step.label }] : [];
-  });
+/** The clip's step segments, each named in whole words (up to two lines) where they fit, a wait by its length. */
+function PhoneClipSteps({
+  steps,
+  trim,
+  cuts,
+  scale,
+}: {
+  steps: readonly ReplayStep[];
+  trim: { start: number; end: number };
+  cuts: ReplayEdits['cuts'];
+  scale: number;
+}) {
+  const px = (time: number) => time * scale;
+  const segments = stepSegments(steps, trim);
+  const labels = segments.map((segment) =>
+    segmentText(segment, keptLength(segment, trim.start, cuts), px(labelRoom(segment, trim.start, cuts).length), {
+      lines: 2,
+      pad: PHONE_STEP_PAD_PX,
+      measure: measureLabel,
+      fallback: stepKindName(segment.kind),
+    }),
+  );
+  const runs = clipRuns(
+    segments,
+    labels.map((label) => !label.text),
+  );
+  return (
+    <>
+      {segments.map((segment, index) => {
+        const room = labelRoom(segment, trim.start, cuts);
+        const label = labels[index] ?? { glyph: false, text: '' };
+        return (
+          <span
+            key={segment.at}
+            className="phone-step"
+            data-wait={segment.wait || undefined}
+            data-blank={!segment.wait && !label.text ? '' : undefined}
+            style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
+          >
+            <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
+              <ClipStepLabel {...label} />
+            </span>
+          </span>
+        );
+      })}
+      {runs.map((run) => (
+        <span key={run.from} className="phone-step-run" style={{ left: `${px(run.from)}px`, width: `${px(run.to - run.from)}px` }}>
+          {wordsThatFit(`${run.steps} steps`, px(run.to - run.from), { pad: PHONE_STEP_PAD_PX, measure: measureLabel })}
+        </span>
+      ))}
+    </>
+  );
 }
 
-/** The recording: its step segments, trimmed-off ends, cuts and highlights; selected, its trim edges drag. */
+/**
+ * The recording: its step segments (each named in whole words, up to two lines), trimmed-off ends, cuts and
+ * highlights; selected, its trim edges drag.
+ */
 function ClipLane({ duration, scale, edits, steps, selection, select, drag }: ClipLaneProps) {
   const px = (time: number) => time * scale;
   const trim = trimOf(edits, duration);
@@ -215,11 +336,7 @@ function ClipLane({ duration, scale, edits, steps, selection, select, drag }: Cl
         onClick={() => select(clipSelected ? undefined : { kind: 'trim' })}
         data-testid="phone-clip"
       >
-        {stepSegments(steps, trim).map((segment) => (
-          <span key={segment.at} className="phone-step" style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}>
-            {px(segment.length) >= LABEL_PX ? segment.label : null}
-          </span>
-        ))}
+        <PhoneClipSteps steps={steps} trim={trim} cuts={edits.cuts} scale={scale} />
       </button>
       <ClipMarks edits={edits} scale={scale} selection={selection} select={select} />
       {clipSelected ? (
@@ -260,7 +377,11 @@ function ClipMarks({ edits, scale, selection, select }: Pick<ClipLaneProps, 'edi
           style={{ left: `${px(cut.from)}px`, width: `${Math.max(4, px(cut.to - cut.from))}px` }}
           onClick={() => select({ kind: 'cut', id: cut.id })}
           data-testid="region-cut"
-        />
+        >
+          <span className="phone-cut-label" aria-hidden="true">
+            {wordsThatFit(lengthLabel('Cut', cut.to - cut.from), px(cut.to - cut.from), { pad: PHONE_STEP_PAD_PX, measure: measureLabel })}
+          </span>
+        </button>
       ))}
       {(edits.highlights ?? []).map((highlight) => {
         const from = highlight.kind === 'point' ? highlight.at : highlight.from;

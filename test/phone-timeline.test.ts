@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 
 import { EDITS_VERSION, type ReplayEdits } from '../src/shared/edits.ts';
 import { duplicateEffect, splitEffect } from '../src/client/editor/phone-edits.ts';
-import { clampScale, fitScale, MAX_SCALE, stepBoundaries, timeAtScroll } from '../src/client/editor/phone-timeline.ts';
+import { scrollForPlayhead, snapTarget } from '../src/client/editor/phone-scrub.ts';
+import { clipRuns, shortRuns } from '../src/client/editor/clip-segments.ts';
+import { clampScale, fitScale, MAX_SCALE, stepBoundaries, stepLineLabel, stepLineText } from '../src/client/editor/phone-timeline.ts';
 
 const DURATION = 10_000;
 const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VERSION, cuts: [], ...extra });
@@ -51,23 +53,102 @@ describe('duplicating a region on the phone timeline', () => {
 });
 
 describe('the phone timeline scale', () => {
-  it('fits the whole recording inside the screen with room on both sides', () => {
-    expect(fitScale(390, DURATION) * DURATION).toBe(390 - 48);
+  it('fits the whole recording inside the screen between its 16 px margins', () => {
+    expect(fitScale(390, DURATION) * DURATION).toBe(390 - 32);
   });
 
-  it('zooms out no further than half the fit and in no further than 400 px a second', () => {
+  it('zooms out no further than the whole recording and in no further than 400 px a second', () => {
     const fit = fitScale(390, DURATION);
-    expect(clampScale(fit / 10, fit)).toBe(fit / 2);
+    expect(clampScale(fit / 10, fit)).toBe(fit);
     expect(clampScale(5, fit)).toBe(MAX_SCALE);
   });
 
-  it('reads the time under the playhead from the scroll offset, inside the recording', () => {
-    expect(timeAtScroll(170, 0.034, DURATION)).toBe(5000);
-    expect(timeAtScroll(-20, 0.034, DURATION)).toBe(0);
-    expect(timeAtScroll(10_000, 0.034, DURATION)).toBe(DURATION);
+  it('leaves the lanes where they are while the playhead shows, and centres it once it leaves the screen', () => {
+    const view = { viewport: 390, max: 1_000, follow: false };
+    expect(scrollForPlayhead({ ...view, x: 200, scrollLeft: 100 })).toBe(100);
+    expect(scrollForPlayhead({ ...view, x: 900, scrollLeft: 100 })).toBe(900 + 16 - 195);
+    expect(scrollForPlayhead({ ...view, x: 10, scrollLeft: 300 })).toBe(0);
+  });
+
+  it('keeps a playing playhead in the middle once it passes it, within the scroll range', () => {
+    const view = { viewport: 390, max: 1_000, follow: true };
+    expect(scrollForPlayhead({ ...view, x: 100, scrollLeft: 0 })).toBe(0);
+    expect(scrollForPlayhead({ ...view, x: 400, scrollLeft: 0 })).toBe(400 + 16 - 195);
+    expect(scrollForPlayhead({ ...view, x: 1_500, scrollLeft: 1_000 })).toBe(1_000);
+  });
+
+  it('settles a scrub on a step start within reach, and not on one it already sits on', () => {
+    expect(snapTarget(1_150, [800, 1_200], 0.1, 14)).toBe(1_200);
+    expect(snapTarget(1_000, [800, 1_200], 0.1, 14)).toBeUndefined();
+    expect(snapTarget(1_200, [1_200], 0.1, 14)).toBeUndefined();
   });
 
   it('snaps to each step start inside the recording once', () => {
     expect(stepBoundaries([{ at: 0 }, { at: 1200 }, { at: 1200.4 }, { at: 800 }, { at: 12_000 }], DURATION)).toEqual([800, 1200]);
+  });
+});
+
+describe('the phone step line', () => {
+  const steps = [
+    { at: 0, label: 'Open the shop', kind: 'navigate' },
+    { at: 2000, label: 'Add the mug to the cart', kind: 'click' },
+    { at: 5000, label: 'Wait', kind: 'wait' },
+    { at: 7000, label: 'Check out', kind: 'click' },
+  ];
+  const whole = { start: 0, end: DURATION };
+
+  it('names the step playing at the playhead', () => {
+    expect(stepLineLabel(steps, whole, 3500)).toBe('Add the mug to the cart');
+  });
+
+  it('names the first kept step while the playhead is in a trimmed-off start', () => {
+    expect(stepLineLabel(steps, { start: 2500, end: DURATION }, 1000)).toBe('Add the mug to the cart');
+  });
+
+  it('keeps whole words that fit and never ends on a joining word', () => {
+    expect(stepLineText('Add the mug to the cart', 32 + 6.6 * 14 + 1)).toBe('Add the mug');
+  });
+});
+
+describe('short block runs on the phone', () => {
+  const blocks = [
+    { from: 0, to: 1_000 },
+    { from: 1_000, to: 1_400 },
+    { from: 1_450, to: 1_800 },
+    { from: 3_000, to: 3_300 },
+    { from: 3_300, to: 3_600 },
+  ];
+
+  it('joins neighbouring short blocks into one run and leaves a lone short block alone', () => {
+    expect(shortRuns(blocks, [false, true, true, true, false])).toEqual([{ from: 1_000, to: 1_800, members: [1, 2] }]);
+  });
+
+  it('starts a new run across a gap wider than the join distance', () => {
+    expect(shortRuns(blocks, [false, true, true, true, true])).toEqual([
+      { from: 1_000, to: 1_800, members: [1, 2] },
+      { from: 3_000, to: 3_600, members: [3, 4] },
+    ]);
+  });
+});
+
+/** A clip segment at `offset` ms for `length` ms, a wait or a click, with no words. */
+const segment = (offset: number, length: number, wait: boolean) => ({
+  at: offset,
+  offset,
+  length,
+  label: '',
+  kind: wait ? 'wait' : 'click',
+  wait,
+});
+
+describe('clip runs', () => {
+  it('names a run of wordless neighbours once it holds two steps', () => {
+    const segments = [segment(0, 100, false), segment(100, 50, true), segment(150, 80, false), segment(230, 900, true)];
+    expect(clipRuns(segments, [true, true, true, false])).toEqual([{ from: 0, to: 230, members: [0, 1, 2], steps: 2 }]);
+  });
+
+  it('leaves a run of one step and its waits to the ground', () => {
+    const segments = [segment(0, 100, false), segment(100, 50, true)];
+    expect(clipRuns(segments, [true, true])).toEqual([]);
   });
 });

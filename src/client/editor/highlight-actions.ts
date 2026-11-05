@@ -10,7 +10,7 @@ export type HighlightOutcome = { edits: ReplayEdits; select: Selection } | { not
 const FULL_NOTE = `A replay can have up to ${MAX_HIGHLIGHTS} highlights`;
 
 /** A point highlight at the playhead, unless the list is full or the playhead is in cut or trimmed time. */
-export function pointHighlight({ present, timeline, time, duration }: HighlightRequest): HighlightOutcome {
+function pointHighlight({ present, timeline, time, duration }: HighlightRequest): HighlightOutcome {
   const duplicate = present.highlights?.some((highlight) => highlight.kind === 'point' && highlight.at === time);
   if (!duplicate && (present.highlights?.length ?? 0) >= MAX_HIGHLIGHTS) return { note: FULL_NOTE };
   if (timeline.isRemoved(time)) return { note: 'Move to a kept moment to add a highlight' };
@@ -19,7 +19,7 @@ export function pointHighlight({ present, timeline, time, duration }: HighlightR
 }
 
 /** A period highlight over the selected range, limited to the part that remains in the edited replay. */
-export function periodHighlight({ present, selection, timeline, duration }: HighlightRequest): HighlightOutcome {
+function periodHighlight({ present, selection, timeline, duration }: HighlightRequest): HighlightOutcome {
   if ((present.highlights?.length ?? 0) >= MAX_HIGHLIGHTS) return { note: FULL_NOTE };
   if (selection?.kind !== 'range') return { note: 'Select a stretch on the clip first' };
   const bounds = trimOf(present, duration);
@@ -29,6 +29,11 @@ export function periodHighlight({ present, selection, timeline, duration }: High
   const added = addPeriodHighlight(present, from, to, duration);
   if (!added) return { note: 'Select at least 0.1 seconds of the clip' };
   return { edits: added.edits, select: { kind: 'highlight', id: added.id } };
+}
+
+/** The one Highlight action: over the selected range when there is one, else at the playhead's moment. */
+export function highlightHere(request: HighlightRequest): HighlightOutcome {
+  return request.selection?.kind === 'range' ? periodHighlight(request) : pointHighlight(request);
 }
 
 /** Applies an outcome: the edit with its selection, or the explaining note. */

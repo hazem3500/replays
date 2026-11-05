@@ -6,7 +6,8 @@
 /* Cascade-layer order (tailwind.css); repeated so whichever stylesheet loads first sets the same order. */
 @layer properties, theme, base, app, components, utilities;
 @layer app {
-  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(0, var(--dock-height, 188px)); background: var(--canvas); }
+  /* invariant: the dock, loaded or loading, is at least its resized height and grows to hold every lane (up to its max-height), so a lane is never clipped and the loading frame holds the lanes the editor arrives with. */
+  .editor-shell.app-shell { grid-template-rows: auto minmax(0, 1fr) 1px minmax(var(--dock-height, 188px), max-content); background: var(--canvas); }
   /* Explicit rows keep the dock at the viewport's bottom even when shared shell styles change. */
   .editor-shell:not([data-mobile]) > .topbar { grid-row: 1; }
   .editor-shell:not([data-mobile]) > .editor-stage { grid-row: 2; }
@@ -19,7 +20,7 @@
   .editor-stage .stage-wrap { flex: 1; min-width: 0; }
   .editor-presentation { flex: 0 0 clamp(264px, 24vw, 320px); min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-left: 1px solid var(--line); background: var(--surface); }
   /* why: the timeline uses the dock space without reserving a standing instruction row. */
-  .editor-dock { min-width: 0; min-height: 0; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
+  .editor-dock { min-width: 0; min-height: 0; max-height: 65dvh; display: flex; flex-direction: column; padding: 0 20px 10px; background: var(--surface); }
   .editor-bar { flex: none; display: flex; flex-wrap: wrap; align-items: center; gap: 2px; min-width: 0; min-height: 44px; }
   .editor-operation-status { flex: none; margin: 8px 0 0; padding-left: 40px; font-size: var(--text-2xs); color: var(--text-secondary); line-height: 1.5; }
   .editor-history { display: flex; align-items: center; gap: 2px; margin-right: 6px; }
@@ -31,7 +32,13 @@
 }
 
 @layer utilities {
+  /* why: a dimmed primary fill read as a pale, low-contrast enabled button; disabled Export is a quiet outlined one whose tooltip says why. */
+  .editor-shell .editor-export:disabled { opacity: 1; background-color: var(--surface-hover); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--text-secondary); }
+  /* why: the top bar's 28 and 32 px buttons answer a 40 px tall press without growing (their neighbours sit beside them). */
+  .editor-shell:not([data-mobile]) .topbar button { position: relative; }
+  .editor-shell:not([data-mobile]) .topbar button::after { content: ""; position: absolute; inset: calc((100% - 40px) / 2) 0; }
   .editor-shell:not([data-mobile]) .topbar :is([data-slot="button"], .topbar-back) { height: 32px; }
   .editor-shell:not([data-mobile]) .topbar .topbar-back { width: 32px; }
-  .editor-shell:not([data-mobile]) .topbar .editor-history [data-slot="button"] { width: 28px; height: 28px; border-radius: 6px; }
+  /* why: by element, as a tooltip trigger renames a wrapped button's data-slot; the loading frame's plain buttons match. */
+  .editor-shell:not([data-mobile]) .topbar .editor-history button { width: 28px; height: 28px; border-radius: 6px; }
 }

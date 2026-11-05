@@ -25,6 +25,8 @@ export interface HintProps {
   shortcut?: string;
   side?: Side;
   align?: Align;
+  /** Distance from the trigger in px (6 by default). */
+  sideOffset?: number;
   /** The trigger: any element that forwards ref and props (Button, Switch, a menu trigger…). */
   children: ReactElement;
   /** Keeps the trigger but never opens (e.g. when the label is already visible). */
@@ -36,7 +38,7 @@ export interface HintProps {
  * neighbours take it over instantly: under a TooltipProvider every hint shares the provider's one
  * popup, which morphs (position, size, label crossfade) from trigger to trigger instead of blinking.
  */
-export function Hint({ label, shortcut, side = 'top', align = 'center', children, disabled: disabledProp = false }: HintProps) {
+export function Hint({ label, shortcut, side = 'top', align = 'center', sideOffset, children, disabled: disabledProp = false }: HintProps) {
   const handle = useSharedTooltipHandle();
   // Touch-only devices never show hints (see useCanHover); the trigger keeps working as is.
   const canHover = useCanHover();
@@ -54,15 +56,16 @@ export function Hint({ label, shortcut, side = 'top', align = 'center', children
       ),
       side,
       align,
+      sideOffset,
     }),
-    [label, shortcut, side, align, trigger],
+    [label, shortcut, side, align, sideOffset, trigger],
   );
   if (handle) return <TooltipTrigger handle={handle} payload={payload} disabled={disabled} render={children} />;
   // Outside a provider (isolated renders), fall back to a tooltip of its own.
   return (
     <Tooltip disabled={disabled}>
       <TooltipTrigger render={children} />
-      <TooltipContent side={side} align={align}>
+      <TooltipContent side={side} align={align} {...(sideOffset === undefined ? {} : { sideOffset })}>
         {payload.content}
       </TooltipContent>
     </Tooltip>

@@ -64,9 +64,8 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   await expect(page.getByTestId('region-caption')).toHaveCount(4);
 
   // Empty tracks remain available for precise range drawing, without crowding the default editor.
-  await page.getByTestId('add-effect').click();
+  await page.getByRole('button', { name: 'More actions' }).click();
   await page.getByTestId('show-empty-tracks').click();
-  await expect(page.getByTestId('add-effect')).toHaveAttribute('aria-expanded', 'false');
   await expect(page.getByRole('menu')).toHaveCount(0);
   await expect(page.getByTestId('lane-speed')).toContainText('Speed · drag');
   // A speed-up dragged out on its lane, then set to 8× from the control row.
@@ -132,17 +131,21 @@ test('effects: zoom on clicks, captions from steps, a speed-up and a blur box ap
   expect(total).not.toMatch(/of 0:04\.\d/);
 });
 
-test('dense captions keep every edit without overlapping labels or truncating the selected text', async ({ page }) => {
+test('dense captions keep every edit without overlapping labels, part words or blank blocks', async ({ page }) => {
   const id = await uploadHuman(page, true);
   await page.goto(`${base()}/r/${id}/edit`);
   await expect(page.getByTestId('timeline')).toHaveAttribute('data-ready', 'true');
-  await expect(page.locator('.tl-activity, .tl-step')).toHaveCount(0);
   await page.locator('body').press('t');
   const captions = page.getByTestId('region-caption');
   await expect(captions).toHaveCount(30);
   const first = captions.first();
   await first.scrollIntoViewIfNeeded();
+  // why: a block too short for two words is no box but a thin bar in its lane's hue, never an icon stub; its name keeps the text.
   await expect(first.locator('.tl-region-label')).toHaveCount(0);
+  await expect(first.locator('.tl-region-body svg')).toHaveCount(0);
+  await expect(first.locator('.tl-region-body')).toHaveAttribute('data-short', '');
+  expect(await first.locator('.tl-region-body').evaluate((body) => getComputedStyle(body, '::before').height)).toBe('4px');
+  await expect(first.locator('.tl-region-body')).toHaveAccessibleName(/Caption 1: complete text remains available for editing$/);
   const boxes = await captions.evaluateAll((nodes) =>
     nodes.map((node) => {
       const box = node.getBoundingClientRect();

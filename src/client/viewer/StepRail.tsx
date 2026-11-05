@@ -6,6 +6,7 @@ import { AnimatedNumber } from '@/components/animated-number.tsx';
 import { HoverGlide, useSlidingHighlight } from '@/components/sliding-highlight.tsx';
 
 import { formatClock } from '../../shared/replay.ts';
+import { STEP_KIND_NAMES } from './step-kinds.ts';
 import { usePlayer, usePlayerState, usePlayhead } from '../player.ts';
 import { useActiveStep } from './active-step.ts';
 import { readStorage } from '../storage.ts';
@@ -19,17 +20,17 @@ import { useViewerPresenceMotion } from '../hooks/use-viewer-presence-motion.ts'
 
 /** One glyph per step kind; the kind's name is the icon's accessible label. */
 const STEP_ICONS: Record<string, { icon: AnimatedIconName; label: string }> = {
-  click: { icon: 'mouse-pointer-click', label: 'Click' },
-  dblclick: { icon: 'mouse-pointer-click', label: 'Double-click' },
-  hover: { icon: 'mouse-pointer-2', label: 'Hover' },
-  type: { icon: 'text-cursor-input', label: 'Type' },
-  fill: { icon: 'text-cursor-input', label: 'Fill' },
-  press: { icon: 'corner-down-left', label: 'Key press' },
-  goto: { icon: 'globe', label: 'Navigate' },
-  open: { icon: 'globe', label: 'Open page' },
-  navigate: { icon: 'globe', label: 'Navigate' },
-  scroll: { icon: 'arrow-down-up', label: 'Scroll' },
-  wait: { icon: 'hourglass', label: 'Wait' },
+  click: { icon: 'mouse-pointer-click', label: STEP_KIND_NAMES.click },
+  dblclick: { icon: 'mouse-pointer-click', label: STEP_KIND_NAMES.dblclick },
+  hover: { icon: 'mouse-pointer-2', label: STEP_KIND_NAMES.hover },
+  type: { icon: 'text-cursor-input', label: STEP_KIND_NAMES.type },
+  fill: { icon: 'text-cursor-input', label: STEP_KIND_NAMES.fill },
+  press: { icon: 'corner-down-left', label: STEP_KIND_NAMES.press },
+  goto: { icon: 'globe', label: STEP_KIND_NAMES.goto },
+  open: { icon: 'globe', label: STEP_KIND_NAMES.open },
+  navigate: { icon: 'globe', label: STEP_KIND_NAMES.navigate },
+  scroll: { icon: 'arrow-down-up', label: STEP_KIND_NAMES.scroll },
+  wait: { icon: 'hourglass', label: STEP_KIND_NAMES.wait },
 };
 
 /** The step's kind glyph; it plays its gesture once when its row becomes the current step (never on hover). */

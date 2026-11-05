@@ -326,16 +326,20 @@ export function effectsKey(effects: PlaybackEffects, viewport: { width: number; 
 /** Longest a caption from a step stays up. */
 export const STEP_CAPTION_MAX_MS = 5000;
 
+/** A wait step named only as a wait ("Wait for the page"): the load after the step before it, not a caption of its own. */
+const LOAD_WAIT = /^wait\b/i;
+
 /**
  * "Captions from steps": one caption per step, from the step until the next one (at most STEP_CAPTION_MAX_MS), its
- * label as the text. Original timeline; `id` names each.
+ * label as the text. A wait named only as a wait gets none, so the step before it stays up through its load.
+ * Original timeline; `id` names each.
  */
 export function proposeStepCaptions(
-  steps: ReadonlyArray<{ at: number; label: string }>,
+  steps: ReadonlyArray<{ at: number; label: string; kind?: string }>,
   duration: number,
   id: (index: number) => string = (index) => `caption-${index + 1}`,
 ): ReplayCaption[] {
-  const order = [...steps].sort((a, b) => a.at - b.at);
+  const order = [...steps].filter((step) => step.kind !== 'wait' || !LOAD_WAIT.test(step.label.trim())).sort((a, b) => a.at - b.at);
   const captions: ReplayCaption[] = [];
   for (const [index, step] of order.entries()) {
     const text = step.label.trim().slice(0, MAX_CAPTION);

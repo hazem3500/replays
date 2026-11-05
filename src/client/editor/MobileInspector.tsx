@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { CaptionsIcon, EllipsisIcon, EyeOffIcon, ScissorsIcon, ZoomInIcon } from 'lucide-react';
+import { AnimatedIcon, type AnimatedIconName } from '@/components/animated-icon.tsx';
 import { Button } from '@/components/ui/button.tsx';
 import {
   DropdownMenu,
@@ -23,9 +24,12 @@ import {
   type SelectionPanels,
 } from './SelectionInspector.tsx';
 
+/** Each effect's name in the timeline list, as the Add menu calls it. */
+const EFFECT_NAMES = { zoom: 'Zoom', speed: 'Speed up', blur: 'Blur', caption: 'Caption' } as const;
+
 function effectLabel(kind: 'zoom' | 'speed' | 'blur' | 'caption', text: string) {
   if (text) return `Caption · ${text}`;
-  return kind.charAt(0).toUpperCase() + kind.slice(1);
+  return EFFECT_NAMES[kind];
 }
 
 /** Named access to short/coincident objects without distorting their timeline widths. */
@@ -61,9 +65,40 @@ export function mobileTimelineObjects(edits: ReplayEdits) {
 
 const NO_OBJECTS: ReturnType<typeof mobileTimelineObjects> = [];
 
+/** A tool in the phone's More menu. */
+export interface MoreTool {
+  /** The tool's name, as the desktop bar and Add menu call it. */
+  label: string;
+  /** One short line under the name: what it does, or why it is unavailable. */
+  hint?: string;
+  /** The same animated icon as the desktop's tool or Add item. */
+  icon?: AnimatedIconName;
+  action: () => void;
+  disabled?: boolean;
+  testId?: string;
+}
+
+/** One of the More menu's tools: its icon, the desktop's name and one line saying what it does or why it is unavailable. */
+function MoreToolItem({ item }: { item: MoreTool }) {
+  return (
+    <DropdownMenuItem
+      className="editor-more-item min-h-11 shrink-0 items-start whitespace-normal text-left data-disabled:opacity-100"
+      disabled={item.disabled}
+      data-testid={item.testId}
+      onClick={item.action}
+    >
+      {item.icon ? <AnimatedIcon name={item.icon} className="editor-more-icon" /> : null}
+      <span className="editor-more-text">
+        <span className="editor-more-name">{item.label}</span>
+        {item.hint ? <span className="editor-more-hint">{item.hint}</span> : null}
+      </span>
+    </DropdownMenuItem>
+  );
+}
+
 /** Adding an object is a command, never a permanent inspector destination. */
 export function MobileAddToolbar({
-  onTrim,
+  onCut,
   onCaption,
   onBlur,
   onZoom,
@@ -71,23 +106,25 @@ export function MobileAddToolbar({
   objects = NO_OBJECTS,
   onSelectObject,
 }: {
-  onTrim: () => void;
+  /** Cuts a second at the playhead, as the desktop bar's Cut does. */
+  onCut: () => void;
   onCaption: () => void;
   onBlur: () => void;
   onZoom: () => void;
-  more: Array<{ label: string; action: () => void; disabled?: boolean; testId?: string }>;
+  /** The other tools, by the desktop's names; `hint` says what one does, or why it is unavailable when `disabled`. */
+  more: MoreTool[];
   objects?: ReturnType<typeof mobileTimelineObjects>;
   onSelectObject?: (object: ReturnType<typeof mobileTimelineObjects>[number]) => void;
 }) {
   return (
     <div className="editor-add-toolbar" role="group" aria-label="Add or edit">
-      <Button variant="ghost" onClick={onTrim} data-testid="mobile-trim">
+      <Button variant="ghost" onClick={onCut} aria-label="Cut a second at the playhead" data-testid="add-cut">
         <ScissorsIcon aria-hidden="true" />
-        Trim
+        Cut
       </Button>
       <Button variant="ghost" onClick={onCaption} data-testid="add-caption">
         <CaptionsIcon aria-hidden="true" />
-        Caption
+        Captions
       </Button>
       <Button variant="ghost" onClick={onBlur} data-testid="add-blur">
         <EyeOffIcon aria-hidden="true" />
@@ -109,22 +146,18 @@ export function MobileAddToolbar({
           aria-label="More editing tools"
         >
           {more.map((item) => (
-            <DropdownMenuItem
-              key={item.label}
-              className="min-h-11"
-              disabled={item.disabled}
-              data-testid={item.testId}
-              onClick={item.action}
-            >
-              {item.label}
-            </DropdownMenuItem>
+            <MoreToolItem key={item.label} item={item} />
           ))}
           {objects.length > 0 ? (
             <DropdownMenuGroup aria-label="On timeline">
               <DropdownMenuSeparator />
               <DropdownMenuLabel>On timeline · {objects.length}</DropdownMenuLabel>
               {objects.map((object) => (
-                <DropdownMenuItem key={object.key} className="editor-object-picker-item min-h-11" onClick={() => onSelectObject?.(object)}>
+                <DropdownMenuItem
+                  key={object.key}
+                  className="editor-object-picker-item min-h-11 shrink-0"
+                  onClick={() => onSelectObject?.(object)}
+                >
                   <span>{object.label}</span>
                   <time>{formatClock(object.at)}</time>
                 </DropdownMenuItem>

@@ -153,7 +153,14 @@ describe('host editor surfaces', () => {
     register('editor.timeline.lanes', { id: 'notes', text: (context) => `Notes at ${context.scale?.x(500)} pixels` });
     viewerRegistry.configureSlot('editor.timeline.lanes', { hide: ['core:clip'] });
     await render(
-      createElement(PhoneLanes, { duration: 1000, scale: 0.2, edits: EMPTY_EDITS, steps: [], selection: undefined, dispatch: noop }),
+      createElement(PhoneLanes, {
+        duration: 1000,
+        scale: 0.2,
+        edits: EMPTY_EDITS,
+        steps: [],
+        selection: undefined,
+        dispatch: noop,
+      }),
     );
     expect(host.textContent).toContain('Notes at 100 pixels');
     expect(host.querySelector('[data-slot-item="core:clip"]')).toBeNull();

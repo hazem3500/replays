@@ -1,49 +1,27 @@
-import {
-  CaptionsIcon,
-  EyeOffIcon,
-  FastForwardIcon,
-  HourglassIcon,
-  type LucideIcon,
-  MapPinIcon,
-  ScissorsIcon,
-  ZoomInIcon,
-} from 'lucide-react';
-
+import type { AnimatedIconName } from '@/components/animated-icon.tsx';
 import type { EffectKind } from './state.ts';
+import { BAR_TOOLS } from './bar-tools.ts';
 
 /** The platform's modifier as key caps show it. */
 export const IS_MAC = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent);
 export const MOD = IS_MAC ? '⌘' : 'Ctrl+';
 
-/** A tool on the bar: what it does, its visible label, its key and its icon. */
-export interface EditorTool {
-  id: 'cut' | 'waits' | 'highlight';
-  label: string;
-  /** The full action, for the tooltip and the accessible name (it contains the label). */
-  action: string;
-  key: string;
-  icon: LucideIcon;
-}
-
-export const BAR_TOOLS: readonly EditorTool[] = [
-  { id: 'cut', label: 'Cut', action: 'Cut a second at the playhead', key: 'C', icon: ScissorsIcon },
-  { id: 'waits', label: 'Waits', action: 'Find waits to remove', key: 'W', icon: HourglassIcon },
-  { id: 'highlight', label: 'Highlight', action: 'Highlight this moment', key: 'M', icon: MapPinIcon },
-];
-
 /** What the Add menu adds at the playhead, each with its key. */
 export interface AddItem {
   kind: EffectKind;
+  /** The menu item's name, one or two words. */
   label: string;
+  /** What it does in one short line: the menu's hint line for the item and the shortcut sheet row. */
+  action: string;
   key: string;
-  icon: LucideIcon;
+  icon: AnimatedIconName;
 }
 
 export const ADD_ITEMS: readonly AddItem[] = [
-  { kind: 'zoom', label: 'Zoom on clicks', key: 'Z', icon: ZoomInIcon },
-  { kind: 'speed', label: 'Speed up', key: 'F', icon: FastForwardIcon },
-  { kind: 'blur', label: 'Blur an area', key: 'B', icon: EyeOffIcon },
-  { kind: 'caption', label: 'Captions', key: 'T', icon: CaptionsIcon },
+  { kind: 'zoom', label: 'Zoom', action: 'Zoom in on every click', key: 'Z', icon: 'zoom-in' },
+  { kind: 'speed', label: 'Speed up', action: 'Speed up from the playhead', key: 'F', icon: 'fast-forward' },
+  { kind: 'blur', label: 'Blur', action: 'Blur part of the page', key: 'B', icon: 'eye-off' },
+  { kind: 'caption', label: 'Captions', action: 'Write captions from the steps', key: 'T', icon: 'captions' },
 ];
 
 export interface ShortcutRow {
@@ -75,7 +53,7 @@ export const EDITOR_SHORTCUT_GROUPS: Array<{ title: string; items: ShortcutRow[]
   },
   {
     title: 'Add',
-    items: ADD_ITEMS.map((item) => ({ keys: [item.key], label: item.label })),
+    items: ADD_ITEMS.map((item) => ({ keys: [item.key], label: item.action })),
   },
   {
     title: 'History',

@@ -14,11 +14,11 @@ const PARTS: Array<[string, string, string]> = [
   ['timeline bar', '.sk-phone-bar', '.phone-timeline-bar'],
   ['play', '.sk-phone-play', '[data-testid="editor-play"]'],
   ['clock', '.sk-phone-clock', '.phone-timeline-bar .editor-clock'],
+  ['step line', '.sk-phone-step-line', '.phone-step-line'],
   ['lanes area', '.sk-phone-lanes', '.phone-lanes-frame'],
   ['scale labels', '.sk-phone-scale > span', '.phone-scale > span'],
   ['lanes', '.sk-phone-lane', '.phone-lane'],
   ['clip', '.sk-phone-clip', '.phone-clip'],
-  ['step segments', '.sk-phone-clip > span', '.phone-step'],
   ['regions', '.sk-phone-region', '.phone-region-slot'],
   ['tools', '.sk-phone-tools > span', '.editor-add-toolbar > button'],
 ];

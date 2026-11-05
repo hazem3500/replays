@@ -29,7 +29,7 @@ import { EditCaption } from '../edit-caption.tsx';
 import type { Speed } from '../player.ts';
 import { BlurOverlay } from './BlurOverlay.tsx';
 import { EffectLanes } from './EffectLanes.tsx';
-import { Durations } from './EditorTransport.tsx';
+import { Durations } from './Durations.tsx';
 import { EDITOR_DOCK } from './dock-size.ts';
 import { EditHistory, EditorDockBar, InspectorAside, PhoneUndo, WaitSuggestion } from './EditorChrome.tsx';
 import { removeSelection } from './remove-selection.ts';
@@ -72,19 +72,18 @@ import {
   noRoomFor,
   type EffectKind,
   effectList,
-  hasEffectLanes,
   NEW_EFFECT_MS,
   withEffectList,
 } from './state.ts';
 import { handOff } from './handoff.ts';
 import { cssVars } from '../lib/css-vars.ts';
-import { applyHighlight, periodHighlight, pointHighlight } from './highlight-actions.ts';
+import { applyHighlight, highlightHere } from './highlight-actions.ts';
 import { Timeline } from './Timeline.tsx';
 import { useBetaFlag } from '../settings/labs.ts';
 import { cursorInput } from '../cursor-motion.ts';
 import { followsRecordedPath } from '../cursor-recorded-path.ts';
 import { CursorInspector } from './CursorInspector.tsx';
-import { AddMenu, BarTools, LaneInvitation } from './EditorTools.tsx';
+import { AddMenu, BarTools, EmptyTracksItem } from './EditorTools.tsx';
 import { IS_MAC, MOD } from './editor-tools.ts';
 import { EditorShortcutSheet } from './EditorShortcutSheet.tsx';
 import { EffectControls, HighlightControls } from './SelectionControls.tsx';
@@ -347,21 +346,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         const removed = removeSelection(live.current.state.present, live.current.state.selection);
         if (removed) change(removed);
       },
-      pointHighlight: () => {
+      /** M, the Highlight tool and the phone's highlight actions: the selected range when there is one, else the moment. */
+      highlight: () => {
         const { state: current, timeline: kept } = live.current;
-        applyHighlight(
-          openingSheet(change, setSheetFor),
-          say,
-          pointHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
-        );
-      },
-      periodHighlight: () => {
-        const { state: current, timeline: kept } = live.current;
-        applyHighlight(
-          openingSheet(change, setSheetFor),
-          say,
-          periodHighlight({ present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration }),
-        );
+        const request = { present: current.present, selection: current.selection, timeline: kept, time: player.getTime(), duration };
+        applyHighlight(openingSheet(change, setSheetFor), say, highlightHere(request));
       },
       /**
        * Z / F / B / T: an effect over the selected range, else at the playhead. Zoom with nothing selected zooms in on
@@ -469,7 +458,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
         case 'caption':
           return actions.effect(action);
         case 'highlight':
-          return actions.pointHighlight();
+          return actions.highlight();
         case 'apply':
           if (live.current.suggestions.length) applySuggestions();
           else if (live.current.state.selection?.kind === 'range') actions.cut();
@@ -695,7 +684,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
       finishMobileObject();
     },
     onCut: actions.cut,
-    onPeriodHighlight: actions.periodHighlight,
+    onPeriodHighlight: actions.highlight,
   };
   const phoneActions: PhoneObjectActions = {
     adjust: () => {
@@ -822,6 +811,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                 backLabel="Back to the replay"
                 status={<SaveIndicator status={status} dirty={dirty} stored={stored} failure={failure} onRetry={() => void save()} />}
                 menuItems={menuItems}
+                menuSettings={<EmptyTracksItem checked={showEmptyTracks} onChange={setShowEmptyTracks} />}
                 alwaysMenu
                 actions={
                   <EditorTopbarActions
@@ -886,19 +876,11 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                       <BarTools
                         rangeSelected={selection?.kind === 'range'}
                         suggesting={suggesting}
-                        onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.pointHighlight })[tool]()}
+                        onTool={(tool) => ({ cut: actions.cut, waits: actions.removeWaits, highlight: actions.highlight })[tool]()}
                       />
                     </EditorPluginTools>
                   }
-                  add={
-                    <AddMenu
-                      onAdd={actions.effect}
-                      onPointHighlight={actions.pointHighlight}
-                      onPeriodHighlight={actions.periodHighlight}
-                      showEmptyTracks={showEmptyTracks}
-                      onShowEmptyTracks={setShowEmptyTracks}
-                    />
-                  }
+                  add={<AddMenu onAdd={actions.effect} />}
                   end={
                     suggesting && suggestions.length ? (
                       <WaitSuggestion count={suggestions.length} onApply={applySuggestions} onDismiss={() => setSuggesting(false)} />
@@ -950,6 +932,7 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   />
                 ) : (
                   <Timeline
+                    steps={bundle.steps}
                     duration={duration}
                     edits={edits}
                     selection={selection}
@@ -966,7 +949,6 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                   />
                 )}
               </div>
-              {mobile || showEmptyTracks || hasEffectLanes(edits) ? null : <LaneInvitation onAdd={actions.effect} />}
               {mobile ? (
                 <>
                   {mobileSelection ? (
@@ -982,40 +964,64 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                         setSheetFor(selectionKey(object.selection));
                         if (object.selection?.kind === 'caption') focusCaption.current = true;
                       }}
-                      onTrim={() => {
+                      onCut={() => {
                         rememberMobileFocus();
-                        player.pause();
-                        setSheetFor('trim');
                         setCursorOpen(false);
-                        setMobileTrimOpen(true);
+                        setMobileTrimOpen(false);
                         setBlurPlacement(undefined);
-                        dispatch({ type: 'select', selection: { kind: 'trim' } });
+                        actions.cut();
                       }}
                       onCaption={() => addMobileObject('caption')}
                       onBlur={() => addMobileObject('blur')}
                       onZoom={() => addMobileObject('zoom')}
                       more={[
-                        { label: 'Speed up', action: () => addMobileObject('speed'), testId: 'add-speed' },
+                        // why: the desktop bar's and Add menu's names, so a tool is called the same on both.
                         {
-                          label: selection?.kind === 'range' ? 'Cut selection' : 'Cut at playhead',
-                          action: () => {
-                            rememberMobileFocus();
-                            setCursorOpen(false);
-                            setMobileTrimOpen(false);
-                            setBlurPlacement(undefined);
-                            actions.cut();
-                          },
-                          testId: 'add-cut',
+                          label: 'Waits',
+                          icon: 'hourglass',
+                          hint: 'Find waits to remove',
+                          action: actions.removeWaits,
+                          testId: 'remove-waits',
                         },
-                        { label: 'Select a range', action: selectMobileRange, testId: 'select-range' },
                         {
-                          label: 'Highlight moment',
+                          label: 'Speed up',
+                          icon: 'fast-forward',
+                          hint: 'Speed up from the playhead',
+                          action: () => addMobileObject('speed'),
+                          testId: 'add-speed',
+                        },
+                        {
+                          label: 'Trim',
+                          icon: 'columns-2',
+                          hint: 'Set where the clip starts and ends',
+                          action: () => {
+                            rememberMobileFocus();
+                            player.pause();
+                            setSheetFor('trim');
+                            setCursorOpen(false);
+                            setMobileTrimOpen(true);
+                            setBlurPlacement(undefined);
+                            dispatch({ type: 'select', selection: { kind: 'trim' } });
+                          },
+                          testId: 'mobile-trim',
+                        },
+                        {
+                          label: 'Select a range',
+                          icon: 'text-cursor-input',
+                          hint: 'To cut or highlight a stretch',
+                          action: selectMobileRange,
+                          testId: 'select-range',
+                        },
+                        {
+                          label: 'Highlight',
+                          icon: 'map-pin',
+                          hint: 'Highlight this moment',
                           action: () => {
                             rememberMobileFocus();
                             setCursorOpen(false);
                             setMobileTrimOpen(false);
                             setBlurPlacement(undefined);
-                            actions.pointHighlight();
+                            actions.highlight();
                           },
                           testId: 'add-point-highlight',
                         },
@@ -1023,6 +1029,8 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           ? [
                               {
                                 label: 'Cursor options',
+                                icon: 'mouse-pointer-2' as const,
+                                hint: 'How the pointer looks and moves',
                                 action: () => {
                                   rememberMobileFocus();
                                   setMobileTrimOpen(false);
@@ -1034,7 +1042,9 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                             ]
                           : []),
                         {
-                          label: 'Generate captions from steps',
+                          label: 'Captions',
+                          icon: 'captions',
+                          hint: edits.captions?.length ? 'Already on the timeline' : 'Write captions from the steps',
                           disabled: Boolean(edits.captions?.length),
                           action: () => {
                             const present = live.current.state.present;
@@ -1051,7 +1061,9 @@ export function Editor({ bundle, loaded }: { bundle: ReplayBundle; loaded: Loade
                           testId: 'generate-step-captions',
                         },
                         {
-                          label: 'Zoom on all clicks',
+                          label: 'Zoom',
+                          icon: 'zoom-in',
+                          hint: 'Zoom in on every click',
                           action: () => {
                             rememberMobileFocus();
                             setCursorOpen(false);
