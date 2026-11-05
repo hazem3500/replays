@@ -187,11 +187,16 @@ const WAIT_GLYPH_PX = 13;
 
 /**
  * What a clip segment shows in `width` px: a step's leading whole words (at least two, or its whole name, so a lone
- * first word never reads as something else); a wait the Waits tool's hourglass and its kept length ("1.5 s"), the
- * else nothing (never the hourglass alone, which reads as an icon stub), so every wait reads the same on both.
+ * first word never reads as something else), else `fallback` (its kind's name, "Fill") when that fits whole; a wait
+ * the Waits tool's hourglass and its kept length ("1.5 s"), else nothing (never the hourglass alone, which reads as
+ * an icon stub), so every wait reads the same on the desktop and the phone. Only what fits neither is left blank.
  */
-export function segmentText(segment: StepSegment, kept: number, width: number, room: LabelRoom) {
-  if (!segment.wait) return { glyph: false, text: wordsThatFit(segment.label, width, { minWords: 2, ...room }) };
+export function segmentText(segment: StepSegment, kept: number, width: number, room: LabelRoom, fallback = '') {
+  if (!segment.wait) {
+    const words = wordsThatFit(segment.label, width, { minWords: 2, ...room });
+    const kind = fallback && !words ? wordsThatFit(fallback, width, { ...room, lines: 1 }) : '';
+    return { glyph: false, text: words || (kind === fallback ? kind : '') };
+  }
   const text = wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width - WAIT_GLYPH_PX, { ...room, lines: 1 });
   return { glyph: text !== '', text };
 }

@@ -8,6 +8,7 @@ import { laneRegions } from './lanes.tsx';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { wordsThatFit } from './block-label.ts';
 import { blockText, ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
+import { stepKindName } from '../viewer/StepRail.tsx';
 import { measureLabel } from './label-measure.ts';
 import { lengthLabel, stepSegments } from './clip-segments.ts';
 import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
@@ -215,11 +216,13 @@ function PhoneClipSteps({
   const px = (time: number) => time * scale;
   return stepSegments(steps, trim).map((segment) => {
     const room = labelRoom(segment, trim.start, cuts);
-    const label = segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
-      lines: 2,
-      pad: PHONE_STEP_PAD_PX,
-      measure: measureLabel,
-    });
+    const label = segmentText(
+      segment,
+      keptLength(segment, trim.start, cuts),
+      px(room.length),
+      { lines: 2, pad: PHONE_STEP_PAD_PX, measure: measureLabel },
+      stepKindName(segment.kind),
+    );
     return (
       <span
         key={segment.at}

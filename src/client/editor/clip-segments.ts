@@ -18,6 +18,8 @@ export interface StepSegment {
   offset: number;
   length: number;
   label: string;
+  /** The step's kind ("click", "fill"), whose name labels a segment too short for its words. */
+  kind: string;
   /** A pause: drawn dim and named by its length. */
   wait: boolean;
 }
@@ -41,7 +43,7 @@ export function stepSegments(steps: readonly Pick<ReplayStep, 'at' | 'label' | '
       last.length = to - trim.start - last.offset;
       continue;
     }
-    segments.push({ at: step.at, offset: from - trim.start, length: to - from, label: step.label, wait });
+    segments.push({ at: step.at, offset: from - trim.start, length: to - from, label: step.label, kind: step.kind, wait });
   }
   for (const segment of segments) if (segment.wait) segment.label = lengthLabel('Wait', segment.length);
   return segments;

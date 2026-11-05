@@ -149,7 +149,7 @@ describe('labelRoom', () => {
 const measure = (text: string) => text.length * 6;
 
 describe('segmentText', () => {
-  const wait = { at: 0, offset: 0, length: 1_500, label: 'Wait 1.5\u00a0s', wait: true };
+  const wait = { at: 0, offset: 0, length: 1_500, label: 'Wait 1.5\u00a0s', kind: 'wait', wait: true };
 
   it('gives a wait the hourglass and its kept length, less the cuts over it', () => {
     const kept = keptLength(wait, 0, [{ from: 1_000, to: 3_000 }]);
@@ -164,6 +164,12 @@ describe('segmentText', () => {
     const action = { ...wait, label: 'Type a coupon code', wait: false };
     expect(segmentText(action, 1_500, 100, { measure }).text).toBe('Type a coupon');
     expect(segmentText(action, 1_500, 50, { measure }).text).toBe('');
+  });
+
+  it('names a step too short for two of its words by its kind, when that fits whole', () => {
+    const action = { ...wait, label: 'Enter an email address', wait: false };
+    expect(segmentText(action, 1_500, 50, { measure }, 'Fill').text).toBe('Fill');
+    expect(segmentText(action, 1_500, 20, { measure }, 'Fill').text).toBe('');
   });
 });
 
