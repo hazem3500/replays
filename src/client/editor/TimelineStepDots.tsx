@@ -4,7 +4,7 @@ import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { Hint } from '@/components/icon-button.tsx';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { usePlayer } from '../player.ts';
-import { stepKindName } from '../viewer/StepRail.tsx';
+import { stepKindName } from '../viewer/step-kinds.ts';
 import { useTimelineScale } from './timeline-drag.ts';
 import { MIN_DOT_GAP_PX, placeStepDots, type StepDot, stepDotDetail, stepDotLabel, stepMarks } from './timeline-marks.ts';
 

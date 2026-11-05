@@ -44,10 +44,10 @@
   /* why: the phone's 44 px control minimum (editor.css) ties the rule above and wins; an effect block keeps its lane's height. */
   .editor-shell[data-mobile] .phone-lanes .phone-region { min-height: 0; }
   .phone-clip, .phone-cut, .phone-highlight, .phone-region { margin: 0; padding: 0; border: 0; font: inherit; cursor: pointer; }
-  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-tertiary); text-align: left; }
+  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: none; color: var(--text-tertiary); text-align: left; }
   .phone-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised)); box-shadow: var(--clip-lift); color: var(--text-secondary); }
   /* A step's name in whole words (block-label.ts wordsThatFit), up to two lines, centred in the clip. */
-  .phone-step { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; overflow: hidden; padding: 0 4px; border-left: 2px solid transparent; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; font-size: 11px; line-height: 13px; }
+  .phone-step { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; overflow: hidden; padding: 0 4px; border-left: 2px solid transparent; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; font-size: 11px; font-weight: 500; line-height: 13px; }
   .phone-step-label { max-height: 26px; overflow: hidden; }
   .phone-step { color: var(--text-secondary); }
   /* As on the desktop: a step raised a touch, a wait the clip's own ground, a 2 px gap between. */
@@ -57,6 +57,14 @@
   .phone-cut-label { padding: 1px 4px; border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); font-size: 11px; line-height: 13px; white-space: nowrap; }
   .phone-cut-label:empty { display: none; }
   .phone-region-slot:not([data-selected]) .phone-region[data-short] { background: none; }
+  /*
+   * A run of neighbours too short for words (PhoneLanes.tsx EffectLane): one quiet span with the lane's glyph and
+   * their count, under its blocks, which stay their own buttons but draw no box until one is selected.
+   */
+  .phone-run { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--block-ink); font-size: 11px; font-weight: 500; white-space: nowrap; pointer-events: none; }
+  .phone-run[data-short] { background: none; }
+  .phone-region-slot:not([data-selected]) .phone-region[data-in-run] { background: none; }
+  .phone-region[data-in-run]::before { content: none; }
   .phone-region > .phone-region-glyph { flex: none; margin-right: 4px; color: var(--kind, var(--text-tertiary)); }
   .phone-step:first-child { border-left: 0; }
   .phone-trimmed { position: absolute; top: 0; bottom: 0; border-radius: 6px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--text-tertiary) 30%, transparent) 0 1.5px, transparent 1.5px 6px); opacity: 0.7; }

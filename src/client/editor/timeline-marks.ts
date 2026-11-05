@@ -1,6 +1,5 @@
 import type { ReplayStep } from '../../shared/replay.ts';
-import { wordsThatFit, type LabelRoom } from './block-label.ts';
-import { type StepSegment, stepSegments, waitSeconds } from './clip-segments.ts';
+import { stepSegments, waitSeconds } from './clip-segments.ts';
 
 /** One dot on the ruler: the step it seeks to and how many neighbours too close to tell apart it stands for. */
 export interface StepDot {
@@ -150,58 +149,4 @@ export function stepDotDetail(
     meaning: 'Filled dots are actions',
     spoken: `${kindName} at ${clock(dot.seek)}${spokenThen}`,
   };
-}
-
-/**
- * Where a clip segment's words may go, in ms from its start: past a cut over its start, and up to the next cut inside
- * it, so a label never runs under a cut and shows cut off.
- */
-export function labelRoom(
-  segment: Pick<StepSegment, 'offset' | 'length'>,
-  trimStart: number,
-  cuts: readonly { from: number; to: number }[],
-) {
-  const start = trimStart + segment.offset;
-  const end = start + segment.length;
-  let from = start;
-  for (const cut of [...cuts].sort((a, b) => a.from - b.from)) if (cut.from <= from && cut.to > from) from = Math.min(cut.to, end);
-  let to = end;
-  for (const cut of cuts) if (cut.from > from) to = Math.min(to, cut.from);
-  return { skip: from - start, length: Math.max(0, to - from) };
-}
-
-/** A segment's kept length: its own, less the cuts over it. */
-export function keptLength(
-  segment: Pick<StepSegment, 'offset' | 'length'>,
-  trimStart: number,
-  cuts: readonly { from: number; to: number }[],
-) {
-  const start = trimStart + segment.offset;
-  const end = start + segment.length;
-  const cut = cuts.reduce((sum, { from, to }) => sum + Math.max(0, Math.min(end, to) - Math.max(start, from)), 0);
-  return Math.max(0, segment.length - cut);
-}
-
-/** Room the hourglass before a wait's length takes: the 10 px glyph and the gap after it. */
-const WAIT_GLYPH_PX = 13;
-
-/**
- * What a clip segment shows in `width` px: a step's leading whole words (at least two, or its whole name, so a lone
- * first word never reads as something else), else `fallback` (its kind's name, "Fill") when that fits whole; a wait
- * the Waits tool's hourglass and its kept length ("1.5 s"), else nothing (never the hourglass alone, which reads as
- * an icon stub), so every wait reads the same on the desktop and the phone. Only what fits neither is left blank.
- */
-export function segmentText(
-  segment: StepSegment,
-  kept: number,
-  width: number,
-  { fallback = '', ...room }: LabelRoom & { fallback?: string },
-) {
-  if (!segment.wait) {
-    const words = wordsThatFit(segment.label, width, { minWords: 2, ...room });
-    const kind = fallback && !words ? wordsThatFit(fallback, width, { ...room, lines: 1 }) : '';
-    return { glyph: false, text: words || (kind === fallback ? kind : '') };
-  }
-  const text = wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width - WAIT_GLYPH_PX, { ...room, lines: 1 });
-  return { glyph: text !== '', text };
 }

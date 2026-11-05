@@ -8,12 +8,12 @@ import { laneRegions } from './lanes.tsx';
 import { AnimatedIcon } from '@/components/animated-icon.tsx';
 import { wordsThatFit } from './block-label.ts';
 import { blockText, ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
-import { stepKindName } from '../viewer/StepRail.tsx';
+import { stepKindName } from '../viewer/step-kinds.ts';
 import { measureLabel } from './label-measure.ts';
-import { lengthLabel, stepSegments } from './clip-segments.ts';
-import { keptLength, labelRoom, segmentText } from './timeline-marks.ts';
+import { keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
+import { shortRuns } from './phone-timeline.ts';
 
 /** A clip step's inline padding (phone-editor.css .phone-step), which its name's words fit inside. */
 const PHONE_STEP_PAD_PX = 4;
@@ -63,6 +63,89 @@ function edgeDrag(duration: number, scale: number, edits: ReplayEdits, dispatch:
 
 type EdgeDrag = ReturnType<typeof edgeDrag>;
 
+/** How a run of short blocks names its lane and count ("9 captions"). */
+const RUN_NAMES: Record<EffectKind, string> = { zoom: 'zooms', speed: 'speed-ups', blur: 'blurs', caption: 'captions' };
+
+/** A block's drawn width on the fitted phone scale: captions keep a 2 px gap from their neighbours, as on the desktop. */
+const blockWidth = (kind: EffectKind, span: number) => (kind === 'caption' ? Math.max(1, span - 2) : span);
+
+/**
+ * One effect lane on the phone: its blocks, each a button, and over a run of neighbours too short for words one quiet
+ * span with the lane's glyph and their count, so the lane reads as one stretch and names its kind.
+ */
+function EffectLane({
+  lane,
+  scale,
+  duration,
+  selection,
+  select,
+  drag,
+}: {
+  lane: ReturnType<typeof laneRegions>[number];
+  scale: number;
+  duration: number;
+  selection: Selection;
+  select: (next: Selection) => void;
+  drag: EdgeDrag;
+}) {
+  const px = (time: number) => time * scale;
+  const short = lane.regions.map(
+    (region) => !blockText(region.label, blockWidth(lane.kind, px(region.to - region.from)) - PHONE_GLYPH_PX, { pad: PHONE_REGION_PAD_PX }),
+  );
+  const runs = shortRuns(lane.regions, short);
+  const inRun = new Set(runs.flatMap((run) => run.members));
+  return (
+    <div className="phone-lane" data-kind={lane.kind}>
+      {runs.map((run) => {
+        const width = px(run.to - run.from);
+        const text = wordsThatFit(`${run.members.length} ${RUN_NAMES[lane.kind]}`, width - PHONE_GLYPH_PX, {
+          pad: PHONE_REGION_PAD_PX,
+          measure: measureLabel,
+        });
+        return (
+          <span
+            key={run.from}
+            className="phone-run"
+            data-short={text ? undefined : ''}
+            style={{ left: `${px(run.from)}px`, width: `${width}px` }}
+            aria-hidden="true"
+          >
+            {text ? (
+              <>
+                <AnimatedIcon name={LANE_GLYPHS[lane.kind]} size={10} strokeWidth={2.25} className="phone-region-glyph" />
+                <span>{text}</span>
+              </>
+            ) : null}
+          </span>
+        );
+      })}
+      {lane.regions.map((region, index) => {
+        const selected = isSelected(selection, lane.kind, region.id);
+        return (
+          <Region
+            key={region.id}
+            kind={lane.kind}
+            selected={selected}
+            inRun={inRun.has(index)}
+            left={px(region.from)}
+            width={blockWidth(lane.kind, px(region.to - region.from))}
+            region={region}
+            onSelect={() => select({ kind: lane.kind, id: region.id })}
+          >
+            {selected ? (
+              <SelectedEdges
+                from={0}
+                to={px(region.to - region.from)}
+                onDrag={(edge, event) => drag(event, (current, time) => moveEffect(current, lane.kind, region.id, edge, time, duration))}
+              />
+            ) : null}
+          </Region>
+        );
+      })}
+    </div>
+  );
+}
+
 /**
  * The phone timeline's lanes on the original replay's scale: the clip (its step segments, trimmed ends, cuts and
  * highlights) and one slim strip per effect kind that has regions, each region labelled. Tapping selects; a selected
@@ -97,34 +180,7 @@ export function PhoneLanes({ duration, scale, edits, steps, selection, dispatch 
           ...laneRegions(edits).map((lane, index) => ({
             id: `core:${lane.kind}`,
             order: (index + 2) * 100,
-            render: () => (
-              <div key={lane.kind} className="phone-lane" data-kind={lane.kind}>
-                {lane.regions.map((region) => {
-                  const selected = isSelected(selection, lane.kind, region.id);
-                  return (
-                    <Region
-                      key={region.id}
-                      kind={lane.kind}
-                      selected={selected}
-                      left={px(region.from)}
-                      width={lane.kind === 'caption' ? Math.max(1, px(region.to - region.from) - 2) : px(region.to - region.from)}
-                      region={region}
-                      onSelect={() => select({ kind: lane.kind, id: region.id })}
-                    >
-                      {selected ? (
-                        <SelectedEdges
-                          from={0}
-                          to={px(region.to - region.from)}
-                          onDrag={(edge, event) =>
-                            drag(event, (current, time) => moveEffect(current, lane.kind, region.id, edge, time, duration))
-                          }
-                        />
-                      ) : null}
-                    </Region>
-                  );
-                })}
-              </div>
-            ),
+            render: () => <EffectLane lane={lane} scale={scale} duration={duration} selection={selection} select={select} drag={drag} />,
           })),
         ]}
       />
@@ -152,6 +208,7 @@ function SelectedEdges({
 function Region({
   kind,
   selected,
+  inRun = false,
   left,
   width,
   region,
@@ -160,6 +217,8 @@ function Region({
 }: {
   kind: EffectKind;
   selected: boolean;
+  /** Part of a run of short neighbours that one span names: drawn as no box of its own, still its own button. */
+  inRun?: boolean;
   left: number;
   width: number;
   region: { id: string; from: number; to: number; label: string };
@@ -179,6 +238,7 @@ function Region({
         data-kind={kind}
         data-region-id={region.id}
         data-short={region.label !== '' && !text ? '' : undefined}
+        data-in-run={inRun ? '' : undefined}
         aria-pressed={selected}
         aria-label={`${KIND_NAMES[kind]}${region.label ? ` ${region.label}` : ''}, ${formatClock(region.from)} to ${formatClock(region.to)}`}
         onClick={onSelect}

@@ -1,16 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { formatClock } from '../src/shared/replay.ts';
-import { stepSegments } from '../src/client/editor/clip-segments.ts';
-import {
-  keptLength,
-  labelRoom,
-  placeStepDots,
-  segmentText,
-  stepDotDetail,
-  stepDotLabel,
-  stepMarks,
-} from '../src/client/editor/timeline-marks.ts';
+import { keptLength, labelRoom, segmentText, stepSegments } from '../src/client/editor/clip-segments.ts';
+import { placeStepDots, stepDotDetail, stepDotLabel, stepMarks } from '../src/client/editor/timeline-marks.ts';
 
 const step = (at: number, label = `Step at ${at}`, kind = 'click') => ({ at, label, kind });
 

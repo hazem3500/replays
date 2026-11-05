@@ -3,7 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { EDITS_VERSION, type ReplayEdits } from '../src/shared/edits.ts';
 import { duplicateEffect, splitEffect } from '../src/client/editor/phone-edits.ts';
 import { scrollForPlayhead, snapTarget } from '../src/client/editor/phone-scrub.ts';
-import { clampScale, fitScale, MAX_SCALE, stepBoundaries, stepLineLabel, stepLineText } from '../src/client/editor/phone-timeline.ts';
+import {
+  clampScale,
+  fitScale,
+  MAX_SCALE,
+  shortRuns,
+  stepBoundaries,
+  stepLineLabel,
+  stepLineText,
+} from '../src/client/editor/phone-timeline.ts';
 
 const DURATION = 10_000;
 const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VERSION, cuts: [], ...extra });
@@ -106,5 +114,26 @@ describe('the phone step line', () => {
 
   it('keeps whole words that fit and never ends on a joining word', () => {
     expect(stepLineText('Add the mug to the cart', 32 + 6.6 * 14 + 1)).toBe('Add the mug');
+  });
+});
+
+describe('short block runs on the phone', () => {
+  const blocks = [
+    { from: 0, to: 1_000 },
+    { from: 1_000, to: 1_400 },
+    { from: 1_450, to: 1_800 },
+    { from: 3_000, to: 3_300 },
+    { from: 3_300, to: 3_600 },
+  ];
+
+  it('joins neighbouring short blocks into one run and leaves a lone short block alone', () => {
+    expect(shortRuns(blocks, [false, true, true, true, false])).toEqual([{ from: 1_000, to: 1_800, members: [1, 2] }]);
+  });
+
+  it('starts a new run across a gap wider than the join distance', () => {
+    expect(shortRuns(blocks, [false, true, true, true, true])).toEqual([
+      { from: 1_000, to: 1_800, members: [1, 2] },
+      { from: 3_000, to: 3_600, members: [3, 4] },
+    ]);
   });
 });

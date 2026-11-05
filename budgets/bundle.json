@@ -143,9 +143,9 @@
       "brotli": 38542
     },
     "dist/client/assets/Editor-HASH.css": {
-      "raw": 30708,
+      "raw": 30617,
       "gzip": 5996,
-      "brotli": 5338
+      "brotli": 5336
     },
     "dist/client/assets/Editor-HASH.js": {
       "raw": 142300,
