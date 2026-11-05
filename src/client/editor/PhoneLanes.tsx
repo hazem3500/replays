@@ -10,10 +10,9 @@ import { wordsThatFit } from './block-label.ts';
 import { blockText, ClipStepLabel, LANE_GLYPHS } from './BlockLabel.tsx';
 import { stepKindName } from '../viewer/step-kinds.ts';
 import { measureLabel } from './label-measure.ts';
-import { keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
+import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, shortRuns, stepSegments } from './clip-segments.ts';
 import { type EditorAction, type EffectKind, moveCut, moveEffect, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { startDrag, type TimelineScale } from './timeline-drag.ts';
-import { shortRuns } from './phone-timeline.ts';
 
 /** A clip step's inline padding (phone-editor.css .phone-step), which its name's words fit inside. */
 const PHONE_STEP_PAD_PX = 4;
@@ -274,28 +273,45 @@ function PhoneClipSteps({
   scale: number;
 }) {
   const px = (time: number) => time * scale;
-  return stepSegments(steps, trim).map((segment) => {
-    const room = labelRoom(segment, trim.start, cuts);
-    const label = segmentText(segment, keptLength(segment, trim.start, cuts), px(room.length), {
+  const segments = stepSegments(steps, trim);
+  const labels = segments.map((segment) =>
+    segmentText(segment, keptLength(segment, trim.start, cuts), px(labelRoom(segment, trim.start, cuts).length), {
       lines: 2,
       pad: PHONE_STEP_PAD_PX,
       measure: measureLabel,
       fallback: stepKindName(segment.kind),
-    });
-    return (
-      <span
-        key={segment.at}
-        className="phone-step"
-        data-wait={segment.wait || undefined}
-        data-blank={!segment.wait && !label.text ? '' : undefined}
-        style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
-      >
-        <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
-          <ClipStepLabel {...label} />
+    }),
+  );
+  const runs = clipRuns(
+    segments,
+    labels.map((label) => !label.text),
+  );
+  return (
+    <>
+      {segments.map((segment, index) => {
+        const room = labelRoom(segment, trim.start, cuts);
+        const label = labels[index] ?? { glyph: false, text: '' };
+        return (
+          <span
+            key={segment.at}
+            className="phone-step"
+            data-wait={segment.wait || undefined}
+            data-blank={!segment.wait && !label.text ? '' : undefined}
+            style={{ left: `${px(segment.offset)}px`, width: `${px(segment.length)}px` }}
+          >
+            <span className="phone-step-label" style={{ marginLeft: `${px(room.skip)}px` }}>
+              <ClipStepLabel {...label} />
+            </span>
+          </span>
+        );
+      })}
+      {runs.map((run) => (
+        <span key={run.from} className="phone-step-run" style={{ left: `${px(run.from)}px`, width: `${px(run.to - run.from)}px` }}>
+          {wordsThatFit(`${run.steps} steps`, px(run.to - run.from), { pad: PHONE_STEP_PAD_PX, measure: measureLabel })}
         </span>
-      </span>
-    );
-  });
+      ))}
+    </>
+  );
 }
 
 /**

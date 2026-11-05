@@ -10,7 +10,7 @@ import { stepKindName } from '../viewer/step-kinds.ts';
 import { measureLabel } from './label-measure.ts';
 import { useHasKeyboard } from '../hooks/use-has-keyboard.ts';
 import { blockText } from './BlockLabel.tsx';
-import { keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
+import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
 import { Durations } from './Durations.tsx';
 import { BAR_TOOLS } from './bar-tools.ts';
 import { laneRegions } from './lanes.tsx';
@@ -114,24 +114,39 @@ function ClipStepsSkeleton({
 }) {
   const segments = stepSegments(steps, trim);
   const length = Math.max(1, trim.end - trim.start);
-  return segments.map((segment, index) => {
+  const labels = segments.map((segment, index) => {
     const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
     const room = labelRoom(segment, trim.start, cuts);
-    const label = segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD), {
+    return segmentText(segment, keptLength(segment, trim.start, cuts), room.length * px - edges * (EDGE_STEP_PAD - STEP_PAD), {
       pad: STEP_PAD,
       measure: measureLabel,
       fallback: stepKindName(segment.kind),
     });
-    return (
-      <span
-        key={segment.at}
-        className="tl-clip-step"
-        data-wait={segment.wait || undefined}
-        data-blank={!segment.wait && !label.text ? '' : undefined}
-        style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
-      />
-    );
   });
+  const runs = clipRuns(
+    segments,
+    labels.map((label) => !label.text),
+  );
+  return (
+    <>
+      {segments.map((segment, index) => (
+        <span
+          key={segment.at}
+          className="tl-clip-step"
+          data-wait={segment.wait || undefined}
+          data-blank={!segment.wait && !labels[index]?.text ? '' : undefined}
+          style={{ left: `${(segment.offset / length) * 100}%`, width: `${(segment.length / length) * 100}%` }}
+        />
+      ))}
+      {runs.map((run) => (
+        <span
+          key={run.from}
+          className="tl-clip-run"
+          style={{ left: `${(run.from / length) * 100}%`, width: `${((run.to - run.from) / length) * 100}%` }}
+        />
+      ))}
+    </>
+  );
 }
 
 /** The clip lane: the kept clip with its step tints, its trim tabs and its cuts (Timeline.tsx); words arrive with the editor. */

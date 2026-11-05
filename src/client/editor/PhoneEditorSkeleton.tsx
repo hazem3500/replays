@@ -17,7 +17,7 @@ import type { ReplayEdits } from '../../shared/edits.ts';
 import { Durations } from './Durations.tsx';
 import { formatClock, type ReplayStep } from '../../shared/replay.ts';
 import { stepKindName } from '../viewer/step-kinds.ts';
-import { keptLength, labelRoom, segmentText, stepSegments } from './clip-segments.ts';
+import { clipRuns, keptLength, labelRoom, segmentText, stepSegments } from './clip-segments.ts';
 import { measureLabel } from './label-measure.ts';
 import { cssVars } from '../lib/css-vars.ts';
 import { laneRegions } from './lanes.tsx';
@@ -77,26 +77,33 @@ function SkeletonClip({
 }) {
   const trim = edits?.trim ?? { start: 0, end: duration };
   const cuts = edits?.cuts ?? [];
+  const segments = stepSegments(steps, trim);
+  const labels = segments.map((segment) =>
+    segmentText(segment, keptLength(segment, trim.start, cuts), labelRoom(segment, trim.start, cuts).length * scale, {
+      lines: 2,
+      pad: STEP_PAD_PX,
+      measure: measureLabel,
+      fallback: stepKindName(segment.kind),
+    }),
+  );
+  const runs = clipRuns(
+    segments,
+    labels.map((label) => !label.text),
+  );
   return (
     <div className="sk-phone-lane" data-kind="clip">
       <span className="sk-phone-clip" style={{ left: `${trim.start * scale}px`, width: `${(trim.end - trim.start) * scale}px` }}>
-        {stepSegments(steps, trim).map((segment) => {
-          const room = labelRoom(segment, trim.start, cuts);
-          const label = segmentText(segment, keptLength(segment, trim.start, cuts), room.length * scale, {
-            lines: 2,
-            pad: STEP_PAD_PX,
-            measure: measureLabel,
-            fallback: stepKindName(segment.kind),
-          });
-          return (
-            <span
-              key={segment.at}
-              data-wait={segment.wait || undefined}
-              data-blank={!segment.wait && !label.text ? '' : undefined}
-              style={{ left: `${segment.offset * scale}px`, width: `${segment.length * scale}px` }}
-            />
-          );
-        })}
+        {segments.map((segment, index) => (
+          <span
+            key={segment.at}
+            data-wait={segment.wait || undefined}
+            data-blank={!segment.wait && !labels[index]?.text ? '' : undefined}
+            style={{ left: `${segment.offset * scale}px`, width: `${segment.length * scale}px` }}
+          />
+        ))}
+        {runs.map((run) => (
+          <span key={run.from} data-run="" style={{ left: `${run.from * scale}px`, width: `${(run.to - run.from) * scale}px` }} />
+        ))}
       </span>
     </div>
   );

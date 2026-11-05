@@ -9,8 +9,9 @@ import { TimelineHighlights } from './TimelineHighlights.tsx';
 import { TimelineStepDots } from './TimelineStepDots.tsx';
 import { ClipStepLabel } from './BlockLabel.tsx';
 import { stepKindName } from '../viewer/step-kinds.ts';
+import { wordsThatFit } from './block-label.ts';
 import { measureLabel } from './label-measure.ts';
-import { keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
+import { clipRuns, keptLength, labelRoom, lengthLabel, segmentText, stepSegments } from './clip-segments.ts';
 import { type EditorAction, moveCut, moveHighlight, type Selection, setTrimEdge, trimOf } from './state.ts';
 import { rulerTicks, tickLabel } from './ruler.ts';
 import { ScaleContext, startDrag, timeKeys, type TimelineScale } from './timeline-drag.ts';
@@ -68,32 +69,53 @@ function ClipSteps({
 }) {
   const px = scale.duration > 0 ? scale.width / scale.duration : 0;
   const segments = stepSegments(steps, trim);
-  return segments.map((segment, index) => {
-    const room = labelRoom(segment, trim.start, cuts);
+  const labels = segments.map((segment, index) => {
     // why: only the side under a trim tab needs its wider pad, so an end step fits words as wide as the blocks below it.
     const edges = (index === 0 ? 1 : 0) + (index === segments.length - 1 ? 1 : 0);
-    const roomPx = room.length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
-    const label = segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, {
+    const roomPx = labelRoom(segment, trim.start, cuts).length * px - edges * (CLIP_STEP_PAD_PX - CLIP_STEP_INNER_PAD_PX);
+    return segmentText(segment, keptLength(segment, trim.start, cuts), roomPx, {
       pad: CLIP_STEP_INNER_PAD_PX,
       measure: measureLabel,
       fallback: stepKindName(segment.kind),
     });
-    return (
-      <span
-        key={segment.at}
-        className="tl-clip-step"
-        data-testid="clip-step"
-        data-wait={segment.wait || undefined}
-        data-blank={!segment.wait && !label.text ? '' : undefined}
-        aria-hidden="true"
-        style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
-      >
-        <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
-          <ClipStepLabel {...label} />
-        </span>
-      </span>
-    );
   });
+  const runs = clipRuns(
+    segments,
+    labels.map((label) => !label.text),
+  );
+  return (
+    <>
+      {segments.map((segment, index) => {
+        const room = labelRoom(segment, trim.start, cuts);
+        const label = labels[index] ?? { glyph: false, text: '' };
+        return (
+          <span
+            key={segment.at}
+            className="tl-clip-step"
+            data-testid="clip-step"
+            data-wait={segment.wait || undefined}
+            data-blank={!segment.wait && !label.text ? '' : undefined}
+            aria-hidden="true"
+            style={{ left: `${segment.offset * px}px`, width: `${segment.length * px}px` }}
+          >
+            <span className="tl-clip-step-label" style={{ marginLeft: `${room.skip * px}px` }}>
+              <ClipStepLabel {...label} />
+            </span>
+          </span>
+        );
+      })}
+      {runs.map((run) => (
+        <span
+          key={run.from}
+          className="tl-clip-run"
+          aria-hidden="true"
+          style={{ left: `${run.from * px}px`, width: `${(run.to - run.from) * px}px` }}
+        >
+          {wordsThatFit(`${run.steps} steps`, (run.to - run.from) * px, { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel })}
+        </span>
+      ))}
+    </>
+  );
 }
 
 /** The waits "Remove waits" would cut, shown before they are applied. */

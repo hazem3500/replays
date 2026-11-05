@@ -148,9 +148,9 @@
       "brotli": 5336
     },
     "dist/client/assets/Editor-HASH.js": {
-      "raw": 142300,
-      "gzip": 47500,
-      "brotli": 39800
+      "raw": 147756,
+      "gzip": 49156,
+      "brotli": 41134
     },
     "dist/client/assets/edits-HASH.js": {
       "raw": 37945,
@@ -278,9 +278,9 @@
       "brotli": 1555
     },
     "dist/client/assets/open-hint-HASH.css": {
-      "raw": 30081,
-      "gzip": 6161,
-      "brotli": 5472
+      "raw": 31230,
+      "gzip": 6322,
+      "brotli": 5616
     },
     "dist/client/assets/open-hint-HASH.js": {
       "raw": 195425,
@@ -2086,11 +2086,11 @@
     {
       "file": "dist/client/assets/Editor-HASH.js",
       "cap": {
-        "raw": 142300,
-        "gzip": 47500,
-        "brotli": 39800
+        "raw": 147756,
+        "gzip": 49156,
+        "brotli": 41134
       },
-      "reason": "The step dots on the desktop ruler and the phone scale drawn from the clip's own blocks (actions at their start, each wait block once mid-block, a wait too close to show apart named in its action's tooltip, one roving tab stop, a pressed label on touch, seek), the clip's step labels of at least two whole words, load waits folded into their step and waits joined and named by their kept length, kept clear of cuts, cut lengths, one shared whole-word label helper measured in the real font for every lane block, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names with icons and hint lines, its scale that seeks and scrubs under a playhead moving along a flush track, and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 141763 (+10572), gzip 43822 to 47220 (+3398), brotli 36747 to 39545 (+2798). Replaces the #247 entry for this file.",
+      "reason": "The step dots on the desktop ruler and the phone scale drawn from the clip's own blocks (actions at their start, each wait block once mid-block, a wait too close to show apart named in its action's tooltip, one roving tab stop, a pressed label on touch, seek), the clip's step labels of at least two whole words, load waits folded into their step and waits joined and named by their kept length, kept clear of cuts, cut lengths, one shared whole-word label helper measured in the real font for every lane block, the shorter Add menu with its hint line, the merged Highlight action, the phone's desktop tool names with icons and hint lines, its scale that seeks and scrubs under a playhead moving along a flush track, and the tools' animated icons and key suffixes. The activity histogram is gone. Same-Boat main 888b6e2a to head: raw 131191 to 141763 (+10572), gzip 43822 to 47220 (+3398), brotli 36747 to 39545 (+2798). Replaces the #247 entry for this file. Later heads add the clip and phone lane runs (a run of wordless neighbours named once: \"4 steps\", \"11 captions\") and the kind-name fallback: Same-Boat head raw 143452, gzip 47724, brotli 39935.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
@@ -2106,11 +2106,11 @@
     {
       "file": "dist/client/assets/open-hint-HASH.css",
       "cap": {
-        "raw": 30081,
-        "gzip": 6161,
-        "brotli": 5472
+        "raw": 31230,
+        "gzip": 6322,
+        "brotli": 5616
       },
-      "reason": "The editor loading frame draws the loaded dock with its own classes: dock-layout.css (the bar, ruler, lanes, clip, tinted blocks and playhead geometry) loads once with the eager loading stylesheet, as editor-layout.css does, and the loaded editor reuses it; dot and clip-step styles stay in the Editor CSS. Same-Boat head: raw 29204, gzip 5981, brotli 5312, against main caps raw 21746, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
+      "reason": "The editor loading frame draws the loaded dock with its own classes: dock-layout.css (the bar, ruler, lanes, clip, tinted blocks and playhead geometry) loads once with the eager loading stylesheet, as editor-layout.css does, and the loaded editor reuses it; dot and clip-step styles stay in the Editor CSS. Same-Boat head: raw 30320, gzip 6137, brotli 5452 (with the clip step and run tints the loading frame draws), against main caps raw 21746, gzip 4642, brotli 4077. Replaces the #208 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {

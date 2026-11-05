@@ -3,15 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { EDITS_VERSION, type ReplayEdits } from '../src/shared/edits.ts';
 import { duplicateEffect, splitEffect } from '../src/client/editor/phone-edits.ts';
 import { scrollForPlayhead, snapTarget } from '../src/client/editor/phone-scrub.ts';
-import {
-  clampScale,
-  fitScale,
-  MAX_SCALE,
-  shortRuns,
-  stepBoundaries,
-  stepLineLabel,
-  stepLineText,
-} from '../src/client/editor/phone-timeline.ts';
+import { clipRuns, shortRuns } from '../src/client/editor/clip-segments.ts';
+import { clampScale, fitScale, MAX_SCALE, stepBoundaries, stepLineLabel, stepLineText } from '../src/client/editor/phone-timeline.ts';
 
 const DURATION = 10_000;
 const edits = (extra: Partial<ReplayEdits>): ReplayEdits => ({ version: EDITS_VERSION, cuts: [], ...extra });
@@ -135,5 +128,27 @@ describe('short block runs on the phone', () => {
       { from: 1_000, to: 1_800, members: [1, 2] },
       { from: 3_000, to: 3_600, members: [3, 4] },
     ]);
+  });
+});
+
+/** A clip segment at `offset` ms for `length` ms, a wait or a click, with no words. */
+const segment = (offset: number, length: number, wait: boolean) => ({
+  at: offset,
+  offset,
+  length,
+  label: '',
+  kind: wait ? 'wait' : 'click',
+  wait,
+});
+
+describe('clip runs', () => {
+  it('names a run of wordless neighbours once it holds two steps', () => {
+    const segments = [segment(0, 100, false), segment(100, 50, true), segment(150, 80, false), segment(230, 900, true)];
+    expect(clipRuns(segments, [true, true, true, false])).toEqual([{ from: 0, to: 230, members: [0, 1, 2], steps: 2 }]);
+  });
+
+  it('leaves a run of one step and its waits to the ground', () => {
+    const segments = [segment(0, 100, false), segment(100, 50, true)];
+    expect(clipRuns(segments, [true, true])).toEqual([]);
   });
 });

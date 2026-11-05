@@ -50,34 +50,3 @@ export function stepLineLabel(
 export function stepLineText(label: string, width: number) {
   return wordsThatFit(label, width, { pad: STEP_LINE_PAD_PX, measure: measureLabel });
 }
-
-/** A run of neighbouring blocks too short for words, drawn as one span: its time and which blocks it holds. */
-export interface ShortRun {
-  from: number;
-  to: number;
-  /** Indexes into the lane's blocks. */
-  members: number[];
-}
-
-/** why: blocks this close (ms) read as one stretch on the fitted phone scale, so they join a run. */
-const RUN_GAP_MS = 100;
-
-/**
- * Runs of two or more neighbouring blocks that are each too short for words (`short`), in time order, so a lane of
- * slivers reads as one span instead of a row of dashes. Blocks further apart than RUN_GAP_MS start a new run.
- */
-export function shortRuns(blocks: readonly { from: number; to: number }[], short: readonly boolean[]) {
-  const runs: ShortRun[] = [];
-  let current: ShortRun | undefined;
-  for (const [index, block] of blocks.entries()) {
-    if (short[index] && current && block.from - current.to <= RUN_GAP_MS) {
-      current.to = Math.max(current.to, block.to);
-      current.members.push(index);
-      continue;
-    }
-    if (current && current.members.length > 1) runs.push(current);
-    current = short[index] ? { from: block.from, to: block.to, members: [index] } : undefined;
-  }
-  if (current && current.members.length > 1) runs.push(current);
-  return runs;
-}

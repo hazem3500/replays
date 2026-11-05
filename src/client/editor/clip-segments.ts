@@ -110,3 +110,52 @@ export function segmentText(
   const text = wordsThatFit(`${waitSeconds(kept)}\u00a0s`, width - WAIT_GLYPH_PX, { ...room, lines: 1 });
   return { glyph: text !== '', text };
 }
+
+/** A run of neighbouring blocks too short for words, drawn as one span: its time and which blocks it holds. */
+export interface ShortRun {
+  from: number;
+  to: number;
+  /** Indexes into the lane's blocks. */
+  members: number[];
+}
+
+/** why: blocks this close (ms) read as one stretch on the fitted phone scale, so they join a run. */
+const RUN_GAP_MS = 100;
+
+/**
+ * Runs of two or more neighbouring blocks that are each too short for words (`short`), in time order, so a lane of
+ * slivers reads as one span instead of a row of dashes. Blocks further apart than RUN_GAP_MS start a new run.
+ */
+export function shortRuns(blocks: readonly { from: number; to: number }[], short: readonly boolean[]) {
+  const runs: ShortRun[] = [];
+  let current: ShortRun | undefined;
+  for (const [index, block] of blocks.entries()) {
+    if (short[index] && current && block.from - current.to <= RUN_GAP_MS) {
+      current.to = Math.max(current.to, block.to);
+      current.members.push(index);
+      continue;
+    }
+    if (current && current.members.length > 1) runs.push(current);
+    current = short[index] ? { from: block.from, to: block.to, members: [index] } : undefined;
+  }
+  if (current && current.members.length > 1) runs.push(current);
+  return runs;
+}
+
+/** A run of neighbouring clip segments that show no words, and how many of them are steps (not waits). */
+export interface ClipRun extends ShortRun {
+  steps: number;
+}
+
+/**
+ * Runs of neighbouring clip segments that each show no words (`blank`) and hold at least two steps, so one span can
+ * name them ("3 steps") instead of the clip's left half reading as empty ground under three dots.
+ */
+export function clipRuns(segments: readonly StepSegment[], blank: readonly boolean[]): ClipRun[] {
+  return shortRuns(
+    segments.map((segment) => ({ from: segment.offset, to: segment.offset + segment.length })),
+    blank,
+  )
+    .map((run) => ({ ...run, steps: run.members.filter((index) => segments[index]?.wait === false).length }))
+    .filter((run) => run.steps > 1);
+}

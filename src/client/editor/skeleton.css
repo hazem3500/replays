@@ -60,8 +60,9 @@
   .sk-phone-lane[data-kind="clip"] { height: 52px; }
   .sk-phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; color: var(--text-secondary); }
   /* The clip's step tints as the loaded clip draws them (phone-editor.css .phone-step), without words. */
-  .sk-phone-clip > span { position: absolute; top: 0; bottom: 0; border-left: 2px solid transparent; border-radius: 4px; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; }
+  .sk-phone-clip > span { position: absolute; top: 0; bottom: 0; border-left: 2px solid transparent; border-radius: 4px; background: color-mix(in srgb, var(--text) var(--step-tint, 6%), transparent); background-clip: padding-box; }
   .sk-phone-clip > span:is([data-wait], [data-blank]) { background: none; }
+  .sk-phone-clip > span[data-run] { border-left: 0; background: color-mix(in srgb, var(--text) calc(var(--step-tint, 6%) + 2%), transparent); }
   .sk-phone-clip > span:first-child { border-left: 0; }
   .sk-phone-region { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--block-ink); font-size: 11px; font-weight: 500; white-space: nowrap; }
   .sk-phone-region[data-short] { background: none; }
