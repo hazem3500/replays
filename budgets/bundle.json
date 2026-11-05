@@ -270,7 +270,7 @@
     "dist/client/assets/motion-features-HASH.js": {
       "raw": 66,
       "gzip": 81,
-      "brotli": 66
+      "brotli": 70
     },
     "dist/client/assets/navigate-HASH.js": {
       "raw": 3856,
@@ -2106,9 +2106,9 @@
       "cap": {
         "raw": 66,
         "gzip": 81,
-        "brotli": 66
+        "brotli": 70
       },
-      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 64 (+0), gzip 78 (+0), brotli 65 to 67 (+2).",
+      "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 64 (+0), gzip 78 (+0), brotli 65 to 67 (+2). CI main to head: brotli 65 to 68, raw and gzip unchanged.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
