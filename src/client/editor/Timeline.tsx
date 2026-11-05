@@ -78,8 +78,7 @@ function ClipSteps({
       segment,
       keptLength(segment, trim.start, cuts),
       roomPx,
-      { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel },
-      stepKindName(segment.kind),
+      { pad: CLIP_STEP_INNER_PAD_PX, measure: measureLabel, fallback: stepKindName(segment.kind) },
     );
     return (
       <span

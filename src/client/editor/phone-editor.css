@@ -44,15 +44,15 @@
   /* why: the phone's 44 px control minimum (editor.css) ties the rule above and wins; an effect block keeps its lane's height. */
   .editor-shell[data-mobile] .phone-lanes .phone-region { min-height: 0; }
   .phone-clip, .phone-cut, .phone-highlight, .phone-region { margin: 0; padding: 0; border: 0; font: inherit; cursor: pointer; }
-  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); color: var(--text-tertiary); text-align: left; }
+  .phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-tertiary); text-align: left; }
   .phone-clip[data-selected] { background: color-mix(in srgb, var(--accent) 10%, var(--surface-raised)); box-shadow: var(--clip-lift); color: var(--text-secondary); }
   /* A step's name in whole words (block-label.ts wordsThatFit), up to two lines, centred in the clip. */
-  .phone-step { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; overflow: hidden; padding: 0 4px; border-left: 2px solid transparent; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; font-size: 11px; line-height: 13px; }
+  .phone-step { position: absolute; top: 0; bottom: 0; border-radius: 4px; display: flex; align-items: center; overflow: hidden; padding: 0 4px; border-left: 2px solid transparent; background: color-mix(in srgb, var(--text) 6%, transparent); background-clip: padding-box; font-size: 11px; line-height: 13px; }
   .phone-step-label { max-height: 26px; overflow: hidden; }
   .phone-step { color: var(--text-secondary); }
   /* As on the desktop: a step raised a touch, a wait the clip's own ground, a 2 px gap between. */
   .phone-step[data-wait] { background: none; }
-  .phone-step[data-blank] { background: none; border-left-color: var(--line-strong); }
+  .phone-step[data-blank] { background: none; }
   .phone-cut { display: flex; align-items: center; justify-content: center; overflow: hidden; }
   .phone-cut-label { padding: 1px 4px; border-radius: 4px; background: var(--surface-raised); color: var(--text-secondary); font-size: 11px; line-height: 13px; white-space: nowrap; }
   .phone-cut-label:empty { display: none; }

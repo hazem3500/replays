@@ -58,7 +58,7 @@
   .sk-phone-scale > span { position: absolute; top: 0; translate: -50% 0; border-radius: 2px; background: var(--surface); box-shadow: 0 0 0 3px var(--surface); color: var(--text-tertiary); font-size: 11px; line-height: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .sk-phone-lane { position: relative; height: 30px; }
   .sk-phone-lane[data-kind="clip"] { height: 52px; }
-  .sk-phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); color: var(--text-secondary); }
+  .sk-phone-clip { position: absolute; top: 0; bottom: 0; overflow: hidden; border-radius: 8px; background: color-mix(in srgb, var(--text) 4%, transparent); color: var(--text-secondary); }
   .sk-phone-region { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--block-ink); font-size: 11px; font-weight: 500; white-space: nowrap; }
   .sk-phone-region[data-short] { background: none; }
   .sk-phone-glyph { flex: none; margin-right: 4px; color: var(--kind, var(--text-tertiary)); }

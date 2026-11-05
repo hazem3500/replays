@@ -191,7 +191,12 @@ const WAIT_GLYPH_PX = 13;
  * the Waits tool's hourglass and its kept length ("1.5 s"), else nothing (never the hourglass alone, which reads as
  * an icon stub), so every wait reads the same on the desktop and the phone. Only what fits neither is left blank.
  */
-export function segmentText(segment: StepSegment, kept: number, width: number, room: LabelRoom, fallback = '') {
+export function segmentText(
+  segment: StepSegment,
+  kept: number,
+  width: number,
+  { fallback = '', ...room }: LabelRoom & { fallback?: string },
+) {
   if (!segment.wait) {
     const words = wordsThatFit(segment.label, width, { minWords: 2, ...room });
     const kind = fallback && !words ? wordsThatFit(fallback, width, { ...room, lines: 1 }) : '';

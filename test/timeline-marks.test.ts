@@ -168,8 +168,8 @@ describe('segmentText', () => {
 
   it('names a step too short for two of its words by its kind, when that fits whole', () => {
     const action = { ...wait, label: 'Enter an email address', wait: false };
-    expect(segmentText(action, 1_500, 50, { measure }, 'Fill').text).toBe('Fill');
-    expect(segmentText(action, 1_500, 20, { measure }, 'Fill').text).toBe('');
+    expect(segmentText(action, 1_500, 50, { measure, fallback: 'Fill' }).text).toBe('Fill');
+    expect(segmentText(action, 1_500, 20, { measure, fallback: 'Fill' }).text).toBe('');
   });
 });
 

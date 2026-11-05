@@ -67,7 +67,7 @@
   /* Lane headers: one small glyph, centred on the lane, in the lane's kind colour; its tooltip names the lane. */
   .tl-gutter { display: grid; place-items: center; width: 100%; height: 100%; color: var(--kind, var(--text-tertiary)); }
   .tl-gutter svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-  .tl-track { position: relative; height: 100%; border-radius: 8px; background: color-mix(in srgb, var(--surface-raised) 70%, var(--canvas)); overflow: visible; cursor: crosshair; }
+  .tl-track { position: relative; height: 100%; border-radius: 8px; overflow: visible; cursor: crosshair; }
 
   /* Clip lane: the clip (its edges are the trim), trimmed-off ends dimmed. */
   .tl-outside { container-type: inline-size; position: absolute; top: 0; bottom: 0; display: grid; place-items: center; overflow: hidden; border-radius: 8px; background: repeating-linear-gradient(135deg, color-mix(in srgb, var(--canvas) 70%, transparent) 0 6px, color-mix(in srgb, var(--canvas) 55%, transparent) 6px 12px); pointer-events: none; }
@@ -102,8 +102,8 @@
   /*
    * Kind hues: each effect lane takes one of the theme's own colours, so the four tell apart at a glance in both
    * themes while staying quiet: zoom the accent, speed the warning amber, blur the danger rose, captions the success
-   * green. Full strength on the lane's glyph and a short block's top accent (80%: 3:1 as a mark, without outshining labelled blocks); a whisper of it in each block's fill,
-   * a step stronger when selected. invariant: labels stay neutral ink, so text keeps AA on every tint.
+   * green. Full strength on the lane's glyph, a quieter shade on a short block's thin bar, a whisper of it in each
+   * block's fill and a step stronger when selected. invariant: labels stay neutral ink, so text keeps AA on every tint.
    */
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="zoom"] { --kind: var(--accent); }
   :is(.editor-shell, .editor-loading) :is(.tl-lane, .phone-lane, .phone-region, .sk-phone-region)[data-kind="speed"] { --kind: var(--warning); }
@@ -135,6 +135,6 @@
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { justify-content: flex-start; border-radius: 4px; background: var(--block); box-shadow: none; color: var(--block-ink); font-weight: 500; }
   /* A block too short for two words is no box: a thin bar in its lane's hue across its span (one tint, no edge). */
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { background: none; }
-  :is(.tl-region-body, .phone-region, .sk-phone-region)[data-short]::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: color-mix(in oklab, var(--kind, var(--line-strong)) 75%, transparent); pointer-events: none; }
+  :is(.tl-region-body, .phone-region, .sk-phone-region)[data-short]::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: color-mix(in oklab, var(--kind, var(--line-strong)) 55%, var(--surface)); pointer-events: none; }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }

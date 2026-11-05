@@ -220,8 +220,7 @@ function PhoneClipSteps({
       segment,
       keptLength(segment, trim.start, cuts),
       px(room.length),
-      { lines: 2, pad: PHONE_STEP_PAD_PX, measure: measureLabel },
-      stepKindName(segment.kind),
+      { lines: 2, pad: PHONE_STEP_PAD_PX, measure: measureLabel, fallback: stepKindName(segment.kind) },
     );
     return (
       <span
