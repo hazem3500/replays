@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { after, before, describe, it } from 'node:test';
-import { CACHE_VERSION, E2E_LABEL, FULL_SCHEDULE, SUITES, suiteKey, suitesReason } from './ci-scope.mjs';
+import { CACHE_VERSION, SUITES, suiteKey, suitesReason } from './ci-scope.mjs';
 
 const FILES = [
   'README.md',
@@ -60,6 +60,7 @@ function run(event, env = {}) {
     env: {
       ...process.env,
       CI_EVENT: event,
+      CI_REF: 'refs/heads/main',
       NODE_VERSION: '22',
       GITHUB_OUTPUT: output,
       GITHUB_STEP_SUMMARY: summary,
@@ -138,48 +139,29 @@ describe('suite keys', () => {
   });
 });
 
-/** Why a pull request whose head changes `path` (against the fixture commit) runs the browser-backed suites. */
-function reasonFor(path, options = {}) {
-  write(path, `changed ${path}\n`);
-  git('add', '-A');
-  git('commit', '-qm', `change ${path}`);
-  try {
-    return suitesReason({ event: 'pull_request', base: 'HEAD~1', cwd: directory, ...options });
-  } finally {
-    git('reset', '-q', '--hard', 'HEAD~1');
-  }
-}
+describe('browser-backed suite placement', () => {
+  it('keeps every pull request out of the browser suites, including labelled and unknown-base events', () => {
+    assert.equal(suitesReason({ event: 'pull_request', ref: 'refs/heads/main' }), '');
+    assert.equal(run('pull_request', { CI_LABELS: '["run-e2e"]' }).values.wanted, 'false');
+  });
 
-describe('browser-backed suites on pull requests', () => {
-  it('stay off for ordinary source, unit test and workflow changes', () => {
-    for (const path of ['src/server/a.ts', 'src/client/a.ts', 'test/x.test.ts', '.github/workflows/ci.yml']) {
-      assert.equal(reasonFor(path), '', path);
+  it('runs main pushes, schedules and manual main runs', () => {
+    for (const event of ['push', 'schedule', 'workflow_dispatch']) {
+      assert.equal(suitesReason({ event, ref: 'refs/heads/main' }), `${event} on main`);
     }
   });
 
-  it('run for the recorder, render, packaging and dependency paths', () => {
-    for (const path of ['src/recorder/a.ts', 'src/client/render/frames.ts', 'package.json', 'pnpm-lock.yaml']) {
-      assert.match(reasonFor(path), new RegExp(`touches ${path}`), path);
-    }
-  });
-
-  it('run for the label without any risky change', () => {
-    assert.equal(reasonFor('test/x.test.ts', { labels: [E2E_LABEL] }), `labelled ${E2E_LABEL}`);
-  });
-
-  it('run when the base commit is unknown', () => {
-    assert.notEqual(suitesReason({ event: 'pull_request', base: '', cwd: directory }), '');
-  });
-
-  it('always run outside pull requests', () => {
-    for (const event of ['push', 'schedule', 'workflow_dispatch']) assert.notEqual(suitesReason({ event, cwd: directory }), '', event);
+  it('rejects manual runs on feature branches and unknown events', () => {
+    assert.equal(suitesReason({ event: 'workflow_dispatch', ref: 'refs/heads/feature' }), '');
+    assert.equal(suitesReason({ event: 'pull_request_target', ref: 'refs/heads/main' }), '');
+    assert.equal(suitesReason(), '');
   });
 });
 
 describe('command line', () => {
-  it('forces a full run for the weekly schedule and manual events only', () => {
-    assert.equal(run('schedule', { CI_SCHEDULE: FULL_SCHEDULE }).values.force, 'true');
-    assert.equal(run('schedule', { CI_SCHEDULE: '23 3 * * 0,2-6' }).values.force, 'false');
+  it('forces every nightly and manual main run to ignore previous passes', () => {
+    assert.equal(run('schedule', { CI_SCHEDULE: '23 3 * * 1' }).values.force, 'true');
+    assert.equal(run('schedule', { CI_SCHEDULE: '23 3 * * 0,2-6' }).values.force, 'true');
     assert.equal(run('workflow_dispatch').values.force, 'true');
     assert.equal(run('push').values.force, 'false');
   });
@@ -193,7 +175,9 @@ describe('command line', () => {
     assert.match(summary, /\| e2e-2 \| e2e \|/);
   });
 
-  it('wants the suites for a labelled pull request', () => {
-    assert.equal(run('pull_request', { CI_BASE: 'HEAD', CI_LABELS: JSON.stringify([E2E_LABEL]) }).values.wanted, 'true');
+  it('runs the nightly suites even when the inputs already passed', () => {
+    const { values } = run('schedule');
+    assert.equal(values.wanted, 'true');
+    assert.equal(values.force, 'true');
   });
 });
