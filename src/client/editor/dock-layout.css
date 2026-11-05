@@ -149,6 +149,6 @@
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body { justify-content: flex-start; border-radius: 4px; background: var(--block); box-shadow: none; color: var(--block-ink); font-weight: 500; }
   /* A block too short for two words is no box: a thin bar in its lane's hue across its span (one tint, no edge). */
   .tl-region[data-kind]:not([data-kind="cut"]) .tl-region-body[data-short] { background: none; }
-  :is(.tl-region-body, .phone-region, .sk-phone-region, .phone-run)[data-short]::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: color-mix(in oklab, var(--kind, var(--line-strong)) 50%, var(--surface)); pointer-events: none; }
+  :is(.tl-region-body, .phone-region, .sk-phone-region, .phone-run)[data-short]::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px; border-radius: 2px; background: color-mix(in oklab, var(--kind, var(--line-strong)) 75%, var(--surface)); pointer-events: none; }
   .tl-region[data-kind="caption"] .tl-region-body { justify-content: flex-start; }
 }
