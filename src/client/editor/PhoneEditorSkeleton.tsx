@@ -119,7 +119,7 @@ function SkeletonRegions({ edits, scale }: { edits: ReplayEdits; scale: number }
   return laneRegions(edits).map((lane) => (
     <div key={lane.kind} className="sk-phone-lane">
       {lane.regions.map((region) => {
-        const width = Math.max(4, px(region.to - region.from));
+        const width = lane.kind === 'caption' ? Math.max(1, px(region.to - region.from) - 2) : Math.max(4, px(region.to - region.from));
         const text = blockText(region.label, width - REGION_GLYPH_PX, { pad: REGION_PAD_PX });
         return (
           <span

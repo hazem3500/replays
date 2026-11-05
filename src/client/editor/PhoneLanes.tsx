@@ -169,7 +169,7 @@ function Region({
   return (
     <span
       className="phone-region-slot"
-      style={{ left: `${left}px`, width: `${Math.max(4, width)}px` }}
+      style={{ left: `${left}px`, width: `${Math.max(kind === 'caption' ? 1 : 4, width)}px` }}
       data-selected={selected || undefined}
     >
       <button

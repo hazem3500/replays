@@ -64,11 +64,10 @@
   .sk-phone-clip > span[data-wait] { background: none; }
   .sk-phone-clip > span > span { display: inline-flex; align-items: center; gap: 3px; max-height: 26px; overflow: hidden; }
   .sk-phone-clip > span:first-child { border-left: 0; }
-  .sk-phone-region { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--text-secondary); font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .sk-phone-region { position: absolute; top: 0; bottom: 0; display: flex; align-items: center; justify-content: flex-start; overflow: hidden; padding: 0 7px; border-radius: 5px; background: var(--block); color: var(--text-secondary); font-size: 11px; font-weight: 500; white-space: nowrap; }
   .sk-phone-region[data-short] { border-top: 3px solid color-mix(in oklab, var(--kind, var(--line-strong)) 80%, transparent); }
   .sk-phone-glyph { flex: none; margin-right: 4px; color: var(--kind, var(--text-tertiary)); }
   .sk-phone-region > span { min-width: 0; overflow: hidden; }
-  .sk-phone-region[data-kind="caption"] { font-weight: 500; }
   .sk-phone-hint { margin: 0; padding: 6px 16px 10px; color: var(--text-tertiary); font-size: var(--text-xs); text-align: center; }
   .sk-phone-hint:empty { padding: 0; }
   .sk-phone-tools { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: stretch; gap: 2px; padding: 4px 6px 0; border-top: 1px solid var(--line); }
