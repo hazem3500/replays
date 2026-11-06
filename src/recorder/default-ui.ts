@@ -341,7 +341,7 @@ export function createDefaultUi(
         current.content.append(icon(receipt ? 'check' : 'alert', 'status-icon'), current.label);
         if (receipt) {
           const href = receipt.url ? safeHref(receipt.url) : undefined;
-          appendCompletionControls(controls, completion?.actions, resolveValue, copy, context, href, messages);
+          appendCompletionControls(controls, completion?.actions, { resolveValue, copy, context, href, messages });
         } else {
           if (error?.action && result.status === 'error')
             renderCleanup = uploadRecovery(controls, error.action, result.retry, (message) => {

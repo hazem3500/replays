@@ -5,12 +5,15 @@ import { element, link } from './default-ui-dom.ts';
 export function appendCompletionControls(
   controls: HTMLElement,
   configuredActions: readonly CompletionAction[] | undefined,
-  resolveValue: (value: ReceiptValue) => string,
-  copy: (value?: string, control?: HTMLElement) => Promise<void>,
-  context: CompletionContext,
-  href: string | undefined,
-  messages: { openLink: string; copyLink: string },
+  options: {
+    resolveValue: (value: ReceiptValue) => string;
+    copy: (value?: string, control?: HTMLElement) => Promise<void>;
+    context: CompletionContext;
+    href: string | undefined;
+    messages: { openLink: string; copyLink: string };
+  },
 ) {
+  const { resolveValue, copy, context, href, messages } = options;
   const actions: readonly CompletionAction[] =
     configuredActions ??
     (href

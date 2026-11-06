@@ -239,7 +239,7 @@
     },
     "dist/client/assets/main-HASH.css": {
       "raw": 223667,
-      "gzip": 39236,
+      "gzip": 39245,
       "brotli": 32841
     },
     "dist/client/assets/main-HASH.js": {
@@ -698,9 +698,9 @@
       "brotli": 2717
     },
     "dist/lib/recorder-ui.mjs": {
-      "raw": 39074,
-      "gzip": 10597,
-      "brotli": 9236
+      "raw": 39109,
+      "gzip": 10612,
+      "brotli": 9245
     },
     "dist/lib/recorder.iife.js": {
       "raw": 190449,
@@ -777,11 +777,11 @@
     {
       "file": "dist/lib/recorder-ui.mjs",
       "cap": {
-        "raw": 39074,
-        "gzip": 10597,
-        "brotli": 9236
+        "raw": 39109,
+        "gzip": 10612,
+        "brotli": 9245
       },
-      "reason": "Cancellable host recovery with duplicate suppression and safe rejection guidance; CI measured main 37501/10142/8892; the recorder-only build after extracting completion controls measured head 39074/10597/9236 bytes.",
+      "reason": "Cancellable host recovery with duplicate suppression and safe rejection guidance; CI measured main 37501/10142/8892; the recorder-only build after extracting completion controls measured head 39109/10612/9245 bytes.",
       "pr": "https://github.com/hazem3500/replays/pull/258"
     },
     {
