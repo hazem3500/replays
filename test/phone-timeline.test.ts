@@ -76,11 +76,35 @@ describe('the phone timeline scale', () => {
     expect(scrollForPlayhead({ ...view, x: 400, scrollLeft: 0 })).toBe(400 + 16 - 195);
     expect(scrollForPlayhead({ ...view, x: 1_500, scrollLeft: 1_000 })).toBe(1_000);
   });
+});
 
-  it('settles a scrub on a step start within reach, and not on one it already sits on', () => {
-    expect(snapTarget(1_150, [800, 1_200], 0.1, 14)).toBe(1_200);
+describe('phone scrub snapping', () => {
+  it('chooses the later step when it is nearer than an earlier candidate', () => {
+    expect(snapTarget(2_250, [2_000, 2_300], 0.0358, 14)).toBe(2_300);
+  });
+
+  it('keeps an exact match instead of falling through to an older nearby step', () => {
+    expect(snapTarget(2_300, [2_000, 2_300], 0.0358, 14)).toBe(2_300);
+  });
+
+  it('keeps the nearest step even when it is less than half a pixel away', () => {
+    expect(snapTarget(2_290, [2_000, 2_300], 0.0358, 14)).toBe(2_300);
+  });
+
+  it('includes a step exactly at the snap radius', () => {
+    expect(snapTarget(1_000, [1_140], 0.1, 14)).toBe(1_140);
+  });
+
+  it('leaves a scrub unsnapped when no step is within reach', () => {
     expect(snapTarget(1_000, [800, 1_200], 0.1, 14)).toBeUndefined();
-    expect(snapTarget(1_200, [1_200], 0.1, 14)).toBeUndefined();
+  });
+
+  it('leaves a scrub unsnapped when there are no steps', () => {
+    expect(snapTarget(1_000, [], 0.1, 14)).toBeUndefined();
+  });
+
+  it('retains the first step on equal distance', () => {
+    expect(snapTarget(2_150, [2_000, 2_300], 0.0358, 14)).toBe(2_000);
   });
 
   it('snaps to each step start inside the recording once', () => {

@@ -1,29 +1,29 @@
+import type { ResolvedView } from '../views/resolve.ts';
 import type { CompareLayout } from './compare-search.ts';
 
-/** Where a viewer page opens from: what decides whether it compares and in which layout. */
+/** Explicit URL and profile views retain their layout; the implicit Standard view opens Single. */
+export function suiteViewLayout({ view, source }: Pick<ResolvedView, 'view' | 'source'>): CompareLayout {
+  if (source === 'recordings') return 'single';
+  return view.layout ?? 'single';
+}
+
+/** Entry intent and the recordings available to the layout switcher. */
 export interface CompareEntry {
   page: 'replay' | 'suite';
-  /** Recordings that can play (a suite's playable runs; 1 for a replay on its own). */
   recordings: number;
-  /** The URL names one recording (`/s/<id>/r/<run>`): it takes the spotlight. */
-  namedRecording?: boolean;
-  /** The page's view arranges sets this way (views/resolve.ts); default Grid. */
+  /** An intentionally requested view's layout; ordinary suite entry passes Single. */
   viewLayout?: CompareLayout;
 }
 
 export interface CompareDefaults {
-  /** The page opens comparing its recordings without a `?with=` or `?layout=`. */
+  /** Whether the multi-recording viewer is available, including in Single. */
   compare: boolean;
   /** The layout a URL without `layout` means. */
   layout: CompareLayout;
 }
 
-/**
- * The one place that decides how a page opens: a suite with two or more recordings compares them in its view's layout
- * (Grid unless the view says otherwise, Spotlight on the run its URL names); a replay on its own shows Single until
- * "Compare" adds another.
- */
-export function compareDefaults({ page, recordings, namedRecording = false, viewLayout = 'grid' }: CompareEntry): CompareDefaults {
+/** Multiple suite runs remain switchable without making comparison the default. */
+export function compareDefaults({ page, recordings, viewLayout = 'single' }: CompareEntry): CompareDefaults {
   if (page === 'replay' || recordings < 2) return { compare: false, layout: 'single' };
-  return { compare: true, layout: namedRecording ? 'spotlight' : viewLayout };
+  return { compare: true, layout: viewLayout };
 }

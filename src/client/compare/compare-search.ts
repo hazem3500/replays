@@ -31,7 +31,7 @@ function validId(value: string) {
 /**
  * Compare state on a viewer URL: `?with=<id>,<id>&layout=grid|spotlight&focus=<id>&t=<seconds>`. One parse and
  * write pair with no routing imports, so a router can adopt it as its search schema. Without `layout` the page
- * shows one recording at a time (`fallback`, Single on `/r/<id>`; a suite passes Grid). Invalid, repeated and
+ * uses the page's entry intent (`fallback`, normally Single; an explicit Compare view passes Grid). Invalid, repeated and
  * surplus ids are dropped, so a hand-edited link still opens.
  */
 export function parseCompareSearch(search: string, own: string, fallback: CompareLayout = 'single'): CompareSearch {

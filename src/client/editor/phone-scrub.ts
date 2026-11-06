@@ -65,7 +65,16 @@ export function scrollForPlayhead({
   return scrollLeft;
 }
 
-/** The step start within `px` pixels of `time` at `scale` px per ms, for a scrub to settle on. */
+/** Closest step within the inclusive pixel radius; equal distances retain input order, including exact matches. */
 export function snapTarget(time: number, snaps: readonly number[], scale: number, px: number) {
-  return snaps.find((at) => Math.abs(at - time) * scale <= px && Math.abs(at - time) * scale > 0.5);
+  let nearest: number | undefined;
+  let distance = Infinity;
+  for (const at of snaps) {
+    const next = Math.abs(at - time) * scale;
+    if (next <= px && next < distance) {
+      nearest = at;
+      distance = next;
+    }
+  }
+  return nearest;
 }

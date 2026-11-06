@@ -78,13 +78,16 @@ test('at 390 px the sidebar becomes a run switcher in the topbar title', async (
   await page.goto(`${server().origin}/s/${suite}/r/${one}`);
   await expect(page.getByRole('complementary', { name: 'Review suite' })).toHaveCount(0);
   await expect(page.getByRole('tablist', { name: 'Replay diagnostics' })).toBeInViewport({ ratio: 1 });
-  // why: comparing, the switch above the stage names the runs and says which is on show; the title keeps its room.
   await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1', exact: true })).toBeVisible();
-  await expect(page.getByTestId('phone-switch').getByRole('radio', { checked: true })).toHaveAccessibleName(/^Run 1\b/);
+  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
+  await expect(page.locator('.ct-label')).toHaveCount(0);
+  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(/Desktop: run 1/);
+  await expect(page.getByTestId('phone-switch')).toHaveCount(0);
   await page.getByTestId('title-menu').click();
   await page.getByRole('menuitemradio', { name: /Desktop: run 2/ }).click();
   await expect(page).toHaveURL(new RegExp(`/r/${two}$`));
-  await expect(page.getByTestId('phone-switch').getByRole('radio', { checked: true })).toHaveAccessibleName(/^Run 2\b/);
+  await expect(page.locator('.ct-tile[data-role="single"]')).toHaveAccessibleName(/Desktop: run 2/);
+  await expect(page.locator('.ct-label')).toHaveCount(0);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
 });
 
@@ -105,12 +108,15 @@ test('the index nests a suite’s runs, and a run whose replay expired is skippe
   await expect(menu.getByRole('menuitem', { name: /Desktop: run 2, Expired/ })).toHaveAttribute('aria-disabled', 'true');
 });
 
-test('a suite with two recordings opens comparing its runs; the sidebar moves the focus, not the players', async ({ page }) => {
+test('a suite opens single and retains grid switching and layout history', async ({ page }) => {
   const { suite, one } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/s/${suite}`);
   const tiles = page.getByTestId('compare-stage').locator('.ct-tile');
-  // why: the shared "Desktop:" is dropped, so each tile, and the scope, reads by what tells it apart.
+  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
+  await expect(tiles.locator('.ct-label')).toHaveCount(0);
+  await page.getByTestId('layout-switch').getByRole('radio', { name: 'Grid', exact: true }).click();
+  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'grid');
   await expect(tiles.locator('.ct-name')).toHaveText(['Run 1', 'Run 2']);
   await expect(page.getByTestId('compare-scope').getByRole('radio')).toHaveText(['Run 1', 'Run 2']);
   await expect(page.locator('.ct-tile iframe')).toHaveCount(2);
@@ -118,17 +124,24 @@ test('a suite with two recordings opens comparing its runs; the sidebar moves th
     for (const frame of frames) frame.setAttribute('data-marked', '');
   });
   await page.getByRole('complementary', { name: 'Review suite' }).locator(`[data-replay-id="${one}"]`).click();
-  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=grid$`));
   await expect(page.getByRole('heading', { level: 1, name: 'Desktop: run 1' })).toBeVisible();
   await page.getByTestId('layout-switch').getByRole('radio', { name: 'Single' }).click();
-  await expect(page).toHaveURL(new RegExp(`/r/${one}\\?layout=single$`));
+  await expect(page).toHaveURL(new RegExp(`/r/${one}$`));
+  await expect(tiles.locator('.ct-label')).toHaveCount(0);
+  await page.goBack();
+  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'grid');
+  await page.goForward();
+  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'single');
+  await page.getByTestId('layout-switch').getByRole('radio', { name: 'Grid', exact: true }).click();
+  await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', 'grid');
   await expect(page.locator('.ct-tile iframe[data-marked]')).toHaveCount(2);
 });
 
-test('each tile is framed in its sidebar swatch colour, and names itself only while a pointer rests on it', async ({ page }) => {
+test('each grid tile retains its sidebar colour and hover identity', async ({ page }) => {
   const { suite, one, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
-  await openReplay(page, `${server().origin}/s/${suite}`);
+  await openReplay(page, `${server().origin}/s/${suite}?layout=grid`);
   const sidebar = page.getByRole('complementary', { name: 'Review suite' });
   const stage = page.getByTestId('compare-stage');
   for (const id of [one, two]) {
@@ -148,13 +161,28 @@ test('each tile is framed in its sidebar swatch colour, and names itself only wh
   await expect(label).toBeHidden();
 });
 
-test('a suite link that names a run opens comparing, that run in the spotlight', async ({ page }) => {
+test('a named suite run opens single and keeps its accessible identity', async ({ page }) => {
   const { suite, two } = await threeRuns(page.request);
   await page.setViewportSize({ width: 1280, height: 800 });
   await openReplay(page, `${server().origin}/s/${suite}/r/${two}`);
-  await expect(page.locator('.ct-tile[data-role="spotlight"]')).toHaveAttribute('data-tile-id', two);
-  await expect(page.getByTestId('layout-switch').getByRole('radio', { checked: true })).toHaveAttribute('data-layout', 'spotlight');
+  const tile = page.locator('.ct-tile[data-role="single"]');
+  await expect(tile).toHaveAttribute('data-tile-id', two);
+  await expect(tile).toHaveAccessibleName(/Desktop: run 2/);
+  await expect(page.locator('.ct-label')).toHaveCount(0);
+  await expect(page.getByTestId('layout-switch').getByRole('radio', { checked: true })).toHaveAttribute('data-layout', 'single');
 });
+
+for (const search of ['?layout=grid', '?layout=spotlight', '?view=compare', '?view=compare&layout=single']) {
+  test(`a suite honors explicit layout intent ${search}`, async ({ page }) => {
+    const { suite, two } = await threeRuns(page.request);
+    await openReplay(page, `${server().origin}/s/${suite}/r/${two}${search}`);
+    let expected = 'grid';
+    if (search.includes('spotlight')) expected = 'spotlight';
+    if (search.includes('single')) expected = 'single';
+    await expect(page.getByTestId('compare-stage')).toHaveAttribute('data-layout', expected);
+    await expect(page.locator('.ct-label')).toHaveCount(expected === 'single' ? 0 : 2);
+  });
+}
 
 test('on phones a suite row puts its run strip on the line under its meta, a short suite as well as a long one', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
