@@ -18,6 +18,25 @@ afterEach(() => {
   document.body.innerHTML = '';
 });
 
+it('prefers recovery over a legacy link while preserving link-only errors', () => {
+  const ui = createDefaultUi();
+  const link = { label: 'Sign in', url: 'https://example.com/sign-in' };
+  ui.showResult({
+    status: 'error',
+    error: Object.assign(new Error('private'), {
+      link,
+      action: { label: 'Sign in', run: async () => {} },
+    }),
+  });
+  expect(control('recover').textContent).toBe('Sign in');
+  expect(document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a')).toBeNull();
+  ui.showResult({ status: 'error', error: Object.assign(new Error('private'), { link }) });
+  const anchor = document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector('a');
+  expect(anchor?.textContent).toBe('Sign in');
+  expect(anchor?.href).toBe(link.url);
+  ui.dismiss();
+});
+
 it('retries once after recovery and ignores duplicate clicks', async () => {
   const wait = deferred();
   const run = vi.fn(() => wait.promise);
