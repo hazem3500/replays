@@ -5,6 +5,8 @@ A custom distribution pins one version of `@hazem3500/replays` and builds on its
 
 The private [capture-only staging artifact](packaging.md#capture-only-staging-boundary) is a CLI build boundary, not a new library export or published package. Its capability manifest describes its reduced command surface; existing full-package public exports and replay schemas are unchanged.
 
+`IssueUploadErrorDetails.action` is an optional recorder recovery contract, with a lifetime-scoped abort signal and one retained-report retry after success. Existing error links remain compatible; the default UI prefers an action when both are supplied. See [recorder recovery](recorder.md#compose-the-built-in-steps).
+
 ## What is public API
 
 Public means: documented here or in [extension-api.md](extension-api.md), exported from one of the subpath entries in

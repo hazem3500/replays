@@ -1,5 +1,6 @@
-import type { CompletionAction, CompletionContext, DefaultUiOptions, ReceiptValue, RecorderTheme } from './default-ui-types.ts';
+import type { CompletionContext, DefaultUiOptions, ReceiptValue, RecorderTheme } from './default-ui-types.ts';
 import { element, link, safeHref } from './default-ui-dom.ts';
+import { appendCompletionControls } from './completion-controls.ts';
 import { DEFAULT_UI_STYLES } from './default-ui-styles.ts';
 import { icon } from './default-ui-icons.ts';
 import { RECORDER_THEME_PRESETS } from './default-ui-themes.ts';
@@ -7,16 +8,15 @@ import { createRecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
 import { resolveRecorderMessages } from './messages.ts';
 import { createUploadActivity } from './upload-activity.ts';
+import { uploadRecovery } from './upload-recovery.ts';
 import { startRecordingPulse } from './recording-pulse.ts';
 import { cleanupText, updateText } from './text-motion.ts';
 import { enterDialog, hideSurface as exitSurface, showSurface, type FloatingSurface } from './surface-motion.ts';
 import type { RecorderUi, UploadDecision } from './types.ts';
 import type { IssueUploadErrorDetails } from './upload.ts';
-
 export * from './messages.ts';
 export { createRecorderFormat, formatDuration, type RecorderFormat } from './format.ts';
 export type { CompletionAction, CompletionContext, CompletionOptions, DefaultUiOptions, RecorderTheme } from './default-ui-types.ts';
-
 /**
  * The built-in, framework-free UI: a consent dialog, a recording pill with a
  * Stop button, a review dialog and a result toast. It lives in a shadow root
@@ -29,7 +29,6 @@ export function createDefaultUi(
   const format = createRecorderFormat(options.locale, options.format);
   const mode = options.privacyMode ?? 'masked';
   const zIndex = String(options.zIndex ?? 2_147_483_000);
-
   const mount = () => {
     const host = document.createElement('div');
     host.setAttribute('data-recorder-ui', '');
@@ -45,7 +44,6 @@ export function createDefaultUi(
     (options.container?.() ?? document.body).append(host);
     return { host, root, remove: () => host.remove() };
   };
-
   let floating: FloatingSurface | undefined;
   let renderCleanup: (() => void) | undefined;
   let timer: ReturnType<typeof setInterval> | undefined;
@@ -103,7 +101,6 @@ export function createDefaultUi(
     if (floating) exitSurface(floating.shell);
     clearContent();
   };
-
   const dialog = <T>(
     build: (finish: (value: T) => void) => {
       title: string;
@@ -149,7 +146,6 @@ export function createDefaultUi(
       trap.release = trapFocus(box);
       focus.focus();
     });
-
   return {
     requestConsent: ({ maxDurationMs, signal, privacy }) =>
       dialog<boolean>(
@@ -189,7 +185,6 @@ export function createDefaultUi(
         false,
         signal,
       ),
-
     dismiss,
     // why: a separate chunk, so hosts without `choices` (every customer page) never download the options step.
     chooseOptions: async (context) =>
@@ -240,7 +235,6 @@ export function createDefaultUi(
         hideSurface();
       };
     },
-
     confirmUpload: ({ summary, privacy, signal }) =>
       dialog<UploadDecision>(
         (finish) => {
@@ -284,7 +278,6 @@ export function createDefaultUi(
         { confirmed: false },
         signal,
       ),
-
     showUploading: () => {
       const { content, label } = surface('uploading', messages.uploading);
       label.className = 'message';
@@ -294,7 +287,6 @@ export function createDefaultUi(
       content.append(label, activity.node);
       return hideSurface;
     },
-
     showResult: (result) => {
       const receipt = result.status === 'uploaded' ? result.receipt : undefined;
       const completion = options.completion;
@@ -349,38 +341,14 @@ export function createDefaultUi(
         current.content.append(icon(receipt ? 'check' : 'alert', 'status-icon'), current.label);
         if (receipt) {
           const href = receipt.url ? safeHref(receipt.url) : undefined;
-          const actions: readonly CompletionAction[] =
-            completion?.actions ??
-            (href
-              ? [
-                  { id: 'open', label: messages.openLink, kind: 'link', href, primary: true },
-                  { id: 'copy-link', label: messages.copyLink, kind: 'copy', value: href },
-                ]
-              : []);
-          for (const action of actions) {
-            let control: HTMLElement | undefined;
-            const className = action.primary ? 'primary' : '';
-            if (action.kind === 'link') control = link(action.label, resolveValue(action.href), className);
-            else
-              control = element(
-                'button',
-                {
-                  type: 'button',
-                  className,
-                  onclick: () => {
-                    if (action.kind === 'copy') void copy(action.value === undefined ? undefined : resolveValue(action.value), control);
-                    else void action.onAction(context);
-                  },
-                },
-                [action.label],
-              );
-            if (control) {
-              control.dataset.action = action.id;
-              controls.append(control);
-            }
-          }
+          appendCompletionControls(controls, completion?.actions, { resolveValue, copy, context, href, messages });
         } else {
-          if (error?.link) {
+          if (error?.action && result.status === 'error')
+            renderCleanup = uploadRecovery(controls, error.action, result.retry, (message) => {
+              updateText(current.label, message);
+              current.live.textContent = message;
+            });
+          if (error?.link && !error.action) {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);
           }
