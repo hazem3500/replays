@@ -1,5 +1,6 @@
-import type { CompletionAction, CompletionContext, DefaultUiOptions, ReceiptValue, RecorderTheme } from './default-ui-types.ts';
+import type { CompletionContext, DefaultUiOptions, ReceiptValue, RecorderTheme } from './default-ui-types.ts';
 import { element, link, safeHref } from './default-ui-dom.ts';
+import { appendCompletionControls } from './completion-controls.ts';
 import { DEFAULT_UI_STYLES } from './default-ui-styles.ts';
 import { icon } from './default-ui-icons.ts';
 import { RECORDER_THEME_PRESETS } from './default-ui-themes.ts';
@@ -340,36 +341,7 @@ export function createDefaultUi(
         current.content.append(icon(receipt ? 'check' : 'alert', 'status-icon'), current.label);
         if (receipt) {
           const href = receipt.url ? safeHref(receipt.url) : undefined;
-          const actions: readonly CompletionAction[] =
-            completion?.actions ??
-            (href
-              ? [
-                  { id: 'open', label: messages.openLink, kind: 'link', href, primary: true },
-                  { id: 'copy-link', label: messages.copyLink, kind: 'copy', value: href },
-                ]
-              : []);
-          for (const action of actions) {
-            let control: HTMLElement | undefined;
-            const className = action.primary ? 'primary' : '';
-            if (action.kind === 'link') control = link(action.label, resolveValue(action.href), className);
-            else
-              control = element(
-                'button',
-                {
-                  type: 'button',
-                  className,
-                  onclick: () => {
-                    if (action.kind === 'copy') void copy(action.value === undefined ? undefined : resolveValue(action.value), control);
-                    else void action.onAction(context);
-                  },
-                },
-                [action.label],
-              );
-            if (control) {
-              control.dataset.action = action.id;
-              controls.append(control);
-            }
-          }
+          appendCompletionControls(controls, completion?.actions, resolveValue, copy, context, href, messages);
         } else {
           if (error?.action && result.status === 'error')
             renderCleanup = uploadRecovery(controls, error.action, result.retry, (message) => {
