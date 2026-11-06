@@ -239,7 +239,7 @@
     },
     "dist/client/assets/main-HASH.css": {
       "raw": 223667,
-      "gzip": 39245,
+      "gzip": 39236,
       "brotli": 32841
     },
     "dist/client/assets/main-HASH.js": {
