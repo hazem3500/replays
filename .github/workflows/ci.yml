@@ -41,6 +41,28 @@ env:
   NODE_VERSION: 22.23.4
 
 jobs:
+  capture-package:
+    name: Capture-only artifact
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubicloud-standard-2
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.3
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --prefer-offline
+      - run: pnpm build:capture
+      - run: node scripts/capture-package-smoke.mjs | tee dist/capture-package/smoke-evidence.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: capture-only-${{ github.sha }}
+          path: dist/capture-package/
+
   # The pull request gate: lint, format, types, unit tests, builds and the quality audits as Turborepo tasks. Pull
   # requests run only the tasks whose inputs changed against the base (`--affected`), and every task replays from the
   # shared remote cache when the same inputs already passed on any branch.

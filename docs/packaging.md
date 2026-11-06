@@ -44,6 +44,18 @@ only if one of these becomes true:
 If it happens, the subpath names become the package names (`@hazem3500/replays-capture`, …) and the umbrella package re-exports them,
 so imports written against the subpaths keep working.
 
+## Capture-only staging boundary
+
+`pnpm build:capture` independently builds `dist/capture-package`, a private CLI-only staging artifact. It does not replace or publish the full package. It supports `capture`, `import`, `upload`, `connect`, `login`, `status`, `logout`, `config` and `doctor`. The upload helpers retain the existing credential, device approval and server-selection behavior. `serve`, `migrate`, `build-static`, `plugin` and `mcp` fail with exit status 2 and a full-distribution requirement. The full launcher and all existing exports remain unchanged.
+
+The staging manifest exposes no library exports or declarations. It includes the CLI, prebuilt rrweb recorder, capability manifest and license, not the viewer, Start server or samples. Config, plugin validation and context-schema helpers remain bundled where capture requires them; this is not a promise of zero server-named source inputs. Custom config and plugin modules, their dependencies, a browser and any selected external driver executable remain consumer-provided. No capture, privacy, redaction or authentication contract changes.
+
+Runtime dependencies are derived from the emitted external import graph and must already exist in the root runtime dependency manifest. The build fails on undeclared externals or viewer, MCP and server entry points. `build-evidence.json` records actual source inputs, external imports and dependency versions. rrweb is bundled in the recorder; current Node imports include Playwright, WebSocket, esbuild and schema validation. CI records the actual closure rather than relying on this illustrative list.
+
+The artifact retains the upstream package identity and version because plugin compatibility discovers that identity at runtime. It is deliberately private. Consumers must not rename it or replace an existing full wrapper that advertises server commands without their own explicit compatibility and command-surface migration. This boundary adds no publish target or new package release cadence.
+
+The CI **Capture-only artifact** job builds, packs and installs it in isolation, checks command help and omitted-command failures, resolves declared dependencies and uploads the staging tree with exact-head build and smoke evidence. Installed import/upload validation and capture help exercise runtime module loading without launching a browser. Real authenticated upload and capture still require their normal integration tests; artifact presence alone is not proof of those flows.
+
 ## Build
 
 `pnpm build` builds the viewer (`dist/client`); `pnpm build:cli` builds `dist/cli` (the command), `dist/lib` (the six entries with shared

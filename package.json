@@ -12,6 +12,7 @@
     "build": "vp run cached:build && vp run cached:start",
     "build:site": "node scripts/build-site.mjs",
     "build:cli": "vp run cached:package",
+    "build:capture": "node scripts/build-capture.mjs",
     "start": "node --experimental-strip-types --no-warnings src/server/main.ts",
     "cli": "node --experimental-strip-types --no-warnings src/cli.ts",
     "capture": "node --experimental-strip-types --no-warnings src/cli.ts capture",

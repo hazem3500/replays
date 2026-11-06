@@ -3,6 +3,8 @@
 A custom distribution pins one version of `@hazem3500/replays` and builds on its extension surface
 ([extension-api.md](extension-api.md)). This page says what that pin protects.
 
+The private [capture-only staging artifact](packaging.md#capture-only-staging-boundary) is a CLI build boundary, not a new library export or published package. Its capability manifest describes its reduced command surface; existing full-package public exports and replay schemas are unchanged.
+
 ## What is public API
 
 Public means: documented here or in [extension-api.md](extension-api.md), exported from one of the subpath entries in
