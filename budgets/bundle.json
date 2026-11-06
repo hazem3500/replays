@@ -775,6 +775,18 @@
   },
   "allowances": [
     {
+      "file": "dist/lib/recorder-ui.mjs",
+      "cap": { "raw": 39020, "gzip": 10500, "brotli": 9227 },
+      "reason": "Cancellable host recovery with duplicate suppression and safe rejection guidance; CI measured main 37501/10142/8892 and head 39020/10500/9227 bytes.",
+      "pr": "https://github.com/hazem3500/replays/pull/258"
+    },
+    {
+      "file": "dist/client/assets/main-HASH.js",
+      "cap": { "raw": 126236, "gzip": 44546, "brotli": 39883 },
+      "reason": "Existing accepted-main build exceeds its raw cap by 36 bytes; same-run main and head are identical at 126236/44546/39883 bytes, with no viewer source changes.",
+      "pr": "https://github.com/hazem3500/replays/pull/258"
+    },
+    {
       "file": "dist/lib/recorder-react.mjs",
       "cap": {
         "raw": 5462,

@@ -1,6 +1,9 @@
 // @vitest-environment happy-dom
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultUi } from './default-ui.ts';
+import { createRecorder } from './recorder.ts';
+import { createFakeRrweb } from './testing/fakes.ts';
+import type { IssueReportUpload } from './upload.ts';
 import { must } from './testing.ts';
 
 const control = (name: string) =>
@@ -14,6 +17,7 @@ const deferred = () => {
   });
   return { promise, resolve, reject };
 };
+describe('upload recovery', () => {
 afterEach(() => {
   document.body.innerHTML = '';
 });
@@ -39,8 +43,8 @@ it('prefers recovery over a legacy link while preserving link-only errors', () =
 
 it('retries once after recovery and ignores duplicate clicks', async () => {
   const wait = deferred();
-  const run = vi.fn(() => wait.promise);
-  const retry = vi.fn();
+  const run = vi.fn<() => Promise<void>>(() => wait.promise);
+  const retry = vi.fn<() => void>();
   const ui = createDefaultUi();
   ui.showResult({
     status: 'error',
@@ -63,7 +67,7 @@ it('retries once after recovery and ignores duplicate clicks', async () => {
 
 it('keeps retry and recovery available after failure without showing technical details', async () => {
   const wait = deferred();
-  const retry = vi.fn();
+  const retry = vi.fn<() => void>();
   const ui = createDefaultUi();
   ui.showResult({
     status: 'error',
@@ -86,7 +90,7 @@ it('keeps retry and recovery available after failure without showing technical d
 it.each(['dismiss', 'replace'] as const)('aborts recovery on %s and prevents a late retry', async (operation) => {
   const wait = deferred();
   let signal: AbortSignal | undefined;
-  const retry = vi.fn();
+  const retry = vi.fn<() => void>();
   const ui = createDefaultUi();
   ui.showResult({
     status: 'error',
@@ -109,4 +113,49 @@ it.each(['dismiss', 'replace'] as const)('aborts recovery on %s and prevents a l
   await wait.promise;
   expect(retry).not.toHaveBeenCalled();
   ui.dismiss();
+});
+
+  it('aborts pending upload recovery when destroyed and never uploads after late success', async () => {
+    const wait = deferred();
+    let signal: AbortSignal | undefined;
+    const upload = vi.fn<IssueReportUpload>(() =>
+      Promise.reject(
+        Object.assign(new Error('private'), {
+          action: {
+            label: 'Sign in',
+            run: (context: { signal: AbortSignal }) => {
+              signal = context.signal;
+              return wait.promise;
+            },
+          },
+        }),
+      ),
+    );
+    const recorder = createRecorder({ upload, ui: createDefaultUi(), loadRrweb: createFakeRrweb().load, app: { name: 'Example' } });
+    const done = recorder.request({ source: 'user' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    must(
+      document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector<HTMLButtonElement>('[data-recorder-action=consent-accept]'),
+    ).click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    recorder.stop();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    must(
+      [...document.querySelectorAll('[data-recorder-ui]')].flatMap((host) => [
+        ...(host.shadowRoot?.querySelectorAll<HTMLButtonElement>('[data-recorder-action=send]') ?? []),
+      ])[0],
+    ).click();
+    await done;
+    const recover = [...document.querySelectorAll('[data-recorder-ui]')].flatMap((host) => [
+      ...(host.shadowRoot?.querySelectorAll<HTMLButtonElement>('[data-recorder-action=recover]') ?? []),
+    ])[0];
+    must(recover).click();
+    recorder.destroy();
+    expect(signal?.aborted).toBe(true);
+    wait.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(upload).toHaveBeenCalledOnce();
+    for (const host of document.querySelectorAll('[data-recorder-ui]')) host.remove();
+  });
+
 });

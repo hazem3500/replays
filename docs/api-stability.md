@@ -3,7 +3,7 @@
 A custom distribution pins one version of `@hazem3500/replays` and builds on its extension surface
 ([extension-api.md](extension-api.md)). This page says what that pin protects.
 
-`IssueUploadErrorDetails.action` is an optional recorder recovery contract, with a lifetime-scoped abort signal and one retained-report retry after success. Existing error links remain compatible; the default UI prefers an action when both are supplied. See [recorder recovery](recorder.md#default-ui).
+`IssueUploadErrorDetails.action` is an optional recorder recovery contract, with a lifetime-scoped abort signal and one retained-report retry after success. Existing error links remain compatible; the default UI prefers an action when both are supplied. See [recorder recovery](recorder.md#compose-the-built-in-steps).
 
 ## What is public API
 
