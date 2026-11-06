@@ -1828,16 +1828,6 @@
       "pr": "https://github.com/hazem3500/replays/pull/213"
     },
     {
-      "file": "dist/lib/recorder-ui.mjs",
-      "cap": {
-        "raw": 38053,
-        "gzip": 10247,
-        "brotli": 8986
-      },
-      "reason": "Recorder default UI redesign: one concentric floating pill with status icons, a red Stop control with hover, focus and press states, soft-tinted Open and Copy link actions, refined consent and review dialogs and their entrance motion. Reviewed and approved by Hazem. Same-runner main to head: raw 30694 to 36944, gzip 8330 to 9948, brotli 7295 to 8724 bytes; caps are head times 1.03.",
-      "pr": "https://github.com/hazem3500/replays/pull/213"
-    },
-    {
       "file": "dist/lib/recorder.mjs",
       "cap": {
         "raw": 3137,
@@ -2083,16 +2073,6 @@
         "brotli": 250
       },
       "reason": "Hash-name drift only: raw is unchanged against main 888b6e2a on the same Boat, and brotli moves with the chunk names this PR's editor changes give the build. Same-Boat main to head: raw 328 (+0), gzip 250 to 253 (+3), brotli 226 to 239 (+13). Replaces the #203 entry for this file.",
-      "pr": "https://github.com/hazem3500/replays/pull/252"
-    },
-    {
-      "file": "dist/client/assets/main-HASH.js",
-      "cap": {
-        "raw": 126200,
-        "gzip": 44560,
-        "brotli": 39960
-      },
-      "reason": "Hash-name drift only: no source change in the main entry; its gzip and brotli move a few bytes with the chunk names this PR gives the build while raw shrinks. CI main to head: raw 126183 to 126179 (-4), gzip 44506 to 44527 (+21), brotli 39818 to 39859 (+41), and 39883 on a later head of this PR; the brotli cap holds that drift. Replaces the #251 entry for this file.",
       "pr": "https://github.com/hazem3500/replays/pull/252"
     },
     {
