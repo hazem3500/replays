@@ -7,6 +7,7 @@ import { createRecorderFormat } from './format.ts';
 import { focusReturn, trapFocus } from './kit/index.ts';
 import { resolveRecorderMessages } from './messages.ts';
 import { createUploadActivity } from './upload-activity.ts';
+import { uploadRecovery } from './upload-recovery.ts';
 import { startRecordingPulse } from './recording-pulse.ts';
 import { cleanupText, updateText } from './text-motion.ts';
 import { enterDialog, hideSurface as exitSurface, showSurface, type FloatingSurface } from './surface-motion.ts';
@@ -380,6 +381,11 @@ export function createDefaultUi(
             }
           }
         } else {
+          if (error?.action && result.status === 'error')
+            renderCleanup = uploadRecovery(controls, error.action, result.retry, (message) => {
+              updateText(current.label, message);
+              current.live.textContent = message;
+            });
           if (error?.link) {
             const control = link(error.link.label, error.link.url);
             if (control) controls.append(control);

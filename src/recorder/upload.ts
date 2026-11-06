@@ -45,6 +45,12 @@ export type IssueUploadErrorLink = { label: string; url: string };
 export type IssueUploadErrorDetails = {
   userMessage?: string;
   link?: IssueUploadErrorLink;
+  /** User-triggered recovery; respect cancellation and resolve only when retry is safe. */
+  action?: {
+    label: string;
+    pendingLabel?: string;
+    run: (context: { signal: AbortSignal }) => Promise<void>;
+  };
 };
 
 /**

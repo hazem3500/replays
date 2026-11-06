@@ -77,6 +77,48 @@ function deferred<T>() {
 }
 
 describe('createRecorder', () => {
+  it('aborts pending upload recovery when destroyed and never uploads after late success', async () => {
+    const wait = deferred<void>();
+    let signal: AbortSignal | undefined;
+    const upload = vi.fn<IssueReportUpload>(() =>
+      Promise.reject(
+        Object.assign(new Error('private'), {
+          action: {
+            label: 'Sign in',
+            run: (context: { signal: AbortSignal }) => {
+              signal = context.signal;
+              return wait.promise;
+            },
+          },
+        }),
+      ),
+    );
+    const recorder = setup({ upload, ui: createDefaultUi() }).recorder;
+    const done = recorder.request({ source: 'user' });
+    await flush();
+    must(
+      document.querySelector('[data-recorder-ui]')?.shadowRoot?.querySelector<HTMLButtonElement>('[data-recorder-action=consent-accept]'),
+    ).click();
+    await flush();
+    recorder.stop();
+    await flush();
+    must(
+      [...document.querySelectorAll('[data-recorder-ui]')].flatMap((host) => [
+        ...(host.shadowRoot?.querySelectorAll<HTMLButtonElement>('[data-recorder-action=send]') ?? []),
+      ])[0],
+    ).click();
+    await done;
+    const recover = [...document.querySelectorAll('[data-recorder-ui]')].flatMap((host) => [
+      ...(host.shadowRoot?.querySelectorAll<HTMLButtonElement>('[data-recorder-action=recover]') ?? []),
+    ])[0];
+    must(recover).click();
+    recorder.destroy();
+    expect(signal?.aborted).toBe(true);
+    wait.resolve();
+    await flush();
+    expect(upload).toHaveBeenCalledOnce();
+    document.querySelectorAll('[data-recorder-ui]').forEach((host) => host.remove());
+  });
   it('loads nothing and records nothing until consent', async () => {
     const { recorder, rrweb, upload } = setup({
       ui: fakeUi({ requestConsent: vi.fn<RecorderUi['requestConsent']>(() => Promise.resolve(false)) }).ui,
