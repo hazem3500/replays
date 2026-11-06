@@ -40,7 +40,7 @@ try {
     assert.equal(rejected.status, 2);
     assert.match(rejected.stderr, /requires the full/);
   }
-  const imported = run(process.execPath, [cli, 'import', '--help'], sandbox);
+  const imported = run(process.execPath, [cli, 'import'], sandbox);
   assert.equal(imported.status, 1);
   assert.match(imported.stderr, /--rrweb/);
   const capture = run(process.execPath, [cli, 'capture', '--help'], sandbox);

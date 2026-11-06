@@ -57,7 +57,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile --prefer-offline
       - run: pnpm build:capture
-      - run: node scripts/capture-package-smoke.mjs | tee dist/capture-package/smoke-evidence.json
+      - run: node scripts/capture-package-smoke.mjs > dist/capture-package/smoke-evidence.json
       - uses: actions/upload-artifact@v4
         with:
           name: capture-only-${{ github.sha }}
