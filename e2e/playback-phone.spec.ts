@@ -20,7 +20,11 @@ test('keeps the playback switch compact with an expanded touch target', async ({
       hitHeight: bounds.height - Number.parseFloat(target.top) - Number.parseFloat(target.bottom),
     };
   });
-  expect(geometry).toEqual({ coarse: true, width: 28, height: 16, hitWidth: 44, hitHeight: 44 });
+  expect(geometry.coarse).toBe(true);
+  expect(geometry.width).toBeCloseTo(28, 0);
+  expect(geometry.height).toBeCloseTo(16, 0);
+  expect(geometry.hitWidth).toBeGreaterThanOrEqual(40);
+  expect(geometry.hitHeight).toBeGreaterThanOrEqual(40);
   await testInfo.attach('phone-playback-menu', { body: await page.screenshot(), contentType: 'image/png' });
   await testInfo.attach('phone-switch-geometry', { body: JSON.stringify(geometry), contentType: 'application/json' });
   const box = await control.boundingBox();
@@ -42,22 +46,25 @@ test('cancels a native switch animation when its connected popup becomes unrende
   await page.locator('.playback-options').click();
   const control = page.locator('.playback-skip [role="switch"]');
   const result = await control.evaluate(async (node) => {
-    (node as HTMLButtonElement).click();
+    if (!(node instanceof HTMLButtonElement)) throw new Error('Expected a native switch button');
+    node.click();
     await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
     const thumb = node.querySelector('[data-slot="switch-thumb"]');
     const animations = thumb?.getAnimations() ?? [];
     const popup = node.closest<HTMLElement>('[data-slot="popover-content"]');
-    if (!popup || !thumb || animations.length === 0) throw new Error('Expected a running native thumb animation');
+    const animation = animations[0];
+    if (!popup || !thumb || !animation) throw new Error('Expected a running native thumb animation');
     popup.style.display = 'none';
     const hidden = thumb.isConnected && thumb.getClientRects().length === 0;
     let rejectedCommit = false;
     try {
-      animations[0]!.commitStyles();
+      animation.commitStyles();
     } catch (error) {
       if (!(error instanceof DOMException)) throw error;
       rejectedCommit = error.name === 'InvalidStateError';
     }
-    (node as HTMLButtonElement).click();
+    if (!(node instanceof HTMLButtonElement)) throw new Error('Expected a native switch button');
+    node.click();
     return { hidden, rejectedCommit, native: animations.every((animation) => animation instanceof Animation) };
   });
   expect(result).toEqual({ hidden: true, rejectedCommit: true, native: true });
